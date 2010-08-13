@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009-2010 Canonical Ltd.  All rights reserved.
 from __future__ import with_statement
 
 # pylint: disable-msg=W0105
@@ -64,7 +64,8 @@ class StubbedOpenIDCallbackView(OpenIDCallbackView):
 
 
 class FakeConsumer:
-    """An OpenID consumer that stashes away arguments for test instection."""
+    """An OpenID consumer that stashes away arguments for test inspection."""
+
     def complete(self, params, requested_url):
         self.params = params
         self.requested_url = requested_url
@@ -72,6 +73,7 @@ class FakeConsumer:
 
 class FakeConsumerOpenIDCallbackView(OpenIDCallbackView):
     """An OpenID handler with fake consumer so arguments can be inspected."""
+
     def _getConsumer(self):
         self.fake_consumer = FakeConsumer()
         return self.fake_consumer
@@ -260,7 +262,7 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
                 'foo': 'bar',
             })
         self.assertEquals(
-            view.fake_consumer.requested_url,'http://example.com?foo=bar')
+            view.fake_consumer.requested_url, 'http://example.com?foo=bar')
 
     def test_personless_account(self):
         # When there is no Person record associated with the account, we
@@ -420,8 +422,10 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
         # the response and redirect to the starting_url specified in the
         # OpenID response.
         test_account = self.factory.makeAccount('Test account')
+
         class StubbedOpenIDCallbackViewLoggedIn(StubbedOpenIDCallbackView):
             account = test_account
+
         view, html = self._createViewWithResponse(
             test_account, response_status=FAILURE,
             response_msg='Server denied check_authentication',
