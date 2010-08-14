@@ -650,8 +650,6 @@ class HgImportWorker(PullingImportWorker):
     The only behaviour we add is preserving the id-sha map between runs.
     """
 
-    db_file = 'hg-v2.db'
-
     @property
     def format_classes(self):
         """See `PullingImportWorker.opening_format`."""
@@ -667,8 +665,17 @@ class HgImportWorker(PullingImportWorker):
         it in the Bazaar tree, that is at '.bzr/repository/hg-v2.db'.
         """
         branch = PullingImportWorker.getBazaarBranch(self)
+        # Fetch the legacy cache from the store, if present.
         self.import_data_store.fetch(
-            self.db_file, branch.repository._transport)
+            'hg-v2.db', branch.repository._transport)
+        # The cache dir from newer bzr-hgs is stored as a tarball.
+        local_name = 'hg-cache.tar.gz'
+        if self.import_data_store.fetch(local_name):
+            repo_transport = branch.repository._transport
+            repo_transport.mkdir('hg')
+            hg_db_dir = os.path.join(
+                local_path_from_url(repo_transport.base), 'hg')
+            extract_tarball(local_name, hg_db_dir)
         return branch
 
     def pushBazaarBranch(self, bazaar_branch):
@@ -680,8 +687,11 @@ class HgImportWorker(PullingImportWorker):
         """
         non_trivial = PullingImportWorker.pushBazaarBranch(
             self, bazaar_branch)
-        self.import_data_store.put(
-            self.db_file, bazaar_branch.repository._transport)
+        repo_base = bazaar_branch.repository._transport.base
+        hg_db_dir = os.path.join(local_path_from_url(repo_base), 'hg')
+        local_name = 'hg-cache.tar.gz'
+        create_tarball(hg_db_dir, local_name)
+        self.import_data_store.put(local_name)
         return non_trivial
 
 
