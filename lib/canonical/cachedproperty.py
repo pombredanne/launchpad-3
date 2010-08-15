@@ -7,6 +7,8 @@ then returned each time it is asked for.
 
 __metaclass__ = type
 
+__all__ = ['cachedproperty']
+
 # XXX: JonathanLange 2010-01-11 bug=505731: Move this to lp.services.
 
 def cachedproperty(attrname_or_fn):
@@ -56,6 +58,7 @@ def cachedproperty(attrname_or_fn):
 
 
 class CachedPropertyForAttr:
+    """Curry a decorator to provide arguments to the CachedProperty."""
 
     def __init__(self, attrname):
         self.attrname = attrname
@@ -66,16 +69,18 @@ class CachedPropertyForAttr:
 
 class CachedProperty:
 
+    # Used to detect not-yet-cached properties.
+    sentinel = object()
+
     def __init__(self, attrname, fn):
         self.fn = fn
         self.attrname = attrname
-        self.marker = object()
 
     def __get__(self, inst, cls=None):
         if inst is None:
             return self
-        cachedresult = getattr(inst, self.attrname, self.marker)
-        if cachedresult is self.marker:
+        cachedresult = getattr(inst, self.attrname, CachedProperty.sentinel)
+        if cachedresult is CachedProperty.sentinel:
             result = self.fn(inst)
             setattr(inst, self.attrname, result)
             return result
