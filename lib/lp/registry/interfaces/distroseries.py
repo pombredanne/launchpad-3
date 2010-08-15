@@ -127,7 +127,7 @@ class DistroSeriesVersionField(UniqueField):
             Version(version)
         except VersionError, error:
             raise LaunchpadValidationError(
-                "'%s': %s" % (version, error[0]))
+                "'%s': %s" % (version, error))
 
 
 class IDistroSeriesEditRestricted(Interface):
@@ -552,12 +552,6 @@ class IDistroSeriesPublic(
         time with records that can't be accepted).
 
         Return a SelectResult of SourcePackagePublishingHistory.
-        """
-
-    def publishedBinaryPackages(component=None):
-        """Given an optional component name, return a list of the binary
-        packages that are currently published in this distroseries in the
-        given component, or in any component if no component name was given.
         """
 
     def getDistroSeriesLanguage(language):
