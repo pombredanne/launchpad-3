@@ -3,11 +3,14 @@
 
 """Cached properties for situations where a property is computed once and
 then returned each time it is asked for.
+
+The clear_cachedproperties function can be used to wipe the cache of properties
+from an instance.
 """
 
 __metaclass__ = type
 
-__all__ = ['cachedproperty']
+__all__ = ['cachedproperty', 'clear_cachedproperties']
 
 # XXX: JonathanLange 2010-01-11 bug=505731: Move this to lp.services.
 
@@ -18,6 +21,10 @@ def cachedproperty(attrname_or_fn):
     The value is cached on the instance, using the attribute name provided.
 
     If you don't provide a name, the mangled name of the property is used.
+
+    cachedproperty is not threadsafe - it should not be used on objects which
+    are shared across threads / external locking should be used on those
+    objects.
 
     >>> class CachedPropertyTest(object):
     ...
@@ -59,6 +66,32 @@ def cachedproperty(attrname_or_fn):
         fn = attrname_or_fn
         attrname = '_%s_cached_value' % fn.__name__
         return CachedProperty(attrname, fn)
+
+
+def clear_cachedproperties(instance):
+    """Clear cached properties from an object.
+    
+    >>> class CachedPropertyTest(object):
+    ...
+    ...     @cachedproperty('_foo_cache')
+    ...     def foo(self):
+    ...         return 23
+    ...
+    >>> instance = CachedPropertyTest()
+    >>> instance.foo
+    23
+    >>> instance._cached_properties
+    ['_foo_cache']
+    >>> clear_cachedproperties(instance)
+    >>> instance._cached_properties
+    []
+    >>> hasattr(instance, '_foo_cache')
+    False
+    """
+    cached_properties = getattr(instance, '_cached_properties', [])
+    for property_name in cached_properties:
+        delattr(instance, property_name)
+    instance._cached_properties = []
 
 
 class CachedPropertyForAttr:
