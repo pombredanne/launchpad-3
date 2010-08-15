@@ -46,6 +46,10 @@ def cachedproperty(attrname_or_fn):
     69
     >>> cpt._bar_cached_value
     69
+    
+    Cached properties are listed on instances.
+    >>> sorted(cpt._cached_properties)
+    ['_bar_cached_value', '_foo_cache']
 
     """
     if isinstance(attrname_or_fn, basestring):
@@ -83,6 +87,9 @@ class CachedProperty:
         if cachedresult is CachedProperty.sentinel:
             result = self.fn(inst)
             setattr(inst, self.attrname, result)
+            cached_properties = getattr(inst, '_cached_properties', [])
+            cached_properties.append(self.attrname)
+            inst._cached_properties = cached_properties
             return result
         else:
             return cachedresult
