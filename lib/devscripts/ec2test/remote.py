@@ -201,7 +201,8 @@ class EC2Runner:
                 pass
 
 
-class TestOnMergeRunner:
+class LaunchpadTester:
+    """Runs Launchpad tests and gathers their results in a useful way."""
 
     def __init__(self, request, logger, echo_to_stdout, test_directory,
                  test_options=None):
@@ -652,7 +653,7 @@ def main(argv):
     runner = EC2Runner(
         options.daemon, pid_filename, options.shutdown, options.email)
 
-    tester = TestOnMergeRunner(
+    tester = LaunchpadTester(
         logger=logger,
         # Only write to stdout if we are running as the foreground process.
         echo_to_stdout=(not options.daemon),

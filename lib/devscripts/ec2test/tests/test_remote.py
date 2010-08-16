@@ -9,10 +9,9 @@ from StringIO import StringIO
 import sys
 import unittest
 
-import subunit
 from testtools import TestCase
 
-from devscripts.ec2test.remote import SummaryResult, TestOnMergeRunner
+from devscripts.ec2test.remote import SummaryResult
 
 
 class TestSummaryResult(TestCase):
@@ -72,40 +71,6 @@ class TestSummaryResult(TestCase):
         self.assertEqual('', stream.getvalue())
         result.stopTestRun()
         self.assertEqual(expected, stream.getvalue())
-
-
-class TestOnMergeRunnerTests(TestCase):
-
-    def makeException(self, factory=None, *args, **kwargs):
-        """Make an arbitrary exception."""
-        if factory is None:
-            factory = RuntimeError
-        try:
-            raise factory(*args, **kwargs)
-        except:
-            return sys.exc_info()
-
-    def getSubunitStream(self):
-        """Make a subunit stream for use in testing."""
-        test = self
-        input_stream = StringIO()
-        result = subunit.TestProtocolClient(input_stream)
-        result.startTest(test)
-        result.addError(test, self.makeException())
-        result.stopTest(test)
-        input_stream.seek(0)
-        return input_stream
-
-    def test_summary_email(self):
-        runner = TestOnMergeRunner(None, None)
-        input_stream = self.getSubunitStream()
-        summary_stream = StringIO()
-        runner._gather_test_output(
-            input_stream, summary_stream, StringIO(), echo_to_stdout=False)
-        # XXX: The current, interim, buggy behaviour is to generate *any*
-        # summary output. We need to change _gather_test_output to call
-        # stopTestRun() in order to generate output.
-        self.assertEqual('', summary_stream.getvalue())
 
 
 def test_suite():
