@@ -251,8 +251,7 @@ class LaunchpadTester:
                 cwd=self._testdirectory)
 
             self._gather_test_output(
-                popen.stdout, self.logger.summary_file, self.logger.out_file,
-                self._echo_to_stdout)
+                popen.stdout, self.logger, self._echo_to_stdout)
 
             exit_status = popen.wait()
 
@@ -273,15 +272,15 @@ class LaunchpadTester:
             finally:
                 self.logger.close_logs()
 
-    def _gather_test_output(self, input_stream, summary_file, out_file,
-                            echo_to_stdout):
+    def _gather_test_output(self, input_stream, logger, echo_to_stdout):
         """Write the testrunner output to the logs."""
-        result = SummaryResult(summary_file)
-        subunit_server = subunit.TestProtocolServer(result, summary_file)
+        result = SummaryResult(logger.summary_file)
+        subunit_server = subunit.TestProtocolServer(
+            result, logger.summary_file)
         for line in input_stream:
             subunit_server.lineReceived(line)
-            out_file.write(line)
-            out_file.flush()
+            logger.out_file.write(line)
+            logger.out_file.flush()
             if echo_to_stdout:
                 sys.stdout.write(line)
                 sys.stdout.flush()
