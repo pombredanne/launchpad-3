@@ -2644,7 +2644,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             SuiteSourcePackage(distroseries, pocket, sourcepackagename))
 
     def makeDistributionSourcePackage(self, sourcepackagename=None,
-                                      distribution=None):
+                                      distribution=None, with_db=False):
         # Make sure we have a real sourcepackagename object.
         if (sourcepackagename is None or
             isinstance(sourcepackagename, basestring)):
@@ -2652,8 +2652,13 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 sourcepackagename)
         if distribution is None:
             distribution = self.makeDistribution()
-
-        return distribution.getSourcePackage(sourcepackagename)
+        package = distribution.getSourcePackage(sourcepackagename)
+        if with_db:
+            # Create an instance with a database record, that is normally
+            # done by secondary process.
+            removeSecurityProxy(package)._new(
+                distribution, sourcepackagename, False)
+        return package
 
     def makeEmailMessage(self, body=None, sender=None, to=None,
                          attachments=None, encode_attachments=False):
