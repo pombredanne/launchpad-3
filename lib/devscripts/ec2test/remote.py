@@ -368,6 +368,16 @@ class Request:
                     continue
                 yield name, branch.get_parent(), branch.revno()
 
+    def submit_to_pqm(self, successful, config):
+        """Submit this request to PQM, if successful & configured to do so."""
+        if not self._pqm_message:
+            return
+        subject = self._pqm_message.get('Subject')
+        if successful:
+            conn = bzrlib.smtp_connection.SMTPConnection(config)
+            conn.send_email(self._pqm_message)
+        return subject
+
 
 class WebTestLogger:
     """Logs test output to disk and a simple web page."""
@@ -429,12 +439,10 @@ class WebTestLogger:
                 successful, summary_filename, full_filename, config)
 
     def _handle_pqm_submission(self, successful, config):
-        if not self._request._pqm_message:
+        subject = self._request.submit_to_pqm(successful, config)
+        if not subject:
             return
-        subject = self._request._pqm_message.get('Subject')
         if successful:
-            conn = bzrlib.smtp_connection.SMTPConnection(config)
-            conn.send_email(self._pqm_message)
             self.write('\n\nSUBMITTED TO PQM:\n%s\n' % (subject,))
         else:
             self.write('\n\n**NOT** submitted to PQM:\n%s\n' % (subject,))
