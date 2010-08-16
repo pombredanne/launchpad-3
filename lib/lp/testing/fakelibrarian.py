@@ -1,7 +1,13 @@
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Fake, in-process implementation of the Librarian API."""
+"""Fake, in-process implementation of the Librarian API.
+
+This works in-process only.  It does not support exchange of files
+between processes, or URL access.  Nor will it completely support all
+details of the Librarian interface.  But if it does, this provides a
+simple and fast alternative to the full Librarian in unit tests.
+"""
 
 __metaclass__ = type
 __all__ = [
