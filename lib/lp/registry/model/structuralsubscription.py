@@ -187,12 +187,13 @@ class StructuralSubscriptionTargetMixin:
         # notifications is a distribution and that distribution has a
         # bug supervisor then only the bug supervisor or a member of
         # that team or, of course, admins, can subscribe someone to it.
-        if IDistribution.providedBy(self) and (
-            self.bug_supervisor is not None
-            and subscriber != self.bug_supervisor
-            and not subscriber.inTeam(self.bug_supervisor)
-            and not subscribed_by.inTeam(admins)):
-            return False
+        if IDistribution.providedBy(self) and self.bug_supervisor is not None:
+            if subscriber is None or subscribed_by is None:
+                return False
+            elif (subscriber != self.bug_supervisor
+                and not subscriber.inTeam(self.bug_supervisor)
+                and not subscribed_by.inTeam(admins)):
+                return False
         return True
 
     def addBugSubscription(self, subscriber, subscribed_by):
