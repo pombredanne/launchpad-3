@@ -56,7 +56,7 @@ class TestCurrentTranslationMessage_can_dismiss(TestCaseWithFactory):
                 self.pofile, self.potmsgset,
                 translations=translations,
                 translator=self.owner,
-                date_updated=self.now())
+                date_created=self.now())
         else:
             message = self.factory.makeTranslationMessage(
                 self.pofile, self.potmsgset,

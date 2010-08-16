@@ -47,7 +47,7 @@ class TestTranslatableMessageBase(TestCaseWithFactory):
         if is_suggestion:
             return self.factory.makeSuggestion(
                 pofile=self.pofile, potmsgset=self.potmsgset,
-                translations=translation, date_updated=date_updated)
+                translations=translation, date_created=date_updated)
         else:
             return self.factory.makeTranslationMessage(
                 pofile=self.pofile, potmsgset=self.potmsgset,

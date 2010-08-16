@@ -86,7 +86,7 @@ class ReviewTestMixin:
             self.factory.makeSuggestion(
                 potmsgset=self.potmsgset, pofile=self.pofile,
                 translator=self.factory.makePerson(), translations=['wi'],
-                date_updated=later_time))
+                date_created=later_time))
 
         self.assertTrue(self.translation.is_current_ubuntu)
         self.pofile.updateStatistics()
