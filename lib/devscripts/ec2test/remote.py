@@ -195,22 +195,20 @@ class EC2Runner:
                 # be shutting down.
                 remove_pidfile(self._pid_filename)
             else:
-                # We're not a daemon, and we're not shutting down.  The user most
-                # likely started this script manually, from a shell running on the
-                # instance itself.
+                # We're not a daemon, and we're not shutting down.  The user
+                # most likely started this script manually, from a shell
+                # running on the instance itself.
                 pass
 
 
 class LaunchpadTester:
     """Runs Launchpad tests and gathers their results in a useful way."""
 
-    def __init__(self, request, logger, echo_to_stdout, test_directory,
-                 test_options=None):
+    def __init__(self, request, logger, test_directory, test_options=None):
         """Construct a TestOnMergeRunner.
 
         :param request: A `Request` representing the merge we are doing.
         :param logger: The WebTestLogger to log to.
-        :param echo_to_stdout: Whether or not to echo results to stdout.
         :param test_directory: The directory to run the tests in. We expect
             this directory to have a fully-functional checkout of Launchpad
             and its dependent branches.
@@ -218,7 +216,6 @@ class LaunchpadTester:
         """
         self._request = request
         self.logger = logger
-        self._echo_to_stdout = echo_to_stdout
         self._test_directory = test_directory
         self._test_options = test_options
 
@@ -250,8 +247,7 @@ class LaunchpadTester:
                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                 cwd=self._testdirectory)
 
-            self._gather_test_output(
-                popen.stdout, self.logger, self._echo_to_stdout)
+            self._gather_test_output(popen.stdout, self.logger)
 
             exit_status = popen.wait()
 
@@ -272,7 +268,7 @@ class LaunchpadTester:
             finally:
                 self.logger.close_logs()
 
-    def _gather_test_output(self, input_stream, logger, echo_to_stdout):
+    def _gather_test_output(self, input_stream, logger):
         """Write the testrunner output to the logs."""
         result = SummaryResult(logger.summary_file)
         subunit_server = subunit.TestProtocolServer(
@@ -280,9 +276,6 @@ class LaunchpadTester:
         for line in input_stream:
             subunit_server.lineReceived(line)
             logger.got_line(line)
-            if echo_to_stdout:
-                sys.stdout.write(line)
-                sys.stdout.flush()
 
 
 class Request:
@@ -405,8 +398,15 @@ class Request:
 class WebTestLogger:
     """Logs test output to disk and a simple web page."""
 
-    def __init__(self, request):
+    def __init__(self, request, echo_to_stdout):
+        """Construct a WebTestLogger.
+
+        :param request: A `Request` object representing the thing that's being
+            tested.
+        :param echo_to_stdout: Whether or not we should echo output to stdout.
+        """
         self._request = request
+        self._echo_to_stdout = echo_to_stdout
 
         self.www_dir = os.path.join(os.path.sep, 'var', 'www')
         self.out_filename = os.path.join(self.www_dir, 'current_test.log')
@@ -442,6 +442,9 @@ class WebTestLogger:
         """Called when we get a line of output from our child processes."""
         self.out_file.write(line)
         self.out_file.flush()
+        if self._echo_to_stdout:
+            sys.stdout.write(line)
+            sys.stdout.flush()
 
     def write(self, msg):
         """Write to the summary and full log file."""
@@ -653,7 +656,9 @@ def main(argv):
     request = Request(
         options.public_branch, options.public_branch_revno, TEST_DIR,
         SOURCECODE_DIR, options.email, pqm_message)
-    logger = WebTestLogger(request)
+    # Only write to stdout if we are running as the foreground process.
+    echo_to_stdout = not options.daemon
+    logger = WebTestLogger(request, echo_to_stdout)
 
     runner = EC2Runner(
         options.daemon, pid_filename, options.shutdown, options.email)
