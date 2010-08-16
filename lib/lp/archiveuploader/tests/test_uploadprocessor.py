@@ -22,11 +22,13 @@ from email import message_from_string
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from lp.archiveuploader.uploadpolicy import AbstractUploadPolicy
+from lp.app.errors import NotFoundError
+from lp.archiveuploader.uploadpolicy import (AbstractUploadPolicy,
+    findPolicyByOptions)
 from lp.archiveuploader.uploadprocessor import UploadProcessor
+from lp.buildmaster.interfaces.buildbase import BuildStatus
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.soyuz.model.archivepermission import ArchivePermission
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import (
@@ -37,6 +39,7 @@ from lp.soyuz.model.publishing import (
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.soyuz.model.sourcepackagerelease import (
     SourcePackageRelease)
+from lp.soyuz.scripts.initialise_distroseries import InitialiseDistroSeries
 from canonical.launchpad.ftests import import_public_test_keys
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.series import SeriesStatus
@@ -59,7 +62,7 @@ from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
 from lp.services.mail import stub
 from canonical.launchpad.testing.fakepackager import FakePackager
-from lp.testing import TestCaseWithFactory
+from lp.testing import TestCase, TestCaseWithFactory
 from lp.testing.mail_helpers import pop_notifications
 from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
 from canonical.testing import LaunchpadZopelessLayer
@@ -113,7 +116,8 @@ class TestUploadProcessorBase(TestCaseWithFactory):
         super(TestUploadProcessorBase, self).setUp()
 
         self.queue_folder = tempfile.mkdtemp()
-        os.makedirs(os.path.join(self.queue_folder, "incoming"))
+        self.incoming_folder = os.path.join(self.queue_folder, "incoming")
+        os.makedirs(self.incoming_folder)
 
         self.test_files_dir = os.path.join(config.root,
             "lib/lp/archiveuploader/tests/data/suite")
@@ -138,6 +142,30 @@ class TestUploadProcessorBase(TestCaseWithFactory):
     def tearDown(self):
         shutil.rmtree(self.queue_folder)
         super(TestUploadProcessorBase, self).tearDown()
+
+    def getUploadProcessor(self, txn):
+        def getPolicy(distro):
+            self.options.distro = distro.name
+            return findPolicyByOptions(self.options)
+        return UploadProcessor(
+            self.options.base_fsroot, self.options.dryrun,
+            self.options.nomails,
+            self.options.keep, getPolicy, txn, self.log)
+
+    def publishPackage(self, packagename, version, source=True,
+                        archive=None):
+        """Publish a single package that is currently NEW in the queue."""
+        queue_items = self.breezy.getQueueItems(
+            status=PackageUploadStatus.NEW, name=packagename,
+            version=version, exact_match=True, archive=archive)
+        self.assertEqual(queue_items.count(), 1)
+        queue_item = queue_items[0]
+        queue_item.setAccepted()
+        if source:
+            pubrec = queue_item.sources[0].publish(self.log)
+        else:
+            pubrec = queue_item.builds[0].publish(self.log)
+        return pubrec
 
     def assertLogContains(self, line):
         """Assert if a given line is present in the log messages."""
@@ -184,15 +212,13 @@ class TestUploadProcessorBase(TestCaseWithFactory):
             name, 'Breezy Badger',
             'The Breezy Badger', 'Black and White', 'Someone',
             '5.10', bat, bat.owner)
-        breezy_i386 = self.breezy.newArch(
-            'i386', bat['i386'].processorfamily, True, self.breezy.owner)
-        self.breezy.nominatedarchindep = breezy_i386
-
-        fake_chroot = self.addMockFile('fake_chroot.tar.gz')
-        breezy_i386.addOrUpdateChroot(fake_chroot)
 
         self.breezy.changeslist = 'breezy-changes@ubuntu.com'
-        self.breezy.initialiseFromParent()
+        ids = InitialiseDistroSeries(self.breezy)
+        ids.initialise()
+
+        fake_chroot = self.addMockFile('fake_chroot.tar.gz')
+        self.breezy['i386'].addOrUpdateChroot(fake_chroot)
 
         if permitted_formats is None:
             permitted_formats = [SourcePackageFormat.FORMAT_1_0]
@@ -208,25 +234,29 @@ class TestUploadProcessorBase(TestCaseWithFactory):
             filename, len(content), StringIO(content),
             'application/x-gtar')
 
-    def queueUpload(self, upload_name, relative_path="", test_files_dir=None):
+    def queueUpload(self, upload_name, relative_path="", test_files_dir=None,
+            queue_entry=None):
         """Queue one of our test uploads.
 
-        upload_name is the name of the test upload directory. It is also
+        upload_name is the name of the test upload directory. If there 
+        is no explicit queue entry name specified, it is also
         the name of the queue entry directory we create.
         relative_path is the path to create inside the upload, eg
         ubuntu/~malcc/default. If not specified, defaults to "".
 
         Return the path to the upload queue entry directory created.
         """
+        if queue_entry is None:
+            queue_entry = upload_name
         target_path = os.path.join(
-            self.queue_folder, "incoming", upload_name, relative_path)
+            self.incoming_folder, queue_entry, relative_path)
         if test_files_dir is None:
             test_files_dir = self.test_files_dir
         upload_dir = os.path.join(test_files_dir, upload_name)
         if relative_path:
             os.makedirs(os.path.dirname(target_path))
         shutil.copytree(upload_dir, target_path)
-        return os.path.join(self.queue_folder, "incoming", upload_name)
+        return os.path.join(self.incoming_folder, queue_entry)
 
     def processUpload(self, processor, upload_dir):
         """Process an upload queue entry directory.
@@ -248,8 +278,7 @@ class TestUploadProcessorBase(TestCaseWithFactory):
         self.layer.txn.commit()
         if policy is not None:
             self.options.context = policy
-        return UploadProcessor(
-            self.options, self.layer.txn, self.log)
+        return self.getUploadProcessor(self.layer.txn)
 
     def assertEmail(self, contents=None, recipients=None):
         """Check last email content and recipients.
@@ -341,24 +370,9 @@ class TestUploadProcessor(TestUploadProcessorBase):
             "Expected acceptance email not rejection. Actually Got:\n%s"
                 % raw_msg)
 
-    def _publishPackage(self, packagename, version, source=True,
-                        archive=None):
-        """Publish a single package that is currently NEW in the queue."""
-        queue_items = self.breezy.getQueueItems(
-            status=PackageUploadStatus.NEW, name=packagename,
-            version=version, exact_match=True, archive=archive)
-        self.assertEqual(queue_items.count(), 1)
-        queue_item = queue_items[0]
-        queue_item.setAccepted()
-        if source:
-            pubrec = queue_item.sources[0].publish(self.log)
-        else:
-            pubrec = queue_item.builds[0].publish(self.log)
-        return pubrec
-
     def testInstantiate(self):
         """UploadProcessor should instantiate"""
-        up = UploadProcessor(self.options, None, self.log)
+        up = self.getUploadProcessor(None)
 
     def testLocateDirectories(self):
         """Return a sorted list of subdirs in a directory.
@@ -372,7 +386,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
             os.mkdir("%s/dir1" % testdir)
             os.mkdir("%s/dir2" % testdir)
 
-            up = UploadProcessor(self.options, None, self.log)
+            up = self.getUploadProcessor(None)
             located_dirs = up.locateDirectories(testdir)
             self.assertEqual(located_dirs, ['dir1', 'dir2', 'dir3'])
         finally:
@@ -390,7 +404,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
             open("%s/2_source.changes" % testdir, "w").close()
             open("%s/3.not_changes" % testdir, "w").close()
 
-            up = UploadProcessor(self.options, None, self.log)
+            up = self.getUploadProcessor(None)
             located_files = up.locateChangesFiles(testdir)
             self.assertEqual(
                 located_files, ["2_source.changes", "1.changes"])
@@ -418,7 +432,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
 
             # Move it
             self.options.base_fsroot = testdir
-            up = UploadProcessor(self.options, None, self.log)
+            up = self.getUploadProcessor(None)
             up.moveUpload(upload, target_name)
 
             # Check it moved
@@ -439,7 +453,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
 
             # Remove it
             self.options.base_fsroot = testdir
-            up = UploadProcessor(self.options, None, self.log)
+            up = self.getUploadProcessor(None)
             up.moveProcessedUpload(upload, "accepted")
 
             # Check it was removed, not moved
@@ -462,7 +476,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
 
             # Move it
             self.options.base_fsroot = testdir
-            up = UploadProcessor(self.options, None, self.log)
+            up = self.getUploadProcessor(None)
             up.moveProcessedUpload(upload, "rejected")
 
             # Check it moved
@@ -485,7 +499,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
 
             # Remove it
             self.options.base_fsroot = testdir
-            up = UploadProcessor(self.options, None, self.log)
+            up = self.getUploadProcessor(None)
             up.removeUpload(upload)
 
             # Check it was removed, not moved
@@ -498,7 +512,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
 
     def testOrderFilenames(self):
         """orderFilenames sorts _source.changes ahead of other files."""
-        up = UploadProcessor(self.options, None, self.log)
+        up = self.getUploadProcessor(None)
 
         self.assertEqual(["d_source.changes", "a", "b", "c"],
             up.orderFilenames(["b", "a", "d_source.changes", "c"]))
@@ -522,8 +536,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         # Register our broken upload policy
         AbstractUploadPolicy._registerPolicy(BrokenUploadPolicy)
         self.options.context = 'broken'
-        uploadprocessor = UploadProcessor(
-            self.options, self.layer.txn, self.log)
+        uploadprocessor = self.getUploadProcessor(self.layer.txn)
 
         # Upload a package to Breezy.
         upload_dir = self.queueUpload("baz_1.0-1")
@@ -634,7 +647,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         # Upload 'bar-1.0-1' source and binary to ubuntu/breezy.
         upload_dir = self.queueUpload("bar_1.0-1")
         self.processUpload(uploadprocessor, upload_dir)
-        bar_source_pub = self._publishPackage('bar', '1.0-1')
+        bar_source_pub = self.publishPackage('bar', '1.0-1')
         [bar_original_build] = bar_source_pub.createMissingBuilds()
 
         # Move the source from the accepted queue.
@@ -653,7 +666,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         self.processUpload(uploadprocessor, upload_dir)
         self.assertEqual(
             uploadprocessor.last_processed_upload.is_rejected, False)
-        bar_bin_pubs = self._publishPackage('bar', '1.0-1', source=False)
+        bar_bin_pubs = self.publishPackage('bar', '1.0-1', source=False)
         # Mangle its publishing component to "restricted" so we can check
         # the copy archive ancestry override later.
         restricted = getUtility(IComponentSet)["restricted"]
@@ -746,14 +759,14 @@ class TestUploadProcessor(TestUploadProcessorBase):
         # Upload 'bar-1.0-1' source and binary to ubuntu/breezy.
         upload_dir = self.queueUpload("bar_1.0-1")
         self.processUpload(uploadprocessor, upload_dir)
-        bar_source_pub = self._publishPackage('bar', '1.0-1')
+        bar_source_pub = self.publishPackage('bar', '1.0-1')
         [bar_original_build] = bar_source_pub.createMissingBuilds()
 
         self.options.context = 'buildd'
         self.options.buildid = bar_original_build.id
         upload_dir = self.queueUpload("bar_1.0-1_binary")
         self.processUpload(uploadprocessor, upload_dir)
-        [bar_binary_pub] = self._publishPackage("bar", "1.0-1", source=False)
+        [bar_binary_pub] = self.publishPackage("bar", "1.0-1", source=False)
 
         # Prepare ubuntu/breezy-autotest to build sources in i386.
         breezy_autotest = self.ubuntu['breezy-autotest']
@@ -803,7 +816,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         # Upload 'bar-1.0-1' source and binary to ubuntu/breezy.
         upload_dir = self.queueUpload("bar_1.0-1")
         self.processUpload(uploadprocessor, upload_dir)
-        bar_source_old = self._publishPackage('bar', '1.0-1')
+        bar_source_old = self.publishPackage('bar', '1.0-1')
 
         # Upload 'bar-1.0-1' source and binary to ubuntu/breezy.
         upload_dir = self.queueUpload("bar_1.0-2")
@@ -816,7 +829,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         self.options.buildid = bar_original_build.id
         upload_dir = self.queueUpload("bar_1.0-2_binary")
         self.processUpload(uploadprocessor, upload_dir)
-        [bar_binary_pub] = self._publishPackage("bar", "1.0-2", source=False)
+        [bar_binary_pub] = self.publishPackage("bar", "1.0-2", source=False)
 
         # Create a COPY archive for building in non-virtual builds.
         uploader = getUtility(IPersonSet).getByName('name16')
@@ -971,7 +984,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         partner_archive = getUtility(IArchiveSet).getByDistroPurpose(
             self.ubuntu, ArchivePurpose.PARTNER)
         self.assertTrue(partner_archive)
-        self._publishPackage("foocomm", "1.0-1", archive=partner_archive)
+        self.publishPackage("foocomm", "1.0-1", archive=partner_archive)
 
         # Check the publishing record's archive and component.
         foocomm_spph = SourcePackagePublishingHistory.selectOneBy(
@@ -1015,7 +1028,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         self.assertEqual(foocomm_bpr.component.name, 'partner')
 
         # Publish the upload so we can check the publishing record.
-        self._publishPackage("foocomm", "1.0-1", source=False)
+        self.publishPackage("foocomm", "1.0-1", source=False)
 
         # Check the publishing record's archive and component.
         foocomm_bpph = BinaryPackagePublishingHistory.selectOneBy(
@@ -1054,14 +1067,14 @@ class TestUploadProcessor(TestUploadProcessorBase):
         # Accept and publish the upload.
         partner_archive = getUtility(IArchiveSet).getByDistroPurpose(
             self.ubuntu, ArchivePurpose.PARTNER)
-        self._publishPackage("foocomm", "1.0-1", archive=partner_archive)
+        self.publishPackage("foocomm", "1.0-1", archive=partner_archive)
 
         # Now do the same thing with a binary package.
         upload_dir = self.queueUpload("foocomm_1.0-1_binary")
         self.processUpload(uploadprocessor, upload_dir)
 
         # Accept and publish the upload.
-        self._publishPackage("foocomm", "1.0-1", source=False,
+        self.publishPackage("foocomm", "1.0-1", source=False,
                              archive=partner_archive)
 
         # Upload the next source version of the package.
@@ -1105,8 +1118,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         self.breezy.status = SeriesStatus.CURRENT
         self.layer.txn.commit()
         self.options.context = 'insecure'
-        uploadprocessor = UploadProcessor(
-            self.options, self.layer.txn, self.log)
+        uploadprocessor = self.getUploadProcessor(self.layer.txn)
 
         # Upload a package for Breezy.
         upload_dir = self.queueUpload("foocomm_1.0-1_proposed")
@@ -1124,8 +1136,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         self.breezy.status = SeriesStatus.CURRENT
         self.layer.txn.commit()
         self.options.context = 'insecure'
-        uploadprocessor = UploadProcessor(
-            self.options, self.layer.txn, self.log)
+        uploadprocessor = self.getUploadProcessor(self.layer.txn)
 
         # Upload a package for Breezy.
         upload_dir = self.queueUpload("foocomm_1.0-1")
@@ -1140,8 +1151,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         pocket and ensure it fails."""
         # Set up the uploadprocessor with appropriate options and logger.
         self.options.context = 'insecure'
-        uploadprocessor = UploadProcessor(
-            self.options, self.layer.txn, self.log)
+        uploadprocessor = self.getUploadProcessor(self.layer.txn)
 
         # Upload a package for Breezy.
         upload_dir = self.queueUpload("foocomm_1.0-1_updates")
@@ -1302,8 +1312,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         used.
         That exception will then initiate the creation of an OOPS report.
         """
-        processor = UploadProcessor(
-            self.options, self.layer.txn, self.log)
+        processor = self.getUploadProcessor(self.layer.txn)
 
         upload_dir = self.queueUpload("foocomm_1.0-1_proposed")
         bogus_changesfile_data = '''
@@ -1346,8 +1355,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         self.setupBreezy()
         self.layer.txn.commit()
         self.options.context = 'absolutely-anything'
-        uploadprocessor = UploadProcessor(
-            self.options, self.layer.txn, self.log)
+        uploadprocessor = self.getUploadProcessor(self.layer.txn)
 
         # Upload the source first to enable the binary later:
         upload_dir = self.queueUpload("bar_1.0-1_lzma")
@@ -1357,7 +1365,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         self.assertTrue(
             "rejected" not in raw_msg,
             "Failed to upload bar source:\n%s" % raw_msg)
-        self._publishPackage("bar", "1.0-1")
+        self.publishPackage("bar", "1.0-1")
         # Clear out emails generated during upload.
         ignore = pop_notifications()
 
@@ -1456,15 +1464,14 @@ class TestUploadProcessor(TestUploadProcessorBase):
             permission=ArchivePermissionType.UPLOAD, person=uploader,
             component=restricted)
 
-        uploadprocessor = UploadProcessor(
-            self.options, self.layer.txn, self.log)
+        uploadprocessor = self.getUploadProcessor(self.layer.txn)
 
         # Upload the first version and accept it to make it known in
         # Ubuntu.  The uploader has rights to upload NEW packages to
         # components that he does not have direct rights to.
         upload_dir = self.queueUpload("bar_1.0-1")
         self.processUpload(uploadprocessor, upload_dir)
-        bar_source_pub = self._publishPackage('bar', '1.0-1')
+        bar_source_pub = self.publishPackage('bar', '1.0-1')
         # Clear out emails generated during upload.
         ignore = pop_notifications()
 
@@ -1509,15 +1516,14 @@ class TestUploadProcessor(TestUploadProcessorBase):
             permission=ArchivePermissionType.UPLOAD, person=uploader,
             component=restricted)
 
-        uploadprocessor = UploadProcessor(
-            self.options, self.layer.txn, self.log)
+        uploadprocessor = self.getUploadProcessor(self.layer.txn)
 
         # Upload the first version and accept it to make it known in
         # Ubuntu.  The uploader has rights to upload NEW packages to
         # components that he does not have direct rights to.
         upload_dir = self.queueUpload("bar_1.0-1")
         self.processUpload(uploadprocessor, upload_dir)
-        bar_source_pub = self._publishPackage('bar', '1.0-1')
+        bar_source_pub = self.publishPackage('bar', '1.0-1')
         # Clear out emails generated during upload.
         ignore = pop_notifications()
 
@@ -1590,8 +1596,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         # with pointer to the Soyuz questions in Launchpad and the
         # reason why the message was sent to the current recipients.
         self.setupBreezy()
-        uploadprocessor = UploadProcessor(
-            self.options, self.layer.txn, self.log)
+        uploadprocessor = self.getUploadProcessor(self.layer.txn)
 
         upload_dir = self.queueUpload("bar_1.0-1", "boing")
         self.processUpload(uploadprocessor, upload_dir)
@@ -1636,8 +1641,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         self.setupBreezy()
         self.layer.txn.commit()
         self.options.context = 'absolutely-anything'
-        uploadprocessor = UploadProcessor(
-            self.options, self.layer.txn, self.log)
+        uploadprocessor = self.getUploadProcessor(self.layer.txn)
 
         # Upload the source.
         upload_dir = self.queueUpload("bar_1.0-1_3.0-quilt")
@@ -1655,8 +1659,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
             permitted_formats=[SourcePackageFormat.FORMAT_3_0_QUILT])
         self.layer.txn.commit()
         self.options.context = 'absolutely-anything'
-        uploadprocessor = UploadProcessor(
-            self.options, self.layer.txn, self.log)
+        uploadprocessor = self.getUploadProcessor(self.layer.txn)
 
         # Upload the source.
         upload_dir = self.queueUpload("bar_1.0-1_3.0-quilt")
@@ -1666,7 +1669,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         self.assertTrue(
             "rejected" not in raw_msg,
             "Failed to upload bar source:\n%s" % raw_msg)
-        spph = self._publishPackage("bar", "1.0-1")
+        spph = self.publishPackage("bar", "1.0-1")
 
         self.assertEquals(
             sorted((sprf.libraryfile.filename, sprf.filetype)
@@ -1689,8 +1692,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
             permitted_formats=[SourcePackageFormat.FORMAT_3_0_QUILT])
         self.layer.txn.commit()
         self.options.context = 'absolutely-anything'
-        uploadprocessor = UploadProcessor(
-            self.options, self.layer.txn, self.log)
+        uploadprocessor = self.getUploadProcessor(self.layer.txn)
 
         # Upload the first source.
         upload_dir = self.queueUpload("bar_1.0-1_3.0-quilt")
@@ -1700,7 +1702,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         self.assertTrue(
             "rejected" not in raw_msg,
             "Failed to upload bar source:\n%s" % raw_msg)
-        spph = self._publishPackage("bar", "1.0-1")
+        spph = self.publishPackage("bar", "1.0-1")
 
         # Upload another source sharing the same (component) orig.
         upload_dir = self.queueUpload("bar_1.0-2_3.0-quilt_without_orig")
@@ -1728,8 +1730,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
             permitted_formats=[SourcePackageFormat.FORMAT_3_0_NATIVE])
         self.layer.txn.commit()
         self.options.context = 'absolutely-anything'
-        uploadprocessor = UploadProcessor(
-            self.options, self.layer.txn, self.log)
+        uploadprocessor = self.getUploadProcessor(self.layer.txn)
 
         # Upload the source.
         upload_dir = self.queueUpload("bar_1.0_3.0-native")
@@ -1739,7 +1740,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         self.assertTrue(
             "rejected" not in raw_msg,
             "Failed to upload bar source:\n%s" % raw_msg)
-        spph = self._publishPackage("bar", "1.0")
+        spph = self.publishPackage("bar", "1.0")
 
         self.assertEquals(
             sorted((sprf.libraryfile.filename, sprf.filetype)
@@ -1754,8 +1755,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         self.setupBreezy()
         self.layer.txn.commit()
         self.options.context = 'absolutely-anything'
-        uploadprocessor = UploadProcessor(
-            self.options, self.layer.txn, self.log)
+        uploadprocessor = self.getUploadProcessor(self.layer.txn)
 
         # Upload the source.
         upload_dir = self.queueUpload("bar_1.0-1_1.0-bzip2")
@@ -1772,8 +1772,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         self.setupBreezy()
         breezy = self.ubuntu['breezy']
         breezy.status = SeriesStatus.CURRENT
-        uploadprocessor = UploadProcessor(
-            self.options, self.layer.txn, self.log)
+        uploadprocessor = self.getUploadProcessor(self.layer.txn)
 
         upload_dir = self.queueUpload("bar_1.0-1")
         self.processUpload(uploadprocessor, upload_dir)

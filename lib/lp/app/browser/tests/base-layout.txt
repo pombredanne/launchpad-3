@@ -171,7 +171,6 @@ Page Footers
     Terms of use http://launchpad.dev/legal
     Contact Launchpad Support https://help.launchpad.net/Feedback
     System status http://identi.ca/launchpadstatus
-    None http://www.surveymonkey.com/s/launchpadsummer2010
 
 
 Page registering

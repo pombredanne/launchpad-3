@@ -13,13 +13,12 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from lp.code.interfaces.branch import NoSuchBranch
+from lp.code.errors import (
+    CannotHaveLinkedBranch, InvalidNamespace, NoLinkedBranch, NoSuchBranch)
 from lp.code.interfaces.branchlookup import (
     IBranchLookup, ILinkedBranchTraverser)
-from lp.code.interfaces.branchnamespace import (
-    get_branch_namespace, InvalidNamespace)
-from lp.code.interfaces.linkedbranch import (
-    CannotHaveLinkedBranch, ICanHasLinkedBranch, NoLinkedBranch)
+from lp.code.interfaces.branchnamespace import get_branch_namespace
+from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from lp.registry.interfaces.distroseries import NoSuchDistroSeries
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.person import NoSuchPerson
@@ -637,7 +636,7 @@ class TestGetByLPPath(TestCaseWithFactory):
         series.branch = branch
         result = self.branch_lookup.getByLPPath(
             '%s/%s/other/bits' % (series.product.name, series.name))
-        self.assertEqual((branch, None), result)
+        self.assertEqual((branch, u'other/bits'), result)
 
     def test_too_long_sourcepackage(self):
         # If the provided path points to an existing source package with a
@@ -655,7 +654,7 @@ class TestGetByLPPath(TestCaseWithFactory):
             ubuntu_branches.teamowner)
         result = self.branch_lookup.getByLPPath(
             '%s/other/bits' % package.path)
-        self.assertEqual((branch, None), result)
+        self.assertEqual((branch, u'other/bits'), result)
 
 
 def test_suite():

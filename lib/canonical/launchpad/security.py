@@ -654,11 +654,12 @@ class ViewTeamMembership(AuthorizationBase):
         """Verify that the user can view the team's membership.
 
         Anyone can see a public team's membership. Only a team member or
-        a Launchpad admin can view a private membership.
+        commercial admin or a Launchpad admin can view a private team.
         """
         if self.obj.team.visibility == PersonVisibility.PUBLIC:
             return True
-        if user.in_admin or user.inTeam(self.obj.team):
+        if (user.in_admin or user.in_commercial_admin
+            or user.inTeam(self.obj.team)):
             return True
         return False
 
@@ -708,9 +709,9 @@ class EditPersonBySelf(AuthorizationBase):
 
 
 class ViewPublicOrPrivateTeamMembers(AuthorizationBase):
-    """Restrict viewing of private memberships of teams.
+    """Restrict viewing of private teams.
 
-    Only members of a team with a private membership can view the
+    Only members of a private team can view the
     membership list.
     """
     permission = 'launchpad.View'
@@ -725,12 +726,13 @@ class ViewPublicOrPrivateTeamMembers(AuthorizationBase):
     def checkAuthenticated(self, user):
         """Verify that the user can view the team's membership.
 
-        Anyone can see a public team's membership. Only a team member
-        or a Launchpad admin can view a private membership.
+        Anyone can see a public team's membership. Only a team member,
+        commercial admin, or a Launchpad admin can view a private team's
+        members.
         """
         if self.obj.visibility == PersonVisibility.PUBLIC:
             return True
-        if user.in_admin or user.inTeam(self.obj):
+        if user.in_admin or user.in_commercial_admin or user.inTeam(self.obj):
             return True
         # We also grant visibility of the private team to administrators of
         # other teams that have been invited to join the private team.
@@ -1171,13 +1173,16 @@ class EditCodeImportMachine(OnlyBazaarExpertsAndAdmins):
     usedfor = ICodeImportMachine
 
 
-class DeleteSourcePackageRecipeBuilds(OnlyBazaarExpertsAndAdmins):
-    """Control who can delete SourcePackageRecipeBuilds.
+class EditSourcePackageRecipeBuilds(AuthorizationBase):
+    """Control who can edit SourcePackageRecipeBuilds.
 
-    Access is restricted to members of ~bazaar-experts and Launchpad admins.
+    Access is restricted to members of ~bazaar-experts and Buildd Admins.
     """
     permission = 'launchpad.Edit'
     usedfor = ISourcePackageRecipeBuild
+
+    def checkAuthenticated(self, user):
+        return user.in_bazaar_experts or user.in_buildd_admin
 
 
 class AdminDistributionTranslations(AuthorizationBase):
@@ -2068,8 +2073,7 @@ class ViewHWDeviceClass(ViewHWDBBase):
 class ViewArchive(AuthorizationBase):
     """Restrict viewing of private archives.
 
-    Only admins or members of a team with a private membership can
-    view the archive.
+    Only admins or members of a private team can view the archive.
     """
     permission = 'launchpad.View'
     usedfor = IArchive

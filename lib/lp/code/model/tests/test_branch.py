@@ -46,12 +46,12 @@ from lp.code.bzr import BranchFormat, ControlFormat, RepositoryFormat
 from lp.code.enums import (
     BranchLifecycleStatus, BranchSubscriptionNotificationLevel, BranchType,
     BranchVisibilityRule, CodeReviewNotificationLevel)
-from lp.code.errors import InvalidBranchMergeProposal
-from lp.code.interfaces.branch import (
+from lp.code.errors import (
     BranchCannotBePrivate, BranchCannotBePublic,
     BranchCreatorNotMemberOfOwnerTeam, BranchCreatorNotOwner,
-    BranchTargetError, CannotDeleteBranch, DEFAULT_BRANCH_STATUS_IN_LISTING,
-    IBranch)
+    BranchTargetError, CannotDeleteBranch, InvalidBranchMergeProposal)
+from lp.code.interfaces.branch import (
+    DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch)
 from lp.code.interfaces.branchjob import (
     IBranchUpgradeJobSource, IBranchScanJobSource)
 from lp.code.interfaces.branchlookup import IBranchLookup
@@ -931,15 +931,18 @@ class TestBranchDeletion(TestCaseWithFactory):
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        TestCaseWithFactory.setUp(self, 'test@canonical.com')
-        self.product = ProductSet().getByName('firefox')
-        self.user = getUtility(IPersonSet).getByEmail('test@canonical.com')
+        TestCaseWithFactory.setUp(self)
+        self.user = self.factory.makePerson()
+        self.product = self.factory.makeProduct(owner=self.user)
         self.branch = self.factory.makeProductBranch(
             name='to-delete', owner=self.user, product=self.product)
         # The owner of the branch is subscribed to the branch when it is
         # created.  The tests here assume no initial connections, so
         # unsubscribe the branch owner here.
         self.branch.unsubscribe(self.branch.owner, self.branch.owner)
+        # Make sure that the tests all flush the database changes.
+        self.addCleanup(Store.of(self.branch).flush)
+        login_person(self.user)
 
     def test_deletable(self):
         """A newly created branch can be deleted without any problems."""
@@ -1077,10 +1080,14 @@ class TestBranchDeletion(TestCaseWithFactory):
         # remove the Job and BranchJob.
         branch = self.factory.makeAnyBranch()
         getUtility(ITranslationTemplatesBuildJobSource).create(branch)
-
         branch.destroySelf(break_references=True)
 
-        Store.of(branch).flush()
+    def test_linked_translations_branch_cleared(self):
+        # The translations_branch of a series that is linked to the branch
+        # should be cleared.
+        dev_focus = self.branch.product.development_focus
+        dev_focus.translations_branch = self.branch
+        self.branch.destroySelf(break_references=True)
 
     def test_unrelated_TranslationTemplatesBuildJob_intact(self):
         # No innocent BuildQueue entries are harmed in deleting a
@@ -1120,21 +1127,15 @@ class TestBranchDeletion(TestCaseWithFactory):
     def test_destroySelf_with_SourcePackageRecipe(self):
         """If branch is a base_branch in a recipe, it is deleted."""
         recipe = self.factory.makeSourcePackageRecipe()
-        store = Store.of(recipe)
         recipe.base_branch.destroySelf(break_references=True)
-        # show no DB constraints have been violated
-        store.flush()
 
     def test_destroySelf_with_SourcePackageRecipe_as_non_base(self):
         """If branch is referred to by a recipe, it is deleted."""
         branch1 = self.factory.makeAnyBranch()
         branch2 = self.factory.makeAnyBranch()
-        recipe = self.factory.makeSourcePackageRecipe(
+        self.factory.makeSourcePackageRecipe(
             branches=[branch1, branch2])
-        store = Store.of(recipe)
         branch2.destroySelf(break_references=True)
-        # show no DB constraints have been violated
-        store.flush()
 
 
 class TestBranchDeletionConsequences(TestCase):
@@ -1954,11 +1955,12 @@ class TestPendingWrites(TestCaseWithFactory):
         branch = self.factory.makeAnyBranch()
         self.assertEqual(False, branch.pending_writes)
 
-    def test_requestMirror_for_hosted(self):
-        # If a hosted branch has a requested mirror, then someone has just
-        # pushed something up. Therefore, pending writes.
+    def test_branchChanged_for_hosted(self):
+        # If branchChanged has been called with a new tip revision id, there
+        # are pending writes.
         branch = self.factory.makeAnyBranch(branch_type=BranchType.HOSTED)
-        branch.requestMirror()
+        with person_logged_in(branch.owner):
+            branch.branchChanged('', 'new-tip', None, None, None)
         self.assertEqual(True, branch.pending_writes)
 
     def test_requestMirror_for_imported(self):
@@ -1980,7 +1982,7 @@ class TestPendingWrites(TestCaseWithFactory):
         # If a branch has been pulled (mirrored) but not scanned, then we have
         # yet to load the revisions into the database. This means there are
         # pending writes.
-        branch = self.factory.makeAnyBranch()
+        branch = self.factory.makeAnyBranch(branch_type=BranchType.MIRRORED)
         branch.startMirroring()
         rev_id = self.factory.getUniqueString('rev-id')
         removeSecurityProxy(branch).branchChanged(
@@ -1990,7 +1992,7 @@ class TestPendingWrites(TestCaseWithFactory):
     def test_pulled_and_scanned(self):
         # If a branch has been pulled and scanned, then there are no pending
         # writes.
-        branch = self.factory.makeAnyBranch()
+        branch = self.factory.makeAnyBranch(branch_type=BranchType.MIRRORED)
         branch.startMirroring()
         rev_id = self.factory.getUniqueString('rev-id')
         removeSecurityProxy(branch).branchChanged(
@@ -2004,14 +2006,14 @@ class TestPendingWrites(TestCaseWithFactory):
     def test_first_mirror_started(self):
         # If we have started mirroring the branch for the first time, then
         # there are probably pending writes.
-        branch = self.factory.makeAnyBranch()
+        branch = self.factory.makeAnyBranch(branch_type=BranchType.MIRRORED)
         branch.startMirroring()
         self.assertEqual(True, branch.pending_writes)
 
     def test_following_mirror_started(self):
         # If we have started mirroring the branch, then there are probably
         # pending writes.
-        branch = self.factory.makeAnyBranch()
+        branch = self.factory.makeAnyBranch(branch_type=BranchType.MIRRORED)
         branch.startMirroring()
         rev_id = self.factory.getUniqueString('rev-id')
         removeSecurityProxy(branch).branchChanged(

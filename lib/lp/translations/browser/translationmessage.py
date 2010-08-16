@@ -39,13 +39,12 @@ from zope.schema.vocabulary import getVocabularyRegistry
 from z3c.ptcompat import ViewPageTemplateFile
 
 from canonical.cachedproperty import cachedproperty
+from lp.app.errors import UnexpectedFormData
 from lp.translations.browser.browser_helpers import (
     contract_rosetta_escapes, convert_newlines_to_web_form, count_lines,
     text_to_html)
 from lp.translations.browser.potemplate import POTemplateFacets
-from canonical.launchpad.webapp.interfaces import (
-    ILaunchBag,
-    UnexpectedFormData)
+from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.translations.interfaces.pofile import IPOFileAlternativeLanguage
 from lp.translations.interfaces.translationmessage import (
     ITranslationMessage, ITranslationMessageSet,

@@ -163,10 +163,10 @@ class GPGHandler:
                 # XXX: 2010-04-26, Salgado, bug=570244: This hack is needed
                 # for python2.5 compatibility. We should remove it when we no
                 # longer need to run on python2.5.
-                if hasattr(e, 'message'):
-                    msg = e.message
-                else:
+                if hasattr(e, 'strerror'):
                     msg = e.strerror
+                else:
+                    msg = e.message
                 raise GPGVerificationError(msg)
         else:
             # store clearsigned signature
@@ -180,10 +180,10 @@ class GPGHandler:
                 # XXX: 2010-04-26, Salgado, bug=570244: This hack is needed
                 # for python2.5 compatibility. We should remove it when we no
                 # longer need to run on python2.5.
-                if hasattr(e, 'message'):
-                    msg = e.message
-                else:
+                if hasattr(e, 'strerror'):
                     msg = e.strerror
+                else:
+                    msg = e.message
                 raise GPGVerificationError(msg)
 
         # XXX jamesh 2006-01-31:
