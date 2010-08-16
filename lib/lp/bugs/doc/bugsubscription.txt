@@ -554,8 +554,8 @@ IBug.subscribe and IBug.unsubscribe:
 By default, the bug_notification_level of the new subscription will be
 COMMENTS, so the user will receive all notifications about the bug.
 
-    >>> print subscription.bug_notification_level.title
-    Discussion
+    >>> print subscription.bug_notification_level.name
+    COMMENTS
 
 To unsubscribe from all dupes for a bug, call
 IBug.unsubscribeFromDupes. This is useful because direct subscribers

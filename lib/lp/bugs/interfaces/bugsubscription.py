@@ -40,9 +40,10 @@ class IBugSubscription(Interface):
     bug_notification_level = Choice(
         title=_("Bug notification level"), required=True,
         vocabulary=BugNotificationLevel,
-        default=BugNotificationLevel.NOTHING,
-        description=_("The volume and type of bug notifications "
-                      "this subscription will generate."))
+        default=BugNotificationLevel.COMMENTS,
+        description=_(
+            "The volume and type of bug notifications "
+            "this subscription will generate."))
     date_created = exported(
         Datetime(title=_('Date subscribed'), required=True, readonly=True))
     subscribed_by = exported(PersonChoice(
