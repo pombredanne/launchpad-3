@@ -279,8 +279,7 @@ class LaunchpadTester:
             result, logger.summary_file)
         for line in input_stream:
             subunit_server.lineReceived(line)
-            logger.out_file.write(line)
-            logger.out_file.flush()
+            logger.got_line(line)
             if echo_to_stdout:
                 sys.stdout.write(line)
                 sys.stdout.flush()
@@ -438,6 +437,11 @@ class WebTestLogger:
         self.out_file.close()
         self.summary_file.close()
         self.index_file.close()
+
+    def got_line(self, line):
+        """Called when we get a line of output from our child processes."""
+        self.out_file.write(line)
+        self.out_file.flush()
 
     def write(self, msg):
         """Write to the summary and full log file."""
