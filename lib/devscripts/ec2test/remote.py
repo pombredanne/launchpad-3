@@ -509,7 +509,7 @@ class WebTestLogger:
 
         index_file.write('<dl>\n')
         self.write_line('\nDEPENDENCY BRANCHES USED\n')
-        for name, branch, revno in self._iter_dependency_branches():
+        for name, branch, revno in self._request.iter_dependency_branches():
             data = {'name': name, 'branch': branch, 'revno': revno}
             self.write_line(
                 '- %(name)s\n    %(branch)s\n    %(revno)d\n' % data)
