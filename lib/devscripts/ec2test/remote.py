@@ -204,7 +204,7 @@ class EC2Runner:
 class TestOnMergeRunner:
 
     def __init__(self, logger, echo_to_stdout, test_directory, request,
-                 email=None, pqm_message=None, test_options=None):
+                 test_options=None):
         """Construct a TestOnMergeRunner.
 
         :param logger: The WebTestLogger to log to.
@@ -212,19 +212,14 @@ class TestOnMergeRunner:
         :param test_directory: The directory to run the tests in. We expect
             this directory to have a fully-functional checkout of Launchpad
             and its dependent branches.
-        :param email: The emails to send result mail to, if any.
-        :param pqm_message: The message to submit to PQM. If not provided,
-            will not submit to PQM.
-        :param public_branch: The public URL for the branch we are testing.
+        :param request: A `Request` representing the merge we are doing.
         :param test_options: Options to pass to the test runner.
         """
         self.logger = logger
         self._echo_to_stdout = echo_to_stdout
         self._test_directory = test_directory
         self._request = request
-        self.email = email
-        self.pqm_message = pqm_message
-        self.test_options = test_options
+        self._test_options = test_options
 
     def build_test_command(self):
         """Return the command that will execute the test suite.
@@ -234,7 +229,7 @@ class TestOnMergeRunner:
 
         Subclasses must provide their own implementation of this method.
         """
-        command = ['make', 'check', 'TESTOPTS=' + self.test_options]
+        command = ['make', 'check', 'TESTOPTS=' + self._test_options]
         return command
 
     def test(self):
@@ -663,8 +658,6 @@ def main(argv):
         echo_to_stdout=(not options.daemon),
         test_directory=TEST_DIR,
         request=request,
-        email=options.email,
-        pqm_message=pqm_message,
         test_options=' '.join(args))
     runner.run("Test runner", tester.test)
 
