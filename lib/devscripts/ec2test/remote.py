@@ -203,22 +203,22 @@ class EC2Runner:
 
 class TestOnMergeRunner:
 
-    def __init__(self, logger, echo_to_stdout, test_directory, request,
+    def __init__(self, request, logger, echo_to_stdout, test_directory,
                  test_options=None):
         """Construct a TestOnMergeRunner.
 
+        :param request: A `Request` representing the merge we are doing.
         :param logger: The WebTestLogger to log to.
         :param echo_to_stdout: Whether or not to echo results to stdout.
         :param test_directory: The directory to run the tests in. We expect
             this directory to have a fully-functional checkout of Launchpad
             and its dependent branches.
-        :param request: A `Request` representing the merge we are doing.
         :param test_options: Options to pass to the test runner.
         """
+        self._request = request
         self.logger = logger
         self._echo_to_stdout = echo_to_stdout
         self._test_directory = test_directory
-        self._request = request
         self._test_options = test_options
 
     def build_test_command(self):
