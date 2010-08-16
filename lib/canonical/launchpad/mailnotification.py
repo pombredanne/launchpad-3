@@ -43,8 +43,7 @@ from lp.bugs.adapters.bugchange import (
     BugDuplicateChange, get_bug_changes, BugTaskAssigneeChange)
 from lp.bugs.interfaces.bugchange import IBugChange
 from lp.bugs.mail.bugnotificationbuilder import get_bugmail_error_address
-from lp.registry.interfaces.structuralsubscription import (
-    BugNotificationLevel)
+from lp.registry.enum import BugNotificationLevel
 from lp.services.mail.mailwrapper import MailWrapper
 
 # XXX 2010-06-16 gmb bug=594985

@@ -16,8 +16,8 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
 
 from lp.bugs.interfaces.bugsubscription import IBugSubscription
+from lp.registry.enum import BugNotificationLevel
 from lp.registry.interfaces.person import validate_person
-from lp.registry.interfaces.structuralsubscription import BugNotificationLevel
 
 
 class BugSubscription(SQLBase):

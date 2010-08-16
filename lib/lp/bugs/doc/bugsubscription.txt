@@ -254,8 +254,7 @@ subscription is currently set to COMMENTS.
 With this subscription level, No Privileges Person is returned for all
 parameter values of level.
 
-    >>> from lp.registry.interfaces.structuralsubscription import (
-    ...     BugNotificationLevel)
+    >>> from lp.registry.enum import BugNotificationLevel
     >>> print_displayname(linux_source_bug.getAlsoNotifiedSubscribers(
     ...     level=BugNotificationLevel.COMMENTS))
     No Privileges Person

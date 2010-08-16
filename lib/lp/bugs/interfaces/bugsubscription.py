@@ -17,7 +17,7 @@ from canonical.launchpad import _
 from canonical.launchpad.fields import PersonChoice
 
 from lp.bugs.interfaces.bug import IBug
-from lp.registry.interfaces.structuralsubscription import BugNotificationLevel
+from lp.registry.enum import BugNotificationLevel
 
 from lazr.restful.declarations import (
     REQUEST_USER, call_with, export_as_webservice_entry,

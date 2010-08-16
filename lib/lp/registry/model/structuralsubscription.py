@@ -16,6 +16,7 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import quote, SQLBase
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.registry.enum import BugNotificationLevel
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
@@ -25,7 +26,7 @@ from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.structuralsubscription import (
-    BlueprintNotificationLevel, BugNotificationLevel, DeleteSubscriptionError,
+    BlueprintNotificationLevel, DeleteSubscriptionError,
     IStructuralSubscription, IStructuralSubscriptionTarget,
     UserCannotSubscribePerson)
 from lp.registry.interfaces.person import (
