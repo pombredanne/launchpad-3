@@ -1,8 +1,20 @@
 #!/usr/bin/env python
-# Run tests in a daemon.
-#
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
+
+"""Run tests in a daemon.
+
+ * `EC2Runner` handles the daemonization and instance shutdown.
+
+ * `Request` knows everything about the test request we're handling (e.g.
+   "test merging foo-bar-bug-12345 into db-devel").
+
+ * `LaunchpadTester` knows how to actually run the tests and gather the
+   results. It uses `SummaryResult` and `FlagFallStream` to do so.
+
+ * `WebTestLogger` knows how to display the results to the user, and is given
+   the responsibility of handling the results that `LaunchpadTester` gathers.
+"""
 
 from __future__ import with_statement
 
