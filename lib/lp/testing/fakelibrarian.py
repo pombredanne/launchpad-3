@@ -60,15 +60,27 @@ class FakeLibrarian(object):
 
     installed_as_librarian = False
 
-
     def installAsLibrarian(self):
         """Install this `FakeLibrarian` as the default Librarian."""
         if self.installed_as_librarian:
             return
 
         transaction.manager.registerSynch(self)
+
+        # Original utilities that need to be restored.
+        self.original_utilities = {}
+
+        site_manager = zope.component.getGlobalSiteManager()
         for utility in self.provided_utilities:
+            original = zope.component.getUtility(utility)
+            if site_manager.unregisterUtility(original, utility):
+                # We really disabled a utility, so remember to restore
+                # it later.  (Alternatively, the utility object might
+                # implement an interface that extends the utility one,
+                # in which case we should not restore it.)
+                self.original_utilities[utility] = original
             zope.component.provideUtility(self, utility)
+
         self.installed_as_librarian = True
 
     def uninstall(self):
@@ -77,9 +89,21 @@ class FakeLibrarian(object):
             return
 
         transaction.manager.unregisterSynch(self)
+
         site_manager = zope.component.getGlobalSiteManager()
         for utility in reversed(self.provided_utilities):
             site_manager.unregisterUtility(self, utility)
+            original_utility = self.original_utilities.get(utility)
+            if original_utility is not None:
+                # We disabled a utility to get here; restore the
+                # original.  We do not do this for utilities that were
+                # implemented through interface inheritance, because in
+                # that case we would never have unregistered anything in
+                # the first place.  Re-registering would register the
+                # same object twice, for related but different
+                # interfaces.
+                zope.component.provideUtility(original_utility, utility)
+
         self.installed_as_librarian = False
 
     def __init__(self):

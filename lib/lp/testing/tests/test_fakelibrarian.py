@@ -11,7 +11,9 @@ import transaction
 from transaction.interfaces import ISynchronizer
 from zope.component import getUtility
 
+from canonical.launchpad.database.librarian import LibraryFileAliasSet
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from canonical.librarian.client import LibrarianClient
 from canonical.librarian.interfaces import ILibrarianClient
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing import (
@@ -21,6 +23,13 @@ from lp.testing.fakelibrarian import FakeLibrarian
 
 
 class LibraryAccessScenarioMixin:
+    """Simple Librarian uses that can be serviced by the FakeLibrarian.
+
+    This tests the subset of the Librarian interface that is also
+    implemented by the FakeLibrarian.  If your test needs anything more
+    than this, then you want the real Librarian.
+    """
+
     def _storeFile(self):
         """Store a file in the `FakeLibrarian`.
 
@@ -96,9 +105,15 @@ class TestFakeLibrarian(LibraryAccessScenarioMixin, TestCaseWithFactory):
 
     def test_fake(self):
         self.assertTrue(verifyObject(ISynchronizer, self.fake_librarian))
+        self.assertIsInstance(self.fake_librarian, FakeLibrarian)
 
 
 class TestRealLibrarian(LibraryAccessScenarioMixin, TestCaseWithFactory):
     """Test the supported interface subset on the real librarian."""
 
     layer = LaunchpadFunctionalLayer
+
+    def test_real(self):
+        self.assertIsInstance(getUtility(ILibrarianClient), LibrarianClient)
+        self.assertIsInstance(
+            getUtility(ILibraryFileAliasSet), LibraryFileAliasSet)
