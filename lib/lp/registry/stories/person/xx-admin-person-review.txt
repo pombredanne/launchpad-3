@@ -97,20 +97,11 @@ Registry experts
 Registry experts can see the +review page in full, just like Launchpad
 admins.
 
-    >>> from lp.testing.sampledata import ADMIN_EMAIL
-    >>> login(ADMIN_EMAIL)
-    >>> registry_expert = factory.makePerson(email='expert@example.com',
-    ...                                      password='test')
-    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
-    >>> from zope.component import getUtility
-    >>> registry_team = getUtility(ILaunchpadCelebrities).registry_experts
-    >>> ignored = registry_team.addMember(
-    ...     registry_expert, registry_team.teamowner)
-    >>> print registry_expert.inTeam(registry_team)
-    True
+    >>> email = "expert@example.com"
+    >>> password = "test"
+    >>> expert= factory.makeRegistryExpert(email=email, password=password)
+    >>> expert_browser = setupBrowser(auth='Basic %s:%s' % (email, password))
     >>> logout()
-    >>> expert_browser = setupBrowser(auth='Basic expert@example.com:test')
-
     >>> expert_browser.open('http://launchpad.dev/~no-priv/+review')
     >>> print expert_browser.title
     Review person...

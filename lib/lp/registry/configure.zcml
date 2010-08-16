@@ -137,7 +137,7 @@
                                  shedloads of data. -->
 
         <require
-            permission="launchpad.Admin"
+            permission="launchpad.Moderate"
             set_attributes="version name status owner nominatedarchindep                                                                                                 changeslist datereleased"/>
 
         <!-- IStructuralSubscriptionTarget -->

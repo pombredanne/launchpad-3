@@ -353,6 +353,18 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         login_as(person)
         return person
 
+    def makeRegistryExpert(self, name=None, email='expert@example.com',
+                           password='test'):
+        from lp.testing.sampledata import ADMIN_EMAIL
+        login(ADMIN_EMAIL)
+        user = self.makePerson(name=name,
+                               email=email,
+                               password=password)
+        registry_team = getUtility(ILaunchpadCelebrities).registry_experts
+        registry_team.addMember(user, registry_team.teamowner)
+        return user
+
+
     def makeCopyArchiveLocation(self, distribution=None, owner=None,
         name=None, enabled=True):
         """Create and return a new arbitrary location for copy packages."""
