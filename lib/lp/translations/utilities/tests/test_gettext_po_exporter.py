@@ -480,3 +480,10 @@ class GettextPOExporterTestCase(TestCaseWithFactory):
         data.source_comment = "Line One\nLine Two\n"
         self.assertEqual("#. Line One\n#. Line Two",
                          comments_text_representation(data))
+
+    def test_export_handles_empty_files(self):
+        # Exporting an empty gettext file does not break the exporter.
+        # The output does contain one message: the header.
+        output = self.factory.makePOFile('nl').export()
+        self.assertTrue(output.startswith('# Dutch translation for '))
+        self.assertEqual(1, output.count('msgid'))
