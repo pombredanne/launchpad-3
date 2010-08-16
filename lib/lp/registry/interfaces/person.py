@@ -131,6 +131,7 @@ def validate_person_common(obj, attr, value, validate_func):
 
 def validate_person(obj, attr, value):
     """Validate the person is a real person with no other restrictions."""
+
     def validate(person):
         return IPerson.providedBy(person)
     return validate_person_common(obj, attr, value, validate)

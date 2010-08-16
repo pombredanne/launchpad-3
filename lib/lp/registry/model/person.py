@@ -1570,7 +1570,7 @@ class Person(
             And(TeamMembership.personID == self.id,
                 Team.id == TeamMembership.teamID,
                 TeamMembership.status.is_in(
-                [TeamMembershipStatus.APPROVED,TeamMembershipStatus.ADMIN])))
+                [TeamMembershipStatus.APPROVED, TeamMembershipStatus.ADMIN])))
 
     def _getMappedParticipantsLocations(self, limit=None):
         """See `IPersonViewRestricted`."""
@@ -1924,7 +1924,7 @@ class Person(
     def getLatestApprovedMembershipsForPerson(self, limit=5):
         """See `IPerson`."""
         result = self.team_memberships
-        result = result.order_by(Desc(TeamMembership.datejoined), 
+        result = result.order_by(Desc(TeamMembership.datejoined),
             Desc(TeamMembership.id))
         return result[:limit]
 

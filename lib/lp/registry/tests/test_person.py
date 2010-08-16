@@ -78,7 +78,7 @@ class TestPersonTeams(TestCaseWithFactory):
         path_to_c_0 = self.user.findPathToTeam(self.c_team, limit=0)
         path_to_c_1 = self.user.findPathToTeam(self.c_team, limit=1)
         path_to_c_2 = self.user.findPathToTeam(self.c_team, limit=2)
-        
+
         self.assertEqual([self.c_team], path_to_c_0)
         self.assertEqual([self.b_team, self.c_team], path_to_c_1)
         self.assertEqual([self.a_team, self.b_team, self.c_team], path_to_c_2)
