@@ -5,8 +5,9 @@
 
 This works in-process only.  It does not support exchange of files
 between processes, or URL access.  Nor will it completely support all
-details of the Librarian interface.  But if it does, this provides a
-simple and fast alternative to the full Librarian in unit tests.
+details of the Librarian interface.  But where it's enough, this
+provides a simple and fast alternative to the full Librarian in unit
+tests.
 """
 
 __metaclass__ = type
