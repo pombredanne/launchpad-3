@@ -45,8 +45,6 @@ class TestSummaryResult(TestCase):
 
     def test_addError_writes_at_end_of_run(self):
         # SummaryResult.addError() prints a nicely-formatted error.
-        #
-        # First, use printError to build the error text we expect.
         test = self
         result = SummaryResult(None)
         error = self.makeException()
@@ -69,8 +67,6 @@ class TestSummaryResult(TestCase):
 
     def test_addFailure_writes_at_end_of_run(self):
         # SummaryResult.addFailure() prints a nicely-formatted error.
-        #
-        # First, use printError to build the error text we expect.
         test = self
         result = SummaryResult(None)
         error = self.makeException(test.failureException)

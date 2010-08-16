@@ -67,11 +67,6 @@ class SummaryResult(unittest.TestResult):
              error,
              ''])
 
-    def printError(self, flavor, test, error):
-        """Print an error to the output stream."""
-        self.stream.write(self._formatError(flavor, test, error))
-        self.stream.flush()
-
     def addError(self, test, error):
         super(SummaryResult, self).addError(test, error)
         self._buffered_results.write(
