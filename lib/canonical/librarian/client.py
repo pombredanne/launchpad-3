@@ -9,6 +9,7 @@ __all__ = [
     'get_libraryfilealias_download_path',
     'LibrarianClient',
     'RestrictedLibrarianClient',
+    'url_quote',
     ]
 
 
@@ -34,10 +35,16 @@ from canonical.librarian.interfaces import (
     LIBRARIAN_SERVER_DEFAULT_TIMEOUT, LibrarianServerError, UploadFailed)
 
 
+def url_quote(filename):
+    """Quote `filename` for use in a URL."""
+    # XXX RobertCollins 2004-09-21: Perhaps filenames with / in them
+    # should be disallowed?
+    return urllib.quote(filename).replace('/', '%2F')
+
+
 def get_libraryfilealias_download_path(aliasID, filename):
     """Download path for a given `LibraryFileAlias` id and filename."""
-    escaped_name = urllib.quote(filename).replace('/', '%2F')
-    return '/%d/%s' % (int(aliasID), escaped_name)
+    return '/%d/%s' % (int(aliasID), url_quote(filename))
 
 
 class FileUploadClient:
