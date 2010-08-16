@@ -149,6 +149,25 @@ class EC2Runner:
         daemonize(self._pid_filename)
         self._daemonized = True
 
+    def _shutdown_instance(self):
+        """Shut down this EC2 instance."""
+        # Make sure our process is daemonized, and has therefore disconnected
+        # the controlling terminal.  This also disconnects the ec2test.py SSH
+        # connection, thus signalling ec2test.py that it may now try to take
+        # control of the server.
+        if not self._daemonized:
+            # We only want to do this if we haven't already been daemonized.
+            # Nesting daemons is bad.
+            self._daemonize()
+
+        time.sleep(self.SHUTDOWN_DELAY)
+
+        # We'll only get here if --postmortem didn't kill us.  This is our
+        # fail-safe shutdown, in case the user got disconnected or suffered
+        # some other mishap that would prevent them from shutting down this
+        # server on their own.
+        subprocess.call(['sudo', 'shutdown', '-P', 'now'])
+
     def run(self, name, function, *args, **kwargs):
         try:
             if self._should_daemonize:
@@ -166,27 +185,11 @@ class EC2Runner:
                     traceback.format_exc())
             raise
         finally:
-
             # When everything is over, if we've been ask to shut down, then
             # make sure we're daemonized, then shutdown.  Otherwise, if we're
             # daemonized, just clean up the pidfile.
             if self._should_shutdown:
-                # Make sure our process is daemonized, and has therefore
-                # disconnected the controlling terminal.  This also disconnects
-                # the ec2test.py SSH connection, thus signalling ec2test.py
-                # that it may now try to take control of the server.
-                if not self._daemonized:
-                    # We only want to do this if we haven't already been
-                    # daemonized.  Nesting daemons is bad.
-                    self._daemonize()
-
-                time.sleep(self.SHUTDOWN_DELAY)
-
-                # We'll only get here if --postmortem didn't kill us.  This is
-                # our fail-safe shutdown, in case the user got disconnected
-                # or suffered some other mishap that would prevent them from
-                # shutting down this server on their own.
-                subprocess.call(['sudo', 'shutdown', '-P', 'now'])
+                self._shutdown_instance()
             elif self._daemonized:
                 # It would be nice to clean up after ourselves, since we won't
                 # be shutting down.
