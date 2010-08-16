@@ -204,18 +204,18 @@ class EC2Runner:
 class LaunchpadTester:
     """Runs Launchpad tests and gathers their results in a useful way."""
 
-    def __init__(self, logger, test_directory, test_options=None):
+    def __init__(self, logger, test_directory, test_options=()):
         """Construct a TestOnMergeRunner.
 
         :param logger: The WebTestLogger to log to.
         :param test_directory: The directory to run the tests in. We expect
             this directory to have a fully-functional checkout of Launchpad
             and its dependent branches.
-        :param test_options: Options to pass to the test runner.
+        :param test_options: A sequence of options to pass to the test runner.
         """
         self._logger = logger
         self._test_directory = test_directory
-        self._test_options = test_options
+        self._test_options = ' '.join(test_options)
 
     def build_test_command(self):
         """Return the command that will execute the test suite.
@@ -683,8 +683,7 @@ def main(argv):
     runner = EC2Runner(
         options.daemon, pid_filename, options.shutdown, options.email)
 
-    tester = LaunchpadTester(
-        logger=logger, test_directory=TEST_DIR, test_options=' '.join(args))
+    tester = LaunchpadTester(logger, TEST_DIR, test_options=args)
     runner.run("Test runner", tester.test)
 
 
