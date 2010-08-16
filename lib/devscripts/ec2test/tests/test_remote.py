@@ -5,13 +5,20 @@
 
 __metaclass__ = type
 
+import os
 from StringIO import StringIO
 import sys
+import tempfile
 import unittest
 
 from testtools import TestCase
 
-from devscripts.ec2test.remote import FlagFallStream, SummaryResult
+from devscripts.ec2test.remote import (
+    FlagFallStream,
+    remove_pidfile,
+    SummaryResult,
+    write_pidfile,
+    )
 
 
 class TestFlagFallStream(TestCase):
@@ -88,6 +95,30 @@ class TestSummaryResult(TestCase):
             'FAILURE', test, result._exc_info_to_string(error, test))
         result.addFailure(test, error)
         self.assertEqual(expected, stream.getvalue())
+
+
+class TestPidfileHelpers(TestCase):
+    """Tests for `write_pidfile` and `remove_pidfile`."""
+
+    def test_write_pidfile(self):
+        fd, path = tempfile.mkstemp()
+        self.addCleanup(os.unlink, path)
+        os.close(fd)
+        write_pidfile(path)
+        self.assertEqual(os.getpid(), int(open(path, 'r').read()))
+
+    def test_remove_pidfile(self):
+        fd, path = tempfile.mkstemp()
+        os.close(fd)
+        write_pidfile(path)
+        remove_pidfile(path)
+        self.assertEqual(False, os.path.exists(path))
+
+    def test_remove_nonexistent_pidfile(self):
+        directory = tempfile.mkdtemp()
+        path = os.path.join(directory, 'doesntexist')
+        remove_pidfile(path)
+        self.assertEqual(False, os.path.exists(path))
 
 
 def test_suite():
