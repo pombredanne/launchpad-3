@@ -13,6 +13,7 @@ from lp.translations.utilities.translation_import import (
 from lp.translations.utilities.translation_common_format import (
     TranslationMessageData)
 
+
 class TestSuperFastImports(TestCaseWithFactory):
     """Test how ExistingPOFileInDatabase cache works."""
 

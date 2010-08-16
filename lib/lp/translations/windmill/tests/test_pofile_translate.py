@@ -487,4 +487,3 @@ class POFileTranslatorAndReviewerWorkingMode(WindmillTestCase):
             reviewer and current_is_reviewer or
             translator and not current_is_reviewer)
         assert switch_done is True, "Could not switch working mode."
-

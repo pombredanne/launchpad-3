@@ -58,11 +58,9 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.menu import structured
 
-
 #
 # Exceptions and helper classes
 #
-
 
 class POTMsgSetBatchNavigator(BatchNavigator):
 
@@ -138,6 +136,7 @@ class CustomDropdownWidget(DropdownWidget):
 #
 # Standard UI classes
 #
+
 class CurrentTranslationMessageFacets(POTemplateFacets):
     usedfor = ITranslationMessage
 
@@ -171,6 +170,7 @@ class CurrentTranslationMessageAppMenus(ApplicationMenu):
 #
 # Views
 #
+
 class CurrentTranslationMessageIndexView:
     """A view to forward to the translation form."""
 
@@ -536,7 +536,7 @@ class BaseTranslationView(LaunchpadView):
         elif fallback_language is not None:
             # If there's a standard alternative language and no
             # user-specified language was provided, preselect it.
-            alternative_language =  fallback_language
+            alternative_language = fallback_language
             second_lang_code = fallback_language.code
         else:
             # The second_lang_code is None and there is no fallback_language.

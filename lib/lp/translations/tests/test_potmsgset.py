@@ -267,7 +267,7 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
 
         # When there are no suggestions, empty list is returned.
         self.assertContentEqual(
-            [], 
+            [],
             self.potmsgset.getLocalTranslationMessages(
                 self.devel_potemplate, serbian))
 
@@ -275,11 +275,11 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         shared_suggestion = self.factory.makeSuggestion(
             pofile=sr_pofile, potmsgset=self.potmsgset)
         self.assertContentEqual(
-            [shared_suggestion], 
+            [shared_suggestion],
             self.potmsgset.getLocalTranslationMessages(
                 self.devel_potemplate, serbian))
         self.assertContentEqual(
-            [shared_suggestion], 
+            [shared_suggestion],
             self.potmsgset.getLocalTranslationMessages(
                 self.stable_potemplate, serbian))
 
@@ -287,7 +287,7 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         another_suggestion = self.factory.makeSuggestion(
             pofile=sr_stable_pofile, potmsgset=self.potmsgset)
         self.assertContentEqual(
-            [shared_suggestion, another_suggestion], 
+            [shared_suggestion, another_suggestion],
             self.potmsgset.getLocalTranslationMessages(
                 self.devel_potemplate, serbian))
         self.assertContentEqual(
@@ -300,7 +300,7 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         current_translation = self.factory.makeSharedTranslationMessage(
             pofile=sr_pofile, potmsgset=self.potmsgset)
         self.assertContentEqual(
-            [], 
+            [],
             self.potmsgset.getLocalTranslationMessages(
                 self.devel_potemplate, serbian))
 
@@ -311,7 +311,7 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         empty_suggestion = self.factory.makeSuggestion(
             pofile=pofile, potmsgset=self.potmsgset, translations=[None])
         self.assertContentEqual(
-            [], 
+            [],
             self.potmsgset.getLocalTranslationMessages(
                 self.stable_potemplate, pofile.language))
 

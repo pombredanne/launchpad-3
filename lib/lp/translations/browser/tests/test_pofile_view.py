@@ -174,4 +174,3 @@ class TestPOFileTranslateViewInvalidFiltering(TestCaseWithFactory,
 
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)
-

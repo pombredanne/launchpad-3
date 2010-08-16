@@ -31,7 +31,6 @@ from operator import isSequenceType
 import os.path
 from random import randint
 from StringIO import StringIO
-import sys
 from textwrap import dedent
 from threading import local
 from types import InstanceType
@@ -2829,8 +2828,16 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 # security wrappers for them, as well as for objects created by
 # other Python libraries.
 unwrapped_types = (
-    BaseRecipeBranch, DSCFile, InstanceType, MergeDirective2, Message,
-    datetime, int, str, unicode,)
+    BaseRecipeBranch,
+    DSCFile,
+    InstanceType,
+    MergeDirective2,
+    Message,
+    datetime,
+    int,
+    str,
+    unicode,
+    )
 
 
 def is_security_proxied_or_harmless(obj):
@@ -2855,12 +2862,11 @@ class UnproxiedFactoryMethodWarning(UserWarning):
     def __init__(self, method_name):
         super(UnproxiedFactoryMethodWarning, self).__init__(
             "PLEASE FIX: LaunchpadObjectFactory.%s returns an "
-            "unproxied object." % (method_name,))
+            "unproxied object." % (method_name, ))
 
 
 class UnreasonableRemoveSecurityProxyWarning(UserWarning):
     """Raised when there is an unreasonable call to removeSecurityProxy."""
-
     # XXX: JonathanLange 2010-07-25: I have no idea what "unreasonable" means
     # in this context.
 
