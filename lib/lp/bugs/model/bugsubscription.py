@@ -12,10 +12,12 @@ from sqlobject import ForeignKey
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
 
 from lp.bugs.interfaces.bugsubscription import IBugSubscription
 from lp.registry.interfaces.person import validate_person
+from lp.registry.interfaces.structuralsubscription import BugNotificationLevel
 
 
 class BugSubscription(SQLBase):
@@ -31,6 +33,10 @@ class BugSubscription(SQLBase):
         notNull=True
         )
     bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
+    bug_notification_level = EnumCol(
+        enum=BugNotificationLevel,
+        default=BugNotificationLevel.COMMENTS,
+        notNull=True)
     date_created = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     subscribed_by = ForeignKey(
         dbName='subscribed_by', foreignKey='Person',

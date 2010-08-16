@@ -12,10 +12,12 @@ __all__ = [
     ]
 
 from zope.interface import Interface, Attribute
-from zope.schema import Int, Datetime
+from zope.schema import Int, Choice, Datetime
 from canonical.launchpad import _
 from canonical.launchpad.fields import PersonChoice
+
 from lp.bugs.interfaces.bug import IBug
+from lp.registry.interfaces.structuralsubscription import BugNotificationLevel
 
 from lazr.restful.declarations import (
     REQUEST_USER, call_with, export_as_webservice_entry,
@@ -35,6 +37,12 @@ class IBugSubscription(Interface):
         "e-mail address.")))
     bug = exported(Reference(
         IBug, title=_("Bug"), required=True, readonly=True))
+    bug_notification_level = Choice(
+        title=_("Bug notification level"), required=True,
+        vocabulary=BugNotificationLevel,
+        default=BugNotificationLevel.NOTHING,
+        description=_("The volume and type of bug notifications "
+                      "this subscription will generate."))
     date_created = exported(
         Datetime(title=_('Date subscribed'), required=True, readonly=True))
     subscribed_by = exported(PersonChoice(
