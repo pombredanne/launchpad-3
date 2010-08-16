@@ -44,19 +44,26 @@ class TestPersonTeams(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def test_teams_indirectly_participated_in(self):
+    def setUp(self):
+        super(TestPersonTeams, self).setUp()
         self.user = self.factory.makePerson()
-        a_team = self.factory.makeTeam(name='a')
-        b_team = self.factory.makeTeam(name='b', owner=a_team)
-        c_team = self.factory.makeTeam(name='c', owner=b_team)
-        login_person(a_team.teamowner)
-        a_team.addMember(self.user, a_team.teamowner)
+        self.a_team = self.factory.makeTeam(name='a')
+        self.b_team = self.factory.makeTeam(name='b', owner=self.a_team)
+        self.c_team = self.factory.makeTeam(name='c', owner=self.b_team)
+        login_person(self.a_team.teamowner)
+        self.a_team.addMember(self.user, self.a_team.teamowner)
+
+    def test_teams_indirectly_participated_in(self):
         indirect_teams = self.user.teams_indirectly_participated_in
-        expected_teams = [b_team, c_team]
+        expected_teams = [self.b_team, self.c_team]
         test_teams = sorted(indirect_teams,
             key=lambda team: team.displayname)
         self.assertEqual(expected_teams, test_teams)
 
+    def test_team_memberships(self):
+        memberships = self.user.team_memberships
+        memberships = [(m.person, m.team) for m in memberships]
+        self.assertEqual([(self.user, self.a_team)], memberships)
 
 class TestPerson(TestCaseWithFactory):
 
