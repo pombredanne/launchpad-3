@@ -220,8 +220,7 @@ class ProductVocabulary(SQLObjectVocabularyBase):
             like_query = "'%%' || %s || '%%'" % quote_like(query)
             fti_query = quote(query)
             sql = "active = 't' AND (name LIKE %s OR fti @@ ftq(%s))" % (
-                    like_query, fti_query
-                    )
+                    like_query, fti_query)
             return self._table.select(sql, orderBy=self._orderBy)
         return self.emptySelectResults()
 
@@ -268,8 +267,7 @@ class ProjectGroupVocabulary(SQLObjectVocabularyBase):
             like_query = "'%%' || %s || '%%'" % quote_like(query)
             fti_query = quote(query)
             sql = "active = 't' AND (name LIKE %s OR fti @@ ftq(%s))" % (
-                    like_query, fti_query
-                    )
+                    like_query, fti_query)
             return self._table.select(sql)
         return self.emptySelectResults()
 
@@ -545,11 +543,8 @@ class ValidPersonOrTeamVocabulary(
                        # Or a person who has an active account and a working
                        # email address.
                        And(Account.status == AccountStatus.ACTIVE,
-                           EmailAddress.status.is_in(valid_email_statuses))
-                       ),
-                    self.extra_clause
-                    )
-                )
+                           EmailAddress.status.is_in(valid_email_statuses))),
+                    self.extra_clause))
             # The public query doesn't need to be ordered as it will be done
             # at the end.
             public_result.order_by()
@@ -980,9 +975,7 @@ class ProductReleaseVocabulary(SQLObjectVocabularyBase):
                 Milestone.q.productseriesID == ProductSeries.q.id,
                 ProductSeries.q.productID == Product.q.id,
                 Product.q.name == productname,
-                ProductSeries.q.name == productseriesname
-                )
-            )
+                ProductSeries.q.name == productseriesname))
         try:
             return self.toTerm(obj)
         except IndexError:
@@ -1268,8 +1261,7 @@ class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
         return [
             project for project in sorted(projects,
                                           key=attrgetter('displayname'))
-            if not project.qualifies_for_free_hosting
-            ]
+            if not project.qualifies_for_free_hosting]
 
     def _doSearch(self, query=None):
         """Return terms where query is in the text of name
@@ -1407,11 +1399,8 @@ class DistroSeriesVocabulary(NamedSQLObjectVocabulary):
                     Distribution.q.id == DistroSeries.q.distributionID,
                     OR(
                         CONTAINSSTRING(Distribution.q.name, query),
-                        CONTAINSSTRING(DistroSeries.q.name, query)
-                        )
-                    ),
-                orderBy=self._orderBy
-                )
+                        CONTAINSSTRING(DistroSeries.q.name, query))),
+                    orderBy=self._orderBy)
         return objs
 
 
@@ -1425,8 +1414,7 @@ class PillarVocabularyBase(NamedSQLObjectHugeVocabulary):
         """See `IVocabulary`."""
         if IPillarName.providedBy(obj):
             assert obj.active, 'Inactive object %s %d' % (
-                    obj.__class__.__name__, obj.id
-                    )
+                    obj.__class__.__name__, obj.id)
             obj = obj.pillar
 
         # It is a hack using the class name here, but it works
