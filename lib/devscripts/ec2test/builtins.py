@@ -249,7 +249,7 @@ class cmd_test(EC2Command):
                 'If the branch is local, then the bzr configuration is '
                 'consulted; for remote branches "Launchpad PQM '
                 '<launchpad@pqm.canonical.com>" is used by default.')),
-        Option('dont', help=("Do not run the tests.")),
+        Option('not-really', help=("Do not run the tests.")),
         postmortem_option,
         attached_option,
         debug_option,
@@ -265,7 +265,7 @@ class cmd_test(EC2Command):
             instance_type=DEFAULT_INSTANCE_TYPE,
             file=None, email=None, test_options=DEFAULT_TEST_OPTIONS,
             noemail=False, submit_pqm_message=None, pqm_public_location=None,
-            pqm_submit_location=None, pqm_email=None, dont=False,
+            pqm_submit_location=None, pqm_email=None, not_really=False,
             postmortem=False, attached=False, debug=False, open_browser=False,
             include_download_cache_changes=False):
         if debug:
@@ -310,10 +310,11 @@ class cmd_test(EC2Command):
             instance=instance, launchpad_login=instance._launchpad_login,
             timeout=480)
 
-        if dont:
-            instance.set_up_and_run(postmortem, attached, runner.dont_run_tests)
+        if not_really:
+            run = runner.dont_run_tests
         else:
-            instance.set_up_and_run(postmortem, attached, runner.run_tests)
+            run = runner.run_tests
+        instance.set_up_and_run(postmortem, attached, run)
 
 
 class cmd_land(EC2Command):
