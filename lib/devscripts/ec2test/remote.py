@@ -188,7 +188,7 @@ class EC2Runner:
             # When everything is over, if we've been ask to shut down, then
             # make sure we're daemonized, then shutdown.  Otherwise, if we're
             # daemonized, just clean up the pidfile.
-            if self._should_shutdown:
+            if self._shutdown_when_done:
                 self._shutdown_instance()
             elif self._daemonized:
                 # It would be nice to clean up after ourselves, since we won't
