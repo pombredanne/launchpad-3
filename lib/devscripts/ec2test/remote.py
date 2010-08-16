@@ -243,7 +243,7 @@ class LaunchpadTester:
             popen = subprocess.Popen(
                 call, bufsize=-1,
                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                cwd=self._testdirectory)
+                cwd=self._test_directory)
 
             self._gather_test_output(popen.stdout, self._logger)
 
@@ -349,10 +349,10 @@ class Request:
             branch.repository.get_revision(parent_ids[1]).get_summary())
         return summary.encode('utf-8')
 
-    def send_email(self, result, body_text, full_log_gz, config):
+    def send_email(self, successful, body_text, full_log_gz, config):
         """Send an email summarizing the test results.
 
-        :param result: True for pass, False for failure.
+        :param successful: True for pass, False for failure.
         :param body_text: The body of the email to send to the requesters.
         :param full_log_gz: A gzip of the full log.
         :param config: A Bazaar configuration object with SMTP details.
@@ -360,7 +360,11 @@ class Request:
         message = MIMEMultipart.MIMEMultipart()
         message['To'] = ', '.join(self._emails)
         message['From'] = config.username()
-        subject = 'Test results: %s' % (result and 'FAILURE' or 'SUCCESS')
+        if successful:
+            status = 'SUCCESS'
+        else:
+            status = 'FAILURE'
+        subject = 'Test results: %s' % (status,)
         message['Subject'] = subject
 
         # Make the body.
