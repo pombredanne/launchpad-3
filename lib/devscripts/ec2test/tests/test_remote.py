@@ -12,6 +12,8 @@ import sys
 import tempfile
 import unittest
 
+from bzrlib.tests import TestCaseWithTransport
+
 from testtools import TestCase
 
 from devscripts.ec2test.remote import (
@@ -136,7 +138,7 @@ class TestGzipFile(TestCase):
         self.assertEqual(contents, gzip.open(gz_file, 'r').read())
 
 
-class TestRequest(TestCase):
+class TestRequest(TestCaseWithTransport):
     """Tests for `Request`."""
 
     def test_doesnt_want_email(self):
@@ -152,6 +154,33 @@ class TestRequest(TestCase):
             None, None, None, None, emails=['foo@example.com'],
             pqm_message=None)
         self.assertEqual(True, req.wants_email)
+
+    def test_get_trunk_details(self):
+        tree = self.make_branch_and_tree('.')
+        branch = tree.branch
+        parent = 'http://example.com/bzr/branch'
+        branch.set_parent(parent)
+        req = Request(None, None, branch.base, None)
+        self.assertEqual((parent, branch.revno()), req.get_trunk_details())
+
+    def test_get_branch_details_no_commits(self):
+        tree = self.make_branch_and_tree('.')
+        req = Request(None, None, tree.basedir, None)
+        self.assertEqual(None, req.get_branch_details())
+
+    def test_get_branch_details_no_merge(self):
+        tree = self.make_branch_and_tree('.')
+        tree.commit(message='foo')
+        req = Request(None, None, tree.basedir, None)
+        self.assertEqual(None, req.get_branch_details())
+
+    def test_get_branch_details_merge(self):
+        tree = self.make_branch_and_tree('.')
+        # Fake a merge, giving silly revision ids.
+        tree.add_pending_merge('foo', 'bar')
+        req = Request('https://example.com/bzr/thing', 42, tree.basedir, None)
+        self.assertEqual(
+            ('https://example.com/bzr/thing', 42), req.get_branch_details())
 
 
 def test_suite():

@@ -312,7 +312,7 @@ class Request:
         """
         tree = bzrlib.workingtree.WorkingTree.open(self._local_branch_path)
         parent_ids = tree.get_parent_ids()
-        if len(parent_ids) == 1:
+        if len(parent_ids) < 2:
             return None
         return self._branch_url.encode('utf-8'), self._revno
 
