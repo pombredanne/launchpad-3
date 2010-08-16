@@ -152,6 +152,15 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         "architecture",
         "files"])
 
+    known_fields = mandatory_fields.union(set([
+        "build-depends",
+        "build-depends-indep",
+        "build-conflicts",
+        "build-conflicts-indep",
+        "format",
+        "standards-version",
+        ]))
+
     # Note that files is actually only set inside verify().
     files = None
     # Copyright and changelog_path are only set inside unpackAndCheckSource().
@@ -626,6 +635,9 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         source_name = getUtility(
             ISourcePackageNameSet).getOrCreateByName(self.source)
 
+        user_defined_fields = self.extractUserDefinedFields([
+            (field, encoded[field]) for field in self._dict])
+
         release = self.policy.distroseries.createUploadedSourcePackageRelease(
             sourcepackagename=source_name,
             version=self.dsc_version,
@@ -651,6 +663,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
             source_package_recipe_build=build,
             copyright=encoded.get('copyright'),
             # dateuploaded by default is UTC:now in the database
+            user_defined_fields=user_defined_fields,
             )
 
         # SourcePackageFiles should contain also the DSC
