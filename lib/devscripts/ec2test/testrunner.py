@@ -489,7 +489,8 @@ class EC2TestRunner:
         self.configure_system()
         self.prepare_tests()
         cmd = self._build_command()
-        self.log('COMMAND: %s' % cmd)
+        self.log('COMMAND: %s\n' % cmd)
+        self.log('ssh ec2test@%s\n' % (self._instance.hostname,))
 
     def run_tests(self):
         self.configure_system()
