@@ -18,6 +18,7 @@ from devscripts.ec2test.remote import (
     FlagFallStream,
     gzip_file,
     remove_pidfile,
+    Request,
     SummaryResult,
     write_pidfile,
     )
@@ -133,6 +134,24 @@ class TestGzipFile(TestCase):
         os.close(fd)
         gz_file = gzip_file(path)
         self.assertEqual(contents, gzip.open(gz_file, 'r').read())
+
+
+class TestRequest(TestCase):
+    """Tests for `Request`."""
+
+    def test_doesnt_want_email(self):
+        # If no email addresses were provided, then the user does not want to
+        # receive email.
+        req = Request(None, None, None, None, emails=None, pqm_message=None)
+        self.assertEqual(False, req.wants_email)
+
+    def test_wants_email(self):
+        # If some email addresses were provided, then the user wants to
+        # receive email.
+        req = Request(
+            None, None, None, None, emails=['foo@example.com'],
+            pqm_message=None)
+        self.assertEqual(True, req.wants_email)
 
 
 def test_suite():
