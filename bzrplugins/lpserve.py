@@ -164,15 +164,20 @@ class LPService(object):
         self._server_socket.listen(1)
         self._server_socket.settimeout(1)
 
-    def _setup_child_file_descriptors(self, base_path):
-        import logging
-        from bzrlib import ui
+    def _create_child_file_descriptors(self, base_path):
         stdin_path = os.path.join(base_path, 'stdin')
         stdout_path = os.path.join(base_path, 'stdout')
         stderr_path = os.path.join(base_path, 'stderr')
         os.mkfifo(stdin_path)
         os.mkfifo(stdout_path)
         os.mkfifo(stderr_path)
+
+    def _bind_child_file_descriptors(self, base_path):
+        import logging
+        from bzrlib import ui
+        stdin_path = os.path.join(base_path, 'stdin')
+        stdout_path = os.path.join(base_path, 'stdout')
+        stderr_path = os.path.join(base_path, 'stderr')
         # Opening for writing blocks (or fails), so do those last
         # TODO: Consider buffering...
         stdin_fid = os.open(stdin_path, os.O_RDONLY | os.O_NONBLOCK)
@@ -205,27 +210,45 @@ class LPService(object):
         os.remove(stdin_path)
         os.rmdir(base_path)
 
-    def become_child(self, user_id, path):
+    def _close_child_file_descriptons(self):
+        sys.stdin.close()
+        sys.stderr.close()
+        sys.stdout.close()
+
+    def become_child(self, user_id, path, conn):
         """We are in the spawned child code, do our magic voodoo."""
-        self._setup_child_file_descriptors(path)
+        # Reset the start time
+        trace._bzr_log_start_time = time.time()
+        trace.mutter('%d starting cmd_launchpad_server %s'
+                     % (os.getpid(), user_id,))
+        self._create_child_file_descriptors(path)
+        # Now that we've set everything up, send the response to the client,
+        # and close everything out. we create them first, so the client can
+        # start trying to connect to them, while we do the same.
+        # Child process, close the connections
+        conn.sendall(path + '\n')
+        conn.close()
+        self.host = None
+        self.port = None
+        self._sockname = None
+        self._bind_child_file_descriptors(path)
         # This is the point where we would actually want to do something with
         # our life
         cmd = cmd_launchpad_server()
-        sys.exit(cmd.run_argv_aliases(['--inet', user_id]))
+        retcode = cmd.run_argv_aliases(['--inet', user_id])
+        self._close_child_file_descriptons()
+        trace.mutter('%d finished cmd_launchpad_server %s'
+                     % (os.getpid(), user_id,))
+        sys.exit(retcode)
 
     def fork_one_request(self, conn, client_addr, user_id):
         """Fork myself and serve a request."""
         temp_name = tempfile.mkdtemp(prefix='lp-service-child-')
         pid = os.fork()
         if pid == 0:
-            # Child process, close the connections
-            conn.sendall(temp_name + '\n')
-            conn.close()
+            trace.mutter('%d spawned' % (os.getpid(),))
             self._server_socket.close()
-            self.host = None
-            self.port = None
-            self._sockname = None
-            self.become_child(user_id, temp_name)
+            self.become_child(user_id, temp_name, conn)
             trace.warning('become_child returned!!!')
             sys.exit(1)
         else:
