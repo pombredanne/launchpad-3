@@ -14,7 +14,7 @@ from lp.archiveuploader.changesfile import (CannotDetermineFileTypeError,
 from lp.archiveuploader.dscfile import DSCFile
 from lp.archiveuploader.nascentuploadfile import (
     DebBinaryUploadFile, DdebBinaryUploadFile, SourceUploadFile,
-    UdebBinaryUploadFile, UploadError)
+    UdebBinaryUploadFile, UploadError, UploadWarning)
 from lp.archiveuploader.uploadpolicy import AbsolutelyAnythingGoesUploadPolicy
 from lp.testing import TestCase
 
@@ -76,13 +76,13 @@ class ChangesFileTests(TestCase):
             changes_fd.close()
         return ChangesFile(path, self.policy, self.logger)
 
-    def test_checkFileName(self):
+    def getBaseChanges(self):
         contents = Changes()
         contents["Source"] = "mypkg"
         contents["Binary"] = "binary"
         contents["Architecture"] = "i386"
         contents["Version"] = "0.1"
-        contents["Distribution"] = "zubuntu"
+        contents["Distribution"] = "nifty"
         contents["Maintainer"] = "Somebody"
         contents["Changes"] = "Something changed"
         contents["Files"] = [{
@@ -91,8 +91,39 @@ class ChangesFileTests(TestCase):
             "section": "python",
             "priority": "optional",
             "name": "dulwich_0.4.1-1.dsc"}]
+        return contents
+
+    def test_checkFileName(self):
+        contents = self.getBaseChanges()
         changes = self.createChangesFile("mypkg_0.1_i386.changes", contents)
         self.assertEquals([], list(changes.checkFileName()))
         changes = self.createChangesFile("mypkg_0.1.changes", contents)
         errors = list(changes.checkFileName())
+        self.assertIsInstance(errors[0], UploadError)
         self.assertEquals(1, len(errors))
+
+    def test_filename(self):
+        changes = self.createChangesFile("mypkg_0.1_i386.changes",
+            self.getBaseChanges())
+        self.assertEquals("mypkg_0.1_i386.changes", changes.filename)
+
+    def test_suite_name(self):
+        changes = self.createChangesFile("mypkg_0.1_i386.changes",
+            self.getBaseChanges())
+        self.assertEquals("nifty", changes.suite_name)
+
+    def test_version(self):
+        changes = self.createChangesFile("mypkg_0.1_i386.changes",
+            self.getBaseChanges())
+        self.assertEquals("0.1", changes.version)
+
+    def test_architectures(self):
+        changes = self.createChangesFile("mypkg_0.1_i386.changes",
+            self.getBaseChanges())
+        self.assertEquals("i386", changes.architecture_line)
+        self.assertEquals(set(["i386"]), changes.architectures)
+
+    def test_source(self):
+        changes = self.createChangesFile("mypkg_0.1_i386.changes",
+            self.getBaseChanges())
+        self.assertEquals("mypkg", changes.source)

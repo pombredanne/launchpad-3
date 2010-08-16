@@ -148,7 +148,7 @@ class ChangesFile(SignableTagFile):
     def isCustom(self, component_and_section):
         """Check if given 'component_and_section' matches a custom upload.
 
-        We recognize an upload as custom if it is taget to a section like
+        We recognize an upload as custom if it is targetted at a section like
         'raw-<something>'.
         Further checks will be performed in CustomUploadFile class.
         """
@@ -321,7 +321,7 @@ class ChangesFile(SignableTagFile):
 
     @property
     def source(self):
-        """Return changesfiel claimed source name"""
+        """Return changesfile claimed source name."""
         return self._dict['source']
 
     @property
