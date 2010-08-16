@@ -24,10 +24,8 @@ from canonical.launchpad.database.librarian import (
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.librarian.client import get_libraryfilealias_download_path
 from canonical.librarian.interfaces import (
-    DownloadFailed,
     ILibrarianClient,
-    LIBRARIAN_SERVER_DEFAULT_TIMEOUT,
-    UploadFailed)
+    LIBRARIAN_SERVER_DEFAULT_TIMEOUT)
 
 
 class InstrumentedLibraryFileAlias(LibraryFileAlias):
@@ -38,7 +36,7 @@ class InstrumentedLibraryFileAlias(LibraryFileAlias):
     def checkCommitted(self):
         """Raise an error if this file has not been committed yet."""
         if not self.file_committed:
-            raise DownloadFailed(
+            raise LookupError(
                 "Attempting to retrieve file '%s' from the fake "
                 "librarian, but the file has not yet been committed to "
                 "storage." % self.filename)
@@ -57,7 +55,7 @@ class FakeLibrarian(object):
     This takes the role of both the librarian client and the LibraryFileAlias
     utility.
     """
-    provided_utilities = (ILibrarianClient, ILibraryFileAliasSet)
+    provided_utilities = [ILibrarianClient, ILibraryFileAliasSet]
     implements(ISynchronizer, *provided_utilities)
 
     installed_as_librarian = False
@@ -80,7 +78,7 @@ class FakeLibrarian(object):
 
         transaction.manager.unregisterSynch(self)
         site_manager = zope.component.getGlobalSiteManager()
-        for utility in self.provided_utilities:
+        for utility in reversed(self.provided_utilities):
             site_manager.unregisterUtility(self, utility)
         self.installed_as_librarian = False
 
@@ -93,7 +91,7 @@ class FakeLibrarian(object):
         content = file.read()
         real_size = len(content)
         if real_size != size:
-            raise UploadFailed(
+            raise AssertionError(
                 "Uploading '%s' to the fake librarian with incorrect "
                 "size %d; actual size is %d." % (name, size, real_size))
 
@@ -146,7 +144,7 @@ class FakeLibrarian(object):
         "See `ILibraryFileAliasSet`."""
         alias = self.aliases.get(key)
         if alias is None:
-            raise DownloadFailed(
+            raise LookupError(
                 "Attempting to retrieve file alias %d from the fake "
                 "librarian, who has never heard of it." % key)
         return alias

@@ -12,44 +12,33 @@ from transaction.interfaces import ISynchronizer
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.librarian.interfaces import (
-    DownloadFailed, ILibrarianClient, UploadFailed)
+from canonical.librarian.interfaces import ILibrarianClient
 from canonical.launchpad.webapp.testing import verifyObject
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing import (
+    DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
 from lp.testing import TestCaseWithFactory
 from lp.testing.fakelibrarian import FakeLibrarian
 
 
-class TestFakeLibrarian(TestCaseWithFactory):
-
-    layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        super(TestFakeLibrarian, self).setUp()
-        self.librarian = FakeLibrarian()
-        self.librarian.installAsLibrarian()
-
-    def tearDown(self):
-        super(TestFakeLibrarian, self).tearDown()
-        self.librarian.uninstall()
-
+class LibraryAccessScenarioMixin:
     def _storeFile(self):
         """Store a file in the `FakeLibrarian`.
 
         :return: Tuple of filename, file contents, alias id.
         """
-        name = self.factory.getUniqueString()
+        name = self.factory.getUniqueString() + '.txt'
         text = self.factory.getUniqueString()
-        alias_id = self.librarian.addFile(
+        alias_id = getUtility(ILibrarianClient).addFile(
             name, len(text), StringIO(text), 'text/plain')
         return name, text, alias_id
 
     def test_baseline(self):
-        self.assertEqual(self.librarian, getUtility(ILibrarianClient))
-        self.assertEqual(self.librarian, getUtility(ILibraryFileAliasSet))
-        self.assertTrue(verifyObject(ILibrarianClient, self.librarian))
-        self.assertTrue(verifyObject(ILibraryFileAliasSet, self.librarian))
-        self.assertTrue(verifyObject(ISynchronizer, self.librarian))
+        self.assertTrue(
+            verifyObject(
+                ILibrarianClient, getUtility(ILibrarianClient)))
+        self.assertTrue(
+            verifyObject(
+                ILibraryFileAliasSet, getUtility(ILibraryFileAliasSet)))
 
     def test_insert_retrieve(self):
         name, text, alias_id = self._storeFile()
@@ -57,12 +46,13 @@ class TestFakeLibrarian(TestCaseWithFactory):
 
         transaction.commit()
 
-        self.assertEqual(text, self.librarian.getFileByAlias(alias_id).read())
+        library_file = getUtility(ILibrarianClient).getFileByAlias(alias_id)
+        self.assertEqual(text, library_file.read())
 
     def test_alias_set(self):
         name, text, alias_id = self._storeFile()
 
-        retrieved_alias = self.librarian[alias_id]
+        retrieved_alias = getUtility(ILibraryFileAliasSet)[alias_id]
 
         self.assertEqual(alias_id, retrieved_alias.id)
         self.assertEqual(name, retrieved_alias.filename)
@@ -71,20 +61,44 @@ class TestFakeLibrarian(TestCaseWithFactory):
         name, text, alias_id = self._storeFile()
         transaction.commit()
 
-        retrieved_alias = self.librarian[alias_id]
+        retrieved_alias = getUtility(ILibraryFileAliasSet)[alias_id]
         retrieved_alias.open()
         self.assertEqual(text, retrieved_alias.read())
 
     def test_uncommitted_file(self):
         name, text, alias_id = self._storeFile()
-        retrieved_alias = self.librarian[alias_id]
-        self.assertRaises(DownloadFailed, retrieved_alias.open)
+        retrieved_alias = getUtility(ILibraryFileAliasSet)[alias_id]
+        self.assertRaises(LookupError, retrieved_alias.open)
 
     def test_incorrect_upload_size(self):
         name = self.factory.getUniqueString()
         text = self.factory.getUniqueString()
         wrong_length = len(text) + 1
         self.assertRaises(
-            UploadFailed,
-            self.librarian.addFile,
+            AssertionError,
+            getUtility(ILibrarianClient).addFile,
             name, wrong_length, StringIO(text), 'text/plain')
+
+
+class TestFakeLibrarian(LibraryAccessScenarioMixin, TestCaseWithFactory):
+    """Test the supported interface subset on the fake librarian."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestFakeLibrarian, self).setUp()
+        self.fake_librarian = FakeLibrarian()
+        self.fake_librarian.installAsLibrarian()
+
+    def tearDown(self):
+        super(TestFakeLibrarian, self).tearDown()
+        self.fake_librarian.uninstall()
+
+    def test_fake(self):
+        self.assertTrue(verifyObject(ISynchronizer, self.fake_librarian))
+
+
+class TestRealLibrarian(LibraryAccessScenarioMixin, TestCaseWithFactory):
+    """Test the supported interface subset on the real librarian."""
+
+    layer = LaunchpadFunctionalLayer
