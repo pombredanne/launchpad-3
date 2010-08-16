@@ -291,16 +291,17 @@ class Request:
         :param pqm_message: The message to submit to PQM. If not provided, we
             don't submit to PQM.
         """
-        self.public_branch = branch_url
-        self.public_branch_revno = revno
-        self.test_directory = local_branch_path
-        self.sourcecode_dir = sourcecode_path
+        self._branch_url = branch_url
+        self._revno = revno
+        self._local_branch_path = local_branch_path
+        self._sourcecode_path = sourcecode_path
         self._emails = emails
         self._pqm_message = pqm_message
 
     def get_trunk_details(self):
         """Return (branch_url, revno) for trunk."""
-        branch = bzrlib.branch.Branch.open_containing(self.test_directory)[0]
+        branch = bzrlib.branch.Branch.open_containing(
+            self._local_branch_path)[0]
         return branch.get_parent().encode('utf-8'), branch.revno()
 
     def get_branch_details(self):
@@ -309,11 +310,11 @@ class Request:
         If we're not merging in a branch, but instead just testing a trunk,
         then return None.
         """
-        tree = bzrlib.workingtree.WorkingTree.open(self.test_directory)
+        tree = bzrlib.workingtree.WorkingTree.open(self._local_branch_path)
         parent_ids = tree.get_parent_ids()
         if len(parent_ids) == 1:
             return None
-        return self.public_branch.encode('utf-8'), self.public_branch_revno
+        return self._branch_url.encode('utf-8'), self._revno
 
     def get_nick(self):
         """Get the nick of the branch we are testing."""
@@ -338,8 +339,9 @@ class Request:
 
     def get_summary_commit(self):
         """Get a message summarizing the change from the commit log."""
-        branch = bzrlib.branch.Branch.open_containing(self.test_directory)[0]
-        tree = bzrlib.workingtree.WorkingTree.open(self.test_directory)
+        branch = bzrlib.branch.Branch.open_containing(
+            self._local_branch_path)[0]
+        tree = bzrlib.workingtree.WorkingTree.open(self._local_branch_path)
         parent_ids = tree.get_parent_ids()
         if len(parent_ids) == 1:
             return None
@@ -377,8 +379,8 @@ class Request:
 
     def iter_dependency_branches(self):
         """Iterate through the Bazaar branches we depend on."""
-        for name in os.listdir(self.sourcecode_dir):
-            path = os.path.join(self.sourcecode_dir, name)
+        for name in os.listdir(self._sourcecode_path):
+            path = os.path.join(self._sourcecode_path, name)
             if os.path.isdir(path):
                 try:
                     branch = bzrlib.branch.Branch.open_containing(path)[0]
