@@ -115,6 +115,15 @@ class EC2Runner:
     catastrophic failure.
     """
 
+    # The number of seconds we give this script to clean itself up, and for
+    # 'ec2 test --postmortem' to grab control if needed.  If we don't give
+    # --postmortem enough time to log in via SSH and take control, then this
+    # server will begin to shutdown on its own.
+    #
+    # (FWIW, "grab control" means sending SIGTERM to this script's process id,
+    # thus preventing fail-safe shutdown.)
+    SHUTDOWN_DELAY = 60
+
     def __init__(self, daemonize, pid_filename, shutdown_when_done,
                  emails=None):
         """Make an EC2Runner.
@@ -171,15 +180,7 @@ class EC2Runner:
                     # daemonized.  Nesting daemons is bad.
                     self._daemonize()
 
-                # Give the script 60 seconds to clean itself up, and 60 seconds
-                # for the ec2test.py --postmortem option to grab control if
-                # needed.  If we don't give --postmortem enough time to log
-                # in via SSH and take control, then this server will begin to
-                # shutdown on it's own.
-                #
-                # (FWIW, "grab control" means sending SIGTERM to this script's
-                # process id, thus preventing fail-safe shutdown.)
-                time.sleep(60)
+                time.sleep(self.SHUTDOWN_DELAY)
 
                 # We'll only get here if --postmortem didn't kill us.  This is
                 # our fail-safe shutdown, in case the user got disconnected
