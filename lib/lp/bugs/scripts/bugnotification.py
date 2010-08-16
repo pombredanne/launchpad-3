@@ -7,20 +7,22 @@
 
 __metaclass__ = type
 
+import transaction
+
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.database.sqlbase import rollback, begin
 from canonical.launchpad.helpers import emailPeople, get_email_template
-from lp.bugs.interfaces.bugmessage import IBugMessageSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from lp.registry.interfaces.person import IPersonSet
 from canonical.launchpad.mailnotification import (
-    generate_bug_add_email, MailWrapper)
-from lp.bugs.mail.bugnotificationbuilder import (
-    BugNotificationBuilder, get_bugmail_from_address)
+    MailWrapper, generate_bug_add_email)
 from canonical.launchpad.scripts.logger import log
 from canonical.launchpad.webapp import canonical_url
+
+from lp.bugs.interfaces.bugmessage import IBugMessageSet
+from lp.bugs.mail.bugnotificationbuilder import (
+    BugNotificationBuilder, get_bugmail_from_address)
+from lp.registry.interfaces.person import IPersonSet
 
 
 def construct_email_notifications(bug_notifications):
@@ -170,8 +172,8 @@ def _log_exception_and_restart_transaction():
     """
     log.exception(
         "An exception was raised while building the email notification.")
-    rollback()
-    begin()
+    transaction.abort()
+    transaction.begin()
 
 
 def get_email_notifications(bug_notifications, date_emailed=None):
@@ -224,4 +226,3 @@ def get_email_notifications(bug_notifications, date_emailed=None):
             raise
         except:
             _log_exception_and_restart_transaction()
-
