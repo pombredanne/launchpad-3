@@ -89,7 +89,17 @@ def cache_property(instance, attrname, value):
     >>> cache_property(instance, '_foo_cache', 42)
     >>> instance.foo
     42
+    >>> instance._cached_properties
+    ['_foo_cache']
+    Caching a new value does not duplicate the cache keys.
+    >>> cache_property(instance, '_foo_cache', 84)
+    >>> instance._cached_properties
+    ['_foo_cache']
+    And does update the cached value.
+    >>> instance.foo
+    84
     """
+    clear_property(instance, attrname)
     setattr(instance, attrname, value)
     cached_properties = getattr(instance, '_cached_properties', [])
     cached_properties.append(attrname)
