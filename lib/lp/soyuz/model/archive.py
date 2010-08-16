@@ -25,6 +25,7 @@ from zope.interface import alsoProvides, implements
 from lp.app.errors import NotFoundError
 from lp.archivepublisher.debversion import Version
 from lp.archiveuploader.utils import re_issource, re_isadeb
+from canonical.cachedproperty import clear_property
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -1753,8 +1754,12 @@ class ArchiveSet:
 
         # Signing-key for the default PPA is reused when it's already present.
         signing_key = None
-        if purpose == ArchivePurpose.PPA and owner.archive is not None:
-            signing_key = owner.archive.signing_key
+        if purpose == ArchivePurpose.PPA:
+            if owner.archive is not None:
+                signing_key = owner.archive.signing_key
+            else:
+                # owner.archive is a cached property and we've just cached it.
+                clear_property(owner, '_archive_cached')
 
         new_archive = Archive(
             owner=owner, distribution=distribution, name=name,
