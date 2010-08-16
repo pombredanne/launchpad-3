@@ -242,8 +242,6 @@ class LaunchpadTester:
         """
         self.logger.prepare()
 
-        summary_file = self.logger.summary_file
-
         call = self.build_test_command()
 
         try:
@@ -253,16 +251,16 @@ class LaunchpadTester:
                 cwd=self._testdirectory)
 
             self._gather_test_output(
-                popen.stdout, summary_file, self.logger.out_file,
+                popen.stdout, self.logger.summary_file, self.logger.out_file,
                 self._echo_to_stdout)
 
             exit_status = popen.wait()
 
-            summary_file.write(
+            self.logger.summary_file.write(
                 '\n(See the attached file for the complete log)\n')
         except:
-            summary_file.write('\n\nERROR IN TESTRUNNER\n\n')
-            traceback.print_exc(file=summary_file)
+            self.logger.summary_file.write('\n\nERROR IN TESTRUNNER\n\n')
+            traceback.print_exc(file=self.logger.summary_file)
             exit_status = 1
             raise
         finally:
