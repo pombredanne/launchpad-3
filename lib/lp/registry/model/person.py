@@ -750,7 +750,14 @@ class Person(
         return packages
 
     def findPathToTeam(self, team, limit=None):
-        """See `IPerson`."""
+        """See `IPerson`.
+
+        The limit parameter sets the depth of traversal along the path. A
+        limit of 0 returns the passed in team, 1 returns the team
+        providing membership to the passed in team. 2 returns the membership
+        for the team returned with limit 1, and so on. None returns the path
+        all the way to the team Person has direct membership in.
+        """
         # This is our guarantee that _getDirectMemberIParticipateIn() will
         # never return None
         assert self.hasParticipationEntryFor(team), (
