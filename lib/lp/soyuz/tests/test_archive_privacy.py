@@ -5,11 +5,14 @@
 
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
-from lp.soyuz.interfaces.archive import CannotSwitchPrivacy, IArchiveSet
+from lp.soyuz.interfaces.archive import (
+    CannotSwitchPrivacy,
+    IArchiveSet)
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 
 from canonical.testing import (
-    LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
+    LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer)
 from lp.testing import login, login_person, TestCaseWithFactory
 
 
