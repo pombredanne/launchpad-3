@@ -717,8 +717,7 @@ class POTMsgSet(SQLBase):
                         distribution=pofile.potemplate.distribution,
                         sourcepackagename=pofile.potemplate.sourcepackagename)
 
-                new_message.reviewer = submitter
-                new_message.date_reviewed = UTC_NOW
+                new_message.markReviewed(submitter, UTC_NOW)
                 pofile.date_changed = UTC_NOW
                 pofile.lasttranslator = submitter
 
@@ -981,18 +980,12 @@ class POTMsgSet(SQLBase):
             ('msgstr%d' % form, potranslation)
             for form, potranslation in potranslations.iteritems())
 
-        message = TranslationMessage(
+        pofile.potemplate.awardKarma(submitter, 'translationsuggestionadded')
+
+        return TranslationMessage(
             potmsgset=self, language=pofile.language,
-            origin=RosettaTranslationOrigin.ROSETTAWEB,
-            submitter=submitter, **forms)
-
-        template = pofile.potemplate
-        submitter.assignKarma(
-            'translationsuggestionadded', product=template.product,
-            distribution=template.distribution,
-            sourcepackagename=template.sourcepackagename)
-
-        return message
+            origin=RosettaTranslationOrigin.ROSETTAWEB, submitter=submitter,
+            **forms)
 
     def _maybeRaiseTranslationConflict(self, message, lock_timestamp):
         """Checks if there is a translation conflict for the message.
@@ -1024,8 +1017,7 @@ class POTMsgSet(SQLBase):
         else:
             # Check for translation conflicts and update review fields.
             self._maybeRaiseTranslationConflict(current, lock_timestamp)
-            current.reviewer = reviewer
-            current.date_reviewed = lock_timestamp
+            current.markReviewed(reviewer, lock_timestamp)
 
     def _nameMessageStatus(self, message, translation_side_traits):
         """Figure out the decision-matrix status of a message.
@@ -1073,20 +1065,21 @@ class POTMsgSet(SQLBase):
     def setCurrentTranslation(self, pofile, submitter, translations, origin,
                               share_with_other_side=False):
         """See `IPOTMsgSet`."""
-        translation_side = pofile.potemplate.translation_side
-        helper = make_message_side_helpers(
-            translation_side, self, pofile.potemplate, pofile.language)
-
+# XXX JeroenVermeulen 2010-08-16: Update POFile last-change timestamp.
         translations = self._findPOTranslations(translations)
-
-        # The current message on this translation side, if any.
-        incumbent_message = helper.incumbent_message
 
         # An already existing message, if any, that's either shared, or
         # diverged for the template/pofile we're working on, whose
         # translations are identical to the ones we're setting.
         twin = self._findTranslationMessage(
             pofile, translations, prefer_shared=False)
+
+        translation_side = pofile.potemplate.translation_side
+        helper = make_message_side_helpers(
+            translation_side, self, pofile.potemplate, pofile.language)
+
+        # The current message on this translation side, if any.
+        incumbent_message = helper.incumbent_message
 
         # Summary of the matrix:
         #  * If the incumbent message is diverged and we're setting a
@@ -1263,8 +1256,7 @@ class POTMsgSet(SQLBase):
                         pofile, submitter, {}, origin, diverged=True)
 
                 Store.of(mask).add_flush_order(current, mask)
-                mask.reviewer = submitter
-                mask.date_reviewed = UTC_NOW
+                mask.markReviewed(submitter, UTC_NOW)
                 traits.setFlag(mask, True)
         else:
             traits.setFlag(current, False)

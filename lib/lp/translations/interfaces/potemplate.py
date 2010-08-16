@@ -494,6 +494,9 @@ class IPOTemplate(IRosettaStats):
     def getTranslationRows():
         """Return the `IVPOTexport` objects for this template."""
 
+    def awardKarma(person, action_name):
+        """Award karma for a translation action on this template."""
+
 
 class IPOTemplateSubset(Interface):
     """A subset of POTemplate."""

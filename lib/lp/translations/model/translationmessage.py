@@ -17,6 +17,8 @@ from sqlobject import BoolCol, ForeignKey, SQLObjectNotFound, StringCol
 from storm.expr import And
 from storm.locals import SQL
 from storm.store import Store
+
+from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.cachedproperty import cachedproperty
@@ -24,11 +26,15 @@ from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import quote, SQLBase, sqlvalues
+from lp.translations.interfaces.side import ITranslationSideTraitsSet
 from lp.translations.interfaces.translationmessage import (
     ITranslationMessage, ITranslationMessageSet, RosettaTranslationOrigin,
     TranslationValidationStatus)
 from lp.translations.interfaces.translations import TranslationConstants
 from lp.registry.interfaces.person import validate_public_person
+
+
+UTC = pytz.timezone('UTC')
 
 
 def make_plurals_fragment(fragment, separator):
@@ -94,6 +100,14 @@ class TranslationMessageMixIn:
         """See `ITranslationMessage`."""
         self.browser_pofile = pofile
 
+    def markReviewed(self, reviewer, timestamp=None):
+        """See `ITranslationMessage`."""
+        if timestamp is None:
+            timestamp = datetime.now(UTC)
+
+        self.reviewer = reviewer
+        self.date_reviewed = timestamp
+
 
 class DummyTranslationMessage(TranslationMessageMixIn):
     """Represents an `ITranslationMessage` where we don't yet HAVE it.
@@ -119,7 +133,6 @@ class DummyTranslationMessage(TranslationMessageMixIn):
         self.language = pofile.language
         self.variant = None
         self.potmsgset = potmsgset
-        UTC = pytz.timezone('UTC')
         self.date_created = datetime.now(UTC)
         self.submitter = None
         self.date_reviewed = None
@@ -145,6 +158,10 @@ class DummyTranslationMessage(TranslationMessageMixIn):
     def isHidden(self, pofile):
         """See `ITranslationMessage`."""
         return True
+
+    def approve(self, *args, **kwargs):
+        """See `ITranslationMessage`."""
+        raise NotImplementedError()
 
     def getOnePOFile(self):
         """See `ITranslationMessage`."""
@@ -310,6 +327,27 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
         if date_reviewed is None:
             date_reviewed = current.date_created
         return date_reviewed > self.date_created
+
+    def approve(self, pofile, reviewer, share_with_other_side=False):
+        """See `ITranslationMessage`."""
+        traits = getUtility(ITranslationSideTraitsSet).getTraits(
+            pofile.potemplate.translation_side)
+        if traits.getFlag(self):
+            # Message is already current.
+            return
+
+# XXX: Implement!
+# XXX: This is just a stub implementation.
+        message = self.potmsgset.setCurrentTranslation(
+            pofile, self.submitter, dict(enumerate(self.translations)),
+            self.origin, share_with_other_side=share_with_other_side)
+# XXX: End of stub.
+
+        self.markReviewed(reviewer)
+        if reviewer != self.submitter:
+            pofile.potemplate.awardKarma(
+                self.submitter, 'translationsuggestionapproved')
+            pofile.potemplate.awardKarma(reviewer, 'translationreview')
 
     def getOnePOFile(self):
         """See `ITranslationMessage`."""

@@ -7,7 +7,6 @@ __metaclass__ = type
 
 from datetime import datetime
 import pytz
-import unittest
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -210,6 +209,55 @@ class TestFactory(TestCaseWithFactory):
         ssp = self.factory.makeSuiteSourcePackage()
         self.assertThat(ssp, ProvidesAndIsProxied(ISuiteSourcePackage))
 
+    def test_makeCurrentTranslationMessage_makes_shared_message(self):
+        tm = self.factory.makeCurrentTranslationMessage()
+        self.assertFalse(tm.is_diverged)
+
+    def test_makeCurrentTranslationMessage_makes_diverged_message(self):
+        tm = self.factory.makeCurrentTranslationMessage(diverged=True)
+        self.assertTrue(tm.is_diverged)
+
+    def test_makeCurrentTranslationMessage_makes_current_upstream(self):
+        pofile = self.factory.makePOFile(
+            'ka', potemplate=self.factory.makePOTemplate(
+                productseries=self.factory.makeProductSeries()))
+
+        tm = self.factory.makeCurrentTranslationMessage(pofile=pofile)
+
+        self.assertTrue(tm.is_current_upstream)
+        self.assertFalse(tm.is_current_ubuntu)
+
+    def test_makeCurrentTranslationMessage_makes_current_ubuntu(self):
+        package = self.factory.makeSourcePackage()
+        pofile = self.factory.makePOFile(
+            'kk', self.factory.makePOTemplate(
+                sourcepackagename=package.sourcepackagename,
+                distroseries=package.distroseries))
+
+        tm = self.factory.makeCurrentTranslationMessage(pofile=pofile)
+
+        self.assertFalse(tm.is_current_upstream)
+        self.assertTrue(tm.is_current_ubuntu)
+
+    def test_makeCurrentTranslationMessage_makes_current_tracking(self):
+        tm = self.factory.makeCurrentTranslationMessage(current_other=True)
+
+        self.assertTrue(tm.is_current_upstream)
+        self.assertTrue(tm.is_current_ubuntu)
+
+    def test_makeCurrentTranslationMessage_uses_given_translation(self):
+        translations = [
+            self.factory.getUniqueString(),
+            self.factory.getUniqueString(),
+            ]
+
+        tm = self.factory.makeCurrentTranslationMessage(
+            translations=translations)
+
+        self.assertEqual(
+            translations, [tm.msgstr0.translation, tm.msgstr1.translation])
+        self.assertIs(None, tm.msgstr2)
+
 
 class TestFactoryWithLibrarian(TestCaseWithFactory):
 
@@ -318,7 +366,3 @@ class IsSecurityProxiedOrHarmlessTests(TestCaseWithFactory):
         unproxied_person = removeSecurityProxy(self.factory.makePerson())
         self.assertFalse(
             is_security_proxied_or_harmless([1, '2', unproxied_person]))
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

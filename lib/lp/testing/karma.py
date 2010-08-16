@@ -53,6 +53,7 @@ class KarmaRecorder:
     def filter(self, karma):
         """Does `karma` match our filters?"""
         return (
+            self._filterFor(self.person, karma.person) and
             self._filterFor(self.action_name, karma.action.name) and
             self._filterFor(self.product, karma.product) and
             self._filterFor(self.distribution, karma.distribution) and

@@ -970,6 +970,12 @@ class POTemplate(SQLBase, RosettaStats):
         else:
             return TranslationSide.UBUNTU
 
+    def awardKarma(self, person, action_name):
+        """See `IPOTemplate`."""
+        person.assignKarma(
+            action_name, product=self.product, distribution=self.distribution,
+            sourcepackagename=self.sourcepackagename)
+
 
 class POTemplateSubset:
     implements(IPOTemplateSubset)
