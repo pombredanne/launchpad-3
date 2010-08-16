@@ -2614,7 +2614,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                                  provides=None, pre_depends=None,
                                  enhances=None, breaks=None,
                                  essential=False, installed_size=None,
-                                 date_created=None):
+                                 date_created=None, debug_package=None):
         """Make a `BinaryPackageRelease`."""
         if build is None:
             build = self.makeBinaryPackageBuild()
@@ -2645,7 +2645,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 suggests=suggests, conflicts=conflicts, replaces=replaces,
                 provides=provides, pre_depends=pre_depends,
                 enhances=enhances, breaks=breaks, essential=essential,
-                installedsize=installed_size)
+                installedsize=installed_size, debug_package=debug_package)
         if date_created is not None:
             removeSecurityProxy(bpr).datecreated = date_created
         return bpr

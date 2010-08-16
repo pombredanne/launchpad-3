@@ -25,7 +25,7 @@ from lp.services.worlddata.interfaces.language import ILanguage
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuild
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageName
 from lp.soyuz.interfaces.binarypackagerelease import (
-    BinaryPackageFileType, IBinaryPackageRelease)
+    BinaryPackageFileType, BinaryPackageFormat, IBinaryPackageRelease)
 from lp.soyuz.interfaces.files import (
     IBinaryPackageFile, ISourcePackageReleaseFile)
 from lp.soyuz.interfaces.publishing import (
@@ -288,6 +288,17 @@ class TestFactory(TestCaseWithFactory):
         bpr = self.factory.makeBinaryPackageRelease(
             date_created=date_created)
         self.assertEqual(date_created, bpr.datecreated)
+
+    def test_makeBinaryPackageName_uses_debug_package(self):
+        debug_package = self.factory.makeBinaryPackageRelease(
+            binpackageformat=BinaryPackageFormat.DDEB)
+        bpr = self.factory.makeBinaryPackageRelease(
+            debug_package=debug_package)
+        self.assertEqual(debug_package, bpr.debug_package)
+
+    def test_makeBinaryPackageName_allows_None_debug_package(self):
+        bpr = self.factory.makeBinaryPackageRelease(debug_package=None)
+        self.assertEqual(None, bpr.debug_package)
 
     # makeBranch
     def test_makeBranch_initialMirrorRequest(self):
