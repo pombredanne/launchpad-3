@@ -53,6 +53,7 @@ class KarmaRecorder:
     def filter(self, karma):
         """Does `karma` match our filters?"""
         return (
+            self._filterFor(self.person, karma.person) and
             self._filterFor(self.action_name, karma.action.name) and
             self._filterFor(self.product, karma.product) and
             self._filterFor(self.distribution, karma.distribution) and
@@ -69,7 +70,7 @@ class KarmaRecorder:
 
     def receive(self, obj, event):
         """Process a karma event.
-        
+
         Runs `filter` on the event and if it passes, `record`s it.
         """
         if self.filter(event.karma):
@@ -106,6 +107,7 @@ class KarmaAssignedEventListener(KarmaRecorder):
     A set of KarmaAction objects assigned since the register_listener()
     method was called is available in the added_listener_actions property.
     """
+
     def __init__(self, show_person=False):
         super(KarmaAssignedEventListener, self).__init__()
         self.added_karma_actions = set()
