@@ -8,7 +8,9 @@ Cribbed from bzrlib.builtins.cmd_serve from Bazaar 0.16.
 
 __metaclass__ = type
 
-__all__ = ['cmd_launchpad_server']
+__all__ = ['cmd_launchpad_server',
+           'cmd_launchpad_service',
+          ]
 
 
 import errno
@@ -340,13 +342,13 @@ class LPService(object):
             conn.sendall('quit command requested... exiting\n')
             self.log(client_addr, 'quit requested')
         elif request.startswith('fork '):
-            # Not handled yet
             user_id = request[5:]
             self.log(client_addr, 'fork requested for %r' % (user_id,))
-            # TODO: Do we want to limit the number of children?
+            # TODO: Do we want to limit the number of children? And/or prefork
+            #       additional instances?
             self.fork_one_request(conn, client_addr, user_id)
         else:
-            self.log(client_addr, 'unknown request: %r' % (request,))
+            self.log(client_addr, 'FAILURE: unknown request: %r' % (request,))
         conn.close()
 
 
@@ -387,6 +389,57 @@ class cmd_launchpad_service(Command):
         service.main_loop()
 
 register_command(cmd_launchpad_service)
+
+
+class cmd_lp_local_serve(Command):
+    """Talk to the local lp service, spawn a connection, and connect to it.
+
+    It basically looks like a local 'bzr serve --inet' connection, only it is
+    connecting to the backend.
+    """
+
+    takes_options = [Option('port',
+                        help='The [host:]portnumber where the service is running',
+                        type=str),
+                    ]
+
+    def _get_host_and_port(self, port):
+        host = None
+        if port is not None:
+            if ':' in port:
+                host, port = port.rsplit(':', 1)
+            port = int(port)
+        return host, port
+
+    def _request_fork(self, host, port, user_id):
+        """Ask the server to fork, and find out the new process's disk path."""
+        # Connect to the service, and request a new connection.
+        addrs = socket.getaddrinfo(host, port, socket.AF_UNSPEC,
+            socket.SOCK_STREAM, 0, socket.AI_PASSIVE)
+        (family, socktype, proto, canonname, sockaddr) = addrs[0]
+        client_sock = socket.socket(family, socktype, proto)
+        try:
+            client_sock.connect(sockaddr)
+            client_sock.sendall('fork %d\n' % (user_id,))
+            response = client_sock.recv(1024)
+        except socket.error, e:
+            raise errors.BzrCommandError('Failed to connect: %s' % (e,))
+        if response.startswith('FAILURE'):
+            raise errors.BzrCommandError('Server rejected with: %s'
+                                         % (response,))
+        # we got a valid path back, so lets return it
+        return response.strip()
+
+    def _connect_to_fifos(self, path):
+        pass
+
+    def run(self, port=None):
+        host, port = self._get_host_and_port(port)
+        if host is None:
+            host = LPService.DEFAULT_HOST
+        if port is None:
+            port = LPService.DEFAULT_PORT
+        sexy
 
 
 libraries_to_preload = [

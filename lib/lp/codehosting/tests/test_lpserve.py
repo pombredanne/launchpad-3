@@ -164,6 +164,7 @@ class TestLaunchpadServe(TestCaseWithTransport):
 
 
 class TestLaunchpadService(TestCaseWithTransport):
+    pass
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
