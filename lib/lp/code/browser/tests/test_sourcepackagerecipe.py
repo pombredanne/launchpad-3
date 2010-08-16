@@ -138,10 +138,9 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
 
     def test_create_new_recipe_private_branch(self):
         # Recipes can't be created on private branches.
-        login(self.chef.preferredemail.email)
-        branch = self.factory.makeBranch(private=True, owner=self.chef)
-        branch_url = canonical_url(branch)
-        logout()
+        with person_logged_in(self.chef):
+            branch = self.factory.makeBranch(private=True, owner=self.chef)
+            branch_url = canonical_url(branch)
 
         browser = self.getUserBrowser(branch_url, user=self.chef)
         self.assertRaises(
