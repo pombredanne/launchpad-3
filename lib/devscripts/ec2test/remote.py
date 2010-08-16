@@ -57,7 +57,6 @@ class SummaryResult(unittest.TestResult):
     def __init__(self, output_stream):
         super(SummaryResult, self).__init__()
         self.stream = output_stream
-        self._buffered_results = StringIO()
 
     def _formatError(self, flavor, test, error):
         return '\n'.join(
@@ -69,20 +68,15 @@ class SummaryResult(unittest.TestResult):
 
     def addError(self, test, error):
         super(SummaryResult, self).addError(test, error)
-        self._buffered_results.write(
+        self.stream.write(
             self._formatError(
                 'ERROR', test, self._exc_info_to_string(error, test)))
 
     def addFailure(self, test, error):
         super(SummaryResult, self).addFailure(test, error)
-        self._buffered_results.write(
+        self.stream.write(
             self._formatError(
                 'FAILURE', test, self._exc_info_to_string(error, test)))
-
-    def stopTestRun(self):
-        # XXX: What we *actually* want is for a list of failing tests to be
-        # written before the summary.
-        self.stream.write(self._buffered_results.getvalue())
 
 
 class FlagFallStream:

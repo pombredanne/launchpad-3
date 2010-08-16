@@ -34,26 +34,15 @@ class TestSummaryResult(TestCase):
             result.double_line, result.single_line)
         self.assertEqual(expected, output)
 
-    def test_addError_does_not_write_immediately(self):
+    def test_addError(self):
         # SummaryResult.addError doesn't write immediately.
         stream = StringIO()
         test = self
         error = self.makeException()
         result = SummaryResult(stream)
-        result.addError(test, error)
-        self.assertEqual('', stream.getvalue())
-
-    def test_addError_writes_at_end_of_run(self):
-        # SummaryResult.addError() prints a nicely-formatted error.
-        test = self
-        result = SummaryResult(None)
-        error = self.makeException()
         expected = result._formatError(
             'ERROR', test, result._exc_info_to_string(error, test))
-        stream = StringIO()
-        result = SummaryResult(stream)
         result.addError(test, error)
-        result.stopTestRun()
         self.assertEqual(expected, stream.getvalue())
 
     def test_addFailure_does_not_write_immediately(self):
@@ -62,20 +51,9 @@ class TestSummaryResult(TestCase):
         test = self
         error = self.makeException()
         result = SummaryResult(stream)
-        result.addFailure(test, error)
-        self.assertEqual('', stream.getvalue())
-
-    def test_addFailure_writes_at_end_of_run(self):
-        # SummaryResult.addFailure() prints a nicely-formatted error.
-        test = self
-        result = SummaryResult(None)
-        error = self.makeException(test.failureException)
         expected = result._formatError(
             'FAILURE', test, result._exc_info_to_string(error, test))
-        stream = StringIO()
-        result = SummaryResult(stream)
         result.addFailure(test, error)
-        result.stopTestRun()
         self.assertEqual(expected, stream.getvalue())
 
 
