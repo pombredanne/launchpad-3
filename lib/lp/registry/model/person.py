@@ -48,7 +48,7 @@ from sqlobject import (
     StringCol)
 from sqlobject.sqlbuilder import AND, OR, SQLConstant
 from storm.store import EmptyResultSet, Store
-from storm.expr import And, In, Join, LeftJoin, Lower, Not, Or, SQL
+from storm.expr import And, In, Join, LeftJoin, Lower, Not, Or, SQL, Desc
 from storm.info import ClassAlias
 
 from canonical.config import config
@@ -1924,7 +1924,8 @@ class Person(
     def getLatestApprovedMembershipsForPerson(self, limit=5):
         """See `IPerson`."""
         result = self.team_memberships
-        result = result.orderBy(['-date_joined', '-id'])
+        result = result.order_by(Desc(TeamMembership.datejoined), 
+            Desc(TeamMembership.id))
         return result[:limit]
 
     @property
