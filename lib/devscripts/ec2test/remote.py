@@ -213,7 +213,7 @@ class LaunchpadTester:
             and its dependent branches.
         :param test_options: Options to pass to the test runner.
         """
-        self.logger = logger
+        self._logger = logger
         self._test_directory = test_directory
         self._test_options = test_options
 
@@ -235,7 +235,7 @@ class LaunchpadTester:
         have completed.  If necessary, submits the branch to PQM, and mails
         the user the test results.
         """
-        self.logger.prepare()
+        self._logger.prepare()
 
         call = self.build_test_command()
 
@@ -245,26 +245,26 @@ class LaunchpadTester:
                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                 cwd=self._testdirectory)
 
-            self._gather_test_output(popen.stdout, self.logger)
+            self._gather_test_output(popen.stdout, self._logger)
 
             exit_status = popen.wait()
         except:
-            self.logger.error_in_testrunner(sys.exc_info())
+            self._logger.error_in_testrunner(sys.exc_info())
             exit_status = 1
             raise
         finally:
             # It probably isn't safe to close the log files ourselves,
             # since someone else might try to write to them later.
             try:
-                self.logger.got_result(not exit_status)
+                self._logger.got_result(not exit_status)
             finally:
-                self.logger.close_logs()
+                self._logger.close_logs()
 
     def _gather_test_output(self, input_stream, logger):
         """Write the testrunner output to the logs."""
-        result = SummaryResult(logger.summary_file)
-        subunit_server = subunit.TestProtocolServer(
-            result, logger.summary_file)
+        summary_stream = logger.get_summary_stream()
+        result = SummaryResult(summary_stream)
+        subunit_server = subunit.TestProtocolServer(result, summary_stream)
         for line in input_stream:
             subunit_server.lineReceived(line)
             logger.got_line(line)
@@ -283,10 +283,16 @@ class Request:
         self._pqm_message = pqm_message
 
     def get_trunk_details(self):
+        """Return (branch_url, revno) for trunk."""
         branch = bzrlib.branch.Branch.open_containing(self.test_directory)[0]
         return branch.get_parent().encode('utf-8'), branch.revno()
 
     def get_branch_details(self):
+        """Return (branch_url, revno) for the branch we're merging in.
+
+        If we're not merging in a branch, but instead just testing a trunk,
+        then return None.
+        """
         tree = bzrlib.workingtree.WorkingTree.open(self.test_directory)
         parent_ids = tree.get_parent_ids()
         if len(parent_ids) == 1:
@@ -302,6 +308,12 @@ class Request:
         return url.strip('/').split('/')[-1]
 
     def get_merge_description(self):
+        """Get a description of the merge request.
+
+        If we're merging a branch, return '$SOURCE_NICK => $TARGET_NICK', if
+        we're just running tests for a trunk branch without merging return
+        '$TRUNK_NICK'.
+        """
         source = self.get_branch_details()
         if not source:
             return self.get_nick()
@@ -309,6 +321,7 @@ class Request:
         return '%s => %s' % (source[0], target[0])
 
     def get_summary_commit(self):
+        """Get a message summarizing the change from the commit log."""
         branch = bzrlib.branch.Branch.open_containing(self.test_directory)[0]
         tree = bzrlib.workingtree.WorkingTree.open(self.test_directory)
         parent_ids = tree.get_parent_ids()
@@ -386,47 +399,51 @@ class WebTestLogger:
         self._request = request
         self._echo_to_stdout = echo_to_stdout
 
-        self.www_dir = os.path.join(os.path.sep, 'var', 'www')
-        self.out_filename = os.path.join(self.www_dir, 'current_test.log')
-        self.summary_filename = os.path.join(self.www_dir, 'summary.log')
-        self.index_filename = os.path.join(self.www_dir, 'index.html')
+        www_dir = os.path.join(os.path.sep, 'var', 'www')
+        self._out_filename = os.path.join(www_dir, 'current_test.log')
+        self._summary_filename = os.path.join(www_dir, 'summary.log')
+        self._index_filename = os.path.join(www_dir, 'index.html')
 
         # We will set up the preliminary bits of the web-accessible log
         # files. "out" holds all stdout and stderr; "summary" holds filtered
         # output; and "index" holds an index page.
-        self.out_file = None
-        self.summary_file = None
-        self.index_file = None
+        self._out_file = None
+        self._summary_file = None
+        self._index_file = None
 
     def error_in_testrunner(self, exc_info):
         """Called when there is a catastrophic error in the test runner."""
         exc_type, exc_value, exc_tb = exc_info
-        self.summary_file.write('\n\nERROR IN TESTRUNNER\n\n')
+        self._summary_file.write('\n\nERROR IN TESTRUNNER\n\n')
         traceback.print_exception(
-            exc_type, exc_value, exc_tb, file=self.logger.summary_file)
+            exc_type, exc_value, exc_tb, file=self._summary_file)
 
     def open_logs(self):
         """Open all of our log files for writing."""
-        self.out_file = open(self.out_filename, 'w')
-        self.summary_file = open(self.summary_filename, 'w')
-        self.index_file = open(self.index_filename, 'w')
+        self._out_file = open(self._out_filename, 'w')
+        self._summary_file = open(self._summary_filename, 'w')
+        self._index_file = open(self._index_filename, 'w')
 
     def flush_logs(self):
         """Flush all of our log file buffers."""
-        self.out_file.flush()
-        self.summary_file.flush()
-        self.index_file.flush()
+        self._out_file.flush()
+        self._summary_file.flush()
+        self._index_file.flush()
 
     def close_logs(self):
         """Closes all of the open log file handles."""
-        self.out_file.close()
-        self.summary_file.close()
-        self.index_file.close()
+        self._out_file.close()
+        self._summary_file.close()
+        self._index_file.close()
+
+    def get_summary_stream(self):
+        """Return a stream that, when written to, writes to the summary."""
+        return self._summary_file
 
     def got_line(self, line):
         """Called when we get a line of output from our child processes."""
-        self.out_file.write(line)
-        self.out_file.flush()
+        self._out_file.write(line)
+        self._out_file.flush()
         if self._echo_to_stdout:
             sys.stdout.write(line)
             sys.stdout.flush()
@@ -436,10 +453,10 @@ class WebTestLogger:
         config = bzrlib.config.GlobalConfig()
         self._handle_pqm_submission(successful, config)
         if self._request.wants_email:
-            self.summary_file.write(
+            self._summary_file.write(
                 '\n(See the attached file for the complete log)\n')
-            summary = open(self.summary_filename, 'r').read()
-            full_log_gz = open(gzip_file(self.out_file), 'rb').read()
+            summary = open(self._summary_filename, 'r').read()
+            full_log_gz = open(gzip_file(self._out_filename), 'rb').read()
             self._request.send_email(successful, summary, full_log_gz, config)
 
     def _handle_pqm_submission(self, successful, config):
@@ -453,7 +470,7 @@ class WebTestLogger:
 
     def write(self, msg):
         """Write to the summary and full log file."""
-        for fd in [self.out_file, self.summary_file]:
+        for fd in [self._out_file, self._summary_file]:
             fd.write(msg)
             fd.flush()
 
@@ -469,12 +486,10 @@ class WebTestLogger:
         """
         self.open_logs()
 
-        index_file   = self.index_file
-
         msg = 'Tests started at approximately %(now)s UTC' % {
             'now': datetime.datetime.utcnow().strftime(
                 '%a, %d %b %Y %H:%M:%S')}
-        index_file.write(textwrap.dedent('''\
+        self._index_file.write(textwrap.dedent('''\
             <html>
               <head>
                 <title>Testing</title>
@@ -489,21 +504,21 @@ class WebTestLogger:
             ''' % (msg,)))
         self.write_line(msg)
 
-        index_file.write(textwrap.dedent('''\
+        self._index_file.write(textwrap.dedent('''\
             <h2>Branches Tested</h2>
             '''))
 
         # Describe the trunk branch.
         trunk, trunk_revno = self._request.get_trunk_details()
         msg = '%s, revision %d\n' % (trunk, trunk_revno)
-        index_file.write(textwrap.dedent('''\
+        self._index_file.write(textwrap.dedent('''\
             <p><strong>%s</strong></p>
             ''' % (escape(msg),)))
         self.write_line(msg)
 
         branch_details = self._request.get_branch_details()
         if not branch_details:
-            index_file.write('<p>(no merged branch)</p>\n')
+            self._index_file.write('<p>(no merged branch)</p>\n')
             self.write_line('(no merged branch)')
         else:
             branch_name, branch_revno = branch_details
@@ -512,13 +527,13 @@ class WebTestLogger:
                     'commit': self._request.get_summary_commit()}
             msg = ('%(name)s, revision %(revno)d '
                    '(commit message: %(commit)s)\n' % data)
-            index_file.write(textwrap.dedent('''\
+            self._index_file.write(textwrap.dedent('''\
                <p>Merged with<br />%(msg)s</p>
                ''' % {'msg': escape(msg)}))
             self.write_line("Merged with")
             self.write_line(msg)
 
-        index_file.write('<dl>\n')
+        self._index_file.write('<dl>\n')
         self.write_line('\nDEPENDENCY BRANCHES USED\n')
         for name, branch, revno in self._request.iter_dependency_branches():
             data = {'name': name, 'branch': branch, 'revno': revno}
@@ -527,12 +542,12 @@ class WebTestLogger:
             escaped_data = {'name': escape(name),
                             'branch': escape(branch.get_parent()),
                             'revno': branch.revno()}
-            index_file.write(textwrap.dedent('''\
+            self._index_file.write(textwrap.dedent('''\
                 <dt>%(name)s</dt>
                   <dd>%(branch)s</dd>
                   <dd>%(revno)s</dd>
                 ''' % escaped_data))
-        index_file.write(textwrap.dedent('''\
+        self._index_file.write(textwrap.dedent('''\
                 </dl>
               </body>
             </html>'''))
