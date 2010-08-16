@@ -43,7 +43,7 @@ If we visit another vhost in the domain, we remain logged in.
     >>> browser.url
     'http://launchpad.dev:8085/'
     >>> print extract_text(find_tag_by_id(browser.contents, 'logincontrol'))
-    Foo Bar...
+    name16...
     >>> browser.cookies.getinfo(session_cookie_name)['domain']
     '.launchpad.dev'
 
