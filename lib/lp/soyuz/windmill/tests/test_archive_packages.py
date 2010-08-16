@@ -21,7 +21,8 @@ class TestArchivePackagesSourcesExtra(WindmillTestCase):
         self.client.click(id="pub29-expander")
 
         self.client.waits.forElement(
-            link=u'i386', timeout=constants.FOR_ELEMENT)
+            xpath=u'//div[@id="pub29-container"]//a[text()="i386"]',
+            timeout=constants.FOR_ELEMENT)
 
 
 
