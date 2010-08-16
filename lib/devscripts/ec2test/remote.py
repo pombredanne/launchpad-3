@@ -442,7 +442,7 @@ class WebTestLogger:
         self._summary_file = open(self._summary_filename, 'w')
         self._index_file = open(self._index_filename, 'w')
 
-    def flush_logs(self):
+    def _flush_logs(self):
         """Flush all of our log file buffers."""
         self._out_file.flush()
         self._summary_file.flush()
@@ -570,7 +570,7 @@ class WebTestLogger:
               </body>
             </html>'''))
         self.write_line('\n\nTEST RESULTS FOLLOW\n\n')
-        self.flush_logs()
+        self._flush_logs()
 
 
 def daemonize(pid_filename):
