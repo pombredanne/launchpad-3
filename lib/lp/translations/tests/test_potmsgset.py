@@ -291,7 +291,7 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
             self.potmsgset.getLocalTranslationMessages(
                 self.devel_potemplate, serbian))
         self.assertContentEqual(
-            [shared_suggestion, another_suggestion], 
+            [shared_suggestion, another_suggestion],
             self.potmsgset.getLocalTranslationMessages(
                 self.stable_potemplate, serbian))
 
