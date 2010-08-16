@@ -225,7 +225,7 @@ class LaunchpadTester:
 
         Subclasses must provide their own implementation of this method.
         """
-        command = ['make', 'check', 'TESTOPTS=' + self._test_options]
+        command = ['make', 'check', 'TESTOPTS="%s"' % self._test_options]
         return command
 
     def test(self):
@@ -240,6 +240,7 @@ class LaunchpadTester:
         call = self.build_test_command()
 
         try:
+            self._logger.write_line("Running %s" % (call,))
             popen = subprocess.Popen(
                 call, bufsize=-1,
                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
@@ -705,7 +706,7 @@ def main(argv):
     runner = EC2Runner(
         options.daemon, pid_filename, options.shutdown, options.email)
 
-    tester = LaunchpadTester(logger, TEST_DIR, test_options=args)
+    tester = LaunchpadTester(logger, TEST_DIR, test_options=args[1:])
     runner.run("Test runner", tester.test)
 
 
