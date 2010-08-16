@@ -324,14 +324,12 @@ class Request:
             branch.repository.get_revision(parent_ids[1]).get_summary())
         return summary.encode('utf-8')
 
-    def _send_email(self, result, summary_filename, full_filename, config):
+    def send_email(self, result, body_text, full_log_gz, config):
         """Send an email summarizing the test results.
 
         :param result: True for pass, False for failure.
-        :param summary_filename: The path to the file where the summary
-            information lives. This will be the body of the email.
-        :param full_filename: The path to the file where the full output
-            lives. This will be zipped and attached.
+        :param body_text: The body of the email to send to the requesters.
+        :param full_log_gz: A gzip of the full log.
         :param config: A Bazaar configuration object with SMTP details.
         """
         message = MIMEMultipart.MIMEMultipart()
@@ -341,15 +339,12 @@ class Request:
         message['Subject'] = subject
 
         # Make the body.
-        with open(summary_filename, 'r') as summary_fd:
-            summary = summary_fd.read()
-        body = MIMEText.MIMEText(summary, 'plain', 'utf8')
+        body = MIMEText.MIMEText(body_text, 'plain', 'utf8')
         body['Content-Disposition'] = 'inline'
         message.attach(body)
 
         # Attach the gzipped log.
-        path = gzip_file(full_filename)
-        zipped_log = MIMEApplication(open(path, 'rb').read(), 'x-gzip')
+        zipped_log = MIMEApplication(full_log_gz, 'x-gzip')
         zipped_log.add_header(
             'Content-Disposition', 'attachment',
             filename='%s.log.gz' % self.get_nick())
@@ -377,6 +372,11 @@ class Request:
             conn = bzrlib.smtp_connection.SMTPConnection(config)
             conn.send_email(self._pqm_message)
         return subject
+
+    @property
+    def wants_email(self):
+        """Do the requesters want emails sent to them?"""
+        return bool(self._emails)
 
 
 class WebTestLogger:
@@ -434,9 +434,10 @@ class WebTestLogger:
         """The tests are done and the results are known."""
         config = bzrlib.config.GlobalConfig()
         self._handle_pqm_submission(successful, config)
-        if self._request._emails:
-            self._request._send_email(
-                successful, summary_filename, full_filename, config)
+        if self._request.wants_email:
+            summary = open(self.summary_filename, 'r').read()
+            full_log_gz = open(gzip_file(self.out_file), 'rb').read()
+            self._request.send_email(successful, summary, full_log_gz, config)
 
     def _handle_pqm_submission(self, successful, config):
         subject = self._request.submit_to_pqm(successful, config)
