@@ -749,7 +749,7 @@ class Person(
         packages.sort(key=lambda x: x.name)
         return packages
 
-    def findPathToTeam(self, team):
+    def findPathToTeam(self, team, limit=None):
         """See `IPerson`."""
         # This is our guarantee that _getDirectMemberIParticipateIn() will
         # never return None
@@ -759,9 +759,13 @@ class Person(
         assert team.is_team, "You can't pass a person to this method."
         path = [team]
         team = self._getDirectMemberIParticipateIn(team)
+        increment = 0
         while team != self:
+            if increment == limit:
+                break
             path.insert(0, team)
             team = self._getDirectMemberIParticipateIn(team)
+            increment += 1
         return path
 
     def _getDirectMemberIParticipateIn(self, team):
