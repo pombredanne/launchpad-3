@@ -391,59 +391,10 @@ class cmd_launchpad_service(Command):
 register_command(cmd_launchpad_service)
 
 
-class cmd_lp_local_serve(Command):
-    """Talk to the local lp service, spawn a connection, and connect to it.
-
-    It basically looks like a local 'bzr serve --inet' connection, only it is
-    connecting to the backend.
-    """
-
-    takes_options = [Option('port',
-                        help='The [host:]portnumber where the service is running',
-                        type=str),
-                    ]
-
-    def _get_host_and_port(self, port):
-        host = None
-        if port is not None:
-            if ':' in port:
-                host, port = port.rsplit(':', 1)
-            port = int(port)
-        return host, port
-
-    def _request_fork(self, host, port, user_id):
-        """Ask the server to fork, and find out the new process's disk path."""
-        # Connect to the service, and request a new connection.
-        addrs = socket.getaddrinfo(host, port, socket.AF_UNSPEC,
-            socket.SOCK_STREAM, 0, socket.AI_PASSIVE)
-        (family, socktype, proto, canonname, sockaddr) = addrs[0]
-        client_sock = socket.socket(family, socktype, proto)
-        try:
-            client_sock.connect(sockaddr)
-            client_sock.sendall('fork %d\n' % (user_id,))
-            response = client_sock.recv(1024)
-        except socket.error, e:
-            raise errors.BzrCommandError('Failed to connect: %s' % (e,))
-        if response.startswith('FAILURE'):
-            raise errors.BzrCommandError('Server rejected with: %s'
-                                         % (response,))
-        # we got a valid path back, so lets return it
-        return response.strip()
-
-    def _connect_to_fifos(self, path):
-        pass
-
-    def run(self, port=None):
-        host, port = self._get_host_and_port(port)
-        if host is None:
-            host = LPService.DEFAULT_HOST
-        if port is None:
-            port = LPService.DEFAULT_PORT
-        sexy
-
-
 libraries_to_preload = [
     'bzrlib.errors',
+    'bzrlib.smart',
+    'bzrlib.smart.server',
     'bzrlib.repository',
     'lp.codehosting.bzrutils',
     'lp.codehosting.vfs',
