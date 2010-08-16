@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 
+import gzip
 import os
 from StringIO import StringIO
 import sys
@@ -15,6 +16,7 @@ from testtools import TestCase
 
 from devscripts.ec2test.remote import (
     FlagFallStream,
+    gzip_file,
     remove_pidfile,
     SummaryResult,
     write_pidfile,
@@ -119,6 +121,18 @@ class TestPidfileHelpers(TestCase):
         path = os.path.join(directory, 'doesntexist')
         remove_pidfile(path)
         self.assertEqual(False, os.path.exists(path))
+
+
+class TestGzipFile(TestCase):
+    """Tests for `gzip_file`."""
+
+    def test_gzip_file(self):
+        fd, path = tempfile.mkstemp()
+        contents = 'foobarbaz\n'
+        os.write(fd, contents)
+        os.close(fd)
+        gz_file = gzip_file(path)
+        self.assertEqual(contents, gzip.open(gz_file, 'r').read())
 
 
 def test_suite():
