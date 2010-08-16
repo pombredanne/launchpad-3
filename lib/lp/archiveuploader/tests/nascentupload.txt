@@ -45,14 +45,15 @@ specified exists and tries to build a ChangesFile (see
 doc/nascentuploadfile.txt) object based on that. If anything goes
 wrong during this process FatalUploadError is raised:
 
-  >>> NascentUpload(datadir("DOES-NOT-EXIST"), buildd_policy, mock_logger)
+  >>> NascentUpload.from_changesfile_path(
+  ...     datadir("DOES-NOT-EXIST"), buildd_policy, mock_logger)
   Traceback (most recent call last):
   ...
   FatalUploadError:...
 
 Otherwise a ChangesFile object is ready to use.
 
-  >>> quodlibet = NascentUpload(
+  >>> quodlibet = NascentUpload.from_changesfile_path(
   ...     datadir("quodlibet_0.13.1-1_i386.changes"),
   ...     anything_policy, mock_logger_quiet)
 
@@ -110,7 +111,7 @@ The same happens for source uploads, where we can identify if a source
 is 'native' (only a TARBALL, no diff + orig) or 'has_orig' (uses ORIG
 + DIFF source form).
 
-  >>> ed_source_upload = NascentUpload(
+  >>> ed_source_upload = NascentUpload.from_changesfile_path(
   ...     datadir("ed_0.2-20_i386.changes.source-only-unsigned"),
   ...     sync_policy, mock_logger_quiet)
 
@@ -167,7 +168,7 @@ For *sourceful* uploads 'archdep' and 'archindep' are always False:
 
 Let's try a simple binary upload:
 
-  >>> ed_binary_upload = NascentUpload(
+  >>> ed_binary_upload = NascentUpload.from_changesfile_path(
   ...     datadir("ed_0.2-20_i386.changes.binary-only-unsigned"),
   ...     buildd_policy, mock_logger_quiet)
 
@@ -220,7 +221,7 @@ changesfiles and binary, source and mixed uploads ...
   >>> modified_buildd_policy.can_upload_source = True
   >>> modified_buildd_policy.can_upload_mixed = True
 
-  >>> ed_mismatched_upload = NascentUpload(
+  >>> ed_mismatched_upload = NascentUpload.from_changesfile_path(
   ...     datadir("ed_0.2-20_i386.changes.mismatched-arch-unsigned"),
   ...     modified_buildd_policy, mock_logger_quiet)
 
@@ -258,7 +259,7 @@ RELEASE pocket ...
   >>> modified_insecure_policy.can_upload_binaries = True
   >>> modified_insecure_policy.can_upload_mixed = True
 
-  >>> ed_mixed_upload = NascentUpload(
+  >>> ed_mixed_upload = NascentUpload.from_changesfile_path(
   ...     datadir("ed_0.2-20_i386.changes"),
   ...     modified_insecure_policy, mock_logger_quiet)
 
@@ -317,7 +318,7 @@ after calling this method.
 
 First up, construct an upload of just the ed source...
 
-  >>> ed_src = NascentUpload(
+  >>> ed_src = NascentUpload.from_changesfile_path(
   ...     datadir('split-upload-test/ed_0.2-20_source.changes'),
   ...     sync_policy, mock_logger_quiet)
   >>> ed_src.process()
@@ -407,7 +408,7 @@ Soyuz is prepared to accept those uploads (and avoid extra work on
 maintainer's side), however it cannot store a proper
 SourcePackageRelease.copyright content. See bug #134567.
 
-  >>> nocopyright_src = NascentUpload(
+  >>> nocopyright_src = NascentUpload.from_changesfile_path(
   ...     datadir('suite/nocopyright_1.0-1/nocopyright_1.0-1_source.changes'),
   ...     sync_policy, mock_logger_quiet)
   >>> nocopyright_src.process()
@@ -451,7 +452,7 @@ However there is another candidate, submitted before and not yet
 published in the archive, which provides the same source package name
 and source package version for the distroseries in question.
 
-  >>> ed_src_dup = NascentUpload(
+  >>> ed_src_dup = NascentUpload.from_changesfile_path(
   ...     datadir('split-upload-test/ed_0.2-20_source.changes'),
   ...     sync_policy, mock_logger_quiet)
   >>> ed_src_dup.process()
@@ -519,7 +520,7 @@ accepts non-security uploads)
   ...     name='sync', distro='ubuntu', distroseries='hoary')
   >>> modified_sync_policy.can_upload_binaries = True
 
-  >>> ed_bin = NascentUpload(
+  >>> ed_bin = NascentUpload.from_changesfile_path(
   ...      datadir('split-upload-test/ed_0.2-20_i386.changes'),
   ...      modified_sync_policy, mock_logger_quiet)
 
@@ -606,7 +607,7 @@ produces multiple binaries using sync policy:
 
 Upload new source 'multibar', step 1:
 
-  >>> multibar_src_upload = NascentUpload(
+  >>> multibar_src_upload = NascentUpload.from_changesfile_path(
   ...     datadir('suite/multibar_1.0-1/multibar_1.0-1_source.changes'),
   ...     sync_policy, mock_logger_quiet)
   >>> multibar_src_upload.process()
@@ -658,7 +659,7 @@ the 'buildd' upload policy and the build record id.
   ...     name='buildd', distro='ubuntu', distroseries='hoary',
   ...     buildid=multibar_build.id)
 
-  >>> multibar_bin_upload = NascentUpload(
+  >>> multibar_bin_upload = NascentUpload.from_changesfile_path(
   ...     datadir('suite/multibar_1.0-1/multibar_1.0-1_i386.changes'),
   ...     buildd_policy, mock_logger_quiet)
   >>> multibar_bin_upload.process()
@@ -727,7 +728,7 @@ overridden by the changesfile:
   >>> norelease_sync_policy = getPolicy(
   ...     name='sync', distro='ubuntu')
 
-  >>> ed_src = NascentUpload(
+  >>> ed_src = NascentUpload.from_changesfile_path(
   ...     datadir('updates-upload-test/ed_0.2-20_source.changes'),
   ...     norelease_sync_policy, mock_logger_quiet)
   >>> ed_src.process()
@@ -756,7 +757,7 @@ And pop it back to development now that we're done
 Check the uploader behaviour against a missing orig.tar.gz file,
       bug # 30741.
 
-  >>> ed21_src = NascentUpload(
+  >>> ed21_src = NascentUpload.from_changesfile_path(
   ...     datadir('ed-0.2-21/ed_0.2-21_source.changes'),
   ...     sync_policy, mock_logger_quiet)
   >>> ed21_src.process()
@@ -774,7 +775,7 @@ Check if we can accept a installer-source upload which doesn't have
 'Standards-Version' field in DSC. See bug #75874 for further
 information.
 
-  >>> inst_src = NascentUpload(
+  >>> inst_src = NascentUpload.from_changesfile_path(
   ...     datadir('test75874_0.1_source.changes'),
   ...     sync_policy, mock_logger_quiet)
   >>> inst_src.process()
@@ -822,7 +823,7 @@ Import the test keys again since the transaction was aborted before.
 When using 'insecure' policy, NascentUpload instace stores the DSC
 sigining key reference as an IGPGKey:
 
-  >>> bar_ok = NascentUpload(
+  >>> bar_ok = NascentUpload.from_changesfile_path(
   ...     datadir('suite/bar_1.0-1/bar_1.0-1_source.changes'),
   ...     insecure_policy, mock_logger_quiet)
   >>> bar_ok.process()
@@ -871,7 +872,7 @@ rights to all components from 'ubuntu-team' to 'mark':
 This time the upload will fail because the ACLs don't let
 "name16", the key owner, upload a package.
 
-  >>> bar_failed = NascentUpload(
+  >>> bar_failed = NascentUpload.from_changesfile_path(
   ...     datadir('suite/bar_1.0-1/bar_1.0-1_source.changes'),
   ...     insecure_policy, mock_logger_quiet)
 
@@ -917,7 +918,7 @@ an ArchivePermission record to permit him to upload "bar" specifically.
 
 Now try the "bar" upload:
 
-    >>> bar2 = NascentUpload(
+    >>> bar2 = NascentUpload.from_changesfile_path(
     ...     datadir('suite/bar_1.0-1/bar_1.0-1_source.changes'),
     ...     insecure_policy, mock_logger_quiet)
     >>> bar2.process()
@@ -943,7 +944,7 @@ Uploads to copy archives are not allowed.
 Make this upload policy pertain to the copy archive.
 
     >>> copy_archive_policy.archive = copy_archive
-    >>> quodlibet = NascentUpload(
+    >>> quodlibet = NascentUpload.from_changesfile_path(
     ...     datadir("quodlibet_0.13.1-1_i386.changes"),
     ...     copy_archive_policy, mock_logger_quiet)
 
