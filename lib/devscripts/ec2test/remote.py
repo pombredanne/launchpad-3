@@ -252,8 +252,7 @@ class LaunchpadTester:
             self.logger.summary_file.write(
                 '\n(See the attached file for the complete log)\n')
         except:
-            self.logger.summary_file.write('\n\nERROR IN TESTRUNNER\n\n')
-            traceback.print_exc(file=self.logger.summary_file)
+            self.logger.error_in_testrunner(sys.exc_info())
             exit_status = 1
             raise
         finally:
@@ -401,6 +400,13 @@ class WebTestLogger:
         self.out_file = None
         self.summary_file = None
         self.index_file = None
+
+    def error_in_testrunner(self, exc_info):
+        """Called when there is a catastrophic error in the test runner."""
+        exc_type, exc_value, exc_tb = exc_info
+        self.summary_file.write('\n\nERROR IN TESTRUNNER\n\n')
+        traceback.print_exception(
+            exc_type, exc_value, exc_tb, file=self.logger.summary_file)
 
     def open_logs(self):
         """Open all of our log files for writing."""
