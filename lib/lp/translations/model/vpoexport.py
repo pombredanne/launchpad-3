@@ -87,7 +87,7 @@ class VPOExportSet:
         # Order by POTemplate.  Caching in the export scripts can be
         # much more effective when consecutive POFiles belong to the
         # same POTemplate, e.g. they'll have the same POTMsgSets.
-        sort_list = [POFile.potemplateID, POFile.languageID, POFile.variant]
+        sort_list = [POFile.potemplateID, POFile.languageID]
         return query.order_by(sort_list).config(distinct=True)
 
     def get_distroseries_pofiles_count(self, series, date=None,

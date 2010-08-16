@@ -15,6 +15,7 @@ except ImportError:
 
 from zope.component import getUtility
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
 from lp.bugs.interfaces.bugtask import BugTaskSearchParams, IBugTaskSet
 from lp.bugs.browser.bugtask import get_comments_for_bugtask
 
@@ -80,7 +81,8 @@ def serialise_bugtask(bugtask):
         for attachment in comment.bugattachments:
             attachment_node = ET.SubElement(
                 comment_node, 'attachment',
-                href=attachment.libraryfile.http_url)
+                href=ProxiedLibraryFileAlias(
+                    attachment.libraryfile, attachment).http_url)
             attachment_node.text = attachment_node.tail = '\n'
             addnode(attachment_node, 'type', attachment.type.name)
             addnode(attachment_node, 'filename',

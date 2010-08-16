@@ -56,7 +56,6 @@ lazr-js
 .bazaar
 .cache
 .subversion
-lib/canonical/buildd/launchpad-files
 .testrepository
 .memcache.pid
 ./pipes
@@ -78,3 +77,4 @@ lib/canonical/launchpad-buildd_*_source.build
 lib/canonical/launchpad-buildd_*_source.changes
 lib/canonical/buildd/debian/*
 doc/_build
+lib/canonical/buildd/launchpad-files/*

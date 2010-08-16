@@ -26,20 +26,25 @@ from canonical.testing import LaunchpadZopelessLayer
 def getUploadForSource(upload_path):
     """Return a NascentUpload object for a source."""
     policy = getPolicy(name='sync', distro='ubuntu', distroseries='hoary')
-    return NascentUpload(datadir(upload_path), policy, mock_logger_quiet)
+    return NascentUpload.from_changesfile_path(
+        datadir(upload_path), policy, mock_logger_quiet)
+
 
 def getPPAUploadForSource(upload_path, ppa):
     """Return a NascentUpload object for a PPA source."""
     policy = getPolicy(name='insecure', distro='ubuntu', distroseries='hoary')
     policy.archive = ppa
-    return NascentUpload(datadir(upload_path), policy, mock_logger_quiet)
+    return NascentUpload.from_changesfile_path(
+        datadir(upload_path), policy, mock_logger_quiet)
+
 
 def getUploadForBinary(upload_path):
     """Return a NascentUpload object for binaries."""
     policy = getPolicy(name='sync', distro='ubuntu', distroseries='hoary')
     policy.can_upload_binaries = True
     policy.can_upload_mixed = True
-    return NascentUpload(datadir(upload_path), policy, mock_logger_quiet)
+    return NascentUpload.from_changesfile_path(
+        datadir(upload_path), policy, mock_logger_quiet)
 
 
 def testGlobalsSetup(test):

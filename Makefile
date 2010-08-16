@@ -403,7 +403,7 @@ copy-apache-config:
 	# We insert the absolute path to the branch-rewrite script
 	# into the Apache config as we copy the file into position.
 	sed -e 's,%BRANCH_REWRITE%,$(shell pwd)/scripts/branch-rewrite.py,' configs/development/local-launchpad-apache > /etc/apache2/sites-available/local-launchpad
-	cp configs/development/local-vostok-apache /etc/apache2/sites-available/local-vosok
+	cp configs/development/local-vostok-apache /etc/apache2/sites-available/local-vostok
 	touch /var/tmp/bazaar.launchpad.dev/rewrite.log
 	chown $(SUDO_UID):$(SUDO_GID) /var/tmp/bazaar.launchpad.dev/rewrite.log
 

@@ -617,6 +617,18 @@ class Builder(SQLBase):
         self._dispatchBuildCandidate(candidate)
         return candidate
 
+    def getBuildQueue(self):
+        """See `IBuilder`."""
+        # Return a single BuildQueue for the builder provided it's
+        # currently running a job.
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        return store.find(
+            BuildQueue,
+            BuildQueue.job == Job.id,
+            BuildQueue.builder == self.id,
+            Job._status == JobStatus.RUNNING,
+            Job.date_started != None).one()
+
 
 class BuilderSet(object):
     """See IBuilderSet"""

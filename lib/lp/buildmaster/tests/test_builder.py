@@ -13,6 +13,7 @@ from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior)
+from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.buildmaster.model.buildfarmjobbehavior import IdleBuildBehavior
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.soyuz.interfaces.archive import ArchivePurpose
@@ -22,6 +23,25 @@ from lp.soyuz.model.binarypackagebuildbehavior import (
     BinaryPackageBuildBehavior)
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
+
+
+class TestBuilder(TestCaseWithFactory):
+    """Basic unit tests for `Builder`."""
+
+    layer = LaunchpadZopelessLayer
+
+    def test_getBuildQueue(self):
+        buildqueueset = getUtility(IBuildQueueSet)
+        active_jobs = buildqueueset.getActiveBuildJobs()
+        [active_job] = active_jobs
+        builder = active_job.builder
+
+        bq = builder.getBuildQueue()
+        self.assertEqual(active_job, bq)
+
+        active_job.builder = None
+        bq = builder.getBuildQueue()
+        self.assertIs(None, bq)
 
 
 class TestFindBuildCandidateBase(TestCaseWithFactory):
