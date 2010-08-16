@@ -442,6 +442,16 @@ class WebTestLogger:
         self.summary_file.close()
         self.index_file.close()
 
+    def write(self, msg):
+        """Write to the summary and full log file."""
+        for fd in [self.out_file, self.summary_file]:
+            fd.write(msg)
+            fd.flush()
+
+    def write_line(self, msg):
+        """Write to the summary and full log file with a newline."""
+        self.write(msg + '\n')
+
     def prepare(self):
         """Prepares the log files on disk.
 
@@ -450,14 +460,8 @@ class WebTestLogger:
         """
         self.open_logs()
 
-        out_file     = self.out_file
-        summary_file = self.summary_file
         index_file   = self.index_file
 
-        def write(msg):
-            msg += '\n'
-            summary_file.write(msg)
-            out_file.write(msg)
         msg = 'Tests started at approximately %(now)s UTC' % {
             'now': datetime.datetime.utcnow().strftime(
                 '%a, %d %b %Y %H:%M:%S')}
@@ -474,7 +478,7 @@ class WebTestLogger:
                   <li><a href="current_test.log">Full results</a></li>
                 </ul>
             ''' % (msg,)))
-        write(msg)
+        self.write_line(msg)
 
         index_file.write(textwrap.dedent('''\
             <h2>Branches Tested</h2>
@@ -486,12 +490,12 @@ class WebTestLogger:
         index_file.write(textwrap.dedent('''\
             <p><strong>%s</strong></p>
             ''' % (escape(msg),)))
-        write(msg)
+        self.write_line(msg)
 
         branch_details = self._request.get_branch_details()
         if not branch_details:
             index_file.write('<p>(no merged branch)</p>\n')
-            write('(no merged branch)')
+            self.write_line('(no merged branch)')
         else:
             branch_name, branch_revno = branch_details
             data = {'name': branch_name,
@@ -502,14 +506,14 @@ class WebTestLogger:
             index_file.write(textwrap.dedent('''\
                <p>Merged with<br />%(msg)s</p>
                ''' % {'msg': escape(msg)}))
-            write("Merged with")
-            write(msg)
+            self.write_line("Merged with")
+            self.write_line(msg)
 
         index_file.write('<dl>\n')
-        write('\nDEPENDENCY BRANCHES USED\n')
+        self.write_line('\nDEPENDENCY BRANCHES USED\n')
         for name, branch, revno in self._iter_dependency_branches():
             data = {'name': name, 'branch': branch, 'revno': revno}
-            write(
+            self.write_line(
                 '- %(name)s\n    %(branch)s\n    %(revno)d\n' % data)
             escaped_data = {'name': escape(name),
                             'branch': escape(branch.get_parent()),
@@ -523,7 +527,7 @@ class WebTestLogger:
                 </dl>
               </body>
             </html>'''))
-        write('\n\nTEST RESULTS FOLLOW\n\n')
+        self.write_line('\n\nTEST RESULTS FOLLOW\n\n')
         self.flush_logs()
 
 
