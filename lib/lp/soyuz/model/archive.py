@@ -101,8 +101,7 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.launchpad.webapp.url import urlappend
 from canonical.launchpad.validators.name import valid_name
-from lp.registry.interfaces.person import (
-    validate_person_not_private_membership)
+from lp.registry.interfaces.person import validate_person
 
 
 class Archive(SQLBase):
@@ -112,7 +111,7 @@ class Archive(SQLBase):
 
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
-        storm_validator=validate_person_not_private_membership, notNull=True)
+        storm_validator=validate_person, notNull=True)
 
     def _validate_archive_name(self, attr, value):
         """Only allow renaming of COPY archives.
@@ -172,6 +171,9 @@ class Archive(SQLBase):
 
     require_virtualized = BoolCol(
         dbName='require_virtualized', notNull=True, default=True)
+
+    build_debug_symbols = BoolCol(
+        dbName='build_debug_symbols', notNull=True, default=False)
 
     authorized_size = IntCol(
         dbName='authorized_size', notNull=False, default=2048)
