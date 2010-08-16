@@ -20,7 +20,7 @@ from canonical.cachedproperty import cachedproperty
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
 from lp.registry.interfaces.structuralsubscription import (
-    BugNotificationLevel, IStructuralSubscriptionForm)
+    SubscriptionNotificationLevel, IStructuralSubscriptionForm)
 from lp.registry.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget)
 from lp.registry.interfaces.person import IPersonSet
@@ -151,7 +151,7 @@ class StructuralSubscriptionView(LaunchpadFormView):
         subscription = self.context.getSubscription(person)
         if subscription is not None:
             return (subscription.bug_notification_level >
-                    BugNotificationLevel.NOTHING)
+                    SubscriptionNotificationLevel.NOTHING)
         else:
             return False
 

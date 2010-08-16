@@ -17,7 +17,7 @@ from canonical.database.sqlbase import SQLBase
 
 from lp.bugs.interfaces.bugsubscription import IBugSubscription
 from lp.registry.interfaces.person import validate_person
-from lp.registry.interfaces.structuralsubscription import BugNotificationLevel
+from lp.registry.interfaces.structuralsubscription import SubscriptionNotificationLevel
 
 
 class BugSubscription(SQLBase):
@@ -34,8 +34,8 @@ class BugSubscription(SQLBase):
         )
     bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
     bug_notification_level = EnumCol(
-        enum=BugNotificationLevel,
-        default=BugNotificationLevel.COMMENTS,
+        enum=SubscriptionNotificationLevel,
+        default=SubscriptionNotificationLevel.COMMENTS,
         notNull=True)
     date_created = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     subscribed_by = ForeignKey(

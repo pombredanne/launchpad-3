@@ -9,7 +9,7 @@ __metaclass__ = type
 
 __all__ = [
     'BlueprintNotificationLevel',
-    'BugNotificationLevel',
+    'SubscriptionNotificationLevel',
     'DeleteSubscriptionError',
     'IStructuralSubscription',
     'IStructuralSubscriptionForm',
@@ -34,7 +34,7 @@ from lazr.restful.declarations import (
 from lazr.restful.fields import Reference
 
 
-class BugNotificationLevel(DBEnumeratedType):
+class SubscriptionNotificationLevel(DBEnumeratedType):
     """Bug Notification Level.
 
     The type and volume of bug notification email sent to subscribers.
@@ -120,8 +120,8 @@ class IStructuralSubscription(Interface):
         description=_("The person creating the subscription.")))
     bug_notification_level = Choice(
         title=_("Bug notification level"), required=True,
-        vocabulary=BugNotificationLevel,
-        default=BugNotificationLevel.NOTHING,
+        vocabulary=SubscriptionNotificationLevel,
+        default=SubscriptionNotificationLevel.NOTHING,
         description=_("The volume and type of bug notifications "
                       "this subscription will generate."))
     blueprint_notification_level = Choice(
@@ -148,9 +148,9 @@ class IStructuralSubscriptionTarget(Interface):
     export_as_webservice_entry()
 
     # We don't really want to expose the level details yet. Only
-    # BugNotificationLevel.COMMENTS is used at this time.
+    # SubscriptionNotificationLevel.COMMENTS is used at this time.
     @call_with(
-        min_bug_notification_level=BugNotificationLevel.COMMENTS,
+        min_bug_notification_level=SubscriptionNotificationLevel.COMMENTS,
         min_blueprint_notification_level=BlueprintNotificationLevel.NOTHING)
     @operation_returns_collection_of(IStructuralSubscription)
     @export_read_operation()
@@ -242,7 +242,7 @@ class IStructuralSubscriptionTarget(Interface):
         'param level: If level is not None, only strucutral
             subscribers with a subscrition level greater or equal
             to the given value are returned.
-        :type level: `BugNotificationLevel`
+        :type level: `SubscriptionNotificationLevel`
         :return: An `INotificationRecipientSet` instance containing
             the bug subscribers.
         """

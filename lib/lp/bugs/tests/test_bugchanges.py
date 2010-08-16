@@ -20,7 +20,7 @@ from lp.bugs.interfaces.cve import ICveSet
 from lp.bugs.interfaces.bugtask import (
     BugTaskImportance, BugTaskStatus)
 from lp.registry.interfaces.structuralsubscription import (
-    BugNotificationLevel)
+    SubscriptionNotificationLevel)
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.testing import LaunchpadFunctionalLayer
@@ -45,10 +45,10 @@ class TestBugChanges(unittest.TestCase):
         # aren't sent to LIFECYCLE subscribers by default.
         self.product_lifecycle_subscriber = self.newSubscriber(
             self.product, "product-lifecycle",
-            BugNotificationLevel.LIFECYCLE)
+            SubscriptionNotificationLevel.LIFECYCLE)
         self.product_metadata_subscriber = self.newSubscriber(
             self.product, "product-metadata",
-            BugNotificationLevel.METADATA)
+            SubscriptionNotificationLevel.METADATA)
 
         self.saveOldChanges()
 
@@ -161,7 +161,7 @@ class TestBugChanges(unittest.TestCase):
                 expected_recipients = expected_notification.get('recipients')
                 if expected_recipients is None:
                     expected_recipients = bug.getBugNotificationRecipients(
-                        level=BugNotificationLevel.METADATA)
+                        level=SubscriptionNotificationLevel.METADATA)
                 self.assertEqual(
                     set(recipient.person
                         for recipient in added_notification.recipients),
@@ -923,9 +923,9 @@ class TestBugChanges(unittest.TestCase):
         # BugNotification get updated.
         target = self.factory.makeDistributionSourcePackage()
         metadata_subscriber = self.newSubscriber(
-            target, "dsp-metadata", BugNotificationLevel.METADATA)
+            target, "dsp-metadata", SubscriptionNotificationLevel.METADATA)
         lifecycle_subscriber = self.newSubscriber(
-            target, "dsp-lifecycle", BugNotificationLevel.LIFECYCLE)
+            target, "dsp-lifecycle", SubscriptionNotificationLevel.LIFECYCLE)
         new_target = self.factory.makeDistributionSourcePackage(
             distribution=target.distribution)
 
@@ -1277,7 +1277,7 @@ class TestBugChanges(unittest.TestCase):
         # marking this bug a duplicate, so that we don't get
         # extra notifications by mistake.
         duplicate_bug_recipients = duplicate_bug.getBugNotificationRecipients(
-            level=BugNotificationLevel.METADATA).getRecipients()
+            level=SubscriptionNotificationLevel.METADATA).getRecipients()
         self.changeAttribute(duplicate_bug, 'duplicateof', self.bug)
 
         expected_activity = {
@@ -1313,7 +1313,7 @@ class TestBugChanges(unittest.TestCase):
         # and a notification is sent.
         duplicate_bug = self.factory.makeBug()
         duplicate_bug_recipients = duplicate_bug.getBugNotificationRecipients(
-            level=BugNotificationLevel.METADATA).getRecipients()
+            level=SubscriptionNotificationLevel.METADATA).getRecipients()
         duplicate_bug.markAsDuplicate(self.bug)
         self.saveOldChanges(duplicate_bug)
         self.changeAttribute(duplicate_bug, 'duplicateof', None)
@@ -1344,7 +1344,7 @@ class TestBugChanges(unittest.TestCase):
         bug_one = self.factory.makeBug()
         bug_two = self.factory.makeBug()
         bug_recipients = self.bug.getBugNotificationRecipients(
-            level=BugNotificationLevel.METADATA).getRecipients()
+            level=SubscriptionNotificationLevel.METADATA).getRecipients()
         self.bug.markAsDuplicate(bug_one)
         self.saveOldChanges()
         self.changeAttribute(self.bug, 'duplicateof', bug_two)
@@ -1383,7 +1383,7 @@ class TestBugChanges(unittest.TestCase):
         # marking this bug a duplicate, so that we don't get
         # extra notifications by mistake.
         public_bug_recipients = public_bug.getBugNotificationRecipients(
-            level=BugNotificationLevel.METADATA).getRecipients()
+            level=SubscriptionNotificationLevel.METADATA).getRecipients()
         self.changeAttribute(public_bug, 'duplicateof', private_bug)
 
         expected_activity = {
@@ -1417,7 +1417,7 @@ class TestBugChanges(unittest.TestCase):
         # marking this bug a duplicate, so that we don't get
         # extra notifications by mistake.
         public_bug_recipients = public_bug.getBugNotificationRecipients(
-            level=BugNotificationLevel.METADATA).getRecipients()
+            level=SubscriptionNotificationLevel.METADATA).getRecipients()
         self.changeAttribute(public_bug, 'duplicateof', private_bug)
 
         self.saveOldChanges(private_bug)
@@ -1454,7 +1454,7 @@ class TestBugChanges(unittest.TestCase):
         duplicate_bug = self.factory.makeBug()
         public_bug = self.factory.makeBug()
         bug_recipients = duplicate_bug.getBugNotificationRecipients(
-            level=BugNotificationLevel.METADATA).getRecipients()
+            level=SubscriptionNotificationLevel.METADATA).getRecipients()
 
         self.changeAttribute(duplicate_bug, 'duplicateof', private_bug)
         self.saveOldChanges(duplicate_bug)
@@ -1540,7 +1540,7 @@ class TestBugChanges(unittest.TestCase):
             'text': u"ENOTOWEL",
             'is_comment': True,
             'recipients': new_bug.getBugNotificationRecipients(
-                level=BugNotificationLevel.COMMENTS),
+                level=SubscriptionNotificationLevel.COMMENTS),
             }
 
         self.assertRecordedChange(

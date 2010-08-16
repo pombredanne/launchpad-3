@@ -9,7 +9,7 @@ import re
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
-    BugNotificationLevel, IDistroBugTask, IDistroSeriesBugTask,
+    SubscriptionNotificationLevel, IDistroBugTask, IDistroSeriesBugTask,
     IUpstreamBugTask)
 from canonical.launchpad.interfaces.mail import (
     EmailProcessingError, IWeaklyAuthenticatedPrincipal)
@@ -106,7 +106,7 @@ def guess_bugtask(bug, person):
                     bug_sub = bugtask.target.getSubscription(person)
                     if bug_sub is not None:
                         if (bug_sub.bug_notification_level >
-                            BugNotificationLevel.NOTHING):
+                            SubscriptionNotificationLevel.NOTHING):
                             # The user is subscribed to bug notifications
                             # for this package
                             return bugtask

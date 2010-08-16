@@ -1405,7 +1405,7 @@ notification level of the subscription.
 
     >>> from lp.registry.interfaces.product import IProductSet
     >>> from lp.registry.interfaces.structuralsubscription import (
-    ...     BugNotificationLevel)
+    ...     SubscriptionNotificationLevel)
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> mr_no_privs = getUtility(IPersonSet).getByName('no-priv')
     >>> subscription_no_priv = firefox.addBugSubscription(
@@ -1480,7 +1480,7 @@ no comment notifications.
     >>> flush_notifications()
     >>> switch_db_to_launchpad()
     >>> subscription_no_priv.bug_notification_level = (
-    ...     BugNotificationLevel.METADATA)
+    ...     SubscriptionNotificationLevel.METADATA)
     >>> switch_db_to_bugnotification()
 
     >>> comment = getUtility(IMessageSet).fromText(
@@ -1596,7 +1596,7 @@ no notifications created by addChangeNotification().
     >>> flush_notifications()
     >>> switch_db_to_launchpad()
     >>> subscription_no_priv.bug_notification_level = (
-    ...     BugNotificationLevel.LIFECYCLE)
+    ...     SubscriptionNotificationLevel.LIFECYCLE)
     >>> switch_db_to_bugnotification()
 
     >>> bug_one.addChangeNotification('** Summary changed to: something.',

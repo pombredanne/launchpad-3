@@ -23,7 +23,7 @@ distribution.
     >>> ff_sub.target
     <Product at ...>
     >>> ff_sub.bug_notification_level
-    <DBItem BugNotificationLevel.NOTHING, (10) Nothing>
+    <DBItem SubscriptionNotificationLevel.NOTHING, (10) Nothing>
 
     >>> ubuntu_sub = StructuralSubscription(distribution=ubuntu,
     ...     subscriber=sampleperson, subscribed_by=foobar)
@@ -85,7 +85,7 @@ target and to the target's parent are notified.
 
     >>> from canonical.launchpad.ftests import syncUpdate
     >>> from canonical.launchpad.interfaces import (
-    ...     BlueprintNotificationLevel, BugNotificationLevel)
+    ...     BlueprintNotificationLevel, SubscriptionNotificationLevel)
     >>> from lp.bugs.mail.bugnotificationrecipients import (
     ...     BugNotificationRecipients)
 
@@ -108,8 +108,8 @@ the recipients for the notifications they generate.
 Sample person has a subscription to Ubuntu and to the Evolution package
 in Ubuntu. We set the bug notification level for both subscriptions.
 
-    >>> ubuntu_sub.bug_notification_level = BugNotificationLevel.COMMENTS
-    >>> evolution_sub.bug_notification_level = BugNotificationLevel.COMMENTS
+    >>> ubuntu_sub.bug_notification_level = SubscriptionNotificationLevel.COMMENTS
+    >>> evolution_sub.bug_notification_level = SubscriptionNotificationLevel.COMMENTS
 
 `getBugNotificationsRecipients` returns all the bug subscribers to the
 target and its parent, and adds the rationale for the subscriptions to
@@ -149,10 +149,10 @@ Subscribers whose subscription level is lower than the given parameter
 are not returned.
 
     >>> foobar_subscription.bug_notification_level = (
-    ...     BugNotificationLevel.METADATA)
+    ...     SubscriptionNotificationLevel.METADATA)
     >>> recipients = BugNotificationRecipients()
     >>> bug_subscribers = evolution_package.getBugNotificationsRecipients(
-    ...     recipients=recipients, level=BugNotificationLevel.COMMENTS)
+    ...     recipients=recipients, level=SubscriptionNotificationLevel.COMMENTS)
     >>> print_bug_recipients(recipients)
     name12 "Subscriber (evolution in ubuntu)"
 
@@ -216,26 +216,26 @@ firefox._targets_args. This attribute should be renamed. Bug #247525.
     name12
 
 If PersonSet.getSubscribersForTargets() is passed a
-BugNotificationLevel in its `level` parameter, only structural
+SubscriptionNotificationLevel in its `level` parameter, only structural
 subscribers with that notification level or higher will be returned.
 The subscription level of ff_sub, the only structural subscription
 to firefox, is NOTHING, hence we get an empty list if we pass any
 larger bug notification level.
 
     >>> firefox_subscribers = person_set.getSubscribersForTargets(
-    ...     [firefox_no_proxy], level=BugNotificationLevel.LIFECYCLE)
+    ...     [firefox_no_proxy], level=SubscriptionNotificationLevel.LIFECYCLE)
     >>> print len(firefox_subscribers)
     0
 
 If the bug notification level of ff_sub is increased, the subscription
 is included in the result of PersonSet.getSubscribersForTarget().
 
-    >>> ff_sub.level = BugNotificationLevel.LIFECYCLE
+    >>> ff_sub.level = SubscriptionNotificationLevel.LIFECYCLE
     >>> firefox_subscribers = person_set.getSubscribersForTargets(
     ...     [firefox_no_proxy])
     >>> print_bug_subscribers(firefox_subscribers)
     name12
-    >>> ff_sub.level = BugNotificationLevel.METADATA
+    >>> ff_sub.level = SubscriptionNotificationLevel.METADATA
     >>> firefox_subscribers = person_set.getSubscribersForTargets(
     ...     [firefox_no_proxy])
     >>> print_bug_subscribers(firefox_subscribers)
