@@ -319,7 +319,10 @@ class BranchContextMenu(ContextMenu, HasRecipesMenuMixin):
             '+upgrade', 'Upgrade this branch', icon='edit', enabled=enabled)
 
     def create_recipe(self):
-        enabled = config.build_from_branch.enabled
+        if not self.context.private and config.build_from_branch.enabled:
+            enabled = True
+        else:
+            enabled = False
         text = 'Create packaging recipe'
         return Link('+new-recipe', text, enabled=enabled, icon='add')
 
