@@ -19,7 +19,7 @@ from zope.component import getUtility
 from zope.interface import alsoProvides, implements
 
 from lp.archivepublisher.debversion import Version
-from canonical.cachedproperty import cachedproperty
+from canonical.cachedproperty import cachedproperty, clear_property
 from canonical.database.constants import UTC_NOW
 
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -1617,8 +1617,9 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             # This driver is a release manager.
             series.driver = owner
 
-        if safe_hasattr(self, '_cached_series'):
-            del self._cached_series
+        # May wish to add this to the series rather than clearing the cache --
+        # RBC 20100816.
+        clear_property(self, '_cached_series')
         return series
 
     @property

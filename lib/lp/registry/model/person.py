@@ -59,7 +59,7 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
     cursor, quote, quote_like, sqlvalues, SQLBase)
 
-from canonical.cachedproperty import cachedproperty
+from canonical.cachedproperty import cachedproperty, cache_property, clear_property
 
 from canonical.lazr.utils import get_current_browser_request, safe_hasattr
 
@@ -390,13 +390,12 @@ class Person(
 
         Order them by name if necessary.
         """
-        self._languages_cache = sorted(
-            languages, key=attrgetter('englishname'))
+        cache_property(self, '_languages_cache', sorted(
+            languages, key=attrgetter('englishname')))
 
     def deleteLanguagesCache(self):
         """Delete this person's cached languages, if it exists."""
-        if safe_hasattr(self, '_languages_cache'):
-            del self._languages_cache
+        clear_property(self, '_languages_cache')
 
     def addLanguage(self, language):
         """See `IPerson`."""

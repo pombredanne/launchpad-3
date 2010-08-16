@@ -10,7 +10,14 @@ from an instance.
 
 __metaclass__ = type
 
-__all__ = ['cachedproperty', 'clear_cachedproperties']
+__all__ = [
+    'cache_property',
+    'cachedproperty',
+    'clear_cachedproperties',
+    'clear_property',
+    ]
+
+from canonical.lazr.utils import safe_hasattr
 
 # XXX: JonathanLange 2010-01-11 bug=505731: Move this to lp.services.
 
@@ -67,6 +74,58 @@ def cachedproperty(attrname_or_fn):
         attrname = '_%s_cached_value' % fn.__name__
         return CachedProperty(attrname, fn)
 
+def cache_property(instance, attrname, value):
+    """Cache value on instance as attrname.
+    
+    instance._cached_properties is updated with attrname.
+
+    >>> class CachedPropertyTest(object):
+    ...
+    ...     @cachedproperty('_foo_cache')
+    ...     def foo(self):
+    ...         return 23
+    ...
+    >>> instance = CachedPropertyTest()
+    >>> cache_property(instance, '_foo_cache', 42)
+    >>> instance.foo
+    42
+    """
+    setattr(instance, attrname, value)
+    cached_properties = getattr(instance, '_cached_properties', [])
+    cached_properties.append(attrname)
+    instance._cached_properties = cached_properties
+
+
+def clear_property(instance, attrname):
+    """Remove a cached attribute from instance.
+
+    The attribute name is removed from instance._cached_properties.
+
+    If the property is not cached, nothing happens.
+
+    :seealso clear_cachedproperties: For clearing all cached items at once.
+
+    >>> class CachedPropertyTest(object):
+    ...
+    ...     @cachedproperty('_foo_cache')
+    ...     def foo(self):
+    ...         return 23
+    ...
+    >>> instance = CachedPropertyTest()
+    >>> instance.foo
+    23
+    >>> clear_property(instance, '_foo_cache')
+    >>> instance._cached_properties
+    []
+    >>> is_cached(instance, '_foo_cache')
+    False
+    >>> clear_property(instance, '_foo_cache')
+    """
+    if not is_cached(instance, attrname):
+        return
+    delattr(instance, attrname)
+    instance._cached_properties.remove(attrname)
+
 
 def clear_cachedproperties(instance):
     """Clear cached properties from an object.
@@ -94,6 +153,26 @@ def clear_cachedproperties(instance):
     instance._cached_properties = []
 
 
+def is_cached(instance, attrname):
+    """Return True if attrname is cached on instance.
+
+    >>> class CachedPropertyTest(object):
+    ...
+    ...     @cachedproperty('_foo_cache')
+    ...     def foo(self):
+    ...         return 23
+    ...
+    >>> instance = CachedPropertyTest()
+    >>> instance.foo
+    23
+    >>> is_cached(instance, '_foo_cache')
+    True
+    >>> is_cached(instance, '_var_cache')
+    False
+    """
+    return safe_hasattr(instance, attrname)
+
+
 class CachedPropertyForAttr:
     """Curry a decorator to provide arguments to the CachedProperty."""
 
@@ -119,10 +198,7 @@ class CachedProperty:
         cachedresult = getattr(inst, self.attrname, CachedProperty.sentinel)
         if cachedresult is CachedProperty.sentinel:
             result = self.fn(inst)
-            setattr(inst, self.attrname, result)
-            cached_properties = getattr(inst, '_cached_properties', [])
-            cached_properties.append(self.attrname)
-            inst._cached_properties = cached_properties
+            cache_property(inst, self.attrname, result)
             return result
         else:
             return cachedresult
