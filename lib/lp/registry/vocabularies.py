@@ -789,7 +789,7 @@ class PersonActiveMembershipVocabulary:
     def _get_teams(self):
         """The teams that the vocabulary is built from."""
         return [membership.team for membership
-                in self.context.myactivememberships
+                in self.context.team_memberships
                 if membership.team.visibility == PersonVisibility.PUBLIC]
 
     def __len__(self):

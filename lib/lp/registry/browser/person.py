@@ -3129,7 +3129,7 @@ class PersonParticipationView(LaunchpadView):
     def active_participations(self):
         """Return the participation information for active memberships."""
         participations = [self._asParticipation(membership=membership)
-                for membership in self.context.myactivememberships
+                for membership in self.context.team_memberships
                 if check_permission('launchpad.View', membership.team)]
         for team in self.context.teams_indirectly_participated_in:
             if not check_permission('launchpad.View', team):

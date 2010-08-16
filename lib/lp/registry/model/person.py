@@ -1557,11 +1557,8 @@ class Person(
             self.invited_members,
             orderBy=self._sortingColumnsForSetOperations)
 
-    # XXX: kiko 2005-10-07:
-    # myactivememberships should be renamed to team_memberships and be
-    # described as the set of memberships for the object's teams.
     @property
-    def myactivememberships(self):
+    def team_memberships(self):
         """See `IPerson`."""
         return TeamMembership.select("""
             TeamMembership.person = %s AND status in %s AND
@@ -1675,7 +1672,7 @@ class Person(
         assert self.is_valid_person, (
             "You can only deactivate an account of a valid person.")
 
-        for membership in self.myactivememberships:
+        for membership in self.team_memberships:
             self.leave(membership.team)
 
         # Deactivate CoC signatures, invalidate email addresses, unassign bug
@@ -1922,7 +1919,7 @@ class Person(
 
     def getLatestApprovedMembershipsForPerson(self, limit=5):
         """See `IPerson`."""
-        result = self.myactivememberships
+        result = self.team_memberships
         result = result.orderBy(['-date_joined', '-id'])
         return result[:limit]
 
