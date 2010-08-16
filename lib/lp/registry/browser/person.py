@@ -1400,6 +1400,11 @@ class PersonDeactivateAccountView(LaunchpadFormView):
     label = "Deactivate your Launchpad account"
     custom_widget('comment', TextAreaWidget, height=5, width=60)
 
+    def validate(self, data):
+        """See `LaunchpadFormView`."""
+        if self.context.account_status != AccountStatus.ACTIVE:
+            self.addError('This account is already deactivated.')
+
     @action(_("Deactivate My Account"), name="deactivate")
     def deactivate_action(self, action, data):
         self.context.deactivateAccount(data['comment'])
@@ -3073,19 +3078,40 @@ class PersonParticipationView(LaunchpadView):
     def label(self):
         return 'Team participation for ' + self.context.displayname
 
-    def _asParticipation(self, membership, team_path=None):
-        """Return a dict of participation information for the membership."""
+    def _asParticipation(self, membership=None, team=None, team_path=None):
+        """Return a dict of participation information for the membership.
+
+        Method requires membership or team, not both.
+        """
+        if ((membership is None and team is None) or
+            (membership is not None and team is not None)):
+            raise AssertionError(
+                "The membership or team argument must be provided, not both.")
+
         if team_path is None:
             via = None
         else:
             via = COMMASPACE.join(team.displayname for team in team_path)
-        team = membership.team
-        if membership.person == team.teamowner:
-            role = 'Owner'
-        elif membership.status == TeamMembershipStatus.ADMIN:
-            role = 'Admin'
-        else:
+
+        if membership is None:
+            #we have membership via an indirect team, and can use
+            #sane defaults
+
+            #the user can only be a member of this team
             role = 'Member'
+            #the user never joined, and can't have a join date
+            datejoined = None
+        else:
+            #the member is a direct member, so we can use membership data
+            team = membership.team
+            datejoined = membership.datejoined
+            if membership.person == team.teamowner:
+                role = 'Owner'
+            elif membership.status == TeamMembershipStatus.ADMIN:
+                role = 'Admin'
+            else:
+                role = 'Member'
+
         if team.mailing_list is not None and team.mailing_list.is_usable:
             subscription = team.mailing_list.getSubscription(self.context)
             if subscription is None:
@@ -3093,15 +3119,16 @@ class PersonParticipationView(LaunchpadView):
             else:
                 subscribed = 'Subscribed'
         else:
-            subscribed = None
+            subscribed = '&mdash;'
+
         return dict(
-            displayname=team.displayname, team=team, membership=membership,
+            displayname=team.displayname, team=team, datejoined=datejoined,
             role=role, via=via, subscribed=subscribed)
 
     @cachedproperty
     def active_participations(self):
         """Return the participation information for active memberships."""
-        participations = [self._asParticipation(membership)
+        participations = [self._asParticipation(membership=membership)
                 for membership in self.context.myactivememberships
                 if check_permission('launchpad.View', membership.team)]
         membership_set = getUtility(ITeamMembershipSet)
@@ -3111,10 +3138,8 @@ class PersonParticipationView(LaunchpadView):
             # The key points of the path for presentation are:
             # [-?] indirect memberships, [-2] direct membership, [-1] team.
             team_path = self.context.findPathToTeam(team)
-            membership = membership_set.getByPersonAndTeam(
-                team_path[-2], team)
             participations.append(
-                self._asParticipation(membership, team_path=team_path[:-1]))
+                self._asParticipation(team_path=team_path[:-1], team=team))
         return sorted(participations, key=itemgetter('displayname'))
 
     @cachedproperty
