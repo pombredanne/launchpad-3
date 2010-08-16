@@ -1479,7 +1479,8 @@ class Person(
             columns.append(KarmaTotalCache)
         if need_ubuntu_coc:
             columns.append(Alias(Exists(Select(SignedCodeOfConduct,
-                Person._is_ubuntu_coc_signer_condition())),
+                AND(Person._is_ubuntu_coc_signer_condition(),
+                    SignedCodeOfConduct.ownerID == Person.id))),
                 name='is_ubuntu_coc_signer'))
         if need_location:
             # New people have no location rows
@@ -2396,7 +2397,8 @@ class Person(
         """See `IPerson`."""
         # Also assigned to by self._all_members.
         store = Store.of(self)
-        query = Person._is_ubuntu_coc_signer_condition()
+        query = AND(SignedCodeOfConduct.ownerID == self.id,
+            Person._is_ubuntu_coc_signer_condition())
         # TODO: Using exists would be faster than count().
         return bool(store.find(SignedCodeOfConduct, query).count())
 
@@ -2406,7 +2408,6 @@ class Person(
         sigset = getUtility(ISignedCodeOfConductSet)
         lastdate = sigset.getLastAcceptedDate()
         return AND(SignedCodeOfConduct.active == True,
-            SignedCodeOfConduct.ownerID == Person.id,
             SignedCodeOfConduct.datecreated >= lastdate)
 
     @property
