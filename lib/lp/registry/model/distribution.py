@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -19,7 +19,7 @@ from zope.component import getUtility
 from zope.interface import alsoProvides, implements
 
 from lp.archivepublisher.debversion import Version
-from canonical.cachedproperty import cachedproperty
+from canonical.cachedproperty import cachedproperty, clear_property
 from canonical.database.constants import UTC_NOW
 
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -29,6 +29,7 @@ from canonical.database.sqlbase import (
 from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet)
 from canonical.launchpad.components.storm_operators import FTQ, Match, RANK
+from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.lazr.utils import safe_hasattr
 from lp.registry.model.announcement import MakesAnnouncements
 from lp.soyuz.model.archive import Archive
@@ -59,7 +60,6 @@ from lp.registry.model.mentoringoffer import MentoringOffer
 from lp.registry.model.milestone import (
     HasMilestonesMixin, Milestone)
 from lp.registry.model.pillar import HasAliasMixin
-from lp.soyuz.model.publishedpackage import PublishedPackage
 from lp.soyuz.model.publishing import (
     BinaryPackageFilePublishing, BinaryPackagePublishingHistory,
     SourcePackageFilePublishing, SourcePackagePublishingHistory)
@@ -92,7 +92,9 @@ from lp.registry.interfaces.distributionmirror import (
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.distroseries import NoSuchDistroSeries
 from canonical.launchpad.interfaces.launchpad import (
-    IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities, ILaunchpadUsage)
+    IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities)
+from lp.app.interfaces.launchpad import ILaunchpadUsage, IServiceUsage
+from lp.app.enums import ServiceUsage
 from lp.soyuz.interfaces.queue import PackageUploadStatus
 from lp.registry.interfaces.packaging import PackagingType
 from lp.registry.interfaces.pillar import IPillarNameSet
@@ -108,7 +110,7 @@ from lp.translations.interfaces.translationgroup import (
 from canonical.launchpad.validators.name import sanitize_name, valid_name
 from lp.app.errors import NotFoundError
 from lp.registry.interfaces.person import (
-    validate_person_not_private_membership, validate_public_person)
+    validate_person, validate_public_person)
 from canonical.launchpad.webapp.url import urlparse
 
 from lp.answers.model.question import (
@@ -129,7 +131,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     implements(
         IDistribution, IFAQTarget, IHasBugHeat, IHasBugSupervisor,
         IHasBuildRecords, IHasIcon, IHasLogo, IHasMugshot, ILaunchpadUsage,
-        IQuestionTarget)
+        IQuestionTarget, IServiceUsage)
 
     _table = 'Distribution'
     _defaultOrder = 'name'
@@ -152,7 +154,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         storm_validator=validate_public_person, notNull=True)
     bug_supervisor = ForeignKey(
         dbName='bug_supervisor', foreignKey='Person',
-        storm_validator=validate_person_not_private_membership,
+        storm_validator=validate_person,
         notNull=False,
         default=None)
     bug_reporting_guidelines = StringCol(default=None)
@@ -178,10 +180,6 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         schema=TranslationPermission, default=TranslationPermission.OPEN)
     lucilleconfig = StringCol(
         dbName='lucilleconfig', notNull=False, default=None)
-    official_answers = BoolCol(dbName='official_answers', notNull=True,
-        default=False)
-    official_blueprints = BoolCol(dbName='official_blueprints', notNull=True,
-        default=False)
     active = True # Required by IPillar interface.
     max_bug_heat = Int()
 
@@ -214,6 +212,15 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
 
         return distro_uploaders
 
+    official_answers = BoolCol(dbName='official_answers', notNull=True,
+        default=False)
+    official_blueprints = BoolCol(dbName='official_blueprints', notNull=True,
+        default=False)
+    official_malone = BoolCol(dbName='official_malone', notNull=True,
+        default=False)
+    official_rosetta = BoolCol(dbName='official_rosetta', notNull=True,
+        default=False)
+
     @property
     def official_codehosting(self):
         # XXX: Aaron Bentley 2008-01-22
@@ -223,15 +230,37 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         # absolutely no sense at all.
         return False
 
-    official_malone = BoolCol(dbName='official_malone', notNull=True,
-        default=False)
-    official_rosetta = BoolCol(dbName='official_rosetta', notNull=True,
-        default=False)
-
     @property
     def official_anything(self):
         return True in (self.official_malone, self.official_rosetta,
                         self.official_blueprints, self.official_answers)
+
+    answers_usage = EnumCol(
+        dbName="answers_usage", notNull=True,
+        schema=ServiceUsage,
+        default=ServiceUsage.UNKNOWN)
+    blueprints_usage = EnumCol(
+        dbName="blueprints_usage", notNull=True,
+        schema=ServiceUsage,
+        default=ServiceUsage.UNKNOWN)
+    translations_usage = EnumCol(
+        dbName="translations_usage", notNull=True,
+        schema=ServiceUsage,
+        default=ServiceUsage.UNKNOWN)
+    @property
+    def codehosting_usage(self):
+        return ServiceUsage.NOT_APPLICABLE
+    @property
+    def bug_tracking_usage(self):
+        if not self.official_malone:
+            return ServiceUsage.UNKNOWN
+        else:
+            return ServiceUsage.LAUNCHPAD
+
+    @property
+    def uses_launchpad(self):
+        """Does this distribution actually use Launchpad?"""
+        return self.official_anything
 
     enable_bug_expiration = BoolCol(dbName='enable_bug_expiration',
         notNull=True, default=False)
@@ -774,7 +803,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def getSeriesByStatus(self, status):
         """See `IDistribution`."""
-        return Store.of(self).find(DistroSeries, 
+        return Store.of(self).find(DistroSeries,
             DistroSeries.distribution == self,
             DistroSeries.status == status)
 
@@ -817,7 +846,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         # Use the facility provided by IBinaryPackageBuildSet to
         # retrieve the records.
         return getUtility(IBinaryPackageBuildSet).getBuildsByArchIds(
-            arch_ids, build_state, name, pocket)
+            self, arch_ids, build_state, name, pocket)
 
     def getSourcePackageCaches(self, archive=None):
         """See `IDistribution`."""
@@ -1172,6 +1201,18 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         # instance, when people file bugs, it might actually be bad for
         # us to allow them to be associated with obsolete packages.
 
+        bpph_location_clauses = [
+            DistroSeries.distribution == self,
+            DistroArchSeries.distroseriesID == DistroSeries.id,
+            BinaryPackagePublishingHistory.distroarchseriesID ==
+                DistroArchSeries.id,
+            BinaryPackagePublishingHistory.archiveID.is_in(
+                self.all_distro_archive_ids),
+            BinaryPackagePublishingHistory.dateremoved == None,
+            BinaryPackageRelease.id ==
+                BinaryPackagePublishingHistory.binarypackagereleaseID,
+            ]
+
         sourcepackagename = SourcePackageName.selectOneBy(name=pkgname)
         if sourcepackagename:
             # Note that in the source package case, we don't restrict
@@ -1197,20 +1238,20 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             if publishing is not None:
                 # Attempt to find a published binary package of the
                 # same name.
-                publishedpackage = PublishedPackage.selectFirst('''
-                    PublishedPackage.sourcepackagename = %s AND
-                    PublishedPackage.binarypackagename = %s AND
-                    PublishedPackage.distribution = %s AND
-                    PublishedPackage.archive IN %s
-                    ''' % sqlvalues(sourcepackagename.name,
-                                    sourcepackagename.name,
-                                    self,
-                                    self.all_distro_archive_ids),
-                    orderBy=['-id'])
-                if publishedpackage is not None:
-                    binarypackagename = BinaryPackageName.byName(
-                        publishedpackage.binarypackagename)
-                    return (sourcepackagename, binarypackagename)
+                bpph = IStore(BinaryPackagePublishingHistory).find(
+                    BinaryPackagePublishingHistory,
+                    BinaryPackageRelease.binarypackagename ==
+                        BinaryPackageName.id,
+                    BinaryPackageName.name == sourcepackagename.name,
+                    BinaryPackageBuild.id == BinaryPackageRelease.buildID,
+                    SourcePackageRelease.id ==
+                        BinaryPackageBuild.source_package_release_id,
+                    SourcePackageRelease.sourcepackagename ==
+                        sourcepackagename,
+                    *bpph_location_clauses).any()
+                if bpph is not None:
+                    bpr = bpph.binarypackagerelease
+                    return (sourcepackagename, bpr.binarypackagename)
                 # No binary with a similar name, so just return None
                 # rather than returning some arbitrary binary package.
                 return (sourcepackagename, None)
@@ -1224,18 +1265,14 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             # latest publication in the distribution (this may be an old
             # package name the end-user is groping for) -- and then get
             # the sourcepackagename from that.
-            publishing = PublishedPackage.selectFirst('''
-                PublishedPackage.binarypackagename = %s AND
-                PublishedPackage.distribution = %s AND
-                PublishedPackage.archive IN %s
-                ''' % sqlvalues(binarypackagename.name,
-                                self,
-                                self.all_distro_archive_ids),
-                orderBy=['-id'])
-            if publishing is not None:
-                sourcepackagename = SourcePackageName.byName(
-                                        publishing.sourcepackagename)
-                return (sourcepackagename, binarypackagename)
+            bpph = IStore(BinaryPackagePublishingHistory).find(
+                BinaryPackagePublishingHistory,
+                BinaryPackageRelease.binarypackagename == binarypackagename,
+                *bpph_location_clauses).order_by(
+                    Desc(BinaryPackagePublishingHistory.id)).first()
+            if bpph is not None:
+                spr = bpph.binarypackagerelease.build.source_package_release
+                return (spr.sourcepackagename, binarypackagename)
 
         # We got nothing so signal an error.
         if sourcepackagename is None:
@@ -1580,8 +1617,9 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             # This driver is a release manager.
             series.driver = owner
 
-        if safe_hasattr(self, '_cached_series'):
-            del self._cached_series
+        # May wish to add this to the series rather than clearing the cache --
+        # RBC 20100816.
+        clear_property(self, '_cached_series')
         return series
 
     @property

@@ -36,7 +36,7 @@ If we go to the attachment edit page, there's an option to delete the
 attachment.
 
     >>> import re
-    >>> user_browser.getLink(url=re.compile(r'[+]attachment/\d')).click()
+    >>> user_browser.getLink(url=re.compile(r'[+]attachment/\d$')).click()
     >>> print user_browser.title
     Bug #2...
     >>> user_browser.getControl('Delete Attachment') is not None
@@ -51,7 +51,9 @@ arent' any other attachments, the portlet won't show up at all.
     'http://.../+bug/2'
     >>> for message in find_tags_by_class(user_browser.contents, 'message'):
     ...     print message.renderContents()
-    Attachment "<a href="...">Great deal</a>" has been deleted.
+    Attachment
+    "<a href="http://bugs.launchpad.dev/...+files/foo.txt">Great deal</a>"
+    has been deleted.
 
     >>> print find_portlet(user_browser.contents, 'Bug attachments')
     None
