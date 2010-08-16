@@ -53,7 +53,8 @@ Registry experts do not have access to the 'Change details' link.
     >>> password = "test"
     >>> registry= factory.makeRegistryExpert(email=email, password=password)
     >>> logout()
-    >>> registry_browser = setupBrowser(auth='Basic %s:%s' % (email, password))
+    >>> registry_browser = setupBrowser(
+    ...     auth='Basic %s:%s' % (email, password))
     >>> registry_browser.open('http://launchpad.dev/ubuntu/happy')
     >>> registry_browser.getLink('Change details').click()
     Traceback (most recent call last):

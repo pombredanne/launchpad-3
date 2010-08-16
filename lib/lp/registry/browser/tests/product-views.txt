@@ -137,7 +137,8 @@ Mark is in the registry admins team and is allowed to access the page.
     >>> print view.label
     Review project
 
-Adding the Commercial Admin to the registry experts team will allow him access.
+Adding the Commercial Admin to the registry experts team will give
+him access.
 
     >>> commercial_member = getUtility(IPersonSet).getByEmail(
     ...     'commercial-member@canonical.com')

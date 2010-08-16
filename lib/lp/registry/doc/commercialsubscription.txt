@@ -566,7 +566,8 @@ but a clause is included to search specifically for the name.
     ...     print product.name
     abc.com
 
-The use of 'forReview' is limited to users with launchpad.Commercial permission.
+The use of 'forReview' is limited to users with launchpad.Commercial
+permission.
 
 Anonymous users cannot access 'forReview'.
 

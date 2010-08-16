@@ -29,7 +29,6 @@ from email.mime.multipart import MIMEMultipart
 from itertools import count
 from operator import isSequenceType
 import os
-import os.path
 from random import randint
 from StringIO import StringIO
 from textwrap import dedent
