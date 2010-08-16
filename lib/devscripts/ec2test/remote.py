@@ -242,10 +242,7 @@ class TestOnMergeRunner:
         """
         self.logger.prepare()
 
-        # XXX: No tests!
-        # XXX: String literal.
-        summary_file = FlagFallStream(
-            self.logger.summary_file, 'Running tests.\n')
+        summary_file = self.logger.summary_file
 
         call = self.build_test_command()
 
