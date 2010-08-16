@@ -262,7 +262,6 @@ class SQLBase(storm.sqlobject.SQLObjectBase):
         # Note this is not directly tested; but the entire test suite blows up
         # awesomely if its broken : its entirely unclear where tests for this
         # should be -- RBC 20100816.
-        super(SQLBase, self).__storm_invalidated__()
         clear_cachedproperties(self)
 
 
