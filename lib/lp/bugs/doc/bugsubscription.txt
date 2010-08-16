@@ -241,7 +241,7 @@ would be used instead.
 
 IBug.getAlsoNotifiedSubscribers() and IBug.getIndirectSubscribers() take
 an optional parameter `level` allowing us to filter the result by
-SubscriptionNotificationLevel for structural subscriptions.  Only subscribers who
+BugNotificationLevel for structural subscriptions.  Only subscribers who
 have a bug notification level greater than or equal to the value passed
 in the `level` parameter are returned.
 
@@ -255,30 +255,30 @@ With this subscription level, No Privileges Person is returned for all
 parameter values of level.
 
     >>> from lp.registry.interfaces.structuralsubscription import (
-    ...     SubscriptionNotificationLevel)
+    ...     BugNotificationLevel)
     >>> print_displayname(linux_source_bug.getAlsoNotifiedSubscribers(
-    ...     level=SubscriptionNotificationLevel.COMMENTS))
+    ...     level=BugNotificationLevel.COMMENTS))
     No Privileges Person
     Robert Collins
     Sample Person
     Ubuntu Team
 
     >>> print_displayname(linux_source_bug.getIndirectSubscribers(
-    ...     level=SubscriptionNotificationLevel.COMMENTS))
+    ...     level=BugNotificationLevel.COMMENTS))
     No Privileges Person
     Robert Collins
     Sample Person
     Ubuntu Team
 
     >>> print_displayname(linux_source_bug.getAlsoNotifiedSubscribers(
-    ...     level=SubscriptionNotificationLevel.LIFECYCLE))
+    ...     level=BugNotificationLevel.LIFECYCLE))
     No Privileges Person
     Robert Collins
     Sample Person
     Ubuntu Team
 
     >>> print_displayname(linux_source_bug.getIndirectSubscribers(
-    ...     level=SubscriptionNotificationLevel.LIFECYCLE))
+    ...     level=BugNotificationLevel.LIFECYCLE))
     No Privileges Person
     Robert Collins
     Sample Person
@@ -288,30 +288,30 @@ If No Privileges Person sets his notification level to LIFECYCLE, he will
 not be included, if the parameter `level` is METADATA or COMMENTS.
 
     >>> subscription_no_priv.bug_notification_level = (
-    ...     SubscriptionNotificationLevel.LIFECYCLE)
+    ...     BugNotificationLevel.LIFECYCLE)
 
     >>> print_displayname(linux_source_bug.getAlsoNotifiedSubscribers(
-    ...     level=SubscriptionNotificationLevel.LIFECYCLE))
+    ...     level=BugNotificationLevel.LIFECYCLE))
     No Privileges Person
     Robert Collins
     Sample Person
     Ubuntu Team
 
     >>> print_displayname(linux_source_bug.getIndirectSubscribers(
-    ...     level=SubscriptionNotificationLevel.LIFECYCLE))
+    ...     level=BugNotificationLevel.LIFECYCLE))
     No Privileges Person
     Robert Collins
     Sample Person
     Ubuntu Team
 
     >>> print_displayname(linux_source_bug.getAlsoNotifiedSubscribers(
-    ...     level=SubscriptionNotificationLevel.METADATA))
+    ...     level=BugNotificationLevel.METADATA))
     Robert Collins
     Sample Person
     Ubuntu Team
 
     >>> print_displayname(linux_source_bug.getIndirectSubscribers(
-    ...     level=SubscriptionNotificationLevel.METADATA))
+    ...     level=BugNotificationLevel.METADATA))
     Robert Collins
     Sample Person
     Ubuntu Team
@@ -369,9 +369,9 @@ Bug.getDuplicateSubscribers(), he will be again listed as a subscriber
 of a duplicate bug.
 
     >>> subscription_keybuk.bug_notification_level = (
-    ...     SubscriptionNotificationLevel.LIFECYCLE)
+    ...     BugNotificationLevel.LIFECYCLE)
     >>> print_displayname(linux_source_bug.getSubscribersFromDuplicates(
-    ...     level=SubscriptionNotificationLevel.METADATA))
+    ...     level=BugNotificationLevel.METADATA))
     Scott James Remnant
 
 When a bug is marked private, all its indirect subscribers become direct
@@ -458,7 +458,7 @@ You can query for the addresses and reasons:
      ('support@ubuntu.com', u'Subscriber @ubuntu-team'),
      ('test@canonical.com', 'Subscriber')]
 
-If IBug.getBugNotificationRecipients() is passed a  SubscriptionNotificationLevel
+If IBug.getBugNotificationRecipients() is passed a  BugNotificationLevel
 in its `level` parameter, only structural subscribers with that
 notification level or higher will be returned. When the linux_source_bug
 was temporarily set to "private", the structural subscriber Sample Person
@@ -467,7 +467,7 @@ getBugNotificationRecipients() even if the parameter level is larger than
 his structural subscription setting.
 
    >>> recipients = linux_source_bug.getBugNotificationRecipients(
-   ...     level=SubscriptionNotificationLevel.COMMENTS)
+   ...     level=BugNotificationLevel.COMMENTS)
    >>> addresses = recipients.getEmails()
    >>> [(address, recipients.getReason(address)[1]) for address in addresses]
     [('foo.bar@canonical.com', 'Subscriber'),
@@ -483,7 +483,7 @@ the COMMENTS level...
 
    >>> linux_source_bug.unsubscribe(mr_no_privs, mr_no_privs)
    >>> recipients = linux_source_bug.getBugNotificationRecipients(
-   ...     level=SubscriptionNotificationLevel.COMMENTS)
+   ...     level=BugNotificationLevel.COMMENTS)
    >>> addresses = recipients.getEmails()
    >>> [(address, recipients.getReason(address)[1]) for address in addresses]
     [('foo.bar@canonical.com', 'Subscriber'),
@@ -496,7 +496,7 @@ the COMMENTS level...
 
    >>> linux_source_bug.unsubscribe(mr_no_privs, mr_no_privs)
    >>> recipients = linux_source_bug.getBugNotificationRecipients(
-   ...     level=SubscriptionNotificationLevel.LIFECYCLE)
+   ...     level=BugNotificationLevel.LIFECYCLE)
    >>> addresses = recipients.getEmails()
    >>> [(address, recipients.getReason(address)[1]) for address in addresses]
     [('foo.bar@canonical.com', 'Subscriber'),

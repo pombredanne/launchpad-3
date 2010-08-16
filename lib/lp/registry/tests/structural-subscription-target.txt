@@ -178,14 +178,14 @@ IStructuralSubscriptionTarget.getSubscription.
 To search for subscriptions with certain level settings on a structure
 we use getSubscriptions.
 
-    >>> from canonical.launchpad.interfaces import SubscriptionNotificationLevel
+    >>> from canonical.launchpad.interfaces import BugNotificationLevel
     >>> subscription = target.addSubscription(no_priv, no_priv)
-    >>> subscription.bug_notification_level = SubscriptionNotificationLevel.METADATA
+    >>> subscription.bug_notification_level = BugNotificationLevel.METADATA
     >>> print_subscriptions_list(target.bug_subscriptions)
     no-priv METADATA NOTHING
     ubuntu-team COMMENTS NOTHING
     >>> subscriptions = target.getSubscriptions(min_bug_notification_level=
-    ...                         SubscriptionNotificationLevel.COMMENTS)
+    ...                         BugNotificationLevel.COMMENTS)
     >>> print_subscriptions_list(subscriptions)
     ubuntu-team COMMENTS NOTHING
 

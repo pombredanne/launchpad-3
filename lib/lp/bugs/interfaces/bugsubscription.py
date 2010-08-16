@@ -17,7 +17,7 @@ from canonical.launchpad import _
 from canonical.launchpad.fields import PersonChoice
 
 from lp.bugs.interfaces.bug import IBug
-from lp.registry.interfaces.structuralsubscription import SubscriptionNotificationLevel
+from lp.registry.interfaces.structuralsubscription import BugNotificationLevel
 
 from lazr.restful.declarations import (
     REQUEST_USER, call_with, export_as_webservice_entry,
@@ -39,8 +39,8 @@ class IBugSubscription(Interface):
         IBug, title=_("Bug"), required=True, readonly=True))
     bug_notification_level = Choice(
         title=_("Bug notification level"), required=True,
-        vocabulary=SubscriptionNotificationLevel,
-        default=SubscriptionNotificationLevel.NOTHING,
+        vocabulary=BugNotificationLevel,
+        default=BugNotificationLevel.NOTHING,
         description=_("The volume and type of bug notifications "
                       "this subscription will generate."))
     date_created = exported(

@@ -25,7 +25,7 @@ from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.structuralsubscription import (
-    BlueprintNotificationLevel, SubscriptionNotificationLevel, DeleteSubscriptionError,
+    BlueprintNotificationLevel, BugNotificationLevel, DeleteSubscriptionError,
     IStructuralSubscription, IStructuralSubscriptionTarget,
     UserCannotSubscribePerson)
 from lp.registry.interfaces.person import (
@@ -66,8 +66,8 @@ class StructuralSubscription(SQLBase):
         dbName='subscribed_by', foreignKey='Person',
         storm_validator=validate_public_person, notNull=True)
     bug_notification_level = EnumCol(
-        enum=SubscriptionNotificationLevel,
-        default=SubscriptionNotificationLevel.NOTHING,
+        enum=BugNotificationLevel,
+        default=BugNotificationLevel.NOTHING,
         notNull=True)
     blueprint_notification_level = EnumCol(
         enum=BlueprintNotificationLevel,
@@ -186,7 +186,7 @@ class StructuralSubscriptionTargetMixin:
         # bug notification level. It is useful so long as
         # subscriptions are mainly used to implement bug contacts.
         sub = self.addSubscription(subscriber, subscribed_by)
-        sub.bug_notification_level = SubscriptionNotificationLevel.COMMENTS
+        sub.bug_notification_level = BugNotificationLevel.COMMENTS
         return sub
 
     def removeBugSubscription(self, subscriber, unsubscribed_by):
@@ -201,7 +201,7 @@ class StructuralSubscriptionTargetMixin:
 
         subscription_to_remove = None
         for subscription in self.getSubscriptions(
-            min_bug_notification_level=SubscriptionNotificationLevel.METADATA):
+            min_bug_notification_level=BugNotificationLevel.METADATA):
             # Only search for bug subscriptions
             if subscription.subscriber == subscriber:
                 subscription_to_remove = subscription
@@ -217,7 +217,7 @@ class StructuralSubscriptionTargetMixin:
                 # This is a subscription to other application too
                 # so only set the bug notification level
                 subscription_to_remove.bug_notification_level = (
-                    SubscriptionNotificationLevel.NOTHING)
+                    BugNotificationLevel.NOTHING)
             else:
                 subscription_to_remove.destroySelf()
 
@@ -231,7 +231,7 @@ class StructuralSubscriptionTargetMixin:
 
     def getSubscriptions(self,
                          min_bug_notification_level=
-                         SubscriptionNotificationLevel.NOTHING,
+                         BugNotificationLevel.NOTHING,
                          min_blueprint_notification_level=
                          BlueprintNotificationLevel.NOTHING):
         """See `IStructuralSubscriptionTarget`."""
@@ -286,7 +286,7 @@ class StructuralSubscriptionTargetMixin:
     def bug_subscriptions(self):
         """See `IStructuralSubscriptionTarget`."""
         return self.getSubscriptions(
-            min_bug_notification_level=SubscriptionNotificationLevel.METADATA)
+            min_bug_notification_level=BugNotificationLevel.METADATA)
 
     @property
     def parent_subscription_target(self):
@@ -339,7 +339,7 @@ class StructuralSubscriptionTargetMixin:
     def userHasBugSubscriptions(self, user):
         """See `IStructuralSubscriptionTarget`."""
         bug_subscriptions = self.getSubscriptions(
-            min_bug_notification_level=SubscriptionNotificationLevel.METADATA)
+            min_bug_notification_level=BugNotificationLevel.METADATA)
         if user is not None:
             for subscription in bug_subscriptions:
                 if (subscription.subscriber == user or

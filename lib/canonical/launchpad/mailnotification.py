@@ -44,7 +44,7 @@ from lp.bugs.adapters.bugchange import (
 from lp.bugs.interfaces.bugchange import IBugChange
 from lp.bugs.mail.bugnotificationbuilder import get_bugmail_error_address
 from lp.registry.interfaces.structuralsubscription import (
-    SubscriptionNotificationLevel)
+    BugNotificationLevel)
 from lp.services.mail.mailwrapper import MailWrapper
 
 # XXX 2010-06-16 gmb bug=594985
@@ -438,12 +438,12 @@ def add_bug_change_notifications(bug_delta, old_bugtask=None,
     changes = get_bug_changes(bug_delta)
     recipients = bug_delta.bug.getBugNotificationRecipients(
         old_bug=bug_delta.bug_before_modification,
-        level=SubscriptionNotificationLevel.METADATA)
+        level=BugNotificationLevel.METADATA)
     if old_bugtask is not None:
         old_bugtask_recipients = BugNotificationRecipients()
         get_bugtask_indirect_subscribers(
             old_bugtask, recipients=old_bugtask_recipients,
-            level=SubscriptionNotificationLevel.METADATA)
+            level=BugNotificationLevel.METADATA)
         recipients.update(old_bugtask_recipients)
     for change in changes:
         # XXX 2009-03-17 gmb [bug=344125]
@@ -454,7 +454,7 @@ def add_bug_change_notifications(bug_delta, old_bugtask=None,
                 no_dupe_master_recipients = (
                     bug_delta.bug.getBugNotificationRecipients(
                         old_bug=bug_delta.bug_before_modification,
-                        level=SubscriptionNotificationLevel.METADATA,
+                        level=BugNotificationLevel.METADATA,
                         include_master_dupe_subscribers=False))
                 bug_delta.bug.addChange(
                     change, recipients=no_dupe_master_recipients)

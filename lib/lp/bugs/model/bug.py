@@ -58,7 +58,7 @@ from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.interfaces.message import (
     IMessage, IndexedMessage)
 from lp.registry.interfaces.structuralsubscription import (
-    SubscriptionNotificationLevel, IStructuralSubscriptionTarget)
+    BugNotificationLevel, IStructuralSubscriptionTarget)
 from lp.bugs.mail.bugnotificationrecipients import BugNotificationRecipients
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp.interfaces import (
@@ -792,7 +792,7 @@ class Bug(SQLBase):
         """See `IBug`."""
         if recipients is None:
             recipients = self.getBugNotificationRecipients(
-                level=SubscriptionNotificationLevel.METADATA)
+                level=BugNotificationLevel.METADATA)
         if when is None:
             when = UTC_NOW
         message = MessageSet().fromText(
@@ -805,7 +805,7 @@ class Bug(SQLBase):
         """See `IBug`."""
         if recipients is None:
             recipients = self.getBugNotificationRecipients(
-                level=SubscriptionNotificationLevel.COMMENTS)
+                level=BugNotificationLevel.COMMENTS)
         getUtility(IBugNotificationSet).addNotification(
              bug=self, is_comment=True,
              message=message, recipients=recipients)
