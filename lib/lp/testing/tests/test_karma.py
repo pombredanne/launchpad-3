@@ -14,6 +14,7 @@ class TestKarmaRecorder(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def test_record(self):
+        # The KarmaRecorder records karma events.
         person = self.factory.makePerson()
         product = self.factory.makeProduct()
 
@@ -26,6 +27,7 @@ class TestKarmaRecorder(TestCaseWithFactory):
         self.assertEqual(product, karma.product)
 
     def test_record_person(self):
+        # The KarmaRecorder can filter for a specific Person.
         person = self.factory.makePerson()
         unrelated_person = self.factory.makePerson()
         product = self.factory.makeProduct()
@@ -39,6 +41,7 @@ class TestKarmaRecorder(TestCaseWithFactory):
         self.assertEqual(person, karma.person)
 
     def test_record_action_name(self):
+        # The KarmaRecorder can filter for a specific, named action.
         person = self.factory.makePerson()
         product = self.factory.makeProduct()
 
@@ -51,6 +54,7 @@ class TestKarmaRecorder(TestCaseWithFactory):
         self.assertEqual('bugrejected', karma.action.name)
 
     def test_record_product(self):
+        # The KarmaRecorder can filter for a specific Product.
         person = self.factory.makePerson()
         product = self.factory.makeProduct()
         other_product = self.factory.makeProduct()
@@ -68,6 +72,7 @@ class TestKarmaRecorder(TestCaseWithFactory):
         self.assertEqual(product, karma.product)
 
     def test_record_distribution(self):
+        # The KarmaRecorder can filter for a specific Distribution.
         person = self.factory.makePerson()
         product = self.factory.makeProduct()
         package = self.factory.makeDistributionSourcePackage()
@@ -88,6 +93,7 @@ class TestKarmaRecorder(TestCaseWithFactory):
         self.assertEqual(distro, karma.distribution)
 
     def test_record_sourcepackagename(self):
+        # The KarmaRecorder can filter for a specific SourcePackageName.
         person = self.factory.makePerson()
         product = self.factory.makeProduct()
         package = self.factory.makeDistributionSourcePackage()
@@ -108,6 +114,8 @@ class TestKarmaRecorder(TestCaseWithFactory):
         self.assertEqual(packagename, karma.sourcepackagename)
 
     def test_record_can_be_replaced(self):
+        # KarmaRecorder.record can be overridden for other uses.  In
+        # this case we use a FakeMethod.
         person = self.factory.makePerson()
         product = self.factory.makeProduct()
 
