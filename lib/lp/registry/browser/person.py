@@ -3078,7 +3078,7 @@ class PersonParticipationView(LaunchpadView):
     def label(self):
         return 'Team participation for ' + self.context.displayname
 
-    def _asParticipation(self, membership=None, team=None, team_path=None):
+    def _asParticipation(self, membership=None, team=None, via=None):
         """Return a dict of participation information for the membership.
 
         Method requires membership or team, not both.
@@ -3088,10 +3088,8 @@ class PersonParticipationView(LaunchpadView):
             raise AssertionError(
                 "The membership or team argument must be provided, not both.")
 
-        if team_path is None:
-            via = None
-        else:
-            via = COMMASPACE.join(team.displayname for team in team_path)
+        if via is not None:
+            via = "Membership through %s" % via.displayname
 
         if membership is None:
             #we have membership via an indirect team, and can use
@@ -3136,9 +3134,9 @@ class PersonParticipationView(LaunchpadView):
                 continue
             # The key points of the path for presentation are:
             # [-?] indirect memberships, [-2] direct membership, [-1] team.
-            team_path = self.context.findPathToTeam(team)
+            team_path = self.context.findPathToTeam(team, limit=1)
             participations.append(
-                self._asParticipation(team_path=team_path[:-1], team=team))
+                self._asParticipation(via=team_path[-2], team=team))
         return sorted(participations, key=itemgetter('displayname'))
 
     @cachedproperty
