@@ -1529,31 +1529,31 @@ class Person(
                     karma_total = 0
                 else:
                     karma_total = karma.karma_total
-                result._karma_cached = karma_total
+                cache_property(result, '_karma_cached', karma_total)
             #-- ubuntu code of conduct signer status caching.
             if need_ubuntu_coc:
                 signed = row[index]
                 index += 1
-                result._is_ubuntu_coc_signer_cached = signed
+                cache_property(result, '_is_ubuntu_coc_signer_cached', signed)
             #-- location caching
             if need_location:
                 location = row[index]
                 index += 1
-                result._location = location
+                cache_property(result, '_location', location)
             #-- archive caching
             if need_archive:
                 archive = row[index]
                 index += 1
-                result._archive_cached = archive
+                cache_property(result, '_archive_cached', archive)
             #-- preferred email caching
             if need_preferred_email:
                 email = row[index]
                 index += 1
-                result._preferredemail_cached = email
+                cache_property(result, '_preferredemail_cached', email)
             if need_validity:
-                valid = row[index]
+                valid = row[index] is not None
                 index += 1
-                result._is_valid_person_cached = valid is not None
+                cache_property(result, '_is_valid_person_cached', valid)
             return result
         return DecoratedResultSet(raw_result, result_decorator=prepopulate_person)
 
