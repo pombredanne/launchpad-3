@@ -7,10 +7,13 @@ __metaclass__ = type
 
 from zope.security.proxy import removeSecurityProxy
 
+from lazr.lifecycle.snapshot import Snapshot
 from lp.registry.tests.test_distroseries import (
     TestDistroSeriesCurrentSourceReleases)
 from lp.registry.interfaces.distroseries import NoSuchDistroSeries
 from lp.registry.interfaces.series import SeriesStatus
+from lp.registry.interfaces.distribution import IDistribution
+
 from lp.soyuz.interfaces.distributionsourcepackagerelease import (
     IDistributionSourcePackageRelease)
 from lp.testing import TestCaseWithFactory
@@ -140,3 +143,31 @@ class SeriesTests(TestCaseWithFactory):
         series = self.factory.makeDistroSeries(distribution=distro,
             name="dappere", version="42.6")
         self.assertEquals(series, distro.getSeries("42.6"))
+
+
+class DistroSnapshotTestCase(TestCaseWithFactory):
+    """A TestCase for distribution snapshots."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        super(DistroSnapshotTestCase, self).setUp()
+        self.distribution = self.factory.makeDistribution(name="boobuntu")
+
+    def test_snapshot(self):
+        """Snapshots of products should not include marked attribues.
+
+        Wrap an export with 'doNotSnapshot' to force the snapshot to not
+        include that attribute.
+        """
+        snapshot = Snapshot(self.distribution, providing=IDistribution)
+        omitted = [
+            'archive_mirrors',
+            'cdimage_mirrors',
+            'series',
+            'all_distro_archives',
+            ]
+        for attribute in omitted:
+            self.assertFalse(
+                hasattr(snapshot, attribute),
+                "Snapshot should not include %s." % attribute)
