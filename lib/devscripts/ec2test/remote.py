@@ -204,17 +204,15 @@ class EC2Runner:
 class LaunchpadTester:
     """Runs Launchpad tests and gathers their results in a useful way."""
 
-    def __init__(self, request, logger, test_directory, test_options=None):
+    def __init__(self, logger, test_directory, test_options=None):
         """Construct a TestOnMergeRunner.
 
-        :param request: A `Request` representing the merge we are doing.
         :param logger: The WebTestLogger to log to.
         :param test_directory: The directory to run the tests in. We expect
             this directory to have a fully-functional checkout of Launchpad
             and its dependent branches.
         :param test_options: Options to pass to the test runner.
         """
-        self._request = request
         self.logger = logger
         self._test_directory = test_directory
         self._test_options = test_options
@@ -262,7 +260,7 @@ class LaunchpadTester:
             # It probably isn't safe to close the log files ourselves,
             # since someone else might try to write to them later.
             try:
-                self._request.got_result(
+                self.logger.got_result(
                     not exit_status, self.logger.summary_filename,
                     self.logger.out_filename)
             finally:
@@ -326,21 +324,6 @@ class Request:
             branch.repository.get_revision(parent_ids[1]).get_summary())
         return summary.encode('utf-8')
 
-    def _handle_pqm_submission(self, successful, summary_filename, config):
-        # XXX: Evil hack for now.
-        summary_file = open(summary_filename, 'a+')
-        subject = self._pqm_message.get('Subject')
-        if successful:
-            # success
-            conn = bzrlib.smtp_connection.SMTPConnection(config)
-            conn.send_email(self._pqm_message)
-            summary_file.write(
-                '\n\nSUBMITTED TO PQM:\n%s\n' % (subject,))
-        else:
-            # failure
-            summary_file.write(
-                '\n\n**NOT** submitted to PQM:\n%s\n' % (subject,))
-
     def _send_email(self, result, summary_filename, full_filename, config):
         """Send an email summarizing the test results.
 
@@ -373,15 +356,6 @@ class Request:
         message.attach(zipped_log)
 
         bzrlib.smtp_connection.SMTPConnection(config).send_email(message)
-
-    def got_result(self, successful, summary_filename, full_filename):
-        """The tests are done and the results are known."""
-        config = bzrlib.config.GlobalConfig()
-        if self._pqm_message:
-            self._handle_pqm_submission(successful, summary_filename, config)
-        if self._emails:
-            self._send_email(
-                successful, summary_filename, full_filename, config)
 
     def iter_dependency_branches(self):
         """Iterate through the Bazaar branches we depend on."""
@@ -445,6 +419,25 @@ class WebTestLogger:
         if self._echo_to_stdout:
             sys.stdout.write(line)
             sys.stdout.flush()
+
+    def got_result(self, successful, summary_filename, full_filename):
+        """The tests are done and the results are known."""
+        config = bzrlib.config.GlobalConfig()
+        self._handle_pqm_submission(successful, config)
+        if self._request._emails:
+            self._request._send_email(
+                successful, summary_filename, full_filename, config)
+
+    def _handle_pqm_submission(self, successful, config):
+        if not self._request._pqm_message:
+            return
+        subject = self._request._pqm_message.get('Subject')
+        if successful:
+            conn = bzrlib.smtp_connection.SMTPConnection(config)
+            conn.send_email(self._pqm_message)
+            self.write('\n\nSUBMITTED TO PQM:\n%s\n' % (subject,))
+        else:
+            self.write('\n\n**NOT** submitted to PQM:\n%s\n' % (subject,))
 
     def write(self, msg):
         """Write to the summary and full log file."""
@@ -664,12 +657,7 @@ def main(argv):
         options.daemon, pid_filename, options.shutdown, options.email)
 
     tester = LaunchpadTester(
-        logger=logger,
-        # Only write to stdout if we are running as the foreground process.
-        echo_to_stdout=(not options.daemon),
-        test_directory=TEST_DIR,
-        request=request,
-        test_options=' '.join(args))
+        logger=logger, test_directory=TEST_DIR, test_options=' '.join(args))
     runner.run("Test runner", tester.test)
 
 
