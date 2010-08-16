@@ -260,9 +260,7 @@ class LaunchpadTester:
             # It probably isn't safe to close the log files ourselves,
             # since someone else might try to write to them later.
             try:
-                self.logger.got_result(
-                    not exit_status, self.logger.summary_filename,
-                    self.logger.out_filename)
+                self.logger.got_result(not exit_status)
             finally:
                 self.logger.close_logs()
 
@@ -430,7 +428,7 @@ class WebTestLogger:
             sys.stdout.write(line)
             sys.stdout.flush()
 
-    def got_result(self, successful, summary_filename, full_filename):
+    def got_result(self, successful):
         """The tests are done and the results are known."""
         config = bzrlib.config.GlobalConfig()
         self._handle_pqm_submission(successful, config)
