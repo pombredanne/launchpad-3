@@ -273,12 +273,28 @@ class LaunchpadTester:
 class Request:
     """A request to have a branch tested and maybe landed."""
 
-    def __init__(self, public_branch, public_branch_revno, test_directory,
-                 sourcecode_dir, emails=None, pqm_message=None):
-        self.public_branch = public_branch
-        self.public_branch_revno = public_branch_revno
-        self.test_directory = test_directory
-        self.sourcecode_dir = sourcecode_dir
+    def __init__(self, branch_url, revno, local_branch_path, sourcecode_path,
+                 emails=None, pqm_message=None):
+        """Construct a `Request`.
+
+        :param branch_url: The public URL to the Launchpad branch we are
+            testing.
+        :param revno: The revision number of the branch we are testing.
+        :param local_branch_path: A local path to the Launchpad branch we are
+            testing.  This must be a branch of Launchpad with a working tree.
+        :param sourcecode_path: A local path to the sourcecode dependencies
+            directory (normally '$local_branch_path/sourcecode'). This must
+            contain up-to-date copies of all of Launchpad's sourcecode
+            dependencies.
+        :param emails: A list of emails to send the results to. If not
+            provided, no emails are sent.
+        :param pqm_message: The message to submit to PQM. If not provided, we
+            don't submit to PQM.
+        """
+        self.public_branch = branch_url
+        self.public_branch_revno = revno
+        self.test_directory = local_branch_path
+        self.sourcecode_dir = sourcecode_path
         self._emails = emails
         self._pqm_message = pqm_message
 
