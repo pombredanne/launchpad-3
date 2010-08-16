@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -22,7 +22,7 @@ __all__ = [
     'DuplicateFileIDError',
     'WrongDatabaseError',
     # _relFileLocation needed by other modules in this package.
-    # Listed here to keep the import facist happy
+    # Listed here to keep the import fascist happy
     '_relFileLocation',
     '_sameFile',
     ]
