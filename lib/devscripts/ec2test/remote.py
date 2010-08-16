@@ -500,7 +500,7 @@ class WebTestLogger:
             branch_name, branch_revno = branch_details
             data = {'name': branch_name,
                     'revno': branch_revno,
-                    'commit': self._request.get_summary()}
+                    'commit': self._request.get_summary_commit()}
             msg = ('%(name)s, revision %(revno)d '
                    '(commit message: %(commit)s)\n' % data)
             index_file.write(textwrap.dedent('''\
