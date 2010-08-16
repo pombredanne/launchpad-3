@@ -17,6 +17,8 @@ __all__ = [
     'clear_property',
     ]
 
+from zope.security.proxy import removeSecurityProxy
+
 from canonical.lazr.utils import safe_hasattr
 
 # XXX: JonathanLange 2010-01-11 bug=505731: Move this to lp.services.
@@ -99,6 +101,7 @@ def cache_property(instance, attrname, value):
     >>> instance.foo
     84
     """
+    instance = removeSecurityProxy(instance)
     clear_property(instance, attrname)
     setattr(instance, attrname, value)
     cached_properties = getattr(instance, '_cached_properties', [])
@@ -131,6 +134,7 @@ def clear_property(instance, attrname):
     False
     >>> clear_property(instance, '_foo_cache')
     """
+    instance = removeSecurityProxy(instance)
     if not is_cached(instance, attrname):
         return
     delattr(instance, attrname)
@@ -157,6 +161,7 @@ def clear_cachedproperties(instance):
     >>> hasattr(instance, '_foo_cache')
     False
     """
+    instance = removeSecurityProxy(instance)
     cached_properties = getattr(instance, '_cached_properties', [])
     for property_name in cached_properties:
         delattr(instance, property_name)
@@ -180,6 +185,7 @@ def is_cached(instance, attrname):
     >>> is_cached(instance, '_var_cache')
     False
     """
+    instance = removeSecurityProxy(instance)
     return safe_hasattr(instance, attrname)
 
 
