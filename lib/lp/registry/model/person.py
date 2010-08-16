@@ -1560,13 +1560,13 @@ class Person(
     @property
     def team_memberships(self):
         """See `IPerson`."""
-        return TeamMembership.select("""
-            TeamMembership.person = %s AND status in %s AND
-            Person.id = TeamMembership.team
-            """ % sqlvalues(self.id, [TeamMembershipStatus.APPROVED,
-                                      TeamMembershipStatus.ADMIN]),
-            clauseTables=['Person'],
-            orderBy=Person.sortingColumns)
+        Team = ClassAlias(Person, "Team")
+        store = Store.of(self)
+        return store.find(TeamMembership,
+            And(TeamMembership.personID == self.id,
+                Team.id == TeamMembership.teamID,
+                TeamMembership.status.is_in(
+                [TeamMembershipStatus.APPROVED,TeamMembershipStatus.ADMIN])))
 
     def _getMappedParticipantsLocations(self, limit=None):
         """See `IPersonViewRestricted`."""
