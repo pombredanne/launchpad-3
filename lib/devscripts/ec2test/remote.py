@@ -559,7 +559,7 @@ class WebTestLogger:
                 '- %(name)s\n    %(branch)s\n    %(revno)d\n' % data)
             escaped_data = {'name': escape(name),
                             'branch': escape(branch),
-                            'revno': branch.revno()}
+                            'revno': revno}
             self._index_file.write(textwrap.dedent('''\
                 <dt>%(name)s</dt>
                   <dd>%(branch)s</dd>
