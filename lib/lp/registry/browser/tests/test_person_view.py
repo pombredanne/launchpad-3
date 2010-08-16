@@ -1,17 +1,16 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
-
-import unittest
 
 import transaction
 from zope.component import getUtility
 
 from canonical.config import config
 from canonical.launchpad.ftests import ANONYMOUS, login
+from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.webapp.interfaces import NotFoundError
+from lp.app.errors import NotFoundError
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import (
     DatabaseFunctionalLayer, LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
@@ -274,7 +273,7 @@ class TestPersonParticipationView(TestCaseWithFactory):
         login_person(team.teamowner)
         team.addMember(self.user, team.teamowner)
         [participation] = self.view.active_participations
-        self.assertEqual(None, participation['subscribed'])
+        self.assertEqual('&mdash;', participation['subscribed'])
 
     def test__asParticpation_unsubscribed_to_mailing_list(self):
         # The default team role is 'Member'.
@@ -548,5 +547,33 @@ class TestPersonRelatedSoftwareFailedBuild(TestCaseWithFactory):
                 self.build.id) in html)
 
 
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
+class TestPersonDeactivateAccountView(TestCaseWithFactory):
+    """Tests for the PersonDeactivateAccountView."""
+
+    layer = DatabaseFunctionalLayer
+    form = {
+        'field.comment': 'Gotta go.',
+        'field.actions.deactivate': 'Deactivate My Account',
+        }
+
+    def test_deactivate_user_active(self):
+        user = self.factory.makePerson()
+        login_person(user)
+        view = create_initialized_view(
+            user, '+deactivate-account', form=self.form)
+        self.assertEqual([], view.errors)
+        notifications = view.request.response.notifications
+        self.assertEqual(1, len(notifications))
+        self.assertEqual(
+            'Your account has been deactivated.', notifications[0].message)
+        self.assertEqual(AccountStatus.DEACTIVATED, user.account_status)
+
+    def test_deactivate_user_already_deactivated(self):
+        deactivated_user = self.factory.makePerson()
+        login_person(deactivated_user)
+        deactivated_user.deactivateAccount('going.')
+        view = create_initialized_view(
+            deactivated_user, '+deactivate-account', form=self.form)
+        self.assertEqual(1, len(view.errors))
+        self.assertEqual(
+            'This account is already deactivated.', view.errors[0])

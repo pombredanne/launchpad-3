@@ -14,6 +14,8 @@ Create a builder working on a TranslationTemplatesBuildJob for a branch.
     ...     ILibraryFileAliasSet)
     >>> from canonical.launchpad.scripts.logger import QuietFakeLogger
     >>> from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
+    >>> from lp.testing.factory import (
+    ...     remove_security_proxy_and_shout_at_engineer)
     >>> from lp.testing.fakemethod import FakeMethod
     >>> from lp.translations.interfaces.translations import (
     ...     TranslationsBranchImportMode)
@@ -29,12 +31,15 @@ Create a builder working on a TranslationTemplatesBuildJob for a branch.
 
     >>> productseries = factory.makeProductSeries(owner=owner)
     >>> product = productseries.product
-    >>> product.official_rosetta = True
+    >>> naked_product = remove_security_proxy_and_shout_at_engineer(product)
+    >>> naked_product.official_rosetta = True
     >>> branch = factory.makeProductBranch(product=product, owner=owner)
     >>> branch_url = branch.unique_name
 
-    >>> productseries.branch = factory.makeBranch()
-    >>> productseries.translations_autoimport_mode = (
+    >>> naked_productseries = remove_security_proxy_and_shout_at_engineer(
+    ...     productseries)
+    >>> naked_productseries.branch = factory.makeBranch()
+    >>> naked_productseries.translations_autoimport_mode = (
     ...     TranslationsBranchImportMode.IMPORT_TEMPLATES)
     >>> specific_job = factory.makeTranslationTemplatesBuildJob(branch=branch)
     >>> buildqueue = getUtility(IBuildQueueSet).getByJob(specific_job.job)

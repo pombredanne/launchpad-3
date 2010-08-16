@@ -635,7 +635,8 @@ size), plus extra links for the MD5 hash and signature of that PRF.
 When the ProductReleaseFile is not signed, the link for the signature is
 not included.
 
-    >>> release_file = factory.makeProductReleaseFile(signed=False)
+    >>> release_file = factory.makeProductReleaseFile(
+    ...     signed=False)
     >>> html = test_tales("release_file/fmt:link", release_file=release_file)
     >>> soup = BeautifulSoup(html)
     >>> print_hrefs_with_titles(html)
@@ -649,8 +650,8 @@ The url for the release file can be retrieved using fmt:url.
 
 HTML in the file description is escaped in the fmt:link.
 
-    >>> release_file.description = (
-    ...     '><script>XSS failed</script>')
+    >>> release_file = factory.makeProductReleaseFile(
+    ...     signed=False, description='><script>XSS failed</script>')
     >>> print test_tales("release_file/fmt:link", release_file=release_file)
     <img ...
     <a title="&gt;&lt;script&gt;XSS failed&lt;/script&gt; (4 bytes)"
@@ -661,7 +662,7 @@ HTML in the file description is escaped in the fmt:link.
 Product series
 ..............
 
-    >>> product_series = factory.makeSeries()
+    >>> product_series = factory.makeProductSeries()
     >>> test_tales("product_series/fmt:link", product_series=product_series)
     u'... series...'
 
@@ -1566,7 +1567,7 @@ To protect privacy of teams, the formatter for teams will only show the
 data for link, displayname, and unique_displayname if the current user
 has the appropriate privileges.
 
-The team 'myteam' is a private membership team so only the team members
+The team 'myteam' is a private team so only the team members
 and Launchpad admins can see the details.
 
 Foo Bar is an administrator so he can see all.

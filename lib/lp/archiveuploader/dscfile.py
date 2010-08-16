@@ -30,8 +30,9 @@ from zope.component import getUtility
 from canonical.encoding import guess as guess_encoding
 from canonical.launchpad.interfaces import (
     GPGVerificationError, IGPGHandler, IGPGKeySet,
-    ISourcePackageNameSet, NotFoundError)
+    ISourcePackageNameSet)
 from canonical.librarian.utils import copy_and_close
+from lp.app.errors import NotFoundError
 from lp.archiveuploader.nascentuploadfile import (
     UploadWarning, UploadError, NascentUploadFile, SourceUploadFile)
 from lp.archiveuploader.tagfiles import (
@@ -573,7 +574,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         build = getUtility(ISourcePackageRecipeBuildSource).getById(build_id)
 
         # The master verifies the status to confirm successful upload.
-        build.buildstate = BuildStatus.FULLYBUILT
+        build.status = BuildStatus.FULLYBUILT
         # If this upload is successful, any existing log is wrong and
         # unuseful.
         build.upload_log = None

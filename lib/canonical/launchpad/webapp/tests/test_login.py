@@ -6,7 +6,13 @@ from __future__ import with_statement
 
 __metaclass__ = type
 
-__all__ = []
+__all__ = [
+    'FakeOpenIDConsumer',
+    'FakeOpenIDResponse',
+    'IAccountSet_getByOpenIDIdentifier_monkey_patched',
+    'SRegResponse_fromSuccessResponse_stubbed',
+    'fill_login_form_and_submit',
+    ]
 
 from contextlib import contextmanager
 from datetime import datetime, timedelta
@@ -65,6 +71,7 @@ class StubbedOpenIDCallbackView(OpenIDCallbackView):
 
 class FakeConsumer:
     """An OpenID consumer that stashes away arguments for test instection."""
+
     def complete(self, params, requested_url):
         self.params = params
         self.requested_url = requested_url
@@ -72,6 +79,7 @@ class FakeConsumer:
 
 class FakeConsumerOpenIDCallbackView(OpenIDCallbackView):
     """An OpenID handler with fake consumer so arguments can be inspected."""
+
     def _getConsumer(self):
         self.fake_consumer = FakeConsumer()
         return self.fake_consumer
@@ -178,6 +186,48 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
             SERVER_URL='http://example.com',
             QUERY_STRING='foo=bar',
             form={'starting_url': 'http://launchpad.dev/after-login'},
+            environ={'PATH_INFO': '/'})
+        view = OpenIDCallbackView(context=None, request=None)
+        params = view._gather_params(request)
+        expected_params = {
+            'starting_url': 'http://launchpad.dev/after-login',
+            'foo': 'bar',
+        }
+        self.assertEquals(params, expected_params)
+
+    def test_gather_params_with_unicode_data(self):
+        # If the currently requested URL includes a query string, the
+        # parameters in the query string will be included when constructing
+        # the params mapping (which is then used to complete the open ID
+        # response) and if there are non-ASCII characters in the query string,
+        # they are properly decoded.
+        request = LaunchpadTestRequest(
+            SERVER_URL='http://example.com',
+            QUERY_STRING='foo=%E1%9B%9D',
+            environ={'PATH_INFO': '/'})
+        view = OpenIDCallbackView(context=None, request=None)
+        params = view._gather_params(request)
+        self.assertEquals(params['foo'], u'\u16dd')
+
+    def test_unexpected_multivalue_fields(self):
+        # The parameter gatering doesn't expect to find multi-valued form
+        # field and it reports an error if it finds any.
+        request = LaunchpadTestRequest(
+            SERVER_URL='http://example.com',
+            QUERY_STRING='foo=1&foo=2',
+            environ={'PATH_INFO': '/'})
+        view = OpenIDCallbackView(context=None, request=None)
+        self.assertRaises(ValueError, view._gather_params, request)
+
+    def test_csrfmiddlewaretoken_is_ignored(self):
+        # Show that the _gather_params filters out the errant
+        # csrfmiddlewaretoken form field.  See comment in _gather_params for
+        # more info.
+        request = LaunchpadTestRequest(
+            SERVER_URL='http://example.com',
+            QUERY_STRING='foo=bar',
+            form={'starting_url': 'http://launchpad.dev/after-login',
+                'csrfmiddlewaretoken': '12345'},
             environ={'PATH_INFO': '/'})
         view = OpenIDCallbackView(context=None, request=None)
         params = view._gather_params(request)
@@ -378,8 +428,10 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
         # the response and redirect to the starting_url specified in the
         # OpenID response.
         test_account = self.factory.makeAccount('Test account')
+
         class StubbedOpenIDCallbackViewLoggedIn(StubbedOpenIDCallbackView):
             account = test_account
+
         view, html = self._createViewWithResponse(
             test_account, response_status=FAILURE,
             response_msg='Server denied check_authentication',
@@ -527,11 +579,13 @@ class FakeOpenIDRequest:
 
 
 class FakeOpenIDConsumer:
+
     def begin(self, url):
         return FakeOpenIDRequest()
 
 
 class StubbedOpenIDLogin(OpenIDLogin):
+
     def _getConsumer(self):
         return FakeOpenIDConsumer()
 

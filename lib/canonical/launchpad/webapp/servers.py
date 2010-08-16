@@ -46,6 +46,7 @@ from lazr.restful.interfaces import (
 from lazr.restful.publisher import (
     WebServicePublicationMixin, WebServiceRequestTraversal)
 
+from lp.app.errors import UnexpectedFormData
 from lp.testopenid.interfaces.server import ITestOpenIDApplication
 from canonical.launchpad.interfaces.launchpad import (
     IFeedsApplication, IPrivateApplication, IWebServiceApplication)
@@ -61,10 +62,10 @@ from canonical.launchpad.webapp.authorization import (
 from canonical.launchpad.webapp.notifications import (
     NotificationRequest, NotificationResponse, NotificationList)
 from canonical.launchpad.webapp.interfaces import (
-    IBasicLaunchpadRequest, IBrowserFormNG,
+    IAPIDocRoot, IBasicLaunchpadRequest, IBrowserFormNG,
     ILaunchpadBrowserApplicationRequest, ILaunchpadProtocolError,
     INotificationRequest, INotificationResponse, IPlacelessAuthUtility,
-    IPlacelessLoginSource, OAuthPermission, UnexpectedFormData)
+    IPlacelessLoginSource, OAuthPermission)
 from canonical.launchpad.webapp.authentication import (
     check_oauth_signature, get_oauth_authorization)
 from canonical.launchpad.webapp.errorlog import ErrorReportRequest
@@ -568,7 +569,9 @@ class LaunchpadBrowserRequest(BasicLaunchpadRequest, BrowserRequest,
     launchpad request class.
     """
 
-    implements(ILaunchpadBrowserApplicationRequest, ISynchronizer)
+    implements(
+        ILaunchpadBrowserApplicationRequest, ISynchronizer,
+        canonical.launchpad.layers.LaunchpadLayer)
 
     retry_max_count = 5    # How many times we're willing to retry
 
@@ -977,7 +980,9 @@ class LaunchpadAccessLogger(CommonAccessLogger):
                 userid,
                 pageid,
                 referer,
-                user_agent))
+                user_agent,
+                )
+           )
 
 
 http = wsgi.ServerType(
@@ -1075,6 +1080,16 @@ class FeedsBrowserRequest(LaunchpadBrowserRequest):
     implements(canonical.launchpad.layers.FeedsLayer)
 
 
+# ---- apidoc
+
+class APIDocBrowserRequest(LaunchpadBrowserRequest):
+    implements(canonical.launchpad.layers.APIDocLayer)
+
+
+class APIDocBrowserPublication(LaunchpadBrowserPublication):
+    root_object_interface = IAPIDocRoot
+
+
 # ---- testopenid
 
 class TestOpenIDBrowserRequest(LaunchpadBrowserRequest):
@@ -1092,6 +1107,16 @@ class WebServicePublication(WebServicePublicationMixin,
     """The publication used for Launchpad web service requests."""
 
     root_object_interface = IWebServiceApplication
+
+    def constructPageID(self, view, context):
+        """Add the web service named operation (if any) to the page ID."""
+        pageid = super(WebServicePublication, self).constructPageID(
+            view, context)
+        op = (view.request.get('ws.op')
+            or view.request.query_string_params.get('ws.op'))
+        if op:
+            pageid += ':' + op
+        return pageid
 
     def getApplication(self, request):
         """See `zope.publisher.interfaces.IPublication`.
@@ -1439,6 +1464,10 @@ def register_launchpad_request_publication_factories():
     if config.launchpad.enable_test_openid_provider:
         factories.append(VHRP('testopenid', TestOpenIDBrowserRequest,
                               TestOpenIDBrowserPublication))
+
+    if config.devmode:
+        factories.append(
+            VHRP('apidoc', APIDocBrowserRequest, APIDocBrowserPublication))
 
     # We may also have a private XML-RPC server.
     private_port = None

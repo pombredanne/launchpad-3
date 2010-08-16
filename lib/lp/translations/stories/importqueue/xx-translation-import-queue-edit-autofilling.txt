@@ -68,8 +68,6 @@ and the user sees a warning so he checks that it's ok.
   ['']
   >>> browser.getControl(name='field.language').value
   ['es']
-  >>> browser.getControl(name='field.variant').value
-  ''
 
 Rosetta experts should be able to override the path in the source tree from
 where this entry comes. To be sure that the path changed but that it's still
@@ -90,5 +88,3 @@ Reloading the form shows all the submitted information applied.
   ['10']
   >>> browser.getControl(name='field.language').value
   ['es']
-  >>> browser.getControl(name='field.variant').value
-  ''

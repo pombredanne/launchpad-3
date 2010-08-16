@@ -12,6 +12,7 @@ __all__ = [
     'updateBuilderStatus',
     ]
 
+import errno
 import httplib
 import gzip
 import logging
@@ -24,8 +25,7 @@ import xmlrpclib
 
 from sqlobject import (
     BoolCol, ForeignKey, IntCol, SQLObjectNotFound, StringCol)
-from storm.expr import Count, Sum
-from storm.store import Store
+from storm.expr import Coalesce, Count, Sum
 from zope.component import getUtility
 from zope.interface import implements
 
@@ -35,15 +35,14 @@ from canonical.buildd.slave import BuilderStatus
 from canonical.launchpad.helpers import filenameToContentType
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.webapp import urlappend
-from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR, SLAVE_FLAVOR)
 from canonical.lazr.utils import safe_hasattr
 from canonical.librarian.utils import copy_and_close
+from lp.app.errors import NotFoundError
 from lp.buildmaster.interfaces.builder import (
     BuildDaemonError, BuildSlaveFailure, CannotBuild, CannotFetchFile,
-    CannotResumeHost, CorruptBuildCookie, IBuilder, IBuilderSet,
-    ProtocolVersionMismatch)
+    CannotResumeHost, CorruptBuildCookie, IBuilder, IBuilderSet)
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSet
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     BuildBehaviorMismatch)
@@ -202,25 +201,38 @@ def updateBuilderStatus(builder, logger=None):
     if logger:
         logger.debug('Checking %s' % builder.name)
 
-    try:
-        builder.checkSlaveAlive()
-        builder.checkSlaveArchitecture()
-        builder.rescueIfLost(logger)
-    # Catch only known exceptions.
-    # XXX cprov 2007-06-15 bug=120571: ValueError & TypeError catching is
-    # disturbing in this context. We should spend sometime sanitizing the
-    # exceptions raised in the Builder API since we already started the
-    # main refactoring of this area.
-    except (ValueError, TypeError, xmlrpclib.Fault,
-            BuildDaemonError), reason:
-        builder.failBuilder(str(reason))
-        if logger:
-            logger.warn(
-                "%s (%s) marked as failed due to: %s",
-                builder.name, builder.url, builder.failnotes, exc_info=True)
-    except socket.error, reason:
-        error_message = str(reason)
-        builder.handleTimeout(logger, error_message)
+    MAX_EINTR_RETRIES = 42 # pulling a number out of my a$$ here
+    eintr_retry_count = 0
+
+    while True:
+        try:
+            builder.checkSlaveAlive()
+            builder.rescueIfLost(logger)
+        # Catch only known exceptions.
+        # XXX cprov 2007-06-15 bug=120571: ValueError & TypeError catching is
+        # disturbing in this context. We should spend sometime sanitizing the
+        # exceptions raised in the Builder API since we already started the
+        # main refactoring of this area.
+        except (ValueError, TypeError, xmlrpclib.Fault,
+                BuildDaemonError), reason:
+            builder.failBuilder(str(reason))
+            if logger:
+                logger.warn(
+                    "%s (%s) marked as failed due to: %s",
+                    builder.name, builder.url, builder.failnotes, exc_info=True)
+        except socket.error, reason:
+            # In Python 2.6 we can use IOError instead.  It also has
+            # reason.errno but we might be using 2.5 here so use the
+            # index hack.
+            if reason[0] == errno.EINTR:
+                eintr_retry_count += 1
+                if eintr_retry_count != MAX_EINTR_RETRIES:
+                    continue
+            error_message = str(reason)
+            builder.handleTimeout(logger, error_message)
+            return
+        else:
+            return
 
 
 class Builder(SQLBase):
@@ -283,38 +295,6 @@ class Builder(SQLBase):
 
     current_build_behavior = property(
         _getCurrentBuildBehavior, _setCurrentBuildBehavior)
-
-    def checkSlaveArchitecture(self):
-        """See `IBuilder`."""
-        # XXX cprov 2007-06-15 bug=545839:
-        # This function currently depends on the operating system specific
-        # details of the build slave to return a processor-family-name (the
-        # architecturetag) which matches the distro_arch_series. In reality,
-        # we should be checking the processor itself (e.g. amd64) as that is
-        # what the distro policy is set from, the architecture tag is both
-        # distro specific and potentially different for radically different
-        # distributions - its not the right thing to be comparing.
-
-        from lp.soyuz.model.distroarchseries import DistroArchSeries
-
-        # query the slave for its active details.
-        # XXX cprov 2007-06-15: Why is 'mechanisms' ignored?
-        builder_vers, builder_arch, mechanisms = self.slave.info()
-        # we can only understand one version of slave today:
-        if builder_vers != '1.0':
-            raise ProtocolVersionMismatch("Protocol version mismatch")
-
-        # Find a distroarchseries with the returned arch tag.
-        # This is ugly, sick and wrong, but so is the whole concept. See the
-        # XXX above and its bug for details.
-        das = Store.of(self).find(
-            DistroArchSeries, architecturetag=builder_arch,
-            processorfamily=self.processor.family).any()
-
-        if das is None:
-            raise BuildDaemonError(
-                "Bad slave architecture tag: %s (registered family: %s)" %
-                    (builder_arch, self.processor.family.name))
 
     def checkSlaveAlive(self):
         """See IBuilder."""
@@ -652,6 +632,18 @@ class Builder(SQLBase):
         self._dispatchBuildCandidate(candidate)
         return candidate
 
+    def getBuildQueue(self):
+        """See `IBuilder`."""
+        # Return a single BuildQueue for the builder provided it's
+        # currently running a job.
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        return store.find(
+            BuildQueue,
+            BuildQueue.job == Job.id,
+            BuildQueue.builder == self.id,
+            Job._status == JobStatus.RUNNING,
+            Job.date_started != None).one()
+
 
 class BuilderSet(object):
     """See IBuilderSet"""
@@ -704,15 +696,18 @@ class BuilderSet(object):
             Count(),
             Sum(BuildQueue.estimated_duration),
             Processor,
-            BuildQueue.virtualized),
+            Coalesce(BuildQueue.virtualized, True)),
             Processor.id == BuildQueue.processorID,
             Job.id == BuildQueue.jobID,
             Job._status == JobStatus.WAITING).group_by(
-                Processor, BuildQueue.virtualized)
+                Processor, Coalesce(BuildQueue.virtualized, True))
 
         result_dict = {'virt': {}, 'nonvirt': {}}
         for size, duration, processor, virtualized in results:
-            virt_str = 'virt' if virtualized else 'nonvirt'
+            if virtualized is False:
+                virt_str = 'nonvirt'
+            else:
+                virt_str = 'virt'
             result_dict[virt_str][processor.name] = (
                 size, duration)
 
