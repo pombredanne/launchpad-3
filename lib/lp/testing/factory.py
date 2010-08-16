@@ -1220,7 +1220,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             # We can't have a series task without a distribution task.
             self.makeBugTask(bug, distribution_package)
 
-        return bug.addTask(owner, target)
+        return removeSecurityProxy(bug).addTask(owner, target)
 
     def makeBugTracker(self, base_url=None, bugtrackertype=None):
         """Make a new bug tracker."""
