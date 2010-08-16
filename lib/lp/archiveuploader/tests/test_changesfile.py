@@ -5,14 +5,18 @@
 
 __metaclass__ = type
 
-from testtools import TestCase
+from debian.deb822 import Changes
+import os
 
+from canonical.launchpad.scripts.logger import BufferLogger
 from lp.archiveuploader.changesfile import (CannotDetermineFileTypeError,
-    determine_file_class_and_name)
+    ChangesFile, determine_file_class_and_name)
 from lp.archiveuploader.dscfile import DSCFile
 from lp.archiveuploader.nascentuploadfile import (
     DebBinaryUploadFile, DdebBinaryUploadFile, SourceUploadFile,
-    UdebBinaryUploadFile)
+    UdebBinaryUploadFile, UploadError)
+from lp.archiveuploader.uploadpolicy import AbsolutelyAnythingGoesUploadPolicy
+from lp.testing import TestCase
 
 
 class TestDetermineFileClassAndName(TestCase):
@@ -52,3 +56,43 @@ class TestDetermineFileClassAndName(TestCase):
             CannotDetermineFileTypeError,
             determine_file_class_and_name,
             'foo')
+
+
+class ChangesFileTests(TestCase):
+    """Tests for ChangesFile."""
+
+    def setUp(self):
+        super(ChangesFileTests, self).setUp()
+        self.logger = BufferLogger()
+        self.policy = AbsolutelyAnythingGoesUploadPolicy()
+
+    def createChangesFile(self, filename, changes):
+        tempdir = self.makeTemporaryDirectory()
+        path = os.path.join(tempdir, filename)
+        changes_fd = open(path, "w")
+        try:
+            changes.dump(changes_fd)
+        finally:
+            changes_fd.close()
+        return ChangesFile(path, self.policy, self.logger)
+
+    def test_checkFileName(self):
+        contents = Changes()
+        contents["Source"] = "mypkg"
+        contents["Binary"] = "binary"
+        contents["Architecture"] = "i386"
+        contents["Version"] = "0.1"
+        contents["Distribution"] = "zubuntu"
+        contents["Maintainer"] = "Somebody"
+        contents["Changes"] = "Something changed"
+        contents["Files"] = [{
+            "md5sum": "d2bd347b3fed184fe28e112695be491c",
+            "size": "1791",
+            "section": "python",
+            "priority": "optional",
+            "name": "dulwich_0.4.1-1.dsc"}]
+        changes = self.createChangesFile("mypkg_0.1_i386.changes", contents)
+        self.assertEquals([], list(changes.checkFileName()))
+        changes = self.createChangesFile("mypkg_0.1.changes", contents)
+        errors = list(changes.checkFileName())
+        self.assertEquals(1, len(errors))
