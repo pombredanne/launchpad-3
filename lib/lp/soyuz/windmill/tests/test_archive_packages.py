@@ -23,6 +23,3 @@ class TestArchivePackagesSourcesExtra(WindmillTestCase):
         self.client.waits.forElement(
             xpath=u'//div[@id="pub29-container"]//a[text()="i386"]',
             timeout=constants.FOR_ELEMENT)
-
-
-
