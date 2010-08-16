@@ -248,9 +248,6 @@ class LaunchpadTester:
             self._gather_test_output(popen.stdout, self.logger)
 
             exit_status = popen.wait()
-
-            self.logger.summary_file.write(
-                '\n(See the attached file for the complete log)\n')
         except:
             self.logger.error_in_testrunner(sys.exc_info())
             exit_status = 1
@@ -439,6 +436,8 @@ class WebTestLogger:
         config = bzrlib.config.GlobalConfig()
         self._handle_pqm_submission(successful, config)
         if self._request.wants_email:
+            self.summary_file.write(
+                '\n(See the attached file for the complete log)\n')
             summary = open(self.summary_filename, 'r').read()
             full_log_gz = open(gzip_file(self.out_file), 'rb').read()
             self._request.send_email(successful, summary, full_log_gz, config)
