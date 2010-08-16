@@ -34,7 +34,7 @@ class TestFormattableDate(TestCase):
         field = FormattableDate()
         date_value = datetime.date(
             *(time.strptime('2010-01-01', '%Y-%m-%d'))[:3])
-        self.assertTrue(field.validate(date_value) is None)
+        self.assertIs(None, field.validate(date_value))
 
 
 class TestStrippableText(TestCase):

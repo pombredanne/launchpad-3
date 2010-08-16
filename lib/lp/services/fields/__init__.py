@@ -1,4 +1,4 @@
-# copyright 2009 canonical ltd.  this software is licensed under the
+# copyright 2009-2010 canonical ltd.  this software is licensed under the
 # gnu affero general public license version 3 (see the file license).
 
 # pylint: disable-msg=E0211,E0213,W0401
@@ -258,21 +258,21 @@ class Whiteboard(StrippableText):
 
 
 class FormattableDate(Date):
-    """A datetime field that checks for compatibility with Python's strformat
+    """A datetime field that checks for compatibility with Python's strformat.
 
     From the user's perspective this is a date entry field; it converts to and
-    from datetime b/c that's what the db is expecting.
+    from datetime because that's what the db is expecting.
     """
     implements(IDate)
 
     def _validate(self, value):
-        error_msg = ("Date and time could not be formatted. Please submit date in "
-            "YYYY-MM-DD format. The year must be after 1900.")
+        error_msg = ("Date could not be formatted. Provide a date formatted "
+            "like YYYY-MM-DD format. The year must be after 1900.")
 
         super(FormattableDate, self)._validate(value)
-        #we're only interested in whether or not we can format the input,
-        #not whether it makes sense therwise. so we'll try to format it
-        #and raise an error if we can't.
+        # The only thing of interest here is whether or the input can be
+        # formatted properly, not whether it makes sense otherwise.
+        # As a minimal sanity check, just raise an error if it fails.
         try:
             value.strftime('%Y')
         except ValueError:
