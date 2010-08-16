@@ -27,7 +27,6 @@ import gzip
 import optparse
 import os
 import pickle
-from StringIO import StringIO
 import subprocess
 import sys
 import tempfile
