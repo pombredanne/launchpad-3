@@ -65,6 +65,15 @@ class TestPersonTeams(TestCaseWithFactory):
         memberships = [(m.person, m.team) for m in memberships]
         self.assertEqual([(self.user, self.a_team)], memberships)
 
+    def test_path_to_team_no_limit(self):
+        path_to_a = self.user.findPathToTeam(self.a_team)
+        path_to_b = self.user.findPathToTeam(self.b_team)
+        path_to_c = self.user.findPathToTeam(self.c_team)
+
+        self.assertEqual([self.a_team], path_to_a)
+        self.assertEqual([self.a_team, self.b_team], path_to_b)
+        self.assertEqual([self.a_team, self.b_team, self.c_team], path_to_c)
+
 class TestPerson(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
