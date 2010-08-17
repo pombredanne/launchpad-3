@@ -84,6 +84,7 @@ from lp.testing import (
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.translations.model.translationtemplatesbuildjob import (
     ITranslationTemplatesBuildJobSource)
+from lp.services.osutils import override_environ
 
 
 class TestCodeImport(TestCase):
@@ -2573,7 +2574,10 @@ class TestGetBzrBranch(TestCaseWithFactory):
         # safe_open returns the underlying bzr branch of a database branch in
         # the simple, unstacked, case.
         db_branch, tree = self.create_branch_and_tree()
-        revid = tree.commit('')
+        # XXX: AaronBentley 2010-08-06 bug=614404: a bzr username is
+        # required to generate the revision-id.
+        with override_environ(BZR_EMAIL='me@example.com'):
+            revid = tree.commit('')
         bzr_branch = db_branch.getBzrBranch()
         self.assertEqual(revid, bzr_branch.last_revision())
 
