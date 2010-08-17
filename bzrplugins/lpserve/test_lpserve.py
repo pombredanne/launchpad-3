@@ -45,6 +45,11 @@ class TestingLPServiceInAThread(lpserve.LPService):
         super(TestingLPServiceInAThread, self).main_loop()
         self.service_stopped.set()
 
+    def fork_one_request(self, conn, client_addr, user_id):
+        # We intentionally don't allow the test suite to request a fork, as
+        # threads + forks and everything else don't exactly play well together
+        raise NotImplementedError(self.fork_one_request)
+
     @staticmethod
     def start_service(test):
         """Start a new LPService in a thread on a random port.
@@ -139,32 +144,12 @@ class TestLPService(TestCaseWithLPService):
         self.assertEqual('yep, still alive\n', response)
 
 
-class TestCaseWithLPServiceSubprocess(tests.TestCaseWithTransport):
-    """Tests will get a separate process to communicate to.
+class TestCaseWithSubprocess(tests.TestCaseWithTransport):
+    """Override the bzr start_bzr_subprocess command.
 
-    The number of these tests should be small, because it is expensive to start
-    and stop the daemon.
-
-    TODO: This should probably use testresources, or layers somehow...
+    The launchpad infrastructure requires a fair amount of configuration to get
+    paths, etc correct. So this provides that work.
     """
-
-    def setUp(self):
-        super(TestCaseWithLPServiceSubprocess, self).setUp()
-        self.service_process, self.service_port = self.start_service_subprocess()
-        self.addCleanup(self.stop_service)
-
-    def send_message_to_service(self, message):
-        addrs = socket.getaddrinfo('127.0.0.1', self.service_port,
-            socket.AF_UNSPEC, socket.SOCK_STREAM, 0, socket.AI_PASSIVE)
-        (family, socktype, proto, canonname, sockaddr) = addrs[0]
-        client_sock = socket.socket(family, socktype, proto)
-        try:
-            client_sock.connect(sockaddr)
-            client_sock.sendall(message)
-            response = client_sock.recv(1024)
-        except socket.error, e:
-            raise RuntimeError('Failed to connect: %s' % (e,))
-        return response
 
     def get_python_path(self):
         """Return the path to the Python interpreter."""
@@ -219,6 +204,34 @@ class TestCaseWithLPServiceSubprocess(tests.TestCaseWithTransport):
                 os.chdir(cwd)
 
         return process
+
+
+class TestCaseWithLPServiceSubprocess(TestCaseWithSubprocess):
+    """Tests will get a separate process to communicate to.
+
+    The number of these tests should be small, because it is expensive to start
+    and stop the daemon.
+
+    TODO: This should probably use testresources, or layers somehow...
+    """
+
+    def setUp(self):
+        super(TestCaseWithLPServiceSubprocess, self).setUp()
+        self.service_process, self.service_port = self.start_service_subprocess()
+        self.addCleanup(self.stop_service)
+
+    def send_message_to_service(self, message):
+        addrs = socket.getaddrinfo('127.0.0.1', self.service_port,
+            socket.AF_UNSPEC, socket.SOCK_STREAM, 0, socket.AI_PASSIVE)
+        (family, socktype, proto, canonname, sockaddr) = addrs[0]
+        client_sock = socket.socket(family, socktype, proto)
+        try:
+            client_sock.connect(sockaddr)
+            client_sock.sendall(message)
+            response = client_sock.recv(1024)
+        except socket.error, e:
+            raise RuntimeError('Failed to connect: %s' % (e,))
+        return response
 
     def start_service_subprocess(self):
         # Make sure this plugin is exposed to the subprocess
