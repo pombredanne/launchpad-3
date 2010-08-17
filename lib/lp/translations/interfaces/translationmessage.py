@@ -240,6 +240,9 @@ class ITranslationMessage(Interface):
         It must not be referenced by any other object.
         """
 
+    def approve(pofile, reviewer, share_with_other_side=False):
+        """Approve this suggestion, making it a current translation."""
+
     # XXX CarlosPerelloMarin 20071022: We should move this into browser code.
     def makeHTMLID(description):
         """Unique identifier for self, suitable for use in HTML element ids.
@@ -250,6 +253,16 @@ class ITranslationMessage(Interface):
         :param description: a keyword to be embedded in the id string, e.g.
             "suggestion" or "translation."  Must be suitable for use in an
             HTML element id.
+        """
+
+    def markReviewed(reviewer, timestamp=None):
+        """Mark this message as reviewed.
+
+        Sets the reviewer and review date for this message.
+
+        :param reviewer: the person who reviewed the message.
+        :param timestamp: optional timestamp indicating when the review
+            happened.  Defaults to "now."
         """
 
     def makeCurrentUbuntu(new_value=True):

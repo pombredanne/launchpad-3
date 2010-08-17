@@ -17,6 +17,7 @@ from sqlobject import BoolCol, ForeignKey, SQLObjectNotFound, StringCol
 from storm.expr import And
 from storm.locals import SQL
 from storm.store import Store
+
 from zope.interface import implements
 
 from canonical.cachedproperty import cachedproperty
@@ -29,6 +30,9 @@ from lp.translations.interfaces.translationmessage import (
     TranslationValidationStatus)
 from lp.translations.interfaces.translations import TranslationConstants
 from lp.registry.interfaces.person import validate_public_person
+
+
+UTC = pytz.timezone('UTC')
 
 
 def make_plurals_fragment(fragment, separator):
@@ -94,6 +98,14 @@ class TranslationMessageMixIn:
         """See `ITranslationMessage`."""
         self.browser_pofile = pofile
 
+    def markReviewed(self, reviewer, timestamp=None):
+        """See `ITranslationMessage`."""
+        if timestamp is None:
+            timestamp = datetime.now(UTC)
+
+        self.reviewer = reviewer
+        self.date_reviewed = timestamp
+
 
 class DummyTranslationMessage(TranslationMessageMixIn):
     """Represents an `ITranslationMessage` where we don't yet HAVE it.
@@ -119,7 +131,6 @@ class DummyTranslationMessage(TranslationMessageMixIn):
         self.language = pofile.language
         self.variant = None
         self.potmsgset = potmsgset
-        UTC = pytz.timezone('UTC')
         self.date_created = datetime.now(UTC)
         self.submitter = None
         self.date_reviewed = None
@@ -145,6 +156,10 @@ class DummyTranslationMessage(TranslationMessageMixIn):
     def isHidden(self, pofile):
         """See `ITranslationMessage`."""
         return True
+
+    def approve(self, *args, **kwargs):
+        """See `ITranslationMessage`."""
+        raise NotImplementedError()
 
     def getOnePOFile(self):
         """See `ITranslationMessage`."""
@@ -310,6 +325,12 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
         if date_reviewed is None:
             date_reviewed = current.date_created
         return date_reviewed > self.date_created
+
+    def approve(self, pofile, reviewer, share_with_other_side=False):
+        """See `ITranslationMessage`."""
+        self.potmsgset.approveSuggestion(
+            pofile, self, reviewer,
+            share_with_other_side=share_with_other_side)
 
     def getOnePOFile(self):
         """See `ITranslationMessage`."""

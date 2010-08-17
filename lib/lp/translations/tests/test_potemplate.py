@@ -99,6 +99,21 @@ class TestPOTemplate(TestCaseWithFactory):
         self.assertContentEqual([gnome_credits, kde_credits],
                                 self.potemplate.getTranslationCredits())
 
+    def test_awardKarma(self):
+        person = self.factory.makePerson()
+        template = self.factory.makePOTemplate()
+        karma_listener = self.installKarmaRecorder(
+            person=person, product=template.product)
+        action = 'translationsuggestionadded'
+
+        # This is not something that browser code or scripts should do,
+        # so we go behind the proxy.
+        removeSecurityProxy(template).awardKarma(person, action)
+
+        karma_events = karma_listener.karma_events
+        self.assertEqual(1, len(karma_events))
+        self.assertEqual(action, karma_events[0].action.name)
+
 
 class EquivalenceClassTestMixin:
     """Helper for POTemplate equivalence class tests."""

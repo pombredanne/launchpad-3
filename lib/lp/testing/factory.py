@@ -29,7 +29,6 @@ from email.mime.multipart import MIMEMultipart
 from itertools import count
 from operator import isSequenceType
 import os
-import os.path
 from random import randint
 from StringIO import StringIO
 from textwrap import dedent
@@ -171,6 +170,8 @@ from lp.translations.interfaces.translationimportqueue import (
 from lp.translations.interfaces.translationfileformat import (
     TranslationFileFormat)
 from lp.translations.interfaces.translationgroup import ITranslationGroupSet
+from lp.translations.interfaces.translationmessage import (
+    RosettaTranslationOrigin)
 from lp.translations.interfaces.translationsperson import ITranslationsPerson
 from lp.translations.interfaces.translationtemplatesbuildjob import (
     ITranslationTemplatesBuildJobSource)
@@ -2139,6 +2140,60 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             translations=translations, date_updated=date_updated,
             force_shared=True)
         return translation_message
+
+    def makeCurrentTranslationMessage(self, pofile=None, potmsgset=None,
+                                      translator=None, reviewer=None,
+                                      translations=None, diverged=False,
+                                      current_other=False):
+        """Create a `TranslationMessage` and make it current.
+
+        This is similar to `makeTranslationMessage`, except:
+         * It doesn't create suggestions.
+         * It doesn't rely on the obsolescent updateTranslation.
+         * It activates the message on the correct translation side.
+
+        By default the message will only be current on the side (Ubuntu
+        or upstream) that `pofile` is on.
+
+        Be careful: if the message is already translated, calling this
+        method may violate database unique constraints.
+
+        :param pofile: `POFile` to put translation in; if omitted, one
+            will be created.
+        :param potmsgset: `POTMsgSet` to translate; if omitted, one will
+            be created (with sequence number 1).
+        :param translator: `Person` who created the translation.  If
+            omitted, one will be created.
+        :param reviewer: `Person` who reviewed the translation.  If
+            omitted, one will be created.
+        :param translations: List of strings to translate the `POTMsgSet`
+            to.  If omitted, will translate to a single random string.
+        :param diverged: Create a diverged message?
+        :param current_other: Should the message also be current on the
+            other translation side?  (Cannot be combined with `diverged`).
+        """
+        assert not (diverged and current_other), (
+            "A diverged message can't be current on the other side.")
+        if pofile is None:
+            pofile = self.makePOFile('nl')
+        if potmsgset is None:
+            potmsgset = self.makePOTMsgSet(pofile.potemplate, sequence=1)
+        if translator is None:
+            translator = self.makePerson()
+        if reviewer is None:
+            reviewer = self.makePerson()
+        if translations is None:
+            translations = [self.getUniqueString()]
+
+        message = potmsgset.setCurrentTranslation(
+            pofile, translator, dict(enumerate(translations)),
+            RosettaTranslationOrigin.ROSETTAWEB,
+            share_with_other_side=current_other)
+
+        if diverged:
+            removeSecurityProxy(message).potemplate = pofile.potemplate
+
+        return message
 
     def makeTranslation(self, pofile, sequence,
                         english=None, translated=None,
