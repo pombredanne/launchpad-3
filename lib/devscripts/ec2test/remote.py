@@ -115,6 +115,8 @@ class EC2Runner:
     catastrophic failure.
     """
 
+    # XXX: EC2Runner needs tests.
+
     # The number of seconds we give this script to clean itself up, and for
     # 'ec2 test --postmortem' to grab control if needed.  If we don't give
     # --postmortem enough time to log in via SSH and take control, then this
@@ -203,6 +205,8 @@ class EC2Runner:
 
 class LaunchpadTester:
     """Runs Launchpad tests and gathers their results in a useful way."""
+
+    # XXX: LaunchpadTester needs tests.
 
     def __init__(self, logger, test_directory, test_options=()):
         """Construct a TestOnMergeRunner.
@@ -442,6 +446,7 @@ class WebTestLogger:
             tested.
         :param echo_to_stdout: Whether or not we should echo output to stdout.
         """
+        # XXX: parametrize www_dir
         self._request = request
         self._echo_to_stdout = echo_to_stdout
 
@@ -459,6 +464,7 @@ class WebTestLogger:
 
     def error_in_testrunner(self, exc_info):
         """Called when there is a catastrophic error in the test runner."""
+        # XXX: error_in_testrunner needs tests.
         exc_type, exc_value, exc_tb = exc_info
         self._summary_file.write('\n\nERROR IN TESTRUNNER\n\n')
         traceback.print_exception(
@@ -488,6 +494,7 @@ class WebTestLogger:
 
     def got_line(self, line):
         """Called when we get a line of output from our child processes."""
+        # XXX: got_line needs tests.
         self._out_file.write(line)
         self._out_file.flush()
         if self._echo_to_stdout:
@@ -516,12 +523,14 @@ class WebTestLogger:
 
     def write(self, msg):
         """Write to the summary and full log file."""
+        # XXX: Logger.write needs tests.
         for fd in [self._out_file, self._summary_file]:
             fd.write(msg)
             fd.flush()
 
     def write_line(self, msg):
         """Write to the summary and full log file with a newline."""
+        # XXX: Logger.write_line needs tests.
         self.write(msg + '\n')
 
     def prepare(self):
@@ -530,6 +539,7 @@ class WebTestLogger:
         Writes three log files: the raw output log, the filtered "summary"
         log file, and a HTML index page summarizing the test run paramters.
         """
+        # XXX: Logger.prepare needs lots of tests.
         self._open_logs()
 
         msg = 'Tests started at approximately %(now)s UTC' % {
