@@ -323,6 +323,8 @@ class SyncUploadPolicy(AbstractUploadPolicy):
         pass
 
 
+# XXX: The two policies below should be moved to a test helper somewhere, but
+# I'll do that in a subsequent branch as this one is already too big.
 class AnythingGoesUploadPolicy(AbstractUploadPolicy):
     """This policy is invoked when processing uploads from the test process.
 
