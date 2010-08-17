@@ -3,6 +3,7 @@
 
 __all__ = [
     'FeatureFlag',
+    'getAllRules',
     'getFeatureStore',
     ]
 
@@ -44,7 +45,7 @@ class FeatureFlag(Storm):
         self.value = value
 
 
-def getAllRules(self):
+def getAllRules():
     """Return model objects for all rules."""
     store = getFeatureStore()
     rs = (store
