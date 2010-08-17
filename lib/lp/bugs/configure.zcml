@@ -928,7 +928,7 @@
         handler="lp.bugs.subscribers.buglastupdated.update_bug_date_last_updated"/>
     <subscriber
         for="canonical.launchpad.interfaces.IBugTask                 lazr.lifecycle.interfaces.IObjectModifiedEvent"
-        handler="canonical.launchpad.mailnotification.notify_bugtask_edited"/>
+        handler="lp.bugs.subscribers.bugtask.notify_bugtask_edited"/>
     <subscriber
         for="canonical.launchpad.interfaces.IBugTask                 lazr.lifecycle.interfaces.IObjectModifiedEvent"
         handler="canonical.launchpad.subscribers.karma.bugtask_modified"/>
