@@ -37,7 +37,7 @@ class MailingListSubscriptionControlsTestCase(TestCaseWithFactory):
             principal=self.user, server_url='http://launchpad.dev',
             path_info='/~%s' % self.b_team.name)
         content = view.render()
-        link_tag = find_tag_by_id(content, "link.list.subscribe")
+        link_tag = find_tag_by_id(content, "link-list-subscribe")
         self.assertNotEqual(None, link_tag)
 
     def test_subscribe_control_doesnt_render_for_anon(self):
@@ -48,5 +48,5 @@ class MailingListSubscriptionControlsTestCase(TestCaseWithFactory):
             path_info='/~%s' % self.b_team.name)
         content = view.render()
         self.assertNotEqual('', content)
-        link_tag = find_tag_by_id(content, "link.list.subscribe")
+        link_tag = find_tag_by_id(content, "link-list-subscribe")
         self.assertEqual(None, link_tag)
