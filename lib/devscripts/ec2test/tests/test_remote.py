@@ -194,6 +194,15 @@ class RequestHelpers:
                 tree.commit(message=str(i))
         return 'sourcecode/'
 
+    def make_logger(self, request=None, echo_to_stdout=False):
+        full_log = StringIO()
+        summary = StringIO()
+        index = StringIO()
+        if request is None:
+            request = self.make_request()
+        return WebTestLogger(
+            full_log, summary, index, request, echo_to_stdout)
+
 
 class TestRequest(TestCaseWithTransport, RequestHelpers):
     """Tests for `Request`."""
@@ -394,15 +403,6 @@ class TestWebTestLogger(TestCaseWithTransport, RequestHelpers):
         self.addCleanup(setattr, obj, name, orig)
         return orig
 
-    def make_logger(self, request=None, echo_to_stdout=False):
-        full_log = StringIO()
-        summary = StringIO()
-        index = StringIO()
-        if request is None:
-            request = self.make_request()
-        return WebTestLogger(
-            full_log, summary, index, request, echo_to_stdout)
-
     def test_make_in_directory(self):
         # WebTestLogger.make_in_directory constructs a logger that writes to a
         # bunch of specific files in a directory.
@@ -471,6 +471,68 @@ class TestWebTestLogger(TestCaseWithTransport, RequestHelpers):
         self.assertEqual(
             "\n\nERROR IN TESTRUNNER\n\n%s" % (stack,),
             logger.get_summary_contents())
+
+
+class TestResultHandling(TestCaseWithTransport, RequestHelpers):
+    """Tests for how we handle the result at the end of the test suite."""
+
+    def test_success_no_emails(self):
+        request = self.make_request(emails=[])
+        logger = self.make_logger(request=request)
+        logger.got_result(True)
+        self.assertEqual([], request.emails_sent)
+
+    def test_failure_no_emails(self):
+        request = self.make_request(emails=[])
+        logger = self.make_logger(request=request)
+        logger.got_result(False)
+        self.assertEqual([], request.emails_sent)
+
+    def test_submits_to_pqm_on_success(self):
+        message = {'Subject': 'foo'}
+        request = self.make_request(emails=[], pqm_message=message)
+        logger = self.make_logger(request=request)
+        logger.got_result(True)
+        self.assertEqual([message], request.emails_sent)
+
+    def test_records_pqm_submission_in_email(self):
+        message = {'Subject': 'foo'}
+        request = self.make_request(
+            emails=['foo@example.com'], pqm_message=message)
+        logger = self.make_logger(request=request)
+        logger.got_result(True)
+        [pqm_message, user_message] = request.emails_sent
+        self.assertEqual(message, pqm_message)
+        self.assertIn(
+            'SUBMITTED TO PQM:\n%s' % (message['Subject'],),
+            str(user_message))
+
+    def test_doesnt_submit_to_pqm_no_failure(self):
+        message = {'Subject': 'foo'}
+        request = self.make_request(emails=[], pqm_message=message)
+        logger = self.make_logger(request=request)
+        logger.got_result(False)
+        self.assertEqual([], request.emails_sent)
+
+    def test_records_non_pqm_submission_in_email(self):
+        message = {'Subject': 'foo'}
+        request = self.make_request(
+            emails=['foo@example.com'], pqm_message=message)
+        logger = self.make_logger(request=request)
+        logger.got_result(False)
+        [user_message] = request.emails_sent
+        self.assertIn(
+            '**NOT** submitted to PQM:\n%s' % (message['Subject'],),
+            str(user_message))
+
+    def test_email_refers_to_attached_log(self):
+        request = self.make_request(emails=['foo@example.com'])
+        logger = self.make_logger(request=request)
+        logger.got_result(False)
+        [user_message] = request.emails_sent
+        self.assertIn(
+            '(See the attached file for the complete log)\n',
+            str(user_message))
 
 
 def test_suite():
