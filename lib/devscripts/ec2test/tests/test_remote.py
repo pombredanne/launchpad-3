@@ -141,6 +141,18 @@ class TestGzipFile(TestCase):
 class TestRequest(TestCaseWithTransport):
     """Tests for `Request`."""
 
+    def make_trunk(self, parent_url='http://example.com/bzr/trunk'):
+        """Make a trunk branch suitable for use with `Request`.
+
+        `Request` expects to be given a path to a working tree that has a
+        branch with a configured parent URL, so this helper returns such a
+        working tree.
+        """
+        nick = parent_url.strip('/').split('/')[-1]
+        tree = self.make_branch_and_tree(nick)
+        tree.branch.set_parent(parent_url)
+        return tree
+
     def test_doesnt_want_email(self):
         # If no email addresses were provided, then the user does not want to
         # receive email.
@@ -156,26 +168,25 @@ class TestRequest(TestCaseWithTransport):
         self.assertEqual(True, req.wants_email)
 
     def test_get_trunk_details(self):
-        tree = self.make_branch_and_tree('.')
-        branch = tree.branch
         parent = 'http://example.com/bzr/branch'
-        branch.set_parent(parent)
-        req = Request(None, None, branch.base, None)
-        self.assertEqual((parent, branch.revno()), req.get_trunk_details())
+        tree = self.make_trunk(parent)
+        req = Request(None, None, tree.basedir, None)
+        self.assertEqual(
+            (parent, tree.branch.revno()), req.get_trunk_details())
 
     def test_get_branch_details_no_commits(self):
-        tree = self.make_branch_and_tree('.')
+        tree = self.make_trunk()
         req = Request(None, None, tree.basedir, None)
         self.assertEqual(None, req.get_branch_details())
 
     def test_get_branch_details_no_merge(self):
-        tree = self.make_branch_and_tree('.')
+        tree = self.make_trunk()
         tree.commit(message='foo')
         req = Request(None, None, tree.basedir, None)
         self.assertEqual(None, req.get_branch_details())
 
     def test_get_branch_details_merge(self):
-        tree = self.make_branch_and_tree('.')
+        tree = self.make_trunk()
         # Fake a merge, giving silly revision ids.
         tree.add_pending_merge('foo', 'bar')
         req = Request('https://example.com/bzr/thing', 42, tree.basedir, None)
@@ -183,33 +194,24 @@ class TestRequest(TestCaseWithTransport):
             ('https://example.com/bzr/thing', 42), req.get_branch_details())
 
     def test_get_nick_trunk_only(self):
-        tree = self.make_branch_and_tree('.')
-        branch = tree.branch
-        parent = 'http://example.com/bzr/db-devel'
-        branch.set_parent(parent)
-        req = Request(None, None, branch.base, None)
+        tree = self.make_trunk(parent_url='http://example.com/bzr/db-devel')
+        req = Request(None, None, tree.basedir, None)
         self.assertEqual('db-devel', req.get_nick())
 
     def test_get_nick_merge(self):
-        tree = self.make_branch_and_tree('.')
+        tree = self.make_trunk()
         # Fake a merge, giving silly revision ids.
         tree.add_pending_merge('foo', 'bar')
         req = Request('https://example.com/bzr/thing', 42, tree.basedir, None)
         self.assertEqual('thing', req.get_nick())
 
     def test_get_merge_description_trunk_only(self):
-        tree = self.make_branch_and_tree('.')
-        branch = tree.branch
-        parent = 'http://example.com/bzr/db-devel'
-        branch.set_parent(parent)
-        req = Request(None, None, branch.base, None)
+        tree = self.make_trunk(parent_url='http://example.com/bzr/db-devel')
+        req = Request(None, None, tree.basedir, None)
         self.assertEqual('db-devel', req.get_merge_description())
 
     def test_get_merge_description_merge(self):
-        tree = self.make_branch_and_tree('.')
-        branch = tree.branch
-        parent = 'http://example.com/bzr/db-devel/'
-        branch.set_parent(parent)
+        tree = self.make_trunk(parent_url='http://example.com/bzr/db-devel/')
         tree.add_pending_merge('foo', 'bar')
         req = Request('https://example.com/bzr/thing', 42, tree.basedir, None)
         self.assertEqual('thing => db-devel', req.get_merge_description())
@@ -217,7 +219,7 @@ class TestRequest(TestCaseWithTransport):
     def test_get_summary_commit(self):
         # The summary commit message is the last commit message of the branch
         # we're merging in.
-        trunk = self.make_branch_and_tree('trunk')
+        trunk = self.make_trunk()
         trunk.commit(message="a starting point")
         thing_bzrdir = trunk.branch.bzrdir.sprout('thing')
         thing = thing_bzrdir.open_workingtree()
@@ -289,6 +291,13 @@ class TestRequest(TestCaseWithTransport):
         subject = req.submit_to_pqm(successful=True)
         self.assertIs(message.get('Subject'), subject)
         self.assertEqual([message], emails)
+
+    def test_report_email_subject_success(self):
+        tree = self.make_trunk()
+        req = Request(
+            None, None, tree.basedir, None, emails=['foo@example.com'])
+        email = req._build_report_email(True, 'foo', 'gobbledygook')
+        self.assertEqual('Test results: SUCCESS', email['Subject'])
 
 
 def test_suite():
