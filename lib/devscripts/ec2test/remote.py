@@ -299,6 +299,11 @@ class Request:
         self._emails = emails
         self._pqm_message = pqm_message
 
+    def _send_email(self, config, message):
+        """Actually send 'message'."""
+        conn = bzrlib.smtp_connection.SMTPConnection(config)
+        conn.send_email(message)
+
     def get_trunk_details(self):
         """Return (branch_url, revno) for trunk."""
         branch = bzrlib.branch.Branch.open_containing(
@@ -380,7 +385,7 @@ class Request:
             filename='%s.log.gz' % self.get_nick())
         message.attach(zipped_log)
 
-        bzrlib.smtp_connection.SMTPConnection(config).send_email(message)
+        self._send_email(message)
 
     def iter_dependency_branches(self):
         """Iterate through the Bazaar branches we depend on."""
@@ -399,8 +404,7 @@ class Request:
             return
         subject = self._pqm_message.get('Subject')
         if successful:
-            conn = bzrlib.smtp_connection.SMTPConnection(config)
-            conn.send_email(self._pqm_message)
+            self._send_email(self._pqm_message)
         return subject
 
     @property
