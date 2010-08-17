@@ -3,6 +3,8 @@
 
 """Tests for the scanner's merge detection."""
 
+from __future__ import with_statement
+
 __metaclass__ = type
 
 import logging
@@ -27,6 +29,7 @@ from lp.code.model.branchmergeproposaljob import (
     BranchMergeProposalJob, BranchMergeProposalJobFactory,
     BranchMergeProposalJobType)
 from lp.code.interfaces.branchlookup import IBranchLookup
+from lp.services.osutils import override_environ
 from lp.testing import TestCase, TestCaseWithFactory
 from lp.testing.mail_helpers import pop_notifications
 
@@ -129,7 +132,10 @@ class TestAutoMergeDetectionForMergeProposals(BzrSyncTestCase):
         proposal, db_trunk, db_branch, branch_tree = (
             self._createBranchesAndProposal())
 
-        branch_tree.commit(u'another revision', rev_id='another-rev')
+        # XXX: AaronBentley 2010-08-06 bug=614404: a bzr username is
+        # required to generate the revision-id.
+        with override_environ(BZR_EMAIL='me@example.com'):
+            branch_tree.commit(u'another revision', rev_id='another-rev')
         current_proposal_status = proposal.queue_status
         self.assertNotEqual(
             current_proposal_status,
@@ -147,7 +153,10 @@ class TestAutoMergeDetectionForMergeProposals(BzrSyncTestCase):
         proposal, db_trunk, db_branch, branch_tree = (
             self._createBranchesAndProposal())
 
-        branch_tree.commit(u'another revision', rev_id='another-rev')
+        # XXX: AaronBentley 2010-08-06 bug=614404: a bzr username is
+        # required to generate the revision-id.
+        with override_environ(BZR_EMAIL='me@example.com'):
+            branch_tree.commit(u'another revision', rev_id='another-rev')
         current_proposal_status = proposal.queue_status
         self.assertNotEqual(
             current_proposal_status,

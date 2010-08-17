@@ -103,6 +103,7 @@ class POTMsgSet(SQLBase):
     credits_message_ids = credits_message_info.keys()
 
     def __storm_invalidated__(self):
+        super(POTMsgSet, self).__storm_invalidated__()
         self._cached_singular_text = None
         self._cached_uses_english_msgids = None
 
@@ -157,6 +158,7 @@ class POTMsgSet(SQLBase):
     @property
     def uses_english_msgids(self):
         """See `IPOTMsgSet`."""
+        # TODO: convert to cachedproperty, it will be simpler.
         if self._cached_uses_english_msgids is not None:
             return self._cached_uses_english_msgids
 
@@ -181,6 +183,7 @@ class POTMsgSet(SQLBase):
     @property
     def singular_text(self):
         """See `IPOTMsgSet`."""
+        # TODO: convert to cachedproperty, it will be simpler.
         if self._cached_singular_text is not None:
             return self._cached_singular_text
 
