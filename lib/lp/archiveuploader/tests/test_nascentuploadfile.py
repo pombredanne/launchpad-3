@@ -10,14 +10,17 @@ import hashlib
 import os
 
 from canonical.launchpad.scripts.logger import BufferLogger
+from canonical.testing import LaunchpadZopelessLayer
+
 from lp.archiveuploader.changesfile import ChangesFile
 from lp.archiveuploader.dscfile import DSCFile
-from lp.archiveuploader.nascentuploadfile import (CustomUploadFile,
-    DebBinaryUploadFile)
+from lp.archiveuploader.nascentuploadfile import (
+    CustomUploadFile,
+    DebBinaryUploadFile,
+    )
 from lp.archiveuploader.uploadpolicy import AbsolutelyAnythingGoesUploadPolicy
 from lp.soyuz.interfaces.queue import PackageUploadCustomFormat
 from lp.testing import TestCaseWithFactory
-from canonical.testing import LaunchpadZopelessLayer
 
 
 class NascentUploadFileTestCase(TestCaseWithFactory):
@@ -53,7 +56,7 @@ class CustomUploadFileTests(NascentUploadFileTestCase):
     layer = LaunchpadZopelessLayer
 
     def createCustomUploadFile(self, filename, contents,
-        component_and_section, priority_name):
+                               component_and_section, priority_name):
         """Simple wrapper to create a CustomUploadFile."""
         (path, digest, size) = self.writeUploadFile(filename, contents)
         uploadfile = CustomUploadFile(
@@ -62,6 +65,8 @@ class CustomUploadFileTests(NascentUploadFileTestCase):
         return uploadfile
 
     def test_custom_type(self):
+        # Test that the mime type gets set according to
+        # PackageUploadCustomFormat.
         uploadfile = self.createCustomUploadFile(
             "bla.txt", "data", "main/raw-installer", "extra")
         self.assertEquals(
@@ -69,6 +74,7 @@ class CustomUploadFileTests(NascentUploadFileTestCase):
             uploadfile.custom_type)
 
     def test_storeInDatabase(self):
+        # Test that storeInDatabase creates a library file.
         uploadfile = self.createCustomUploadFile(
             "bla.txt", "data", "main/raw-installer", "extra")
         self.assertEquals("application/octet-stream", uploadfile.content_type)
@@ -137,7 +143,7 @@ class DSCFileTests(PackageUploadFileTestCase):
         return dsc
 
     def createDSCFile(self, filename, dsc, component_and_section,
-            priority_name, package, version, changes):
+                      priority_name, package, version, changes):
         (path, digest, size) = self.writeUploadFile(filename, dsc.dump())
         if changes:
             self.assertEquals([], list(changes.processAddresses()))
@@ -146,21 +152,24 @@ class DSCFileTests(PackageUploadFileTestCase):
             version, changes, self.policy, self.logger)
 
     def test_filetype(self):
+        # Test that the filetype attribute is set based on the file
+        # extension.
         dsc = self.getBaseDsc()
-        uploadfile = self.createDSCFile("foo.dsc", dsc,
-            "main/net", "extra", "dulwich", "0.42", None)
-        self.assertEquals("text/x-debian-source-package",
-            uploadfile.content_type)
+        uploadfile = self.createDSCFile(
+            "foo.dsc", dsc, "main/net", "extra", "dulwich", "0.42", None)
+        self.assertEquals(
+            "text/x-debian-source-package", uploadfile.content_type)
 
     def test_storeInDatabase(self):
+        # Test that storeInDatabase creates a SourcePackageRelease.
         dsc = self.getBaseDsc()
         dsc["Build-Depends"] = "dpkg, bzr"
         changes = self.getBaseChanges()
         uploadfile = self.createDSCFile(
             "foo.dsc", dsc, "main/net", "extra", "dulwich", "0.42",
             self.createChangesFile("foo.changes", changes))
-        (uploadfile.changelog_path, changelog_digest, changelog_size) = \
-            self.writeUploadFile("changelog", "DUMMY")
+        (uploadfile.changelog_path, changelog_digest, changelog_size) = (
+            self.writeUploadFile("changelog", "DUMMY"))
         uploadfile.files = []
         release = uploadfile.storeInDatabase(None)
         self.assertEquals("0.42", release.version)
@@ -187,10 +196,11 @@ class DebBinaryUploadFileTests(PackageUploadFileTestCase):
             "Homepage": "http://samba.org/~jelmer/dulwich",
             "Description": "Pure-python Git library\n"
                 "Dulwich is a Python implementation of the file formats and "
-                "protocols"}
+                "protocols"
+            }
 
     def createDebBinaryUploadFile(self, filename, component_and_section,
-        priority_name, package, version, changes):
+                                  priority_name, package, version, changes):
         """Create a DebBinaryUploadFile."""
         (path, digest, size) = self.writeUploadFile(filename, "DUMMY DATA")
         return DebBinaryUploadFile(
@@ -198,11 +208,13 @@ class DebBinaryUploadFileTests(PackageUploadFileTestCase):
             version, changes, self.policy, self.logger)
 
     def test_unknown_priority(self):
+        # Test that unknown priorities automatically get changed to 'extra'.
         uploadfile = self.createDebBinaryUploadFile(
             "foo_0.42_i386.deb", "main/net", "unknown", "mypkg", "0.42", None)
         self.assertEquals("extra", uploadfile.priority_name)
 
     def test_parseControl(self):
+        # Test that parseControl sets various fields on DebBinaryUploadFile.
         uploadfile = self.createDebBinaryUploadFile(
             "foo_0.42_i386.deb", "main/python", "unknown", "mypkg", "0.42",
             None)
@@ -214,6 +226,7 @@ class DebBinaryUploadFileTests(PackageUploadFileTestCase):
         self.assertEquals("0.42", uploadfile.control_version)
 
     def test_storeInDatabase(self):
+        # Test that storeInDatabase creates a BinaryPackageRelease.
         uploadfile = self.createDebBinaryUploadFile(
             "foo_0.42_i386.deb", "main/python", "unknown", "mypkg", "0.42",
             None)

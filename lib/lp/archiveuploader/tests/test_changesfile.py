@@ -11,12 +11,19 @@ import os
 from canonical.launchpad.scripts.logger import BufferLogger
 from canonical.testing import LaunchpadZopelessLayer
 
-from lp.archiveuploader.changesfile import (CannotDetermineFileTypeError,
-    ChangesFile, determine_file_class_and_name)
+from lp.archiveuploader.changesfile import (
+    CannotDetermineFileTypeError,
+    ChangesFile,
+    determine_file_class_and_name,
+    )
 from lp.archiveuploader.dscfile import DSCFile
 from lp.archiveuploader.nascentuploadfile import (
-    DebBinaryUploadFile, DdebBinaryUploadFile, SourceUploadFile,
-    UdebBinaryUploadFile, UploadError)
+    DebBinaryUploadFile,
+    DdebBinaryUploadFile,
+    SourceUploadFile,
+    UdebBinaryUploadFile,
+    UploadError,
+    )
 from lp.archiveuploader.uploadpolicy import AbsolutelyAnythingGoesUploadPolicy
 from lp.testing import TestCase
 
@@ -101,6 +108,8 @@ class ChangesFileTests(TestCase):
         return contents
 
     def test_checkFileName(self):
+        # Test that checkFileName() yields an UploadError if the filename
+        # is invalid.
         contents = self.getBaseChanges()
         changes = self.createChangesFile("mypkg_0.1_i386.changes", contents)
         self.assertEquals([], list(changes.checkFileName()))
@@ -110,52 +119,68 @@ class ChangesFileTests(TestCase):
         self.assertEquals(1, len(errors))
 
     def test_filename(self):
-        changes = self.createChangesFile("mypkg_0.1_i386.changes",
-            self.getBaseChanges())
+        # Test that filename gets set to the basename of the changes file
+        # on disk.
+        changes = self.createChangesFile(
+            "mypkg_0.1_i386.changes", self.getBaseChanges())
         self.assertEquals("mypkg_0.1_i386.changes", changes.filename)
 
     def test_suite_name(self):
-        changes = self.createChangesFile("mypkg_0.1_i386.changes",
-            self.getBaseChanges())
+        # Test that the suite name gets extracted from the changes file.
+        changes = self.createChangesFile(
+            "mypkg_0.1_i386.changes", self.getBaseChanges())
         self.assertEquals("nifty", changes.suite_name)
 
     def test_version(self):
-        changes = self.createChangesFile("mypkg_0.1_i386.changes",
-            self.getBaseChanges())
+        # Test that the version gets extracted from the changes file.
+        changes = self.createChangesFile(
+            "mypkg_0.1_i386.changes", self.getBaseChanges())
         self.assertEquals("0.1", changes.version)
 
     def test_architectures(self):
-        changes = self.createChangesFile("mypkg_0.1_i386.changes",
-            self.getBaseChanges())
+        # Test that the architectures get extracted from the changes file
+        # and parsed correctly.
+        changes = self.createChangesFile(
+            "mypkg_0.1_i386.changes", self.getBaseChanges())
         self.assertEquals("i386", changes.architecture_line)
         self.assertEquals(set(["i386"]), changes.architectures)
 
     def test_source(self):
-        changes = self.createChangesFile("mypkg_0.1_i386.changes",
-            self.getBaseChanges())
+        # Test that the source package name gets extracted from the changes
+        # file.
+        changes = self.createChangesFile(
+            "mypkg_0.1_i386.changes", self.getBaseChanges())
         self.assertEquals("mypkg", changes.source)
 
     def test_processAddresses(self):
+        # Test that processAddresses parses the changes file and sets the
+        # changed_by field.
         contents = self.getBaseChanges()
-        changes = self.createChangesFile("mypkg_0.1_i386.changes",
-            contents)
+        changes = self.createChangesFile(
+            "mypkg_0.1_i386.changes", contents)
         self.assertEquals(None, changes.changed_by)
         errors = list(changes.processAddresses())
         self.assertEquals(0, len(errors), "Errors: %r" % errors)
-        self.assertEquals("Somebody <somebody@ubuntu.com>",
-            changes.changed_by['rfc822'])
+        self.assertEquals(
+            "Somebody <somebody@ubuntu.com>", changes.changed_by['rfc822'])
 
     def test_simulated_changelog(self):
+        # Test that the simulated_changelog property returns a
+        # changelog entry based on the control fields.
         contents = self.getBaseChanges()
-        changes = self.createChangesFile("mypkg_0.1_i386.changes",
-            contents)
+        changes = self.createChangesFile(
+            "mypkg_0.1_i386.changes", contents)
         self.assertEquals([], list(changes.processAddresses()))
-        self.assertEquals("Something changed\n"
+        self.assertEquals(
+            "Something changed\n"
             " -- Somebody <somebody@ubuntu.com>   Fri, 25 Jun 2010 11:20:22 -0600",
             changes.simulated_changelog)
 
     def test_requires_changed_by(self):
+        # Test that a changes file is rejected if it does not have a
+        # Changed-By field.
         contents = self.getBaseChanges()
         del contents["Changed-By"]
-        self.assertRaises(UploadError,
+        self.assertRaises(
+            UploadError,
             self.createChangesFile, "mypkg_0.1_i386.changes", contents)

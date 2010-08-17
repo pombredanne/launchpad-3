@@ -152,7 +152,7 @@ class ChangesFile(SignableTagFile):
     def isCustom(self, component_and_section):
         """Check if given 'component_and_section' matches a custom upload.
 
-        We recognize an upload as custom if it is targetted at a section like
+        We recognize an upload as custom if it is targeted at a section like
         'raw-<something>'.
         Further checks will be performed in CustomUploadFile class.
         """
@@ -219,7 +219,7 @@ class ChangesFile(SignableTagFile):
         if len(self.files) == 0:
             yield UploadError("No files found in the changes")
 
-        if not 'urgency' in self._dict:
+        if 'urgency' not in self._dict:
             # Urgency is recommended but not mandatory. Default to 'low'
             self._dict['urgency'] = "low"
 
