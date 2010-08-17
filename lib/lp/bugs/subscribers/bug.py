@@ -16,12 +16,12 @@ from canonical.config import config
 from canonical.database.sqlbase import block_implicit_flushes
 from canonical.launchpad.helpers import get_contact_email_addresses
 from canonical.launchpad.mail import format_address, sendmail
-from canonical.launchpad.mailnotification import (
-    add_bug_change_notifications, generate_bug_add_email)
+from canonical.launchpad.mailnotification import add_bug_change_notifications
 from canonical.launchpad.webapp.publisher import canonical_url
 
 from lp.bugs.adapters.bugdelta import BugDelta
 from lp.bugs.mail.bugnotificationbuilder import BugNotificationBuilder
+from lp.bugs.mail.newbug import generate_bug_add_email
 from lp.registry.interfaces.person import IPerson
 
 
