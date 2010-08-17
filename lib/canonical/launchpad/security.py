@@ -920,24 +920,8 @@ class EditBugTask(AuthorizationBase):
     usedfor = IHasBug
 
     def checkAuthenticated(self, user):
-
-        if user.in_admin:
-            # Admins can always edit bugtasks, whether they're reported on a
-            # private bug or not.
-            return True
-
-        if not self.obj.bug.private:
-            # This is a public bug, so anyone can edit it.
-            return True
-        else:
-            # This is a private bug, and we know the user isn't an admin, so
-            # we'll only allow editing if the user is explicitly subscribed to
-            # this bug.
-            for subscription in self.obj.bug.subscriptions:
-                if user.inTeam(subscription.person):
-                    return True
-
-            return False
+        # Delegated entirely to the bug.
+        return self.obj.bug.userCanView(user)
 
 
 class PublicToAllOrPrivateToExplicitSubscribersForBugTask(AuthorizationBase):
@@ -959,21 +943,10 @@ class EditPublicByLoggedInUserAndPrivateByExplicitSubscribers(
 
     def checkAuthenticated(self, user):
         """Allow any logged in user to edit a public bug, and only
-        explicit subscribers to edit private bugs.
+        explicit subscribers to edit private bugs. Any bug that can be seen can
+        be edited.
         """
-        if not self.obj.private:
-            # This is a public bug.
-            return True
-        elif user.in_admin:
-            # Admins can edit all bugs.
-            return True
-        else:
-            # This is a private bug. Only explicit subscribers may edit it.
-            for subscription in self.obj.subscriptions:
-                if user.inTeam(subscription.person):
-                    return True
-
-        return False
+        return self.obj.userCanView(user)
 
     def checkUnauthenticated(self):
         """Never allow unauthenticated users to edit a bug."""
