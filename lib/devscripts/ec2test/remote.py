@@ -516,12 +516,15 @@ class WebTestLogger:
         subject = self._request.submit_to_pqm(successful)
         if not subject:
             return
+        self.write_line('')
+        self.write_line('')
         if successful:
-            self.write('\n\nSUBMITTED TO PQM:\n%s\n' % (subject,))
+            self.write_line('SUBMITTED TO PQM:')
         else:
-            self.write('\n\n**NOT** submitted to PQM:\n%s\n' % (subject,))
+            self.write_line('**NOT** submitted to PQM:')
+        self.write_line(subject)
 
-    def write(self, msg):
+    def _write(self, msg):
         """Write to the summary and full log file."""
         # XXX: Logger.write needs tests.
         for fd in [self._out_file, self._summary_file]:
@@ -531,7 +534,7 @@ class WebTestLogger:
     def write_line(self, msg):
         """Write to the summary and full log file with a newline."""
         # XXX: Logger.write_line needs tests.
-        self.write(msg + '\n')
+        self._write(msg + '\n')
 
     def prepare(self):
         """Prepares the log files on disk.
