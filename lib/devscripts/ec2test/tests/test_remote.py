@@ -156,12 +156,19 @@ class TestRequest(TestCaseWithTransport):
     def make_request(self, branch_url=None, revno=None,
                      trunk=None, sourcecode_path=None,
                      emails=None, pqm_message=None):
-        """Make a request to test, specifying only things we care about."""
+        """Make a request to test, specifying only things we care about.
+
+        Note that the returned request object will not ever send email, but
+        will instead log "sent" emails to `request.emails_sent`.
+        """
         if trunk is None:
             trunk = self.make_trunk()
-        return Request(
+        request = Request(
             branch_url, revno, trunk.basedir, sourcecode_path, emails,
             pqm_message)
+        request.emails_sent = []
+        request._send_email = request.emails_sent.append
+        return request
 
     def test_doesnt_want_email(self):
         # If no email addresses were provided, then the user does not want to
@@ -270,11 +277,9 @@ class TestRequest(TestCaseWithTransport):
 
     def test_submit_to_pqm_no_message_doesnt_send(self):
         # If there's no PQM message, then 'submit_to_pqm' returns None.
-        emails = []
         req = self.make_request(pqm_message=None)
-        req._send_email = emails.append
         req.submit_to_pqm(successful=True)
-        self.assertEqual([], emails)
+        self.assertEqual([], req.emails_sent)
 
     def test_submit_to_pqm_unsuccessful(self):
         # submit_to_pqm returns the subject of the PQM mail even if it's
@@ -287,21 +292,17 @@ class TestRequest(TestCaseWithTransport):
     def test_submit_to_pqm_unsuccessful_no_email(self):
         # submit_to_pqm doesn't send any email if the run was unsuccessful.
         message = {'Subject:': 'My PQM message'}
-        emails = []
         req = self.make_request(pqm_message=message)
-        req._send_email = emails.append
         req.submit_to_pqm(successful=False)
-        self.assertEqual([], emails)
+        self.assertEqual([], req.emails_sent)
 
     def test_submit_to_pqm_successful(self):
         # submit_to_pqm returns the subject of the PQM mail.
         message = {'Subject:': 'My PQM message'}
-        emails = []
         req = self.make_request(pqm_message=message)
-        req._send_email = emails.append
         subject = req.submit_to_pqm(successful=True)
         self.assertIs(message.get('Subject'), subject)
-        self.assertEqual([message], emails)
+        self.assertEqual([message], req.emails_sent)
 
     def test_report_email_subject_success(self):
         req = self.make_request(emails=['foo@example.com'])
