@@ -13,6 +13,7 @@ from zope.component import getUtility
 
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.soyuz.interfaces.sourcepackageformat import SourcePackageFormat
 from lp.soyuz.scripts.initialise_distroseries import (
     InitialiseDistroSeries, InitialisationError)
@@ -164,6 +165,39 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
         self.assertEqual(
             'i386 build of pmount 0.1-2 in ubuntutest foobuntu RELEASE',
             created_build.title)
+
+    def test_copying_packagesets(self):
+        # If a parent series has packagesets, we should copy them
+        test1 = getUtility(IPackagesetSet).new(
+            u'test1', u'test 1 packageset', self.hoary.owner,
+            distroseries=self.hoary)
+        test2 = getUtility(IPackagesetSet).new(
+            u'test2', u'test 2 packageset', self.hoary.owner,
+            distroseries=self.hoary)
+        test3 = getUtility(IPackagesetSet).new(
+            u'test3', u'test 3 packageset', self.hoary.owner,
+            distroseries=self.hoary)
+        foobuntu = self._create_distroseries(self.hoary)
+        self._set_pending_to_failed(self.hoary)
+        transaction.commit()
+        ids = InitialiseDistroSeries(foobuntu)
+        ids.check()
+        ids.initialise()
+        # We can fetch the copied sets from foobuntu
+        foobuntu_test1 = getUtility(IPackagesetSet).getByName(
+            u'test1', distroseries=foobuntu)
+        foobuntu_test2 = getUtility(IPackagesetSet).getByName(
+            u'test2', distroseries=foobuntu)
+        foobuntu_test3 = getUtility(IPackagesetSet).getByName(
+            u'test3', distroseries=foobuntu)
+        # And we can see they are exact copies, with the related_set for the
+        # copies pointing to the packageset in the parent
+        self.assertEqual(test1.description, foobuntu_test1.description)
+        self.assertEqual(test2.description, foobuntu_test2.description)
+        self.assertEqual(test3.description, foobuntu_test3.description)
+        self.assertEqual(foobuntu_test1.relatedSets().one(), test1)
+        self.assertEqual(foobuntu_test2.relatedSets().one(), test2)
+        self.assertEqual(foobuntu_test3.relatedSets().one(), test3)
 
     def test_script(self):
         # Do an end-to-end test using the command-line tool

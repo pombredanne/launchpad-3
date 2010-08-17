@@ -9,14 +9,32 @@ import transaction
 import unittest
 
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing import DatabaseFunctionalLayer, LaunchpadZopelessLayer
 
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.model.karma import KarmaTotalCache
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
+
+
+class TestDistributionSourcePackage(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_dsp_with_no_series_summary(self):
+        distribution_set = getUtility(IDistributionSet)
+
+        distribution = distribution_set.new(name='wart',
+            displayname='wart', title='wart', description='lots of warts',
+            summary='lots of warts', domainname='wart.dumb',
+            members=self.factory.makeTeam(), owner=self.factory.makePerson())
+        naked_distribution = removeSecurityProxy(distribution)
+        self.factory.makeSourcePackage(distroseries=distribution)
+        dsp = naked_distribution.getSourcePackage(name='pmount')
+        self.assertEqual(None, dsp.summary)
 
 
 class TestDistributionSourcePackageFindRelatedArchives(TestCaseWithFactory):
