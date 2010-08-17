@@ -17,6 +17,8 @@ __all__ = [
     'clear_property',
     ]
 
+from zope.security.proxy import removeSecurityProxy
+
 from canonical.lazr.utils import safe_hasattr
 
 # XXX: JonathanLange 2010-01-11 bug=505731: Move this to lp.services.
@@ -79,31 +81,36 @@ def cache_property(instance, attrname, value):
     
     instance._cached_properties is updated with attrname.
 
-    >>> class CachedPropertyTest(object):
-    ...
-    ...     @cachedproperty('_foo_cache')
-    ...     def foo(self):
-    ...         return 23
-    ...
-    >>> instance = CachedPropertyTest()
-    >>> cache_property(instance, '_foo_cache', 42)
-    >>> instance.foo
-    42
-    >>> instance._cached_properties
-    ['_foo_cache']
+        >>> class CachedPropertyTest(object):
+        ...
+        ...     @cachedproperty('_foo_cache')
+        ...     def foo(self):
+        ...         return 23
+        ...
+        >>> instance = CachedPropertyTest()
+        >>> cache_property(instance, '_foo_cache', 42)
+        >>> instance.foo
+        42
+        >>> instance._cached_properties
+        ['_foo_cache']
+
     Caching a new value does not duplicate the cache keys.
-    >>> cache_property(instance, '_foo_cache', 84)
-    >>> instance._cached_properties
-    ['_foo_cache']
+
+        >>> cache_property(instance, '_foo_cache', 84)
+        >>> instance._cached_properties
+        ['_foo_cache']
+
     And does update the cached value.
-    >>> instance.foo
-    84
+
+        >>> instance.foo
+        84
     """
-    clear_property(instance, attrname)
-    setattr(instance, attrname, value)
-    cached_properties = getattr(instance, '_cached_properties', [])
+    naked_instance = removeSecurityProxy(instance)
+    clear_property(naked_instance, attrname)
+    setattr(naked_instance, attrname, value)
+    cached_properties = getattr(naked_instance, '_cached_properties', [])
     cached_properties.append(attrname)
-    instance._cached_properties = cached_properties
+    naked_instance._cached_properties = cached_properties
 
 
 def clear_property(instance, attrname):
@@ -131,10 +138,11 @@ def clear_property(instance, attrname):
     False
     >>> clear_property(instance, '_foo_cache')
     """
-    if not is_cached(instance, attrname):
+    naked_instance = removeSecurityProxy(instance)
+    if not is_cached(naked_instance, attrname):
         return
-    delattr(instance, attrname)
-    instance._cached_properties.remove(attrname)
+    delattr(naked_instance, attrname)
+    naked_instance._cached_properties.remove(attrname)
 
 
 def clear_cachedproperties(instance):
@@ -157,10 +165,11 @@ def clear_cachedproperties(instance):
     >>> hasattr(instance, '_foo_cache')
     False
     """
-    cached_properties = getattr(instance, '_cached_properties', [])
+    naked_instance = removeSecurityProxy(instance)
+    cached_properties = getattr(naked_instance, '_cached_properties', [])
     for property_name in cached_properties:
-        delattr(instance, property_name)
-    instance._cached_properties = []
+        delattr(naked_instance, property_name)
+    naked_instance._cached_properties = []
 
 
 def is_cached(instance, attrname):
@@ -180,7 +189,8 @@ def is_cached(instance, attrname):
     >>> is_cached(instance, '_var_cache')
     False
     """
-    return safe_hasattr(instance, attrname)
+    naked_instance = removeSecurityProxy(instance)
+    return safe_hasattr(naked_instance, attrname)
 
 
 class CachedPropertyForAttr:
