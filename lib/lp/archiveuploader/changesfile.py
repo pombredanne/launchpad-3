@@ -41,7 +41,11 @@ class ChangesFile(SignableTagFile):
 
     mandatory_fields = set([
         "source", "binary", "architecture", "version", "distribution",
-        "maintainer", "files", "changes"])
+        "maintainer", "files", "changes", "date", "description",
+        # Changed-By is not technically mandatory according to
+        # Debian policy but Soyuz relies on it being set in
+        # various places.
+        "changed-by"])
 
     # Map urgencies to their dbschema values.
     # Debian policy only permits low, medium, high, emergency.
@@ -148,7 +152,7 @@ class ChangesFile(SignableTagFile):
     def isCustom(self, component_and_section):
         """Check if given 'component_and_section' matches a custom upload.
 
-        We recognize an upload as custom if it is taget to a section like
+        We recognize an upload as custom if it is targeted at a section like
         'raw-<something>'.
         Further checks will be performed in CustomUploadFile class.
         """
@@ -214,6 +218,10 @@ class ChangesFile(SignableTagFile):
 
         if len(self.files) == 0:
             yield UploadError("No files found in the changes")
+
+        if 'urgency' not in self._dict:
+            # Urgency is recommended but not mandatory. Default to 'low'
+            self._dict['urgency'] = "low"
 
         raw_urgency = self._dict['urgency'].lower()
         if raw_urgency not in self.urgency_map:
@@ -321,7 +329,7 @@ class ChangesFile(SignableTagFile):
 
     @property
     def source(self):
-        """Return changesfiel claimed source name"""
+        """Return changesfile claimed source name."""
         return self._dict['source']
 
     @property
