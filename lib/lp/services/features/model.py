@@ -9,7 +9,9 @@ __all__ = [
 __metaclass__ = type
 
 from zope.component import getUtility
-from storm.locals import Int, Storm, Unicode, DateTime
+from storm.locals import (
+    Desc, Int, Storm, Unicode, DateTime,
+    )
 
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE)
@@ -40,3 +42,12 @@ class FeatureFlag(Storm):
         self.priority = priority
         self.flag = flag
         self.value = value
+
+
+def getAllRules(self):
+    """Return model objects for all rules."""
+    store = getFeatureStore()
+    rs = (store
+            .find(FeatureFlag)
+            .order_by([FeatureFlag.scope, Desc(FeatureFlag.priority)]))
+    return list(rs)

@@ -11,8 +11,18 @@
 
 <div metal:fill-slot="main">
 
-    <p>In this page you can view or control the feature flags currently active on Launchpad.</p>
+  <p>In this page you can view or control the feature flags currently active on Launchpad.</p>
 
-</div> 
+  <div metal:use-macro="context/@@launchpad_form/form">
+    <div metal:fill-slot="widgets">
+
+      Currently active feature rules:
+
+      <textarea style="font-family: monospace;" tal:content="view/rules_text">
+      </textarea>
+
+    </div>
+  </div>
+</div>
 </body>
 </html>
