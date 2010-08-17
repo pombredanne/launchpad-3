@@ -9,16 +9,15 @@
 __metaclass__ = type
 
 import datetime
-from difflib import unified_diff
 import operator
+import re
 
+from difflib import unified_diff
 from email.Header import Header
 from email.MIMEText import MIMEText
 from email.MIMEMultipart import MIMEMultipart
 from email.MIMEMessage import MIMEMessage
 from email.Utils import formataddr, make_msgid
-
-import re
 
 from zope.component import getAdapter, getUtility
 
