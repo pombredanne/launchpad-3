@@ -443,20 +443,21 @@ class WebTestLogger:
                  echo_to_stdout):
         """Construct a WebTestLogger.
 
+        :param out_file: A file-like object that will have the full log output
+            written to it.
+        :param summary_file: A file-like object that will have a
+            human-readable summary written to it.
+        :param index_file: A file-like object that will have an HTML page
+            written to it.
         :param request: A `Request` object representing the thing that's being
             tested.
         :param echo_to_stdout: Whether or not we should echo output to stdout.
         """
-        # XXX: WebTestLogger.__init__ docstring out of date.
+        self._out_file = out_file
+        self._summary_file = summary_file
+        self._index_file = index_file
         self._request = request
         self._echo_to_stdout = echo_to_stdout
-
-        # Stream for storing the complete output, including stdout & stderr.
-        self._out_file = out_file
-        # Stream for storing a filtered summary.
-        self._summary_file = summary_file
-        # Stream for storing the HTML index page.
-        self._index_file = index_file
 
     @classmethod
     def make_in_directory(cls, www_dir, request, echo_to_stdout):
