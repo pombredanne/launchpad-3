@@ -12,7 +12,8 @@ import os
 from canonical.launchpad.scripts.logger import BufferLogger
 from lp.archiveuploader.changesfile import ChangesFile
 from lp.archiveuploader.dscfile import DSCFile
-from lp.archiveuploader.nascentuploadfile import CustomUploadFile
+from lp.archiveuploader.nascentuploadfile import (CustomUploadFile,
+    DebBinaryUploadFile)
 from lp.archiveuploader.uploadpolicy import AbsolutelyAnythingGoesUploadPolicy
 from lp.soyuz.interfaces.queue import PackageUploadCustomFormat
 from lp.testing import TestCaseWithFactory
@@ -162,3 +163,48 @@ class DSCFileTests(PackageUploadFileTestCase):
         release = uploadfile.storeInDatabase(None)
         self.assertEquals("0.42", release.version)
         self.assertEquals("dpkg, bzr", release.builddepends)
+
+
+class DebBinaryUploadFileTests(PackageUploadFileTestCase):
+    """Tests for DebBinaryUploadFile."""
+
+    layer = LaunchpadZopelessLayer
+
+    def getBaseControl(self):
+        return {
+            "Package": "python-dulwich",
+            "Source": "dulwich",
+            "Version": "0.42",
+            "Architecture": "i386",
+            "Maintainer": "Jelmer Vernooij <jelmer@debian.org>",
+            "Installed-Size": "524",
+            "Depends": "python (<< 2.7), python (>= 2.5)",
+            "Provides": "python2.5-dulwich, python2.6-dulwich",
+            "Section": "python",
+            "Priority": "optional",
+            "Homepage": "http://samba.org/~jelmer/dulwich",
+            "Description": "Pure-python Git library\n"
+            " Dulwich is a Python implementation of the file formats and protocols"
+        }
+
+    def createDebBinaryUploadFile(self, filename, component_and_section,
+        priority_name, package, version, changes):
+        (path, digest, size) = self.writeUploadFile(filename, "DATA")
+        return DebBinaryUploadFile(path, digest, size, component_and_section,
+            priority_name, package, version, changes, self.policy,
+            self.logger)
+
+    def test_unknown_priority(self):
+        uploadfile = self.createDebBinaryUploadFile("foo_0.42_i386.deb",
+            "main/net", "unknown", "mypkg", "0.42", None)
+        self.assertEquals("extra", uploadfile.priority_name)
+
+    def test_parseControl(self):
+        uploadfile = self.createDebBinaryUploadFile("foo_0.42_i386.deb",
+            "main/python", "unknown", "mypkg", "0.42", None)
+        control = self.getBaseControl()
+        uploadfile.parseControl(control)
+        self.assertEquals("python", uploadfile.section_name)
+        self.assertEquals("dulwich", uploadfile.source_name)
+        self.assertEquals("0.42", uploadfile.source_version)
+        self.assertEquals("0.42", uploadfile.control_version)

@@ -491,12 +491,15 @@ class BaseBinaryUploadFile(PackageUploadFile):
                 yield UploadError(
                     "%s: control file lacks mandatory field %r"
                      % (self.filename, mandatory_field))
+        control = {}
+        for key in control_lines.keys():
+            control[key] = control_lines.Find(key)
+        self.parseControl(control)
 
+    def parseControl(self, control):
         # XXX kiko 2007-02-15: We never use the Maintainer information in
         # the control file for anything. Should we? --
-        self.control = {}
-        for key in control_lines.keys():
-            self.control[key] = control_lines.Find(key)
+        self.control = control
 
         control_source = self.control.get("Source", None)
         if control_source is not None:
