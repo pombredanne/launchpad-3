@@ -249,6 +249,47 @@ class TestRequest(TestCaseWithTransport):
         branches = list(req.iter_dependency_branches())
         self.assertEqual(sorted(sourcecode_branches), branches)
 
+    def test_submit_to_pqm_no_message(self):
+        # If there's no PQM message, then 'submit_to_pqm' returns None.
+        req = Request(None, None, None, None, pqm_message=None)
+        subject = req.submit_to_pqm(successful=True)
+        self.assertIs(None, subject)
+
+    def test_submit_to_pqm_no_message_doesnt_send(self):
+        # If there's no PQM message, then 'submit_to_pqm' returns None.
+        emails = []
+        req = Request(None, None, None, None, pqm_message=None)
+        req._send_email = emails.append
+        req.submit_to_pqm(successful=True)
+        self.assertEqual([], emails)
+
+    def test_submit_to_pqm_unsuccessful(self):
+        # submit_to_pqm returns the subject of the PQM mail even if it's
+        # handling a failed test run.
+        message = {'Subject:': 'My PQM message'}
+        req = Request(None, None, None, None, pqm_message=message)
+        subject = req.submit_to_pqm(successful=False)
+        self.assertIs(message.get('Subject'), subject)
+
+    def test_submit_to_pqm_unsuccessful_no_email(self):
+        # submit_to_pqm doesn't send any email if the run was unsuccessful.
+        message = {'Subject:': 'My PQM message'}
+        emails = []
+        req = Request(None, None, None, None, pqm_message=message)
+        req._send_email = emails.append
+        req.submit_to_pqm(successful=False)
+        self.assertEqual([], emails)
+
+    def test_submit_to_pqm_successful(self):
+        # submit_to_pqm returns the subject of the PQM mail.
+        message = {'Subject:': 'My PQM message'}
+        emails = []
+        req = Request(None, None, None, None, pqm_message=message)
+        req._send_email = emails.append
+        subject = req.submit_to_pqm(successful=True)
+        self.assertIs(message.get('Subject'), subject)
+        self.assertEqual([message], emails)
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

@@ -403,6 +403,7 @@ class Request:
         :param body_text: The body of the email to send to the requesters.
         :param full_log_gz: A gzip of the full log.
         """
+        # XXX: Rename this method. Send *what* email, exactly?
         message = self._build_email(successful, body_text, full_log_gz)
         self._send_email(message)
 
