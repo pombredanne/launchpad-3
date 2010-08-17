@@ -46,7 +46,6 @@ from lp.registry.browser.objectreassignment import *
 from canonical.launchpad.browser.packagerelationship import *
 from lp.registry.browser.peoplemerge import *
 from lp.registry.browser.poll import *
-from lp.soyuz.browser.publishedpackage import *
 from lp.soyuz.browser.publishing import *
 from lp.answers.browser.question import *
 from lp.answers.browser.questiontarget import *

@@ -12,6 +12,7 @@ __all__ = [
     'updateBuilderStatus',
     ]
 
+import errno
 import httplib
 import gzip
 import logging
@@ -200,24 +201,38 @@ def updateBuilderStatus(builder, logger=None):
     if logger:
         logger.debug('Checking %s' % builder.name)
 
-    try:
-        builder.checkSlaveAlive()
-        builder.rescueIfLost(logger)
-    # Catch only known exceptions.
-    # XXX cprov 2007-06-15 bug=120571: ValueError & TypeError catching is
-    # disturbing in this context. We should spend sometime sanitizing the
-    # exceptions raised in the Builder API since we already started the
-    # main refactoring of this area.
-    except (ValueError, TypeError, xmlrpclib.Fault,
-            BuildDaemonError), reason:
-        builder.failBuilder(str(reason))
-        if logger:
-            logger.warn(
-                "%s (%s) marked as failed due to: %s",
-                builder.name, builder.url, builder.failnotes, exc_info=True)
-    except socket.error, reason:
-        error_message = str(reason)
-        builder.handleTimeout(logger, error_message)
+    MAX_EINTR_RETRIES = 42 # pulling a number out of my a$$ here
+    eintr_retry_count = 0
+
+    while True:
+        try:
+            builder.checkSlaveAlive()
+            builder.rescueIfLost(logger)
+        # Catch only known exceptions.
+        # XXX cprov 2007-06-15 bug=120571: ValueError & TypeError catching is
+        # disturbing in this context. We should spend sometime sanitizing the
+        # exceptions raised in the Builder API since we already started the
+        # main refactoring of this area.
+        except (ValueError, TypeError, xmlrpclib.Fault,
+                BuildDaemonError), reason:
+            builder.failBuilder(str(reason))
+            if logger:
+                logger.warn(
+                    "%s (%s) marked as failed due to: %s",
+                    builder.name, builder.url, builder.failnotes, exc_info=True)
+        except socket.error, reason:
+            # In Python 2.6 we can use IOError instead.  It also has
+            # reason.errno but we might be using 2.5 here so use the
+            # index hack.
+            if reason[0] == errno.EINTR:
+                eintr_retry_count += 1
+                if eintr_retry_count != MAX_EINTR_RETRIES:
+                    # It was an EINTR. Just retry.
+                    continue
+            error_message = str(reason)
+            builder.handleTimeout(logger, error_message)
+
+        return
 
 
 class Builder(SQLBase):
@@ -616,6 +631,18 @@ class Builder(SQLBase):
 
         self._dispatchBuildCandidate(candidate)
         return candidate
+
+    def getBuildQueue(self):
+        """See `IBuilder`."""
+        # Return a single BuildQueue for the builder provided it's
+        # currently running a job.
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        return store.find(
+            BuildQueue,
+            BuildQueue.job == Job.id,
+            BuildQueue.builder == self.id,
+            Job._status == JobStatus.RUNNING,
+            Job.date_started != None).one()
 
 
 class BuilderSet(object):

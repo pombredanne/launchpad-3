@@ -96,6 +96,12 @@
       classes="LaunchpadRootNavigation"
       />
 
+  <browser:navigation
+      module="canonical.launchpad.browser"
+      classes="LaunchpadRootNavigation"
+      layer="zope.publisher.interfaces.xmlrpc.IXMLRPCRequest"
+      />
+
   <!-- Register a handler to fix things up just before the application
        starts (and after zcml has been processed). -->
   <subscriber handler=".webapp.initialization.handle_process_start" />
