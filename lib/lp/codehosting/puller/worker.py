@@ -503,7 +503,7 @@ class PullerWorkerUIFactory(SilentUIFactory):
     def get_boolean(self, prompt):
         """If we're asked to break a lock like a stale lock of ours, say yes.
         """
-        assert prompt.startswith('Break lock'), (
+        assert prompt.startswith('Break '), (
             "Didn't expect prompt %r" % (prompt,))
         branch_id = self.puller_worker_protocol.branch_id
         if get_lock_id_for_branch_id(branch_id) in prompt:

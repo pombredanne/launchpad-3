@@ -1,4 +1,4 @@
-launchpad-buildd (68) UNRELEASED; urgency=low
+launchpad-buildd (68) hardy-cat; urgency=low
 
   [ William Grant ]
   * Take an 'arch_tag' argument, so the master can override the slave
@@ -13,7 +13,10 @@ launchpad-buildd (68) UNRELEASED; urgency=low
   * Fix spelling in description.
   * Install example buildd configuration.
 
- -- Jelmer Vernooij <jelmer@canonical.com>  Thu, 12 Aug 2010 17:04:14 +0200
+  [ Paul Hummer ]
+  * Provide BZR_EMAIL for bzr 2.2 in the buildds LP#617072
+
+ -- LaMont Jones <lamont@canonical.com>  Mon, 16 Aug 2010 13:25:09 -0600
 
 launchpad-buildd (67) hardy-cat; urgency=low
 
