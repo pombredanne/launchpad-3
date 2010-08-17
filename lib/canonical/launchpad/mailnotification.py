@@ -47,6 +47,12 @@ from lp.registry.interfaces.structuralsubscription import (
     BugNotificationLevel)
 from lp.services.mail.mailwrapper import MailWrapper
 
+# XXX 2010-06-16 gmb bug=594985
+#     This shouldn't be here, but if we take it out lots of things cry,
+#     which is sad.
+from lp.services.mail.notificationrecipientset import (
+    NotificationRecipientSet)
+
 from lp.bugs.mail.bugnotificationbuilder import (
     BugNotificationBuilder)
 from lp.bugs.mail.bugnotificationrecipients import BugNotificationRecipients
