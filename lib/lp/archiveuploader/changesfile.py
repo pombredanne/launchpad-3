@@ -41,7 +41,11 @@ class ChangesFile(SignableTagFile):
 
     mandatory_fields = set([
         "source", "binary", "architecture", "version", "distribution",
-        "maintainer", "files", "changes"])
+        "maintainer", "files", "changes", "date", "description",
+        # Changed-By is not technically mandatory according to
+        # Debian policy but Soyuz relies on it being set in
+        # various places.
+        "changed-by"])
 
     # Map urgencies to their dbschema values.
     # Debian policy only permits low, medium, high, emergency.

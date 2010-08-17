@@ -9,6 +9,8 @@ from debian.deb822 import Changes
 import os
 
 from canonical.launchpad.scripts.logger import BufferLogger
+from canonical.testing import LaunchpadZopelessLayer
+
 from lp.archiveuploader.changesfile import (CannotDetermineFileTypeError,
     ChangesFile, determine_file_class_and_name)
 from lp.archiveuploader.dscfile import DSCFile
@@ -61,6 +63,8 @@ class TestDetermineFileClassAndName(TestCase):
 class ChangesFileTests(TestCase):
     """Tests for ChangesFile."""
 
+    layer = LaunchpadZopelessLayer
+
     def setUp(self):
         super(ChangesFileTests, self).setUp()
         self.logger = BufferLogger()
@@ -80,11 +84,14 @@ class ChangesFileTests(TestCase):
         contents = Changes()
         contents["Source"] = "mypkg"
         contents["Binary"] = "binary"
+        contents["Date"] = "Fri, 25 Jun 2010 11:20:22 -0600"
         contents["Architecture"] = "i386"
         contents["Version"] = "0.1"
         contents["Distribution"] = "nifty"
         contents["Maintainer"] = "Somebody"
         contents["Changes"] = "Something changed"
+        contents["Description"] = "\n An awesome package."
+        contents["Changed-By"] = "Somebody <somebody@ubuntu.com>"
         contents["Files"] = [{
             "md5sum": "d2bd347b3fed184fe28e112695be491c",
             "size": "1791",
@@ -127,3 +134,22 @@ class ChangesFileTests(TestCase):
         changes = self.createChangesFile("mypkg_0.1_i386.changes",
             self.getBaseChanges())
         self.assertEquals("mypkg", changes.source)
+
+    def test_processAddresses(self):
+        contents = self.getBaseChanges()
+        changes = self.createChangesFile("mypkg_0.1_i386.changes",
+            contents)
+        self.assertEquals(None, changes.changed_by)
+        errors = list(changes.processAddresses())
+        self.assertEquals(0, len(errors), "Errors: %r" % errors)
+        self.assertEquals("Somebody <somebody@ubuntu.com>",
+            changes.changed_by['rfc822'])
+
+    def test_simulated_changelog(self):
+        contents = self.getBaseChanges()
+        changes = self.createChangesFile("mypkg_0.1_i386.changes",
+            contents)
+        self.assertEquals([], list(changes.processAddresses()))
+        self.assertEquals("Something changed\n"
+            " -- Somebody <somebody@ubuntu.com>   Fri, 25 Jun 2010 11:20:22 -0600",
+            changes.simulated_changelog)

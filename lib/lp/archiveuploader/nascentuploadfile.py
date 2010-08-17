@@ -321,7 +321,6 @@ class PackageUploadFile(NascentUploadFile):
                 "%s: Unknown component %r" % (
                 self.filename, self.component_name))
 
-
     @property
     def component(self):
         """Return an IComponent for self.component.name."""
