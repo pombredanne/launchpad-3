@@ -355,8 +355,8 @@ class Request:
             branch.repository.get_revision(parent_ids[1]).get_summary())
         return summary.encode('utf-8')
 
-    def send_email(self, successful, body_text, full_log_gz, config):
-        """Send an email summarizing the test results.
+    def _build_email(self, successful, body_text, full_log_gz, config):
+        """Build a MIME email summarizing the test results.
 
         :param successful: True for pass, False for failure.
         :param body_text: The body of the email to send to the requesters.
@@ -384,7 +384,17 @@ class Request:
             'Content-Disposition', 'attachment',
             filename='%s.log.gz' % self.get_nick())
         message.attach(zipped_log)
+        return message
 
+    def send_email(self, successful, body_text, full_log_gz, config):
+        """Send an email summarizing the test results.
+
+        :param successful: True for pass, False for failure.
+        :param body_text: The body of the email to send to the requesters.
+        :param full_log_gz: A gzip of the full log.
+        :param config: A Bazaar configuration object with SMTP details.
+        """
+        message = self._build_email(successful, body_text, full_log_gz, config)
         self._send_email(message)
 
     def iter_dependency_branches(self):
