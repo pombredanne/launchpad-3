@@ -317,13 +317,17 @@ class Request:
             return None
         return self._branch_url.encode('utf-8'), self._revno
 
+    def _last_segment(self, url):
+        """Return the last segment of a URL."""
+        return url.strip('/').split('/')[-1]
+
     def get_nick(self):
         """Get the nick of the branch we are testing."""
         details = self.get_branch_details()
         if not details:
             details = self.get_trunk_details()
         url, revno = details
-        return url.strip('/').split('/')[-1]
+        return self._last_segment(url)
 
     def get_merge_description(self):
         """Get a description of the merge request.
@@ -336,7 +340,8 @@ class Request:
         if not source:
             return self.get_nick()
         target = self.get_trunk_details()
-        return '%s => %s' % (source[0], target[0])
+        return '%s => %s' % (
+            self._last_segment(source[0]), self._last_segment(target[0]))
 
     def get_summary_commit(self):
         """Get a message summarizing the change from the commit log."""

@@ -182,6 +182,38 @@ class TestRequest(TestCaseWithTransport):
         self.assertEqual(
             ('https://example.com/bzr/thing', 42), req.get_branch_details())
 
+    def test_get_nick_trunk_only(self):
+        tree = self.make_branch_and_tree('.')
+        branch = tree.branch
+        parent = 'http://example.com/bzr/db-devel'
+        branch.set_parent(parent)
+        req = Request(None, None, branch.base, None)
+        self.assertEqual('db-devel', req.get_nick())
+
+    def test_get_nick_merge(self):
+        tree = self.make_branch_and_tree('.')
+        # Fake a merge, giving silly revision ids.
+        tree.add_pending_merge('foo', 'bar')
+        req = Request('https://example.com/bzr/thing', 42, tree.basedir, None)
+        self.assertEqual('thing', req.get_nick())
+
+    def test_get_merge_description_trunk_only(self):
+        tree = self.make_branch_and_tree('.')
+        branch = tree.branch
+        parent = 'http://example.com/bzr/db-devel'
+        branch.set_parent(parent)
+        req = Request(None, None, branch.base, None)
+        self.assertEqual('db-devel', req.get_merge_description())
+
+    def test_get_merge_description_merge(self):
+        tree = self.make_branch_and_tree('.')
+        branch = tree.branch
+        parent = 'http://example.com/bzr/db-devel/'
+        branch.set_parent(parent)
+        tree.add_pending_merge('foo', 'bar')
+        req = Request('https://example.com/bzr/thing', 42, tree.basedir, None)
+        self.assertEqual('thing => db-devel', req.get_merge_description())
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
