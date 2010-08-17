@@ -8,6 +8,7 @@ __metaclass__ = type
 from email.mime.application import MIMEApplication
 from email.mime.text import MIMEText
 import gzip
+from itertools import izip
 import os
 from StringIO import StringIO
 import sys
@@ -347,6 +348,23 @@ class TestRequest(TestCaseWithTransport):
             attachment['Content-Disposition'])
         self.assertEqual(
             "gobbledygook", attachment.get_payload().decode('base64'))
+
+    def test_send_report_email_sends_email(self):
+        req = self.make_request(emails=['foo@example.com'])
+        expected = req._build_report_email(False, "foo", "gobbledygook")
+        req.send_report_email(False, "foo", "gobbledygook")
+        [observed] = req.emails_sent
+        # The standard library sucks. None of the MIME objects have __eq__
+        # implementations.
+        for expected_part, observed_part in izip(
+            expected.walk(), observed.walk()):
+            self.assertEqual(type(expected_part), type(observed_part))
+            self.assertEqual(expected_part.items(), observed_part.items())
+            self.assertEqual(
+                expected_part.is_multipart(), observed_part.is_multipart())
+            if not expected_part.is_multipart():
+                self.assertEqual(
+                    expected_part.get_payload(), observed_part.get_payload())
 
 
 def test_suite():
