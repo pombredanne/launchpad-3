@@ -45,9 +45,8 @@ class TestPOFileBaseViewFiltering(TestCaseWithFactory):
         self.factory.makeTranslationMessage(
             self.pofile, self.new_suggestion,
             date_updated=self.now())
-        self.factory.makeTranslationMessage(
-            self.pofile, self.new_suggestion, suggestion=True,
-            date_updated=self.now())
+        self.factory.makeSuggestion(
+            self.pofile, self.new_suggestion, date_created=self.now())
         # An upstream that was changed in Ubuntu.
         self.changed = self.factory.makePOTMsgSet(
             self.potemplate, sequence=4)
@@ -171,8 +170,3 @@ class TestPOFileTranslateViewInvalidFiltering(TestCaseWithFactory,
     def setUp(self):
         super(TestPOFileTranslateViewInvalidFiltering, self).setUp()
         self.pofile = self.factory.makePOFile('eo')
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)
-

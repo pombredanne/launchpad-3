@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = []
 
 import transaction
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.windmill.testing import constants, lpuser
 from lp.translations.windmill.testing import TranslationsWindmillLayer
@@ -151,9 +152,11 @@ class POFileTranslationActions(WindmillTestCase):
         current_translation = self.factory.makeTranslationMessage(
             pofile=pofile, potmsgset=potmsgset, translations=['current'])
         transaction.commit()
-        suggestion = self.factory.makeTranslationMessage(
-            pofile=pofile, potmsgset=potmsgset,
-            translations=['suggestion'], suggestion=True)
+        suggestion = self.factory.makeSuggestion(
+            pofile=pofile, potmsgset=potmsgset, translations=['suggestion'])
+        # XXX henninge 2010-08-13 bug=597539: The view code depends on the
+        # pofile attribute being set.
+        removeSecurityProxy(suggestion).pofile = pofile
         transaction.commit()
         logout()
 
@@ -484,4 +487,3 @@ class POFileTranslatorAndReviewerWorkingMode(WindmillTestCase):
             reviewer and current_is_reviewer or
             translator and not current_is_reviewer)
         assert switch_done is True, "Could not switch working mode."
-

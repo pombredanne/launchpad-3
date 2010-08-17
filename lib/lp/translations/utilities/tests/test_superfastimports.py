@@ -13,6 +13,7 @@ from lp.translations.utilities.translation_import import (
 from lp.translations.utilities.translation_common_format import (
     TranslationMessageData)
 
+
 class TestSuperFastImports(TestCaseWithFactory):
     """Test how ExistingPOFileInDatabase cache works."""
 
@@ -66,8 +67,7 @@ class TestSuperFastImports(TestCaseWithFactory):
     def test_inactive_messages(self):
         # Make sure non-current messages (i.e. suggestions) are
         # not cached in ExistingPOFileInDatabase.
-        inactive_message = self.factory.makeTranslationMessage(
-            pofile=self.pofile, suggestion=True)
+        inactive_message = self.factory.makeSuggestion(pofile=self.pofile)
         cached_file = ExistingPOFileInDatabase(self.pofile)
         message_data = self.getTranslationMessageData(inactive_message)
         self.assertFalse(

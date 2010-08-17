@@ -51,13 +51,20 @@ class TestCurrentTranslationMessage_can_dismiss(TestCaseWithFactory):
             translations = translation
         else:
             translations = [translation]
-        message = self.factory.makeTranslationMessage(
-            self.pofile, self.potmsgset,
-            translations=translations,
-            suggestion=suggestion,
-            is_current_upstream=is_packaged,
-            translator=self.owner,
-            date_updated=self.now())
+        if suggestion:
+            message = self.factory.makeSuggestion(
+                self.pofile, self.potmsgset,
+                translations=translations,
+                translator=self.owner,
+                date_created=self.now())
+        else:
+            message = self.factory.makeTranslationMessage(
+                self.pofile, self.potmsgset,
+                translations=translations,
+                suggestion=suggestion,
+                is_current_upstream=is_packaged,
+                translator=self.owner,
+                date_updated=self.now())
         message.browser_pofile = self.pofile
         return message
 

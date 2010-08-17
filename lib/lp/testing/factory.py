@@ -2072,8 +2072,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if pofile is None:
             pofile = self.makePOFile('sr')
         if potmsgset is None:
-            potmsgset = self.makePOTMsgSet(pofile.potemplate)
-            potmsgset.setSequence(pofile.potemplate, 1)
+            potmsgset = self.makePOTMsgSet(pofile.potemplate, sequence=1)
         if translator is None:
             translator = self.makePerson()
         if translations is None:
@@ -2089,6 +2088,42 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             naked_translation_message.date_created = date_updated
             if translation_message.reviewer is not None:
                 naked_translation_message.date_reviewed = date_updated
+            naked_translation_message.sync()
+        return translation_message
+
+    def _makeTranslationsDict(self, translations=None):
+        """Make sure translations are stored in a dict, e.g. {0: "foo"}.
+
+        If translations is already dict, it is returned unchanged.
+        If translations is a sequence, it is enumerated into a dict.
+        If translations is None, an arbitrary single translation is created.
+        """
+        if translations is None:
+            return {0: self.getUniqueString()}
+        if isinstance(translations, dict):
+            return translations
+        assert isinstance(translations, (list, tuple)), (
+                "Expecting either a dict or a sequence." )
+        return dict(enumerate(translations))
+
+    def makeSuggestion(self, pofile=None, potmsgset=None, translator=None,
+                       translations=None, date_created=None):
+        """Make a new suggested `TranslationMessage` in the given PO file."""
+        if pofile is None:
+            pofile = self.makePOFile('sr')
+        if potmsgset is None:
+            potmsgset = self.makePOTMsgSet(pofile.potemplate, sequence=1)
+        if translator is None:
+            translator = self.makePerson()
+        translations = self._makeTranslationsDict(translations)
+        translation_message = potmsgset.submitSuggestion(
+            pofile, translator, translations)
+        assert translation_message is not None, (
+            "Cannot make suggestion on translation credits POTMsgSet.")
+        if date_created is not None:
+            naked_translation_message = removeSecurityProxy(
+                translation_message)
+            naked_translation_message.date_created = date_created
             naked_translation_message.sync()
         return translation_message
 

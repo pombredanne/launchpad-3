@@ -26,6 +26,7 @@ UTC = timezone('UTC')
 
 class ReviewTestMixin:
     """Base for testing which translations a reviewer can review."""
+
     def setUpMixin(self, for_product=True):
         """Set up test environment.
 
@@ -82,10 +83,10 @@ class ReviewTestMixin:
 
         later_time = self.base_time + timedelta(0, 3600)
         self.suggestion = removeSecurityProxy(
-            self.factory.makeTranslationMessage(
+            self.factory.makeSuggestion(
                 potmsgset=self.potmsgset, pofile=self.pofile,
                 translator=self.factory.makePerson(), translations=['wi'],
-                date_updated=later_time, suggestion=True))
+                date_created=later_time))
 
         self.assertTrue(self.translation.is_current_ubuntu)
         self.pofile.updateStatistics()
@@ -109,6 +110,7 @@ class ReviewableTranslationFilesTest:
 
     Can be applied to product or distribution setups.
     """
+
     def test_OneFileToReview(self):
         # In the base case, the method finds one POFile for self.person
         # to review.

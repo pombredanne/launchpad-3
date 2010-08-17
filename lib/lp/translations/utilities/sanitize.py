@@ -51,8 +51,7 @@ class Sanitizer(object):
         """Find out which newline style is used in text."""
         error_message = (
             "%s text (%r) mixes different newline markers." % (
-                text_name, text)
-            )
+                text_name, text))
         style = None
         # To avoid confusing the single-character newline styles for mac and
         # unix with the two-character windows one, remove the windows-style
@@ -169,6 +168,9 @@ def sanitize_translations_from_webui(
     :param pluralforms: The number of expected pluralforms
     """
     # Sanitize all given translations.
+    # Make sure the translations are stored in a dict.
+    if isinstance(translations, (list, tuple)):
+        translations = dict(enumerate(translations))
     # Unneeded plural forms are stored as well (needed since we may
     # have incorrect plural form data, so we can just reactivate them
     # once we fix the plural information for the language)
@@ -188,4 +190,3 @@ def sanitize_translations_from_webui(
 # There will be a different function for translation coming from imports but
 # for now it is identical to the one used in browser code.
 sanitize_translations_from_import = sanitize_translations_from_webui
-
