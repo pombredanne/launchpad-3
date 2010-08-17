@@ -477,8 +477,7 @@ email address.
 mailnotification.py contains a class, BugNotificationBuilder, which is
 used to construct bug notification emails.
 
-    >>> from canonical.launchpad.mailnotification import (
-    ...     BugNotificationBuilder)
+    >>> from lp.bugs.mail.bugnotificationbuilder import BugNotificationBuilder
 
 When instantiatiated it derives a list of common unchanging headers
 from the bug so that they are not calculated for every recipient.
