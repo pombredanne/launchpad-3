@@ -18,7 +18,6 @@ from storm.expr import And
 from storm.locals import SQL
 from storm.store import Store
 
-from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.cachedproperty import cachedproperty
@@ -26,7 +25,6 @@ from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import quote, SQLBase, sqlvalues
-from lp.translations.interfaces.side import ITranslationSideTraitsSet
 from lp.translations.interfaces.translationmessage import (
     ITranslationMessage, ITranslationMessageSet, RosettaTranslationOrigin,
     TranslationValidationStatus)
@@ -330,24 +328,9 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
 
     def approve(self, pofile, reviewer, share_with_other_side=False):
         """See `ITranslationMessage`."""
-        traits = getUtility(ITranslationSideTraitsSet).getTraits(
-            pofile.potemplate.translation_side)
-        if traits.getFlag(self):
-            # Message is already current.
-            return
-
-# XXX: Implement!
-# XXX: This is just a stub implementation.
-        message = self.potmsgset.setCurrentTranslation(
-            pofile, self.submitter, dict(enumerate(self.translations)),
-            self.origin, share_with_other_side=share_with_other_side)
-# XXX: End of stub.
-
-        self.markReviewed(reviewer)
-        if reviewer != self.submitter:
-            pofile.potemplate.awardKarma(
-                self.submitter, 'translationsuggestionapproved')
-            pofile.potemplate.awardKarma(reviewer, 'translationreview')
+        self.potmsgset.approveSuggestion(
+            pofile, self, reviewer,
+            share_with_other_side=share_with_other_side)
 
     def getOnePOFile(self):
         """See `ITranslationMessage`."""
