@@ -538,7 +538,6 @@ class WebTestLogger:
 
     def got_result(self, successful):
         """The tests are done and the results are known."""
-        # XXX: got_result needs tests.
         self._handle_pqm_submission(successful)
         if self._request.wants_email:
             self._summary_file.write(
