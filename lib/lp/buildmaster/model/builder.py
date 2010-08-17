@@ -227,12 +227,12 @@ def updateBuilderStatus(builder, logger=None):
             if reason[0] == errno.EINTR:
                 eintr_retry_count += 1
                 if eintr_retry_count != MAX_EINTR_RETRIES:
+                    # It was an EINTR. Just retry.
                     continue
             error_message = str(reason)
             builder.handleTimeout(logger, error_message)
-            return
-        else:
-            return
+
+        return
 
 
 class Builder(SQLBase):
