@@ -115,7 +115,7 @@ class EC2Runner:
     catastrophic failure.
     """
 
-    # XXX: EC2Runner needs tests.
+    # XXX: JonathanLange 2010-08-17: EC2Runner needs tests.
 
     # The number of seconds we give this script to clean itself up, and for
     # 'ec2 test --postmortem' to grab control if needed.  If we don't give
@@ -206,7 +206,7 @@ class EC2Runner:
 class LaunchpadTester:
     """Runs Launchpad tests and gathers their results in a useful way."""
 
-    # XXX: LaunchpadTester needs tests.
+    # XXX: JonathanLange 2010-08-17: LaunchpadTester needs tests.
 
     def __init__(self, logger, test_directory, test_options=()):
         """Construct a TestOnMergeRunner.
@@ -575,7 +575,7 @@ class WebTestLogger:
         Writes three log files: the raw output log, the filtered "summary"
         log file, and a HTML index page summarizing the test run paramters.
         """
-        # XXX: Logger.prepare needs lots of tests.
+        # XXX: JonathanLange 2010-07-18: Mostly untested.
         msg = 'Tests started at approximately %(now)s UTC' % {
             'now': datetime.datetime.utcnow().strftime(
                 '%a, %d %b %Y %H:%M:%S')}
