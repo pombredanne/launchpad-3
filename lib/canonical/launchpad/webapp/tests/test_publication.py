@@ -394,7 +394,6 @@ class TestBlockingOffsitePosts(TestCase):
         referer = 'this is not a URI'
         request = LaunchpadTestRequest(
             method='POST', environ=dict(PATH_INFO='/', REFERER=referer))
-        # this call shouldn't raise an exception
         self.assertRaises(
             OffsiteFormPostError, maybe_block_offsite_form_post, request)
 
