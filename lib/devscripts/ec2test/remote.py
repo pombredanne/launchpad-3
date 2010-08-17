@@ -439,18 +439,17 @@ class Request:
 class WebTestLogger:
     """Logs test output to disk and a simple web page."""
 
-    def __init__(self, request, echo_to_stdout):
+    def __init__(self, www_dir, request, echo_to_stdout):
         """Construct a WebTestLogger.
 
+        :param www_dir: The root directory of the web server.
         :param request: A `Request` object representing the thing that's being
             tested.
         :param echo_to_stdout: Whether or not we should echo output to stdout.
         """
-        # XXX: parametrize www_dir
         self._request = request
         self._echo_to_stdout = echo_to_stdout
 
-        www_dir = os.path.join(os.path.sep, 'var', 'www')
         self._out_filename = os.path.join(www_dir, 'current_test.log')
         self._summary_filename = os.path.join(www_dir, 'summary.log')
         self._index_filename = os.path.join(www_dir, 'index.html')
@@ -737,7 +736,7 @@ def main(argv):
         SOURCECODE_DIR, options.email, pqm_message)
     # Only write to stdout if we are running as the foreground process.
     echo_to_stdout = not options.daemon
-    logger = WebTestLogger(request, echo_to_stdout)
+    logger = WebTestLogger('/var/www', request, echo_to_stdout)
 
     runner = EC2Runner(
         options.daemon, pid_filename, options.shutdown, options.email)
