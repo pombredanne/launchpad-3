@@ -1111,17 +1111,18 @@ class POTMsgSet(SQLBase):
                         identical_message=None, share_with_other_side=False):
         """Set the current translation.
 
-        :param pofile:
-        :param submitter:
-        :param origin:
-        :param potranslations:
+        :param pofile: The `POFile` to set the translation in.
+        :param submitter: The `Person` who produced this translation.
+        :param origin: The translation's `RosettaTranslationOrigin`.
+        :param potranslations: List of `POTranslation`s, with a None for
+            each untranslated plural-form.
         :param identical_message: The already existing message, if any,
             that's either shared or diverged for `pofile.potemplate`,
             whose translations are identical to the ones we're setting.
         :param share_with_other_side:
         :return:
         """
-# XXX JeroenVermeulen 2010-08-16: Update pofile.date_changed.
+        # XXX JeroenVermeulen 2010-08-16: Update pofile.date_changed.
 
         twin = identical_message
 
