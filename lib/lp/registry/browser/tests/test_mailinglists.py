@@ -17,8 +17,7 @@ from lp.testing.views import create_view
 
 
 class MailingListSubscriptionControlsTestCase(TestCaseWithFactory):
-    """Tests to ensure the rendering of subscribe and unsubscribe
-    controls on the team page."""
+    """Verify the team index subscribe/unsubscribe to mailing list content."""
 
     layer = DatabaseFunctionalLayer
 
