@@ -13,7 +13,9 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.services.worlddata.interfaces.language import ILanguageSet
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    record_statements,
+    TestCaseWithFactory)
 from lp.translations.interfaces.pofiletranslator import (
     IPOFileTranslatorSet)
 from lp.translations.model.pomsgid import POMsgID
@@ -742,22 +744,6 @@ class TestSharingMigrationPerformance(TestCaseWithFactory,
         transaction.commit()
         gc.collect()
 
-    def _listLoadedObjects(self, of_class, ignore_list=None):
-        """Return the set of objects of a given type that are in memory.
-
-        :param of_class: A class to filter for.
-        :param ignore_list: A previous return value.  Any POMsgIDs that
-            were already in that list are ignored here.
-        """
-        pomsgids = set([
-            whatever
-            for whatever in gc.get_objects()
-            if isinstance(whatever, of_class)
-            ])
-        if ignore_list is not None:
-            pomsgids -= ignore_list
-        return pomsgids
-
     def _resetReferences(self):
         """Reset translation-related references in the test object.
 
@@ -782,50 +768,31 @@ class TestSharingMigrationPerformance(TestCaseWithFactory,
 
         self.templates = [POTemplate.get(id) for id in template_ids]
 
-    def test_merging_loads_no_msgids(self):
-        # Migration does not load actual msgids into memory.
-        self._flushDbObjects()
-        msgids_before = self._listLoadedObjects(POMsgID)
+    def assertNoStatementsInvolvingTable(self, table_name, statements):
+        """The specified table name is not in any of the statements."""
+        table_name = table_name.upper()
+        self.assertFalse(
+            any([table_name in statement.upper()
+                 for statement in statements]))
 
+    def test_merging_loads_no_msgids_or_potranslations(self):
+        # Migration does not touch the POMsgID or POTranslation tables.
         self._makeTranslationMessages('x', 'y', trunk_diverged=True)
         self._makeTranslationMessages('1', '2', stable_diverged=True)
-
         self._resetReferences()
         self.assertNotEqual([], self.templates)
-        self.assertEqual(
-            set(), self._listLoadedObjects(POMsgID, msgids_before))
-        
-        self.script._mergePOTMsgSets(self.templates)
-        self.script._mergeTranslationMessages(self.templates)
 
-        self.assertEqual(
-            set(), self._listLoadedObjects(POMsgID, msgids_before))
+        _ignored, statements = record_statements(
+            self.script._mergePOTMsgSets, self.templates)
+        self.assertNoStatementsInvolvingTable(POMsgID._table, statements)
+        self.assertNoStatementsInvolvingTable(
+            POTranslation._table, statements)
 
-    def test_merging_loads_no_potranslations(self):
-        # Migration does not load actual POTranslations into memory.
-        self._flushDbObjects()
-        potranslations_before = self._listLoadedObjects(POTranslation)
-
-        self._makeTranslationMessages('x', 'y', trunk_diverged=True)
-        self._makeTranslationMessages('1', '2', stable_diverged=True)
-
-        self._resetReferences()
-        self.assertNotEqual([], self.templates)
-        self.assertEqual(
-            set(),
-            self._listLoadedObjects(POTranslation, potranslations_before))
-        
-        self.script._mergePOTMsgSets(self.templates)
-
-        self.assertEqual(
-            set(),
-            self._listLoadedObjects(POTranslation, potranslations_before))
-        
-        self.script._mergeTranslationMessages(self.templates)
-
-        self.assertEqual(
-            set(),
-            self._listLoadedObjects(POTranslation, potranslations_before))
+        _ignored, statements = record_statements(
+            self.script._mergeTranslationMessages, self.templates)
+        self.assertNoStatementsInvolvingTable(POMsgID._table, statements)
+        self.assertNoStatementsInvolvingTable(
+            POTranslation._table, statements)
 
 
 def test_suite():
