@@ -10,7 +10,6 @@ from email.mime.text import MIMEText
 import gzip
 from itertools import izip
 import os
-import shutil
 from StringIO import StringIO
 import sys
 import tempfile
