@@ -37,7 +37,6 @@ from canonical.launchpad.webapp.url import urlappend
 
 from lp.bugs.adapters.bugchange import (
     BugDuplicateChange, BugTaskAssigneeChange, get_bug_changes)
-from lp.bugs.adapters.bugdelta import BugDelta
 from lp.bugs.interfaces.bugchange import IBugChange
 from lp.bugs.mail.bugnotificationbuilder import get_bugmail_error_address
 from lp.bugs.mail.bugnotificationrecipients import BugNotificationRecipients
@@ -173,50 +172,6 @@ def _get_task_change_values(task_change, displayattrname):
         newval_display = getattr(newval, displayattrname)
 
     return (oldval_display, newval_display)
-
-
-def get_bug_delta(old_bug, new_bug, user):
-    """Compute the delta from old_bug to new_bug.
-
-    old_bug and new_bug are IBug's. user is an IPerson. Returns an
-    IBugDelta if there are changes, or None if there were no changes.
-    """
-    changes = {}
-
-    for field_name in ("title", "description", "name", "private",
-                       "security_related", "duplicateof", "tags"):
-        # fields for which we show old => new when their values change
-        old_val = getattr(old_bug, field_name)
-        new_val = getattr(new_bug, field_name)
-        if old_val != new_val:
-            changes[field_name] = {}
-            changes[field_name]["old"] = old_val
-            changes[field_name]["new"] = new_val
-
-    if changes:
-        changes["bug"] = new_bug
-        changes["bug_before_modification"] = old_bug
-        changes["bugurl"] = canonical_url(new_bug)
-        changes["user"] = user
-
-        return BugDelta(**changes)
-    else:
-        return None
-
-
-@block_implicit_flushes
-def notify_bug_modified(modified_bug, event):
-    """Notify the Cc'd list that this bug has been modified.
-
-    modified_bug bug must be an IBug. event must be an
-    IObjectModifiedEvent.
-    """
-    bug_delta = get_bug_delta(
-        old_bug=event.object_before_modification,
-        new_bug=event.object, user=IPerson(event.user))
-
-    if bug_delta is not None:
-        add_bug_change_notifications(bug_delta)
 
 
 def get_bugtask_indirect_subscribers(bugtask, recipients=None, level=None):

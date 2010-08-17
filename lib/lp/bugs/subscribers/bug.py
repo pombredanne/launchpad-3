@@ -3,7 +3,11 @@
 
 __metaclass__ = type
 __all__ = [
+    'get_bug_delta',
     'notify_bug_added',
+    'notify_bug_attachment_added',
+    'notify_bug_attachment_removed',
+    'notify_bug_comment_added',
     'notify_bug_modified',
     'notify_bug_subscription_added',
     'send_bug_details_to_new_bug_subscribers',
@@ -38,8 +42,8 @@ def notify_bug_added(bug, event):
 def notify_bug_modified(bug, event):
     """Handle bug change events.
 
-    Subscribe the security contacts for a bug when it
-    becomes security-related.
+    Subscribe the security contacts for a bug when it becomes
+    security-related, and add notifications for the changes.
     """
     if (event.object.security_related and
         not event.object_before_modification.security_related):
@@ -48,6 +52,13 @@ def notify_bug_modified(bug, event):
         for pillar in bug.affected_pillars:
             if pillar.security_contact is not None:
                 bug.subscribe(pillar.security_contact, IPerson(event.user))
+
+    bug_delta = get_bug_delta(
+        old_bug=event.object_before_modification,
+        new_bug=event.object, user=IPerson(event.user))
+
+    if bug_delta is not None:
+        add_bug_change_notifications(bug_delta)
 
 
 @block_implicit_flushes
@@ -101,6 +112,34 @@ def notify_bug_subscription_added(bug_subscription, event):
         send_bug_details_to_new_bug_subscribers(
             bug_subscription.bug, [], [bug_subscription.person],
             subscribed_by=bug_subscription.subscribed_by)
+
+
+def get_bug_delta(old_bug, new_bug, user):
+    """Compute the delta from old_bug to new_bug.
+
+    old_bug and new_bug are IBug's. user is an IPerson. Returns an
+    IBugDelta if there are changes, or None if there were no changes.
+    """
+    changes = {}
+
+    for field_name in ("title", "description", "name", "private",
+                       "security_related", "duplicateof", "tags"):
+        # fields for which we show old => new when their values change
+        old_val = getattr(old_bug, field_name)
+        new_val = getattr(new_bug, field_name)
+        if old_val != new_val:
+            changes[field_name] = {}
+            changes[field_name]["old"] = old_val
+            changes[field_name]["new"] = new_val
+
+    if changes:
+        changes["bug"] = new_bug
+        changes["bug_before_modification"] = old_bug
+        changes["bugurl"] = canonical_url(new_bug)
+        changes["user"] = user
+        return BugDelta(**changes)
+    else:
+        return None
 
 
 def send_bug_details_to_new_bug_subscribers(
