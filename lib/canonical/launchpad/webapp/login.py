@@ -254,15 +254,6 @@ class OpenIDCallbackView(OpenIDLogin):
                     'Did not expect multi-valued fields.')
             params[key] = value[0]
 
-        # XXX benji 2010-07-23 bug=608920
-        # The production OpenID provider has some Django middleware that
-        # generates a token used to prevent XSRF attacks and stuffs it into
-        # every form.  Unfortunately that includes forms that have off-site
-        # targets and since our OpenID client verifies that no form values have
-        # been injected as a security precaution, this breaks logging-in in
-        # certain circumstances (see bug 597324).  The best we can do at the
-        # moment is to remove the token before invoking the OpenID library.
-        params.pop('csrfmiddlewaretoken', None)
         return params
 
     def _get_requested_url(self, request):
