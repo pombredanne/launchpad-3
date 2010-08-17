@@ -389,12 +389,23 @@ class TestWebTestLogger(TestCase):
         return WebTestLogger(
             full_log, summary, index, request, echo_to_stdout)
 
+    def test_initial_full_log(self):
+        # Initially, the full log has nothing in it.
+        logger = self.make_logger()
+        self.assertEqual('', logger.get_full_log_contents())
+
+    def test_initial_summary_contents(self):
+        # Initially, the summary log has nothing in it.
+        logger = self.make_logger()
+        self.assertEqual('', logger.get_summary_contents())
+
     def test_got_line_no_echo(self):
         stdout = StringIO()
         self.patch(sys, 'stdout', stdout)
         logger = self.make_logger(echo_to_stdout=False)
         logger.got_line("output from script\n")
-        self.assertEqual("output from script\n", logger._out_file.getvalue())
+        self.assertEqual(
+            "output from script\n", logger.get_full_log_contents())
         self.assertEqual("", stdout.getvalue())
 
     def test_got_line_echo(self):
@@ -402,14 +413,15 @@ class TestWebTestLogger(TestCase):
         self.patch(sys, 'stdout', stdout)
         logger = self.make_logger(echo_to_stdout=True)
         logger.got_line("output from script\n")
-        self.assertEqual("output from script\n", logger._out_file.getvalue())
+        self.assertEqual(
+            "output from script\n", logger.get_full_log_contents())
         self.assertEqual("output from script\n", stdout.getvalue())
 
     def test_write_line(self):
         logger = self.make_logger()
         logger.write_line('foo')
-        self.assertEqual('foo\n', logger._out_file.getvalue())
-        self.assertEqual('foo\n', logger._summary_file.getvalue())
+        self.assertEqual('foo\n', logger.get_full_log_contents())
+        self.assertEqual('foo\n', logger.get_summary_contents())
 
     def test_error_in_testrunner(self):
         try:
@@ -421,7 +433,7 @@ class TestWebTestLogger(TestCase):
         logger.error_in_testrunner(exc_info)
         self.assertEqual(
             "\n\nERROR IN TESTRUNNER\n\n%s" % (stack,),
-            logger._summary_file.getvalue())
+            logger.get_summary_contents())
 
 
 def test_suite():

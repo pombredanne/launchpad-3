@@ -489,6 +489,14 @@ class WebTestLogger:
         self._summary_file.close()
         self._index_file.close()
 
+    def get_full_log_contents(self):
+        """Return the contents of the complete log."""
+        return self._get_contents(self._out_file)
+
+    def get_summary_contents(self):
+        """Return the contents of the summary log."""
+        return self._get_contents(self._summary_file)
+
     def get_summary_stream(self):
         """Return a stream that, when written to, writes to the summary."""
         return self._summary_file
@@ -515,8 +523,8 @@ class WebTestLogger:
         if self._request.wants_email:
             self._summary_file.write(
                 '\n(See the attached file for the complete log)\n')
-            summary = self._get_contents(self._summary_file)
-            full_log_gz = self._get_contents(self._out_file)
+            summary = self.get_summary_contents()
+            full_log_gz = self.get_full_log_contents()
             self._request.send_report_email(successful, summary, full_log_gz)
         self._close_logs()
 
