@@ -165,7 +165,7 @@
             interface="lp.registry.interfaces.distroseries.IDistroSeriesSet"/>
     </securedutility>
     <adapter
-        provides="canonical.launchpad.interfaces.ILaunchpadUsage"
+        provides="lp.app.interfaces.launchpad.ILaunchpadUsage"
         for="lp.registry.interfaces.distroseries.IDistroSeries"
         factory="lp.registry.adapters.distroseries_to_launchpadusage"
         permission="zope.Public"/>
@@ -403,6 +403,8 @@
                 bugtargetdisplayname
                 bugtargetname
                 getBugCounts
+                bug_count
+                total_bug_heat
                 bug_subscriptions
                 getSubscriptions
                 getSubscription
@@ -1356,7 +1358,7 @@
         factory="lp.registry.adapters.productseries_to_product"
         permission="zope.Public"/>
     <adapter
-        provides="canonical.launchpad.interfaces.ILaunchpadUsage"
+        provides="lp.app.interfaces.launchpad.ILaunchpadUsage"
         for="lp.registry.interfaces.productseries.IProductSeries"
         factory="lp.registry.adapters.productseries_to_product"
         permission="zope.Public"/>

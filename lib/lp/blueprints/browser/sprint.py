@@ -140,8 +140,6 @@ class SprintSetFacets(StandardLaunchpadFacets):
 
 class SprintView(HasSpecificationsView, LaunchpadView):
 
-    __used_for__ = ISprint
-
     implements(IMajorHeadingView)
 
     # XXX Michael Nelson 20090923 bug=435255
@@ -149,7 +147,7 @@ class SprintView(HasSpecificationsView, LaunchpadView):
     # a second h1 to display. But as this view implements IMajorHeadingView
     # it should not include an h1 below the app buttons.
     label = None
-    
+
     @property
     def page_title(self):
         return '%s (sprint or meeting)' % self.context.title

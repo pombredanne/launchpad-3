@@ -278,7 +278,8 @@ class FakePackager:
         if suite is not None:
             policy.setDistroSeriesAndPocket(suite)
 
-        upload = NascentUpload(changesfile_path, policy, logger)
+        upload = NascentUpload.from_changesfile_path(
+            changesfile_path, policy, logger)
         upload.process()
 
         return upload

@@ -424,8 +424,6 @@ class SpecificationContextMenu(ContextMenu, SpecificationEditLinksMixin):
 class SpecificationSimpleView(LaunchpadView):
     """Used to render portlets and listing items that need browser code."""
 
-    __used_for__ = ISpecification
-
     @cachedproperty
     def feedbackrequests(self):
         if self.user is None:
@@ -456,8 +454,6 @@ class SpecificationSimpleView(LaunchpadView):
 
 class SpecificationView(SpecificationSimpleView):
     """Used to render the main view of a specification."""
-
-    __used_for__ = ISpecification
 
     @property
     def label(self):

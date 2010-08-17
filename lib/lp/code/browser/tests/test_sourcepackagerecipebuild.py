@@ -7,13 +7,15 @@
 __metaclass__ = type
 
 from mechanize import LinkNotFoundError
+from storm.locals import Store
 import transaction
 from zope.component import getUtility
+from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.testing.pages import (
-    extract_text, find_tags_by_class)
+    extract_text, find_main_content, find_tags_by_class)
 from canonical.launchpad.webapp import canonical_url
 from canonical.testing import DatabaseFunctionalLayer
 from lp.buildmaster.interfaces.buildbase import BuildStatus
@@ -96,6 +98,10 @@ class TestSourcePackageRecipeBuild(BrowserTestCase):
             LinkNotFoundError,
             browser.getLink, 'Cancel build')
 
+        self.assertRaises(
+            Unauthorized,
+            self.getUserBrowser, build_url + '/+cancel', user=self.chef)
+
     def test_cancel_build_wrong_state(self):
         """If the build isn't queued, you can't cancel it."""
         experts = getUtility(ILaunchpadCelebrities).bazaar_experts.teamowner
@@ -176,6 +182,10 @@ class TestSourcePackageRecipeBuild(BrowserTestCase):
             LinkNotFoundError,
             browser.getLink, 'Rescore build')
 
+        self.assertRaises(
+            Unauthorized,
+            self.getUserBrowser, build_url + '/+rescore', user=self.chef)
+
     def test_rescore_build_wrong_state(self):
         """If the build isn't queued, you can't rescore it."""
         experts = getUtility(ILaunchpadCelebrities).bazaar_experts.teamowner
@@ -189,3 +199,15 @@ class TestSourcePackageRecipeBuild(BrowserTestCase):
         self.assertRaises(
             LinkNotFoundError,
             browser.getLink, 'Rescore build')
+
+    def test_builder_history(self):
+        build = self.makeRecipeBuild()
+        Store.of(build).flush()
+        build_url = canonical_url(build)
+        removeSecurityProxy(build).builder = self.factory.makeBuilder()
+        browser = self.getViewBrowser(build.builder, '+history')
+        self.assertTextMatchesExpressionIgnoreWhitespace(
+             'Build history.*~chef/chocolate/cake recipe build',
+             extract_text(find_main_content(browser.contents)))
+        self.assertEqual(build_url,
+                browser.getLink('~chef/chocolate/cake recipe build').url)

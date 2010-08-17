@@ -46,6 +46,7 @@ from lazr.restful.interfaces import (
 from lazr.restful.publisher import (
     WebServicePublicationMixin, WebServiceRequestTraversal)
 
+from lp.app.errors import UnexpectedFormData
 from lp.testopenid.interfaces.server import ITestOpenIDApplication
 from canonical.launchpad.interfaces.launchpad import (
     IFeedsApplication, IPrivateApplication, IWebServiceApplication)
@@ -64,7 +65,7 @@ from canonical.launchpad.webapp.interfaces import (
     IAPIDocRoot, IBasicLaunchpadRequest, IBrowserFormNG,
     ILaunchpadBrowserApplicationRequest, ILaunchpadProtocolError,
     INotificationRequest, INotificationResponse, IPlacelessAuthUtility,
-    IPlacelessLoginSource, OAuthPermission, UnexpectedFormData)
+    IPlacelessLoginSource, OAuthPermission)
 from canonical.launchpad.webapp.authentication import (
     check_oauth_signature, get_oauth_authorization)
 from canonical.launchpad.webapp.errorlog import ErrorReportRequest
@@ -77,6 +78,10 @@ from canonical.launchpad.webapp.opstats import OpStats
 from zc.zservertracelog.tracelog import Server as ZServerTracelogServer
 
 from canonical.lazr.timeout import set_default_timeout_function
+
+from lp.services.features.flags import (
+    NullFeatureController,
+    )
 
 
 class StepsToGo:
@@ -837,6 +842,9 @@ class LaunchpadTestRequest(TestRequest, ErrorReportRequest,
         self.needs_datetimepicker_iframe = False
         self.needs_json = False
         self.needs_gmap2 = False
+        # stub out the FeatureController that would normally be provided by
+        # the publication mechanism
+        self.features = NullFeatureController()
 
     @property
     def uuid(self):

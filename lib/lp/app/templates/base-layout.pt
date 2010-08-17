@@ -14,6 +14,8 @@
     site_message modules/canonical.config/config/launchpad/site_message;
     icingroot string:${rooturl}+icing/rev${revno};
     icingroot_contrib string:${rooturl}+icing-contrib/rev${revno};
+    features request/features;
+    feature_scopes request/features/scopes;
     CONTEXTS python:{'template':template, 'context': context, 'view':view};
   "
 ><metal:doctype define-slot="doctype"><tal:doctype tal:replace="structure string:&lt;!DOCTYPE html PUBLIC &quot;-//W3C//DTD XHTML 1.0 Transitional//EN&quot; &quot;http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd&quot;&gt;" /></metal:doctype>
@@ -117,12 +119,12 @@
                 metal:define-slot="heading"
                 >Page Label
               </h1>
-              <div id="registration" class="registering">
-                <metal:registering define-slot="registering" />
-              </div>
               <tal:breadcrumbs replace="structure context/@@+hierarchy">
                 ProjectName > Branches > Merge Proposals > fix-for-navigation
               </tal:breadcrumbs>
+              <div id="registration" class="registering">
+                <metal:registering define-slot="registering" />
+              </div>
             </div>
 
             <tal:maintenance
@@ -171,7 +173,7 @@
 
 <tal:template>
   <tal:comment
-    define="log modules/canonical.launchpad.webapp.adapter/summarize_requests"
+    define="log modules/canonical.launchpad.webapp.adapter/summarize_requests;"
     replace="structure string:&lt;!--
     Facet name: ${view/menu:selectedfacetname}
     Page type: ${view/macro:pagetype}
@@ -180,6 +182,9 @@
     Has side portlets: ${view/macro:pagehas/portlets}
 
     At least ${log}
+
+    Features: ${request/features/usedFlags} 
+    in scopes ${request/features/usedScopes} 
 
     r${revno}
   --&gt;" />

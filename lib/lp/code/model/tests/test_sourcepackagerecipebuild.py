@@ -18,10 +18,10 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.testing.layers import (
     LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
-from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.testing import verifyObject
+from lp.app.errors import NotFoundError
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
 from lp.buildmaster.tests.test_buildbase import (
@@ -289,6 +289,14 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
             BuildStatus.SUPERSEDED,
             build.status)
 
+    def test_getSpecificJob(self):
+        # getSpecificJob returns the SourcePackageRecipeBuild
+        sprb = self.makeSourcePackageRecipeBuild()
+        Store.of(sprb).flush()
+        build = sprb.build_farm_job
+        job = sprb.build_farm_job.getSpecificJob()
+        self.assertEqual(sprb, job)
+
 
 class TestAsBuildmaster(TestCaseWithFactory):
 
@@ -326,7 +334,9 @@ class TestAsBuildmaster(TestCaseWithFactory):
         def prepare_build():
             queue_record = self.factory.makeSourcePackageRecipeBuildJob()
             build = queue_record.specific_job.build
-            removeSecurityProxy(build).status = BuildStatus.FULLYBUILT
+            naked_build = removeSecurityProxy(build)
+            naked_build.status = BuildStatus.FULLYBUILT
+            naked_build.date_started = self.factory.getUniqueDate()
             queue_record.builder = self.factory.makeBuilder()
             slave = WaitingSlave('BuildStatus.OK')
             queue_record.builder.setSlaveForTesting(slave)

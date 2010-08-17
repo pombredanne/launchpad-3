@@ -36,8 +36,8 @@ from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.email import email_validator
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.validators.version import sane_version
-from canonical.launchpad.webapp.interfaces import NameLookupFailed
 
+from lp.app.errors import NameLookupFailed
 from lp.blueprints.interfaces.specificationtarget import (
     ISpecificationGoal)
 from lp.bugs.interfaces.bugtarget import (
@@ -127,7 +127,7 @@ class DistroSeriesVersionField(UniqueField):
             Version(version)
         except VersionError, error:
             raise LaunchpadValidationError(
-                "'%s': %s" % (version, error[0]))
+                "'%s': %s" % (version, error))
 
 
 class IDistroSeriesEditRestricted(Interface):
@@ -554,12 +554,6 @@ class IDistroSeriesPublic(
         Return a SelectResult of SourcePackagePublishingHistory.
         """
 
-    def publishedBinaryPackages(component=None):
-        """Given an optional component name, return a list of the binary
-        packages that are currently published in this distroseries in the
-        given component, or in any component if no component name was given.
-        """
-
     def getDistroSeriesLanguage(language):
         """Return the DistroSeriesLanguage for this distroseries and the
         given language, or None if there's no DistroSeriesLanguage for this
@@ -578,7 +572,7 @@ class IDistroSeriesPublic(
         dsc_maintainer_rfc822, dsc_standards_version, dsc_format,
         dsc_binaries, archive, copyright, build_conflicts,
         build_conflicts_indep, dateuploaded=None,
-        source_package_recipe_build=None):
+        source_package_recipe_build=None, user_defined_fields=None):
         """Create an uploads `SourcePackageRelease`.
 
         Set this distroseries set to be the uploadeddistroseries.
@@ -614,6 +608,8 @@ class IDistroSeriesPublic(
          :param archive: IArchive to where the upload was targeted
          :param dateuploaded: optional datetime, if omitted assumed nowUTC
          :param source_package_recipe_build: optional SourcePackageRecipeBuild
+         :param user_defined_fields: optional sequence of key-value pairs with
+                                     user defined fields.
          :return: the just creates `SourcePackageRelease`
         """
 
@@ -726,35 +722,6 @@ class IDistroSeriesPublic(
     def newArch(architecturetag, processorfamily, official, owner,
                 supports_virtualized=False):
         """Create a new port or DistroArchSeries for this DistroSeries."""
-
-    def initialiseFromParent():
-        """Copy in all of the parent distroseries's configuration. This
-        includes all configuration for distroseries and distroarchseries
-        publishing and all publishing records for sources and binaries.
-
-        Preconditions:
-          The distroseries must have been set up with its distroarchseriess
-          as needed. It should have its nominated arch-indep set up along
-          with all other basic requirements for the structure of the
-          distroseries. This distroseries and all its distroarchseriess
-          must have empty publishing sets. Section and component selections
-          must be empty.
-
-        Outcome:
-          The publishing structure will be copied from the parent. All
-          PUBLISHED and PENDING packages in the parent will be created in
-          this distroseries and its distroarchseriess. The lucille config
-          will be copied in, all component and section selections will be
-          duplicated as will any permission-related structures.
-
-        Note:
-          This method will assert all of its preconditions where possible.
-          After this is run, you still need to construct chroots for building,
-          you need to add anything missing wrt. ports etc. This method is
-          only meant to give you a basic copy of a parent series in order
-          to assist you in preparing a new series of a distribution or
-          in the initialisation of a derivative.
-        """
 
     def copyTranslationsFromParent(ztm):
         """Copy any translation done in parent that we lack.

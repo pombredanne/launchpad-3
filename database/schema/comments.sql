@@ -197,6 +197,10 @@ COMMENT ON COLUMN BugNomination.date_decided IS 'The date the nomination was app
 COMMENT ON COLUMN BugNomination.owner IS 'The person that submitted the nomination';
 COMMENT ON COLUMN BugNomination.decider IS 'The person who approved or declined the nomination';
 
+--- BugSubscription
+COMMENT ON TABLE BugSubscription IS 'A subscription by a Person to a bug.';
+COMMENT ON COLUMN BugSubscription.bug_notification_level IS 'The level of notifications which the Person will receive from this subscription.';
+
 -- BugTag
 COMMENT ON TABLE BugTag IS 'Attaches simple text tags to a bug.';
 COMMENT ON COLUMN BugTag.bug IS 'The bug the tags is attached to.';
@@ -631,7 +635,6 @@ COMMENT ON COLUMN Product.translationpermission IS 'The level of openness of thi
 COMMENT ON COLUMN Product.official_rosetta IS 'Whether or not this product upstream uses Rosetta for its official translation team and coordination. This is a useful indicator in terms of whether translations in Rosetta for this upstream will quickly move upstream.';
 COMMENT ON COLUMN Product.official_malone IS 'Whether or not this product upstream uses Malone for an official bug tracker. This is useful to help indicate whether or not people are likely to pick up on bugs registered in Malone.';
 COMMENT ON COLUMN Product.official_answers IS 'Whether or not this product upstream uses Answers officialy. This is useful to help indicate whether or not that a question will receive an answer.';
-COMMENT ON COLUMN Product.official_codehosting IS 'Whether or not this product upstream uses codehosting officially.';
 COMMENT ON COLUMN Product.bug_supervisor IS 'Person who is responsible for managing bugs on this product.';
 COMMENT ON COLUMN Product.security_contact IS 'The person or team who handles security-related issues in the product.';
 COMMENT ON COLUMN Product.driver IS 'This is a driver for the overall product. This driver will be able to approve nominations of bugs and specs to any series in the product, including backporting to old stable series. You want the smallest group of "overall drivers" here, because you can add specific drivers to each series individually.';
@@ -1109,14 +1112,6 @@ COMMENT ON COLUMN BinaryPackagePublishingHistory.archive IS 'Target archive for 
 COMMENT ON COLUMN BinaryPackagePublishingHistory.removed_by IS 'Person responsible for the removal.';
 COMMENT ON COLUMN BinaryPackagePublishingHistory.removal_comment IS 'Reason why the publication was removed.';
 
--- PublishedPackage View
-
-COMMENT ON VIEW PublishedPackage IS
-    'A very large view that brings together all the information about
-    packages that are currently being published within a distribution. This
-    view was designed for the page which shows packages published in the
-    distribution, but may be more widely used.';
-
 -- ProcessorFamily
 
 COMMENT ON TABLE ProcessorFamily IS 'An architecture, that might consist of several actual processors. Different distributions call these architectures different things, so we have an "architecturetag" in DistroArchSeries that might be different to the architecture''s name.';
@@ -1343,6 +1338,7 @@ COMMENT ON COLUMN SourcePackageRelease.copyright IS 'The copyright associated wi
 COMMENT ON COLUMN SourcePackageRelease.build_conflicts IS 'The list of packages that will conflict with this source while building, as mentioned in the control file "Build-Conflicts:" field.';
 COMMENT ON COLUMN SourcePackageRelease.build_conflicts_indep IS 'The list of packages that will conflict with this source while building in architecture independent environment, as mentioned in the control file "Build-Conflicts-Indep:" field.';
 COMMENT ON COLUMN SourcePackageRelease.changelog IS 'The LibraryFileAlias ID of changelog associated with this sourcepackage.  Often in the case of debian packages and will be found after the installation in /usr/share/doc/<binarypackagename>/changelog.Debian.gz';
+COMMENT ON COLUMN SourcePackageRelease.user_defined_fields IS 'A JSON struct containing a sequence of key-value pairs with user defined fields in the control file.';
 
 -- SourcePackageName
 
@@ -1483,6 +1479,7 @@ COMMENT ON COLUMN BinaryPackageRelease.pre_depends IS 'The list of packages this
 COMMENT ON COLUMN BinaryPackageRelease.enhances IS 'The list of packages pointed as "enhanced" after the installation of this package, as it is in control file "Enhances:" field.';
 COMMENT ON COLUMN BinaryPackageRelease.breaks IS 'The list of packages which will be broken by the installtion of this package, as it is in the control file "Breaks:" field.';
 COMMENT ON COLUMN BinaryPackageRelease.debug_package IS 'The corresponding binary package release containing debug symbols for this binary, if any.';
+COMMENT ON COLUMN BinaryPackageRelease.user_defined_fields IS 'A JSON struct containing a sequence of key-value pairs with user defined fields in the control file.';
 
 
 -- BinaryPackageFile
@@ -1990,6 +1987,7 @@ COMMENT ON COLUMN Archive.num_old_versions_published IS 'The number of versions 
 COMMENT ON COLUMN Archive.relative_build_score IS 'A delta to the build score that is applied to all builds in this archive.';
 COMMENT ON COLUMN Archive.external_dependencies IS 'Newline-separated list of repositories to be used to retrieve any external build dependencies when building packages in this archive, in the format: deb http[s]://[user:pass@]<host>[/path] %(series)s[-pocket] [components]  The series variable is replaced with the series name of the context build.  This column is specifically and only intended for OEM migration to Launchpad and should be re-examined in October 2010 to see if it is still relevant.';
 COMMENT ON COLUMN Archive.commercial IS 'Whether this archive is a commercial Archive and should appear in the Software Center.';
+COMMENT ON COLUMN Archive.build_debug_symbols IS 'Whether builds for this archive should create debug symbol packages.';
 
 -- ArchiveAuthToken
 

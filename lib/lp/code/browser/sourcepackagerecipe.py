@@ -35,8 +35,8 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from lp.code.errors import (
-    BuildAlreadyPending, ForbiddenInstruction, PrivateBranchRecipe)
-from lp.code.interfaces.branch import NoSuchBranch
+    BuildAlreadyPending, ForbiddenInstruction, NoSuchBranch,
+    PrivateBranchRecipe)
 from lp.code.interfaces.sourcepackagerecipe import (
     ISourcePackageRecipe, ISourcePackageRecipeSource, MINIMAL_RECIPE_TEXT)
 from lp.code.interfaces.sourcepackagerecipebuild import (
@@ -166,7 +166,6 @@ class SourcePackageRecipeView(LaunchpadView):
             builds.append(build)
             if len(builds) >= 5:
                 break
-        builds.reverse()
         return builds
 
 
@@ -380,7 +379,6 @@ class SourcePackageRecipeEditView(RecipeTextValidatorMixin,
             except PrivateBranchRecipe, e:
                 self.setFieldError('recipe_text', str(e))
                 return
-
 
 
         distros = data.pop('distros')

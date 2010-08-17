@@ -606,6 +606,11 @@
       for="lp.registry.interfaces.sourcepackage.ISourcePackage"
       provides="lp.code.interfaces.branchtarget.IBranchTarget"
       factory="lp.code.model.branchtarget.PackageBranchTarget"/>
+  <adapter
+      for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
+      provides="lp.code.interfaces.branchtarget.IBranchTarget"
+      factory="lp.code.model.branchtarget.distribution_sourcepackage_to_branch_target"/>
+
   <class class="lp.code.model.branchtarget.PersonBranchTarget">
     <allow interface="lp.code.interfaces.branchtarget.IBranchTarget"/>
   </class>
@@ -613,6 +618,7 @@
       for="lp.registry.interfaces.person.IPerson"
       provides="lp.code.interfaces.branchtarget.IBranchTarget"
       factory="lp.code.model.branchtarget.PersonBranchTarget"/>
+
   <class class="lp.code.model.branchtarget.ProductBranchTarget">
     <allow interface="lp.code.interfaces.branchtarget.IBranchTarget"/>
   </class>
@@ -620,6 +626,10 @@
       for="lp.registry.interfaces.product.IProduct"
       provides="lp.code.interfaces.branchtarget.IBranchTarget"
       factory="lp.code.model.branchtarget.ProductBranchTarget"/>
+  <adapter
+      for="lp.registry.interfaces.productseries.IProductSeries"
+      provides="lp.code.interfaces.branchtarget.IBranchTarget"
+      factory="lp.code.model.branchtarget.product_series_to_branch_target"/>
   <adapter
       for="lp.code.interfaces.branchtarget.IBranchTarget"
       provides="canonical.launchpad.webapp.interfaces.ICanonicalUrlData"
@@ -990,5 +1000,10 @@
         name="RECIPEBRANCHBUILD"
         provides="lp.buildmaster.interfaces.buildfarmjob.IBuildFarmJob"/>
   <webservice:register module="lp.code.interfaces.webservice" />
-
+    <adapter
+        provides="lp.buildmaster.interfaces.buildfarmjob.ISpecificBuildFarmJob"
+        for="lp.buildmaster.interfaces.buildfarmjob.IBuildFarmJob"
+        factory="lp.code.model.sourcepackagerecipebuild.get_recipe_build_for_build_farm_job"
+        name="RECIPEBRANCHBUILD"
+        permission="zope.Public"/>
 </configure>

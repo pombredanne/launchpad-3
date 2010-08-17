@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -18,13 +18,15 @@ from canonical.testing import LaunchpadFunctionalLayer
 
 from canonical.launchpad.ftests import syncUpdate
 
+from lazr.lifecycle.snapshot import Snapshot
 from lp.registry.interfaces.person import IPersonSet
-from lp.registry.interfaces.product import License
+from lp.registry.interfaces.product import IProduct, License
 from lp.registry.model.product import Product
 from lp.registry.model.productlicense import ProductLicense
 from lp.registry.model.commercialsubscription import (
     CommercialSubscription)
 from lp.testing import TestCaseWithFactory
+
 
 class TestProduct(TestCaseWithFactory):
     """Tests product object."""
@@ -84,7 +86,7 @@ class TestProductFiles(unittest.TestCase):
         firefox_owner.open('http://launchpad.dev/firefox/+download')
         content = find_main_content(firefox_owner.contents)
         rows = content.findAll('tr')
-        print
+
         a_list = rows[-1].findAll('a')
         # 1st row
         a_element = a_list[0]
@@ -176,6 +178,32 @@ class ProductAttributeCacheTestCase(unittest.TestCase):
         # before the cache is populated.
         self.assertEqual(self.product.commercial_subscription.sales_system_id,
                          'new')
+
+
+class ProductSnapshotTestCase(TestCaseWithFactory):
+    """A TestCase for product snapshots."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        super(ProductSnapshotTestCase, self).setUp()
+        self.product = self.factory.makeProduct(name="shamwow")
+
+    def test_snapshot(self):
+        """Snapshots of products should not include marked attribues.
+
+        Wrap an export with 'doNotSnapshot' to force the snapshot to not
+        include that attribute.
+        """
+        snapshot = Snapshot(self.product, providing=IProduct)
+        omitted = [
+            'series',
+            'releases',
+            ]
+        for attribute in omitted:
+            self.assertFalse(
+                hasattr(snapshot, attribute),
+                "Snapshot should not include %s." % attribute)
 
 
 class BugSupervisorTestCase(TestCaseWithFactory):

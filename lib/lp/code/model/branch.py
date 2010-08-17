@@ -55,7 +55,9 @@ from lp.code.enums import (
     BranchLifecycleStatus, BranchMergeControlStatus,
     BranchMergeProposalStatus, BranchType)
 from lp.code.errors import (
-    BranchMergeProposalExists, InvalidBranchMergeProposal)
+    BranchCannotBePrivate, BranchCannotBePublic, BranchTargetError,
+    BranchTypeError, BranchMergeProposalExists, CannotDeleteBranch,
+    InvalidBranchMergeProposal)
 from lp.code.mail.branch import send_branch_modified_notifications
 from lp.code.model.branchmergeproposal import (
      BranchMergeProposal, BranchMergeProposalGetter)
@@ -65,9 +67,7 @@ from lp.code.model.revision import Revision, RevisionAuthor
 from lp.code.model.seriessourcepackagebranch import SeriesSourcePackageBranch
 from lp.code.event.branchmergeproposal import NewBranchMergeProposalEvent
 from lp.code.interfaces.branch import (
-    BranchCannotBePrivate, BranchCannotBePublic,
-    BranchTargetError, BranchTypeError, BzrIdentityMixin, CannotDeleteBranch,
-    DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch,
+    BzrIdentityMixin, DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch,
     IBranchNavigationMenu, IBranchSet, user_has_special_branch_access)
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchlookup import IBranchLookup
@@ -650,6 +650,7 @@ class Branch(SQLBase, BzrIdentityMixin):
         # actually a very interesting thing to tell the user about.
         if self.code_import is not None:
             DeleteCodeImport(self.code_import)()
+        Store.of(self).flush()
 
     def associatedProductSeries(self):
         """See `IBranch`."""
@@ -1131,7 +1132,6 @@ class ClearDependentBranch(DeletionOperation):
 
     def __call__(self):
         self.affected_object.prerequisite_branch = None
-        Store.of(self.affected_object).flush()
 
 
 class ClearSeriesBranch(DeletionOperation):
@@ -1145,7 +1145,6 @@ class ClearSeriesBranch(DeletionOperation):
     def __call__(self):
         if self.affected_object.branch == self.branch:
             self.affected_object.branch = None
-        Store.of(self.affected_object).flush()
 
 
 class ClearSeriesTranslationsBranch(DeletionOperation):
@@ -1158,9 +1157,8 @@ class ClearSeriesTranslationsBranch(DeletionOperation):
         self.branch = branch
 
     def __call__(self):
-        if self.affected_object.branch == self.branch:
-            self.affected_object.branch = None
-        self.affected_object.syncUpdate()
+        if self.affected_object.translations_branch == self.branch:
+            self.affected_object.translations_branch = None
 
 
 class ClearOfficialPackageBranch(DeletionOperation):
@@ -1322,6 +1320,6 @@ def compose_public_url(scheme, unique_name, suffix=None):
     assert scheme in accepted_schemes, "Unknown scheme: %s" % scheme
     host = URI(config.codehosting.supermirror_root).host
     path = '/' + urlutils.escape(unique_name)
-    if suffix is not None:
+    if suffix:
         path = os.path.join(path, suffix)
     return str(URI(scheme=scheme, host=host, path=path))

@@ -135,9 +135,10 @@ The page includes a comment after the document with diagnostic information.
       Has application tabs: False
       Has side portlets: False
       At least ... queries issued in ... seconds
+      Features: {}
+      in scopes {}
       r...
     -->
-
 
 Page Headings
 -------------
@@ -171,7 +172,6 @@ Page Footers
     Terms of use http://launchpad.dev/legal
     Contact Launchpad Support https://help.launchpad.net/Feedback
     System status http://identi.ca/launchpadstatus
-    None http://www.surveymonkey.com/s/launchpadsummer2010
 
 
 Page registering

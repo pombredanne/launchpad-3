@@ -49,6 +49,7 @@ class TestBuildFarmJobMixin:
         build_farm_job = getUtility(IBuildFarmJobSource).new(
             job_type=job_type, status=status)
         removeSecurityProxy(build_farm_job).builder = builder
+        removeSecurityProxy(build_farm_job).date_started = date_finished
         removeSecurityProxy(build_farm_job).date_finished = date_finished
         return build_farm_job
 

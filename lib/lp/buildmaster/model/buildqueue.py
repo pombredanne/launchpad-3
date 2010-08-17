@@ -25,7 +25,8 @@ from canonical.database.constants import DEFAULT
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE, NotFoundError)
+    DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE)
+from lp.app.errors import NotFoundError
 from lp.buildmaster.interfaces.buildfarmjob import (
     BuildFarmJobType, IBuildFarmJob)
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
