@@ -18,15 +18,14 @@ from canonical.launchpad.webapp.interfaces import ILaunchBag
 
 from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.bugs.scripts.bugnotification import construct_email_notifications
-from lp.services.mail import stub
 from lp.testing import TestCaseWithFactory
 
-from lazr.lifecycle.event import (ObjectModifiedEvent)
+from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
 
 
 class TestModificationNotification(TestCaseWithFactory):
-    """Test email headers when bug task is modified."""
+    """Test email notifications when a bug task is modified."""
 
     layer = DatabaseFunctionalLayer
 
@@ -43,7 +42,6 @@ class TestModificationNotification(TestCaseWithFactory):
 
     def test_for_bug_modifier_header(self):
         """Test X-Launchpad-Bug-Modifier appears when a bug is modified."""
-        self.assertEqual(len(stub.test_emails), 0, 'emails in queue')
         self.bug_task.transitionToStatus(BugTaskStatus.CONFIRMED, self.user)
         notify(ObjectModifiedEvent(
             self.bug_task, self.bug_task_before_modification,
