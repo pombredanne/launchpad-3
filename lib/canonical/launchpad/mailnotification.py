@@ -47,12 +47,6 @@ from lp.registry.interfaces.structuralsubscription import (
     BugNotificationLevel)
 from lp.services.mail.mailwrapper import MailWrapper
 
-# XXX 2010-06-16 gmb bug=594985
-#     This shouldn't be here, but if we take it out lots of things cry,
-#     which is sad.
-from lp.services.mail.notificationrecipientset import (
-    NotificationRecipientSet)
-
 from lp.bugs.mail.bugnotificationbuilder import (
     BugNotificationBuilder)
 from lp.bugs.mail.bugnotificationrecipients import BugNotificationRecipients
@@ -187,6 +181,7 @@ def notify_errors_list(message, file_alias_url):
         template % {'url': file_alias_url, 'error_msg': message},
         headers={'X-Launchpad-Unhandled-Email': message})
 
+
 def generate_bug_add_email(bug, new_recipients=False, reason=None,
                            subscribed_by=None, event_creator=None):
     """Generate a new bug notification from the given IBug.
@@ -237,7 +232,8 @@ def generate_bug_add_email(bug, new_recipients=False, reason=None,
 
     if new_recipients:
         if "assignee" in reason:
-            contents += "You have been assigned a bug task for a %(visibility)s bug"
+            contents += (
+                "You have been assigned a bug task for a %(visibility)s bug")
             if event_creator is not None:
                 contents += " by %(assigner)s"
                 content_substitutions['assigner'] = (
