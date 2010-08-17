@@ -15,21 +15,20 @@ from lp.archiveuploader.dscfile import DSCFile
 from lp.archiveuploader.nascentuploadfile import CustomUploadFile
 from lp.archiveuploader.uploadpolicy import AbsolutelyAnythingGoesUploadPolicy
 from lp.soyuz.interfaces.queue import PackageUploadCustomFormat
-from lp.testing import TestCase
+from lp.testing import TestCaseWithFactory
 from canonical.testing import LaunchpadZopelessLayer
 
 
-class NascentUploadFileTestCase(TestCase):
+class NascentUploadFileTestCase(TestCaseWithFactory):
     """Base class for all tests of classes deriving from NascentUploadFile."""
 
     def setUp(self):
         super(NascentUploadFileTestCase, self).setUp()
         self.logger = BufferLogger()
         self.policy = AbsolutelyAnythingGoesUploadPolicy()
-        class MockArchive:
-
-            private = False
-        self.policy.archive = MockArchive()
+        self.distro = self.factory.makeDistribution()
+        self.policy.archive = self.factory.makeArchive(
+            distribution=self.distro)
 
     def writeUploadFile(self, filename, contents):
         """Write a temporary file but with a specific filename.
@@ -78,7 +77,10 @@ class CustomUploadFileTests(NascentUploadFileTestCase):
 class PackageUploadFileTestCase(NascentUploadFileTestCase):
     """Base class for all tests of classes deriving from PackageUploadFile."""
 
-    cls = None
+    def setUp(self):
+        super(PackageUploadFileTestCase, self).setUp()
+        self.policy.distroseries = self.factory.makeDistroSeries(
+            distribution=self.distro)
 
     def getBaseChanges(self):
         contents = Changes()
@@ -91,6 +93,7 @@ class PackageUploadFileTestCase(NascentUploadFileTestCase):
         contents["Maintainer"] = "Somebody"
         contents["Changes"] = "Something changed"
         contents["Date"] = "Fri, 25 Jun 2010 11:20:22 -0600"
+        contents["Urgency"] = "low"
         contents["Changed-By"] = "Seombody Else <somebody@example.com>"
         contents["Files"] = [{
             "md5sum": "d2bd347b3fed184fe28e112695be491c",
@@ -143,13 +146,19 @@ class DSCFileTests(PackageUploadFileTestCase):
         dsc = self.getBaseDsc()
         uploadfile = self.createDSCFile("foo.dsc", dsc,
             "main/net", "extra", "dulwich", "0.42", None)
-        self.assertEquals("text/x-debian-source-package", uploadfile.content_type)
+        self.assertEquals("text/x-debian-source-package",
+            uploadfile.content_type)
 
     def test_storeInDatabase(self):
         dsc = self.getBaseDsc()
+        dsc["Build-Depends"] = "dpkg, bzr"
         changes = self.getBaseChanges()
         uploadfile = self.createDSCFile("foo.dsc", dsc,
             "main/net", "extra", "dulwich", "0.42",
             self.createChangesFile("foo.changes", changes))
+        (uploadfile.changelog_path, changelog_digest, changelog_size) = \
+            self.writeUploadFile("changelog", "DUMMY")
+        uploadfile.files = []
         release = uploadfile.storeInDatabase(None)
         self.assertEquals("0.42", release.version)
+        self.assertEquals("dpkg, bzr", release.builddepends)
