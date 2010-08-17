@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213,C0322
@@ -156,7 +156,7 @@ from lp.code.browser.sourcepackagerecipelisting import HasRecipesMenuMixin
 from lp.registry.interfaces.codeofconduct import ISignedCodeOfConductSet
 from lp.registry.interfaces.gpg import IGPGKeySet
 from lp.registry.interfaces.irc import IIrcIDSet
-from lp.registry.interfaces.jabber import IJabberIDSet
+from lp.registry.interfaces.jabber import IJabberID, IJabberIDSet
 from lp.registry.interfaces.mailinglist import (
     CannotUnsubscribe, IMailingListSet)
 from lp.registry.interfaces.mailinglistsubscription import (
@@ -1264,7 +1264,7 @@ class TeamMenuMixin(PPANavigationMenuMixIn, CommonMenuLinks):
         return Link(target, text, icon=icon, enabled=enabled)
 
 
-class TeamOverviewMenu(ApplicationMenu, TeamMenuMixin):
+class TeamOverviewMenu(ApplicationMenu, TeamMenuMixin, HasRecipesMenuMixin):
 
     usedfor = ITeam
     facet = 'overview'
@@ -1275,7 +1275,7 @@ class TeamOverviewMenu(ApplicationMenu, TeamMenuMixin):
              'editlanguages', 'map', 'polls',
              'add_poll', 'join', 'leave', 'add_my_teams',
              'reassign', 'projects', 'activate_ppa', 'maintained', 'ppa',
-             'related_software_summary']
+             'related_software_summary', 'view_recipes']
 
 
 class TeamOverviewNavigationMenu(NavigationMenu, TeamMenuMixin):
@@ -1399,6 +1399,11 @@ class PersonDeactivateAccountView(LaunchpadFormView):
     schema = DeactivateAccountSchema
     label = "Deactivate your Launchpad account"
     custom_widget('comment', TextAreaWidget, height=5, width=60)
+
+    def validate(self, data):
+        """See `LaunchpadFormView`."""
+        if self.context.account_status != AccountStatus.ACTIVE:
+            self.addError('This account is already deactivated.')
 
     @action(_("Deactivate My Account"), name="deactivate")
     def deactivate_action(self, action, data):
@@ -3073,19 +3078,40 @@ class PersonParticipationView(LaunchpadView):
     def label(self):
         return 'Team participation for ' + self.context.displayname
 
-    def _asParticipation(self, membership, team_path=None):
-        """Return a dict of participation information for the membership."""
+    def _asParticipation(self, membership=None, team=None, team_path=None):
+        """Return a dict of participation information for the membership.
+
+        Method requires membership or team, not both.
+        """
+        if ((membership is None and team is None) or
+            (membership is not None and team is not None)):
+            raise AssertionError(
+                "The membership or team argument must be provided, not both.")
+
         if team_path is None:
             via = None
         else:
             via = COMMASPACE.join(team.displayname for team in team_path)
-        team = membership.team
-        if membership.person == team.teamowner:
-            role = 'Owner'
-        elif membership.status == TeamMembershipStatus.ADMIN:
-            role = 'Admin'
-        else:
+
+        if membership is None:
+            #we have membership via an indirect team, and can use
+            #sane defaults
+
+            #the user can only be a member of this team
             role = 'Member'
+            #the user never joined, and can't have a join date
+            datejoined = None
+        else:
+            #the member is a direct member, so we can use membership data
+            team = membership.team
+            datejoined = membership.datejoined
+            if membership.person == team.teamowner:
+                role = 'Owner'
+            elif membership.status == TeamMembershipStatus.ADMIN:
+                role = 'Admin'
+            else:
+                role = 'Member'
+
         if team.mailing_list is not None and team.mailing_list.is_usable:
             subscription = team.mailing_list.getSubscription(self.context)
             if subscription is None:
@@ -3093,15 +3119,16 @@ class PersonParticipationView(LaunchpadView):
             else:
                 subscribed = 'Subscribed'
         else:
-            subscribed = None
+            subscribed = '&mdash;'
+
         return dict(
-            displayname=team.displayname, team=team, membership=membership,
+            displayname=team.displayname, team=team, datejoined=datejoined,
             role=role, via=via, subscribed=subscribed)
 
     @cachedproperty
     def active_participations(self):
         """Return the participation information for active memberships."""
-        participations = [self._asParticipation(membership)
+        participations = [self._asParticipation(membership=membership)
                 for membership in self.context.myactivememberships
                 if check_permission('launchpad.View', membership.team)]
         membership_set = getUtility(ITeamMembershipSet)
@@ -3111,10 +3138,8 @@ class PersonParticipationView(LaunchpadView):
             # The key points of the path for presentation are:
             # [-?] indirect memberships, [-2] direct membership, [-1] team.
             team_path = self.context.findPathToTeam(team)
-            membership = membership_set.getByPersonAndTeam(
-                team_path[-2], team)
             participations.append(
-                self._asParticipation(membership, team_path=team_path[:-1]))
+                self._asParticipation(team_path=team_path[:-1], team=team))
         return sorted(participations, key=itemgetter('displayname'))
 
     @cachedproperty
@@ -3327,8 +3352,6 @@ class TeamIndexView(PersonIndexView):
     def visibility_info(self):
         if self.context.visibility == PersonVisibility.PRIVATE:
             return 'Private team'
-        elif self.context.visibility == PersonVisibility.PRIVATE_MEMBERSHIP:
-            return 'Team membership is viewable by team members'
         else:
             return 'Public team'
 
@@ -3520,7 +3543,18 @@ class PersonEditIRCNicknamesView(LaunchpadFormView):
 
 
 class PersonEditJabberIDsView(LaunchpadFormView):
-    schema = Interface
+
+    schema = IJabberID
+    field_names = ['jabberid']
+
+    def setUpFields(self):
+        super(PersonEditJabberIDsView, self).setUpFields()
+        if self.context.jabberids.count() > 0:
+            # Make the jabberid entry optional on the edit page if one or more
+            # ids already exist, which allows the removal of ids without
+            # filling out the new jabberid field.
+            jabber_field = self.form_fields['jabberid']
+            jabber_field.field.required = False
 
     @property
     def page_title(self):
@@ -3529,42 +3563,42 @@ class PersonEditJabberIDsView(LaunchpadFormView):
     label = page_title
 
     @property
-    def cancel_url(self):
+    def next_url(self):
         return canonical_url(self.context)
+
+    cancel_url = next_url
+
+    def validate(self, data):
+        """Ensure the edited data does not already exist."""
+        jabberid = data.get('jabberid')
+        if jabberid is not None:
+            jabberset = getUtility(IJabberIDSet)
+            existingjabber = jabberset.getByJabberID(jabberid)
+            if existingjabber is not None:
+                if existingjabber.person != self.context:
+                    self.setFieldError(
+                        'jabberid',
+                        structured(
+                            'The Jabber ID %s is already registered by '
+                            '<a href="%s">%s</a>.',
+                            jabberid, canonical_url(existingjabber.person),
+                            existingjabber.person.displayname))
+                else:
+                    self.setFieldError(
+                        'jabberid',
+                        'The Jabber ID %s already belongs to you.' % jabberid)
 
     @action(_("Save Changes"), name="save")
     def save(self, action, data):
         """Process the Jabber ID form."""
-        # XXX: EdwinGrubbs 2009-09-01 bug=422784
-        # This view should use schema and form validation.
         form = self.request.form
         for jabber in self.context.jabberids:
             if form.get('remove_%s' % jabber.jabberid):
                 jabber.destroySelf()
-            else:
-                jabberid = form.get('jabberid_%s' % jabber.jabberid)
-                if not jabberid:
-                    self.request.response.addErrorNotification(
-                        "You cannot save an empty Jabber ID.")
-                    return
-                jabber.jabberid = jabberid
-
-        jabberid = form.get('newjabberid')
-        if jabberid:
+        jabberid = data.get('jabberid')
+        if jabberid is not None:
             jabberset = getUtility(IJabberIDSet)
-            existingjabber = jabberset.getByJabberID(jabberid)
-            if existingjabber is None:
-                jabberset.new(self.context, jabberid)
-            elif existingjabber.person != self.context:
-                self.request.response.addErrorNotification(
-                    structured(
-                        'The Jabber ID %s is already registered by '
-                        '<a href="%s">%s</a>.',
-                        jabberid, canonical_url(existingjabber.person),
-                        existingjabber.person.displayname))
-            else:
-                self.request.response.addErrorNotification(
-                    'The Jabber ID %s already belongs to you.' % jabberid)
+            jabberset.new(self.context, jabberid)
 
 
 class PersonEditSSHKeysView(LaunchpadView):
@@ -3600,8 +3634,8 @@ class PersonEditSSHKeysView(LaunchpadView):
 
     def add_ssh(self):
         sshkey = self.request.form.get('sshkey')
-	try:
-      	    getUtility(ISSHKeySet).new(self.user, sshkey)
+        try:
+            getUtility(ISSHKeySet).new(self.user, sshkey)
         except SSHKeyAdditionError:
             self.error_message = structured('Invalid public key')
         except SSHKeyCompromisedError:
@@ -4005,12 +4039,11 @@ class TeamJoinView(LaunchpadFormView, TeamJoinMixin):
         and this team's visibility is either None or PUBLIC.
         """
         # Joining a moderated team will put you on the proposed_members
-        # list. If it is a private membership team, you are not allowed
-        # to view the proposed_members attribute until you are an
-        # active member; therefore, it would look like the join button
-        # is broken. Either private membership teams should always have a
-        # restricted subscription policy, or we need a more complicated
-        # permission model.
+        # list. If it is a private team, you are not allowed to view the
+        # proposed_members attribute until you are an active member;
+        # therefore, it would look like the join button is broken. Either
+        # private teams should always have a restricted subscription policy,
+        # or we need a more complicated permission model.
         if not (self.context.visibility is None
                 or self.context.visibility == PersonVisibility.PUBLIC):
             return False

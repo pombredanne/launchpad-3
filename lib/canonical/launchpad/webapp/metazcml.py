@@ -19,7 +19,6 @@ from zope.configuration.fields import (
 from zope.interface import Interface, implements
 from zope.publisher.interfaces.browser import (
     IBrowserPublisher, IBrowserRequest, IDefaultBrowserLayer)
-from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
 from zope.schema import TextLine
 from zope.security.checker import Checker, CheckerPublic
 from zope.security.interfaces import IPermission
@@ -34,6 +33,7 @@ import z3c.ptcompat.zcml
 from z3c.ptcompat.zcml import page_directive as original_page
 from z3c.ptcompat.zcml import pages_directive as original_pages
 
+from canonical.config import config
 from canonical.launchpad.layers import FeedsLayer
 from canonical.launchpad.webapp.interfaces import (
     IApplicationMenu, IAuthorization, ICanonicalUrlData, IContextMenu,
@@ -192,6 +192,10 @@ class IMenusDirective(IGlueDirective):
 class INavigationDirective(IGlueDirective):
     """Hook up traversal etc."""
 
+    layer = GlobalInterface(
+        title=u"The layer where this navigation is going to be available.",
+        required=False)
+
 
 class IFeedsDirective(IGlueDirective):
     """Hook up feeds."""
@@ -266,7 +270,7 @@ def feeds(_context, module, classes):
                           layer=layer, class_=feedclass)
 
 
-def navigation(_context, module, classes):
+def navigation(_context, module, classes, layer=IDefaultBrowserLayer):
     """Handler for the `INavigationDirective`."""
     if not inspect.ismodule(module):
         raise TypeError("module attribute must be a module: %s, %s" %
@@ -280,19 +284,11 @@ def navigation(_context, module, classes):
         for_ = [navclass.usedfor]
 
         # Register the navigation as the traversal component.
-        layer = IDefaultBrowserLayer
         provides = IBrowserPublisher
         name = ''
         view(_context, factory, layer, name, for_,
                 permission=PublicPermission, provides=provides,
                 allowed_interface=[IBrowserPublisher])
-        #view(_context, factory, layer, name, for_,
-        #     permission=PublicPermission, provides=provides)
-
-        # Also register the navigation as a traversal component for XMLRPC.
-        xmlrpc_layer = IXMLRPCRequest
-        view(_context, factory, xmlrpc_layer, name, for_,
-             permission=PublicPermission, provides=provides)
 
 
 class InterfaceInstanceDispatcher:
@@ -655,10 +651,19 @@ _arbitrary_priority = 12
 
 
 def launchpadPublisher(_context, name, factory, methods=['*'],
-                       mimetypes=['*'], priority=None):
-    # This overrides zope's definition of the <publisher> directive to supply
-    # an arbitrary unique priority if none is explicitly supplied -- we don't
-    # care about the priority in Launchpad but it needs to be unique.
+                       mimetypes=['*'], priority=None, vhost_name=None):
+    # This overrides zope's definition of the <publisher> directive to
+    # supply an arbitrary unique priority if none is explicitly
+    # supplied -- we don't care about the priority in Launchpad but it
+    # needs to be unique -- and to do nothing if no hostname is
+    # configured for this publisher.
+
+    # shipit, uniquely, uses a different name in its <publisher>
+    # directives to the name of the section in the config.
+    if not name.startswith('shipit'):
+        section = getattr(config.vhost, name, None)
+        if section is None or section.hostname is None:
+            return
     global _arbitrary_priority
     if priority is None:
         _arbitrary_priority += 1

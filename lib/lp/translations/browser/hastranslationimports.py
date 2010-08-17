@@ -24,6 +24,7 @@ from z3c.ptcompat import ViewPageTemplateFile
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
+from canonical.launchpad.webapp.vocabulary import ForgivingSimpleVocabulary
 from lp.app.errors import UnexpectedFormData
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.pillar import IPillarNameSet
@@ -391,10 +392,13 @@ class TranslationImportFileExtensionVocabularyFactory:
 
     def __call__(self, context):
         file_extensions = ('po', 'pot')
-
-        terms = [SimpleTerm('all', 'all', 'All files')]
+        all_files = SimpleTerm('all', 'all', 'All files')
+        terms = [all_files]
         for extension in file_extensions:
             title = 'Only %s files' % extension
             terms.append(SimpleTerm(extension, extension, title))
-        return SimpleVocabulary(terms)
 
+        # We use a ForgivingSimpleVocabulary because we don't care if a user
+        # provides an invalid value.  If they do we just ignore it and show
+        # them all files.
+        return ForgivingSimpleVocabulary(terms, default_term=all_files)

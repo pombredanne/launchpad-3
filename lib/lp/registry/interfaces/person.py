@@ -37,7 +37,7 @@ __all__ = [
     'TeamContactMethod',
     'TeamMembershipRenewalPolicy',
     'TeamSubscriptionPolicy',
-    'validate_person_not_private_membership',
+    'validate_person',
     'validate_public_person',
     ]
 
@@ -67,7 +67,7 @@ from canonical.launchpad import _
 from canonical.launchpad.fields import (
     BlacklistableContentNameField, IconImageUpload, LogoImageUpload,
     MugshotImageUpload, PasswordField, PersonChoice, PublicPersonChoice,
-    StrippedTextLine, is_private_membership_person, is_public_person)
+    StrippedTextLine, is_public_person)
 from canonical.launchpad.interfaces.account import AccountStatus, IAccount
 from canonical.launchpad.interfaces.emailaddress import IEmailAddress
 from canonical.launchpad.interfaces.launchpad import (
@@ -110,7 +110,7 @@ class PrivatePersonLinkageError(ValueError):
 
 
 @block_implicit_flushes
-def validate_person(obj, attr, value, validate_func):
+def validate_person_common(obj, attr, value, validate_func):
     """Validate the person using the supplied function."""
     if value is None:
         return None
@@ -121,7 +121,7 @@ def validate_person(obj, attr, value, validate_func):
     # DB. This needs cleaning up.
     from lp.registry.model.person import Person
     person = Person.get(value)
-    if validate_func(person):
+    if not validate_func(person):
         raise PrivatePersonLinkageError(
             "Cannot link person (name=%s, visibility=%s) to %s (name=%s)"
             % (person.name, person.visibility.name,
@@ -129,18 +129,20 @@ def validate_person(obj, attr, value, validate_func):
     return value
 
 
+def validate_person(obj, attr, value):
+    """Validate the person is a real person with no other restrictions."""
+    def validate(person):
+        return IPerson.providedBy(person)
+    return validate_person_common(obj, attr, value, validate)
+
+
 def validate_public_person(obj, attr, value):
     """Validate that the person identified by value is public."""
 
     def validate(person):
-        return not is_public_person(person)
+        return is_public_person(person)
 
-    return validate_person(obj, attr, value, validate)
-
-
-def validate_person_not_private_membership(obj, attr, value):
-    """Validate that the person (value) is not a private membership team."""
-    return validate_person(obj, attr, value, is_private_membership_person)
+    return validate_person_common(obj, attr, value, validate)
 
 
 class PersonalStanding(DBEnumeratedType):
@@ -378,14 +380,6 @@ class PersonVisibility(DBEnumeratedType):
         Everyone can view all the attributes of this person.
         """)
 
-    PRIVATE_MEMBERSHIP = DBItem(20, """
-        Private Membership
-
-        Only Launchpad admins and team members can view the
-        membership list for this team. The team is severely restricted in the
-        roles it can assume.
-        """)
-
     PRIVATE = DBItem(30, """
         Private
 
@@ -520,33 +514,6 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
             "should be no bigger than 100kb in size. ")))
     mugshotID = Int(title=_('Mugshot ID'), required=True, readonly=True)
 
-    addressline1 = TextLine(
-            title=_('Address'), required=True, readonly=False,
-            description=_('Your address (Line 1)'))
-    addressline2 = TextLine(
-            title=_('Address'), required=False, readonly=False,
-            description=_('Your address (Line 2)'))
-    city = TextLine(
-            title=_('City'), required=True, readonly=False,
-            description=_('The City/Town/Village/etc to where the CDs should '
-                          'be shipped.'))
-    province = TextLine(
-            title=_('Province'), required=True, readonly=False,
-            description=_('The State/Province/etc to where the CDs should '
-                          'be shipped.'))
-    country = Choice(
-            title=_('Country'), required=True, readonly=False,
-            vocabulary='CountryName',
-            description=_('The Country to where the CDs should be shipped.'))
-    postcode = TextLine(
-            title=_('Postcode'), required=True, readonly=False,
-            description=_('The Postcode to where the CDs should be shipped.'))
-    phone = TextLine(
-            title=_('Phone'), required=True, readonly=False,
-            description=_('[(+CountryCode) number] e.g. (+55) 16 33619445'))
-    organization = TextLine(
-            title=_('Organization'), required=False, readonly=False,
-            description=_('The Organization requesting the CDs'))
     languages = exported(
         CollectionField(
             title=_('List of languages known by this person'),
@@ -1264,7 +1231,7 @@ class IPersonViewRestricted(Interface):
     all_member_count = Attribute(
         "The total number of real people who are members of this team, "
         "including subteams.")
-    allmembers = exported(
+    all_members_prepopulated = exported(
         doNotSnapshot(
             CollectionField(
                 title=_("All participants of this team."),
@@ -1276,6 +1243,8 @@ class IPersonViewRestricted(Interface):
                     "IPerson.inTeam()."),
                 value_type=Reference(schema=Interface))),
         exported_as='participants')
+    allmembers = doNotSnapshot(
+        Attribute("List of all members, without checking karma etc."))
     approvedmembers = doNotSnapshot(
         Attribute("List of members with APPROVED status"))
     deactivated_member_count = Attribute("Number of deactivated members")
@@ -1355,14 +1324,17 @@ class IPersonViewRestricted(Interface):
             center_lat, and center_lng
         """
 
-    def getMembersWithPreferredEmails(include_teams=False):
+    def getMembersWithPreferredEmails():
         """Returns a result set of persons with precached addresses.
 
         Persons or teams without preferred email addresses are not included.
         """
 
-    def getMembersWithPreferredEmailsCount(include_teams=False):
-        """Returns the count of persons/teams with preferred emails."""
+    def getMembersWithPreferredEmailsCount():
+        """Returns the count of persons/teams with preferred emails.
+        
+        See also getMembersWithPreferredEmails.
+        """
 
     def getDirectAdministrators():
         """Return this team's administrators.
@@ -2156,9 +2128,16 @@ class NoSuchPerson(NameLookupFailed):
 
 
 # Fix value_type.schema of IPersonViewRestricted attributes.
-for name in ['allmembers', 'activemembers', 'adminmembers', 'proposedmembers',
-             'invited_members', 'deactivatedmembers', 'expiredmembers',
-             'unmapped_participants']:
+for name in [
+    'all_members_prepopulated',
+    'activemembers',
+    'adminmembers',
+    'proposedmembers',
+    'invited_members',
+    'deactivatedmembers',
+    'expiredmembers',
+    'unmapped_participants',
+    ]:
     IPersonViewRestricted[name].value_type.schema = IPerson
 
 IPersonPublic['sub_teams'].value_type.schema = ITeam

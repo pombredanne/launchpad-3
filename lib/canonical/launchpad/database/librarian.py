@@ -194,6 +194,7 @@ class LibraryFileAlias(SQLBase):
 
     def __storm_invalidated__(self):
         """Make sure that the file is closed across transaction boundary."""
+        super(LibraryFileAlias, self).__storm_invalidated__()
         self.close()
 
 

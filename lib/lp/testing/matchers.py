@@ -3,12 +3,15 @@
 
 __metaclass__ = type
 __all__ = [
-    'DoesNotProvide',
     'DoesNotCorrectlyProvide',
+    'DoesNotProvide',
+    'DoesNotStartWith',
+    'HasQueryCount',
     'IsNotProxied',
     'IsProxied',
     'Provides',
     'ProvidesAndIsProxied',
+    'StartsWith',
     ]
 
 from zope.interface.verify import verifyObject
@@ -16,6 +19,8 @@ from zope.interface.exceptions import (
     BrokenImplementation, BrokenMethodImplementation, DoesNotImplement)
 from zope.security.proxy import builtin_isinstance, Proxy
 
+from testtools.content import Content
+from testtools.content_type import ContentType
 from testtools.matchers import Matcher, Mismatch
 
 
@@ -89,6 +94,45 @@ class Provides(Matcher):
         return None
 
 
+class HasQueryCount(Matcher):
+    """Adapt a Binary Matcher to the query count on a QueryCollector.
+
+    If there is a mismatch, the queries from the collector are provided as a
+    test attachment.
+    """
+
+    def __init__(self, count_matcher):
+        """Create a HasQueryCount that will match using count_matcher."""
+        self.count_matcher = count_matcher
+
+    def __str__(self):
+        return "HasQueryCount(%s)" % self.count_matcher
+
+    def match(self, something):
+        mismatch = self.count_matcher.match(something.count)
+        if mismatch is None:
+            return None
+        return _MismatchedQueryCount(mismatch, something)
+
+
+class _MismatchedQueryCount(Mismatch):
+    """The Mismatch for a HasQueryCount matcher."""
+
+    def __init__(self, mismatch, query_collector):
+        self.count_mismatch = mismatch
+        self.query_collector = query_collector
+
+    def describe(self):
+        return "queries do not match: %s" % (self.count_mismatch.describe(),)
+
+    def get_details(self):
+        result = []
+        for query in self.query_collector.queries:
+            result.append(unicode(query).encode('utf8'))
+        return {'queries': Content(ContentType('text', 'plain',
+            {'charset': 'utf8'}), lambda:['\n'.join(result)])}
+ 
+
 class IsNotProxied(Mismatch):
     """An object is not proxied."""
 
@@ -133,3 +177,39 @@ class ProvidesAndIsProxied(Matcher):
         if mismatch is not None:
             return mismatch
         return IsProxied().match(matchee)
+
+
+class DoesNotStartWith(Mismatch):
+
+    def __init__(self, matchee, expected):
+        """Create a DoesNotStartWith Mismatch.
+
+        :param matchee: the string that did not match.
+        :param expected: the string that `matchee` was expected to start
+            with.
+        """
+        self.matchee = matchee
+        self.expected = expected
+
+    def describe(self):
+        return "'%s' does not start with '%s'." % (
+            self.matchee, self.expected)
+
+
+class StartsWith(Matcher):
+    """Checks whether one string starts with another."""
+
+    def __init__(self, expected):
+        """Create a StartsWith Matcher.
+
+        :param expected: the string that matchees should start with.
+        """
+        self.expected = expected
+
+    def __str__(self):
+        return "Starts with '%s'." % self.expected
+
+    def match(self, matchee):
+        if not matchee.startswith(self.expected):
+            return DoesNotStartWith(matchee, self.expected)
+        return None

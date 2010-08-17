@@ -23,7 +23,7 @@ First, test the rejection of a missapplied changesfile name:
   >>> sync_policy = getPolicy(
   ...     name='sync', distro='ubuntutest', distroseries=None)
 
-  >>> upload = NascentUpload(
+  >>> upload = NascentUpload.from_changesfile_path(
   ...     datadir('dist-upgrader/dist-upgrader_20060302.0120.changes'),
   ...     sync_policy, mock_logger)
   DEBUG: Changes file can be unsigned.
@@ -37,7 +37,7 @@ Now do a proper upload into the system.
   >>> insecure_policy = getPolicy(
   ...     name='insecure', distro='ubuntutest', distroseries=None)
 
-  >>> upload = NascentUpload(
+  >>> upload = NascentUpload.from_changesfile_path(
   ...     datadir('dist-upgrader/dist-upgrader_20060302.0120_all.changes'),
   ...     insecure_policy, mock_logger)
   DEBUG: Verifying signature on dist-upgrader_20060302.0120_all.changes
@@ -214,7 +214,7 @@ manual intervention.
   >>> insecure_policy = getPolicy(
   ...     name='insecure', distro='ubuntutest', distroseries=None)
 
-  >>> upload = NascentUpload(
+  >>> upload = NascentUpload.from_changesfile_path(
   ...     datadir('dist-upgrader/dist-upgrader_20070219.1234_all.changes'),
   ...     insecure_policy, mock_logger)
   DEBUG: Verifying signature on dist-upgrader_20070219.1234_all.changes
@@ -249,7 +249,7 @@ Publish the custom upload:
 
   >>> pub_records = upload.queue_root.realiseUpload(mock_logger)
   DEBUG: Publishing custom dist-upgrader_20070219.1234_all.tar.gz to ubuntutest/breezy-autotest
-  ERROR: Queue item ignored: bad version found in '.../dist-upgrader_20070219.1234_all.tar.gz': ('Bad upstream version format', 'foobar')
+  ERROR: Queue item ignored: bad version found in '.../dist-upgrader_20070219.1234_all.tar.gz': Could not parse version: Bad upstream version format foobar
 
 Check if the queue item remained in ACCEPTED and not cruft was
 inserted in the archive:
@@ -287,7 +287,7 @@ files in the respective PPA location.
 
   >>> insecure_policy.archive = foobar_archive
 
-  >>> ppa_upload = NascentUpload(
+  >>> ppa_upload = NascentUpload.from_changesfile_path(
   ...     datadir('dist-upgrader/dist-upgrader_20060302.0120_all.changes'),
   ...     insecure_policy, mock_logger)
   DEBUG: Verifying signature on dist-upgrader_20060302.0120_all.changes
