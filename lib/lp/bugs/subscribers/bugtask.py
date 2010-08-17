@@ -9,12 +9,12 @@ __all__ = [
 
 
 from canonical.database.sqlbase import block_implicit_flushes
-from canonical.launchpad.mailnotification import (
-    _send_bug_details_to_new_bug_subscribers, add_bug_change_notifications)
+from canonical.launchpad.mailnotification import add_bug_change_notifications
 from canonical.launchpad.webapp.publisher import canonical_url
 
 from lp.bugs.adapters.bugdelta import BugDelta
 from lp.bugs.interfaces.bugtask import IUpstreamBugTask
+from lp.bugs.subscribers.bug import send_bug_details_to_new_bug_subscribers
 from lp.registry.interfaces.person import IPerson
 
 
@@ -71,7 +71,7 @@ def notify_bugtask_edited(modified_bugtask, event):
         bug_delta, old_bugtask=event.object_before_modification,
         new_subscribers=new_subs)
 
-    _send_bug_details_to_new_bug_subscribers(
+    send_bug_details_to_new_bug_subscribers(
         event.object.bug, previous_subscribers, current_subscribers,
         event_creator=event_creator)
 

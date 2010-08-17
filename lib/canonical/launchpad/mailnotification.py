@@ -8,7 +8,6 @@
 
 __metaclass__ = type
 
-import datetime
 import operator
 import re
 
@@ -40,7 +39,6 @@ from lp.bugs.adapters.bugchange import (
     BugDuplicateChange, BugTaskAssigneeChange, get_bug_changes)
 from lp.bugs.adapters.bugdelta import BugDelta
 from lp.bugs.interfaces.bugchange import IBugChange
-from lp.bugs.mail.bugnotificationbuilder import BugNotificationBuilder
 from lp.bugs.mail.bugnotificationbuilder import get_bugmail_error_address
 from lp.bugs.mail.bugnotificationrecipients import BugNotificationRecipients
 from lp.registry.interfaces.structuralsubscription import BugNotificationLevel
@@ -56,52 +54,6 @@ NotificationRecipientSet
 
 
 CC = "CC"
-
-
-def _send_bug_details_to_new_bug_subscribers(
-    bug, previous_subscribers, current_subscribers, subscribed_by=None,
-    event_creator=None):
-    """Send an email containing full bug details to new bug subscribers.
-
-    This function is designed to handle situations where bugtasks get
-    reassigned to new products or sourcepackages, and the new bug subscribers
-    need to be notified of the bug.
-    """
-    prev_subs_set = set(previous_subscribers)
-    cur_subs_set = set(current_subscribers)
-    new_subs = cur_subs_set.difference(prev_subs_set)
-
-    to_addrs = set()
-    for new_sub in new_subs:
-        to_addrs.update(get_contact_email_addresses(new_sub))
-
-    if not to_addrs:
-        return
-
-    from_addr = format_address(
-        'Launchpad Bug Tracker',
-        "%s@%s" % (bug.id, config.launchpad.bugs_domain))
-    # Now's a good a time as any for this email; don't use the original
-    # reported date for the bug as it will just confuse mailer and
-    # recipient.
-    email_date = datetime.datetime.now()
-
-    # The new subscriber email is effectively the initial message regarding
-    # a new bug. The bug's initial message is used in the References
-    # header to establish the message's context in the email client.
-    references = [bug.initial_message.rfc822msgid]
-    recipients = bug.getBugNotificationRecipients()
-
-    bug_notification_builder = BugNotificationBuilder(bug, event_creator)
-    for to_addr in sorted(to_addrs):
-        reason, rationale = recipients.getReason(to_addr)
-        subject, contents = generate_bug_add_email(
-            bug, new_recipients=True, subscribed_by=subscribed_by,
-            reason=reason, event_creator=event_creator)
-        msg = bug_notification_builder.build(
-            from_addr, to_addr, contents, subject, email_date,
-            rationale=rationale, references=references)
-        sendmail(msg)
 
 
 def send_process_error_notification(to_address, subject, error_msg,
@@ -475,17 +427,6 @@ def notify_bug_attachment_removed(bugattachment, event):
         attachment={'old': bugattachment, 'new': None})
 
     add_bug_change_notifications(bug_delta)
-
-
-@block_implicit_flushes
-def notify_bug_subscription_added(bug_subscription, event):
-    """Notify that a new bug subscription was added."""
-    # When a user is subscribed to a bug by someone other
-    # than themselves, we send them a notification email.
-    if bug_subscription.person != bug_subscription.subscribed_by:
-        _send_bug_details_to_new_bug_subscribers(
-            bug_subscription.bug, [], [bug_subscription.person],
-            subscribed_by=bug_subscription.subscribed_by)
 
 
 @block_implicit_flushes

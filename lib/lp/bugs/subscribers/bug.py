@@ -5,10 +5,20 @@ __metaclass__ = type
 __all__ = [
     'notify_bug_added',
     'notify_bug_modified',
+    'notify_bug_subscription_added',
+    'send_bug_details_to_new_bug_subscribers',
     ]
 
 
+import datetime
+
+from canonical.config import config
 from canonical.database.sqlbase import block_implicit_flushes
+from canonical.launchpad.helpers import get_contact_email_addresses
+from canonical.launchpad.mail import format_address, sendmail
+from canonical.launchpad.mailnotification import generate_bug_add_email
+
+from lp.bugs.mail.bugnotificationbuilder import BugNotificationBuilder
 from lp.registry.interfaces.person import IPerson
 
 
@@ -35,3 +45,60 @@ def notify_bug_modified(bug, event):
         for pillar in bug.affected_pillars:
             if pillar.security_contact is not None:
                 bug.subscribe(pillar.security_contact, IPerson(event.user))
+
+
+@block_implicit_flushes
+def notify_bug_subscription_added(bug_subscription, event):
+    """Notify that a new bug subscription was added."""
+    # When a user is subscribed to a bug by someone other
+    # than themselves, we send them a notification email.
+    if bug_subscription.person != bug_subscription.subscribed_by:
+        send_bug_details_to_new_bug_subscribers(
+            bug_subscription.bug, [], [bug_subscription.person],
+            subscribed_by=bug_subscription.subscribed_by)
+
+
+def send_bug_details_to_new_bug_subscribers(
+    bug, previous_subscribers, current_subscribers, subscribed_by=None,
+    event_creator=None):
+    """Send an email containing full bug details to new bug subscribers.
+
+    This function is designed to handle situations where bugtasks get
+    reassigned to new products or sourcepackages, and the new bug subscribers
+    need to be notified of the bug.
+    """
+    prev_subs_set = set(previous_subscribers)
+    cur_subs_set = set(current_subscribers)
+    new_subs = cur_subs_set.difference(prev_subs_set)
+
+    to_addrs = set()
+    for new_sub in new_subs:
+        to_addrs.update(get_contact_email_addresses(new_sub))
+
+    if not to_addrs:
+        return
+
+    from_addr = format_address(
+        'Launchpad Bug Tracker',
+        "%s@%s" % (bug.id, config.launchpad.bugs_domain))
+    # Now's a good a time as any for this email; don't use the original
+    # reported date for the bug as it will just confuse mailer and
+    # recipient.
+    email_date = datetime.datetime.now()
+
+    # The new subscriber email is effectively the initial message regarding
+    # a new bug. The bug's initial message is used in the References
+    # header to establish the message's context in the email client.
+    references = [bug.initial_message.rfc822msgid]
+    recipients = bug.getBugNotificationRecipients()
+
+    bug_notification_builder = BugNotificationBuilder(bug, event_creator)
+    for to_addr in sorted(to_addrs):
+        reason, rationale = recipients.getReason(to_addr)
+        subject, contents = generate_bug_add_email(
+            bug, new_recipients=True, subscribed_by=subscribed_by,
+            reason=reason, event_creator=event_creator)
+        msg = bug_notification_builder.build(
+            from_addr, to_addr, contents, subject, email_date,
+            rationale=rationale, references=references)
+        sendmail(msg)
