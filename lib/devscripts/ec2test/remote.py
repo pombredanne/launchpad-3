@@ -447,6 +447,7 @@ class WebTestLogger:
             tested.
         :param echo_to_stdout: Whether or not we should echo output to stdout.
         """
+        # XXX: WebTestLogger.__init__ docstring out of date.
         self._request = request
         self._echo_to_stdout = echo_to_stdout
 
@@ -459,6 +460,7 @@ class WebTestLogger:
 
     @classmethod
     def make_in_directory(cls, www_dir, request, echo_to_stdout):
+        # XXX: make_in_directory untested
         files = [
             open(filename, 'w') for filename in [
                 os.path.join(www_dir, 'current_test.log'),
@@ -532,14 +534,12 @@ class WebTestLogger:
 
     def _write(self, msg):
         """Write to the summary and full log file."""
-        # XXX: Logger.write needs tests.
         for fd in [self._out_file, self._summary_file]:
             fd.write(msg)
             fd.flush()
 
     def write_line(self, msg):
         """Write to the summary and full log file with a newline."""
-        # XXX: Logger.write_line needs tests.
         self._write(msg + '\n')
 
     def prepare(self):

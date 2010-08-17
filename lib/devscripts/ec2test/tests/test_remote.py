@@ -404,6 +404,12 @@ class TestWebTestLogger(TestCase):
         self.assertEqual("output from script\n", logger._out_file.getvalue())
         self.assertEqual("output from script\n", stdout.getvalue())
 
+    def test_write_line(self):
+        logger = self.make_logger()
+        logger.write_line('foo')
+        self.assertEqual('foo\n', logger._out_file.getvalue())
+        self.assertEqual('foo\n', logger._summary_file.getvalue())
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
