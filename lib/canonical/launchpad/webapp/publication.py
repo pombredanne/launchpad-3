@@ -67,7 +67,7 @@ OFFSITE_POST_WHITELIST = ('/+storeblob', '/+request-token', '/+access-token',
 def maybe_block_offsite_form_post(request):
     """Check if an attempt was made to post a form from a remote site.
 
-    This appears to be a XSRF countermeasure.
+    This is a cross-site request forgery (XSRF/CSRF) countermeasure.
 
     The OffsiteFormPostError exception is raised if the following
     holds true:
