@@ -254,12 +254,7 @@ class LaunchpadTester:
             exit_status = 1
             raise
         finally:
-            # It probably isn't safe to close the log files ourselves,
-            # since someone else might try to write to them later.
-            try:
-                self._logger.got_result(not exit_status)
-            finally:
-                self._logger.close_logs()
+            self._logger.got_result(not exit_status)
 
     def _gather_test_output(self, input_stream, logger):
         """Write the testrunner output to the logs."""
@@ -455,7 +450,7 @@ class WebTestLogger:
         traceback.print_exception(
             exc_type, exc_value, exc_tb, file=self._summary_file)
 
-    def open_logs(self):
+    def _open_logs(self):
         """Open all of our log files for writing."""
         self._out_file = open(self._out_filename, 'w')
         self._summary_file = open(self._summary_filename, 'w')
@@ -467,7 +462,7 @@ class WebTestLogger:
         self._summary_file.flush()
         self._index_file.flush()
 
-    def close_logs(self):
+    def _close_logs(self):
         """Closes all of the open log file handles."""
         self._out_file.close()
         self._summary_file.close()
@@ -495,6 +490,7 @@ class WebTestLogger:
             summary = open(self._summary_filename, 'r').read()
             full_log_gz = open(gzip_file(self._out_filename), 'rb').read()
             self._request.send_email(successful, summary, full_log_gz, config)
+        self._close_logs()
 
     def _handle_pqm_submission(self, successful, config):
         subject = self._request.submit_to_pqm(successful, config)
@@ -521,7 +517,7 @@ class WebTestLogger:
         Writes three log files: the raw output log, the filtered "summary"
         log file, and a HTML index page summarizing the test run paramters.
         """
-        self.open_logs()
+        self._open_logs()
 
         msg = 'Tests started at approximately %(now)s UTC' % {
             'now': datetime.datetime.utcnow().strftime(
