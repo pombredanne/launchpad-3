@@ -14,7 +14,7 @@ from lp.archiveuploader.changesfile import (CannotDetermineFileTypeError,
 from lp.archiveuploader.dscfile import DSCFile
 from lp.archiveuploader.nascentuploadfile import (
     DebBinaryUploadFile, DdebBinaryUploadFile, SourceUploadFile,
-    UdebBinaryUploadFile, UploadError, UploadWarning)
+    UdebBinaryUploadFile, UploadError)
 from lp.archiveuploader.uploadpolicy import AbsolutelyAnythingGoesUploadPolicy
 from lp.testing import TestCase
 
