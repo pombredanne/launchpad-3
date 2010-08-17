@@ -91,6 +91,11 @@ class TestTranslationSharedPOFileSourcePackage(TestCaseWithFactory):
 
         # Setting a suggestion as current makes it have no unreviewed
         # suggestions.
+        # XXX henninge 2010-08-17: It looks like this test passes by
+        # accident as the suggestion already is the newest translation
+        # available. Other tests may be passing just by accident, too.
+        # This will have to be investigated when all bits and pieces are in
+        # place.
         translation.is_current_ubuntu = False
         suggestion.is_current_ubuntu = True
         found_translations = list(
