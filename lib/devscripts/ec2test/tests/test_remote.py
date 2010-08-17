@@ -23,7 +23,8 @@ from testtools import TestCase
 
 from devscripts.ec2test.remote import (
     FlagFallStream,
-    gzip_file,
+    gunzip_data,
+    gzip_data,
     remove_pidfile,
     Request,
     SummaryResult,
@@ -132,16 +133,21 @@ class TestPidfileHelpers(TestCase):
         self.assertEqual(False, os.path.exists(path))
 
 
-class TestGzipFile(TestCase):
-    """Tests for `gzip_file`."""
+class TestGzip(TestCase):
+    """Tests for gzip helpers."""
 
-    def test_gzip_file(self):
+    def test_gzip_data(self):
+        data = 'foobarbaz\n'
+        compressed = gzip_data(data)
         fd, path = tempfile.mkstemp()
-        contents = 'foobarbaz\n'
-        os.write(fd, contents)
+        os.write(fd, compressed)
         os.close(fd)
-        gz_file = gzip_file(path)
-        self.assertEqual(contents, gzip.open(gz_file, 'r').read())
+        self.assertEqual(data, gzip.open(path, 'r').read())
+
+    def test_gunzip_data(self):
+        data = 'foobarbaz\n'
+        compressed = gzip_data(data)
+        self.assertEqual(data, gunzip_data(compressed))
 
 
 class RequestHelpers:
@@ -476,6 +482,9 @@ class TestWebTestLogger(TestCaseWithTransport, RequestHelpers):
 class TestResultHandling(TestCaseWithTransport, RequestHelpers):
     """Tests for how we handle the result at the end of the test suite."""
 
+    def get_body_text(self, email):
+        return email.get_payload()[0].get_payload()
+
     def test_success_no_emails(self):
         request = self.make_request(emails=[])
         logger = self.make_logger(request=request)
@@ -505,7 +514,7 @@ class TestResultHandling(TestCaseWithTransport, RequestHelpers):
         self.assertEqual(message, pqm_message)
         self.assertIn(
             'SUBMITTED TO PQM:\n%s' % (message['Subject'],),
-            str(user_message))
+            self.get_body_text(user_message))
 
     def test_doesnt_submit_to_pqm_no_failure(self):
         message = {'Subject': 'foo'}
@@ -523,7 +532,7 @@ class TestResultHandling(TestCaseWithTransport, RequestHelpers):
         [user_message] = request.emails_sent
         self.assertIn(
             '**NOT** submitted to PQM:\n%s' % (message['Subject'],),
-            str(user_message))
+            self.get_body_text(user_message))
 
     def test_email_refers_to_attached_log(self):
         request = self.make_request(emails=['foo@example.com'])
@@ -532,7 +541,41 @@ class TestResultHandling(TestCaseWithTransport, RequestHelpers):
         [user_message] = request.emails_sent
         self.assertIn(
             '(See the attached file for the complete log)\n',
-            str(user_message))
+            self.get_body_text(user_message))
+
+    def test_email_body_is_summary(self):
+        # The body of the email sent to the user is the summary file.
+        # XXX: JonathanLange 2010-08-17: We actually want to change this
+        # behaviour so that the summary log stays roughly the same as it is
+        # now and can vary independently from the contents of the sent
+        # email. We probably just want the contents of the email to be a list
+        # of failing tests.
+        request = self.make_request(emails=['foo@example.com'])
+        logger = self.make_logger(request=request)
+        logger.get_summary_stream().write('bar\nbaz\nqux\n')
+        logger.got_result(False)
+        [user_message] = request.emails_sent
+        self.assertEqual(
+            'bar\nbaz\nqux\n\n(See the attached file for the complete log)\n',
+            self.get_body_text(user_message))
+
+    def test_gzip_of_full_log_attached(self):
+        # The full log is attached to the email.
+        request = self.make_request(emails=['foo@example.com'])
+        logger = self.make_logger(request=request)
+        logger.got_line("output from test process\n")
+        logger.got_line("more output\n")
+        logger.got_result(False)
+        [user_message] = request.emails_sent
+        [body, attachment] = user_message.get_payload()
+        self.assertEqual('application/x-gzip', attachment['Content-Type'])
+        self.assertEqual(
+            'attachment; filename="%s.log.gz"' % request.get_nick(),
+            attachment['Content-Disposition'])
+        attachment_contents = attachment.get_payload().decode('base64')
+        uncompressed = gunzip_data(attachment_contents)
+        self.assertEqual(
+            "output from test process\nmore output\n", uncompressed)
 
 
 def test_suite():

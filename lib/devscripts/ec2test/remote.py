@@ -544,7 +544,7 @@ class WebTestLogger:
             self._summary_file.write(
                 '\n(See the attached file for the complete log)\n')
             summary = self.get_summary_contents()
-            full_log_gz = self.get_full_log_contents()
+            full_log_gz = gzip_data(self.get_full_log_contents())
             self._request.send_report_email(successful, summary, full_log_gz)
         self._close_logs()
 
@@ -680,19 +680,36 @@ def daemonize(pid_filename):
     os.dup2(0, 2)
 
 
-def gzip_file(filename):
-    """Compress 'filename' to a new temporary file.
+def gunzip_data(data):
+    """Decompress 'data'.
 
-    :param filename: The path to a file.
-    :return: The path to the compressed version of that file.
+    :param data: The gzip data to decompress.
+    :return: The decompressed data.
+    """
+    fd, path = tempfile.mkstemp()
+    os.write(fd, data)
+    os.close(fd)
+    try:
+        return gzip.open(path, 'r').read()
+    finally:
+        os.unlink(path)
+
+
+def gzip_data(data):
+    """Compress 'data'.
+
+    :param data: The data to compress.
+    :return: The gzip-compressed data.
     """
     fd, path = tempfile.mkstemp()
     os.close(fd)
     gz = gzip.open(path, 'wb')
-    full_log = open(filename, 'rb')
-    gz.writelines(full_log)
+    gz.writelines(data)
     gz.close()
-    return path
+    try:
+        return open(path).read()
+    finally:
+        os.unlink(path)
 
 
 def write_pidfile(pid_filename):
