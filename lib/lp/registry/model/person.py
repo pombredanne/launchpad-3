@@ -2049,7 +2049,8 @@ class Person(
         if self.mailing_list is not None:
             mailing_list_email = getUtility(IEmailAddressSet).getByEmail(
                 self.mailing_list.address)
-            mailing_list_email = IMasterObject(mailing_list_email)
+            if mailing_list_email is not None:
+                mailing_list_email = IMasterObject(mailing_list_email)
         else:
             mailing_list_email = None
         all_addresses = IMasterStore(self).find(
