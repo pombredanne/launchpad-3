@@ -400,6 +400,8 @@ class TestWebTestLogger(TestCase):
         self.assertEqual('', logger.get_summary_contents())
 
     def test_got_line_no_echo(self):
+        # got_line forwards the line to the full log, but does not forward to
+        # stdout if echo_to_stdout is False.
         stdout = StringIO()
         self.patch(sys, 'stdout', stdout)
         logger = self.make_logger(echo_to_stdout=False)
@@ -409,6 +411,8 @@ class TestWebTestLogger(TestCase):
         self.assertEqual("", stdout.getvalue())
 
     def test_got_line_echo(self):
+        # got_line forwards the line to the full log, and to stdout if
+        # echo_to_stdout is True.
         stdout = StringIO()
         self.patch(sys, 'stdout', stdout)
         logger = self.make_logger(echo_to_stdout=True)
@@ -418,12 +422,15 @@ class TestWebTestLogger(TestCase):
         self.assertEqual("output from script\n", stdout.getvalue())
 
     def test_write_line(self):
+        # write_line writes a line to both the full log and the summary log.
         logger = self.make_logger()
         logger.write_line('foo')
         self.assertEqual('foo\n', logger.get_full_log_contents())
         self.assertEqual('foo\n', logger.get_summary_contents())
 
     def test_error_in_testrunner(self):
+        # error_in_testrunner logs the traceback to the summary log in a very
+        # prominent way.
         try:
             1/0
         except ZeroDivisionError:
