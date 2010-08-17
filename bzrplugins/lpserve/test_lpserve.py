@@ -134,6 +134,10 @@ class TestLPService(TestCaseWithLPService):
         response = self.send_message_to_service('unknown\n')
         self.assertStartsWith(response, 'FAILURE')
 
+    def test_send_hello_heartbeat(self):
+        response = self.send_message_to_service('hello\n')
+        self.assertEqual('yep, still alive\n', response)
+
 
 class TestCaseWithLPServiceSubprocess(tests.TestCaseWithTransport):
     """Tests will get a separate process to communicate to.
