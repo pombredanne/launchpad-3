@@ -150,30 +150,6 @@ def get_unified_diff(old_text, new_text, text_width):
     return text_diff
 
 
-def _get_task_change_row(label, oldval_display, newval_display):
-    """Return a row formatted for display in task change info."""
-    return u"%(label)13s: %(oldval)s => %(newval)s\n" % {
-        'label': label.capitalize(),
-        'oldval': oldval_display,
-        'newval': newval_display}
-
-
-def _get_task_change_values(task_change, displayattrname):
-    """Return the old value and the new value for a task field change."""
-    oldval = task_change.get('old')
-    newval = task_change.get('new')
-
-    oldval_display = None
-    newval_display = None
-
-    if oldval:
-        oldval_display = getattr(oldval, displayattrname)
-    if newval:
-        newval_display = getattr(newval, displayattrname)
-
-    return (oldval_display, newval_display)
-
-
 def get_bugtask_indirect_subscribers(bugtask, recipients=None, level=None):
     """Return the indirect subscribers for a bug task.
 
