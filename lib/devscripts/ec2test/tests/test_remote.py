@@ -214,6 +214,41 @@ class TestRequest(TestCaseWithTransport):
         req = Request('https://example.com/bzr/thing', 42, tree.basedir, None)
         self.assertEqual('thing => db-devel', req.get_merge_description())
 
+    def test_get_summary_commit(self):
+        # The summary commit message is the last commit message of the branch
+        # we're merging in.
+        trunk = self.make_branch_and_tree('trunk')
+        trunk.commit(message="a starting point")
+        thing_bzrdir = trunk.branch.bzrdir.sprout('thing')
+        thing = thing_bzrdir.open_workingtree()
+        thing.commit(message="a new thing")
+        trunk.merge_from_branch(thing.branch)
+        req = Request(
+            'https://example.com/bzr/thing', thing.branch.revno(),
+            trunk.basedir, None)
+        self.assertEqual("a new thing", req.get_summary_commit())
+
+    def test_iter_dependency_branches(self):
+        # iter_dependency_branches yields a list of branches in the sourcecode
+        # directory, along with their parent URLs and their revnos.
+        sourcecode_branches = [
+            ('b', 'http://example.com/parent-b', 3),
+            ('a', 'http://example.com/parent-a', 2),
+            ('c', 'http://example.com/parent-c', 5),
+            ]
+        self.build_tree(
+            ['sourcecode/',
+             'sourcecode/not-a-branch/',
+             'sourcecode/just-a-file'])
+        for name, parent_url, revno in sourcecode_branches:
+            tree = self.make_branch_and_tree('sourcecode/%s' % (name,))
+            tree.branch.set_parent(parent_url)
+            for i in range(revno):
+                tree.commit(message=str(i))
+        req = Request(None, None, None, 'sourcecode/')
+        branches = list(req.iter_dependency_branches())
+        self.assertEqual(sorted(sourcecode_branches), branches)
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

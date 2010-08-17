@@ -336,6 +336,9 @@ class Request:
         we're just running tests for a trunk branch without merging return
         '$TRUNK_NICK'.
         """
+        # XXX: JonathanLange 2010-08-17: Not actually used yet. I think it
+        # would be a great thing to have in the subject of the emails we
+        # receive.
         source = self.get_branch_details()
         if not source:
             return self.get_nick()
@@ -344,7 +347,13 @@ class Request:
             self._last_segment(source[0]), self._last_segment(target[0]))
 
     def get_summary_commit(self):
-        """Get a message summarizing the change from the commit log."""
+        """Get a message summarizing the change from the commit log.
+
+        Returns the last commit message of the merged branch, or None.
+        """
+        # XXX: JonathanLange 2010-08-17: I don't actually know why we are
+        # using this commit message as a summary message. It's used in the
+        # test logs and the EC2 hosted web page.
         branch = bzrlib.branch.Branch.open_containing(
             self._local_branch_path)[0]
         tree = bzrlib.workingtree.WorkingTree.open(self._local_branch_path)
@@ -399,11 +408,11 @@ class Request:
 
     def iter_dependency_branches(self):
         """Iterate through the Bazaar branches we depend on."""
-        for name in os.listdir(self._sourcecode_path):
+        for name in sorted(os.listdir(self._sourcecode_path)):
             path = os.path.join(self._sourcecode_path, name)
             if os.path.isdir(path):
                 try:
-                    branch = bzrlib.branch.Branch.open_containing(path)[0]
+                    branch = bzrlib.branch.Branch.open(path)
                 except bzrlib.errors.NotBranchError:
                     continue
                 yield name, branch.get_parent(), branch.revno()
