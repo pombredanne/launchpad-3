@@ -5,8 +5,6 @@
 
 __metaclass__ = type
 
-import unittest
-
 from zope.component import getUtility
 
 from canonical.testing.layers import DatabaseFunctionalLayer
@@ -103,7 +101,3 @@ class TestMilestoneDeleteView(TestCaseWithFactory):
         self.assertEqual([], view.errors)
         self.assertEqual(0, len(product.all_milestones))
         self.assertEqual(0, product.development_focus.all_bugtasks.count())
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
