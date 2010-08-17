@@ -44,6 +44,7 @@ from lp.testing import (
     )
 from lp.testing.matchers import HasQueryCount
 from lp.testing.views import create_initialized_view
+from lp.testing import celebrity_logged_in
 from lp.testing._webservice import QueryCollector
 from lp.registry.interfaces.person import PrivatePersonLinkageError
 from canonical.testing.layers import DatabaseFunctionalLayer, reconnect_stores
@@ -68,6 +69,22 @@ class TestPersonTeams(TestCaseWithFactory):
 
 
 class TestPerson(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_getOwnedOrDrivenPillars(self):
+        user = self.factory.makePerson()
+        active_project = self.factory.makeProject(owner=user)
+        inactive_project = self.factory.makeProject(owner=user)
+        with celebrity_logged_in('admin'):
+            inactive_project.active = False
+        expected_pillars = [active_project.name]
+        received_pillars = [pillar.name for pillar in
+            user.getOwnedOrDrivenPillars()]
+        self.assertEqual(expected_pillars, received_pillars)
+
+
+class TestPersonStates(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
@@ -201,7 +218,7 @@ class TestPerson(TestCaseWithFactory):
     def test_person_snapshot(self):
         omitted = (
             'activemembers', 'adminmembers', 'allmembers',
-            'all_members_prepopulated',  'approvedmembers',
+            'all_members_prepopulated', 'approvedmembers',
             'deactivatedmembers', 'expiredmembers', 'inactivemembers',
             'invited_members', 'member_memberships', 'pendingmembers',
             'proposedmembers', 'unmapped_participants',
@@ -583,7 +600,8 @@ class TestAPIPartipication(TestCaseWithFactory):
         self.addCleanup(collector.unregister)
         url = "/~%s/participants" % team.name
         logout()
-        response = webservice.get(url, headers={'User-Agent':'AnonNeedsThis'})
+        response = webservice.get(url,
+            headers={'User-Agent': 'AnonNeedsThis'})
         self.assertEqual(response.status, 200,
             "Got %d for url %r with response %r" % (
             response.status, url, response.body))
