@@ -439,10 +439,10 @@ class Request:
 class WebTestLogger:
     """Logs test output to disk and a simple web page."""
 
-    def __init__(self, www_dir, request, echo_to_stdout):
+    def __init__(self, out_file, summary_file, index_file, request,
+                 echo_to_stdout):
         """Construct a WebTestLogger.
 
-        :param www_dir: The root directory of the web server.
         :param request: A `Request` object representing the thing that's being
             tested.
         :param echo_to_stdout: Whether or not we should echo output to stdout.
@@ -450,16 +450,22 @@ class WebTestLogger:
         self._request = request
         self._echo_to_stdout = echo_to_stdout
 
-        self._out_filename = os.path.join(www_dir, 'current_test.log')
-        self._summary_filename = os.path.join(www_dir, 'summary.log')
-        self._index_filename = os.path.join(www_dir, 'index.html')
+        # Stream for storing the complete output, including stdout & stderr.
+        self._out_file = out_file
+        # Stream for storing a filtered summary.
+        self._summary_file = summary_file
+        # Stream for storing the HTML index page.
+        self._index_file = index_file
 
-        # We will set up the preliminary bits of the web-accessible log
-        # files. "out" holds all stdout and stderr; "summary" holds filtered
-        # output; and "index" holds an index page.
-        self._out_file = None
-        self._summary_file = None
-        self._index_file = None
+    @classmethod
+    def make_in_directory(cls, www_dir, request, echo_to_stdout):
+        files = [
+            open(filename, 'w') for filename in [
+                os.path.join(www_dir, 'current_test.log'),
+                os.path.join(www_dir, 'summary.log'),
+                os.path.join(www_dir, 'index.html')]]
+        files.extend([request, echo_to_stdout])
+        return cls(*files)
 
     def error_in_testrunner(self, exc_info):
         """Called when there is a catastrophic error in the test runner."""
@@ -468,12 +474,6 @@ class WebTestLogger:
         self._summary_file.write('\n\nERROR IN TESTRUNNER\n\n')
         traceback.print_exception(
             exc_type, exc_value, exc_tb, file=self._summary_file)
-
-    def _open_logs(self):
-        """Open all of our log files for writing."""
-        self._out_file = open(self._out_filename, 'w')
-        self._summary_file = open(self._summary_filename, 'w')
-        self._index_file = open(self._index_filename, 'w')
 
     def _flush_logs(self):
         """Flush all of our log file buffers."""
@@ -493,12 +493,19 @@ class WebTestLogger:
 
     def got_line(self, line):
         """Called when we get a line of output from our child processes."""
-        # XXX: got_line needs tests.
         self._out_file.write(line)
         self._out_file.flush()
         if self._echo_to_stdout:
             sys.stdout.write(line)
             sys.stdout.flush()
+
+    def _get_contents(self, stream):
+        """Get the full contents of 'stream'."""
+        current_position = stream.tell()
+        stream.seek(0)
+        contents = stream.read()
+        stream.seek(current_position)
+        return contents
 
     def got_result(self, successful):
         """The tests are done and the results are known."""
@@ -506,8 +513,8 @@ class WebTestLogger:
         if self._request.wants_email:
             self._summary_file.write(
                 '\n(See the attached file for the complete log)\n')
-            summary = open(self._summary_filename, 'r').read()
-            full_log_gz = open(gzip_file(self._out_filename), 'rb').read()
+            summary = self._get_contents(self._summary_file)
+            full_log_gz = self._get_contents(self._out_file)
             self._request.send_report_email(successful, summary, full_log_gz)
         self._close_logs()
 
@@ -542,8 +549,6 @@ class WebTestLogger:
         log file, and a HTML index page summarizing the test run paramters.
         """
         # XXX: Logger.prepare needs lots of tests.
-        self._open_logs()
-
         msg = 'Tests started at approximately %(now)s UTC' % {
             'now': datetime.datetime.utcnow().strftime(
                 '%a, %d %b %Y %H:%M:%S')}
@@ -736,7 +741,8 @@ def main(argv):
         SOURCECODE_DIR, options.email, pqm_message)
     # Only write to stdout if we are running as the foreground process.
     echo_to_stdout = not options.daemon
-    logger = WebTestLogger('/var/www', request, echo_to_stdout)
+    logger = WebTestLogger.make_in_directory(
+        '/var/www', request, echo_to_stdout)
 
     runner = EC2Runner(
         options.daemon, pid_filename, options.shutdown, options.email)

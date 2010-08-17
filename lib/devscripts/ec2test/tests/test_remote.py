@@ -26,6 +26,7 @@ from devscripts.ec2test.remote import (
     remove_pidfile,
     Request,
     SummaryResult,
+    WebTestLogger,
     write_pidfile,
     )
 
@@ -365,6 +366,43 @@ class TestRequest(TestCaseWithTransport):
             if not expected_part.is_multipart():
                 self.assertEqual(
                     expected_part.get_payload(), observed_part.get_payload())
+
+
+class TestWebTestLogger(TestCase):
+
+    def patch(self, obj, name, value):
+        orig = getattr(obj, name)
+        setattr(obj, name, value)
+        self.addCleanup(setattr, obj, name, orig)
+        return orig
+
+    def make_request(self):
+        return Request(None, None, None, 'sourcecode')
+
+    def make_logger(self, request=None, echo_to_stdout=False):
+        full_log = StringIO()
+        summary = StringIO()
+        index = StringIO()
+        if request is None:
+            request = self.make_request()
+        return WebTestLogger(
+            full_log, summary, index, request, echo_to_stdout)
+
+    def test_got_line_no_echo(self):
+        stdout = StringIO()
+        self.patch(sys, 'stdout', stdout)
+        logger = self.make_logger(echo_to_stdout=False)
+        logger.got_line("output from script\n")
+        self.assertEqual("output from script\n", logger._out_file.getvalue())
+        self.assertEqual("", stdout.getvalue())
+
+    def test_got_line_echo(self):
+        stdout = StringIO()
+        self.patch(sys, 'stdout', stdout)
+        logger = self.make_logger(echo_to_stdout=True)
+        logger.got_line("output from script\n")
+        self.assertEqual("output from script\n", logger._out_file.getvalue())
+        self.assertEqual("output from script\n", stdout.getvalue())
 
 
 def test_suite():
