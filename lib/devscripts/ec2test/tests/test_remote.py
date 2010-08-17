@@ -153,67 +153,77 @@ class TestRequest(TestCaseWithTransport):
         tree.branch.set_parent(parent_url)
         return tree
 
+    def make_request(self, branch_url=None, revno=None,
+                     trunk=None, sourcecode_path=None,
+                     emails=None, pqm_message=None):
+        """Make a request to test, specifying only things we care about."""
+        if trunk is None:
+            trunk = self.make_trunk()
+        return Request(
+            branch_url, revno, trunk.basedir, sourcecode_path, emails,
+            pqm_message)
+
     def test_doesnt_want_email(self):
         # If no email addresses were provided, then the user does not want to
         # receive email.
-        req = Request(None, None, None, None, emails=None, pqm_message=None)
+        req = self.make_request()
         self.assertEqual(False, req.wants_email)
 
     def test_wants_email(self):
         # If some email addresses were provided, then the user wants to
         # receive email.
-        req = Request(
-            None, None, None, None, emails=['foo@example.com'],
-            pqm_message=None)
+        req = self.make_request(emails=['foo@example.com'])
         self.assertEqual(True, req.wants_email)
 
     def test_get_trunk_details(self):
         parent = 'http://example.com/bzr/branch'
         tree = self.make_trunk(parent)
-        req = Request(None, None, tree.basedir, None)
+        req = self.make_request(trunk=tree)
         self.assertEqual(
             (parent, tree.branch.revno()), req.get_trunk_details())
 
     def test_get_branch_details_no_commits(self):
-        tree = self.make_trunk()
-        req = Request(None, None, tree.basedir, None)
+        req = self.make_request(trunk=self.make_trunk())
         self.assertEqual(None, req.get_branch_details())
 
     def test_get_branch_details_no_merge(self):
         tree = self.make_trunk()
         tree.commit(message='foo')
-        req = Request(None, None, tree.basedir, None)
+        req = self.make_request(trunk=tree)
         self.assertEqual(None, req.get_branch_details())
 
     def test_get_branch_details_merge(self):
         tree = self.make_trunk()
         # Fake a merge, giving silly revision ids.
         tree.add_pending_merge('foo', 'bar')
-        req = Request('https://example.com/bzr/thing', 42, tree.basedir, None)
+        req = self.make_request(
+            branch_url='https://example.com/bzr/thing', revno=42, trunk=tree)
         self.assertEqual(
             ('https://example.com/bzr/thing', 42), req.get_branch_details())
 
     def test_get_nick_trunk_only(self):
         tree = self.make_trunk(parent_url='http://example.com/bzr/db-devel')
-        req = Request(None, None, tree.basedir, None)
+        req = self.make_request(trunk=tree)
         self.assertEqual('db-devel', req.get_nick())
 
     def test_get_nick_merge(self):
         tree = self.make_trunk()
         # Fake a merge, giving silly revision ids.
         tree.add_pending_merge('foo', 'bar')
-        req = Request('https://example.com/bzr/thing', 42, tree.basedir, None)
+        req = self.make_request(
+            branch_url='https://example.com/bzr/thing', revno=42, trunk=tree)
         self.assertEqual('thing', req.get_nick())
 
     def test_get_merge_description_trunk_only(self):
         tree = self.make_trunk(parent_url='http://example.com/bzr/db-devel')
-        req = Request(None, None, tree.basedir, None)
+        req = self.make_request(trunk=tree)
         self.assertEqual('db-devel', req.get_merge_description())
 
     def test_get_merge_description_merge(self):
         tree = self.make_trunk(parent_url='http://example.com/bzr/db-devel/')
         tree.add_pending_merge('foo', 'bar')
-        req = Request('https://example.com/bzr/thing', 42, tree.basedir, None)
+        req = self.make_request(
+            branch_url='https://example.com/bzr/thing', revno=42, trunk=tree)
         self.assertEqual('thing => db-devel', req.get_merge_description())
 
     def test_get_summary_commit(self):
@@ -225,9 +235,10 @@ class TestRequest(TestCaseWithTransport):
         thing = thing_bzrdir.open_workingtree()
         thing.commit(message="a new thing")
         trunk.merge_from_branch(thing.branch)
-        req = Request(
-            'https://example.com/bzr/thing', thing.branch.revno(),
-            trunk.basedir, None)
+        req = self.make_request(
+            branch_url='https://example.com/bzr/thing',
+            revno=thing.branch.revno(),
+            trunk=trunk)
         self.assertEqual("a new thing", req.get_summary_commit())
 
     def test_iter_dependency_branches(self):
@@ -247,20 +258,20 @@ class TestRequest(TestCaseWithTransport):
             tree.branch.set_parent(parent_url)
             for i in range(revno):
                 tree.commit(message=str(i))
-        req = Request(None, None, None, 'sourcecode/')
+        req = self.make_request(sourcecode_path='sourcecode/')
         branches = list(req.iter_dependency_branches())
         self.assertEqual(sorted(sourcecode_branches), branches)
 
     def test_submit_to_pqm_no_message(self):
         # If there's no PQM message, then 'submit_to_pqm' returns None.
-        req = Request(None, None, None, None, pqm_message=None)
+        req = self.make_request(pqm_message=None)
         subject = req.submit_to_pqm(successful=True)
         self.assertIs(None, subject)
 
     def test_submit_to_pqm_no_message_doesnt_send(self):
         # If there's no PQM message, then 'submit_to_pqm' returns None.
         emails = []
-        req = Request(None, None, None, None, pqm_message=None)
+        req = self.make_request(pqm_message=None)
         req._send_email = emails.append
         req.submit_to_pqm(successful=True)
         self.assertEqual([], emails)
@@ -269,7 +280,7 @@ class TestRequest(TestCaseWithTransport):
         # submit_to_pqm returns the subject of the PQM mail even if it's
         # handling a failed test run.
         message = {'Subject:': 'My PQM message'}
-        req = Request(None, None, None, None, pqm_message=message)
+        req = self.make_request(pqm_message=message)
         subject = req.submit_to_pqm(successful=False)
         self.assertIs(message.get('Subject'), subject)
 
@@ -277,7 +288,7 @@ class TestRequest(TestCaseWithTransport):
         # submit_to_pqm doesn't send any email if the run was unsuccessful.
         message = {'Subject:': 'My PQM message'}
         emails = []
-        req = Request(None, None, None, None, pqm_message=message)
+        req = self.make_request(pqm_message=message)
         req._send_email = emails.append
         req.submit_to_pqm(successful=False)
         self.assertEqual([], emails)
@@ -286,16 +297,14 @@ class TestRequest(TestCaseWithTransport):
         # submit_to_pqm returns the subject of the PQM mail.
         message = {'Subject:': 'My PQM message'}
         emails = []
-        req = Request(None, None, None, None, pqm_message=message)
+        req = self.make_request(pqm_message=message)
         req._send_email = emails.append
         subject = req.submit_to_pqm(successful=True)
         self.assertIs(message.get('Subject'), subject)
         self.assertEqual([message], emails)
 
     def test_report_email_subject_success(self):
-        tree = self.make_trunk()
-        req = Request(
-            None, None, tree.basedir, None, emails=['foo@example.com'])
+        req = self.make_request(emails=['foo@example.com'])
         email = req._build_report_email(True, 'foo', 'gobbledygook')
         self.assertEqual('Test results: SUCCESS', email['Subject'])
 
