@@ -293,10 +293,12 @@ class Request:
         self._sourcecode_path = sourcecode_path
         self._emails = emails
         self._pqm_message = pqm_message
+        # Used for figuring out how to send emails.
+        self._bzr_config = bzrlib.config.GlobalConfig()
 
-    def _send_email(self, config, message):
+    def _send_email(self, message):
         """Actually send 'message'."""
-        conn = bzrlib.smtp_connection.SMTPConnection(config)
+        conn = bzrlib.smtp_connection.SMTPConnection(self._bzr_config)
         conn.send_email(message)
 
     def get_trunk_details(self):
@@ -364,17 +366,16 @@ class Request:
             branch.repository.get_revision(parent_ids[1]).get_summary())
         return summary.encode('utf-8')
 
-    def _build_email(self, successful, body_text, full_log_gz, config):
+    def _build_email(self, successful, body_text, full_log_gz):
         """Build a MIME email summarizing the test results.
 
         :param successful: True for pass, False for failure.
         :param body_text: The body of the email to send to the requesters.
         :param full_log_gz: A gzip of the full log.
-        :param config: A Bazaar configuration object with SMTP details.
         """
         message = MIMEMultipart.MIMEMultipart()
         message['To'] = ', '.join(self._emails)
-        message['From'] = config.username()
+        message['From'] = self._bzr_config.username()
         if successful:
             status = 'SUCCESS'
         else:
@@ -395,15 +396,14 @@ class Request:
         message.attach(zipped_log)
         return message
 
-    def send_email(self, successful, body_text, full_log_gz, config):
+    def send_email(self, successful, body_text, full_log_gz):
         """Send an email summarizing the test results.
 
         :param successful: True for pass, False for failure.
         :param body_text: The body of the email to send to the requesters.
         :param full_log_gz: A gzip of the full log.
-        :param config: A Bazaar configuration object with SMTP details.
         """
-        message = self._build_email(successful, body_text, full_log_gz, config)
+        message = self._build_email(successful, body_text, full_log_gz)
         self._send_email(message)
 
     def iter_dependency_branches(self):
@@ -417,7 +417,7 @@ class Request:
                     continue
                 yield name, branch.get_parent(), branch.revno()
 
-    def submit_to_pqm(self, successful, config):
+    def submit_to_pqm(self, successful):
         """Submit this request to PQM, if successful & configured to do so."""
         if not self._pqm_message:
             return
@@ -496,18 +496,17 @@ class WebTestLogger:
 
     def got_result(self, successful):
         """The tests are done and the results are known."""
-        config = bzrlib.config.GlobalConfig()
-        self._handle_pqm_submission(successful, config)
+        self._handle_pqm_submission(successful)
         if self._request.wants_email:
             self._summary_file.write(
                 '\n(See the attached file for the complete log)\n')
             summary = open(self._summary_filename, 'r').read()
             full_log_gz = open(gzip_file(self._out_filename), 'rb').read()
-            self._request.send_email(successful, summary, full_log_gz, config)
+            self._request.send_email(successful, summary, full_log_gz)
         self._close_logs()
 
-    def _handle_pqm_submission(self, successful, config):
-        subject = self._request.submit_to_pqm(successful, config)
+    def _handle_pqm_submission(self, successful):
+        subject = self._request.submit_to_pqm(successful)
         if not subject:
             return
         if successful:
