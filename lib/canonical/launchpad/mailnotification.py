@@ -364,16 +364,6 @@ def get_bug_delta(old_bug, new_bug, user):
 
 
 @block_implicit_flushes
-def notify_bug_added(bug, event):
-    """Send an email notification that a bug was added.
-
-    Event must be an IObjectCreatedEvent.
-    """
-
-    bug.addCommentNotification(bug.initial_message)
-
-
-@block_implicit_flushes
 def notify_bug_modified(modified_bug, event):
     """Notify the Cc'd list that this bug has been modified.
 

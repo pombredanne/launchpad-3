@@ -51,7 +51,7 @@
         handler="lp.bugs.subscribers.bugcreation.at_least_one_task"/>
     <subscriber
         for="canonical.launchpad.interfaces.IBug                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
-        handler="canonical.launchpad.mailnotification.notify_bug_added"/>
+        handler="lp.bugs.subscribers.bugcreation.notify_bug_added"/>
     <subscriber
         for="canonical.launchpad.interfaces.IBug                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
         handler="canonical.launchpad.subscribers.karma.bug_created"/>
