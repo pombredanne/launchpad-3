@@ -66,10 +66,10 @@
         handler="lp.bugs.subscribers.buglastupdated.update_bug_date_last_updated"/>
     <subscriber
         for="canonical.launchpad.interfaces.IBugAttachment                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
-        handler="canonical.launchpad.mailnotification.notify_bug_attachment_added"/>
+        handler="lp.bugs.subscribers.bug.notify_bug_attachment_added"/>
     <subscriber
         for="canonical.launchpad.interfaces.IBugAttachment                 lazr.lifecycle.interfaces.IObjectDeletedEvent"
-        handler="canonical.launchpad.mailnotification.notify_bug_attachment_removed"/>
+        handler="lp.bugs.subscribers.bug.notify_bug_attachment_removed"/>
     <subscriber
         for="canonical.launchpad.interfaces.IBugAttachment                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
         handler="lp.bugs.subscribers.buglastupdated.update_bug_date_last_updated"/>
@@ -90,7 +90,7 @@
         handler="canonical.launchpad.subscribers.karma.cve_added"/>
     <subscriber
         for="canonical.launchpad.interfaces.IBugMessage                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
-        handler="canonical.launchpad.mailnotification.notify_bug_comment_added"/>
+        handler="lp.bugs.subscribers.bug.notify_bug_comment_added"/>
     <subscriber
         for="canonical.launchpad.interfaces.IBugMessage                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
         handler="canonical.launchpad.subscribers.karma.bug_comment_added"/>

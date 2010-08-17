@@ -388,48 +388,6 @@ def add_bug_change_notifications(bug_delta, old_bugtask=None,
 
 
 @block_implicit_flushes
-def notify_bug_comment_added(bugmessage, event):
-    """Notify CC'd list that a message was added to this bug.
-
-    bugmessage must be an IBugMessage. event must be an
-    IObjectCreatedEvent. If bugmessage.bug is a duplicate the
-    comment will also be sent to the dup target's subscribers.
-    """
-    bug = bugmessage.bug
-    bug.addCommentNotification(bugmessage.message)
-
-
-@block_implicit_flushes
-def notify_bug_attachment_added(bugattachment, event):
-    """Notify CC'd list that a new attachment has been added.
-
-    bugattachment must be an IBugAttachment. event must be an
-    IObjectCreatedEvent.
-    """
-    bug = bugattachment.bug
-    bug_delta = BugDelta(
-        bug=bug,
-        bugurl=canonical_url(bug),
-        user=IPerson(event.user),
-        attachment={'new': bugattachment, 'old': None})
-
-    add_bug_change_notifications(bug_delta)
-
-
-@block_implicit_flushes
-def notify_bug_attachment_removed(bugattachment, event):
-    """Notify that an attachment has been removed."""
-    bug = bugattachment.bug
-    bug_delta = BugDelta(
-        bug=bug,
-        bugurl=canonical_url(bug),
-        user=IPerson(event.user),
-        attachment={'old': bugattachment, 'new': None})
-
-    add_bug_change_notifications(bug_delta)
-
-
-@block_implicit_flushes
 def notify_invitation_to_join_team(event):
     """Notify team admins that the team has been invited to join another team.
 

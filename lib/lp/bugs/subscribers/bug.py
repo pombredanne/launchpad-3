@@ -16,8 +16,11 @@ from canonical.config import config
 from canonical.database.sqlbase import block_implicit_flushes
 from canonical.launchpad.helpers import get_contact_email_addresses
 from canonical.launchpad.mail import format_address, sendmail
-from canonical.launchpad.mailnotification import generate_bug_add_email
+from canonical.launchpad.mailnotification import (
+    add_bug_change_notifications, generate_bug_add_email)
+from canonical.launchpad.webapp.publisher import canonical_url
 
+from lp.bugs.adapters.bugdelta import BugDelta
 from lp.bugs.mail.bugnotificationbuilder import BugNotificationBuilder
 from lp.registry.interfaces.person import IPerson
 
@@ -45,6 +48,48 @@ def notify_bug_modified(bug, event):
         for pillar in bug.affected_pillars:
             if pillar.security_contact is not None:
                 bug.subscribe(pillar.security_contact, IPerson(event.user))
+
+
+@block_implicit_flushes
+def notify_bug_comment_added(bugmessage, event):
+    """Notify CC'd list that a message was added to this bug.
+
+    bugmessage must be an IBugMessage. event must be an
+    IObjectCreatedEvent. If bugmessage.bug is a duplicate the
+    comment will also be sent to the dup target's subscribers.
+    """
+    bug = bugmessage.bug
+    bug.addCommentNotification(bugmessage.message)
+
+
+@block_implicit_flushes
+def notify_bug_attachment_added(bugattachment, event):
+    """Notify CC'd list that a new attachment has been added.
+
+    bugattachment must be an IBugAttachment. event must be an
+    IObjectCreatedEvent.
+    """
+    bug = bugattachment.bug
+    bug_delta = BugDelta(
+        bug=bug,
+        bugurl=canonical_url(bug),
+        user=IPerson(event.user),
+        attachment={'new': bugattachment, 'old': None})
+
+    add_bug_change_notifications(bug_delta)
+
+
+@block_implicit_flushes
+def notify_bug_attachment_removed(bugattachment, event):
+    """Notify that an attachment has been removed."""
+    bug = bugattachment.bug
+    bug_delta = BugDelta(
+        bug=bug,
+        bugurl=canonical_url(bug),
+        user=IPerson(event.user),
+        attachment={'old': bugattachment, 'new': None})
+
+    add_bug_change_notifications(bug_delta)
 
 
 @block_implicit_flushes
