@@ -509,9 +509,8 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def __storm_invalidated__(self):
         """Clear cached non-storm attributes when the transaction ends."""
+        super(Product, self).__storm_invalidated__()
         self._cached_licenses = None
-        if safe_hasattr(self, '_commercial_subscription_cached'):
-            del self._commercial_subscription_cached
 
     def _getLicenses(self):
         """Get the licenses as a tuple."""
