@@ -33,7 +33,7 @@ class IJabberID(IHasOwner):
         Reference(
             title=_("Owner"), required=True, schema=Interface, readonly=True))
     jabberid = exported(
-        TextLine(title=_("Jabber user ID"), required=True))
+        TextLine(title=_("New Jabber user ID"), required=True))
 
     def destroySelf():
         """Delete this JabberID from the database."""
@@ -50,4 +50,3 @@ class IJabberIDSet(Interface):
 
     def getByPerson(person):
         """Return all JabberIDs for the given person."""
-
