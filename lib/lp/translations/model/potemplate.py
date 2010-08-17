@@ -1294,8 +1294,7 @@ class POTemplateSet:
             preferred_matches = [
                 match
                 for match in matches
-                if match.from_sourcepackagename == sourcepackagename
-            ]
+                if match.from_sourcepackagename == sourcepackagename]
 
             if len(preferred_matches) == 1:
                 return preferred_matches[0]
@@ -1454,6 +1453,7 @@ class POTemplateSharingSubset(object):
         name.
         :return: A ResultSet for the query.
         """
+        # Avoid circular imports.
         from lp.registry.model.productseries import ProductSeries
 
         ProductSeries1 = ClassAlias(ProductSeries)
@@ -1467,16 +1467,14 @@ class POTemplateSharingSubset(object):
             And(
                 Packaging.distroseriesID == POTemplate.distroseriesID,
                 Packaging.sourcepackagenameID == (
-                        POTemplate.sourcepackagenameID))
-            )
+                        POTemplate.sourcepackagenameID)))
         return Store.of(self.product).using(origin).find(
             POTemplate,
             And(
                 Or(
                     ProductSeries.productID == self.product.id,
                     ProductSeries1.productID == self.product.id),
-                templatename_clause
-                ))
+                templatename_clause))
 
     def _queryBySourcepackagename(self, templatename_clause):
         """Build the query that finds POTemplates by their names.
@@ -1623,8 +1621,7 @@ class POTemplateToTranslationFileDataAdapter:
                 msgset.flags = set([
                     flag.strip()
                     for flag in row.flags_comment.split(',')
-                    if flag
-                    ])
+                    if flag])
 
             # Store the message.
             messages.append(msgset)
