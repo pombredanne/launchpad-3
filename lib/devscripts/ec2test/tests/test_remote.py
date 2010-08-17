@@ -5,6 +5,8 @@
 
 __metaclass__ = type
 
+from email.mime.application import MIMEApplication
+from email.mime.text import MIMEText
 import gzip
 import os
 from StringIO import StringIO
@@ -12,6 +14,7 @@ import sys
 import tempfile
 import unittest
 
+from bzrlib.config import GlobalConfig
 from bzrlib.tests import TestCaseWithTransport
 
 from testtools import TestCase
@@ -308,6 +311,42 @@ class TestRequest(TestCaseWithTransport):
         req = self.make_request(emails=['foo@example.com'])
         email = req._build_report_email(True, 'foo', 'gobbledygook')
         self.assertEqual('Test results: SUCCESS', email['Subject'])
+
+    def test_report_email_subject_failure(self):
+        req = self.make_request(emails=['foo@example.com'])
+        email = req._build_report_email(False, 'foo', 'gobbledygook')
+        self.assertEqual('Test results: FAILURE', email['Subject'])
+
+    def test_report_email_recipients(self):
+        req = self.make_request(emails=['foo@example.com', 'bar@example.com'])
+        email = req._build_report_email(False, 'foo', 'gobbledygook')
+        self.assertEqual('foo@example.com, bar@example.com', email['To'])
+
+    def test_report_email_sender(self):
+        req = self.make_request(emails=['foo@example.com'])
+        email = req._build_report_email(False, 'foo', 'gobbledygook')
+        self.assertEqual(GlobalConfig().username(), email['From'])
+
+    def test_report_email_body(self):
+        req = self.make_request(emails=['foo@example.com'])
+        email = req._build_report_email(False, 'foo', 'gobbledygook')
+        [body, attachment] = email.get_payload()
+        self.assertIsInstance(body, MIMEText)
+        self.assertEqual('inline', body['Content-Disposition'])
+        self.assertEqual('text/plain; charset="utf-8"', body['Content-Type'])
+        self.assertEqual("foo", body.get_payload())
+
+    def test_report_email_attachment(self):
+        req = self.make_request(emails=['foo@example.com'])
+        email = req._build_report_email(False, "foo", "gobbledygook")
+        [body, attachment] = email.get_payload()
+        self.assertIsInstance(attachment, MIMEApplication)
+        self.assertEqual('application/x-gzip', attachment['Content-Type'])
+        self.assertEqual(
+            'attachment; filename="%s.log.gz"' % req.get_nick(),
+            attachment['Content-Disposition'])
+        self.assertEqual(
+            "gobbledygook", attachment.get_payload().decode('base64'))
 
 
 def test_suite():
