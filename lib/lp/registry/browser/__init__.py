@@ -218,7 +218,7 @@ class RegistryDeleteViewMixin:
         self._unsubscribe_structure(milestone)
         for bugtask in self._getBugtasks(milestone):
             if bugtask.conjoined_master is not None:
-                Store.of(bugtask).remove(bugtask)
+                Store.of(bugtask).remove(bugtask.conjoined_master)
             else:
                 bugtask.milestone = None
         for spec in self._getSpecifications(milestone):
