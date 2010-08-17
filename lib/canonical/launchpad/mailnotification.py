@@ -91,19 +91,6 @@ def send_process_error_notification(to_address, subject, error_msg,
     sendmail(msg)
 
 
-def notify_errors_list(message, file_alias_url):
-    """Sends an error to the Launchpad errors list."""
-    template = get_email_template('notify-unhandled-email.txt')
-    # We add the error message in as a header too
-    # (X-Launchpad-Unhandled-Email) so we can create filters in the
-    # Launchpad-Error-Reports Mailman mailing list.
-    simple_sendmail(
-        get_bugmail_error_address(), [config.launchpad.errors_address],
-        'Unhandled Email: %s' % file_alias_url,
-        template % {'url': file_alias_url, 'error_msg': message},
-        headers={'X-Launchpad-Unhandled-Email': message})
-
-
 def get_unified_diff(old_text, new_text, text_width):
     r"""Return a unified diff of the two texts.
 
