@@ -15,7 +15,8 @@ from zope.security.proxy import removeSecurityProxy
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing import (
     record_statements,
-    TestCaseWithFactory)
+    TestCaseWithFactory,
+    )
 from lp.translations.interfaces.pofiletranslator import (
     IPOFileTranslatorSet)
 from lp.translations.model.pomsgid import POMsgID
