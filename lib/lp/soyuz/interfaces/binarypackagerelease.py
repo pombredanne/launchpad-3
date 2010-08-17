@@ -18,7 +18,7 @@ __all__ = [
 from lazr.enum import DBEnumeratedType, DBItem
 from lazr.restful.declarations import exported, export_as_webservice_entry
 from lazr.restful.fields import Reference, ReferenceChoice
-from zope.schema import Bool, Date, Datetime, Int, Object, Text, TextLine
+from zope.schema import Bool, Date, Datetime, Int, List, Object, Text, TextLine
 from zope.interface import Interface, Attribute
 
 from canonical.launchpad import _
@@ -56,6 +56,8 @@ class IBinaryPackageRelease(Interface):
         title=_("Debug package"), schema=Interface, required=False,
         description=_("The corresponding package containing debug symbols "
                       "for this binary."))
+    user_defined_fields = List(
+        title=_("Sequence of user-defined fields as key-value pairs."))
 
     files = Attribute("Related list of IBinaryPackageFile entries")
 

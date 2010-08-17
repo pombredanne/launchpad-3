@@ -15,6 +15,7 @@ import operator
 import pytz
 from StringIO import StringIO
 import re
+import simplejson
 
 from sqlobject import StringCol, ForeignKey, SQLMultipleJoin
 from storm.expr import Join
@@ -146,6 +147,22 @@ class SourcePackageRelease(SQLBase):
         joinColumn='sourcepackagerelease', orderBy="-datecreated")
     package_diffs = SQLMultipleJoin(
         'PackageDiff', joinColumn='to_source', orderBy="-date_requested")
+
+    _user_defined_fields = StringCol(dbName='user_defined_fields')
+
+    def __init__(self, *args, **kwargs):
+        if 'user_defined_fields' in kwargs:
+            kwargs['_user_defined_fields'] = simplejson.dumps(
+                kwargs['user_defined_fields'])
+            del kwargs['user_defined_fields']
+        super(SourcePackageRelease, self).__init__(*args, **kwargs)
+
+    @property
+    def user_defined_fields(self):
+        """See `IBinaryPackageRelease`."""
+        if self._user_defined_fields is None:
+            return []
+        return simplejson.loads(self._user_defined_fields)
 
     @property
     def builds(self):

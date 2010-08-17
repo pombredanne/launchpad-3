@@ -13,6 +13,8 @@ __all__ = [
 
 from zope.interface import implements
 
+import simplejson
+
 from sqlobject import StringCol, ForeignKey, IntCol, SQLMultipleJoin, BoolCol
 from storm.locals import Date, Int, Reference, Storm
 
@@ -67,6 +69,22 @@ class BinaryPackageRelease(SQLBase):
 
     files = SQLMultipleJoin('BinaryPackageFile',
         joinColumn='binarypackagerelease', orderBy="libraryfile")
+
+    _user_defined_fields = StringCol(dbName='user_defined_fields')
+
+    def __init__(self, *args, **kwargs):
+        if 'user_defined_fields' in kwargs:
+            kwargs['_user_defined_fields'] = simplejson.dumps(
+                kwargs['user_defined_fields'])
+            del kwargs['user_defined_fields']
+        super(BinaryPackageRelease, self).__init__(*args, **kwargs)
+
+    @property
+    def user_defined_fields(self):
+        """See `IBinaryPackageRelease`."""
+        if self._user_defined_fields is None:
+            return []
+        return simplejson.loads(self._user_defined_fields)
 
     @property
     def title(self):

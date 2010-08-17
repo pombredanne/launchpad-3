@@ -846,7 +846,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         # Use the facility provided by IBinaryPackageBuildSet to
         # retrieve the records.
         return getUtility(IBinaryPackageBuildSet).getBuildsByArchIds(
-            arch_ids, build_state, name, pocket)
+            self, arch_ids, build_state, name, pocket)
 
     def getSourcePackageCaches(self, archive=None):
         """See `IDistribution`."""
@@ -1268,7 +1268,8 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             bpph = IStore(BinaryPackagePublishingHistory).find(
                 BinaryPackagePublishingHistory,
                 BinaryPackageRelease.binarypackagename == binarypackagename,
-                *bpph_location_clauses).any()
+                *bpph_location_clauses).order_by(
+                    Desc(BinaryPackagePublishingHistory.id)).first()
             if bpph is not None:
                 spr = bpph.binarypackagerelease.build.source_package_release
                 return (spr.sourcepackagename, binarypackagename)

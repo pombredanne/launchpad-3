@@ -34,10 +34,8 @@ class ILinkedBranchTraverser(Interface):
     def traverse(path):
         """Traverse to the linked object referred to by 'path'.
 
-        :raises NoSuchBranch: If we can't find a branch that matches the
-            branch component of the path.
-        :raises NoSuchPerson: If we can't find a person who matches the person
-            component of the path.
+        :raises InvalidProductName: If the first segment of the path is not a
+            valid name.
         :raises NoSuchProduct: If we can't find a product that matches the
             product component of the path.
         :raises NoSuchProductSeries: If the series component doesn't match an

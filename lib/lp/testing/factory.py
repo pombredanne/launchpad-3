@@ -28,7 +28,6 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from itertools import count
 from operator import isSequenceType
-import os
 import os.path
 from random import randint
 from StringIO import StringIO
@@ -144,6 +143,7 @@ from lp.soyuz.adapters.packagelocation import PackageLocation
 from lp.soyuz.interfaces.archive import (
     default_name_by_purpose, IArchiveSet, ArchivePurpose)
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
+from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.binarypackagerelease import (
     BinaryPackageFileType, BinaryPackageFormat)
 from lp.soyuz.interfaces.component import IComponentSet
@@ -151,9 +151,8 @@ from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.interfaces.publishing import (
     IPublishingSet, PackagePublishingPriority, PackagePublishingStatus)
+from lp.soyuz.interfaces.queue import PackageUploadStatus
 from lp.soyuz.interfaces.section import ISectionSet
-from lp.soyuz.model.binarypackagename import BinaryPackageName
-from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
 from lp.soyuz.model.files import BinaryPackageFile, SourcePackageReleaseFile
 from lp.soyuz.model.processor import ProcessorFamilySet
 from lp.testing import (
@@ -1221,7 +1220,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             # We can't have a series task without a distribution task.
             self.makeBugTask(bug, distribution_package)
 
-        return bug.addTask(owner, target)
+        return removeSecurityProxy(bug).addTask(owner, target)
 
     def makeBugTracker(self, base_url=None, bugtrackertype=None):
         """Make a new bug tracker."""
@@ -1669,12 +1668,12 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return library_file_alias
 
     def makeDistribution(self, name=None, displayname=None, owner=None,
-                         members=None, title=None):
+                         members=None, title=None, aliases=None):
         """Make a new distribution."""
         if name is None:
-            name = self.getUniqueString()
+            name = self.getUniqueString(prefix="distribution")
         if displayname is None:
-            displayname = self.getUniqueString()
+            displayname = name.capitalize()
         if title is None:
             title = self.getUniqueString()
         description = self.getUniqueString()
@@ -1684,9 +1683,12 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             owner = self.makePerson()
         if members is None:
             members = self.makeTeam(owner)
-        return getUtility(IDistributionSet).new(
+        distro = getUtility(IDistributionSet).new(
             name, displayname, title, description, summary, domainname,
             members, owner)
+        if aliases is not None:
+            removeSecurityProxy(distro).setAliases(aliases)
+        return distro
 
     def makeDistroRelease(self, distribution=None, version=None,
                           status=SeriesStatus.DEVELOPMENT,
@@ -1695,7 +1697,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if distribution is None:
             distribution = self.makeDistribution()
         if name is None:
-            name = self.getUniqueString()
+            name = self.getUniqueString(prefix="distroseries")
         if displayname is None:
             displayname = name.capitalize()
         if version is None:
@@ -2275,6 +2277,34 @@ class BareLaunchpadObjectFactory(ObjectFactory):
     def getAnySourcePackageUrgency(self):
         return SourcePackageUrgency.MEDIUM
 
+    def makePackageUpload(self, distroseries=None, archive=None,
+                          pocket=None, changes_filename=None,
+                          changes_file_content=None,
+                          signing_key=None, status=None):
+        if archive is None:
+            archive = self.makeArchive()
+        if distroseries is None:
+            distroseries = self.makeDistroSeries(
+                distribution=archive.distribution)
+        if changes_filename is None:
+            changes_filename = self.getUniqueString("changesfilename")
+        if changes_file_content is None:
+            changes_file_content = self.getUniqueString("changesfilecontent")
+        if pocket is None:
+            pocket = PackagePublishingPocket.RELEASE
+        package_upload = distroseries.createQueueEntry(
+            pocket, changes_filename, changes_file_content, archive,
+            signing_key=signing_key)
+        if status is not None:
+            naked_package_upload = removeSecurityProxy(package_upload)
+            status_changers = {
+                PackageUploadStatus.DONE: naked_package_upload.setDone,
+                PackageUploadStatus.ACCEPTED:
+                    naked_package_upload.setAccepted,
+                }
+            status_changers[status]()
+        return package_upload
+
     def makeSourcePackageRelease(self, archive=None, sourcepackagename=None,
                                  distroseries=None, maintainer=None,
                                  creator=None, component=None,
@@ -2289,7 +2319,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                                  dsc_format='1.0', dsc_binaries='foo-bin',
                                  date_uploaded=UTC_NOW,
                                  source_package_recipe_build=None,
-                                 dscsigningkey=None):
+                                 dscsigningkey=None,
+                                 user_defined_fields=None):
         """Make a `SourcePackageRelease`."""
         if distroseries is None:
             if source_package_recipe_build is not None:
@@ -2321,9 +2352,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if maintainer is None:
             maintainer = self.makePerson()
 
-        maintainer_email = '%s <%s>' % (
-            maintainer.displayname,
-            maintainer.preferredemail.email)
+        if dsc_maintainer_rfc822 is None:
+            dsc_maintainer_rfc822 = '%s <%s>' % (
+                maintainer.displayname,
+                maintainer.preferredemail.email)
 
         if creator is None:
             creator = self.makePerson()
@@ -2349,13 +2381,14 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             dsc=None,
             copyright=self.getUniqueString(),
             dscsigningkey=dscsigningkey,
-            dsc_maintainer_rfc822=maintainer_email,
+            dsc_maintainer_rfc822=dsc_maintainer_rfc822,
             dsc_standards_version=dsc_standards_version,
             dsc_format=dsc_format,
             dsc_binaries=dsc_binaries,
             archive=archive,
             dateuploaded=date_uploaded,
-            source_package_recipe_build=source_package_recipe_build)
+            source_package_recipe_build=source_package_recipe_build,
+            user_defined_fields=user_defined_fields)
 
     def makeSourcePackageReleaseFile(self, sourcepackagerelease=None,
                                      library_file=None, filetype=None):
@@ -2489,6 +2522,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         naked_spph.datecreated = date_uploaded
         naked_spph.dateremoved = dateremoved
         naked_spph.scheduleddeletiondate = scheduleddeletiondate
+        if status == PackagePublishingStatus.PUBLISHED:
+            naked_spph.datepublished = UTC_NOW
         return spph
 
     def makeBinaryPackagePublishingHistory(self, binarypackagerelease=None,
@@ -2537,12 +2572,25 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         naked_bpph.dateremoved = dateremoved
         naked_bpph.scheduleddeletiondate = scheduleddeletiondate
         naked_bpph.priority = priority
+        if status == PackagePublishingStatus.PUBLISHED:
+            naked_bpph.datepublished = UTC_NOW
         return bpph
 
     def makeBinaryPackageName(self, name=None):
+        """Make an `IBinaryPackageName`."""
         if name is None:
             name = self.getUniqueString("binarypackage")
-        return BinaryPackageName(name=name)
+        return getUtility(IBinaryPackageNameSet).new(name)
+
+    def getOrMakeBinaryPackageName(self, name=None):
+        """Get an existing `IBinaryPackageName` or make a new one.
+
+        This method encapsulates getOrCreateByName so that tests can be kept
+        free of the getUtility(IBinaryPackageNameSet) noise.
+        """
+        if name is None:
+            return self.makeBinaryPackageName()
+        return getUtility(IBinaryPackageNameSet).getOrCreateByName(name)
 
     def makeBinaryPackageFile(self, binarypackagerelease=None,
                               library_file=None, filetype=None):
@@ -2561,32 +2609,48 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                                  binpackageformat=None, component=None,
                                  section_name=None, priority=None,
                                  architecturespecific=False,
-                                 summary=None, description=None):
+                                 summary=None, description=None,
+                                 shlibdeps=None, depends=None,
+                                 recommends=None, suggests=None,
+                                 conflicts=None, replaces=None,
+                                 provides=None, pre_depends=None,
+                                 enhances=None, breaks=None,
+                                 essential=False, installed_size=None,
+                                 date_created=None, debug_package=None):
         """Make a `BinaryPackageRelease`."""
+        if build is None:
+            build = self.makeBinaryPackageBuild()
         if binarypackagename is None:
             binarypackagename = self.makeBinaryPackageName()
         if version is None:
-            version = self.getUniqueString("version")
-        if build is None:
-            build = self.makeBinaryPackageBuild()
+            version = build.source_package_release.version
         if binpackageformat is None:
             binpackageformat = BinaryPackageFormat.DEB
         if component is None:
-            component = self.makeComponent()
-        section = self.makeSection(name=section_name)
+            component = build.source_package_release.component
+        section = build.source_package_release.section
         if priority is None:
             priority = PackagePublishingPriority.OPTIONAL
         if summary is None:
             summary = self.getUniqueString("summary")
         if description is None:
             description = self.getUniqueString("description")
-        return ProxyFactory(
-            BinaryPackageRelease(
+        if installed_size is None:
+            installed_size = self.getUniqueInteger()
+        bpr = build.createBinaryPackageRelease(
                 binarypackagename=binarypackagename, version=version,
-                build=build, binpackageformat=binpackageformat,
+                binpackageformat=binpackageformat,
                 component=component, section=section, priority=priority,
                 summary=summary, description=description,
-                architecturespecific=architecturespecific))
+                architecturespecific=architecturespecific,
+                shlibdeps=shlibdeps, depends=depends, recommends=recommends,
+                suggests=suggests, conflicts=conflicts, replaces=replaces,
+                provides=provides, pre_depends=pre_depends,
+                enhances=enhances, breaks=breaks, essential=essential,
+                installedsize=installed_size, debug_package=debug_package)
+        if date_created is not None:
+            removeSecurityProxy(bpr).datecreated = date_created
+        return bpr
 
     def makeSection(self, name=None):
         """Make a `Section`."""
@@ -2630,7 +2694,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             SuiteSourcePackage(distroseries, pocket, sourcepackagename))
 
     def makeDistributionSourcePackage(self, sourcepackagename=None,
-                                      distribution=None):
+                                      distribution=None, with_db=False):
         # Make sure we have a real sourcepackagename object.
         if (sourcepackagename is None or
             isinstance(sourcepackagename, basestring)):
@@ -2638,8 +2702,13 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 sourcepackagename)
         if distribution is None:
             distribution = self.makeDistribution()
-
-        return distribution.getSourcePackage(sourcepackagename)
+        package = distribution.getSourcePackage(sourcepackagename)
+        if with_db:
+            # Create an instance with a database record, that is normally
+            # done by secondary process.
+            removeSecurityProxy(package)._new(
+                distribution, sourcepackagename, False)
+        return package
 
     def makeEmailMessage(self, body=None, sender=None, to=None,
                          attachments=None, encode_attachments=False):
