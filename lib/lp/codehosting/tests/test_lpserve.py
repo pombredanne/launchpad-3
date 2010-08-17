@@ -8,6 +8,7 @@ __metaclass__ = type
 import os
 import re
 from subprocess import PIPE
+import threading
 import unittest
 
 from bzrlib import errors, osutils
@@ -163,8 +164,10 @@ class TestLaunchpadServe(TestCaseWithTransport):
         self.assertIsNot(None, error_utility.getLastOopsReport())
 
 
-class TestLaunchpadService(TestCaseWithTransport):
-    pass
-
 def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
+    from bzrlib.plugins import lpserve
+
+    loader = unittest.TestLoader()
+    suite = loader.loadTestsFromName(__name__)
+    suite.addTests(lpserve.load_tests([], lpserve, loader))
+    return suite

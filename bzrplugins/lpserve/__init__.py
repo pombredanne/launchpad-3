@@ -20,6 +20,7 @@ import shutil
 import socket
 import sys
 import tempfile
+import threading
 import time
 
 from bzrlib.commands import Command, register_command
@@ -126,6 +127,8 @@ class LPService(object):
     DEFAULT_HOST = '127.0.0.1'
     DEFAULT_PORT = 4156
     WAIT_FOR_CHILDREN_TIMEOUT = 5*60 # Wait no more than 5 min for children
+    SOCKET_TIMEOUT = 1.0
+    SLEEP_FOR_CHILDREN_TIMEOUT = 1.0
 
     def __init__(self, host=DEFAULT_HOST, port=DEFAULT_PORT):
         if host is None:
@@ -136,7 +139,7 @@ class LPService(object):
             self.port = self.DEFAULT_PORT
         else:
             self.port = port
-        self._should_terminate = False
+        self._should_terminate = threading.Event()
         # We address these locally, in case of shutdown socket may be gc'd
         # before we are
         self._socket_timeout = socket.timeout
@@ -162,7 +165,7 @@ class LPService(object):
         # self.host = self._sockname[0]
         self.port = self._sockname[1]
         self._server_socket.listen(1)
-        self._server_socket.settimeout(1)
+        self._server_socket.settimeout(self.SOCKET_TIMEOUT)
 
     def _create_child_file_descriptors(self, base_path):
         stdin_path = os.path.join(base_path, 'stdin')
@@ -257,15 +260,16 @@ class LPService(object):
                             % (pid, user_id, temp_name))
 
     def main_loop(self):
+        self._should_terminate.clear()
         self._create_master_socket()
         trace.note('Connected to: %s' % (self._sockname,))
-        self._should_terminate = False
-        while not self._should_terminate:
+        while not self._should_terminate.isSet():
             try:
                 conn, client_addr = self._server_socket.accept()
             except self._socket_timeout:
                 # Check on the children, and see if we think we should quit
                 # anyway
+                trace.mutter('*timeout*')
                 self._poll_children()
             except self._socket_error, e:
                 # we might get a EBADF here, any other socket errors
@@ -275,7 +279,7 @@ class LPService(object):
             else:
                 self.log(client_addr, 'connected')
                 self.serve_one_connection(conn, client_addr)
-                if self._should_terminate:
+                if self._should_terminate.isSet():
                     break
         trace.note('Shutting down. Waiting up to %.0fs for %d child processes'
                    % (self.WAIT_FOR_CHILDREN_TIMEOUT,
@@ -311,6 +315,9 @@ class LPService(object):
         One interesting hook here would be to track memory consumption, etc.
         """
         to_remove = []
+        # TODO: I think we can change this to a simple 'while True: (c_pid,
+        # status) = os.wait() if c_pid == 0: break. But that needs some
+        # testing.
         for child_pid, child_path in self._child_processes.iteritems():
             remove_child = True
             try:
@@ -343,7 +350,7 @@ class LPService(object):
             self._poll_children()
             if self.WAIT_FOR_CHILDREN_TIMEOUT > 0 and time.time() > end:
                 break
-            time.sleep(1.0)
+            time.sleep(self.SLEEP_FOR_CHILDREN_TIMEOUT)
         if self._child_processes:
             trace.warning('Failed to stop children: %s'
                 % ', '.join(map(str, self._child_processes)))
@@ -361,7 +368,7 @@ class LPService(object):
             conn.sendall('yep, still alive\n')
             self.log_information()
         elif request == 'quit':
-            self._should_terminate = True
+            self._should_terminate.set()
             conn.sendall('quit command requested... exiting\n')
             self.log(client_addr, 'quit requested')
         elif request.startswith('fork '):
@@ -425,3 +432,12 @@ libraries_to_preload = [
     'lp.codehosting.vfs.branchfsclient',
     'lp.codehosting.vfs.transport',
     ]
+
+
+
+def load_tests(standard_tests, module, loader):
+    standard_tests.addTests(loader.loadTestsFromModuleNames(
+        [__name__ + '.' + x for x in [
+            'test_lpserve',
+        ]]))
+    return standard_tests
