@@ -3,7 +3,9 @@
 
 __metaclass__ = type
 __all__ = [
+    'add_bug_change_notifications',
     'get_bug_delta',
+    'get_bugtask_indirect_subscribers',
     'notify_bug_added',
     'notify_bug_attachment_added',
     'notify_bug_attachment_removed',
