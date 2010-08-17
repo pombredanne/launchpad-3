@@ -159,6 +159,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         "build-conflicts-indep",
         "format",
         "standards-version",
+        "filecontents",
         ]))
 
     # Note that files is actually only set inside verify().

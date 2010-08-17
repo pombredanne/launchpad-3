@@ -396,6 +396,9 @@ class BaseBinaryUploadFile(PackageUploadFile):
         "Description",
         "Installed-Size",
         "Priority",
+        "Section",
+        "Maintainer",
+        "Source",
         ]))
 
     # Map priorities to their dbschema valuesa

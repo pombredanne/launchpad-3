@@ -175,6 +175,22 @@ class DSCFileTests(PackageUploadFileTestCase):
         self.assertEquals("0.42", release.version)
         self.assertEquals("dpkg, bzr", release.builddepends)
 
+    def test_user_defined_fields(self):
+        # Test that storeInDatabase updates user_defined_fields.
+        dsc = self.getBaseDsc()
+        dsc["Python-Version"] = "2.5"
+        changes = self.getBaseChanges()
+        uploadfile = self.createDSCFile(
+            "foo.dsc", dsc, "main/net", "extra", "dulwich", "0.42",
+            self.createChangesFile("foo.changes", changes))
+        (uploadfile.changelog_path, changelog_digest, changelog_size) = (
+            self.writeUploadFile("changelog", "DUMMY"))
+        uploadfile.files = []
+        release = uploadfile.storeInDatabase(None)
+        # DSCFile lowercases the field names
+        self.assertEquals(
+            [["python-version", u"2.5"]], release.user_defined_fields)
+
 
 class DebBinaryUploadFileTests(PackageUploadFileTestCase):
     """Tests for DebBinaryUploadFile."""
@@ -241,5 +257,19 @@ class DebBinaryUploadFileTests(PackageUploadFileTestCase):
         self.assertEquals(False, bpr.essential)
         self.assertEquals(524, bpr.installedsize)
         self.assertEquals(True, bpr.architecturespecific)
-        self.assertEquals(None, bpr.recommends)
+        self.assertEquals("", bpr.recommends)
         self.assertEquals("0.42", bpr.version)
+
+    def test_user_defined_fields(self):
+        # Test that storeInDatabase stores user defined fields
+        uploadfile = self.createDebBinaryUploadFile(
+            "foo_0.42_i386.deb", "main/python", "unknown", "mypkg", "0.42",
+            None)
+        control = self.getBaseControl()
+        control["Python-Version"] = "2.5"
+        uploadfile.parseControl(control)
+        build = self.factory.makeBinaryPackageBuild()
+        bpr = uploadfile.storeInDatabase(build)
+        self.assertEquals(
+            [[u"Homepage", u"http://samba.org/~jelmer/dulwich"],
+             [u"Python-Version", u"2.5"]], bpr.user_defined_fields)
