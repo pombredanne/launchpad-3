@@ -13,6 +13,7 @@ import os
 from StringIO import StringIO
 import sys
 import tempfile
+import traceback
 import unittest
 
 from bzrlib.config import GlobalConfig
@@ -409,6 +410,18 @@ class TestWebTestLogger(TestCase):
         logger.write_line('foo')
         self.assertEqual('foo\n', logger._out_file.getvalue())
         self.assertEqual('foo\n', logger._summary_file.getvalue())
+
+    def test_error_in_testrunner(self):
+        try:
+            1/0
+        except ZeroDivisionError:
+            exc_info = sys.exc_info()
+        stack = ''.join(traceback.format_exception(*exc_info))
+        logger = self.make_logger()
+        logger.error_in_testrunner(exc_info)
+        self.assertEqual(
+            "\n\nERROR IN TESTRUNNER\n\n%s" % (stack,),
+            logger._summary_file.getvalue())
 
 
 def test_suite():
