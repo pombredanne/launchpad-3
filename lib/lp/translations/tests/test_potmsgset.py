@@ -183,6 +183,13 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
                           self.potmsgset.getCurrentDummyTranslationMessage,
                           self.devel_potemplate, serbian)
 
+    def test_getCurrentDummyTranslationMessage_is_current(self):
+        # getCurrentDummyTranslationMessage returns a current message.
+        frysian = getUtility(ILanguageSet).getLanguageByCode('fy')
+        dummy = self.potmsgset.getCurrentDummyTranslationMessage(
+            self.devel_potemplate, frysian)
+        self.assertTrue(dummy.is_current_upstream)
+
     def test_getCurrentTranslationMessage(self):
         """Test how shared and diverged current translation messages
         interact."""
