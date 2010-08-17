@@ -8,7 +8,6 @@
 
 __metaclass__ = type
 
-import operator
 import re
 
 from difflib import unified_diff
@@ -26,7 +25,7 @@ from canonical.launchpad.helpers import (
     get_contact_email_addresses, get_email_template)
 from canonical.launchpad.interfaces import (
     IHeldMessageDetails, IPerson, IPersonSet, ISpecification,
-    IStructuralSubscriptionTarget, ITeamMembershipSet, TeamMembershipStatus)
+    ITeamMembershipSet, TeamMembershipStatus)
 from canonical.launchpad.interfaces.launchpad import ILaunchpadRoot
 from canonical.launchpad.interfaces.message import (
     IDirectEmailAuthorization, QuotaReachedError)
@@ -35,12 +34,7 @@ from canonical.launchpad.mail import (
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.url import urlappend
 
-from lp.bugs.adapters.bugchange import (
-    BugDuplicateChange, BugTaskAssigneeChange, get_bug_changes)
-from lp.bugs.interfaces.bugchange import IBugChange
 from lp.bugs.mail.bugnotificationbuilder import get_bugmail_error_address
-from lp.bugs.mail.bugnotificationrecipients import BugNotificationRecipients
-from lp.registry.interfaces.structuralsubscription import BugNotificationLevel
 from lp.services.mail.mailwrapper import MailWrapper
 
 # XXX 2010-06-16 gmb bug=594985
@@ -148,91 +142,6 @@ def get_unified_diff(old_text, new_text, text_width):
         for line in text_diff]
     text_diff = '\n'.join(text_diff)
     return text_diff
-
-
-def get_bugtask_indirect_subscribers(bugtask, recipients=None, level=None):
-    """Return the indirect subscribers for a bug task.
-
-    Return the list of people who should get notifications about
-    changes to the task because of having an indirect subscription
-    relationship with it (by subscribing to its target, being an
-    assignee or owner, etc...)
-
-    If `recipients` is present, add the subscribers to the set of
-    bug notification recipients.
-    """
-    if bugtask.bug.private:
-        return set()
-
-    also_notified_subscribers = set()
-
-    # Assignees are indirect subscribers.
-    if bugtask.assignee:
-        also_notified_subscribers.add(bugtask.assignee)
-        if recipients is not None:
-            recipients.addAssignee(bugtask.assignee)
-
-    if IStructuralSubscriptionTarget.providedBy(bugtask.target):
-        also_notified_subscribers.update(
-            bugtask.target.getBugNotificationsRecipients(
-                recipients, level=level))
-
-    if bugtask.milestone is not None:
-        also_notified_subscribers.update(
-            bugtask.milestone.getBugNotificationsRecipients(
-                recipients, level=level))
-
-    # If the target's bug supervisor isn't set,
-    # we add the owner as a subscriber.
-    pillar = bugtask.pillar
-    if pillar.bug_supervisor is None:
-        also_notified_subscribers.add(pillar.owner)
-        if recipients is not None:
-            recipients.addRegistrant(pillar.owner, pillar)
-
-    return sorted(
-        also_notified_subscribers,
-        key=operator.attrgetter('displayname'))
-
-
-def add_bug_change_notifications(bug_delta, old_bugtask=None,
-                                 new_subscribers=None):
-    """Generate bug notifications and add them to the bug."""
-    changes = get_bug_changes(bug_delta)
-    recipients = bug_delta.bug.getBugNotificationRecipients(
-        old_bug=bug_delta.bug_before_modification,
-        level=BugNotificationLevel.METADATA)
-    if old_bugtask is not None:
-        old_bugtask_recipients = BugNotificationRecipients()
-        get_bugtask_indirect_subscribers(
-            old_bugtask, recipients=old_bugtask_recipients,
-            level=BugNotificationLevel.METADATA)
-        recipients.update(old_bugtask_recipients)
-    for change in changes:
-        # XXX 2009-03-17 gmb [bug=344125]
-        #     This if..else should be removed once the new BugChange API
-        #     is complete and ubiquitous.
-        if IBugChange.providedBy(change):
-            if isinstance(change, BugDuplicateChange):
-                no_dupe_master_recipients = (
-                    bug_delta.bug.getBugNotificationRecipients(
-                        old_bug=bug_delta.bug_before_modification,
-                        level=BugNotificationLevel.METADATA,
-                        include_master_dupe_subscribers=False))
-                bug_delta.bug.addChange(
-                    change, recipients=no_dupe_master_recipients)
-            elif (isinstance(change, BugTaskAssigneeChange) and
-                  new_subscribers is not None):
-                for person in new_subscribers:
-                    reason, rationale = recipients.getReason(person)
-                    if 'Assignee' in rationale:
-                        recipients.remove(person)
-                bug_delta.bug.addChange(change, recipients=recipients)
-            else:
-                bug_delta.bug.addChange(change, recipients=recipients)
-        else:
-            bug_delta.bug.addChangeNotification(
-                change, person=bug_delta.user, recipients=recipients)
 
 
 @block_implicit_flushes
