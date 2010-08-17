@@ -28,7 +28,7 @@ from lazr.restful.declarations import (
 from lazr.restful.fields import Reference, ReferenceChoice
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import (
+from lp.services.fields import (
     ContentNameField, Description, PublicPersonChoice, Title,
     UniqueField)
 from canonical.launchpad.interfaces.launchpad import IHasAppointedDriver

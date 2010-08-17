@@ -14,7 +14,7 @@ from zope.interface import Interface, Attribute
 from zope.schema import Bool, Datetime, Int, Text, TextLine
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import PublicPersonChoice
+from lp.services.fields import PublicPersonChoice
 
 
 class IRevision(Interface):
