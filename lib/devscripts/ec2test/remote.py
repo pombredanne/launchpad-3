@@ -366,7 +366,7 @@ class Request:
             branch.repository.get_revision(parent_ids[1]).get_summary())
         return summary.encode('utf-8')
 
-    def _build_email(self, successful, body_text, full_log_gz):
+    def _build_report_email(self, successful, body_text, full_log_gz):
         """Build a MIME email summarizing the test results.
 
         :param successful: True for pass, False for failure.
@@ -396,15 +396,14 @@ class Request:
         message.attach(zipped_log)
         return message
 
-    def send_email(self, successful, body_text, full_log_gz):
+    def send_report_email(self, successful, body_text, full_log_gz):
         """Send an email summarizing the test results.
 
         :param successful: True for pass, False for failure.
         :param body_text: The body of the email to send to the requesters.
         :param full_log_gz: A gzip of the full log.
         """
-        # XXX: Rename this method. Send *what* email, exactly?
-        message = self._build_email(successful, body_text, full_log_gz)
+        message = self._build_report_email(successful, body_text, full_log_gz)
         self._send_email(message)
 
     def iter_dependency_branches(self):
@@ -503,7 +502,7 @@ class WebTestLogger:
                 '\n(See the attached file for the complete log)\n')
             summary = open(self._summary_filename, 'r').read()
             full_log_gz = open(gzip_file(self._out_filename), 'rb').read()
-            self._request.send_email(successful, summary, full_log_gz)
+            self._request.send_report_email(successful, summary, full_log_gz)
         self._close_logs()
 
     def _handle_pqm_submission(self, successful):
