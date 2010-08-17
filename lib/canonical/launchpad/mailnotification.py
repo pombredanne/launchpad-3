@@ -1051,9 +1051,9 @@ def send_direct_contact_email(
     additions = u'\n'.join([
         u'',
         u'-- ',
-        u'This message was sent from Launchpad by the user',
+        u'This message was sent from Launchpad by',
         u'%s (%s)' % (sender_name, canonical_url(sender)),
-        u'using %s.',
+        u'%s.',
         u'For more information see',
         u'https://help.launchpad.net/YourAccount/ContactingPeople',
         ])

@@ -5635,18 +5635,20 @@ class ContactViaWebNotificationRecipientSet:
         :type person_or_team: `IPerson`.
         """
         if self._primary_reason is self.TO_USER:
-            reason = 'the "Contact this user" link on your profile page'
+            reason = (
+                'using the "Contact this user" link on your profile page\n'
+                '(%s)' % canonical_url(person_or_team))
             header = 'ContactViaWeb user'
         elif self._primary_reason is self.TO_OWNER:
             reason = (
-                'the "Contact this team\'s owner" link on the '
+                'using the "Contact this team\'s owner" link on the '
                 '%s team page\n(%s)' % (
                     person_or_team.displayname,
                     canonical_url(person_or_team)))
             header = 'ContactViaWeb owner (%s team)' % person_or_team.name
         elif self._primary_reason is self.TO_TEAM:
             reason = (
-                'the "Contact this team" link on the '
+                'using the "Contact this team" link on the '
                 '%s team page\n(%s)' % (
                     person_or_team.displayname,
                     canonical_url(person_or_team)))
@@ -5654,8 +5656,9 @@ class ContactViaWebNotificationRecipientSet:
         else:
             # self._primary_reason is self.TO_MEMBERS.
             reason = (
-                'the "Contact this team" link on the %s\n'
-                'team page to each member directly\n(%s)' % (
+                'to each member of the %s team using the '
+                '"Contact this team" link on the %s team page\n(%s)' % (
+                    person_or_team.displayname,
                     person_or_team.displayname,
                     canonical_url(person_or_team)))
             header = 'ContactViaWeb member (%s team)' % person_or_team.name
