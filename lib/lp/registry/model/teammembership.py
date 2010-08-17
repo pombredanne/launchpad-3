@@ -11,7 +11,6 @@ __all__ = [
     ]
 
 from datetime import datetime, timedelta
-import itertools
 import pytz
 
 from storm.locals import Store
@@ -167,8 +166,10 @@ class TeamMembership(SQLBase):
             simple_sendmail(from_addr, address, subject, msg)
 
     def canChangeStatusSilently(self, user):
-        """Ensure that the user is in the Launchpad Administrators group before
-           silently making changes to their membership status."""
+        """Ensure that the user is in the Launchpad Administrators group.
+
+        Then the user can silently make changes to their membership status.
+        """
         return user.inTeam(getUtility(ILaunchpadCelebrities).admin)
 
     def canChangeExpirationDate(self, person):
@@ -288,8 +289,8 @@ class TeamMembership(SQLBase):
 
         if silent and not self.canChangeStatusSilently(user):
             raise UserCannotChangeMembershipSilently(
-                "Only Launchpad administrators may change membership statuses "
-                "silently.")
+                "Only Launchpad administrators may change membership "
+                "statuses silently.")
 
         approved = TeamMembershipStatus.APPROVED
         admin = TeamMembershipStatus.ADMIN
@@ -536,7 +537,7 @@ class TeamMembershipSet:
         conditions = [
             TeamMembership.dateexpires <= when,
             TeamMembership.status.is_in(
-                [TeamMembershipStatus.ADMIN, TeamMembershipStatus.APPROVED])
+                [TeamMembershipStatus.ADMIN, TeamMembershipStatus.APPROVED]),
             ]
         if exclude_autorenewals:
             # Avoid circular import.
