@@ -21,7 +21,7 @@ import time
 from zope.component import getUtility
 
 from lp.archiveuploader.nascentupload import NascentUpload
-from lp.archiveuploader.uploadpolicy import findPolicyByName
+from lp.archiveuploader.uploadpolicy import IArchiveUploadPolicy
 from canonical.launchpad.ftests.keys_for_tests import import_secret_test_key
 from canonical.launchpad.interfaces import IGPGHandler
 from canonical.launchpad.interfaces import (
@@ -393,7 +393,7 @@ class FakePackager:
         the corresponding `ISourcePackagePublishingHistory` record. Otherwise
         return the corresponding `NascentUpload` object.
         """
-        policy = findPolicyByName(policy)
+        policy = getUtility(IArchiveUploadPolicy, policy)()
 
         if logger is None:
             logger = QuietFakeLogger()

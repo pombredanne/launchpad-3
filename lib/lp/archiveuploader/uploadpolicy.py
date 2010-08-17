@@ -6,27 +6,43 @@
 __metaclass__ = type
 
 __all__ = [
-    "findPolicyByName",
-    "findPolicyByOptions",
+    "BuildDaemonUploadPolicy",
+    "IArchiveUploadPolicy",
+    "SOURCE_PACKAGE_RECIPE_UPLOAD_POLICY_NAME",
     "UploadPolicyError",
     ]
 
-from zope.component import getUtility
+from zope.component import getGlobalSiteManager, getUtility
+from zope.interface import implements, Interface
 
 from canonical.launchpad.interfaces import ILaunchpadCelebrities
-from lp.code.interfaces.sourcepackagerecipebuild import (
-    ISourcePackageRecipeBuildSource)
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 
 
+# Defined here so that uploadpolicy.py doesn't depend on lp.code.
+SOURCE_PACKAGE_RECIPE_UPLOAD_POLICY_NAME = 'recipe'
 # Number of seconds in an hour (used later)
 HOURS = 3600
 
 
 class UploadPolicyError(Exception):
     """Raised when a specific policy violation occurs."""
+
+
+class IArchiveUploadPolicy(Interface):
+    """The policy of an upload to a Launchpad archive.
+
+    This is, in practice, just a marker interface for us to look up upload
+    policies by name.
+
+    If registered as a utility, any classes implementing this must be given as
+    the 'component' argument of the <utility> directive so that a getUtility()
+    call returns the class itself rather than an instance.  This is needed
+    because the callsites usually change the policies (based on user-specified
+    arguments).
+    """
 
 
 class AbstractUploadPolicy:
@@ -38,13 +54,13 @@ class AbstractUploadPolicy:
     tests themselves and they operate on NascentUpload instances in order
     to verify them.
     """
+    implements(IArchiveUploadPolicy)
 
-    policies = {}
     options = None
+    name = 'abstract'
 
     def __init__(self):
         """Prepare a policy..."""
-        self.name = 'abstract'
         self.distro = None
         self.distroseries = None
         self.pocket = None
@@ -143,39 +159,14 @@ class AbstractUploadPolicy:
         """Return whether the NEW upload should be automatically approved."""
         return False
 
-    @classmethod
-    def _registerPolicy(cls, policy_type):
-        """Register the given policy type as belonging to its given name."""
-        # XXX: JonathanLange 2010-01-15 bug=510892: This shouldn't instantiate
-        # policy types. They should instead have names as class variables.
-        policy_name = policy_type().name
-        cls.policies[policy_name] = policy_type
-
-    @classmethod
-    def findPolicyByName(cls, policy_name):
-        """Return a new policy instance for the given policy name."""
-        return cls.policies[policy_name]()
-
-    @classmethod
-    def findPolicyByOptions(cls, options):
-        """Return a new policy instance given the options dictionary."""
-        policy = cls.policies[options.context]()
-        policy.setOptions(options)
-        return policy
-
-# XXX: dsilvers 2005-10-19 bug=3373: use the component architecture for
-# these instead of reinventing the registration/finder again?
-# Nice shiny top-level policy finder
-findPolicyByName = AbstractUploadPolicy.findPolicyByName
-findPolicyByOptions = AbstractUploadPolicy.findPolicyByOptions
-
 
 class InsecureUploadPolicy(AbstractUploadPolicy):
     """The insecure upload policy is used by the poppy interface."""
 
+    name = 'insecure'
+
     def __init__(self):
         AbstractUploadPolicy.__init__(self)
-        self.name = 'insecure'
         self.can_upload_binaries = False
         self.can_upload_mixed = False
 
@@ -281,15 +272,13 @@ class InsecureUploadPolicy(AbstractUploadPolicy):
         return False
 
 
-AbstractUploadPolicy._registerPolicy(InsecureUploadPolicy)
-
-
 class BuildDaemonUploadPolicy(AbstractUploadPolicy):
     """The build daemon upload policy is invoked by the slave scanner."""
 
+    name = 'buildd'
+
     def __init__(self):
         super(BuildDaemonUploadPolicy, self).__init__()
-        self.name = 'buildd'
         # We permit unsigned uploads because we trust our build daemons
         self.unsigned_changes_ok = True
         self.unsigned_dsc_ok = True
@@ -313,37 +302,13 @@ class BuildDaemonUploadPolicy(AbstractUploadPolicy):
         return False
 
 
-AbstractUploadPolicy._registerPolicy(BuildDaemonUploadPolicy)
-
-
-class SourcePackageRecipeUploadPolicy(BuildDaemonUploadPolicy):
-    """Policy for uploading the results of a source package recipe build."""
-
-    def __init__(self):
-        super(SourcePackageRecipeUploadPolicy, self).__init__()
-        # XXX: JonathanLange 2010-01-15 bug=510894: This has to be exactly the
-        # same string as the one in SourcePackageRecipeBuild.policy_name.
-        # Factor out a shared constant.
-        self.name = 'recipe'
-        self.can_upload_source = True
-        self.can_upload_binaries = False
-
-    def getUploader(self, changes):
-        """Return the person doing the upload."""
-        build_id = int(getattr(self.options, 'buildid'))
-        sprb = getUtility(ISourcePackageRecipeBuildSource).getById(build_id)
-        return sprb.requester
-
-
-AbstractUploadPolicy._registerPolicy(SourcePackageRecipeUploadPolicy)
-
-
 class SyncUploadPolicy(AbstractUploadPolicy):
     """This policy is invoked when processing sync uploads."""
 
+    name = 'sync'
+
     def __init__(self):
         AbstractUploadPolicy.__init__(self)
-        self.name = "sync"
         # We don't require changes or dsc to be signed for syncs
         self.unsigned_changes_ok = True
         self.unsigned_dsc_ok = True
@@ -357,8 +322,6 @@ class SyncUploadPolicy(AbstractUploadPolicy):
         # Implement this to check the sync
         pass
 
-AbstractUploadPolicy._registerPolicy(SyncUploadPolicy)
-
 
 class AnythingGoesUploadPolicy(AbstractUploadPolicy):
     """This policy is invoked when processing uploads from the test process.
@@ -366,9 +329,10 @@ class AnythingGoesUploadPolicy(AbstractUploadPolicy):
     We require a signed changes file but that's it.
     """
 
+    name = 'anything'
+
     def __init__(self):
         AbstractUploadPolicy.__init__(self)
-        self.name = "anything"
         # We require the changes to be signed but not the dsc
         self.unsigned_dsc_ok = True
 
@@ -380,8 +344,6 @@ class AnythingGoesUploadPolicy(AbstractUploadPolicy):
         """We allow PPA uploads."""
         return False
 
-AbstractUploadPolicy._registerPolicy(AnythingGoesUploadPolicy)
-
 
 class AbsolutelyAnythingGoesUploadPolicy(AnythingGoesUploadPolicy):
     """This policy is invoked when processing uploads from the test process.
@@ -390,16 +352,15 @@ class AbsolutelyAnythingGoesUploadPolicy(AnythingGoesUploadPolicy):
     of dealing with inappropriate checks in tests.
     """
 
+    name = 'absolutely-anything'
+
     def __init__(self):
         AnythingGoesUploadPolicy.__init__(self)
-        self.name = "absolutely-anything"
         self.unsigned_changes_ok = True
 
     def policySpecificChecks(self, upload):
         """Nothing, let it go."""
         pass
-
-AbstractUploadPolicy._registerPolicy(AbsolutelyAnythingGoesUploadPolicy)
 
 
 class SecurityUploadPolicy(AbstractUploadPolicy):
@@ -408,9 +369,10 @@ class SecurityUploadPolicy(AbstractUploadPolicy):
     It allows unsigned changes and binary uploads.
     """
 
+    name = 'security'
+
     def __init__(self):
         AbstractUploadPolicy.__init__(self)
-        self.name = "security"
         self.unsigned_dsc_ok = True
         self.unsigned_changes_ok = True
         self.can_upload_mixed = True
@@ -422,4 +384,16 @@ class SecurityUploadPolicy(AbstractUploadPolicy):
             upload.reject(
                 "Not permitted to do security upload to non SECURITY pocket")
 
-AbstractUploadPolicy._registerPolicy(SecurityUploadPolicy)
+
+def register_archive_upload_policy_adapters():
+    policies = [
+        BuildDaemonUploadPolicy,
+        InsecureUploadPolicy,
+        SyncUploadPolicy, 
+        AnythingGoesUploadPolicy,
+        AbsolutelyAnythingGoesUploadPolicy,
+        SecurityUploadPolicy]
+    sm = getGlobalSiteManager()
+    for policy in policies:
+        sm.registerUtility(
+            component=policy, provided=IArchiveUploadPolicy, name=policy.name)

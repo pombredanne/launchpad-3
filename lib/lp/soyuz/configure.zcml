@@ -855,4 +855,8 @@
             interface="lp.soyuz.interfaces.binarypackagerelease.IBinaryPackageReleaseDownloadCount"/>
     </class>
 
+    <call
+      callable="lp.archiveuploader.uploadpolicy.register_archive_upload_policy_adapters"
+      />
+
 </configure>
