@@ -797,7 +797,7 @@ class TestBugTaskSearch(TestCaseWithFactory):
         self.assertEqual([task2], list(result))
 
     def test_private_bug_view_permissions_cached(self):
-        """private bugs from a search know the user can see the bugs."""
+        """Private bugs from a search know the user can see the bugs."""
         target = self.makeBugTarget()
         person = self.login()
         self.factory.makeBug(product=target, private=True, owner=person)
@@ -805,7 +805,7 @@ class TestBugTaskSearch(TestCaseWithFactory):
         # Search style and parameters taken from the milestone index view where
         # the issue was discovered.
         login_person(person)
-        tasks =target.searchTasks(BugTaskSearchParams(person, omit_dupes=True,
+        tasks = target.searchTasks(BugTaskSearchParams(person, omit_dupes=True,
             orderby=['status', '-importance', 'id']))
         # We must be finding the bugs.
         self.assertEqual(2, tasks.count())

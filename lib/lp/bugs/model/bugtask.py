@@ -1246,24 +1246,54 @@ def search_value_to_where_condition(search_value):
 
 def get_bug_privacy_filter(user):
     """An SQL filter for search results that adds privacy-awareness."""
+    return get_bug_privacy_filter_with_decorator(user)[0]
+
+
+def _nocache_bug_decorator(obj):
+    """A pass through decorator for consistency.
+    
+    :seealso: get_bug_privacy_filter_with_decorator
+    """
+    return obj
+
+
+def _make_cache_user_can_view_bug(user):
+    """Curry a decorator for bugtask queries to cache permissions.
+
+    :seealso: get_bug_privacy_filter_with_decorator
+    """
+    userid = user.id
+    def cache_user_can_view_bug(bugtask):
+        cache_property(bugtask.bug, '_cached_viewers', set([userid]))
+        return bugtask
+    return cache_user_can_view_bug
+
+
+def get_bug_privacy_filter_with_decorator(user):
+    """Return a SQL filter to limit returned bug tasks.
+
+    :return: A SQL filter, a decorator to cache visibility in a resultset that
+        returns BugTask objects.
+    """
     if user is None:
-        return "Bug.private = FALSE"
+        return "Bug.private = FALSE", _nocache_bug_decorator
     admin_team = getUtility(ILaunchpadCelebrities).admin
     if user.inTeam(admin_team):
-        return ""
+        return "", _nocache_bug_decorator
     # A subselect is used here because joining through
     # TeamParticipation is only relevant to the "user-aware"
     # part of the WHERE condition (i.e. the bit below.) The
     # other half of this condition (see code above) does not
     # use TeamParticipation at all.
-    return """
+    return ("""
         (Bug.private = FALSE OR EXISTS (
              SELECT BugSubscription.bug
              FROM BugSubscription, TeamParticipation
              WHERE TeamParticipation.person = %(personid)s AND
                    BugSubscription.person = TeamParticipation.team AND
                    BugSubscription.bug = Bug.id))
-                     """ % sqlvalues(personid=user.id)
+                     """ % sqlvalues(personid=user.id),
+        _make_cache_user_can_view_bug(user))
 
 
 def build_tag_set_query(joiner, tags):
@@ -1816,14 +1846,10 @@ class BugTaskSet:
             extra_clauses.append(nominated_for_clause)
             clauseTables.append('BugNomination')
 
-        clause = get_bug_privacy_filter(params.user)
+        clause, decorator = get_bug_privacy_filter_with_decorator(params.user)
         if clause:
             extra_clauses.append(clause)
-            userid = params.user.id
-            def cache_user_can_view_bug(bugtask):
-                cache_property(bugtask.bug, '_cached_viewers', set([userid]))
-                return bugtask
-            decorators.append(cache_user_can_view_bug)
+            decorators.append(decorator)
 
         hw_clause = self._buildHardwareRelatedClause(params)
         if hw_clause is not None:

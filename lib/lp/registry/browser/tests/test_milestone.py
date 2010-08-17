@@ -121,6 +121,12 @@ class TestMilestoneIndex(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def test_more_private_bugs_query_count_is_constant(self):
+        # This test tests that as we add more private bugs to a milestone index
+        # page, the number of queries issued by the page does not change.
+        # It also sets a cap on the queries for this page: if the baseline 
+        # were to increase, the test would fail. As the baseline is very large
+        # already, if the test fails due to such a change, please cut some more
+        # of the existing fat out of it rather than increasing the cap.
         product = self.factory.makeProduct()
         login_person(product.owner)
         milestone = self.factory.makeMilestone(
