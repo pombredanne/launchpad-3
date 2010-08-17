@@ -185,7 +185,7 @@ class LPService(object):
         # TODO: Consider buffering...
         stdin_fid = os.open(stdin_path, os.O_RDONLY | os.O_NONBLOCK)
         stdout_fid = os.open(stdout_path, os.O_WRONLY)
-        stderr_fid = os.open(stdout_path, os.O_WRONLY)
+        stderr_fid = os.open(stderr_path, os.O_WRONLY)
         # XXX: Cheap hack. by this point bzrlib has opened stderr for logging
         #      (as part of starting the service process in the first place). As
         #      such, it has a stream handler that writes to stderr. logging

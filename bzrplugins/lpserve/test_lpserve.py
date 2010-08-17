@@ -1,12 +1,22 @@
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+import os
 import signal
 import socket
+import subprocess
 import threading
+import time
 
-from bzrlib import tests, trace
+from bzrlib import (
+    osutils,
+    tests,
+    trace,
+    )
 from bzrlib.plugins import lpserve
+
+from canonical.config import config
+from lp.codehosting import get_bzr_path, get_BZR_PLUGIN_PATH_for_subprocess
 
 
 class TestingLPServiceInAThread(lpserve.LPService):
@@ -136,12 +146,11 @@ class TestCaseWithLPServiceSubprocess(tests.TestCaseWithTransport):
 
     def setUp(self):
         super(TestCaseWithLPServiceSubprocess, self).setUp()
-        self.service_process, self.service_port = self.start_service()
+        self.service_process, self.service_port = self.start_service_subprocess()
         self.addCleanup(self.stop_service)
 
     def send_message_to_service(self, message):
-        host, port = self.service._sockname
-        addrs = socket.getaddrinfo('localhost', self.service_port,
+        addrs = socket.getaddrinfo('127.0.0.1', self.service_port,
             socket.AF_UNSPEC, socket.SOCK_STREAM, 0, socket.AI_PASSIVE)
         (family, socktype, proto, canonname, sockaddr) = addrs[0]
         client_sock = socket.socket(family, socktype, proto)
@@ -153,17 +162,76 @@ class TestCaseWithLPServiceSubprocess(tests.TestCaseWithTransport):
             raise RuntimeError('Failed to connect: %s' % (e,))
         return response
 
-    def start_service(self):
-        self.start_bzr_subprocess('lp-service')
-        proc = self.run_bzr_subprocess(['lp-service', '--port', 'localhost:0'],
-                skip_if_plan_to_signal=True)
+    def get_python_path(self):
+        """Return the path to the Python interpreter."""
+        return '%s/bin/py' % config.root
+
+    def start_bzr_subprocess(self, process_args, env_changes=None,
+                             working_dir=None):
+        """Start bzr in a subprocess for testing.
+
+        Copied and modified from `bzrlib.tests.TestCase.start_bzr_subprocess`.
+        This version removes some of the skipping stuff, some of the
+        irrelevant comments (e.g. about win32) and uses Launchpad's own
+        mechanisms for getting the path to 'bzr'.
+
+        Comments starting with 'LAUNCHPAD' are comments about our
+        modifications.
+        """
+        if env_changes is None:
+            env_changes = {}
+        env_changes['BZR_PLUGIN_PATH'] = get_BZR_PLUGIN_PATH_for_subprocess()
+        old_env = {}
+
+        def cleanup_environment():
+            for env_var, value in env_changes.iteritems():
+                old_env[env_var] = osutils.set_or_unset_env(env_var, value)
+
+        def restore_environment():
+            for env_var, value in old_env.iteritems():
+                osutils.set_or_unset_env(env_var, value)
+
+        cwd = None
+        if working_dir is not None:
+            cwd = osutils.getcwd()
+            os.chdir(working_dir)
+
+        # LAUNCHPAD: Because of buildout, we need to get a custom Python
+        # binary, not sys.executable.
+        python_path = self.get_python_path()
+        # LAUNCHPAD: We can't use self.get_bzr_path(), since it'll find
+        # lib/bzrlib, rather than the path to sourcecode/bzr/bzr.
+        bzr_path = get_bzr_path()
+        try:
+            cleanup_environment()
+            command = [python_path, bzr_path]
+            command.extend(process_args)
+            process = self._popen(
+                command, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE)
+        finally:
+            restore_environment()
+            if cwd is not None:
+                os.chdir(cwd)
+
+        return process
+
+    def start_service_subprocess(self):
+        # Make sure this plugin is exposed to the subprocess
+        # SLOOWWW (~2.4 seconds, which is why we are doing the work anyway)
+        old_val = osutils.set_or_unset_env('BZR_PLUGIN_PATH',
+                                           lpserve.__path__[0])
+        self.addCleanup(osutils.set_or_unset_env, 'BZR_PLUGIN_PATH', old_val)
+        proc = self.start_bzr_subprocess(['lp-service', '--port', '127.0.0.1:0'])
+        trace.mutter('started lp-service subprocess')
         preload_line = proc.stderr.readline()
         self.assertStartsWith(preload_line, 'Preloading')
         prefix = 'Listening on port: '
         port_line = proc.stderr.readline()
         self.assertStartsWith(port_line, prefix)
         port = int(port_line[len(prefix):])
-        return process, port
+        trace.mutter(port_line)
+        return proc, port
 
     def stop_service(self):
         if self.service_process is None:
@@ -176,10 +244,26 @@ class TestCaseWithLPServiceSubprocess(tests.TestCaseWithTransport):
         while self.service_process.poll() is None:
             if time.time() > tend:
                 self.finish_bzr_subprocess(process=self.service_process,
-                    signal=signal.SIGINT, retcode=3)
+                    send_signal=signal.SIGINT, retcode=3)
                 self.fail('Failed to quit gracefully after 10.0 seconds')
             time.sleep(0.1)
         self.assertEqual('quit command requested... exiting\n', response)
 
-    def test_single_fork(self):
-        pass
+    def test_fork_child_hello(self):
+        response = self.send_message_to_service('fork 2\n')
+        if response.startswith('FAILURE'):
+            self.fail('Fork request failed')
+        self.assertContainsRe(response, '/lp-service-child-')
+        path = response.strip()
+        stdin_path = os.path.join(path, 'stdin')
+        stdout_path = os.path.join(path, 'stdout')
+        stderr_path = os.path.join(path, 'stderr')
+        child_stdout = open(stdout_path, 'rb')
+        child_stderr = open(stderr_path, 'rb')
+        child_stdin = open(stdin_path, 'wb')
+        child_stdin.write('hello\n')
+        child_stdin.close()
+        stdout_content = child_stdout.read()
+        stderr_content = child_stderr.read()
+        self.assertEqual('ok\x012\n', stdout_content)
+        self.assertEqual('', stderr_content)
