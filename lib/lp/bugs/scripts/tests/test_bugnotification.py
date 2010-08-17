@@ -18,13 +18,14 @@ from canonical.database.sqlbase import commit
 from canonical.launchpad.database import BugTask
 from canonical.launchpad.helpers import get_contact_email_addresses
 from canonical.launchpad.interfaces.message import IMessageSet
+from canonical.testing import LaunchpadZopelessLayer
+
 from lp.bugs.interfaces.bug import IBug, IBugSet
-from lp.registry.interfaces.person import IPersonSet
-from lp.registry.interfaces.product import IProductSet
 from lp.bugs.mail.bugnotificationrecipients import BugNotificationRecipients
 from lp.bugs.scripts.bugnotification import (
-    get_email_notifications)
-from canonical.testing import LaunchpadZopelessLayer
+    get_email_notifications, notification_comment_batches)
+from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.product import IProductSet
 
 
 class MockBug:
@@ -164,8 +165,7 @@ class TestGetEmailNotificattions(unittest.TestCase):
         also checks that the notifications got sent to the correct
         addresses.
         """
-        email_notifications = get_email_notifications(
-            notifications_to_send, date_emailed=self.now)
+        email_notifications = get_email_notifications(notifications_to_send)
         to_addresses = set()
         sent_notifications = []
         for notifications, messages in email_notifications:
@@ -246,6 +246,87 @@ class TestGetEmailNotificattions(unittest.TestCase):
         # cause any errors.
         bug_four = getUtility(IBugSet).get(4)
         self.assertEqual(bug_four.id, 4)
+
+
+class FakeNotification:
+
+    def __init__(self, is_comment):
+        self.is_comment = is_comment
+
+    def __repr__(self):
+        return "FN(%r)" % self.is_comment
+
+
+class TestNotificationCommentBatches(unittest.TestCase):
+    """Tests of `notification_comment_batches`."""
+
+    def test_with_nothing(self):
+        # Nothing is generated if an empty list is passed in.
+        self.assertEquals([], list(notification_comment_batches([])))
+
+    def test_with_one_non_comment_notification(self):
+        # Given a single non-comment notification, a single tuple is
+        # generated.
+        notification = FakeNotification(False)
+        self.assertEquals(
+            [(1, notification)],
+            list(notification_comment_batches([notification])))
+
+    def test_with_one_comment_notification(self):
+        # Given a single comment notification, a single tuple is generated.
+        notification = FakeNotification(True)
+        self.assertEquals(
+            [(1, notification)],
+            list(notification_comment_batches([notification])))
+
+    def test_with_two_notifications_comment_first(self):
+        # Given two notifications, one a comment, one not, and the comment
+        # first, two tuples are generated, both in the same group.
+        notification1 = FakeNotification(True)
+        notification2 = FakeNotification(False)
+        notifications = [notification1, notification2]
+        self.assertEquals(
+            [(1, notification1), (1, notification2)],
+            list(notification_comment_batches(notifications)))
+
+    def test_with_two_notifications_comment_last(self):
+        # Given two notifications, one a comment, one not, and the comment
+        # last, two tuples are generated, both in the same group.
+        notification1 = FakeNotification(False)
+        notification2 = FakeNotification(True)
+        notifications = [notification1, notification2]
+        self.assertEquals(
+            [(1, notification1), (1, notification2)],
+            list(notification_comment_batches(notifications)))
+
+    def test_with_three_notifications_comment_in_middle(self):
+        # Given three notifications, one a comment, two not, and the comment
+        # in the middle, three tuples are generated, all in the same group.
+        notification1 = FakeNotification(False)
+        notification2 = FakeNotification(True)
+        notification3 = FakeNotification(False)
+        notifications = [notification1, notification2, notification3]
+        self.assertEquals(
+            [(1, notification1), (1, notification2), (1, notification3)],
+            list(notification_comment_batches(notifications)))
+
+    def test_with_more_notifications(self):
+        # Given four notifications - non-comment, comment, non-comment,
+        # comment - four tuples are generated. The first three notifications
+        # are in the first group, the last notification is in a group on its
+        # own.
+        notification1 = FakeNotification(False)
+        notification2 = FakeNotification(True)
+        notification3 = FakeNotification(False)
+        notification4 = FakeNotification(True)
+        notifications = [
+            notification1, notification2,
+            notification3, notification4,
+            ]
+        self.assertEquals(
+            [(1, notification1), (1, notification2),
+             (1, notification3), (2, notification4)],
+            list(notification_comment_batches(notifications)))
 
 
 def test_suite():
