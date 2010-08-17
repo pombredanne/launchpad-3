@@ -307,7 +307,8 @@ class FileDownloadClient:
                 'Alias %d cannot be downloaded from this client.' % aliasID)
         if lfa.deleted:
             return None
-        return get_libraryfilealias_download_path(aliasID, lfa.filename)
+        return get_libraryfilealias_download_path(
+            aliasID, lfa.filename.encode('utf-8'))
 
     def getURLForAlias(self, aliasID):
         """Returns the url for talking to the librarian about the given
