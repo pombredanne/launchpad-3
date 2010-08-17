@@ -10,6 +10,7 @@ from email.mime.text import MIMEText
 import gzip
 from itertools import izip
 import os
+import shutil
 from StringIO import StringIO
 import sys
 import tempfile
@@ -388,6 +389,22 @@ class TestWebTestLogger(TestCase):
             request = self.make_request()
         return WebTestLogger(
             full_log, summary, index, request, echo_to_stdout)
+
+    def test_make_in_directory(self):
+        # WebTestLogger.make_in_directory constructs a logger that writes to a
+        # bunch of specific files in a directory.
+        temp_dir = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, temp_dir)
+        request = self.make_request()
+        logger = WebTestLogger.make_in_directory(temp_dir, request, False)
+        # A method on logger that writes to _everything_.
+        logger.prepare()
+        self.assertEqual(
+            logger.get_summary_contents(),
+            open(os.path.join(temp_dir, 'summary.log'), 'r').read())
+        self.assertEqual(
+            logger.get_full_log_contents(),
+            open(os.path.join(temp_dir, 'current_test.log'), 'r').read())
 
     def test_initial_full_log(self):
         # Initially, the full log has nothing in it.

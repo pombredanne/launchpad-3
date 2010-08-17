@@ -443,6 +443,11 @@ class WebTestLogger:
                  echo_to_stdout):
         """Construct a WebTestLogger.
 
+        Because this writes an HTML file with links to the summary and full
+        logs, you should construct this object with
+        `WebTestLogger.make_in_directory`, which will guarantee that the files
+        are available in the correct locations.
+
         :param full_log_file: A file-like object that will have the full log
             output written to it.
         :param summary_file: A file-like object that will have a
@@ -461,9 +466,17 @@ class WebTestLogger:
 
     @classmethod
     def make_in_directory(cls, www_dir, request, echo_to_stdout):
-        # XXX: make_in_directory untested
+        """Make a logger that logs to specific files in `www_dir`.
+
+        :param www_dir: The directory in which to log the files:
+            current_test.log, summary.log and index.html. These files
+            will be overwritten.
+        :param request: A `Request` object representing the thing that's being
+            tested.
+        :param echo_to_stdout: Whether or not we should echo output to stdout.
+        """
         files = [
-            open(filename, 'w') for filename in [
+            open(filename, 'w+') for filename in [
                 os.path.join(www_dir, 'current_test.log'),
                 os.path.join(www_dir, 'summary.log'),
                 os.path.join(www_dir, 'index.html')]]
@@ -490,6 +503,10 @@ class WebTestLogger:
         self._full_log_file.close()
         self._summary_file.close()
         self._index_file.close()
+
+    def get_index_contents(self):
+        """Return the contents of the index.html page."""
+        return self._get_contents(self._index_file)
 
     def get_full_log_contents(self):
         """Return the contents of the complete log."""
