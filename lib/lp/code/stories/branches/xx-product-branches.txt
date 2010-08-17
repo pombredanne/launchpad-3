@@ -66,6 +66,9 @@ in downloads that may have been added for the product.
     There are no branches for NetApplet in Launchpad.
     ...
     There are download files available for NetApplet.
+    >>> browser.getLink('download files')
+    <Link...url='http://launchpad.dev/netapplet/+download'>
+
 
 
 Development focus branches
