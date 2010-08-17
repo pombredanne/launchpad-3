@@ -59,7 +59,7 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
     cursor, quote, quote_like, sqlvalues, SQLBase)
 
-from canonical.cachedproperty import cachedproperty
+from canonical.cachedproperty import cachedproperty, cache_property, clear_property
 
 from canonical.lazr.utils import get_current_browser_request, safe_hasattr
 
@@ -390,13 +390,12 @@ class Person(
 
         Order them by name if necessary.
         """
-        self._languages_cache = sorted(
-            languages, key=attrgetter('englishname'))
+        cache_property(self, '_languages_cache', sorted(
+            languages, key=attrgetter('englishname')))
 
     def deleteLanguagesCache(self):
         """Delete this person's cached languages, if it exists."""
-        if safe_hasattr(self, '_languages_cache'):
-            del self._languages_cache
+        clear_property(self, '_languages_cache')
 
     def addLanguage(self, language):
         """See `IPerson`."""
@@ -1462,7 +1461,7 @@ class Person(
             include_teams=include_teams)
         person_list = []
         for person, email in result:
-            person._preferredemail_cached = email
+            cache_property(person, '_preferredemail_cached', email)
             person_list.append(person)
         return person_list
 
@@ -1737,7 +1736,7 @@ class Person(
         self.account_status = AccountStatus.DEACTIVATED
         self.account_status_comment = comment
         IMasterObject(self.preferredemail).status = EmailAddressStatus.NEW
-        self._preferredemail_cached = None
+        clear_property(self, '_preferredemail_cached')
         base_new_name = self.name + '-deactivatedaccount'
         self.name = self._ensureNewName(base_new_name)
 
@@ -2070,7 +2069,7 @@ class Person(
         if email_address is not None:
             email_address.status = EmailAddressStatus.VALIDATED
             email_address.syncUpdate()
-        self._preferredemail_cached = None
+        clear_property(self, '_preferredemail_cached')
 
     def setPreferredEmail(self, email):
         """See `IPerson`."""
@@ -2107,7 +2106,7 @@ class Person(
         IMasterObject(email).syncUpdate()
 
         # Now we update our cache of the preferredemail.
-        self._preferredemail_cached = email
+        cache_property(self, '_preferredemail_cached', email)
 
     @cachedproperty('_preferredemail_cached')
     def preferredemail(self):
@@ -2622,7 +2621,8 @@ class PersonSet:
                 # Populate the previously empty 'preferredemail' cached
                 # property, so the Person record is up-to-date.
                 if master_email.status == EmailAddressStatus.PREFERRED:
-                    account_person._preferredemail_cached = master_email
+                    cache_property(account_person, '_preferredemail_cached',
+                        master_email)
                 return account_person
             # There is no associated `Person` to the email `Account`.
             # This is probably because the account was created externally
