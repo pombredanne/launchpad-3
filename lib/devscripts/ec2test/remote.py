@@ -471,8 +471,9 @@ class WebTestLogger:
 
     def error_in_testrunner(self, exc_info):
         """Called when there is a catastrophic error in the test runner."""
-        # XXX: error_in_testrunner needs tests.
         exc_type, exc_value, exc_tb = exc_info
+        # XXX: JonathanLange 2010-08-17: This should probably log to the full
+        # log as well.
         self._summary_file.write('\n\nERROR IN TESTRUNNER\n\n')
         traceback.print_exception(
             exc_type, exc_value, exc_tb, file=self._summary_file)
@@ -519,6 +520,7 @@ class WebTestLogger:
 
     def got_result(self, successful):
         """The tests are done and the results are known."""
+        # XXX: got_result needs tests.
         self._handle_pqm_submission(successful)
         if self._request.wants_email:
             self._summary_file.write(
