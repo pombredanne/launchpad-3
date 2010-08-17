@@ -2,11 +2,23 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
-__all__ = ['notify_bug_modified']
+__all__ = [
+    'notify_bug_added',
+    'notify_bug_modified',
+    ]
 
 
 from canonical.database.sqlbase import block_implicit_flushes
 from lp.registry.interfaces.person import IPerson
+
+
+@block_implicit_flushes
+def notify_bug_added(bug, event):
+    """Send an email notification that a bug was added.
+
+    Event must be an IObjectCreatedEvent.
+    """
+    bug.addCommentNotification(bug.initial_message)
 
 
 @block_implicit_flushes

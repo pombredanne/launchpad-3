@@ -2,8 +2,10 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
+__all__ = [
+    'at_least_one_task',
+    ]
 
-from canonical.database.sqlbase import block_implicit_flushes
 from lp.bugs.interfaces.bug import CreatedBugWithNoBugTasksError
 
 
@@ -15,13 +17,3 @@ def at_least_one_task(bug, event):
     if len(bug.bugtasks) == 0:
         raise CreatedBugWithNoBugTasksError(
             "The bug has to affect at least one product or distribution.")
-
-
-@block_implicit_flushes
-def notify_bug_added(bug, event):
-    """Send an email notification that a bug was added.
-
-    Event must be an IObjectCreatedEvent.
-    """
-
-    bug.addCommentNotification(bug.initial_message)
