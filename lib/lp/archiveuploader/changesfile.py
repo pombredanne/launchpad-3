@@ -219,6 +219,10 @@ class ChangesFile(SignableTagFile):
         if len(self.files) == 0:
             yield UploadError("No files found in the changes")
 
+        if 'urgency' not in self._dict:
+            # Urgency is recommended but not mandatory. Default to 'low'
+            self._dict['urgency'] = "low"
+
         raw_urgency = self._dict['urgency'].lower()
         if raw_urgency not in self.urgency_map:
             yield UploadWarning(
