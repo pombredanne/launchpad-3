@@ -8,7 +8,7 @@ from __future__ import with_statement
 __metaclass__ = type
 
 __all__ = ['datadir', 'getPolicy', 'insertFakeChangesFile',
-           'insertFakeChangesFileForAllPackageUploads', 'mock_options',
+           'insertFakeChangesFileForAllPackageUploads', 
            'mock_logger', 'mock_logger_quiet']
 
 import os
@@ -98,6 +98,5 @@ class MockUploadLogger:
         self.print_traceback(exc_info)
 
 
-mock_options = MockUploadOptions()
 mock_logger = MockUploadLogger()
 mock_logger_quiet = MockUploadLogger(verbose=False)
