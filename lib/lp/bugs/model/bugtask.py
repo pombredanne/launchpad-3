@@ -42,7 +42,7 @@ from zope.security.proxy import (
 from lazr.enum import DBItem
 
 from canonical.config import config
-
+from canonical.cachedproperty import cache_property
 from canonical.database.sqlbase import (
     SQLBase, block_implicit_flushes, convert_storm_clause_to_string, cursor,
     quote, quote_like, sqlvalues)
@@ -51,6 +51,7 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.nl_search import nl_phrase_search
 from canonical.database.enumcol import EnumCol
 
+from canonical.launchpad.components.decoratedresultset import DecoratedResultSet
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 
@@ -1534,11 +1535,15 @@ class BugTaskSet:
         """Build and return an SQL query with the given parameters.
 
         Also return the clauseTables and orderBy for the generated query.
+
+        :return: A query, the tables to query, ordering expression and a
+            decorator to call on each returned row.
         """
         assert isinstance(params, BugTaskSearchParams)
 
         extra_clauses = ['Bug.id = BugTask.bug']
         clauseTables = ['BugTask', 'Bug']
+        decorators = []
 
         # These arguments can be processed in a loop without any other
         # special handling.
@@ -1814,6 +1819,11 @@ class BugTaskSet:
         clause = get_bug_privacy_filter(params.user)
         if clause:
             extra_clauses.append(clause)
+            userid = params.user.id
+            def cache_user_can_view_bug(bugtask):
+                cache_property(bugtask.bug, '_cached_viewers', set([userid]))
+                return bugtask
+            decorators.append(cache_user_can_view_bug)
 
         hw_clause = self._buildHardwareRelatedClause(params)
         if hw_clause is not None:
@@ -1842,7 +1852,15 @@ class BugTaskSet:
         orderby_arg = self._processOrderBy(params)
 
         query = " AND ".join(extra_clauses)
-        return query, clauseTables, orderby_arg
+
+        if not decorators:
+            decorator = lambda x:x
+        else:
+            def decorator(obj):
+                for decor in decorators:
+                    obj = decor(obj)
+                return obj
+        return query, clauseTables, orderby_arg, decorator
 
     def _buildUpstreamClause(self, params):
         """Return an clause for returning upstream data if the data exists.
@@ -2074,22 +2092,23 @@ class BugTaskSet:
         """See `IBugTaskSet`."""
         store_selector = getUtility(IStoreSelector)
         store = store_selector.get(MAIN_STORE, SLAVE_FLAVOR)
-        query, clauseTables, orderby = self.buildQuery(params)
+        query, clauseTables, orderby, decorator = self.buildQuery(params)
         if len(args) == 0:
             # Do normal prejoins, if we don't have to do any UNION
             # queries.  Prejoins don't work well with UNION, and the way
             # we prefetch objects without prejoins cause problems with
             # COUNT(*) queries, which get inefficient.
-            return BugTask.select(
+            resultset = BugTask.select(
                 query, clauseTables=clauseTables, orderBy=orderby,
                 prejoins=['product', 'sourcepackagename'],
                 prejoinClauseTables=['Bug'])
+            return DecoratedResultSet(resultset, result_decorator=decorator)
 
         bugtask_fti = SQL('BugTask.fti')
         result = store.find((BugTask, bugtask_fti), query,
                             AutoTables(SQL("1=1"), clauseTables))
         for arg in args:
-            query, clauseTables, dummy = self.buildQuery(arg)
+            query, clauseTables, dummy, decorator = self.buildQuery(arg)
             result = result.union(
                 store.find((BugTask, bugtask_fti), query,
                            AutoTables(SQL("1=1"), clauseTables)))
@@ -2108,7 +2127,7 @@ class BugTaskSet:
             (BugTask, Bug, Product, SourcePackageName))
         bugtasks = SQLObjectResultSet(BugTask, orderBy=orderby,
                                       prepared_result_set=result)
-        return bugtasks
+        return DecoratedResultSet(bugtasks, result_decorator=decorator)
 
     def getAssignedMilestonesFromSearch(self, search_results):
         """See `IBugTaskSet`."""

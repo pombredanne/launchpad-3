@@ -42,6 +42,10 @@ from lazr.lifecycle.event import (
     ObjectCreatedEvent, ObjectDeletedEvent, ObjectModifiedEvent)
 from lazr.lifecycle.snapshot import Snapshot
 
+from canonical.cachedproperty import (
+    cachedproperty,
+    clear_property,
+    )
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -555,6 +559,7 @@ class Bug(SQLBase):
                 # disabled see the change.
                 store.flush()
                 self.updateHeat()
+                clear_property(self, '_cached_viewers')
                 return
 
     def unsubscribeFromDupes(self, person, unsubscribed_by):
@@ -1547,21 +1552,32 @@ class Bug(SQLBase):
             self, self.messages[comment_number])
         bug_message.visible = visible
 
+    @cachedproperty('_cached_viewers')
+    def _known_viewers(self):
+        """A dict of of known persons able to view this bug."""
+        return set()
+
     def userCanView(self, user):
-        """See `IBug`."""
+        """See `IBug`.
+        
+        Note that Editing is also controlled by this check,
+        because we permit editing of any bug one can see.
+        """
+        if user.id in self._known_viewers:
+            return True
         admins = getUtility(ILaunchpadCelebrities).admin
         if not self.private:
             # This is a public bug.
             return True
-        elif user.inTeam(admins):
+        elif user.in_admin:
             # Admins can view all bugs.
             return True
         else:
             # This is a private bug. Only explicit subscribers may view it.
             for subscription in self.subscriptions:
                 if user.inTeam(subscription.person):
+                    self._known_viewers.add(user.id)
                     return True
-
         return False
 
     def linkHWSubmission(self, submission):
