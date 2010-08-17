@@ -18,7 +18,7 @@
 
       Currently active feature rules:
 
-      <textarea style="font-family: monospace;" tal:content="view/rules_text">
+      <textarea style="font-family: monospace;" tal:content="view/rules_text" name="feature_rules">
       </textarea>
 
     </div>
