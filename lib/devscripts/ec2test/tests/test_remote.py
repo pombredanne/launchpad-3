@@ -145,8 +145,7 @@ class TestGzipFile(TestCase):
         self.assertEqual(contents, gzip.open(gz_file, 'r').read())
 
 
-class TestRequest(TestCaseWithTransport):
-    """Tests for `Request`."""
+class RequestHelpers:
 
     def make_trunk(self, parent_url='http://example.com/bzr/trunk'):
         """Make a trunk branch suitable for use with `Request`.
@@ -170,12 +169,35 @@ class TestRequest(TestCaseWithTransport):
         """
         if trunk is None:
             trunk = self.make_trunk()
+        if sourcecode_path is None:
+            sourcecode_path = self.make_sourcecode(
+                [('a', 'http://example.com/bzr/a', 2),
+                 ('b', 'http://example.com/bzr/b', 3),
+                 ('c', 'http://example.com/bzr/c', 5)])
         request = Request(
             branch_url, revno, trunk.basedir, sourcecode_path, emails,
             pqm_message)
         request.emails_sent = []
         request._send_email = request.emails_sent.append
         return request
+
+    def make_sourcecode(self, branches):
+        """Make a sourcecode directory with sample branches.
+
+        :param branches: A list of (name, parent_url, revno) tuples.
+        :return: The path to the sourcecode directory.
+        """
+        self.build_tree(['sourcecode/'])
+        for name, parent_url, revno in branches:
+            tree = self.make_branch_and_tree('sourcecode/%s' % (name,))
+            tree.branch.set_parent(parent_url)
+            for i in range(revno):
+                tree.commit(message=str(i))
+        return 'sourcecode/'
+
+
+class TestRequest(TestCaseWithTransport, RequestHelpers):
+    """Tests for `Request`."""
 
     def test_doesnt_want_email(self):
         # If no email addresses were provided, then the user does not want to
@@ -263,16 +285,11 @@ class TestRequest(TestCaseWithTransport):
             ('a', 'http://example.com/parent-a', 2),
             ('c', 'http://example.com/parent-c', 5),
             ]
+        sourcecode_path = self.make_sourcecode(sourcecode_branches)
         self.build_tree(
-            ['sourcecode/',
-             'sourcecode/not-a-branch/',
-             'sourcecode/just-a-file'])
-        for name, parent_url, revno in sourcecode_branches:
-            tree = self.make_branch_and_tree('sourcecode/%s' % (name,))
-            tree.branch.set_parent(parent_url)
-            for i in range(revno):
-                tree.commit(message=str(i))
-        req = self.make_request(sourcecode_path='sourcecode/')
+            ['%s/not-a-branch/' % sourcecode_path,
+             '%s/just-a-file' % sourcecode_path])
+        req = self.make_request(sourcecode_path=sourcecode_path)
         branches = list(req.iter_dependency_branches())
         self.assertEqual(sorted(sourcecode_branches), branches)
 
@@ -370,16 +387,13 @@ class TestRequest(TestCaseWithTransport):
                     expected_part.get_payload(), observed_part.get_payload())
 
 
-class TestWebTestLogger(TestCase):
+class TestWebTestLogger(TestCaseWithTransport, RequestHelpers):
 
     def patch(self, obj, name, value):
         orig = getattr(obj, name)
         setattr(obj, name, value)
         self.addCleanup(setattr, obj, name, orig)
         return orig
-
-    def make_request(self):
-        return Request(None, None, None, 'sourcecode')
 
     def make_logger(self, request=None, echo_to_stdout=False):
         full_log = StringIO()
@@ -393,21 +407,18 @@ class TestWebTestLogger(TestCase):
     def test_make_in_directory(self):
         # WebTestLogger.make_in_directory constructs a logger that writes to a
         # bunch of specific files in a directory.
-        temp_dir = tempfile.mkdtemp()
-        self.addCleanup(shutil.rmtree, temp_dir)
+        self.build_tree(['www/'])
         request = self.make_request()
-        logger = WebTestLogger.make_in_directory(temp_dir, request, False)
+        logger = WebTestLogger.make_in_directory('www', request, False)
         # A method on logger that writes to _everything_.
         logger.prepare()
         self.assertEqual(
-            logger.get_summary_contents(),
-            open(os.path.join(temp_dir, 'summary.log'), 'r').read())
+            logger.get_summary_contents(), open('www/summary.log').read())
         self.assertEqual(
             logger.get_full_log_contents(),
-            open(os.path.join(temp_dir, 'current_test.log'), 'r').read())
+            open('www/current_test.log').read())
         self.assertEqual(
-            logger.get_index_contents(),
-            open(os.path.join(temp_dir, 'index.html'), 'r').read())
+            logger.get_index_contents(), open('www/index.html').read())
 
     def test_initial_full_log(self):
         # Initially, the full log has nothing in it.
