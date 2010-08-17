@@ -103,22 +103,16 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
         # possible again to commit to these branches at some point.
         # When that happens, remove this workaround and just call
         # _makeDirectBranchCommit directly.
-        committer = self._makeDirectBranchCommit(db_branch)
-        if not db_branch.stacked_on:
-            # The normal case.
-            return committer
+        if db_branch.stacked_on:
+            bzrbranch = db_branch.getBzrBranch()
+            self.logger.info("Unstacking branch to work around bug 375013.")
+            bzrbranch.set_stacked_on_url(None)
+            self.logger.info("Done unstacking branch.")
 
-        self.logger.info("Unstacking branch to work around bug 375013.")
-        try:
-            committer.bzrbranch.set_stacked_on_url(None)
-        finally:
-            committer.unlock()
-        self.logger.info("Done unstacking branch.")
-
-        # This may have taken a while, so commit for good
-        # manners.
-        if self.txn:
-            self.txn.commit()
+            # This may have taken a while, so commit for good
+            # manners.
+            if self.txn:
+                self.txn.commit()
 
         return self._makeDirectBranchCommit(db_branch)
 

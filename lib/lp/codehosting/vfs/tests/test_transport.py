@@ -43,6 +43,9 @@ class TestingServer(LaunchpadInternalServer):
             BlockingProxy(branchfs), LocalTransport(local_path_to_url('.')))
         self._chroot_servers = []
 
+    def get_bogus_url(self):
+        return self._scheme + 'bogus'
+
     def _transportFactory(self, url):
         """See `LaunchpadInternalServer._transportFactory`.
 

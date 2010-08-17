@@ -118,6 +118,7 @@ class InitialiseDistroSeries:
     def initialise(self):
         self._copy_architectures()
         self._copy_packages()
+        self._copy_packagesets()
 
     def _copy_architectures(self):
         self._store.execute("""
@@ -254,3 +255,13 @@ class InitialiseDistroSeries:
                         )
                     )
             """ % self.distroseries.id)
+
+    def _copy_packagesets(self):
+        """Copy packagesets from the parent distroseries."""
+        self._store.execute("""
+            INSERT INTO Packageset
+            (distroseries, owner, name, description, packagesetgroup)
+            SELECT %s, %s, name, description, packagesetgroup
+            FROM Packageset WHERE distroseries = %s
+            """ % sqlvalues(
+            self.distroseries, self.distroseries.owner, self.parent))

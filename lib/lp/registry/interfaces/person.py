@@ -1232,7 +1232,7 @@ class IPersonViewRestricted(Interface):
     all_member_count = Attribute(
         "The total number of real people who are members of this team, "
         "including subteams.")
-    allmembers = exported(
+    all_members_prepopulated = exported(
         doNotSnapshot(
             CollectionField(
                 title=_("All participants of this team."),
@@ -1244,6 +1244,8 @@ class IPersonViewRestricted(Interface):
                     "IPerson.inTeam()."),
                 value_type=Reference(schema=Interface))),
         exported_as='participants')
+    allmembers = doNotSnapshot(
+        Attribute("List of all members, without checking karma etc."))
     approvedmembers = doNotSnapshot(
         Attribute("List of members with APPROVED status"))
     deactivated_member_count = Attribute("Number of deactivated members")
@@ -1323,14 +1325,17 @@ class IPersonViewRestricted(Interface):
             center_lat, and center_lng
         """
 
-    def getMembersWithPreferredEmails(include_teams=False):
+    def getMembersWithPreferredEmails():
         """Returns a result set of persons with precached addresses.
 
         Persons or teams without preferred email addresses are not included.
         """
 
-    def getMembersWithPreferredEmailsCount(include_teams=False):
-        """Returns the count of persons/teams with preferred emails."""
+    def getMembersWithPreferredEmailsCount():
+        """Returns the count of persons/teams with preferred emails.
+        
+        See also getMembersWithPreferredEmails.
+        """
 
     def getDirectAdministrators():
         """Return this team's administrators.
@@ -2124,9 +2129,16 @@ class NoSuchPerson(NameLookupFailed):
 
 
 # Fix value_type.schema of IPersonViewRestricted attributes.
-for name in ['allmembers', 'activemembers', 'adminmembers', 'proposedmembers',
-             'invited_members', 'deactivatedmembers', 'expiredmembers',
-             'unmapped_participants']:
+for name in [
+    'all_members_prepopulated',
+    'activemembers',
+    'adminmembers',
+    'proposedmembers',
+    'invited_members',
+    'deactivatedmembers',
+    'expiredmembers',
+    'unmapped_participants',
+    ]:
     IPersonViewRestricted[name].value_type.schema = IPerson
 
 IPersonPublic['sub_teams'].value_type.schema = ITeam
