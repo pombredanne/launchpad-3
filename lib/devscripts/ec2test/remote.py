@@ -439,12 +439,12 @@ class Request:
 class WebTestLogger:
     """Logs test output to disk and a simple web page."""
 
-    def __init__(self, out_file, summary_file, index_file, request,
+    def __init__(self, full_log_file, summary_file, index_file, request,
                  echo_to_stdout):
         """Construct a WebTestLogger.
 
-        :param out_file: A file-like object that will have the full log output
-            written to it.
+        :param full_log_file: A file-like object that will have the full log
+            output written to it.
         :param summary_file: A file-like object that will have a
             human-readable summary written to it.
         :param index_file: A file-like object that will have an HTML page
@@ -453,7 +453,7 @@ class WebTestLogger:
             tested.
         :param echo_to_stdout: Whether or not we should echo output to stdout.
         """
-        self._out_file = out_file
+        self._full_log_file = full_log_file
         self._summary_file = summary_file
         self._index_file = index_file
         self._request = request
@@ -481,19 +481,19 @@ class WebTestLogger:
 
     def _flush_logs(self):
         """Flush all of our log file buffers."""
-        self._out_file.flush()
+        self._full_log_file.flush()
         self._summary_file.flush()
         self._index_file.flush()
 
     def _close_logs(self):
         """Closes all of the open log file handles."""
-        self._out_file.close()
+        self._full_log_file.close()
         self._summary_file.close()
         self._index_file.close()
 
     def get_full_log_contents(self):
         """Return the contents of the complete log."""
-        return self._get_contents(self._out_file)
+        return self._get_contents(self._full_log_file)
 
     def get_summary_contents(self):
         """Return the contents of the summary log."""
@@ -505,8 +505,8 @@ class WebTestLogger:
 
     def got_line(self, line):
         """Called when we get a line of output from our child processes."""
-        self._out_file.write(line)
-        self._out_file.flush()
+        self._full_log_file.write(line)
+        self._full_log_file.flush()
         if self._echo_to_stdout:
             sys.stdout.write(line)
             sys.stdout.flush()
@@ -545,7 +545,7 @@ class WebTestLogger:
 
     def _write(self, msg):
         """Write to the summary and full log file."""
-        for fd in [self._out_file, self._summary_file]:
+        for fd in [self._full_log_file, self._summary_file]:
             fd.write(msg)
             fd.flush()
 
