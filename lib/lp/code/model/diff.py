@@ -140,7 +140,7 @@ class Diff(SQLBase):
             source_revision)
         merger = Merge3Merger(
             merge_target, merge_target, merge_base, merge_source,
-            do_merge=False)
+            this_branch=target_branch, do_merge=False)
         def dummy_warning(self, *args, **kwargs):
             pass
         real_warning = trace.warning
