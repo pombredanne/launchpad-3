@@ -405,6 +405,9 @@ class TestWebTestLogger(TestCase):
         self.assertEqual(
             logger.get_full_log_contents(),
             open(os.path.join(temp_dir, 'current_test.log'), 'r').read())
+        self.assertEqual(
+            logger.get_index_contents(),
+            open(os.path.join(temp_dir, 'index.html'), 'r').read())
 
     def test_initial_full_log(self):
         # Initially, the full log has nothing in it.
