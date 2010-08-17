@@ -190,7 +190,7 @@ def notification_comment_batches(notifications):
         yield comment_count or 1, notification
 
 
-def batch_notifications(notifications):
+def notification_batches(notifications):
     """Batch notifications for `get_email_notifications`."""
     notifications_grouped = groupby(
         notifications, attrgetter("bug", "message.owner"))
@@ -210,7 +210,7 @@ def get_email_notifications(bug_notifications):
         - Must be related to the same bug.
         - Must contain at most one comment.
     """
-    for batch in batch_notifications(bug_notifications):
+    for batch in notification_batches(bug_notifications):
         # We don't want bugs preventing all bug notifications from
         # being sent, so catch and log all exceptions.
         try:

@@ -23,7 +23,8 @@ from canonical.testing import LaunchpadZopelessLayer
 from lp.bugs.interfaces.bug import IBug, IBugSet
 from lp.bugs.mail.bugnotificationrecipients import BugNotificationRecipients
 from lp.bugs.scripts.bugnotification import (
-    get_email_notifications, notification_comment_batches)
+    get_email_notifications, notification_batches,
+    notification_comment_batches)
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
 
@@ -95,6 +96,7 @@ class MockBugNotification:
     Using a real BugNotification won't allow us to set the bug to a mock
     object.
     """
+
     def __init__(self, message, bug, is_comment, date_emailed):
         self.message = message
         self.bug = bug
@@ -194,7 +196,6 @@ class TestGetEmailNotificattions(unittest.TestCase):
             notifications_to_send)
         self.assertEqual(sent_notifications, notifications_to_send)
 
-
     def test_catch_simple_exception_in_the_middle(self):
         # Make sure that the first and last notifications are sent even
         # if the middle one causes an exception to be raised.
@@ -249,12 +250,16 @@ class TestGetEmailNotificattions(unittest.TestCase):
 
 
 class FakeNotification:
+    """Used by TestNotificationCommentBatches and TestNotificationBatches."""
 
-    def __init__(self, is_comment):
+    class Message(object):
+        pass
+
+    def __init__(self, is_comment=False, bug=None, owner=None):
         self.is_comment = is_comment
-
-    def __repr__(self):
-        return "FN(%r)" % self.is_comment
+        self.bug = bug
+        self.message = self.Message()
+        self.message.owner = owner
 
 
 class TestNotificationCommentBatches(unittest.TestCase):
@@ -327,6 +332,138 @@ class TestNotificationCommentBatches(unittest.TestCase):
             [(1, notification1), (1, notification2),
              (1, notification3), (2, notification4)],
             list(notification_comment_batches(notifications)))
+
+
+class TestNotificationBatches(unittest.TestCase):
+    """Tests of `notification_batches`."""
+
+    def test_with_nothing(self):
+        # Nothing is generated if an empty list is passed in.
+        self.assertEquals([], list(notification_batches([])))
+
+    def test_with_one_non_comment_notification(self):
+        # Given a single non-comment notification, a single batch is
+        # generated.
+        notification = FakeNotification(False)
+        self.assertEquals(
+            [[notification]],
+            list(notification_batches([notification])))
+
+    def test_with_one_comment_notification(self):
+        # Given a single comment notification, a single batch is generated.
+        notification = FakeNotification(True)
+        self.assertEquals(
+            [[notification]],
+            list(notification_batches([notification])))
+
+    def test_with_two_notifications_comment_first(self):
+        # Given two similar notifications, one a comment, one not, and the
+        # comment first, a single batch is generated.
+        notification1 = FakeNotification(True)
+        notification2 = FakeNotification(False)
+        notifications = [notification1, notification2]
+        self.assertEquals(
+            [[notification1, notification2]],
+            list(notification_batches(notifications)))
+
+    def test_with_two_notifications_comment_last(self):
+        # Given two similar notifications, one a comment, one not, and the
+        # comment last, a single batch is generated.
+        notification1 = FakeNotification(False)
+        notification2 = FakeNotification(True)
+        notifications = [notification1, notification2]
+        self.assertEquals(
+            [[notification1, notification2]],
+            list(notification_batches(notifications)))
+
+    def test_with_three_notifications_comment_in_middle(self):
+        # Given three similar notifications, one a comment, two not, and the
+        # comment in the middle, one batch is generated.
+        notification1 = FakeNotification(False)
+        notification2 = FakeNotification(True)
+        notification3 = FakeNotification(False)
+        notifications = [notification1, notification2, notification3]
+        self.assertEquals(
+            [[notification1, notification2, notification3]],
+            list(notification_batches(notifications)))
+
+    def test_with_more_notifications(self):
+        # Given four similar notifications - non-comment, comment,
+        # non-comment, comment - two batches are generated. The first three
+        # notifications are in the first batch.
+        notification1 = FakeNotification(False)
+        notification2 = FakeNotification(True)
+        notification3 = FakeNotification(False)
+        notification4 = FakeNotification(True)
+        notifications = [
+            notification1, notification2,
+            notification3, notification4,
+            ]
+        self.assertEquals(
+            [[notification1, notification2, notification3], [notification4]],
+            list(notification_batches(notifications)))
+
+    def test_notifications_for_same_bug(self):
+        # Batches are grouped by bug.
+        notifications = [FakeNotification(bug=1) for number in range(5)]
+        observed = list(notification_batches(notifications))
+        self.assertEquals([notifications], observed)
+
+    def test_notifications_for_different_bugs(self):
+        # Batches are grouped by bug.
+        notifications = [FakeNotification(bug=number) for number in range(5)]
+        expected = [[notification] for notification in notifications]
+        observed = list(notification_batches(notifications))
+        self.assertEquals(expected, observed)
+
+    def test_notifications_for_same_owner(self):
+        # Batches are grouped by owner.
+        notifications = [FakeNotification(owner=1) for number in range(5)]
+        observed = list(notification_batches(notifications))
+        self.assertEquals([notifications], observed)
+
+    def test_notifications_for_different_owners(self):
+        # Batches are grouped by owner.
+        notifications = [FakeNotification(owner=number) for number in range(5)]
+        expected = [[notification] for notification in notifications]
+        observed = list(notification_batches(notifications))
+        self.assertEquals(expected, observed)
+
+    def test_notifications_with_mixed_bugs_and_owners(self):
+        # Batches are grouped by bug and owner.
+        notifications = [
+            FakeNotification(bug=1, owner=1),
+            FakeNotification(bug=1, owner=2),
+            FakeNotification(bug=2, owner=2),
+            FakeNotification(bug=2, owner=1),
+            ]
+        expected = [[notification] for notification in notifications]
+        observed = list(notification_batches(notifications))
+        self.assertEquals(expected, observed)
+
+    def test_notifications_with_mixed_bugs_and_owners_2(self):
+        # Batches are grouped by bug and owner.
+        notifications = [
+            FakeNotification(bug=1, owner=1),
+            FakeNotification(bug=1, owner=1),
+            FakeNotification(bug=2, owner=2),
+            FakeNotification(bug=2, owner=2),
+            ]
+        expected = [notifications[0:2], notifications[2:4]]
+        observed = list(notification_batches(notifications))
+        self.assertEquals(expected, observed)
+
+    def test_notifications_with_mixed_bugs_owners_and_comments(self):
+        # Batches are grouped by bug, owner and comments.
+        notifications = [
+            FakeNotification(is_comment=False, bug=1, owner=1),
+            FakeNotification(is_comment=False, bug=1, owner=1),
+            FakeNotification(is_comment=True, bug=1, owner=1),
+            FakeNotification(is_comment=False, bug=1, owner=2),
+            ]
+        expected = [notifications[0:3], notifications[3:4]]
+        observed = list(notification_batches(notifications))
+        self.assertEquals(expected, observed)
 
 
 def test_suite():
