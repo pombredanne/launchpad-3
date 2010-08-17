@@ -153,3 +153,9 @@ class ChangesFileTests(TestCase):
         self.assertEquals("Something changed\n"
             " -- Somebody <somebody@ubuntu.com>   Fri, 25 Jun 2010 11:20:22 -0600",
             changes.simulated_changelog)
+
+    def test_requires_changed_by(self):
+        contents = self.getBaseChanges()
+        del contents["Changed-By"]
+        self.assertRaises(UploadError,
+            self.createChangesFile, "mypkg_0.1_i386.changes", contents)
