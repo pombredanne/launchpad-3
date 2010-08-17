@@ -587,4 +587,7 @@ class TestAPIPartipication(TestCaseWithFactory):
         self.assertEqual(response.status, 200,
             "Got %d for url %r with response %r" % (
             response.status, url, response.body))
-        self.assertThat(collector, HasQueryCount(LessThan(12)))
+        # XXX: This number should really be 10, but see
+        # https://bugs.launchpad.net/storm/+bug/619017 which is adding 3
+        # queries to the test.
+        self.assertThat(collector, HasQueryCount(LessThan(13)))
