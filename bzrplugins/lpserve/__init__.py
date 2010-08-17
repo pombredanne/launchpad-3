@@ -262,7 +262,7 @@ class LPService(object):
     def main_loop(self):
         self._should_terminate.clear()
         self._create_master_socket()
-        trace.note('Connected to: %s' % (self._sockname,))
+        trace.note('Listening on port: %s' % (self.port,))
         while not self._should_terminate.isSet():
             try:
                 conn, client_addr = self._server_socket.accept()
@@ -379,6 +379,10 @@ class LPService(object):
             self.fork_one_request(conn, client_addr, user_id)
         else:
             self.log(client_addr, 'FAILURE: unknown request: %r' % (request,))
+            # TODO: Do we want to be friendly here? Or do we want to just
+            #       ignore the request? This is meant to be a local-only
+            #       process, so we probably want to be helpful
+            conn.sendall('FAILURE: unknown request: %r\n' % (request,))
         conn.close()
 
 
