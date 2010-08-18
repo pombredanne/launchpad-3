@@ -928,7 +928,7 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
     # @operation_parameters(team=copy_field(ITeamMembership['team']))
     # @operation_returns_collection_of(Interface) # Really IPerson
     # @export_read_operation()
-    def findPathToTeam(team):
+    def findPathToTeam(team, limit):
         """Return the teams that cause this person to be a participant of the
         given team.
 
@@ -1106,6 +1106,9 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
 
     def getLatestApprovedMembershipsForPerson(limit=5):
         """Return the <limit> latest approved membrships for this person."""
+
+    def getPathsToTeams():
+        """Return the paths to all teams related to this person."""
 
     def addLanguage(language):
         """Add a language to this person's preferences.

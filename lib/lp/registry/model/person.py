@@ -49,8 +49,8 @@ from sqlobject import (
 from sqlobject.sqlbuilder import AND, OR, SQLConstant
 from storm.store import EmptyResultSet, Store
 from storm.expr import (
-    Alias, And, Exists, In, Join, LeftJoin, Lower, Min, Not, Or, Select, SQL,
-    Desc)
+    Alias, And, Desc, Exists, In, Join, LeftJoin, Lower, Min, Not, Or, Select, 
+    SQL)
 from storm.info import ClassAlias
 
 from canonical.config import config
@@ -2058,6 +2058,30 @@ class Person(
             Desc(TeamMembership.id))
         return result[:limit]
 
+    def getPathsToTeams(self):
+        """See `Iperson`."""
+        teams = list(self.teams_participated_in)
+        all_user_memberships = [(self, team) for team in teams] 
+        store = Store.of(self)
+        all_direct_memberships = store.find(TeamMembership,
+            TeamMembership.personID.is_in(
+                [team.id for team in teams] + [self.id]))
+        all_direct_memberships = [(membership.team, membership.person) for
+            membership in all_direct_memberships]
+        
+        graph = dict(all_direct_memberships)
+        paths = {} 
+        for team in teams:
+            graph.update(all_user_memberships)
+            path = [team]
+            step = team
+            while path[-1] != self:
+                step = graph[step]
+                path.append(step)
+            paths[team] = path
+        return paths
+            
+            
     @property
     def teams_participated_in(self):
         """See `IPerson`."""

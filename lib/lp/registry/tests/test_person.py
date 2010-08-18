@@ -15,6 +15,7 @@ import transaction
 
 from zope.component import getUtility
 from zope.interface import providedBy
+from zope.interface.verify import verifyObject
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.sqlbase import cursor
@@ -27,7 +28,7 @@ from lp.registry.interfaces.karma import IKarmaCacheManager
 from lp.registry.interfaces.person import InvalidName
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.person import (
-    IPersonSet, ImmutableVisibilityError, NameAlreadyTaken,
+    IPerson, IPersonSet, ImmutableVisibilityError, NameAlreadyTaken,
     PersonCreationRationale, PersonVisibility)
 from canonical.launchpad.database import Bug
 from canonical.launchpad.testing.pages import LaunchpadWebServiceCaller
@@ -47,6 +48,14 @@ from lp.testing.views import create_initialized_view
 from lp.testing._webservice import QueryCollector
 from lp.registry.interfaces.person import PrivatePersonLinkageError
 from canonical.testing.layers import DatabaseFunctionalLayer, reconnect_stores
+
+
+#   class TestPersonImplementsIPerson(TestCaseWithFactory):
+#       
+#       layer = DatabaseFunctionalLayer
+
+#       def test_implementation(self):
+#           verifyObject(IPerson, self.factory.makePerson())
 
 
 class TestPersonTeams(TestCaseWithFactory):
@@ -92,7 +101,20 @@ class TestPersonTeams(TestCaseWithFactory):
         self.assertEqual([self.b_team, self.c_team], path_to_c_1)
         self.assertEqual([self.a_team, self.b_team, self.c_team], path_to_c_2)
 
+    def test_teams_participated_in(self):
+        teams = self.user.teams_participated_in
+        teams = sorted(list(teams), key=lambda x: x.displayname)
+        expected_teams = [self.a_team, self.b_team, self.c_team]
+        self.assertEqual(expected_teams, teams)
 
+    def test_getPathsToTeams(self):
+        paths = self.user.getPathsToTeams()
+        expected = {self.a_team:[self.a_team, self.user],
+            self.b_team:[self.b_team, self.a_team, self.user],
+            self.c_team:[self.c_team, self.b_team, self.a_team, self.user]}
+        self.assertEqual(expected, paths)
+
+    
 class TestPerson(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
