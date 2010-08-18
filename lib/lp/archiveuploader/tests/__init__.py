@@ -15,9 +15,7 @@ import os
 import sys
 import traceback
 
-from zope.component import getUtility
-
-from lp.archiveuploader.uploadpolicy import IArchiveUploadPolicy
+from lp.archiveuploader.uploadpolicy import findPolicyByName
 from lp.soyuz.model.queue import PackageUploadSet
 from canonical.librarian.ftests.harness import fillLibrarianFile
 
@@ -64,7 +62,7 @@ class MockUploadOptions:
 def getPolicy(name='anything', distro='ubuntu', distroseries=None,
               buildid=None):
     """Build and return an Upload Policy for the given context."""
-    policy = getUtility(IArchiveUploadPolicy, name)()
+    policy = findPolicyByName(name)
     options = MockUploadOptions(distro, distroseries, buildid)
     policy.setOptions(options)
     return policy

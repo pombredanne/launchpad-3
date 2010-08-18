@@ -10,20 +10,27 @@ arguments, we register the classes as the component of the utilities, which
 means a call to getUtility(IArchiveUploadPolicy, name) will return the class
 itself rather than an instance of it.
 
-  >>> from lp.archiveuploader.uploadpolicy import IArchiveUploadPolicy
+  >>> from lp.archiveuploader.uploadpolicy import (
+  ...     IArchiveUploadPolicy, findPolicyByName)
+  >>> policy_cls = getUtility(IArchiveUploadPolicy, 'insecure')
+  >>> policy_cls
+  <class '...InsecureUploadPolicy'>
+
+There's a helper function which returns an instance of the policy with the
+given name, though, and it's preferred over using getUtility() directly.
+
+  >>> insecure_policy = findPolicyByName('insecure')
+  >>> insecure_policy
+  <lp...InsecureUploadPolicy object...
 
 Two of the policies defined so far are the insecure and buildd policies.
 
-  >>> insecure_policy_cls = getUtility(IArchiveUploadPolicy, 'insecure')
-  >>> insecure_policy_cls
-  <class '...InsecureUploadPolicy'>
-  >>> insecure_policy = insecure_policy_cls()
   >>> insecure_policy.name
   'insecure'
-  >>> buildd_policy = getUtility(IArchiveUploadPolicy, 'buildd')()
+  >>> buildd_policy = findPolicyByName('buildd')
   >>> buildd_policy.name
   'buildd'
-  >>> abstract_policy = getUtility(IArchiveUploadPolicy, 'abstract')
+  >>> abstract_policy = findPolicyByName('abstract')
   Traceback (most recent call last):
   ...
   ComponentLookupError:...

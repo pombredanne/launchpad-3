@@ -24,7 +24,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.app.errors import NotFoundError
 from lp.archiveuploader.uploadpolicy import (
-    AbstractUploadPolicy, IArchiveUploadPolicy)
+    AbstractUploadPolicy, IArchiveUploadPolicy, findPolicyByName)
 from lp.archiveuploader.uploadprocessor import UploadProcessor
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
@@ -145,7 +145,7 @@ class TestUploadProcessorBase(TestCaseWithFactory):
     def getUploadProcessor(self, txn):
         def getPolicy(distro):
             self.options.distro = distro.name
-            policy = getUtility(IArchiveUploadPolicy, self.options.context)()
+            policy = findPolicyByName(self.options.context)
             policy.setOptions(self.options)
             return policy
         return UploadProcessor(

@@ -7,6 +7,7 @@ __metaclass__ = type
 
 __all__ = [
     "BuildDaemonUploadPolicy",
+    "findPolicyByName",
     "IArchiveUploadPolicy",
     "SOURCE_PACKAGE_RECIPE_UPLOAD_POLICY_NAME",
     "UploadPolicyError",
@@ -385,6 +386,11 @@ class SecurityUploadPolicy(AbstractUploadPolicy):
         if self.pocket != PackagePublishingPocket.SECURITY:
             upload.reject(
                 "Not permitted to do security upload to non SECURITY pocket")
+
+
+def findPolicyByName(policy_name):
+    """Return a new policy instance for the given policy name."""
+    return getUtility(IArchiveUploadPolicy, policy_name)()
 
 
 def register_archive_upload_policy_adapters():
