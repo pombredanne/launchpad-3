@@ -40,7 +40,7 @@ from canonical.widgets import HiddenUserWidget, LaunchpadRadioWidget
 from canonical.launchpad import _
 from lp.app.errors import UnexpectedFormData
 from lp.registry.browser.branding import BrandingChangeView
-from canonical.launchpad.fields import PublicPersonChoice
+from lp.services.fields import PublicPersonChoice
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.webapp import (
@@ -166,28 +166,6 @@ class TeamFormMixin:
         """Remove the visibility field if not authorized."""
         if not check_permission('launchpad.Commercial', self.context):
             self.form_fields = self.form_fields.omit('visibility')
-        else:
-            # XXX: BradCrittenden 2010-07-12 bug=602773:  This code can be
-            # removed when PRIVATE_MEMBERSHIP disappears fully.
-
-            # Remove the visibility selector and replace with one with a more
-            # limited vocabulary.
-            terms = [SimpleTerm(PersonVisibility.PUBLIC,
-                                PersonVisibility.PUBLIC.name,
-                                PersonVisibility.PUBLIC.title),
-                     SimpleTerm(PersonVisibility.PRIVATE,
-                                PersonVisibility.PRIVATE.name,
-                                PersonVisibility.PRIVATE.title),
-                     ]
-            visibility = self.form_fields['visibility'].field
-            field = Choice(
-                __name__=visibility.getName(),
-                title=visibility.title,
-                source=SimpleVocabulary(terms))
-            self.form_fields = (
-                self.form_fields.omit('visibility') +
-                form.Fields(field))
-            self.form_fields = self.form_fields.select(*self.field_names)
 
 
 class TeamEditView(TeamFormMixin, HasRenewalPolicyMixin,

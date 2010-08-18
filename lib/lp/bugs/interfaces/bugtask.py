@@ -56,8 +56,8 @@ from lazr.enum import (
     DBEnumeratedType, DBItem, EnumeratedType, Item, use_template)
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import (
-    BugField, ParticipatingPersonChoice, ProductNameField, SearchTag,
+from lp.services.fields import (
+    BugField, PersonChoice, ProductNameField, SearchTag,
     StrippedTextLine, Summary)
 from lp.bugs.interfaces.bugwatch import (
     IBugWatch, IBugWatchSet, NoBugTrackerFound, UnrecognizedBugTrackerURL)
@@ -437,7 +437,7 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
     statusexplanation = Text(
         title=_("Status notes (optional)"), required=False)
     assignee = exported(
-        ParticipatingPersonChoice(
+        PersonChoice(
             title=_('Assigned to'), required=False,
             vocabulary='ValidAssignee',
             readonly=True))

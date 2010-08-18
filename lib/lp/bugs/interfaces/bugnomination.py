@@ -26,7 +26,7 @@ from lazr.restful.declarations import (
 from lazr.restful.fields import Reference, ReferenceChoice
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import PublicPersonChoice
+from lp.services.fields import PublicPersonChoice
 from canonical.launchpad.interfaces.launchpad import IHasBug, IHasDateCreated
 from lp.bugs.interfaces.bug import IBug
 from lp.bugs.interfaces.bugtarget import IBugTarget

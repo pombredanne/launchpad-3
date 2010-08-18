@@ -19,7 +19,7 @@ from zope.schema import Datetime, Choice, Int, TextLine, Timedelta
 from CVS.protocol import CVSRoot, CvsRootError
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import PublicPersonChoice, URIField
+from lp.services.fields import PublicPersonChoice, URIField
 from canonical.launchpad.validators import LaunchpadValidationError
 from lp.code.enums import CodeImportReviewStatus, RevisionControlSystems
 from lp.code.interfaces.branch import IBranch

@@ -11,7 +11,6 @@ from lp.soyuz.model.packageset import *
 from lp.soyuz.model.sourcepackagerelease import *
 from lp.soyuz.model.binarypackagerelease import *
 from lp.soyuz.model.binarypackagename import *
-from lp.soyuz.model.publishedpackage import *
 from lp.soyuz.model.distributionsourcepackagerelease import *
 from lp.soyuz.model.distroseriesbinarypackage import *
 from lp.soyuz.model.distroseriespackagecache import *

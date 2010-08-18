@@ -49,7 +49,7 @@ from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
 from canonical.launchpad.database.librarian import LibraryFileAlias
 from canonical.launchpad.database.message import (
     Message, MessageChunk, MessageSet)
-from canonical.launchpad.fields import DuplicateBug
+from lp.services.fields import DuplicateBug
 from canonical.launchpad.helpers import shortlist
 from lp.hardwaredb.interfaces.hwdb import IHWSubmissionBugSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
@@ -694,7 +694,8 @@ class Bug(SQLBase):
 
         if recipients is not None:
             for subscriber in dupe_subscribers:
-                recipients.addDupeSubscriber(subscriber, dupe_details[subscriber])
+                recipients.addDupeSubscriber(
+                    subscriber, dupe_details[subscriber])
 
         return sorted(
             dupe_subscribers, key=operator.attrgetter("displayname"))
@@ -959,13 +960,21 @@ class Bug(SQLBase):
 
         filealias = getUtility(ILibraryFileAliasSet).create(
             name=filename, size=len(filecontent),
-            file=StringIO(filecontent), contentType=content_type)
+            file=StringIO(filecontent), contentType=content_type,
+            restricted=self.private)
 
         return self.linkAttachment(
             owner, filealias, comment, is_patch, description)
 
     def linkAttachment(self, owner, file_alias, comment, is_patch=False,
                        description=None):
+        """See `IBug`.
+
+        This method should only be called by addAttachment() and
+        FileBugViewBase.submit_bug_action, otherwise
+        we may get inconsistent settings of bug.private and
+        file_alias.restricted.
+        """
         if is_patch:
             attach_type = BugAttachmentType.PATCH
         else:
@@ -1387,6 +1396,9 @@ class Bug(SQLBase):
             else:
                 self.who_made_private = None
                 self.date_made_private = None
+
+            for attachment in self.attachments:
+                attachment.libraryfile.restricted = private
 
             # Correct the heat for the bug immediately, so that we don't have
             # to wait for the next calculation job for the adjusted heat.
@@ -1946,4 +1958,3 @@ class FileBugData:
     def asDict(self):
         """Return the FileBugData instance as a dict."""
         return self.__dict__.copy()
-

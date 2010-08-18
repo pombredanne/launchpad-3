@@ -6,7 +6,13 @@ from __future__ import with_statement
 
 __metaclass__ = type
 
-__all__ = []
+__all__ = [
+    'FakeOpenIDConsumer',
+    'FakeOpenIDResponse',
+    'IAccountSet_getByOpenIDIdentifier_monkey_patched',
+    'SRegResponse_fromSuccessResponse_stubbed',
+    'fill_login_form_and_submit',
+    ]
 
 from contextlib import contextmanager
 from datetime import datetime, timedelta
@@ -65,6 +71,7 @@ class StubbedOpenIDCallbackView(OpenIDCallbackView):
 
 class FakeConsumer:
     """An OpenID consumer that stashes away arguments for test instection."""
+
     def complete(self, params, requested_url):
         self.params = params
         self.requested_url = requested_url
@@ -72,6 +79,7 @@ class FakeConsumer:
 
 class FakeConsumerOpenIDCallbackView(OpenIDCallbackView):
     """An OpenID handler with fake consumer so arguments can be inspected."""
+
     def _getConsumer(self):
         self.fake_consumer = FakeConsumer()
         return self.fake_consumer
@@ -420,8 +428,10 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
         # the response and redirect to the starting_url specified in the
         # OpenID response.
         test_account = self.factory.makeAccount('Test account')
+
         class StubbedOpenIDCallbackViewLoggedIn(StubbedOpenIDCallbackView):
             account = test_account
+
         view, html = self._createViewWithResponse(
             test_account, response_status=FAILURE,
             response_msg='Server denied check_authentication',
@@ -532,7 +542,7 @@ class TestOpenIDReplayAttack(TestCaseWithFactory):
         fill_login_form_and_submit(browser, 'test@canonical.com', 'test')
         login_status = extract_text(
             find_tag_by_id(browser.contents, 'logincontrol'))
-        self.assertIn('Sample Person', login_status)
+        self.assertIn('name12', login_status)
 
         # Now we look up (in urls_redirected_to) the +openid-callback URL that
         # was used to complete the authentication and open it on a different
@@ -569,11 +579,13 @@ class FakeOpenIDRequest:
 
 
 class FakeOpenIDConsumer:
+
     def begin(self, url):
         return FakeOpenIDRequest()
 
 
 class StubbedOpenIDLogin(OpenIDLogin):
+
     def _getConsumer(self):
         return FakeOpenIDConsumer()
 

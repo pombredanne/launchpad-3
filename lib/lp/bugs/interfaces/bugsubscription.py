@@ -14,7 +14,7 @@ __all__ = [
 from zope.interface import Interface, Attribute
 from zope.schema import Int, Datetime
 from canonical.launchpad import _
-from canonical.launchpad.fields import ParticipatingPersonChoice
+from lp.services.fields import PersonChoice
 from lp.bugs.interfaces.bug import IBug
 
 from lazr.restful.declarations import (
@@ -22,13 +22,14 @@ from lazr.restful.declarations import (
     export_read_operation, exported)
 from lazr.restful.fields import Reference
 
+
 class IBugSubscription(Interface):
     """The relationship between a person and a bug."""
 
     export_as_webservice_entry()
 
     id = Int(title=_('ID'), readonly=True, required=True)
-    person = exported(ParticipatingPersonChoice(
+    person = exported(PersonChoice(
         title=_('Person'), required=True, vocabulary='ValidPersonOrTeam',
         readonly=True, description=_("The person's Launchpad ID or "
         "e-mail address.")))
@@ -36,7 +37,7 @@ class IBugSubscription(Interface):
         IBug, title=_("Bug"), required=True, readonly=True))
     date_created = exported(
         Datetime(title=_('Date subscribed'), required=True, readonly=True))
-    subscribed_by = exported(ParticipatingPersonChoice(
+    subscribed_by = exported(PersonChoice(
         title=_('Subscribed by'), required=True,
         vocabulary='ValidPersonOrTeam', readonly=True,
         description=_("The person who created this subscription.")))

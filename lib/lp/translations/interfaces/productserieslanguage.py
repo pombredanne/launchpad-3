@@ -41,6 +41,5 @@ class IProductSeriesLanguage(IRosettaStats, ITranslatedLanguage):
 class IProductSeriesLanguageSet(Interface):
     """The set of productserieslanguages."""
 
-    def getProductSeriesLanguage(productseries, language, variant=None,
-                                 pofile=None):
+    def getProductSeriesLanguage(productseries, language, pofile=None):
         """Return a PSL for a productseries and a language."""

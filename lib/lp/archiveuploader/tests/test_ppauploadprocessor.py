@@ -18,7 +18,6 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.errors import NotFoundError
-from lp.archiveuploader.uploadprocessor import UploadProcessor
 from lp.archiveuploader.tests.test_uploadprocessor import (
     TestUploadProcessorBase)
 from canonical.config import config
@@ -74,8 +73,7 @@ class TestPPAUploadProcessorBase(TestUploadProcessorBase):
 
         # Set up the uploadprocessor with appropriate options and logger
         self.options.context = 'insecure'
-        self.uploadprocessor = UploadProcessor(
-            self.options, self.layer.txn, self.log)
+        self.uploadprocessor = self.getUploadProcessor(self.layer.txn)
 
     def assertEmail(self, contents=None, recipients=None,
                     ppa_header='name16'):
@@ -1224,8 +1222,7 @@ class TestPPAUploadProcessorQuotaChecks(TestPPAUploadProcessorBase):
 
         # Re-initialize uploadprocessor since it depends on the new
         # transaction reset by switchDbUser.
-        self.uploadprocessor = UploadProcessor(
-            self.options, self.layer.txn, self.log)
+        self.uploadprocessor = self.getUploadProcessor(self.layer.txn)
 
     def testPPASizeQuotaSourceRejection(self):
         """Verify the size quota check for PPA uploads.

@@ -1235,14 +1235,14 @@
             class="lp.code.browser.sourcepackagerecipebuild.SourcePackageRecipeBuildCancelView"
             name="+cancel"
             template="../../app/templates/generic-edit.pt"
-            permission="launchpad.View"/>
+            permission="launchpad.Edit"/>
         <browser:page
             for="lp.code.interfaces.sourcepackagerecipebuild.ISourcePackageRecipeBuild"
             layer="lp.code.publisher.CodeLayer"
             class="lp.code.browser.sourcepackagerecipebuild.SourcePackageRecipeBuildRescoreView"
             name="+rescore"
             template="../../app/templates/generic-edit.pt"
-            permission="launchpad.View"/>
+            permission="launchpad.Edit"/>
         <browser:menus
             classes="
                 SourcePackageRecipeNavigationMenu
@@ -1269,7 +1269,7 @@
             for="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipe"
             layer="lp.code.publisher.CodeLayer"
             class="lp.code.browser.sourcepackagerecipe.SourcePackageRecipeDeleteView"
-            permission="zope.Public"
+            permission="launchpad.Edit"
             facet="branches"
             name="+delete"
             template="../../app/templates/generic-edit.pt"/>

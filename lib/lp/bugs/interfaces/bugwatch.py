@@ -23,7 +23,7 @@ from zope.schema import Choice, Datetime, Int, TextLine, Text
 from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import StrippedTextLine
+from lp.services.fields import StrippedTextLine
 from canonical.launchpad.interfaces.launchpad import IHasBug
 from lp.bugs.interfaces.bugtracker import IBugTracker
 
