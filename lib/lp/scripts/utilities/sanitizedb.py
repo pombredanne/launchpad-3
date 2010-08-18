@@ -90,7 +90,6 @@ class SanitizeDb(LaunchpadScript):
             'openidassociation',
             'openidconsumerassociation',
             'openidconsumernonce',
-            'openidnonce',
             'openidrpsummary',
             'requestedcds',
             'scriptactivity',
