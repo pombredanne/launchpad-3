@@ -254,6 +254,8 @@
             tal:attributes="src string:${lp_js}/bugs/subscriber.js"></script>
     <script type="text/javascript"
             tal:attributes="src string:${lp_js}/bugs/bugtask_index.js">
+    <script type="text/javascript"
+            tal:attributes="src string:${lp_js}/bugs/bug_subscription_widget.js">
     </script>
 
   </tal:devmode>
