@@ -9,9 +9,11 @@ In the 'devel' version of the web service, named operations that
 return collections will return a 'total_size_link' pointing to the
 total size of the collection.
 
-  >>> def get_collection(version):
+  >>> def get_collection(version, start=0, size=2):
   ...     collection = webservice.get(
-  ...         "/people?ws.op=find&text=salgado", api_version=version)
+  ...         ("/people?ws.op=find&text=s&ws.start=%s&ws.size=%s" %
+  ...          (start, size)),
+  ...         api_version=version)
   ...     return collection.jsonBody()
 
   >>> collection = get_collection("devel")
@@ -28,6 +30,24 @@ In previous versions, the same named operations will return a
   [u'entries', u'start', u'total_size']
   >>> print collection['total_size']
   1
+
+If the entire collection fits on one page, 'total_size' will be served
+instead of 'total_size_link', regardless of the version
+
+  >>> collection = get_collection("devel", size=100)
+  >>> print sorted(collection.keys())
+  [u'entries', u'start', u'total_size']
+  >>> print collection['total_size']
+  5
+
+If the last page of the collection is fetched, 'total_size' will be
+served instead of 'total_size_link', regardless of the version.
+
+  >>> collection = get_collection("devel", start=4)
+  >>> print sorted(collection.keys())
+  [u'entries', u'start', u'total_size']
+  >>> print collection['total_size']
+  5
 
 Mutator operations
 ==================
