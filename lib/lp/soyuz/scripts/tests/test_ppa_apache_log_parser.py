@@ -40,8 +40,8 @@ class TestPathParsing(TestCase):
         self.assertIs(None, get_ppa_file_key('/foo'))
 
     def test_get_ppa_file_key_ignores_non_binary_path(self):
-        # A path with extra path segments returns None, to indicate that
-        # it should be ignored.
+        # A path pointing to a file not from a binary package returns
+        # None to indicate that it should be ignored.
         self.assertIs(None, get_ppa_file_key(
             '/cprov/ppa/ubuntu/pool/main/f/foo/foo_1.2.3-4.dsc'))
 

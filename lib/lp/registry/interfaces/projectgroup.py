@@ -18,7 +18,7 @@ from zope.interface import Interface, Attribute
 from zope.schema import Bool, Datetime, Int, Object, Text, TextLine
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import (
+from lp.services.fields import (
     PublicPersonChoice, Summary, Title, URIField)
 from lp.app.interfaces.headings import IRootContext
 from lp.code.interfaces.branchvisibilitypolicy import (
@@ -43,7 +43,7 @@ from lp.translations.interfaces.translationgroup import (
 from lp.registry.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget)
 from canonical.launchpad.validators.name import name_validator
-from canonical.launchpad.fields import (
+from lp.services.fields import (
     IconImageUpload, LogoImageUpload, MugshotImageUpload, PillarNameField)
 
 from lazr.restful.fields import CollectionField, Reference, ReferenceChoice

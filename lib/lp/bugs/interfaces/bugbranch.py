@@ -19,7 +19,7 @@ from lazr.restful.declarations import export_as_webservice_entry, exported
 from lazr.restful.fields import ReferenceChoice
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import BugField, Summary
+from lp.services.fields import BugField, Summary
 from canonical.launchpad.interfaces.launchpad import IHasBug, IHasDateCreated
 from lp.bugs.interfaces.bugtask import IBugTask
 from lp.code.interfaces.branchtarget import IHasBranchTarget

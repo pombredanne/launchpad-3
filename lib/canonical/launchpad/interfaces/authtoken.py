@@ -16,7 +16,7 @@ from zope.schema import Choice, Datetime, Int, Text, TextLine
 from zope.interface import Attribute, Interface
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import PasswordField
+from lp.services.fields import PasswordField
 from lazr.enum import DBEnumeratedType, DBItem
 
 
