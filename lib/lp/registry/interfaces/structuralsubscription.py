@@ -22,7 +22,7 @@ from zope.schema import Bool, Choice, Datetime, Int
 from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import (
+from lp.services.fields import (
     PersonChoice, PublicPersonChoice)
 from lp.registry.interfaces.person import IPerson
 

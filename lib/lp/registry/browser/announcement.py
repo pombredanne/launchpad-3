@@ -28,7 +28,7 @@ from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.browser.feeds import (
     AnnouncementsFeedLink, FeedsMixin, RootAnnouncementsFeedLink)
-from canonical.launchpad.fields import AnnouncementDate, Summary, Title
+from lp.services.fields import AnnouncementDate, Summary, Title
 from canonical.launchpad.interfaces.validation import valid_webref
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
