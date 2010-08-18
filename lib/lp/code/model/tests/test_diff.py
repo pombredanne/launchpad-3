@@ -3,6 +3,8 @@
 
 """Tests for Diff, etc."""
 
+from __future__ import with_statement
+
 __metaclass__ = type
 
 
@@ -26,6 +28,7 @@ from lp.code.model.directbranchcommit import DirectBranchCommit
 from lp.code.interfaces.diff import (
     IDiff, IPreviewDiff, IStaticDiff, IStaticDiffSource)
 from lp.testing import login, login_person, TestCaseWithFactory
+from lp.services.osutils import override_environ
 
 
 class RecordLister(logging.Handler):
@@ -285,7 +288,10 @@ class TestStaticDiff(TestCaseWithFactory):
         """Ensure that acquire returns the existing StaticDiff."""
         self.useBzrBranches(direct_database=True)
         branch, tree = self.create_branch_and_tree()
-        tree.commit('First commit', rev_id='rev1')
+        # XXX: AaronBentley 2010-08-06 bug=614404: a bzr username is
+        # required to generate the revision-id.
+        with override_environ(BZR_EMAIL='me@example.com'):
+            tree.commit('First commit', rev_id='rev1')
         diff1 = StaticDiff.acquire('null:', 'rev1', tree.branch.repository)
         diff2 = StaticDiff.acquire('null:', 'rev1', tree.branch.repository)
         self.assertIs(diff1, diff2)
@@ -294,7 +300,10 @@ class TestStaticDiff(TestCaseWithFactory):
         """The existing object is used even if the repository is different."""
         self.useBzrBranches(direct_database=True)
         branch1, tree1 = self.create_branch_and_tree('tree1')
-        tree1.commit('First commit', rev_id='rev1')
+        # XXX: AaronBentley 2010-08-06 bug=614404: a bzr username is
+        # required to generate the revision-id.
+        with override_environ(BZR_EMAIL='me@example.com'):
+            tree1.commit('First commit', rev_id='rev1')
         branch2, tree2 = self.create_branch_and_tree('tree2')
         tree2.pull(tree1.branch)
         diff1 = StaticDiff.acquire('null:', 'rev1', tree1.branch.repository)
@@ -305,8 +314,11 @@ class TestStaticDiff(TestCaseWithFactory):
         """A new object is created if there is no existant matching object."""
         self.useBzrBranches(direct_database=True)
         branch, tree = self.create_branch_and_tree()
-        tree.commit('First commit', rev_id='rev1')
-        tree.commit('Next commit', rev_id='rev2')
+        # XXX: AaronBentley 2010-08-06 bug=614404: a bzr username is
+        # required to generate the revision-id.
+        with override_environ(BZR_EMAIL='me@example.com'):
+            tree.commit('First commit', rev_id='rev1')
+            tree.commit('Next commit', rev_id='rev2')
         diff1 = StaticDiff.acquire('null:', 'rev1', tree.branch.repository)
         diff2 = StaticDiff.acquire('rev1', 'rev2', tree.branch.repository)
         self.assertIsNot(diff1, diff2)

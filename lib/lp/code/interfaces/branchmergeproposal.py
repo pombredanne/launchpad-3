@@ -36,7 +36,7 @@ from zope.schema import (
     Bytes, Bool, Choice, Datetime, Int, Object, Text, TextLine)
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import PublicPersonChoice, Summary, Whiteboard
+from lp.services.fields import PublicPersonChoice, Summary, Whiteboard
 from canonical.launchpad.interfaces.launchpad import IPrivacy
 from lp.bugs.interfaces.bug import IBug
 from lp.code.enums import BranchMergeProposalStatus, CodeReviewVote
