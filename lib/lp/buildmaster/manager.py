@@ -290,6 +290,10 @@ class SlaveScanner:
             # Decide if we need to terminate the job or fail the
             # builder.
             self._incrementFailureCounts(builder)
+            self.logger.info(
+                "builder failure count: %s, job failure count: %s" % ( 
+                    builder.failure_count,
+                    builder.currentjob.specific_job.build.failure_count))
             BaseDispatchResult(slave=None).assessFailureCounts(builder)
             transaction.commit()
 
