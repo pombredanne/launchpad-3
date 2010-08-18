@@ -188,6 +188,12 @@ class ValidPersonCache(SQLBase):
     """Flags if a Person is active and usable in Launchpad.
 
     This is readonly, as this is a view in the database.
+
+    Note that it performs poorly at least some of the time, and if
+    EmailAddress and Person are already being queried, its probably better to
+    query Account directly. See bug
+    https://bugs.edge.launchpad.net/launchpad-registry/+bug/615237 for some
+    corroborating information.
     """
 
 
@@ -1499,8 +1505,9 @@ class Person(
                 Archive.id == Select(Min(Archive.id),
                     Archive.owner == Person.id, Archive),
                 Archive.purpose == ArchivePurpose.PPA)))
-        if need_preferred_email:
-            # Teams don't have email.
+        # checking validity requires having a preferred email.
+        if need_preferred_email or need_validity:
+            # Teams don't have email, so a left join
             origin.append(
                 LeftJoin(EmailAddress, EmailAddress.person == Person.id))
             columns.append(EmailAddress)
@@ -1510,8 +1517,11 @@ class Person(
         if need_validity:
             # May find invalid persons
             origin.append(
-                LeftJoin(ValidPersonCache, ValidPersonCache.id == Person.id))
-            columns.append(ValidPersonCache)
+                LeftJoin(Account, Person.account == Account.id))
+            columns.append(Account)
+            conditions = AND(conditions,
+                Or(Account.status == None,
+                    Account.status == AccountStatus.ACTIVE))
         if len(columns) == 1:
             columns = columns[0]
             # Return a simple ResultSet
@@ -1551,8 +1561,13 @@ class Person(
                 email = row[index]
                 index += 1
                 cache_property(result, '_preferredemail_cached', email)
+            #-- validity caching
             if need_validity:
-                valid = row[index] is not None
+                # valid if:
+                # -- valid account found
+                valid = (row[index] is not None
+                    # -- preferred email found
+                    and result.preferredemail is not None)
                 index += 1
                 cache_property(result, '_is_valid_person_cached', valid)
             return result
