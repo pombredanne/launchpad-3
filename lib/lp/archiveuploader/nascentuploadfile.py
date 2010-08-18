@@ -901,7 +901,7 @@ class BaseBinaryUploadFile(PackageUploadFile):
             debug_package = None
 
         user_defined_fields = self.extractUserDefinedFields(
-            [(field, encoded[field]) for field in self.control])
+            [(field, encoded[field]) for field in self.control.iterkeys()])
 
         binary = build.createBinaryPackageRelease(
             binarypackagename=binary_name,

@@ -637,7 +637,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
             ISourcePackageNameSet).getOrCreateByName(self.source)
 
         user_defined_fields = self.extractUserDefinedFields([
-            (field, encoded[field]) for field in self._dict])
+            (field, encoded[field]) for field in self._dict.iterkeys()])
 
         release = self.policy.distroseries.createUploadedSourcePackageRelease(
             sourcepackagename=source_name,
@@ -779,6 +779,7 @@ def findChangelog(dsc_file, source_dir, logger):
     # Move the changelog file out of the package direcotry
     logger.debug("Found changelog")
     dsc_file.changelog_path = changelog_file
+
 
 def check_format_1_0_files(filename, file_type_counts, component_counts,
                            bzip2_count):

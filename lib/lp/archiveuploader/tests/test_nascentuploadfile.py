@@ -261,7 +261,7 @@ class DebBinaryUploadFileTests(PackageUploadFileTestCase):
         self.assertEquals("0.42", bpr.version)
 
     def test_user_defined_fields(self):
-        # Test that storeInDatabase stores user defined fields
+        # storeInDatabase stores user defined fields.
         uploadfile = self.createDebBinaryUploadFile(
             "foo_0.42_i386.deb", "main/python", "unknown", "mypkg", "0.42",
             None)
@@ -274,4 +274,20 @@ class DebBinaryUploadFileTests(PackageUploadFileTestCase):
             [
                 [u"Homepage", u"http://samba.org/~jelmer/dulwich"],
                 [u"Python-Version", u"2.5"]
+            ], bpr.user_defined_fields)
+
+    def test_user_defined_fields_newlines(self):
+        # storeInDatabase stores user defined fields and keeps newlines.
+        uploadfile = self.createDebBinaryUploadFile(
+            "foo_0.42_i386.deb", "main/python", "unknown", "mypkg", "0.42",
+            None)
+        control = self.getBaseControl()
+        control["RandomData"] = "Foo\nbar\nbla\n"
+        uploadfile.parseControl(control)
+        build = self.factory.makeBinaryPackageBuild()
+        bpr = uploadfile.storeInDatabase(build)
+        self.assertEquals(
+            [
+                [u"RandomData", u"Foo\nbar\nbla\n"],
+                [u"Homepage", u"http://samba.org/~jelmer/dulwich"],
             ], bpr.user_defined_fields)

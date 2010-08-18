@@ -173,7 +173,8 @@ class ChangesFileTests(TestCase):
         self.assertEquals([], list(changes.processAddresses()))
         self.assertEquals(
             "Something changed\n"
-            " -- Somebody <somebody@ubuntu.com>   Fri, 25 Jun 2010 11:20:22 -0600",
+            " -- Somebody <somebody@ubuntu.com>   "
+            "Fri, 25 Jun 2010 11:20:22 -0600",
             changes.simulated_changelog)
 
     def test_requires_changed_by(self):
