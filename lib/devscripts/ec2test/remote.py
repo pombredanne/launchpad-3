@@ -78,6 +78,12 @@ class SummaryResult(unittest.TestResult):
             self._formatError(
                 'FAILURE', test, self._exc_info_to_string(error, test)))
 
+    def stopTest(self, test):
+        super(SummaryResult, self).stopTest(test)
+        # At the very least, we should be sure that a test's output has been
+        # completely displayed once it has stopped.
+        self.stream.flush()
+
 
 class FlagFallStream:
     """Wrapper around a stream that only starts forwarding after a flagfall.

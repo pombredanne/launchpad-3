@@ -112,6 +112,15 @@ class TestSummaryResult(TestCase):
         result.addFailure(test, error)
         self.assertEqual(expected, stream.getvalue())
 
+    def test_stopTest_flushes_stream(self):
+        # SummaryResult.stopTest() flushes the stream.
+        stream = StringIO()
+        flush_calls = []
+        stream.flush = lambda: flush_calls.append(None)
+        result = SummaryResult(stream)
+        result.stopTest(self)
+        self.assertEqual(1, len(flush_calls))
+
 
 class TestPidfileHelpers(TestCase):
     """Tests for `write_pidfile` and `remove_pidfile`."""
