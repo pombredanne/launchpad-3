@@ -641,6 +641,7 @@ class TestSlaveScannerScan(TrialTestCase):
         self.assertEqual(slave.name, builder.name)
         self.assertEqual(slave.url, builder.url)
         self.assertEqual(slave.vm_host, builder.vm_host)
+        self.assertEqual(0, builder.failure_count)
 
         self.assertEqual(
             [('ensurepresent',
@@ -673,6 +674,9 @@ class TestSlaveScannerScan(TrialTestCase):
         # Reset sampledata builder.
         builder = getUtility(IBuilderSet)['bob']
         self._resetBuilder(builder)
+        # Set this to 1 here so that _checkDispatch can make sure it's
+        # reset to 0 after a successful dispatch.
+        builder.failure_count = 1
 
         # Run 'scan' and check its result.
         LaunchpadZopelessLayer.switchDbUser(config.builddmaster.dbuser)

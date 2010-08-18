@@ -362,6 +362,9 @@ class SlaveScanner:
             self.builder.name, self.builder.url, self.builder.vm_host)
         candidate = self.builder.findAndStartJob(buildd_slave=slave)
         if self.builder.currentjob is not None:
+            # After a successful dispatch we can reset the
+            # failure_count.
+            self.builder.failure_count = 0
             transaction.commit()
             return slave
 
