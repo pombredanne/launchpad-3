@@ -11,8 +11,10 @@ import gzip
 from itertools import izip
 import os
 from StringIO import StringIO
+import subprocess
 import sys
 import tempfile
+import time
 import traceback
 import unittest
 
@@ -20,6 +22,8 @@ from bzrlib.config import GlobalConfig
 from bzrlib.tests import TestCaseWithTransport
 
 from testtools import TestCase
+from testtools.content import Content
+from testtools.content_type import ContentType
 
 from devscripts.ec2test.remote import (
     FlagFallStream,
@@ -477,6 +481,49 @@ class TestWebTestLogger(TestCaseWithTransport, RequestHelpers):
         self.assertEqual(
             "\n\nERROR IN TESTRUNNER\n\n%s" % (stack,),
             logger.get_summary_contents())
+
+
+class TestDaemonizationInteraction(TestCaseWithTransport, RequestHelpers):
+
+    script_file = 'remote_daemonization_test.py'
+
+    def run_script(self, script_file, pidfile, directory, logfile):
+        path = os.path.join(os.path.dirname(__file__), script_file)
+        popen = subprocess.Popen(
+            [sys.executable, path, pidfile, directory, logfile],
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdout, stderr = popen.communicate()
+        self.assertEqual((0, '', ''), (popen.returncode, stdout, stderr))
+        # Make sure the daemon is finished doing its thing.
+        while os.path.exists(pidfile):
+            time.sleep(0.01)
+        # If anything was written to 'logfile' while the script was running,
+        # we want it to appear in our test errors.  This way, stack traces in
+        # the script are visible to us as test runners.
+        if os.path.exists(logfile):
+            content_type = ContentType("text", "plain", {"charset": "utf8"})
+            content = Content(content_type, open(logfile).read)
+            self.addDetail('logfile', content)
+
+    def test_daemonization(self):
+        # Daemonizing something can do funny things to its behavior. This test
+        # runs a script that's very similar to remote.py but only does
+        # "logger.prepare".
+        pidfile = "%s.pid" % self.id()
+        directory = 'www'
+        logfile = "%s.log" % self.id()
+        self.run_script(self.script_file, pidfile, directory, logfile)
+        logger = self.make_logger()
+        logger.prepare()
+        self.assertEqual(
+            logger.get_summary_contents(),
+            open(os.path.join(directory, 'summary.log')).read())
+        self.assertEqual(
+            logger.get_full_log_contents(),
+            open(os.path.join(directory, 'current_test.log')).read())
+        self.assertEqual(
+            logger.get_index_contents(),
+            open(os.path.join(directory, 'index.html')).read())
 
 
 class TestResultHandling(TestCaseWithTransport, RequestHelpers):
