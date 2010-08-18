@@ -164,13 +164,14 @@ class BaseDispatchResult:
         from lp.buildmaster.interfaces.builder import IBuilderSet
         return getUtility(IBuilderSet)[self.slave.name]
 
-    def assessFailureCounts(self):
+    def assessFailureCounts(self, builder=None):
         """View builder/job failure_count and work out which needs to die.
         
         :return: True if we disabled something, False if we did not.
         """
         # Avoiding circular imports.
-        builder = self._getBuilder()
+        if builder is None:
+            builder = self._getBuilder()
         build_job = builder.currentjob.specific_job.build
 
         if builder.failure_count == build_job.failure_count:
@@ -281,8 +282,17 @@ class SlaveScanner:
             error = Failure()
             self.logger.info("Scanning failed with: %s\n%s" %
                 (error.getErrorMessage(), error.getTraceback()))
-            # We should probably detect continuous failures here and mark
-            # the builder down.
+
+            # Avoid circular import.
+            from lp.buildmaster.interfaces.builder import IBuilderSet
+            builder = getUtility(IBuilderSet)[self.builder_name]
+
+            # Decide if we need to terminate the job or fail the
+            # builder.
+            self._incrementFailureCounts(builder)
+            BaseDispatchResult(slave=None).assessFailureCounts(builder)
+            transaction.commit()
+
             self.scheduleNextScanCycle()
 
     @write_transaction
@@ -478,10 +488,8 @@ class SlaveScanner:
         self.logger.error('%s resume failure: %s' % (slave, error_text))
         return self.reset_result(slave, error_text)
 
-    def _incrementFailureCounts(self, slave):
+    def _incrementFailureCounts(self, builder):
         # Avoid circular import.
-        from lp.buildmaster.interfaces.builder import IBuilderSet
-        builder = getUtility(IBuilderSet)[slave.name]
         builder.failure_count += 1
         builder.currentjob.specific_job.build.failure_count += 1
 
@@ -492,6 +500,9 @@ class SlaveScanner:
         `FailDispatchResult`, if it was a communication failure, simply
         reset the slave by returning a `ResetDispatchResult`.
         """
+        from lp.buildmaster.interfaces.builder import IBuilderSet
+        builder = getUtility(IBuilderSet)[slave.name]
+
         # XXX these DispatchResult classes are badly named and do the
         # same thing.  We need to fix that.
         self.logger.debug(
@@ -502,7 +513,7 @@ class SlaveScanner:
                 '%s communication failed (%s)' %
                 (slave, response.getErrorMessage()))
             self.slaveConversationEnded()
-            self._incrementFailureCounts(slave)
+            self._incrementFailureCounts(builder)
             return self.fail_result(slave)
 
         if isinstance(response, list) and len(response) == 2:
@@ -521,7 +532,7 @@ class SlaveScanner:
             '%s failed to dispatch (%s)' % (slave, info))
 
         self.slaveConversationEnded()
-        self._incrementFailureCounts(slave)
+        self._incrementFailureCounts(builder)
         return self.fail_result(slave, info)
 
 

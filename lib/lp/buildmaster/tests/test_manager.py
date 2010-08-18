@@ -797,6 +797,35 @@ class TestSlaveScannerScan(TrialTestCase):
         d.addCallback(self._checkJobUpdated, builder, job)
         return d
 
+    def test_scan_assesses_failure_exceptions(self):
+        # If scan() fails with an exception, failure_counts should be
+        # incremented and tested.
+        def fake_scan():
+            raise Exception("fake exception")
+        manager = self._getManager()
+        manager.scan = fake_scan
+        manager.scheduleNextScanCycle = FakeMethod()
+        self.patch(BaseDispatchResult, 'assessFailureCounts', FakeMethod())
+        builder = getUtility(IBuilderSet)[manager.builder_name]
+
+        # Failure counts start at zero.
+        self.assertEqual(0, builder.failure_count)
+        self.assertEqual(
+            0, builder.currentjob.specific_job.build.failure_count)
+
+        # startCycle() calls scan() which is our fake one that throws an
+        # exception.
+        manager.startCycle()
+
+        # Failure counts should be updated, and the assessment method
+        # should have been called.
+        self.assertEqual(1, builder.failure_count)
+        self.assertEqual(
+            1, builder.currentjob.specific_job.build.failure_count)
+
+        self.assertEqual(
+            1, BaseDispatchResult.assessFailureCounts.call_count)
+
 
 class TestDispatchResult(unittest.TestCase):
     """Tests `BaseDispatchResult` variations.
