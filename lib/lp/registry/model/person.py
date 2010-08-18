@@ -49,7 +49,7 @@ from sqlobject import (
 from sqlobject.sqlbuilder import AND, OR, SQLConstant
 from storm.store import EmptyResultSet, Store
 from storm.expr import (
-    Alias, And, Desc, Exists, In, Join, LeftJoin, Lower, Min, Not, Or, Select, 
+    Alias, And, Desc, Exists, In, Join, LeftJoin, Lower, Min, Not, Or, Select,
     SQL)
 from storm.info import ClassAlias
 
@@ -2068,20 +2068,30 @@ class Person(
 
     def getPathsToTeams(self):
         """See `Iperson`."""
+        # Get all of the teams this person participates in.
         teams = list(self.teams_participated_in)
-        all_user_memberships = [(self, team) for team in teams] 
+        all_user_memberships = [(self, team) for team in teams]
+
+        # Get all of the memberships for any of the teams this person is
+        # a participant of.
         store = Store.of(self)
         all_direct_memberships = store.find(TeamMembership,
             TeamMembership.personID.is_in(
                 [team.id for team in teams] + [self.id]))
-        user_memberships = [membership for membership in 
+
+        # Pull out the memberships directly used by this person.
+        user_memberships = [membership for membership in
             all_direct_memberships if membership.person == self]
         all_direct_memberships = [(membership.team, membership.person) for
             membership in all_direct_memberships.order_by(
                 Desc(TeamMembership.datejoined), Desc(TeamMembership.id))]
+
+        # Create a graph from the edges provided by the other data sets
         graph = dict(all_direct_memberships)
         graph.update(all_user_memberships)
-        paths = {} 
+
+        # Build the teams paths from that graph.
+        paths = {}
         for team in teams:
             path = [team]
             step = team
@@ -2090,8 +2100,7 @@ class Person(
                 path.append(step)
             paths[team] = path
         return  paths, user_memberships
-            
-            
+
     @property
     def teams_participated_in(self):
         """See `IPerson`."""
