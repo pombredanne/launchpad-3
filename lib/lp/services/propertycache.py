@@ -69,18 +69,21 @@ It is safe to delete names from the cache even if there is no value cached.
 
 A cache manager can be used to empty the cache.
 
+    >>> manager = IPropertyCacheManager(cache)
+
     >>> cache.bar = 123
     >>> cache.baz = 456
     >>> sorted(cache)
     ['bar', 'baz']
 
-    >>> IPropertyCacheManager(cache).clear()
+    >>> manager.clear()
     >>> list(cache)
     []
 
-A cache manager can be obtained by adaption from a non-cache objects too.
+A cache manager can be obtained by adaption from non-cache objects too.
 
-    >>> IPropertyCacheManager(foo).cache is cache
+    >>> manager = IPropertyCacheManager(foo)
+    >>> manager.cache is cache
     True
 
 """
