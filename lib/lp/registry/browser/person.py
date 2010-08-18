@@ -207,7 +207,7 @@ from lp.registry.browser.menu import (
     TopLevelMenuMixin)
 from lp.answers.browser.questiontarget import SearchQuestionsView
 
-from canonical.launchpad.fields import LocationField
+from lp.services.fields import LocationField
 
 from canonical.launchpad.mailnotification import send_direct_contact_email
 from canonical.launchpad.validators.email import valid_email
@@ -5180,7 +5180,7 @@ class PersonRelatedSoftwareView(LaunchpadView):
     @cachedproperty
     def related_projects_count(self):
         """The number of project owned or driven by this person."""
-        return len(self._related_projects())
+        return self._related_projects().count()
 
     @cachedproperty
     def has_more_related_projects(self):
@@ -5647,24 +5647,32 @@ class ContactViaWebNotificationRecipientSet:
         :type person_or_team: `IPerson`.
         """
         if self._primary_reason is self.TO_USER:
-            reason = 'the "Contact this user" link on your profile page'
+            reason = (
+                'using the "Contact this user" link on your profile page\n'
+                '(%s)' % canonical_url(person_or_team))
             header = 'ContactViaWeb user'
         elif self._primary_reason is self.TO_OWNER:
             reason = (
-                'the "Contact this team" owner link on the '
-                '%s team page' % person_or_team.displayname)
+                'using the "Contact this team\'s owner" link on the '
+                '%s team page\n(%s)' % (
+                    person_or_team.displayname,
+                    canonical_url(person_or_team)))
             header = 'ContactViaWeb owner (%s team)' % person_or_team.name
         elif self._primary_reason is self.TO_TEAM:
             reason = (
-                'the "Contact this team" link on the '
-                '%s team page' % person_or_team.displayname)
+                'using the "Contact this team" link on the '
+                '%s team page\n(%s)' % (
+                    person_or_team.displayname,
+                    canonical_url(person_or_team)))
             header = 'ContactViaWeb member (%s team)' % person_or_team.name
         else:
             # self._primary_reason is self.TO_MEMBERS.
             reason = (
-                'the "Contact this team" link on the %s\n'
-                'team page to each member directly' %
-                person_or_team.displayname)
+                'to each member of the %s team using the '
+                '"Contact this team" link on the %s team page\n(%s)' % (
+                    person_or_team.displayname,
+                    person_or_team.displayname,
+                    canonical_url(person_or_team)))
             header = 'ContactViaWeb member (%s team)' % person_or_team.name
         return (reason, header)
 

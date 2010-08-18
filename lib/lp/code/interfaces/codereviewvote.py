@@ -12,7 +12,7 @@ from zope.interface import Interface
 from zope.schema import Bool, Datetime, Int, TextLine
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import PublicPersonChoice
+from lp.services.fields import PublicPersonChoice
 from lp.code.interfaces.branchmergeproposal import (
     IBranchMergeProposal)
 from lp.code.interfaces.codereviewcomment import (

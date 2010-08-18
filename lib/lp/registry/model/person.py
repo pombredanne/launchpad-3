@@ -61,8 +61,8 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
     cursor, quote, quote_like, sqlvalues, SQLBase)
 
-from canonical.cachedproperty import (
-    cachedproperty, cache_property, clear_property)
+from canonical.cachedproperty import (cachedproperty, cache_property,
+    clear_property)
 
 from canonical.lazr.utils import get_current_browser_request
 
@@ -903,14 +903,16 @@ class Person(
                 SELECT name, 3 as kind, displayname
                 FROM product
                 WHERE
-                    driver = %(person)s
-                    OR owner = %(person)s
+                    active = True AND
+                    (driver = %(person)s
+                    OR owner = %(person)s)
                 UNION
                 SELECT name, 2 as kind, displayname
                 FROM project
                 WHERE
-                    driver = %(person)s
-                    OR owner = %(person)s
+                    active = True AND
+                    (driver = %(person)s
+                    OR owner = %(person)s)
                 UNION
                 SELECT name, 1 as kind, displayname
                 FROM distribution
@@ -922,7 +924,12 @@ class Person(
             """ % sqlvalues(person=self))
         results = IStore(self).using(origin).find(find_spec)
         results = results.order_by('kind', 'displayname')
-        return [pillar_name for pillar_name, kind, displayname in results]
+
+        def get_pillar_name(result):
+            pillar_name, kind, displayname = result
+            return pillar_name
+
+        return DecoratedResultSet(results, get_pillar_name)
 
     def getOwnedProjects(self, match_name=None):
         """See `IPerson`."""
@@ -1534,6 +1541,7 @@ class Person(
         # Adapt the result into a cached Person.
         columns = tuple(columns)
         raw_result = store.using(*origin).find(columns, conditions)
+
         def prepopulate_person(row):
             result = row[0]
             index = 1

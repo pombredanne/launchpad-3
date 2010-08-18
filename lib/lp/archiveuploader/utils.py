@@ -266,6 +266,10 @@ def fix_maintainer(maintainer, field_name="Maintainer"):
     # Force the name to be UTF-8
     name = force_to_utf8(name)
 
+    # If the maintainer's name contains a full stop then the whole field will
+    # not work directly as an email address due to a misfeature in the syntax
+    # specified in RFC822; see Debian policy 5.6.2 (Maintainer field syntax)
+    # for details.
     if name.find(',') != -1 or name.find('.') != -1:
         rfc822_maint = "%s (%s)" % (email, name)
         rfc2047_maint = "%s (%s)" % (email, rfc2047_name)

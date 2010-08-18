@@ -27,7 +27,7 @@ from zope.schema import Choice
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
-from canonical.launchpad.fields import URIField
+from lp.services.fields import URIField
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.errors import NotFoundError
 from lp.code.enums import (
