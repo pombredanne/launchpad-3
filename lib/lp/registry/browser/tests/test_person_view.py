@@ -344,8 +344,8 @@ class TestPersonParticipationView(TestCaseWithFactory):
             participation['displayname'] for participation in participations]
         self.assertEqual(['A', 'B', 'C'], display_names)
         self.assertEqual(None, participations[0]['via'])
-        self.assertEqual('Membership through A', participations[1]['via'])
-        self.assertEqual('Membership through B', participations[2]['via'])
+        self.assertEqual('A', participations[1]['via'])
+        self.assertEqual('B, A', participations[2]['via'])
 
     def test_has_participations_false(self):
         participations = self.view.active_participations

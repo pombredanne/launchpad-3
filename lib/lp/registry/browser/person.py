@@ -3091,18 +3091,21 @@ class PersonParticipationView(LaunchpadView):
                 "The membership or team argument must be provided, not both.")
 
         if via is not None:
-            via = "Membership through %s" % via.displayname
+            # When showing the path, it's unnecessary to show the team in
+            # question at the beginning of the path, or the user at the
+            # end of the path.
+            via = COMMASPACE.join(
+                [via_team.displayname for via_team in via[1:-1]])
 
         if membership is None:
-            #we have membership via an indirect team, and can use
-            #sane defaults
+            # Membership is via an indirect team; sane defaults exist.
 
-            #the user can only be a member of this team
+            # The user can only be a member of this team.
             role = 'Member'
-            #the user never joined, and can't have a join date
+            # The user never joined, and can't have a join date.
             datejoined = None
         else:
-            #the member is a direct member, so we can use membership data
+            # The member is a direct member; use the membership data.
             team = membership.team
             datejoined = membership.datejoined
             if membership.person == team.teamowner:
@@ -3128,20 +3131,27 @@ class PersonParticipationView(LaunchpadView):
     @cachedproperty
     def active_participations(self):
         """Return the participation information for active memberships."""
-        participations = [self._asParticipation(membership=membership)
-                for membership in self.context.team_memberships
-                if check_permission('launchpad.View', membership.team)]
-        for team in self.context.teams_indirectly_participated_in:
-            if not check_permission('launchpad.View', team):
+        paths, memberships = self.context.getPathsToTeams()
+        direct_teams = [membership.team for membership in memberships]
+        indirect_teams = [team for team in paths.keys() if
+            team not in direct_teams]
+        participations = []
+
+        # First, create participation for all direct memberships.
+        for membership in memberships:
+            # Add a participation record for the membership if allowed.
+            if check_permission('launchpad.View', membership.team):
+                participations.append(self._asParticipation(
+                    membership=membership))
+
+        # Second, create participation for all indirect memberships,
+        # using the remaining paths.
+        for indirect_team in indirect_teams:
+            if not check_permission('launchpad.View', indirect_team):
                 continue
-            # The key points of the path for presentation are:
-            # [-?] indirect memberships, [-2] direct membership, [-1] team.
-            
-            # Passing in limit=1 on findPathToTeam gets just the team
-            # providing membership, which is all that matters.
-            team_path = self.context.findPathToTeam(team, limit=1)
             participations.append(
-                self._asParticipation(via=team_path[-2], team=team))
+                self._asParticipation(via=paths[indirect_team],
+                    team=indirect_team))
         return sorted(participations, key=itemgetter('displayname'))
 
     @cachedproperty
