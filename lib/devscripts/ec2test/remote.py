@@ -649,16 +649,18 @@ def daemonize(pid_filename):
     # this seems like the sort of thing that ought to be in the
     # standard library :-/
     pid = os.fork()
-    if (pid == 0): # child 1
+    if (pid == 0): # Child 1
         os.setsid()
         pid = os.fork()
-        if (pid == 0): # child 2
+        if (pid == 0): # Child 2, the daemon.
             pass # lookie, we're ready to do work in the daemon
         else:
             os._exit(0)
-    else:
-        # give the pidfile a chance to be written before we exit.
-        time.sleep(1)
+    else: # Parent
+        # Make sure the pidfile is written before we exit, so that people
+        # who've chosen to daemonize can quickly rectify their mistake.
+        while not os.path.exists(pid_filename):
+            time.sleep(0.01)
         os._exit(0)
 
     # write a pidfile ASAP
