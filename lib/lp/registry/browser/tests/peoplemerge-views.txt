@@ -251,9 +251,8 @@ A team with a mailing list cannot be deleted.
     >>> print find_tag_by_id(content, 'field.actions.delete')
     None
 
-The registry experts can delete a team with a new email address (from
-an import), which will be invisible, since only preferred email addresses are
-shown for teams.
+The registry experts can delete a team with an email address. The email
+address is deleted instead of being transferred to the registry experts team.
 
     >>> from canonical.launchpad.interfaces.emailaddress import (
     ...     IEmailAddressSet, EmailAddressStatus)
@@ -275,6 +274,9 @@ shown for teams.
     >>> for notification in view.request.response.notifications:
     ...     print notification.message
     Team deleted.
+    >>> emails = getUtility(IEmailAddressSet).getByPerson(registry_experts)
+    >>> emails.count()
+    0
 
 Private teams can be deleted by admins.
 

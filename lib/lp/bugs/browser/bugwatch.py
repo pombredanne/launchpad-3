@@ -22,7 +22,7 @@ from canonical.launchpad import _
 from lp.bugs.browser.bugtask import get_comments_for_bugtask
 from lp.bugs.browser.bugcomment import (
     should_display_remote_comments)
-from canonical.launchpad.fields import URIField
+from lp.services.fields import URIField
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.bugs.interfaces.bugwatch import (
     BUG_WATCH_ACTIVITY_SUCCESS_STATUSES, IBugWatch, IBugWatchSet,

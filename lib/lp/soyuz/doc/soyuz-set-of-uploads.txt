@@ -70,6 +70,10 @@ Having set up that infrastructure we need to prepare a breezy distroseries
 for the ubuntutest distribution.
 
   >>> from lp.registry.model.distribution import Distribution
+  >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
+  >>> from lp.soyuz.interfaces.queue import PackageUploadStatus
+  >>> from lp.soyuz.scripts.initialise_distroseries import (
+  ...     InitialiseDistroSeries)
   >>> from canonical.launchpad.database import LibraryFileAlias
   >>> ubuntu = Distribution.byName('ubuntu')
   >>> breezy_autotest = ubuntu['breezy-autotest']
@@ -78,13 +82,11 @@ for the ubuntutest distribution.
   ...     'breezy', 'Breezy Badger', 'The Breezy Badger',
   ...     'Black and White', 'Someone', '5.10', breezy_autotest,
   ...     breezy_autotest.owner)
-  >>> breezy_i386 = breezy.newArch(
-  ...     'i386', breezy_autotest['i386'].processorfamily, True, breezy.owner)
-  >>> breezy.nominatedarchindep = breezy_i386
+  >>> ids = InitialiseDistroSeries(breezy)
+  >>> ids.initialise()
   >>> breezy.changeslist = 'breezy-changes@ubuntu.com'
-  >>> breezy.initialiseFromParent()
   >>> fake_chroot = LibraryFileAlias.get(1)
-  >>> unused = breezy_i386.addOrUpdateChroot(fake_chroot)
+  >>> unused = breezy['i386'].addOrUpdateChroot(fake_chroot)
 
 Add disk content for file inherited from ubuntu/breezy-autotest:
 

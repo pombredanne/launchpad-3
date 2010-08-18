@@ -13,7 +13,7 @@ __all__ = [
     ]
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import PublicPersonChoice, URIField
+from lp.services.fields import PublicPersonChoice, URIField
 
 from zope.interface import Interface, Attribute
 
