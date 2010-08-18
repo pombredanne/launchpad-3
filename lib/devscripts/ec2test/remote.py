@@ -246,6 +246,8 @@ class LaunchpadTester:
 
         try:
             self._logger.write_line("Running %s" % (call,))
+            # XXX: JonathanLange 2010-08-18: bufsize=-1 implies "use the
+            # system buffering", when we actually want no buffering at all.
             popen = subprocess.Popen(
                 call, bufsize=-1,
                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
@@ -570,6 +572,11 @@ class WebTestLogger:
         """
         # XXX: JonathanLange 2010-07-18: Mostly untested.
         log = self.write_line
+
+        # Clear the existing index file.
+        index = open(self._index_filename, 'w')
+        index.truncate(0)
+        index.close()
 
         def add_to_html(html):
             return self._write_to_filename(
