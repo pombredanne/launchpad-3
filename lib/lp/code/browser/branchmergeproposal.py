@@ -53,7 +53,7 @@ from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import Summary, Whiteboard
+from lp.services.fields import Summary, Whiteboard
 from canonical.launchpad.interfaces.message import IMessageSet
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, custom_widget, Link, enabled_with_permission,
@@ -550,7 +550,6 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
     implements(IBranchMergeProposalActionMenu)
 
     label = "Proposal to merge branch"
-    __used_for__ = IBranchMergeProposal
     schema = ClaimButton
 
     @action('Claim', name='claim')
@@ -781,8 +780,6 @@ class DecoratedCodeReviewVoteReference:
 
 class BranchMergeProposalVoteView(LaunchpadView):
     """The view used for the tables of votes and requested reviews."""
-
-    __used_for__ = IBranchMergeProposal
 
     @property
     def show_table(self):
@@ -1238,8 +1235,6 @@ class BranchMergeProposalJumpQueueView(LaunchpadEditFormView):
 class BranchMergeProposalSubscribersView(LaunchpadView):
     """Used to show the pagelet subscribers on the main proposal page."""
 
-    __used_for__ = IBranchMergeProposal
-
     def initialize(self):
         """See `LaunchpadView`."""
         # Get the subscribers and dump them into two sets.
@@ -1450,8 +1445,6 @@ def text_xhtml_representation(context, field, request):
 
 class FormatPreviewDiffView(LaunchpadView, DiffRenderingMixin):
     """A simple view to render a diff formatted nicely."""
-
-    __used_for__ = IPreviewDiff
 
     @property
     def preview_diff(self):

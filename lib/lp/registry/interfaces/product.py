@@ -34,10 +34,11 @@ from zope.schema.vocabulary import SimpleVocabulary
 from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import (
+from lp.services.fields import (
     Description, IconImageUpload, LogoImageUpload, MugshotImageUpload,
-    ParticipatingPersonChoice, ProductBugTracker, ProductNameField,
+    PersonChoice, ProductBugTracker, ProductNameField,
     PublicPersonChoice, Summary, Title, URIField)
+from lp.app.errors import NameLookupFailed
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
 from lp.bugs.interfaces.securitycontact import IHasSecurityContact
 from lp.registry.interfaces.structuralsubscription import (
@@ -53,7 +54,8 @@ from lp.bugs.interfaces.bugtarget import (
 from lp.registry.interfaces.karma import IKarmaContext
 from canonical.launchpad.interfaces.launchpad import (
     IHasAppointedDriver, IHasDrivers, IHasExternalBugTracker, IHasIcon,
-    IHasLogo, IHasMugshot, ILaunchpadUsage)
+    IHasLogo, IHasMugshot)
+from lp.app.interfaces.launchpad import ILaunchpadUsage, IServiceUsage
 from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.milestone import (
     ICanGetMilestonesDirectly, IHasMilestones)
@@ -72,7 +74,7 @@ from lp.translations.interfaces.translationgroup import (
     ITranslationPolicy)
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator
-from canonical.launchpad.webapp.interfaces import NameLookupFailed
+from lazr.lifecycle.snapshot import doNotSnapshot
 from lazr.restful.fields import CollectionField, Reference, ReferenceChoice
 from lazr.restful.declarations import (
     REQUEST_USER, call_with, collection_default_content,
@@ -347,13 +349,10 @@ class IProductPublic(
     IHasLogo, IHasMentoringOffers, IHasMergeProposals, IHasMilestones,
     IHasMugshot, IHasOwner, IHasSecurityContact, IHasSprints,
     ITranslationPolicy, IKarmaContext, ILaunchpadUsage, IMakesAnnouncements,
-    IOfficialBugTagTargetPublic, IPillar, ISpecificationTarget, IHasRecipes,
-    IHasCodeImports):
+    IOfficialBugTagTargetPublic, IPillar, IServiceUsage,
+    ISpecificationTarget, IHasRecipes, IHasCodeImports):
     """Public IProduct properties."""
 
-    # XXX Mark Shuttleworth 2004-10-12: Let's get rid of ID's in interfaces
-    # unless we really need them. BradB says he can remove the need for them
-    # in SQLObject soon.
     id = Int(title=_('The Project ID'))
 
     project = exported(
@@ -373,7 +372,7 @@ class IProductPublic(
         exported_as='project_group')
 
     owner = exported(
-        ParticipatingPersonChoice(
+        PersonChoice(
             title=_('Maintainer'),
             required=True,
             vocabulary='ValidOwner',
@@ -390,7 +389,7 @@ class IProductPublic(
                           "Launchpad.")))
 
     driver = exported(
-        ParticipatingPersonChoice(
+        PersonChoice(
             title=_("Driver"),
             description=_(
                 "This person or team will be able to set feature goals for "
@@ -587,7 +586,8 @@ class IProductPublic(
         "this product"))
 
     series = exported(
-        CollectionField(value_type=Object(schema=IProductSeries)))
+        doNotSnapshot(
+            CollectionField(value_type=Object(schema=IProductSeries))))
 
     development_focus = exported(
         ReferenceChoice(
@@ -604,10 +604,12 @@ class IProductPublic(
         "product; otherwise, simply returns the product name."))
 
     releases = exported(
-        CollectionField(
-            title=_("An iterator over the ProductReleases for this product."),
-            readonly=True,
-            value_type=Reference(schema=IProductRelease)))
+        doNotSnapshot(
+            CollectionField(
+                title=_("An iterator over the ProductReleases for "
+                        "this product."),
+                readonly=True,
+                value_type=Reference(schema=IProductRelease))))
 
     translation_focus = exported(
         ReferenceChoice(

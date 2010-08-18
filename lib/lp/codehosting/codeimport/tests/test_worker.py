@@ -952,7 +952,7 @@ class PullingImportWorkerTests:
         t = get_transport(self.get_url('.'))
         t.mkdir('reference')
         a_bzrdir = BzrDir.create(self.get_url('reference'))
-        BranchReferenceFormat().initialize(a_bzrdir, branch)
+        BranchReferenceFormat().initialize(a_bzrdir, target_branch=branch)
         return a_bzrdir.root_transport.base
 
     def test_reject_branch_reference(self):
@@ -1015,7 +1015,7 @@ class TestGitImport(WorkerTest, TestActualImportMixin,
         paths to database connections, which happily returns the connection
         that corresponds to a path that no longer exists.
         """
-        from bzrlib.plugins.git.shamap import mapdbs
+        from bzrlib.plugins.git.cache import mapdbs
         mapdbs().clear()
         WorkerTest.tearDown(self)
 

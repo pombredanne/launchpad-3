@@ -34,7 +34,7 @@ from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.message import IMessageSet
-from canonical.launchpad.webapp.interfaces import NotFoundError
+from lp.app.errors import NotFoundError
 from lp.bugs.interfaces.bug import CreateBugParams, IBugSet
 from lp.bugs.interfaces.bugattachment import (
     BugAttachmentType, IBugAttachmentSet)
@@ -638,7 +638,7 @@ class Bugzilla:
                 lpdupe.duplicateof is None):
                 logger.info('Marking %d as a duplicate of %d',
                             lpdupe.id, lpdupe_of.id)
-                lpdupe.duplicateof = lpdupe_of
+                lpdupe.markAsDuplicate(lpdupe_of)
             trans.commit()
 
     def importBugs(self, trans, product=None, component=None, status=None):

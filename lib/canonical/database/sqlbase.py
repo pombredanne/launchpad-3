@@ -30,6 +30,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from lazr.restful.interfaces import IRepresentationCache
 
+from canonical.cachedproperty import clear_cachedproperties
 from canonical.config import config, dbconfig
 from canonical.database.interfaces import ISQLBase
 
@@ -175,6 +176,9 @@ class SQLBase(storm.sqlobject.SQLObjectBase):
         correct master Store.
         """
         from canonical.launchpad.interfaces import IMasterStore
+        # Make it simple to write dumb-invalidators - initialised
+        # _cached_properties to a valid list rather than just-in-time creation.
+        self._cached_properties = []
         store = IMasterStore(self.__class__)
 
         # The constructor will fail if objects from a different Store
@@ -252,6 +256,14 @@ class SQLBase(storm.sqlobject.SQLObjectBase):
         """Invalidate the web service cache."""
         cache = getUtility(IRepresentationCache)
         cache.delete(self)
+
+    def __storm_invalidated__(self):
+        """Flush cached properties."""
+        # Note this is not directly tested; but the entire test suite blows up
+        # awesomely if its broken : its entirely unclear where tests for this
+        # should be -- RBC 20100816.
+        clear_cachedproperties(self)
+
 
 alreadyInstalledMsg = ("A ZopelessTransactionManager with these settings is "
 "already installed.  This is probably caused by calling initZopeless twice.")

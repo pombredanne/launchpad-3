@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for ftparchive.py"""
@@ -15,7 +15,7 @@ import unittest
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.launchpad.scripts.logger import QuietFakeLogger
+from canonical.launchpad.scripts.logger import BufferLogger, QuietFakeLogger
 from canonical.testing import LaunchpadZopelessLayer
 from lp.archivepublisher.config import Config
 from lp.archivepublisher.diskpool import DiskPool
@@ -23,6 +23,7 @@ from lp.archivepublisher.ftparchive import FTPArchiveHandler, f_touch
 from lp.archivepublisher.publishing import Publisher
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.testing import TestCaseWithFactory
 
 
 def sanitize_apt_ftparchive_Sources_output(text):
@@ -30,10 +31,11 @@ def sanitize_apt_ftparchive_Sources_output(text):
     # apt-ftparchive Sources file content, such that the output of lucid
     # apt-ftparchive is the same as on karmic.
     return re.subn(r'(?sm)^Checksums-.*?(?=^[^ ])', '', text)[0]
-    
+
 
 class SamplePublisher:
     """Publisher emulation test class."""
+
     def __init__(self, archive):
         self.archive = archive
 
@@ -54,10 +56,11 @@ class FakeSelectResult:
         return self._result[i:j]
 
 
-class TestFTPArchive(unittest.TestCase):
+class TestFTPArchive(TestCaseWithFactory):
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
+        super(TestFTPArchive, self).setUp()
         self.layer.switchDbUser(config.archivepublisher.dbuser)
 
         self._distribution = getUtility(IDistributionSet)['ubuntutest']
@@ -78,6 +81,7 @@ class TestFTPArchive(unittest.TestCase):
         self._publisher = SamplePublisher(self._archive)
 
     def tearDown(self):
+        super(TestFTPArchive, self).tearDown()
         shutil.rmtree(self._config.distroroot)
 
     def _verifyFile(self, filename, directory, output_filter=None):
@@ -114,6 +118,19 @@ class TestFTPArchive(unittest.TestCase):
             self._logger, self._config, self._dp, self._distribution,
             self._publisher)
         return fa
+
+    def test_NoLucilleConfig(self):
+        # Distroseries without a lucille configuration get ignored
+        # and trigger a warning, they don't break the publisher
+        logger = BufferLogger()
+        publisher = Publisher(
+            logger, self._config, self._dp, self._archive)
+        self.factory.makeDistroSeries(self._distribution, name="somename")
+        fa = FTPArchiveHandler(logger, self._config, self._dp,
+                               self._distribution, publisher)
+        fa.createEmptyPocketRequests(fullpublish=True)
+        self.assertEquals("WARNING: Distroseries somename in ubuntutest doesn't "
+            "have a lucille configuration.\n", logger.buffer.getvalue())
 
     def test_getSourcesForOverrides(self):
         # getSourcesForOverrides returns a list of tuples containing:
@@ -155,7 +172,7 @@ class TestFTPArchive(unittest.TestCase):
             hoary, PackagePublishingPocket.RELEASE)
         expectedBinaries = [
             ('pmount', 'hoary', 'main', 'base', 'extra'),
-            ('pmount', 'hoary', 'universe', 'editors', 'important')
+            ('pmount', 'hoary', 'universe', 'editors', 'important'),
             ]
         self.assertEqual(expectedBinaries, list(published_binaries))
 
@@ -220,9 +237,13 @@ class TestFTPArchive(unittest.TestCase):
 
         binary_files = fa.getBinaryFiles(
             hoary, PackagePublishingPocket.RELEASE)
-        expected_files = [
-            ('pmount', 'hoary', 'pmount_1.9-1_all.deb', 'main', 'binary-hppa')
-            ]
+        expected_files = [(
+            'pmount',
+            'hoary',
+            'pmount_1.9-1_all.deb',
+            'main',
+            'binary-hppa',
+            )]
         self.assertEqual(expected_files, list(binary_files))
 
     def test_publishFileLists(self):
@@ -230,7 +251,7 @@ class TestFTPArchive(unittest.TestCase):
         fa = self._setUpFTPArchiveHandler()
 
         source_files = FakeSelectResult(
-            [('foo', 'hoary-test',  'foo.dsc', 'main')])
+            [('foo', 'hoary-test', 'foo.dsc', 'main')])
         binary_files = FakeSelectResult(
             [('foo', 'hoary-test', 'foo.deb', 'main', 'binary-i386')])
         fa.publishFileLists(source_files, binary_files)
@@ -252,14 +273,14 @@ class TestFTPArchive(unittest.TestCase):
 
         # Calculate overrides.
         source_overrides = FakeSelectResult(
-            [('foo', 'hoary-test', 'main', 'misc'),])
+            [('foo', 'hoary-test', 'main', 'misc'), ])
         binary_overrides = FakeSelectResult(
             [('foo', 'hoary-test', 'main', 'misc', 'extra')])
         fa.publishOverrides(source_overrides, binary_overrides)
 
         # Calculate filelists.
         source_files = FakeSelectResult(
-            [('foo', 'hoary-test',  'foo.dsc', 'main')])
+            [('foo', 'hoary-test', 'foo.dsc', 'main')])
         binary_files = FakeSelectResult(
             [('foo', 'hoary-test', 'foo.deb', 'main', 'binary-i386')])
         fa.publishFileLists(source_files, binary_files)
@@ -376,8 +397,3 @@ class TestFTouch(unittest.TestCase):
         f.close()
 
         self.assertEqual("", contents)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
-

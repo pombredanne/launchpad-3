@@ -28,7 +28,7 @@ from canonical.database.sqlbase import SQLBase
 from uuid import uuid1
 
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.launchpad.interfaces.launchpad import NotFoundError
+from lp.app.errors import NotFoundError
 from lp.code.interfaces.diff import (
     IDiff, IPreviewDiff, IStaticDiff, IStaticDiffSource)
 
@@ -140,7 +140,7 @@ class Diff(SQLBase):
             source_revision)
         merger = Merge3Merger(
             merge_target, merge_target, merge_base, merge_source,
-            do_merge=False)
+            this_branch=target_branch, do_merge=False)
         def dummy_warning(self, *args, **kwargs):
             pass
         real_warning = trace.warning

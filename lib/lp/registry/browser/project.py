@@ -42,7 +42,7 @@ from z3c.ptcompat import ViewPageTemplateFile
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
-from canonical.launchpad.webapp.interfaces import NotFoundError
+from lp.app.errors import NotFoundError
 from canonical.launchpad.webapp.menu import NavigationMenu
 from lp.blueprints.browser.specificationtarget import (
     HasSpecificationsMenuMixin)
@@ -63,7 +63,7 @@ from lp.answers.browser.questiontarget import (
     QuestionTargetFacetMixin, QuestionCollectionAnswersMenu)
 from lp.registry.browser.objectreassignment import (
     ObjectReassignmentView)
-from canonical.launchpad.fields import PillarAliases, PublicPersonChoice
+from lp.services.fields import PillarAliases, PublicPersonChoice
 from canonical.launchpad.webapp import (
     ApplicationMenu, ContextMenu, LaunchpadEditFormView, LaunchpadFormView,
     LaunchpadView, Link, Navigation, StandardLaunchpadFacets, action,

@@ -19,7 +19,7 @@ from lazr.restful.fields import CollectionField, Reference
 from lazr.restful.declarations import exported
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import (
+from lp.services.fields import (
     PublicPersonChoice, Summary)
 from canonical.launchpad.interfaces.launchpad import IHasDrivers
 from lp.registry.interfaces.person import IPerson

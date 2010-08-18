@@ -57,6 +57,7 @@ from lp.bugs.browser.bugrole import BugRoleMixin
 from canonical.launchpad import _
 from canonical.launchpad.browser.feeds import (
     BugFeedLink, BugTargetLatestBugsFeedLink, FeedsMixin)
+from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
 from lp.bugs.interfaces.bugtarget import (
     IBugTarget, IOfficialBugTagTargetPublic, IOfficialBugTagTargetRestricted)
@@ -64,14 +65,15 @@ from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugtask import (
     BugTaskStatus, IBugTaskSet, UNRESOLVED_BUGTASK_STATUSES)
 from canonical.launchpad.interfaces.launchpad import (
-    IHasExternalBugTracker, ILaunchpadUsage)
+    IHasExternalBugTracker)
+from lp.app.interfaces.launchpad import ILaunchpadUsage
 from lp.hardwaredb.interfaces.hwdb import IHWSubmissionSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.searchbuilder import any
 from canonical.launchpad.webapp import urlappend
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.interfaces import (
-    ILaunchBag, NotFoundError, UnexpectedFormData)
+from canonical.launchpad.webapp.interfaces import ILaunchBag
+from lp.app.errors import NotFoundError, UnexpectedFormData
 from lp.bugs.interfaces.bug import (
     CreateBugParams, IBugAddForm, IProjectGroupBugAddForm)
 from lp.bugs.interfaces.malone import IMaloneApplication
@@ -167,11 +169,13 @@ class ProductConfigureBugTrackerView(BugRoleMixin, ProductConfigureBase):
 
     @action("Change", name='change')
     def change_action(self, action, data):
-        # bug_supervisor requires a transition method, so it must be
-        # handled separately and removed for the updateContextFromData
-        # to work as expected.
+        # bug_supervisor and security_contactrequires a transition method,
+        # so it must be handled separately and removed for the
+        # updateContextFromData to work as expected.
         self.changeBugSupervisor(data['bug_supervisor'])
         del data['bug_supervisor']
+        self.changeSecurityContact(data['security_contact'])
+        del data['security_contact']
         self.updateContextFromData(data)
 
 
@@ -1467,3 +1471,7 @@ class BugsPatchesView(LaunchpadView):
         """Return a timedelta object for the age of a patch attachment."""
         now = datetime.now(timezone('UTC'))
         return now - patch.message.datecreated
+
+    def proxiedUrlForLibraryFile(self, patch):
+        """Return the proxied download URL for a Librarian file."""
+        return ProxiedLibraryFileAlias(patch.libraryfile, patch).http_url

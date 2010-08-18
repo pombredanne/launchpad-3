@@ -52,16 +52,16 @@ from zope.schema import (
 from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import (
-    ParticipatingPersonChoice, PublicPersonChoice, StrippedTextLine)
+from lp.services.fields import (
+    PersonChoice, PublicPersonChoice, StrippedTextLine)
 from canonical.launchpad.interfaces.launchpad import IPrivacy
+from lp.app.errors import NameLookupFailed
 from lp.registry.interfaces.role import IHasOwner
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.soyuz.interfaces.processor import IProcessorFamily
 from lp.registry.interfaces.gpg import IGPGKey
 from lp.registry.interfaces.person import IPerson
 from canonical.launchpad.validators.name import name_validator
-from canonical.launchpad.webapp.interfaces import NameLookupFailed
 
 from lazr.restful.declarations import (
     REQUEST_USER, call_with, export_as_webservice_entry, exported,
@@ -166,6 +166,7 @@ class InvalidPocketForPartnerArchive(CannotUploadToArchive):
 
 class CannotUploadToPocket(Exception):
     """Returned when a pocket is closed for uploads."""
+    webservice_error(403) # Forbidden.
 
     def __init__(self, distroseries, pocket):
         Exception.__init__(self,
@@ -226,7 +227,7 @@ class IArchivePublic(IHasOwner, IPrivacy):
     id = Attribute("The archive ID.")
 
     owner = exported(
-        ParticipatingPersonChoice(
+        PersonChoice(
             title=_('Owner'), required=True, vocabulary='ValidOwner',
             description=_("""The archive owner.""")))
 
@@ -263,6 +264,11 @@ class IArchivePublic(IHasOwner, IPrivacy):
             title=_("Require Virtualized Builder"), required=False,
             description=_("Whether this archive requires its packages to be "
                           "built on a virtual builder."), readonly=False))
+
+    build_debug_symbols = Bool(
+        title=_("Build debug symbols"), required=False,
+        description=_("Whether builds for this archive should create debug "
+                      "symbol packages."))
 
     authorized_size = Int(
         title=_("Authorized PPA size "), required=False,
@@ -443,11 +449,24 @@ class IArchivePublic(IHasOwner, IPrivacy):
         Person table indexes while searching.
         """
 
-    def findDepCandidateByName(distroarchseries, name):
-        """Return the last published binarypackage by given name.
+    def findDepCandidates(distro_arch_series, pocket, component,
+                          source_package_name, dep_name):
+        """Return matching binaries in this archive and its dependencies.
 
-        Return the `BinaryPackagePublishingHistory` record by distroarchseries
-        and name, or None if not found.
+        Return all published `IBinaryPackagePublishingHistory` records with
+        the given name, in this archive and dependencies as specified by the
+        given build context, using the usual archive dependency rules.
+
+        We can't just use the first, since there may be other versions
+        published in other dependency archives.
+
+        :param distro_arch_series: the context `IDistroArchSeries`.
+        :param pocket: the context `PackagePublishingPocket`.
+        :param component: the context `IComponent`.
+        :param source_package_name: the context source package name (as text).
+        :param dep_name: the name of the binary package to look up.
+        :return: a sequence of matching `IBinaryPackagePublishingHistory`
+            records.
         """
 
     def removeArchiveDependency(dependency):
@@ -504,7 +523,7 @@ class IArchivePublic(IHasOwner, IPrivacy):
         """
 
     def checkUploadToPocket(distroseries, pocket):
-        """Check if uploading to a particular pocket in an archive is possible.
+        """Check if an upload to a particular archive and pocket is possible.
 
         :param distroseries: A `IDistroSeries`
         :param pocket: A `PackagePublishingPocket`
@@ -528,7 +547,7 @@ class IArchivePublic(IHasOwner, IPrivacy):
             vocabulary=DBEnumeratedType,
             required=True),
         strict_component=Bool(
-            title=_("Strict component"), required=False)
+            title=_("Strict component"), required=False),
         )
     @export_operation_as("checkUpload")
     @export_read_operation()
@@ -553,17 +572,18 @@ class IArchivePublic(IHasOwner, IPrivacy):
                       distroseries, strict_component=True):
         """Can 'person' upload 'sourcepackagename' to this archive ?
 
-        :param person: The `IPerson` trying to upload to the package. Referred to
-            as 'the signer' in upload code.
-        :param sourcepackagename: The source package being uploaded. None if the
-            package is new.
+        :param person: The `IPerson` trying to upload to the package. Referred
+            to as 'the signer' in upload code.
+        :param sourcepackagename: The source package being uploaded. None if
+            the package is new.
         :param archive: The `IArchive` being uploaded to.
         :param component: The `IComponent` that the source package belongs to.
         :param distroseries: The upload's target distro series.
-        :param strict_component: True if access to the specific component for the
-            package is needed to upload to it. If False, then access to any
-            package will do.
-        :return: CannotUploadToArchive if 'person' cannot upload to the archive,
+        :param strict_component: True if access to the specific component for
+            the package is needed to upload to it. If False, then access to
+            any package will do.
+        :return: CannotUploadToArchive if 'person' cannot upload to the
+            archive,
             None otherwise.
         """
 
@@ -1121,6 +1141,7 @@ class IArchiveView(IHasBuildRecords):
         :return: A new IArchiveAuthToken
         """
 
+
 class IArchiveAppend(Interface):
     """Archive interface for operations restricted by append privilege."""
 
@@ -1417,7 +1438,6 @@ class IArchiveSet(Interface):
         Only public and published sources are considered.
         """
 
-
     def new(purpose, owner, name=None, displayname=None, distribution=None,
             description=None, enabled=True, require_virtualized=True):
         """Create a new archive.
@@ -1431,8 +1451,9 @@ class IArchiveSet(Interface):
             given it uses the names defined in
             `IArchiveSet._getDefaultArchiveNameForPurpose`;
         :param displayname: optional text that will be used as a reference
-            to this archive in the UI. If not provided a default text (
-            including the archive name and the owner displayname will be used.)
+            to this archive in the UI. If not provided a default text
+            (including the archive name and the owner displayname)  will be
+            used.
         :param distribution: optional `IDistribution` to which the archive
             will be attached;
         :param description: optional text to be set as the archive
@@ -1644,7 +1665,6 @@ class ArchiveStatus(DBEnumeratedType):
 
         This archive has been deleted and removed from disk.
         """)
-
 
 
 default_name_by_purpose = {

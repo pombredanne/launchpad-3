@@ -7,14 +7,30 @@ __metaclass__ = type
 __all__ = [
     'BadBranchMergeProposalSearchContext',
     'BadStateTransition',
+    'BranchCannotBePrivate',
+    'BranchCannotBePublic',
+    'BranchCreationException',
+    'BranchCreationForbidden',
+    'BranchCreatorNotMemberOfOwnerTeam',
+    'BranchCreatorNotOwner',
+    'BranchExists',
+    'BranchTargetError',
+    'BranchTypeError',
     'BuildAlreadyPending',
+    'BuildNotAllowedForDistro',
     'BranchMergeProposalExists',
+    'CannotDeleteBranch',
+    'CannotHaveLinkedBranch',
     'CodeImportAlreadyRequested',
     'CodeImportAlreadyRunning',
     'CodeImportNotInReviewedState',
     'ClaimReviewFailed',
     'ForbiddenInstruction',
     'InvalidBranchMergeProposal',
+    'InvalidNamespace',
+    'NoLinkedBranch',
+    'NoSuchBranch',
+    'PrivateBranchRecipe',
     'ReviewNotPending',
     'TooManyBuilds',
     'TooNewRecipeFormat',
@@ -26,6 +42,8 @@ __all__ = [
 
 from lazr.restful.declarations import webservice_error
 
+from lp.app.errors import NameLookupFailed
+
 
 class BadBranchMergeProposalSearchContext(Exception):
     """The context is not valid for a branch merge proposal search."""
@@ -33,6 +51,96 @@ class BadBranchMergeProposalSearchContext(Exception):
 
 class BadStateTransition(Exception):
     """The user requested a state transition that is not possible."""
+
+
+class BranchCreationException(Exception):
+    """Base class for branch creation exceptions."""
+
+
+class BranchExists(BranchCreationException):
+    """Raised when creating a branch that already exists."""
+
+    webservice_error(400)
+
+    def __init__(self, existing_branch):
+        # XXX: TimPenhey 2009-07-12 bug=405214: This error
+        # message logic is incorrect, but the exact text is being tested
+        # in branch-xmlrpc.txt.
+        params = {'name': existing_branch.name}
+        if existing_branch.product is None:
+            params['maybe_junk'] = 'junk '
+            params['context'] = existing_branch.owner.name
+        else:
+            params['maybe_junk'] = ''
+            params['context'] = '%s in %s' % (
+                existing_branch.owner.name, existing_branch.product.name)
+        message = (
+            'A %(maybe_junk)sbranch with the name "%(name)s" already exists '
+            'for %(context)s.' % params)
+        self.existing_branch = existing_branch
+        BranchCreationException.__init__(self, message)
+
+
+class BranchTargetError(Exception):
+    """Raised when there is an error determining a branch target."""
+
+
+class CannotDeleteBranch(Exception):
+    """The branch cannot be deleted at this time."""
+
+
+class BranchCreationForbidden(BranchCreationException):
+    """A Branch visibility policy forbids branch creation.
+
+    The exception is raised if the policy for the product does not allow
+    the creator of the branch to create a branch for that product.
+    """
+
+
+class BranchCreatorNotMemberOfOwnerTeam(BranchCreationException):
+    """Branch creator is not a member of the owner team.
+
+    Raised when a user is attempting to create a branch and set the owner of
+    the branch to a team that they are not a member of.
+    """
+
+    webservice_error(400)
+
+
+class BranchCreatorNotOwner(BranchCreationException):
+    """A user cannot create a branch belonging to another user.
+
+    Raised when a user is attempting to create a branch and set the owner of
+    the branch to another user.
+    """
+
+    webservice_error(400)
+
+
+class BranchTypeError(Exception):
+    """An operation cannot be performed for a particular branch type.
+
+    Some branch operations are only valid for certain types of branches.  The
+    BranchTypeError exception is raised if one of these operations is called
+    with a branch of the wrong type.
+    """
+
+
+class BranchCannotBePublic(Exception):
+    """The branch cannot be made public."""
+
+
+class BranchCannotBePrivate(Exception):
+    """The branch cannot be made private."""
+
+
+class CannotHaveLinkedBranch(Exception):
+    """Raised when we try to get the linked branch for a thing that can't."""
+
+    def __init__(self, component):
+        self.component = component
+        Exception.__init__(
+            self, "%r cannot have linked branches." % (component,))
 
 
 class ClaimReviewFailed(Exception):
@@ -50,6 +158,43 @@ class BranchMergeProposalExists(InvalidBranchMergeProposal):
     """Raised if there is already a matching BranchMergeProposal."""
 
     webservice_error(400) #Bad request.
+
+
+class InvalidNamespace(Exception):
+    """Raised when someone tries to lookup a namespace with a bad name.
+
+    By 'bad', we mean that the name is unparseable. It might be too short, too
+    long or malformed in some other way.
+    """
+
+    def __init__(self, name):
+        self.name = name
+        Exception.__init__(
+            self, "Cannot understand namespace name: '%s'" % (name,))
+
+
+class NoLinkedBranch(Exception):
+    """Raised when there's no linked branch for a thing."""
+
+    def __init__(self, component):
+        self.component = component
+        Exception.__init__(self, "%r has no linked branch." % (component,))
+
+
+class NoSuchBranch(NameLookupFailed):
+    """Raised when we try to load a branch that does not exist."""
+
+    _message_prefix = "No such branch"
+
+
+class PrivateBranchRecipe(Exception):
+
+    def __init__(self, branch):
+        message = (
+            'Recipe may not refer to private branch: %s' %
+            branch.bzr_identity)
+        self.branch = branch
+        Exception.__init__(self, message)
 
 
 class ReviewNotPending(Exception):
@@ -144,3 +289,14 @@ class BuildAlreadyPending(RecipeBuildException):
         RecipeBuildException.__init__(
             self, recipe, distroseries,
             'An identical build of this recipe is already pending.')
+
+
+class BuildNotAllowedForDistro(RecipeBuildException):
+    """A build was requested against an unsupported distroseries."""
+
+    webservice_error(400)
+
+    def __init__(self, recipe, distroseries):
+        RecipeBuildException.__init__(
+            self, recipe, distroseries,
+            'A build against this distro is not allowed.')

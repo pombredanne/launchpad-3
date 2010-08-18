@@ -86,11 +86,11 @@ from lp.code.enums import (
     CodeImportResultStatus, CodeImportReviewStatus, RevisionControlSystems,
     UICreatableBranchType)
 from lp.code.errors import (
-    CodeImportAlreadyRequested, CodeImportAlreadyRunning,
-    CodeImportNotInReviewedState, InvalidBranchMergeProposal)
+    BranchCreationForbidden, BranchExists, CodeImportAlreadyRequested,
+    CodeImportAlreadyRunning, CodeImportNotInReviewedState,
+    InvalidBranchMergeProposal)
 from lp.code.interfaces.branch import (
-    BranchCreationForbidden, BranchExists, IBranch,
-    user_has_special_branch_access)
+    IBranch, user_has_special_branch_access)
 from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.branchnamespace import IBranchNamespacePolicy
@@ -319,14 +319,15 @@ class BranchContextMenu(ContextMenu, HasRecipesMenuMixin):
             '+upgrade', 'Upgrade this branch', icon='edit', enabled=enabled)
 
     def create_recipe(self):
-        enabled = config.build_from_branch.enabled
+        if not self.context.private and config.build_from_branch.enabled:
+            enabled = True
+        else:
+            enabled = False
         text = 'Create packaging recipe'
         return Link('+new-recipe', text, enabled=enabled, icon='add')
 
 
 class BranchView(LaunchpadView, FeedsMixin):
-
-    __used_for__ = IBranch
 
     feed_types = (
         BranchFeedLink,
@@ -566,8 +567,8 @@ class BranchView(LaunchpadView, FeedsMixin):
     def show_merge_links(self):
         """Return whether or not merge proposal links should be shown.
 
-        Merge proposal links should not be shown if there is only one branch in
-        a non-final state.
+        Merge proposal links should not be shown if there is only one branch
+        in a non-final state.
         """
         if not self.context.target.supports_merge_proposals:
             return False
@@ -1154,8 +1155,6 @@ class BranchSubscriptionsView(LaunchpadView):
 
 class BranchMergeQueueView(LaunchpadView):
     """The view used to render the merge queue for a branch."""
-
-    __used_for__ = IBranch
 
     @cachedproperty
     def merge_queue(self):

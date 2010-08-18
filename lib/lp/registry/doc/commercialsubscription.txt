@@ -1,4 +1,6 @@
-= Commercial Subscriptions =
+========================
+Commercial Subscriptions
+========================
 
 The CommercialSubscription class is used to track whether a project,
 which does not qualify for free hosting, has an unexpired subscription.
@@ -32,6 +34,43 @@ attribute is correct.
     >>> print bzr.commercial_subscription.sales_system_id
     asdf123
 
+Commercial subscriptions have zope.Public permissions for reading.
+
+    >>> from canonical.launchpad.webapp.authorization import check_permission
+    >>> login(ANONYMOUS)
+    >>> check_permission('zope.Public', bzr.commercial_subscription)
+    True
+    >>> print bzr.commercial_subscription.product.name
+    bzr
+
+For modification, launchpad.Commerical is required.  Anonymous users,
+regular users, and the project owner all are denied.
+
+    >>> check_permission('launchpad.Commercial', bzr.commercial_subscription)
+    False
+
+    >>> login('no-priv@canonical.com')
+    >>> check_permission('launchpad.Commercial', bzr.commercial_subscription)
+    False
+
+    >>> login_person(owner)
+    >>> check_permission('launchpad.Commercial', bzr.commercial_subscription)
+    False
+
+A member of the commercial admins team does have modification privileges.
+
+    >>> from canonical.launchpad.interfaces.launchpad import (
+    ...     ILaunchpadCelebrities)
+    >>> celebs = getUtility(ILaunchpadCelebrities)
+    >>> commercial_admin = celebs.commercial_admin
+    >>> login('commercial-member@canonical.com')
+    >>> commercial_member = getUtility(ILaunchBag).user
+    >>> commercial_member.inTeam(commercial_admin)
+    True
+    >>> check_permission('launchpad.Commercial', bzr.commercial_subscription)
+    True
+
+
 The expiration date can be extended by redeeming another voucher.  In
 real life this would be done nearer to the expiration date.  For
 testing consistency, let's force the start and expiry dates to a known
@@ -40,6 +79,7 @@ date and use a known time as the current time.
     >>> from zope.security.proxy import removeSecurityProxy
     >>> from datetime import date, datetime, timedelta
     >>> from pytz import UTC
+    >>> login('no-priv@canonical.com')
     >>> now = datetime(2008, 1, 10, tzinfo=UTC)
     >>> subscription = removeSecurityProxy(bzr.commercial_subscription)
     >>> subscription.date_starts = datetime(2008,1,15,tzinfo=UTC)
@@ -321,7 +361,9 @@ hosting; there is no commercial subscription due.
     >>> bzr.qualifies_for_free_hosting, bzr.commercial_subscription_is_due
     (True, False)
 
-= Product License Reviews =
+=======================
+Product License Reviews
+=======================
 
 The forReview() method allows searching for products whose license needs to
 be reviewed. You can search by text in the Product table's full text index.
@@ -486,8 +528,6 @@ the web form delivers.
     ...     print product.name
     bzr
 
-
-
 You can search for products based on the date of that
 its commercial subscription was modified, which only
 happens when a voucher is redeemed.
@@ -530,9 +570,8 @@ The use of 'forReview' is limited to users with launchpad.Commercial permission.
 
 Anonymous users cannot access 'forReview'.
 
-    >>> from canonical.launchpad.webapp.authorization import check_permission
     >>> login(ANONYMOUS)
-    >>> check_permission('launchpad.Commercial', product_set)
+    >>> check_permission('launchpad.ProjectReview', product_set)
     False
     >>> gnome = product_set.forReview(search_text='gnome')
     Traceback (most recent call last):
@@ -553,10 +592,7 @@ But if we add No Privileges Person to the Registry Experts team he can
 access it.
 
     >>> login('foo.bar@canonical.com')
-    >>> from canonical.launchpad.interfaces.launchpad import (
-    ...     ILaunchpadCelebrities)
     >>> registry_member = factory.makePerson()
-    >>> celebs = getUtility(ILaunchpadCelebrities)
     >>> registry = celebs.registry_experts
     >>> ignored = registry.addMember(registry_member, registry.teamowner)
     >>> logout()

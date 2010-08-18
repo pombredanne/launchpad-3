@@ -10,6 +10,7 @@ import zope.app.publisher.browser.metadirectives
 import zope.configuration.config
 from zope.app.file.image import Image
 from zope.app.pagetemplate.engine import TrustedEngine
+from zope.app.publication.metaconfigure import publisher
 from zope.component import getUtility
 from zope.component.security import PublicPermission
 from zope.component.zcml import adapter, handler, utility, view
@@ -18,7 +19,6 @@ from zope.configuration.fields import (
 from zope.interface import Interface, implements
 from zope.publisher.interfaces.browser import (
     IBrowserPublisher, IBrowserRequest, IDefaultBrowserLayer)
-from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
 from zope.schema import TextLine
 from zope.security.checker import Checker, CheckerPublic
 from zope.security.interfaces import IPermission
@@ -33,6 +33,7 @@ import z3c.ptcompat.zcml
 from z3c.ptcompat.zcml import page_directive as original_page
 from z3c.ptcompat.zcml import pages_directive as original_pages
 
+from canonical.config import config
 from canonical.launchpad.layers import FeedsLayer
 from canonical.launchpad.webapp.interfaces import (
     IApplicationMenu, IAuthorization, ICanonicalUrlData, IContextMenu,
@@ -45,9 +46,11 @@ class IAuthorizationsDirective(Interface):
 
     module = GlobalObject(title=u'module', required=True)
 
+
 def _isAuthorization(module_member):
     return (type(module_member) is type and
             IAuthorization.implementedBy(module_member))
+
 
 def authorizations(_context, module):
     if not inspect.ismodule(module):
@@ -97,6 +100,7 @@ class PermissionCollectingContext:
                     raise RuntimeError(
                         "unrecognised discriminator name", name)
 
+
 class SecuredUtilityDirective:
 
     def __init__(self, _context, provides, class_=None, component=None,
@@ -128,11 +132,10 @@ class SecuredUtilityDirective:
         # of the zcml.
         checker = Checker(
             self.permission_collector.get_permissions,
-            self.permission_collector.set_permissions
-            )
+            self.permission_collector.set_permissions)
         component = ProxyFactory(self.component, checker=checker)
-        utility(self._context, self.provides, component=component,
-                name=self.name)
+        utility(
+            self._context, self.provides, component=component, name=self.name)
         return ()
 
 
@@ -141,29 +144,24 @@ class IURLDirective(Interface):
 
     for_ = GlobalObject(
         title=u"Specification of the object that has this canonical url",
-        required=True
-        )
+        required=True)
 
     urldata = GlobalObject(
         title=u"Adapter to ICanonicalUrlData for this object.",
-        required=False
-        )
+        required=False)
 
     path_expression = TextLine(
         title=u"TALES expression that evaluates to the path"
                " relative to the parent object.",
-        required=False
-        )
+        required=False)
 
     attribute_to_parent = PythonIdentifier(
         title=u"Name of the attribute that gets you to the parent object",
-        required=False
-        )
+        required=False)
 
     parent_utility = GlobalObject(
         title=u"Interface of the utility that is the parent of the object",
-        required=False
-        )
+        required=False)
 
     rootsite = PythonIdentifier(
         title=u"Name of the site this URL has as its root."
@@ -179,14 +177,12 @@ class IGlueDirective(Interface):
     generic mechanism, what that 'something' is isn't important.
     """
     module = GlobalObject(
-        title=u"Module in which the classes are found."
-        )
+        title=u"Module in which the classes are found.")
 
     classes = Tokens(
         value_type=PythonIdentifier(),
         title=u"Space separated list of classes to register.",
-        required=True
-        )
+        required=True)
 
 
 class IMenusDirective(IGlueDirective):
@@ -195,6 +191,10 @@ class IMenusDirective(IGlueDirective):
 
 class INavigationDirective(IGlueDirective):
     """Hook up traversal etc."""
+
+    layer = GlobalInterface(
+        title=u"The layer where this navigation is going to be available.",
+        required=False)
 
 
 class IFeedsDirective(IGlueDirective):
@@ -205,13 +205,11 @@ class IFaviconDirective(Interface):
 
     for_ = GlobalObject(
         title=u"Specification of the object that has this favicon",
-        required=True
-        )
+        required=True)
 
     file = Path(
         title=u"Path to the image file",
-        required=True
-        )
+        required=True)
 
 
 def menus(_context, module, classes):
@@ -272,7 +270,7 @@ def feeds(_context, module, classes):
                           layer=layer, class_=feedclass)
 
 
-def navigation(_context, module, classes):
+def navigation(_context, module, classes, layer=IDefaultBrowserLayer):
     """Handler for the `INavigationDirective`."""
     if not inspect.ismodule(module):
         raise TypeError("module attribute must be a module: %s, %s" %
@@ -286,24 +284,17 @@ def navigation(_context, module, classes):
         for_ = [navclass.usedfor]
 
         # Register the navigation as the traversal component.
-        layer = IDefaultBrowserLayer
         provides = IBrowserPublisher
         name = ''
         view(_context, factory, layer, name, for_,
                 permission=PublicPermission, provides=provides,
                 allowed_interface=[IBrowserPublisher])
-        #view(_context, factory, layer, name, for_,
-        #     permission=PublicPermission, provides=provides)
-
-        # Also register the navigation as a traversal component for XMLRPC.
-        xmlrpc_layer = IXMLRPCRequest
-        view(_context, factory, xmlrpc_layer, name, for_,
-             permission=PublicPermission, provides=provides)
 
 
 class InterfaceInstanceDispatcher:
     """Dispatch getitem on names that appear in the interface to the instance.
     """
+
     def __init__(self, interface, instance):
         self.interface = interface
         self.instance = instance
@@ -376,6 +367,7 @@ def url(_context, for_, path_expression=None, urldata=None,
             _for = for_
             _compiled_path_expression = compiled_path_expression
             rootsite = rootsite_
+
             @property
             def inside(self):
                 return getattr(self.context, attribute_to_parent)
@@ -384,6 +376,7 @@ def url(_context, for_, path_expression=None, urldata=None,
             _for = for_
             _compiled_path_expression = compiled_path_expression
             rootsite = rootsite_
+
             @property
             def inside(self):
                 return getUtility(parent_utility)
@@ -394,17 +387,18 @@ def url(_context, for_, path_expression=None, urldata=None,
 
 
 class FaviconRendererBase:
-
     # subclasses must provide a 'fileobj' member that has 'contentType'
     # and 'data' attributes.
 
     def __call__(self):
-        self.request.response.setHeader('Content-type',
-                                        self.file.contentType)
+        self.request.response.setHeader(
+            'Content-type', self.file.contentType)
         return self.file.data
+
 
 def favicon(_context, for_, file):
     fileobj = Image(open(file, 'rb').read())
+
     class Favicon(FaviconRendererBase):
         file = fileobj
 
@@ -431,8 +425,7 @@ def page(_context, name, permission, for_,
          layer=IDefaultBrowserLayer, template=None, class_=None,
          allowed_interface=None, allowed_attributes=None,
          attribute='__call__', menu=None, title=None,
-         facet=None
-         ):
+         facet=None):
     """Like the standard 'page' directive, but with an added 'facet' optional
     argument.
 
@@ -500,7 +493,7 @@ class IRenamedPageDirective(Interface):
 
     for_ = GlobalObject(
         title=u"Specification of the object that has the renamed page",
-        required=True )
+        required=True)
 
     layer = GlobalInterface(
         title=u"The layer the renamed page is in.",
@@ -529,6 +522,7 @@ class IRenamedPageDirective(Interface):
 def renamed_page(_context, for_, name, new_name, layer=IDefaultBrowserLayer,
                  rootsite=None):
     """Will provide a `RedirectView` that will redirect to the new_name."""
+
     def renamed_factory(context, request):
         return RenamedView(
             context, request, new_name=new_name, rootsite=rootsite)
@@ -651,3 +645,27 @@ def definePermission(_context, id, title, access_level="write",
                      description=''):
     permission = LaunchpadPermission(id, title, access_level, description)
     utility(_context, ILaunchpadPermission, permission, name=id)
+
+
+_arbitrary_priority = 12
+
+
+def launchpadPublisher(_context, name, factory, methods=['*'],
+                       mimetypes=['*'], priority=None, vhost_name=None):
+    # This overrides zope's definition of the <publisher> directive to
+    # supply an arbitrary unique priority if none is explicitly
+    # supplied -- we don't care about the priority in Launchpad but it
+    # needs to be unique -- and to do nothing if no hostname is
+    # configured for this publisher.
+
+    # shipit, uniquely, uses a different name in its <publisher>
+    # directives to the name of the section in the config.
+    if not name.startswith('shipit'):
+        section = getattr(config.vhost, name, None)
+        if section is None or section.hostname is None:
+            return
+    global _arbitrary_priority
+    if priority is None:
+        _arbitrary_priority += 1
+        priority = _arbitrary_priority
+    publisher(_context, name, factory, methods, mimetypes, priority)

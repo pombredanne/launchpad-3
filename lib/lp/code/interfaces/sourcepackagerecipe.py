@@ -27,8 +27,8 @@ from zope.interface import Attribute, Interface
 from zope.schema import Bool, Choice, Datetime, Int, Object, Text, TextLine
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import (
-    ParticipatingPersonChoice, PublicPersonChoice
+from lp.services.fields import (
+    PersonChoice, PublicPersonChoice
 )
 from canonical.launchpad.validators.name import name_validator
 
@@ -84,7 +84,7 @@ class ISourcePackageRecipe(IHasOwner, ISourcePackageRecipeData):
             vocabulary='ValidPersonOrTeam'))
 
     owner = exported(
-        ParticipatingPersonChoice(
+        PersonChoice(
             title=_('Owner'),
             required=True, readonly=False,
             vocabulary='UserTeamsParticipationPlusSelf',

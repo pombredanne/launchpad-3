@@ -23,8 +23,9 @@ from lp.registry.interfaces.structuralsubscription import (
 from lp.registry.interfaces.productrelease import IProductRelease
 from lp.bugs.interfaces.bugtarget import IHasBugs, IHasOfficialBugTags
 from lp.bugs.interfaces.bugtask import IBugTask
+from lp.services.fields import FormattableDate
 from canonical.launchpad import _
-from canonical.launchpad.fields import (
+from lp.services.fields import (
     ContentNameField, NoneableDescription, NoneableTextLine)
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.components.apihelpers import (
@@ -107,7 +108,7 @@ class IMilestone(IHasBugs, IStructuralSubscriptionTarget,
         vocabulary="FilteredDistroSeries",
         required=False) # for now
     dateexpected = exported(
-        Date(title=_("Date Targeted"), required=False,
+        FormattableDate(title=_("Date Targeted"), required=False,
              description=_("Example: 2005-11-24")),
         exported_as='date_targeted')
     active = exported(

@@ -3,7 +3,6 @@
 
 from datetime import date
 import subprocess
-import unittest
 
 from zope.component import getUtility
 
@@ -41,8 +40,8 @@ class TestPathParsing(TestCase):
         self.assertIs(None, get_ppa_file_key('/foo'))
 
     def test_get_ppa_file_key_ignores_non_binary_path(self):
-        # A path with extra path segments returns None, to indicate that
-        # it should be ignored.
+        # A path pointing to a file not from a binary package returns
+        # None to indicate that it should be ignored.
         self.assertIs(None, get_ppa_file_key(
             '/cprov/ppa/ubuntu/pool/main/f/foo/foo_1.2.3-4.dsc'))
 
@@ -128,7 +127,3 @@ class TestScriptRunning(TestCaseWithFactory):
                 [(result.binary_package_release, result.archive, result.day,
                   result.country, result.count) for result in results],
                  key=lambda r: (r[0].id, r[2], r[3].name if r[3] else None)))
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

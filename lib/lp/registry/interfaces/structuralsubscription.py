@@ -22,8 +22,8 @@ from zope.schema import Bool, Choice, Datetime, Int
 from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import (
-    ParticipatingPersonChoice, PublicPersonChoice)
+from lp.services.fields import (
+    PersonChoice, PublicPersonChoice)
 from lp.registry.interfaces.person import IPerson
 
 from lazr.restful.declarations import (
@@ -49,19 +49,23 @@ class BugNotificationLevel(DBEnumeratedType):
     LIFECYCLE = DBItem(20, """
         Lifecycle
 
-        Only send a low volume of notifications about new bugs registered, bugs removed or bug targetting.
+        Only send a low volume of notifications about new bugs registered,
+        bugs removed or bug targetting.
         """)
 
     METADATA = DBItem(30, """
         Details
 
-        Send bug lifecycle notifications, as well as notifications about changes to the bug's details like status and description.
+        Send bug lifecycle notifications, as well as notifications about
+        changes to the bug's details like status and description.
         """)
 
     COMMENTS = DBItem(40, """
         Discussion
 
-        Send bug lifecycle notifications, detail change notifications and notifications about new events in the bugs's discussion, like new comments.
+        Send bug lifecycle notifications, detail change notifications and
+        notifications about new events in the bugs's discussion, like new
+        comments.
         """)
 
 
@@ -80,13 +84,15 @@ class BlueprintNotificationLevel(DBEnumeratedType):
     LIFECYCLE = DBItem(20, """
         Lifecycle
 
-        Only send a low volume of notifications about new blueprints registered, blueprints accepted or blueprint targetting.
+        Only send a low volume of notifications about new blueprints
+        registered, blueprints accepted or blueprint targetting.
         """)
 
     METADATA = DBItem(30, """
         Details
 
-        Send blueprint lifecycle notifications, as well as notifications about changes to the blueprints's details like status and description.
+        Send blueprint lifecycle notifications, as well as notifications about
+        changes to the blueprints's details like status and description.
         """)
 
 
@@ -105,7 +111,7 @@ class IStructuralSubscription(Interface):
         title=_('Distribution series'), required=False, readonly=True)
     sourcepackagename = Int(
         title=_('Source package name'), required=False, readonly=True)
-    subscriber = exported(ParticipatingPersonChoice(
+    subscriber = exported(PersonChoice(
         title=_('Subscriber'), required=True, vocabulary='ValidPersonOrTeam',
         readonly=True, description=_("The person subscribed.")))
     subscribed_by = exported(PublicPersonChoice(

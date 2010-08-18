@@ -31,7 +31,7 @@ from canonical.database.enumcol import EnumCol
 
 from lp.bugs.adapters.bugchange import BugTaskAdded
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.webapp.interfaces import NotFoundError
+from lp.app.errors import NotFoundError
 from lp.bugs.interfaces.bugnomination import (
     BugNominationStatus, BugNominationStatusError, IBugNomination,
     IBugNominationSet)

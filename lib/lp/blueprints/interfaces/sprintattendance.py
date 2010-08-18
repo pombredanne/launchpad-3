@@ -14,7 +14,7 @@ __all__ = [
 from zope.interface import Interface
 from zope.schema import Bool, Choice, Datetime
 from canonical.launchpad import _
-from canonical.launchpad.fields import PublicPersonChoice
+from lp.services.fields import PublicPersonChoice
 
 
 class ISprintAttendance(Interface):

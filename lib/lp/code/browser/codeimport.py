@@ -27,19 +27,21 @@ from zope.schema import Choice
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
-from canonical.launchpad.fields import URIField
+from lp.services.fields import URIField
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.errors import NotFoundError
 from lp.code.enums import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
     CodeImportReviewStatus, CodeReviewNotificationLevel,
     RevisionControlSystems)
+from lp.code.errors import BranchExists
 from lp.code.interfaces.branchnamespace import (
     get_branch_namespace, IBranchNamespacePolicy)
 from lp.code.interfaces.codeimport import (
     ICodeImport, ICodeImportSet)
 from lp.code.interfaces.codeimportmachine import ICodeImportMachineSet
 from lp.code.interfaces.branch import (
-    BranchExists, IBranch, user_has_special_branch_access)
+    IBranch, user_has_special_branch_access)
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.registry.interfaces.product import IProduct
 from canonical.launchpad.webapp import (
@@ -47,7 +49,6 @@ from canonical.launchpad.webapp import (
     Navigation, stepto)
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.launchpad.webapp.menu import structured
 from lazr.restful.interface import copy_field, use_template
 from canonical.widgets import LaunchpadDropdownWidget
@@ -593,8 +594,6 @@ class CodeImportEditView(CodeImportBaseView):
 
 class CodeImportMachineView(LaunchpadView):
     """The view for the page that shows all the import machines."""
-
-    __used_for__ = ICodeImportSet
 
     label = "Import machines for Launchpad"
 

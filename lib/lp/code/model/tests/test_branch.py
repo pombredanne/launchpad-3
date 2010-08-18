@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=F0401,E1002
@@ -14,6 +14,7 @@ from datetime import datetime, timedelta
 from unittest import TestLoader
 
 from bzrlib.bzrdir import BzrDir
+from bzrlib.revision import NULL_REVISION
 
 from pytz import UTC
 
@@ -34,6 +35,7 @@ from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
 from canonical.testing import DatabaseFunctionalLayer, LaunchpadZopelessLayer
 
+from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.blueprints.interfaces.specification import (
     ISpecificationSet, SpecificationDefinitionStatus)
 from lp.blueprints.model.specificationbranch import (
@@ -44,17 +46,19 @@ from lp.code.bzr import BranchFormat, ControlFormat, RepositoryFormat
 from lp.code.enums import (
     BranchLifecycleStatus, BranchSubscriptionNotificationLevel, BranchType,
     BranchVisibilityRule, CodeReviewNotificationLevel)
-from lp.code.errors import InvalidBranchMergeProposal
-from lp.code.interfaces.branch import (
+from lp.code.errors import (
     BranchCannotBePrivate, BranchCannotBePublic,
     BranchCreatorNotMemberOfOwnerTeam, BranchCreatorNotOwner,
-    BranchTargetError, CannotDeleteBranch, DEFAULT_BRANCH_STATUS_IN_LISTING)
+    BranchTargetError, CannotDeleteBranch, InvalidBranchMergeProposal)
+from lp.code.interfaces.branch import (
+    DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch)
 from lp.code.interfaces.branchjob import (
     IBranchUpgradeJobSource, IBranchScanJobSource)
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
 from lp.code.interfaces.branchmergeproposal import (
     BRANCH_MERGE_PROPOSAL_FINAL_STATES as FINAL_STATES)
+from lp.code.interfaces.branchrevision import IBranchRevision
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from lp.code.interfaces.seriessourcepackagebranch import (
     IFindOfficialBranchLinks)
@@ -78,6 +82,9 @@ from lp.testing import (
     person_logged_in, run_with_login, TestCase, TestCaseWithFactory,
     time_counter)
 from lp.testing.factory import LaunchpadObjectFactory
+from lp.translations.model.translationtemplatesbuildjob import (
+    ITranslationTemplatesBuildJobSource)
+from lp.services.osutils import override_environ
 
 
 class TestCodeImport(TestCase):
@@ -423,6 +430,28 @@ class TestBranch(TestCaseWithFactory):
             SourcePackage(branch.sourcepackagename, branch.distroseries),
             branch.sourcepackage)
 
+    def test_implements_IBranch(self):
+        # Instances of Branch provide IBranch.
+        branch = self.factory.makeBranch()
+        # We don't care about security, we just want to check that it
+        # implements the interface.
+        self.assertProvides(removeSecurityProxy(branch), IBranch)
+
+    def test_associatedProductSeries_initial(self):
+        # By default, a branch has no associated product series.
+        branch = self.factory.makeBranch()
+        self.assertEqual([], list(branch.associatedProductSeries()))
+
+    def test_associatedProductSeries_linked(self):
+        # When a branch is linked to a product series, that product series is
+        # included in associatedProductSeries.
+        branch = self.factory.makeProductBranch()
+        product = removeSecurityProxy(branch.product)
+        ICanHasLinkedBranch(product).setBranch(branch)
+        self.assertEqual(
+            [product.development_focus],
+            list(branch.associatedProductSeries()))
+
 
 class TestBranchUpgrade(TestCaseWithFactory):
     """Test the upgrade functionalities of branches."""
@@ -534,7 +563,7 @@ class TestBranchUpgrade(TestCaseWithFactory):
         jobs = list(getUtility(IBranchUpgradeJobSource).iterReady())
         self.assertEqual(
             jobs,
-            [job,])
+            [job, ])
 
     def test_requestUpgrade_no_upgrade_needed(self):
         # If a branch doesn't need to be upgraded, requestUpgrade raises an
@@ -632,6 +661,7 @@ class TestBranchLinksAndIdentites(TestCaseWithFactory):
         branch = self.factory.makeProductBranch(
             product=fooix, owner=eric, name='trunk')
         linked_branch = ICanHasLinkedBranch(future)
+        login_person(fooix.owner)
         linked_branch.setBranch(branch)
         self.assertEqual(
             [linked_branch],
@@ -824,6 +854,7 @@ class TestBzrIdentity(TestCaseWithFactory):
         product = branch.product
         series = self.factory.makeProductSeries(product=product)
         linked_branch = ICanHasLinkedBranch(series)
+        login_person(series.owner)
         linked_branch.setBranch(branch)
         self.assertBzrIdentity(branch, linked_branch.bzr_path)
 
@@ -849,6 +880,7 @@ class TestBzrIdentity(TestCaseWithFactory):
             removeSecurityProxy(branch.product))
         series_link = ICanHasLinkedBranch(series)
         product_link.setBranch(branch)
+        login_person(series.owner)
         series_link.setBranch(branch)
         self.assertBzrIdentity(branch, product_link.bzr_path)
 
@@ -900,15 +932,18 @@ class TestBranchDeletion(TestCaseWithFactory):
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        TestCaseWithFactory.setUp(self, 'test@canonical.com')
-        self.product = ProductSet().getByName('firefox')
-        self.user = getUtility(IPersonSet).getByEmail('test@canonical.com')
+        TestCaseWithFactory.setUp(self)
+        self.user = self.factory.makePerson()
+        self.product = self.factory.makeProduct(owner=self.user)
         self.branch = self.factory.makeProductBranch(
             name='to-delete', owner=self.user, product=self.product)
         # The owner of the branch is subscribed to the branch when it is
         # created.  The tests here assume no initial connections, so
         # unsubscribe the branch owner here.
         self.branch.unsubscribe(self.branch.owner, self.branch.owner)
+        # Make sure that the tests all flush the database changes.
+        self.addCleanup(Store.of(self.branch).flush)
+        login_person(self.user)
 
     def test_deletable(self):
         """A newly created branch can be deleted without any problems."""
@@ -1039,6 +1074,43 @@ class TestBranchDeletion(TestCaseWithFactory):
         # Need to commit the transaction to fire off the constraint checks.
         transaction.commit()
 
+    def test_related_TranslationTemplatesBuildJob_cleaned_out(self):
+        # A TranslationTemplatesBuildJob is a type of BranchJob that
+        # comes with a BuildQueue entry referring to the same Job.
+        # Deleting the branch cleans up the BuildQueue before it can
+        # remove the Job and BranchJob.
+        branch = self.factory.makeAnyBranch()
+        getUtility(ITranslationTemplatesBuildJobSource).create(branch)
+        branch.destroySelf(break_references=True)
+
+    def test_linked_translations_branch_cleared(self):
+        # The translations_branch of a series that is linked to the branch
+        # should be cleared.
+        dev_focus = self.branch.product.development_focus
+        dev_focus.translations_branch = self.branch
+        self.branch.destroySelf(break_references=True)
+
+    def test_unrelated_TranslationTemplatesBuildJob_intact(self):
+        # No innocent BuildQueue entries are harmed in deleting a
+        # branch.
+        branch = self.factory.makeAnyBranch()
+        other_branch = self.factory.makeAnyBranch()
+        source = getUtility(ITranslationTemplatesBuildJobSource)
+        job = source.create(branch)
+        other_job = source.create(other_branch)
+        store = Store.of(branch)
+
+        branch.destroySelf(break_references=True)
+
+        # The BuildQueue for the job whose branch we deleted is gone.
+        buildqueue = store.find(BuildQueue, BuildQueue.job == job.job)
+        self.assertEqual([], list(buildqueue))
+
+        # The other job's BuildQueue entry is still there.
+        other_buildqueue = store.find(
+            BuildQueue, BuildQueue.job == other_job.job)
+        self.assertNotEqual([], list(other_buildqueue))
+
     def test_createsJobToReclaimSpace(self):
         # When a branch is deleted from the database, a job to remove the
         # branch from disk as well.
@@ -1052,6 +1124,19 @@ class TestBranchDeletion(TestCaseWithFactory):
         self.assertEqual(
             [branch_id],
             [ReclaimBranchSpaceJob(job).branch_id for job in jobs])
+
+    def test_destroySelf_with_SourcePackageRecipe(self):
+        """If branch is a base_branch in a recipe, it is deleted."""
+        recipe = self.factory.makeSourcePackageRecipe()
+        recipe.base_branch.destroySelf(break_references=True)
+
+    def test_destroySelf_with_SourcePackageRecipe_as_non_base(self):
+        """If branch is referred to by a recipe, it is deleted."""
+        branch1 = self.factory.makeAnyBranch()
+        branch2 = self.factory.makeAnyBranch()
+        self.factory.makeSourcePackageRecipe(
+            branches=[branch1, branch2])
+        branch2.destroySelf(break_references=True)
 
 
 class TestBranchDeletionConsequences(TestCase):
@@ -1347,25 +1432,6 @@ class TestBranchDeletionConsequences(TestCase):
         self.assertEqual(
             {recipe: ('delete', 'This recipe uses this branch.')},
             recipe.base_branch.deletionRequirements())
-
-    def test_destroySelf_with_SourcePackageRecipe(self):
-        """If branch is a base_branch in a recipe, it is deleted."""
-        recipe = self.factory.makeSourcePackageRecipe()
-        store = Store.of(recipe)
-        recipe.base_branch.destroySelf(break_references=True)
-        # show no DB constraints have been violated
-        store.flush()
-
-    def test_destroySelf_with_SourcePackageRecipe_as_non_base(self):
-        """If branch is referred to by a recipe, it is deleted."""
-        branch1 = self.factory.makeAnyBranch()
-        branch2 = self.factory.makeAnyBranch()
-        recipe = self.factory.makeSourcePackageRecipe(
-            branches=[branch1, branch2])
-        store = Store.of(recipe)
-        branch2.destroySelf(break_references=True)
-        # show no DB constraints have been violated
-        store.flush()
 
 
 class StackedBranches(TestCaseWithFactory):
@@ -1674,8 +1740,123 @@ class TestCreateBranchRevisionFromIDs(TestCaseWithFactory):
             [(rev.revision_id, revision_number)])
 
 
-class TestCodebrowseURL(TestCaseWithFactory):
-    """Tests for `Branch.codebrowse_url`."""
+class TestRevisionHistory(TestCaseWithFactory):
+    """Tests for a branch's revision history."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_revision_count(self):
+        # A branch's revision count is equal to the number of revisions that
+        # are associated with it.
+        branch = self.factory.makeBranch()
+        some_number = 6
+        self.factory.makeRevisionsForBranch(branch, count=some_number)
+        self.assertEqual(some_number, branch.revision_count)
+
+    def test_revision_history_matches_count(self):
+        branch = self.factory.makeBranch()
+        some_number = 3
+        self.factory.makeRevisionsForBranch(branch, count=some_number)
+        self.assertEqual(
+            branch.revision_count, branch.revision_history.count())
+
+    def test_revision_history_is_made_of_revisions(self):
+        # Branch.revision_history contains IBranchRevision objects.
+        branch = self.factory.makeBranch()
+        some_number = 6
+        self.factory.makeRevisionsForBranch(branch, count=some_number)
+        for branch_revision in branch.revision_history:
+            self.assertProvides(branch_revision, IBranchRevision)
+
+    def test_continuous_sequence_numbers(self):
+        # The revisions in the revision history have sequence numbers which
+        # start from 1 at the oldest and don't have any gaps.
+        branch = self.factory.makeBranch()
+        some_number = 4
+        self.factory.makeRevisionsForBranch(branch, count=some_number)
+        self.assertEqual(
+            [4, 3, 2, 1], [br.sequence for br in branch.revision_history])
+
+    def test_most_recent_first(self):
+        # The revisions in the revision history start with the most recent
+        # first.
+        branch = self.factory.makeBranch()
+        some_number = 4
+        self.factory.makeRevisionsForBranch(branch, count=some_number)
+        revision_history = list(branch.revision_history)
+        sorted_by_date = sorted(
+            revision_history, key=lambda x: x.revision.revision_date,
+            reverse=True)
+        self.assertEqual(sorted_by_date, revision_history)
+
+    def test_latest_revisions(self):
+        # IBranch.latest_revisions gives only the latest revisions.
+        branch = self.factory.makeBranch()
+        some_number = 7
+        self.factory.makeRevisionsForBranch(branch, count=some_number)
+        smaller_number = some_number / 2
+        self.assertEqual(
+            list(branch.revision_history[:smaller_number]),
+            list(branch.latest_revisions(smaller_number)))
+
+    def test_getRevisionsSince(self):
+        # IBranch.getRevisionsSince gives all the BranchRevisions for
+        # revisions committed since a given timestamp.
+        branch = self.factory.makeBranch()
+        some_number = 7
+        self.factory.makeRevisionsForBranch(branch, count=some_number)
+        mid_sequence = some_number - 2
+        revisions = list(branch.revision_history)
+        mid_revision = revisions[mid_sequence]
+        since = branch.getRevisionsSince(mid_revision.revision.revision_date)
+        self.assertEqual(revisions[:mid_sequence], list(since))
+
+    def test_top_ancestor_has_no_parents(self):
+        # The top-most revision of a branch (i.e. the first one) has no
+        # parents.
+        branch = self.factory.makeBranch()
+        self.factory.makeRevisionsForBranch(branch, count=1)
+        revision = list(branch.revision_history)[0].revision
+        self.assertEqual([], revision.parent_ids)
+
+    def test_non_first_revisions_have_parents(self):
+        # Revisions which are not the first revision of the branch have
+        # parent_ids. When there are no merges present, there is only one
+        # parent which is the previous revision.
+        branch = self.factory.makeBranch()
+        some_number = 5
+        self.factory.makeRevisionsForBranch(branch, count=some_number)
+        revisions = list(branch.revision_history)
+        last_rev = revisions[0].revision
+        second_last_rev = revisions[1].revision
+        self.assertEqual(last_rev.parent_ids, [second_last_rev.revision_id])
+
+    def test_tip_revision_when_no_bazaar_data(self):
+        # When a branch has no revisions and no Bazaar data at all, its tip
+        # revision is None and its last_scanned_id is None.
+        branch = self.factory.makeBranch()
+        self.assertIs(None, branch.last_scanned_id)
+        self.assertIs(None, branch.getTipRevision())
+
+    def test_tip_revision_when_no_revisions(self):
+        # When a branch has no revisions but does have Bazaar data, its tip
+        # revision is None and its last_scanned_id is
+        # bzrlib.revision.NULL_REVISION.
+        branch = self.factory.makeBranch()
+        branch.updateScannedDetails(None, 0)
+        self.assertEqual(NULL_REVISION, branch.last_scanned_id)
+        self.assertIs(None, branch.getTipRevision())
+
+    def test_tip_revision_is_updated(self):
+        branch = self.factory.makeBranch()
+        revision = self.factory.makeRevision()
+        branch.updateScannedDetails(revision, 1)
+        self.assertEqual(revision.revision_id, branch.last_scanned_id)
+        self.assertEqual(revision, branch.getTipRevision())
+
+
+class TestCodebrowse(TestCaseWithFactory):
+    """Tests for branch codebrowse support."""
 
     layer = DatabaseFunctionalLayer
 
@@ -1708,6 +1889,17 @@ class TestCodebrowseURL(TestCaseWithFactory):
         branch = self.factory.makeAnyBranch()
         self.assertEqual(
             branch.browse_source_url, branch.codebrowse_url('files'))
+
+    def test_no_revisions_not_browseable(self):
+        # A branch with no revisions is not browseable.
+        branch = self.factory.makeBranch()
+        self.assertFalse(branch.code_is_browseable)
+
+    def test_revisions_means_browseable(self):
+        # A branch that has revisions is browseable.
+        branch = self.factory.makeBranch()
+        self.factory.makeRevisionsForBranch(branch, count=5)
+        self.assertTrue(branch.code_is_browseable)
 
 
 class TestBranchNamespace(TestCaseWithFactory):
@@ -1764,11 +1956,12 @@ class TestPendingWrites(TestCaseWithFactory):
         branch = self.factory.makeAnyBranch()
         self.assertEqual(False, branch.pending_writes)
 
-    def test_requestMirror_for_hosted(self):
-        # If a hosted branch has a requested mirror, then someone has just
-        # pushed something up. Therefore, pending writes.
+    def test_branchChanged_for_hosted(self):
+        # If branchChanged has been called with a new tip revision id, there
+        # are pending writes.
         branch = self.factory.makeAnyBranch(branch_type=BranchType.HOSTED)
-        branch.requestMirror()
+        with person_logged_in(branch.owner):
+            branch.branchChanged('', 'new-tip', None, None, None)
         self.assertEqual(True, branch.pending_writes)
 
     def test_requestMirror_for_imported(self):
@@ -1790,7 +1983,7 @@ class TestPendingWrites(TestCaseWithFactory):
         # If a branch has been pulled (mirrored) but not scanned, then we have
         # yet to load the revisions into the database. This means there are
         # pending writes.
-        branch = self.factory.makeAnyBranch()
+        branch = self.factory.makeAnyBranch(branch_type=BranchType.MIRRORED)
         branch.startMirroring()
         rev_id = self.factory.getUniqueString('rev-id')
         removeSecurityProxy(branch).branchChanged(
@@ -1800,7 +1993,7 @@ class TestPendingWrites(TestCaseWithFactory):
     def test_pulled_and_scanned(self):
         # If a branch has been pulled and scanned, then there are no pending
         # writes.
-        branch = self.factory.makeAnyBranch()
+        branch = self.factory.makeAnyBranch(branch_type=BranchType.MIRRORED)
         branch.startMirroring()
         rev_id = self.factory.getUniqueString('rev-id')
         removeSecurityProxy(branch).branchChanged(
@@ -1814,14 +2007,14 @@ class TestPendingWrites(TestCaseWithFactory):
     def test_first_mirror_started(self):
         # If we have started mirroring the branch for the first time, then
         # there are probably pending writes.
-        branch = self.factory.makeAnyBranch()
+        branch = self.factory.makeAnyBranch(branch_type=BranchType.MIRRORED)
         branch.startMirroring()
         self.assertEqual(True, branch.pending_writes)
 
     def test_following_mirror_started(self):
         # If we have started mirroring the branch, then there are probably
         # pending writes.
-        branch = self.factory.makeAnyBranch()
+        branch = self.factory.makeAnyBranch(branch_type=BranchType.MIRRORED)
         branch.startMirroring()
         rev_id = self.factory.getUniqueString('rev-id')
         removeSecurityProxy(branch).branchChanged(
@@ -2381,7 +2574,10 @@ class TestGetBzrBranch(TestCaseWithFactory):
         # safe_open returns the underlying bzr branch of a database branch in
         # the simple, unstacked, case.
         db_branch, tree = self.create_branch_and_tree()
-        revid = tree.commit('')
+        # XXX: AaronBentley 2010-08-06 bug=614404: a bzr username is
+        # required to generate the revision-id.
+        with override_environ(BZR_EMAIL='me@example.com'):
+            revid = tree.commit('')
         bzr_branch = db_branch.getBzrBranch()
         self.assertEqual(revid, bzr_branch.last_revision())
 

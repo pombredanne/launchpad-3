@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'escape_js_string',
     'TranslationImportQueueEntryNavigation',
     'TranslationImportQueueEntryView',
     'TranslationImportQueueNavigation',
@@ -22,8 +23,7 @@ from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.webapp.tales import DateTimeFormatterAPI
-from canonical.launchpad.webapp.interfaces import (
-    NotFoundError, UnexpectedFormData)
+from lp.app.errors import NotFoundError, UnexpectedFormData
 from lp.translations.browser.hastranslationimports import (
     HasTranslationImportsView)
 from lp.registry.interfaces.distroseries import IDistroSeries
@@ -40,6 +40,23 @@ from lp.translations.utilities.template import make_domain, make_name
 from canonical.launchpad.webapp import (
     action, canonical_url, GetitemNavigation, LaunchpadFormView)
 from canonical.launchpad.validators.name import valid_name
+
+
+def replace(string, replacement):
+    """In `string,` replace `replacement`[0] with `replacement`[1]."""
+    return string.replace(*replacement)
+
+
+def escape_js_string(string):
+    """Escape `string` for use as a string in a JS <script> tag."""
+    replacements = [
+        ('\\', '\\\\'),
+        ('"', '\\"'),
+        ("'", "\\'"),
+        ('\n', '\\n'),
+        ]
+    return reduce(replace, replacements, string)
+
 
 class TranslationImportQueueEntryNavigation(GetitemNavigation):
 
@@ -96,7 +113,6 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
             field_values['potemplate'] = self.context.potemplate
             if self.context.pofile is not None:
                 field_values['language'] = self.context.pofile.language
-                field_values['variant'] = self.context.pofile.variant
             else:
                 # The entries that are translations usually have the language
                 # code
@@ -104,9 +120,7 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
                 language_set = getUtility(ILanguageSet)
                 filename = os.path.basename(self.context.path)
                 guessed_language, file_ext = filename.split(u'.', 1)
-                (language, variant) = (
-                    language_set.getLanguageAndVariantFromString(
-                        guessed_language))
+                language = language_set.getLanguageByCode(guessed_language)
                 if language is not None:
                     field_values['language'] = language
                     # Need to warn the user that we guessed the language
@@ -114,8 +128,6 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
                     self.request.response.addWarningNotification(
                         "Review the language selection as we guessed it and"
                         " could not be accurate.")
-                if variant is not None:
-                    field_values['variant'] = variant
 
         return field_values
 
@@ -232,9 +244,9 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
     def initialize(self):
         """Remove some fields based on the entry handled."""
         self.field_names = ['file_type', 'path', 'sourcepackagename',
-                            'name', 'translation_domain', 'languagepack',
                             'potemplate', 'potemplate_name',
-                            'language', 'variant']
+                            'name', 'translation_domain', 'languagepack',
+                            'language']
 
         if self.context.productseries is not None:
             # We are handling an entry for a productseries, this field is not
@@ -448,7 +460,6 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
 
         path = data.get('path')
         language = data.get('language')
-        variant = data.get('variant')
 
         # Use manual potemplate, if given.
         # man_potemplate is set in validate().
@@ -457,11 +468,11 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
         else:
             potemplate = data.get('potemplate')
 
-        pofile = potemplate.getPOFileByLang(language.code, variant)
+        pofile = potemplate.getPOFileByLang(language.code)
         if pofile is None:
             # We don't have such IPOFile, we need to create it.
             pofile = potemplate.newPOFile(
-                language.code, variant, self.context.importer)
+                language.code, self.context.importer)
         self.context.pofile = pofile
         if (self.context.sourcepackagename is not None and
             potemplate.sourcepackagename is not None and
@@ -507,6 +518,21 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
 
         self.context.setStatus(RosettaImportStatus.APPROVED, self.user)
         self.context.date_status_changed = UTC_NOW
+
+    @property
+    def js_domain_mapping(self):
+        """Return JS code mapping templates' names to translation domains."""
+        target = self.import_target
+        if target is None:
+            contents = ""
+        else:
+            contents = ", \n".join([
+                "'%s': '%s'" % (
+                    escape_js_string(template.name),
+                    escape_js_string(template.translation_domain))
+                for template in target.getCurrentTranslationTemplates()
+                ])
+        return "var template_domains = {%s};" % contents
 
 
 class TranslationImportQueueNavigation(GetitemNavigation):
