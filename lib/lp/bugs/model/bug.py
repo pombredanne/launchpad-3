@@ -56,7 +56,10 @@ from canonical.launchpad.database.message import (
 from canonical.launchpad.fields import DuplicateBug
 from canonical.launchpad.helpers import shortlist
 from lp.hardwaredb.interfaces.hwdb import IHWSubmissionBugSet
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.launchpad import (
+    ILaunchpadCelebrities,
+    IPersonRoles,
+    )
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.interfaces.message import (
@@ -1565,11 +1568,10 @@ class Bug(SQLBase):
         """
         if user.id in self._known_viewers:
             return True
-        admins = getUtility(ILaunchpadCelebrities).admin
         if not self.private:
             # This is a public bug.
             return True
-        elif user.in_admin:
+        elif IPersonRoles(user).in_admin:
             # Admins can view all bugs.
             return True
         else:
