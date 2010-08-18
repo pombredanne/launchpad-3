@@ -3082,6 +3082,8 @@ class PersonParticipationView(LaunchpadView):
         """Return a dict of participation information for the membership.
 
         Method requires membership or team, not both.
+        :param via: The team through which the membership in the indirect
+        is established.
         """
         if ((membership is None and team is None) or
             (membership is not None and team is not None)):
@@ -3134,6 +3136,9 @@ class PersonParticipationView(LaunchpadView):
                 continue
             # The key points of the path for presentation are:
             # [-?] indirect memberships, [-2] direct membership, [-1] team.
+            
+            # Passing in limit=1 on findPathToTeam gets just the team
+            # providing membership, which is all that matters.
             team_path = self.context.findPathToTeam(team, limit=1)
             participations.append(
                 self._asParticipation(via=team_path[-2], team=team))
