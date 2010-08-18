@@ -39,7 +39,7 @@ Values in the cache can be deleted.
     >>> list(cache)
     []
 
-Accessing the cached property causes its function to be called again.
+Accessing the cached property causes its populate function to be called again.
 
     >>> foo.bar
     2
