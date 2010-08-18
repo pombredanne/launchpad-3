@@ -2066,10 +2066,11 @@ class Person(
         all_direct_memberships = store.find(TeamMembership,
             TeamMembership.personID.is_in(
                 [team.id for team in teams] + [self.id]))
+        user_memberships = [membership for membership in 
+            all_direct_memberships if membership.person == self]
         all_direct_memberships = [(membership.team, membership.person) for
             membership in all_direct_memberships.order_by(
                 Desc(TeamMembership.datejoined), Desc(TeamMembership.id))]
-        
         graph = dict(all_direct_memberships)
         graph.update(all_user_memberships)
         paths = {} 
@@ -2080,7 +2081,7 @@ class Person(
                 step = graph[step]
                 path.append(step)
             paths[team] = path
-        return paths
+        return  paths, user_memberships
             
             
     @property

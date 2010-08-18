@@ -109,10 +109,15 @@ class TestPersonTeams(TestCaseWithFactory):
 
     def test_getPathsToTeams(self):
         paths = self.user.getPathsToTeams()
-        expected = {self.a_team:[self.a_team, self.user],
+        expected_paths = {self.a_team:[self.a_team, self.user],
             self.b_team:[self.b_team, self.a_team, self.user],
             self.c_team:[self.c_team, self.b_team, self.a_team, self.user]}
-        self.assertEqual(expected, paths)
+        self.assertEqual(expected_paths, paths[0])
+        
+        expected_memberships = [(self.a_team, self.user)]
+        memberships = [(membership.team, membership.person) for membership 
+            in paths[1]]
+        self.assertEqual(expected_memberships, memberships)
 
     def test_getPathsToTeamsComplicated(self):
         d_team = self.factory.makeTeam(name='d', owner=self.b_team)
@@ -125,14 +130,23 @@ class TestPersonTeams(TestCaseWithFactory):
         e_team.addMember(self.user, e_team.teamowner)
 
         paths = self.user.getPathsToTeams()
-        expected = {
+        expected_paths = {
             self.a_team:[self.a_team, self.user],
             self.b_team:[self.b_team, self.a_team, self.user],
             self.c_team:[self.c_team, self.b_team, self.a_team, self.user],
-            d_team:[d_team, self.user],
+            d_team:[d_team, self.b_team, self.a_team, self.user],
             e_team:[e_team, self.user],
             f_team:[f_team, e_team, self.user]}
-        self.assertEqual(expected, paths)
+        self.assertEqual(expected_paths, paths[0])
+        
+        expected_memberships = [
+            (self.a_team, self.user), 
+            (d_team, self.user),
+            (e_team, self.user)
+            ]
+        memberships = [(membership.team, membership.person) for membership 
+            in paths[1]]
+        self.assertEqual(expected_memberships, memberships)
 
     def test_getPathsToTeamsCycle(self):
         d_team = self.factory.makeTeam(name='d', owner=self.b_team)
@@ -141,12 +155,17 @@ class TestPersonTeams(TestCaseWithFactory):
         #d_team.acceptInvitationToBeMemberOf(self.c_team, 'accepted')
 
         paths = self.user.getPathsToTeams()
-        expected = {
+        expected_paths = {
             self.a_team:[self.a_team, self.user],
             self.b_team:[self.b_team, self.a_team, self.user],
             self.c_team:[self.c_team, self.b_team, self.a_team, self.user],
             d_team:[d_team, self.b_team, self.a_team, self.user]}
-        self.assertEqual(expected, paths)
+        self.assertEqual(expected_paths, paths[0])
+        
+        expected_memberships = [(self.a_team, self.user)]
+        memberships = [(membership.team, membership.person) for membership 
+            in paths[1]]
+        self.assertEqual(expected_memberships, memberships)
 
 
 class TestPerson(TestCaseWithFactory):
