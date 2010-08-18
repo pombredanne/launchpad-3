@@ -53,7 +53,7 @@ from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import Summary, Whiteboard
+from lp.services.fields import Summary, Whiteboard
 from canonical.launchpad.interfaces.message import IMessageSet
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, custom_widget, Link, enabled_with_permission,

@@ -49,7 +49,7 @@ from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
 from canonical.launchpad.database.librarian import LibraryFileAlias
 from canonical.launchpad.database.message import (
     Message, MessageChunk, MessageSet)
-from canonical.launchpad.fields import DuplicateBug
+from lp.services.fields import DuplicateBug
 from canonical.launchpad.helpers import shortlist
 from lp.hardwaredb.interfaces.hwdb import IHWSubmissionBugSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities

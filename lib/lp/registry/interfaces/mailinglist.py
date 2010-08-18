@@ -30,7 +30,7 @@ from zope.schema import Bool, Choice, Datetime, Object, Set, Text, TextLine
 from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import PublicPersonChoice
+from lp.services.fields import PublicPersonChoice
 from canonical.launchpad.interfaces.emailaddress import IEmailAddress
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from canonical.launchpad.interfaces.message import IMessage
