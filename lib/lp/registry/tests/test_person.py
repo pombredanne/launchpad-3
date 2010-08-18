@@ -51,14 +51,6 @@ from lp.registry.interfaces.person import PrivatePersonLinkageError
 from canonical.testing.layers import DatabaseFunctionalLayer, reconnect_stores
 
 
-#   class TestPersonImplementsIPerson(TestCaseWithFactory):
-#       
-#       layer = DatabaseFunctionalLayer
-
-#       def test_implementation(self):
-#           verifyObject(IPerson, self.factory.makePerson())
-
-
 class TestPersonTeams(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
@@ -153,7 +145,6 @@ class TestPersonTeams(TestCaseWithFactory):
         d_team = self.factory.makeTeam(name='d', owner=self.b_team)
         login_person(self.a_team.teamowner)
         self.c_team.addMember(d_team, self.c_team.teamowner)
-        #d_team.acceptInvitationToBeMemberOf(self.c_team, 'accepted')
 
         paths = self.user.getPathsToTeams()
         expected_paths = {
