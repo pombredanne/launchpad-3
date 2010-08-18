@@ -46,8 +46,10 @@ class FeatureController(object):
     """A FeatureController tells application code what features are active.
 
     It does this by meshing together two sources of data:
-    - feature flags, typically set by an administrator into the database
-    - feature scopes, which would typically be looked up based on attributes
+
+      - feature flags, typically set by an administrator into the database
+
+      - feature scopes, which would typically be looked up based on attributes
       of the current web request, or the user for whom a job is being run, or
       something similar.
 
@@ -72,14 +74,14 @@ class FeatureController(object):
     The controller is then supposed to be held in a thread-local and reused
     for the duration of the request.
 
-    See <https://dev.launchpad.net/LEP/FeatureFlags>
+    @see: U{https://dev.launchpad.net/LEP/FeatureFlags}
     """
 
     def __init__(self, scope_check_callback):
         """Construct a new view of the features for a set of scopes.
 
         :param scope_check_callback: Given a scope name, says whether
-            it's active or not.
+        it's active or not.
         """
         self._known_scopes = Memoize(scope_check_callback)
         self._known_flags = Memoize(self._checkFlag)
@@ -91,8 +93,9 @@ class FeatureController(object):
         """Get the value of a specific flag.
         
         :param flag: A name to lookup. e.g. 'recipes.enabled'
+
         :return: The value of the flag determined by the highest priority rule
-            that matched.
+        that matched.
         """
         return self._known_flags.lookup(flag)
 
