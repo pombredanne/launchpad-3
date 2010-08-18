@@ -112,9 +112,10 @@ class TestLaunchpadServe(TestCaseWithSubprocess):
 
 
 def test_suite():
+    from bzrlib import tests
     from bzrlib.plugins import lpserve
 
-    loader = unittest.TestLoader()
+    loader = tests.TestLoader()
     suite = loader.loadTestsFromName(__name__)
-    suite.addTests(lpserve.load_tests([], lpserve, loader))
+    suite = lpserve.load_tests(suite, lpserve, loader)
     return suite
