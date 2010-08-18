@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
+    "AbstractUploadPolicy",
     "BuildDaemonUploadPolicy",
     "findPolicyByName",
     "IArchiveUploadPolicy",
@@ -324,48 +325,6 @@ class SyncUploadPolicy(AbstractUploadPolicy):
         pass
 
 
-# XXX: The two policies below should be moved to a test helper somewhere, but
-# I'll do that in a subsequent branch as this one is already too big.
-class AnythingGoesUploadPolicy(AbstractUploadPolicy):
-    """This policy is invoked when processing uploads from the test process.
-
-    We require a signed changes file but that's it.
-    """
-
-    name = 'anything'
-
-    def __init__(self):
-        AbstractUploadPolicy.__init__(self)
-        # We require the changes to be signed but not the dsc
-        self.unsigned_dsc_ok = True
-
-    def policySpecificChecks(self, upload):
-        """Nothing, let it go."""
-        pass
-
-    def rejectPPAUploads(self, upload):
-        """We allow PPA uploads."""
-        return False
-
-
-class AbsolutelyAnythingGoesUploadPolicy(AnythingGoesUploadPolicy):
-    """This policy is invoked when processing uploads from the test process.
-
-    Absolutely everything is allowed, for when you don't want the hassle
-    of dealing with inappropriate checks in tests.
-    """
-
-    name = 'absolutely-anything'
-
-    def __init__(self):
-        AnythingGoesUploadPolicy.__init__(self)
-        self.unsigned_changes_ok = True
-
-    def policySpecificChecks(self, upload):
-        """Nothing, let it go."""
-        pass
-
-
 class SecurityUploadPolicy(AbstractUploadPolicy):
     """The security-upload policy.
 
@@ -398,8 +357,6 @@ def register_archive_upload_policy_adapters():
         BuildDaemonUploadPolicy,
         InsecureUploadPolicy,
         SyncUploadPolicy, 
-        AnythingGoesUploadPolicy,
-        AbsolutelyAnythingGoesUploadPolicy,
         SecurityUploadPolicy]
     sm = getGlobalSiteManager()
     for policy in policies:
