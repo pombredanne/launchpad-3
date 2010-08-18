@@ -61,11 +61,13 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
     cursor, quote, quote_like, sqlvalues, SQLBase)
 
-from canonical.cachedproperty import cachedproperty, cache_property, clear_property
+from canonical.cachedproperty import (cachedproperty, cache_property,
+    clear_property)
 
-from canonical.lazr.utils import get_current_browser_request, safe_hasattr
+from canonical.lazr.utils import get_current_browser_request
 
-from canonical.launchpad.components.decoratedresultset import DecoratedResultSet
+from canonical.launchpad.components.decoratedresultset import (
+    DecoratedResultSet)
 from canonical.launchpad.database.account import Account, AccountPassword
 from canonical.launchpad.interfaces.account import AccountSuspendedError
 from lp.bugs.model.bugtarget import HasBugsBase
@@ -890,14 +892,16 @@ class Person(
                 SELECT name, 3 as kind, displayname
                 FROM product
                 WHERE
-                    driver = %(person)s
-                    OR owner = %(person)s
+                    active = True AND
+                    (driver = %(person)s
+                    OR owner = %(person)s)
                 UNION
                 SELECT name, 2 as kind, displayname
                 FROM project
                 WHERE
-                    driver = %(person)s
-                    OR owner = %(person)s
+                    active = True AND
+                    (driver = %(person)s
+                    OR owner = %(person)s)
                 UNION
                 SELECT name, 1 as kind, displayname
                 FROM distribution
@@ -909,7 +913,12 @@ class Person(
             """ % sqlvalues(person=self))
         results = IStore(self).using(origin).find(find_spec)
         results = results.order_by('kind', 'displayname')
-        return [pillar_name for pillar_name, kind, displayname in results]
+
+        def get_pillar_name(result):
+            pillar_name, kind, displayname = result
+            return pillar_name
+
+        return DecoratedResultSet(results, get_pillar_name)
 
     def getOwnedProjects(self, match_name=None):
         """See `IPerson`."""
@@ -1447,7 +1456,7 @@ class Person(
         need_location=False, need_archive=False, need_preferred_email=False,
         need_validity=False):
         """Lookup all members of the team with optional precaching.
-        
+
         :param need_karma: The karma attribute will be cached.
         :param need_ubuntu_coc: The is_ubuntu_coc_signer attribute will be
             cached.
@@ -1475,7 +1484,8 @@ class Person(
         if need_karma:
             # New people have no karmatotalcache rows.
             origin.append(
-                LeftJoin(KarmaTotalCache, KarmaTotalCache.person == Person.id))
+                LeftJoin(KarmaTotalCache,
+                    KarmaTotalCache.person == Person.id))
             columns.append(KarmaTotalCache)
         if need_ubuntu_coc:
             columns.append(Alias(Exists(Select(SignedCodeOfConduct,
@@ -1488,9 +1498,9 @@ class Person(
                 LeftJoin(PersonLocation, PersonLocation.person == Person.id))
             columns.append(PersonLocation)
         if need_archive:
-            # Not everyone has PPA's 
-            # It would be nice to cleanly expose the soyuz rules for this to avoid
-            # duplicating the relationships.
+            # Not everyone has PPA's
+            # It would be nice to cleanly expose the soyuz rules for this to
+            # avoid duplicating the relationships.
             origin.append(
                 LeftJoin(Archive, Archive.owner == Person.id))
             columns.append(Archive)
@@ -1519,6 +1529,7 @@ class Person(
         # Adapt the result into a cached Person.
         columns = tuple(columns)
         raw_result = store.using(*origin).find(columns, conditions)
+
         def prepopulate_person(row):
             result = row[0]
             index = 1
@@ -1556,7 +1567,8 @@ class Person(
                 index += 1
                 cache_property(result, '_is_valid_person_cached', valid)
             return result
-        return DecoratedResultSet(raw_result, result_decorator=prepopulate_person)
+        return DecoratedResultSet(raw_result,
+            result_decorator=prepopulate_person)
 
     def _getMembersWithPreferredEmails(self):
         """Helper method for public getMembersWithPreferredEmails.

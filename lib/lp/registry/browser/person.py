@@ -5168,7 +5168,7 @@ class PersonRelatedSoftwareView(LaunchpadView):
     @cachedproperty
     def related_projects_count(self):
         """The number of project owned or driven by this person."""
-        return len(self._related_projects())
+        return self._related_projects().count()
 
     @cachedproperty
     def has_more_related_projects(self):
