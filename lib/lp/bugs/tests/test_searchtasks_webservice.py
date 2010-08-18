@@ -28,22 +28,16 @@ class TestOmitTargetedParameter(TestCaseWithFactory):
         self.webservice = LaunchpadWebServiceCaller('launchpad-library',
             'salgado-change-anything')
 
-    def test_omit_targeted_default(self):
+    def test_omit_targeted_old_default_true(self):
         response = self.webservice.named_get(
             self.webservice.getAbsoluteUrl('/mebuntu/inkanyamba'),
-            'searchTasks').jsonBody()
-        self.assertEqual(response['total_size'], 1)
-
-    def test_omit_targeted_true(self):
-        response = self.webservice.named_get(
-            self.webservice.getAbsoluteUrl('/mebuntu/inkanyamba'),
-            'searchTasks', omit_targeted=True).jsonBody()
+            'searchTasks', api_version='1.0').jsonBody()
         self.assertEqual(response['total_size'], 0)
 
-    def test_omit_targeted_false(self):
+    def test_omit_targeted_new_default_false(self):
         response = self.webservice.named_get(
             self.webservice.getAbsoluteUrl('/mebuntu/inkanyamba'),
-            'searchTasks', omit_targeted=False).jsonBody()
+            'searchTasks', api_version='devel').jsonBody()
         self.assertEqual(response['total_size'], 1)
 
 
