@@ -151,6 +151,9 @@ class IStructuralSubscriptionTarget(Interface):
         :return: The new subscription.
         """
 
+    def userCanAlterBugSubscription(subscriber, subscribed_by):
+        """Check if a user can change a bug subscription for a person."""
+
     @operation_parameters(
         subscriber=Reference(
             schema=IPerson,
