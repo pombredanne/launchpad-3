@@ -88,7 +88,6 @@ class SanitizeDb(LaunchpadScript):
             'oauthnonce',
             'oauthrequesttoken',
             'openidassociation',
-            'openidauthorization',
             'openidconsumerassociation',
             'openidconsumernonce',
             'openidnonce',
