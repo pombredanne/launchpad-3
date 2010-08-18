@@ -1485,7 +1485,7 @@ class Person(
             columns.append(KarmaTotalCache)
         if need_ubuntu_coc:
             columns.append(Alias(Exists(Select(SignedCodeOfConduct,
-                AND(Person._is_ubuntu_coc_signer_condition(),
+                And(Person._is_ubuntu_coc_signer_condition(),
                     SignedCodeOfConduct.ownerID == Person.id))),
                 name='is_ubuntu_coc_signer'))
         if need_location:
@@ -1515,12 +1515,13 @@ class Person(
                 Or(EmailAddress.status == None,
                     EmailAddress.status == EmailAddressStatus.PREFERRED))
         if need_validity:
-            # May find invalid persons
+            # May find teams (teams are not valid people)
             origin.append(
                 LeftJoin(Account, Person.account == Account.id))
             columns.append(Account)
-            conditions = AND(conditions,
-                Or(Account.status == None,
+            conditions = And(conditions,
+                Or(
+                    Account.status == None,
                     Account.status == AccountStatus.ACTIVE))
         if len(columns) == 1:
             columns = columns[0]
@@ -1564,8 +1565,9 @@ class Person(
             #-- validity caching
             if need_validity:
                 # valid if:
-                # -- valid account found
-                valid = (row[index] is not None
+                valid = (
+                    # -- valid account found
+                    row[index] is not None
                     # -- preferred email found
                     and result.preferredemail is not None)
                 index += 1
@@ -2412,7 +2414,7 @@ class Person(
         """See `IPerson`."""
         # Also assigned to by self._all_members.
         store = Store.of(self)
-        query = AND(SignedCodeOfConduct.ownerID == self.id,
+        query = And(SignedCodeOfConduct.ownerID == self.id,
             Person._is_ubuntu_coc_signer_condition())
         # TODO: Using exists would be faster than count().
         return bool(store.find(SignedCodeOfConduct, query).count())
@@ -2422,7 +2424,7 @@ class Person(
         """Generate a Storm Expr for determing the coc signing status."""
         sigset = getUtility(ISignedCodeOfConductSet)
         lastdate = sigset.getLastAcceptedDate()
-        return AND(SignedCodeOfConduct.active == True,
+        return And(SignedCodeOfConduct.active == True,
             SignedCodeOfConduct.datecreated >= lastdate)
 
     @property
