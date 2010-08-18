@@ -327,7 +327,6 @@ class IndexStanzaFields:
 
     def extend(self, entries):
         """Extend the internal list with the key-value pairs in entries.
-
         """
         self.fields.extend(entries)
 

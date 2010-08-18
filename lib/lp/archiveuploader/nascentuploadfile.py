@@ -334,7 +334,9 @@ class PackageUploadFile(NascentUploadFile):
     def extractUserDefinedFields(self, control):
         """Extract the user defined fields out of a control file list.
         """
-        return [(field, contents) for (field, contents) in
+        return [
+            (field, contents)
+            for (field, contents) in
             control if field not in self.known_fields]
 
 

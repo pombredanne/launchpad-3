@@ -271,5 +271,7 @@ class DebBinaryUploadFileTests(PackageUploadFileTestCase):
         build = self.factory.makeBinaryPackageBuild()
         bpr = uploadfile.storeInDatabase(build)
         self.assertEquals(
-            [[u"Homepage", u"http://samba.org/~jelmer/dulwich"],
-             [u"Python-Version", u"2.5"]], bpr.user_defined_fields)
+            [
+                [u"Homepage", u"http://samba.org/~jelmer/dulwich"],
+                [u"Python-Version", u"2.5"]
+            ], bpr.user_defined_fields)
