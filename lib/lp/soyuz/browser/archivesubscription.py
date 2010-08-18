@@ -27,7 +27,7 @@ from zope.schema import Date, Text
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
-from canonical.launchpad.fields import PersonChoice
+from lp.services.fields import PersonChoice
 from lp.soyuz.browser.sourceslist import (
     SourcesListEntries, SourcesListEntriesView)
 from lp.soyuz.interfaces.archive import IArchiveSet

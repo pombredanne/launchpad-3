@@ -24,10 +24,17 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.job.interfaces.job import JobStatus
 from lp.soyuz.interfaces.archive import (
-    ArchiveDisabled, ArchivePurpose, ArchiveStatus,
-    CannotRestrictArchitectures, CannotSwitchPrivacy, CannotUploadToPocket,
-    CannotUploadToPPA, IArchiveSet, InsufficientUploadRights,
-    InvalidPocketForPartnerArchive, InvalidPocketForPPA, NoRightsForArchive,
+    ArchiveDisabled,
+    ArchivePurpose,
+    ArchiveStatus,
+    CannotRestrictArchitectures,
+    CannotUploadToPocket,
+    CannotUploadToPPA,
+    IArchiveSet,
+    InsufficientUploadRights,
+    InvalidPocketForPartnerArchive,
+    InvalidPocketForPPA,
+    NoRightsForArchive,
     NoRightsForComponent)
 from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.soyuz.interfaces.archivearch import IArchiveArchSet
@@ -502,8 +509,7 @@ class TestArchiveCanUpload(TestCaseWithFactory):
                 archive, person, sourcepackagename,
                 distroseries=distroseries, component=component,
                 pocket=pocket, strict_component=strict_component),
-            reason
-            )
+            reason)
 
     def test_checkUpload_partner_invalid_pocket(self):
         # Partner archives only have release and proposed pockets
@@ -976,52 +982,6 @@ class TestArchiveTokens(TestCaseWithFactory):
         url = self.joe.getArchiveSubscriptionURL(self.joe, self.private_ppa)
         token = self.private_ppa.getAuthToken(self.joe)
         self.assertEqual(token.archive_url, url)
-
-
-class TestArchivePrivacySwitching(TestCaseWithFactory):
-
-    layer = LaunchpadZopelessLayer
-
-    def setUp(self):
-        """Create a public and a private PPA."""
-        super(TestArchivePrivacySwitching, self).setUp()
-        self.public_ppa = self.factory.makeArchive()
-        self.private_ppa = self.factory.makeArchive()
-        self.private_ppa.buildd_secret = 'blah'
-        self.private_ppa.private = True
-
-    def make_ppa_private(self, ppa):
-        """Helper method to privatise a ppa."""
-        ppa.private = True
-        ppa.buildd_secret = "secret"
-
-    def make_ppa_public(self, ppa):
-        """Helper method to make a PPA public (and use for assertRaises)."""
-        ppa.private = False
-        ppa.buildd_secret = ''
-
-    def test_switch_privacy_no_pubs_succeeds(self):
-        # Changing the privacy is fine if there are no publishing
-        # records.
-        self.make_ppa_private(self.public_ppa)
-        self.assertTrue(self.public_ppa.private)
-
-        self.private_ppa.private = False
-        self.assertFalse(self.private_ppa.private)
-
-    def test_switch_privacy_with_pubs_fails(self):
-        # Changing the privacy is not possible when the archive already
-        # has published sources.
-        publisher = SoyuzTestPublisher()
-        publisher.prepareBreezyAutotest()
-        publisher.getPubSource(archive=self.public_ppa)
-        publisher.getPubSource(archive=self.private_ppa)
-
-        self.assertRaises(
-            CannotSwitchPrivacy, self.make_ppa_private, self.public_ppa)
-
-        self.assertRaises(
-            CannotSwitchPrivacy, self.make_ppa_public, self.private_ppa)
 
 
 class TestGetBinaryPackageRelease(TestCaseWithFactory):

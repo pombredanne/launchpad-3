@@ -16,7 +16,7 @@ __all__ = [
 from zope.interface import Attribute, Interface
 from zope.schema import Bool, Bytes, Int, Object, Text, TextLine
 
-from canonical.launchpad.fields import Title
+from lp.services.fields import Title
 from lp.bugs.interfaces.bug import IBug
 from lp.bugs.interfaces.bugwatch import IBugWatch
 from canonical.launchpad.interfaces.launchpad import IHasBug

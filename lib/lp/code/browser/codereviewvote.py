@@ -9,7 +9,7 @@ __metaclass__ = type
 from zope.interface import Interface
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import PublicPersonChoice
+from lp.services.fields import PublicPersonChoice
 from canonical.launchpad.webapp import (
     action, canonical_url, LaunchpadFormView)
 from lp.code.errors import ReviewNotPending, UserHasExistingReview

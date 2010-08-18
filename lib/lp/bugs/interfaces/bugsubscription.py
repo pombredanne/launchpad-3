@@ -14,10 +14,10 @@ __all__ = [
 from zope.interface import Interface, Attribute
 from zope.schema import Int, Choice, Datetime
 from canonical.launchpad import _
-from canonical.launchpad.fields import PersonChoice
 
 from lp.bugs.interfaces.bug import IBug
 from lp.registry.enum import BugNotificationLevel
+from lp.services.fields import PersonChoice
 
 from lazr.restful.declarations import (
     REQUEST_USER, call_with, export_as_webservice_entry,
