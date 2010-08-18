@@ -88,7 +88,7 @@ bug got submitted correctly:
 
     >>> process_email(submit_mail)
 
-    >>> from canonical.database.sqlbase import rollback, commit
+    >>> from canonical.database.sqlbase import commit
     >>> from canonical.launchpad.ftests import sync
     >>> from canonical.launchpad.interfaces import IBugSet
     >>> from lp.services.mail import stub
@@ -1741,65 +1741,6 @@ user, telling him that he has to use the 'affects' command.
     different contexts, and you have to specify which one by using the
     affects command.
     ...
-
-
-Avoiding replay attacks
------------------------
-
-GPG signed messages that contain commands have their signature times checked
-to verify that they were not signed too long ago (because the message might be
-a reuse of an old message) or too far in the future (someone with a clock set
-far in the future could accidentally expose themselves to having a message
-reused for a long time).
-
-First we'll demonstrate that we can run commands with a (faux) signed message.
-
-    >>> msg = construct_command_email(bug_four, 'security no')
-    >>> submit_command_email(msg)
-    >>> bug_four.security_related
-    False
-    >>> msg = construct_command_email(bug_four, 'security yes')
-    >>> submit_command_email(msg)
-    >>> bug_four.security_related
-    True
-
-Now, if we set the signature's timestamp to far in the past, the command will
-fail and send us an email telling us what happened.
-
-    >>> msg = construct_command_email(bug_four, 'security no')
-    >>> msg.signature.timestamp = 0
-    >>> submit_command_email(msg)
-    >>> print_latest_email()
-    Subject: Submit Request Failure
-    ...
-    The message you sent included commands to modify the bug report, but the
-    signature was (apparently) generated too far in the past or future.
-    ...
-
-The same goes for signatures that are generated in the future.
-
-    >>> msg = construct_command_email(bug_four, 'security no')
-    >>> one_day = 24 * 60 * 60
-    >>> msg.signature.timestamp += one_day
-    >>> submit_command_email(msg)
-    >>> print_latest_email()
-    Subject: Submit Request Failure
-    ...
-    The message you sent included commands to modify the bug report, but the
-    signature was (apparently) generated too far in the past or future.
-    ...
-
-However, if the message does not contain any commands and is just a comment,
-the future/past signature is ignored.
-
-    >>> msg = construct_email(comment_mail)
-    >>> msg.signature.timestamp += one_day
-    >>> handler.process(msg, msg['To'])
-    True
-
-We don't really want that comment stored.
-
-    >>> rollback()
 
 
 More About Error Handling
