@@ -2067,12 +2067,13 @@ class Person(
             TeamMembership.personID.is_in(
                 [team.id for team in teams] + [self.id]))
         all_direct_memberships = [(membership.team, membership.person) for
-            membership in all_direct_memberships]
+            membership in all_direct_memberships.order_by(
+                Desc(TeamMembership.datejoined), Desc(TeamMembership.id))]
         
         graph = dict(all_direct_memberships)
+        graph.update(all_user_memberships)
         paths = {} 
         for team in teams:
-            graph.update(all_user_memberships)
             path = [team]
             step = team
             while path[-1] != self:

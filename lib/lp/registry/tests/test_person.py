@@ -114,7 +114,41 @@ class TestPersonTeams(TestCaseWithFactory):
             self.c_team:[self.c_team, self.b_team, self.a_team, self.user]}
         self.assertEqual(expected, paths)
 
-    
+    def test_getPathsToTeamsComplicated(self):
+        d_team = self.factory.makeTeam(name='d', owner=self.b_team)
+        e_team = self.factory.makeTeam(name='e')
+        f_team = self.factory.makeTeam(name='f', owner=e_team)
+        unrelated_team = self.factory.makeTeam(name='unrelated')
+        login_person(self.a_team.teamowner)
+        d_team.addMember(self.user, d_team.teamowner)
+        login_person(e_team.teamowner)
+        e_team.addMember(self.user, e_team.teamowner)
+
+        paths = self.user.getPathsToTeams()
+        expected = {
+            self.a_team:[self.a_team, self.user],
+            self.b_team:[self.b_team, self.a_team, self.user],
+            self.c_team:[self.c_team, self.b_team, self.a_team, self.user],
+            d_team:[d_team, self.user],
+            e_team:[e_team, self.user],
+            f_team:[f_team, e_team, self.user]}
+        self.assertEqual(expected, paths)
+
+    def test_getPathsToTeamsCycle(self):
+        d_team = self.factory.makeTeam(name='d', owner=self.b_team)
+        login_person(self.a_team.teamowner)
+        self.c_team.addMember(d_team, self.c_team.teamowner)
+        #d_team.acceptInvitationToBeMemberOf(self.c_team, 'accepted')
+
+        paths = self.user.getPathsToTeams()
+        expected = {
+            self.a_team:[self.a_team, self.user],
+            self.b_team:[self.b_team, self.a_team, self.user],
+            self.c_team:[self.c_team, self.b_team, self.a_team, self.user],
+            d_team:[d_team, self.b_team, self.a_team, self.user]}
+        self.assertEqual(expected, paths)
+
+
 class TestPerson(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
