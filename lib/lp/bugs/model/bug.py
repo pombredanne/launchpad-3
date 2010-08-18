@@ -57,8 +57,9 @@ from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.interfaces.message import (
     IMessage, IndexedMessage)
+from lp.registry.enum import BugNotificationLevel
 from lp.registry.interfaces.structuralsubscription import (
-    BugNotificationLevel, IStructuralSubscriptionTarget)
+    IStructuralSubscriptionTarget)
 from lp.bugs.mail.bugnotificationrecipients import BugNotificationRecipients
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp.interfaces import (

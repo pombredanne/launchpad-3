@@ -178,7 +178,7 @@ IStructuralSubscriptionTarget.getSubscription.
 To search for subscriptions with certain level settings on a structure
 we use getSubscriptions.
 
-    >>> from canonical.launchpad.interfaces import BugNotificationLevel
+    >>> from lp.registry.enum import BugNotificationLevel
     >>> subscription = target.addSubscription(no_priv, no_priv)
     >>> subscription.bug_notification_level = BugNotificationLevel.METADATA
     >>> print_subscriptions_list(target.bug_subscriptions)
