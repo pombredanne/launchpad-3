@@ -15,7 +15,7 @@ from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.testing import DatabaseFunctionalLayer
 
 from lp.registry.interfaces.mailinglist import MailingListStatus
-from lp.testing import login_person, login_celebrity, TestCaseWithFactory
+from lp.testing import login_celebrity, login_person, TestCaseWithFactory
 
 
 class TestTeamContactAddress(TestCaseWithFactory):
