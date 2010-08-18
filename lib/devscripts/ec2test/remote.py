@@ -316,7 +316,7 @@ class Request:
 
     def get_trunk_details(self):
         """Return (branch_url, revno) for trunk."""
-        branch = bzrlib.branch.Branch.open(self._local_branch_path)[0]
+        branch = bzrlib.branch.Branch.open(self._local_branch_path)
         return branch.get_parent().encode('utf-8'), branch.revno()
 
     def get_branch_details(self):
@@ -368,7 +368,7 @@ class Request:
         # XXX: JonathanLange 2010-08-17: I don't actually know why we are
         # using this commit message as a summary message. It's used in the
         # test logs and the EC2 hosted web page.
-        branch = bzrlib.branch.Branch.open(self._local_branch_path)[0]
+        branch = bzrlib.branch.Branch.open(self._local_branch_path)
         tree = bzrlib.workingtree.WorkingTree.open(self._local_branch_path)
         parent_ids = tree.get_parent_ids()
         if len(parent_ids) == 1:
