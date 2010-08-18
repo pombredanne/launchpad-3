@@ -1181,7 +1181,7 @@
             attributes="
                 findSimilarFAQs"/>
         <require
-            permission="launchpad.Moderate"
+            permission="launchpad.Append"
             attributes="
                 newFAQ"/>
 
@@ -1396,7 +1396,7 @@
             permission="launchpad.Edit"
             interface="lp.registry.interfaces.distribution.IDistributionEditRestricted"/>
         <require
-            permission="launchpad.Append"
+            permission="launchpad.Moderate"
             interface="lp.registry.interfaces.distribution.IDistributionDriverRestricted"/>
         <require
             permission="launchpad.Edit"
@@ -1453,7 +1453,7 @@
             attributes="
                 findSimilarFAQs"/>
         <require
-            permission="launchpad.Moderate"
+            permission="launchpad.Append"
             attributes="
                 newFAQ"/>
 
