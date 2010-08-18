@@ -495,14 +495,6 @@ class EC2TestRunner:
         cmd.extend(['--', self.test_options])
         return ' '.join(cmd)
 
-    def dont_run_tests(self):
-        """Reach the point where we are able to run tests and stop there."""
-        self.configure_system()
-        self.prepare_tests()
-        cmd = self._build_command()
-        self.log('COMMAND: %s\n' % cmd)
-        self.log('ssh ec2test@%s\n' % (self._instance.hostname,))
-
     def run_tests(self):
         self.configure_system()
         self.prepare_tests()
