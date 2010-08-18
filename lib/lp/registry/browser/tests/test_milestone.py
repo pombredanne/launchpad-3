@@ -16,6 +16,54 @@ from lp.testing.views import create_initialized_view
 from lp.testing.memcache import MemcacheTestCase
 
 
+class TestMilestoneViews(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        self.product = self.factory.makeProduct()
+        self.series = self.factory.makeSeries(product=self.product)
+        owner = self.product.owner
+        login_person(owner)
+
+    def test_add_milestone(self):
+        form = {
+            'field.name': '1.1',
+            'field.actions.register': 'Register Milestone',
+            }
+        view = create_initialized_view(
+            self.series, '+addmilestone', form=form)
+        self.assertEqual([], view.errors)
+
+    def test_add_milestone_with_good_date(self):
+        form = {
+            'field.name': '1.1',
+            'field.dateexpected': '2010-10-10',
+            'field.actions.register': 'Register Milestone',
+            }
+        view = create_initialized_view(
+            self.series, '+addmilestone', form=form)
+        # It's important to make sure no errors occured, but
+        # but also confirm that the milestone was created.
+        self.assertEqual([], view.errors)
+        self.assertEqual('1.1', self.product.milestones[0].name)
+
+    def test_add_milestone_with_bad_date(self):
+        form = {
+            'field.name': '1.1',
+            'field.dateexpected': '1010-10-10',
+            'field.actions.register': 'Register Milestone',
+            }
+        view = create_initialized_view(
+            self.series, '+addmilestone', form=form)
+        error_msg = view.errors[0].errors[0]
+        expected_msg = (
+            "Date could not be formatted. Provide a date formatted "
+            "like YYYY-MM-DD format. The year must be after 1900.")
+        self.assertEqual(expected_msg, error_msg)
+
+
 class TestMilestoneMemcache(MemcacheTestCase):
 
     def setUp(self):

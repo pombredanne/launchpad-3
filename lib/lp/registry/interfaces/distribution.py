@@ -34,7 +34,7 @@ from lazr.restful.declarations import (
 from lazr.restful.interface import copy_field
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import (
+from lp.services.fields import (
     Description, PublicPersonChoice, Summary, Title)
 from lp.registry.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget)
@@ -62,7 +62,7 @@ from lp.blueprints.interfaces.sprint import IHasSprints
 from lp.translations.interfaces.translationgroup import (
     ITranslationPolicy)
 from canonical.launchpad.validators.name import name_validator
-from canonical.launchpad.fields import (
+from lp.services.fields import (
     IconImageUpload, LogoImageUpload, MugshotImageUpload, PillarNameField)
 
 

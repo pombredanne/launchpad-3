@@ -24,7 +24,7 @@ from zope.interface import Interface, Attribute
 from zope.schema import Bool, Choice, Datetime, List, Object, Text, TextLine
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import Tag
+from lp.services.fields import Tag
 from lp.bugs.interfaces.bugtask import (
     BugBranchSearch, BugTagsSearchCombinator, IBugTask, IBugTaskSearch)
 from lazr.enum import DBEnumeratedType

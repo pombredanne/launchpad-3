@@ -19,7 +19,7 @@ from lazr.restful.declarations import (
     export_as_webservice_entry, exported)
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import PublicPersonChoice
+from lp.services.fields import PublicPersonChoice
 
 
 class ICommercialSubscription(Interface):

@@ -20,7 +20,7 @@ from zope.schema import Choice, Datetime, Int, Text, TextLine
 from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import PersonChoice
+from lp.services.fields import PersonChoice
 from lp.soyuz.interfaces.archive import IArchive
 from lp.registry.interfaces.person import IPerson
 from lazr.restful.declarations import export_as_webservice_entry, exported

@@ -11,7 +11,6 @@ __all__ = [
     ]
 
 from datetime import datetime, timedelta
-import itertools
 import pytz
 
 from storm.locals import Store
@@ -167,8 +166,10 @@ class TeamMembership(SQLBase):
             simple_sendmail(from_addr, address, subject, msg)
 
     def canChangeStatusSilently(self, user):
-        """Ensure that the user is in the Launchpad Administrators group before
-           silently making changes to their membership status."""
+        """Ensure that the user is in the Launchpad Administrators group.
+
+        Then the user can silently make changes to their membership status.
+        """
         return user.inTeam(getUtility(ILaunchpadCelebrities).admin)
 
     def canChangeExpirationDate(self, person):
@@ -288,8 +289,8 @@ class TeamMembership(SQLBase):
 
         if silent and not self.canChangeStatusSilently(user):
             raise UserCannotChangeMembershipSilently(
-                "Only Launchpad administrators may change membership statuses "
-                "silently.")
+                "Only Launchpad administrators may change membership "
+                "statuses silently.")
 
         approved = TeamMembershipStatus.APPROVED
         admin = TeamMembershipStatus.ADMIN
@@ -536,7 +537,7 @@ class TeamMembershipSet:
         conditions = [
             TeamMembership.dateexpires <= when,
             TeamMembership.status.is_in(
-                [TeamMembershipStatus.ADMIN, TeamMembershipStatus.APPROVED])
+                [TeamMembershipStatus.ADMIN, TeamMembershipStatus.APPROVED]),
             ]
         if exclude_autorenewals:
             # Avoid circular import.
@@ -718,20 +719,48 @@ def _getSuperTeamsExcludingDirectMembership(person, team):
     return Store.of(person).find(Person, "id IN (%s)" % query)
 
 
-def _fillTeamParticipation(member, team):
+def _fillTeamParticipation(member, accepting_team):
     """Add relevant entries in TeamParticipation for given member and team.
 
     Add a tuple "member, team" in TeamParticipation for the given team and all
     of its superteams. More information on how to use the TeamParticipation
     table can be found in the TeamParticipationUsage spec.
     """
-    members = [member]
     if member.isTeam():
-        # The given member is, in fact, a team, and in this case we must
-        # add all of its members to the given team and to its superteams.
-        members.extend(member.allmembers)
+        # The submembers will be all the members of the team that is
+        # being added as a member. The superteams will be all the teams
+        # that the accepting_team belongs to, so all the members will
+        # also be joining the superteams indirectly. It is important to
+        # remember that teams are members of themselves, so the member
+        # team will also be one of the submembers, and the
+        # accepting_team will also be one of the superteams.
+        query = """
+            INSERT INTO TeamParticipation (person, team)
+            SELECT submember.person, superteam.team
+            FROM TeamParticipation submember
+                JOIN TeamParticipation superteam ON TRUE
+            WHERE submember.team = %(member)d
+                AND superteam.person = %(accepting_team)d
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM TeamParticipation
+                    WHERE person = submember.person
+                        AND team = superteam.team
+                    )
+            """ % dict(member=member.id, accepting_team=accepting_team.id)
+    else:
+        query = """
+            INSERT INTO TeamParticipation (person, team)
+            SELECT %(member)d, superteam.team
+            FROM TeamParticipation superteam
+            WHERE superteam.person = %(accepting_team)d
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM TeamParticipation
+                    WHERE person = %(member)d
+                        AND team = superteam.team
+                    )
+            """ % dict(member=member.id, accepting_team=accepting_team.id)
 
-    for m in members:
-        for t in itertools.chain(team.super_teams, [team]):
-            if not m.hasParticipationEntryFor(t):
-                TeamParticipation(person=m, team=t)
+    store = Store.of(member)
+    store.execute(query)

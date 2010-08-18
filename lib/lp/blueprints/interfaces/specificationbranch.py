@@ -20,7 +20,7 @@ from lazr.restful.declarations import (export_as_webservice_entry, exported,
     export_operation_as, export_write_operation)
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import Summary
+from lp.services.fields import Summary
 from canonical.launchpad.interfaces.launchpad import IHasDateCreated
 from lp.blueprints.interfaces.specification import ISpecification
 from lp.code.interfaces.branch import IBranch
