@@ -180,12 +180,35 @@ class StructuralSubscriptionTargetMixin:
                 subscribed_by=subscribed_by,
                 **self._target_args)
 
+    def userCanAlterBugSubscription(self, subscriber, subscribed_by):
+        """See `IStructuralSubscriptionTarget`."""
+
+        admins = getUtility(ILaunchpadCelebrities).admin
+        # If the object to be structurally subscribed to for bug
+        # notifications is a distribution and that distribution has a
+        # bug supervisor then only the bug supervisor or a member of
+        # that team or, of course, admins, can subscribe someone to it.
+        if IDistribution.providedBy(self) and self.bug_supervisor is not None:
+            if subscriber is None or subscribed_by is None:
+                return False
+            elif (subscriber != self.bug_supervisor
+                and not subscriber.inTeam(self.bug_supervisor)
+                and not subscribed_by.inTeam(admins)):
+                return False
+        return True
+
     def addBugSubscription(self, subscriber, subscribed_by):
         """See `IStructuralSubscriptionTarget`."""
         # This is a helper method for creating a structural
         # subscription and immediately giving it a full
         # bug notification level. It is useful so long as
         # subscriptions are mainly used to implement bug contacts.
+
+        if not self.userCanAlterBugSubscription(subscriber, subscribed_by):
+            raise UserCannotSubscribePerson(
+                '%s does not have permission to subscribe %s' % (
+                    subscribed_by.name, subscriber.name))
+
         sub = self.addSubscription(subscriber, subscribed_by)
         sub.bug_notification_level = BugNotificationLevel.COMMENTS
         return sub
@@ -240,7 +263,7 @@ class StructuralSubscriptionTargetMixin:
         for key, value in self._target_args.items():
             if value is None:
                 target_clause_parts.append(
-                    "StructuralSubscription.%s IS NULL " % (key,))
+                    "StructuralSubscription.%s IS NULL " % (key, ))
             else:
                 target_clause_parts.append(
                     "StructuralSubscription.%s = %s " % (key, quote(value)))

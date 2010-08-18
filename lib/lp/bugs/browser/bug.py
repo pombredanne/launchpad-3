@@ -251,7 +251,7 @@ class BugContextMenu(ContextMenu):
         return Link('+addbranch', text, icon='add')
 
     def linktocve(self):
-        """Return the 'Link tp CVE' Link."""
+        """Return the 'Link to CVE' Link."""
         text = structured(
             'Link to '
             '<abbr title="Common Vulnerabilities and Exposures Index">'
