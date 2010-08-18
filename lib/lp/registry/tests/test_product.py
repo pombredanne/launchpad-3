@@ -14,11 +14,15 @@ from zope.component import getUtility
 from canonical.launchpad.ftests import login
 from canonical.launchpad.testing.pages import (
     find_main_content, get_feedback_messages, setupBrowser)
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    ) 
 
 from canonical.launchpad.ftests import syncUpdate
 
 from lazr.lifecycle.snapshot import Snapshot
+from lp.app.enums import ServiceUsage
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProduct, License
 from lp.registry.model.product import Product
@@ -28,6 +32,31 @@ from lp.registry.model.commercialsubscription import (
 from lp.testing import TestCaseWithFactory
 
 
+class TestProductUsageEnums(TestCaseWithFactory):
+    """Tests the usage enums for the product."""
+    
+    layer = DatabaseFunctionalLayer
+    
+    def setUp(self):
+        super(TestProductUsageEnums, self).setUp()
+
+    def test_answers_usage_default(self):
+        product = self.factory.makeProduct()
+        self.assertEqual(ServiceUsage.UNKNOWN, product.answers_usage)
+
+    def test_codehosting_usage_default(self):
+        product = self.factory.makeProduct()
+        self.assertEqual(ServiceUsage.UNKNOWN, product.codehosting_usage)
+
+    def test_translations_usage_default(self):
+        product = self.factory.makeProduct()
+        self.assertEqual(ServiceUsage.UNKNOWN, product.translations_usage)
+    
+    def test_bug_tracking_usage_default(self):
+        product = self.factory.makeProduct()
+        self.assertEqual(ServiceUsage.UNKNOWN, product.bug_tracking_usage)
+
+    
 class TestProduct(TestCaseWithFactory):
     """Tests product object."""
 
