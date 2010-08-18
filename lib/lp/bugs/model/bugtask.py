@@ -617,9 +617,6 @@ class BugTask(SQLBase, BugTaskMixin):
 
         matching_bugtasks = getUtility(IBugTaskSet).findSimilar(
             user, self.bug.title, **context_params)
-        # Remove all the prejoins, since we won't use them and they slow
-        # down the query significantly.
-        matching_bugtasks = matching_bugtasks.prejoin([])
 
         # Make sure to exclude the current BugTask from the list of
         # matching tasks. We use 4*limit as an arbitrary value here to
@@ -1518,7 +1515,7 @@ class BugTaskSet:
 
         search_params.fast_searchtext = nl_phrase_search(
             summary, Bug, ' AND '.join(constraint_clauses), ['BugTask'])
-        return self.search(search_params)
+        return self.search(search_params, _noprejoins=True)
 
     def _buildStatusClause(self, status):
         """Return the SQL query fragment for search by status.
@@ -2114,20 +2111,30 @@ class BugTaskSet:
             ', '.join(tables), ' AND '.join(clauses))
         return clause
 
-    def search(self, params, *args):
-        """See `IBugTaskSet`."""
+    def search(self, params, *args, **kwargs):
+        """See `IBugTaskSet`.
+        
+        :param _noprejoins: Private internal parameter to BugTaskSet which
+            disables all use of prejoins : consolidated from code paths that
+            claim they were inefficient and unwanted.
+        """
+        _noprejoins = kwargs.get('_noprejoins', False)
         store_selector = getUtility(IStoreSelector)
         store = store_selector.get(MAIN_STORE, SLAVE_FLAVOR)
         query, clauseTables, orderby, decorator = self.buildQuery(params)
         if len(args) == 0:
-            # Do normal prejoins, if we don't have to do any UNION
-            # queries.  Prejoins don't work well with UNION, and the way
-            # we prefetch objects without prejoins cause problems with
-            # COUNT(*) queries, which get inefficient.
-            resultset = BugTask.select(
-                query, clauseTables=clauseTables, orderBy=orderby,
-                prejoins=['product', 'sourcepackagename'],
-                prejoinClauseTables=['Bug'])
+            if _noprejoins:
+                resultset = BugTask.select(
+                    query, clauseTables=clauseTables, orderBy=orderby)
+            else:
+                # Do normal prejoins, if we don't have to do any UNION
+                # queries.  Prejoins don't work well with UNION, and the way
+                # we prefetch objects without prejoins cause problems with
+                # COUNT(*) queries, which get inefficient.
+                resultset = BugTask.select(
+                    query, clauseTables=clauseTables, orderBy=orderby,
+                    prejoins=['product', 'sourcepackagename'],
+                    prejoinClauseTables=['Bug'])
             return DecoratedResultSet(resultset, result_decorator=decorator)
 
         bugtask_fti = SQL('BugTask.fti')
@@ -2139,7 +2146,11 @@ class BugTaskSet:
                 store.find((BugTask, bugtask_fti), query,
                            AutoTables(SQL("1=1"), clauseTables)))
 
-        # Build up the joins
+        # Build up the joins.
+        # TODO: implement _noprejoins for this code path: as of 20100818 it has
+        # been silently disabled because clients of the API were setting
+        # prejoins=[] which had no effect; this TODO simply notes the reality
+        # already existing when it was added.
         from lp.bugs.model.bug import Bug
         from lp.registry.model.product import Product
         from lp.registry.model.sourcepackagename import SourcePackageName

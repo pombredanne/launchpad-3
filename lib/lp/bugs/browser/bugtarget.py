@@ -933,13 +933,8 @@ class FilebugShowSimilarBugsView(FileBugViewBase):
 
         matching_bugtasks = getUtility(IBugTaskSet).findSimilar(
             self.user, title, **context_params)
-        # Remove all the prejoins, since we won't use them and they slow
-        # down the query significantly.
-        matching_bugtasks = matching_bugtasks.prejoin([])
-
         matching_bugs = getUtility(IBugSet).getDistinctBugsForBugTasks(
             matching_bugtasks, self.user, self._MATCHING_BUGS_LIMIT)
-
         return matching_bugs
 
     @property
