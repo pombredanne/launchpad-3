@@ -513,17 +513,17 @@ class TestDaemonizationInteraction(TestCaseWithTransport, RequestHelpers):
         directory = 'www'
         logfile = "%s.log" % self.id()
         self.run_script(self.script_file, pidfile, directory, logfile)
+        # Check that the output from the daemonized version matches the output
+        # from a normal version. Only checking one of the files, since this is
+        # more of a smoke test than a correctness test.
         logger = self.make_logger()
         logger.prepare()
+        expected_summary = logger.get_summary_contents()
+        observed_summary = open(os.path.join(directory, 'summary.log')).read()
+        # The first line contains a timestamp, so we ignore it.
         self.assertEqual(
-            logger.get_summary_contents(),
-            open(os.path.join(directory, 'summary.log')).read())
-        self.assertEqual(
-            logger.get_full_log_contents(),
-            open(os.path.join(directory, 'current_test.log')).read())
-        self.assertEqual(
-            logger.get_index_contents(),
-            open(os.path.join(directory, 'index.html')).read())
+            expected_summary.splitlines()[1:],
+            observed_summary.splitlines()[1:])
 
 
 class TestResultHandling(TestCaseWithTransport, RequestHelpers):
