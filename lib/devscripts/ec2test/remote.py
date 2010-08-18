@@ -658,9 +658,11 @@ def daemonize(pid_filename):
             os._exit(0)
     else: # Parent
         # Make sure the pidfile is written before we exit, so that people
-        # who've chosen to daemonize can quickly rectify their mistake.
-        while not os.path.exists(pid_filename):
-            time.sleep(0.01)
+        # who've chosen to daemonize can quickly rectify their mistake.  Since
+        # the daemon might terminate itself very, very quickly, we cannot poll
+        # for the existence of the pidfile. Instead, we just sleep for a
+        # reasonable amount of time.
+        time.sleep(1)
         os._exit(0)
 
     # write a pidfile ASAP
