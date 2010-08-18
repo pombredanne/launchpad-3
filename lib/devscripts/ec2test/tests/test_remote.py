@@ -205,13 +205,10 @@ class RequestHelpers:
         return 'sourcecode/'
 
     def make_logger(self, request=None, echo_to_stdout=False):
-        full_log = StringIO()
-        summary = StringIO()
-        index = StringIO()
         if request is None:
             request = self.make_request()
         return WebTestLogger(
-            full_log, summary, index, request, echo_to_stdout)
+            'full.log', 'summary.log', 'index.html', request, echo_to_stdout)
 
 
 class TestRequest(TestCaseWithTransport, RequestHelpers):

@@ -23,6 +23,7 @@ __metatype__ = type
 import datetime
 from email import MIMEMultipart, MIMEText
 from email.mime.application import MIMEApplication
+import errno
 import gzip
 import optparse
 import os
@@ -439,28 +440,28 @@ class Request:
 class WebTestLogger:
     """Logs test output to disk and a simple web page."""
 
-    def __init__(self, full_log_file, summary_file, index_file, request,
-                 echo_to_stdout):
+    def __init__(self, full_log_filename, summary_filename, index_filename,
+                 request, echo_to_stdout):
         """Construct a WebTestLogger.
 
         Because this writes an HTML file with links to the summary and full
         logs, you should construct this object with
-        `WebTestLogger.make_in_directory`, which will guarantee that the files
+        `WebTestLogger.make_in_directory`, which guarantees that the files
         are available in the correct locations.
 
-        :param full_log_file: A file-like object that will have the full log
-            output written to it.
-        :param summary_file: A file-like object that will have a
-            human-readable summary written to it.
-        :param index_file: A file-like object that will have an HTML page
-            written to it.
+        :param full_log_filename: Path to a file that will have the full
+            log output written to it. The file will be overwritten.
+        :param summary_file: Path to a file that will have a human-readable
+            summary written to it. The file will be overwritten.
+        :param index_file: Path to a file that will have an HTML page
+            written to it. The file will be overwritten.
         :param request: A `Request` object representing the thing that's being
             tested.
         :param echo_to_stdout: Whether or not we should echo output to stdout.
         """
-        self._full_log_file = full_log_file
-        self._summary_file = summary_file
-        self._index_file = index_file
+        self._full_log_filename = full_log_filename
+        self._summary_filename = summary_filename
+        self._index_filename = index_filename
         self._request = request
         self._echo_to_stdout = echo_to_stdout
 
@@ -476,10 +477,9 @@ class WebTestLogger:
         :param echo_to_stdout: Whether or not we should echo output to stdout.
         """
         files = [
-            open(filename, 'w+') for filename in [
-                os.path.join(www_dir, 'current_test.log'),
-                os.path.join(www_dir, 'summary.log'),
-                os.path.join(www_dir, 'index.html')]]
+            os.path.join(www_dir, 'current_test.log'),
+            os.path.join(www_dir, 'summary.log'),
+            os.path.join(www_dir, 'index.html')]
         files.extend([request, echo_to_stdout])
         return cls(*files)
 
@@ -488,64 +488,52 @@ class WebTestLogger:
         exc_type, exc_value, exc_tb = exc_info
         # XXX: JonathanLange 2010-08-17: This should probably log to the full
         # log as well.
-        self._summary_file.write('\n\nERROR IN TESTRUNNER\n\n')
-        traceback.print_exception(
-            exc_type, exc_value, exc_tb, file=self._summary_file)
-
-    def _flush_logs(self):
-        """Flush all of our log file buffers."""
-        self._full_log_file.flush()
-        self._summary_file.flush()
-        self._index_file.flush()
-
-    def _close_logs(self):
-        """Closes all of the open log file handles."""
-        self._full_log_file.close()
-        self._summary_file.close()
-        self._index_file.close()
+        summary = self.get_summary_stream()
+        summary.write('\n\nERROR IN TESTRUNNER\n\n')
+        traceback.print_exception(exc_type, exc_value, exc_tb, file=summary)
+        summary.flush()
 
     def get_index_contents(self):
         """Return the contents of the index.html page."""
-        return self._get_contents(self._index_file)
+        return self._get_contents(self._index_filename)
 
     def get_full_log_contents(self):
         """Return the contents of the complete log."""
-        return self._get_contents(self._full_log_file)
+        return self._get_contents(self._full_log_filename)
 
     def get_summary_contents(self):
         """Return the contents of the summary log."""
-        return self._get_contents(self._summary_file)
+        return self._get_contents(self._summary_filename)
 
     def get_summary_stream(self):
         """Return a stream that, when written to, writes to the summary."""
-        return self._summary_file
+        return open(self._summary_filename, 'a')
 
     def got_line(self, line):
         """Called when we get a line of output from our child processes."""
-        self._full_log_file.write(line)
-        self._full_log_file.flush()
+        self._write_to_filename(self._full_log_filename, line)
         if self._echo_to_stdout:
             sys.stdout.write(line)
             sys.stdout.flush()
 
-    def _get_contents(self, stream):
-        """Get the full contents of 'stream'."""
-        current_position = stream.tell()
-        stream.seek(0)
-        contents = stream.read()
-        stream.seek(current_position)
-        return contents
+    def _get_contents(self, filename):
+        """Get the full contents of 'filename'."""
+        try:
+            return open(filename, 'r').read()
+        except IOError, e:
+            if e.errno == errno.ENOENT:
+                return ''
 
     def got_result(self, successful):
         """The tests are done and the results are known."""
         self._handle_pqm_submission(successful)
         if self._request.wants_email:
-            self._summary_file.write(
+            self._write_to_filename(
+                self._summary_filename,
                 '\n(See the attached file for the complete log)\n')
             summary = self.get_summary_contents()
             full_log_gz = gzip_data(self.get_full_log_contents())
             self._request.send_report_email(successful, summary, full_log_gz)
-        self._close_logs()
 
     def _handle_pqm_submission(self, successful):
         subject = self._request.submit_to_pqm(successful)
@@ -559,11 +547,16 @@ class WebTestLogger:
             self.write_line('**NOT** submitted to PQM:')
         self.write_line(subject)
 
+    def _write_to_filename(self, filename, msg):
+        fd = open(filename, 'a')
+        fd.write(msg)
+        fd.flush()
+        fd.close()
+
     def _write(self, msg):
         """Write to the summary and full log file."""
-        for fd in [self._full_log_file, self._summary_file]:
-            fd.write(msg)
-            fd.flush()
+        self._write_to_filename(self._full_log_filename, msg)
+        self._write_to_filename(self._summary_filename, msg)
 
     def write_line(self, msg):
         """Write to the summary and full log file with a newline."""
@@ -576,10 +569,16 @@ class WebTestLogger:
         log file, and a HTML index page summarizing the test run paramters.
         """
         # XXX: JonathanLange 2010-07-18: Mostly untested.
+        log = self.write_line
+
+        def add_to_html(html):
+            return self._write_to_filename(
+                self._index_filename, textwrap.dedent(html))
+
         msg = 'Tests started at approximately %(now)s UTC' % {
             'now': datetime.datetime.utcnow().strftime(
                 '%a, %d %b %Y %H:%M:%S')}
-        self._index_file.write(textwrap.dedent('''\
+        add_to_html('''\
             <html>
               <head>
                 <title>Testing</title>
@@ -591,25 +590,25 @@ class WebTestLogger:
                   <li><a href="summary.log">Summary results</a></li>
                   <li><a href="current_test.log">Full results</a></li>
                 </ul>
-            ''' % (msg,)))
-        self.write_line(msg)
+            ''' % (msg,))
+        log(msg)
 
-        self._index_file.write(textwrap.dedent('''\
+        add_to_html('''\
             <h2>Branches Tested</h2>
-            '''))
+            ''')
 
         # Describe the trunk branch.
         trunk, trunk_revno = self._request.get_trunk_details()
         msg = '%s, revision %d\n' % (trunk, trunk_revno)
-        self._index_file.write(textwrap.dedent('''\
+        add_to_html('''\
             <p><strong>%s</strong></p>
-            ''' % (escape(msg),)))
-        self.write_line(msg)
+            ''' % (escape(msg),))
+        log(msg)
 
         branch_details = self._request.get_branch_details()
         if not branch_details:
-            self._index_file.write('<p>(no merged branch)</p>\n')
-            self.write_line('(no merged branch)')
+            add_to_html('<p>(no merged branch)</p>\n')
+            log('(no merged branch)')
         else:
             branch_name, branch_revno = branch_details
             data = {'name': branch_name,
@@ -617,32 +616,31 @@ class WebTestLogger:
                     'commit': self._request.get_summary_commit()}
             msg = ('%(name)s, revision %(revno)d '
                    '(commit message: %(commit)s)\n' % data)
-            self._index_file.write(textwrap.dedent('''\
+            add_to_html('''\
                <p>Merged with<br />%(msg)s</p>
-               ''' % {'msg': escape(msg)}))
-            self.write_line("Merged with")
-            self.write_line(msg)
+               ''' % {'msg': escape(msg)})
+            log("Merged with")
+            log(msg)
 
-        self._index_file.write('<dl>\n')
-        self.write_line('\nDEPENDENCY BRANCHES USED\n')
+        add_to_html('<dl>\n')
+        log('\nDEPENDENCY BRANCHES USED\n')
         for name, branch, revno in self._request.iter_dependency_branches():
             data = {'name': name, 'branch': branch, 'revno': revno}
-            self.write_line(
+            log(
                 '- %(name)s\n    %(branch)s\n    %(revno)d\n' % data)
             escaped_data = {'name': escape(name),
                             'branch': escape(branch),
                             'revno': revno}
-            self._index_file.write(textwrap.dedent('''\
+            add_to_html('''\
                 <dt>%(name)s</dt>
                   <dd>%(branch)s</dd>
                   <dd>%(revno)s</dd>
-                ''' % escaped_data))
-        self._index_file.write(textwrap.dedent('''\
+                ''' % escaped_data)
+        add_to_html('''\
                 </dl>
               </body>
-            </html>'''))
-        self.write_line('\n\nTEST RESULTS FOLLOW\n\n')
-        self._flush_logs()
+            </html>''')
+        log('\n\nTEST RESULTS FOLLOW\n\n')
 
 
 def daemonize(pid_filename):
