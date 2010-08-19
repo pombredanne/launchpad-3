@@ -185,7 +185,7 @@ adds a '-deactivatedaccount' suffix to the person's name...
 
 ...no owned or driven pillars...
 
-    >>> len(foobar.getOwnedOrDrivenPillars())
+    >>> foobar.getOwnedOrDrivenPillars().count()
     0
 
 ...and, finally, to not be considered a valid person in Launchpad.

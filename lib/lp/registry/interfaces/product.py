@@ -34,7 +34,7 @@ from zope.schema.vocabulary import SimpleVocabulary
 from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import (
+from lp.services.fields import (
     Description, IconImageUpload, LogoImageUpload, MugshotImageUpload,
     PersonChoice, ProductBugTracker, ProductNameField,
     PublicPersonChoice, Summary, Title, URIField)

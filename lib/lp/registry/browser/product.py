@@ -68,7 +68,7 @@ from canonical.config import config
 from lazr.delegates import delegates
 from lazr.restful.interface import copy_field
 from canonical.launchpad import _
-from canonical.launchpad.fields import PillarAliases, PublicPersonChoice
+from lp.services.fields import PillarAliases, PublicPersonChoice
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.headings import IEditableContextTitle
 from lp.blueprints.browser.specificationtarget import (

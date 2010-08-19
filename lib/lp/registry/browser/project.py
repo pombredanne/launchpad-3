@@ -63,7 +63,7 @@ from lp.answers.browser.questiontarget import (
     QuestionTargetFacetMixin, QuestionCollectionAnswersMenu)
 from lp.registry.browser.objectreassignment import (
     ObjectReassignmentView)
-from canonical.launchpad.fields import PillarAliases, PublicPersonChoice
+from lp.services.fields import PillarAliases, PublicPersonChoice
 from canonical.launchpad.webapp import (
     ApplicationMenu, ContextMenu, LaunchpadEditFormView, LaunchpadFormView,
     LaunchpadView, Link, Navigation, StandardLaunchpadFacets, action,

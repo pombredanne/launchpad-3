@@ -60,6 +60,90 @@ from canonical.launchpad.webapp.vhosts import allvhosts
 
 METHOD_WRAPPER_TYPE = type({}.__setitem__)
 
+OFFSITE_POST_WHITELIST = ('/+storeblob', '/+request-token', '/+access-token',
+    '/+hwdb/+submit', '/+openid')
+
+
+def maybe_block_offsite_form_post(request):
+    """Check if an attempt was made to post a form from a remote site.
+
+    This is a cross-site request forgery (XSRF/CSRF) countermeasure.
+
+    The OffsiteFormPostError exception is raised if the following
+    holds true:
+      1. the request method is POST *AND*
+      2. a. the HTTP referer header is empty *OR*
+         b. the host portion of the referrer is not a registered vhost
+    """
+    if request.method != 'POST':
+        return
+    if (IOAuthSignedRequest.providedBy(request)
+        or not IBrowserRequest.providedBy(request)):
+        # We only want to check for the referrer header if we are
+        # in the middle of a request initiated by a web browser. A
+        # request to the web service (which is necessarily
+        # OAuth-signed) or a request that does not implement
+        # IBrowserRequest (such as an XML-RPC request) can do
+        # without a Referer.
+        return
+    if request['PATH_INFO'] in OFFSITE_POST_WHITELIST:
+        # XXX: jamesh 2007-11-23 bug=124421:
+        # Allow offsite posts to our TestOpenID endpoint.  Ideally we'd
+        # have a better way of marking this URL as allowing offsite
+        # form posts.
+        #
+        # XXX gary 2010-03-09 bug=535122,538097
+        # The one-off exceptions are necessary because existing
+        # non-browser applications make requests to these URLs
+        # without providing a Referer. Apport makes POST requests
+        # to +storeblob without providing a Referer (bug 538097),
+        # and launchpadlib used to make POST requests to
+        # +request-token and +access-token without providing a
+        # Referer.
+        #
+        # XXX Abel Deuring 2010-04-09 bug=550973
+        # The HWDB client "checkbox" accesses /+hwdb/+submit without
+        # a referer. This will change in the version in Ubuntu 10.04,
+        # but Launchpad should support HWDB submissions from older
+        # Ubuntu versions during their support period.
+        #
+        # We'll have to keep an application's one-off exception
+        # until the application has been changed to send a
+        # Referer, and until we have no legacy versions of that
+        # application to support. For instance, we can't get rid
+        # of the apport exception until after Lucid's end-of-life
+        # date. We should be able to get rid of the launchpadlib
+        # exception after Karmic's end-of-life date.
+        return
+    if request['PATH_INFO'].startswith('/+openid-callback'):
+        # If this is a callback from an OpenID provider, we don't require an
+        # on-site referer (because the provider may be off-site).  This
+        # exception was added as a result of bug 597324 (message #10 in
+        # particular).
+        return
+    referrer = request.getHeader('referer') # match HTTP spec misspelling
+    if not referrer:
+        raise NoReferrerError('No value for REFERER header')
+    # XXX: jamesh 2007-04-26 bug=98437:
+    # The Zope testing infrastructure sets a default (incorrect)
+    # referrer value of "localhost" or "localhost:9000" if no
+    # referrer is included in the request.  We let it pass through
+    # here for the benefits of the tests.  Web browsers send full
+    # URLs so this does not open us up to extra XSRF attacks.
+    if referrer in ['localhost', 'localhost:9000']:
+        return
+    # Extract the hostname from the referrer URI
+    try:
+        hostname = URI(referrer).host
+    except InvalidURIError:
+        hostname = None
+    if hostname not in allvhosts.hostnames:
+        raise OffsiteFormPostError(referrer)
+
+
+class ProfilingOops(Exception):
+    """Fake exception used to log OOPS information when profiling pages."""
+
 
 class LoginRoot:
     """Object that provides IPublishTraverse to return only itself.
@@ -191,7 +275,7 @@ class LaunchpadBrowserPublication(
         principal = self.getPrincipal(request)
         request.setPrincipal(principal)
         self.maybeRestrictToTeam(request)
-        self.maybeBlockOffsiteFormPost(request)
+        maybe_block_offsite_form_post(request)
         self.maybeNotifyReadOnlyMode(request)
 
     def maybeNotifyReadOnlyMode(self, request):
@@ -294,77 +378,6 @@ class LaunchpadBrowserPublication(
         if query_string:
             uri = uri.replace(query=query_string)
         return str(uri)
-
-    def maybeBlockOffsiteFormPost(self, request):
-        """Check if an attempt was made to post a form from a remote site.
-
-        The OffsiteFormPostError exception is raised if the following
-        holds true:
-          1. the request method is POST *AND*
-          2. a. the HTTP referer header is empty *OR*
-             b. the host portion of the referrer is not a registered vhost
-        """
-        if request.method != 'POST':
-            return
-        # XXX: jamesh 2007-11-23 bug=124421:
-        # Allow offsite posts to our TestOpenID endpoint.  Ideally we'd
-        # have a better way of marking this URL as allowing offsite
-        # form posts.
-        if request['PATH_INFO'] == '/+openid':
-            return
-        if (IOAuthSignedRequest.providedBy(request)
-            or not IBrowserRequest.providedBy(request)
-            or request['PATH_INFO'] in (
-                '/+storeblob', '/+request-token', '/+access-token',
-                '/+hwdb/+submit')):
-            # We only want to check for the referrer header if we are
-            # in the middle of a request initiated by a web browser. A
-            # request to the web service (which is necessarily
-            # OAuth-signed) or a request that does not implement
-            # IBrowserRequest (such as an XML-RPC request) can do
-            # without a Referer.
-            #
-            # XXX gary 2010-03-09 bug=535122,538097
-            # The one-off exceptions are necessary because existing
-            # non-browser applications make requests to these URLs
-            # without providing a Referer. Apport makes POST requests
-            # to +storeblob without providing a Referer (bug 538097),
-            # and launchpadlib used to make POST requests to
-            # +request-token and +access-token without providing a
-            # Referer.
-            #
-            # XXX Abel Deuring 2010-04-09 bug=550973
-            # The HWDB client "checkbox" accesses /+hwdb/+submit without
-            # a referer. This will change in the version in Ubuntu 10.04,
-            # but Launchpad should support HWDB submissions from older
-            # Ubuntu versions during their support period.
-            #
-            # We'll have to keep an application's one-off exception
-            # until the application has been changed to send a
-            # Referer, and until we have no legacy versions of that
-            # application to support. For instance, we can't get rid
-            # of the apport exception until after Lucid's end-of-life
-            # date. We should be able to get rid of the launchpadlib
-            # exception after Karmic's end-of-life date.
-            return
-        referrer = request.getHeader('referer') # match HTTP spec misspelling
-        if not referrer:
-            raise NoReferrerError('No value for REFERER header')
-        # XXX: jamesh 2007-04-26 bug=98437:
-        # The Zope testing infrastructure sets a default (incorrect)
-        # referrer value of "localhost" or "localhost:9000" if no
-        # referrer is included in the request.  We let it pass through
-        # here for the benefits of the tests.  Web browsers send full
-        # URLs so this does not open us up to extra XSRF attacks.
-        if referrer in ['localhost', 'localhost:9000']:
-            return
-        # Extract the hostname from the referrer URI
-        try:
-            hostname = URI(referrer).host
-        except InvalidURIError:
-            hostname = None
-        if hostname not in allvhosts.hostnames:
-            raise OffsiteFormPostError(referrer)
 
     def constructPageID(self, view, context):
         """Given a view, figure out what its page ID should be.

@@ -25,6 +25,7 @@ class LaunchpadWebServiceConfiguration(BaseWebServiceConfiguration):
     path_override = "api"
     active_versions = ["beta", "1.0", "devel"]
     last_version_with_mutator_named_operations = "beta"
+    first_version_with_total_size_link = "devel"
     view_permission = "launchpad.View"
     compensate_for_mod_compress_etag_modification = True
 

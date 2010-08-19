@@ -23,6 +23,8 @@ from bzrlib.urlutils import join as urljoin, local_path_from_url
 
 from CVS import Repository, tree as CVSTree
 
+from dulwich.repo import Repo as GitRepo
+
 from canonical.config import config
 from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.testing import BaseLayer
@@ -1027,15 +1029,10 @@ class TestGitImport(WorkerTest, TestActualImportMixin,
 
     def makeForeignCommit(self, source_details):
         """Change the foreign tree, generating exactly one commit."""
-        from bzrlib.plugins.git.tests import run_git
-        wd = os.getcwd()
-        os.chdir(source_details.url)
-        try:
-            run_git('config', 'user.name', 'Joe Random Hacker')
-            run_git('commit', '-m', 'dsadas')
-            self.foreign_commit_count += 1
-        finally:
-            os.chdir(wd)
+        repo = GitRepo(source_details.url)
+        repo.do_commit(message=self.factory.getUniqueString(),
+            committer="Joe Random Hacker <joe@example.com>")
+        self.foreign_commit_count += 1
 
     def makeSourceDetails(self, branch_name, files):
         """Make a Git `CodeImportSourceDetails` pointing at a real Git repo.
