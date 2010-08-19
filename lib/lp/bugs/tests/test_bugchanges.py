@@ -19,8 +19,7 @@ from lp.bugs.interfaces.bug import IBug
 from lp.bugs.interfaces.cve import ICveSet
 from lp.bugs.interfaces.bugtask import (
     BugTaskImportance, BugTaskStatus)
-from lp.registry.interfaces.structuralsubscription import (
-    BugNotificationLevel)
+from lp.registry.enum import BugNotificationLevel
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.testing import LaunchpadFunctionalLayer

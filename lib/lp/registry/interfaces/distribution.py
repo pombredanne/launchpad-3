@@ -34,7 +34,7 @@ from lazr.restful.declarations import (
 from lazr.restful.interface import copy_field
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import (
+from lp.services.fields import (
     Description, PublicPersonChoice, Summary, Title)
 from lp.registry.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget)
@@ -62,7 +62,7 @@ from lp.blueprints.interfaces.sprint import IHasSprints
 from lp.translations.interfaces.translationgroup import (
     ITranslationPolicy)
 from canonical.launchpad.validators.name import name_validator
-from canonical.launchpad.fields import (
+from lp.services.fields import (
     IconImageUpload, LogoImageUpload, MugshotImageUpload, PillarNameField)
 
 
@@ -183,7 +183,7 @@ class IDistributionPublic(
                 "The person or team responsible for decisions about features "
                 "and bugs that will be targeted for any series in this "
                 "distribution. Note that you can also specify a driver "
-                "on each series who's permissions will be limited to that "
+                "on each series whose permissions will be limited to that "
                 "specific series."),
             required=False, vocabulary='ValidPersonOrTeam'))
     drivers = Attribute(

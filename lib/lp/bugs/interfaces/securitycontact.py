@@ -16,7 +16,7 @@ from zope.interface import Interface
 from lazr.restful.declarations import exported
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import PublicPersonChoice
+from lp.services.fields import PublicPersonChoice
 
 
 class IHasSecurityContact(Interface):

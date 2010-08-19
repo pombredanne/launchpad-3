@@ -50,7 +50,6 @@ from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad import _
 from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
-from canonical.launchpad.fields import DuplicateBug
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.app.errors import NotFoundError
 from lp.bugs.interfaces.bug import IBug, IBugSet
@@ -62,6 +61,7 @@ from lp.bugs.interfaces.cve import ICveSet
 from lp.bugs.interfaces.bugattachment import IBugAttachmentSet
 from lp.bugs.interfaces.bugnomination import IBugNominationSet
 from lp.bugs.mail.bugnotificationbuilder import format_rfc2822_date
+from lp.services.fields import DuplicateBug
 
 from canonical.launchpad.mailnotification import (
     MailWrapper)
@@ -251,7 +251,7 @@ class BugContextMenu(ContextMenu):
         return Link('+addbranch', text, icon='add')
 
     def linktocve(self):
-        """Return the 'Link tp CVE' Link."""
+        """Return the 'Link to CVE' Link."""
         text = structured(
             'Link to '
             '<abbr title="Common Vulnerabilities and Exposures Index">'

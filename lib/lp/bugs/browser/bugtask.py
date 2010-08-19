@@ -88,7 +88,7 @@ from canonical.config import config
 from canonical.database.sqlbase import cursor
 from canonical.launchpad import _
 from canonical.cachedproperty import cachedproperty
-from canonical.launchpad.fields import PersonChoice
+from lp.services.fields import PersonChoice 
 from canonical.launchpad.mailnotification import get_unified_diff
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp import (
@@ -2320,7 +2320,9 @@ class BugTaskSearchListingMenu(NavigationMenu):
             '+securitycontact', 'Change security contact', icon='edit')
 
     def subscribe(self):
-        return Link('+subscribe', 'Subscribe to bug mail', icon='edit')
+        user = getUtility(ILaunchBag).user
+        if self.context.userCanAlterBugSubscription(user):
+            return Link('+subscribe', 'Subscribe to bug mail', icon='edit')
 
     def nominations(self):
         return Link('+nominations', 'Review nominations', icon='bug')
