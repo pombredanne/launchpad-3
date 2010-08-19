@@ -296,7 +296,7 @@ class IProductDriverRestricted(Interface):
         """
 
 
-class IProductEditRestricted(IOfficialBugTagTargetRestricted, IServiceUsage):
+class IProductEditRestricted(IOfficialBugTagTargetRestricted):
     """`IProduct` properties which require launchpad.Edit permission."""
 
 
@@ -350,7 +350,7 @@ class IProductPublic(
     IHasMugshot, IHasOwner, IHasSecurityContact, IHasSprints,
     ITranslationPolicy, IKarmaContext, ILaunchpadUsage, IMakesAnnouncements,
     IOfficialBugTagTargetPublic, IPillar, ISpecificationTarget, IHasRecipes,
-    IHasCodeImports):
+    IHasCodeImports, IServiceUsage):
     """Public IProduct properties."""
 
     id = Int(title=_('The Project ID'))
