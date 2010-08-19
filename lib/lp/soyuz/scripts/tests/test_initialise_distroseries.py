@@ -13,6 +13,7 @@ from zope.component import getUtility
 
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.soyuz.interfaces.sourcepackageformat import SourcePackageFormat
 from lp.soyuz.scripts.initialise_distroseries import (
@@ -168,6 +169,7 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
 
     def test_copying_packagesets(self):
         # If a parent series has packagesets, we should copy them
+        joe = self.factory.makePerson(name='joe')
         test1 = getUtility(IPackagesetSet).new(
             u'test1', u'test 1 packageset', self.hoary.owner,
             distroseries=self.hoary)
@@ -176,13 +178,11 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
             distroseries=self.hoary)
         test3 = getUtility(IPackagesetSet).new(
             u'test3', u'test 3 packageset', self.hoary.owner,
-            distroseries=self.hoary)
-        foobuntu = self._create_distroseries(self.hoary)
-        self._set_pending_to_failed(self.hoary)
-        transaction.commit()
-        ids = InitialiseDistroSeries(foobuntu)
-        ids.check()
-        ids.initialise()
+            distroseries=self.hoary, related_set=test2)
+        test1.addSources('pmount')
+        getUtility(IArchivePermissionSet).newPackagesetUploader(
+            self.hoary.main_archive, joe, test1)
+        foobuntu = self._full_initialise()
         # We can fetch the copied sets from foobuntu
         foobuntu_test1 = getUtility(IPackagesetSet).getByName(
             u'test1', distroseries=foobuntu)
@@ -196,8 +196,25 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
         self.assertEqual(test2.description, foobuntu_test2.description)
         self.assertEqual(test3.description, foobuntu_test3.description)
         self.assertEqual(foobuntu_test1.relatedSets().one(), test1)
-        self.assertEqual(foobuntu_test2.relatedSets().one(), test2)
-        self.assertEqual(foobuntu_test3.relatedSets().one(), test3)
+        self.assertEqual(
+            list(foobuntu_test2.relatedSets()),
+            [test2, test3, foobuntu_test3])
+        self.assertEqual(
+            list(foobuntu_test3.relatedSets()), 
+            [test2, foobuntu_test2, test3])
+        # The contents of the packagesets will have been copied
+        foobuntu_srcs = foobuntu_test1.getSourcesIncluded(
+            direct_inclusion=True)
+        hoary_srcs = test1.getSourcesIncluded(direct_inclusion=True)
+        self.assertEqual(foobuntu_srcs, hoary_srcs)
+        # joe can also upload to the new distroseries
+        self.assertTrue(
+            getUtility(IArchivePermissionSet).isSourceUploadAllowed(
+            self.hoary.main_archive, 'pmount', joe,
+            distroseries=self.hoary))
+        self.assertTrue(
+            getUtility(IArchivePermissionSet).isSourceUploadAllowed(
+            foobuntu.main_archive, 'pmount', joe, distroseries=foobuntu))
 
     def test_script(self):
         # Do an end-to-end test using the command-line tool

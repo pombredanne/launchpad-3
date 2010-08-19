@@ -21,6 +21,7 @@ from lp.soyuz.adapters.packagelocation import PackageLocation
 from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
 from lp.soyuz.interfaces.queue import PackageUploadStatus
 from lp.soyuz.model.packagecloner import clone_packages
+from lp.soyuz.model.packageset import Packageset
 
 
 class InitialisationError(Exception):
@@ -258,10 +259,28 @@ class InitialiseDistroSeries:
 
     def _copy_packagesets(self):
         """Copy packagesets from the parent distroseries."""
-        self._store.execute("""
+        packagesets = self._store.find(Packageset, distroseries=self.parent)
+        for parent_ps in packagesets:
+            self._store.execute("""
             INSERT INTO Packageset
             (distroseries, owner, name, description, packagesetgroup)
             SELECT %s, %s, name, description, packagesetgroup
-            FROM Packageset WHERE distroseries = %s
+            FROM Packageset WHERE id = %s
             """ % sqlvalues(
-            self.distroseries, self.distroseries.owner, self.parent))
+            self.distroseries, self.distroseries.owner, parent_ps.id))
+            child_ps = self._store.find(
+                Packageset, distroseries=self.distroseries,
+                name=parent_ps.name).one()
+            self._store.execute("""
+            INSERT INTO Packagesetsources
+            (packageset, sourcepackagename)
+            SELECT %s, sourcepackagename FROM Packagesetsources
+            WHERE packageset = %s
+            """ % sqlvalues(child_ps.id, parent_ps.id))
+            self._store.execute("""
+            INSERT INTO Archivepermission
+            (person, permission, archive, packageset, explicit)
+            SELECT person, permission, %s, %s, explicit
+            FROM Archivepermission WHERE packageset = %s
+            """ % sqlvalues(
+            self.distroseries.main_archive, child_ps.id, parent_ps.id))
