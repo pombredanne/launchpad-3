@@ -9,14 +9,14 @@ import re
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
-    BugNotificationLevel, IDistroBugTask, IDistroSeriesBugTask,
-    IUpstreamBugTask)
+    IDistroBugTask, IDistroSeriesBugTask, IUpstreamBugTask)
 from canonical.launchpad.interfaces.mail import (
     EmailProcessingError, IWeaklyAuthenticatedPrincipal)
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.interaction import get_current_principal
 
+from lp.registry.enum import BugNotificationLevel
 from lp.registry.vocabularies import ValidPersonOrTeamVocabulary
 
 

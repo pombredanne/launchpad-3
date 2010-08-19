@@ -24,6 +24,8 @@ from lazr.enum import DBEnumeratedType, DBItem
 from canonical.launchpad import _
 from lp.services.fields import (
     PersonChoice, PublicPersonChoice)
+
+from lp.registry.enum import BugNotificationLevel
 from lp.registry.interfaces.person import IPerson
 
 from lazr.restful.declarations import (
@@ -32,41 +34,6 @@ from lazr.restful.declarations import (
     operation_parameters, operation_returns_collection_of,
     operation_returns_entry, webservice_error)
 from lazr.restful.fields import Reference
-
-
-class BugNotificationLevel(DBEnumeratedType):
-    """Bug Notification Level.
-
-    The type and volume of bug notification email sent to subscribers.
-    """
-
-    NOTHING = DBItem(10, """
-        Nothing
-
-        Don't send any notifications about bugs.
-        """)
-
-    LIFECYCLE = DBItem(20, """
-        Lifecycle
-
-        Only send a low volume of notifications about new bugs registered,
-        bugs removed or bug targetting.
-        """)
-
-    METADATA = DBItem(30, """
-        Details
-
-        Send bug lifecycle notifications, as well as notifications about
-        changes to the bug's details like status and description.
-        """)
-
-    COMMENTS = DBItem(40, """
-        Discussion
-
-        Send bug lifecycle notifications, detail change notifications and
-        notifications about new events in the bugs's discussion, like new
-        comments.
-        """)
 
 
 class BlueprintNotificationLevel(DBEnumeratedType):
@@ -183,6 +150,9 @@ class IStructuralSubscriptionTarget(Interface):
         :subscribed_by: The IPerson creating the subscription.
         :return: The new subscription.
         """
+
+    def userCanAlterBugSubscription(subscriber, subscribed_by):
+        """Check if a user can change a bug subscription for a person."""
 
     @operation_parameters(
         subscriber=Reference(

@@ -19,14 +19,13 @@ import traceback
 
 from email import message_from_string
 
-from zope.component import getUtility
+from zope.component import getGlobalSiteManager, getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.errors import NotFoundError
-from lp.archiveuploader.uploadpolicy import (AbstractUploadPolicy,
-    findPolicyByOptions)
+from lp.archiveuploader.uploadpolicy import (
+    AbstractUploadPolicy, IArchiveUploadPolicy, findPolicyByName)
 from lp.archiveuploader.uploadprocessor import UploadProcessor
-from lp.buildmaster.interfaces.buildbase import BuildStatus
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from lp.soyuz.model.archivepermission import ArchivePermission
@@ -62,7 +61,7 @@ from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
 from lp.services.mail import stub
 from canonical.launchpad.testing.fakepackager import FakePackager
-from lp.testing import TestCase, TestCaseWithFactory
+from lp.testing import TestCaseWithFactory
 from lp.testing.mail_helpers import pop_notifications
 from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
 from canonical.testing import LaunchpadZopelessLayer
@@ -146,7 +145,9 @@ class TestUploadProcessorBase(TestCaseWithFactory):
     def getUploadProcessor(self, txn):
         def getPolicy(distro):
             self.options.distro = distro.name
-            return findPolicyByOptions(self.options)
+            policy = findPolicyByName(self.options.context)
+            policy.setOptions(self.options)
+            return policy
         return UploadProcessor(
             self.options.base_fsroot, self.options.dryrun,
             self.options.nomails,
@@ -533,9 +534,12 @@ class TestUploadProcessor(TestUploadProcessorBase):
 
         See bug 35965.
         """
-        # Register our broken upload policy
-        AbstractUploadPolicy._registerPolicy(BrokenUploadPolicy)
-        self.options.context = 'broken'
+        self.options.context = u'broken'
+        # Register our broken upload policy.
+        getGlobalSiteManager().registerUtility(
+            component=BrokenUploadPolicy, provided=IArchiveUploadPolicy,
+            name=self.options.context)
+
         uploadprocessor = self.getUploadProcessor(self.layer.txn)
 
         # Upload a package to Breezy.
