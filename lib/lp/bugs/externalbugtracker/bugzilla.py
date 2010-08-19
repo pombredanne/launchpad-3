@@ -231,10 +231,10 @@ class Bugzilla(ExternalBugTracker):
         ('RESOLVED', 'VERIFIED', 'CLOSED',
             LookupTree(
                 ('CODE_FIX', 'CURRENTRELEASE', 'ERRATA', 'NEXTRELEASE',
-                 'PATCH_ALREADY_AVAILABLE', 'FIXED', 'RAWHIDE', 'UPSTREAM',
+                 'PATCH_ALREADY_AVAILABLE', 'FIXED', 'RAWHIDE',
                  'DOCUMENTED',
                  BugTaskStatus.FIXRELEASED),
-                ('WONTFIX', 'WILL_NOT_FIX', 'NOTOURBUG',
+                ('WONTFIX', 'WILL_NOT_FIX', 'NOTOURBUG', 'UPSTREAM',
                  BugTaskStatus.WONTFIX),
                 ('OBSOLETE', 'INSUFFICIENT_DATA', 'INCOMPLETE', 'EXPIRED',
                  BugTaskStatus.EXPIRED),
