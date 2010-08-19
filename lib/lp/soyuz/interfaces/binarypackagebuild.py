@@ -125,10 +125,11 @@ class IBinaryPackageBuildView(IPackageBuild):
 
     def createBinaryPackageRelease(
         binarypackagename, version, summary, description, binpackageformat,
-        component, section, priority, shlibdeps, depends, recommends,
-        suggests, conflicts, replaces, provides, pre_depends, enhances,
-        breaks, essential, installedsize, architecturespecific,
-        debug_package):
+        component, section, priority, installedsize, architecturespecific,
+        shlibdeps=None, depends=None, recommends=None, suggests=None,
+        conflicts=None, replaces=None, provides=None, pre_depends=None,
+        enhances=None, breaks=None, essential=False, debug_package=None,
+        user_defined_fields=None):
         """Create and return a `BinaryPackageRelease`.
 
         The binarypackagerelease will be attached to this specific build.
@@ -284,7 +285,8 @@ class IBinaryPackageBuildSet(Interface):
         :return: a `ResultSet` representing the requested builds.
         """
 
-    def getBuildsByArchIds(arch_ids, status=None, name=None, pocket=None):
+    def getBuildsByArchIds(distribution, arch_ids, status=None, name=None,
+                           pocket=None):
         """Retrieve Build Records for a given arch_ids list.
 
         Optionally, for a given status and/or pocket, if ommited return all

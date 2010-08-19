@@ -9,8 +9,8 @@ team.
     ...     anon_browser.contents, 'portlet-related-projects')
     >>> for tr in related_projects.findAll('tr'):
     ...     print extract_text(tr)
-    Ubuntu Linux
-    Ubuntu Test
+    Ubuntu
+    ubuntutest
     Tomcat
 
 The +related-software page displays a table with links to open bugs,

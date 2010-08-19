@@ -448,10 +448,11 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
 
     def createBinaryPackageRelease(
         self, binarypackagename, version, summary, description,
-        binpackageformat, component,section, priority, shlibdeps,
-        depends, recommends, suggests, conflicts, replaces, provides,
-        pre_depends, enhances, breaks, essential, installedsize,
-        architecturespecific, debug_package):
+        binpackageformat, component, section, priority, installedsize,
+        architecturespecific, shlibdeps=None, depends=None, recommends=None,
+        suggests=None, conflicts=None, replaces=None, provides=None,
+        pre_depends=None, enhances=None, breaks=None, essential=False,
+        debug_package=None, user_defined_fields=None):
         """See IBuild."""
         return BinaryPackageRelease(
             build=self, binarypackagename=binarypackagename, version=version,
@@ -463,7 +464,8 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
             provides=provides, pre_depends=pre_depends, enhances=enhances,
             breaks=breaks, essential=essential, installedsize=installedsize,
             architecturespecific=architecturespecific,
-            debug_package=debug_package)
+            debug_package=debug_package,
+            user_defined_fields=user_defined_fields)
 
     def estimateDuration(self):
         """See `IBuildBase`."""
@@ -885,8 +887,8 @@ class BinaryPackageBuildSet:
             BinaryPackageBuild.select(
                 clause, clauseTables=clauseTables, orderBy=orderBy))
 
-    def getBuildsByArchIds(self, arch_ids, status=None, name=None,
-                           pocket=None):
+    def getBuildsByArchIds(self, distribution, arch_ids, status=None,
+                           name=None, pocket=None):
         """See `IBinaryPackageBuildSet`."""
         # If not distroarchseries was found return empty list
         if not arch_ids:
@@ -945,12 +947,9 @@ class BinaryPackageBuildSet:
 
         # Only pick builds from the distribution's main archive to
         # exclude PPA builds
-        clauseTables.append("Archive")
-        condition_clauses.append("""
-            Archive.purpose IN (%s) AND
-            Archive.id = PackageBuild.archive
-            """ % ','.join(
-                sqlvalues(ArchivePurpose.PRIMARY, ArchivePurpose.PARTNER)))
+        condition_clauses.append(
+            "PackageBuild.archive IN %s" %
+            sqlvalues(list(distribution.all_distro_archive_ids)))
 
         return self._decorate_with_prejoins(
             BinaryPackageBuild.select(' AND '.join(condition_clauses),

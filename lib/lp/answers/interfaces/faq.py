@@ -17,7 +17,7 @@ from zope.schema import (
      Datetime,  Int, Object, Text, TextLine)
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import PublicPersonChoice, Title
+from lp.services.fields import PublicPersonChoice, Title
 from lp.registry.interfaces.role import IHasOwner
 
 from lp.answers.interfaces.faqcollection import IFAQCollection

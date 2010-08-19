@@ -201,6 +201,7 @@ class POTemplate(SQLBase, RosettaStats):
             return result
 
     def __storm_invalidated__(self):
+        super(POTemplate, self).__storm_invalidated__()
         self.clearPOFileCache()
         self._uses_english_msgids = None
 

@@ -42,7 +42,7 @@ from lazr.restful.declarations import (
 from canonical.config import config
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import (
+from lp.services.fields import (
     PersonChoice, PublicPersonChoice, URIField, Whiteboard)
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.validators import LaunchpadValidationError

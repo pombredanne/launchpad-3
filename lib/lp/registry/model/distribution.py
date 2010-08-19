@@ -19,7 +19,7 @@ from zope.component import getUtility
 from zope.interface import alsoProvides, implements
 
 from lp.archivepublisher.debversion import Version
-from canonical.cachedproperty import cachedproperty
+from canonical.cachedproperty import cachedproperty, clear_property
 from canonical.database.constants import UTC_NOW
 
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -846,7 +846,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         # Use the facility provided by IBinaryPackageBuildSet to
         # retrieve the records.
         return getUtility(IBinaryPackageBuildSet).getBuildsByArchIds(
-            arch_ids, build_state, name, pocket)
+            self, arch_ids, build_state, name, pocket)
 
     def getSourcePackageCaches(self, archive=None):
         """See `IDistribution`."""
@@ -1268,7 +1268,8 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             bpph = IStore(BinaryPackagePublishingHistory).find(
                 BinaryPackagePublishingHistory,
                 BinaryPackageRelease.binarypackagename == binarypackagename,
-                *bpph_location_clauses).any()
+                *bpph_location_clauses).order_by(
+                    Desc(BinaryPackagePublishingHistory.id)).first()
             if bpph is not None:
                 spr = bpph.binarypackagerelease.build.source_package_release
                 return (spr.sourcepackagename, binarypackagename)
@@ -1616,8 +1617,9 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             # This driver is a release manager.
             series.driver = owner
 
-        if safe_hasattr(self, '_cached_series'):
-            del self._cached_series
+        # May wish to add this to the series rather than clearing the cache --
+        # RBC 20100816.
+        clear_property(self, '_cached_series')
         return series
 
     @property

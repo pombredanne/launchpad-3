@@ -52,6 +52,7 @@ __all__ = [
     'setupInteraction',
     'setupInteractionByEmail',
     'setupInteractionForPerson',
+    'Participation',
     ]
 
 

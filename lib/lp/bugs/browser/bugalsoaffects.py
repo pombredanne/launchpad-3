@@ -24,7 +24,7 @@ from lazr.lifecycle.event import ObjectCreatedEvent
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.browser.multistep import MultiStepView, StepView
-from canonical.launchpad.fields import StrippedTextLine
+from lp.services.fields import StrippedTextLine
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.validation import (
     valid_upstreamtask, validate_new_distrotask)

@@ -118,6 +118,7 @@ from lp.testing._webservice import (
 from lp.testing.matchers import Provides
 from lp.testing.fixture import ZopeEventHandlerFixture
 from lp.testing.karma import KarmaRecorder
+from lp.services.osutils import override_environ
 
 # zope.exception demands more of frame objects than twisted.python.failure
 # provides in its fake frames.  This is enough to make it work with them
@@ -590,18 +591,11 @@ class TestCaseWithFactory(TestCase):
         return os.path.join(base, branch_id_to_path(branch.id))
 
     def useTempBzrHome(self):
-        # XXX: Extract the temporary environment blatting into a generic
-        # helper function.
         self.useTempDir()
         # Avoid leaking local user configuration into tests.
-        old_bzr_home = os.environ.get('BZR_HOME')
-        def restore_bzr_home():
-            if old_bzr_home is None:
-                del os.environ['BZR_HOME']
-            else:
-                os.environ['BZR_HOME'] = old_bzr_home
-        os.environ['BZR_HOME'] = os.getcwd()
-        self.addCleanup(restore_bzr_home)
+        self.useContext(override_environ(
+            BZR_HOME=os.getcwd(), BZR_EMAIL=None, EMAIL=None,
+            ))
 
     def useBzrBranches(self, direct_database=False):
         """Prepare for using bzr branches.

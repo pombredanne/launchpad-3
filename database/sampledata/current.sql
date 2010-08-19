@@ -5090,13 +5090,6 @@ ALTER TABLE openidassociation DISABLE TRIGGER ALL;
 ALTER TABLE openidassociation ENABLE TRIGGER ALL;
 
 
-ALTER TABLE openidauthorization DISABLE TRIGGER ALL;
-
-
-
-ALTER TABLE openidauthorization ENABLE TRIGGER ALL;
-
-
 ALTER TABLE openidconsumerassociation DISABLE TRIGGER ALL;
 
 
@@ -5109,13 +5102,6 @@ ALTER TABLE openidconsumernonce DISABLE TRIGGER ALL;
 
 
 ALTER TABLE openidconsumernonce ENABLE TRIGGER ALL;
-
-
-ALTER TABLE openidnonce DISABLE TRIGGER ALL;
-
-
-
-ALTER TABLE openidnonce ENABLE TRIGGER ALL;
 
 
 ALTER TABLE openidrpconfig DISABLE TRIGGER ALL;

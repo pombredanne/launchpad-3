@@ -18,7 +18,7 @@ __all__ = [
 from zope.schema import Bool, Choice, Datetime, Int, TextLine
 from zope.interface import Interface, Attribute
 
-from canonical.launchpad.fields import (
+from lp.services.fields import (
     ContentNameField, PersonChoice, Title)
 from lp.registry.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget)

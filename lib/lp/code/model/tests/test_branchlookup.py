@@ -636,7 +636,7 @@ class TestGetByLPPath(TestCaseWithFactory):
         series.branch = branch
         result = self.branch_lookup.getByLPPath(
             '%s/%s/other/bits' % (series.product.name, series.name))
-        self.assertEqual((branch, None), result)
+        self.assertEqual((branch, u'other/bits'), result)
 
     def test_too_long_sourcepackage(self):
         # If the provided path points to an existing source package with a
@@ -654,7 +654,7 @@ class TestGetByLPPath(TestCaseWithFactory):
             ubuntu_branches.teamowner)
         result = self.branch_lookup.getByLPPath(
             '%s/other/bits' % package.path)
-        self.assertEqual((branch, None), result)
+        self.assertEqual((branch, u'other/bits'), result)
 
 
 def test_suite():
