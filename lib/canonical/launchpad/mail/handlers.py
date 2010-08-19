@@ -27,7 +27,8 @@ from canonical.launchpad.mail.commands import (
     BugEmailCommands, get_error_message)
 from canonical.launchpad.mail.helpers import (
     ensure_not_weakly_authenticated, get_main_body, guess_bugtask,
-    IncomingEmailError, parse_commands, reformat_wiki_text)
+    IncomingEmailError, parse_commands, reformat_wiki_text,
+    ensure_sane_signature_timestamp)
 from lp.services.mail.sendmail import sendmail, simple_sendmail
 from canonical.launchpad.mail.specexploder import get_spec_url_from_moin_mail
 from canonical.launchpad.mailnotification import (
@@ -62,15 +63,19 @@ class MaloneHandler:
         commands = self.getCommands(signed_msg)
         user, host = to_addr.split('@')
         add_comment_to_bug = False
+        signature = signed_msg.signature
 
         try:
             if len(commands) > 0:
-                ensure_not_weakly_authenticated(signed_msg, 'bug report')
+                CONTEXT = 'bug report'
+                ensure_not_weakly_authenticated(signed_msg, CONTEXT)
+                if signature is not None:
+                    ensure_sane_signature_timestamp(signature, CONTEXT)
 
             if user.lower() == 'new':
                 # A submit request.
                 commands.insert(0, BugEmailCommands.get('bug', ['new']))
-                if signed_msg.signature is None:
+                if signature is None:
                     raise IncomingEmailError(
                         get_error_message('not-gpg-signed.txt'))
             elif user.isdigit():
@@ -345,7 +350,7 @@ class AnswerTrackerHandler:
         """
         if question.status in [
             QuestionStatus.OPEN, QuestionStatus.NEEDSINFO,
-	    QuestionStatus.ANSWERED]:
+        QuestionStatus.ANSWERED]:
             question.giveAnswer(message.owner, message)
         else:
             # In the other states, only a comment can be added.

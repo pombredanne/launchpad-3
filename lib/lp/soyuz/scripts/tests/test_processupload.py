@@ -91,11 +91,12 @@ class TestProcessUpload(unittest.TestCase):
         # the process-upload call terminated with ERROR and
         # proper log message
         self.assertEqual(1, returncode)
-        self.assertEqual([
-            ('INFO    Creating lockfile: '
-             '/var/lock/process-upload-insecure.lock'),
-            'DEBUG   Lockfile /var/lock/process-upload-insecure.lock in use',
-             ], err.splitlines())
+        self.assert_(
+            'INFO    Creating lockfile: '
+            '/var/lock/process-upload-insecure.lock' in err.splitlines())
+        self.assert_(
+            'DEBUG   Lockfile /var/lock/process-upload-insecure.lock in use'
+            in err.splitlines())
 
         # release the locally acquired lockfile
         locker.release()
