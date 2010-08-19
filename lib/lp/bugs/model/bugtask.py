@@ -21,13 +21,23 @@ __all__ = [
 
 
 import datetime
-from operator import attrgetter
+from operator import attrgetter, itemgetter
 
 from sqlobject import (
     ForeignKey, StringCol, SQLObjectNotFound)
 from sqlobject.sqlbuilder import SQLConstant
 
-from storm.expr import And, Alias, AutoTables, In, Join, LeftJoin, Or, SQL
+from storm.expr import (
+    Alias,
+    And,
+    AutoTables,
+    Desc,
+    In,
+    Join,
+    LeftJoin,
+    Or,
+    SQL,
+    )
 from storm.sqlobject import SQLObjectResultSet
 from storm.store import EmptyResultSet
 from storm.zope.interfaces import IResultSet, ISQLObjectResultSet
@@ -69,6 +79,7 @@ from lp.bugs.interfaces.bugtask import (
     RESOLVED_BUGTASK_STATUSES, UNRESOLVED_BUGTASK_STATUSES,
     UserCannotEditBugTaskAssignee, UserCannotEditBugTaskImportance,
     UserCannotEditBugTaskMilestone, UserCannotEditBugTaskStatus)
+from lp.bugs.model.bugnomination import BugNomination
 from lp.bugs.model.bugsubscription import BugSubscription
 from lp.registry.interfaces.distribution import (
     IDistribution, IDistributionSet)
@@ -82,10 +93,13 @@ from lp.registry.interfaces.product import IProduct, IProductSet
 from lp.registry.interfaces.productseries import (
     IProductSeries, IProductSeriesSet)
 from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
+from lp.soyuz.model.publishing import SourcePackagePublishingHistory
+from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 from canonical.launchpad.searchbuilder import (
     all, any, greater_than, NULL, not_equals)
 from lp.registry.interfaces.person import (
@@ -1379,24 +1393,7 @@ class BugTaskSet:
     """See `IBugTaskSet`."""
     implements(IBugTaskSet)
 
-    _ORDERBY_COLUMN = {
-        "id": "BugTask.bug",
-        "importance": "BugTask.importance",
-        "assignee": "BugTask.assignee",
-        "targetname": "BugTask.targetnamecache",
-        "status": "BugTask.status",
-        "title": "Bug.title",
-        "milestone": "BugTask.milestone",
-        "dateassigned": "BugTask.dateassigned",
-        "datecreated": "BugTask.datecreated",
-        "date_last_updated": "Bug.date_last_updated",
-        "date_closed": "BugTask.date_closed",
-        "number_of_duplicates": "Bug.number_of_duplicates",
-        "message_count": "Bug.message_count",
-        "users_affected_count": "Bug.users_affected_count",
-        "heat": "Bug.heat",
-        "latest_patch_uploaded": "Bug.latest_patch_uploaded",
-        }
+    _ORDERBY_COLUMN = None
 
     _open_resolved_upstream = """
                 EXISTS (
@@ -1567,9 +1564,9 @@ class BugTaskSet:
             decorator to call on each returned row.
         """
         assert isinstance(params, BugTaskSearchParams)
-
+        from lp.bugs.model.bug import Bug
         extra_clauses = ['Bug.id = BugTask.bug']
-        clauseTables = ['BugTask', 'Bug']
+        clauseTables = [BugTask, Bug]
         decorators = []
 
         # These arguments can be processed in a loop without any other
@@ -1626,7 +1623,9 @@ class BugTaskSet:
             extra_clauses.append("BugTask.milestone %s" % where_cond)
 
         if params.project:
-            clauseTables.append("Product")
+            # Circular.
+            from lp.registry.model.product import Product
+            clauseTables.append(Product)
             extra_clauses.append("BugTask.product = Product.id")
             if isinstance(params.project, any):
                 extra_clauses.append("Product.project IN (%s)" % ",".join(
@@ -1669,7 +1668,7 @@ class BugTaskSet:
             extra_clauses.append(self._buildFastSearchTextClause(params))
 
         if params.subscriber is not None:
-            clauseTables.append('BugSubscription')
+            clauseTables.append(BugSubscription)
             extra_clauses.append("""Bug.id = BugSubscription.bug AND
                     BugSubscription.person = %(personid)s""" %
                     sqlvalues(personid=params.subscriber.id))
@@ -1717,8 +1716,8 @@ class BugTaskSet:
             extra_clauses.append(structural_subscriber_clause)
 
         if params.component:
-            clauseTables += ["SourcePackagePublishingHistory",
-                             "SourcePackageRelease"]
+            clauseTables += [SourcePackagePublishingHistory,
+                             SourcePackageRelease]
             distroseries = None
             if params.distribution:
                 distroseries = params.distribution.currentseries
@@ -1841,7 +1840,7 @@ class BugTaskSet:
                 BugNomination.status = %(nomination_status)s
                 """ % mappings
             extra_clauses.append(nominated_for_clause)
-            clauseTables.append('BugNomination')
+            clauseTables.append(BugNomination)
 
         clause, decorator = get_bug_privacy_filter_with_decorator(params.user)
         if clause:
@@ -2118,42 +2117,72 @@ class BugTaskSet:
             disables all use of prejoins : consolidated from code paths that
             claim they were inefficient and unwanted.
         """
+        # Circular.
+        from lp.registry.model.product import Product
+        from lp.bugs.model.bug import Bug
         _noprejoins = kwargs.get('_noprejoins', False)
-        store_selector = getUtility(IStoreSelector)
-        store = store_selector.get(MAIN_STORE, SLAVE_FLAVOR)
-        query, clauseTables, orderby, decorator = self.buildQuery(params)
+        store = IStore(BugTask)
+        query, clauseTables, orderby, bugtask_decorator = self.buildQuery(params)
+        if False:#True:
+            print "***************************************"
+            print query
+            print "***************************************"
+            print clauseTables
+            print "***************************************"
+            print orderby
+            print "***************************************"
+            print bugtask_decorator
         if len(args) == 0:
             if _noprejoins:
-                resultset = BugTask.select(
-                    query, clauseTables=clauseTables, orderBy=orderby)
+                resultset = store.find(BugTask,
+                    AutoTables(SQL("1=1"), clauseTables),
+                    query)
+                decorator = bugtask_decorator
             else:
-                # Do normal prejoins, if we don't have to do any UNION
-                # queries.  Prejoins don't work well with UNION, and the way
-                # we prefetch objects without prejoins cause problems with
-                # COUNT(*) queries, which get inefficient.
-                resultset = BugTask.select(
-                    query, clauseTables=clauseTables, orderBy=orderby,
-                    prejoins=['product', 'sourcepackagename'],
-                    prejoinClauseTables=['Bug'])
+                tables = clauseTables + [Product, SourcePackageName]
+                origin = [
+                    BugTask,
+                    LeftJoin(Bug, BugTask.bug == Bug.id),
+                    LeftJoin(Product, BugTask.product == Product.id),
+                    LeftJoin(
+                        SourcePackageName,
+                        BugTask.sourcepackagename == SourcePackageName.id),
+                    ]
+                if BugNomination in tables:
+                    # The relation is already in query.
+                    origin.append(BugNomination)
+                resultset = store.using(*origin).find(
+                    (BugTask, Product, SourcePackageName, Bug),
+                    AutoTables(SQL("1=1"), tables),
+                    query)
+                decorator=lambda row:bugtask_decorator(row[0])
+            resultset.order_by(orderby)
             return DecoratedResultSet(resultset, result_decorator=decorator)
 
         bugtask_fti = SQL('BugTask.fti')
         result = store.find((BugTask, bugtask_fti), query,
                             AutoTables(SQL("1=1"), clauseTables))
+        decorators = [bugtask_decorator]
         for arg in args:
             query, clauseTables, dummy, decorator = self.buildQuery(arg)
             result = result.union(
                 store.find((BugTask, bugtask_fti), query,
                            AutoTables(SQL("1=1"), clauseTables)))
+            # NB: assumes the decorators are all compatible.
+            # This may need revisiting if e.g. searches on behalf of different
+            # users are combined.
+            decorators.append(decorator)
+        def decorator(row):
+            bugtask = row[0]
+            for decorator in decorators:
+                bugtask = decorator(bugtask)
+            return bugtask
 
         # Build up the joins.
         # TODO: implement _noprejoins for this code path: as of 20100818 it has
         # been silently disabled because clients of the API were setting
         # prejoins=[] which had no effect; this TODO simply notes the reality
         # already existing when it was added.
-        from lp.bugs.model.bug import Bug
-        from lp.registry.model.product import Product
-        from lp.registry.model.sourcepackagename import SourcePackageName
         joins = Alias(result._get_select(), "BugTask")
         joins = Join(joins, Bug, BugTask.bug == Bug.id)
         joins = LeftJoin(joins, Product, BugTask.product == Product.id)
@@ -2162,9 +2191,8 @@ class BugTaskSet:
 
         result = store.using(joins).find(
             (BugTask, Bug, Product, SourcePackageName))
-        bugtasks = SQLObjectResultSet(BugTask, orderBy=orderby,
-                                      prepared_result_set=result)
-        return DecoratedResultSet(bugtasks, result_decorator=decorator)
+        result.order_by(orderby)
+        return DecoratedResultSet(result, result_decorator=decorator)
 
     def getAssignedMilestonesFromSearch(self, search_results):
         """See `IBugTaskSet`."""
@@ -2513,14 +2541,40 @@ class BugTaskSet:
 
     def getOrderByColumnDBName(self, col_name):
         """See `IBugTaskSet`."""
-        return self._ORDERBY_COLUMN[col_name]
+        if BugTaskSet._ORDERBY_COLUMN is None:
+            # Local import of Bug to avoid import loop.
+            from lp.bugs.model.bug import Bug
+            BugTaskSet._ORDERBY_COLUMN = {
+                "id": BugTask.bugID,
+                "importance": BugTask.importance,
+                # TODO: sort by their name?
+                "assignee": BugTask.assigneeID,
+                "targetname": BugTask.targetnamecache,
+                "status": BugTask.status,
+                "title": Bug.title,
+                "milestone": BugTask.milestoneID,
+                "dateassigned": BugTask.date_assigned,
+                "datecreated": BugTask.datecreated,
+                "date_last_updated": Bug.date_last_updated,
+                "date_closed": BugTask.date_closed,
+                "number_of_duplicates": Bug.number_of_duplicates,
+                "message_count": Bug.message_count,
+                "users_affected_count": Bug.users_affected_count,
+                "heat": Bug.heat,
+                "latest_patch_uploaded": Bug.latest_patch_uploaded,
+                }
+        return BugTaskSet._ORDERBY_COLUMN[col_name]
 
     def _processOrderBy(self, params):
         """Process the orderby parameter supplied to search().
 
         This method ensures the sort order will be stable, and converting
         the string supplied to actual column names.
+
+        :return: A Storm order_by tuple.
         """
+        # Local import of Bug to avoid import loop.
+        from lp.bugs.model.bug import Bug
         orderby = params.orderby
         if orderby is None:
             orderby = []
@@ -2535,10 +2589,10 @@ class BugTaskSet:
         # columns to make the sort consistent over runs -- which is good
         # for the user and essential for the test suite.
         unambiguous_cols = set([
-            "BugTask.dateassigned",
-            "BugTask.datecreated",
-            "Bug.datecreated",
-            "Bug.date_last_updated"])
+            BugTask.date_assigned,
+            BugTask.datecreated,
+            Bug.datecreated,
+            Bug.date_last_updated])
         # Bug ID is unique within bugs on a product or source package.
         if (params.product or
             (params.distribution and params.sourcepackagename) or
@@ -2548,7 +2602,7 @@ class BugTaskSet:
             in_unique_context = False
 
         if in_unique_context:
-            unambiguous_cols.add("BugTask.bug")
+            unambiguous_cols.add(BugTask.bug)
 
         # Translate orderby keys into corresponding Table.attribute
         # strings.
@@ -2558,22 +2612,22 @@ class BugTaskSet:
                 orderby_arg.append(orderby_col)
                 continue
             if orderby_col.startswith("-"):
-                col_name = self.getOrderByColumnDBName(orderby_col[1:])
-                order_clause = "-" + col_name
+                col = self.getOrderByColumnDBName(orderby_col[1:])
+                order_clause = Desc(col)
             else:
-                col_name = self.getOrderByColumnDBName(orderby_col)
-                order_clause = col_name
-            if col_name in unambiguous_cols:
+                col = self.getOrderByColumnDBName(orderby_col)
+                order_clause = col
+            if col in unambiguous_cols:
                 ambiguous = False
             orderby_arg.append(order_clause)
 
         if ambiguous:
             if in_unique_context:
-                orderby_arg.append('BugTask.bug')
+                orderby_arg.append(BugTask.bugID)
             else:
-                orderby_arg.append('BugTask.id')
+                orderby_arg.append(BugTask.id)
 
-        return orderby_arg
+        return tuple(orderby_arg)
 
     def dangerousGetAllTasks(self):
         """DO NOT USE THIS METHOD. For details, see `IBugTaskSet`"""

@@ -1889,6 +1889,10 @@ class BugSet:
         #      Transaction.iterSelect() will try to listify the results.
         #      This can be fixed by selecting from Bugs directly, but
         #      that's non-trivial.
+        # ---: Robert Collins 20100818: if bug_tasks implements IResultSset
+        #      then it should be very possible to improve on it, though
+        #      DecoratedResultSets would need careful handling (e.g. type
+        #      driven callbacks on columns)
         # We select more than :limit: since if a bug affects more than
         # one source package, it will be returned more than one time. 4
         # is an arbitrary number that should be large enough.
