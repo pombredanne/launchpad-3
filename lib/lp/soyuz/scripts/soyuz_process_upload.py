@@ -85,9 +85,9 @@ class ProcessUpload(LaunchpadCronScript):
             policy = findPolicyByName(self.options.context)
             policy.setOptions(self.options)
             return policy
-        processor = UploadProcessor(self.options.base_fsroot, 
-            self.options.dryrun, self.options.nomails, self.options.keep,
-            getPolicy, self.txn, self.logger)
+        processor = UploadProcessor(self.options.base_fsroot,
+            self.options.dryrun, self.options.nomails, self.options.builds,
+            self.options.keep, getPolicy, self.txn, self.logger)
         processor.processUploadQueue(self.options.leafname)
 
     @property
