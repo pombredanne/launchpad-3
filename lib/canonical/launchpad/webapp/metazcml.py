@@ -618,6 +618,22 @@ class SchemaDisplayDirective(
             self)
 
 
+class ICallDirective(Interface):
+    """Call the given callable.
+
+    This is useful when you have something that you want to call at startup
+    but don't want it tied to a specific zope event.  Or when you need to
+    register utilities in python at the time the zcml is processed.
+    """
+
+    callable = GlobalObject(
+        title=u"The thing that will be called.", required=True)
+
+
+def call(_context, callable):
+    callable()
+
+
 class IDefineLaunchpadPermissionDirective(IPermissionDirective):
 
     access_level = TextLine(
