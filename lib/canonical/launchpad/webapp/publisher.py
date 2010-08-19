@@ -491,8 +491,6 @@ def canonical_url(
         urlparts.insert(0, view_name)
 
     if request is None:
-        if rootsite is None:
-            rootsite = 'mainsite'
         root_url = allvhosts.configs[rootsite].rooturl
     else:
         root_url = request.getRootURL(rootsite)
