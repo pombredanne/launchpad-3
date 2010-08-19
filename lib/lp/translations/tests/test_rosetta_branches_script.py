@@ -7,6 +7,8 @@ This would normally be done in a doctest but TestCaseWithFactory has all the
 provisions to handle Bazaar branches.
 """
 
+from __future__ import with_statement
+
 __metaclass__ = type
 
 from unittest import TestLoader
@@ -23,6 +25,7 @@ from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue, RosettaImportStatus)
 from canonical.launchpad.scripts.tests import run_script
 from lp.testing import TestCaseWithFactory
+from lp.services.osutils import override_environ
 from canonical.launchpad.webapp.errorlog import globalErrorUtility
 
 class TestRosettaBranchesScript(TestCaseWithFactory):
@@ -43,7 +46,10 @@ class TestRosettaBranchesScript(TestCaseWithFactory):
         branch, tree = self.create_branch_and_tree()
         tree.bzrdir.root_transport.put_bytes(pot_path, pot_content)
         tree.add(pot_path)
-        revision_id = tree.commit("first commit")
+        # XXX: AaronBentley 2010-08-06 bug=614404: a bzr username is
+        # required to generate the revision-id.
+        with override_environ(BZR_EMAIL='me@example.com'):
+            revision_id = tree.commit("first commit")
         branch.last_scanned_id = revision_id
         branch.last_mirrored_id = revision_id
         series = self.factory.makeProductSeries()

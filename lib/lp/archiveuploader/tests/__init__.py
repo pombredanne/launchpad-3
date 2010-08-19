@@ -15,7 +15,10 @@ import os
 import sys
 import traceback
 
-from lp.archiveuploader.uploadpolicy import findPolicyByName
+from zope.component import getGlobalSiteManager
+
+from lp.archiveuploader.uploadpolicy import (
+    AbstractUploadPolicy, findPolicyByName, IArchiveUploadPolicy)
 from lp.soyuz.model.queue import PackageUploadSet
 from canonical.librarian.ftests.harness import fillLibrarianFile
 
@@ -96,6 +99,55 @@ class MockUploadLogger:
     def error(self, message, exc_info=False, **kw):
         print 'ERROR:', message
         self.print_traceback(exc_info)
+
+
+class AnythingGoesUploadPolicy(AbstractUploadPolicy):
+    """This policy is invoked when processing uploads from the test process.
+
+    We require a signed changes file but that's it.
+    """
+
+    name = 'anything'
+
+    def __init__(self):
+        AbstractUploadPolicy.__init__(self)
+        # We require the changes to be signed but not the dsc
+        self.unsigned_dsc_ok = True
+
+    def policySpecificChecks(self, upload):
+        """Nothing, let it go."""
+        pass
+
+    def rejectPPAUploads(self, upload):
+        """We allow PPA uploads."""
+        return False
+
+
+class AbsolutelyAnythingGoesUploadPolicy(AnythingGoesUploadPolicy):
+    """This policy is invoked when processing uploads from the test process.
+
+    Absolutely everything is allowed, for when you don't want the hassle
+    of dealing with inappropriate checks in tests.
+    """
+
+    name = 'absolutely-anything'
+
+    def __init__(self):
+        AnythingGoesUploadPolicy.__init__(self)
+        self.unsigned_changes_ok = True
+
+    def policySpecificChecks(self, upload):
+        """Nothing, let it go."""
+        pass
+
+
+def register_archive_upload_policy_adapters():
+    policies = [
+        AnythingGoesUploadPolicy, AbsolutelyAnythingGoesUploadPolicy]
+    sm = getGlobalSiteManager()
+    for policy in policies:
+        sm.registerUtility(
+            component=policy, provided=IArchiveUploadPolicy, name=policy.name)
 
 
 mock_options = MockUploadOptions()

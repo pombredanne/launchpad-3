@@ -24,7 +24,7 @@ from lp.archiveuploader.nascentuploadfile import (
     UdebBinaryUploadFile,
     UploadError,
     )
-from lp.archiveuploader.uploadpolicy import AbsolutelyAnythingGoesUploadPolicy
+from lp.archiveuploader.tests import AbsolutelyAnythingGoesUploadPolicy
 from lp.testing import TestCase
 
 

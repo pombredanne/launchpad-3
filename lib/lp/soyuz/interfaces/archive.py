@@ -52,7 +52,7 @@ from zope.schema import (
 from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import (
+from lp.services.fields import (
     PersonChoice, PublicPersonChoice, StrippedTextLine)
 from canonical.launchpad.interfaces.launchpad import IPrivacy
 from lp.app.errors import NameLookupFailed

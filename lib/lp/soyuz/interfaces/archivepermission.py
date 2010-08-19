@@ -20,7 +20,7 @@ from zope.schema import Bool, Choice, Datetime, TextLine
 from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import PublicPersonChoice
+from lp.services.fields import PublicPersonChoice
 from lp.soyuz.interfaces.archive import IArchive
 from lp.soyuz.interfaces.component import IComponent
 from lp.soyuz.interfaces.packageset import IPackageset

@@ -18,7 +18,7 @@ from lp.archiveuploader.nascentuploadfile import (
     CustomUploadFile,
     DebBinaryUploadFile,
     )
-from lp.archiveuploader.uploadpolicy import AbsolutelyAnythingGoesUploadPolicy
+from lp.archiveuploader.tests import AbsolutelyAnythingGoesUploadPolicy
 from lp.soyuz.interfaces.queue import PackageUploadCustomFormat
 from lp.testing import TestCaseWithFactory
 

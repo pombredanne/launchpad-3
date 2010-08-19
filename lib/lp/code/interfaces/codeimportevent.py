@@ -16,7 +16,7 @@ from zope.interface import Attribute, Interface
 from zope.schema import Datetime, Choice, Int
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import PublicPersonChoice
+from lp.services.fields import PublicPersonChoice
 from lp.code.enums import CodeImportEventType
 
 

@@ -319,7 +319,10 @@ class BranchContextMenu(ContextMenu, HasRecipesMenuMixin):
             '+upgrade', 'Upgrade this branch', icon='edit', enabled=enabled)
 
     def create_recipe(self):
-        enabled = config.build_from_branch.enabled
+        if not self.context.private and config.build_from_branch.enabled:
+            enabled = True
+        else:
+            enabled = False
         text = 'Create packaging recipe'
         return Link('+new-recipe', text, enabled=enabled, icon='add')
 
@@ -564,8 +567,8 @@ class BranchView(LaunchpadView, FeedsMixin):
     def show_merge_links(self):
         """Return whether or not merge proposal links should be shown.
 
-        Merge proposal links should not be shown if there is only one branch in
-        a non-final state.
+        Merge proposal links should not be shown if there is only one branch
+        in a non-final state.
         """
         if not self.context.target.supports_merge_proposals:
             return False

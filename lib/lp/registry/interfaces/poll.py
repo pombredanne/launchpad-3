@@ -32,7 +32,7 @@ from lazr.enum import DBEnumeratedType, DBItem
 from canonical.launchpad import _
 from canonical.launchpad.validators.name import name_validator
 from lp.registry.interfaces.person import ITeam
-from canonical.launchpad.fields import ContentNameField
+from lp.services.fields import ContentNameField
 
 
 class PollNameField(ContentNameField):

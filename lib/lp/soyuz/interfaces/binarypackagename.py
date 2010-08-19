@@ -14,7 +14,7 @@ __all__ = [
     ]
 
 from zope.schema import Int, TextLine
-from zope.interface import Interface, Attribute
+from zope.interface import Interface
 
 from canonical.launchpad import _
 from canonical.launchpad.validators.name import name_validator
@@ -25,11 +25,6 @@ class IBinaryPackageName(Interface):
 
     name = TextLine(title=_('Valid Binary package name'),
                     required=True, constraint=name_validator)
-
-    binarypackages = Attribute('binarypackages')
-
-    def nameSelector(sourcepackage=None, selected=None):
-        """Return browser-ready HTML to select a Binary Package Name"""
 
     def __unicode__():
         """Return the name"""

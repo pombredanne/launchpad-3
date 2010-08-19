@@ -88,7 +88,7 @@ class GettextMOExporter:
             # include those as .pot files stored in a templates/
             # directory.
             file_path = 'templates/%s' % os.path.basename(po_export.path)
-            content_type = gettext_po_exporter.content_type
+            content_type = gettext_po_exporter.mime_type
             file_extension = po_export.file_extension
         else:
             file_extension = 'mo'

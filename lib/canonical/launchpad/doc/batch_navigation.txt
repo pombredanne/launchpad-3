@@ -69,27 +69,33 @@ Prepare a query, and create a batch of the results:
   >>> email_batch = batch_nav.currentBatch()
   >>> batch_items = list(email_batch)
 
-Because we're only looking at the first batch, the database is only asked for
-the number of rows, and the first 10 rows:
+Because we're only looking at the first batch, the database is only
+asked for the first 11 rows. (lazr.batchnavigator asks for 11 instead
+of 10 so that it can reliably detect the end of the dataset).
 
   >>> len(CursorWrapper.last_executed_sql)
-  2
-  >>> print CursorWrapper.last_executed_sql[1]
-  SELECT ... FROM EmailAddress ... LIMIT 10...
+  1
   >>> print CursorWrapper.last_executed_sql[0]
-  SELECT COUNT(*) FROM EmailAddress
+  SELECT ... FROM EmailAddress ... LIMIT 11...
 
-Get the next 10.  The database is only asked for the next 10 rows -- no further
-COUNTs are issued:
+Get the next 10.  The database is only asked for the next 11 rows:
 
   >>> CursorWrapper.last_executed_sql = []
   >>> email_batch2 = email_batch.nextBatch()
   >>> batch_items = list(email_batch2)
   >>> len(CursorWrapper.last_executed_sql)
   1
-  >>> CursorWrapper.last_executed_sql[0].endswith('LIMIT 10 OFFSET 10')
+  >>> CursorWrapper.last_executed_sql[0].endswith('LIMIT 11 OFFSET 10')
   True
 
+As seen above, simply accessing the batch doesn't trigger a SQL query
+asking for the length. But explicitly asking for the length will
+trigger a SQL query.
+
+  >>> CursorWrapper.last_executed_sql = []
+  >>> ignored = email_batch.total()
+  >>> print CursorWrapper.last_executed_sql[0]
+  SELECT COUNT(*) FROM EmailAddress
 
 Multiple pages
 ==============
