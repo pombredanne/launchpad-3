@@ -325,6 +325,11 @@ class IndexStanzaFields:
         """
         self.fields.append((name, value))
 
+    def extend(self, entries):
+        """Extend the internal list with the key-value pairs in entries.
+        """
+        self.fields.extend(entries)
+
     def makeOutput(self):
         """Return a line-by-line aggregation of appended fields.
 
@@ -672,6 +677,8 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         fields.append('Format', spr.dsc_format)
         fields.append('Directory', pool_path)
         fields.append('Files', files_subsection)
+        if spr.user_defined_fields:
+            fields.extend(spr.user_defined_fields)
 
         return fields
 
@@ -941,6 +948,8 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         fields.append('MD5sum', bin_md5)
         fields.append('SHA1', bin_sha1)
         fields.append('Description', bin_description)
+        if bpr.user_defined_fields:
+            fields.extend(bpr.user_defined_fields)
 
         # XXX cprov 2006-11-03: the extra override fields (Bugs, Origin and
         # Task) included in the template be were not populated.

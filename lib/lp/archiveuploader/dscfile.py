@@ -152,6 +152,16 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         "architecture",
         "files"])
 
+    known_fields = mandatory_fields.union(set([
+        "build-depends",
+        "build-depends-indep",
+        "build-conflicts",
+        "build-conflicts-indep",
+        "format",
+        "standards-version",
+        "filecontents",
+        ]))
+
     # Note that files is actually only set inside verify().
     files = None
     # Copyright and changelog_path are only set inside unpackAndCheckSource().
@@ -626,6 +636,9 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         source_name = getUtility(
             ISourcePackageNameSet).getOrCreateByName(self.source)
 
+        user_defined_fields = self.extractUserDefinedFields([
+            (field, encoded[field]) for field in self._dict.iterkeys()])
+
         release = self.policy.distroseries.createUploadedSourcePackageRelease(
             sourcepackagename=source_name,
             version=self.dsc_version,
@@ -651,6 +664,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
             source_package_recipe_build=build,
             copyright=encoded.get('copyright'),
             # dateuploaded by default is UTC:now in the database
+            user_defined_fields=user_defined_fields,
             )
 
         # SourcePackageFiles should contain also the DSC
@@ -740,6 +754,7 @@ def findCopyright(dsc_file, source_dir, logger):
     logger.debug("Copying copyright contents.")
     dsc_file.copyright = open(copyright_file).read().strip()
 
+
 def findChangelog(dsc_file, source_dir, logger):
     """Find and move any debian/changelog.
 
@@ -764,6 +779,7 @@ def findChangelog(dsc_file, source_dir, logger):
     # Move the changelog file out of the package direcotry
     logger.debug("Found changelog")
     dsc_file.changelog_path = changelog_file
+
 
 def check_format_1_0_files(filename, file_type_counts, component_counts,
                            bzip2_count):
