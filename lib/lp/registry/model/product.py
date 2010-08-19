@@ -267,42 +267,22 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         return True in (self.official_malone, self.official_rosetta,
                         self.official_blueprints, self.official_answers,
                         self.official_codehosting)
+
     _answers_usage = EnumCol(
         dbName="answers_usage", notNull=True,
         schema=ServiceUsage,
         default=ServiceUsage.UNKNOWN)
-    def set_answers_usage(self, val):
-        self._answers_usage = val
-    def get_answers_usage(self):
-        return self._answers_usage
-    answers_usage = property(
-        get_answers_usage,
-        set_answers_usage,
-        doc="Indicates if the product uses the answers service.")
+    
     _blueprints_usage = EnumCol(
         dbName="blueprints_usage", notNull=True,
         schema=ServiceUsage,
         default=ServiceUsage.UNKNOWN)
-    def set_blueprints_usage(self, val):
-        self._blueprints_usage = val
-    def get_blueprints_usage(self):
-        return self._blueprints_usage
-    blueprints_usage = property(
-        get_blueprints_usage,
-        set_blueprints_usage,
-        doc="Indicates if the product uses the blueprints service.")
+
     _translations_usage = EnumCol(
         dbName="translations_usage", notNull=True,
         schema=ServiceUsage,
         default=ServiceUsage.UNKNOWN)
-    def set_translations_usage(self, val):
-        self._translations_usage = val
-    def get_translations_usage(self):
-        return self._translations_usage
-    translations_usage = property(
-        get_translations_usage,
-        set_translations_usage,
-        doc="Indicates if the product uses the translations service.")
+
     @property
     def codehosting_usage(self):
         if self.development_focus.branch is None:
@@ -312,6 +292,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         elif self.development_focus.branch.branch_type == BranchType.MIRRORED:
             return ServiceUsage.EXTERNAL
         return ServiceUsage.NOT_APPLICABLE
+
     @property
     def bug_tracking_usage(self):
         if self.official_malone:
@@ -320,6 +301,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             return ServiceUsage.UNKNOWN
         else:
             return ServiceUsage.EXTERNAL
+
     @property
     def uses_launchpad(self):
         """Does this distribution actually use Launchpad?"""
@@ -534,6 +516,54 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         """Clear cached non-storm attributes when the transaction ends."""
         super(Product, self).__storm_invalidated__()
         self._cached_licenses = None
+    
+    def _get_answers_usage(self):
+        if self._answers_usage != ServiceUsage.UNKNOWN:
+            # If someone has set something with the enum, use it.
+            return self._answers_usage
+        elif self.official_answers:
+            return ServiceUsage.LAUNCHPAD
+        return self._answers_usage
+    
+    def _set_answers_usage(self, val):
+        self._answers_usage = val
+    
+    answers_usage = property(
+        _get_answers_usage,
+        _set_answers_usage,
+        doc="Indicates if the product uses the answers service.")
+
+    def _get_blueprints_usage(self):
+        if self._blueprints_usage != ServiceUsage.UNKNOWN:
+            # If someone has set something with the enum, use it.
+            return self._blueprints_usage
+        elif self.official_blueprints:
+            return ServiceUsage.LAUNCHPAD
+        return self._blueprints_usage
+    
+    def _set_blueprints_usage(self, val):
+        self._blueprints_usage = val
+   
+    blueprints_usage = property(
+        _get_blueprints_usage,
+        _set_blueprints_usage,
+        doc="Indicates if the product uses the blueprints service.")
+  
+    def _get_translations_usage(self):
+        if self._translations_usage != ServiceUsage.UNKNOWN:
+            # If someone has set something with the enum, use it.
+            return self._translations_usage
+        elif self.official_rosetta:
+            return ServiceUsage.LAUNCHPAD
+        return self._translations_usage
+    
+    def _set_translations_usage(self, val):
+        self._translations_usage = val
+    
+    translations_usage = property(
+        _get_translations_usage,
+        _set_translations_usage,
+        doc="Indicates if the product uses the translations service.")
 
     def _getLicenses(self):
         """Get the licenses as a tuple."""

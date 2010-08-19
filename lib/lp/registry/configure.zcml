@@ -1104,7 +1104,11 @@
                             redeemSubscriptionVoucher releaseroot
                             remote_product screenshotsurl
                             security_contact sourceforgeproject
-                            summary title wikiurl"/>
+                            summary title wikiurl
+                            answers_usage blueprints_usage
+                            bug_tracking_usage codehosting_usage
+                            translations_usage"/>
+                            
 
         <!-- mark 2006-04-10 I put "name" in the admin group because
                         with Bazaar now in place, lots of people can have personal
@@ -1373,7 +1377,6 @@
         for="lp.registry.interfaces.productseries.IProductSeries"
         factory="lp.registry.browser.productseries.ProductSeriesBreadcrumb"
         permission="zope.Public"/>
-
     <!-- ProductSeriesSet -->
 
     <class
@@ -1412,7 +1415,9 @@
                 icon logo mugshot enable_bug_expiration
                 bug_reporting_guidelines bug_reported_acknowledgement
                 official_blueprints official_malone
-                official_rosetta official_answers official_bug_tags"/>
+                official_rosetta official_answers official_bug_tags
+                answers_usage blueprints_usage codehosting_usage
+                bug_tracking_usage translations_usage"/>
         <require
             permission="launchpad.TranslationsAdmin"
             set_attributes="
