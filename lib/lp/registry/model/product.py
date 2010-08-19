@@ -267,19 +267,42 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         return True in (self.official_malone, self.official_rosetta,
                         self.official_blueprints, self.official_answers,
                         self.official_codehosting)
-
-    answers_usage = EnumCol(
+    _answers_usage = EnumCol(
         dbName="answers_usage", notNull=True,
         schema=ServiceUsage,
         default=ServiceUsage.UNKNOWN)
-    blueprints_usage = EnumCol(
+    def set_answers_usage(self, val):
+        self._answers_usage = val
+    def get_answers_usage(self):
+        return self._answers_usage
+    answers_usage = property(
+        get_answers_usage,
+        set_answers_usage,
+        doc="Indicates if the product uses the answers service.")
+    _blueprints_usage = EnumCol(
         dbName="blueprints_usage", notNull=True,
         schema=ServiceUsage,
         default=ServiceUsage.UNKNOWN)
-    translations_usage = EnumCol(
+    def set_blueprints_usage(self, val):
+        self._blueprints_usage = val
+    def get_blueprints_usage(self):
+        return self._blueprints_usage
+    blueprints_usage = property(
+        get_blueprints_usage,
+        set_blueprints_usage,
+        doc="Indicates if the product uses the blueprints service.")
+    _translations_usage = EnumCol(
         dbName="translations_usage", notNull=True,
         schema=ServiceUsage,
         default=ServiceUsage.UNKNOWN)
+    def set_translations_usage(self, val):
+        self._translations_usage = val
+    def get_translations_usage(self):
+        return self._translations_usage
+    translations_usage = property(
+        get_translations_usage,
+        set_translations_usage,
+        doc="Indicates if the product uses the translations service.")
     @property
     def codehosting_usage(self):
         if self.development_focus.branch is None:
