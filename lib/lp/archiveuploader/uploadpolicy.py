@@ -290,7 +290,8 @@ class BuildDaemonUploadPolicy(AbstractUploadPolicy):
     def setOptions(self, options):
         AbstractUploadPolicy.setOptions(self, options)
         # We require a buildid to be provided
-        if getattr(options, 'buildid', None) is None:
+        if (getattr(options, 'buildid', None) is None and
+            not getattr(options, 'builds', False)):
             raise UploadPolicyError("BuildID required for buildd context")
 
     def policySpecificChecks(self, upload):
