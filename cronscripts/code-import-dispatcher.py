@@ -1,5 +1,7 @@
-#!/usr/bin/python2.4
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+#!/usr/bin/python -S
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Look for and dispatch code import jobs as needed."""
 
@@ -8,13 +10,19 @@ import _pythonpath
 
 from xmlrpclib import ServerProxy
 
-from canonical.codehosting.codeimport.dispatcher import CodeImportDispatcher
+from lp.codehosting.codeimport.dispatcher import CodeImportDispatcher
 from canonical.config import config
-from canonical.launchpad.scripts.base import LaunchpadScript
+from lp.services.scripts.base import LaunchpadScript
 from canonical.launchpad.webapp.errorlog import globalErrorUtility
 
 
 class CodeImportDispatcherScript(LaunchpadScript):
+
+    def add_my_options(self):
+        self.parser.add_option(
+            "--max-jobs", dest="max_jobs", type=int,
+            default=config.codeimportdispatcher.max_jobs_per_machine,
+            help="The maximum number of jobs to run on this machine.")
 
     def run(self, use_web_security=False, implicit_begin=True,
             isolation=None):
@@ -28,7 +36,8 @@ class CodeImportDispatcherScript(LaunchpadScript):
     def main(self):
         globalErrorUtility.configure('codeimportdispatcher')
 
-        CodeImportDispatcher(self.logger).findAndDispatchJob(
+        dispatcher = CodeImportDispatcher(self.logger, self.options.max_jobs)
+        dispatcher.findAndDispatchJobs(
             ServerProxy(config.codeimportdispatcher.codeimportscheduler_url))
 
 

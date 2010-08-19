@@ -1,0 +1,40 @@
+Hello %(user_name)s,
+
+You recently registered the project '%(product_name)s' in Launchpad
+with this licensing:
+
+%(license_titles)s.
+
+Launchpad is a collaboration site that is free to use for projects
+with an approved open source license.  When you registered your
+project the list of licenses presented are the ones we automatically
+recognize.
+
+Other licenses must follow the guidelines we list on the following
+page in order to be approved:
+https://help.launchpad.net/Legal/ProjectLicensing
+
+Further information is on our FAQ "Can closed-source or proprietary
+projects use Launchpad?" which can be found at:
+https://answers.launchpad.net/launchpad/+faq/208
+
+If your project's licensing does not meet the guidelines we will
+consider it "Proprietary" and mark it as such in Launchpad.
+
+Proprietary projects can use Launchpad by purchasing a commercial-use
+subscription which costs US$250/year/project.  Please follow the
+instructions presented on your project overview page to purchase a
+subscription voucher.  Feel free to contact me if you have any
+questions.
+
+Sometimes new projects are licensed as 'Other/Open Source' because the
+licensing decisions have not yet been made.  If that is your situation
+we urge you to update the licensing in Launchpad as soon as you make
+that choice.
+
+If the license for your project needs to be corrected you can do so by
+following the 'Change Details' link on your project's overview page.
+
+Thanks,
+
+The Launchpad team.

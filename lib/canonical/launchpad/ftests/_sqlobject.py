@@ -1,4 +1,5 @@
-# Copyright 2006-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Helper functions for testing SQLObjects."""
 
@@ -7,9 +8,9 @@ __all__ = ['print_date_attribute',
            'sync',
            'syncUpdate']
 
+from storm.sqlobject import SQLObjectBase as SQLObject
 from zope.security.proxy import (
     removeSecurityProxy, isinstance as zope_isinstance)
-from sqlobject import SQLObject
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import sqlvalues

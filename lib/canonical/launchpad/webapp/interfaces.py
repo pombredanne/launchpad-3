@@ -1,52 +1,41 @@
-# Copyright 2004 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 __metaclass__ = type
 
 import logging
 
+# Import only added to allow change to land.  Needs to be removed when shipit
+# is updated.
+from lp.app.errors import UnexpectedFormData
+
 import zope.app.publication.interfaces
+from zope.component.interfaces import IObjectEvent
 from zope.interface import Interface, Attribute, implements
-from zope.app.security.interfaces import IAuthenticationService, IPrincipal
-from zope.app.pluggableauth.interfaces import IPrincipalSource
-from zope.app.rdb.interfaces import IZopeDatabaseAdapter
+from zope.app.security.interfaces import (
+    IAuthentication, IPrincipal, IPrincipalSource)
+from zope.traversing.interfaces import IContainmentRoot
 from zope.schema import Bool, Choice, Datetime, Int, Object, Text, TextLine
+from lazr.batchnavigator.interfaces import IBatchNavigator
+from lazr.enum import DBEnumeratedType, DBItem, use_template
 
 from canonical.launchpad import _
-from canonical.lazr import DBEnumeratedType, DBItem, use_template
 
 
-
-class TranslationUnavailable(Exception):
-    """Translation objects are unavailable."""
-
-
-class NotFoundError(KeyError):
-    """Launchpad object not found."""
+class IAPIDocRoot(IContainmentRoot):
+    """Marker interface for the root object of the apidoc vhost."""
 
 
-class UnexpectedFormData(AssertionError):
-    """Got form data that is not what is expected by a form handler."""
+class ILaunchpadContainer(Interface):
+    """Marker interface for objects used as the context of something."""
+
+    def isWithin(scope):
+        """Return True if this context is within the given scope."""
 
 
-class POSTToNonCanonicalURL(UnexpectedFormData):
-    """Got a POST to an incorrect URL.
-
-    One example would be a URL containing uppercase letters.
-    """
-
-
-class InvalidBatchSizeError(AssertionError):
-    """Received a batch parameter that exceed our configured max size."""
-
-    # XXX flacoste 2008/05/09 bug=185958:
-    # Ideally, we would use webservice_error, to set this up and
-    # register the view, but cyclic imports prevents us from doing
-    # so. This should be fixed once we move webapp stuff into LAZR.
-    __lazr_webservice_error__ = 400
-
-
-class ILaunchpadRoot(zope.app.traversing.interfaces.IContainmentRoot):
+class ILaunchpadRoot(IContainmentRoot):
     """Marker interface for the root object of Launchpad."""
 
 
@@ -72,16 +61,20 @@ class IAuthorization(Interface):
         on the adapted object.  Otherwise returns False.
         """
 
-    def checkAuthenticated(user):
-        """Returns True if the user has that permission on the adapted
+    def checkAccountAuthenticated(account):
+        """Returns True if the account has that permission on the adapted
         object.  Otherwise returns False.
 
-        The argument `user` is the person who is authenticated.
+        The argument `account` is the account who is authenticated.
         """
 
 
 class OffsiteFormPostError(Exception):
     """An attempt was made to post a form from a remote site."""
+
+
+class NoReferrerError(Exception):
+    """At attempt was made to post a form without a REFERER header."""
 
 
 class UnsafeFormGetSubmissionError(Exception):
@@ -189,6 +182,8 @@ class ILink(ILinkData):
         "The full url this link points to.  Set by the menus infrastructure. "
         "None before it is set.")
 
+    path = Attribute("The path portion of the URL.")
+
     linked = Attribute(
         "A boolean value saying whether this link should appear as a "
         "clickable link in the UI.  The general rule is that a link to "
@@ -227,13 +222,11 @@ class IStructuredString(Interface):
 
 
 class IBreadcrumb(Interface):
-    """A breadcrumb link.  IBreadcrumbs get put into request.breadcrumbs."""
+    """A breadcrumb link."""
 
     url = Attribute('Absolute url of this breadcrumb.')
 
     text = Attribute('Text of this breadcrumb.')
-
-    has_menu = Attribute('Whether this breadcrumb has a drop-down menu.')
 
 
 #
@@ -264,64 +257,14 @@ class NoCanonicalUrl(TypeError):
             (object_url_requested_for, broken_link_in_chain)
             )
 
-#
-# DBSchema
-#
-
-
-# XXX kiko 2007-02-08: this is currently unused. We need somebody to come
-# in and set up interfaces for the enums.
-class IDBSchema(Interface):
-    """A DBSchema enumeration."""
-
-    name = Attribute("Lower-cased-spaces-inserted class name of this schema.")
-
-    title = Attribute("Title of this schema.")
-
-    description = Attribute("Description of this schema.")
-
-    items = Attribute("A mapping of [name or value] -> dbschema item.")
-
-
-class IDBSchemaItem(Interface):
-    """An Item in a DBSchema enumeration."""
-
-    value = Attribute("Integer value of this enum item.")
-
-    name = Attribute("Symbolic name of this item.")
-
-    title = Attribute("Title text of this item.")
-
-    description = Attribute("Description text of this item.")
-
-    def __sqlrepr__(dbname):
-        """Return an SQL representation of this item.
-
-        The dbname attribute is required as part of the sqlobject
-        interface, but it not used in this case.
-        """
-
-    def __eq__(other):
-        """An item is equal if it is from the same DBSchema and has the same
-        value.
-        """
-
-    def __ne__(other):
-        """not __eq__"""
-
-    def __hash__():
-        """Returns a hash value."""
-
-# XXX kiko 2007-02-08: this needs reconsideration if we are to make it a
-# truly generic thing. The problem lies in the fact that half of this (user,
-# login, timezone, developer) is actually useful inside webapp/, and the other
-# half is very Launchpad-specific. I suggest we split the interface and
-# implementation into two parts, having a different name for the webapp/
-# bits.
+# XXX kiko 2007-02-08: this needs reconsideration if we are to make it a truly
+# generic thing. The problem lies in the fact that half of this (user, login,
+# time zone, developer) is actually useful inside webapp/, and the other half
+# is very Launchpad-specific. I suggest we split the interface and
+# implementation into two parts, having a different name for the webapp/ bits.
 class ILaunchBag(Interface):
-    site = Attribute('The application object, or None')
     person = Attribute('IPerson, or None')
-    project = Attribute('IProject, or None')
+    project = Attribute('IProjectGroup, or None')
     product = Attribute('IProduct, or None')
     distribution = Attribute('IDistribution, or None')
     distroseries = Attribute('IDistroSeries, or None')
@@ -332,10 +275,11 @@ class ILaunchBag(Interface):
     bug = Attribute('IBug, or None')
     bugtask = Attribute('IBugTask, or None')
 
+    account = Attribute('Currently authenticated IAccount, or None')
     user = Attribute('Currently authenticated IPerson, or None')
     login = Attribute('The login used by the authenticated person, or None')
 
-    timezone = Attribute("The user's time zone")
+    time_zone = Attribute("The user's time zone")
 
     developer = Bool(
         title=u'True if a member of the launchpad developers celebrity'
@@ -367,12 +311,18 @@ class IBasicLaunchpadRequest(Interface):
         'The StepsToGo object for this request, allowing you to inspect and'
         ' alter the remaining traversal steps.')
 
-    breadcrumbs = Attribute(
-        'List of IBreadcrumb objects.  This is appended to during traversal'
-        ' so that a page can render appropriate breadcrumbs.')
-
     traversed_objects = Attribute(
         'List of traversed objects.  This is appended to during traversal.')
+
+    query_string_params = Attribute(
+        'A dictionary of the query string parameters.')
+
+    def getRootURL(rootsite):
+        """Return this request's root URL.
+
+        If rootsite is not None, then return the root URL for that rootsite,
+        looked up from our config.
+        """
 
     def getNearest(*some_interfaces):
         """Searches for the last traversed object to implement one of
@@ -403,7 +353,7 @@ class IBrowserFormNG(Interface):
         """
 
     def getAll(name, default=None):
-        """Return the the list of values submitted under field name.
+        """Return the list of values submitted under field name.
 
         If the field wasn't submitted return the default value. (If default
         is None, an empty list will be returned. It is an error to use
@@ -423,26 +373,6 @@ class ILaunchpadBrowserApplicationRequest(
         title=u'IBrowserFormNG object containing the submitted form data',
         schema=IBrowserFormNG)
 
-
-# XXX SteveAlexander 2005-09-14: These need making into a launchpad version
-#     rather than the zope versions for the publisher simplification work.
-# class IEndRequestEvent(Interface):
-#     """An event which gets sent when the publication is ended"""
-#
-# # called in zopepublication's endRequest method, after ending
-# # the interaction.  it is used only by local sites, to clean
-# # up per-thread state.
-# class EndRequestEvent(object):
-#     """An event which gets sent when the publication is ended"""
-#     implements(IEndRequestEvent)
-#     def __init__(self, ob, request):
-#         self.object = ob
-#         self.request = request
-
-
-#
-#
-#
 
 class IPrincipalIdentifiedEvent(Interface):
     """An event that is sent after a principal has been recovered from the
@@ -501,15 +431,18 @@ class LoggedOutEvent:
         self.request = request
 
 
-class IPlacelessAuthUtility(IAuthenticationService):
+class IPlacelessAuthUtility(IAuthentication):
     """This is a marker interface for a utility that supplies the interface
     of the authentication service placelessly, with the addition of
     a method to allow the acquisition of a principal using his
     login name.
     """
 
-    def getPrincipalByLogin(login):
-        """Return a principal based on his login name."""
+    def getPrincipalByLogin(login, want_password=True):
+        """Return a principal based on his login name.
+
+        The principal's password is set to None if want_password is False.
+        """
 
 
 class IPlacelessLoginSource(IPrincipalSource):
@@ -518,8 +451,15 @@ class IPlacelessLoginSource(IPrincipalSource):
     between the user id and login name.
     """
 
-    def getPrincipalByLogin(login):
-        """Return a principal based on his login name."""
+    # want_password is temporary. Eventually we will have accounts
+    # without passwords at all, authenticated via other means such as external
+    # OpenID providers or SSL certificates. Principals having passwords
+    # doesn't really make sense.
+    def getPrincipalByLogin(login, want_password=True):
+        """Return a principal based on his login name.
+
+        If want_password is False, the principal's password is set to None.
+        """
 
     def getPrincipals(name):
         """Not implemented.
@@ -585,31 +525,10 @@ class ILaunchpadPrincipal(IPrincipal):
         title=_("The level of access this principal has."),
         vocabulary=AccessLevel, default=AccessLevel.WRITE_PRIVATE)
 
+    account = Attribute("The IAccount the principal represents.")
 
-class ILaunchpadDatabaseAdapter(IZopeDatabaseAdapter):
-    """The Launchpad customized database adapter"""
-    def readonly():
-        """Set the connection to read only.
+    person = Attribute("The IPerson the principal represents.")
 
-        This should only be called at the start of the transaction to
-        avoid confusing code that defers making database changes until
-        transaction commit time.
-        """
-
-    def switchUser(self, dbuser=None):
-        """Change the PostgreSQL user we are connected as.
-
-        This involves closing the existing connection and reopening it;
-        uncommitted changes will be lost. The new connection will also open
-        in read/write mode so calls to readonly() will need to be made
-        after switchUser.
-        """
-
-    def getUser(self):
-        """Return the current PostgreSQL user we are connected as.
-
-        The default user comes from config.launchpad.dbuser.
-        """
 
 #
 # Browser notifications
@@ -619,7 +538,7 @@ class BrowserNotificationLevel:
     """Matches the standard logging levels, with the addition of notice
     (which we should probably add to our log levels as well)
     """
-    # XXX Matthew Paul Thomas 2006-03-22 bugs=36287:
+    # XXX mpt 2006-03-22 bugs=36287:
     # NOTICE and INFO should be merged.
     DEBUG = logging.DEBUG     # A debugging message
     INFO = logging.INFO       # simple confirmation of a change
@@ -663,7 +582,7 @@ class INotificationRequest(Interface):
 
 
 class INotificationResponse(Interface):
-    """This class is responsible for propogating any notifications that
+    """This class is responsible for propagating any notifications that
     have been set when redirect() is called.
     """
 
@@ -676,11 +595,11 @@ class INotificationResponse(Interface):
         instance of a Zope internationalized message will cause the
         message to be translated, then CGI escaped.
 
-        :param msg: This may be a string, `zope.i18n.Message`,
-        	`zope.i18n.MessageID`, or an instance of `IStructuredString`.
+        :param msg: This may be a string, an instance of `zope.i18n.Message`,
+            or an instance of `IStructuredString`.
 
         :param level: One of the `BrowserNotificationLevel` values: DEBUG,
-        	INFO, NOTICE, WARNING, ERROR.
+            INFO, NOTICE, WARNING, ERROR.
         """
 
     def removeAllNotifications():
@@ -709,10 +628,17 @@ class INotificationResponse(Interface):
     def addErrorNotification(msg):
         """Shortcut to addNotification(msg, ERROR)."""
 
-    def redirect(location, status=None):
-        """As per IHTTPApplicationResponse.redirect, except notifications
-        are preserved.
+    def redirect(location, status=None, trusted=True):
+        """Like IHTTPApplicationResponse.redirect, preserving notifications.
+
+        Also, for convenience we use trusted=True here, so that our callsites
+        that redirect from lp.net to vhost.lp.net don't have to pass
+        trusted=True explicitly.
         """
+
+
+class IErrorReportEvent(IObjectEvent):
+    """A new error report has been created."""
 
 
 class IErrorReport(Interface):
@@ -742,22 +668,6 @@ class IErrorReportRequest(Interface):
 # Batch Navigation
 #
 
-class IBatchNavigator(Interface):
-    """A batch navigator for a specified set of results."""
-
-    batch = Attribute("The IBatch for which navigation links are provided.")
-
-    def prevBatchURL():
-        """Return a URL to the previous chunk of results."""
-
-    def nextBatchURL():
-        """Return a URL to the next chunk of results."""
-
-    def batchPageURLs():
-        """Return a list of links representing URLs to pages of
-        results."""
-
-
 class ITableBatchNavigator(IBatchNavigator):
     """A batch navigator for tabular listings."""
 
@@ -779,18 +689,179 @@ class IAlwaysSubmittedWidget(Interface):
     'Optional' marker for such widgets.
     """
 
+
 class ISingleLineWidgetLayout(Interface):
     """A widget that is displayed in a single table row next to its label."""
 
+
 class IMultiLineWidgetLayout(Interface):
     """A widget that is displayed on its own table row below its label."""
+
 
 class ICheckBoxWidgetLayout(IAlwaysSubmittedWidget):
     """A widget that is displayed like a check box with label to the right."""
 
 
-class IBreadcrumbProvider(Interface):
-    """Object that provides breadcrumb text."""
+class IPrimaryContext(Interface):
+    """The primary context that used to determine the tabs for the web UI."""
+    context = Attribute('The primary context.')
 
-    def breadcrumb():
-        """Breadcrumb text."""
+
+#
+# Database policies
+#
+
+MAIN_STORE = 'main' # The main database.
+ALL_STORES = frozenset([MAIN_STORE])
+
+DEFAULT_FLAVOR = 'default' # Default flavor for current state.
+MASTER_FLAVOR = 'master' # The master database.
+SLAVE_FLAVOR = 'slave' # A slave database.
+
+
+class IDatabasePolicy(Interface):
+    """Implement database policy based on the request.
+
+    The publisher adapts the request to `IDatabasePolicy` to
+    instantiate the policy for the current request.
+    """
+    def __enter__():
+        """Standard Python context manager interface.
+
+        The IDatabasePolicy will install itself using the IStoreSelector
+        utility.
+        """
+
+    def __exit__(exc_type, exc_value, traceback):
+        """Standard Python context manager interface.
+
+        The IDatabasePolicy will uninstall itself using the IStoreSelector
+        utility.
+        """
+
+    def getStore(name, flavor):
+        """Retrieve a Store.
+
+        :param name: one of ALL_STORES.
+
+        :param flavor: MASTER_FLAVOR, SLAVE_FLAVOR, or DEFAULT_FLAVOR.
+        """
+
+    def install():
+        """Hook called when policy is pushed onto the `IStoreSelector`."""
+
+    def uninstall():
+        """Hook called when policy is popped from the `IStoreSelector`."""
+
+
+class MasterUnavailable(Exception):
+    """A master (writable replica) database was requested but not available.
+    """
+
+
+class DisallowedStore(Exception):
+    """A request was made to access a Store that has been disabled
+    by the current policy.
+    """
+
+
+class ReadOnlyModeViolation(Exception):
+    """An attempt was made to write to a slave Store in read-only mode.
+
+    This can happen in legacy code where writes are being made to an
+    object retrieved from the default Store rather than casting the
+    object to a writable version using IMasterObject(obj).
+    """
+
+
+class ReadOnlyModeDisallowedStore(DisallowedStore, ReadOnlyModeViolation):
+    """A request was made to access a Store that cannot be granted
+    because we are running in read-only mode.
+    """
+
+
+class IStoreSelector(Interface):
+    """Get a Storm store with a desired flavor.
+
+    Stores come in two flavors - MASTER_FLAVOR and SLAVE_FLAVOR.
+
+    The master is writable and up to date, but we should not use it
+    whenever possible because there is only one master and we don't want
+    it to be overloaded.
+
+    The slave is read only replica of the master and may lag behind the
+    master. For many purposes such as serving unauthenticated web requests
+    and generating reports this is fine. We can also have as many slave
+    databases as we are prepared to pay for, so they will perform better
+    because they are less loaded.
+    """
+    def push(dbpolicy):
+        """Install an `IDatabasePolicy` as the default for this thread."""
+
+    def pop():
+        """Uninstall the most recently pushed `IDatabasePolicy` from
+        this thread.
+
+        Returns the `IDatabasePolicy` removed.
+        """
+
+    def get_current():
+        """Return the currently installed `IDatabasePolicy`."""
+
+    def get(name, flavor):
+        """Retrieve a Storm Store.
+
+        Results should not be shared between threads, as which store is
+        returned for a given name or flavor can depend on thread state
+        (eg. the HTTP request currently being handled).
+
+        If a SLAVE_FLAVOR is requested, the MASTER_FLAVOR may be returned
+        anyway.
+
+        The DEFAULT_FLAVOR flavor may return either a master or slave
+        depending on process state. Application code using the
+        DEFAULT_FLAVOR flavor should assume they have a MASTER and that
+        a higher level will catch the exception raised if an attempt is
+        made to write changes to a read only store. DEFAULT_FLAVOR exists
+        for backwards compatibility, and new code should explicitly state
+        if they want a master or a slave.
+
+        :raises MasterUnavailable:
+
+        :raises DisallowedStore:
+        """
+
+
+class IWebBrowserOriginatingRequest(Interface):
+    """Marker interface for converting webservice requests into webapp ones.
+
+    It's used in the webservice domain for calculating webapp URLs, for
+    instance, `ProxiedLibraryFileAlias`.
+    """
+
+
+# XXX mars 2010-07-14 bug=598816
+#
+# We need a conditional import of the request events until the real events
+# land in the Zope mainline.
+#
+# See bug 598816 for the details.
+
+try:
+    from zope.publisher.interfaces import StartRequestEvent
+except:
+    class IStartRequestEvent(Interface):
+        """An event that gets sent before the start of a request."""
+
+        request = Attribute("The request the event is about")
+
+
+    class StartRequestEvent:
+        """An event fired once at the start of requests.
+
+        :ivar request: The request the event is for.
+        """
+        implements(IStartRequestEvent)
+
+        def __init__(self, request):
+            self.request = request

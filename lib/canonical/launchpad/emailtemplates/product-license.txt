@@ -1,4 +1,5 @@
 Please review this project's licenses.
+%(product_url)s
 
 User: %(user_browsername)s (%(user_name)s)
 

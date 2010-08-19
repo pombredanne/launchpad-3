@@ -181,7 +181,7 @@ Here's an example of a table for the Rosetta project::
   Key to $VARs
   ============
   $PROJECT    The name of the project.  This is the name attribute of
-              the IProject interface, or the name field in the Project
+              the IProjectGroup interface, or the name field in the Project
               relation.  Case is not significant, and is normalized to
               lower-case in the UI.  Examples: 'mozilla', 'gtk+'.
 

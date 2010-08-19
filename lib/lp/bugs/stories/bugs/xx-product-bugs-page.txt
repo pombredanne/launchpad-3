@@ -1,0 +1,208 @@
+== The Product Bugs Page ==
+
+The front page for a product on the bugs domain presents some basic
+information the bugs in it. It doesn't display the list of bugs.
+
+    >>> anon_browser.open('http://bugs.launchpad.dev/firefox')
+    >>> anon_browser.title
+    'Bugs in Mozilla Firefox'
+    >>> find_tag_by_id(anon_browser.contents, 'buglisting') is None
+    True
+
+The page has a link to see all open bugs.
+
+    >>> anon_browser.getLink('Open bugs').click()
+    >>> anon_browser.url
+    'http://bugs.launchpad.dev/firefox/+bugs'
+    >>> find_tag_by_id(anon_browser.contents, 'buglisting') is not None
+    True
+
+It also has a link to subscribe to bug mail.
+
+    >>> user_browser.open('http://bugs.launchpad.dev/firefox')
+    >>> user_browser.getLink('Subscribe to bug mail').click()
+    >>> user_browser.url
+    'http://bugs.launchpad.dev/firefox/+subscribe'
+
+== CVE Bugs ==
+
+It also displays the number of open bugs associated with a CVE.
+
+    >>> anon_browser.open('http://bugs.launchpad.dev/evolution')
+    >>> cve_bugs_link = anon_browser.getLink('Open CVE bugs')
+
+    >>> anon_browser.open('http://bugs.launchpad.dev/firefox')
+    >>> cve_bugs_link = anon_browser.getLink('Open CVE bugs')
+
+The link takes you to the list of bugs with CVEs linked to them.
+
+    >>> cve_bugs_link.click()
+    >>> buglisting = find_tag_by_id(anon_browser.contents, 'buglisting')
+    >>> for tr in buglisting('tr'):
+    ...     if tr.td:
+    ...         print extract_text(tr)
+    1 Firefox does not support SVG
+      Low New
+
+
+== Bugs Fixed Elsewhere ==
+
+The Bugs front page includes the number of bugs that are fixed in some
+other context. For example, users can see all bugs raised against
+Mozilla Firefox that are fixed in some other context:
+
+    >>> anon_browser.goBack(1)
+    >>> fixed_elsewhere_link = anon_browser.getLink('Bugs fixed elsewhere')
+
+The link takes you to the list of the bugs fixed elsewhere:
+
+    >>> fixed_elsewhere_link.click()
+    >>> anon_browser.url
+    'http://.../+bugs?field.status_upstream=resolved_upstream'
+
+    >>> print find_main_content(anon_browser.contents)
+    <...
+    <p>There are currently no open bugs.</p>
+    ...
+
+
+== Expirable Bugs ==
+
+The bugs page displays the number of Incomplete, unattended bugs that
+can expire when the project has enabled bug expiration. Jokosher
+is such a project.
+
+    >>> anon_browser.open('http://bugs.launchpad.dev/jokosher')
+    >>> expirable_bugs_link = anon_browser.getLink('Incomplete bugs')
+
+The link goes to the expirable bugs page, where the anonymous user can
+see which bugs will expire if they are not confirmed.
+
+    >>> expirable_bugs_link.click()
+    >>> print anon_browser.title
+    Bugs that can expire in Jokosher...
+
+Product series may also have a link to expirable bugs. Jokosher's trunk
+series has the link because Jokosher has enabled bug expiration.
+
+    >>> anon_browser.open('http://bugs.launchpad.dev/jokosher/trunk')
+    >>> expirable_bugs_link = anon_browser.getLink('Incomplete bugs')
+    >>> expirable_bugs_link.click()
+    >>> print anon_browser.title
+    Bugs that can expire in Jokosher...
+
+Thunderbird has not enabled bug expiration; the anonymous user
+cannot see any link reporting that bugs can expire.
+
+    >>> anon_browser.open('http://bugs.launchpad.dev/thunderbird')
+    >>> expirable_bugs_link = anon_browser.getLink('Incomplete bugs')
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+
+== Tags and Filters ==
+
+There's also portlets for easy searching by tags and filters. Its content is
+loaded using Javascript in a separate request.
+
+    >>> anon_browser.open('http://bugs.launchpad.dev/firefox')
+    >>> tags_portlet = find_tag_by_id(anon_browser.contents, 'portlet-tags')
+    >>> anon_browser.getLink(id='tags-content-link').click()
+    >>> print extract_text(anon_browser.contents)
+    Tags
+    doc layout-test
+
+They are there to provide easy navigation for bugs with a certain
+tag...
+
+    >>> from lp.bugs.tests.bug import print_bugtasks
+    >>> anon_browser.getLink('layout-test').click()
+    >>> print_bugtasks(anon_browser.contents)
+    4  Reflow problems with complex page layouts
+       Medium New
+
+    >>> anon_browser.open('http://bugs.launchpad.dev/firefox')
+    >>> anon_browser.getLink('Critical bugs').click()
+    >>> print_bugtasks(anon_browser.contents)
+    5 Firefox install instructions should be complete
+      Critical New
+
+
+== Hot Bugs ==
+
+A listing of the 10 'hottest' bugs is displayed to allow a quick
+overview of the project.
+
+To demonstrate this, we create 10 bugs and adjust their heat values manually.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> from lp.registry.interfaces.product import IProductSet
+    >>> import transaction
+    >>> login('foo.bar@canonical.com')
+    >>> firefox = getUtility(IProductSet).getByName("firefox")
+    >>> heat_values = [0, 400, 200, 600, 100, 50, 50, 50, 50, 50, 50, 50]
+    >>> for count in range(1, 11):
+    ...     summary = 'Summary for new bug %d' % count
+    ...     bug = factory.makeBug(title=summary, product=firefox)
+    ...     bug.setHeat(heat_values[count])
+    >>> transaction.commit()
+    >>> logout()
+
+For each bug we have the number, title, status, importance and the time
+since the last update.
+
+    >>> anon_browser.open('http://bugs.launchpad.dev/firefox')
+    >>> print extract_text(
+    ...     find_tag_by_id(anon_browser.contents, 'hot-bugs'))
+        Summary                   Status   Importance    Last changed
+    #18 Summary for new bug 3    New      Undecided     ...
+    #16 Summary for new bug 1    New      Undecided     ...
+    #17 Summary for new bug 2    New      Undecided     ...
+    #19 Summary for new bug 4    New      Undecided     ...
+    #20 Summary for new bug 5    New      Undecided     ...
+    #21 Summary for new bug 6    New      Undecided     ...
+    #22 Summary for new bug 7    New      Undecided     ...
+    #23 Summary for new bug 8    New      Undecided     ...
+    #24 Summary for new bug 9    New      Undecided     ...
+    #25 Summary for new bug 10   New      Undecided     ...
+
+Fix Released bugs are not shown. We demonstrate this by setting the bugtask
+for bug 18 to be "Fix Released".
+
+    >>> from lp.bugs.interfaces.bug import BugTaskStatus, IBugSet
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> login('foo.bar@canonical.com')
+    >>> bug_18 = getUtility(IBugSet).get(18)
+    >>> project_owner = getUtility(IPersonSet).getByName('name12')
+    >>> bug_18.bugtasks[0].transitionToStatus(
+    ...     BugTaskStatus.FIXRELEASED, project_owner)
+    >>> logout()
+
+    >>> anon_browser.reload()
+    >>> print extract_text(
+    ...     find_tag_by_id(anon_browser.contents, 'hot-bugs'))
+        Summary                   Status   Importance    Last changed
+    #16 Summary for new bug 1    New      Undecided     ...
+    #17 Summary for new bug 2    New      Undecided     ...
+    #19 Summary for new bug 4    New      Undecided     ...
+    #20 Summary for new bug 5    New      Undecided     ...
+    #21 Summary for new bug 6    New      Undecided     ...
+    #22 Summary for new bug 7    New      Undecided     ...
+    #23 Summary for new bug 8    New      Undecided     ...
+    #24 Summary for new bug 9    New      Undecided     ...
+    #25 Summary for new bug 10   New      Undecided     ...
+
+There is a link to see all bugs by heat if the project has more
+than 10 hot bugs.
+
+    >>> find_tag_by_id(anon_browser.contents, 'more-hot-bugs') is None
+    False
+
+Jokosher does not have more than 10 bugs and does not have a link
+to more hot bugs.
+
+    >>> anon_browser.open('http://bugs.launchpad.dev/jokosher')
+    >>> find_tag_by_id(anon_browser.contents, 'more-hot-bugs') is None
+    True

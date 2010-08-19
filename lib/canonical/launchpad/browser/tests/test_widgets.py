@@ -1,4 +1,5 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for Launchpad-specific widgets."""
 
@@ -7,7 +8,7 @@ __metaclass__ = type
 import unittest
 
 from zope.app.form.interfaces import ConversionError
-from zope.app.tests import ztapi
+from zope.app.testing import ztapi
 from zope.component import getUtility
 from zope.interface import implements
 from zope.schema import Choice
@@ -16,14 +17,15 @@ from canonical.launchpad import _
 from canonical.launchpad.browser.widgets import (
     BranchPopupWidget, NoProductError)
 from canonical.launchpad.ftests import ANONYMOUS, login, logout
-from canonical.launchpad.interfaces import BranchType, IBranchSet
-from canonical.launchpad.testing import LaunchpadObjectFactory
+from lp.code.enums import BranchType
+from lp.code.interfaces.branchlookup import IBranchLookup
+from lp.testing.factory import LaunchpadObjectFactory
 from canonical.launchpad.vocabularies import (
     BranchRestrictedOnProductVocabulary, BranchVocabulary)
 from canonical.testing import LaunchpadFunctionalLayer
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.launchpad.webapp.uri import URI
+from lazr.uri import URI
 
 
 class DummyLaunchBag:
@@ -99,40 +101,8 @@ class TestBranchPopupWidget(unittest.TestCase):
         name = self.popup.getBranchNameFromURL(url)
         self.assertEqual(URI(url).path.split('/')[-1], name)
 
-    def test_getBranchNameFromURLWhenAlreadyTaken(self):
-        """getBranchNameFromURL() returns a name that isn't already taken."""
-        # Make sure that the branch name for `url` is already taken.
-        url = self.factory.getUniqueURL()
-        branch = self.factory.makeBranch(
-            product=self.launch_bag.product,
-            name=self.popup.getBranchNameFromURL(url))
-
-        # Now that the name is taken for this product, getBranchNameFromURL
-        # returns the same name with '-1' at the end.
-        self.assertEqual(
-            branch.name + '-1', self.popup.getBranchNameFromURL(url))
-
-    def test_getBranchNameFromURLWhenAlreadyTakenProgressive(self):
-        """getBranchNameFromURL() returns a name that isn't already taken.
-
-        It does this by looping until it finds one that isn't.
-        """
-        # Make sure that the branch name for `url` is already taken.
-        url = self.factory.getUniqueURL()
-        branch = self.factory.makeBranch(
-            product=self.launch_bag.product,
-            name=self.popup.getBranchNameFromURL(url))
-        self.factory.makeBranch(
-            product=self.launch_bag.product,
-            name=self.popup.getBranchNameFromURL(url))
-
-        # Now that the name is taken for this product, getBranchNameFromURL
-        # returns the same name with '-2' at the end.
-        self.assertEqual(
-            branch.name + '-2', self.popup.getBranchNameFromURL(url))
-
-    def test_makeBranch(self):
-        """makeBranch(url) creates a mirrored branch at `url`.
+    def test_makeBranchFromURL(self):
+        """makeBranchFromURL(url) creates a mirrored branch at `url`.
 
         The owner and registrant are the currently logged-in user, as given by
         getPerson(), and the product is the product in the LaunchBag.
@@ -147,6 +117,17 @@ class TestBranchPopupWidget(unittest.TestCase):
         self.assertEqual(self.popup.getProduct(), branch.product)
         self.assertEqual(expected_name, branch.name)
 
+    def test_makeBranch_used(self):
+        # makeBranch makes up the branch name if the inferred one is already
+        # used.
+        url = self.factory.getUniqueURL()
+        expected_name = self.popup.getBranchNameFromURL(url)
+        self.factory.makeProductBranch(
+            name=expected_name, product=self.popup.getProduct(),
+            owner=self.popup.getPerson())
+        branch = self.popup.makeBranchFromURL(url)
+        self.assertEqual(expected_name + '-1', branch.name)
+
     def test_makeBranchRequestsMirror(self):
         """makeBranch requests a mirror on the branch it creates."""
         url = self.factory.getUniqueURL()
@@ -154,7 +135,7 @@ class TestBranchPopupWidget(unittest.TestCase):
         self.assertNotEqual('None', str(branch.next_mirror_time))
 
     def test_makeBranchNoProduct(self):
-        """makeBranch(url) returns None if there's no product in LaunchBag.
+        """makeBranchFromURL(url) returns None if there's no product.
 
         Not all contexts for branch registration have products. In particular,
         a bug can be on a source package. When we link a branch to that bug,
@@ -178,14 +159,15 @@ class TestBranchPopupWidget(unittest.TestCase):
         """_toFieldValue falls back to making a branch if it's given a URL."""
         url = self.factory.getUniqueURL()
         # Check that there's no branch with this URL.
-        self.assertIs(None, getUtility(IBranchSet).getByUrl(url))
+        self.assertIs(None, getUtility(IBranchLookup).getByUrl(url))
 
         branch = self.popup._toFieldValue(url)
         self.assertEqual(url, branch.url)
 
     def test_toFieldValueFetchesTheExistingBranch(self):
         """_toFieldValue returns the existing branch that has that URL."""
-        expected_branch = self.factory.makeBranch(BranchType.MIRRORED)
+        expected_branch = self.factory.makeAnyBranch(
+            branch_type=BranchType.MIRRORED)
         branch = self.popup._toFieldValue(expected_branch.url)
         self.assertEqual(expected_branch, branch)
 
@@ -225,7 +207,8 @@ class TestBranchPopupWidget(unittest.TestCase):
         popup = self.makeBranchPopup(vocab)
 
         # Make a branch on a different product.
-        branch = self.factory.makeBranch(BranchType.MIRRORED)
+        branch = self.factory.makeProductBranch(
+            branch_type=BranchType.MIRRORED)
         self.assertNotEqual(self.launch_bag.product, branch.product)
 
         # Trying to make a branch with that URL will fail.

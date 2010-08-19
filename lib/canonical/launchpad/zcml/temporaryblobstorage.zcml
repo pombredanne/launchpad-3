@@ -1,3 +1,7 @@
+<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+     GNU Affero General Public License version 3 (see the file LICENSE).
+-->
+
 <configure
   xmlns="http://namespaces.zope.org/zope"
   xmlns:browser="http://namespaces.zope.org/browser"
@@ -5,29 +9,25 @@
   i18n_domain="launchpad">
 
   <!-- TemporaryBlobStorage -->
-  <content class="canonical.launchpad.database.TemporaryBlobStorage">
+  <class class="canonical.launchpad.database.TemporaryBlobStorage">
     <allow
       interface="canonical.launchpad.interfaces.ITemporaryBlobStorage" />
-  </content>
+  </class>
 
-  <browser:generalform
+  <browser:page
     name="+storeblob"
     for="canonical.launchpad.interfaces.ILaunchpadRoot"
     class="canonical.launchpad.browser.TemporaryBlobStorageAddView"
-    schema="canonical.launchpad.interfaces.ITemporaryBlobStorage"
-    label="Store BLOB"
-    fields="blob"
-    keyword_arguments="blob"
     permission="zope.Public"
     template="../templates/temporaryblobstorage-storeblob.pt"
     >
-  </browser:generalform>
+  </browser:page>
 
   <!-- TemporaryStorageManager -->
-  <content class="canonical.launchpad.database.TemporaryStorageManager">
+  <class class="canonical.launchpad.database.TemporaryStorageManager">
     <allow
       interface="canonical.launchpad.interfaces.ITemporaryStorageManager" />
-  </content>
+  </class>
 
   <securedutility
       class="canonical.launchpad.database.TemporaryStorageManager"
@@ -36,4 +36,20 @@
         interface="canonical.launchpad.interfaces.ITemporaryStorageManager" />
   </securedutility>
 
+  <browser:navigation
+      module="canonical.launchpad.browser.temporaryblobstorage"
+      classes="TemporaryBlobStorageNavigation"
+      />
+
+  <browser:url
+      for="canonical.launchpad.interfaces.temporaryblobstorage.ITemporaryBlobStorage"
+      urldata="canonical.launchpad.browser.temporaryblobstorage.TemporaryBlobStorageURL"
+      parent_utility="canonical.launchpad.interfaces.IWebServiceApplication"/>
+      path_expression="string:temporary-blobs/${uuid}"
+      />
+
+  <browser:url
+      for="canonical.launchpad.interfaces.temporaryblobstorage.ITemporaryStorageManager"
+      path_expression="string:temporary-blobs"
+      parent_utility="canonical.launchpad.interfaces.IWebServiceApplication"/>
 </configure>

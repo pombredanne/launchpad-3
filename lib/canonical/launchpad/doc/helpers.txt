@@ -39,7 +39,7 @@ A mix of all previous cases.
 The english_list function takes a list of strings and concatenates
 them in a form suitable for inclusion in an English sentence. For
 lists of 3 or more elements it follows the advice given in The
-Elements of Style, chapter II, section 2.
+Elements of Style, chapter I, section 2.
 
     >>> from canonical.launchpad.helpers import english_list
 
@@ -74,3 +74,18 @@ The conjunction can be changed:
 
     >>> english_list('123', 'or')
     '1, 2, or 3'
+
+
+== get_contact_email_addresses ==
+
+The get_contact_email_addresses function is used to get a person's preferred
+address as a set for function that require the a set of email addresses.
+
+    >>> from canonical.launchpad.helpers import get_contact_email_addresses
+
+    >>> user = factory.makePerson(
+    ...     email='user@canonical.com',
+    ...     name='user',)
+    >>> get_contact_email_addresses(user)
+    set(['user@canonical.com'])
+

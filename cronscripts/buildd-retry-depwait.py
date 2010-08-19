@@ -1,5 +1,8 @@
-#!/usr/bin/python2.4
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+#!/usr/bin/python -S
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=C0103,W0403
 """Retrying build in MANUALDEPWAIT state.
 
@@ -22,7 +25,7 @@ __metaclass__ = type
 import _pythonpath
 
 from canonical.config import config
-from canonical.launchpad.scripts.buildd import RetryDepwait
+from lp.soyuz.scripts.buildd import RetryDepwait
 
 if __name__ == '__main__':
     script = RetryDepwait(

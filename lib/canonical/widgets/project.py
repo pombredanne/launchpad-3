@@ -1,6 +1,7 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Widgets related to IProject."""
+"""Widgets related to IProjectGroup."""
 
 __metaclass__ = type
 
@@ -14,7 +15,7 @@ from zope.app.form.utility import setUpWidget
 from zope.interface import implements
 from zope.schema import Choice
 
-from canonical.launchpad.interfaces import UnexpectedFormData
+from lp.app.errors import UnexpectedFormData
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp.interfaces import IAlwaysSubmittedWidget
 
@@ -34,7 +35,7 @@ class ProjectScopeWidget(BrowserWidget, InputWidget):
         # field since it determines the valid target types.
         # XXX flacoste 2007-02-21 bug=86861: We must
         # use field.vocabularyName instead of the vocabulary parameter
-        # otherwise SinglePopupWidget will fail.
+        # otherwise VocabularyPickerWidget will fail.
         target_field = Choice(
             __name__='target', title=field.title,
             description=field.description, vocabulary=field.vocabularyName,

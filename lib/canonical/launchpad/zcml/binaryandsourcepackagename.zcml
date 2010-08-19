@@ -1,3 +1,7 @@
+<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+     GNU Affero General Public License version 3 (see the file LICENSE).
+-->
+
 <configure
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
@@ -7,14 +11,26 @@
   <facet facet="overview">
 
     <!-- BinaryAndSourcePackagename -->
-    <content class="canonical.launchpad.database.BinaryAndSourcePackageName">
+    <class class="canonical.launchpad.database.BinaryAndSourcePackageName">
         <allow interface="canonical.launchpad.interfaces.IBinaryAndSourcePackageName" />
-    </content>
+    </class>
 
-    <vocabulary
+    <class class="canonical.launchpad.database.binaryandsourcepackagename.BinaryAndSourcePackageNameIterator">
+        <allow interface="canonical.launchpad.webapp.vocabulary.ICountableIterator" />
+    </class>
+
+    <securedutility
       name="BinaryAndSourcePackageName"
-      factory="canonical.launchpad.database.binaryandsourcepackagename.BinaryAndSourcePackageNameVocabulary"
-      />
+      component="canonical.launchpad.database.binaryandsourcepackagename.BinaryAndSourcePackageNameVocabulary"
+      provides="zope.schema.interfaces.IVocabularyFactory"
+      >
+      <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
+    </securedutility>
+
+    <class class="canonical.launchpad.database.binaryandsourcepackagename.BinaryAndSourcePackageNameVocabulary">
+      <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
+    </class>
+
 
   </facet>
 </configure>

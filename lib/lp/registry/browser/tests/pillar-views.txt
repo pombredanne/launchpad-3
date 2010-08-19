@@ -1,0 +1,292 @@
+Pillar views
+============
+
+Pillar views are used to display IPillar objects link distributions and
+products in a consistent fashion.
+
+The +get-involved presentation creates a portlet of links to encourage
+project involvement. Only links to official applications are rendered.
+
+
+    >>> distribution = factory.makeDistribution(name='umbra')
+    >>> login_person(distribution.owner)
+    >>> view = create_view(
+    ...     distribution, '+get-involved', principal=distribution.owner)
+
+The has_involvement property is used to determine if the portlet should
+be rendered. The newly created pillar does not use any launchpad applications.
+
+    >>> view.has_involvement
+    False
+
+    >>> print view.render()
+    <BLANKLINE>
+
+Pillars that do use launchpad applications have an involvement menu.
+
+    >>> distribution.official_answers = True
+    >>> distribution.official_malone = True
+    >>> view = create_view(
+    ...     distribution, '+get-involved', principal=distribution.owner)
+    >>> view.has_involvement
+    True
+
+    >>> view.official_malone
+    True
+    >>> view.official_answers
+    True
+    >>> view.official_rosetta
+    False
+    >>> view.official_blueprints
+    False
+    >>> view.official_codehosting
+    False
+
+The view provides a list of enabled links that is rendered by the template.
+
+    >>> for link in view.enabled_links:
+    ...     print link.name
+    report_bug ask_question
+
+    >>> print view.render()
+    <div id="involvement" class="portlet">
+      <h2>Get Involved</h2>
+      <ul class="involvement">
+        <li>
+          <a href=... class="...bugs">Report a bug</a>...
+        </li>
+        <li>
+          <a href=... class="...answers">Ask a question</a>...
+        </li>
+      </ul>
+    ...
+
+Products are supported.
+
+    >>> product = factory.makeProduct(name='bread')
+    >>> login_person(product.owner)
+    >>> product.official_blueprints = True
+    >>> view = create_view(product, '+get-involved')
+    >>> view.official_blueprints
+    True
+    >>> for link in view.enabled_links:
+    ...     print link.name
+    register_blueprint
+
+Products subclass the view to display disabled links to encourage
+configuring that service in Launchpad for the project. The project
+also has configuration links that make it easy to figure out where
+to configure each service.
+
+    >>> for link in view.visible_disabled_links:
+    ...     print link.name
+    report_bug
+    ask_question
+    help_translate
+    submit_code
+
+    >>> for link in view.configuration_links:
+    ...     print link['link'].name
+    configure_bugtracker
+    configure_answers
+    configure_translations
+    set_branch
+
+The registration status is determined with the 'configuration_states'
+property.  Notice that blueprints are not included in the
+configuration links nor the completeness computation as the use of
+blueprints is not promoted.
+
+    >>> for key in sorted(view.configuration_states.keys()):
+    ...     print key, view.configuration_states[key]
+    configure_answers False
+    configure_bugtracker False
+    configure_codehosting False
+    configure_translations False
+
+The percentage of the registration completed can be determined by
+using the 'registration_completeness' property, which returns a
+dictionary, which makes it easy for use in the page template.
+
+    >>> print pretty(view.registration_completeness)
+    {'done': 0,
+     'undone': 100}
+
+Changing the product's official usage is reflected in the view properties.
+
+    >>> product.official_malone = True
+    >>> view = create_view(product, '+get-involved')
+    >>> for key in sorted(view.configuration_states.keys()):
+    ...     print key, view.configuration_states[key]
+    configure_answers False
+    configure_bugtracker True
+    configure_codehosting False
+    configure_translations False
+
+    >>> print pretty(view.registration_completeness)
+    {'done': 25,
+     'undone': 75}
+
+The progress bar is shown as a green bar.
+
+    >>> from canonical.launchpad.testing.pages import find_tag_by_id
+    >>> rendered = view.render()
+    >>> print find_tag_by_id(rendered, 'progressbar')
+    <div ... id="progressbar">
+    ...
+    <img src="/@@/green-bar" ... width="25".../>
+    ...
+
+Each application is displayed (except for blueprints) with an
+indicator showing whether it has been configured or not.
+
+    >>> print find_tag_by_id(rendered, 'configuration_links')
+    <table...
+    <a href="http://launchpad.dev/bread/+configure-bugtracker"...
+    <span class="sprite yes">...
+    <a href="http://launchpad.dev/bread/+configure-answers"...
+    <span class="sprite no">...
+    <a href="http://launchpad.dev/bread/+configure-translations"...
+    <span class="sprite no">...
+    <a href="http://launchpad.dev/bread/trunk/+setbranch"...
+    <span class="sprite no">...
+    </table>
+
+Until other supporting code lands, the progress bar is not going to be
+shown on lpnet.
+
+    >>> # Pretend that we're on launchpad.net:
+    >>> from canonical.config import config
+    >>> from textwrap import dedent
+    >>> test_data = dedent("""
+    ...     [launchpad]
+    ...     is_lpnet: True
+    ...     """)
+    >>> config.push('test_data', test_data)
+
+The progress bar is not shown on lpnet.
+
+    >>> view = create_view(product, '+get-involved')
+    >>> rendered = view.render()
+    >>> print find_tag_by_id(rendered, 'progressbar')
+    None
+
+Neither are the indicator sprites.
+
+    >>> 'sprite' in find_tag_by_id(rendered, 'configuration_links')
+    False
+
+    >>> # Restore the previous config:
+    >>> config_data = config.pop('test_data')
+    >>> print config.launchpad.is_lpnet
+    False
+
+Project groups are supported too, but they only display the
+applications used by their products.
+
+    >>> project_group = factory.makeProject(name='box', owner=product.owner)
+    >>> product.project = project_group
+
+    >>> view = create_view(project_group, '+get-involved')
+    >>> view.official_blueprints
+    True
+
+The offical_codehosting for a project is based on whether the project's
+development focus series has a branch.
+
+    >>> print product.development_focus.branch
+    None
+    >>> product.official_codehosting
+    False
+    >>> view = create_view(product, '+get-involved')
+    >>> view.official_codehosting
+    False
+
+    >>> product.development_focus.branch = factory.makeBranch(
+    ...     product=product)
+    >>> product.official_codehosting
+    True
+    >>> view = create_view(product, '+get-involved')
+    >>> view.official_codehosting
+    True
+
+Project groups cannot make links to register a branch, so
+official_codehosting is always false.
+
+    >>> view = create_view(project_group, '+get-involved')
+    >>> view.official_codehosting
+    False
+
+DistroSeries can use this view. The distribution is used to set the links.
+
+    >>> series = factory.makeDistroRelease(distribution=distribution)
+    >>> view = create_view(series, '+get-involved')
+    >>> for link in view.enabled_links:
+    ...     print link.name
+    report_bug
+
+DistributionSourcePackages can use this view. The distribution is used to
+set the links.  Despite the fact that the distribution uses blueprints,
+and translations those links are not enabled for DistributionSourcePackages.
+
+    >>> login_person(distribution.owner)
+    >>> distribution.official_blueprints = True
+    >>> distribution.official_rosetta = True
+    >>> package = factory.makeDistributionSourcePackage(
+    ...     sourcepackagename="box",
+    ...     distribution=distribution)
+    >>> view = create_view(package, '+get-involved')
+    >>> for link in view.enabled_links:
+    ...     print link.name
+    report_bug ask_question
+
+
+Involvement links
+-----------------
+
+The pillar involvement view uses the InvolvedMenu when rendering links.
+
+    >>> from operator import attrgetter
+    >>> from canonical.launchpad.webapp.tales import MenuAPI
+
+The menu when viewed from a product page.
+
+    >>> view = create_view(product, '+get-involved')
+    >>> menuapi = MenuAPI(view)
+    >>> for link in sorted(
+    ...     menuapi.navigation.values(), key=attrgetter('sort_key')):
+    ...     print link.url
+    http://bugs.launchpad.dev/bread/+filebug
+    http://answers.launchpad.dev/bread/+addquestion
+    http://translations.launchpad.dev/bread
+    http://code.launchpad.dev/bread/+addbranch
+    http://blueprints.launchpad.dev/bread/+addspec
+
+    >>> from lp.testing.menu import check_menu_links
+    >>> from lp.registry.browser.pillar import InvolvedMenu
+    >>> check_menu_links(InvolvedMenu(product))
+    True
+
+The menu when viewed from a distribution page.
+
+    >>> view = create_view(distribution, '+get-involved')
+    >>> menuapi = MenuAPI(view)
+    >>> for link in sorted(
+    ...     menuapi.navigation.values(), key=attrgetter('sort_key')):
+    ...     if link.enabled:
+    ...         print link.url
+    http://bugs.launchpad.dev/umbra/+filebug
+    http://answers.launchpad.dev/umbra/+addquestion
+    http://translations.launchpad.dev/umbra
+    http://blueprints.launchpad.dev/umbra/+addspec
+
+The menu when viewed from a distribution source package page.
+
+    >>> view = create_view(package, '+get-involved')
+    >>> menuapi = MenuAPI(view)
+    >>> for link in sorted(
+    ...     menuapi.navigation.values(), key=attrgetter('sort_key')):
+    ...     if link.enabled:
+    ...         print link.url
+    http://bugs.launchpad.dev/umbra/+source/box/+filebug
+    http://answers.launchpad.dev/umbra/+source/box/+addquestion

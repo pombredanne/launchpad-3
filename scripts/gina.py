@@ -1,15 +1,17 @@
-#!/usr/bin/python2.4
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+#!/usr/bin/python -S
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # This module uses relative imports.
 # pylint: disable-msg=W0403
-
 
 """
 Gina launcher script. Handles commandline options and makes the proper
 calls to the other classes and instances.
 
 The callstack is essentially:
-    main -> run_gina 
+    main -> run_gina
                 -> import_sourcepackages -> do_one_sourcepackage
                 -> import_binarypackages -> do_one_binarypackage
 """
@@ -25,7 +27,7 @@ import _pythonpath
 
 from optparse import OptionParser
 import os
-import psycopg
+import psycopg2
 import sys
 import time
 
@@ -33,21 +35,21 @@ from zope.component import getUtility
 
 from contrib.glock import GlobalLock, LockAlreadyAcquired
 
+from canonical import lp
 from canonical.lp import initZopeless
 from canonical.config import config
-from canonical.launchpad.interfaces import (
-    IComponentSet, PackagePublishingPocket)
+from lp.soyuz.interfaces.component import IComponentSet
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger_options, log)
 
-from canonical.launchpad.scripts.gina import ExecutionError
-from canonical.launchpad.scripts.gina.katie import Katie
-from canonical.launchpad.scripts.gina.archive import (ArchiveComponentItems,
+from lp.soyuz.scripts.gina import ExecutionError
+from lp.soyuz.scripts.gina.katie import Katie
+from lp.soyuz.scripts.gina.archive import (ArchiveComponentItems,
     PackagesMap, MangledArchiveError)
 
-from canonical.launchpad.scripts.gina.handlers import (ImporterHandler,
+from lp.soyuz.scripts.gina.handlers import (ImporterHandler,
     MultiplePackageReleaseError, NoSourcePackageError, DataSetupError)
-from canonical.launchpad.scripts.gina.packages import (SourcePackageData,
+from lp.soyuz.scripts.gina.packages import (SourcePackageData,
     BinaryPackageData, MissingRequiredArguments, DisplayNameDecodingError,
     PoolFileNotFound, InvalidVersionError)
 
@@ -114,6 +116,9 @@ def main():
 
 
 def run_gina(options, ztm, target_section):
+    # Avoid circular imports.
+    from lp.registry.interfaces.pocket import PackagePublishingPocket
+
     package_root = target_section.root
     keyrings_root = target_section.keyrings
     distro = target_section.distro
@@ -130,8 +135,8 @@ def run_gina(options, ztm, target_section):
 
     dry_run = options.dry_run
 
-    LPDB = config.database.dbname
-    LPDB_HOST = config.database.dbhost
+    LPDB = lp.dbname
+    LPDB_HOST = lp.dbhost
     LPDB_USER = config.gina.dbuser
     KTDB = target_section.katie_dbname
 
@@ -176,9 +181,9 @@ def run_gina(options, ztm, target_section):
         keyrings = _get_keyring(keyrings_root)
 
     try:
-        arch_component_items = ArchiveComponentItems(package_root,
-                                                     pocket_distroseries,
-                                                     components, archs)
+        arch_component_items = ArchiveComponentItems(
+            package_root, pocket_distroseries, components, archs,
+            source_only)
     except MangledArchiveError:
         log.exception(
             "Failed to analyze archive for %s" % pocket_distroseries)
@@ -189,28 +194,20 @@ def run_gina(options, ztm, target_section):
                                        dry_run, kdb, package_root, keyrings,
                                        pocket, component_override)
 
-    for archtag in archs:
-        try:
-            importer_handler.ensure_archinfo(archtag)
-        except DataSetupError:
-            log.exception("Database setup required for run on %s" % archtag)
-            sys.exit(1)
-
-    if spnames_only:
-        log.info('Running in SourcePackageName-only mode...')
-        for source in packages_map.src_map.itervalues():
-            log.info('Ensuring %s name' % source['Package'])
-            importer_handler.ensure_sourcepackagename(source['Package'])
-        log.info('done')
-        sys.exit(0)
-
     import_sourcepackages(packages_map, kdb, package_root, keyrings,
                           importer_handler)
     importer_handler.commit()
 
     if source_only:
         log.info('Source only mode... done')
-        sys.exit(0)
+        return
+
+    for archtag in archs:
+        try:
+            importer_handler.ensure_archinfo(archtag)
+        except DataSetupError:
+            log.exception("Database setup required for run on %s" % archtag)
+            sys.exit(1)
 
     import_binarypackages(packages_map, kdb, package_root, keyrings,
                           importer_handler)
@@ -224,44 +221,48 @@ def import_sourcepackages(packages_map, kdb, package_root,
     npacks = len(packages_map.src_map)
     log.info('%i Source Packages to be imported' % npacks)
 
-    for source in sorted(packages_map.src_map.values(),
-                         key=lambda x: x.get("Package")):
-        count += 1
-        package_name = source.get("Package", "unknown")
-        try:
+    for list_source in sorted(
+        packages_map.src_map.values(), key=lambda x: x[0].get("Package")):
+        for source in list_source:
+            count += 1
+            package_name = source.get("Package", "unknown")
             try:
-                do_one_sourcepackage(source, kdb, package_root, keyrings,
-                                     importer_handler)
-            except psycopg.Error:
-                log.exception("Database error: unable to create "
-                              "SourcePackage for %s. Retrying once.."
-                              % package_name)
-                importer_handler.abort()
-                time.sleep(15)
-                do_one_sourcepackage(source, kdb, package_root, keyrings,
-                                     importer_handler)
-        except (InvalidVersionError, MissingRequiredArguments,
+                try:
+                    do_one_sourcepackage(
+                        source, kdb, package_root, keyrings, importer_handler)
+                except psycopg2.Error:
+                    log.exception(
+                        "Database error: unable to create SourcePackage "
+                        "for %s. Retrying once.." % package_name)
+                    importer_handler.abort()
+                    time.sleep(15)
+                    do_one_sourcepackage(
+                        source, kdb, package_root, keyrings, importer_handler)
+            except (
+                InvalidVersionError, MissingRequiredArguments,
                 DisplayNameDecodingError):
-            log.exception("Unable to create SourcePackageData for %s" %
-                          package_name)
-            continue
-        except (PoolFileNotFound, ExecutionError):
-            # Problems with katie db stuff of opening files
-            log.exception("Error processing package files for %s" %
-                          package_name)
-            continue
-        except psycopg.Error:
-            log.exception("Database errors made me give up: unable to create "
-                          "SourcePackage for %s" % package_name)
-            importer_handler.abort()
-            continue
-        except MultiplePackageReleaseError:
-            log.exception("Database duplication processing %s" %
-                          package_name)
-            continue
+                log.exception(
+                    "Unable to create SourcePackageData for %s" %
+                    package_name)
+                continue
+            except (PoolFileNotFound, ExecutionError):
+                # Problems with katie db stuff of opening files
+                log.exception(
+                    "Error processing package files for %s" % package_name)
+                continue
+            except psycopg2.Error:
+                log.exception(
+                    "Database errors made me give up: unable to create "
+                    "SourcePackage for %s" % package_name)
+                importer_handler.abort()
+                continue
+            except MultiplePackageReleaseError:
+                log.exception(
+                    "Database duplication processing %s" % package_name)
+                continue
 
-        if COUNTDOWN and count % COUNTDOWN == 0:
-            log.warn('%i/%i sourcepackages processed' % (count, npacks))
+            if COUNTDOWN and count % COUNTDOWN == 0:
+                log.warn('%i/%i sourcepackages processed' % (count, npacks))
 
 
 def do_one_sourcepackage(source, kdb, package_root, keyrings,
@@ -297,7 +298,7 @@ def import_binarypackages(packages_map, kdb, package_root, keyrings,
                 try:
                     do_one_binarypackage(binary, archtag, kdb, package_root,
                                          keyrings, importer_handler)
-                except psycopg.Error:
+                except psycopg2.Error:
                     log.exception("Database errors when importing a "
                                   "BinaryPackage for %s. Retrying once.."
                                   % package_name)
@@ -318,7 +319,7 @@ def import_binarypackages(packages_map, kdb, package_root, keyrings,
                 log.exception("Database duplication processing %s" %
                               package_name)
                 continue
-            except psycopg.Error:
+            except psycopg2.Error:
                 log.exception("Database errors made me give up: unable to "
                               "create BinaryPackage for %s" % package_name)
                 importer_handler.abort()

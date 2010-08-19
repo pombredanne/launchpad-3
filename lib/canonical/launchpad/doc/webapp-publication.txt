@@ -38,7 +38,11 @@ These are parsed into webapp.vhost.allvhosts.
     althosts:
     ----
     api @ api.launchpad.dev
-    rooturl: http://api.launchpad.dev/beta/
+    rooturl: http://api.launchpad.dev/
+    althosts:
+    ----
+    apidoc @ apidoc.launchpad.dev
+    rooturl: http://apidoc.launchpad.dev/
     althosts:
     ----
     blueprints @ blueprints.launchpad.dev
@@ -77,8 +81,20 @@ These are parsed into webapp.vhost.allvhosts.
     rooturl: http://shipit.ubuntu.dev/
     althosts:
     ----
+    testopenid @ testopenid.dev
+    rooturl: http://testopenid.dev/
+    althosts:
+    ----
     translations @ translations.launchpad.dev
     rooturl: http://translations.launchpad.dev/
+    althosts:
+    ----
+    ubuntu_openid @ ubuntu-openid.launchpad.dev
+    rooturl: http://ubuntu-openid.launchpad.dev/
+    althosts:
+    ----
+    vostok @ vostok.dev
+    rooturl: http://vostok.dev/
     althosts:
     ----
     xmlrpc @ xmlrpc.launchpad.dev
@@ -98,6 +114,7 @@ request is headed to one of the officialy-used Launchpad host names:
     ...     print hostname
     answers.launchpad.dev
     api.launchpad.dev
+    apidoc.launchpad.dev
     blueprints.launchpad.dev
     bugs.launchpad.dev
     code.launchpad.dev
@@ -108,7 +125,10 @@ request is headed to one of the officialy-used Launchpad host names:
     shipit.edubuntu.dev
     shipit.kubuntu.dev
     shipit.ubuntu.dev
+    testopenid.dev
     translations.launchpad.dev
+    ubuntu-openid.launchpad.dev
+    vostok.dev
     xmlrpc-private.launchpad.dev
     xmlrpc.launchpad.dev
 
@@ -146,8 +166,7 @@ A request publication factory that was initialized with
 handle_default_host=True will handle a request that specifies no virtual
 host. By default, handle_default_host is False.
 
-    >>> environment = {'REQUEST_METHOD': 'GET',
-    ...                'HTTP_HOST': ''}
+    >>> environment = {'REQUEST_METHOD': 'GET'}
     >>> factory.canHandle(environment)
     False
 
@@ -211,8 +230,7 @@ factory is not wrapped:
     >>> requestfactory
     <class 'canonical.launchpad.webapp.servers.LaunchpadBrowserRequest'>
 
-    >>> environment = {'REQUEST_METHOD': 'GET',
-    ...                'HTTP_HOST': ''}
+    >>> environment = {'REQUEST_METHOD': 'GET'}
     >>> default_handling_factory.canHandle(environment)
     True
     >>> requestfactory, publicationfactory = default_handling_factory()
@@ -262,19 +280,17 @@ The port is also checked for in the HTTP_HOST variable:
     >>> factory.canHandle(environment)
     False
 
-If the port is given twice (in SERVER_PORT and the Host header), and
-the ports don't match, an AssertionError is the result. This prevents
-sneaky outsiders from making requests to ports only exposed
-internally.
+If the port is given twice (in SERVER_PORT and the Host header), the
+value from SERVER_PORT takes precedence. (The rationale behind this is
+that it's valid for a client to put launchpad.dev:80 in the Host header,
+but the request is really coming on the port 1234 because it's being
+proxied.)
 
     >>> environment = {'REQUEST_METHOD': 'GET',
-    ...                'SERVER_PORT' : 1234,
+    ...                'SERVER_PORT' : '1234',
     ...                'HTTP_HOST': 'launchpad.dev:80'}
     >>> factory.canHandle(environment)
-    Traceback (most recent call last):
-    ...
-    AssertionError: Port specified in SERVER_PORT does not match
-    port specified in HTTP_HOST
+    True
 
 It's okay to specify the port in both places if the ports are the same:
 
@@ -334,44 +350,9 @@ the registered factories.)
     ...     register_launchpad_request_publication_factories)
     >>> register_launchpad_request_publication_factories()
 
-    # Z3 doesn't make this available as a utility.
-    >>> from zope.app.publication.requestpublicationregistry import (
-    ...     factoryRegistry)
+    >>> from lp.testing.publication import (
+    ...     get_request_and_publication, print_request_and_publication)
 
-    # Defines an helper function that returns the appropriate
-    # IRequest and IPublication.
-    >>> def get_request_and_publication(host='localhost', port=None,
-    ...                                 method='GET', mime_type='text/html',
-    ...                                 in_stream='', extra_environment=None):
-    ...     environment = {'HTTP_HOST': host,
-    ...                    'REQUEST_METHOD': method,
-    ...                    'SERVER_PORT': port,
-    ...                    'CONTENT_TYPE': mime_type}
-    ...     if extra_environment is not None:
-    ...         environment.update(extra_environment)
-    ...     launchpad_factory = factoryRegistry.lookup(
-    ...         method, mime_type, environment)
-    ...     request_factory, publication_factory = launchpad_factory()
-    ...     request = request_factory(StringIO(in_stream), environment)
-    ...     # Since Launchpad doesn't use ZODB, we use None here.
-    ...     publication = publication_factory(None)
-    ...     return request, publication
-
-    >>> from canonical.launchpad.webapp.servers import ProtocolErrorPublication
-    >>> def print_request_and_publication(host='localhost', port=None,
-    ...                                   method='GET', mime_type='text/html'):
-    ...     """Helper giving short names for the request and publication."""
-    ...     request, publication = get_request_and_publication(
-    ...         host, port, method, mime_type)
-    ...     print type(request).__name__.split('.')[-1]
-    ...     publication_classname = type(publication).__name__.split('.')[-1]
-    ...     if isinstance(publication, ProtocolErrorPublication):
-    ...         print "%s: status=%d" % (
-    ...             publication_classname, publication.status)
-    ...         for name, value in publication.headers.items():
-    ...             print "  %s: %s" % (name, value)
-    ...     else:
-    ...         print publication_classname
     >>> print_request_and_publication('launchpad.dev')
     LaunchpadBrowserRequest
     MainLaunchpadPublication
@@ -385,49 +366,13 @@ the registered factories.)
     ProtocolErrorPublication: status=405
       Allow: GET HEAD POST
 
-    >>> print_request_and_publication('answers.launchpad.dev')
-    AnswersBrowserRequest
-    AnswersPublication
-
     >>> print_request_and_publication('api.launchpad.dev')
     WebServiceClientRequest
     WebServicePublication
 
-    >>> print_request_and_publication('blueprints.launchpad.dev')
-    BlueprintBrowserRequest
-    BlueprintPublication
-
-    >>> print_request_and_publication('bugs.launchpad.dev')
-    BugsBrowserRequest
-    BugsPublication
-
-    >>> print_request_and_publication('code.launchpad.dev')
-    CodeBrowserRequest
-    CodePublication
-
     >>> print_request_and_publication('feeds.launchpad.dev')
     FeedsBrowserRequest
     FeedsPublication
-
-    >>> print_request_and_publication('openid.launchpad.dev')
-    OpenIdBrowserRequest
-    OpenIdPublication
-
-    >>> print_request_and_publication('translations.launchpad.dev')
-    TranslationsBrowserRequest
-    TranslationsPublication
-
-    >>> print_request_and_publication('shipit.ubuntu.dev')
-    UbuntuShipItBrowserRequest
-    ShipItPublication
-
-    >>> print_request_and_publication('shipit.edubuntu.dev')
-    EdubuntuShipItBrowserRequest
-    ShipItPublication
-
-    >>> print_request_and_publication('shipit.kubuntu.dev')
-    KubuntuShipItBrowserRequest
-    ShipItPublication
 
 The web service RequestPublicationFactory responds to the six most
 common HTTP methods, but it will only accept a MIME type of
@@ -453,28 +398,24 @@ application/json.
     WebServiceClientRequest
     WebServicePublication
 
-XXX: We don't want to expose the web service until it's ready, so
-we've defined a config variable which controls its availability. This
-test will go away when we decide to deploy the web service on
-production. -- Leonard Richardson 2008-01-04
-(https://launchpad.net/launchpad/+spec/api-bugs-remote)
+When a request for '/api' is made to one of the application
+virtualhosts, such as the application root, it is also handled by the
+web service request and publication:
 
-    >>> from canonical.config import config
-    >>> config.vhosts.expose_webservice
-    True
+    >>> print_request_and_publication(
+    ...     'launchpad.dev', method='GET',
+    ...     extra_environment={'PATH_INFO': '/api'})
+    WebServiceClientRequest
+    WebServicePublication
 
-    >>> from textwrap import dedent
-    >>> test_data = dedent("""
-    ...     [vhosts]
-    ...     expose_webservice: false
-    ...     """)
-    >>> config.push('test', test_data)
+Requests for '/api' on other hosts like feeds are handled like
+other requests on these hosts:
 
-    >>> print_request_and_publication('api.launchpad.dev', method='GET')
-    ProtocolErrorRequest
-    ProtocolErrorPublication: status=404
-
-    >>> test_config_data = config.pop('test')
+    >>> print_request_and_publication(
+    ...     'feeds.launchpad.dev', method='GET',
+    ...     extra_environment={'PATH_INFO': '/api'})
+    FeedsBrowserRequest
+    FeedsPublication
 
 The XML-RPC RequestPublicationFactory only responds to POST requests,
 and then only when the MIME type is text/xml.
@@ -705,6 +646,15 @@ the pageid.
     >>> print request._orig_env['launchpad.pageid']
     TestContext:+test
 
+Views registered through ZCML using the attribute property, are really a
+bounded method. These views have the same pageid as their class.
+
+    >>> del request._orig_env['launchpad.pageid']
+    >>> publication.callObject(request, view.__call__)
+    u'Result'
+    >>> print request._orig_env['launchpad.pageid']
+    TestContext:+test
+
 If the published object doesn't have a context attribute (unlike most
 views), the pageid will be empty.
 
@@ -764,11 +714,15 @@ available as launchpad.publicationticks in the WSGI environment.
 
 If an exception is raised during traversal or object publication, we'll
 store the ticks up to the point in which the exception is raised.  This
-is done inside the handleException() hook.
+is done inside the handleException() hook.  (The hook also sets and resets
+the request timer from canonical.launchpad.webapp.adapter, so you'll notice
+some calls to prepare that code to what handleException expects.)
 
 If the exception is raised before we even start the traversal, then
 there's nothing to store.
 
+    >>> from canonical.launchpad.webapp.adapter import (
+    ...     clear_request_started, set_request_started)
     >>> request, publication = get_request_and_publication()
     >>> request.setPrincipal(auth_utility.unauthenticatedPrincipal())
     >>> import sys
@@ -776,12 +730,14 @@ there's nothing to store.
     ...     raise Exception()
     ... except:
     ...     exc_info = sys.exc_info()
+    >>> set_request_started()
     >>> publication.handleException(
     ...     None, request, exc_info, retry_allowed=False)
     >>> request._orig_env.has_key('launchpad.traversalticks')
     False
     >>> request._orig_env.has_key('launchpad.publicationticks')
     False
+    >>> clear_request_started()
 
 If we started the traversal, but haven't finished it, we'll only have
 the ticks for the traversal and not for the publication.
@@ -789,12 +745,11 @@ the ticks for the traversal and not for the publication.
     >>> publication.beforeTraversal(request)
     >>> publication.handleException(
     ...     None, request, exc_info, retry_allowed=False)
-    ERROR:SiteError:http://localhost
-    ...
     >>> request._orig_env['launchpad.traversalticks'] < 200
     True
     >>> request._orig_env.has_key('launchpad.publicationticks')
     False
+    >>> clear_request_started()
 
 If we started the publication (which means the traversal has been
 completed), we'll have the ticks for the traversal and the ticks for
@@ -803,10 +758,9 @@ the publication, up to the point where it was forcefully stopped.
     >>> publication.afterTraversal(request, None)
     >>> publication.callObject(request, TestView(TestContext(), request))
     u'Result'
+    >>> set_request_started()
     >>> publication.handleException(
     ...     None, request, exc_info, retry_allowed=False)
-    ERROR:SiteError:http://localhost
-    ...
     >>> request._orig_env['launchpad.traversalticks'] < 500
     True
     >>> request._orig_env['launchpad.publicationticks'] < 50
@@ -815,7 +769,7 @@ the publication, up to the point where it was forcefully stopped.
 
 When a Retry or DisconnectionError exception is raised and the request
 supports retry, it will be retried with a copy of the WSGI environment.
-If that happens, though, we'll remove the [publication,traversal]ticks 
+If that happens, though, we'll remove the [publication,traversal]ticks
 variables from there.
 
     >>> request, publication = get_request_and_publication()
@@ -825,14 +779,15 @@ variables from there.
     >>> request.supportsRetry()
     True
     >>> from zope.publisher.interfaces import Retry
+    >>> foo_exc_info = (Exception, 'foo', None)
     >>> try:
-    ...     raise Retry('foo')
+    ...     raise Retry(foo_exc_info)
     ... except:
     ...     publication.handleException(
     ...         None, request, sys.exc_info(), retry_allowed=True)
     Traceback (most recent call last):
     ...
-    Retry: 'foo'
+    Retry: foo
 
     >>> request._orig_env.has_key('launchpad.publicationticks')
     False
@@ -845,17 +800,16 @@ variables from there.
     >>> request._orig_env['launchpad.publicationticks'] = 500
     >>> request.supportsRetry()
     True
-    >>> import canonical.launchpad.webapp.adapter as da
+    >>> from storm.exceptions import DisconnectionError
     >>> try:
-    ...     raise da.DisconnectionError()
+    ...     raise DisconnectionError('foo DisconnectionError')
     ... except:
     ...     exc_info = sys.exc_info()
     >>> publication.handleException(
     ...     None, request, exc_info, retry_allowed=True)
     Traceback (most recent call last):
     ...
-    Retry: (<class canonical.launchpad.webapp.adapter.DisconnectionError...
-    ...
+    Retry: foo DisconnectionError
 
     >>> request._orig_env.has_key('launchpad.publicationticks')
     False
@@ -875,13 +829,13 @@ WSGI env.
     False
     >>> from zope.publisher.interfaces import Retry
     >>> try:
-    ...     raise Retry('foo')
+    ...     raise Retry(foo_exc_info)
     ... except:
     ...     publication.handleException(
     ...         None, request, sys.exc_info(), retry_allowed=True)
     Traceback (most recent call last):
     ...
-    Retry: 'foo'
+    Retry: foo
 
     >>> request._orig_env['launchpad.publicationticks']
     500
@@ -945,8 +899,8 @@ afterCall().  For example, this publication subclass will simply print
 some string in its finishReadOnlyRequest().
 
     >>> class MyPublication(LaunchpadBrowserPublication):
-    ...	      def finishReadOnlyRequest(self, txn):
-    ...	      	  print "booo!"
+    ...     def finishReadOnlyRequest(self, txn):
+    ...         print "booo!"
 
     >>> publication = MyPublication(None)
     >>> publication.afterCall(request, None)
@@ -956,12 +910,20 @@ In the default implementation, the following database modification will
 be automatically reverted in a GET request.
 
     >>> from canonical.launchpad.ftests import syncUpdate
+    >>> from canonical.launchpad.database import EmailAddress
+    >>> from lp.registry.model.person import Person
+    >>> from canonical.launchpad.interfaces import IMasterStore
     >>> login('foo.bar@canonical.com')
     >>> txn = transaction.begin()
-    >>> foo_bar = personset.getByEmail('foo.bar@canonical.com')
-    >>> print foo_bar.city
+    >>> def get_foo_bar_person():
+    ...     return IMasterStore(Person).find(
+    ...         Person,
+    ...         Person.id == EmailAddress.personID,
+    ...         EmailAddress.email == 'foo.bar@canonical.com').one()
+    >>> foo_bar = get_foo_bar_person()
+    >>> print foo_bar.homepage_content
     None
-    >>> foo_bar.city = 'Montreal'
+    >>> foo_bar.homepage_content = 'Montreal'
     >>> syncUpdate(foo_bar)
 
     >>> request, publication = get_request_and_publication(method='GET')
@@ -972,15 +934,15 @@ be automatically reverted in a GET request.
     # have to change the request manually.
     >>> request._publicationticks_start = 1345
     >>> publication.afterCall(request, None)
-    >>> publication.clearSQLOSCache()
     >>> txn = transaction.begin()
-    >>> foo_bar = personset.getByEmail('foo.bar@canonical.com')
-    >>> print foo_bar.city
+    >>> foo_bar = get_foo_bar_person()
+    >>> print foo_bar.homepage_content
     None
 
 But not if the request uses POST, the changes will be preserved.
 
-    >>> foo_bar.city = 'Montreal'
+    >>> txn = transaction.begin()
+    >>> get_foo_bar_person().homepage_content = 'Darwin'
     >>> syncUpdate(foo_bar)
 
     >>> request, publication = get_request_and_publication(method='POST')
@@ -991,11 +953,9 @@ But not if the request uses POST, the changes will be preserved.
     # have to change the request manually.
     >>> request._publicationticks_start = 1345
     >>> publication.afterCall(request, None)
-    >>> publication.clearSQLOSCache()
     >>> txn = transaction.begin()
-    >>> foo_bar = personset.getByEmail('foo.bar@canonical.com')
-    >>> print foo_bar.city
-    Montreal
+    >>> print get_foo_bar_person().homepage_content
+    Darwin
 
 
 === GET requests on api.launchpad.net ===
@@ -1005,13 +965,21 @@ transaction after GET requests in order to persist new entries added to
 the OAuthNonce table.
 
     >>> import time
-    >>> from canonical.launchpad.interfaces import (
-    ...     IOAuthConsumerSet, IPersonSet, OAuthPermission)
+    >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from canonical.launchpad.interfaces.oauth import IOAuthConsumerSet
+
+    >>> from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
+    >>> from canonical.launchpad.webapp.interfaces import IStoreSelector
+    >>> from zope.component import getUtility
+    >>> getUtility(IStoreSelector).push(MasterDatabasePolicy())
+
     >>> salgado = getUtility(IPersonSet).getByName('salgado')
     >>> consumer = getUtility(IOAuthConsumerSet).getByKey('foobar123451432')
     >>> token = consumer.newRequestToken()
     >>> token.review(salgado, OAuthPermission.WRITE_PUBLIC)
     >>> access_token = token.createAccessToken()
+    >>> policy = getUtility(IStoreSelector).pop()
     >>> transaction.commit()
     >>> form = dict(
     ...     oauth_consumer_key='foobar123451432',
@@ -1035,7 +1003,6 @@ the OAuthNonce table.
     >>> test_request._publicationticks_start = 1345
     >>> publication.afterCall(test_request, None)
 
-    >>> form['oauth_timestamp'] += 500
     >>> test_request, publication = get_request_and_publication(
     ...     'api.launchpad.dev', 'GET',
     ...     extra_environment=dict(QUERY_STRING=urlencode(form)))
@@ -1044,6 +1011,56 @@ the OAuthNonce table.
     Traceback (most recent call last):
     ...
     Unauthorized: Invalid nonce/timestamp: This nonce has been used already.
+
+
+== Doomed transactions are aborted ==
+
+Doomed transactions are aborted.
+
+    >>> request, publication = get_request_and_publication(method='POST')
+    >>> txn = transaction.begin()
+
+    # This sets up an alert so we can easily see that the transaction has
+    # been aborted.
+    >>> bound_abort = txn.abort
+    >>> def faux_abort():
+    ...     bound_abort()
+    ...     print 'Aborted'
+    ...
+    >>> txn.abort = faux_abort
+
+    # Now we doom the transaction.
+    >>> txn.doom()
+    >>> txn.isDoomed()
+    True
+
+    # Our afterCall() implementation expects to find a
+    # _publicationticks_start in its request, which is set by
+    # callObject(). Since we don't want to callObject() here, we'll
+    # have to change the request manually.
+    >>> request._publicationticks_start = 1345
+
+    >>> publication.afterCall(request, None)
+    Aborted
+    >>> txn.isDoomed() # It is still doomed.
+    True
+    >>> del txn.abort # Clean up test fixture.
+
+
+== Requests on Python C Methods succeed ==
+
+Rarely but occasionally, it is possible to traverse to a Python C method.
+For instance, an XMLRPC proxy might allow a traversal to __repr__.
+`callObject` handles these methods itself, since Zope's
+`zope.publisher.publish.mapply` cannot.
+
+    >>> request.setPrincipal(auth_utility.unauthenticatedPrincipal())
+    >>> publication.callObject(request, {}.__repr__)
+    '{}'
+    >>> import zope.security.checker
+    >>> publication.callObject(
+    ...     request, zope.security.checker.ProxyFactory({}).__repr__)
+    '{}'
 
 
 == HEAD requests have empty body ==
@@ -1094,8 +1111,8 @@ will get associated with the request after the beforeTraversal() hook.
 
     >>> marker = object()
     >>> class MyPublication(LaunchpadBrowserPublication):
-    ...	      def getPrincipal(self, request):
-    ...	      	  return marker
+    ...     def getPrincipal(self, request):
+    ...         return marker
 
     >>> publication = MyPublication(None)
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
@@ -1114,10 +1131,11 @@ will get associated with the request after the beforeTraversal() hook.
 The default implementation will use the IPlacelessAuthentication
 utility to setup the request.
 
+    >>> login(ANONYMOUS) # Get rid of the marker object in the interaction.
     >>> foo_bar_auth = 'Basic %s' % (
-    ...	    'foo.bar@canonical.com:test'.encode('base64'))
+    ...     'foo.bar@canonical.com:test'.encode('base64'))
     >>> request, publication = get_request_and_publication(
-    ...	    extra_environment=dict(HTTP_AUTHORIZATION=foo_bar_auth))
+    ...     extra_environment=dict(HTTP_AUTHORIZATION=foo_bar_auth))
     >>> principal = publication.getPrincipal(request)
     >>> print principal.title
     Foo Bar
@@ -1125,8 +1143,8 @@ utility to setup the request.
 The feeds implementation always returns the anonymous user.
 
     >>> request, publication = get_request_and_publication(
-    ...	    'feeds.launchpad.dev',
-    ...	    extra_environment=dict(HTTP_AUTHORIZATION=foo_bar_auth))
+    ...     'feeds.launchpad.dev',
+    ...     extra_environment=dict(HTTP_AUTHORIZATION=foo_bar_auth))
     >>> principal = publication.getPrincipal(request)
 
     >>> from zope.app.security.interfaces import IUnauthenticatedPrincipal
@@ -1135,12 +1153,16 @@ The feeds implementation always returns the anonymous user.
 
 The webservice implementation returns the principal for the person
 associated with the access token specified in the request.  The
-principal's access_level will be the one specified in the token.
+principal's access_level and scope will match what was specified in the
+token.
 
+    >>> from lp.registry.interfaces.product import IProductSet
+    >>> getUtility(IStoreSelector).push(MasterDatabasePolicy())
     >>> salgado = getUtility(IPersonSet).getByName('salgado')
     >>> consumer = getUtility(IOAuthConsumerSet).getByKey('foobar123451432')
     >>> token = consumer.newRequestToken()
-    >>> token.review(salgado, OAuthPermission.WRITE_PUBLIC)
+    >>> firefox = getUtility(IProductSet)['firefox']
+    >>> token.review(salgado, OAuthPermission.WRITE_PUBLIC, context=firefox)
     >>> access_token = token.createAccessToken()
     >>> form = dict(
     ...     oauth_consumer_key='foobar123451432',
@@ -1150,6 +1172,7 @@ principal's access_level will be the one specified in the token.
     ...     oauth_signature="&".join([consumer.secret, access_token.secret]),
     ...     oauth_timestamp=time.time(),
     ...     oauth_nonce='4572616e48616d6d65724c61686176')
+    >>> policy = getUtility(IStoreSelector).pop()
     >>> test_request, publication = get_request_and_publication(
     ...     'api.launchpad.dev', 'GET',
     ...     extra_environment=dict(QUERY_STRING=urlencode(form)))
@@ -1159,6 +1182,8 @@ principal's access_level will be the one specified in the token.
     Guilherme Salgado
     >>> principal.access_level
     <DBItem AccessLevel.WRITE_PUBLIC...
+    >>> principal.scope.name
+    u'firefox'
 
 If the token is expired or doesn't exist, an Unauthorized exception is
 raised, though.
@@ -1170,7 +1195,9 @@ raised, though.
     >>> now = datetime.now(pytz.timezone('UTC'))
     >>> access_token.date_expires = now - timedelta(days=1)
     >>> syncUpdate(access_token)
-    >>> test_request = LaunchpadTestRequest(form=form)
+    >>> form2 = form.copy()
+    >>> form2['oauth_nonce'] = '1764572616e48616d6d65724c61686'
+    >>> test_request = LaunchpadTestRequest(form=form2)
     >>> print publication.getPrincipal(test_request).title
     Traceback (most recent call last):
     ...
@@ -1180,6 +1207,7 @@ raised, though.
 
     >>> form2 = form.copy()
     >>> form2['oauth_token'] += 'z'
+    >>> form2['oauth_nonce'] = '4572616e48616d6d65724c61686176'
     >>> test_request = LaunchpadTestRequest(form=form2)
     >>> print publication.getPrincipal(test_request).title
     Traceback (most recent call last):
@@ -1199,32 +1227,64 @@ correct.
 
     >>> form2 = form.copy()
     >>> form2['oauth_signature'] += 'z'
+    >>> form2['oauth_nonce'] = '2616e48616d6d65724c61686176457'
     >>> test_request = LaunchpadTestRequest(form=form2)
     >>> print publication.getPrincipal(test_request).title
     Traceback (most recent call last):
     ...
     Unauthorized: Invalid signature.
 
-Last but not least, the nonce specified in the request must either have
-not been used before (in a request with this same token) or its
-timestamp must be +/- 60 seconds of the timestamp associated with the
-OAuthNonce in our database.
+The nonce specified in the request must not have been used before in a request
+with this same token and timestamp.
 
-    >>> from canonical.launchpad.database.oauth import NONCE_TIME_WINDOW
     >>> form2 = form.copy()
-    >>> form2['oauth_timestamp'] += NONCE_TIME_WINDOW - 1
+    >>> form2['oauth_nonce'] = '6e48616d6d65724c61686176457261'
     >>> test_request = LaunchpadTestRequest(form=form2)
     >>> print publication.getPrincipal(test_request).title
     Guilherme Salgado
 
-    >>> form2['oauth_timestamp'] += NONCE_TIME_WINDOW + 1
     >>> test_request = LaunchpadTestRequest(form=form2)
     >>> print publication.getPrincipal(test_request).title
     Traceback (most recent call last):
     ...
-    Unauthorized: Invalid nonce/timestamp...
+    Unauthorized: Invalid nonce/timestamp: This nonce has been used already.
+
+The timestamp must not be older than TIMESTAMP_ACCEPTANCE_WINDOW from the most
+recent request for this token.
+
+    >>> from canonical.launchpad.database.oauth import (
+    ...     TIMESTAMP_ACCEPTANCE_WINDOW)
+    >>> form2 = form.copy()
+    >>> form2['oauth_timestamp'] -= (TIMESTAMP_ACCEPTANCE_WINDOW-5)
+    >>> test_request = LaunchpadTestRequest(form=form2)
+    >>> print publication.getPrincipal(test_request).title
+    Guilherme Salgado
+
+    >>> form2['oauth_timestamp'] -= 10
+    >>> test_request = LaunchpadTestRequest(form=form2)
+    >>> print publication.getPrincipal(test_request).title
+    Traceback (most recent call last):
+    ...
+    Unauthorized: Invalid nonce/timestamp: Timestamp too old compared ...
+
+Last but not least, the timestamp must not be too far in the future, as
+defined by TIMESTAMP_SKEW_WINDOW.
+
+    >>> from canonical.launchpad.database.oauth import (
+    ...     TIMESTAMP_SKEW_WINDOW)
+    >>> form2 = form.copy()
+    >>> form2['oauth_timestamp'] += (TIMESTAMP_SKEW_WINDOW+10)
+    >>> test_request = LaunchpadTestRequest(form=form2)
+    >>> print publication.getPrincipal(test_request).title
+    Traceback (most recent call last):
+    ...
+    Unauthorized: Invalid nonce/timestamp: Timestamp ... from bad system clock
 
 Close the bogus request that was started by the call to
 beforeTraversal, in order to ensure we leave our state sane.
+Also, pop all the database policies we have been accumulating.
 
     >>> publication.endRequest(request, None)
+    >>> store_selector = getUtility(IStoreSelector)
+    >>> while store_selector.get_current():
+    ...     db_policy = store_selector.pop()

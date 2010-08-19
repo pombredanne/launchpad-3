@@ -1,24 +1,37 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
-__all__ = ['LibraryFileContent', 'LibraryFileAlias', 'LibraryFileAliasSet']
+__all__ = [
+    'LibraryFileAlias',
+    'LibraryFileAliasWithParent',
+    'LibraryFileAliasSet',
+    'LibraryFileContent',
+    'LibraryFileDownloadCount',
+    ]
 
 from datetime import datetime, timedelta
 import pytz
 
-from zope.component import getUtility
-from zope.interface import implements
+from zope.component import adapts, getUtility
+from zope.interface import implements, Interface
+
+from sqlobject import StringCol, ForeignKey, IntCol, SQLRelatedJoin, BoolCol
+from storm.locals import Date, Desc, Int, Reference, Store
 
 from canonical.config import config
 from canonical.launchpad.interfaces import (
-    ILibraryFileContent, ILibraryFileAlias, ILibraryFileAliasSet)
+    ILibraryFileAlias, ILibraryFileAliasWithParent, ILibraryFileAliasSet,
+    ILibraryFileContent, ILibraryFileDownloadCount, IMasterStore)
 from canonical.librarian.interfaces import (
-    DownloadFailed, ILibrarianClient, IRestrictedLibrarianClient)
+    DownloadFailed, ILibrarianClient, IRestrictedLibrarianClient,
+    LIBRARIAN_SERVER_DEFAULT_TIMEOUT)
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import UTC_NOW, DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
-from sqlobject import StringCol, ForeignKey, IntCol, SQLRelatedJoin, BoolCol
+from lazr.delegates import delegates
 
 
 class LibraryFileContent(SQLBase):
@@ -29,11 +42,9 @@ class LibraryFileContent(SQLBase):
     _table = 'LibraryFileContent'
 
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
-    datemirrored = UtcDateTimeCol(default=None)
     filesize = IntCol(notNull=True)
     sha1 = StringCol(notNull=True)
     md5 = StringCol()
-    deleted = BoolCol(notNull=True, default=False)
 
 
 class LibraryFileAlias(SQLBase):
@@ -46,13 +57,14 @@ class LibraryFileAlias(SQLBase):
     _table = 'LibraryFileAlias'
     date_created = UtcDateTimeCol(notNull=False, default=DEFAULT)
     content = ForeignKey(
-            foreignKey='LibraryFileContent', dbName='content', notNull=True,
+            foreignKey='LibraryFileContent', dbName='content', notNull=False,
             )
     filename = StringCol(notNull=True)
     mimetype = StringCol(notNull=True)
     expires = UtcDateTimeCol(notNull=False, default=None)
     restricted = BoolCol(notNull=True, default=False)
     last_accessed = UtcDateTimeCol(notNull=True, default=DEFAULT)
+    hits = IntCol(notNull=True, default=0)
 
     products = SQLRelatedJoin('ProductRelease', joinColumn='libraryfile',
                            otherColumn='productrelease',
@@ -86,26 +98,27 @@ class LibraryFileAlias(SQLBase):
 
     def getURL(self):
         """See ILibraryFileAlias.getURL"""
-        if config.vhosts.use_https:
+        if config.librarian.use_https:
             return self.https_url
         else:
             return self.http_url
 
     _datafile = None
 
-    def open(self):
-        self._datafile = self.client.getFileByAlias(self.id)
+    def open(self, timeout=LIBRARIAN_SERVER_DEFAULT_TIMEOUT):
+        """See ILibraryFileAlias."""
+        self._datafile = self.client.getFileByAlias(self.id, timeout)
         if self._datafile is None:
             raise DownloadFailed(
                     "Unable to retrieve LibraryFileAlias %d" % self.id
                     )
 
-    def read(self, chunksize=None):
-        """See ILibraryFileAlias.read"""
+    def read(self, chunksize=None, timeout=LIBRARIAN_SERVER_DEFAULT_TIMEOUT):
+        """See ILibraryFileAlias."""
         if not self._datafile:
             if chunksize is not None:
                 raise RuntimeError("Can't combine autoopen with chunksize")
-            self.open()
+            self.open(timeout=timeout)
             autoopen = True
         else:
             autoopen = False
@@ -119,8 +132,11 @@ class LibraryFileAlias(SQLBase):
             return self._datafile.read(chunksize)
 
     def close(self):
-        self._datafile.close()
-        self._datafile = None
+        # Don't die with an AttributeError if the '_datafile' property
+        # is not set.
+        if self._datafile is not None:
+            self._datafile.close()
+            self._datafile = None
 
     def updateLastAccessed(self):
         """Update last_accessed if it has not been updated recently.
@@ -138,6 +154,31 @@ class LibraryFileAlias(SQLBase):
         if self.last_accessed + precision < now:
             self.last_accessed = UTC_NOW
 
+    @property
+    def last_downloaded(self):
+        """See `ILibraryFileAlias`."""
+        store = Store.of(self)
+        results = store.find(LibraryFileDownloadCount, libraryfilealias=self)
+        results.order_by(Desc(LibraryFileDownloadCount.day))
+        entry = results.first()
+        if entry is None:
+            return None
+        else:
+            return datetime.now(pytz.utc).date() - entry.day
+
+    def updateDownloadCount(self, day, country, count):
+        """See ILibraryFileAlias."""
+        store = Store.of(self)
+        entry = store.find(
+            LibraryFileDownloadCount, libraryfilealias=self,
+            day=day, country=country).one()
+        if entry is None:
+            entry = LibraryFileDownloadCount(
+                libraryfilealias=self, day=day, country=country, count=count)
+        else:
+            entry.count += count
+        self.hits += count
+
     products = SQLRelatedJoin('ProductRelease', joinColumn='libraryfile',
                            otherColumn='productrelease',
                            intermediateTable='ProductReleaseFile')
@@ -146,6 +187,27 @@ class LibraryFileAlias(SQLBase):
                                  joinColumn='libraryfile',
                                  otherColumn='sourcepackagerelease',
                                  intermediateTable='SourcePackageReleaseFile')
+
+    @property
+    def deleted(self):
+        return self.content is None
+
+    def __storm_invalidated__(self):
+        """Make sure that the file is closed across transaction boundary."""
+        super(LibraryFileAlias, self).__storm_invalidated__()
+        self.close()
+
+
+class LibraryFileAliasWithParent:
+    """A LibraryFileAlias variant that has a parent."""
+
+    adapts(ILibraryFileAlias, Interface)
+    implements(ILibraryFileAliasWithParent)
+    delegates(ILibraryFileAlias)
+
+    def __init__(self, libraryfile, parent):
+        self.context = libraryfile
+        self.__parent__ = parent
 
 
 class LibraryFileAliasSet(object):
@@ -162,7 +224,10 @@ class LibraryFileAliasSet(object):
         else:
             client = getUtility(ILibrarianClient)
         fid = client.addFile(name, size, file, contentType, expires, debugID)
-        return LibraryFileAlias.get(fid)
+        lfa = IMasterStore(LibraryFileAlias).find(
+            LibraryFileAlias, LibraryFileAlias.id == fid).one()
+        assert lfa is not None, "client.addFile didn't!"
+        return lfa
 
     def __getitem__(self, key):
         """See ILibraryFileAliasSet.__getitem__"""
@@ -175,3 +240,17 @@ class LibraryFileAliasSet(object):
             AND LibraryFileContent.sha1 = '%s'
             """ % sha1, clauseTables=['LibraryFileContent'])
 
+
+class LibraryFileDownloadCount(SQLBase):
+    """See `ILibraryFileDownloadCount`"""
+
+    implements(ILibraryFileDownloadCount)
+    __storm_table__ = 'LibraryFileDownloadCount'
+
+    id = Int(primary=True)
+    libraryfilealias_id = Int(name='libraryfilealias', allow_none=False)
+    libraryfilealias = Reference(libraryfilealias_id, 'LibraryFileAlias.id')
+    day = Date(allow_none=False)
+    count = Int(allow_none=False)
+    country_id = Int(name='country', allow_none=True)
+    country = Reference(country_id, 'Country.id')

@@ -1,4 +1,5 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Launchpad Form View Classes
 """
@@ -6,14 +7,16 @@
 __metaclass__ = type
 
 __all__ = [
-    'LaunchpadFormView',
-    'LaunchpadEditFormView',
     'action',
     'custom_widget',
+    'LaunchpadEditFormView',
+    'LaunchpadFormView',
+    'ReturnToReferrerMixin',
     'safe_action',
     ]
 
 import transaction
+
 from zope.interface import classImplements, providedBy
 from zope.interface.advice import addClassAdvisor
 from zope.event import notify
@@ -24,13 +27,14 @@ from zope.app.form.interfaces import IInputWidget
 from zope.app.form.browser import (
     CheckBoxWidget, DropdownWidget, RadioWidget, TextAreaWidget)
 
+from lazr.lifecycle.event import ObjectModifiedEvent
+from lazr.lifecycle.snapshot import Snapshot
+
 from canonical.launchpad.webapp.interfaces import (
     IMultiLineWidgetLayout, ICheckBoxWidgetLayout,
     IAlwaysSubmittedWidget, UnsafeFormGetSubmissionError)
 from canonical.launchpad.webapp.menu import escape
-from canonical.launchpad.webapp.publisher import LaunchpadView
-from canonical.launchpad.webapp.snapshot import Snapshot
-from canonical.launchpad.event import SQLObjectModifiedEvent
+from canonical.launchpad.webapp.publisher import canonical_url, LaunchpadView
 
 
 classImplements(CheckBoxWidget, ICheckBoxWidgetLayout)
@@ -70,6 +74,8 @@ class LaunchpadFormView(LaunchpadView):
 
     actions = ()
 
+    action_taken = None
+
     render_context = False
 
     form_result = None
@@ -108,6 +114,7 @@ class LaunchpadFormView(LaunchpadView):
             self.form_result = action.success(data)
             if self.next_url:
                 self.request.response.redirect(self.next_url)
+        self.action_taken = action
 
     def render(self):
         """Return the body of the response.
@@ -135,26 +142,32 @@ class LaunchpadFormView(LaunchpadView):
         # done and then committed.
         transaction.abort()
 
+    def extendFields(self):
+        """Allow subclasses to extend the form fields."""
+        pass
+
     def setUpFields(self):
         assert self.schema is not None, (
             "Schema must be set for LaunchpadFormView")
         self.form_fields = form.Fields(self.schema, for_input=self.for_input,
                                        render_context=self.render_context)
+        self.extendFields()
         if self.field_names is not None:
             self.form_fields = self.form_fields.select(*self.field_names)
-
-        for field in self.form_fields:
-            if field.__name__ in self.custom_widgets:
-                field.custom_widget = self.custom_widgets[field.__name__]
 
     def setUpWidgets(self, context=None):
         """Set up the widgets using the view's form fields and the context.
 
         If no context is given, the view's context is used."""
+        for field in self.form_fields:
+            if (field.custom_widget is None and
+                field.__name__ in self.custom_widgets):
+                # The check for custom_widget is None means that we honor the
+                # value if previously set. This is important for some existing
+                # forms.
+                field.custom_widget = self.custom_widgets[field.__name__]
         if context is None:
             context = self.context
-        # XXX: jamesh 2006-08-02:
-        # do we want to do anything with ignore_request?
         self.widgets = form.setUpWidgets(
             self.form_fields, self.prefix, context, self.request,
             data=self.initial_values, adapters=self.adapters,
@@ -176,6 +189,18 @@ class LaunchpadFormView(LaunchpadView):
         # done in 'initialize' if the functionality for initialization and
         # form processing are split.
         return self.request.getURL()
+
+    @property
+    def has_available_actions(self):
+        """Does the view have any available actions that will render?
+
+        If False is returned, the view or template probably needs to explain
+        why no actions can be performed and offer a cancel link.
+        """
+        for action in self.actions:
+            if action.available():
+                return True
+        return False
 
     @property
     def initial_values(self):
@@ -222,7 +247,7 @@ class LaunchpadFormView(LaunchpadView):
         self.errors.append(cleanmsg)
 
     @staticmethod
-    def validate_none(self, action, data):
+    def validate_none(form, action, data):
         """Do not do any validation.
 
         This is to be used in subclasses that have actions in which no
@@ -234,27 +259,17 @@ class LaunchpadFormView(LaunchpadView):
         """Validate the named form widgets.
 
         :param names: Names of widgets to validate. If None, all widgets
-        will be validated.
+            will be validated.
         """
-        # XXX jamesh 2006-09-26:
-        # If a form field is disabled, then no data will be sent back.
-        # getWidgetsData() raises an exception when this occurs, even
-        # if the field is not marked as required.
-        #
-        # To work around this, we pass a subset of widgets to
-        # getWidgetsData().  Reported as:
-        #     http://www.zope.org/Collectors/Zope3-dev/717
-        widgets = []
-        for input, widget in self.widgets.__iter_input_and_widget__():
-            if names is None or widget.context.__name__ in names:
-                if (input and IInputWidget.providedBy(widget) and
-                    not widget.hasInput()):
-                    if widget.context.required:
-                        self.setFieldError(widget.context.__name__,
-                                           'Required field is missing')
-                else:
+        if names is None:
+            # Validate all widgets.
+            widgets = self.widgets
+        else:
+            widgets = []
+            for input, widget in self.widgets.__iter_input_and_widget__():
+                if widget.context.__name__ in names:
                     widgets.append((input, widget))
-        widgets = form.Widgets(widgets, len(self.prefix)+1)
+            widgets = form.Widgets(widgets, len(self.prefix) + 1)
         for error in form.getWidgetsData(widgets, self.prefix, data):
             self.errors.append(error)
         for error in form.checkInvariants(self.form_fields, data):
@@ -300,7 +315,7 @@ class LaunchpadFormView(LaunchpadView):
     def validate_cancel(self, action, data):
         """Noop validation in case we cancel.
 
-        You can use this in your Form views by simply setting 
+        You can use this in your Form views by simply setting
         validator='validate_cancel' in the @action line of your cancel
         button."""
         return []
@@ -352,6 +367,12 @@ class LaunchpadFormView(LaunchpadView):
         # widgets.
         if not IInputWidget.providedBy(widget):
             return False
+
+        # Do not show for readonly fields.
+        context = getattr(widget, 'context', None)
+        if getattr(context, 'readonly', None):
+            return False
+
         # Do not show the marker for required widgets or always submitted
         # widgets.  Everything else gets the marker.
         return not (widget.required or
@@ -362,12 +383,12 @@ class LaunchpadEditFormView(LaunchpadFormView):
 
     render_context = True
 
-    def updateContextFromData(self, data, context=None):
+    def updateContextFromData(self, data, context=None, notify_modified=True):
         """Update the context object based on form data.
 
         If no context is given, the view's context is used.
 
-        If any changes were made, SQLObjectModifiedEvent will be
+        If any changes were made, ObjectModifiedEvent will be
         emitted.
 
         This method should be called by an action method of the form.
@@ -376,17 +397,17 @@ class LaunchpadEditFormView(LaunchpadFormView):
         """
         if context is None:
             context = self.context
-        context_before_modification = Snapshot(
-            context, providing=providedBy(context))
+        if notify_modified:
+            context_before_modification = Snapshot(
+                context, providing=providedBy(context))
 
         was_changed = form.applyChanges(context, self.form_fields,
                                         data, self.adapters)
-        if was_changed:
+        if was_changed and notify_modified:
             field_names = [form_field.__name__
                            for form_field in self.form_fields]
-            notify(SQLObjectModifiedEvent(context,
-                                          context_before_modification,
-                                          field_names))
+            notify(ObjectModifiedEvent(
+                context, context_before_modification, field_names))
         return was_changed
 
 
@@ -418,3 +439,63 @@ def safe_action(action):
     """
     action.is_safe = True
     return action
+
+
+class ReturnToReferrerMixin:
+    """Return to the previous page after submitting the form.
+
+    The _return_url is stored in a hidden field in the launchpad-form.pt
+    between the request to view the form and submitting the form.
+
+    _return_attribute_name and _return_attribute_values are also stored
+    as hidden fields and they are use to check the validity of _return_url.
+
+    If _return_url depends on _return_attribute_name, the result of a form
+    submission can invalidate it.
+    If this is the case, _return_attribute_name should be overwritten to
+    return the attribute name to which _return_url depends.
+    """
+
+    @property
+    def _return_attribute_name(self):
+        return None
+
+    @property
+    def _return_attribute_value(self):
+        if self._return_attribute_name is not None:
+            return getattr(self.context, self._return_attribute_name)
+        else:
+            return None
+
+    @property
+    def _return_url(self):
+        """See `LaunchpadFormView`."""
+        # The referer header we want is only available before the view's
+        # form submits to itself. This field is a hidden input in the form.
+        referrer = self.request.form.get('_return_url')
+        returnNotChanged = True
+        if referrer is None:
+            # "referer" is misspelled in the HTTP specification.
+            referrer = self.request.getHeader('referer')
+            # Windmill doesn't pass in a correct referer.
+            if (referrer is not None
+                and '/windmill-serv/remote.html' in referrer):
+                referrer = None
+        else:
+            attribute_name = self.request.form.get('_return_attribute_name')
+            attribute_value = self.request.form.get('_return_attribute_value')
+            if (attribute_name is not None
+                and attribute_value is not None
+                and getattr(self.context, attribute_name) != attribute_value):
+                returnNotChanged = False
+
+        if (referrer is not None
+            and returnNotChanged
+            and referrer.startswith(self.request.getApplicationURL())
+            and referrer != self.request.getHeader('location')):
+            return referrer
+        else:
+            return canonical_url(self.context)
+
+    next_url = _return_url
+    cancel_url = _return_url

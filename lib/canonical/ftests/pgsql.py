@@ -1,4 +1,6 @@
-# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 '''
 Test harness for tests needing a PostgreSQL backend.
 '''
@@ -8,29 +10,31 @@ __metaclass__ = type
 import unittest
 import time
 
-import psycopg
+import psycopg2
 from canonical.database.postgresql import (
     generateResetSequencesSQL, resetSequences)
 
 
-class ConnectionWrapper(object):
+class ConnectionWrapper:
     real_connection = None
     committed = False
     last_execute = None
     dirty = False
+    auto_close = True
 
     def __init__(self, real_connection):
         assert not isinstance(real_connection, ConnectionWrapper), \
                 "Wrapped the wrapper!"
-        self.__dict__['real_connection'] = real_connection
+        self.real_connection = real_connection
+        # Set to True to stop test cleanup forcing the connection closed.
         PgTestSetup.connections.append(self)
 
     def close(self):
         if self in PgTestSetup.connections:
             PgTestSetup.connections.remove(self)
-            self.__dict__['real_connection'].close()
+            self.real_connection.close()
 
-    def rollback(self, InterfaceError=psycopg.InterfaceError):
+    def rollback(self, InterfaceError=psycopg2.InterfaceError):
         # In our test suites, rollback ends up being called twice in some
         # circumstances. Silently ignoring this is probably not correct,
         # but the alternative is wasting further time chasing this
@@ -39,10 +43,10 @@ class ConnectionWrapper(object):
         # Need to store InterfaceError cleverly, otherwise it may have been
         # GCed when the world is being destroyed, leading to an odd
         # AttributeError with
-        #   except psycopg.InterfaceError:
+        #   except psycopg2.InterfaceError:
         # -- SteveAlexander 2005-03-22
         try:
-            self.__dict__['real_connection'].rollback()
+            self.real_connection.rollback()
         except InterfaceError:
             pass
 
@@ -51,18 +55,21 @@ class ConnectionWrapper(object):
         # optimizations by subclasses, since if no commit has been made,
         # dropping and recreating the database might be unnecessary
         try:
-            return self.__dict__['real_connection'].commit()
+            return self.real_connection.commit()
         finally:
             ConnectionWrapper.committed = True
 
     def cursor(self):
-        return CursorWrapper(self.__dict__['real_connection'].cursor())
+        return CursorWrapper(self.real_connection.cursor())
 
     def __getattr__(self, key):
-        return getattr(self.__dict__['real_connection'], key)
+        return getattr(self.real_connection, key)
 
     def __setattr__(self, key, val):
-        return setattr(self.__dict__['real_connection'], key, val)
+        if key in ConnectionWrapper.__dict__.keys():
+            return object.__setattr__(self, key, val)
+        else:
+            return setattr(self.real_connection, key, val)
 
 
 class CursorWrapper:
@@ -80,11 +87,12 @@ class CursorWrapper:
     def __init__(self, real_cursor):
         assert not isinstance(real_cursor, CursorWrapper), \
                 "Wrapped the wrapper!"
-        self.__dict__['real_cursor'] = real_cursor
+        self.real_cursor = real_cursor
 
     def execute(self, *args, **kwargs):
         # Detect if DML has been executed. This method isn't perfect,
-        # but should be good enough.
+        # but should be good enough. In particular, it won't notice
+        # data modification made by stored procedures.
         mutating_commands = [
                 'INSERT', 'UPDATE', 'DELETE', 'CREATE', 'DROP', 'INTO',
                 'TRUNCATE', 'REPLACE',
@@ -97,13 +105,16 @@ class CursorWrapper:
         # Record the last query executed.
         if CursorWrapper.record_sql:
             CursorWrapper.last_executed_sql.append(args[0])
-        return self.__dict__['real_cursor'].execute(*args, **kwargs)
+        return self.real_cursor.execute(*args, **kwargs)
 
     def __getattr__(self, key):
-        return getattr(self.__dict__['real_cursor'], key)
+        return getattr(self.real_cursor, key)
 
     def __setattr__(self, key, val):
-        return setattr(self.__dict__['real_cursor'], key, val)
+        if key in CursorWrapper.__dict__.keys():
+            return object.__setattr__(self, key, val)
+        else:
+            return setattr(self.real_cursor, key, val)
 
 
 _org_connect = None
@@ -114,17 +125,17 @@ def fake_connect(*args, **kw):
 def installFakeConnect():
     global _org_connect
     assert _org_connect is None
-    _org_connect = psycopg.connect
-    psycopg.connect = fake_connect
+    _org_connect = psycopg2.connect
+    psycopg2.connect = fake_connect
 
 def uninstallFakeConnect():
     global _org_connect
     assert _org_connect is not None
-    psycopg.connect = _org_connect
+    psycopg2.connect = _org_connect
     _org_connect = None
 
 
-class PgTestSetup(object):
+class PgTestSetup:
     connections = [] # Shared
 
     template = 'template1'
@@ -132,6 +143,13 @@ class PgTestSetup(object):
     dbuser = None
     host = None
     port = None
+
+    # Class attributes. With PostgreSQL 8.4, pg_shdepend bloats
+    # hugely when we drop and create databases, because this
+    # operation cancels any autovacuum process maintaining it.
+    # To cope, we need to manually vacuum it ourselves occasionally.
+    vacuum_shdepend_every = 10
+    _vacuum_shdepend_counter = 0
 
     # (template, name) of last test. Class attribute.
     _last_db = (None, None)
@@ -169,7 +187,7 @@ class PgTestSetup(object):
 
     def generateResetSequencesSQL(self):
         """Return a SQL statement that resets all sequences."""
-        con = psycopg.connect(self._connectionString(self.dbname))
+        con = psycopg2.connect(self._connectionString(self.dbname))
         cur = con.cursor()
         try:
             return generateResetSequencesSQL(cur)
@@ -190,7 +208,7 @@ class PgTestSetup(object):
             # anyway (because they might have been incremented even if
             # nothing was committed), making sure not to disturb the
             # 'committed' flag, and we're done.
-            con = psycopg.connect(self._connectionString(self.dbname))
+            con = psycopg2.connect(self._connectionString(self.dbname))
             cur = con.cursor()
             if self.reset_sequences_sql is None:
                 resetSequences(cur)
@@ -208,7 +226,7 @@ class PgTestSetup(object):
         # template database that are slow in dropping off.
         attempts = 60
         for counter in range(0, attempts):
-            con = psycopg.connect(self._connectionString(self.template))
+            con = psycopg2.connect(self._connectionString(self.template))
             try:
                 con.set_isolation_level(0)
                 cur = con.cursor()
@@ -218,7 +236,7 @@ class PgTestSetup(object):
                         "ENCODING='UNICODE'" % (
                             self.dbname, self.template))
                     break
-                except psycopg.ProgrammingError, x:
+                except psycopg2.DatabaseError, x:
                     if counter == attempts - 1:
                         raise
                     x = str(x)
@@ -234,9 +252,9 @@ class PgTestSetup(object):
 
     def tearDown(self):
         '''Close all outstanding connections and drop the database'''
-        while self.connections:
-            con = self.connections[-1]
-            con.close() # Removes itself from self.connections
+        for con in self.connections[:]:
+            if con.auto_close:
+                con.close() # Removes itself from self.connections
         if (ConnectionWrapper.committed and ConnectionWrapper.dirty):
             PgTestSetup._reset_db = True
         ConnectionWrapper.committed = False
@@ -248,7 +266,7 @@ class PgTestSetup(object):
 
     def connect(self):
         """Get an open DB-API Connection object to a temporary database"""
-        con = psycopg.connect(
+        con = psycopg2.connect(
             self._connectionString(self.dbname, self.dbuser)
             )
         if isinstance(con, ConnectionWrapper):
@@ -264,8 +282,8 @@ class PgTestSetup(object):
         attempts = 100
         for i in range(0, attempts):
             try:
-                con = psycopg.connect(self._connectionString(self.template))
-            except psycopg.OperationalError, x:
+                con = psycopg2.connect(self._connectionString(self.template))
+            except psycopg2.OperationalError, x:
                 if 'does not exist' in x:
                     return
                 raise
@@ -278,7 +296,7 @@ class PgTestSetup(object):
                 try:
                     cur = con.cursor()
                     cur.execute('SELECT _killall_backends(%s)', [self.dbname])
-                except psycopg.ProgrammingError:
+                except psycopg2.DatabaseError:
                     pass
 
                 # Drop the database, trying for a number of seconds in case
@@ -286,7 +304,7 @@ class PgTestSetup(object):
                 try:
                     cur = con.cursor()
                     cur.execute('DROP DATABASE %s' % self.dbname)
-                except psycopg.ProgrammingError, x:
+                except psycopg2.DatabaseError, x:
                     if i == attempts - 1:
                         # Too many failures - raise an exception
                         raise
@@ -297,6 +315,10 @@ class PgTestSetup(object):
                     if 'does not exist' in str(x):
                         break
                     raise
+                PgTestSetup._vacuum_shdepend_counter += 1
+                if (PgTestSetup._vacuum_shdepend_counter
+                    % PgTestSetup.vacuum_shdepend_every) == 0:
+                    cur.execute('VACUUM pg_catalog.pg_shdepend')
             finally:
                 con.close()
 

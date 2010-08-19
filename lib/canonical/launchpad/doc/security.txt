@@ -48,7 +48,7 @@ launchpad.Edit permission on objects that implement the IHasOwner interface:
         permission = 'launchpad.Edit'
         usedfor = IHasOwner
 
-        def checkPermission(self, person):
+        def checkAuthenticated(self, person):
             """Authorize the object owner."""
             if person.id == self.obj.owner.id:
                 return True
@@ -68,6 +68,6 @@ permission:
         factory="canonical.launchpad.security.EditByOwner"
         />
 
-In this example, the EditByOwner adapter's checkPermission method will be
+In this example, the EditByOwner adapter's checkAuthenticated method will be
 called to determine if the currently authenticated user is authorized to access
 whatever is protected by launchpad.Edit on an IProduct.

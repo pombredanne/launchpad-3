@@ -2,12 +2,12 @@
 
 Feeds are served over HTTP, and are heavily cached. Pages which are not
 registered on the Feeds layer should not be served from the feeds.lp.net
-subdomain. 
+subdomain.
 
 
 == Index of a product ==
 
-Trying to view a page which is not registered on the Feeds layer 
+Trying to view a page which is not registered on the Feeds layer
 returns a 404.
 
     >>> browser.open('http://feeds.launchpad.dev/jokosher')
@@ -19,6 +19,10 @@ returns a 404.
     ...
     NotFound: ...
     >>> browser.open('http://feeds.launchpad.dev/+dims')
+    Traceback (most recent call last):
+    ...
+    NotFound: ...
+    >>> browser.open('http://feeds.launchpad.dev/announcements.atom/foo')
     Traceback (most recent call last):
     ...
     NotFound: ...
@@ -37,7 +41,7 @@ before serving the page.
 
 The +index view should redirect to https://help.launchpad.net/Feeds
 
-XXX Edwin Grubbs 2007-12-10 bug=98482: zope.testbrowser does not handle 
+XXX Edwin Grubbs 2007-12-10 bug=98482: zope.testbrowser does not handle
 redirects to remote sites, but http() can be used instead.
 
    >>> response = http(r"""
@@ -48,6 +52,7 @@ redirects to remote sites, but http() can be used instead.
    HTTP/1.0 301 Moved Permanently
    ...
    Location: https://help.launchpad.net/Feeds
+   ...
 
 
 == Query String Normalization ==
@@ -60,7 +65,11 @@ XXX: statik 2007-10-18 bug=154114: We don't yet normalize case in
 query strings.
 
     >>> from canonical.config import config
-    >>> config.launchpad.is_bug_search_feed_active = True
+    >>> bug_search_feed_data = """
+    ...     [launchpad]
+    ...     is_bug_search_feed_active: True
+    ...     """
+    >>> config.push('bug_search_feed_data', bug_search_feed_data)
     >>> browser.open('http://feeds.launchpad.dev/bugs/+bugs.atom?'
     ...     'field.scope=all&search=Search+Bug+Reports&aaa=foo')
     >>> browser.url
@@ -83,7 +92,7 @@ on feeds.launchpad.dev and does not work on all the other vhosts.
     ...     except:
     ...         print "Error accessing:", url
     ...         raise
-    ...     prefixes = ('', 'answers.', 'blueprints.', 'bugs.', 
+    ...     prefixes = ('', 'answers.', 'blueprints.', 'bugs.',
     ...         'code.', 'translations.')
     ...     for prefix in prefixes:
     ...         try:
@@ -122,4 +131,4 @@ These html feeds should only exist on feeds.launchpad.dev:
 
 Revert configuration change after tests are finished.
 
-    >>> config.launchpad.is_bug_search_feed_active = False
+    >>> config_data = config.pop('bug_search_feed_data')

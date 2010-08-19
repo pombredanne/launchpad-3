@@ -1,10 +1,13 @@
-#!/usr/bin/python2.4
+#!/usr/bin/python -S
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 # General purpose package removal tool for ftpmaster
-# Copyright (C) 2000, 2001, 2002, 2003, 2004, 2005  James Troup <james@nocrew.org>
-# Copyright (C) 2006  James Troup <james.troup@canonical.com>
 
 ################################################################################
+
+import _pythonpath
 
 import commands
 import optparse
@@ -16,14 +19,12 @@ import dak_utils
 
 import apt_pkg
 
-import _pythonpath
-
 from zope.component import getUtility
 
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad.database import (SecureBinaryPackagePublishingHistory,
-                                          SecureSourcePackagePublishingHistory)
+from canonical.launchpad.database import (BinaryPackagePublishingHistory,
+                                          SourcePackagePublishingHistory)
 from canonical.launchpad.interfaces import (
     IDistributionSet, PackagePublishingStatus)
 from canonical.launchpad.scripts import (execute_zcml_for_scripts,
@@ -186,12 +187,12 @@ def game_over():
 #     else:
 #         print "No dependency problem found."
 #     print
-    
+
 ################################################################################
 
 def options_init():
     global Options
-    
+
     parser = optparse.OptionParser()
     logger_options(parser)
     parser.add_option("-a", "--architecture", dest="architecture",
@@ -258,9 +259,8 @@ def init():
     Lock.acquire(blocking=True)
 
     Log.debug("Initialising connection.")
-    ztm = initZopeless(dbuser=config.archivepublisher.dbuser)
-
     execute_zcml_for_scripts()
+    ztm = initZopeless(dbuser=config.archivepublisher.dbuser)
 
     if not Options.distro:
         Options.distro = "ubuntu"
@@ -275,7 +275,7 @@ def init():
 
     return arguments
 
-################################################################################    
+################################################################################
 
 def summary_to_remove(to_remove):
     # Generate the summary of what's to be removed
@@ -314,7 +314,7 @@ def summary_to_remove(to_remove):
 
     return summary
 
-################################################################################   
+################################################################################
 
 def what_to_remove(packages):
     to_remove = []
@@ -377,9 +377,9 @@ def do_removal(removal):
     """
     current = removal["publishing"]
     if removal["type"] == "binary":
-        real_current = SecureBinaryPackagePublishingHistory.get(current.id)
+        real_current = BinaryPackagePublishingHistory.get(current.id)
     else:
-        real_current = SecureSourcePackagePublishingHistory.get(current.id)
+        real_current = SourcePackagePublishingHistory.get(current.id)
     real_current.status = PackagePublishingStatus.SUPERSEDED
     real_current.datesuperseded = UTC_NOW
 

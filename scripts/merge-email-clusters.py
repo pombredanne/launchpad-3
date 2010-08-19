@@ -1,14 +1,20 @@
+#!/usr/bin/python -S
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
+# pylint: disable-msg=W0403
+import _pythonpath
 
 import sys
 import logging
 import optparse
 
-import _pythonpath
-
 from canonical.lp import initZopeless
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger_options, logger as logger_from_options)
-from canonical.launchpad.scripts.keyringtrustanalyser import *
+from lp.registry.scripts.keyringtrustanalyser import mergeClusters
+
 
 def readClusters(fp):
     """Read clusters of email addresses from the file (separated by blank
@@ -23,6 +29,7 @@ def readClusters(fp):
             cluster = set()
     if cluster:
         yield cluster
+
 
 def main(argv):
     parser = optparse.OptionParser(
@@ -47,17 +54,18 @@ def main(argv):
     else:
         fp = sys.stdin
 
-    logger.info('Connecting to database')
-    ztm = initZopeless()
-
     logger.info('Setting up utilities')
     execute_zcml_for_scripts()
+
+    logger.info('Connecting to database')
+    ztm = initZopeless()
 
     mergeClusters(readClusters(fp), ztm, logger)
 
     logger.info('Done')
 
     return 0
+
 
 if __name__ == '__main__':
     sys.exit(main(sys.argv))

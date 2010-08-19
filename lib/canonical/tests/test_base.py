@@ -1,7 +1,8 @@
-# Copyright 2004 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
+from doctest import DocTestSuite
 import unittest
-from zope.testing.doctestunit import DocTestSuite
 import canonical.base
 
 def test_suite():

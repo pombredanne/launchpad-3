@@ -1,4 +1,6 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 """EmailAddress interfaces."""
@@ -11,15 +13,16 @@ __all__ = [
     'IEmailAddressSet',
     'InvalidEmailAddress']
 
-from zope.schema import Choice, Int, TextLine
+from zope.schema import Choice, Int, Object, TextLine
 from zope.interface import Interface
-
-from canonical.lazr import DBEnumeratedType, DBItem
-from canonical.lazr.rest.declarations import (
-    export_as_webservice_entry, exported)
-from canonical.lazr.rest.schema import Reference
+from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
+from canonical.launchpad.interfaces.account import IAccount
+from lp.registry.interfaces.role import IHasOwner
+from lazr.restful.declarations import (
+    export_as_webservice_entry, exported)
+from lazr.restful.fields import Reference
 
 
 class InvalidEmailAddress(Exception):
@@ -76,9 +79,9 @@ class EmailAddressStatus(DBEnumeratedType):
         """)
 
 
-class IEmailAddress(Interface):
+class IEmailAddress(IHasOwner):
     """The object that stores the `IPerson`'s emails."""
-    export_as_webservice_entry()
+    export_as_webservice_entry(plural_name='email_addresses')
 
     id = Int(title=_('ID'), required=True, readonly=True)
     email = exported(
@@ -86,13 +89,26 @@ class IEmailAddress(Interface):
     status = Choice(
         title=_('Email Address Status'), required=True, readonly=False,
         vocabulary=EmailAddressStatus)
+    account = Object(title=_('Account'), schema=IAccount, required=False)
+    accountID = Int(title=_('AccountID'), required=False, readonly=True)
     person = exported(
-        Reference(title=_('Person'), required=True, readonly=True,
+        Reference(title=_('Person'), required=False, readonly=False,
                   schema=Interface))
-    personID = Int(title=_('PersonID'), required=True, readonly=True)
+    personID = Int(title=_('PersonID'), required=False, readonly=True)
+
+    rdf_sha1 = TextLine(
+        title=_("RDF-ready SHA-1 Hash"),
+        description=_("The SHA-1 hash of the preferred email address and "
+                      "a mailto: prefix as a hexadecimal string. This is "
+                      "used as a key by FOAF RDF spec"),
+        readonly=True)
 
     def destroySelf():
-        """Delete this email from the database."""
+        """Destroy this email address and any associated subscriptions.
+        
+        :raises UndeletableEmailAddress: When the email address is a person's
+            preferred one or a hosted mailing list's address.
+        """
 
     def syncUpdate():
         """Write updates made on this object to the database.
@@ -105,14 +121,22 @@ class IEmailAddress(Interface):
 class IEmailAddressSet(Interface):
     """The set of EmailAddresses."""
 
-    def new(email, person, status=EmailAddressStatus.NEW):
-        """Create a new EmailAddress with the given email, pointing to person.
+    def new(email, person=None, status=EmailAddressStatus.NEW, account=None):
+        """Create a new EmailAddress with the given email.
+
+        The newly created EmailAddress will point to the person
+        and/or account.
 
         The given status must be an item of EmailAddressStatus.
+
+        :raises InvalidEmailAddress: If the email address is invalid.
         """
 
     def getByPerson(person):
         """Return all email addresses for the given person."""
+
+    def getPreferredEmailForPeople(self, people):
+        """Return preferred email addresses for the people provided."""
 
     def getByEmail(email):
         """Return the EmailAddress object for the given email.

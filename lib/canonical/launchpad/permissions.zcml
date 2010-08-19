@@ -1,3 +1,7 @@
+<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+     GNU Affero General Public License version 3 (see the file LICENSE).
+-->
+
 <configure xmlns="http://namespaces.zope.org/zope">
 
   <permission
@@ -19,16 +23,6 @@
     id="launchpad.ExpensiveRequest" title="Make expensive requests"
     access_level="read" />
 
-  <!-- XXX: David Allouche 2006-07-19
-  Needed to allow EditSeriesSourceByVCSImports to run, and enable
-  IProductSeriesSource, while the EditProductSeries adapter already owns
-  'launchpad.Edit' on ProductSeries and only enables IProductSeries. There
-  might be a cleaner way of fixing that issue, but it breaks my brain already
-  and I need this fix urgently. -->
-  <permission
-    id="launchpad.EditSource" title="Edit source details"
-    access_level="write" />
-
   <permission
     id="launchpad.Append" title="Adding something" access_level="write" />
 
@@ -39,8 +33,8 @@
     id="launchpad.Admin" title="Administer something" access_level="write" />
 
   <permission
-    id="launchpad.Commercial" 
-    title="Administer something related to commercial offering." 
+    id="launchpad.Commercial"
+    title="Administer something related to commercial offering."
     access_level="write" />
 
   <!-- There are some translation-related fields that need to be set
@@ -62,11 +56,11 @@
   <permission
     id="launchpad.Special" title="Special permissions" access_level="write" />
 
-  <!-- Experimental (sabdfl) Trying to use the permissions system to
+  <!-- Experimental (mark) Trying to use the permissions system to
        establish roles. If this works we should consider a parallel "roles"
        system that is similar to the permissions system, or just extending
        our permissions vocabulary to include these roles. -->
-  <permission 
+  <permission
     id="launchpad.Driver"
     title="The role of deciding what bug fixes and features should be goals
            for a series or release."
@@ -76,5 +70,25 @@
     id="launchpad.Owner"
     title="The role of someone who created or otherwise owns an object."
     access_level="write" />
+
+  <permission
+    id="launchpad.MailingListManager"
+    title="The role of someone who can manage and configure a mailing list."
+    access_level="write" />
+
+  <!--
+    XXX: BradCrittenden 2009-05-17 bug=400762: ProjectReview should properly
+    just be Moderate except there is a clash between IProduct and IFAQTarget.
+  -->
+  <permission
+    id="launchpad.ProjectReview"
+    title="Review Launchpad projects"
+    access_level="write" />
+
+  <!-- This permission only exists to please apidoc.launchpad.dev and
+       shouldn't be used anywhere else. -->
+  <permission
+    id="zope.ManageApplication" title="Needed by zope.app.apidoc"
+    access_level="read" />
 
 </configure>

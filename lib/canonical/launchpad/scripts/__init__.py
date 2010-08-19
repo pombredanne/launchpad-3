@@ -1,83 +1,47 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """Library functions for use in all scripts.
 
 """
 __metaclass__ = type
 
 __all__ = [
-    'execute_zcml_for_scripts',
-    'logger_options',
-    'logger',
-    'log',
     'db_options',
+    'execute_zcml_for_scripts',
+    'log',
+    'logger',
+    'logger_options',
+    'BufferLogger',
     'FakeLogger',
     'QuietFakeLogger',
+    'WatchedFileHandler',
     ]
 
 import atexit
 import os
+import sys
 from textwrap import dedent
 import threading
 
-import zope.app.appsetup
-import zope.app.mail.delivery
+import zope.sendmail.delivery
+import zope.site.hooks
 from zope.configuration.config import ConfigurationMachine
-from zope.configuration.config import GroupingContextDecorator
 from zope.security.management import setSecurityPolicy
 from zope.security.simplepolicies import PermissiveSecurityPolicy
 
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
+from canonical.launchpad.webapp.interaction import (
+    ANONYMOUS, setupInteractionByEmail)
 
 from canonical import lp
 from canonical.config import config
 
 from canonical.launchpad.scripts.logger import (
-        logger_options, logger, log, FakeLogger, QuietFakeLogger)
-
-# XXX StuartBishop 2005-06-02:
-# We should probably split out all the stuff in this directory that
-# doesn't rely on Zope and migrate it to canonical/scripts.
-
-# XXX SteveAlexander 2005-04-11:
-# This is a total mess.  I need to work out what this all means.
-
-class NullItem:
-    def __init__(self, context, handler, info, *argdata):
-        newcontext = GroupingContextDecorator(context)
-        newcontext.info = info
-        self.context = newcontext
-        self.handler = handler
-        self.argdata = argdata
-
-    def contained(self, name, data, info):
-        return NullItem(self.context, None, None)
-
-    def finish(self):
-        pass
-
-
-def NullFactory(context, data, info):
-    return NullItem(context, data, info)
-
-
-class CustomMachine(ConfigurationMachine):
-
-    def factory(self, context, name):
-        # Hackery to remove 'browser:xxx' directives from being processed.
-        # This is needed to avoid page directives, which screw up when you
-        # parse the zcml from a cwd that isn't the launchpad root.
-        # XXX: Bjorn Tillenius 2005-07-14:
-        #      I added a workaround so that browser:url directives get
-        #      processed, though. SteveA said he will fix it better when
-        #      he lands the navigation stuff.
-        ns, simplename = name
-        if (ns == u'http://namespaces.zope.org/browser'
-            and simplename != 'url'):
-            return NullFactory
-        else:
-            f = ConfigurationMachine.factory(self, context, name)
-            return f
-
+    # these are intentional re-exports, apparently, used by *many* files.
+    logger_options, logger, log, BufferLogger, FakeLogger, QuietFakeLogger)
+# Intentional re-export, following along the lines of the logger module.
+from canonical.launchpad.scripts.loghandlers import WatchedFileHandler
 
 def execute_zcml_for_scripts(use_web_security=False):
     """Execute the zcml rooted at launchpad/script.zcml
@@ -86,30 +50,35 @@ def execute_zcml_for_scripts(use_web_security=False):
     application uses will be used. Otherwise everything protected by a
     permission is allowed, and everything else denied.
     """
-    # Prevent some cases of erroneous layer useage.
-    from canonical.testing import (
-            FunctionalLayer, BaseLayer, ZopelessLayer
-            )
-    assert not FunctionalLayer.isSetUp, \
-            'Setting up Zopeless CA when Zopefull CA is already running'
-    assert not BaseLayer.isSetUp or ZopelessLayer.isSetUp, """
-            execute_zcml_for_scripts should not be called from tests.
-            Instead, your test should use the Zopeless layer.
+
+    # When in testing mode, prevent some cases of erroneous layer usage.
+    # But we don't want to import that module in production usage, thus
+    # the conditional block.
+    if 'canonical.testing.layers' in sys.modules:
+        from canonical.testing.layers import (
+                FunctionalLayer, BaseLayer, ZopelessLayer)
+        assert not FunctionalLayer.isSetUp, \
+                'Setting up Zopeless CA when Zopefull CA is already running'
+        assert not BaseLayer.isSetUp or ZopelessLayer.isSetUp, """
+                execute_zcml_for_scripts should not be called from tests.
+                Instead, your test should use the Zopeless layer.
             """
 
-    scriptzcmlfilename = os.path.normpath(
-        os.path.join(os.path.dirname(__file__),
-                     os.pardir, os.pardir, os.pardir, os.pardir,
-                     'script.zcml'))
+    if config.instance_name == 'testrunner':
+        scriptzcmlfilename = 'script-testing.zcml'
+    else:
+        scriptzcmlfilename = 'script.zcml'
 
-    scriptzcmlfilename = os.path.abspath(scriptzcmlfilename)
+    scriptzcmlfilename = os.path.abspath(
+        os.path.join(config.root, scriptzcmlfilename))
+
     from zope.configuration import xmlconfig
 
     # Hook up custom component architecture calls
-    zope.app.component.hooks.setHooks()
+    zope.site.hooks.setHooks()
 
     # Load server-independent site config
-    context = CustomMachine()
+    context = ConfigurationMachine()
     xmlconfig.registerCommonDirectives(context)
     context = xmlconfig.file(
         scriptzcmlfilename, execute=True, context=context)
@@ -128,7 +97,7 @@ def execute_zcml_for_scripts(use_web_security=False):
     def kill_queue_processor_threads():
         for thread in threading.enumerate():
             if isinstance(
-                thread, zope.app.mail.delivery.QueueProcessorThread):
+                thread, zope.sendmail.delivery.QueueProcessorThread):
                 thread.stop()
                 thread.join(30)
                 if thread.isAlive():
@@ -140,8 +109,7 @@ def execute_zcml_for_scripts(use_web_security=False):
     # the proper API for having a principal / user running in scripts.
     # The script will have full permissions because of the
     # PermissiveSecurityPolicy set up in script.zcml.
-    from canonical.launchpad.ftests import login
-    login('launchpad.anonymous')
+    setupInteractionByEmail(ANONYMOUS)
 
 
 def db_options(parser):

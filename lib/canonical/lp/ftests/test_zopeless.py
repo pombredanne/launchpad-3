@@ -1,38 +1,47 @@
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """
 Tests to make sure that initZopeless works as expected.
 """
+
+from doctest import DocTestSuite
 from threading import Thread
 import unittest
 import warnings
 
-import psycopg
+import psycopg2
 from sqlobject import StringCol, IntCol
-from zope.testing.doctest import DocTestSuite
 
-from canonical.database.sqlbase import SQLBase, alreadyInstalledMsg
+from canonical.database.sqlbase import SQLBase, alreadyInstalledMsg, cursor
 from canonical.ftests.pgsql import PgTestSetup
 from canonical.lp import initZopeless
-from canonical.testing import LaunchpadLayer
+from canonical.testing import LaunchpadScriptLayer
 
 
 class MoreBeer(SQLBase):
     '''Simple SQLObject class used for testing'''
     # test_sqlos defines a Beer SQLObject already, so we call this one
     # MoreBeer to avoid confusing SQLObject.
-    _columns = [
-        StringCol('name', alternateID=True, notNull=True),
-        IntCol('rating', default=None),
-        ]
+    name = StringCol(alternateID=True, notNull=True)
+    rating = IntCol(default=None)
 
 
 class TestInitZopeless(unittest.TestCase):
-    layer = LaunchpadLayer
+    layer = LaunchpadScriptLayer
 
     def test_initZopelessTwice(self):
         # Hook the warnings module, so we can verify that we get the expected
-        # warning.
-        warn_explicit = warnings.warn_explicit
-        warnings.warn_explicit = self.expectedWarning
+        # warning.  The warnings module has two key functions, warn and
+        # warn_explicit, the first calling the second. You might, therefore,
+        # think that we should hook the second, to catch all warnings in one
+        # place.  However, from Python 2.6, both of these are replaced with
+        # entries into a C extension if available, and the C implementation of
+        # the first will not call a monkeypatched Python implementation of the
+        # second.  Therefore, we hook warn, as is the one actually called by
+        # the particular code we are interested in testing.
+        original_warn = warnings.warn
+        warnings.warn = self.warn_hooked
         self.warned = False
         try:
             # Calling initZopeless with the same arguments twice should return
@@ -48,21 +57,26 @@ class TestInitZopeless(unittest.TestCase):
                 tm1.uninstall()
         finally:
             # Put the warnings module back the way we found it.
-            warnings.warn_explicit = warn_explicit
+            warnings.warn = original_warn
 
-    def expectedWarning(self, message, category, filename, lineno,
-                        module=None, registry=None):
+    def warn_hooked(self, message, category=None, stacklevel=1):
         self.failUnlessEqual(alreadyInstalledMsg, str(message))
         self.warned = True
 
 
 class TestZopeless(unittest.TestCase):
-    layer = LaunchpadLayer
+    layer = LaunchpadScriptLayer
 
     def setUp(self):
         self.tm = initZopeless(dbname=PgTestSetup().dbname,
                                dbuser='launchpad')
-        MoreBeer.createTable()
+
+        c = cursor()
+        c.execute("CREATE TABLE morebeer ("
+                  "  id SERIAL PRIMARY KEY,"
+                  "  name text NOT NULL UNIQUE,"
+                  "  rating integer"
+                  ")")
         self.tm.commit()
 
     def tearDown(self):
@@ -144,10 +158,12 @@ class TestZopeless(unittest.TestCase):
         # We have observed if a database transaction ends badly, it is
         # not reset for future transactions. To test this, we cause
         # a database exception
-        MoreBeer(name='Victoria Bitter')
+        beer1 = MoreBeer(name='Victoria Bitter')
+        beer1.syncUpdate()
         try:
-            MoreBeer(name='Victoria Bitter')
-        except psycopg.DatabaseError:
+            beer2 = MoreBeer(name='Victoria Bitter')
+            beer2.syncUpdate()
+        except psycopg2.DatabaseError:
             pass
         else:
             self.fail('Unique constraint was not triggered')
@@ -155,7 +171,8 @@ class TestZopeless(unittest.TestCase):
 
         # Now start a new transaction and see if we can do anything
         self.tm.begin()
-        MoreBeer(name='Singa')
+        beer3 = MoreBeer(name='Singa')
+        beer3.syncUpdate()
 
     def test_externalChange(self):
         # Make a change
@@ -165,7 +182,7 @@ class TestZopeless(unittest.TestCase):
         self.tm.commit()
 
         # Make another change from a non-SQLObject connection, and commit that
-        conn = psycopg.connect('dbname=' + PgTestSetup().dbname)
+        conn = psycopg2.connect('dbname=' + PgTestSetup().dbname)
         cur = conn.cursor()
         cur.execute("BEGIN TRANSACTION;")
         cur.execute("UPDATE MoreBeer SET rating=4 "
@@ -185,20 +202,12 @@ def test_isZopeless():
     >>> isZopeless()
     False
 
-    >>> PgTestSetup().setUp()
-    >>> isZopeless()
-    False
-
     >>> tm = initZopeless(dbname=PgTestSetup().dbname,
     ...     dbhost='', dbuser='launchpad')
     >>> isZopeless()
     True
 
     >>> tm.uninstall()
-    >>> isZopeless()
-    False
-
-    >>> PgTestSetup().tearDown()
     >>> isZopeless()
     False
 
@@ -209,10 +218,6 @@ def test_suite():
     suite.addTest(unittest.makeSuite(TestZopeless))
     suite.addTest(unittest.makeSuite(TestInitZopeless))
     doctests = DocTestSuite()
-    doctests.layer = LaunchpadLayer
-    suite.addTests(doctests)
+    doctests.layer = LaunchpadScriptLayer
+    suite.addTest(doctests)
     return suite
-
-if __name__ == '__main__':
-    unittest.main()
-

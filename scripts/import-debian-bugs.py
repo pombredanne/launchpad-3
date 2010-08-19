@@ -1,5 +1,7 @@
-#!/usr/bin/python2.4
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+#!/usr/bin/python -S
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Import Debian bugs into Launchpad, linking them to Ubuntu.
 
@@ -12,8 +14,8 @@ An Ubuntu task will be created for each imported bug.
 import _pythonpath
 
 from canonical.config import config
-from canonical.launchpad.scripts.base import LaunchpadScript
-from canonical.launchpad.scripts.importdebianbugs import import_debian_bugs
+from lp.services.scripts.base import LaunchpadScript
+from lp.bugs.scripts.importdebianbugs import import_debian_bugs
 
 
 class DebianBugImportScript(LaunchpadScript):

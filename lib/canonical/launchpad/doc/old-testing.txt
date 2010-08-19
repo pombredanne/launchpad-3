@@ -100,7 +100,7 @@ PostgreSQL default user.
 >>> cursor = connection.cursor()
 >>> cursor.execute("SELECT current_user")
 >>> cursor.fetchone()[0]
-'statistician'
+u'statistician'
 >>> pgsetup.tearDown()
 
 
@@ -125,7 +125,7 @@ By default, LaunchpadTestSetup connects as the 'launchpad' user:
 
 >>> cursor.execute("SELECT current_user")
 >>> cursor.fetchone()[0]
-'launchpad'
+u'launchpad'
 
 >>> LaunchpadTestSetup().tearDown()
 
@@ -139,7 +139,7 @@ described above for PgTestSetup
 >>> cursor = connection.cursor()
 >>> cursor.execute("SELECT current_user")
 >>> cursor.fetchone()[0]
-'statistician'
+u'statistician'
 >>> lpsetup.tearDown()
 
 
@@ -152,7 +152,7 @@ the Zope3 infrastructure.
 
 >>> from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
 >>> LaunchpadZopelessTestSetup().setUp()
->>> from canonical.launchpad.database.person import Person
+>>> from lp.registry.model.person import Person
 >>> stub = Person.byName('stub')
 >>> stub.displayname
 u'Stuart Bishop'
@@ -176,12 +176,12 @@ You can select the user you connect as:
 
 >>> setup = LaunchpadZopelessTestSetup(dbuser=config.librarian.dbuser)
 >>> setup.setUp()
->>> from canonical.launchpad.database import SourcePackageName
+>>> from lp.registry.model.sourcepackagename import SourcePackageName
 >>> SourcePackageName.get(1).name
 Traceback (most recent call last):
 ...
-ProgrammingError: ERROR:  permission denied for relation sourcepackagename
-...
+ProgrammingError: permission denied for relation sourcepackagename
+<BLANKLINE>
 >>> setup.tearDown()
 
 
@@ -196,15 +196,15 @@ environment.
 
 You have full access to the SQLBase objects
 
->>> sabdfl = Person.byName('sabdfl')
->>> sabdfl.displayname
+>>> mark = Person.byName('mark')
+>>> mark.displayname
 u'Mark Shuttleworth'
 
 You also have access to the Zope3 component architecture, as registered
 by ftesting.zcml
 
 >>> from zope.app import zapi
->>> from zope.app.mail.interfaces import IMailer
+>>> from zope.sendmail.interfaces import IMailer
 >>> zapi.getUtility(IMailer, 'smtp') is not None
 True
 
@@ -212,18 +212,23 @@ True
 
 You can change the user that the tests connect as:
 
->>> setup = LaunchpadFunctionalTestSetup(dbuser=config.librarian.dbuser)
->>> setup.setUp()
->>> connection = setup.connect()
->>> cursor = connection.cursor()
->>> cursor.execute('SELECT current_user')
->>> cursor.fetchone()[0]
-'librarian'
->>> SourcePackageName.get(1).name
-Traceback (most recent call last):
-...
-ProgrammingError: ERROR:  permission denied ...
->>> setup.tearDown()
+  XXX 2008-05-29 jamesh:
+  Using LaunchpadFunctionalLayer for non-webapp db users is generally
+  a sign of a bug.  These bits of code should generally be using
+  LaunchpadZopelessLayer.
+
+##>>> setup = LaunchpadFunctionalTestSetup(dbuser=config.librarian.dbuser)
+##>>> setup.setUp()
+##>>> connection = setup.connect()
+##>>> cursor = connection.cursor()
+##>>> cursor.execute('SELECT current_user')
+##>>> cursor.fetchone()[0]
+##u'librarian'
+##>>> SourcePackageName.get(1).name
+##Traceback (most recent call last):
+##...
+##ProgrammingError: permission denied ...
+##>>> setup.tearDown()
 
 And the next test will be unaffected:
 
@@ -233,7 +238,7 @@ And the next test will be unaffected:
 >>> cursor = connection.cursor()
 >>> cursor.execute('SELECT current_user')
 >>> cursor.fetchone()[0]
-'launchpad'
+u'launchpad'
 >>> SourcePackageName.get(1).name
 u'mozilla-firefox'
 >>> setup.tearDown()

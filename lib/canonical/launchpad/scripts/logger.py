@@ -1,9 +1,11 @@
-# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=W0702
 
 """Logging setup for scripts.
 
-Don't import from this module. Import it from canonical.scripts.
+Don't import from this module. Import it from canonical.launchpad.scripts.
 
 Parts of this may be moved into canonical.launchpad somewhere if it is
 to be used for non-script stuff.
@@ -12,15 +14,25 @@ to be used for non-script stuff.
 __metaclass__ = type
 
 # Don't import stuff from this module. Import it from canonical.scripts
-__all__ = ['log', 'logger', 'logger_options', 'FakeLogger',
-           'QuietFakeLogger']
+__all__ = [
+    'log',
+    'logger',
+    'logger_options',
+    'BufferLogger',
+    'FakeLogger',
+    'QuietFakeLogger',
+    'DEBUG2', 'DEBUG3', 'DEBUG4', 'DEBUG5',
+    'DEBUG6', 'DEBUG7', 'DEBUG8', 'DEBUG9'
+    ]
 
+
+import hashlib
 import logging
 import re
-import sha
 import sys
 import traceback
 import time
+
 from optparse import OptionParser
 from cStringIO import StringIO
 from datetime import datetime, timedelta
@@ -29,15 +41,45 @@ from pytz import utc
 from zope.component import getUtility
 
 from canonical.base import base
-from canonical.librarian.interfaces import ILibrarianClient, UploadFailed
 from canonical.config import config
+from canonical.librarian.interfaces import ILibrarianClient, UploadFailed
+
+# Custom log levels. logging.debug is 10.
+DEBUG2 = 9
+DEBUG3 = 8
+DEBUG4 = 7
+DEBUG5 = 6
+DEBUG6 = 5
+DEBUG7 = 4
+DEBUG8 = 3
+DEBUG9 = 2
+
+logging.addLevelName(DEBUG2, 'DEBUG2')
+logging.addLevelName(DEBUG3, 'DEBUG3')
+logging.addLevelName(DEBUG4, 'DEBUG4')
+logging.addLevelName(DEBUG5, 'DEBUG5')
+logging.addLevelName(DEBUG6, 'DEBUG6')
+logging.addLevelName(DEBUG7, 'DEBUG7')
+logging.addLevelName(DEBUG8, 'DEBUG8')
+logging.addLevelName(DEBUG9, 'DEBUG9')
 
 
 class FakeLogger:
-    """Emulates a proper logger, just printing everything out to stdout.
-    Used exclusively in doc tests."""
-    def message(self, prefix, *stuff, **kw):
-        print prefix, ' '.join(stuff)
+    """Emulates a proper logger, just printing everything out the given file.
+    """
+    def __init__(self, output_file=None):
+        """The default output_file is sys.stdout."""
+        self.output_file = output_file
+
+    def message(self, prefix, msg, *stuff, **kw):
+        # We handle the default output file here because sys.stdout
+        # might have been reassigned. Between now and when this object
+        # was instantiated.
+        if self.output_file is None:
+            output_file = sys.stdout
+        else:
+            output_file = self.output_file
+        print >> output_file, prefix, msg % stuff
 
         if 'exc_info' in kw:
             exception = traceback.format_exception(*sys.exc_info())
@@ -56,6 +98,13 @@ class FakeLogger:
     def error(self, *stuff, **kw):
         self.message('ERROR', *stuff, **kw)
 
+    exception = error
+
+    def critical(self, *stuff, **kw):
+        self.message('CRITICAL', *stuff, **kw)
+
+    fatal = critical
+
     def info(self, *stuff, **kw):
         self.message('INFO', *stuff, **kw)
 
@@ -66,13 +115,26 @@ class FakeLogger:
 class QuietFakeLogger(FakeLogger):
     """Extra quiet FakeLogger.
 
-    Does not print DEBUG and INFO messages.
+    Does not print any message. Messages can be retrieved from
+    logger.output_file, which is a StringIO instance.
     """
-    def info(self, *stuff, **kw):
-        pass
+    def __init__(self):
+        self.output_file = StringIO()
 
-    def debug(self, *stuff, **kw):
-        pass
+
+class BufferLogger(FakeLogger):
+    """A logger that logs to a StringIO object."""
+    def __init__(self):
+        self.buffer = StringIO()
+
+    def message(self, prefix, msg, *stuff, **kw):
+        self.buffer.write('%s: %s\n' % (prefix, msg % stuff))
+
+        if 'exc_info' in kw:
+            exception = traceback.format_exception(*sys.exc_info())
+            for thing in exception:
+                for line in thing.splitlines():
+                    self.log(line)
 
 
 class LibrarianFormatter(logging.Formatter):
@@ -103,12 +165,12 @@ class LibrarianFormatter(logging.Formatter):
         except:
             pass
         if not exception_string:
-            exception_string = str(ei[0]).split('.')[-1]
+            exception_string = ei[0].__name__
 
         expiry = datetime.now().replace(tzinfo=utc) + timedelta(days=90)
         try:
             filename = base(
-                    long(sha.new(traceback).hexdigest(),16), 62
+                    long(hashlib.sha1(traceback).hexdigest(),16), 62
                     ) + '.txt'
             url = librarian.remoteAddFile(
                     filename, len(traceback), StringIO(traceback),
@@ -179,22 +241,35 @@ def logger_options(parser, default=logging.INFO):
     # Undocumented use of the optparse module
     parser.defaults['verbose'] = False
 
-    def counter(option, opt_str, value, parser, inc):
-        parser.values.loglevel = (
-                getattr(parser.values, 'loglevel', default) + inc
-                )
+    def inc_loglevel(option, opt_str, value, parser):
+        current_level = getattr(parser.values, 'loglevel', default)
+        if current_level < 10:
+            inc = 1
+        else:
+            inc = 10
+        parser.values.loglevel = current_level + inc
+        parser.values.verbose = (parser.values.loglevel < default)
+        # Reset the global log.
+        log._log = _logger(parser.values.loglevel, out_stream=sys.stderr)
+
+    def dec_loglevel(option, opt_str, value, parser):
+        current_level = getattr(parser.values, 'loglevel', default)
+        if current_level <= 10:
+            dec = 1
+        else:
+            dec = 10
+        parser.values.loglevel = current_level - dec
         parser.values.verbose = (parser.values.loglevel < default)
         # Reset the global log.
         log._log = _logger(parser.values.loglevel, out_stream=sys.stderr)
 
     parser.add_option(
             "-v", "--verbose", dest="loglevel", default=default,
-            action="callback", callback=counter, callback_args=(-10, ),
+            action="callback", callback=dec_loglevel,
             help="Increase verbosity. May be specified multiple times."
             )
     parser.add_option(
-            "-q", "--quiet",
-            action="callback", callback=counter, callback_args=(10, ),
+            "-q", "--quiet", action="callback", callback=inc_loglevel,
             help="Decrease verbosity. May be specified multiple times."
             )
     parser.add_option(
@@ -217,7 +292,7 @@ def logger(options=None, name=None):
     >>> logger_options(parser)
     >>> options, args = parser.parse_args(['-v', '-v', '-q', '-q', '-q'])
     >>> log = logger(options)
-    >>> log.debug("Not shown - I'm too quiet")
+    >>> log.debug('Not shown - too quiet')
 
     Cleanup:
 
@@ -247,6 +322,7 @@ def reset_root_logger():
             pass
         root_logger.removeHandler(hdlr)
 
+
 def _logger(level, out_stream, name=None):
     """Create the actual logger instance, logging at the given level
 
@@ -257,12 +333,6 @@ def _logger(level, out_stream, name=None):
         # Determine the logger name from the script name
         name = sys.argv[0]
         name = re.sub('.py[oc]?$', '', name)
-
-    # Clamp the loglevel
-    if level < logging.DEBUG:
-        level = logging.DEBUG
-    elif level > logging.CRITICAL:
-        level = logging.CRITICAL
 
     # We install our custom handlers and formatters on the root logger.
     # This means that if the root logger is used, we still get correct
@@ -331,3 +401,5 @@ class _LogWrapper:
 
 
 log = _LogWrapper(logging.getLogger())
+
+

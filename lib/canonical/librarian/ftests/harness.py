@@ -1,4 +1,5 @@
-# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Fixture for the librarians."""
 
@@ -11,6 +12,7 @@ __all__ = [
 
 import os
 import shutil
+import tempfile
 
 import canonical
 from canonical.config import config
@@ -90,6 +92,9 @@ class LibrarianTestSetup:
 
     def setUp(self):
         """Start both librarian instances."""
+        if (os.environ.get('LP_PERSISTENT_TEST_SERVICES') is not None and
+            os.path.exists(TacLibrarianTestSetup().pidfile)):
+            return
         self.setUpRoot()
         try:
             TacLibrarianTestSetup().setUp()
@@ -98,18 +103,11 @@ class LibrarianTestSetup:
             self.tearDownRoot()
             raise
 
-        try:
-            TacRestrictedLibrarianTestSetup().setUp()
-        except TacException:
-            # Tear-down the started librarian.
-            TacLibrarianTestSetup().tearDown()
-            self.tearDownRoot()
-            raise
-
     def tearDown(self):
         """Shut downs both librarian instances."""
+        if os.environ.get('LP_PERSISTENT_TEST_SERVICES') is not None:
+            return
         TacLibrarianTestSetup().tearDown()
-        TacRestrictedLibrarianTestSetup().tearDown()
         self.tearDownRoot()
 
     def clear(self):
@@ -160,27 +158,20 @@ class TacLibrarianTestSetup(TacTestSetup):
         return os.path.join(self.root, 'librarian.pid')
 
     @property
-    def logfile(self):
-        return os.path.join(self.root, 'librarian.log')
-
-
-class TacRestrictedLibrarianTestSetup(TacLibrarianTestSetup):
-    """Fixture for the restricted librarian instance."""
-
-    def setUp(self, spew=False):
-        os.environ['RESTRICTED_LIBRARIAN'] = '1'
-        try:
-            super(TacRestrictedLibrarianTestSetup, self).setUp(spew)
-        finally:
-            del os.environ['RESTRICTED_LIBRARIAN']
-
-    @property
-    def pidfile(self):
-        return os.path.join(self.root, 'restricted-librarian.pid')
+    def _log_directory(self):
+        # Since the root gets deleted after the tests complete, and since we
+        # may still want to access the log file for post-mortem debugging, put
+        # the log file in the parent directory of root, or the temporary
+        # directory if that doesn't exist.
+        log_directory = os.path.dirname(self.root)
+        if os.path.isdir(log_directory):
+            return log_directory
+        else:
+            return tempfile.tempdir
 
     @property
     def logfile(self):
-        return os.path.join(self.root, 'restricted-librarian.log')
+        return os.path.join(self._log_directory, 'librarian.log')
 
 
 def fillLibrarianFile(fileid, content='Fake Content'):

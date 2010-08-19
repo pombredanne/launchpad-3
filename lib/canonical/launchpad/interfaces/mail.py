@@ -1,4 +1,6 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 """Interfaces specific to mail handling."""
@@ -74,7 +76,10 @@ class IMailHandler(Interface):
         The 'filealias' is an ILibraryFileAlias.
         The 'log' is the logger to be used.
 
-        Return True if the mesage was processed, otherwise False.
+        Return False if to_address does not exist/is bad.
+        Return True if the mesage was processed, successfully or
+        unsuccessfully.  This includes user or input errors.
+        Programming errors should cause exceptions to be raised.
         """
 
 

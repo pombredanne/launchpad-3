@@ -1,13 +1,18 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
-#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
-from twisted.web import resource, static, error, util, server, proxy
+from datetime import datetime
+import time
+
+from twisted.web import resource, static, util, server, proxy
 from twisted.internet.threads import deferToThread
 
-from canonical.librarian.client import quote
-from canonical.database.sqlbase import begin, commit, rollback
+from canonical.librarian.client import url_path_quote
+from canonical.librarian.db import read_transaction, write_transaction
+from canonical.librarian.utils import guess_librarian_encoding
+
 
 defaultResource = static.Data("""
         <html>
@@ -17,11 +22,12 @@ defaultResource = static.Data("""
         http://librarian.launchpad.net/ is a
         file repository used by <a href="https://launchpad.net/">Launchpad</a>.
         </p>
-        <p><small>Copyright 2004-2007 Canonical Ltd.</small></p>
+        <p><small>Copyright 2004-2009 Canonical Ltd.</small></p>
         <!-- kthxbye. -->
         </body></html>
         """, type='text/html')
-fourOhFour = error.NoResource('No such resource')
+fourOhFour = resource.NoResource('No such resource')
+
 
 class NotFound(Exception):
     pass
@@ -75,24 +81,22 @@ class LibraryFileAliasResource(resource.Resource):
         deferred.addErrback(self._eb_getFileAlias)
         return util.DeferredResource(deferred)
 
+    @write_transaction
     def _getFileAlias(self, aliasID):
-        begin()
         try:
-            try:
-                alias = self.storage.getFileAlias(aliasID)
-                alias.updateLastAccessed()
-                return alias.contentID, alias.filename, alias.mimetype
-            except LookupError:
-                raise NotFound
-        finally:
-            commit()
+            alias = self.storage.getFileAlias(aliasID)
+            alias.updateLastAccessed()
+            return (alias.contentID, alias.filename,
+                alias.mimetype, alias.date_created)
+        except LookupError:
+            raise NotFound
 
     def _eb_getFileAlias(self, failure):
         failure.trap(NotFound)
         return fourOhFour
 
     def _cb_getFileAlias(
-            self, (dbcontentID, dbfilename, mimetype),
+            self, (dbcontentID, dbfilename, mimetype, date_created),
             filename, request
             ):
         # Return a 404 if the filename in the URL is incorrect. This offers
@@ -100,27 +104,17 @@ class LibraryFileAliasResource(resource.Resource):
         # unguessable names effectively using the filename as a secret).
         if dbfilename.encode('utf-8') != filename:
             return fourOhFour
+
+        # Set our caching headers. Librarian files can be cached forever.
+        request.setHeader('Cache-Control', 'max-age=31536000, public')
+
         if self.storage.hasFile(dbcontentID) or self.upstreamHost is None:
             # XXX: Brad Crittenden 2007-12-05 bug=174204: When encodings are
             # stored as part of a file's metadata this logic will be replaced.
-
-            # This fix is in response to Bug 173096.  The Ubuntu team wants
-            # their log files to be automatically unzipped.  Previously this
-            # was done by having Apache add an encoding for all content that
-            # was .gz or .tgz.  Doing so violates the intent of the
-            # Content-Encoding header and caused other gzipped files served
-            # from the Librarian to be treated incorrectly by browsers.  The
-            # fix shown here is to still support the encoding of Ubuntu log
-            # files while allowing others to pass with no encoding.  Apache
-            # will be changed to remove the Content-Encoding header for gzip.
-            if filename.endswith(".txt.gz"):
-                encoding = "gzip"
-                mimetype = "text/plain"
-            else:
-                encoding = None
-            return File(mimetype.encode('ascii'),
-                        encoding,
-                        self.storage._fileLocation(dbcontentID))
+            encoding, mimetype = guess_librarian_encoding(filename, mimetype)
+            return File(
+                mimetype, encoding, date_created,
+                self.storage._fileLocation(dbcontentID))
         else:
             return proxy.ReverseProxyResource(self.upstreamHost,
                                               self.upstreamPort, request.path)
@@ -131,10 +125,23 @@ class LibraryFileAliasResource(resource.Resource):
 
 class File(static.File):
     isLeaf = True
-    def __init__(self, contentType, encoding=None, *args, **kwargs):
+    def __init__(
+        self, contentType, encoding, modification_time, *args, **kwargs):
+        # Have to convert the UTC datetime to POSIX timestamp (localtime)
+        offset = datetime.utcnow() - datetime.now()
+        local_modification_time = modification_time - offset
+        self._modification_time = time.mktime(
+            local_modification_time.timetuple())
         static.File.__init__(self, *args, **kwargs)
         self.type = contentType
         self.encoding = encoding
+
+    def getModificationTime(self):
+        """Override the time on disk with the time from the database.
+
+        This is used by twisted to set the Last-Modified: header.
+        """
+        return self._modification_time
 
 
 class DigestSearchResource(resource.Resource):
@@ -153,16 +160,13 @@ class DigestSearchResource(resource.Resource):
         deferred.addErrback(_eb, request)
         return server.NOT_DONE_YET
 
+    @read_transaction
     def _matchingAliases(self, digest):
-        begin()
-        try:
-            library = self.storage.library
-            matches = ['%s/%s' % (aID, quote(aName))
-                       for fID in library.lookupBySHA1(digest)
-                       for aID, aName, aType in library.getAliases(fID)]
-            return matches
-        finally:
-            rollback()
+        library = self.storage.library
+        matches = ['%s/%s' % (aID, url_path_quote(aName))
+                   for fID in library.lookupBySHA1(digest)
+                   for aID, aName, aType in library.getAliases(fID)]
+        return matches
 
     def _cb_matchingAliases(self, matches, request):
         text = '\n'.join([str(len(matches))] + matches)

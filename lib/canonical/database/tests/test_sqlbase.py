@@ -1,9 +1,10 @@
-# Copyright 2004 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 from canonical.database import sqlbase
 import unittest, doctest
 
-from zope.testing.doctest import ELLIPSIS, NORMALIZE_WHITESPACE, REPORT_NDIFF
+from doctest import ELLIPSIS, NORMALIZE_WHITESPACE, REPORT_NDIFF
 
 
 def test_suite():

@@ -1,0 +1,61 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  metal:use-macro="view/macro:page/main_only"
+  i18n:domain="launchpad"
+>
+  <body>
+    <h1 metal:fill-slot="heading">
+      Redeem Vouchers for Commercial Subscriptions</h1>
+
+    <div metal:fill-slot="main"
+         tal:define="
+           commercial_projects view/has_commercial_projects;
+           config modules/canonical.config/config">
+
+        <tal:not_commercial condition="not: commercial_projects">
+          <tal:name replace="context/fmt:displayname"/>
+          does not own any commercial projects. Only project owners can redeem
+          vouchers for a project.
+        </tal:not_commercial>
+        <tal:commercial condition="commercial_projects">
+          <tal:define_vouchers define="vouchers view/redeemable_vouchers" >
+            <tal:no_vouchers condition="not: vouchers">
+              <p>
+              <tal:name replace="context/fmt:displayname" />
+              does not have any redeemable vouchers available.</p>
+
+              <tal:voucher-instructions
+                 replace="structure context/@@+voucher-purchase-instructions"
+                 />
+
+            </tal:no_vouchers>
+            <tal:has_voucher condition="vouchers">
+              <div metal:use-macro="context/@@launchpad_form/form">
+                <metal:widgets fill-slot="widgets">
+                  <table class="form">
+                    <tal:widget define="widget nocall:view/widgets/project">
+                      <metal:block use-macro="context/@@launchpad_form/widget_row" />
+                    </tal:widget>
+                    <tal:widget define="widget nocall:view/widgets/voucher">
+                      <metal:block use-macro="context/@@launchpad_form/widget_row" />
+                    </tal:widget>
+                    <tr>
+                      <td></td>
+                      <td>
+                        <input tal:replace="structure view/redeem_action/render" />
+                        <input tal:replace="structure view/cancel_action/render" />
+                      </td>
+                    </tr>
+                  </table>
+                </metal:widgets>
+                <metal:widgets fill-slot="buttons" />
+              </div>
+            </tal:has_voucher>
+          </tal:define_vouchers>
+        </tal:commercial>
+    </div>
+  </body>
+</html>

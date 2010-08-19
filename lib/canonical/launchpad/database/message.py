@@ -1,30 +1,54 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
-__all__ = ['Message', 'MessageSet', 'MessageChunk']
+__all__ = [
+    'DirectEmailAuthorization',
+    'Message',
+    'MessageChunk',
+    'MessageJob',
+    'MessageJobAction',
+    'MessageSet',
+    'UserToUserEmail',
+    ]
+
 
 import email
+
+from email.Header import make_header, decode_header
 from email.Utils import parseaddr, make_msgid, parsedate_tz, mktime_tz
 from cStringIO import StringIO as cStringIO
 from datetime import datetime
+from operator import attrgetter
 
-from zope.interface import implements
+from canonical.database.enumcol import EnumCol
+from lazr.enum import DBEnumeratedType, DBItem
 from zope.component import getUtility
+from zope.interface import implements
 from zope.security.proxy import isinstance as zisinstance
 
 from sqlobject import ForeignKey, StringCol, IntCol
 from sqlobject import SQLMultipleJoin, SQLRelatedJoin
+from storm.locals import And, DateTime, Int, Reference, Store, Storm, Unicode
 
 import pytz
 
+from canonical.config import config
 from canonical.encoding import guess as ensure_unicode
 from canonical.launchpad.helpers import get_filename_from_message_id
+from lp.services.job.model.job import Job
 from canonical.launchpad.interfaces import (
-    ILibraryFileAliasSet, IMessage, IMessageChunk, IMessageSet, IPersonSet,
-    InvalidEmailMessage, NotFoundError, PersonCreationRationale,
+    ILibraryFileAliasSet, IPersonSet, PersonCreationRationale,
     UnknownSender)
-from canonical.launchpad.validators.person import public_person_validator
+from canonical.launchpad.interfaces.message import (
+    IDirectEmailAuthorization, IMessage, IMessageChunk, IMessageJob,
+    IMessageSet, IUserToUserEmail, InvalidEmailMessage)
+from canonical.launchpad.mail import signed_message_from_string
+from lp.app.errors import NotFoundError
+from lp.registry.interfaces.person import validate_public_person
+from lazr.config import as_timedelta
 
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import UTC_NOW
@@ -33,6 +57,24 @@ from canonical.database.datetimecol import UtcDateTimeCol
 # this is a hard limit on the size of email we will be willing to store in
 # the database.
 MAX_EMAIL_SIZE = 10 * 1024 * 1024
+
+
+def utcdatetime_from_field(field_value):
+    """Turn an RFC 2822 Date: header value into a Python datetime (UTC).
+
+    :param field_value: The value of the Date: header
+    :type field_value: string
+    :return: The corresponding datetime (UTC)
+    :rtype: `datetime.datetime`
+    :raise `InvalidEmailMessage`: when the date string cannot be converted.
+    """
+    try:
+        date_tuple = parsedate_tz(field_value)
+        timestamp = mktime_tz(date_tuple)
+        return datetime.fromtimestamp(timestamp, tz=pytz.timezone('UTC'))
+    except (TypeError, ValueError, OverflowError):
+        raise InvalidEmailMessage('Invalid date %s' % field_value)
+
 
 class Message(SQLBase):
     """A message. This is an RFC822-style message, typically it would be
@@ -47,12 +89,10 @@ class Message(SQLBase):
     subject = StringCol(notNull=False, default=None)
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
-        validator=public_person_validator, notNull=True)
+        storm_validator=validate_public_person, notNull=False)
     parent = ForeignKey(foreignKey='Message', dbName='parent',
         notNull=False, default=None)
-    distribution = ForeignKey(foreignKey='Distribution',
-        dbName='distribution', notNull=False, default=None)
-    rfc822msgid = StringCol(unique=True, notNull=True)
+    rfc822msgid = StringCol(notNull=True)
     bugs = SQLRelatedJoin('Bug', joinColumn='message', otherColumn='bug',
         intermediateTable='BugMessage')
     chunks = SQLMultipleJoin('MessageChunk', joinColumn='message')
@@ -135,9 +175,11 @@ class MessageSet:
             raise NotFoundError(rfc822msgid)
         return messages
 
-    def fromText(self, subject, content, owner=None, datecreated=UTC_NOW,
+    def fromText(self, subject, content, owner=None, datecreated=None,
         rfc822msgid=None):
         """See IMessageSet."""
+        if datecreated is None:
+            datecreated = UTC_NOW
         if rfc822msgid is None:
             rfc822msgid = make_msgid("launchpad")
 
@@ -145,10 +187,14 @@ class MessageSet:
             subject=subject, rfc822msgid=rfc822msgid, owner=owner,
             datecreated=datecreated)
         MessageChunk(message=message, sequence=1, content=content)
+        # XXX 2008-05-27 jamesh:
+        # Ensure that BugMessages get flushed in same order as they
+        # are created.
+        Store.of(message).flush()
         return message
 
     def _decode_header(self, header):
-        r"""Decode an RFC 2097 encoded header.
+        r"""Decode an RFC 2047 encoded header.
 
             >>> MessageSet()._decode_header('=?iso-8859-1?q?F=F6=F6_b=E4r?=')
             u'F\xf6\xf6 b\xe4r'
@@ -169,14 +215,24 @@ class MessageSet:
         for bytes, charset in bits:
             if charset is None:
                 charset = 'us-ascii'
+            # 2008-09-26 gary:
+            # The RFC 2047 encoding names and the Python encoding names are
+            # not always the same. A safer and more correct approach would use
+            #   bytes.decode(email.Charset.Charset(charset).input_codec,
+            #                'replace')
+            # or similar, rather than
+            #   bytes.decode(charset, 'replace')
+            # That said, this has not bitten us so far, and is only likely to
+            # cause problems in unusual encodings that we are hopefully
+            # unlikely to encounter in this part of the code.
             re_encoded_bits.append(
                 (bytes.decode(charset, 'replace').encode('utf-8'), 'utf-8'))
 
         return unicode(email.Header.make_header(re_encoded_bits))
 
     def fromEmail(self, email_message, owner=None, filealias=None,
-            parsed_message=None, distribution=None,
-            create_missing_persons=False, fallback_parent=None):
+                  parsed_message=None, create_missing_persons=False,
+                  fallback_parent=None, date_created=None):
         """See IMessageSet.fromEmail."""
         # It does not make sense to handle Unicode strings, as email
         # messages may contain chunks encoded in differing character sets.
@@ -293,14 +349,11 @@ class MessageSet:
             parent = fallback_parent
 
         # figure out the date of the message
-        try:
-            datestr = parsed_message['date']
-            thedate = parsedate_tz(datestr)
-            timestamp = mktime_tz(thedate)
-            datecreated = datetime.fromtimestamp(timestamp,
-                tz=pytz.timezone('UTC'))
-        except (TypeError, ValueError, OverflowError):
-            raise InvalidEmailMessage('Invalid date %s' % datestr)
+        if date_created is not None:
+            datecreated = date_created
+        else:
+            datecreated = utcdatetime_from_field(parsed_message['date'])
+
         # make sure we don't create an email with a datecreated in the
         # future. also make sure we don't create an ancient one
         now = datetime.now(pytz.timezone('UTC'))
@@ -311,8 +364,7 @@ class MessageSet:
         # DOIT
         message = Message(subject=subject, owner=owner,
             rfc822msgid=rfc822msgid, parent=parent,
-            raw=raw_email_message, datecreated=datecreated,
-            distribution=distribution)
+            raw=raw_email_message, datecreated=datecreated)
 
         sequence = 1
 
@@ -366,11 +418,18 @@ class MessageSet:
             #   text/plain content is stored as a blob.
             content_disposition = part.get('Content-disposition', '').lower()
             no_attachment = not content_disposition.startswith('attachment')
-            if (mime_type == 'text/plain' and no_attachment 
+            if (mime_type == 'text/plain' and no_attachment
                 and part.get_filename() is None):
+
+                # Get the charset for the message part. If one isn't
+                # specified, default to latin-1 to prevent
+                # UnicodeDecodeErrors.
                 charset = part.get_content_charset()
-                if charset:
-                    content = content.decode(charset, 'replace')
+                if charset is None or str(charset).lower() == 'x-unknown':
+                    charset = 'latin-1'
+
+                content = content.decode(charset, 'replace')
+
                 if content.strip():
                     MessageChunk(
                         message=message, sequence=sequence,
@@ -380,13 +439,19 @@ class MessageSet:
                 filename = part.get_filename() or 'unnamed'
                 # Note we use the Content-Type header instead of
                 # part.get_content_type() here to ensure we keep
-                # parameters as sent
+                # parameters as sent. If Content-Type is None we default
+                # to application/octet-stream.
+                if part['content-type'] is None:
+                    content_type = 'application/octet-stream'
+                else:
+                    content_type = part['content-type']
+
                 if len(content) > 0:
                     blob = file_alias_set.create(
                         name=filename,
                         size=len(content),
                         file=cStringIO(content),
-                        contentType=part['content-type']
+                        contentType=content_type
                         )
                     MessageChunk(message=message, sequence=sequence,
                                  blob=blob)
@@ -404,6 +469,11 @@ class MessageSet:
         #         MessageChunk(
         #             message=message, sequence=sequence, content=epilogue
         #             )
+
+        # XXX 2008-05-27 jamesh:
+        # Ensure that BugMessages get flushed in same order as they
+        # are created.
+        Store.of(message).flush()
         return message
 
     @staticmethod
@@ -477,3 +547,221 @@ class MessageChunk(SQLBase):
                 "URL:        %s" % (blob.filename, blob.mimetype, blob.url)
                 )
 
+
+class UserToUserEmail(Storm):
+    """See `IUserToUserEmail`."""
+
+    implements(IUserToUserEmail)
+
+    __storm_table__ = 'UserToUserEmail'
+
+    id = Int(primary=True)
+
+    sender_id = Int(name='sender')
+    sender = Reference(sender_id, 'Person.id')
+
+    recipient_id = Int(name='recipient')
+    recipient = Reference(recipient_id, 'Person.id')
+
+    date_sent = DateTime(allow_none=False)
+
+    subject = Unicode(allow_none=False)
+
+    message_id = Unicode(allow_none=False)
+
+    def __init__(self, message):
+        """Create a new user-to-user email entry.
+
+        :param message: the message being sent
+        :type message: `email.message.Message`
+        """
+        super(UserToUserEmail, self).__init__()
+        person_set = getUtility(IPersonSet)
+        # Find the person who is sending this message.
+        realname, address = parseaddr(message['from'])
+        assert address, 'Message has no From: field'
+        sender = person_set.getByEmail(address)
+        assert sender is not None, 'No person for sender email: %s' % address
+        # Find the person who is the recipient.
+        realname, address = parseaddr(message['to'])
+        assert address, 'Message has no To: field'
+        recipient = person_set.getByEmail(address)
+        assert recipient is not None, (
+            'No person for recipient email: %s' % address)
+        # Convert the date string into a UTC datetime.
+        date = message['date']
+        assert date is not None, 'Message has no Date: field'
+        self.date_sent = utcdatetime_from_field(date)
+        # Find the subject and message-id.
+        message_id = message['message-id']
+        assert message_id is not None, 'Message has no Message-ID: field'
+        subject = message['subject']
+        assert subject is not None, 'Message has no Subject: field'
+        # Initialize.
+        self.sender = sender
+        self.recipient = recipient
+        self.message_id = unicode(message_id, 'ascii')
+        self.subject = unicode(make_header(decode_header(subject)))
+        # Add the object to the store of the sender.  Our StormMigrationGuide
+        # recommends against this saying "Note that the constructor should not
+        # usually add the object to a store -- leave that for a FooSet.new()
+        # method, or let it be inferred by a relation."
+        #
+        # On the other hand, we really don't need a UserToUserEmailSet for any
+        # other purpose.  There isn't any other relationship that can be
+        # inferred, so in this case I think it makes fine sense for the
+        # constructor to add self to the store.  Also, this closely mimics
+        # what the SQLObject compatibility layer does.
+        Store.of(sender).add(self)
+
+
+class MessageJobAction(DBEnumeratedType):
+    """MessageJob action
+
+    The action that a job should perform.
+    """
+
+    CREATE_MERGE_PROPOSAL = DBItem(1, """
+        Create a merge proposal.
+
+        Create a merge proposal from a message which must contain a merge
+        directive.
+        """)
+
+
+class MessageJob(Storm):
+    """A job for processing messages."""
+
+    implements(IMessageJob)
+    # XXX: AaronBentley 2009-02-05 bug=325883: This table is poorly named.
+    __storm_table__ = 'MergeDirectiveJob'
+
+    id = Int(primary=True)
+
+    jobID = Int('job', allow_none=False)
+    job = Reference(jobID, Job.id)
+
+    message_bytesID = Int('merge_directive', allow_none=False)
+    message_bytes = Reference(message_bytesID, 'LibraryFileAlias.id')
+
+    action = EnumCol(enum=MessageJobAction)
+
+    def __init__(self, message_bytes, action):
+        Storm.__init__(self)
+        self.job = Job()
+        self.message_bytes = message_bytes
+        self.action = action
+
+    def destroySelf(self):
+        """See `IMessageJob`."""
+        self.job.destroySelf()
+        Store.of(self).remove(self)
+
+    def sync(self):
+        """Update the database with all changes for this object."""
+        store = Store.of(self)
+        store.flush()
+        store.autoreload(self)
+
+    def getMessage(self):
+        """See `IMessageJob`."""
+        return signed_message_from_string(self.message_bytes.read())
+
+
+class DirectEmailAuthorization:
+    """See `IDirectEmailAuthorization`."""
+
+    implements(IDirectEmailAuthorization)
+
+    def __init__(self, sender):
+        """Create a `UserContactBy` instance.
+
+        :param sender: The sender we're checking.
+        :type sender: `IPerson`
+        :param after: The cutoff date for throttling.  Primarily used only for
+            testing purposes.
+        :type after: `datetime.datetime`
+        """
+        self.sender = sender
+
+    def _getThrottlers(self, after):
+        """Return a result set of entries affecting throttling decisions.
+
+        :param after: Explicit cut off date.
+        :type after: `datetime.datetime`
+        """
+        return Store.of(self.sender).find(
+            UserToUserEmail,
+            And(UserToUserEmail.sender == self.sender,
+                UserToUserEmail.date_sent >= after))
+
+    def _isAllowedAfter(self, after):
+        """Like .is_allowed but used with an explicit cutoff date.
+
+        For testing purposes only.
+
+        :param after: Explicit cut off date.
+        :type after: `datetime.datetime`
+        :return: True if email is allowed
+        :rtype: bool
+        """
+        # Count the number of messages from the sender since the throttle
+        # date.
+        messages_sent = self._getThrottlers(after).count()
+        return messages_sent < config.launchpad.user_to_user_max_messages
+
+    @property
+    def is_allowed(self):
+        """See `IDirectEmailAuthorization`."""
+        # Users are only allowed to send X number of messages in a certain
+        # period of time.  Both the number of messages and the time period
+        # are configurable.
+        now = datetime.now(pytz.timezone('UTC'))
+        after = now - as_timedelta(
+            config.launchpad.user_to_user_throttle_interval)
+        return self._isAllowedAfter(after)
+
+    @property
+    def throttle_date(self):
+        """See `IDirectEmailAuthorization`."""
+        now = datetime.now(pytz.timezone('UTC'))
+        after = now - as_timedelta(
+            config.launchpad.user_to_user_throttle_interval)
+        throttlers = self._getThrottlers(after)
+        # We now have the set of emails that would throttle delivery.  If the
+        # configuration variable has changed, this could produce more or less
+        # than the now-allowed number of throttlers.  We should never get here
+        # if it's less because the contact would have been allowed.
+        #
+        # If it's more, then we really want to count back from the sorted end,
+        # because when /that/ contact record expires, they'll be able to
+        # resend.  Here are two examples.
+        #
+        # affecters = A B C
+        # max allowed = 3
+        # index = len(affecters) - 3 == 0 == A
+        # when A's date < the interval, they can try again
+        #
+        # affecters = A B C D E F G
+        # max allowed (now) = 3
+        # index = len(affecters) - 3 = 4 == E (counting from zero)
+        # when E's date < than the interval, they can try again
+        affecters = sorted(throttlers, key=attrgetter('date_sent'))
+        max_throttlers = config.launchpad.user_to_user_max_messages
+        expiry = len(affecters) - max_throttlers
+        if expiry < 0:
+            # There were fewer affecters than are now allowed, so they can
+            # retry immediately.  Remember that the caller adds the interval
+            # back, so this would give us 'now'.
+            return after
+        return affecters[expiry].date_sent
+
+    @property
+    def message_quota(self):
+        """See `IDirectEmailAuthorization`."""
+        return config.launchpad.user_to_user_max_messages
+
+    def record(self, message):
+        """See `IDirectEmailAuthorization`."""
+        contact = UserToUserEmail(message)
+        Store.of(self.sender).add(contact)

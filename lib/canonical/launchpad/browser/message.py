@@ -1,42 +1,14 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """Message related view classes."""
 
 __metaclass__ = type
 
-__all__ = ['MessageAddView']
+from zope.interface import implements
 
-from zope.interface import providedBy, implements
-
-from canonical.launchpad.browser.addview import SQLObjectAddView
-from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.interfaces.message import IIndexedMessage
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
-from canonical.launchpad.webapp.snapshot import Snapshot
-
-
-class MessageAddView(SQLObjectAddView):
-    """View class for adding an IMessage to an IMessageTarget."""
-
-    def __init__(self, context, request):
-        self._nextURL = '.'
-        SQLObjectAddView.__init__(self, context, request)
-
-    def create(self, *args, **kw):
-        subject = kw.get('subject')
-        content = kw.get('content')
-        owner = kw.get('owner')
-        unmodified_context = Snapshot(
-            self.context, providing=providedBy(self.context))
-        msg = self.context.newMessage(owner=owner,
-            subject=subject, content=content)
-        self._nextURL = canonical_url(self.context)
-
-        return msg
-
-    def add(self, ob):
-        return ob
-
-    def nextURL(self):
-        return self._nextURL
 
 
 class BugMessageCanonicalUrlData:
@@ -49,9 +21,26 @@ class BugMessageCanonicalUrlData:
         self.path = "comments/%d" % list(bug.messages).index(message)
 
 
+class IndexedBugMessageCanonicalUrlData:
+    """An optimized bug message canonical_url implementation.
+
+    This implementation relies on the message being decorated with
+    its index and context.
+    """
+    implements(ICanonicalUrlData)
+    rootsite = 'bugs'
+
+    def __init__(self, message):
+        self.inside = message.inside
+        self.path = "comments/%d" % message.index
+
+
 def message_to_canonical_url_data(message):
     """This factory creates `ICanonicalUrlData` for BugMessage."""
-    if message.bugs.count() == 0:
-        # Will result in a ComponentLookupError
-        return None
-    return BugMessageCanonicalUrlData(message.bugs[0], message)
+    if IIndexedMessage.providedBy(message):
+        return IndexedBugMessageCanonicalUrlData(message)
+    else:
+        if message.bugs.count() == 0:
+            # Will result in a ComponentLookupError
+            return None
+        return BugMessageCanonicalUrlData(message.bugs[0], message)

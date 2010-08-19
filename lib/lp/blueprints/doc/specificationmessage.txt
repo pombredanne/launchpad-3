@@ -1,0 +1,46 @@
+Specification Messages
+======================
+
+Specification messages are messages associated with blueprints. A
+specifiction message is described by the ISpecificationMessage
+interface.
+
+
+Creating specification messages
+-------------------------------
+
+To create a specification message, use
+ISpecificationMessageSet.createMessage:
+
+    >>> from lp.blueprints.interfaces.specification import (
+    ...     ISpecificationSet)
+    >>> from lp.blueprints.interfaces.specificationmessage import (
+    ...     ISpecificationMessageSet)
+    >>> specset = getUtility(ISpecificationSet)
+    >>> specmessageset = getUtility(ISpecificationMessageSet)
+
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> sample_person = getUtility(IPersonSet).get(12)
+    >>> spec = specset.getByURL(
+    ...     'http://developer.mozilla.org/en/docs/SVG')
+    >>> test_message = specmessageset.createMessage(
+    ...     subject="test message subject",
+    ...     content="text message content",
+    ...     owner=sample_person,
+    ...     spec=spec)
+    >>> test_message.message.subject
+    u'test message subject'
+
+
+Retrieving specification messages
+---------------------------------
+
+ISpecificationMessageSet represents the set of all messages in the
+system. An individual ISpecificationMessage can be retrieved with
+ISpecificationMessageSet.get:
+
+    >>> specmessage_one = specmessageset.get(1)
+    >>> specmessage_one.message.subject
+    u'test message subject'
+
+

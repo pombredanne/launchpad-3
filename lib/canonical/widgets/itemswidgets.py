@@ -1,25 +1,30 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Widgets dealing with a choice of options."""
 
 __metaclass__ = type
 
 __all__ = [
-    'LaunchpadDropdownWidget',
+    'CheckBoxMatrixWidget',
     'LabeledMultiCheckBoxWidget',
+    'LaunchpadBooleanRadioWidget',
+    'LaunchpadDropdownWidget',
     'LaunchpadRadioWidget',
     'LaunchpadRadioWidgetWithDescription',
-    'CheckBoxMatrixWidget',
+    'PlainMultiCheckBoxWidget',
     ]
 
 import math
 
 from zope.schema.interfaces import IChoice
+from zope.schema.vocabulary import SimpleVocabulary
 from zope.app.form.browser import MultiCheckBoxWidget
 from zope.app.form.browser.itemswidgets import DropdownWidget, RadioWidget
 from zope.app.form.browser.widget import renderElement
 
-from canonical.lazr.enum import IEnumeratedType
+from lazr.enum import IEnumeratedType
+
 
 class LaunchpadDropdownWidget(DropdownWidget):
     """A Choice widget that doesn't encloses itself in <div> tags."""
@@ -28,13 +33,10 @@ class LaunchpadDropdownWidget(DropdownWidget):
         return contents
 
 
-class LabeledMultiCheckBoxWidget(MultiCheckBoxWidget):
-    """MultiCheckBoxWidget which wraps option labels with proper
-    <label> elements.
-    """
+class PlainMultiCheckBoxWidget(MultiCheckBoxWidget):
+    """MultiCheckBoxWidget that copes with CustomWidgetFacotry."""
 
-    _joinButtonToMessageTemplate = (
-        u'<label style="font-weight: normal">%s&nbsp;%s</label>')
+    _joinButtonToMessageTemplate = u'%s&nbsp;%s '
 
     def __init__(self, field, vocabulary, request):
         # XXX flacoste 2006-07-23 Workaround Zope3 bug #545:
@@ -43,57 +45,69 @@ class LabeledMultiCheckBoxWidget(MultiCheckBoxWidget):
             vocabulary = vocabulary.vocabulary
         MultiCheckBoxWidget.__init__(self, field, vocabulary, request)
 
+    def _renderItem(self, index, text, value, name, cssClass, checked=False):
+        """Render a checkbox and text without without label."""
+        kw = {}
+        if checked:
+            kw['checked'] = 'checked'
+        id = '%s.%s' % (name, index)
+        element = renderElement(
+            u'input', value=value, name=name, id=id,
+            cssClass=cssClass, type='checkbox', **kw)
+        return self._joinButtonToMessageTemplate % (element, text)
+
+
+class LabeledMultiCheckBoxWidget(PlainMultiCheckBoxWidget):
+    """MultiCheckBoxWidget which wraps option labels with proper
+    <label> elements.
+    """
+
+    _joinButtonToMessageTemplate = (
+        u'<label for="%s" style="font-weight: normal">%s&nbsp;%s</label> ')
+
+    def _renderItem(self, index, text, value, name, cssClass, checked=False):
+        """Render a checkbox and text in a label with a style attribute."""
+        kw = {}
+        if checked:
+            kw['checked'] = 'checked'
+        id = '%s.%s' % (name, index)
+        elem = renderElement(u'input',
+                             value=value,
+                             name=name,
+                             id=id,
+                             cssClass=cssClass,
+                             type='checkbox',
+                             **kw)
+        option_id = '%s.%s' % (self.name, index)
+        return self._joinButtonToMessageTemplate % (option_id, elem, text)
+
 
 # XXX Brad Bollenbach 2006-08-10 bugs=56062: This is a hack to
 # workaround Zope's RadioWidget not properly selecting the default value.
 class LaunchpadRadioWidget(RadioWidget):
     """A widget to work around a bug in RadioWidget."""
 
-    _joinButtonToMessageTemplate = (
-        u'<label style="font-weight: normal">%s&nbsp;%s</label>')
+    def _renderItem(self, index, text, value, name, cssClass, checked=False):
+        # This is an almost-complete copy of the method in Zope.  We need it
+        # to inject the style in the label, and we omit the "for" in the label
+        # because it is redundant (and not used in legacy tests).
+        kw = {}
+        if checked:
+            kw['checked'] = 'checked'
+        id = '%s.%s' % (name, index)
+        elem = renderElement(u'input',
+                             value=value,
+                             name=name,
+                             id=id,
+                             cssClass=cssClass,
+                             type='radio',
+                             **kw)
+        return renderElement(u'label',
+                             contents='%s&nbsp;%s' % (elem, text),
+                             **{'style': 'font-weight: normal'})
 
     def _div(self, cssClass, contents, **kw):
         return contents
-
-    def renderItems(self, value):
-        """Render the items with the correct radio button selected."""
-        # XXX Brad Bollenbach 2006-08-11: Workaround the fact that
-        # value is a value taken directly from the form, when it should
-        # instead have been already converted to a vocabulary term, to
-        # ensure the code in the rest of this method will select the
-        # appropriate radio button.
-        if value == self._missing:
-            value = self.context.missing_value
-
-        no_value = None
-        if (value == self.context.missing_value
-            and getattr(self, 'firstItem', False)
-            and len(self.vocabulary) > 0
-            and self.context.required):
-            # Grab the first item from the iterator:
-            values = [iter(self.vocabulary).next().value]
-        elif value != self.context.missing_value:
-            values = [value]
-        else:
-            # the "no value" option will be checked
-            no_value = 'checked'
-            values = []
-
-        items = self.renderItemsWithValues(values)
-        if not self.context.required:
-            kwargs = {
-                'index': None,
-                'text': self.translate(self._messageNoValue),
-                'value': '',
-                'name': self.name,
-                'cssClass': self.cssClass}
-            if no_value:
-                option = self.renderSelectedItem(**kwargs)
-            else:
-                option = self.renderItem(**kwargs)
-            items.insert(0, option)
-
-        return items
 
 
 class LaunchpadRadioWidgetWithDescription(LaunchpadRadioWidget):
@@ -171,6 +185,42 @@ class LaunchpadRadioWidgetWithDescription(LaunchpadRadioWidget):
             % ''.join(rendered_items))
 
 
+class LaunchpadBooleanRadioWidget(LaunchpadRadioWidget):
+    """Render a Bool field as radio widget.
+
+    The `LaunchpadRadioWidget` does the rendering. Only the True-False values
+    are rendered; a missing value item is not rendered. The default labels
+    are rendered as 'yes' and 'no', but can be changed by setting the widget's 
+    true_label and false_label attributes.
+    """
+
+    TRUE = 'yes'
+    FALSE = 'no'
+
+    def __init__(self, field, request):
+        """Initialize the widget."""
+        vocabulary = SimpleVocabulary.fromItems(
+            ((self.TRUE, True), (self.FALSE, False)))
+        super(LaunchpadBooleanRadioWidget, self).__init__(
+            field, vocabulary, request)
+        # Suppress the missing value behaviour; this is a boolean field.
+        self.required = True
+        self._displayItemForMissingValue = False
+        # Set the default labels for true and false values.
+        self.true_label = 'yes'
+        self.false_label = 'no'
+
+    def _renderItem(self, index, text, value, name, cssClass, checked=False):
+        """Render the item with the preferred true and false labels."""
+        if value == self.TRUE:
+            text = self.true_label
+        else:
+            # value == self.FALSE.
+            text = self.false_label
+        return super(LaunchpadBooleanRadioWidget, self)._renderItem(
+            index, text, value, name, cssClass, checked=checked)
+
+
 class CheckBoxMatrixWidget(LabeledMultiCheckBoxWidget):
     """A CheckBox widget which organizes the inputs in a grid.
 
@@ -207,4 +257,3 @@ class CheckBoxMatrixWidget(LabeledMultiCheckBoxWidget):
 
         html.append('</table>')
         return '\n'.join(html)
-

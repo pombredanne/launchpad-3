@@ -1,3 +1,7 @@
+<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+     GNU Affero General Public License version 3 (see the file LICENSE).
+-->
+
 <configure
     xmlns="http://namespaces.zope.org/zope"
     xmlns:i18n="http://namespaces.zope.org/i18n"
@@ -5,13 +9,13 @@
     xmlns:browser="http://namespaces.zope.org/browser"
     i18n_domain="launchpad">
 
-  <content class="canonical.launchpad.database.OAuthConsumer">
+  <class class="canonical.launchpad.database.OAuthConsumer">
       <allow interface="canonical.launchpad.interfaces.IOAuthConsumer"/>
-  </content>
+  </class>
 
-  <content class="canonical.launchpad.database.OAuthConsumerSet">
+  <class class="canonical.launchpad.database.OAuthConsumerSet">
       <allow interface="canonical.launchpad.interfaces.IOAuthConsumerSet"/>
-  </content>
+  </class>
 
   <securedutility
       class="canonical.launchpad.database.OAuthConsumerSet"
@@ -20,9 +24,12 @@
           interface="canonical.launchpad.interfaces.IOAuthConsumerSet"/>
   </securedutility>
 
-  <content class="canonical.launchpad.database.OAuthRequestToken">
+  <class class="canonical.launchpad.database.OAuthRequestToken">
       <allow interface="canonical.launchpad.interfaces.IOAuthRequestToken"/>
-  </content>
+      <require
+          permission="launchpad.Edit"
+          set_schema="canonical.launchpad.interfaces.IOAuthRequestToken"/>
+  </class>
 
   <securedutility
       class="canonical.launchpad.database.OAuthRequestTokenSet"
@@ -31,14 +38,14 @@
           interface="canonical.launchpad.interfaces.IOAuthRequestTokenSet"/>
   </securedutility>
 
-  <content class="canonical.launchpad.database.OAuthAccessToken">
+  <class class="canonical.launchpad.database.OAuthAccessToken">
       <allow interface="canonical.launchpad.interfaces.IOAuthAccessToken"/>
       <require
           permission="launchpad.Edit"
           set_schema="canonical.launchpad.interfaces.IOAuthAccessToken"/>
-  </content>
+  </class>
 
-  <content class="canonical.launchpad.database.OAuthNonce">
+  <class class="canonical.launchpad.database.OAuthNonce">
       <allow interface="canonical.launchpad.interfaces.IOAuthNonce"/>
-  </content>
+  </class>
 </configure>

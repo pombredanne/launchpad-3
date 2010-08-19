@@ -1,4 +1,5 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """XML-RPC interface for extracting real time stats from the appserver."""
 
@@ -8,9 +9,7 @@ __all__ = ["OpStats", "IOpStats"]
 from cStringIO import StringIO
 from time import time
 
-from zope.interface import Interface, implements
-
-from canonical.launchpad.webapp import canonical_url, LaunchpadXMLRPCView
+from canonical.launchpad.webapp import LaunchpadXMLRPCView
 
 
 class OpStats(LaunchpadXMLRPCView):
@@ -21,9 +20,11 @@ class OpStats(LaunchpadXMLRPCView):
 
     @classmethod
     def resetStats(cls):
+        """Reset the collected stats to 0."""
         OpStats.stats.update({
             # Global
             'requests': 0, # Requests, all protocols, all statuses
+            'retries': 0, # Optimistic transaction retries.
             'soft timeouts': 0, # Requests that generated a soft timeout OOPS
             'timeouts': 0, # Requests that generated a hard timeout OOPS
 
@@ -42,6 +43,7 @@ class OpStats(LaunchpadXMLRPCView):
             '4XXs': 0, # Client Errors
             '5XXs': 0, # Server Errors
             '6XXs': 0, # Internal Errors
+            '5XXs_b': 0, # Server Errors returned to browsers (not robots).
             })
 
     def opstats(self):
@@ -50,13 +52,14 @@ class OpStats(LaunchpadXMLRPCView):
         Keys currently are:
             requests -- # requests served by this appserver.
             xml-rpc requests -- # xml-rpc requests served.
-            404s -- # 404 status responses served (Not Found)
-            500s -- # 500 status responses served (Unhandled exceptions)
-            503s -- # 503 status responses served (Timeouts)
-            3XXs -- # 300-399 status responses served (Redirection)
-            4XXs -- # 400-499 status responses served (Client Errors)
-            5XXs -- # 500-599 status responses served (Server Errors)
-            6XXs -- # 600-600 status responses served (Internal Errors)
+            404s   -- 404 status responses served (Not Found)
+            500s   -- 500 status responses served (Unhandled exceptions)
+            503s   -- 503 status responses served (Timeouts)
+            3XXs   -- 300-399 status responses served (Redirection)
+            4XXs   -- 400-499 status responses served (Client Errors)
+            5XXs   -- 500-599 status responses served (Server Errors)
+            6XXs   -- 600-600 status responses served (Internal Errors)
+            5XXs_b -- As 5XXs, but returned to browsers (not robots).
         """
         return OpStats.stats
 

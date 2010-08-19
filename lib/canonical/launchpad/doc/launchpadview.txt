@@ -2,8 +2,9 @@
 
 This is the base-class we should use for all View classes in Launchpad.
 
-    >>> from zope.publisher.browser import TestRequest
     >>> from canonical.launchpad.webapp import LaunchpadView
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+
     >>> class MyView(LaunchpadView):
     ...
     ...     def initialize(self):
@@ -13,14 +14,16 @@ This is the base-class we should use for all View classes in Launchpad.
     ...         return "rendered content"
 
     >>> context = object()
-    >>> request = TestRequest()
+    >>> request = LaunchpadTestRequest()
 
 Note that constructing a view does not initialize().
 
     >>> view = MyView(context, request)
 
-Anonymous logged in, so view.user is None.
+Anonymous logged in, so view.account and view.user are None.
 
+    >>> print view.account
+    None
     >>> print view.user
     None
 
@@ -39,12 +42,15 @@ existing view should have the same user, 'None', because it was cached.
 
 A new view should have the new user.
 
-    >>> print MyView(context, request).user
-    <...launchpad.database.person.Person instance ...>
-    >>> print MyView(context, request).user.name
+    >>> view = MyView(context, request)
+    >>> print view.account
+    <...launchpad.database.account.Account instance ...>
+    >>> print view.user
+    <...lp.registry.model.person.Person instance ...>
+    >>> print view.user.name
     name16
 
-When the initialize method does a redirection, the render method should 
+When the initialize method does a redirection, the render method should
 not be called.
 
     >>> class MyRedirectView(LaunchpadView):
@@ -56,10 +62,43 @@ not be called.
     ...     def render(self):
     ...         return "Should not be called."
     ...
-    >>> request = TestRequest()
+    >>> request = LaunchpadTestRequest()
     >>> view = MyRedirectView(context, request)
     >>> result = view()
     Redirecting...
     >>> result
     u''
 
+A view can have `error_message` or `info_message` set for display in
+the template (each template is responsible for including the messages,
+using a `structure` directive). The supplied value must be None or
+an IStructuredString implementation.
+
+    >>> view = MyView(context, request)
+    >>> print view.error_message
+    None
+    >>> print view.info_message
+    None
+
+    >>> view.error_message = 'A simple string.'
+    Traceback (most recent call last):
+    ...
+    ValueError: <type 'str'> is not a valid value for error_message, only None and IStructuredString are allowed.
+    >>> print view.error_message
+    None
+
+    >>> view.info_message = 'A simple string.'
+    Traceback (most recent call last):
+    ...
+    ValueError: <type 'str'> is not a valid value for info_message, only None and IStructuredString are allowed.
+    >>> print view.info_message
+    None
+
+    >>> from canonical.launchpad.webapp.menu import structured
+    >>> view.error_message = structured(
+    ...    'A structure is just "%s".', 'smoke & mirrors')
+    >>> view.error_message.escapedtext
+    u'A structure is just "smoke &amp; mirrors".'
+    >>> view.error_message = structured('Information overload.')
+    >>> view.error_message.escapedtext
+    u'Information overload.'

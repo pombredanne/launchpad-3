@@ -1,4 +1,6 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 """Interfaces for searching and working with results."""
@@ -9,7 +11,7 @@ __all__ = [
     'ISearchResult',
     'ISearchResults',
     'ISearchService',
-    'GoogleParamError',
+    'GoogleResponseError',
     'GoogleWrongGSPVersion',
     ]
 
@@ -40,7 +42,10 @@ class ISearchResults(Interface):
 
     total = Int(
         title=_('Total'), required=True,
-        description=_('The total number of items that matched a search.'))
+        description=_(
+            'The total number of items that matched a search. This '
+            'collection may be a slice of the total items because the '
+            'search service returns the results in batches.'))
     start = Int(
         title=_('Start'), required=True,
         description=_(
@@ -49,7 +54,11 @@ class ISearchResults(Interface):
             'of the total search results.'))
 
     def __len__():
-        """The number of items in the collection returned by the search."""
+        """The number of items in the collection returned by the search.
+
+        This number may be much smaller than the total matches because the
+        search service may batch the items.
+        """
 
     def __getitem__(index):
         """Return the item at index in the collection."""
@@ -58,12 +67,12 @@ class ISearchResults(Interface):
         """Iterate over the items in the collection."""
 
 
-class GoogleParamError(ValueError):
-    """Raised when a Google search parameter has a bad value."""
-
-
 class GoogleWrongGSPVersion(ValueError):
     """Raised when the content is not parsable Google Search Protocol XML."""
+
+
+class GoogleResponseError(SyntaxError):
+    """Raised when Google's response is not contain valid XML."""
 
 
 class ISearchService(Interface):

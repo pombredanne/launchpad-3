@@ -1,4 +1,5 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Helper functions for testing feeds."""
 
@@ -14,9 +15,13 @@ __all__ = [
     ]
 
 
-import feedvalidator
-from cStringIO import StringIO
 import socket
+original_timeout = socket.getdefaulttimeout()
+import feedvalidator
+if socket.getdefaulttimeout() != original_timeout:
+    # feedvalidator's __init__ uses setdefaulttimeout promiscuously
+    socket.setdefaulttimeout(original_timeout)
+from cStringIO import StringIO
 from textwrap import wrap
 
 from zope.interface import implements, Interface, Attribute

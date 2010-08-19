@@ -1,6 +1,9 @@
-#!/usr/bin/env python2.4
+#!/usr/bin/python -S
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
-# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+import _pythonpath
 
 import base64
 import httplib
@@ -9,20 +12,18 @@ import pwd
 import sys
 import urllib
 import webbrowser
-
 from optparse import OptionParser
 from urlparse import urljoin
-
-import _pythonpath
-
-from ClientCookie import Cookie, CookieJar
+from cookielib import Cookie, CookieJar
+from mechanize import HTTPRobotRulesProcessor
 
 from zope.testbrowser.browser import Browser
 
 
 # Should we be able to override any of these?
 AUTH_FILE = '~/.lp_auth_cookie'
-PASTE_HOST = 'pastebin.canonical.com'
+PRIVATE_PASTE_HOST = 'pastebin.canonical.com'
+PUBLIC_PASTE_HOST = 'pastebin.ubuntu.com'
 PASTE_PATH = ''
 LP_AUTH_INSTRUCTIONS = """
 %s doesn't contain a valid LP authentication cookie.
@@ -40,6 +41,9 @@ def parse_arguments():
     parser.add_option('-b', '--browser',
                       default=False, action='store_true',
                       help='Open web browser to the pastebin.')
+    parser.add_option('-p', '--private',
+                      default=False, action='store_true',
+                      help='Use a private pastebin (pastebin.canonical.com).')
     parser.add_option('-s', '--syntax',
                       default='text', type='string',
                       help='The syntax of the pastebin.')
@@ -82,17 +86,7 @@ def authenticate(browser):
     """Go through the OpenID process and authenticate."""
     # First click on the page where it says we have to log in.
     browser.getControl('Continue').click()
-    # Then click on the page with nothing but a submit button.
-    browser.getControl('Continue').click()
-
-    # Now we're at the LP login. since we have sent the auth cookie, we
-    # can sign in without specifying a user and password.
-    try:
-        browser.getControl('Sign In').click()
-    except LookupError:
-        return False
-    else:
-        return True
+    return True
 
 
 def main():
@@ -122,23 +116,35 @@ def main():
         ('content', content),
         )
 
-    # Figure out the authentication.
-    lp_cookie = get_lp_auth_cookie(AUTH_FILE)
-    if lp_cookie is None:
-        print LP_AUTH_INSTRUCTIONS
-        return
-    cookiejar = CookieJar()
-    cookiejar.set_cookie(lp_cookie)
     browser = Browser()
-    browser.mech_browser.set_cookiejar(cookiejar)
-
-    browser.open(urljoin('https://' + PASTE_HOST, PASTE_PATH))
-    # We need to authenticate before pasting.
-    if browser.getForm(name='oid_form') is not None:
-        authenticated = authenticate(browser)
-        if not authenticated:
+    paste_host = PUBLIC_PASTE_HOST
+    if parser.options.private:
+        paste_host = PRIVATE_PASTE_HOST
+        # Figure out the authentication.
+        lp_cookie = get_lp_auth_cookie(AUTH_FILE)
+        if lp_cookie is None:
             print LP_AUTH_INSTRUCTIONS
             return
+        cookiejar = CookieJar()
+        cookiejar.set_cookie(lp_cookie)
+        browser.mech_browser.set_cookiejar(cookiejar)
+
+    # Remove the the check for robots.txt, since the one on
+    # pastebin.ubuntu.com doesn't allow us to open the page. We're not
+    # really a robot.
+    browser.mech_browser.handlers = [
+        handler for handler in browser.mech_browser.handlers
+        if not isinstance(handler, HTTPRobotRulesProcessor)]
+    browser.open(urljoin('https://' + paste_host, PASTE_PATH))
+
+    if parser.options.private:
+        # We need to authenticate before pasting.
+        oid_form = browser.getForm(id='openid_message')
+        if oid_form is not None:
+            authenticated = authenticate(browser)
+            if not authenticated:
+                print LP_AUTH_INSTRUCTIONS
+                return
     for name, value in form:
         browser.getControl(name=name).value = value
     browser.getControl('Paste!').click()

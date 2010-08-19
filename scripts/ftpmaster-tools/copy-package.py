@@ -1,12 +1,16 @@
-#!/usr/bin/python2.4
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+#!/usr/bin/python -S
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
+# pylint: disable-msg=W0403
 
 """Copy publications across suites."""
 
 import _pythonpath
 
 from canonical.config import config
-from canonical.launchpad.scripts.ftpmaster import PackageCopier
+from lp.soyuz.scripts.packagecopier import PackageCopier
 
 
 if __name__ == '__main__':

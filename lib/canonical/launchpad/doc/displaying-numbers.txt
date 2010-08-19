@@ -58,7 +58,7 @@ Here's a set of exhaustive examples:
     >>> test_tales('foo/fmt:float', foo=12345.67890)
     Traceback (most recent call last):
     ...
-    TraversalError: 'fmt:float requires a single decimal argument'
+    LocationError: 'fmt:float requires a single decimal argument'
 
     >>> test_tales('foo/fmt:float/0.3', foo=-12345.67890)
     '-12345.679'

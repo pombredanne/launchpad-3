@@ -68,6 +68,7 @@ combined.
 ... """)
 >>> print result
 HTTP/1.1 303 See Other
+...
 Content-Length: 0
 ...
 Location: /+notificationtest1
@@ -110,6 +111,7 @@ be needed.
 ... """)
 >>> print result
 HTTP/1.1 303 See Other
+...
 Content-Length: 0
 ...
 Location: /+notificationtest3
@@ -126,6 +128,7 @@ Location: /+notificationtest3
 ... """ % vars())
 >>> print result
 HTTP/1.1 303 See Other
+...
 Content-Length: 0
 ...
 Location: /+notificationtest1

@@ -1,6 +1,8 @@
-#!/usr/bin/python2.4
+#!/usr/bin/python -S
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
-# Copyright 2006-2007 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=C0103,W0403
 
 """Expire all old, Incomplete bugs tasks that are unassigned in Malone.
@@ -14,8 +16,8 @@ __metaclass__ = type
 import _pythonpath
 
 from canonical.config import config
-from canonical.launchpad.scripts.base import LaunchpadCronScript
-from canonical.launchpad.scripts.bugexpire import BugJanitor
+from lp.services.scripts.base import LaunchpadCronScript
+from lp.bugs.scripts.bugexpire import BugJanitor
 
 
 class ExpireBugTasks(LaunchpadCronScript):

@@ -1,14 +1,21 @@
-#!/usr/bin/python2.4
+#!/usr/bin/python -S
 #
-# Remove all translations from upstream. This script is useful to recover from
-# breakages after importing bad .po files like the one reported at #32610
-#
-# Copyright 2006 Canonical Ltd.  All rights reserved.
-#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
+# pylint: disable-msg=W0403
+"""Remove all translations from upstream.
+
+This script is useful to recover from breakages after importing bad
+.po files like the one reported at #32610.
+"""
+
+import _pythonpath
 
 import sys
 import logging
 from optparse import OptionParser
+
 from zope.component import getUtility
 
 from canonical.config import config
@@ -16,9 +23,17 @@ from canonical.database.constants import UTC_NOW
 from canonical.lp import initZopeless
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger, logger_options)
-from canonical.launchpad.interfaces import (
-    IProductSet, IDistributionSet, IDistroSeriesSet, ISourcePackageNameSet,
-    IPOTemplateSet, ILaunchpadCelebrities, RosettaTranslationOrigin)
+from canonical.launchpad.interfaces import ILaunchpadCelebrities
+from lp.registry.interfaces.product import IProductSet
+from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.distroseries import IDistroSeriesSet
+from lp.registry.interfaces.sourcepackagename import (
+    ISourcePackageNameSet)
+from lp.translations.interfaces.potemplate import IPOTemplateSet
+from lp.translations.interfaces.translationmessage import (
+    RosettaTranslationOrigin)
+
+
 
 logger_name = 'remove-upstream-translations'
 
@@ -52,21 +67,16 @@ def parse_options(args):
 
     return options
 
-def remove_upstream_entries(ztm, potemplates, lang_code=None, variant=None):
+def remove_upstream_entries(ztm, potemplates, lang_code=None):
     """Remove all translations that came from upstream.
 
     :arg ztm: Zope transaction manager.
     :arg potemplates: A set of potemplates that we should process.
     :arg lang_code: A string with a language code where we should do the
         removal.
-    :arg variant: A language variant that we should use with the lang_code to
-        locate the translations to remove.
 
     If lang_code is None, we process all available languages.
     """
-    assert ((lang_code is None and variant is None) or
-            (lang_code is not None)), (
-                'variant cannot be != None if lang_code is None')
 
     logger_object = logging.getLogger(logger_name)
 
@@ -78,9 +88,9 @@ def remove_upstream_entries(ztm, potemplates, lang_code=None, variant=None):
         if lang_code is None:
             pofiles = sorted(
                 list(potemplate.pofiles),
-                key=lambda p: (p.language.code, p.variant))
+                key=lambda p: p.language.code)
         else:
-            pofile = potemplate.getPOFileByLang(lang_code, variant)
+            pofile = potemplate.getPOFileByLang(lang_code)
             if pofile is None:
                 pofiles = []
             else:
@@ -119,7 +129,7 @@ def main(argv):
     logger_object = logger(options, logger_name)
 
     execute_zcml_for_scripts()
-    ztm = initZopeless(dbuser=config.rosettaadmin.dbuser)
+    ztm = initZopeless(dbuser=config.rosetta.admin_dbuser)
 
     product = None
     series = None
@@ -211,15 +221,7 @@ def main(argv):
             # transaction commits.
             potemplates = list(potemplate_subset)
 
-    lang_code = None
-    variant = None
-    if options.languagecode is not None:
-        if '@' in options.languagecode:
-            lang_code, variant = options.languagecode.split('@')
-        else:
-            lang_code = options.languagecode
-
-    remove_upstream_entries(ztm, potemplates, lang_code, variant)
+    remove_upstream_entries(ztm, potemplates, options.languagecode)
 
 if __name__ == '__main__':
     sys.exit(main(sys.argv))

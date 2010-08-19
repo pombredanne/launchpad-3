@@ -1,0 +1,74 @@
+= TranslationTemplatesBuildJob Build Summary =
+
+The builders UI can show TranslationTemplateBuildJobs, although they
+look a little different from Soyuz-style jobs.
+
+== Setup ==
+
+Create a builder working on a TranslationTemplatesBuildJob for a branch.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces.launchpad import (
+    ...     ILaunchpadCelebrities)
+    >>> from canonical.launchpad.interfaces.librarian import (
+    ...     ILibraryFileAliasSet)
+    >>> from canonical.launchpad.scripts.logger import QuietFakeLogger
+    >>> from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
+    >>> from lp.testing.factory import (
+    ...     remove_security_proxy_and_shout_at_engineer)
+    >>> from lp.testing.fakemethod import FakeMethod
+    >>> from lp.translations.interfaces.translations import (
+    ...     TranslationsBranchImportMode)
+
+    >>> class FakeSlave:
+    ...     resume = FakeMethod(result=('stdout', 'stderr', 0))
+    ...     build = FakeMethod()
+    ...     cacheFile = FakeMethod()
+
+    >>> login(ANONYMOUS)
+    >>> owner_email = factory.getUniqueString() + '@example.com'
+    >>> owner = factory.makePerson(email=owner_email, password='test')
+
+    >>> productseries = factory.makeProductSeries(owner=owner)
+    >>> product = productseries.product
+    >>> naked_product = remove_security_proxy_and_shout_at_engineer(product)
+    >>> naked_product.official_rosetta = True
+    >>> branch = factory.makeProductBranch(product=product, owner=owner)
+    >>> branch_url = branch.unique_name
+
+    >>> naked_productseries = remove_security_proxy_and_shout_at_engineer(
+    ...     productseries)
+    >>> naked_productseries.branch = factory.makeBranch()
+    >>> naked_productseries.translations_autoimport_mode = (
+    ...     TranslationsBranchImportMode.IMPORT_TEMPLATES)
+    >>> specific_job = factory.makeTranslationTemplatesBuildJob(branch=branch)
+    >>> buildqueue = getUtility(IBuildQueueSet).getByJob(specific_job.job)
+
+    >>> fake_chroot = getUtility(ILibraryFileAliasSet)[1]
+    >>> ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+    >>> unused = ubuntu.currentseries.nominatedarchindep.addOrUpdateChroot(
+    ...     fake_chroot)
+
+    >>> builder = factory.makeBuilder(vm_host=factory.getUniqueString())
+    >>> builder.setSlaveForTesting(FakeSlave())
+    >>> builder.startBuild(buildqueue, QuietFakeLogger())
+
+    >>> builder_page = canonical_url(builder)
+    >>> logout()
+
+Helper: find the current build's summary on a browser's current page.
+
+    >>> def find_build_summary(browser):
+    ...     return find_tag_by_id(browser.contents, 'current-build-summary')
+
+
+== Show summary ==
+
+The job's summary shows that what type of job this is.  It also links
+to the branch.
+
+    >>> user_browser.open(builder_page)
+    >>> print extract_text(find_build_summary(user_browser))
+    Working on TranslationTemplatesBuildJob for branch ...
+
+    >>> user_browser.getLink(branch_url).click()

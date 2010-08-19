@@ -1,0 +1,104 @@
+Distribution series main page
+=============================
+
+In the main page for a distribution we have a link to help translating
+this distribution series.
+
+    >>> user_browser.open('http://launchpad.dev/ubuntu/hoary')
+    >>> user_browser.getLink('Help translate').click()
+    >>> print user_browser.title
+    Translations : Hoary (5.04) : Ubuntu
+
+
+Registering information
+-----------------------
+
+The distroseries pages presents the 'registering' information besides
+its main 'heading'.
+
+    >>> anon_browser.open('http://launchpad.dev/ubuntu/warty')
+
+    >>> print extract_text(
+    ...     find_tag_by_id(anon_browser.contents, 'registration'))
+    registered by Ubuntu Team on 2006-10-16
+
+    >>> print extract_text(find_main_content(anon_browser.contents))
+    Warty
+    ...
+
+    >>> print anon_browser.getLink('Ubuntu Team').url
+    http://launchpad.dev/~ubuntu-team
+
+
+Details portlet
+---------------
+
+The distroseries page contains a details portlet giving more information
+on the series' details.
+
+    >>> print extract_text(
+    ...     find_portlet(anon_browser.contents, 'Series information'))
+    Series information
+    Distribution: Ubuntu
+    Series: Warty (4.10)
+    Project drivers: Ubuntu Team
+    Release manager: None
+    Status: Current Stable Release
+    Derives from: Warty (4.10) is not derived from another series.
+    Source packages: 3
+    Binary packages: 4
+
+On series that have no source or binary packages, the portlet will
+change its text slightly to annouce this:
+
+    >>> anon_browser.open('http://launchpad.dev/debian/sarge')
+    >>> print extract_text(
+    ...     find_portlet(anon_browser.contents, 'Series information'))
+    Series information
+    Distribution: Debian
+    Series: Sarge (3.1)
+    Project drivers: Jeff Waugh, Mark Shuttleworth
+    Release manager: Jeff Waugh
+    Status: Pre-release Freeze
+    Derives from: Woody (3.0)
+    Source packages: No sources imported or published.
+    Binary packages: No binaries imported or published.
+
+
+Distribution series bug subscriptions
+-------------------------------------
+
+To receive email notifications about bugs pertaining to a distribution
+series, we can create structural bug subscriptions.
+
+    >>> admin_browser.open('http://launchpad.dev/ubuntu/warty')
+    >>> admin_browser.getLink('Subscribe to bug mail').click()
+    >>> print admin_browser.url
+    http://launchpad.dev/ubuntu/warty/+subscribe
+
+    >>> print admin_browser.title
+    Subscribe to Bugs in The Warty Warthog Release
+
+
+Upstream packaging portlet
+--------------------------
+
+The distroseries page contains a portlet with information on the
+upstream packaging.
+
+    >>> # Note that warty's sourcecount is stale in sample data
+    >>> # which causes -2 need linking.
+    >>> anon_browser.open('http://launchpad.dev/ubuntu/warty')
+    >>> print extract_text(
+    ...     find_tag_by_id(anon_browser.contents, 'series-packaging'))
+    Upstream packaging
+    5 source packages are linked to registered upstream projects.
+    -2 need linking.
+    Recently linked to upstream:
+    alsa-utils linked...
+    a52dec linked...
+    evolution linked...
+    mozilla-firefox linked...
+    netapplet linked 2005-07-05
+    Needs upstream links
+    All upstream links

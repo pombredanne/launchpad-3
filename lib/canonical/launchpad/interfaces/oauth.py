@@ -1,4 +1,6 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 """OAuth interfaces."""
@@ -14,14 +16,17 @@ __all__ = [
     'IOAuthNonce',
     'IOAuthRequestToken',
     'IOAuthRequestTokenSet',
+    'IOAuthSignedRequest',
     'NonceAlreadyUsed',
-    'OAuthPermission']
+    'TimestampOrderingError',
+    'ClockSkew',
+    ]
 
 from zope.schema import Bool, Choice, Datetime, Object, TextLine
-from zope.interface import Interface
+from zope.interface import Attribute, Interface
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.person import IPerson
+from lp.registry.interfaces.person import IPerson
 from canonical.launchpad.webapp.interfaces import AccessLevel, OAuthPermission
 
 
@@ -129,6 +134,14 @@ class IOAuthToken(Interface):
         title=_('Secret'), required=True, readonly=True,
         description=_('The secret associated with this token.  It is used '
                       'by the consumer to sign its requests.'))
+    product = Choice(title=_('Project'), required=False, vocabulary='Product')
+    project = Choice(
+        title=_('Project'), required=False, vocabulary='ProjectGroup')
+    sourcepackagename = Choice(
+        title=_("Package"), required=False, vocabulary='SourcePackageName')
+    distribution = Choice(
+        title=_("Distribution"), required=False, vocabulary='Distribution')
+    context = Attribute("FIXME")
 
 
 class IOAuthAccessToken(IOAuthToken):
@@ -144,16 +157,25 @@ class IOAuthAccessToken(IOAuthToken):
         description=_('The level of access given to the application acting '
                       'on your behalf.'))
 
-    def ensureNonce(nonce, timestamp):
-        """Ensure the nonce hasn't been used with a different timestamp.
+    def checkNonceAndTimestamp(nonce, timestamp):
+        """Verify the nonce and timestamp.
 
-        :raises NonceAlreadyUsed: If the nonce has been used before with a
-            timestamp not in the accepted range (+/- `NONCE_TIME_WINDOW`
-            seconds from the timestamp stored in the database).
+        - Ensure the nonce hasn't been used with the same timestamp.
+        - Ensure this is a first access, or this timestamp is no older than
+          last timestamp minus `TIMESTAMP_ACCEPTANCE_WINDOW`.
+        - Ensure this timestamp is within +/- `TIMESTAMP_SKEW_WINDOW` of the
+          server's concept of now.
 
-        If the nonce has never been used together with this token before,
-        we store it in the database with the given timestamp and associated
-        with this token.
+        :raises NonceAlreadyUsed: If the nonce has been used before with the
+            same timestamp.
+        :raises TimestampOrderingError: If the timestamp is older than the
+            last timestamp minus `TIMESTAMP_ACCEPTANCE_WINDOW`.
+        :raises ClockSkew: If the timestamp is not within
+            +/- `TIMESTAMP_SKEW_WINDOW` of now.
+
+        If the nonce has never been used together with this token and
+        timestamp before, we store it in the database with the given timestamp
+        and associated with this token.
         """
 
 
@@ -180,8 +202,12 @@ class IOAuthRequestToken(IOAuthToken):
         description=_('A reviewed request token can only be exchanged for an '
                       'access token (in case the user granted access).'))
 
-    def review(user, permission):
+    def review(user, permission, context=None):
         """Grant `permission` as `user` to this token's consumer.
+
+        :param context: An IProduct, IProjectGroup, IDistribution or
+            IDistributionSourcePackage in which the permission is valid. If
+            None, the permission will be valid everywhere.
 
         Set this token's person, permission and date_reviewed.  This will also
         cause this token to be marked as used, meaning it can only be
@@ -224,5 +250,18 @@ class IOAuthNonce(Interface):
     nonce = TextLine(title=_('Nonce'), required=True, readonly=True)
 
 
+class IOAuthSignedRequest(Interface):
+    """Marker interface for a request signed with OAuth credentials."""
+
+
+# Note that these three exceptions are converted to Unauthorized (equating to
+# 401 status) in webapp/servers.py, WebServicePublication.getPrincipal.
+
 class NonceAlreadyUsed(Exception):
     """Nonce has been used together with same token but another timestamp."""
+
+class TimestampOrderingError(Exception):
+    """Timestamp is too old, compared to the last request."""
+
+class ClockSkew(Exception):
+    """Timestamp is too far off from server's clock."""

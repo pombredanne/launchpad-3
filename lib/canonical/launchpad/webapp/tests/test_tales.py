@@ -1,10 +1,16 @@
-# Copyright 2004 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """tales.py doctests."""
 
-
+from doctest import DocTestSuite
 import unittest
 
-from zope.testing.doctestunit import DocTestSuite
+from zope.component import getAdapter
+from zope.traversing.interfaces import IPathAdapter
+
+from canonical.testing import DatabaseFunctionalLayer
+from lp.testing import TestCaseWithFactory
 
 
 def test_requestapi():
@@ -72,7 +78,7 @@ def test_cookie_scope():
 def test_dbschemaapi():
     """
     >>> from canonical.launchpad.webapp.tales import DBSchemaAPI
-    >>> from canonical.launchpad.interfaces.branch import BranchType
+    >>> from lp.code.enums import BranchType
 
     The syntax to get the title is: number/lp:DBSchemaClass
 
@@ -87,104 +93,37 @@ def test_dbschemaapi():
     ...
     KeyError: 99
 
-    Using a dbschema name that doesn't exist should give a TraversalError
+    Using a dbschema name that doesn't exist should give a LocationError
 
     >>> DBSchemaAPI(99).traverse('NotADBSchema', [])
     Traceback (most recent call last):
     ...
-    TraversalError: 'NotADBSchema'
+    LocationError: 'NotADBSchema'
 
     """
 
-def test_split_paragraphs():
-    r"""
-    The split_paragraphs() method is used to split a block of text
-    into paragraphs, which are separated by one or more blank lines.
-    Paragraphs are yielded as a list of lines in the paragraph.
 
-      >>> from canonical.launchpad.webapp.tales import split_paragraphs
-      >>> for paragraph in split_paragraphs('\na\nb\n\nc\nd\n\n\n'):
-      ...     print paragraph
-      ['a', 'b']
-      ['c', 'd']
-    """
+class TestPersonFormatterAPI(TestCaseWithFactory):
+    """Tests for PersonFormatterAPI"""
 
-def test_re_substitute():
-    """
-    When formatting text, we want to replace portions with links.
-    re.sub() works fairly well for this, but doesn't give us much
-    control over the non-matched text.  The re_substitute() function
-    lets us do that.
+    layer = DatabaseFunctionalLayer
 
-      >>> import re
-      >>> from canonical.launchpad.webapp.tales import re_substitute
+    def test_nameLink(self):
+        """The nameLink links to the URL with the person name as the text."""
+        person = self.factory.makePerson()
+        formatter = getAdapter(person, IPathAdapter, 'fmt')
+        result = formatter.nameLink(None)
+        expected = '<a href="%s" class="sprite person">%s</a>' % (
+            formatter.url(), person.name)
+        self.assertEqual(expected, result)
 
-      >>> def match_func(match):
-      ...     return '[%s]' % match.group()
-      >>> def nomatch_func(text):
-      ...     return '{%s}' % text
-
-      >>> pat = re.compile('a{2,6}')
-      >>> print re_substitute(pat, match_func, nomatch_func,
-      ...                     'bbaaaabbbbaaaaaaa aaaaaaaab')
-      {bb}[aaaa]{bbbb}[aaaaaa]{a }[aaaaaa][aa]{b}
-    """
-
-def test_add_word_breaks():
-    """
-    Long words can cause page layout problems, so we insert manual
-    word breaks into long words.  Breaks are added at least once every
-    15 characters, but will break on as little as 7 characters if
-    there is a suitable non-alphanumeric character to break after.
-
-      >>> from canonical.launchpad.webapp.tales import add_word_breaks
-
-      >>> print add_word_breaks('abcdefghijklmnop')
-      abcdefghijklmno<wbr></wbr>p
-
-      >>> print add_word_breaks('abcdef/ghijklmnop')
-      abcdef/<wbr></wbr>ghijklmnop
-
-      >>> print add_word_breaks('ab/cdefghijklmnop')
-      ab/cdefghijklmn<wbr></wbr>op
-
-    The string can contain HTML entities, which do not get split:
-
-      >>> print add_word_breaks('abcdef&anentity;hijklmnop')
-      abcdef&anentity;<wbr></wbr>hijklmnop
-    """
-
-def test_break_long_words():
-    """
-    If we have a long HTML string, break_long_words() can be used to
-    add word breaks to the long words.  It will not add breaks inside HTML
-    tags.  Only words longer than 20 characters will have breaks added.
-
-      >>> from canonical.launchpad.webapp.tales import break_long_words
-
-      >>> print break_long_words('1234567890123456')
-      1234567890123456
-
-      >>> print break_long_words('12345678901234567890')
-      123456789012345<wbr></wbr>67890
-
-      >>> print break_long_words('<tag a12345678901234567890="foo"></tag>')
-      <tag a12345678901234567890="foo"></tag>
-
-      >>> print break_long_words('12345678901234567890 1234567890.1234567890')
-      123456789012345<wbr></wbr>67890 1234567890.<wbr></wbr>1234567890
-
-      >>> print break_long_words('1234567890&abcdefghi;123')
-      1234567890&abcdefghi;123
-
-      >>> print break_long_words('<tag>1234567890123456</tag>')
-      <tag>1234567890123456</tag>
-    """
 
 
 def test_suite():
-    """Return this module's doctest Suite. Unit tests are not run."""
-    suite = DocTestSuite()
+    """Return this module's doctest Suite. Unit tests are also run."""
+    suite = unittest.TestSuite()
+    suite.addTests(DocTestSuite())
+    suite.addTests(unittest.TestLoader().loadTestsFromName(__name__))
     return suite
 
 

@@ -26,8 +26,8 @@ The zcml `browser:feeds` directive describes a feed view.
     >>> from zope.configuration import xmlconfig
     >>> zcmlcontext = xmlconfig.string("""
     ... <configure xmlns:browser="http://namespaces.zope.org/browser">
-    ...   <include file="lib/canonical/launchpad/webapp/meta.zcml" />
-    ...   <include file="lib/zope/app/meta.zcml" />
+    ...   <include package="canonical.launchpad.webapp" file="meta.zcml" />
+    ...   <include package="zope.app.zcmlfiles" file="meta.zcml" />
     ...   <browser:feeds
     ...       module="canonical.launchpad.ftests.feeds_helper"
     ...       classes="ThingFeedView"
@@ -108,7 +108,7 @@ and Cache-Control headers so that the feeds will be cached longer
 by browsers and the reverse-proxy in front of the feeds servers.
 
     >>> from canonical.config import config
-    >>> from canonical.launchpad.feed.bug import BugsFeedBase
+    >>> from lp.bugs.feed.bug import BugsFeedBase
     >>> from canonical.lazr.feed.feed import FeedBase
     >>> config.launchpad.max_feed_cache_minutes
     60
@@ -157,7 +157,7 @@ we are testing xhtml encoding here in case we need it in the future.
     >>> xhtml = FeedTypedData("<b> and &nbsp; and &amp;</b><hr/>",
     ...               content_type="xhtml")
     >>> xhtml.content
-    u'<b> and \xa0 and &amp;</b><hr />'
+    u'<b> and \xa0 and &</b><hr />'
 
 
 == validate_feed() helper function ==

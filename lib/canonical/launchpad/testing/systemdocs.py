@@ -1,35 +1,44 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Infrastructure for setting up doctests."""
 
+from __future__ import with_statement
+
 __metaclass__ = type
 __all__ = [
+    'default_optionflags',
     'LayeredDocFileSuite',
     'SpecialOutputChecker',
     'setUp',
     'setGlobs',
+    'stop',
     'strip_prefix',
     'tearDown',
     ]
 
+import doctest
 import logging
 import os
+import pdb
+import pprint
 import sys
 
 import transaction
-from zope.component import getUtility, getMultiAdapter
-from zope.testing import doctest
+from zope.component import getUtility
 from zope.testing.loggingsupport import Handler
 
 from canonical.chunkydiff import elided_source
 from canonical.config import config
 from canonical.database.sqlbase import flush_database_updates
-from canonical.launchpad.ftests import ANONYMOUS, login, logout
 from canonical.launchpad.interfaces import ILaunchBag
-from canonical.launchpad.layers import setFirstLayer
-from canonical.launchpad.testing import LaunchpadObjectFactory
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing import reset_logging
+from lp.testing import (
+    ANONYMOUS, launchpadlib_credentials_for, launchpadlib_for, login,
+    login_person, logout, oauth_access_token_for)
+from lp.testing.factory import LaunchpadObjectFactory
+from lp.testing.views import create_view, create_initialized_view
 
 
 default_optionflags = (doctest.REPORT_NDIFF |
@@ -51,6 +60,7 @@ def strip_prefix(path):
 
 class FilePrefixStrippingDocTestParser(doctest.DocTestParser):
     """A DocTestParser that strips a prefix from doctests."""
+
     def get_doctest(self, string, globs, name, filename, lineno):
         filename = strip_prefix(filename)
         return doctest.DocTestParser.get_doctest(
@@ -145,36 +155,57 @@ class SpecialOutputChecker(doctest.OutputChecker):
             self, example, newgot, optionflags)
 
 
-def create_view(context, name, form=None, layer=None, server_url=None,
-                method='GET'):
-    """Return a view based on the given arguments.
+def ordered_dict_as_string(dict):
+    """Return the contents of a dict as an ordered string.
 
-    :param context: The context for the view.
-    :param name: The web page the view should handle.
-    :param form: A dictionary with the form keys.
-    :param layer: The layer where the page we are interested in is located.
-    :param server_url: The URL from where this request was done.
-    :param method: The method used in the request. Defaults to 'GET'.
-    :return: The view class for the given context and the name.
+    The output will be ordered by key, so {'z': 1, 'a': 2, 'c': 3} will
+    be printed as {'a': 2, 'c': 3, 'z': 1}.
+
+    We do this because dict ordering is not guaranteed.
     """
-    request = LaunchpadTestRequest(
-        form=form, SERVER_URL=server_url, method=method)
-    if layer is not None:
-        setFirstLayer(request, layer)
-    return getMultiAdapter((context, request), name=name)
+    # XXX 2008-06-25 gmb:
+    #     Once we move to Python 2.5 we won't need this, since dict
+    #     ordering is guaranteed when __str__() is called.
+    item_string = '%r: %r'
+    item_strings = []
+    for key, value in sorted(dict.items()):
+        item_strings.append(item_string % (key, value))
+
+    return '{%s}' % ', '.join(
+        "%r: %r" % (key, value) for key, value in sorted(dict.items()))
+
+
+def stop():
+    # Temporarily restore the real stdout.
+    old_stdout = sys.stdout
+    sys.stdout = sys.__stdout__
+    try:
+        pdb.set_trace()
+    finally:
+        sys.stdout = old_stdout
 
 
 def setGlobs(test):
     """Add the common globals for testing system documentation."""
     test.globs['ANONYMOUS'] = ANONYMOUS
     test.globs['login'] = login
+    test.globs['login_person'] = login_person
     test.globs['logout'] = logout
     test.globs['ILaunchBag'] = ILaunchBag
     test.globs['getUtility'] = getUtility
     test.globs['transaction'] = transaction
     test.globs['flush_database_updates'] = flush_database_updates
     test.globs['create_view'] = create_view
-    test.globs['LaunchpadObjectFactory'] = LaunchpadObjectFactory
+    test.globs['create_initialized_view'] = create_initialized_view
+    test.globs['factory'] = LaunchpadObjectFactory()
+    test.globs['ordered_dict_as_string'] = ordered_dict_as_string
+    test.globs['verifyObject'] = verifyObject
+    test.globs['pretty'] = pprint.PrettyPrinter(width=1).pformat
+    test.globs['stop'] = stop
+    test.globs['with_statement'] = with_statement
+    test.globs['launchpadlib_for'] = launchpadlib_for
+    test.globs['launchpadlib_credentials_for'] = launchpadlib_credentials_for
+    test.globs['oauth_access_token_for'] = oauth_access_token_for
 
 
 def setUp(test):

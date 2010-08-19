@@ -1,4 +1,6 @@
-# Copyright Canonical Limited
+# Copyright 2009, 2010 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # Authors: Daniel Silverstone <daniel.silverstone@canonical.com>
 #      and Adam Conrad <adam.conrad@canonical.com>
 
@@ -6,9 +8,9 @@
 
 __metaclass__ = type
 
+import hashlib
 import os
 import re
-import sha
 import urllib2
 import xmlrpclib
 
@@ -17,6 +19,11 @@ from twisted.internet import reactor
 from twisted.internet import process
 from twisted.web import xmlrpc
 
+# cprov 20080611: in python2.4 posixfile.SEEK_END is deprecated and our
+# importfascist-check denies its import. When we migrate to python2.5,
+# we can use os.SEEK_END. See bug #239213.
+SEEK_END = 2
+
 devnull = open("/dev/null", "r")
 
 
@@ -24,7 +31,7 @@ def _sanitizeURLs(text_seq):
     """A generator that deletes URL passwords from a string sequence.
 
     This generator removes user/password data from URLs if embedded
-    in the latter as follows: scheme://user:passwd@netloc/path. 
+    in the latter as follows: scheme://user:passwd@netloc/path.
 
     :param text_seq: A sequence of strings (that may contain URLs).
     :return: A (sanitized) line stripped of authentication credentials.
@@ -89,6 +96,11 @@ class BuildManager(object):
     """Build Daemon slave build manager abstract parent"""
 
     def __init__(self, slave, buildid):
+        """Create a BuildManager.
+
+        :param slave: A `BuildDSlave`.
+        :param buildid: Identifying string for this build.
+        """
         object.__init__(self)
         self._buildid = buildid
         self._slave = slave
@@ -97,6 +109,7 @@ class BuildManager(object):
         self._mountpath = slave._config.get("allmanagers", "mountpath")
         self._umountpath = slave._config.get("allmanagers", "umountpath")
         self.is_archive_private = False
+        self.home = os.environ['HOME']
 
     def runSubProcess(self, command, args):
         """Run a sub process capturing the results in the log."""
@@ -105,7 +118,7 @@ class BuildManager(object):
         childfds = {0: devnull.fileno(), 1: "r", 2: "r"}
         reactor.spawnProcess(
             self._subprocess, command, args, env=os.environ,
-            path=os.environ["HOME"], childFDs=childfds)
+            path=self.home, childFDs=childfds)
 
     def doUnpack(self):
         """Unpack the build chroot."""
@@ -139,10 +152,10 @@ class BuildManager(object):
         value keyed under the 'archive_private' string. If that value
         evaluates to True the build at hand is for a private archive.
         """
-        os.mkdir("%s/build-%s" % (os.environ["HOME"], self._buildid))
+        os.mkdir("%s/build-%s" % (self.home, self._buildid))
         for f in files:
             os.symlink( self._slave.cachePath(files[f]),
-                        "%s/build-%s/%s" % (os.environ["HOME"],
+                        "%s/build-%s/%s" % (self.home,
                                             self._buildid, f))
         self._chroottarfile = self._slave.cachePath(chroot)
 
@@ -247,7 +260,25 @@ class BuildDSlave(object):
         """Return the path in the cache of the file specified."""
         return os.path.join(self._cachepath, file)
 
-    def ensurePresent(self, sha1sum, url=None):
+    def setupAuthHandler(self, url, username, password):
+        """Set up a BasicAuthHandler to open the url.
+
+        :param url: The URL that needs authenticating.
+        :param username: The username for authentication.
+        :param password: The password for authentication.
+        :return: The OpenerDirector instance.
+
+        This helper installs a urllib2.HTTPBasicAuthHandler that will deal
+        with any HTTP basic authentication required when opening the
+        URL.
+        """
+        password_mgr = urllib2.HTTPPasswordMgrWithDefaultRealm()
+        password_mgr.add_password(None, url, username, password)
+        handler = urllib2.HTTPBasicAuthHandler(password_mgr)
+        opener = urllib2.build_opener(handler)
+        return opener
+
+    def ensurePresent(self, sha1sum, url=None, username=None, password=None):
         """Ensure we have the file with the checksum specified.
 
         Optionally you can provide the librarian URL and
@@ -259,8 +290,13 @@ class BuildDSlave(object):
             extra_info = 'Cache'
             if not os.path.exists(self.cachePath(sha1sum)):
                 self.log('Fetching %s by url %s' % (sha1sum, url))
+                if username:
+                    opener = self.setupAuthHandler(
+                        url, username, password).open
+                else:
+                    opener = urllib2.urlopen
                 try:
-                    f = urllib2.urlopen(url)
+                    f = opener(url)
                 # Don't change this to URLError without thoroughly
                 # testing for regressions. For now, just suppress
                 # the PyLint warnings.
@@ -271,7 +307,7 @@ class BuildDSlave(object):
                 else:
                     of = open(self.cachePath(sha1sum), "w")
                     # Upped for great justice to 256k
-                    check_sum = sha.sha()
+                    check_sum = hashlib.sha1()
                     for chunk in iter(lambda: f.read(256*1024), ''):
                         of.write(chunk)
                         check_sum.update(chunk)
@@ -286,7 +322,7 @@ class BuildDSlave(object):
 
     def storeFile(self, content):
         """Take the provided content and store it in the file cache."""
-        sha1sum = sha.sha(content).hexdigest()
+        sha1sum = hashlib.sha1(content).hexdigest()
         present, info = self.ensurePresent(sha1sum)
         if present:
             return sha1sum
@@ -294,6 +330,15 @@ class BuildDSlave(object):
         f.write(content)
         f.close()
         return sha1sum
+
+    def addWaitingFile(self, path):
+        """Add a file to the cache and store its details for reporting."""
+        fn = os.path.basename(path)
+        f = open(path)
+        try:
+            self.waitingfiles[fn] = self.storeFile(f.read())
+        finally:
+            f.close()
 
     def fetchFile(self, sha1sum):
         """Fetch the file of the given sha1sum."""
@@ -343,21 +388,43 @@ class BuildDSlave(object):
         print "Build log: " + data
 
     def getLogTail(self):
-        """Return the tail of the log."""
-        ret = ""
-        if self._log is not None:
-            rlog = None
+        """Return the tail of the log.
+
+        If the buildlog is not yet opened for writing (self._log is None),
+        return a empty string.
+
+        It safely tries to open the 'buildlog', if it doesn't exist, due to
+        job cleanup or buildlog sanitization race-conditions, it also returns
+        an empty string.
+
+        When the 'buildlog' is present it return up to 2 KiB character of
+        the end of the file.
+
+        The returned content will be 'sanitized', see `_sanitizeURLs` for
+        further information.
+        """
+        if self._log is None:
+            return ""
+
+        rlog = None
+        try:
             try:
                 rlog = open(self.cachePath("buildlog"), "r")
-                rlog.seek(0, 2)
+            except IOError:
+                ret = ""
+            else:
+                # We rely on good OS practices that keep the file handler
+                # usable once it's opened. So, if open() is ok, a subsequent
+                # seek/tell/read will be safe.
+                rlog.seek(0, SEEK_END)
                 count = rlog.tell()
                 if count > 2048:
                     count = 2048
-                rlog.seek(-count, 2)
+                rlog.seek(-count, SEEK_END)
                 ret = rlog.read(count)
-            finally:
-                if rlog is not None:
-                    rlog.close()
+        finally:
+            if rlog is not None:
+                rlog.close()
 
         if self.manager.is_archive_private:
             # This is a build in a private archive. We need to scrub
@@ -479,7 +546,7 @@ class XMLRPCBuildDSlave(xmlrpc.XMLRPC):
     """XMLRPC build daemon slave management interface"""
 
     def __init__(self, config):
-        xmlrpc.XMLRPC.__init__(self)
+        xmlrpc.XMLRPC.__init__(self, allowNone=True)
         # The V1.0 new-style protocol introduces string-style protocol
         # versions of the form 'MAJOR.MINOR', the protocol is '1.0' for now
         # implying the presence of /filecache/ /filecache/buildlog and
@@ -562,9 +629,9 @@ class XMLRPCBuildDSlave(xmlrpc.XMLRPC):
         """
         return (self.buildid, )
 
-    def xmlrpc_ensurepresent(self, sha1sum, url):
+    def xmlrpc_ensurepresent(self, sha1sum, url, username, password):
         """Attempt to ensure the given file is present."""
-        return self.slave.ensurePresent(sha1sum, url)
+        return self.slave.ensurePresent(sha1sum, url, username, password)
 
     def xmlrpc_abort(self):
         """Abort the current build."""
@@ -584,7 +651,8 @@ class XMLRPCBuildDSlave(xmlrpc.XMLRPC):
         """
         # check requested builder
         if not builder in self._builders:
-            return (BuilderStatus.UNKNOWNBUILDER, None)
+            extra_info = "%s not in %r" % (builder, self._builders.keys())
+            return (BuilderStatus.UNKNOWNBUILDER, extra_info)
         # check requested chroot availability
         chroot_present, info = self.slave.ensurePresent(chrootsum)
         if not chroot_present:

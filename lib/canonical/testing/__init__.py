@@ -1,28 +1,37 @@
-# Copyright 2006-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Testing helpers"""
 
 __metaclass__ = type
 
 __all__ = [
+    'BaseLayer',
+    'DatabaseFunctionalLayer',
+    'DatabaseLayer',
+    'ExperimentalLaunchpadZopelessLayer',
+    'FunctionalLayer',
+    'LaunchpadFunctionalLayer',
+    'LaunchpadLayer',
+    'LaunchpadScriptLayer',
+    'LaunchpadZopelessLayer',
+    'LibrarianLayer',
+    'PageTestLayer',
     'reset_logging',
-    'BaseLayer', 'DatabaseLayer', 'LibrarianLayer', 'FunctionalLayer',
-    'LaunchpadLayer', 'ZopelessLayer', 'LaunchpadFunctionalLayer',
-    'LaunchpadZopelessLayer', 'PageTestLayer', 'TwistedLayer',
-    'LaunchpadScriptLayer', 'ExperimentalLaunchpadZopelessLayer',
-    'TwistedLaunchpadZopelessLayer'
+    'TwistedAppServerLayer',
+    'TwistedLaunchpadZopelessLayer',
+    'TwistedLayer',
+    'ZopelessAppServerLayer',
+    'ZopelessLayer',
     ]
 
 import logging
+
 
 def reset_logging():
     """Reset the logging system back to defaults
 
     Currently, defaults means 'the way the Z3 testrunner sets it up'
-
-    XXX: StuartBishop 2006-03-08 bug=39877:
-    We need isolation enforcement so that an error will be raised and
-    the test run stop if a test fails to reset the logging system.
     """
     # Remove all handlers from non-root loggers, and remove the loggers too.
     loggerDict = logging.Logger.manager.loggerDict
@@ -40,6 +49,9 @@ def reset_logging():
     for handler in root.handlers:
         root.removeHandler(handler)
 
+    # Set the root logger's log level back to the default level: WARNING.
+    root.setLevel(logging.WARNING)
+
     # Clean out the guts of the logging module. We don't want handlers that
     # have already been closed hanging around for the atexit handler to barf
     # on, for example.
@@ -47,14 +59,16 @@ def reset_logging():
     logging._handlers.clear()
 
     # Reset the setup
-    import zope.testing.testrunner
-    zope.testing.testrunner.configure_logging()
+    from zope.testing.testrunner.runner import Runner
+    from zope.testing.testrunner.logsupport import Logging
+    Logging(Runner()).global_setup()
 
+
+# This import registers the 'doctest' Unicode codec.
+import canonical.testing.doctestcodec
 
 # Imported here to avoid circular import issues
-from canonical.testing.layers import (
-    BaseLayer, DatabaseLayer, ExperimentalLaunchpadZopelessLayer,
-    FunctionalLayer, GoogleServiceLayer, LaunchpadFunctionalLayer,
-    LaunchpadLayer, LaunchpadZopelessLayer, PageTestLayer,
-    LaunchpadScriptLayer, LibrarianLayer, TwistedLaunchpadZopelessLayer,
-    TwistedLayer, ZopelessLayer)
+# pylint: disable-msg=W0401
+from canonical.testing.layers import *
+from canonical.testing.layers import __all__ as layers_all
+__all__.extend(layers_all)

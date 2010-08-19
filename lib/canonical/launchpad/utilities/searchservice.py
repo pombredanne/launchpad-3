@@ -1,4 +1,6 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 """Interfaces for searching and working with results."""
@@ -11,7 +13,10 @@ __all__ = [
     'PageMatches',
     ]
 
-import cElementTree as ET
+try:
+    import xml.etree.cElementTree as ET
+except ImportError:
+    import cElementTree as ET
 import urllib
 from urlparse import urlunparse
 
@@ -19,9 +24,10 @@ from zope.interface import implements
 
 from canonical.config import config
 from canonical.launchpad.interfaces.searchservice import (
-    ISearchResult, ISearchResults, ISearchService, GoogleParamError,
+    ISearchResult, ISearchResults, ISearchService, GoogleResponseError,
     GoogleWrongGSPVersion)
 from canonical.launchpad.webapp import urlparse
+from lazr.uri import URI
 
 
 class PageMatch:
@@ -70,6 +76,11 @@ class PageMatch:
         self.summary = summary
         self.url = self._rewrite_url(url)
 
+    def _strip_trailing_slash(self, url):
+        """Return the url without a trailing slash."""
+        uri = URI(url).ensureNoSlash()
+        return str(uri)
+
     def _rewrite_url(self, url):
         """Rewrite the url to the local environment.
 
@@ -83,7 +94,7 @@ class PageMatch:
         """
         if self.url_rewrite_hostname == 'launchpad.net':
             # Do not rewrite the url is the hostname is the public hostname.
-            return url
+            return self._strip_trailing_slash(url)
         parts = urlparse(url)
         for netloc in self.url_rewrite_exceptions:
             # The network location is parts[1] in the tuple.
@@ -94,7 +105,8 @@ class PageMatch:
             'launchpad.net', self.url_rewrite_hostname)
         local_parts = tuple(
             [local_scheme] + [local_hostname] + list(parts[2:]))
-        return urlunparse(local_parts)
+        url = urlunparse(local_parts)
+        return self._strip_trailing_slash(url)
 
 
 class PageMatches:
@@ -137,7 +149,6 @@ class GoogleSearchService:
     implements(ISearchService)
 
     _default_values = {
-        'as_sitesearch' : 'launchpad.net',
         'client' : 'google-csbe',
         'cx' : None,
         'ie' : 'utf8',
@@ -174,7 +185,6 @@ class GoogleSearchService:
         used over multiple queries to get successive sets of results.
 
         :return: `ISearchResults` (PageMatches).
-        :raise: `GoogleParamError` when an search parameter is None.
         :raise: `GoogleWrongGSPVersion` if the xml cannot be parsed.
         """
         search_url = self.create_search_url(terms, start=start)
@@ -245,9 +255,13 @@ class GoogleSearchService:
             version 3.2 XML. There is no guarantee that other GSP versions
             can be parsed.
         :return: `ISearchResults` (PageMatches).
+        :raise: `GoogleResponseError` if the xml is incomplete.
         :raise: `GoogleWrongGSPVersion` if the xml cannot be parsed.
         """
-        gsp_doc = ET.fromstring(gsp_xml)
+        try:
+            gsp_doc = ET.fromstring(gsp_xml)
+        except SyntaxError:
+            raise GoogleResponseError("The response was incomplete, no xml.")
         start_param = self._getElementByAttributeValue(
             gsp_doc, './PARAM', 'name', 'start')
         try:
@@ -270,14 +284,27 @@ class GoogleSearchService:
             raise GoogleWrongGSPVersion(
                 "Could not get the 'total' from the GSP XML response.")
         for result in results.findall('R'):
-            try:
-                title = result.find('T').text
-                url = result.find('U').text
-                summary = result.find('S').text.replace('<br>', '')
-            except (AttributeError):
+            url_tag = result.find('U')
+            title_tag = result.find('T')
+            summary_tag = result.find('S')
+            if None in (url_tag, title_tag, summary_tag):
+                # Google indexed a bad page, or the page may be marked for
+                # removal from the index. We should not include this.
+                continue
+            title = title_tag.text
+            url = url_tag.text
+            summary = summary_tag.text
+            if None in (url, title, summary):
                 # There is not enough data to create a PageMatch object.
-                raise GoogleWrongGSPVersion(
-                    "Could not get the 'title', 'url', and 'summary' from "
-                    "the GSP XML response.")
+                # This can be caused by an empty title or summary which
+                # has been observed for pages that are from vhosts that
+                # should not be indexed.
+                continue
+            summary = summary.replace('<br>', '')
             page_matches.append(PageMatch(title, url, summary))
+        if len(page_matches) == 0 and total > 20:
+            # No viable page matches could be found in the set and there
+            # are more possible matches; the XML may be the wrong version.
+            raise GoogleWrongGSPVersion(
+                "Could not get any PageMatches from the GSP XML response.")
         return PageMatches(page_matches, start, total)

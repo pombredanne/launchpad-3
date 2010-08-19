@@ -1,4 +1,5 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Base classes for feeds.
 
@@ -25,16 +26,17 @@ import time
 from urlparse import urljoin
 from xml.sax.saxutils import escape as xml_escape
 
-from zope.app.datetimeutils import rfc1123_date
-from zope.app.pagetemplate import ViewPageTemplateFile
+from zope.datetime import rfc1123_date
 from zope.component import getUtility
 from zope.interface import implements
 
+from z3c.ptcompat import ViewPageTemplateFile
+
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
-# XXX - bac - 2007-09-20, modules in canonical.lazr should not import from
-# canonical.launchpad, but we're doing it here as an expediency to get a
-# working prototype.  Bug 153795.
+# XXX: bac 2007-09-20 bug=153795: modules in canonical.lazr should not import
+# from canonical.launchpad, but we're doing it here as an expediency to get a
+# working prototype.
 from canonical.launchpad.interfaces import ILaunchpadRoot
 from canonical.launchpad.webapp import (
     LaunchpadView, canonical_url, urlappend, urlparse)
@@ -139,7 +141,11 @@ class FeedBase(LaunchpadView):
     @property
     def feed_format(self):
         """See `IFeed`."""
-        path = self.request['PATH_INFO']
+        # If the full URL is http://feeds.launchpad.dev/announcements.atom/foo
+        # getURL() will return http://feeds.launchpad.dev/announcements.atom
+        # when traversing the feed, which will allow os.path.splitext()
+        # to split off ".atom" correctly.
+        path = self.request.getURL()
         extension = os.path.splitext(path)[1]
         if extension in SUPPORTED_FEEDS:
             return extension[1:]
@@ -301,6 +307,7 @@ class FeedTypedData:
                 convertEntities=BeautifulSoup.HTML_ENTITIES)
             altered_content = unicode(soup)
         return altered_content
+
 
 class FeedPerson:
     """See `IFeedPerson`.

@@ -1,4 +1,6 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """Menus and facets."""
 
 __metaclass__ = type
@@ -7,10 +9,7 @@ __all__ = [
     'escape',
     'get_current_view',
     'get_facet',
-    'nearest_context_with_adapter',
-    'nearest_adapter',
     'structured',
-    'translate_if_msgid',
     'FacetMenu',
     'ApplicationMenu',
     'ContextMenu',
@@ -24,22 +23,22 @@ __all__ = [
 import cgi
 import types
 
-from zope.i18n import translate, Message, MessageID
+from zope.i18n import translate, Message
 from zope.interface import implements
-from zope.component import getMultiAdapter, queryAdapter
+from zope.component import getMultiAdapter
 from zope.security.proxy import (
-    isinstance as zope_isinstance, ProxyFactory, removeSecurityProxy)
+    isinstance as zope_isinstance, removeSecurityProxy)
 
-from canonical.lazr import decorates
+from lazr.delegates import delegates
 
 from canonical.launchpad.webapp.interfaces import (
     IApplicationMenu, IContextMenu, IFacetLink, IFacetMenu, ILink, ILinkData,
     IMenuBase, INavigationMenu, IStructuredString)
 from canonical.launchpad.webapp.publisher import (
-    canonical_url, canonical_url_iterator, get_current_browser_request,
+    canonical_url, get_current_browser_request,
     LaunchpadView, UserAttributeCache)
 from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.uri import InvalidURIError, URI
+from lazr.uri import InvalidURIError, URI
 from canonical.launchpad.webapp.vhosts import allvhosts
 
 
@@ -69,41 +68,6 @@ class structured:
         return "<structured-string '%s'>" % self.text
 
 
-def nearest_context_with_adapter(obj, interface):
-    """Return the tuple (context, adapter) of the nearest object up the
-    canonical url chain that has an adapter of the type given.
-
-    This might be an adapter for the object given as an argument.
-
-    Return (None, None) if there is no object that has such an adapter
-    in the url chain.
-
-    """
-    for current_obj in canonical_url_iterator(obj):
-        adapter = interface(current_obj, None)
-        if adapter is not None:
-            return (current_obj, adapter)
-    return (None, None)
-
-
-def nearest_adapter(obj, interface):
-    """Return the adapter of the nearest object up the canonical url chain
-    that has an adapter of the type given.
-
-    This might be an adapter for the object given as an argument.
-
-    :return None: if there is no object that has such an adapter in the url
-        chain.
-
-    This will often be used with an interface of IFacetMenu, when looking up
-    the facet menu for a particular context.
-
-    """
-    context, adapter = nearest_context_with_adapter(obj, interface)
-    # Will be None, None if not found.
-    return adapter
-
-
 def get_current_view(request=None):
     """Return the current view or None.
 
@@ -118,10 +82,10 @@ def get_current_view(request=None):
     # among the traversed_names. We need to get it from a private attribute.
     view = request._last_obj_traversed
     # Note: The last traversed object may be a view's instance method.
+    bare =  removeSecurityProxy(view)
     if zope_isinstance(view, types.MethodType):
-        bare =  removeSecurityProxy(view)
-        return ProxyFactory(bare.im_self)
-    return view
+        return bare.im_self
+    return bare
 
 
 def get_facet(view):
@@ -158,10 +122,13 @@ class LinkData:
 
         :param menu: The sub menu used by the page that the link represents.
         """
+
         self.target = target
         self.text = text
         self.summary = summary
         self.icon = icon
+        if not isinstance(enabled, bool):
+            raise AssertionError("enabled must be boolean, got %r" % enabled)
         self.enabled = enabled
         self.site = site
         self.menu = menu
@@ -172,7 +139,7 @@ Link = LinkData
 class MenuLink:
     """Adapter from ILinkData to ILink."""
     implements(ILink)
-    decorates(ILinkData, context='_linkdata')
+    delegates(ILinkData, context='_linkdata')
 
     # These attributes are set by the menus infrastructure.
     name = None
@@ -218,6 +185,11 @@ class MenuLink:
         return getMultiAdapter(
             (self, get_current_browser_request()), name="+inline")()
 
+    @property
+    def path(self):
+        """See `ILink`."""
+        return self.url.path
+
 
 class FacetLink(MenuLink):
     """Adapter from ILinkData to IFacetLink."""
@@ -230,6 +202,8 @@ class FacetLink(MenuLink):
 # Marker object that means 'all links are to be enabled'.
 ALL_LINKS = object()
 
+MENU_ANNOTATION_KEY = 'canonical.launchpad.webapp.menu.links'
+
 
 class MenuBase(UserAttributeCache):
     """Base class for facets and menus."""
@@ -237,12 +211,13 @@ class MenuBase(UserAttributeCache):
     implements(IMenuBase)
 
     links = None
+    extra_attributes = None
     enable_only = ALL_LINKS
     _baseclassname = 'MenuBase'
     _initialized = False
     _forbiddenlinknames = set(
         ['user', 'initialize', 'links', 'enable_only', 'isBetaUser',
-         'iterlinks'])
+         'iterlinks', 'extra_attributes'])
 
     def __init__(self, context):
         # The attribute self.context is defined in IMenuBase.
@@ -253,12 +228,33 @@ class MenuBase(UserAttributeCache):
         """Override this in subclasses to do initialization."""
         pass
 
-    def _get_link(self, name):
-        method = getattr(self, name)
+    def _buildLink(self, name):
+        method = getattr(self, name, None)
+        # Since Zope traversals hides the root cause of an AttributeError,
+        # an AssertionError is raised explaining what went wrong.
+        if method is None:
+            raise AssertionError(
+                '%r does not define %r method.' % (self, name))
         linkdata = method()
         # The link need only provide ILinkData.  We need an ILink so that
         # we can set attributes on it like 'name' and 'url' and 'linked'.
         return ILink(linkdata)
+
+    def _get_link(self, name):
+        request = get_current_browser_request()
+        if request is not None:
+            # We must not use a weak ref here because if we do so and
+            # templates do stuff like "context/menu:bugs/foo", then there
+            # would be no reference to the Link object, which would allow it
+            # to be garbage collected during the course of the request.
+            cache = request.annotations.setdefault(MENU_ANNOTATION_KEY, {})
+            key = (self.__class__, self.context, name)
+            link = cache.get(key)
+            if link is None:
+                link = self._buildLink(name)
+                cache[key] = link
+            return link
+        return self._buildLink(name)
 
     def _rootUrlForSite(self, site):
         """Return the root URL for the given site."""
@@ -302,7 +298,7 @@ class MenuBase(UserAttributeCache):
             # self.links.
             raise AssertionError(
                 "Links in 'enable_only' not found in 'links': %s" %
-                (', '.join([name for name in unknown_links])))
+                ', '.join(sorted(unknown_links)))
 
         for idx, linkname in enumerate(self.links):
             link = self._get_link(linkname)
@@ -391,10 +387,7 @@ class NavigationMenu(MenuBase):
     _baseclassname = 'NavigationMenu'
 
     title = None
-
-    def _get_link(self, name):
-        return IFacetLink(
-            super(NavigationMenu, self)._get_link(name))
+    disabled = False
 
     def iterlinks(self, request_url=None):
         """See `INavigationMenu`.
@@ -404,50 +397,45 @@ class NavigationMenu(MenuBase):
         the request) and whether the current view's menu is the link's menu.
         """
         request = get_current_browser_request()
-        submenu = self._get_current_menu(request)
+        view = get_current_view(request)
         if request_url is None:
-            request_url = request.getURL()
-        else:
-            request_url = str(request_url)
+            request_url = URI(request.getURL())
 
         for link in super(NavigationMenu, self).iterlinks():
-            link_url = str(link.url)
-            link.linked = not request_url.startswith(link_url)
-            # A link is selected when the request_url matches the link's URL
-            # or because the menu for the current view is the link's menu.
-            link.selected = (request_url.startswith(link_url)
-                             or self._is_link_menu(link, submenu))
+            # The link should be unlinked if it is the current URL, or if
+            # the menu for the current view is the link's menu.
             link.url = link.url.ensureNoSlash()
+            link.linked = not (self._is_current_url(request_url, link.url)
+                               or self._is_menulink_for_view(link, view))
             yield link
 
-    def _get_current_menu(self, request):
-        """Return the menu associated with the current view, or None.
+    def _is_current_url(self, request_url, link_url):
+        """Determines if <link_url> is the current URL.
 
-        :param request: The request provides the current view, usually
-            it is the last traversed object.
-
-        Menus associated with views are often sub menus that belong to
-        links in the menu associated with the content object. A link
-        in a top-level menu is considered to be selected if the view's
-        menu is an instance of the link's menu
+        There are two cases to consider:
+        1) If the link target doesn't have query parameters, the request URL
+        must be the same link (ignoring query parameters).
+        2) If the link target has query parameters, the request url must be
+        a prefix of it to be the current url.
         """
-        view = get_current_view(request)
-        # XXX sinzui 2008-05-09 bug=226917: We should be retrieving the facet
-        # name from the layer implemented by the request.
-        facet = get_facet(view)
-        return queryAdapter(view, INavigationMenu, name=facet)
+        if link_url.query is not None:
+            return str(request_url).startswith(str(link_url))
+        else:
+            request_url_without_query = (
+                request_url.replace(query=None).ensureNoSlash())
+            return link_url == request_url_without_query
 
-    def _is_link_menu(self, link, menu):
-        """Return True if menu is an instance of link's menu, otherwise False.
+    def _is_menulink_for_view(self, link, view):
+        """Return True if the menu-link is for the current view.
 
         :param link: An `ILink` in the menu. It has a menu attribute that may
             have an `INavigationMenu` assigned.
-        :menu: The `INavigationMenu` being tested.
+        :view: The view being tested.
 
-        A link is considered to be selected when the menu for the current
-        view is an instance of a link's menu.
+        A link is considered to be selected when the view provides link's menu
+        interface.
         """
-        return (menu is not None and isinstance(menu, link.menu.__class__))
+        return (link.menu is not None and link.menu.providedBy(view))
 
 
 class enabled_with_permission:
@@ -494,7 +482,7 @@ class enabled_with_permission:
 ## text.
 ##
 
-# XXX mars 2008-2-12:
+# XXX: mars 2008-02-12:
 # This entire block should be extracted into its own module, along
 # with the structured() class.
 
@@ -528,7 +516,7 @@ def translate_if_i18n(obj_or_msgid):
 
     Returns any other type of object untouched.
     """
-    if isinstance(obj_or_msgid, (Message, MessageID)):
+    if isinstance(obj_or_msgid, Message):
         return translate(
             obj_or_msgid,
             context=get_current_browser_request())

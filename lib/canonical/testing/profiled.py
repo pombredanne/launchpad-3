@@ -1,4 +1,5 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Profile the test layers."""
 
@@ -88,7 +89,7 @@ def report_profile_stats():
         hits, duration = value
         total_profiled_duration += duration
         if duration < 0.1:
-            duration = 'negligable time'
+            duration = 'negligible time'
         else:
             duration = '%0.1fs' % duration
         print '%-45s %4d calls taking %s.' % (

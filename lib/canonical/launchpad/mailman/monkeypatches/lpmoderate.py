@@ -1,10 +1,12 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """A pipeline handler for holding list non-members postings for approval.
 """
 
 import xmlrpclib
 
+from email.iterators import typed_subpart_iterator
 from email.Utils import formatdate, make_msgid
 
 # pylint: disable-msg=F0401
@@ -36,23 +38,39 @@ def process(mlist, msg, msgdata):
     # mailing list.  They are also not Launchpad members in good standing or
     # we'd have already approved the message.  So now the message must be held
     # in Launchpad for approval via the LP u/i.
-    sender = msg.get_sender()
-    # Hold the message in Mailman too so that it's easier to resubmit it after
-    # approval via the LP u/i.  If the team administrator ends up rejecting
-    # the message, it will also be easy to discard it on the Mailman side.
-    # But this way, we don't have to reconstitute the message from the
-    # librarian if it gets approved.   However, unlike the standard Moderate
-    # handler, we don't craft all the notification messages about this hold.
-    # We also need to keep track of the message-id (which better be unique)
-    # because that's how we communicate about the message's status.
-    request_id = mlist.HoldMessage(msg, 'Not subscribed', msgdata)
+    hold(mlist, msg, msgdata, 'Not subscribed')
+
+
+def is_message_empty(msg):
+    """Is the message missing a text/plain part with content?"""
+    for part in typed_subpart_iterator(msg, 'text'):
+        if part.get_content_subtype() == 'plain':
+            if len(part.get_payload().strip()) > 0:
+                return False
+    return True
+
+
+def hold(mlist, msg, msgdata, annotation):
+    """Hold the message in both Mailman and Launchpad.
+
+    `annotation` is an arbitrary string required by the API.
+    """
+    # Hold the message in Mailman and Launchpad so that it's easier to
+    # resubmit it after approval via the LP u/i.  If the team administrator
+    # ends up rejecting the message, it will also be easy to discard it on the
+    # Mailman side.  But this way, we don't have to reconstitute the message
+    # from the librarian if it gets approved.  However, unlike the standard
+    # Moderate handler, we don't craft all the notification messages about
+    # this hold.  We also need to keep track of the message-id (which better
+    # be unique) because that's how we communicate about the message's status.
+    request_id = mlist.HoldMessage(msg, annotation, msgdata)
+    assert mlist.Locked(), (
+        'Mailing list should be locked: %s' % mlist.internal_name())
     # This is a hack because by default Mailman cannot look up held messages
     # by message-id.  This works because Mailman's persistency layer simply
     # pickles the MailList object, mostly without regard to a known schema.
-    assert mlist.Locked(), (
-        'Mailing list should be locked: %s', mlist.internal_name())
-    # For lists that were created before first-post moderation landed, add the
-    # mapping between message-ids and request-ids.
+    #
+    # Mapping: message-id -> request-id
     holds = getattr(mlist, 'held_message_ids', None)
     if holds is None:
         holds = mlist.held_message_ids = {}
@@ -65,16 +83,23 @@ def process(mlist, msg, msgdata):
         syslog('vette',
                'Discarding duplicate held message-id: %s', message_id)
         raise Errors.DiscardMessage
+    # Discard messages without text content since there will be nothing to
+    # moderate. Most of these messages are spam.
+    if is_message_empty(msg):
+        syslog('vette',
+               'Discarding text-less message-id: %s', message_id)
+        raise Errors.DiscardMessage
     holds[message_id] = request_id
     # In addition to Message-ID, the librarian requires a Date header.
-    if msg.get('date') is None:
+    if 'date' not in msg:
         msg['Date'] = formatdate()
     # Store the message in the librarian.
     proxy = xmlrpclib.ServerProxy(mm_cfg.XMLRPC_URL)
     # This will fail if we can't talk to Launchpad.  That's okay though
     # because Mailman's IncomingRunner will re-queue the message and re-start
     # processing at this handler.
-    proxy.holdMessage(mlist.internal_name(), msg.as_string())
+    proxy.holdMessage(mlist.internal_name(),
+                      xmlrpclib.Binary(msg.as_string()))
     syslog('vette', 'Holding message for LP approval: %s', message_id)
     # Raise this exception, signaling to the incoming queue runner that it is
     # done processing this message, and should not send it through any further

@@ -9,3 +9,5 @@
 
 Bug description:
 %(bug_description)s
+
+%(unsubscribe_notice)s

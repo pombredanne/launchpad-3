@@ -1,3 +1,7 @@
+<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+     GNU Affero General Public License version 3 (see the file LICENSE).
+-->
+
 <configure
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
@@ -5,26 +9,22 @@
     i18n_domain="launchpad">
 
     <!-- Message -->
-    <content class="canonical.launchpad.database.Message">
+    <class class="canonical.launchpad.database.Message">
         <allow interface="canonical.launchpad.interfaces.IMessage" />
         <require
             permission="zope.Public"
             set_schema="canonical.launchpad.interfaces.IMessage" />
-    </content>
+    </class>
 
-    <!-- Page to render a HTML snippet for a single MessageChunk -->
-    <browser:page
-        name="+snippet"
-        for="canonical.launchpad.interfaces.IMessageChunk"
-        facet="overview"
-        template="../templates/messagechunk-snippet.pt"
-        permission="launchpad.AnyPerson"
-        />
+    <class class="canonical.launchpad.interfaces.IndexedMessage">
+      <allow interface="canonical.launchpad.interfaces.IMessage" />
+      <allow interface="canonical.launchpad.interfaces.IIndexedMessage" />
+    </class>
 
     <!-- MessageChunk -->
-    <content class="canonical.launchpad.database.MessageChunk">
+    <class class="canonical.launchpad.database.MessageChunk">
         <allow interface="canonical.launchpad.interfaces.IMessageChunk" />
-    </content>
+    </class>
 
   <!-- MessageSet -->
   <securedutility
@@ -42,7 +42,16 @@
   <!-- Adapt several related objects to provide unified details -->
   <adapter for="canonical.launchpad.interfaces.IMessageApproval"
     provides="canonical.launchpad.interfaces.IHeldMessageDetails"
-    factory="canonical.launchpad.database.mailinglist.HeldMessageDetails"
+    factory="lp.registry.model.mailinglist.HeldMessageDetails"
     />
+
+  <!-- Adapt a person to an IDirectEmailAuthorization for throttling of direct
+       person-to-person emails. -->
+  <adapter
+    for="lp.registry.interfaces.person.IPerson"
+    provides="canonical.launchpad.interfaces.message.IDirectEmailAuthorization"
+    factory="canonical.launchpad.database.message.DirectEmailAuthorization"
+    />
+       
 
 </configure>

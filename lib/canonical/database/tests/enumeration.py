@@ -1,4 +1,5 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test enumerations used for enumcol doctests."""
 
@@ -11,7 +12,7 @@ __all__ = [
     ]
 
 
-from canonical.lazr import DBEnumeratedType, DBItem, use_template
+from lazr.enum import DBEnumeratedType, DBItem, use_template
 
 
 class DBTestEnumeration(DBEnumeratedType):

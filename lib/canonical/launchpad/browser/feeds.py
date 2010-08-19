@@ -1,4 +1,5 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """View support classes for feeds."""
 
@@ -14,9 +15,11 @@ __all__ = [
     'FeedsNavigation',
     'FeedsRootUrlData',
     'PersonBranchesFeedLink',
-    'PersonLatestBugsFeedLink',
+    'PersonRevisionsFeedLink',
     'ProductBranchesFeedLink',
+    'ProductRevisionsFeedLink',
     'ProjectBranchesFeedLink',
+    'ProjectRevisionsFeedLink',
     'RootAnnouncementsFeedLink',
     ]
 
@@ -27,11 +30,10 @@ from zope.security.interfaces import Unauthorized
 
 from canonical.config import config
 from canonical.launchpad.interfaces import (
-    IAnnouncementSet, IBranch, IBugSet, IBugTaskSet, IFeedsApplication,
-    IPersonSet, IPillarNameSet, NotFoundError)
+    IAnnouncementSet, IBugSet, IBugTaskSet, IFeedsApplication,
+    IPillarNameSet)
 from canonical.launchpad.interfaces import (
-    IBugTarget, IBugTask, IHasAnnouncements, ILaunchpadRoot, IPerson,
-    IProduct, IProject)
+    IBugTask, IHasAnnouncements, IHasBugs, ILaunchpadRoot)
 from canonical.launchpad.layers import FeedsLayer
 from canonical.launchpad.webapp import (
     Navigation, canonical_name, canonical_url, stepto)
@@ -39,6 +41,11 @@ from canonical.launchpad.webapp.publisher import RedirectionView
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.launchpad.webapp.url import urlappend
+from lp.app.errors import NotFoundError
+from lp.code.interfaces.branch import IBranch
+from lp.registry.interfaces.person import IPerson, IPersonSet
+from lp.registry.interfaces.product import IProduct
+from lp.registry.interfaces.projectgroup import IProjectGroup
 
 
 class FeedsRootUrlData:
@@ -168,7 +175,7 @@ class BugFeedLink(FeedLinkBase):
 
 
 class BugTargetLatestBugsFeedLink(FeedLinkBase):
-    usedfor = IBugTarget
+    usedfor = IHasBugs
 
     @property
     def title(self):
@@ -178,15 +185,6 @@ class BugTargetLatestBugsFeedLink(FeedLinkBase):
     def href(self):
         return urlappend(canonical_url(self.context, rootsite='feeds'),
                          'latest-bugs.atom')
-
-
-class PersonLatestBugsFeedLink(BugTargetLatestBugsFeedLink):
-    """Child class of BugTargetLatestBugsFeedLink.
-
-    This uses the same title and href attributes as the superclass.
-    The canonical_url takes care of the differences between the classes.
-    """
-    usedfor = IPerson
 
 
 class AnnouncementsFeedLink(FeedLinkBase):
@@ -234,7 +232,7 @@ class BranchesFeedLinkBase(FeedLinkBase):
 
 class ProjectBranchesFeedLink(BranchesFeedLinkBase):
     """Feed links for branches on a project."""
-    usedfor = IProject
+    usedfor = IProjectGroup
 
 
 class ProductBranchesFeedLink(BranchesFeedLinkBase):
@@ -245,6 +243,33 @@ class ProductBranchesFeedLink(BranchesFeedLinkBase):
 class PersonBranchesFeedLink(BranchesFeedLinkBase):
     """Feed links for branches on a person."""
     usedfor = IPerson
+
+
+class RevisionsFeedLinkBase(FeedLinkBase):
+    """Base class for objects with revisions."""
+
+    @property
+    def title(self):
+        return 'Latest Revisions for %s' % self.context.displayname
+
+    @property
+    def href(self):
+        """The location of the feed.
+
+        E.g.  http://feeds.launchpad.net/firefox/revisions.atom
+        """
+        return urlappend(canonical_url(self.context, rootsite='feeds'),
+                         'revisions.atom')
+
+
+class ProjectRevisionsFeedLink(RevisionsFeedLinkBase):
+    """Feed links for revisions on a project."""
+    usedfor = IProjectGroup
+
+
+class ProductRevisionsFeedLink(RevisionsFeedLinkBase):
+    """Feed links for revisions on a product."""
+    usedfor = IProduct
 
 
 class BranchFeedLink(FeedLinkBase):
@@ -260,6 +285,24 @@ class BranchFeedLink(FeedLinkBase):
                          'branch.atom')
 
 
+class PersonRevisionsFeedLink(FeedLinkBase):
+    """Feed links for revisions created by a person."""
+    usedfor = IPerson
+
+    @property
+    def title(self):
+        if self.context.is_team:
+            return 'Latest Revisions by members of %s' % (
+                self.context.displayname)
+        else:
+            return 'Latest Revisions by %s' % self.context.displayname
+
+    @property
+    def href(self):
+        return urlappend(canonical_url(self.context, rootsite="feeds"),
+                         'revisions.atom')
+
+
 class FeedsMixin:
     """Mixin which adds the feed_links attribute to a view object.
 
@@ -270,14 +313,16 @@ class FeedsMixin:
     """
     feed_types = (
         AnnouncementsFeedLink,
-        RootAnnouncementsFeedLink,
+        BranchFeedLink,
         BugFeedLink,
         BugTargetLatestBugsFeedLink,
-        PersonLatestBugsFeedLink,
-        ProjectBranchesFeedLink,
-        ProductBranchesFeedLink,
         PersonBranchesFeedLink,
-        BranchFeedLink,
+        PersonRevisionsFeedLink,
+        ProductBranchesFeedLink,
+        ProductRevisionsFeedLink,
+        ProjectBranchesFeedLink,
+        ProjectRevisionsFeedLink,
+        RootAnnouncementsFeedLink,
         )
 
     @property

@@ -157,7 +157,7 @@ urlfetch() function that retrieve a URL using custom urllib2 handlers
 that will timeout using the default timeout function and clean-up the
 socket properly.
 
-    # Create a socket bounded to a random port.
+    # Create a socket bound to a random port.
     >>> sock = socket.socket()
     >>> sock.settimeout(2)
     >>> sock.bind(('127.0.0.1', 0))
@@ -173,7 +173,7 @@ Normal urllib2 exceptions are raised:
     >>> urlfetch(http_server_url)
     Traceback (most recent call last):
       ...
-    URLError: ...'Connection refused'...
+    URLError: ...Connection refused...
 
 After the listen() is called, connections will hang until accept() is
 called, so a TimeoutError will be raised.
@@ -252,6 +252,67 @@ urlfetch() only supports http urls:
     Traceback (most recent call last):
       ...
     AssertionError: only http is supported.
+
+== TransportWithTimeouts ==
+
+Another use case for timeouts is communicating with external systems
+using XMLRPC.  In order to allow timeouts using XMLRPC we provide a
+transport that is timeout-aware.  The Transport is used for XMLRPC
+over HTTP.
+
+    # Create a socket bound to a random port, just to obtain a free port.
+    >>> sock = socket.socket()
+    >>> sock.bind(('127.0.0.1', 0))
+    >>> addr, port = sock.getsockname()
+    >>> sock.close()
+
+Create a simple XMLRPC server to listen for requests.  The request
+handler will respond to 'echo' requests normally but will hang
+indefinitely for all other requests.  This allows us to show a
+successful request followed by one that times out.
+
+    >>> from SimpleXMLRPCServer import (
+    ...     SimpleXMLRPCRequestHandler, SimpleXMLRPCServer)
+
+    >>> class EchoOrWaitXMLRPCReqHandler(SimpleXMLRPCRequestHandler):
+    ...     def _dispatch(self, method, params):
+    ...         if method == 'echo':
+    ...             return params[0]
+    ...         else:
+    ...             # Will hang until the client closes its end of the socket.
+    ...             self.connection.settimeout(None)
+    ...             self.connection.recv(1024)
+
+    >>> class MySimpleXMLRPCServer(SimpleXMLRPCServer):
+    ...     allow_reuse_address = True
+    ...     def serve_2_requests(self):
+    ...         for i in range(2):
+    ...             self.handle_request()
+    ...         self.server_close()
+    ...     def handle_error(self, request, address):
+    ...         pass
+
+    >>> server = MySimpleXMLRPCServer(
+    ...              ("localhost", port),
+    ...              requestHandler=EchoOrWaitXMLRPCReqHandler,
+    ...              logRequests=False)
+    >>> server_thread = threading.Thread(target=server.serve_2_requests)
+    >>> server_thread.start()
+
+    >>> from canonical.lazr.timeout import TransportWithTimeout
+    >>> from xmlrpclib import ServerProxy
+    >>> proxy = ServerProxy('https://localhost:%d' % port,
+    ...                     transport=TransportWithTimeout())
+
+    >>> print proxy.echo("Successful test message.")
+    Successful test message.
+
+    >>> print proxy.no_response("Unsuccessful test message.")
+    Traceback (most recent call last):
+      ...
+    TimeoutError: timeout exceeded.
+
+    >>> server_thread.join()
 
 
 == Cleanup ==

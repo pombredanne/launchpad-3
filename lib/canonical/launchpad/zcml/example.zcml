@@ -1,3 +1,7 @@
+<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+     GNU Affero General Public License version 3 (see the file LICENSE).
+-->
+
 <!-- THIS IS AN EXAMPLE ONLY -->
 <!-- XXX Steve Alexander 2004-10-08: Please update for RosettaSkins! -->
 
@@ -9,9 +13,9 @@
 
     <!-- This is class Example -->
     <!-- CONTENT CLASSES -->
-    <content class="canonical.launchpad.database.Example">
+    <class class="canonical.launchpad.database.Example">
         <allow interface="canonical.launchpad.interfaces.IExample" />
-    </content>
+    </class>
 
     <!-- UTILITY DECLARATION-->
     <securedutility

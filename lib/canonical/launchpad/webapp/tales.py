@@ -1,5 +1,7 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
-# pylint: disable-msg=C0103,W0613,R0911
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
+# pylint: disable-msg=C0103,W0613,R0911,F0401
 #
 """Implementation of the lp: htmlform: fmt: namespaces in TALES."""
 
@@ -10,99 +12,77 @@ import cgi
 from email.Utils import formatdate
 import math
 import os.path
-import re
 import rfc822
-from xml.sax.saxutils import unescape as xml_unescape
+import sys
+import urllib
+##import warnings
+
 from datetime import datetime, timedelta
+from lazr.enum import enumerated_type_registry
+from lazr.uri import URI
 
 from zope.interface import Interface, Attribute, implements
-from zope.component import getUtility, queryAdapter
+from zope.component import adapts, getUtility, queryAdapter, getMultiAdapter
 from zope.app import zapi
+from zope.publisher.browser import BrowserView
 from zope.publisher.interfaces import IApplicationRequest
 from zope.publisher.interfaces.browser import IBrowserApplicationRequest
-from zope.app.traversing.interfaces import ITraversable, IPathAdapter
-from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
+from zope.traversing.interfaces import (
+    ITraversable, IPathAdapter, TraversalError)
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import isinstance as zope_isinstance
+from zope.schema import TextLine
 
 import pytz
+from z3c.ptcompat import ViewPageTemplateFile
 
-from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    BuildStatus,
-    IBug,
-    IBugAttachment,
-    IBugNomination,
-    IBugSet,
-    IDistribution,
-    IFAQSet,
-    IHasIcon,
-    IHasLogo,
-    IHasMugshot,
-    IPerson,
-    IPersonSet,
-    IProduct,
-    IProject,
-    ISprint,
-    IStructuralHeaderPresentation,
-    NotFoundError,
-    )
+    IBug, IDistribution, IProduct, IProjectGroup, IDistributionSourcePackage,
+    ISprint, LicenseStatus)
+from canonical.launchpad.interfaces.launchpad import (
+    IHasIcon, IHasLogo, IHasMugshot, IPrivacy)
+from canonical.launchpad.layers import LaunchpadLayer
+import canonical.launchpad.pagetitles
+from canonical.launchpad.webapp import canonical_url, urlappend
+from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.badge import IHasBadges
 from canonical.launchpad.webapp.interfaces import (
     IApplicationMenu, IContextMenu, IFacetMenu, ILaunchBag, INavigationMenu,
-    NoCanonicalUrl)
-from canonical.launchpad.webapp.vhosts import allvhosts
-import canonical.launchpad.pagetitles
-from canonical.launchpad.webapp import (
-    canonical_url, nearest_context_with_adapter, nearest_adapter)
-from canonical.launchpad.webapp.uri import URI
+    IPrimaryContext, NoCanonicalUrl)
 from canonical.launchpad.webapp.menu import get_current_view, get_facet
 from canonical.launchpad.webapp.publisher import (
     get_current_browser_request, LaunchpadView, nearest)
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.badge import IHasBadges
 from canonical.launchpad.webapp.session import get_cookie_domain
-from canonical.lazr import enumerated_type_registry
+from canonical.lazr.canonicalurl import nearest_adapter
+from lp.app.browser.stringformatter import escape, FormattersAPI
+from lp.blueprints.interfaces.specification import ISpecification
+from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.code.interfaces.branch import IBranch
+from lp.soyuz.interfaces.archive import ArchivePurpose, IPPA
+from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
+from lp.registry.interfaces.person import IPerson
 
-def escape(text, quote=True):
-    """Escape text for insertion into HTML.
 
-    Wraps `cgi.escape` to make the default to escape double-quotes.
-    """
-    return cgi.escape(text, quote)
-
-
-class TraversalError(NotFoundError):
-    """Remove this when we upgrade to a more recent Zope x3."""
-    # XXX: Steve Alexander 2004-12-14:
-    # Remove this when we upgrade to a more recent Zope x3.
+SEPARATOR = ' : '
 
 
 class MenuAPI:
     """Namespace to give access to the facet menus.
 
-       CONTEXTS/menu:facet       gives the facet menu of the nearest object
-                                 along the canonical url chain that has an
-                                 IFacetMenu adapter.
+    The facet menu can be accessed with an expression like:
 
+        tal:define="facetmenu view/menu:facet"
+
+    which gives the facet menu of the nearest object along the canonical url
+    chain that has an IFacetMenu adapter.
     """
 
     def __init__(self, context):
         self._tales_context = context
-        if zope_isinstance(context, dict):
-            # We have what is probably a CONTEXTS dict.
-            # We get the context out of here, and use that for self.context.
-            # We also want to see if the view has a __launchpad_facetname__
-            # attribute.
-
-            # XXX sinzui 2008-05-06 bug=226952: Zope 3.4 will not adapt a
-            # dict to a view object. Templates must switch to 'view'.
-            self._context = context['context']
-            self.view = context['view']
-            self._request = context['request']
-            self._selectedfacetname = getattr(
-                self.view, '__launchpad_facetname__', None)
-        elif zope_isinstance(context, LaunchpadView):
+        if zope_isinstance(context, (LaunchpadView, BrowserView)):
+            # The view is a LaunchpadView or a SimpleViewClass from a
+            # template. The facet is added to the call by the ZCML.
             self.view = context
             self._context = self.view.context
             self._request = self.view.request
@@ -114,38 +94,60 @@ class MenuAPI:
             self.view = None
             self._selectedfacetname = None
 
-    def __getattr__(self, attribute_name):
-        """Return a dictionary for retrieval of individual Links.
+    def __getattribute__(self, facet):
+        """Retrieve the links associated with a facet.
 
         It's used with expressions like context/menu:bugs/subscribe.
-        """
-        for facet_entry in self.facet():
-            if attribute_name == facet_entry.name:
-                menu = self._getFacetLinks(facet_entry.name)
-                object.__setattr__(self, facet_entry.name, menu)
-                return menu
-        raise AttributeError(attribute_name)
 
-    def _getFacetLinks(self, facet_name):
-        """Return a dictionary with all links available in the given facet.
-
-        If the facet name is not valid, we raise the TraversalError exception
-        that we get from queryAdapter.
+        :return: A dictionary mapping the link name to the associated Link
+            object.
+        :raise AttributeError: when there is no application menu for the
+            facet.
         """
-        menu = queryAdapter(self._context, IApplicationMenu, facet_name)
+        # Use __getattribute__ instead of __getattr__, since __getattr__
+        # gets called if any of the other properties raise an AttributeError,
+        # which makes troubleshooting confusing. The has_facet can't easily
+        # be placed first, since all the properties it uses would need to
+        # be retrieved with object.__getattribute().
+        missing = object()
+        if (getattr(MenuAPI, facet, missing) is not missing
+            or facet in object.__getattribute__(self, '__dict__')):
+            return object.__getattribute__(self, facet)
+
+        has_facet = object.__getattribute__(self, '_has_facet')
+        if not has_facet(facet):
+            raise AttributeError(facet)
+        menu = queryAdapter(self._context, IApplicationMenu, facet)
         if menu is None:
-            # There aren't menu entries.
-            return {}
+            menu = queryAdapter(self._context, INavigationMenu, facet)
+        if menu is not None:
+            links_map = self._getMenuLinksAndAttributes(menu)
+        else:
+            # The object has the facet, but does not have a menu, this
+            # is probably the overview menu with is the default facet.
+            links_map = {}
+        object.__setattr__(self, facet, links_map)
+        return links_map
 
+    def _getMenuLinksAndAttributes(self, menu):
+        """Return a dict of the links and attributes of the menu."""
         menu.request = self._request
-        links = list(menu.iterlinks(request_url=self._request_url()))
-        return dict((link.name, link) for link in links)
+        request_url = self._request_url()
+        result = dict(
+            (link.name, link)
+            for link in menu.iterlinks(request_url=request_url))
+        extras = menu.extra_attributes
+        if extras is not None:
+            for attr in extras:
+                result[attr] = getattr(menu, attr, None)
+        return result
 
-    def _nearest_menu(self, menutype):
-        try:
-            return nearest_adapter(self._context, menutype)
-        except NoCanonicalUrl:
-            return None
+    def _has_facet(self, facet):
+        """Does the object have the named facet?"""
+        for facet_entry in self.facet():
+            if facet == facet_entry.name:
+                return True
+        return False
 
     def _request_url(self):
         request = self._request
@@ -163,14 +165,24 @@ class MenuAPI:
         return request_urlobj
 
     def facet(self):
-        menu = self._nearest_menu(IFacetMenu)
+        """Return the IFacetMenu related to the context."""
+        try:
+            try:
+                context = IPrimaryContext(self._context).context
+            except TypeError:
+                # Could not adapt raises a type error.  If there was no
+                # way to adapt, then just use self._context.
+                context = self._context
+            menu = nearest_adapter(context, IFacetMenu)
+        except NoCanonicalUrl:
+            menu = None
+
         if menu is None:
             return []
-        else:
-            menu.request = self._request
-            return list(menu.iterlinks(
-                request_url=self._request_url(),
-                selectedfacetname=self._selectedfacetname))
+        menu.request = self._request
+        return list(menu.iterlinks(
+            request_url=self._request_url(),
+            selectedfacetname=self._selectedfacetname))
 
     def selectedfacetname(self):
         if self._selectedfacetname is None:
@@ -178,49 +190,48 @@ class MenuAPI:
         else:
             return self._selectedfacetname
 
-    def application(self):
-        selectedfacetname = self._selectedfacetname
-        if selectedfacetname is None:
-            # No facet menu is selected.  So, return empty list.
-            return []
-        menu = queryAdapter(
-            self._context, IApplicationMenu, selectedfacetname)
-        if menu is None:
-            return []
-        else:
-            menu.request = self._request
-            return list(menu.iterlinks(request_url=self._request_url()))
-
     @property
     def context(self):
         menu = IContextMenu(self._context, None)
         if menu is None:
             return  {}
         else:
-            menu.request = self._request
-            links = list(menu.iterlinks(request_url=self._request_url()))
-            return dict((link.name, link) for link in links)
+            return self._getMenuLinksAndAttributes(menu)
 
     @property
     def navigation(self):
         """Navigation menu links list."""
-        # NavigationMenus may be associated with a content object or one of
-        # its views. The context we need is the one from the TAL expression.
-        context = self._tales_context
-        if self._selectedfacetname is not None:
-            selectedfacetname = self._selectedfacetname
-        else:
-            # XXX sinzui 2008-05-09 bug=226917: We should be retrieving the
-            # facet name from the layer implemented by the request.
-            view = get_current_view(self._request)
-            selectedfacetname = get_facet(view)
-        menu = queryAdapter(context, INavigationMenu, name=selectedfacetname)
-        if menu is None:
-            return {}
-        else:
-            menu.request = self._request
-            links = list(menu.iterlinks(request_url=self._request_url()))
-            return dict((link.name, link) for link in links)
+        try:
+            # NavigationMenus may be associated with a content object or one
+            # of its views. The context we need is the one from the TAL
+            # expression.
+            context = self._tales_context
+            if self._selectedfacetname is not None:
+                selectedfacetname = self._selectedfacetname
+            else:
+                # XXX sinzui 2008-05-09 bug=226917: We should be retrieving
+                # the facet name from the layer implemented by the request.
+                view = get_current_view(self._request)
+                selectedfacetname = get_facet(view)
+            try:
+                menu = nearest_adapter(
+                    context, INavigationMenu, name=selectedfacetname)
+            except NoCanonicalUrl:
+                menu = None
+            if menu is None or menu.disabled:
+                return {}
+            else:
+                return self._getMenuLinksAndAttributes(menu)
+        except AttributeError, e:
+            # If this method gets an AttributeError, we rethrow it as a
+            # AssertionError. Otherwise, zope will hide the root cause
+            # of the error and just say that "navigation" can't be traversed.
+            new_exception = AssertionError(
+                'AttributError in MenuAPI.navigation: %s' % e)
+            # We cannot use parens around the arguments to `raise`,
+            # since that will cause it to ignore the third argument,
+            # which is the original traceback.
+            raise new_exception, None, sys.exc_info()[2]
 
 
 class CountAPI:
@@ -281,7 +292,6 @@ class HTMLFormAPI:
 
     """
     implements(ITraversable)
-    __used_for__ = IBrowserApplicationRequest
 
     def __init__(self, request):
         self.form = request.form
@@ -331,8 +341,6 @@ class RequestAPI:
     """Adapter from IApplicationRequest to IRequestAPI."""
     implements(IRequestAPI)
 
-    __used_for__ = IApplicationRequest
-
     def __init__(self, request):
         self.request = request
 
@@ -381,7 +389,6 @@ class NoneFormatter:
     allowed_names = set([
         'approximatedate',
         'approximateduration',
-        'breadcrumbs',
         'break-long-words',
         'date',
         'datetime',
@@ -418,47 +425,175 @@ class NoneFormatter:
 
 
 class ObjectFormatterAPI:
-    """Adapter from any object to a formatted string.
+    """Adapter for any object to a formatted string."""
 
-    Used for fmt:url.
-    """
+    implements(ITraversable)
+
+    # Although we avoid mutables as class attributes, the two ones below are
+    # constants, so it's not a problem. We might want to use something like
+    # frozenset (http://code.activestate.com/recipes/414283/) here, though.
+    # The names which can be traversed further (e.g context/fmt:url/+edit).
+    traversable_names = {
+        'api_url': 'api_url',
+        'link': 'link',
+        'url': 'url',
+        }
+
+    # Names which are allowed but can't be traversed further.
+    final_traversable_names = {
+        'pagetitle': 'pagetitle',
+        'public-private-css': 'public_private_css',
+        }
 
     def __init__(self, context):
         self._context = context
 
-    def url(self, view_name=None):
-        url = canonical_url(
-            self._context, path_only_if_possible=True, view_name=view_name)
+    def url(self, view_name=None, rootsite=None):
+        """Return the object's canonical URL.
+
+        :param view_name: If not None, return the URL to the page with that
+            name on this object.
+        :param rootsite: If not None, return the URL to the page on the
+            specified rootsite.  Note this is available only for subclasses
+            that allow specifying the rootsite.
+        """
+        try:
+            url = canonical_url(
+                self._context, path_only_if_possible=True,
+                rootsite=rootsite, view_name=view_name)
+        except Unauthorized:
+            url = ""
         return url
 
+    def api_url(self, context):
+        """Return the object's (partial) canonical web service URL.
 
-class ObjectFormatterExtendedAPI(ObjectFormatterAPI):
-    """Adapter for any object to a formatted string.
-
-    Adds fmt:link which shows the icon and formatted string in an anchor.
-    """
-
-    implements(ITraversable)
-
-    allowed_names = set([
-        'url',
-        ])
+        This method returns everything that goes after the web service version
+        number.  Effectively the canonical URL but only the relative part with
+        no site.
+        """
+        try:
+            url = canonical_url(self._context, force_local_path=True)
+        except Unauthorized:
+            url = ""
+        return url
 
     def traverse(self, name, furtherPath):
-        if name == 'link':
-            extra_path = '/'.join(reversed(furtherPath))
+        if name.startswith('link:') or name.startswith('url:'):
+            rootsite = name.split(':')[1]
+            extra_path = None
+            if len(furtherPath) > 0:
+                extra_path = '/'.join(reversed(furtherPath))
+            # Remove remaining entries in furtherPath so that traversal
+            # stops here.
             del furtherPath[:]
-            return self.link(extra_path)
-        elif name in self.allowed_names:
-            return getattr(self, name)()
+            if name.startswith('link:'):
+                if rootsite is None:
+                    return self.link(extra_path)
+                else:
+                    return self.link(extra_path, rootsite=rootsite)
+            else:
+                if rootsite is None:
+                    self.url(extra_path)
+                else:
+                    return self.url(extra_path, rootsite=rootsite)
+        elif name in self.traversable_names:
+            if len(furtherPath) >= 1:
+                extra_path = '/'.join(reversed(furtherPath))
+                del furtherPath[:]
+            else:
+                extra_path = None
+            method_name = self.traversable_names[name]
+            return getattr(self, method_name)(extra_path)
+        elif name in self.final_traversable_names:
+            method_name = self.final_traversable_names[name]
+            return getattr(self, method_name)()
         else:
             raise TraversalError, name
 
-    def link(self, extra_path):
-        """Return an HTML link to the object's page containing an icon
-        followed by the object's name.
+    def link(self, view_name, rootsite=None):
+        """Return an HTML link to the object's page.
+
+        The link consists of an icon followed by the object's name.
+
+        :param view_name: If not None, the link will point to the page with
+            that name on this object.
+        :param rootsite: If not None, return the URL to the page on the
+            specified rootsite.  Note this is available only for subclasses
+            that allow specifying the rootsite.
         """
-        raise NotImplemented
+        raise NotImplementedError(
+            "No link implementation for %r, IPathAdapter implementation "
+            "for %r." % (self, self._context))
+
+    def public_private_css(self):
+        """Return the CSS class that represents the object's privacy."""
+        privacy = IPrivacy(self._context, None)
+        if privacy is not None and privacy.private:
+            return 'private'
+        else:
+            return 'public'
+
+    def pagetitle(self):
+        """The page title to be used.
+
+        By default, reverse breadcrumbs are always used if they are available.
+        If not available, then the view's .page_title attribute or entry in
+        pagetitles.py (deprecated) is used.  If breadcrumbs are available,
+        then a view can still choose to override them by setting the attribute
+        .override_title_breadcrumbs to True.
+        """
+        view = self._context
+        request = get_current_browser_request()
+        module = canonical.launchpad.pagetitles
+        hierarchy_view = getMultiAdapter(
+            (view.context, request), name='+hierarchy')
+        override = getattr(view, 'override_title_breadcrumbs', False)
+        if (override or
+            hierarchy_view is None or
+            not hierarchy_view.display_breadcrumbs):
+            # The breadcrumbs are either not available or are overridden.  If
+            # the view has a .page_title attribute use that.
+            page_title = getattr(view, 'page_title', None)
+            if page_title is not None:
+                return page_title
+            # If there is no template for the view, just use the default
+            # Launchpad title.
+            template = getattr(view, 'template', None)
+            if template is None:
+                template = getattr(view, 'index', None)
+                if template is None:
+                    return module.DEFAULT_LAUNCHPAD_TITLE
+            # There is no .page_title attribute on the view, so fallback to
+            # looking for an an entry in pagetitles.py.  This is deprecated
+            # though, so issue a warning.
+            filename = os.path.basename(template.filename)
+            name, ext = os.path.splitext(filename)
+            title_name = name.replace('-', '_')
+            title_object = getattr(module, title_name, None)
+            # Page titles are mandatory.
+            assert title_object is not None, (
+                'No .page_title or pagetitles.py found for %s'
+                % template.filename)
+            ## 2009-09-08 BarryWarsaw bug 426527: Enable this when we want to
+            ## force conversions from pagetitles.py; however tests will fail
+            ## because of this output.
+            ## warnings.warn('Old style pagetitles.py entry found for %s. '
+            ##               'Switch to using a .page_title attribute on the '
+            ##               'view instead.' % template.filename,
+            ##               DeprecationWarning)
+            if isinstance(title_object, basestring):
+                return title_object
+            else:
+                title = title_object(view.context, view)
+                if title is None:
+                    return module.DEFAULT_LAUNCHPAD_TITLE
+                else:
+                    return title
+        # Use the reverse breadcrumbs.
+        return SEPARATOR.join(
+            breadcrumb.text for breadcrumb
+            in reversed(hierarchy_view.items))
 
 
 class ObjectImageDisplayAPI:
@@ -469,29 +604,49 @@ class ObjectImageDisplayAPI:
     def __init__(self, context):
         self._context = context
 
-    def default_icon_resource(self, context):
+    #def default_icon_resource(self, context):
+    def sprite_css(self):
+        """Return the CSS class for the sprite"""
+        # XXX: mars 2008-08-22 bug=260468
+        # This should be refactored.  We shouldn't have to do type-checking
+        # using interfaces.
+        context = self._context
         if IProduct.providedBy(context):
-            return '/@@/product'
-        elif IProject.providedBy(context):
-            return '/@@/project'
+            return 'sprite product'
+        elif IProjectGroup.providedBy(context):
+            return 'sprite project'
         elif IPerson.providedBy(context):
             if context.isTeam():
-                return '/@@/team'
+                return 'sprite team'
             else:
                 if context.is_valid_person:
-                    return '/@@/person'
+                    return 'sprite person'
                 else:
-                    return '/@@/person-inactive'
+                    return 'sprite person-inactive'
         elif IDistribution.providedBy(context):
-            return '/@@/distribution'
+            return 'sprite distribution'
+        elif IDistributionSourcePackage.providedBy(context):
+            return 'sprite package-source'
         elif ISprint.providedBy(context):
-            return '/@@/meeting'
+            return 'sprite meeting'
         elif IBug.providedBy(context):
-            return '/@@/bug'
-        return '/@@/nyet-icon'
+            return 'sprite bug'
+        elif IPPA.providedBy(context):
+            if context.enabled:
+                return 'sprite ppa-icon'
+            else:
+                return 'sprite ppa-icon-inactive'
+        elif IBranch.providedBy(context):
+            return 'sprite branch'
+        elif ISpecification.providedBy(context):
+            return 'sprite blueprint'
+        return None
 
     def default_logo_resource(self, context):
-        if IProject.providedBy(context):
+        # XXX: mars 2008-08-22 bug=260468
+        # This should be refactored.  We shouldn't have to do type-checking
+        # using interfaces.
+        if IProjectGroup.providedBy(context):
             return '/@@/project-logo'
         elif IPerson.providedBy(context):
             if context.isTeam():
@@ -507,10 +662,13 @@ class ObjectImageDisplayAPI:
             return '/@@/distribution-logo'
         elif ISprint.providedBy(context):
             return '/@@/meeting-logo'
-        return '/@@/nyet-logo'
+        return None
 
     def default_mugshot_resource(self, context):
-        if IProject.providedBy(context):
+        # XXX: mars 2008-08-22 bug=260468
+        # This should be refactored.  We shouldn't have to do type-checking
+        # using interfaces.
+        if IProjectGroup.providedBy(context):
             return '/@@/project-mugshot'
         elif IPerson.providedBy(context):
             if context.isTeam():
@@ -526,27 +684,29 @@ class ObjectImageDisplayAPI:
             return '/@@/distribution-mugshot'
         elif ISprint.providedBy(context):
             return '/@@/meeting-mugshot'
-        return '/@@/nyet-mugshot'
+        return None
 
-    def icon(self, rootsite=None):
-        """Return the appropriate <img> tag for this object's icon."""
+    def _get_custom_icon_url(self):
+        """Return the URL for this object's icon."""
         context = self._context
-        if context is None:
-            # we handle None specially and return an empty string
-            return ''
         if IHasIcon.providedBy(context) and context.icon is not None:
-            url = context.icon.getURL()
+            icon_url = context.icon.getURL()
+            return icon_url
+        elif context is None:
+            return ''
         else:
-            if rootsite is None:
-                root_url = ''
-            else:
-                root_url = allvhosts.configs[rootsite].rooturl[:-1]
-            url = root_url + self.default_icon_resource(context)
-        icon = '<img alt="" width="14" height="14" src="%s" />'
-        return icon % url
+            return None
+
+    def icon(self):
+        #XXX: this should go away as soon as all image:icon where replaced
+        return None
 
     def logo(self):
-        """Return the appropriate <img> tag for this object's logo."""
+        """Return the appropriate <img> tag for this object's logo.
+
+        :return: A string, or None if the context object doesn't have
+            a logo.
+        """
         context = self._context
         if not IHasLogo.providedBy(context):
             context = nearest(context, IHasLogo)
@@ -558,35 +718,47 @@ class ObjectImageDisplayAPI:
             url = context.logo.getURL()
         else:
             url = self.default_logo_resource(context)
+            if url is None:
+                # We want to indicate that there is no logo for this
+                # object.
+                return None
         logo = '<img alt="" width="64" height="64" src="%s" />'
         return logo % url
 
     def mugshot(self):
-        """Return the appropriate <img> tag for this object's mugshot."""
+        """Return the appropriate <img> tag for this object's mugshot.
+
+        :return: A string, or None if the context object doesn't have
+            a mugshot.
+        """
         context = self._context
         assert IHasMugshot.providedBy(context), 'No Mugshot for this item'
         if context.mugshot is not None:
             url = context.mugshot.getURL()
         else:
             url = self.default_mugshot_resource(context)
-        mugshot = """<div style="width: 200; height: 200; float: right">
-            <img alt="" width="192" height="192" src="%s" />
-            </div>"""
+            if url is None:
+                # We want to indicate that there is no mugshot for this
+                # object.
+                return None
+        mugshot = """<img alt="" class="mugshot"
+            width="192" height="192" src="%s" />"""
         return mugshot % url
 
     def badges(self):
         raise NotImplementedError(
             "Badge display not implemented for this item")
 
-
-class PillarSearchItemAPI(ObjectImageDisplayAPI):
-    """Provides image:icon for a PillarSearchItem."""
-
-    def mugshot(self):
-        raise NotImplementedError("A PillarSearchItem doesn't have a mugshot")
-
-    def logo(self):
-        raise NotImplementedError("A PillarSearchItem doesn't have a logo")
+    def boolean(self):
+        """Return an icon representing the context as a boolean value."""
+        if bool(self._context):
+            icon = 'yes'
+        else:
+            icon = 'no'
+        markup = (
+            '<span class="sprite %(icon)s">&nbsp;'
+            '<span class="invisible-link">%(icon)s</span></span>')
+        return markup % dict(icon=icon)
 
 
 class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
@@ -603,31 +775,32 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
         'logo',
         'mugshot',
         'badges',
+        'sprite_css',
         ])
 
     icon_template = (
-        '<img height="14" width="14" alt="%s" title="%s" src="%s" />')
+        '<span alt="%s" title="%s" class="%s">&nbsp;</span>')
 
     linked_icon_template = (
-        '<a href="%s"><img height="14" width="14"'
-        ' alt="%s" title="%s" src="%s" /></a>')
+        '<a href="%s" alt="%s" title="%s" class="%s"></a>')
 
     def traverse(self, name, furtherPath):
         """Special-case traversal for icons with an optional rootsite."""
         if name in self.allowed_names:
             return getattr(self, name)()
-        elif name.startswith('icon:'):
-            rootsite = name.split(':', 1)[1]
-            return self.icon(rootsite=rootsite)
         else:
             raise TraversalError, name
 
-    def icon(self, rootsite=None):
-        """Display the icon dependent on the IBugTask.importance."""
-        if rootsite is not None:
-            root_url = allvhosts.configs[rootsite].rooturl[:-1]
+    def sprite_css(self):
+        """Return the CSS class for the sprite"""
+        if self._context.importance:
+            importance = self._context.importance.title.lower()
+            return "sprite bug-%s" % importance
         else:
-            root_url = ''
+            return "sprite bug"
+
+    def icon(self):
+        """Display the icon dependent on the IBugTask.importance."""
         if self._context.importance:
             importance = self._context.importance.title.lower()
             alt = "(%s)" % importance
@@ -636,13 +809,13 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
                 # The other status names do not make a lot of sense on
                 # their own, so tack on a noun here.
                 title += " importance"
-            src = "%s/@@/bug-%s" % (root_url, importance)
+            css = "sprite bug-%s" % importance
         else:
             alt = ""
             title = ""
-            src = "%s/@@/bug" % root_url
+            css = self.sprite_css()
 
-        return self.icon_template % (alt, title, src)
+        return self.icon_template % (alt, title, css)
 
     def _hasMentoringOffer(self):
         """Return whether the bug has a mentoring offer."""
@@ -650,37 +823,46 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
 
     def _hasBugBranch(self):
         """Return whether the bug has a branch linked to it."""
-        return self._context.bug.bug_branches.count() > 0
+        return self._context.bug.linked_branches.count() > 0
 
     def _hasSpecification(self):
         """Return whether the bug is linked to a specification."""
         return self._context.bug.specifications.count() > 0
+
+    def _hasPatch(self):
+        """Return whether the bug has a patch."""
+        return self._context.bug.has_patches
+
 
     def badges(self):
 
         badges = []
         if self._context.bug.private:
             badges.append(self.icon_template % (
-                "private", "Private","/@@/private"))
+                "private", "Private","sprite private"))
 
         if self._hasMentoringOffer():
             badges.append(self.icon_template % (
-                "mentoring", "Mentoring offered", "/@@/mentoring"))
+                "mentoring", "Mentoring offered", "sprite mentoring"))
 
         if self._hasBugBranch():
             badges.append(self.icon_template % (
-                "branch", "Branch exists", "/@@/branch"))
+                "branch", "Branch exists", "sprite branch"))
 
         if self._hasSpecification():
             badges.append(self.icon_template % (
-                "blueprint", "Related to a blueprint", "/@@/blueprint"))
+                "blueprint", "Related to a blueprint", "sprite blueprint"))
 
         if self._context.milestone:
             milestone_text = "milestone %s" % self._context.milestone.name
             badges.append(self.linked_icon_template % (
                 canonical_url(self._context.milestone),
                 milestone_text , "Linked to %s" % milestone_text,
-                "/@@/milestone"))
+                "sprite milestone"))
+
+        if self._hasPatch():
+            badges.append(self.icon_template % (
+                "haspatch", "Has a patch", "sprite haspatch-icon"))
 
         # Join with spaces to avoid the icons smashing into each other
         # when multiple ones are presented.
@@ -707,12 +889,16 @@ class BugTaskListingItemImageDisplayAPI(BugTaskImageDisplayAPI):
         """See `BugTaskImageDisplayAPI`"""
         return self._context.has_specification
 
+    def _hasPatch(self):
+        """See `BugTaskImageDisplayAPI`"""
+        return self._context.has_patch
+
 
 class QuestionImageDisplayAPI(ObjectImageDisplayAPI):
     """Adapter for IQuestion to a formatted string. Used for image:icon."""
 
-    def icon(self):
-        return '<img alt="" height="14" width="14" src="/@@/question" />'
+    def sprite_css(self):
+        return "sprite question"
 
 
 class SpecificationImageDisplayAPI(ObjectImageDisplayAPI):
@@ -723,45 +909,32 @@ class SpecificationImageDisplayAPI(ObjectImageDisplayAPI):
     Used for image:icon.
     """
 
-    icon_template = """
-        <img height="14" width="14" alt="%s" title="%s" src="%s" />"""
+    icon_template = (
+        '<span alt="%s" title="%s" class="%s" />')
 
-    def icon(self):
-        # The icon displayed is dependent on the IBugTask.importance.
+    def sprite_css(self):
+        """Return the CSS class for the sprite"""
         if self._context.priority:
             priority = self._context.priority.title.lower()
-            alt = "(%s)" % priority
-            title = priority.capitalize()
-            if priority != 'not':
-                # The other status names do not make a lot of sense on
-                # their own, so tack on a noun here.
-                title += " priority"
-            else:
-                title += " a priority"
-            src = "/@@/blueprint-%s" % priority
+            return "sprite blueprint-%s" % priority
         else:
-            alt = ""
-            title = ""
-            src = "/@@/blueprint"
-
-        return self.icon_template % (alt, title, src)
-
+            return "sprite blueprint"
 
     def badges(self):
 
         badges = ''
         if self._context.mentoring_offers.count() > 0:
             badges += self.icon_template % (
-                "mentoring", "Mentoring offered", "/@@/mentoring")
+                "mentoring", "Mentoring offered", "sprite mentoring")
 
-        if self._context.branch_links.count() > 0:
+        if self._context.linked_branches.count() > 0:
             badges += self.icon_template % (
-                "branch", "Branch is available", "/@@/branch")
+                "branch", "Branch is available", "sprite branch")
 
         if self._context.informational:
             badges += self.icon_template % (
                 "informational", "Blueprint is purely informational",
-                "/@@/info")
+                "sprite info")
 
         return badges
 
@@ -777,6 +950,7 @@ class KarmaCategoryImageDisplayAPI(ObjectImageDisplayAPI):
         'code': '/@@/branch',
         'translations': '/@@/translation',
         'specs': '/@@/blueprint',
+        'soyuz': '/@@/package-source',
         'answers': '/@@/question'}
 
     def icon(self):
@@ -801,26 +975,62 @@ class BuildImageDisplayAPI(ObjectImageDisplayAPI):
 
     Used for image:icon.
     """
+    icon_template = (
+        '<img width="%(width)s" height="14" alt="%(alt)s" '
+        'title="%(title)s" src="%(src)s" />')
+
+
+    def icon(self):
+        """Return the appropriate <img> tag for the build icon."""
+        icon_map = {
+            BuildStatus.NEEDSBUILD: {'src': "/@@/build-needed"},
+            BuildStatus.FULLYBUILT: {'src': "/@@/build-success"},
+            BuildStatus.FAILEDTOBUILD: {
+                'src': "/@@/build-failed",
+                'width': '16'
+                },
+            BuildStatus.MANUALDEPWAIT: {'src': "/@@/build-depwait"},
+            BuildStatus.CHROOTWAIT: {'src': "/@@/build-chrootwait"},
+            BuildStatus.SUPERSEDED: {'src': "/@@/build-superseded"},
+            BuildStatus.BUILDING: {'src': "/@@/processing"},
+            BuildStatus.FAILEDTOUPLOAD: {'src': "/@@/build-failedtoupload"},
+            }
+
+        alt = '[%s]' % self._context.status.name
+        title = self._context.status.title
+        source = icon_map[self._context.status].get('src')
+        width = icon_map[self._context.status].get('width', '14')
+
+        return self.icon_template % {
+            'alt': alt,
+            'title': title,
+            'src': source,
+            'width': width,
+            }
+
+
+class ArchiveImageDisplayAPI(ObjectImageDisplayAPI):
+    """Adapter for IArchive objects to an image.
+
+    Used for image:icon.
+    """
     icon_template = """
         <img width="14" height="14" alt="%s" title="%s" src="%s" />
         """
 
     def icon(self):
-        """Return the appropriate <img> tag for the build icon."""
+        """Return the appropriate <img> tag for an archive."""
         icon_map = {
-            BuildStatus.NEEDSBUILD: "/@@/build-needed",
-            BuildStatus.FULLYBUILT: "/@@/build-success",
-            BuildStatus.FAILEDTOBUILD: "/@@/build-failure",
-            BuildStatus.MANUALDEPWAIT: "/@@/build-depwait",
-            BuildStatus.CHROOTWAIT: "/@@/build-chrootwait",
-            BuildStatus.SUPERSEDED: "/@@/build-superseded",
-            BuildStatus.BUILDING: "/@@/build-building",
-            BuildStatus.FAILEDTOUPLOAD: "/@@/build-failedtoupload",
+            ArchivePurpose.PRIMARY: '/@@/distribution',
+            ArchivePurpose.PARTNER: '/@@/distribution',
+            ArchivePurpose.PPA: '/@@/ppa-icon',
+            ArchivePurpose.COPY: '/@@/distribution',
+            ArchivePurpose.DEBUG: '/@@/distribution',
             }
 
-        alt = '[%s]' % self._context.buildstate.name
-        title = self._context.buildstate.title
-        source = icon_map[self._context.buildstate]
+        alt = '[%s]' % self._context.purpose.title
+        title = self._context.purpose.title
+        source = icon_map[self._context.purpose]
 
         return self.icon_template % (alt, title, source)
 
@@ -846,49 +1056,134 @@ class BadgeDisplayAPI:
         return ''.join([badge.renderHeadingImage() for badge in badges])
 
 
-class PersonFormatterAPI(ObjectFormatterExtendedAPI):
+class PersonFormatterAPI(ObjectFormatterAPI):
     """Adapter for `IPerson` objects to a formatted string."""
 
-    implements(ITraversable)
+    traversable_names = {'link': 'link', 'url': 'url', 'api_url': 'api_url',
+                         'icon': 'icon',
+                         'displayname': 'displayname',
+                         'unique_displayname': 'unique_displayname',
+                         'name_link': 'nameLink',
+                         }
 
-    allowed_names = set([
-        'url',
-        ])
+    final_traversable_names = {'local-time': 'local_time'}
+    final_traversable_names.update(ObjectFormatterAPI.final_traversable_names)
 
-    def traverse(self, name, furtherPath):
-        """Special-case traversal for links with an optional rootsite."""
-        extra_path = '/'.join(reversed(furtherPath))
-        if name == 'link':
-            # Remove remaining entries in furtherPath so that traversal
-            # stops here.
-            del furtherPath[:]
-            return self.link(extra_path)
-        elif name.startswith('link:'):
-            # Remove remaining entries in furtherPath so that traversal
-            # stops here.
-            del furtherPath[:]
-            rootsite = name.split(':')[1]
-            return self.link(extra_path, rootsite=rootsite)
-        elif name in self.allowed_names:
-            return getattr(self, name)()
+    def local_time(self):
+        """Return the local time for this person."""
+        time_zone = 'UTC'
+        if self._context.time_zone is not None:
+            time_zone = self._context.time_zone
+        return datetime.now(pytz.timezone(time_zone)).strftime('%T %Z')
+
+    def url(self, view_name=None, rootsite='mainsite'):
+        """See `ObjectFormatterAPI`.
+
+        The default URL for a person is to the mainsite.
+        """
+        return super(PersonFormatterAPI, self).url(view_name, rootsite)
+
+    def _makeLink(self, view_name, rootsite, text):
+        person = self._context
+        url = self.url(view_name, rootsite)
+        custom_icon = ObjectImageDisplayAPI(person)._get_custom_icon_url()
+        if custom_icon is None:
+            css_class = ObjectImageDisplayAPI(person).sprite_css()
+            return (u'<a href="%s" class="%s">%s</a>') % (
+                url, css_class, cgi.escape(text))
         else:
-            raise TraversalError(name)
+            return (u'<a href="%s" class="bg-image" '
+                     'style="background-image: url(%s)">%s</a>') % (
+                url, custom_icon, cgi.escape(text))
 
-    def link(self, extra_path, rootsite=None):
-        """Return an HTML link to the person's page containing an icon
-        followed by the person's name.
+    def link(self, view_name, rootsite='mainsite'):
+        """See `ObjectFormatterAPI`.
+
+        Return an HTML link to the person's page containing an icon
+        followed by the person's name. The default URL for a person is to
+        the mainsite.
+        """
+        return self._makeLink(view_name, rootsite, self._context.displayname)
+
+    def displayname(self, view_name, rootsite=None):
+        """Return the displayname as a string."""
+        person = self._context
+        return person.displayname
+
+    def unique_displayname(self, view_name):
+        """Return the unique_displayname as a string."""
+        person = self._context
+        return person.unique_displayname
+
+    def icon(self, view_name):
+        """Return the URL for the person's icon."""
+        custom_icon = ObjectImageDisplayAPI(
+            self._context)._get_custom_icon_url()
+        if custom_icon is None:
+            css_class = ObjectImageDisplayAPI(self._context).sprite_css()
+            return '<span class="' + css_class + '"></span>'
+        else:
+            return '<img src="%s" width="14" height="14" />' % custom_icon
+
+    def nameLink(self, view_name):
+        """Return the Launchpad id of the person, linked to their profile."""
+        return self._makeLink(view_name, None, self._context.name)
+
+
+class TeamFormatterAPI(PersonFormatterAPI):
+    """Adapter for `ITeam` objects to a formatted string."""
+
+    hidden = u'<hidden>'
+
+    def url(self, view_name=None, rootsite='mainsite'):
+        """See `ObjectFormatterAPI`.
+
+        The default URL for a team is to the mainsite. None is returned
+        when the user does not have permission to review the team.
+        """
+        if not check_permission('launchpad.View', self._context):
+            # This person has no permission to view the team details.
+            return None
+        return super(TeamFormatterAPI, self).url(view_name, rootsite)
+
+    def api_url(self, context):
+        """See `ObjectFormatterAPI`."""
+        if not check_permission('launchpad.View', self._context):
+            # This person has no permission to view the team details.
+            return None
+        return super(TeamFormatterAPI, self).api_url(context)
+
+    def link(self, view_name, rootsite='mainsite'):
+        """See `ObjectFormatterAPI`.
+
+        The default URL for a team is to the mainsite. None is returned
+        when the user does not have permission to review the team.
         """
         person = self._context
-        url = canonical_url(person, rootsite=rootsite)
-        if extra_path:
-            url = '%s/%s' % (url, extra_path)
-        image_html = ObjectImageDisplayAPI(person).icon(rootsite=rootsite)
-        return '<a href="%s">%s&nbsp;%s</a>' % (
-            url, image_html, cgi.escape(person.browsername))
+        if not check_permission('launchpad.View', person):
+            # This person has no permission to view the team details.
+            return '<span class="sprite team">%s</span>' % cgi.escape(
+                self.hidden)
+        return super(TeamFormatterAPI, self).link(view_name, rootsite)
 
+    def displayname(self, view_name, rootsite=None):
+        """See `PersonFormatterAPI`."""
+        person = self._context
+        if not check_permission('launchpad.View', person):
+            # This person has no permission to view the team details.
+            return self.hidden
+        return super(TeamFormatterAPI, self).displayname(view_name, rootsite)
 
-class CustomizableFormatter(ObjectFormatterExtendedAPI):
-    """A ObjectFormatterExtendedAPI that is easy to customize.
+    def unique_displayname(self, view_name):
+        """See `PersonFormatterAPI`."""
+        person = self._context
+        if not check_permission('launchpad.View', person):
+            # This person has no permission to view the team details.
+            return self.hidden
+        return super(TeamFormatterAPI, self).unique_displayname(view_name)
+
+class CustomizableFormatter(ObjectFormatterAPI):
+    """A ObjectFormatterAPI that is easy to customize.
 
     This provides fmt:url and fmt:link support for the object it
     adapts.
@@ -905,9 +1200,6 @@ class CustomizableFormatter(ObjectFormatterExtendedAPI):
 
     For greater control over the summary, overrride
     _make_link_summary.
-
-    If image:icon does not provide a suitable icon, override
-    _get_icon.
 
     If a different permission is required, override _link_permission.
     """
@@ -936,18 +1228,14 @@ class CustomizableFormatter(ObjectFormatterExtendedAPI):
                 values[key] = cgi.escape(value)
         return self._link_summary_template % values
 
-    def _get_icon(self):
+    def sprite_css(self):
         """Retrieve the icon for the _context, if any.
 
-        :return: The icon HTML or None if no icon is available.
+        :return: The icon css or None if no icon is available.
         """
-        icon = queryAdapter(self._context, IPathAdapter, 'image').icon()
-        if 'src="/@@/nyet-icon"' in icon:
-            return None
-        else:
-            return icon
+        return queryAdapter(self._context, IPathAdapter, 'image').sprite_css()
 
-    def link(self, extra_path):
+    def link(self, view_name, rootsite=None):
         """Return html including a link, description and icon.
 
         Icon and link are optional, depending on type and permissions.
@@ -955,91 +1243,202 @@ class CustomizableFormatter(ObjectFormatterExtendedAPI):
         for the icon, self._should_link to determine whether to link, and
         self.url() to generate the url.
         """
-        html = self._get_icon()
-        if html is None:
-            html = ''
+        sprite = self.sprite_css()
+        if sprite is None:
+            css = ''
         else:
-            html += '&nbsp;'
-        html += self._make_link_summary()
-        if extra_path == '':
-            extra_path = None
+            css = ' class="' + sprite + '"'
+
+        summary = self._make_link_summary()
         if check_permission(self._link_permission, self._context):
-            url = self.url(extra_path)
+            url = self.url(view_name, rootsite)
         else:
             url = ''
         if url:
-            html = '<a href="%s">%s</a>' % (url, html)
-        return html
+            return '<a href="%s"%s>%s</a>' % (url, css, summary)
+        else:
+            return summary
 
 
 class PillarFormatterAPI(CustomizableFormatter):
-    """Adapter for IProduct, IDistribution and IProject objects to a
+    """Adapter for IProduct, IDistribution and IProjectGroup objects to a
     formatted string."""
 
     _link_summary_template = '%(displayname)s'
     _link_permission = 'zope.Public'
 
     def _link_summary_values(self):
-        return {'displayname': self._context.displayname}
+        displayname = self._context.displayname
+        return {'displayname': displayname}
+
+    def url(self, view_name=None, rootsite=None):
+        """See `ObjectFormatterAPI`.
+
+        The default URL for a pillar is to the mainsite.
+        """
+        return super(PillarFormatterAPI, self).url(view_name, rootsite)
+
+    def link(self, view_name, rootsite='mainsite'):
+        """The html to show a link to a Product, ProjectGroup or distribution.
+
+        In the case of Products or ProjectGroups we display the custom
+        icon, if one exists. The default URL for a pillar is to the mainsite.
+        """
+
+        html = super(PillarFormatterAPI, self).link(view_name)
+        context = self._context
+        custom_icon = ObjectImageDisplayAPI(
+            context)._get_custom_icon_url()
+        url = self.url(view_name, rootsite)
+        summary = self._make_link_summary()
+        if custom_icon is None:
+            css_class = ObjectImageDisplayAPI(context).sprite_css()
+            html = (u'<a href="%s" class="%s">%s</a>') % (
+                url, css_class, summary)
+        else:
+            html = (u'<a href="%s" class="bg-image" '
+                     'style="background-image: url(%s)">%s</a>') % (
+                url, custom_icon, summary)
+        if IProduct.providedBy(context):
+            license_status = context.license_status
+            if license_status != LicenseStatus.OPEN_SOURCE:
+                html = '<span title="%s">%s (%s)</span>' % (
+                        license_status.description, html,
+                        license_status.title)
+        return html
 
 
-class BranchFormatterAPI(ObjectFormatterExtendedAPI):
+class DistroSeriesFormatterAPI(CustomizableFormatter):
+    """Adapter for IDistroSeries objects to a formatted string."""
+
+    _link_summary_template = '%(displayname)s'
+    _link_permission = 'zope.Public'
+
+    def _link_summary_values(self):
+        displayname = self._context.displayname
+        return {'displayname': displayname}
+
+
+class SourcePackageFormatterAPI(CustomizableFormatter):
+    """Adapter for ISourcePackage objects to a formatted string."""
+
+    _link_summary_template = '%(displayname)s'
+
+    def _link_summary_values(self):
+        displayname = self._context.displayname
+        return {'displayname': displayname}
+
+
+class SourcePackageReleaseFormatterAPI(CustomizableFormatter):
+
+    """Adapter for ISourcePackageRelease objects to a formatted string."""
+
+    _link_summary_template = '%(sourcepackage)s %(version)s'
+
+    def _link_summary_values(self):
+        return {'sourcepackage':
+                self._context.distrosourcepackage.displayname,
+                'version': self._context.version}
+
+
+class ProductReleaseFileFormatterAPI(ObjectFormatterAPI):
+    """Adapter for `IProductReleaseFile` objects to a formatted string."""
+
+    traversable_names = {'link': 'link', 'url': 'url'}
+
+    def link(self, view_name):
+        """A hyperlinked ProductReleaseFile.
+
+        This consists of a download icon, the link to the ProductReleaseFile
+        itself (with a tooltip stating its size) and links to that file's
+        signature and MD5 hash.
+        """
+        file_ = self._context
+        file_size = NumberFormatterAPI(
+            file_.libraryfile.content.filesize).bytes()
+        if file_.description is not None:
+            description = cgi.escape(file_.description)
+        else:
+            description = file_.libraryfile.filename
+        link_title = "%s (%s)" % (description, file_size)
+        download_url = self._getDownloadURL(file_.libraryfile)
+        md5_url = urlappend(download_url, '+md5')
+        replacements = dict(
+            url=download_url, filename=file_.libraryfile.filename,
+            md5_url=md5_url, link_title=link_title)
+        html = (
+            '<img alt="download icon" src="/@@/download" />'
+            '<strong>'
+            '  <a title="%(link_title)s" href="%(url)s">%(filename)s</a> '
+            '</strong>'
+            '(<a href="%(md5_url)s">md5</a>')
+        if file_.signature is not None:
+            html += ', <a href="%(signature_url)s">sig</a>)'
+            replacements['signature_url'] = self._getDownloadURL(
+                file_.signature)
+        else:
+            html += ')'
+        return html % replacements
+
+    def url(self, view_name=None, rootsite=None):
+        """Return the URL to download the file."""
+        return self._getDownloadURL(self._context.libraryfile)
+
+    @property
+    def _release(self):
+        return self._context.productrelease
+
+    def _getDownloadURL(self, lfa):
+        """Return the download URL for the given `LibraryFileAlias`."""
+        url = urlappend(canonical_url(self._release), '+download')
+        # Quote the filename to eliminate non-ascii characters which
+        # are invalid in the url.
+        url = urlappend(url, urllib.quote(lfa.filename.encode('utf-8')))
+        return str(URI(url).replace(scheme='http'))
+
+
+class BranchFormatterAPI(ObjectFormatterAPI):
     """Adapter for IBranch objects to a formatted string."""
 
-    def traverse(self, name, furtherPath):
-        """Special case traversal to support multiple link formats."""
-        if name == 'project-link':
-            extra_path = '/'.join(reversed(furtherPath))
-            del furtherPath[:]
-            return self.projectLink(extra_path)
-        if name == 'title-link':
-            extra_path = '/'.join(reversed(furtherPath))
-            del furtherPath[:]
-            return self.titleLink(extra_path)
-        return ObjectFormatterExtendedAPI.traverse(self, name, furtherPath)
+    traversable_names = {
+        'link': 'link', 'url': 'url', 'project-link': 'projectLink',
+        'title-link': 'titleLink', 'bzr-link': 'bzrLink',
+        'api_url': 'api_url'}
 
-    def _args(self, extra_path):
+    def _args(self, view_name):
         """Generate a dict of attributes for string template expansion."""
         branch = self._context
-        url = canonical_url(branch)
-        if extra_path:
-            url = '%s/%s' % (url, extra_path)
-        if branch.title is not None:
-            title = branch.title
-        else:
-            title = "(no title)"
-        if branch.author is not None:
-            author = branch.author.name
-        else:
-            author = branch.owner.name
         return {
-            'author': author,
+            'bzr_identity': branch.bzr_identity,
             'display_name': cgi.escape(branch.displayname),
             'name': branch.name,
-            'title': cgi.escape(title),
             'unique_name' : branch.unique_name,
-            'url': url,
+            'url': self.url(view_name),
             }
 
-    def link(self, extra_path):
-        """A hyperlinked branch icon with the unique name."""
+    def link(self, view_name):
+        """A hyperlinked branch icon with the displayname."""
         return (
-            '<a href="%(url)s" title="%(display_name)s">'
-            '<img src="/@@/branch" alt=""/>'
-            '&nbsp;%(unique_name)s</a>' % self._args(extra_path))
+            '<a href="%(url)s" class="sprite branch">'
+            '%(display_name)s</a>' % self._args(view_name))
 
-    def projectLink(self, extra_path):
+    def bzrLink(self, view_name):
+        """A hyperlinked branch icon with the bazaar identity."""
+        # Defer to link.
+        return self.link(view_name)
+
+    def projectLink(self, view_name):
         """A hyperlinked branch icon with the name and title."""
         return (
             '<a href="%(url)s" title="%(display_name)s">'
             '<img src="/@@/branch" alt=""/>'
-            '&nbsp;%(name)s</a>: %(title)s' % self._args(extra_path))
+            '&nbsp;%(name)s</a>: %(title)s' % self._args(view_name))
 
-    def titleLink(self, extra_path):
+    def titleLink(self, view_name):
         """A hyperlinked branch name with following title."""
         return (
             '<a href="%(url)s" title="%(display_name)s">'
-            '%(name)s</a>: %(title)s' % self._args(extra_path))
+            '%(name)s</a>: %(title)s' % self._args(view_name))
 
 
 class BranchSubscriptionFormatterAPI(CustomizableFormatter):
@@ -1057,12 +1456,11 @@ class BranchSubscriptionFormatterAPI(CustomizableFormatter):
 
 class BranchMergeProposalFormatterAPI(CustomizableFormatter):
 
-    _link_summary_template = _('Proposed merge of %(source)s into %(target)s')
+    _link_summary_template = _('%(title)s')
 
     def _link_summary_values(self):
         return {
-            'source': self._context.source_branch.title,
-            'target': self._context.target_branch.title,
+            'title': self._context.title,
             }
 
 
@@ -1104,17 +1502,44 @@ class BugTaskFormatterAPI(CustomizableFormatter):
 class CodeImportFormatterAPI(CustomizableFormatter):
     """Adapter providing fmt support for CodeImport objects"""
 
-    _link_summary_template = _('Import of %(product)s: %(branch)s')
+    _link_summary_template = _('Import of %(target)s: %(branch)s')
     _link_permission = 'zope.Public'
 
     def _link_summary_values(self):
         """See CustomizableFormatter._link_summary_values."""
-        branch_title = self._context.branch.title
-        if branch_title is None:
-            branch_title = _('(no title)')
-        return {'product': self._context.product.displayname,
-                'branch': branch_title,
+        return {'target': self._context.branch.target.displayname,
+                'branch': self._context.branch.bzr_identity,
                }
+
+    def url(self, view_name=None, rootsite=None):
+        """See `ObjectFormatterAPI`."""
+        # The url of a code import is the associated branch.
+        # This is still here primarily for supporting branch deletion,
+        # which does a fmt:link of the other entities that will be deleted.
+        url = canonical_url(
+            self._context.branch, path_only_if_possible=True,
+            view_name=view_name)
+        return url
+
+
+class PackageBuildFormatterAPI(ObjectFormatterAPI):
+    """Adapter providing fmt support for `IPackageBuild` objects."""
+    def _composeArchiveReference(self, archive):
+        if archive.is_ppa:
+            return " [%s/%s]" % (
+                cgi.escape(archive.owner.name), cgi.escape(archive.name))
+        else:
+            return ""
+
+    def link(self, view_name, rootsite=None):
+        build = self._context
+        if not check_permission('launchpad.View', build):
+            return 'private source'
+
+        url = self.url(view_name=view_name, rootsite=rootsite)
+        title = cgi.escape(build.title)
+        archive = self._composeArchiveReference(build.archive)
+        return '<a href="%s">%s</a>%s' % (url, title, archive)
 
 
 class CodeImportMachineFormatterAPI(CustomizableFormatter):
@@ -1139,10 +1564,27 @@ class MilestoneFormatterAPI(CustomizableFormatter):
         return {'title': self._context.title}
 
 
+class ProductReleaseFormatterAPI(CustomizableFormatter):
+    """Adapter providing fmt support for Milestone objects."""
+
+    _link_summary_template = _('%(displayname)s %(code_name)s')
+    _link_permission = 'zope.Public'
+
+    def _link_summary_values(self):
+        """See CustomizableFormatter._link_summary_values."""
+        code_name = self._context.milestone.code_name
+        if code_name is None or code_name.strip() == '':
+            code_name = ''
+        else:
+            code_name = '(%s)' % code_name.strip()
+        return dict(displayname=self._context.milestone.displayname,
+                    code_name=code_name)
+
+
 class ProductSeriesFormatterAPI(CustomizableFormatter):
     """Adapter providing fmt support for ProductSeries objects"""
 
-    _link_summary_template = _('%(product)s Series: %(series)s')
+    _link_summary_template = _('%(product)s %(series)s series')
 
     def _link_summary_values(self):
         """See CustomizableFormatter._link_summary_values."""
@@ -1161,6 +1603,27 @@ class QuestionFormatterAPI(CustomizableFormatter):
         return {'id': str(self._context.id), 'title': self._context.title}
 
 
+class SourcePackageRecipeFormatterAPI(CustomizableFormatter):
+    """Adapter providing fmt support for ISourcePackageRecipe objects."""
+
+    _link_summary_template = 'Recipe %(name)s for %(owner)s'
+
+    def _link_summary_values(self):
+        return {'name': self._context.name,
+                'owner': self._context.owner.displayname}
+
+
+class SourcePackageRecipeBuildFormatterAPI(CustomizableFormatter):
+    """Adapter providing fmt support for ISourcePackageRecipe objects."""
+
+    _link_summary_template = '%(name)s recipe build [%(owner)s/%(archive)s]'
+
+    def _link_summary_values(self):
+        return {'name': self._context.recipe.base_branch.unique_name,
+                'owner': self._context.archive.owner.name,
+                'archive': self._context.archive.name}
+
+
 class SpecificationFormatterAPI(CustomizableFormatter):
     """Adapter providing fmt support for Specification objects"""
 
@@ -1172,8 +1635,8 @@ class SpecificationFormatterAPI(CustomizableFormatter):
         return {'title': self._context.title}
 
 
-class CodeReviewMessageFormatterAPI(CustomizableFormatter):
-    """Adapter providing fmt support for CodeReviewMessage objects"""
+class CodeReviewCommentFormatterAPI(CustomizableFormatter):
+    """Adapter providing fmt support for CodeReviewComment objects"""
 
     _link_summary_template = _('Comment by %(author)s')
     _link_permission = 'zope.Public'
@@ -1181,6 +1644,66 @@ class CodeReviewMessageFormatterAPI(CustomizableFormatter):
     def _link_summary_values(self):
         """See CustomizableFormatter._link_summary_values."""
         return {'author': self._context.message.owner.displayname}
+
+
+class PPAFormatterAPI(CustomizableFormatter):
+    """Adapter providing fmt support for `IPPA` objects."""
+
+    _link_summary_template = '%(display_name)s'
+    _link_permission = 'launchpad.View'
+    _reference_template = "ppa:%(owner_name)s/%(ppa_name)s"
+
+    final_traversable_names = {
+        'reference': 'reference',
+        }
+    final_traversable_names.update(
+        CustomizableFormatter.final_traversable_names)
+
+    def _link_summary_values(self):
+        """See CustomizableFormatter._link_summary_values."""
+        return {
+            'display_name': self._context.displayname,
+            }
+
+    def link(self, view_name):
+        """Return html including a link for the context PPA.
+
+        Render a link using CSS sprites for users with permission to view
+        the PPA.
+
+        Disabled PPAs are listed with sprites but not linkified.
+
+        Unaccessible private PPA are not rendered at all (empty string
+        is returned).
+        """
+        summary = self._make_link_summary()
+        css = self.sprite_css()
+        if check_permission(self._link_permission, self._context):
+            url = self.url(view_name)
+            return '<a href="%s" class="%s">%s</a>' % (url, css, summary)
+        else:
+            if not self._context.private:
+                return '<span class="%s">%s</span>' % (css, summary)
+            else:
+                return ''
+
+    def reference(self, view_name=None, rootsite=None):
+        """Return the text PPA reference for a PPA."""
+        # XXX: noodles 2010-02-11 bug=336779: This following check
+        # should be replaced with the normal check_permission once
+        # permissions for archive subscribers has been resolved.
+        if self._context.private:
+            request = get_current_browser_request()
+            person = IPerson(request.principal)
+            subscriptions = getUtility(IArchiveSubscriberSet).getBySubscriber(
+                person, self._context)
+            if subscriptions.is_empty():
+                return ''
+
+        return self._reference_template % {
+            'owner_name': self._context.owner.name,
+            'ppa_name': self._context.name,
+            }
 
 
 class SpecificationBranchFormatterAPI(CustomizableFormatter):
@@ -1196,19 +1719,27 @@ class SpecificationBranchFormatterAPI(CustomizableFormatter):
         formatter = SpecificationFormatterAPI(self._context.specification)
         return formatter._get_icon()
 
+    def sprite_css(self):
+        return queryAdapter(
+            self._context.specification, IPathAdapter, 'image').sprite_css()
+
 
 class BugTrackerFormatterAPI(ObjectFormatterAPI):
     """Adapter for `IBugTracker` objects to a formatted string."""
 
-    implements(ITraversable)
+    final_traversable_names = {
+        'aliases': 'aliases',
+        'external-link': 'external_link',
+        'external-title-link': 'external_title_link'}
+    final_traversable_names.update(ObjectFormatterAPI.final_traversable_names)
 
-    def link(self):
+    def link(self, view_name):
         """Return an HTML link to the bugtracker page.
 
         If the user is not logged-in, the title of the bug tracker is
         modified to obfuscate all email addresses.
         """
-        url = self.url()
+        url = self.url(view_name)
         title = self._context.title
         if getUtility(ILaunchBag).user is None:
             title = FormattersAPI(title).obfuscate_email()
@@ -1258,32 +1789,14 @@ class BugTrackerFormatterAPI(ObjectFormatterAPI):
             else:
                 yield alias
 
-    def traverse(self, name, furtherPath):
-        """See `ITraversable`.
-
-        Names supported:
-          url: As for `ObjectFormatterAPI`.
-          external-link: See `external_link`.
-          aliases: See `aliases`.
-        """
-        if name == 'url':
-            return self.url()
-        elif name == 'link':
-            return self.link()
-        elif name == 'external-link':
-            return self.external_link()
-        elif name == 'external-title-link':
-            return self.external_title_link()
-        elif name == 'aliases':
-            return self.aliases()
-        else:
-            raise TraversalError(name)
-
 
 class BugWatchFormatterAPI(ObjectFormatterAPI):
     """Adapter for `IBugWatch` objects to a formatted string."""
 
-    implements(ITraversable)
+    final_traversable_names = {
+        'external-link': 'external_link',
+        'external-link-short': 'external_link_short'}
+    final_traversable_names.update(ObjectFormatterAPI.final_traversable_names)
 
     def _make_external_link(self, summary=None):
         """Return an external HTML link to the target of the bug watch.
@@ -1325,23 +1838,6 @@ class BugWatchFormatterAPI(ObjectFormatterAPI):
         """
         return self._make_external_link(self._context.remotebug)
 
-    def traverse(self, name, furtherPath):
-        """See `ITraversable`.
-
-        Names supported:
-          url: As for `ObjectFormatterAPI`.
-          external-link: See `external_link`.
-          external-link-short: See `external_link_short`.
-        """
-        if name == 'url':
-            return self.url()
-        elif name == 'external-link':
-            return self.external_link()
-        elif name == 'external-link-short':
-            return self.external_link_short()
-        else:
-            raise TraversalError(name)
-
 
 class NumberFormatterAPI:
     """Adapter for converting numbers to formatted strings."""
@@ -1361,8 +1857,24 @@ class NumberFormatterAPI:
             return self.float(float(format))
         elif name == 'bytes':
             return self.bytes()
+        elif name == 'intcomma':
+            return self.intcomma()
         else:
             raise TraversalError(name)
+
+    def intcomma(self):
+        """Return this number with its thousands separated by comma.
+
+        This can only be used for integers.
+        """
+        if not isinstance(self._number, int):
+            raise AssertionError("This can't be used with non-integers")
+        L = []
+        for index, char in enumerate(reversed(str(self._number))):
+            if index != 0 and (index % 3) == 0:
+                L.insert(0, ',')
+            L.insert(0, char)
+        return ''.join(L)
 
     def bytes(self):
         """Render number as byte contractions according to IEC60027-2."""
@@ -1406,7 +1918,8 @@ class DateTimeFormatterAPI:
 
     def time(self):
         if self._datetime.tzinfo:
-            value = self._datetime.astimezone(getUtility(ILaunchBag).timezone)
+            value = self._datetime.astimezone(
+                getUtility(ILaunchBag).time_zone)
             return value.strftime('%T %Z')
         else:
             return self._datetime.strftime('%T')
@@ -1414,7 +1927,8 @@ class DateTimeFormatterAPI:
     def date(self):
         value = self._datetime
         if value.tzinfo:
-            value = value.astimezone(getUtility(ILaunchBag).timezone)
+            value = value.astimezone(
+                getUtility(ILaunchBag).time_zone)
         return value.strftime('%Y-%m-%d')
 
     def _now(self):
@@ -1475,6 +1989,23 @@ class DateTimeFormatterAPI:
 
     def isodate(self):
         return self._datetime.isoformat()
+
+
+class SeriesSourcePackageBranchFormatter(ObjectFormatterAPI):
+    """Formatter for a SourcePackage, Pocket -> Branch link.
+
+    Since the link object is never really interesting in and of itself, we
+    always link to the source package instead.
+    """
+
+    def url(self, view_name=None, rootsite=None):
+        return queryAdapter(
+            self._context.sourcepackage, IPathAdapter, 'fmt').url(
+                view_name, rootsite)
+
+    def link(self, view_name):
+        return queryAdapter(
+            self._context.sourcepackage, IPathAdapter, 'fmt').link(view_name)
 
 
 class DurationFormatterAPI:
@@ -1668,6 +2199,33 @@ class DurationFormatterAPI:
         return "%s weeks" % number_name.get(weeks, str(weeks))
 
 
+class LinkFormatterAPI(ObjectFormatterAPI):
+    """Adapter from Link objects to a formatted anchor."""
+    final_traversable_names = {
+        'icon': 'icon',
+        'icon-link': 'link',
+        'link-icon': 'link',
+        }
+    final_traversable_names.update(ObjectFormatterAPI.final_traversable_names)
+
+    def icon(self):
+        """Return the icon representation of the link."""
+        request = get_current_browser_request()
+        return getMultiAdapter(
+            (self._context, request), name="+inline-icon")()
+
+    def link(self, view_name=None, rootsite=None):
+        """Return the default representation of the link."""
+        return self._context.render()
+
+    def url(self, view_name=None, rootsite=None):
+        """Return the URL representation of the link."""
+        if self._context.enabled:
+            return self._context.url
+        else:
+            return u''
+
+
 def clean_path_segments(request):
     """Returns list of path segments, excluding system-related segments."""
     proto_host_port = request.getApplicationURL()
@@ -1677,6 +2235,8 @@ def clean_path_segments(request):
     return clean_path_split
 
 
+# 2009-09-08 BarryWarsaw bug 426532.  Remove this class, all references to it,
+# and all instances of CONTEXTS/fmt:pagetitle
 class PageTemplateContextsAPI:
     """Adapter from page tempate's CONTEXTS object to fmt:pagetitle.
 
@@ -1702,8 +2262,9 @@ class PageTemplateContextsAPI:
         underscores, and use this to look up a string, unicode or
         function in the module canonical.launchpad.pagetitles.
 
-        If no suitable object is found in canonical.launchpad.pagetitles, emit a
-        warning that this page has no title, and return the default page title.
+        If no suitable object is found in canonical.launchpad.pagetitles, emit
+        a warning that this page has no title, and return the default page
+        title.
         """
         template = self.contextdict['template']
         filename = os.path.basename(template.filename)
@@ -1711,7 +2272,6 @@ class PageTemplateContextsAPI:
         name = name.replace('-', '_')
         titleobj = getattr(canonical.launchpad.pagetitles, name, None)
         if titleobj is None:
-            # sabdfl 25/0805 page titles are now mandatory hence the assert
             raise AssertionError(
                  "No page title in canonical.launchpad.pagetitles "
                  "for %s" % name)
@@ -1725,647 +2285,6 @@ class PageTemplateContextsAPI:
                 return canonical.launchpad.pagetitles.DEFAULT_LAUNCHPAD_TITLE
             else:
                 return title
-
-
-def split_paragraphs(text):
-    """Split text into paragraphs.
-
-    This function yields lists of strings that represent lines of text
-    in each paragraph.
-
-    Paragraphs are split by one or more blank lines.
-    """
-    paragraph = []
-    for line in text.splitlines():
-        line = line.rstrip()
-
-        # blank lines split paragraphs
-        if not line:
-            if paragraph:
-                yield paragraph
-            paragraph = []
-            continue
-
-        paragraph.append(line)
-
-    if paragraph:
-        yield paragraph
-
-
-def re_substitute(pattern, replace_match, replace_nomatch, string):
-    """Transform a string, replacing matched and non-matched sections.
-
-     :param patter: a regular expression
-     :param replace_match: a function used to transform matches
-     :param replace_nomatch: a function used to transform non-matched text
-     :param string: the string to transform
-
-    This function behaves similarly to re.sub() when a function is
-    passed as the second argument, except that the non-matching
-    portions of the string can be transformed by a second function.
-    """
-    if replace_match is None:
-        replace_match = lambda match: match.group()
-    if replace_nomatch is None:
-        replace_nomatch = lambda text: text
-    parts = []
-    position = 0
-    for match in re.finditer(pattern, string):
-        if match.start() != position:
-            parts.append(replace_nomatch(string[position:match.start()]))
-        parts.append(replace_match(match))
-        position = match.end()
-    remainder = string[position:]
-    if remainder:
-        parts.append(replace_nomatch(remainder))
-    return ''.join(parts)
-
-
-def next_word_chunk(word, pos, minlen, maxlen):
-    """Return the next chunk of the word of length between minlen and maxlen.
-
-    Shorter word chunks are preferred, preferably ending in a non
-    alphanumeric character.  The index of the end of the chunk is also
-    returned.
-
-    This function treats HTML entities in the string as single
-    characters.  The string should not include HTML tags.
-    """
-    nchars = 0
-    endpos = pos
-    while endpos < len(word):
-        # advance by one character
-        if word[endpos] == '&':
-            # make sure we grab the entity as a whole
-            semicolon = word.find(';', endpos)
-            assert semicolon >= 0, 'badly formed entity: %r' % word[endpos:]
-            endpos = semicolon + 1
-        else:
-            endpos += 1
-        nchars += 1
-        if nchars >= maxlen:
-            # stop if we've reached the maximum chunk size
-            break
-        if nchars >= minlen and not word[endpos-1].isalnum():
-            # stop if we've reached the minimum chunk size and the last
-            # character wasn't alphanumeric.
-            break
-    return word[pos:endpos], endpos
-
-
-def add_word_breaks(word):
-    """Insert manual word breaks into a string.
-
-    The word may be entity escaped, but is not expected to contain
-    any HTML tags.
-
-    Breaks are inserted at least every 7 to 15 characters,
-    preferably after puctuation.
-    """
-    broken = []
-    pos = 0
-    while pos < len(word):
-        chunk, pos = next_word_chunk(word, pos, 7, 15)
-        broken.append(chunk)
-    return '<wbr></wbr>'.join(broken)
-
-
-break_text_pat = re.compile(r'''
-  (?P<tag>
-    <[^>]*>
-  ) |
-  (?P<longword>
-    (?<![^\s<>])(?:[^\s<>&]|&[^;]*;){20,}
-  )
-''', re.VERBOSE)
-
-def break_long_words(text):
-    """Add word breaks to long words in a run of text.
-
-    The text may contain entity references or HTML tags.
-    """
-    def replace(match):
-        if match.group('tag'):
-            return match.group()
-        elif match.group('longword'):
-            return add_word_breaks(match.group())
-        else:
-            raise AssertionError('text matched but neither named group found')
-    return break_text_pat.sub(replace, text)
-
-
-class FormattersAPI:
-    """Adapter from strings to HTML formatted text."""
-
-    implements(ITraversable)
-
-    def __init__(self, stringtoformat):
-        self._stringtoformat = stringtoformat
-
-    def nl_to_br(self):
-        """Quote HTML characters, then replace newlines with <br /> tags."""
-        return cgi.escape(self._stringtoformat).replace('\n','<br />\n')
-
-    def break_long_words(self):
-        """Add manual word breaks to long words."""
-        return break_long_words(cgi.escape(self._stringtoformat))
-
-    @staticmethod
-    def _substitute_matchgroup_for_spaces(match):
-        """Return a string made up of '&nbsp;' for each character in the
-        first match group.
-
-        Used when replacing leading spaces with nbsps.
-
-        There must be only one match group.
-        """
-        groups = match.groups()
-        assert len(groups) == 1
-        return '&nbsp;' * len(groups[0])
-
-    @staticmethod
-    def _linkify_substitution(match):
-        if match.group('bug') is not None:
-            bugnum = match.group('bugnum')
-            # XXX Brad Bollenbach 2006-04-10: Use a hardcoded url so
-            # we still have a link for bugs that don't exist.
-            url = '/bugs/%s' % bugnum
-            # The text will have already been cgi escaped.
-            text = match.group('bug')
-            bugset = getUtility(IBugSet)
-            try:
-                bug = bugset.get(bugnum)
-            except NotFoundError:
-                title = "No such bug"
-            else:
-                try:
-                    title = bug.title
-                except Unauthorized:
-                    title = "private bug"
-            title = cgi.escape(title, quote=True)
-            return '<a href="%s" title="%s">%s</a>' % (url, title, text)
-        elif match.group('url') is not None:
-            # The text will already have been cgi escaped.  We temporarily
-            # unescape it so that we can strip common trailing characters
-            # that aren't part of the URL.
-            url = xml_unescape(match.group('url'))
-            match = FormattersAPI._re_url_trailers.search(url)
-            if match:
-                trailers = match.group(1)
-                url = url[:-len(trailers)]
-            else:
-                trailers = ''
-            # We use nofollow for these links to reduce the value of
-            # adding spam URLs to our comments; it's a way of moderately
-            # devaluing the return on effort for spammers that consider
-            # using Launchpad.
-            return '<a rel="nofollow" href="%s">%s</a>%s' % (
-                cgi.escape(url, quote=True),
-                add_word_breaks(cgi.escape(url)),
-                cgi.escape(trailers))
-        elif match.group('faq') is not None:
-            text = match.group('faq')
-            faqnum = match.group('faqnum')
-            faqset = getUtility(IFAQSet)
-            faq = faqset.getFAQ(faqnum)
-            if not faq:
-                return text
-            url = canonical_url(faq)
-            return '<a href="%s">%s</a>' % (url, text)
-        elif match.group('oops') is not None:
-            text = match.group('oops')
-
-            if not getUtility(ILaunchBag).developer:
-                return text
-
-            root_url = config.launchpad.oops_root_url
-
-            if not root_url.endswith('/'):
-                root_url += '/'
-
-            url = root_url + match.group('oopscode')
-            return '<a href="%s">%s</a>' % (url, text)
-        else:
-            raise AssertionError("Unknown pattern matched.")
-
-    # match whitespace at the beginning of a line
-    _re_leadingspace = re.compile(r'^(\s+)')
-
-    # From RFC 3986 ABNF for URIs:
-    #
-    #   URI           = scheme ":" hier-part [ "?" query ] [ "#" fragment ]
-    #   hier-part     = "//" authority path-abempty
-    #                 / path-absolute
-    #                 / path-rootless
-    #                 / path-empty
-    #
-    #   authority     = [ userinfo "@" ] host [ ":" port ]
-    #   userinfo      = *( unreserved / pct-encoded / sub-delims / ":" )
-    #   host          = IP-literal / IPv4address / reg-name
-    #   reg-name      = *( unreserved / pct-encoded / sub-delims )
-    #   port          = *DIGIT
-    #
-    #   path-abempty  = *( "/" segment )
-    #   path-absolute = "/" [ segment-nz *( "/" segment ) ]
-    #   path-rootless = segment-nz *( "/" segment )
-    #   path-empty    = 0<pchar>
-    #
-    #   segment       = *pchar
-    #   segment-nz    = 1*pchar
-    #   pchar         = unreserved / pct-encoded / sub-delims / ":" / "@"
-    #
-    #   query         = *( pchar / "/" / "?" )
-    #   fragment      = *( pchar / "/" / "?" )
-    #
-    #   unreserved    = ALPHA / DIGIT / "-" / "." / "_" / "~"
-    #   pct-encoded   = "%" HEXDIG HEXDIG
-    #   sub-delims    = "!" / "$" / "&" / "'" / "(" / ")"
-    #                 / "*" / "+" / "," / ";" / "="
-    #
-    # We only match a set of known scheme names too.  We don't handle
-    # IP-literal either.
-    #
-    # We will simplify "unreserved / pct-encoded / sub-delims" as the
-    # following regular expression:
-    #   [-a-zA-Z0-9._~%!$&'()*+,;=]
-    #
-    # We also require that the path-rootless form not begin with a
-    # colon to avoid matching strings like "http::foo" (to avoid bug
-    # #40255).
-    #
-    # The path-empty pattern is not matched either, due to false
-    # positives.
-    #
-    # Some allowed URI punctuation characters will be trimmed if they
-    # appear at the end of the URI since they may be incidental in the
-    # flow of the text.
-    #
-    # apport has at one time produced query strings containing sqaure
-    # braces (that are not percent-encoded). In RFC 2986 they seem to be
-    # allowed by section 2.2 "Reserved Characters", yet section 3.4
-    # "Query" appears to provide a strict definition of the query string
-    # that would forbid square braces. Either way, links with
-    # non-percent-encoded square braces are being used on Launchpad so
-    # it's probably best to accomodate them.
-
-    # Match urls or bugs or oopses.
-    _re_linkify = re.compile(r'''
-      (?P<url>
-        \b
-        (?:about|gopher|http|https|sftp|news|ftp|mailto|file|irc|jabber)
-        :
-        (?:
-          (?:
-            # "//" authority path-abempty
-            //
-            (?: # userinfo
-              [%(unreserved)s:]*
-              @
-            )?
-            (?: # host
-              \d+\.\d+\.\d+\.\d+ |
-              [%(unreserved)s]*
-            )
-            (?: # port
-              : \d*
-            )?
-            (?: / [%(unreserved)s:@]* )*
-          ) | (?:
-            # path-absolute
-            /
-            (?: [%(unreserved)s:@]+
-                (?: / [%(unreserved)s:@]* )* )?
-          ) | (?:
-            # path-rootless
-            [%(unreserved)s@]
-            [%(unreserved)s:@]*
-            (?: / [%(unreserved)s:@]* )*
-          )
-        )
-        (?: # query
-          \?
-          [%(unreserved)s:@/\?\[\]]*
-        )?
-        (?: # fragment
-          \#
-          [%(unreserved)s:@/\?]*
-        )?
-      ) |
-      (?P<bug>
-        \bbug(?:\s|<br\s*/>)*(?:\#|report|number\.?|num\.?|no\.?)?(?:\s|<br\s*/>)*
-        0*(?P<bugnum>\d+)
-      ) |
-      (?P<faq>
-        \bfaq(?:\s|<br\s*/>)*(?:\#|item|number\.?|num\.?|no\.?)?(?:\s|<br\s*/>)*
-        0*(?P<faqnum>\d+)
-      ) |
-      (?P<oops>
-        \boops\s*-?\s*
-        (?P<oopscode> \d* [a-z]+ \d+)
-      )
-    ''' % {'unreserved': "-a-zA-Z0-9._~%!$&'()*+,;="},
-                             re.IGNORECASE | re.VERBOSE)
-
-    # a pattern to match common trailing punctuation for URLs that we
-    # don't want to include in the link.
-    _re_url_trailers = re.compile(r'([,.?:);>]+)$')
-
-    def text_to_html(self):
-        """Quote text according to DisplayingParagraphsOfText."""
-        # This is based on the algorithm in the
-        # DisplayingParagraphsOfText spec, but is a little more
-        # complicated.
-
-        # 1. Blank lines are used to detect paragraph boundaries.
-        # 2. Two lines are considered to be part of the same logical line
-        #    only if the first is between 60 and 80 characters and the
-        #    second does not begin with white space.
-        # 3. Use <br /> to split logical lines within a paragraph.
-
-        output = []
-        first_para = True
-        for para in split_paragraphs(self._stringtoformat):
-            if not first_para:
-                output.append('\n')
-            first_para = False
-            output.append('<p>')
-            first_line = True
-            for line in para:
-                if not first_line:
-                    output.append('<br />\n')
-                first_line = False
-                # escape ampersands, etc in text
-                line = cgi.escape(line)
-                # convert leading space in logical line to non-breaking space
-                line = self._re_leadingspace.sub(
-                    self._substitute_matchgroup_for_spaces, line)
-                output.append(line)
-            output.append('</p>')
-
-        text = ''.join(output)
-
-        # Linkify the text.
-        text = re_substitute(self._re_linkify, self._linkify_substitution,
-                             break_long_words, text)
-
-        return text
-
-    def nice_pre(self):
-        """<pre>, except the browser knows it is allowed to break long lines
-
-        Note that CSS will eventually have a property to specify this
-        behaviour, but we want this now. To do this we need to use the mozilla
-        specific -moz-pre-wrap value of the white-space property. We try to
-        fall back for IE by using the IE specific word-wrap property.
-
-        TODO: Test IE compatibility. StuartBishop 20041118
-        TODO: This should probably just live in the stylesheet if this
-            CSS implementation is good enough. StuartBishop 20041118
-        """
-        if not self._stringtoformat:
-            return self._stringtoformat
-        else:
-            return ('<pre style="'
-                    'white-space: -moz-pre-wrap;'
-                    'white-space: -o-pre-wrap;'
-                    'word-wrap: break-word;'
-                    '">%s</pre>'
-                    % cgi.escape(self._stringtoformat)
-                    )
-
-    # Match lines that start with one or more quote symbols followed
-    # by a space. Quote symbols are commonly '|', or '>'; they are
-    # used for quoting passages from another email. Both '>> ' and
-    # '> > ' are valid quoting sequences.
-    # The dpkg version is used for exceptional cases where it
-    # is better to not assume '|' is a start of a quoted passage.
-    _re_quoted = re.compile('^(([|] ?)+|(&gt; ?)+)')
-    _re_dpkg_quoted = re.compile('^(&gt; ?)+ ')
-
-    # Match blocks that start as signatures or PGP inclusions.
-    _re_include = re.compile('^<p>(--<br />|-----BEGIN PGP)')
-
-    def email_to_html(self):
-        """text_to_html and hide signatures and full-quoted emails.
-
-        This method wraps inclusions like signatures and PGP blocks in
-        <span class="foldable"></span> tags. Quoted passages are wrapped
-        <span class="foldable-quoted"></span> tags. The tags identify the
-        extra content in the message to the presentation layer. CSS and
-        JavaScript may use this markup to control the content's display
-        behaviour.
-        """
-        start_fold_markup = '<span class="foldable">'
-        start_fold_quoted_markup = '<span class="foldable-quoted">'
-        end_fold_markup = '%s\n</span></p>'
-        re_quoted = self._re_quoted
-        re_include = self._re_include
-        output = []
-        in_fold = False
-        in_quoted = False
-        in_false_paragraph = False
-
-        def is_quoted(line):
-            """Test that a line is a quote and not Python.
-
-            Note that passages may be wrongly be interpreted as Python
-            because they start with '>>> '. The function does not check
-            that next and previous lines of text consistently uses '>>> '
-            as Python would.
-            """
-            python_block = '&gt;&gt;&gt; '
-            return (not line.startswith(python_block)
-                and re_quoted.match(line) is not None)
-
-        def strip_leading_p_tag(line):
-            """Return the characters after the paragraph mark (<p>).
-
-            The caller must be certain the line starts with a paragraph mark.
-            """
-            assert line.startswith('<p>'), (
-                "The line must start with a paragraph mark (<p>).")
-            return line[3:]
-
-        def strip_trailing_p_tag(line):
-            """Return the characters before the line paragraph mark (</p>).
-
-            The caller must be certain the line ends with a paragraph mark.
-            """
-            assert line.endswith('</p>'), (
-                "The line must end with a paragraph mark (</p>).")
-            return line[:-4]
-
-        for line in self.text_to_html().split('\n'):
-            if 'Desired=<wbr></wbr>Unknown/' in line and not in_fold:
-                # When we see a evidence of dpkg output, we switch the
-                # quote matching rules. We do not assume lines that start
-                # with a pipe are quoted passages. dpkg output is often
-                # reformatted by users and tools. When we see the dpkg
-                # output header, we change the rules regardless of if the
-                # lines that follow are legitimate.
-                re_quoted = self._re_dpkg_quoted
-            elif not in_fold and re_include.match(line) is not None:
-                # This line is a paragraph with a signature or PGP inclusion.
-                # Start a foldable paragraph.
-                in_fold = True
-                line = '<p>%s%s' % (start_fold_markup,
-                                    strip_leading_p_tag(line))
-            elif (not in_fold and line.startswith('<p>')
-                and is_quoted(strip_leading_p_tag(line))):
-                # The paragraph starts with quoted marks.
-                # Start a foldable quoted paragraph.
-                in_fold = True
-                line = '<p>%s%s' % (
-                    start_fold_quoted_markup, strip_leading_p_tag(line))
-            elif not in_fold and is_quoted(line):
-                # This line in the paragraph is quoted.
-                # Start foldable quoted lines in a paragraph.
-                in_quoted = True
-                in_fold = True
-                output.append(start_fold_quoted_markup)
-            else:
-                # This line is continues the current state.
-                # This line is not a transition.
-                pass
-
-            # We must test line starts and ends in separate blocks to
-            # close the rare single line that is foldable.
-            if in_fold and line.endswith('</p>') and in_false_paragraph:
-                # The line ends with a false paragraph in a PGP signature.
-                # Restore the line break to join with the next paragraph.
-                line = '%s<br />\n<br />' %  strip_trailing_p_tag(line)
-            elif (in_quoted and self._re_quoted.match(line) is None):
-                # The line is not quoted like the previous line.
-                # End fold before we append this line.
-                in_fold = False
-                in_quoted = False
-                output.append("</span>\n")
-            elif in_fold and line.endswith('</p>'):
-                # The line is quoted or an inclusion, and ends the paragraph.
-                # End the fold before the close paragraph mark.
-                in_fold = False
-                in_quoted = False
-                line = end_fold_markup % strip_trailing_p_tag(line)
-            elif in_false_paragraph and line.startswith('<p>'):
-                # This line continues a PGP signature, but starts a paragraph.
-                # Remove the paragraph to join with the previous paragraph.
-                in_false_paragraph = False
-                line = strip_leading_p_tag(line)
-            else:
-                # This line is continues the current state.
-                # This line is not a transition.
-                pass
-
-            if in_fold and 'PGP SIGNATURE' in line:
-                # PGP signature blocks are split into two paragraphs
-                # by the text_to_html. The foldable feature works with
-                # a single paragraph, so we merge this paragraph with
-                # the next one.
-                in_false_paragraph = True
-
-            output.append(line)
-        return '\n'.join(output)
-
-    # This is a regular expression that matches email address embedded in
-    # text. It is not RFC 2821 compliant, nor does it need to be. This
-    # expression strives to identify probable email addresses so that they
-    # can be obfuscated when viewed by unauthenticated users. See
-    # http://www.email-unlimited.com/stuff/email_address_validator.htm
-
-    # localnames do not have [&?%!@<>,;:`|{}()#*^~ ] in practice
-    # (regardless of RFC 2821) because they conflict with other systems.
-    # See https://lists.ubuntu.com
-    #     /mailman/private/launchpad-reviews/2007-June/006081.html
-
-    # This verson of the re is more than 5x faster that the orginal
-    # version used in ftest/test_tales.testObfuscateEmail.
-    _re_email = re.compile(r"""
-        \b[a-zA-Z0-9._/="'+-]{1,64}@  # The localname.
-        [a-zA-Z][a-zA-Z0-9-]{1,63}    # The hostname.
-        \.[a-zA-Z0-9.-]{1,251}\b      # Dot starts one or more domains.
-        """, re.VERBOSE)
-
-    def obfuscate_email(self):
-        """Obfuscate an email address as '<email address hidden>'.
-
-        This formatter is intended to hide possible email addresses from
-        unauthenticated users who view this text on the Web. Run this before
-        the text is converted to html because text-to-html and email-to-html
-        will insert markup into the address. eg.
-        foo/fmt:obfuscate-email/fmt:email-to-html
-
-        The pattern used to identify an email address is not 2822. It strives
-        to match any possible email address embedded in the text. For example,
-        mailto:person@domain.dom and http://person:password@domain.dom both
-        match, though the http match is in fact not an email address.
-        """
-        text = self._re_email.sub(
-            r'<email address hidden>', self._stringtoformat)
-        text = text.replace(
-            "<<email address hidden>>", "<email address hidden>")
-        return text
-
-    def linkify_email(self):
-        """Linkify any email address recognised in Launchpad.
-
-        If an email address is recognised as one registered in Launchpad,
-        it is linkified to point to the profile page for that person.
-
-        Note that someone could theoretically register any old email
-        address in Launchpad and then have it linkified.  This may or not
-        may be a concern but is noted here for posterity anyway.
-        """
-        text = self._stringtoformat
-
-        matches = re.finditer(self._re_email, text)
-        for match in matches:
-            address = match.group()
-            person = getUtility(IPersonSet).getByEmail(address)
-            # Only linkify if person exists and does not want to hide
-            # their email addresses.
-            if person is not None and not person.hide_email_addresses:
-                person_formatter = PersonFormatterAPI(person)
-                image_html = ObjectImageDisplayAPI(person).icon()
-                text = text.replace(address, '<a href="%s">%s&nbsp;%s</a>' % (
-                    canonical_url(person), image_html, address))
-        return text
-
-    def lower(self):
-        """Return the string in lowercase"""
-        return self._stringtoformat.lower()
-
-    def shorten(self, maxlength):
-        """Use like tal:content="context/foo/fmt:shorten/60"."""
-        if len(self._stringtoformat) > maxlength:
-            return '%s...' % self._stringtoformat[:maxlength-3]
-        else:
-            return self._stringtoformat
-
-    def traverse(self, name, furtherPath):
-        if name == 'nl_to_br':
-            return self.nl_to_br()
-        elif name == 'lower':
-            return self.lower()
-        elif name == 'break-long-words':
-            return self.break_long_words()
-        elif name == 'text-to-html':
-            return self.text_to_html()
-        elif name == 'nice_pre':
-            return self.nice_pre()
-        elif name == 'email-to-html':
-            return self.email_to_html()
-        elif name == 'obfuscate-email':
-            return self.obfuscate_email()
-        elif name == 'linkify-email':
-            return self.linkify_email()
-        elif name == 'shorten':
-            if len(furtherPath) == 0:
-                raise TraversalError(
-                    "you need to traverse a number after fmt:shorten")
-            maxlength = int(furtherPath.pop())
-            return self.shorten(maxlength)
-        else:
-            raise TraversalError(name)
 
 
 class PermissionRequiredQuery:
@@ -2388,23 +2307,32 @@ class PermissionRequiredQuery:
         return check_permission(name, self.context)
 
 
+class IMainTemplateFile(Interface):
+    path = TextLine(title=u'The absolute path to this main template.')
+
+
+class LaunchpadLayerToMainTemplateAdapter:
+    adapts(LaunchpadLayer)
+    implements(IMainTemplateFile)
+
+    def __init__(self, context):
+        here = os.path.dirname(os.path.realpath(__file__))
+        self.path = os.path.join(
+            here, '../../../lp/app/templates/base-layout.pt')
+
+
 class PageMacroDispatcher:
     """Selects a macro, while storing information about page layout.
 
         view/macro:page
-        view/macro:page/onecolumn
-        view/macro:page/applicationhome
-        view/macro:page/pillarindex
-        view/macro:page/freeform
+        view/macro:page/main_side
+        view/macro:page/main_only
+        view/macro:page/searchless
+        view/macro:page/locationless
 
         view/macro:pagehas/applicationtabs
-        view/macro:pagehas/applicationborder
-        view/macro:pagehas/applicationbuttons
         view/macro:pagehas/globalsearch
-        view/macro:pagehas/heading
-        view/macro:pagehas/pageheading
         view/macro:pagehas/portlets
-        view/macro:pagehas/structuralheaderobject
 
         view/macro:pagetype
 
@@ -2412,11 +2340,14 @@ class PageMacroDispatcher:
 
     implements(ITraversable)
 
-    master = ViewPageTemplateFile('../templates/main-template.pt')
-
     def __init__(self, context):
         # The context of this object is a view object.
         self.context = context
+
+    @property
+    def base(self):
+        return ViewPageTemplateFile(
+            IMainTemplateFile(self.context.request).path)
 
     def traverse(self, name, furtherPath):
         if name == 'page':
@@ -2439,6 +2370,8 @@ class PageMacroDispatcher:
             return self.pagetype()
         elif name == 'show_actions_menu':
             return self.show_actions_menu()
+        elif name == 'isbetauser':
+            return getattr(self.context, 'isBetaUser', False)
         else:
             raise TraversalError(name)
 
@@ -2446,7 +2379,7 @@ class PageMacroDispatcher:
         if pagetype not in self._pagetypes:
             raise TraversalError('unknown pagetype: %s' % pagetype)
         self.context.__pagetype__ = pagetype
-        return self.master.macros['master']
+        return self.base.macros['master']
 
     def haspage(self, layoutelement):
         pagetype = getattr(self.context, '__pagetype__', None)
@@ -2457,33 +2390,13 @@ class PageMacroDispatcher:
     def pagetype(self):
         return getattr(self.context, '__pagetype__', 'unset')
 
-    def show_actions_menu(self):
-        """Should the actions menu be rendered?
-
-        It should be rendered unless the layout turns it off, or if we are
-        running in development mode and the layout has navigation tabs.
-        """
-        has_actionsmenu = self.haspage('actionsmenu')
-        if has_actionsmenu and config.devmode:
-            # In devmode, actually hides the actions menu if
-            # the navigation tabs are used.
-            return not self.haspage('navigationtabs')
-        return has_actionsmenu
-
     class LayoutElements:
 
         def __init__(self,
             applicationtabs=False,
-            applicationborder=False,
-            applicationbuttons=False,
             globalsearch=False,
-            heading=False,
-            pageheading=True,
             portlets=False,
-            structuralheaderobject=False,
             pagetypewasset=True,
-            actionsmenu=True,
-            navigationtabs=False
             ):
             self.elements = vars()
 
@@ -2491,118 +2404,107 @@ class PageMacroDispatcher:
             return self.elements[name]
 
     _pagetypes = {
-        'unset':
+       'main_side':
             LayoutElements(
-                applicationborder=True,
                 applicationtabs=True,
                 globalsearch=True,
-                portlets=True,
-                structuralheaderobject=True,
-                pagetypewasset=False),
-        'default':
-            LayoutElements(
-                applicationborder=True,
-                applicationtabs=True,
-                globalsearch=True,
-                portlets=True,
-                structuralheaderobject=True),
-        'default2.0':
-            LayoutElements(
-                applicationborder=True,
-                applicationtabs=True,
-                globalsearch=True,
-                portlets=True,
-                structuralheaderobject=True,
-                navigationtabs=True),
-        'defaultnomenu':
-            LayoutElements(
-                applicationborder=True,
-                applicationtabs=True,
-                globalsearch=True,
-                portlets=True,
-                structuralheaderobject=True,
-                actionsmenu=False),
-        'onecolumn':
-            # XXX 20080130 mpt: Should eventually become the new 'default'.
-            LayoutElements(
-                applicationborder=True,
-                applicationtabs=True,
-                globalsearch=True,
-                portlets=False,
-                structuralheaderobject=True),
-        'applicationhome':
-            LayoutElements(
-                applicationborder=True,
-                applicationbuttons=True,
-                pageheading=False,
-                globalsearch=False,
-                heading=True),
-        'pillarindex':
-            LayoutElements(
-                applicationborder=True,
-                applicationbuttons=True,
-                globalsearch=False,
-                heading=True,
-                pageheading=False,
                 portlets=True),
-        'search':
+       'main_only':
             LayoutElements(
-                actionsmenu=False,
-                applicationborder=True,
+                applicationtabs=True,
+                globalsearch=True,
+                portlets=False),
+       'searchless':
+            LayoutElements(
                 applicationtabs=True,
                 globalsearch=False,
-                heading=False,
-                pageheading=False,
-                portlets=False,
-                structuralheaderobject=False),
-       'freeform':
+                portlets=False),
+       'locationless':
             LayoutElements(),
         }
 
 
-class GotoStructuralObject:
-    """lp:structuralheaderobject, lp:structuralfooterobject
+class TranslationGroupFormatterAPI(ObjectFormatterAPI):
+    """Adapter for `ITranslationGroup` objects to a formatted string."""
 
-    Returns None when there is no structural object.
-    """
+    traversable_names = {
+        'link': 'link',
+        'url': 'url',
+        'displayname': 'displayname',
+    }
 
-    def __init__(self, context_dict):
-        self.context = context_dict['context']
-        self.view = context_dict['view']
-        self.use_context = self._getUseContext()
+    def url(self, view_name=None, rootsite='translations'):
+        """See `ObjectFormatterAPI`."""
+        return super(TranslationGroupFormatterAPI, self).url(
+            view_name, rootsite)
 
-    def _getUseContext(self):
-        """Return the appropriate context to use.
+    def link(self, view_name, rootsite='translations'):
+        """See `ObjectFormatterAPI`."""
+        group = self._context
+        url = self.url(view_name, rootsite)
+        return u'<a href="%s">%s</a>' % (url, cgi.escape(group.title))
 
-        This works around the hack in bug-related views where the context
-        is not the bugtask, but instead the bug.
-        """
-        if (IBug.providedBy(self.context) or
-            IBugAttachment.providedBy(self.context) or
-            IBugNomination.providedBy(self.context)):
-            return self.view.current_bugtask
+    def displayname(self, view_name, rootsite=None):
+        """Return the displayname as a string."""
+        return self._context.title
+
+
+class LanguageFormatterAPI(ObjectFormatterAPI):
+    """Adapter for `ILanguage` objects to a formatted string."""
+    traversable_names = {
+        'link': 'link',
+        'url': 'url',
+        'displayname': 'displayname',
+    }
+
+    def url(self, view_name=None, rootsite='translations'):
+        """See `ObjectFormatterAPI`."""
+        return super(LanguageFormatterAPI, self).url(view_name, rootsite)
+
+
+    def link(self, view_name, rootsite='translations'):
+        """See `ObjectFormatterAPI`."""
+        url = self.url(view_name, rootsite)
+        return u'<a href="%s" class="sprite language">%s</a>' % (
+            url, cgi.escape(self._context.englishname))
+
+    def displayname(self, view_name, rootsite=None):
+        """See `ObjectFormatterAPI`."""
+        return self._context.englishname
+
+
+class POFileFormatterAPI(ObjectFormatterAPI):
+    """Adapter for `IPOFile` objects to a formatted string."""
+
+    traversable_names = {
+        'link': 'link',
+        'url': 'url',
+        'displayname': 'displayname',
+    }
+
+    def url(self, view_name=None, rootsite='translations'):
+        """See `ObjectFormatterAPI`."""
+        return super(POFileFormatterAPI, self).url(view_name, rootsite)
+
+    def link(self, view_name, rootsite='translations'):
+        """See `ObjectFormatterAPI`."""
+        pofile = self._context
+        url = self.url(view_name, rootsite)
+        return u'<a href="%s">%s</a>' % (url, cgi.escape(pofile.title))
+
+    def displayname(self, view_name, rootsite=None):
+        """Return the displayname as a string."""
+        return self._context.title
+
+
+class PackageDiffFormatterAPI(ObjectFormatterAPI):
+    def link(self, view_name, rootsite=None):
+        diff = self._context
+        if not diff.date_fulfilled:
+            return '%s (pending)' % cgi.escape(diff.title)
         else:
-            return self.context
-
-    @property
-    def structuralfooterobject(self):
-        # The structural object is the nearest object with a facet menu.
-        try:
-            menucontext, facetmenu = nearest_context_with_adapter(
-                self.use_context, IFacetMenu)
-        except NoCanonicalUrl:
-            return None
-        return menucontext
-
-    @property
-    def structuralheaderobject(self):
-        try:
-            headercontext, adapter = nearest_context_with_adapter(
-                self.use_context, IStructuralHeaderPresentation)
-        except NoCanonicalUrl:
-            return None
-        return headercontext
-
-    @property
-    def context_badges(self):
-        return IHasBadges(self.use_context)
+            file_size = NumberFormatterAPI(
+                diff.diff_content.content.filesize).bytes()
+            return '<a href="%s">%s</a> (%s)' % (
+                cgi.escape(diff.diff_content.http_url),
+                cgi.escape(diff.title), file_size)

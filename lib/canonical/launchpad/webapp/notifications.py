@@ -1,4 +1,6 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """Browser notification messages
 
 Provides an API for displaying arbitrary  notifications to users after
@@ -15,7 +17,7 @@ __metaclass__ = type
 from datetime import datetime
 
 from zope.interface import implements
-from zope.app.session.interfaces import ISession
+from zope.session.interfaces import ISession
 
 from canonical.config import config
 from canonical.launchpad.webapp.interfaces import (
@@ -24,6 +26,8 @@ from canonical.launchpad.webapp.interfaces import (
         )
 from canonical.launchpad.webapp.menu import escape, structured
 from canonical.launchpad.webapp.publisher import LaunchpadView
+from canonical.launchpad.webapp.login import allowUnauthenticatedSession
+from zope.app.security.interfaces import IUnauthenticatedPrincipal
 
 
 SESSION_KEY = 'launchpad'
@@ -83,6 +87,9 @@ class NotificationResponse:
     >>> request = NotificationRequest()
     >>> request.response = response
     >>> response._request = request
+    >>> request.principal = None # full IRequests are zope.security
+    ... # participations, and NotificationResponse.redirect expects a
+    ... # principal, as in the full IRequest interface.
 
     >>> len(response.notifications)
     0
@@ -170,15 +177,6 @@ class NotificationResponse:
         # just return it
         if self._notifications is not None:
             return self._notifications
-        # XXX: SteveAlexander 2007-04-01:
-        #      If there is no session currently then there can be no
-        #      notifications.  However, ISession(self)[SESSION_KEY] creates
-        #      a session whether one is needed or not.
-        #      Options are to refactor the session code so that it makes a
-        #      session only when necessary, or to check for the presence of
-        #      the session cookie at call-sites like this one.
-        #      A get_session() helper would help here.
-        #      Maybe a get_or_create_session() to go with it.
         cookie_name = config.launchpad_session.cookie
         request = self._request
         response = self
@@ -211,14 +209,19 @@ class NotificationResponse:
         """See canonical.launchpad.webapp.interfaces.INotificationResponse"""
         self._notifications = None
 
-    def redirect(self, location, status=None):
+    def redirect(self, location, status=None, trusted=True):
         """See canonical.launchpad.webapp.interfaces.INotificationResponse"""
         # We are redirecting, so we need to stuff our notifications into
         # the session
         if self._notifications is not None and len(self._notifications) > 0:
+            # A dance to assert that we want to break the rules about no
+            # unauthenticated sessions. Only after this next line is it safe
+            # to set the session.
+            allowUnauthenticatedSession(self._request)
             session = ISession(self)[SESSION_KEY]
             session['notifications'] = self._notifications
-        return super(NotificationResponse, self).redirect(location, status)
+        return super(NotificationResponse, self).redirect(
+            location, status, trusted=trusted)
 
     def addDebugNotification(self, msg):
         """See `INotificationResponse`."""
@@ -313,6 +316,9 @@ class NotificationTestView1(LaunchpadView):
     in the test suite, as this page is useful for adjusting the visual style
     of the notifications
     """
+
+    label = page_title = 'Notification test'
+
     def initialize(self):
         response = self.request.response
 

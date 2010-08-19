@@ -1,5 +1,8 @@
-#!/usr/bin/python2.4
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+#!/usr/bin/python -S
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=C0103,W0403
 
 """Script to probe distribution mirrors and check how up-to-date they are."""
@@ -15,12 +18,12 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.database.sqlbase import ISOLATION_LEVEL_AUTOCOMMIT
-from canonical.launchpad.scripts.base import (
+from lp.services.scripts.base import (
     LaunchpadCronScript, LaunchpadScriptFailure)
 from canonical.launchpad.interfaces import (
     IDistributionMirrorSet, ILibraryFileAliasSet, MirrorContent)
 from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.scripts.distributionmirror_prober import (
+from lp.registry.scripts.distributionmirror_prober import (
     get_expected_cdimage_paths, probe_archive_mirror, probe_cdimage_mirror)
 
 
@@ -29,17 +32,21 @@ class DistroMirrorProber(LaunchpadCronScript):
              '[--no-owner-notification] [--max-mirrors=N]')
 
     def _sanity_check_mirror(self, mirror):
-        """Check that the given mirror is official and has an http_base_url."""
-        assert mirror.isOfficial(), 'Non-official mirrors should not be probed'
+        """Check that the given mirror is official and has an http_base_url.
+        """
+        assert mirror.isOfficial(), (
+            'Non-official mirrors should not be probed')
         if mirror.base_url is None:
             self.logger.warning(
                 "Mirror '%s' of distribution '%s' doesn't have a base URL; "
-                "we can't probe it." % (mirror.name, mirror.distribution.name))
+                "we can't probe it." % (
+                    mirror.name, mirror.distribution.name))
             return False
         return True
 
     def _create_probe_record(self, mirror, logfile):
-        """Create a probe record for the given mirror with the given logfile."""
+        """Create a probe record for the given mirror with the given logfile.
+        """
         logfile.seek(0)
         filename = '%s-probe-logfile.txt' % mirror.name
         log_file = getUtility(ILibraryFileAliasSet).create(
@@ -53,7 +60,7 @@ class DistroMirrorProber(LaunchpadCronScript):
             help='Probe only mirrors of the given type')
         self.parser.add_option('--force',
             dest='force', default=False, action='store_true',
-            help='Force the probing of mirrors that have been probed recently')
+            help='Force the probing of mirrors that were probed recently')
         self.parser.add_option('--no-owner-notification',
             dest='no_owner_notification', default=False, action='store_true',
             help='Do not send failure notification to mirror owners.')
@@ -83,19 +90,23 @@ class DistroMirrorProber(LaunchpadCronScript):
         else:
             self.logger.debug("Not using any proxy.")
 
+        self.txn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
+        self.txn.begin()
+
         # Using a script argument to control a config variable is not a great
         # idea, but to me this seems better than passing the no_remote_hosts
         # value through a lot of method/function calls, until it reaches the
         # probe() method.
         if self.options.no_remote_hosts:
-            config.distributionmirrorprober.localhost_only = True
+            localhost_only_conf = """
+                [distributionmirrorprober]
+                localhost_only: True
+                """
+            config.push('localhost_only_conf', localhost_only_conf)
 
         self.logger.info('Probing %s Mirrors' % content_type.title)
 
         mirror_set = getUtility(IDistributionMirrorSet)
-
-        self.txn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
-        self.txn.begin()
 
         results = mirror_set.getMirrorsToProbe(
             content_type, ignore_last_probe=self.options.force,
@@ -115,8 +126,8 @@ class DistroMirrorProber(LaunchpadCronScript):
             # in the old times, so now we need to do this small hack here.
             if not mirror.distribution.full_functionality:
                 self.logger.info(
-                    "Mirror '%s' of distribution '%s' can't be probed --we only "
-                    "probe Ubuntu mirrors." 
+                    "Mirror '%s' of distribution '%s' can't be probed --we "
+                    "only probe Ubuntu mirrors."
                     % (mirror.name, mirror.distribution.name))
                 continue
 

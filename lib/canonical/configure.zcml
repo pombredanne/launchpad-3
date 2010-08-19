@@ -1,6 +1,11 @@
+<!-- Copyright 2009, 2010 Canonical Ltd.  This software is licensed under the
+     GNU Affero General Public License version 3 (see the file LICENSE).
+-->
+
 <configure
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:zcml="http://namespaces.zope.org/zcml"
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="canonical">
 
@@ -9,31 +14,19 @@
         file="meta-overrides.zcml" />
     <include package="canonical.launchpad" file="permissions.zcml" />
     <include package="canonical.launchpad.webapp" file="meta.zcml" />
-    <include package="canonical.lazr.rest" file="meta.zcml" />
+    <include package="lazr.restful" file="meta.zcml" />
+    <include package="lp.services.database" />
+    <include package="lp.services.inlinehelp" file="meta.zcml" />
+    <include package="lp.services.openid" />
+    <include package="lp.services.job" />
+    <include package="lp.services.memcache" />
+    <include package="lp.services.profile" />
+    <include package="lp.services.features" />
+    <include package="lp.services.scripts" />
+    <include package="lp.services.worlddata" />
+    <include package="lp.services.salesforce" />
+    <include package="lazr.uri" />
     <include package="canonical.librarian" />
-
-    <browser:skin
-        name="launchpad"
-        interface="canonical.launchpad.layers.LaunchpadLayer"/>
-    <browser:skin
-        name="rosetta"
-        interface="canonical.launchpad.layers.TranslationsLayer"/>
-    <browser:skin
-        name="shipit"
-        interface="canonical.launchpad.layers.ShipItLayer"/>
-    <browser:skin
-        name="shipit-ubuntu"
-        interface="canonical.launchpad.layers.ShipItUbuntuLayer"/>
-    <browser:skin
-        name="shipit-kubuntu"
-        interface="canonical.launchpad.layers.ShipItKUbuntuLayer"/>
-    <browser:skin
-        name="shipit-edubuntu"
-        interface="canonical.launchpad.layers.ShipItEdUbuntuLayer"/>
-
-    <!-- Set via overrides -->
-    <browser:defaultSkin
-        name="launchpad" />
 
     <!-- The default Zope 3 configuration of the SimpleComponentTraverser is
         that it applies to any object that provides Interface.
@@ -44,6 +37,17 @@
         for="*"
         type="zope.publisher.interfaces.browser.IBrowserRequest"
         provides="zope.publisher.interfaces.browser.IBrowserPublisher"
+        factory="zope.app.publication.traversers.SimpleComponentTraverser"
+        permission="zope.Public"
+        />
+    <!-- We don't include zope.app.publication (see zopeapp.zcml in the
+         top level), so we lose the default registration that makes our
+         private XMLRPC server work.  Copy that from Zope into here.
+         -->
+    <view
+        for="zope.interface.Interface"
+        type="zope.publisher.interfaces.xmlrpc.IXMLRPCRequest"
+        provides="zope.publisher.interfaces.xmlrpc.IXMLRPCPublisher"
         factory="zope.app.publication.traversers.SimpleComponentTraverser"
         permission="zope.Public"
         />
@@ -59,173 +63,88 @@
         />
 
 
-    <!-- This is an index.html view on the root object.
-        The root object is not ever published itself.  Only its views are.
-        -->
-
-    <browser:page
-        for="canonical.launchpad.interfaces.ILaunchpadRoot"
-        class="canonical.launchpad.browser.LaunchpadRootIndexView"
-        name="index.html"
-        template="launchpad/templates/root-index.pt"
-        permission="zope.Public"
-        />
-
-    <browser:page
-        for="canonical.launchpad.interfaces.ILaunchpadRoot"
-        class="canonical.launchpad.browser.FeaturedProjectsView"
-        name="+featuredprojects"
-        template="launchpad/templates/root-featuredprojects.pt"
-        permission="launchpad.Admin"
-        />
-
     <!-- The following directives set up root front pages for the different
          virtual host layers.  The directives come in pairs.
-         The Resources registration is needed because currently in Zope,
-         published browser views are looked up as no-name views.  View
-         look-up will use views on the same layer
-         before more general views on a different layer.  So we need to
-         re-register the resources container on the new layer.
-         This workaround will no longer be needed once published browser
-         pages are registered to provide a specific interface.
+         The separate registration for the resources namespace (@@) is needed
+         because otherwise the lookup for /@@/ will fail because the
+         layer-specific defaultView directive also registers the
+         default view name as an unnamed adapter.
+         -->
       -->
     <!-- virtual host: blueprints -->
     <browser:defaultView
         for="canonical.launchpad.interfaces.ILaunchpadRoot"
         name="specs"
-        layer="canonical.launchpad.layers.BlueprintsLayer"
+        layer="lp.blueprints.publisher.BlueprintsLayer"
         />
     <browser:page
         name=""
         for="canonical.launchpad.interfaces.ILaunchpadRoot"
-        class="zope.app.publisher.browser.resources.Resources"
+        class="canonical.launchpad.browser.launchpad.LaunchpadImageFolder"
         permission="zope.Public"
-        allowed_interface="zope.publisher.interfaces.browser.IBrowserPublisher"
-        layer="canonical.launchpad.layers.BlueprintsLayer"
+        layer="lp.blueprints.publisher.BlueprintsLayer"
         />
 
     <!-- virtual host: code -->
     <browser:defaultView
         for="canonical.launchpad.interfaces.ILaunchpadRoot"
         name="+code"
-        layer="canonical.launchpad.layers.CodeLayer"
+        layer="lp.code.publisher.CodeLayer"
         />
     <browser:page
         name=""
         for="canonical.launchpad.interfaces.ILaunchpadRoot"
-        class="zope.app.publisher.browser.resources.Resources"
+        class="canonical.launchpad.browser.launchpad.LaunchpadImageFolder"
         permission="zope.Public"
-        allowed_interface="zope.publisher.interfaces.browser.IBrowserPublisher"
-        layer="canonical.launchpad.layers.CodeLayer"
+        layer="lp.code.publisher.CodeLayer"
         />
 
     <!-- virtual host: translations -->
     <browser:defaultView
         for="canonical.launchpad.interfaces.ILaunchpadRoot"
         name="translations"
-        layer="canonical.launchpad.layers.TranslationsLayer"
+        layer="lp.translations.publisher.TranslationsLayer"
         />
     <browser:page
         name=""
         for="canonical.launchpad.interfaces.ILaunchpadRoot"
-        class="zope.app.publisher.browser.resources.Resources"
+        class="canonical.launchpad.browser.launchpad.LaunchpadImageFolder"
         permission="zope.Public"
-        allowed_interface="zope.publisher.interfaces.browser.IBrowserPublisher"
-        layer="canonical.launchpad.layers.TranslationsLayer"
+        layer="lp.translations.publisher.TranslationsLayer"
         />
 
     <!-- virtual host: bugs -->
     <browser:defaultView
         for="canonical.launchpad.interfaces.ILaunchpadRoot"
         name="bugs"
-        layer="canonical.launchpad.layers.BugsLayer"
+        layer="lp.bugs.publisher.BugsLayer"
         />
     <browser:page
         name=""
         for="canonical.launchpad.interfaces.ILaunchpadRoot"
-        class="zope.app.publisher.browser.resources.Resources"
+        class="canonical.launchpad.browser.launchpad.LaunchpadImageFolder"
         permission="zope.Public"
-        allowed_interface="zope.publisher.interfaces.browser.IBrowserPublisher"
-        layer="canonical.launchpad.layers.BugsLayer"
+        layer="lp.bugs.publisher.BugsLayer"
         />
 
     <!-- virtual host: answers -->
     <browser:defaultView
         for="canonical.launchpad.interfaces.ILaunchpadRoot"
         name="questions"
-        layer="canonical.launchpad.layers.AnswersLayer"
+        layer="lp.answers.publisher.AnswersLayer"
         />
     <browser:page
         name=""
         for="canonical.launchpad.interfaces.ILaunchpadRoot"
-        class="zope.app.publisher.browser.resources.Resources"
+        class="canonical.launchpad.browser.launchpad.LaunchpadImageFolder"
         permission="zope.Public"
-        allowed_interface="zope.publisher.interfaces.browser.IBrowserPublisher"
-        layer="canonical.launchpad.layers.AnswersLayer"
+        layer="lp.answers.publisher.AnswersLayer"
         />
-
-    <!-- virtual host: openid -->
-    <browser:page
-        name=""
-        for="canonical.launchpad.interfaces.IOpenIdApplication"
-        class="zope.app.publisher.browser.resources.Resources"
-        permission="zope.Public"
-        allowed_interface="zope.publisher.interfaces.browser.IBrowserPublisher"
-        layer="canonical.launchpad.layers.OpenIdLayer"
-        />
-
-    <!-- This should really be on ILaunchpadRoot for all layers, and we should
-         be registering views on the launchpad main side front page object
-         thing on ILaunchpadApplication. -->
-    <browser:page
-        name=""
-        for="canonical.launchpad.interfaces.IShipItApplication"
-        class="zope.app.publisher.browser.resources.Resources"
-        permission="zope.Public"
-        allowed_interface="zope.publisher.interfaces.browser.IBrowserPublisher"
-        />
-
-    <browser:pages
-        for="canonical.launchpad.interfaces.ILaunchpadRoot"
-        permission="zope.Public"
-        >
-        <browser:page
-          name="+portlet-malone"
-          template="launchpad/templates/root-portlet-malone.pt" />
-    </browser:pages>
-
-    <browser:pages
-        for="canonical.launchpad.interfaces.ILaunchpadRoot"
-        class="canonical.launchpad.browser.BountySetView"
-        permission="zope.Public"
-        >
-        <browser:page
-          name="+portlet-bounties"
-          template="launchpad/templates/root-portlet-bounties.pt" />
-    </browser:pages>
-
-    <browser:pages
-        for="canonical.launchpad.interfaces.ILaunchpadRoot"
-        class="canonical.launchpad.browser.RosettaApplicationView"
-        permission="zope.Public"
-        >
-        <browser:page
-          name="+portlet-rosetta"
-          template="launchpad/templates/root-portlet-rosetta.pt" />
-    </browser:pages>
-
-    <browser:pages
-        for="canonical.launchpad.interfaces.ILaunchpadRoot"
-        class="canonical.launchpad.browser.FOAFSearchView"
-        permission="zope.Public"
-        >
-        <browser:page
-          name="+portlet-foaf"
-          template="launchpad/templates/root-portlet-foaf.pt" />
-    </browser:pages>
 
     <include package="canonical.widgets" />
     <include package="canonical.launchpad" />
     <include package="canonical.lazr" />
+    <include zcml:condition="installed canonical.shipit"
+             package="canonical.shipit" />
 
 </configure>

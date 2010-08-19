@@ -1,4 +1,32 @@
-= StrippedTextLine Widget =
+StrippedTextLine field
+======================
+
+The StrippedTextLine field strips the leading and trailing text from the
+set value.
+
+    >>> from lp.services.fields import StrippedTextLine
+
+    >>> non_required_field = StrippedTextLine(
+    ...     __name__='field', title=u'Title',  required=False)
+
+    >>> class Thing:
+    ...     def __init__(self, field):
+    ...         self.field = field
+    >>> thing = Thing('abc')
+
+    >>> non_required_field.set(thing, '   egf   ')
+    >>> non_required_field.get(thing)
+    'egf'
+
+None is an accepted field value.
+
+    >>> non_required_field.set(thing, None)
+    >>> print non_required_field.get(thing)
+    None
+
+
+StrippedTextLine Widget
+-----------------------
 
 This custom widget is used to strip leading and trailing whitespaces.
 
@@ -21,9 +49,6 @@ And check that the leading and trailing whitespaces were correctly stripped.
 If only whitespace is provided, the widget acts like no input was
 provided.
 
-  >>> from canonical.launchpad.fields import StrippedTextLine
-  >>> non_required_field = StrippedTextLine(
-  ...     __name__='field', title=u'Title',  required=False)
   >>> non_required_field.missing_value is None
   True
   >>> request = LaunchpadTestRequest(form={'field.field':'    \n    '})
@@ -38,4 +63,4 @@ provided.
   >>> widget.getInputValue()
   Traceback (most recent call last):
   ...
-  WidgetInputError: ('field', u'Title', )
+  WidgetInputError: ('field', u'Title', RequiredMissing())

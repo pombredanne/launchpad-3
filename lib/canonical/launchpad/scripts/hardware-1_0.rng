@@ -20,6 +20,11 @@
             <element name="questions">
                 <ref name="questionsSection"/>
             </element>
+            <optional>
+                <element name="context">
+                    <ref name="contextSection"/>
+                </element>
+            </optional>
           </interleave>
         </element>
     </start>
@@ -93,39 +98,64 @@
                     </element>
                 </zeroOrMore>
             </element>
+            <optional>
+                <element name="kernel-release">
+                    <attribute name="value">
+                        <text/>
+                    </attribute>
+                </element>
+            </optional>
         </interleave>
     </define>
 
     <define name="hardwareSection">
         <interleave>
-            <element name="hal">
-                <attribute name="version">
-                    <text/>
-                </attribute>
-                <oneOrMore>
-                    <element name="device">
-                        <attribute name="id">
-                            <data type="integer">
-                                <except>
-                                    <value/>
-                                </except>
-                            </data>
-                        </attribute>
-                        <attribute name="udi">
-                            <text/>
-                        </attribute>
-                        <optional>
-                            <attribute name="parent">
-                               <data type="integer"/>
+            <choice>
+                <element name="hal">
+                    <attribute name="version">
+                        <text/>
+                    </attribute>
+                    <oneOrMore>
+                        <element name="device">
+                            <attribute name="id">
+                                <data type="integer">
+                                    <except>
+                                        <value/>
+                                    </except>
+                                </data>
                             </attribute>
-                        </optional>
-                        <!-- XXX specify a set of required properties? -->
-                        <oneOrMore>
-                            <ref name="property"/>
-                        </oneOrMore>
-                    </element>
-                </oneOrMore>
-            </element>
+                            <attribute name="udi">
+                                <text/>
+                            </attribute>
+                            <optional>
+                                <attribute name="parent">
+                                   <data type="integer"/>
+                                </attribute>
+                            </optional>
+                            <!-- XXX: Abel Deuring 2007-12-07:
+                                 specify a set of required properties? -->
+                            <oneOrMore>
+                                <ref name="property"/>
+                            </oneOrMore>
+                        </element>
+                    </oneOrMore>
+                </element>
+                <group>
+                    <interleave>
+                        <element name="udev">
+                            <text/>
+                        </element>
+                        <element name="dmi">
+                            <text/>
+                        </element>
+                        <element name="sysfs-attributes">
+                            <zeroOrMore>
+                                <text/>
+                            </zeroOrMore>
+                        </element>
+                    </interleave>
+                </group>
+            </choice>
             <element name="processors">
                 <oneOrMore>
                     <element name="processor">
@@ -150,11 +180,7 @@
                     <zeroOrMore>
                         <element name="alias">
                             <attribute name="target">
-                                <data type="integer">
-                                    <except>
-                                        <value/>
-                                    </except>
-                                </data>
+                                <text/>
                             </attribute>
                             <interleave>
                                 <element name="vendor">
@@ -174,7 +200,8 @@
     <define name="softwareSection">
         <interleave>
             <element name="lsbrelease">
-                <!-- XXX specify a more restrictive set of allowed
+                <!-- XXX: Abel Deuring 2007-12-07:
+                     specify a more restrictive set of allowed
                      and/or required properties?
                 -->
                 <oneOrMore>
@@ -285,11 +312,7 @@
                     <zeroOrMore>
                         <element name="target">
                             <attribute name="id">
-                                <data type="integer">
-                                    <except>
-                                        <value/>
-                                    </except>
-                                </data>
+                                <text/>
                             </attribute>
                             <interleave>
                                 <zeroOrMore>
@@ -306,6 +329,17 @@
                         </element>
                     </optional>
                 </interleave>
+            </element>
+        </zeroOrMore>
+    </define>
+
+    <define name="contextSection">
+        <zeroOrMore>
+            <element name="info">
+                <attribute name="command">
+                    <text/>
+                </attribute>
+                <text/>
             </element>
         </zeroOrMore>
     </define>
@@ -425,7 +459,7 @@
                 <attribute name="type">
                     <value>int</value>
                 </attribute>
-                <data type="int">
+                <data type="long">
                     <except>
                         <value/>
                     </except>

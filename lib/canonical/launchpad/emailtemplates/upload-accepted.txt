@@ -1,11 +1,11 @@
-%(STATUS)s:
-%(SUMMARY)s
-
 %(CHANGESFILE)s
+
+%(DATE)s%(CHANGEDBY)s%(MAINTAINER)s%(SIGNER)s%(ORIGIN)s
+%(SPR_URL)s
 
 ==
 
-Announcing to %(ANNOUNCE)s
+%(ANNOUNCE)s
 
 Thank you for your contribution to %(DISTRO)s.
 

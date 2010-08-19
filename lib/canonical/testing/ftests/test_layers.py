@@ -1,4 +1,6 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """ Test layers
 
 Note that many tests are performed at run time in the layers themselves
@@ -6,25 +8,29 @@ to confirm that the environment hasn't been corrupted by tests
 """
 __metaclass__ = type
 
-from cStringIO import StringIO
-from urllib import urlopen
+import os
+import signal
+import smtplib
 import unittest
 
-import psycopg
+from cStringIO import StringIO
+from urllib import urlopen
+import psycopg2
 
-from sqlos.interfaces import IConnectionName
-
-from zope.app.rdb.interfaces import IZopeDatabaseAdapter
 from zope.component import getUtility, ComponentLookupError
 
-from canonical.config import config
+from canonical.config import config, dbconfig
+from canonical.launchpad.ftests.harness import LaunchpadTestSetup
+from lazr.config import as_host_port
 from canonical.librarian.client import LibrarianClient, UploadFailed
 from canonical.librarian.interfaces import ILibrarianClient
-from canonical.testing import (
-    BaseLayer, DatabaseLayer, FunctionalLayer, LaunchpadFunctionalLayer,
-    LaunchpadLayer, LaunchpadScriptLayer, LaunchpadZopelessLayer,
-    LibrarianLayer, ZopelessLayer)
-
+from canonical.lazr.pidfile import pidfile_path
+from canonical.testing.layers import (
+    AppServerLayer, BaseLayer, DatabaseLayer, FunctionalLayer,
+    LaunchpadFunctionalLayer, LaunchpadLayer, LaunchpadScriptLayer,
+    LaunchpadZopelessLayer, LayerInvariantError, LayerIsolationError,
+    LayerProcessController, LibrarianLayer, MemcachedLayer, ZopelessLayer)
+from lp.services.memcache.client import memcache_client_factory
 
 class BaseTestCase(unittest.TestCase):
     """Both the Base layer tests, as well as the base Test Case
@@ -39,6 +45,7 @@ class BaseTestCase(unittest.TestCase):
     want_launchpad_database = False
     want_functional_flag = False
     want_zopeless_flag = False
+    want_memcached = False
 
     def testBaseIsSetUpFlag(self):
         self.failUnlessEqual(BaseLayer.isSetUp, True)
@@ -103,7 +110,7 @@ class BaseTestCase(unittest.TestCase):
                     want_librarian_working,
                     'Librarian should be fully operational'
                     )
-        except AttributeError:
+        except (AttributeError, ComponentLookupError):
             self.failIf(
                     want_librarian_working,
                     'Librarian not operational as component architecture '
@@ -126,12 +133,29 @@ class BaseTestCase(unittest.TestCase):
                         'Launchpad database should not be available.'
                         )
                 return
-        except psycopg.Error:
+        except psycopg2.Error:
             pass
         self.failIf(
                 self.want_launchpad_database,
                 'Launchpad database should be available but is not.'
                 )
+
+    def testMemcachedWorking(self):
+        client = MemcachedLayer.client or memcache_client_factory()
+        key = "BaseTestCase.testMemcachedWorking"
+        client.forget_dead_hosts()
+        is_live = client.set(key, "live")
+        if self.want_memcached:
+            self.assertEqual(
+                is_live, True, "memcached not live when it should be.")
+        else:
+            self.assertEqual(
+                is_live, False, "memcached is live but should not be.")
+
+
+class MemcachedTestCase(BaseTestCase):
+    layer = MemcachedLayer
+    want_memcached = True
 
 
 class LibrarianTestCase(BaseTestCase):
@@ -264,6 +288,7 @@ class LaunchpadTestCase(BaseTestCase):
 
     want_launchpad_database = True
     want_librarian_running = True
+    want_memcached = True
 
 
 class FunctionalTestCase(BaseTestCase):
@@ -289,6 +314,7 @@ class LaunchpadFunctionalTestCase(BaseTestCase):
     want_launchpad_database = True
     want_librarian_running = True
     want_functional_flag = True
+    want_memcached = True
 
 
 class LaunchpadZopelessTestCase(BaseTestCase):
@@ -298,6 +324,7 @@ class LaunchpadZopelessTestCase(BaseTestCase):
     want_launchpad_database = True
     want_librarian_running = True
     want_zopeless_flag = True
+    want_memcached = True
 
 
 class LaunchpadScriptTestCase(BaseTestCase):
@@ -307,21 +334,97 @@ class LaunchpadScriptTestCase(BaseTestCase):
     want_launchpad_database = True
     want_librarian_running = True
     want_zopeless_flag = True
+    want_memcached = True
 
     def testSwitchDbConfig(self):
         # Test that we can switch database configurations, and that we
         # end up connected as the right user.
-        name = getUtility(IConnectionName).name
-        da = getUtility(IZopeDatabaseAdapter, name)
-        self.assertEqual(da.getUser(), 'launchpad')
+
+        self.assertEqual(dbconfig.dbuser, 'launchpad_main')
         LaunchpadScriptLayer.switchDbConfig('librarian')
-        self.assertEqual(da.getUser(), 'librarian')
+        self.assertEqual(dbconfig.dbuser, 'librarian')
 
         from canonical.database.sqlbase import cursor
         cur = cursor()
         cur.execute('SELECT current_user;')
         user = cur.fetchone()[0]
         self.assertEqual(user, 'librarian')
+
+
+class LayerProcessControllerInvariantsTestCase(BaseTestCase):
+    layer = AppServerLayer
+
+    want_component_architecture = True
+    want_launchpad_database = True
+    want_librarian_running = True
+    want_functional_flag = True
+    want_zopeless_flag = False
+    want_memcached = True
+
+    def testAppServerIsAvailable(self):
+        # Test that the app server is up and running.
+        mainsite = LayerProcessController.appserver_config.vhost.mainsite
+        home_page = urlopen(mainsite.rooturl).read()
+        self.failUnless(
+            'Is your project registered yet?' in home_page,
+            "Home page couldn't be retrieved:\n%s" % home_page)
+
+    def testSMTPServerIsAvailable(self):
+        # Test that the SMTP server is up and running.
+        smtpd = smtplib.SMTP()
+        host, port = as_host_port(config.mailman.smtp)
+        code, message = smtpd.connect(host, port)
+        self.assertEqual(code, 220)
+
+    def testStartingAppServerTwiceRaisesInvariantError(self):
+        # Starting the appserver twice should raise an exception.
+        self.assertRaises(LayerInvariantError,
+                          LayerProcessController.startAppServer)
+
+    def testStartingSMTPServerTwiceRaisesInvariantError(self):
+        # Starting the SMTP server twice should raise an exception.
+        self.assertRaises(LayerInvariantError,
+                          LayerProcessController.startSMTPServer)
+
+
+class LayerProcessControllerTestCase(unittest.TestCase):
+    """Tests for the `LayerProcessController`."""
+    # We need the database to be set up, no more.
+    layer = DatabaseLayer
+
+    def tearDown(self):
+        # Stop both servers.  It's okay if they aren't running.
+        LayerProcessController.stopSMTPServer()
+        LayerProcessController.stopAppServer()
+
+    def test_stopAppServer(self):
+        # Test that stopping the app server kills the process and remove the
+        # PID file.
+        LayerProcessController.startAppServer()
+        pid = LayerProcessController.appserver.pid
+        pid_file = pidfile_path('launchpad',
+                                LayerProcessController.appserver_config)
+        LayerProcessController.stopAppServer()
+        self.assertRaises(OSError, os.kill, pid, 0)
+        self.failIf(os.path.exists(pid_file), "PID file wasn't removed")
+        self.failUnless(LayerProcessController.appserver is None,
+                        "appserver class attribute wasn't reset")
+
+    def test_postTestInvariants(self):
+        # A LayerIsolationError should be raised if the app server dies in the
+        # middle of a test.
+        LayerProcessController.startAppServer()
+        pid = LayerProcessController.appserver.pid
+        os.kill(pid, signal.SIGTERM)
+        LayerProcessController.appserver.wait()
+        self.assertRaises(LayerIsolationError,
+                          LayerProcessController.postTestInvariants)
+
+    def test_postTestInvariants_dbIsReset(self):
+        # The database should be reset by the test invariants.
+        LayerProcessController.startAppServer()
+        LayerProcessController.postTestInvariants()
+        self.assertEquals(True, LaunchpadTestSetup()._reset_db)
 
 
 class TestNameTestCase(unittest.TestCase):

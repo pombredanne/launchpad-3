@@ -1,4 +1,5 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test that no files in the tree has spurious conflicts marker."""
 
@@ -28,10 +29,12 @@ class NoSpuriousConlictsMarkerTest(unittest.TestCase):
 
         # We need to reset PYTHONPATH here otherwise the bzrlib in our
         # tree will be picked up.
+        new_env = dict(os.environ)
+        new_env['PYTHONPATH'] = ''
         process = subprocess.Popen(
             shell_command, shell=True, stdin=subprocess.PIPE,
             stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-            env={'PYTHONPATH':''})
+            env=new_env)
         out, err = process.communicate()
         self.failIf(len(out), 'Found spurious conflicts marker:\n%s' % out)
 

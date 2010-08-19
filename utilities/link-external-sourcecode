@@ -1,14 +1,24 @@
 #!/usr/bin/python
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 import optparse
 
-from os import curdir, listdir, sep, symlink
-from os.path import abspath, exists, join, realpath
-from sys import stdout
+from os import curdir, listdir, sep, symlink, unlink
+from os.path import abspath, basename, exists, islink, join, realpath
+from sys import stderr, stdout
 from urllib import unquote
 from urlparse import urlparse
 
+# This comes before other bzrlib stuff, because imports may cause warnings,
+# etc.
+from bzrlib.trace import enable_default_logging
+enable_default_logging()
 from bzrlib.branch import Branch
+from bzrlib.plugin import load_plugins
+
+load_plugins()
 
 
 def url2path(url):
@@ -31,12 +41,33 @@ def get_parent(branch_dir):
 
 
 def gen_missing_files(source, destination):
-    """Generate info on every file in source not in destination."""
+    """Generate info on every file in source not in destination.
+
+    Yields `(source, destination)` tuples.
+    """
     for name in listdir(source):
         destination_file = join(destination, name)
         if not exists(destination_file):
             source_file = join(source, name)
-            yield source_file, destination_file
+            yield source_file, destination_file,
+
+
+def link(source, destination):
+    """Symlink source to destination.
+
+    Assumes destination is missing or broken.
+    """
+    try:
+        if islink(destination):
+            unlink(destination)
+        symlink(source, destination)
+    except OSError, error:
+        stderr.write(
+            '  Error linking %s: %s\n' % (basename(destination), error))
+    else:
+        if options.verbose:
+            stdout.write('%s -> %s\n' % (
+                    sep.join(destination.rsplit(sep, 3)[-3:]), source))
 
 
 if __name__ == '__main__':
@@ -91,11 +122,18 @@ if __name__ == '__main__':
         realpath(join(options.parent, 'sourcecode')),
         abspath(join(options.target, 'sourcecode')))
 
-    for target, link in missing_files:
-        symlink(target, link)
-        if options.verbose:
-            stdout.write('%s -> %s\n' % (
-                    sep.join(link.rsplit(sep, 3)[-3:]), target))
+    for source, destination in missing_files:
+        link(source, destination)
 
+    for folder_name in ('eggs', 'download-cache'):
+        source = join(options.parent, folder_name)
+        destination = join(options.target, folder_name)
+        if not exists(destination):
+            if not exists(source):
+                stderr.write(
+                    '  Wanted to link %s to %s but source does not exist\n' %
+                    (source, destination))
+            else:
+                link(source, destination)
 
 # End

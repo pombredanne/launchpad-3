@@ -1,4 +1,6 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=W0603
 
 __metaclass__ = type
@@ -12,16 +14,17 @@ import signal
 import subprocess
 
 from canonical.config import config
-from canonical.pidfile import make_pidfile, pidfile_path
+from canonical.lazr.pidfile import make_pidfile, pidfile_path
 from zope.app.server.main import main
 from canonical.launchpad.mailman import runmailman
 from canonical.launchpad.testing import googletestservice
 
-TWISTD_SCRIPT = None
-
 
 def make_abspath(path):
     return os.path.abspath(os.path.join(config.root, *path.split('/')))
+
+
+TWISTD_SCRIPT = make_abspath('bin/twistd')
 
 
 class Service(object):
@@ -37,21 +40,21 @@ class Service(object):
 
 class TacFile(Service):
 
-    def __init__(self, name, tac_filename, configuration, pre_launch=None):
+    def __init__(self, name, tac_filename, section_name, pre_launch=None):
         """Create a TacFile object.
 
         :param name: A short name for the service. Used to name the pid file.
         :param tac_filename: The location of the TAC file, relative to this
             script.
-        :param configuration: A config object with launch, logfile and spew
-            attributes.
+        :param section_name: The config section name that provides the
+            launch, logfile and spew options.
         :param pre_launch: A callable that is called before the launch process.
         """
         # No point calling super's __init__.
         # pylint: disable-msg=W0231
         self.name = name
         self.tac_filename = tac_filename
-        self.config = configuration
+        self.section_name = section_name
         if pre_launch is None:
             self.pre_launch = lambda: None
         else:
@@ -59,7 +62,8 @@ class TacFile(Service):
 
     @property
     def should_launch(self):
-        return self.config is not None and self.config.launch
+        return (self.section_name is not None
+                and config[self.section_name].launch)
 
     @property
     def logfile(self):
@@ -67,7 +71,7 @@ class TacFile(Service):
 
         Default to the value of the configuration key logfile.
         """
-        return self.config.logfile
+        return config[self.section_name].logfile
 
     def launch(self):
         # Don't run the server if it wasn't asked for.
@@ -77,11 +81,10 @@ class TacFile(Service):
         self.pre_launch()
 
         pidfile = pidfile_path(self.name)
-        logfile = self.config.logfile
+        logfile = config[self.section_name].logfile
         tacfile = make_abspath(self.tac_filename)
 
         args = [
-            sys.executable,
             TWISTD_SCRIPT,
             "--no_save",
             "--nodaemon",
@@ -91,7 +94,7 @@ class TacFile(Service):
             "--logfile", logfile,
             ]
 
-        if self.config.spew:
+        if config[self.section_name].spew:
             args.append("--spew")
 
         # Note that startup tracebacks and evil programmers using 'print' will
@@ -109,26 +112,6 @@ class TacFile(Service):
         #        "%s did not start: %d"
         #        % (self.name, process.returncode))
         stop_at_exit(process)
-
-
-class RestrictedLibrarianService(TacFile):
-    """Custom TacFile launcher for the restricted librarian."""
-    def __init__(self):
-        super(RestrictedLibrarianService, self).__init__(
-            "restricted-librarian", "daemons/librarian.tac",
-            config.librarian_server, prepare_for_librarian)
-
-    def launch(self):
-        """We need to set an environment variable to launch this service."""
-        os.environ['RESTRICTED_LIBRARIAN'] = '1'
-        try:
-            super(RestrictedLibrarianService, self).launch()
-        finally:
-            del os.environ['RESTRICTED_LIBRARIAN']
-
-    @property
-    def logfile(self):
-        return self.config.restricted_logfile
 
 
 class MailmanService(Service):
@@ -151,10 +134,11 @@ class CodebrowseService(Service):
 
     def launch(self):
         process = subprocess.Popen(
-            ['make', '-C', 'sourcecode/launchpad-loggerhead', 'fg'],
+            ['make', 'run_codebrowse'],
             stdin=subprocess.PIPE)
         process.stdin.close()
         stop_at_exit(process)
+
 
 class GoogleWebService(Service):
 
@@ -163,7 +147,32 @@ class GoogleWebService(Service):
         return config.google_test_service.launch
 
     def launch(self):
-        process = googletestservice.start_as_process()
+        if self.should_launch:
+            process = googletestservice.start_as_process()
+            stop_at_exit(process)
+
+
+class MemcachedService(Service):
+    """A local memcached service for developer environments."""
+    @property
+    def should_launch(self):
+        return config.memcached.launch
+
+
+    def launch(self):
+        cmd = [
+            'memcached',
+            '-m', str(config.memcached.memory_size),
+            '-l', str(config.memcached.address),
+            '-p', str(config.memcached.port),
+            '-U', str(config.memcached.port),
+            ]
+        if config.memcached.verbose:
+            cmd.append('-vv')
+        else:
+            cmd.append('-v')
+        process = subprocess.Popen(cmd, stdin=subprocess.PIPE)
+        process.stdin.close()
         stop_at_exit(process)
 
 
@@ -188,30 +197,13 @@ def prepare_for_librarian():
 
 SERVICES = {
     'librarian': TacFile('librarian', 'daemons/librarian.tac',
-                         config.librarian_server, prepare_for_librarian),
-    'restricted-librarian': RestrictedLibrarianService(),
-    'buildsequencer': TacFile('buildsequencer',
-                              'daemons/buildd-sequencer.tac',
-                              config.buildsequencer),
-    'authserver': TacFile('authserver', 'daemons/authserver.tac',
-                          config.authserver),
-    'sftp': TacFile('sftp', 'daemons/sftp.tac', config.codehosting),
+                         'librarian_server', prepare_for_librarian),
+    'sftp': TacFile('sftp', 'daemons/sftp.tac', 'codehosting'),
     'mailman': MailmanService(),
     'codebrowse': CodebrowseService(),
     'google-webservice': GoogleWebService(),
+    'memcached': MemcachedService(),
     }
-
-
-def make_css_slimmer():
-    import contrib.slimmer
-    inputfile = make_abspath(
-        'lib/canonical/launchpad/icing/style.css')
-    outputfile = make_abspath(
-        'lib/canonical/launchpad/icing/+style-slimmer.css')
-
-    cssdata = open(inputfile, 'rb').read()
-    slimmed = contrib.slimmer.slimmer(cssdata, 'css')
-    open(outputfile, 'w').write(slimmed)
 
 
 def get_services_to_run(requested_services):
@@ -243,13 +235,34 @@ def split_out_runlaunchpad_arguments(args):
     return [], args
 
 
-def start_launchpad(argv=list(sys.argv)):
-    global TWISTD_SCRIPT
-    TWISTD_SCRIPT = make_abspath('sourcecode/twisted/bin/twistd')
+def process_config_arguments(args):
+    """Process the arguments related to the config.
 
+    -i  Will set the instance name aka LPCONFIG env.
+
+    If there is no ZConfig file passed, one will add to the argument
+    based on the selected instance.
+    """
+    if '-i' in args:
+        index = args.index('-i')
+        config.setInstance(args[index+1])
+        del args[index:index+2]
+
+    if '-C' not in args:
+        zope_config_file = config.zope_config_file
+        if not os.path.isfile(zope_config_file):
+            raise ValueError(
+                "Cannot find ZConfig file for instance %s: %s" % (
+                    config.instance_name, zope_config_file))
+        args.extend(['-C', zope_config_file])
+    return args
+
+
+def start_launchpad(argv=list(sys.argv)):
     # We really want to replace this with a generic startup harness.
     # However, this should last us until this is developed
     services, argv = split_out_runlaunchpad_arguments(argv[1:])
+    argv = process_config_arguments(argv)
     services = get_services_to_run(services)
     for service in services:
         service.launch()
@@ -257,6 +270,34 @@ def start_launchpad(argv=list(sys.argv)):
     # Store our process id somewhere
     make_pidfile('launchpad')
 
-    # Create a new compressed +style-slimmer.css from style.css in +icing.
-    make_css_slimmer()
-    main(argv)
+    # Create the ZCML override file based on the instance.
+    config.generate_overrides()
+
+    if config.launchpad.launch:
+        main(argv)
+    else:
+        # We just need the foreground process to sit around forever waiting
+        # for the signal to shut everything down.  Normally, Zope itself would
+        # be this master process, but we're not starting that up, so we need
+        # to do something else.
+        try:
+            signal.pause()
+        except KeyboardInterrupt:
+            pass
+
+
+def start_librarian():
+    """Start the Librarian in the background."""
+    # Create the ZCML override file based on the instance.
+    config.generate_overrides()
+    # Create the Librarian storage directory if it doesn't already exist.
+    prepare_for_librarian()
+    pidfile = pidfile_path('librarian')
+    cmd = [
+        TWISTD_SCRIPT,
+        "--python", 'daemons/librarian.tac',
+        "--pidfile", pidfile,
+        "--prefix", 'Librarian',
+        "--logfile", config.librarian_server.logfile,
+        ]
+    return subprocess.call(cmd)

@@ -1,0 +1,77 @@
+<html>
+  <head>
+    <title>Introducing OpenPGP keys</title>
+    <link rel="stylesheet" type="text/css"
+          href="/+icing/yui/cssreset/reset.css" />
+    <link rel="stylesheet" type="text/css"
+          href="/+icing/yui/cssfonts/fonts.css" />
+    <link rel="stylesheet" type="text/css"
+          href="/+icing/yui/cssbase/base.css" />
+  </head>
+  <body>
+    <h1>Introducing OpenPGP keys</h1>
+
+    <p>
+      An OpenPGP (also called GnuPrivacyGuard) key allows you to sign documents, such as emails or text files, using a digital key.
+    </p>
+
+    <p>There are two parts to an OpenPGP key: one public that you share with the world and the other private,
+       which you should guard closely. Both are standard text files that make up a digital signature.
+    </p>
+
+    <p><a href="https://help.ubuntu.com/community/GnuPrivacyGuardHowto" target="_blank">Read more about OpenPGP keys &gt;</a></p>
+
+    <p>
+      In Launchpad, you can use your OpenPGP key to identify yourself when using the bug
+      tracker's email interface, when uploading distribution packages and when signing a code
+      of conduct.
+    </p>
+
+    <h2>Generating your key in Ubuntu</h2>
+
+    <p>
+      The easiest way to generate a new OpenPGP key in Ubuntu is to use the <em>Passwords and Encryption Keys</em> tool.
+    </p>
+
+    <p>
+      <strong>Step 1:</strong> Open <em>Applications &gt; Accessories &gt; Passwords and Encryption Keys</em>.
+    </p>
+
+    <p>
+      <strong>Step 2:</strong> Select <em>File &gt; New</em>, select <em>PGP Key</em> and then follow the on-screen instructions.
+    </p>
+
+    <p>Now you'll see your new key listed in the <em>Passwords and Encryption Keys</em> tool.
+
+    <a name="publish"></a>
+    <h2>Publishing your key</h2>
+
+    <p>Your key is useful only if other people can verify items that you sign. By publishing your key to a keyserver, which acts as a directory of people's public keys, you can make your public key available to anyone else.</p>
+
+    <p>Before you add your key to Launchpad, you need to push it to the Ubuntu keyserver.</p>
+
+    <p><strong>Step 1:</strong> Open a terminal and type:</p>
+
+    <p><code>gpg --list-keys</code></p>
+
+    <p><strong>Step 2:</strong> You'll see a list of OpenPGP keys in your system, including the one you've just created, which look something like this:</p>
+
+    <p><code>pub  1024D/12345678 2007-01-26<br />
+             uid  Geoffrey Hayes (My OpenPGP key) &lt;geoffrey@bungle.com&gt;<br />
+             sub  2048g/9ABCDEF1 2007-01-26</code></p>
+
+    <p>In the example above, <code>1024D/12345678</code> is the key's public id. We need the second part, i.e. <code>12345678</code>. Copy that part of your key's public id.</p>
+
+    <p><strong>Step 3:</strong> Enter:</p>
+
+    <p><code>gpg --send-keys --keyserver keyserver.ubuntu.com 12345678</code></p>
+
+    <p><strong>Note:</strong> Replace <em>12345678</em> with the public key id you copied in the step 2.</p>
+
+    <p>If successful, GPG will display a message similar to:</p>
+
+    <p><code>gpg: sending key 12345678 to hkp server keyserver.ubuntu.com</code></p>
+
+    <p>It can take up to ten minutes before your key is available to Launchpad. After that time, you're ready to <a href="/+help/import-pgp-key.html">import your new key into Launchpad</a>!</p>
+  </body>
+</html>

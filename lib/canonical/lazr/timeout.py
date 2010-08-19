@@ -1,13 +1,17 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # Explicit is better than implicit.
 # pylint: disable-msg=W0602,W0603
 """Helpers to time out external operations."""
 
 __metaclass__ = type
 __all__ = [
-    "TimeoutError",
     "get_default_timeout_function",
+    "SafeTransportWithTimeout",
     "set_default_timeout_function",
+    "TimeoutError",
+    "TransportWithTimeout",
     "urlfetch",
     "with_timeout",
     ]
@@ -16,6 +20,7 @@ import httplib
 import socket
 import sys
 from threading import Thread
+from xmlrpclib import SafeTransport, Transport
 import urllib2
 
 default_timeout_function = None
@@ -170,3 +175,53 @@ class URLFetcher:
 def urlfetch(url, data=None):
     """Wrapper for `urllib2.urlopen()` that times out."""
     return URLFetcher().fetch(url, data)
+
+
+class TransportWithTimeout(Transport):
+    """Create a HTTP transport for XMLRPC with timeouts."""
+
+    def make_connection(self, host):
+        """Create the connection for the transport and save it."""
+        self.conn = Transport.make_connection(self, host)
+        return self.conn
+
+    @with_timeout(cleanup='cleanup')
+    def request(self, host, handler, request_body, verbose=0):
+        """Make the request but using the with_timeout decorator."""
+        return Transport.request(
+            self, host, handler, request_body, verbose)
+
+    def cleanup(self):
+        """In the event of a timeout cleanup by closing the connection."""
+        try:
+            self.conn._conn.sock.shutdown(socket.SHUT_RDWR)
+        except AttributeError:
+            # It's possible that the other thread closed the socket
+            # beforehand.
+            pass
+        self.conn._conn.close()
+
+
+class SafeTransportWithTimeout(SafeTransport):
+    """Create a HTTPS transport for XMLRPC with timeouts."""
+
+    def make_connection(self, host):
+        """Create the connection for the transport and save it."""
+        self.conn = SafeTransport.make_connection(self, host)
+        return self.conn
+
+    @with_timeout(cleanup='cleanup')
+    def request(self, host, handler, request_body, verbose=0):
+        """Make the request but using the with_timeout decorator."""
+        return SafeTransport.request(
+            self, host, handler, request_body, verbose)
+
+    def cleanup(self):
+        """In the event of a timeout cleanup by closing the connection."""
+        try:
+            self.conn._conn.sock.shutdown(socket.SHUT_RDWR)
+        except AttributeError:
+            # It's possible that the other thread closed the socket
+            # beforehand.
+            pass
+        self.conn._conn.close()

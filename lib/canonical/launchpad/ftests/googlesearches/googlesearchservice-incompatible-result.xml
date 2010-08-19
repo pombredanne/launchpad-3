@@ -15,11 +15,11 @@
 <Context><title>Launchpad Search Engine</title></Context>
 
 <RES SN="1" EN="1">
-<M>1</M>
+<M>1000</M>
 <FI/><NB><NU>/custom?q=bugs+site:launchpad.net&amp;num=20&amp;hl=en&amp;output=xml_no_dtd&amp;client=google-csbe&amp;cx=011948274177882366108:ixpjdn21yfg&amp;ie=UTF-8&amp;oe=UTF-8&amp;start=0&amp;sa=N</NU>
 </NB>
 
-<R N="1">
+<RESULT N="1">
   <url>https://bugs.launchpad.net/</url>
   <UE>https://bugs.launchpad.net/</UE>
   <T>Launchpad Bugs</T>
@@ -29,7 +29,7 @@
   <LANG>en</LANG>
   <Label>_cse_ixpjdn21yfg</Label>
   <HAS><L/><RT/></HAS>
-</R>
+</RESULT>
 
 </RES>
 </GSP>

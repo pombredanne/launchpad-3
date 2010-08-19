@@ -1,3 +1,7 @@
+<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+     GNU Affero General Public License version 3 (see the file LICENSE).
+-->
+
 <configure
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
@@ -5,9 +9,9 @@
     xmlns:zope="http://namespaces.zope.org/zope"
     i18n_domain="launchpad">
 
-    <content class="canonical.launchpad.utilities.GPGHandler">
+    <class class="canonical.launchpad.utilities.GPGHandler">
         <allow interface="canonical.launchpad.interfaces.IGPGHandler" />
-    </content>
+    </class>
 
     <securedutility
         class="canonical.launchpad.utilities.GPGHandler"
@@ -15,16 +19,16 @@
         <allow interface="canonical.launchpad.interfaces.IGPGHandler" />
     </securedutility>
 
-    <content class="canonical.launchpad.utilities.PymeSignature">
+    <class class="canonical.launchpad.utilities.PymeSignature">
         <allow interface="canonical.launchpad.interfaces.IPymeSignature" />
-    </content>
+    </class>
 
-    <content class="canonical.launchpad.utilities.PymeKey">
+    <class class="canonical.launchpad.utilities.PymeKey">
         <allow interface="canonical.launchpad.interfaces.IPymeKey" />
-    </content>
+    </class>
 
-    <content class="canonical.launchpad.utilities.PymeUserId">
+    <class class="canonical.launchpad.utilities.PymeUserId">
         <allow interface="canonical.launchpad.interfaces.IPymeUserId" />
-    </content>
+    </class>
 
 </configure>

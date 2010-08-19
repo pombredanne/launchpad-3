@@ -1,0 +1,70 @@
+<div
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  i18n:domain="launchpad"
+  id="application-summary">
+
+  <tal:no-branches condition="not: view/branch_count">
+    There are no branches for <tal:project-name replace="context/displayname"/>
+    in Launchpad.
+    <ul>
+      <li>If there are Bazaar branches of
+      <tal:project-name replace="context/displayname"/>
+      in a publicly accessible location,
+      Launchpad can act as a mirror of the branch by registering a
+      <em>Mirrored</em> branch.
+      <a href="https://help.launchpad.net/Code/MirroredBranches">Read more.</a>
+      </li>
+      <li>Launchpad can also act as a primary
+      location for Bazaar branches of
+      <tal:project-name replace="context/displayname"/>.
+      <a href="https://help.launchpad.net/Code/UploadingABranch">Read more.</a>
+      </li>
+
+      <li>Launchpad can import code from CVS, Subversion, Mercurial or Git
+      into Bazaar branches.  <a
+      href="https://help.launchpad.net/VcsImports">Read more.</a> </li>
+
+    </ul>
+  </tal:no-branches>
+
+  <tal:has-branches condition="view/branch_count">
+    <p tal:replace="structure context/@@+count-summary"/>
+    <p id="merge-counts"
+       tal:define="menu context/menu:branches">
+      <strong class="count" tal:content="menu/active_review_count">5</strong>
+      <tal:link
+          define="link menu/active_reviews"
+          replace="structure link/render"
+          />
+    </p>
+    <div tal:condition="view/has_development_focus_branch"
+         style="margin: 1em 0"
+         tal:define="config modules/canonical.config/config;
+                     dev_focus context/development_focus/branch">
+      You can
+      <tal:browseable condition="dev_focus/code_is_browseable">
+        <a tal:attributes="href dev_focus/browse_source_url"
+           >browse the source code</a> for the development focus branch or get a
+           copy of the branch</tal:browseable>
+      <tal:not-browseable condition="not: dev_focus/code_is_browseable">
+        get a copy of the development focus branch
+      </tal:not-browseable>
+       using the command:<br/>
+      <tt style="padding-left:2em">bzr branch <tal:project-name replace="dev_focus/bzr_identity"/></tt>
+    </div>
+
+  </tal:has-branches>
+  <p tal:condition="view/latest_release_with_download_files">
+    <img src="/@@/download"/> There are
+    <a tal:define="rooturl modules/canonical.launchpad.webapp.vhosts/allvhosts/configs/mainsite/rooturl"
+      tal:attributes="href string:${rooturl}${context/name}/+download">download files</a>
+    available for <tal:project-name replace="context/displayname"/>.
+  </p>
+
+</div>

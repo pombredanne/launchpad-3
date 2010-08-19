@@ -1,4 +1,6 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """Virtual host handling for the Launchpad webapp."""
 
 __all__ = ['allvhosts']
@@ -98,6 +100,11 @@ class AllVirtualHostsConfiguration:
             self._hostnames.add(config.hostname)
             self._hostnames.update(config.althostnames)
         self._has_vhost_data = True
+
+    def reload(self):
+        """Reload the VHost data."""
+        self._has_vhost_data = False
+        self._getVHostData()
 
     @property
     def use_https(self):

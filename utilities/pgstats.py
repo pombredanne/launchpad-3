@@ -1,5 +1,8 @@
-#!/usr/bin/python2.4
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+#!/usr/bin/python
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """
 Generate some statistics about a PostgreSQL database suitable for
 emailing via cron
@@ -8,7 +11,7 @@ emailing via cron
 __metaclass__ = type
 
 import sys
-import psycopg
+import psycopg2
 
 def percentage(num, total):
     """Return a percentage string of num/total"""
@@ -48,7 +51,7 @@ def pgstattuple(cur, table):
 
 
 def main(dbname):
-    con = psycopg.connect("dbname=%s" % dbname)
+    con = psycopg2.connect("dbname=%s" % dbname)
     cur = con.cursor()
 
     print 'Statistics for %s' % dbname

@@ -1,72 +1,87 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
+# pylint: disable-msg=W0231,E1002
 
 """Definition of the internet servers that Launchpad uses."""
 
 __metaclass__ = type
 
+import cgi
 import pytz
 import threading
 import xmlrpclib
 from datetime import datetime
 
+import transaction
+from transaction.interfaces import ISynchronizer
+
 from zope.app.form.browser.widget import SimpleInputWidget
 from zope.app.form.browser.itemswidgets import  MultiDataHelper
-from zope.app.session.interfaces import ISession
+from zope.session.interfaces import ISession
 from zope.app.publication.httpfactory import HTTPPublicationRequestFactory
 from zope.app.publication.interfaces import IRequestPublicationFactory
 from zope.app.publication.requestpublicationregistry import (
     factoryRegistry as publisher_factory_registry)
 from zope.app.server import wsgi
 from zope.app.wsgi import WSGIPublisherApplication
-from zope.component import (
-    getMultiAdapter, getUtility, queryAdapter, queryMultiAdapter)
-from zope.interface import implements
+from zope.component import getUtility
+from zope.interface import alsoProvides, implements
 from zope.publisher.browser import (
     BrowserRequest, BrowserResponse, TestRequest)
 from zope.publisher.interfaces import NotFound
 from zope.publisher.xmlrpc import XMLRPCRequest, XMLRPCResponse
-from zope.schema.interfaces import IBytes
 from zope.security.interfaces import IParticipation, Unauthorized
-from zope.security.checker import ProxyFactory
 from zope.security.proxy import (
     isinstance as zope_isinstance, removeSecurityProxy)
 from zope.server.http.commonaccesslogger import CommonAccessLogger
-from zope.server.http.wsgihttpserver import PMDBWSGIHTTPServer, WSGIHTTPServer
+from zope.server.http.wsgihttpserver import PMDBWSGIHTTPServer
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 
-from canonical.lazr.interfaces import (
-    IByteStorage, ICollection, ICollectionField, IEntry, IFeed,
-    IHTTPResource)
-from canonical.lazr.rest.resource import (
-    CollectionResource, EntryResource, ScopedCollection)
+from canonical.lazr.interfaces.feed import IFeed
+from lazr.restful.interfaces import (
+    IWebServiceConfiguration, IWebServiceVersion)
+from lazr.restful.publisher import (
+    WebServicePublicationMixin, WebServiceRequestTraversal)
 
+from lp.app.errors import UnexpectedFormData
+from lp.testopenid.interfaces.server import ITestOpenIDApplication
+from canonical.launchpad.interfaces.launchpad import (
+    IFeedsApplication, IPrivateApplication, IWebServiceApplication)
+from canonical.launchpad.interfaces.oauth import (
+    ClockSkew, IOAuthConsumerSet, IOAuthSignedRequest, NonceAlreadyUsed,
+    TimestampOrderingError)
 import canonical.launchpad.layers
-from canonical.launchpad.interfaces import (
-    IFeedsApplication, IPrivateApplication, IOpenIdApplication,
-    IShipItApplication, IWebServiceApplication, IOAuthConsumerSet,
-    OAuthPermission, NonceAlreadyUsed)
 
 from canonical.launchpad.webapp.adapter import (
     get_request_duration, RequestExpired)
+from canonical.launchpad.webapp.authorization import (
+    LAUNCHPAD_SECURITY_POLICY_CACHE_KEY)
 from canonical.launchpad.webapp.notifications import (
     NotificationRequest, NotificationResponse, NotificationList)
 from canonical.launchpad.webapp.interfaces import (
+    IAPIDocRoot, IBasicLaunchpadRequest, IBrowserFormNG,
     ILaunchpadBrowserApplicationRequest, ILaunchpadProtocolError,
-    IBasicLaunchpadRequest, IBrowserFormNG, INotificationRequest,
-    INotificationResponse, IPlacelessAuthUtility, UnexpectedFormData,
-    IPlacelessLoginSource)
+    INotificationRequest, INotificationResponse, IPlacelessAuthUtility,
+    IPlacelessLoginSource, OAuthPermission)
 from canonical.launchpad.webapp.authentication import (
     check_oauth_signature, get_oauth_authorization)
 from canonical.launchpad.webapp.errorlog import ErrorReportRequest
-from canonical.launchpad.webapp.uri import URI
+from lazr.uri import URI
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.launchpad.webapp.publication import LaunchpadBrowserPublication
-from canonical.launchpad.webapp.publisher import get_current_browser_request
+from canonical.launchpad.webapp.publisher import (
+    get_current_browser_request, RedirectionView)
 from canonical.launchpad.webapp.opstats import OpStats
+from zc.zservertracelog.tracelog import Server as ZServerTracelogServer
 
 from canonical.lazr.timeout import set_default_timeout_function
+
+from lp.services.features.flags import (
+    NullFeatureController,
+    )
 
 
 class StepsToGo:
@@ -110,6 +125,10 @@ class StepsToGo:
     >>> bool(stepstogo)
     False
 
+    >>> request = FakeRequest([], ['baz', 'bar', 'foo'])
+    >>> list(StepsToGo(request))
+    ['foo', 'bar', 'baz']
+
     """
 
     @property
@@ -118,6 +137,9 @@ class StepsToGo:
 
     def __init__(self, request):
         self.request = request
+
+    def __iter__(self):
+        return self
 
     def consume(self):
         """Remove the next path step and return it.
@@ -132,6 +154,12 @@ class StepsToGo:
         self.request._traversed_names.append(nextstep)
         self.request.setTraversalStack(stack)
         return nextstep
+
+    def next(self):
+        value = self.consume()
+        if value is None:
+            raise StopIteration
+        return value
 
     def startswith(self, *args):
         """Return whether the steps to go start with the names given."""
@@ -163,9 +191,14 @@ class ApplicationServerSettingRequestFactory:
 
     def __call__(self, body_instream, environ, response=None):
         """Equivalent to the request's __init__ method."""
+        # Make sure that HTTPS variable is set so that request.getURL() is
+        # sane
+        if self.protocol == 'https':
+            environ['HTTPS'] = 'on'
         request = self.requestfactory(body_instream, environ, response)
         request.setApplicationServer(self.host, self.protocol, self.port)
         return request
+
 
 class VirtualHostRequestPublicationFactory:
     """An `IRequestPublicationFactory` handling request to a Launchpad vhost.
@@ -174,6 +207,8 @@ class VirtualHostRequestPublicationFactory:
     that matches a particular port and set of HTTP methods.
     """
     implements(IRequestPublicationFactory)
+
+    default_methods = ['GET', 'HEAD', 'POST']
 
     def __init__(self, vhost_name, request_factory, publication_factory,
                  port=None, methods=None, handle_default_host=False):
@@ -198,7 +233,7 @@ class VirtualHostRequestPublicationFactory:
         self.publication_factory = publication_factory
         self.port = port
         if methods is None:
-            methods = ['GET', 'HEAD', 'POST']
+            methods = self.default_methods
         self.methods = methods
         self.handle_default_host = handle_default_host
 
@@ -219,18 +254,16 @@ class VirtualHostRequestPublicationFactory:
         # places; either it's on the SERVER_PORT environment variable
         # or, as is the case with the test suite, it's on the
         # HTTP_HOST variable after a colon.
-        # Check the former first.
-        host = environment.get('HTTP_HOST')
+        # The former takes precedence, the port from the host variable is
+        # only checked because the test suite doesn't set SERVER_PORT.
+        host = environment.get('HTTP_HOST', '')
         port = environment.get('SERVER_PORT')
         if ":" in host:
             assert len(host.split(':')) == 2, (
                 "Having a ':' in the host name isn't allowed.")
             host, new_port = host.split(':')
-            if port is not None:
-                assert str(port) == new_port, (
-                    "Port specified in SERVER_PORT does not match "
-                    "port specified in HTTP_HOST")
-            port = new_port
+            if port is None:
+                port = new_port
 
         if host == '':
             if not self.handle_default_host:
@@ -271,11 +304,10 @@ class VirtualHostRequestPublicationFactory:
             self.checkRequest(environment))
 
         if not real_request_factory:
-            real_request_factory = self.request_factory
-            publication_factory = self.publication_factory
+            real_request_factory, publication_factory = (
+                self.getRequestAndPublicationFactories(environment))
 
-
-        host = environment.get('HTTP_HOST').split(':')[0]
+        host = environment.get('HTTP_HOST', '').split(':')[0]
         if host in ['', 'localhost']:
             # Sometimes requests come in to the default or local host.
             # If we set the application server for these requests,
@@ -294,6 +326,19 @@ class VirtualHostRequestPublicationFactory:
         self._thread_local.environment = None
         return (request_factory, publication_factory)
 
+    def getRequestAndPublicationFactories(self, environment):
+        """Return the request and publication factories to use.
+
+        You can override this method if the request and publication can
+        vary based on the environment.
+        """
+        return self.request_factory, self.publication_factory
+
+    def getAcceptableMethods(self, environment):
+        """Return the HTTP methods acceptable in this particular environment.
+        """
+        return self.methods
+
     def checkRequest(self, environment):
         """Makes sure that the incoming HTTP request is of an expected type.
 
@@ -306,13 +351,16 @@ class VirtualHostRequestPublicationFactory:
             the request does comply, (None, None).
         """
         method = environment.get('REQUEST_METHOD')
-        if method in self.methods:
-            return None, None
+
+        if method in self.getAcceptableMethods(environment):
+            factories = (None, None)
         else:
             request_factory = ProtocolErrorRequest
             publication_factory = ProtocolErrorPublicationFactory(
-                405, headers={'Allow':" ".join(self.methods)})
-            return request_factory, publication_factory
+                405, headers={'Allow': " ".join(self.methods)})
+            factories = (request_factory, publication_factory)
+
+        return factories
 
 
 class XMLRPCRequestPublicationFactory(VirtualHostRequestPublicationFactory):
@@ -349,25 +397,58 @@ class WebServiceRequestPublicationFactory(
     resources published through a web service.
     """
 
+    default_methods = [
+        'GET', 'HEAD', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS']
+
     def __init__(self, vhost_name, request_factory, publication_factory,
                  port=None):
         """This factory accepts requests that use all five major HTTP methods.
         """
         super(WebServiceRequestPublicationFactory, self).__init__(
-            vhost_name, request_factory, publication_factory, port,
-            ['GET', 'HEAD', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'])
+            vhost_name, request_factory, publication_factory, port)
 
-    def canHandle(self, environment):
-        """See `IRequestPublicationFactory`.
 
-        XXX: This factory only accepts calls if the web service is
-        exposed. Once we launch the web service this method will be
-        removed.-- Leonard Richardson 2008-01-04
-        (https://launchpad.net/launchpad/+spec/api-bugs-remote)
+class VHostWebServiceRequestPublicationFactory(
+    VirtualHostRequestPublicationFactory):
+    """An `IRequestPublicationFactory` handling requests to vhosts.
+
+    It also handles requests to the launchpad web service, if the
+    request's path points to a web service resource.
+    """
+
+    def getAcceptableMethods(self, environment):
+        """See `VirtualHostRequestPublicationFactory`.
+
+        If this is a request for a webservice path, returns the appropriate
+        methods.
         """
-        result = super(WebServiceRequestPublicationFactory, self).canHandle(
-            environment)
-        return result and config.vhosts.expose_webservice
+        if self.isWebServicePath(environment.get('PATH_INFO', '')):
+            return WebServiceRequestPublicationFactory.default_methods
+        else:
+            return super(
+                VHostWebServiceRequestPublicationFactory,
+                self).getAcceptableMethods(environment)
+
+    def getRequestAndPublicationFactories(self, environment):
+        """See `VirtualHostRequestPublicationFactory`.
+
+        If this is a request for a webservice path, returns the appropriate
+        factories.
+        """
+        if self.isWebServicePath(environment.get('PATH_INFO', '')):
+            return WebServiceClientRequest, WebServicePublication
+        else:
+            return super(
+                VHostWebServiceRequestPublicationFactory,
+                self).getRequestAndPublicationFactories(environment)
+
+    def isWebServicePath(self, path):
+        """Does the path refer to a web service resource?"""
+        # Add a trailing slash, if it is missing.
+        if not path.endswith('/'):
+            path = path + '/'
+        ws_config = getUtility(IWebServiceConfiguration)
+        return path.startswith('/%s/' % ws_config.path_override)
 
 
 class NotFoundRequestPublicationFactory:
@@ -387,19 +468,50 @@ class NotFoundRequestPublicationFactory:
         return (ProtocolErrorRequest, ProtocolErrorPublicationFactory(404))
 
 
+def get_query_string_params(request):
+    """Return a dict of the decoded query string params for a request.
+
+    The parameter values will be decoded as unicodes, exactly as
+    `BrowserRequest` would do to build the request form.
+
+    Defined here so that it can be used in both BasicLaunchpadRequest and
+    the LaunchpadTestRequest (which doesn't inherit from
+    BasicLaunchpadRequest).
+    """
+    query_string = request.get('QUERY_STRING', '')
+
+    # Just in case QUERY_STRING is in the environment explicitly as
+    # None (Some tests seem to do this, but not sure if it can ever
+    # happen outside of tests.)
+    if query_string is None:
+        query_string = ''
+
+    parsed_qs = cgi.parse_qs(query_string, keep_blank_values=True)
+    # Use BrowserRequest._decode() for decoding the received parameters.
+    decoded_qs = {}
+    for key, values in parsed_qs.iteritems():
+        decoded_qs[key] = [
+            request._decode(value) for value in values]
+    return decoded_qs
+
+
 class BasicLaunchpadRequest:
-    """Mixin request class to provide stepstogo and breadcrumbs."""
+    """Mixin request class to provide stepstogo."""
 
     implements(IBasicLaunchpadRequest)
 
     def __init__(self, body_instream, environ, response=None):
-        self.breadcrumbs = []
         self.traversed_objects = []
         self._wsgi_keys = set()
         self.needs_datepicker_iframe = False
         self.needs_datetimepicker_iframe = False
+        self.needs_json = False
+        self.needs_gmap2 = False
         super(BasicLaunchpadRequest, self).__init__(
             body_instream, environ, response)
+
+        # Our response always vary based on authentication.
+        self.response.setHeader('Vary', 'Cookie, Authorization')
 
     @property
     def stepstogo(self):
@@ -408,7 +520,7 @@ class BasicLaunchpadRequest:
     def retry(self):
         """See IPublisherRequest."""
         new_request = super(BasicLaunchpadRequest, self).retry()
-        # propagate the list of keys we have set in the WSGI environment
+        # Propagate the list of keys we have set in the WSGI environment.
         new_request._wsgi_keys = self._wsgi_keys
         return new_request
 
@@ -433,29 +545,81 @@ class BasicLaunchpadRequest:
         self._orig_env[key] = value
         self._wsgi_keys.add(key)
 
+    @cachedproperty
+    def query_string_params(self):
+        """See ILaunchpadBrowserApplicationRequest."""
+        return get_query_string_params(self)
+
+
+class LaunchpadBrowserRequestMixin:
+    """A mixin for classes that share some method implementations."""
+
+    def getRootURL(self, rootsite):
+        """See IBasicLaunchpadRequest."""
+        if rootsite is not None:
+            assert rootsite in allvhosts.configs, (
+                "rootsite is %s.  Must be in %r." % (
+                    rootsite, sorted(allvhosts.configs.keys())))
+            root_url = allvhosts.configs[rootsite].rooturl
+        else:
+            root_url = self.getApplicationURL() + '/'
+        return root_url
+
 
 class LaunchpadBrowserRequest(BasicLaunchpadRequest, BrowserRequest,
-                              NotificationRequest, ErrorReportRequest):
+                              NotificationRequest, ErrorReportRequest,
+                              LaunchpadBrowserRequestMixin):
     """Integration of launchpad mixin request classes to make an uber
     launchpad request class.
     """
 
-    implements(ILaunchpadBrowserApplicationRequest)
+    implements(
+        ILaunchpadBrowserApplicationRequest, ISynchronizer,
+        canonical.launchpad.layers.LaunchpadLayer)
 
     retry_max_count = 5    # How many times we're willing to retry
 
     def __init__(self, body_instream, environ, response=None):
-        super(LaunchpadBrowserRequest, self).__init__(
-            body_instream, environ, response)
+        BasicLaunchpadRequest.__init__(self, body_instream, environ, response)
+        transaction.manager.registerSynch(self)
 
     def _createResponse(self):
         """As per zope.publisher.browser.BrowserRequest._createResponse"""
         return LaunchpadBrowserResponse()
 
+    def isRedirectInhibited(self):
+        """Returns True if edge redirection has been inhibited."""
+        return self.cookies.get('inhibit_beta_redirect', '0') == '1'
+
     @cachedproperty
     def form_ng(self):
         """See ILaunchpadBrowserApplicationRequest."""
         return BrowserFormNG(self.form)
+
+    def setPrincipal(self, principal):
+        self.clearSecurityPolicyCache()
+        BrowserRequest.setPrincipal(self, principal)
+
+    def clearSecurityPolicyCache(self):
+        if LAUNCHPAD_SECURITY_POLICY_CACHE_KEY in self.annotations:
+            del self.annotations[LAUNCHPAD_SECURITY_POLICY_CACHE_KEY]
+
+    def beforeCompletion(self, transaction):
+        """See `ISynchronizer`."""
+        pass
+
+    def afterCompletion(self, transaction):
+        """See `ISynchronizer`.
+
+        We clear the cache of security policy results on commit, as objects
+        will be refetched from the database and the security checks may result
+        in different answers.
+        """
+        self.clearSecurityPolicyCache()
+
+    def newTransaction(self, transaction):
+        """See `ISynchronizer`."""
+        pass
 
 
 class BrowserFormNG:
@@ -499,6 +663,18 @@ class BrowserFormNG:
         return value
 
 
+def web_service_request_to_browser_request(webservice_request):
+    """Convert a given webservice request into a webapp one.
+
+    Simply overrides 'SERVER_URL' to the 'mainsite', preserving headers and
+    body.
+    """
+    body = webservice_request.bodyStream.getCacheStream().read()
+    environ = dict(webservice_request.environment)
+    environ['SERVER_URL'] = allvhosts.configs['mainsite'].rooturl
+    return LaunchpadBrowserRequest(body, environ)
+
+
 class Zope3WidgetsUseIBrowserFormNGMonkeyPatch:
     """Make Zope3 widgets use IBrowserFormNG.
 
@@ -512,6 +688,7 @@ class Zope3WidgetsUseIBrowserFormNGMonkeyPatch:
     def install(cls):
         """Install the monkey patch."""
         assert not cls.installed, "Monkey patch is already installed."
+
         def _getFormInput_single(self):
             """Return the submitted form value.
 
@@ -551,12 +728,15 @@ class LaunchpadBrowserResponse(NotificationResponse, BrowserResponse):
     # Note that NotificationResponse defines a 'redirect' method which
     # needs to override the 'redirect' method in BrowserResponse
     def __init__(self, header_output=None, http_transaction=None):
-        super(LaunchpadBrowserResponse, self).__init__(
-                header_output, http_transaction
-                )
+        super(LaunchpadBrowserResponse, self).__init__()
 
-    def redirect(self, location, status=None, temporary_if_possible=False):
+    def redirect(self, location, status=None, trusted=True,
+                 temporary_if_possible=False):
         """Do a redirect.
+
+        Unlike Zope's BrowserResponse.redirect(), consider all redirects to be
+        trusted. Otherwise we'd have to change all callsites that redirect
+        from lp.net to vhost.lp.net to pass trusted=True.
 
         If temporary_if_possible is True, then do a temporary redirect
         if this is a HEAD or GET, otherwise do a 303.
@@ -578,8 +758,7 @@ class LaunchpadBrowserResponse(NotificationResponse, BrowserResponse):
             else:
                 status = 303
         super(LaunchpadBrowserResponse, self).redirect(
-                unicode(location).encode('UTF-8'), status=status
-                )
+            unicode(location).encode('UTF-8'), status=status, trusted=trusted)
 
 
 def adaptResponseToSession(response):
@@ -592,7 +771,8 @@ def adaptRequestToResponse(request):
     return request.response
 
 
-class LaunchpadTestRequest(TestRequest):
+class LaunchpadTestRequest(TestRequest, ErrorReportRequest,
+                           LaunchpadBrowserRequestMixin):
     """Mock request for use in unit and functional tests.
 
     >>> request = LaunchpadTestRequest(SERVER_URL='http://127.0.0.1/foo/bar')
@@ -622,12 +802,29 @@ class LaunchpadTestRequest(TestRequest):
     >>> verifyObject(IBrowserFormNG, request.form_ng)
     True
 
+    It also provides the query_string_params dict that is available from
+    LaunchpadBrowserRequest.
+
+    >>> request = LaunchpadTestRequest(SERVER_URL='http://127.0.0.1/foo/bar',
+    ...     QUERY_STRING='a=1&b=2&c=3')
+    >>> request.charsets = ['utf-8']
+    >>> request.query_string_params == {'a': ['1'], 'b': ['2'], 'c': ['3']}
+    True
+
     It also provides the  hooks for popup calendar iframes:
 
     >>> request.needs_datetimepicker_iframe
     False
     >>> request.needs_datepicker_iframe
     False
+
+    And for JSON and GMap2:
+
+    >>> request.needs_json
+    False
+    >>> request.needs_gmap2
+    False
+
     """
     implements(INotificationRequest, IBasicLaunchpadRequest, IParticipation,
                canonical.launchpad.layers.LaunchpadLayer)
@@ -640,10 +837,14 @@ class LaunchpadTestRequest(TestRequest):
         super(LaunchpadTestRequest, self).__init__(
             body_instream=body_instream, environ=environ, form=form,
             skin=skin, outstream=outstream, REQUEST_METHOD=method, **kw)
-        self.breadcrumbs = []
         self.traversed_objects = []
         self.needs_datepicker_iframe = False
         self.needs_datetimepicker_iframe = False
+        self.needs_json = False
+        self.needs_gmap2 = False
+        # stub out the FeatureController that would normally be provided by
+        # the publication mechanism
+        self.features = NullFeatureController()
 
     @property
     def uuid(self):
@@ -675,6 +876,11 @@ class LaunchpadTestRequest(TestRequest):
     def form_ng(self):
         """See ILaunchpadBrowserApplicationRequest."""
         return BrowserFormNG(self.form)
+
+    @property
+    def query_string_params(self):
+        """See ILaunchpadBrowserApplicationRequest."""
+        return get_query_string_params(self)
 
     def setPrincipal(self, principal):
         """See `IPublicationRequest`."""
@@ -781,13 +987,13 @@ class LaunchpadAccessLogger(CommonAccessLogger):
                 userid,
                 pageid,
                 referer,
-                user_agent
+                user_agent,
                 )
            )
 
 
 http = wsgi.ServerType(
-    WSGIHTTPServer,
+    ZServerTracelogServer, # subclass of WSGIHTTPServer
     WSGIPublisherApplication,
     LaunchpadAccessLogger,
     8080,
@@ -801,7 +1007,7 @@ pmhttp = wsgi.ServerType(
     True)
 
 debughttp = wsgi.ServerType(
-    WSGIHTTPServer,
+    ZServerTracelogServer, # subclass of WSGIHTTPServer
     WSGIPublisherApplication,
     LaunchpadAccessLogger,
     8082,
@@ -809,7 +1015,7 @@ debughttp = wsgi.ServerType(
     requestFactory=DebugLayerRequestFactory)
 
 privatexmlrpc = wsgi.ServerType(
-    WSGIHTTPServer,
+    ZServerTracelogServer, # subclass of WSGIHTTPServer
     WSGIPublisherApplication,
     LaunchpadAccessLogger,
     8080,
@@ -821,61 +1027,24 @@ privatexmlrpc = wsgi.ServerType(
 class MainLaunchpadPublication(LaunchpadBrowserPublication):
     """The publication used for the main Launchpad site."""
 
-# ---- blueprint
 
-class BlueprintBrowserRequest(LaunchpadBrowserRequest):
-    implements(canonical.launchpad.layers.BlueprintLayer)
+class AccountPrincipalMixin:
+    """Mixin for publication that works with person-less accounts."""
 
-class BlueprintPublication(LaunchpadBrowserPublication):
-    """The publication used for the Blueprint site."""
+    def getPrincipal(self, request):
+        """Return the authenticated principal for this request.
 
-# ---- code
+        This is only necessary because, unlike in LaunchpadBrowserPublication,
+        here we want principals representing personless accounts to be
+        returned, so that personless accounts can use our OpenID server.
+        """
+        auth_utility = getUtility(IPlacelessAuthUtility)
+        principal = auth_utility.authenticate(request)
+        if principal is None:
+            principal = auth_utility.unauthenticatedPrincipal()
+            assert principal is not None, "Missing unauthenticated principal."
+        return principal
 
-class CodePublication(LaunchpadBrowserPublication):
-    """The publication used for the Code site."""
-
-class CodeBrowserRequest(LaunchpadBrowserRequest):
-    implements(canonical.launchpad.layers.CodeLayer)
-
-# ---- translations
-
-class TranslationsPublication(LaunchpadBrowserPublication):
-    """The publication used for the Translations site."""
-
-class TranslationsBrowserRequest(LaunchpadBrowserRequest):
-    implements(canonical.launchpad.layers.TranslationsLayer)
-
-# ---- bugs
-
-class BugsPublication(LaunchpadBrowserPublication):
-    """The publication used for the Bugs site."""
-
-class BugsBrowserRequest(LaunchpadBrowserRequest):
-    implements(canonical.launchpad.layers.BugsLayer)
-
-# ---- answers
-
-class AnswersPublication(LaunchpadBrowserPublication):
-    """The publication used for the Answers site."""
-
-class AnswersBrowserRequest(LaunchpadBrowserRequest):
-    implements(canonical.launchpad.layers.AnswersLayer)
-
-# ---- shipit
-
-class ShipItPublication(LaunchpadBrowserPublication):
-    """The publication used for the ShipIt sites."""
-
-    root_object_interface = IShipItApplication
-
-class UbuntuShipItBrowserRequest(LaunchpadBrowserRequest):
-    implements(canonical.launchpad.layers.ShipItUbuntuLayer)
-
-class KubuntuShipItBrowserRequest(LaunchpadBrowserRequest):
-    implements(canonical.launchpad.layers.ShipItKUbuntuLayer)
-
-class EdubuntuShipItBrowserRequest(LaunchpadBrowserRequest):
-    implements(canonical.launchpad.layers.ShipItEdUbuntuLayer)
 
 # ---- feeds
 
@@ -890,12 +1059,15 @@ class FeedsPublication(LaunchpadBrowserPublication):
         Feeds.lp.net should only serve classes that implement the IFeed
         interface or redirect to some other url.
         """
+        # LaunchpadImageFolder is imported here to avoid an import loop.
+        from canonical.launchpad.browser.launchpad import LaunchpadImageFolder
         result = super(FeedsPublication, self).traverseName(request, ob, name)
         if len(request.stepstogo) == 0:
             # The url has been fully traversed. Now we can check that
-            # the result is a feed or a redirection.
+            # the result is a feed, an image, or a redirection.
             naked_result = removeSecurityProxy(result)
             if (IFeed.providedBy(result) or
+                isinstance(naked_result, LaunchpadImageFolder) or
                 getattr(naked_result, 'status', None) == 301):
                 return result
             else:
@@ -914,12 +1086,44 @@ class FeedsBrowserRequest(LaunchpadBrowserRequest):
     """Request type for a launchpad feed."""
     implements(canonical.launchpad.layers.FeedsLayer)
 
+
+# ---- apidoc
+
+class APIDocBrowserRequest(LaunchpadBrowserRequest):
+    implements(canonical.launchpad.layers.APIDocLayer)
+
+
+class APIDocBrowserPublication(LaunchpadBrowserPublication):
+    root_object_interface = IAPIDocRoot
+
+
+# ---- testopenid
+
+class TestOpenIDBrowserRequest(LaunchpadBrowserRequest):
+    implements(canonical.launchpad.layers.TestOpenIDLayer)
+
+
+class TestOpenIDBrowserPublication(LaunchpadBrowserPublication):
+    root_object_interface = ITestOpenIDApplication
+
+
 # ---- web service
 
-class WebServicePublication(LaunchpadBrowserPublication):
+class WebServicePublication(WebServicePublicationMixin,
+                            LaunchpadBrowserPublication):
     """The publication used for Launchpad web service requests."""
 
     root_object_interface = IWebServiceApplication
+
+    def constructPageID(self, view, context):
+        """Add the web service named operation (if any) to the page ID."""
+        pageid = super(WebServicePublication, self).constructPageID(
+            view, context)
+        op = (view.request.get('ws.op')
+            or view.request.query_string_params.get('ws.op'))
+        if op:
+            pageid += ':' + op
+        return pageid
 
     def getApplication(self, request):
         """See `zope.publisher.interfaces.IPublication`.
@@ -930,73 +1134,6 @@ class WebServicePublication(LaunchpadBrowserPublication):
         """
         return getUtility(IWebServiceApplication)
 
-    def traverseName(self, request, ob, name):
-        """See `zope.publisher.interfaces.IPublication`.
-
-        In addition to the default traversal implementation, this publication
-        also handle traversal to collection scoped into an entry.
-        """
-        # If this is the last traversal step, then look first for a scoped
-        # collection. This is done because although Navigation handles
-        # traversal to entries in a scoped collection, they don't usually
-        # handle traversing to the scoped collection itself.
-        if len(request.getTraversalStack()) == 0:
-            try_special_traversal = True
-            try:
-                entry = IEntry(ob)
-            except TypeError:
-                try_special_traversal = False
-            result = None
-            if try_special_traversal:
-                field = entry.schema.get(name)
-                if ICollectionField.providedBy(field):
-                    result = self._traverseToScopedCollection(
-                        request, entry, field, name)
-                elif IBytes.providedBy(field):
-                    result = self._traverseToByteStorage(
-                        request, entry, field, name)
-            if result is not None:
-                return result
-        return super(WebServicePublication, self).traverseName(
-            request, ob, name)
-
-    def _traverseToByteStorage(self, request, entry, field, name):
-        """Try to traverse to a byte storage resource in entry."""
-        # Even if the library file is None, we want to allow
-        # traversal, because the request might be a PUT request
-        # creating a file here.
-        return getMultiAdapter((entry, field.bind(entry)), IByteStorage)
-
-    def _traverseToScopedCollection(self, request, entry, field, name):
-        """Try to traverse to a collection in entry.
-
-        This is done because we don't usually traverse to attributes
-        representing a collection in our regular Navigation.
-
-        This method returns None if a scoped collection cannot be found.
-        """
-        collection = getattr(entry, name, None)
-        if collection is None:
-            return None
-        scoped_collection = ScopedCollection(entry.context, entry)
-        # Tell the IScopedCollection object what collection it's managing,
-        # and what the collection's relationship is to the entry it's
-        # scoped to.
-        scoped_collection.collection = collection
-        scoped_collection.relationship = field
-        return scoped_collection
-
-    def getDefaultTraversal(self, request, ob):
-        """See `zope.publisher.interfaces.browser.IBrowserPublication`.
-
-        The WebService doesn't use the getDefaultTraversal() extension
-        mechanism, because it only applies to GET, HEAD, and POST methods.
-
-        See getResource() for the alternate mechanism.
-        """
-        # Don't traverse to anything else.
-        return ob, None
-
     def getResource(self, request, ob):
         """Return the resource that can publish the object ob.
 
@@ -1004,48 +1141,94 @@ class WebServicePublication(LaunchpadBrowserPublication):
         supports the ICollection, or IEntry interface we wrap it into the
         appropriate resource.
         """
-        if (ICollection.providedBy(ob) or
-            queryAdapter(ob, ICollection) is not None):
-            # Object supports ICollection protocol.
-            resource = CollectionResource(ob, request)
-        elif (IEntry.providedBy(ob) or
-              queryAdapter(ob, IEntry) is not None):
-            # Object supports IEntry protocol.
-            resource = EntryResource(ob, request)
-        elif queryMultiAdapter((ob, request), IHTTPResource) is not None:
-            # Object can be adapted to a resource.
-            resource = queryMultiAdapter((ob, request), IHTTPResource)
-        elif IHTTPResource.providedBy(ob):
-            # A resource knows how to take care of itself.
+        if zope_isinstance(ob, RedirectionView):
+            # A redirection should be served as is.
             return ob
         else:
-            # This object should not be published on the web service.
-            raise NotFound(ob, '')
-
-        # Wrap the resource in a security proxy.
-        return ProxyFactory(resource)
+            return super(WebServicePublication, self).getResource(request, ob)
 
     def finishReadOnlyRequest(self, txn):
         """Commit the transaction so that created OAuthNonces are stored."""
+        # Transaction commits usually need to be aware of the possibility of
+        # a doomed transaction.  We do not expect that this code will
+        # encounter doomed transactions.  If it does, this will need to be
+        # revisited.
         txn.commit()
 
     def getPrincipal(self, request):
+        """See `LaunchpadBrowserPublication`.
+
+        Web service requests are authenticated using OAuth, except for the
+        one made using (presumably) JavaScript on the /api override path.
+        """
+        # Use the regular HTTP authentication, when the request is not
+        # on the API virtual host but comes through the path_override on
+        # the other regular virtual hosts.
+        request_path = request.get('PATH_INFO', '')
+        web_service_config = getUtility(IWebServiceConfiguration)
+        if request_path.startswith("/%s" % web_service_config.path_override):
+            return super(WebServicePublication, self).getPrincipal(request)
+
         # Fetch OAuth authorization information from the request.
         form = get_oauth_authorization(request)
 
         consumer_key = form.get('oauth_consumer_key')
-        consumer = getUtility(IOAuthConsumerSet).getByKey(consumer_key)
-        if consumer is None:
-            raise Unauthorized('Unknown consumer (%s).' % consumer_key)
+        consumers = getUtility(IOAuthConsumerSet)
+        consumer = consumers.getByKey(consumer_key)
         token_key = form.get('oauth_token')
+        anonymous_request = (token_key == '')
+
+        if consumer_key is None:
+            # Either the client's OAuth implementation is broken, or
+            # the user is trying to make an unauthenticated request
+            # using wget or another OAuth-ignorant application.
+            # Try to retrieve a consumer based on the User-Agent
+            # header.
+            anonymous_request = True
+            consumer_key = request.getHeader('User-Agent', '')
+            if consumer_key == '':
+                raise Unauthorized(
+                    'Anonymous requests must provide a User-Agent.')
+            consumer = consumers.getByKey(consumer_key)
+
+        if consumer is None:
+            if anonymous_request:
+                # This is the first time anyone has tried to make an
+                # anonymous request using this consumer name (or user
+                # agent). Dynamically create the consumer.
+                #
+                # In the normal website this wouldn't be possible
+                # because GET requests have their transactions rolled
+                # back. But webservice requests always have their
+                # transactions committed so that we can keep track of
+                # the OAuth nonces and prevent replay attacks.
+                if consumer_key == '' or consumer_key is None:
+                    raise Unauthorized("No consumer key specified.")
+                consumer = consumers.new(consumer_key, '')
+            else:
+                # An unknown consumer can never make a non-anonymous
+                # request, because access tokens are registered with a
+                # specific, known consumer.
+                raise Unauthorized('Unknown consumer (%s).' % consumer_key)
+        if anonymous_request:
+            # Skip the OAuth verification step and let the user access the
+            # web service as an unauthenticated user.
+            #
+            # XXX leonardr 2009-12-15 bug=496964: Ideally we'd be
+            # auto-creating a token for the anonymous user the first
+            # time, passing it through the OAuth verification step,
+            # and using it on all subsequent anonymous requests.
+            alsoProvides(request, IOAuthSignedRequest)
+            auth_utility = getUtility(IPlacelessAuthUtility)
+            return auth_utility.unauthenticatedPrincipal()
         token = consumer.getAccessToken(token_key)
         if token is None:
             raise Unauthorized('Unknown access token (%s).' % token_key)
         nonce = form.get('oauth_nonce')
         timestamp = form.get('oauth_timestamp')
         try:
-            token.ensureNonce(nonce, timestamp)
-        except NonceAlreadyUsed, e:
+            token.checkNonceAndTimestamp(nonce, timestamp)
+        except (NonceAlreadyUsed, TimestampOrderingError, ClockSkew), e:
             raise Unauthorized('Invalid nonce/timestamp: %s' % e)
         now = datetime.now(pytz.timezone('UTC'))
         if token.permission == OAuthPermission.UNAUTHORIZED:
@@ -1057,43 +1240,48 @@ class WebServicePublication(LaunchpadBrowserPublication):
         else:
             # Everything is fine, let's return the principal.
             pass
-        return getUtility(IPlacelessLoginSource).getPrincipal(
-            token.person.id, access_level=token.permission)
+        alsoProvides(request, IOAuthSignedRequest)
+        principal = getUtility(IPlacelessLoginSource).getPrincipal(
+            token.person.account.id, access_level=token.permission,
+            scope=token.context)
 
-
-class WebServiceRequestTraversal:
-    """Mixin providing web-service resource wrapping in traversal.
-
-    This is implemented as a mixin, because we want the WebServiceTestRequest
-    to use the same mechanism. And since the Launchpad request class
-    hierarchy is a mess, it's simple to use a mixin.
-    """
-
-    def traverse(self, ob):
-        """See `zope.publisher.interfaces.IPublisherRequest`.
-
-        WebService requests call the WebServicePublication.getResource()
-        on the result of the default traversal.
-        """
-        stack = self.getTraversalStack()
-        # Only accept versioned URLs.
-        if len(stack) > 0:
-            last_component = stack.pop()
-        else:
-            last_component = ''
-        if last_component == 'beta':
-            self.setTraversalStack(stack)
-            self.setVirtualHostRoot(names=('beta', ))
-        else:
-            raise NotFound(self, '', self)
-        result = super(WebServiceRequestTraversal, self).traverse(ob)
-        return self.publication.getResource(self, result)
+        return principal
 
 
 class WebServiceClientRequest(WebServiceRequestTraversal,
                               LaunchpadBrowserRequest):
     """Request type for a resource published through the web service."""
     implements(canonical.launchpad.layers.WebServiceLayer)
+
+    def __init__(self, body_instream, environ, response=None):
+        super(WebServiceClientRequest, self).__init__(
+            body_instream, environ, response)
+        # Web service requests use content negotiation, so we put
+        # 'Accept' in the Vary header. They don't use cookies, so
+        # there's no point in putting 'Cookie' in the Vary header, and
+        # putting 'Authorization' in the Vary header totally destroys
+        # caching because every web service request contains a
+        # distinct OAuth nonce in its Authorization header.
+        #
+        # Because 'Authorization' is not in the Vary header, a client
+        # that reuses a single cache for different OAuth credentials
+        # could conceivably leak private information to an
+        # unprivileged user via the cache. This won't happen for the
+        # web service root resource because the service root is the
+        # same for everybody. It won't happen for entry resources
+        # because if two users have a different representation of an
+        # entry, the ETag will also be different and a conditional
+        # request will fail.
+        #
+        # Once lazr.restful starts setting caching directives other
+        # than ETag, we may have to revisit this.
+        self.response.setHeader('Vary', 'Accept')
+
+    def getRootURL(self, rootsite):
+        """See IBasicLaunchpadRequest."""
+        # When browsing the web service, we want URLs to point back at the web
+        # service, so we basically ignore rootsite.
+        return self.getApplicationURL() + '/'
 
 
 class WebServiceTestRequest(WebServiceRequestTraversal, LaunchpadTestRequest):
@@ -1104,36 +1292,30 @@ class WebServiceTestRequest(WebServiceRequestTraversal, LaunchpadTestRequest):
     """
     implements(canonical.launchpad.layers.WebServiceLayer)
 
-    def __init__(self, body_instream=None, environ=None, **kw):
+    def __init__(self, body_instream=None, environ=None, version=None, **kw):
         test_environ = {
-            'SERVERL_URL': 'http://api.launchpad.dev',
+            'SERVER_URL': 'http://api.launchpad.dev',
             'HTTP_HOST': 'api.launchpad.dev',
             }
         if environ is not None:
             test_environ.update(environ)
         super(WebServiceTestRequest, self).__init__(
             body_instream=body_instream, environ=test_environ, **kw)
+        if version is None:
+            version = getUtility(IWebServiceConfiguration).active_versions[-1]
+        self.version = version
+        version_marker = getUtility(IWebServiceVersion, name=version)
+        alsoProvides(self, version_marker)
 
-
-# ---- openid
-
-class OpenIdPublication(LaunchpadBrowserPublication):
-    """The publication used for OpenId requests."""
-
-    root_object_interface = IOpenIdApplication
-
-
-class OpenIdBrowserRequest(LaunchpadBrowserRequest):
-    implements(canonical.launchpad.layers.OpenIdLayer)
 
 # ---- xmlrpc
 
 class PublicXMLRPCPublication(LaunchpadBrowserPublication):
     """The publication used for public XML-RPC requests."""
+
     def handleException(self, object, request, exc_info, retry_allowed=True):
         LaunchpadBrowserPublication.handleException(
-                self, object, request, exc_info, retry_allowed
-                )
+                self, object, request, exc_info, retry_allowed)
         OpStats.stats['xml-rpc faults'] += 1
 
     def endRequest(self, request, object):
@@ -1142,7 +1324,7 @@ class PublicXMLRPCPublication(LaunchpadBrowserPublication):
 
 
 class PublicXMLRPCRequest(BasicLaunchpadRequest, XMLRPCRequest,
-                          ErrorReportRequest):
+                          ErrorReportRequest, LaunchpadBrowserRequestMixin):
     """Request type for doing public XML-RPC in Launchpad."""
 
     def _createResponse(self):
@@ -1186,6 +1368,7 @@ class PrivateXMLRPCPublication(PublicXMLRPCPublication):
 class PrivateXMLRPCRequest(PublicXMLRPCRequest):
     """Request type for doing private XML-RPC in Launchpad."""
     # For now, the same as public requests.
+
 
 # ---- Protocol errors
 
@@ -1273,29 +1456,25 @@ def register_launchpad_request_publication_factories():
     DEATH TO ZCML!
     """
     VHRP = VirtualHostRequestPublicationFactory
+    VWSHRP = VHostWebServiceRequestPublicationFactory
 
     factories = [
-        VHRP('mainsite', LaunchpadBrowserRequest, MainLaunchpadPublication,
-             handle_default_host=True),
-        VHRP('blueprints', BlueprintBrowserRequest, BlueprintPublication),
-        VHRP('code', CodeBrowserRequest, CodePublication),
-        VHRP('translations', TranslationsBrowserRequest,
-             TranslationsPublication),
-        VHRP('bugs', BugsBrowserRequest, BugsPublication),
-        VHRP('answers', AnswersBrowserRequest, AnswersPublication),
-        VHRP('openid', OpenIdBrowserRequest, OpenIdPublication),
-        VHRP('shipitubuntu', UbuntuShipItBrowserRequest,
-             ShipItPublication),
-        VHRP('shipitkubuntu', KubuntuShipItBrowserRequest,
-             ShipItPublication),
-        VHRP('shipitedubuntu', EdubuntuShipItBrowserRequest,
-             ShipItPublication),
+        VWSHRP('mainsite', LaunchpadBrowserRequest, MainLaunchpadPublication,
+               handle_default_host=True),
         VHRP('feeds', FeedsBrowserRequest, FeedsPublication),
-        WebServiceRequestPublicationFactory('api', WebServiceClientRequest,
-                                            WebServicePublication),
-        XMLRPCRequestPublicationFactory('xmlrpc', PublicXMLRPCRequest,
-                                        PublicXMLRPCPublication)
+        WebServiceRequestPublicationFactory(
+            'api', WebServiceClientRequest, WebServicePublication),
+        XMLRPCRequestPublicationFactory(
+            'xmlrpc', PublicXMLRPCRequest, PublicXMLRPCPublication),
         ]
+
+    if config.launchpad.enable_test_openid_provider:
+        factories.append(VHRP('testopenid', TestOpenIDBrowserRequest,
+                              TestOpenIDBrowserPublication))
+
+    if config.devmode:
+        factories.append(
+            VHRP('apidoc', APIDocBrowserRequest, APIDocBrowserPublication))
 
     # We may also have a private XML-RPC server.
     private_port = None

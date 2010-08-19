@@ -25,7 +25,6 @@ handle, and register them for some domains:
 
     >>> from canonical.launchpad.interfaces import IMailHandler
     >>> from zope.interface import implements
-    >>> from canonical.config import config
     >>> class MockHandler:
     ...     implements(IMailHandler)
     ...     def __init__(self, allow_unknown_users=False):
@@ -41,18 +40,17 @@ handle, and register them for some domains:
     >>> mail_handlers.add('foo.com', foo_handler)
     >>> mail_handlers.add('bar.com', bar_handler)
 
-We temporarily override the error mails' From address, so that they will
-pass through the authentication stage:
-
-    >>> old_error_from_address = config.malone.bugmail_error_from_address
-    >>> config.malone.bugmail_error_from_address = 'foo.bar@canonical.com'
-
 Now we send a few test mails to foo.com, bar.com, and baz.com:
 
     >>> from canonical.testing import LaunchpadZopelessLayer
     >>> from canonical.database.sqlbase import commit
     >>> from canonical.launchpad.mail.ftests import read_test_message
-    >>> from canonical.launchpad.mail import sendmail
+    >>> from canonical.launchpad.mail import sendmail as original_sendmail
+
+For these examples, we don't want the Precedence header added.
+
+    >>> def sendmail(msg, to_addrs=None):
+    ...     return original_sendmail(msg, to_addrs=to_addrs, bulk=False)
 
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
     >>> msgids = {'foo.com': [], 'bar.com': [], 'baz.com': []}
@@ -61,21 +59,29 @@ Now we send a few test mails to foo.com, bar.com, and baz.com:
     ...     msg.replace_header('To', '123@%s' % domain)
     ...     msgids[domain].append("<%s>" % sendmail(msg))
 
-The test mails are now in Launchpad's mail box, so now we can call
-handleMail, so that every mail gets handled by the correct handler.
 Since the User gets authenticated using OpenPGP signatures we have to
-import the keys first.
+import the keys before handleMail is called.
 
+    >>> from canonical.config import config
     >>> from canonical.launchpad.ftests import import_public_test_keys
     >>> import_public_test_keys()
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser(config.processmail.dbuser)
     >>> zopeless_transaction = LaunchpadZopelessLayer.txn
+
+We temporarily override the error mails' From address, so that they will
+pass through the authentication stage:
+
+    >>> bugmail_error_from_address = """
+    ...     [malone]
+    ...     bugmail_error_from_address: foo.bar@canonical.com
+    ...     """
+    >>> config.push('bugmail_error_from_address', bugmail_error_from_address)
+
+The test mails are now in Launchpad's mail box, so now we can call
+handleMail, so that every mail gets handled by the correct handler.
+
     >>> handleMail(zopeless_transaction)
-    WARNING:canonical.launchpad.mail:No X-Original-To header was present in email: ...
-    WARNING:canonical.launchpad.mail:No X-Original-To header was present in email: ...
-    WARNING:canonical.launchpad.mail:No X-Original-To header was present in email: ...
-    WARNING:canonical.launchpad.mail:No X-Original-To header was present in email: ...
 
 Now we can see that each handler handled the emails sent to its domain:
 
@@ -91,7 +97,7 @@ So, what happened to the message that got sent to baz.com? Since there
 wasn't a handler registered for that domain, an OOPS was recorded with
 a link to the original message.
 
-    >>> from canonical.launchpad.mail import stub
+    >>> from lp.services.mail import stub
     >>> print stub.test_emails[-1][2]
     Content-Type: multipart/mixed...
     ...
@@ -134,7 +140,7 @@ However, bar_handler specifies that it can handle such emails:
 
 So if we send the mail to bar.com, bar_handler will handle the mail:
 
-    >>> moin_change.replace_header('X-Original-To', '123@bar.com')
+    >>> moin_change.replace_header('To', '123@bar.com')
     >>> msgid = "<%s>" % sendmail(moin_change)
     >>> handleMail(zopeless_transaction)
     >>> msgid in bar_handler.handledMails
@@ -169,23 +175,10 @@ silently rejected.
 
 == X-Original-To ==
 
-If available, the X-Original-To header is used to determine to which
-address the email was sent to:
-
-    >>> msg = read_test_message('signed_detached.txt')
-    >>> msg.replace_header('To', '123@foo.com')
-    >>> msg['CC'] = '123@foo.com'
-    >>> msg['X-Original-To'] = '123@bar.com'
-    >>> msgid = '<%s>' % sendmail (msg, ['123@bar.com'])
-    >>> handleMail(zopeless_transaction)
-    >>> msgid in bar_handler.handledMails
-    True
-
-Only the address in X-Original-To header will be used. The addresses in
-the To and CC headers will be ignored:
-
-    >>> msgid in foo_handler.handledMails
-    False
+Ideally, we would use X-Original-To, as this reflects the actual address
+that the mail was sent to.  Unfortunately, due to mail configuration issues,
+X-Original-To is very wrong, so we must rely on To and Cc, even though these
+may be inaccurate.
 
 
 == OOPSes processing incoming mail ==
@@ -333,10 +326,8 @@ out:
     ERROR:...:An exception was raised inside the handler: http://...
     Traceback (most recent call last):
     ...
-    ProgrammingError: ERROR:  division by zero
+    DataError: division by zero
     <BLANKLINE>
-    SELECT 1/0
-    WARNING...
 
 The second mail we sent got handled despite the exception:
 
@@ -353,7 +344,7 @@ the user reporting the error:
 == Librarian not running ==
 
 If for some reason the Librarian isn't up and running, we shouldn't
-loose any emails. All that should happen is that an error should get
+lose any emails. All that should happen is that an error should get
 logged.
 
 
@@ -369,7 +360,7 @@ logged.
     >>> handleMail(transaction)
     ERROR:...:Upload to Librarian failed...
     ...
-    UploadFailed: (111, 'Connection refused')
+    UploadFailed: ...Connection refused...
 
     >>> len(stub.test_emails)
     2
@@ -420,12 +411,25 @@ empty Return-Path, but there are some broken mailers out there.
     >>> len(stub.test_emails)
     0
 
+Email with the Precedence header are probably from an auto-responder or
+another robot. We also drop those.
+
+    >>> msg = read_test_message('signed_inline.txt')
+    >>> msg.replace_header('To', '123@foo.com')
+    >>> msg['Return-Path'] = '<not@empty.com>'
+    >>> msg['Precedence'] = 'bulk'
+    >>> msgid = '<%s>' % sendmail(msg)
+    >>> handleMail(zopeless_transaction)
+    >>> msgid in foo_handler.handledMails
+    False
+
+    >>> len(stub.test_emails)
+    0
+
 
 == Doctest cleanup ==
 
-    >>> LibrarianLayer.hide()
-    >>> config.malone.bugmail_error_from_address = old_error_from_address
+    >>> config_data = config.pop('bugmail_error_from_address')
     >>> mail_handlers.add('foo.com', None)
     >>> mail_handlers.add('bar.com', None)
     >>> mail_handlers.add('except.com', None)
-    >>> LibrarianLayer.reveal()

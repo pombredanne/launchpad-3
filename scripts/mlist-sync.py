@@ -1,9 +1,11 @@
-#!/usr/bin/python2.4
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+#!/usr/bin/python -S
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Sync Mailman data from one Launchpad to another."""
 
-# XXX BarryWarsaw 12-Feb-2008
+# XXX BarryWarsaw 2008-02-12:
 # Things this script does NOT do correctly.
 #
 # - Fix up the deactivated lists.  This isn't done because that data lives in
@@ -22,22 +24,23 @@
 #   Not doing this means that some of the links in staging's MHonArc archive
 #   will point to production archives.
 
+# pylint: disable-msg=W0403
+import _pythonpath
+
 import os
 import sys
 import logging
 import textwrap
 import subprocess
 
-# pylint: disable-msg=W0403
-import _pythonpath
-
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.launchpad.interfaces import (
     IEmailAddressSet, IMailingListSet, IPersonSet)
 from canonical.launchpad.mailman.config import configure_prefix
-from canonical.launchpad.scripts.base import LaunchpadCronScript
+from lp.services.scripts.base import LaunchpadCronScript
 
 
 RSYNC_OPTIONS = ('-avz', '--delete')
@@ -170,14 +173,19 @@ class MailingListSyncScript(LaunchpadCronScript):
                 old_address = '%s@%s' % (list_name, self.options.hostname)
                 for email_address in mlist_addresses:
                     if email_address.email == old_address:
-                        email_address.email = lp_mailing_list.address
+                        new_address = lp_mailing_list.address
+                        removeSecurityProxy(email_address).email = new_address
+                        self.logger.info('%s -> %s', old_address, new_address)
                         break
                 else:
                     self.logger.error('No change to LP email address for: %s',
                                       list_name)
             else:
-                email_address = mlist_addresses[0]
+                email_address = removeSecurityProxy(mlist_addresses[0])
+                old_address = email_address.email
                 email_address.email = lp_mailing_list.address
+                self.logger.info('%s -> %s',
+                                 old_address, lp_mailing_list.address)
 
     def deleteMailmanList(self, list_name):
         """Delete all Mailman data structures for `list_name`."""

@@ -1,33 +1,10 @@
+<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+     GNU Affero General Public License version 3 (see the file LICENSE).
+-->
+
 <configure
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser">
-
-    <!-- XXX: StuartBishop 2004-11-12: This stanza might not be necessary. -->
-    <content class="canonical.widgets.SinglePopupWidget">
-        <allow interface="canonical.widgets.ISinglePopupWidget" />
-    </content>
-
-    <!-- Define the views needed by the popup widget
-       XXX: StuartBishop 2004-11-12:
-       These should probably just be attached to the add and edit forms.
-    -->
-    <browser:page
-        for="*"
-        class="canonical.widgets.popup.SinglePopupView"
-        allowed_interface="canonical.widgets.popup.ISinglePopupView"
-        permission="zope.Public"
-        name="popup-window"
-        template="templates/popup-window.pt"
-        />
-
-    <browser:page
-        for="*"
-        class="canonical.widgets.popup.SearchForUpstreamPopupView"
-        allowed_interface="canonical.widgets.popup.ISinglePopupView"
-        permission="zope.Public"
-        name="popup-search-upstream"
-        template="templates/popup-window.pt"
-        />
 
     <!--
         XXX: anonymous 2004-08-14: Feed back into Zope3.
@@ -40,15 +17,6 @@
         for=".exception.WidgetInputError"
         provides="zope.app.form.browser.interfaces.IWidgetInputErrorView"
         factory=".exception.WidgetInputErrorView"
-        permission="zope.Public"
-        />
-
-    <!-- Date and DateTime based on PopCalXP -->
-    <browser:page
-        name="+popcalxp"
-        for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-        class="canonical.widgets.date.PopCalXPFolder"
-        attribute="__call__"
         permission="zope.Public"
         />
 

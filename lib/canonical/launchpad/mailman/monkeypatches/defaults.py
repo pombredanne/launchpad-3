@@ -1,7 +1,9 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 # Pick up the standard Mailman defaults
 # pylint: disable-msg=W0401
+# pylint: disable-msg=W0614
 from Mailman.Defaults import *
 
 # Use a name for the site list that is very unlikely to conflict with any
@@ -39,6 +41,7 @@ DEFAULT_BOUNCE_NOTIFY_OWNER_ON_DISABLE = No
 DEFAULT_BOUNCE_NOTIFY_OWNER_ON_REMOVAL = No
 VERP_PERSONALIZED_DELIVERIES = Yes
 DEFAULT_FORWARD_AUTO_DISCARDS = No
+DEFAULT_BOUNCE_PROCESSING = No
 
 # Modify the global pipeline to add some handlers for Launchpad specific
 # functionality.
@@ -49,6 +52,7 @@ GLOBAL_PIPELINE.insert(0, 'LaunchpadMember')
 index = GLOBAL_PIPELINE.index('CookHeaders')
 GLOBAL_PIPELINE.insert(index + 1, 'LaunchpadHeaders')
 # - Insert our own moderation handlers instead of the standard Mailman
-#   handler.
+#   Moderate and Hold handlers.  Hold always comes after Moderate in the
+#   default global pipeline.
 index = GLOBAL_PIPELINE.index('Moderate')
-GLOBAL_PIPELINE[index:index + 1] = ['LPStanding', 'LPModerate']
+GLOBAL_PIPELINE[index:index + 2] = ['LPStanding', 'LPModerate', 'LPSize']

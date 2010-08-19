@@ -1,0 +1,45 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  metal:use-macro="view/macro:page/main_only"
+  i18n:domain="launchpad"
+>
+
+<body>
+
+<div metal:fill-slot="main">
+
+  <div style="height:420px;">
+    <div tal:condition="not: view/has_mapped_participants">
+      None of the current participants in
+      <tal:teamname replace="context/fmt:displayname" /> have a recorded
+      location.
+    </div>
+
+    <div
+      tal:content="cache:public, 1 hour">
+      <tal:some_mapped condition="view/has_mapped_participants">
+        <div id="team_map_div"
+           style="width: 75%; height: 250px; border: 1px; float: left;
+           margin: 0 14px 0 0;">
+        </div>
+        <tal:map replace="structure view/map_html" />
+      </tal:some_mapped>
+
+      <div tal:condition="view/has_mapped_participants" style="float:left;">
+        <div style="margin-bottom: 4px;">
+          <strong>Members' current local time:</strong>
+        </div>
+        <tal:time_set repeat="time view/times">
+          <tal:times replace="time" /><br />
+        </tal:time_set>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

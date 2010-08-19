@@ -1,0 +1,167 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  metal:use-macro="view/macro:page/main_only"
+  i18n:domain="launchpad"
+  >
+<body>
+    <metal:block fill-slot="head_epilogue">
+      <script type="text/javascript" id="repository-size-update"
+              tal:condition="view/archive_url">
+LPS.use('io-base', 'lazr.anim', 'node', 'lp.soyuz.base',
+          'lp.soyuz.update_archive_build_statuses', function(Y) {
+
+
+/*
+ * Update the page based on the XHR response.
+ */
+function doUpdate(transaction_id, response, args) {
+    args.container.set('innerHTML', response.responseText);
+}
+
+
+/*
+ * Communicate the update has failed and allow the user to retry
+ * the operation.
+ */
+function informFailure(transaction_id, response, args) {
+    function retry_handler (e) {
+        e.preventDefault();
+        dispatchUpdate();
+    };
+
+    var failure_message = Y.lp.soyuz.base.makeFailureNode(
+        'Failed to fetch repository size ...', retry_handler);
+
+    args.container.set('innerHTML', '');
+    args.container.appendChild(failure_message);
+
+    var anim = Y.lazr.anim.red_flash({
+        node: failure_message
+        });
+    anim.run();
+}
+
+
+/*
+ * Communicate an update is in progress and fire the XHR.
+ */
+function dispatchUpdate () {
+    in_progress_message = Y.lp.soyuz.base.makeInProgressNode(
+        'Fetching repository size ...')
+
+    var container = Y.one('#package-counters');
+    container.set('innerHTML', '');
+    container.appendChild(in_progress_message);
+
+    var uri = '+repository-size';
+    var xhr_config = {
+        on: {
+            success: doUpdate,
+            failure: informFailure
+        },
+        arguments: {
+            'container': container
+        }
+    };
+
+    Y.io(uri, xhr_config);
+}
+
+Y.on("domready", dispatchUpdate);
+});
+      </script>
+      <style type="text/css" media="screen, print">
+tr#package-counters p{
+    margin-bottom: 3.4em;
+}
+      </style>
+    </metal:block>
+
+    <div metal:fill-slot="main"
+         tal:define="archive_active view/has_sources;
+                     archive_label  view/archive_label;"
+         tal:attributes="class string:archive">
+
+      <div class="top-portlet">
+
+        <div class="ppa-packaging-tmp-actions"
+             tal:content="structure view/@@+global-actions" />
+
+        <p tal:condition="not: context/enabled"
+           style="clear: right;" class="warning message"
+           tal:content="view/disabled_warning_message">
+          This archive has been disabled.
+        </p>
+
+        <p>This
+          <tal:archive_label replace="archive_label">PPA</tal:archive_label>
+          currently publishes packages for
+          <tal:series_list replace="view/series_list_string">
+            Gutsy, Hardy and Karmic
+          </tal:series_list>.
+        </p>
+      </div>
+
+      <div class="yui-g">
+        <div class="first yui-u"><div class="portlet">
+          <h2>Package totals</h2>
+          <p>The following information is related to the total published
+             packages in the repository (not on your system).</p>
+          <div id="package-counters">
+            <p class="discreet">
+              Package counters and estimated archive size temporarily
+              unavailable.
+            </p>
+          </div>
+        </div></div> <!-- portlet, yui-u -->
+        <div class="yui-u">
+          <div tal:define="archive context"
+               tal:condition="archive_active"
+               id="build-status-summary"
+               class="portlet">
+            <h2>
+              <span class="see-all"><a
+                tal:replace="structure context/menu:overview/builds/fmt:link" />
+              </span>
+              Package build summary
+            </h2>
+
+            <metal:build-status-summary
+                use-macro="archive/@@+macros/build-status-summary" />
+          </div>
+        </div>
+
+      </div> <!-- yui-g -->
+
+      <div class="portlet">
+        <h2>Packages</h2>
+        <tal:package-copy-request-list tal:condition="context/is_copy">
+          <metal:package-copy-request-list
+              use-macro="context/@@+macros/package-copy-request-list" />
+        </tal:package-copy-request-list>
+
+        <p tal:condition="not: archive_active">
+          This <tal:archive_label replace="archive_label" /> does not contain
+          any packages yet. Find more information about how to upload
+          packages in the <a href="https://help.launchpad.net/Packaging/PPA"
+          >PPA help page</a>
+        </p>
+
+        <tal:active_archive condition="archive_active">
+
+        <metal:package_filter_form
+          use-macro="context/@@+macros/package-filter-form" />
+
+        <metal:package-list
+            use-macro="context/@@+macros/source-package-list" />
+
+        </tal:active_archive>
+      </div> <!-- portlet -->
+    </div> <!--main -->
+
+  </body>
+
+</html>

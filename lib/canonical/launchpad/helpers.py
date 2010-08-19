@@ -1,4 +1,6 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """Various functions and classes that are useful across different parts of
 launchpad.
 
@@ -8,24 +10,24 @@ be better as a method on an existing content object or IFooSet object.
 
 __metaclass__ = type
 
-import subprocess
+import hashlib
 import gettextpo
 import os
 import random
 import re
+import subprocess
 import tarfile
 import warnings
+
 from StringIO import StringIO
 from difflib import unified_diff
-import sha
 
 from zope.component import getUtility
+from zope.security.interfaces import ForbiddenAttribute
 
 import canonical
 from canonical.launchpad.interfaces import (
-    BinaryPackageFormat, BinaryPackageFileType, ILaunchBag,
-    IRequestPreferredLanguages, IRequestLocalLanguages,
-    SourcePackageFileType)
+    ILaunchBag, IRequestPreferredLanguages, IRequestLocalLanguages)
 
 
 # pylint: disable-msg=W0102
@@ -174,7 +176,7 @@ def browserLanguages(request):
     return IRequestPreferredLanguages(request).getPreferredLanguages()
 
 
-def simple_popen2(command, input, in_bufsize=1024, out_bufsize=128):
+def simple_popen2(command, input, env=None, in_bufsize=1024, out_bufsize=128):
     """Run a command, give it input on its standard input, and capture its
     standard output.
 
@@ -189,7 +191,7 @@ def simple_popen2(command, input, in_bufsize=1024, out_bufsize=128):
     """
 
     p = subprocess.Popen(
-            command, shell=True, stdin=subprocess.PIPE,
+            command, env=env, stdin=subprocess.PIPE,
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT
             )
     (output, nothing) = p.communicate(input)
@@ -222,16 +224,16 @@ def emailPeople(person):
     return people
 
 
-def contactEmailAddresses(person):
+def get_contact_email_addresses(person):
     """Return a set of email addresses to contact this Person.
 
     In general, it is better to use emailPeople instead.
     """
-    # XXX: Guilherme Salgado 2006-04-20:
-    # This str() call can be removed as soon as Andrew lands his
-    # unicode-simple-sendmail branch, because that will make
-    # simple_sendmail handle unicode email addresses.
-    return set(str(mail_person.preferredemail.email)
+    # Need to remove the security proxy of the email address because the
+    # logged in user may not have permission to see it.
+    from zope.security.proxy import removeSecurityProxy
+    return set(
+        str(removeSecurityProxy(mail_person.preferredemail).email)
         for mail_person in emailPeople(person))
 
 
@@ -265,15 +267,6 @@ def obfuscateEmail(emailaddr, idx=None):
     return text_replaced(emailaddr, replacements[idx])
 
 
-def convertToHtmlCode(text):
-    """Return the given text converted to HTML codes, like &#103;.
-
-    This is usefull to avoid email harvesting, while keeping the email address
-    in a form that a 'normal' person can read.
-    """
-    return ''.join(["&#%s;" % ord(c) for c in text])
-
-
 def validate_translation(original, translation, flags):
     """Check with gettext if a translation is correct or not.
 
@@ -285,8 +278,8 @@ def validate_translation(original, translation, flags):
     if len(original) > 1:
         # It has plural forms.
         msg.set_msgid_plural(original[1])
-        for i in range(len(translation)):
-            msg.set_msgstr_plural(i, translation[i])
+        for form in range(len(translation)):
+            msg.set_msgstr_plural(form, translation[form])
     elif len(translation):
         msg.set_msgstr(translation[0])
 
@@ -297,7 +290,7 @@ def validate_translation(original, translation, flags):
     msg.check_format()
 
 
-class ShortListTimeoutError(Exception):
+class ShortListTooBigError(Exception):
     """This error is raised when the shortlist hardlimit is reached"""
 
 
@@ -309,43 +302,69 @@ def shortlist(sequence, longest_expected=15, hardlimit=None):
     >>> shortlist([1, 2])
     [1, 2]
 
-    >>> shortlist([1, 2, 3], 2)
+    >>> shortlist([1, 2, 3], 2) #doctest: +NORMALIZE_WHITESPACE
     Traceback (most recent call last):
-        ...
-    UserWarning: shortlist() should not be used here. It's meant to listify sequences with no more than 2 items.  There were 3 items.
+    ...
+    UserWarning: shortlist() should not be used here. It's meant to listify
+    sequences with no more than 2 items.  There were 3 items.
 
     >>> shortlist([1, 2, 3, 4], hardlimit=2)
     Traceback (most recent call last):
-        ...
-    ShortListTimeoutError: Hard limit of 2 exceeded.  There were 4 items.
+    ...
+    ShortListTooBigError: Hard limit of 2 exceeded.
 
-    >>> shortlist([1, 2, 3, 4], 2, hardlimit=4)
+    >>> shortlist(
+    ...     [1, 2, 3, 4], 2, hardlimit=4) #doctest: +NORMALIZE_WHITESPACE
     Traceback (most recent call last):
-        ...
-    UserWarning: shortlist() should not be used here. It's meant to listify sequences with no more than 2 items.  There were 4 items.
+    ...
+    UserWarning: shortlist() should not be used here. It's meant to listify
+    sequences with no more than 2 items.  There were 4 items.
+
+    It works on iterable also which don't support the extended slice protocol.
+
+    >>> xrange(5)[:1] #doctest: +ELLIPSIS
+    Traceback (most recent call last):
+    ...
+    TypeError: ...
+
+    >>> shortlist(xrange(10), 5, hardlimit=8) #doctest: +ELLIPSIS
+    Traceback (most recent call last):
+    ...
+    ShortListTooBigError: ...
 
     """
-    L = list(sequence)
-    size = len(L)
+    if hardlimit is not None:
+        last = hardlimit + 1
+    else:
+        last = None
+    try:
+        results = list(sequence[:last])
+    except (TypeError, ForbiddenAttribute):
+        results = []
+        for idx, item in enumerate(sequence):
+            if hardlimit and idx > hardlimit:
+                break
+            results.append(item)
+
+    size = len(results)
     if hardlimit and size > hardlimit:
-        msg = 'Hard limit of %d exceeded.  There were %d items.'
-        raise ShortListTimeoutError(msg % (hardlimit, size))
-    if size > longest_expected:
+        raise ShortListTooBigError(
+           'Hard limit of %d exceeded.' % hardlimit)
+    elif size > longest_expected:
         warnings.warn(
             "shortlist() should not be used here. It's meant to listify"
-            " sequences with no more than %d items.  There were %s items." %
-              (longest_expected, size),
-              stacklevel=2)
-    return L
+            " sequences with no more than %d items.  There were %s items."
+            % (longest_expected, size), stacklevel=2)
+    return results
 
 
 def preferred_or_request_languages(request):
-    '''Turn a request into a list of languages to show.
+    """Turn a request into a list of languages to show.
 
     Return Person.languages when the user has preferred languages.
     Otherwise, return the languages from the request either from the
     headers or from the IP address.
-    '''
+    """
     user = getUtility(ILaunchBag).user
     if user is not None and user.languages:
         return user.languages
@@ -444,68 +463,7 @@ def get_filename_from_message_id(message_id):
     """
     return '%s.msg' % (
             canonical.base.base(
-                long(sha.new(message_id).hexdigest(), 16), 62))
-
-
-def getFileType(fname):
-    if fname.endswith(".deb"):
-        return BinaryPackageFileType.DEB
-    if fname.endswith(".udeb"):
-        return BinaryPackageFileType.DEB
-    if fname.endswith(".dsc"):
-        return SourcePackageFileType.DSC
-    if fname.endswith(".diff.gz"):
-        return SourcePackageFileType.DIFF
-    if fname.endswith(".orig.tar.gz"):
-        return SourcePackageFileType.ORIG
-    if fname.endswith(".tar.gz"):
-        return SourcePackageFileType.TARBALL
-
-
-BINARYPACKAGE_EXTENSIONS = {
-    BinaryPackageFormat.DEB: '.deb',
-    BinaryPackageFormat.UDEB: '.udeb',
-    BinaryPackageFormat.RPM: '.rpm'}
-
-
-class UnrecognizedBinaryFormat(Exception):
-
-    def __init__(self, fname, *args):
-        Exception.__init__(self, *args)
-        self.fname = fname
-
-    def __str__(self):
-        return '%s is not recognized as a binary file.' % self.fname
-
-
-def getBinaryPackageFormat(fname):
-    """Return the BinaryPackageFormat for the given filename.
-
-    >>> getBinaryPackageFormat('mozilla-firefox_0.9_i386.deb').name
-    'DEB'
-    >>> getBinaryPackageFormat('debian-installer.9_all.udeb').name
-    'UDEB'
-    >>> getBinaryPackageFormat('network-manager.9_i386.rpm').name
-    'RPM'
-    """
-    for key, value in BINARYPACKAGE_EXTENSIONS.items():
-        if fname.endswith(value):
-            return key
-
-    raise UnrecognizedBinaryFormat(fname)
-
-
-def getBinaryPackageExtension(format):
-    """Return the file extension for the given BinaryPackageFormat.
-
-    >>> getBinaryPackageExtension(BinaryPackageFormat.DEB)
-    '.deb'
-    >>> getBinaryPackageExtension(BinaryPackageFormat.UDEB)
-    '.udeb'
-    >>> getBinaryPackageExtension(BinaryPackageFormat.RPM)
-    '.rpm'
-    """
-    return BINARYPACKAGE_EXTENSIONS[format]
+                long(hashlib.sha1(message_id).hexdigest(), 16), 62))
 
 
 def intOrZero(value):
@@ -554,13 +512,18 @@ def positiveIntOrZero(value):
     return value
 
 
-def get_email_template(filename):
+def get_email_template(filename, app=None):
     """Returns the email template with the given file name.
 
     The templates are located in 'lib/canonical/launchpad/emailtemplates'.
     """
-    base = os.path.dirname(canonical.launchpad.__file__)
-    fullpath = os.path.join(base, 'emailtemplates', filename)
+    if app is None:
+        base = os.path.dirname(canonical.launchpad.__file__)
+        fullpath = os.path.join(base, 'emailtemplates', filename)
+    else:
+        import lp
+        base = os.path.dirname(lp.__file__)
+        fullpath = os.path.join(base, app, 'emailtemplates', filename)
     return open(fullpath).read()
 
 
@@ -601,11 +564,13 @@ def truncate_text(text, max_length):
 def english_list(items, conjunction='and'):
     """Return all the items concatenated into a English-style string.
 
-    Follows the advice given in The Elements of Style, chapter II,
+    Follows the advice given in The Elements of Style, chapter I,
     section 2:
 
     "In a series of three or more terms with a single conjunction, use
      a comma after each term except the last."
+
+    Beware that this is US English and is wrong for non-US.
     """
     items = list(items)
     if len(items) <= 2:

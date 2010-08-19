@@ -1,4 +1,5 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Helpers for Code Import page tests."""
 
@@ -13,22 +14,21 @@ __all__ = [
 from datetime import datetime, timedelta
 
 from pytz import UTC
-
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.database.codeimportjob import CodeImportJobWorkflow
 from canonical.launchpad.ftests import sync
-from canonical.launchpad.interfaces import (
-    CodeImportJobState, CodeImportResultStatus, CodeImportReviewStatus,
-    IBranchSet
-    )
-from canonical.launchpad.testing import LaunchpadObjectFactory, time_counter
+from lp.code.enums import (
+    CodeImportJobState, CodeImportResultStatus, CodeImportReviewStatus)
+from lp.code.model.codeimportjob import CodeImportJobWorkflow
+from lp.code.interfaces.branchlookup import IBranchLookup
+from lp.testing import time_counter
+from lp.testing.factory import LaunchpadObjectFactory
 
 
 def get_import_for_branch_name(branch_unique_name):
     """Return the code import associated with the branch."""
-    branch = getUtility(IBranchSet).getByUniqueName(branch_unique_name)
+    branch = getUtility(IBranchLookup).getByUniqueName(branch_unique_name)
     if branch is not None:
         return branch.code_import
     else:
@@ -36,7 +36,7 @@ def get_import_for_branch_name(branch_unique_name):
 
 
 def make_running_import(code_import=None, machine=None, date_started=None,
-                        factory=None):
+                        factory=None, logtail=None):
     """Return a code import with a running job.
 
     :param code_import: The code import to create the job for.  If None, an
@@ -47,6 +47,7 @@ def make_running_import(code_import=None, machine=None, date_started=None,
         of the newly started job.
     :param factory: The LaunchpadObjectFactory to use for the creation of
         the objects.  If None, one is created.
+    :param logtail: An optional string to put in the logtail field of the job.
     """
     if factory is None:
         factory = LaunchpadObjectFactory()
@@ -56,9 +57,14 @@ def make_running_import(code_import=None, machine=None, date_started=None,
         machine = factory.makeCodeImportMachine(set_online=True)
     # The code import must be in a reviewed state.
     if code_import.review_status != CodeImportReviewStatus.REVIEWED:
-        code_import.approve({}, code_import.registrant)
+        code_import.updateFromData(
+            {'review_status': CodeImportReviewStatus.REVIEWED},
+            code_import.registrant)
 
     CodeImportJobWorkflow().startJob(code_import.import_job, machine)
+    if logtail:
+        CodeImportJobWorkflow().updateHeartbeat(
+            code_import.import_job, logtail)
 
     assert code_import.import_job.state == CodeImportJobState.RUNNING
 
@@ -91,7 +97,9 @@ def make_finished_import(code_import=None, status=None, date_finished=None,
         status = CodeImportResultStatus.SUCCESS
     # The code import must be in a reviewed state.
     if code_import.review_status != CodeImportReviewStatus.REVIEWED:
-        code_import.approve({}, code_import.registrant)
+        code_import.updateFromData(
+            {'review_status': CodeImportReviewStatus.REVIEWED},
+            code_import.registrant)
 
     # If the job isn't running, make it run.
     if code_import.import_job.state != CodeImportJobState.RUNNING:
@@ -109,17 +117,13 @@ def make_finished_import(code_import=None, status=None, date_finished=None,
     return code_import
 
 
-def make_all_result_types(code_import=None, factory=None, machine=None):
+def make_all_result_types(code_import, factory, machine, start, count):
     """Make a code import result of each possible type for the code import."""
-    if factory is None:
-        factory = LaunchpadObjectFactory()
-    if code_import is None:
-        code_import = factory.makeCodeImport()
     start_dates = time_counter(
         datetime(2007,12,1,12, tzinfo=UTC), timedelta(days=1))
     end_dates = time_counter(
         datetime(2007,12,1,13, tzinfo=UTC), timedelta(days=1, hours=1))
-    for result_status in CodeImportResultStatus.items:
+    for result_status in sorted(CodeImportResultStatus.items)[start:start+count]:
         factory.makeCodeImportResult(
             code_import, result_status, start_dates.next(), end_dates.next(),
             machine=machine)

@@ -1,4 +1,5 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
@@ -52,7 +53,7 @@ class AnnouncementDateWidget(SimpleInputWidget):
             else:
                 data['action'] = 'specific'
         else:
-            data={'action': 'immediately'}
+            data = {'action': 'immediately'}
         widgets = form.setUpWidgets(
             fields, self.name, context, request, ignore_request=False,
             data=data)
@@ -74,9 +75,11 @@ class AnnouncementDateWidget(SimpleInputWidget):
             ('sometime', 'At some time in the future when I come back to '
                          'authorize it'),
             ('specific', 'At this specific date and time:')]
-        terms = [SimpleTerm(name, name, label) for name, label in action_names]
+        terms = [
+            SimpleTerm(name, name, label) for name, label in action_names]
         return SimpleVocabulary(terms)
 
+    # pylint: disable-msg=W0706
     def getInputValue(self):
         self._error = None
         action = self.action_widget.getInputValue()
@@ -88,7 +91,6 @@ class AnnouncementDateWidget(SimpleInputWidget):
                 LaunchpadValidationError(
                     _('Please provide a valid date and time.')))
             raise self._error
-        form = self.request.form_ng
         if action == 'immediately' and announcement_date is not None:
             self._error = WidgetInputError(
                 self.name, self.label,
@@ -103,7 +105,7 @@ class AnnouncementDateWidget(SimpleInputWidget):
                     _('Please provide a publication date.')))
             raise self._error
         if action == 'immediately':
-            return datetime.utcnow().replace(tzinfo=pytz.utc)
+            return datetime.now(pytz.utc)
         elif action == "sometime":
             return None
         elif action == "specific":

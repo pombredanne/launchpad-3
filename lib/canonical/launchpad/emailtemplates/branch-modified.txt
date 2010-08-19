@@ -1,7 +1,7 @@
-%(contents)s
+%(diff)s%(delta)s
 
 --
-%(branch_title)s
+%(branch_identity)s
 %(branch_url)s
 
-%(rationale)s%(unsubscribe)s
+%(reason)s%(unsubscribe)s

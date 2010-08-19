@@ -1,4 +1,5 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
@@ -6,7 +7,7 @@ from StringIO import StringIO
 
 from zope.interface import implements
 from zope.component import getUtility
-from zope.app.content_types import guess_content_type
+from zope.contenttype import guess_content_type
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser.widget import SimpleInputWidget
 from zope.app.form.browser import FileWidget
@@ -18,7 +19,7 @@ from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 from canonical.launchpad.webapp.interfaces import IAlwaysSubmittedWidget
 from canonical.launchpad.interfaces.librarian import (
     ILibraryFileAlias, ILibraryFileAliasSet)
-from canonical.launchpad.fields import KEEP_SAME_IMAGE
+from lp.services.fields import KEEP_SAME_IMAGE
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 from canonical.launchpad import _

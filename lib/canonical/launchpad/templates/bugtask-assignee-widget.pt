@@ -4,7 +4,7 @@
   define="widget_name string:${view/name}.option">
 
   <table>
-    <tr>
+    <tr tal:condition="view/showUnassignOption">
       <td style="padding: 0 2px 2px 0">
         <input type="radio"
                tal:attributes="name widget_name;
@@ -56,7 +56,7 @@
         </tr>
       </tal:assigned_to_another_user>
     </tal:assigned>
-    <tr>
+    <tr tal:condition="view/showPersonChooserWidget">
       <td style="padding: 2px 2px 0 0;">
         <input type="radio"
                tal:attributes="name widget_name;
@@ -75,4 +75,3 @@
   </table>
 
 </tal:assigneewidget>
-

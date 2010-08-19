@@ -1,33 +1,50 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
-#
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
 __all__ = [
     'FileDownloadClient',
     'FileUploadClient',
+    'get_libraryfilealias_download_path',
     'LibrarianClient',
     'RestrictedLibrarianClient',
+    'url_path_quote',
     ]
 
-import md5
-import sha
+
+import hashlib
+import re
 import socket
-from socket import SOCK_STREAM, AF_INET
-from select import select
 import time
 import threading
 import urllib
 import urllib2
+
+from select import select
+from socket import SOCK_STREAM, AF_INET
 from urlparse import urljoin
 
+from storm.store import Store
 from zope.interface import implements
 
-from canonical.config import config
+from canonical.config import config, dbconfig
 from canonical.database.sqlbase import cursor
 from canonical.librarian.interfaces import (
     DownloadFailed, ILibrarianClient, IRestrictedLibrarianClient,
-    UploadFailed)
+    LIBRARIAN_SERVER_DEFAULT_TIMEOUT, LibrarianServerError, UploadFailed)
+
+
+def url_path_quote(filename):
+    """Quote `filename` for use in a URL."""
+    # XXX RobertCollins 2004-09-21: Perhaps filenames with / in them
+    # should be disallowed?
+    return urllib.quote(filename).replace('/', '%2F')
+
+
+def get_libraryfilealias_download_path(aliasID, filename):
+    """Download path for a given `LibraryFileAlias` id and filename."""
+    return '/%d/%s' % (int(aliasID), url_path_quote(filename))
 
 
 class FileUploadClient:
@@ -49,7 +66,8 @@ class FileUploadClient:
             self.state.s.connect((self.upload_host, self.upload_port))
             self.state.f = self.state.s.makefile('w+', 0)
         except socket.error, x:
-            raise UploadFailed(str(x))
+            raise UploadFailed(
+                '[%s:%s]: %s' % (self.upload_host, self.upload_port, x))
 
     def _close(self):
         """Close connection"""
@@ -127,8 +145,8 @@ class FileUploadClient:
             self._sendLine('')
 
             # Prepare to the upload the file
-            shaDigester = sha.sha()
-            md5Digester = md5.md5()
+            shaDigester = hashlib.sha1()
+            md5Digester = hashlib.md5()
             bytesWritten = 0
 
             # Read in and upload the file 64kb at a time, by using the two-arg
@@ -151,12 +169,16 @@ class FileUploadClient:
                 raise UploadFailed, 'Server said: ' + response
 
             # Add rows to DB
-            LibraryFileContent(id=contentID, filesize=size,
-                            sha1=shaDigester.hexdigest(),
-                            md5=md5Digester.hexdigest())
-            LibraryFileAlias(id=aliasID, contentID=contentID, filename=name,
-                            mimetype=contentType, expires=expires,
-                            restricted=self.restricted)
+            content = LibraryFileContent(
+                id=contentID, filesize=size,
+                sha1=shaDigester.hexdigest(),
+                md5=md5Digester.hexdigest())
+            LibraryFileAlias(
+                id=aliasID, content=content, filename=name.decode('UTF-8'),
+                mimetype=contentType, expires=expires,
+                restricted=self.restricted)
+
+            Store.of(content).flush()
 
             assert isinstance(aliasID, (int, long)), \
                     "aliasID %r not an integer" % (aliasID,)
@@ -179,9 +201,13 @@ class FileUploadClient:
             name = name.encode('utf-8')
         self._connect()
         try:
-            # Send command
+            # Use dbconfig.rw_main_master directly here because it doesn't
+            # make sense to try and use ro_main_master (which might be
+            # returned if we use dbconfig.main_master).
+            database_name = re.search(
+                r"dbname=(\S*)", dbconfig.rw_main_master).group(1)
             self._sendLine('STORE %d %s' % (size, name))
-            self._sendHeader('Database-Name', config.database.dbname)
+            self._sendHeader('Database-Name', database_name)
             self._sendHeader('Content-Type', str(contentType))
             if expires is not None:
                 epoch = time.mktime(expires.utctimetuple())
@@ -213,16 +239,10 @@ class FileUploadClient:
             status, ids = response.split()
             contentID, aliasID = ids.split('/', 1)
 
-            path = '/%d/%s' % (int(aliasID), quote(name))
+            path = get_libraryfilealias_download_path(aliasID, name)
             return urljoin(self.download_url, path)
         finally:
             self._close()
-
-
-def quote(s):
-    # XXX: Robert Collins 2004-09-21: Perhaps filenames with / in them
-    # should be disallowed?
-    return urllib.quote(s).replace('/', '%2F')
 
 
 class _File:
@@ -285,9 +305,10 @@ class FileDownloadClient:
         if self.restricted != lfa.restricted:
             raise DownloadFailed(
                 'Alias %d cannot be downloaded from this client.' % aliasID)
-        if lfa.content.deleted:
+        if lfa.deleted:
             return None
-        return '/%d/%s' % (aliasID, quote(lfa.filename.encode('utf-8')))
+        return get_libraryfilealias_download_path(
+            aliasID, lfa.filename.encode('utf-8'))
 
     def getURLForAlias(self, aliasID):
         """Returns the url for talking to the librarian about the given
@@ -303,25 +324,55 @@ class FileDownloadClient:
         base = self.download_url
         return urljoin(base, path)
 
-    def getFileByAlias(self, aliasID):
-        """Returns a fd to read the file from
+    def _getURLForDownload(self, aliasID):
+        """Returns the internal librarian URL for the alias.
 
         :param aliasID: A unique ID for the alias
 
-        :returns: file-like object, or None if the file has expired and
-                  been deleted.
+        :returns: String URL, or None if the file has expired and been deleted.
         """
-        url = self.getURLForAlias(aliasID)
+        path = self._getPathForAlias(aliasID)
+        if path is None:
+            return None
+        base = self._internal_download_url
+        return urljoin(base, path)
+
+    def getFileByAlias(
+        self, aliasID, timeout=LIBRARIAN_SERVER_DEFAULT_TIMEOUT):
+        """See `IFileDownloadClient`."""
+        url = self._getURLForDownload(aliasID)
         if url is None:
             # File has been deleted
             return None
-        try:
-            return _File(urllib2.urlopen(url))
-        except urllib2.HTTPError, x:
-            if x.code == 404:
-                raise LookupError, aliasID
-            else:
-                raise
+        try_until = time.time() + timeout
+        while 1:
+            try:
+                return _File(urllib2.urlopen(url))
+            except urllib2.URLError, error:
+                # 404 errors indicate a data inconsistency: more than one
+                # attempt to open the file is pointless.
+                #
+                # Note that URLError is a base class of HTTPError.
+                if isinstance(error, urllib2.HTTPError) and error.code == 404:
+                    raise LookupError, aliasID
+                # HTTPErrors with a 5xx error code ("server problem")
+                # are a reason to retry the access again, as well as
+                # generic, non-HTTP, URLErrors like "connection refused".
+                if (isinstance(error, urllib2.HTTPError)
+                    and 500 <= error.code <= 599
+                    or isinstance(error, urllib2.URLError) and
+                        not isinstance(error, urllib2.HTTPError)):
+                    if  time.time() <= try_until:
+                        time.sleep(1)
+                    else:
+                        # There's a test (in
+                        # lib/c/l/browser/tests/test_librarian.py) which 
+                        # simulates a librarian server error by raising this
+                        # exception, so if you change the exception raised
+                        # here, make sure you update the test.
+                        raise LibrarianServerError(str(error))
+                else:
+                    raise
 
 
 class LibrarianClient(FileUploadClient, FileDownloadClient):
@@ -342,6 +393,12 @@ class LibrarianClient(FileUploadClient, FileDownloadClient):
     def download_url(self):
         return config.librarian.download_url
 
+    @property
+    def _internal_download_url(self): # used by _getURLForDownload
+        return 'http://%s:%s/' % (config.librarian.download_host,
+                                  config.librarian.download_port)
+
+
 
 class RestrictedLibrarianClient(LibrarianClient):
     """See `IRestrictedLibrarianClient`."""
@@ -361,3 +418,7 @@ class RestrictedLibrarianClient(LibrarianClient):
     def download_url(self):
         return config.librarian.restricted_download_url
 
+    @property
+    def _internal_download_url(self): # used by _getURLForDownload
+        return 'http://%s:%s/' % (config.librarian.restricted_download_host,
+                                  config.librarian.restricted_download_port)

@@ -78,7 +78,7 @@ https one, depending on a config value.
 
     >>> from textwrap import dedent
     >>> test_data = dedent("""
-    ...     [vhosts]
+    ...     [librarian]
     ...     use_https: true
     ...     """)
     >>> config.push('test', test_data)
@@ -158,6 +158,12 @@ more:
     >>> alias.expires is None
     True
 
+Closing an alias repeatedly and/or without opening it beforehand is
+tolerated and will not result in exceptions being raised.
+
+    >>> alias.close()
+    >>> alias.close()
+
 
 == Low Level ==
 
@@ -201,7 +207,7 @@ If we abort the transaction, it is still in there
 
 You can also set the expiry date on the file this way too:
 
-    >>> from datetime import datetime
+    >>> from datetime import date, datetime
     >>> from pytz import utc
     >>> url = client.remoteAddFile(
     ...     'text.txt', len(data), StringIO(data), 'text/plain',
@@ -357,10 +363,10 @@ But on the restricted server, this will work:
     >>> result = result.splitlines()
     >>> print result[0]
     3
-    >>> sorted(result[1:])
-    ['.../private.txt',
-     '.../another-private.txt',
-     '.../yet-another-private.txt']
+    >>> sorted(file_path.split('/')[1] for file_path in result[1:])
+    ['another-private.txt',
+     'private.txt',
+     'yet-another-private.txt']
 
 
 == Odds and Sods ==
@@ -409,7 +415,7 @@ LibrarianGarbageCollection. If you request the URL of a deleted file, you
 will be given None
 
     >>> alias = lfas[36]
-    >>> alias.content.deleted
+    >>> alias.deleted
     True
     >>> alias.http_url is None
     True
@@ -438,3 +444,258 @@ A librarian file has a default view that should redirect to the download URL.
     >>> url = alias.getURL()
     >>> lfa_url == url
     True
+
+
+== StreamOrRedirectLibraryFileAliasView ==
+
+This special view allows call sites to stream restricted `LibraryFileAlias`
+contents directly from launchpad instances.
+
+    >>> filename = 'public.txt'
+    >>> content = 'PUBLIC'
+    >>> public_file = getUtility(ILibraryFileAliasSet).create(
+    ...     filename, len(content), StringIO(content), 'text/plain',
+    ...     NEVER_EXPIRES, restricted=False)
+
+    >>> filename = 'restricted.txt'
+    >>> content = 'RESTRICTED'
+    >>> restricted_file = getUtility(ILibraryFileAliasSet).create(
+    ...     filename, len(content), StringIO(content), 'text/plain',
+    ...     NEVER_EXPIRES, restricted=True)
+
+Commit the just-created files.
+
+    >>> from canonical.database.sqlbase import commit
+    >>> commit()
+
+This view  implements `IBrowserPublisher` which allows us to use it in
+traversals.
+
+    >>> from canonical.launchpad.browser.librarian import (
+    ...     StreamOrRedirectLibraryFileAliasView)
+
+    >>> empty_request = LaunchpadTestRequest()
+    >>> restricted_view = StreamOrRedirectLibraryFileAliasView(
+    ...     restricted_file, empty_request)
+
+    >>> from zope.publisher.interfaces.browser import IBrowserPublisher
+    >>> verifyObject(IBrowserPublisher, restricted_view)
+    True
+
+When the context file is a restricted `LibraryFileAlias`, the
+traversal chain is finished with the view object itself.
+
+    >>> view, extra = restricted_view.browserDefault(empty_request)
+    >>> view == restricted_view
+    True
+
+The zope publishing system will then call that view and receive an open
+file containig the content to be streamed, as documented in
+lib/zope/publisher/httpresults.txt. This approach minimises the memory
+usage when streaming huge files.
+
+    >>> result = view()
+    >>> print result
+    <open file '<fdopen>', mode 'w+b' ...>
+
+    >>> result.seek(0)
+    >>> print result.read()
+    RESTRICTED
+
+`StreamOrRedirectLibraryFileAliasView` ignores the system http_proxy
+configuration and is still able to access the restricted file even if
+a invalid proxy address is set.
+
+This approach was adopted because all launchpad machines are
+configured to use the same proxy, originally for external
+access. Openning the restricted librarian for the proxy host would be
+too permissive and that's why we only allow direct access from the
+app-servers.
+
+Let's configure a broken proxy and refresh the default urllib2 opener
+to follow it.
+
+    >>> import os
+    >>> import urllib2
+    >>> os.environ['http_proxy'] = 'http://foo.bar:1234'
+    >>> urllib2.install_opener(urllib2.build_opener())
+
+The file can be reached by `StreamOrRedirectLibraryFileAliasView`.
+
+    >>> result = view()
+    >>> result.seek(0)
+    >>> print result.read()
+    RESTRICTED
+
+But is unreachable in the test scope, due to the broken proxy
+settings.
+
+    >>> print os.environ['http_proxy']
+    http://foo.bar:1234
+
+    # AaronBentley 2009-02-13 bug=329140
+    # This causes a spurious test failure on systems that use wildcard DNS.
+    #>>> print restricted_file.read()
+    Traceback (most recent call last):
+    ...
+    URLError: <urlopen error (-2, 'Name or service not known')>
+
+Let's remove the broken proxy settings to avoid compromising other
+tests.
+
+    >>> del os.environ['http_proxy']
+    >>> urllib2.install_opener(urllib2.build_opener())
+
+When the context given to `StreamOrRedirectLibraryFileAliasView` is a
+public `LibraryFileAlias` the traversal chain is extended with a
+`RedirectionView` pointing to its public librarian url.
+
+    >>> public_view = StreamOrRedirectLibraryFileAliasView(
+    ...     public_file, empty_request)
+
+    >>> verifyObject(IBrowserPublisher, public_view)
+    True
+
+    >>> view, extra = public_view.browserDefault(empty_request)
+
+    >>> print view
+    <...RedirectionView ...>
+
+    >>> view.target == public_file.http_url
+    True
+
+Files in this condition cannot be handled by the view and it raises an
+appropriate AssertionError when it gets traversed.
+
+    # Create a new LibraryFileAlias not referencing any LibraryFileContent
+    # record. Such records are considered as being deleted.
+    >>> from canonical.launchpad.database import LibraryFileAlias
+    >>> from canonical.launchpad.webapp.interfaces import (
+    ...     IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
+
+    >>> store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+    >>> deleted_file = LibraryFileAlias(
+    ...     content=None, filename='deleted.txt',
+    ...     mimetype='text/plain')
+    >>> ignore = store.add(deleted_file)
+    >>> store.commit()
+
+    >>> deleted_file = getUtility(ILibraryFileAliasSet)[deleted_file.id]
+    >>> print deleted_file.deleted
+    True
+
+    >>> deleted_view = StreamOrRedirectLibraryFileAliasView(
+    ...     deleted_file, empty_request)
+
+    >>> view, extra = deleted_view.browserDefault(empty_request)
+    Traceback (most recent call last):
+    ...
+    AssertionError: StreamOrRedirectLibraryFileAliasView can not
+    operate on deleted librarian files, since their URL is undefined.
+
+
+== LibraryFileAliasMD5View ==
+
+The MD5 summary for a file can be downloaded. The text file contains the
+hash and file name.
+
+    >>> view = create_view(public_file, '+md5')
+    >>> print view.render()
+    cd0c6092d6a6874f379fe4827ed1db8b public.txt
+
+    >>> print view.request.response.getHeader('Content-type')
+    text/plain
+
+
+== Download counts ==
+
+The download counts for librarian files are stored in the
+LibraryFileDownloadCount table, broken down by day and country, but there's
+also a 'hits' attribute on ILibraryFileAlias, which holds the total number of
+times that file has been downloaded.
+
+The count starts at 0, and cannot be changed directly.
+
+    >>> public_file.hits
+    0
+    >>> public_file.hits = 10
+    Traceback (most recent call last):
+    ...
+    ForbiddenAttribute: ...
+
+To change that, we have to use the updateDownloadCount() method, which takes
+care of creating/updating the necessary LibraryFileDownloadCount entries.
+
+    >>> from lp.services.worlddata.interfaces.country import ICountrySet
+    >>> country_set = getUtility(ICountrySet)
+    >>> november_1st_2006 = date(2006, 11, 1)
+    >>> brazil = country_set['BR']
+    >>> public_file.updateDownloadCount(november_1st_2006, brazil, count=1)
+    >>> public_file.hits
+    1
+
+This was the first hit for that file from Brazil on 2006 November first, so a
+new LibraryFileDownloadCount was created.
+
+    >>> from canonical.launchpad.database.librarian import (
+    ...     LibraryFileDownloadCount)
+    >>> from storm.locals import Store
+    >>> store = Store.of(public_file)
+    >>> brazil_entry = store.find(
+    ...     LibraryFileDownloadCount, libraryfilealias=public_file,
+    ...     country=brazil, day=november_1st_2006).one()
+    >>> brazil_entry.count
+    1
+
+Below we simulate a hit from Japan on that same day, which will also create a
+new LibraryFileDownloadCount.
+
+    >>> japan = country_set['JP']
+    >>> public_file.updateDownloadCount(november_1st_2006, japan, count=3)
+    >>> public_file.hits
+    4
+
+    >>> japan_entry = store.find(
+    ...     LibraryFileDownloadCount, libraryfilealias=public_file,
+    ...     country=japan, day=november_1st_2006).one()
+    >>> japan_entry.count
+    3
+
+If there's another hit from Brazil on the same day, the existing entry will be
+updated.
+
+    >>> public_file.updateDownloadCount(november_1st_2006, brazil, count=2)
+    >>> public_file.hits
+    6
+    >>> brazil_entry.count
+    3
+
+If the hit happened on a different day, a separate entry would be created.
+
+    >>> november_2nd_2006 = date(2006, 11, 2)
+    >>> public_file.updateDownloadCount(november_2nd_2006, brazil, count=10)
+    >>> public_file.hits
+    16
+    >>> brazil_entry2 = store.find(
+    ...     LibraryFileDownloadCount, libraryfilealias=public_file,
+    ...     country=brazil, day=november_2nd_2006).one()
+    >>> brazil_entry2.count
+    10
+    >>> last_downloaded_date = november_2nd_2006
+
+
+== Time to last download ==
+
+The .last_downloaded property gives us the time delta from today to the day
+that file was last downloaded, or None if it's never been downloaded.
+
+    >>> today = datetime.now(utc).date()
+    >>> public_file.last_downloaded == today - last_downloaded_date
+    True
+
+    >>> content = 'something'
+    >>> brand_new_file = getUtility(ILibraryFileAliasSet).create(
+    ...     'new.txt', len(content), StringIO(content), 'text/plain',
+    ...     NEVER_EXPIRES, restricted=False)
+    >>> print brand_new_file.last_downloaded
+    None
