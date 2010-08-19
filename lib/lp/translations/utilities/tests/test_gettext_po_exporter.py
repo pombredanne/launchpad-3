@@ -16,8 +16,7 @@ from lp.translations.utilities.gettext_po_exporter import (
     comments_text_representation, strip_last_newline)
 from lp.translations.utilities.gettext_po_exporter import (
     GettextPOExporter)
-from lp.translations.utilities.gettext_po_parser import (
-    POParser)
+from lp.translations.utilities.gettext_po_parser import POParser
 from lp.translations.utilities.translation_common_format import (
     TranslationMessageData)
 from lp.translations.utilities.translation_export import ExportFileStorage

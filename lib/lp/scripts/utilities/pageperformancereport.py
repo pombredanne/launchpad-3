@@ -6,15 +6,13 @@
 __metaclass__ = type
 __all__ = ['main']
 
-import bz2
 from cgi import escape as html_quote
 from ConfigParser import RawConfigParser
 from datetime import datetime
-import gzip
 import re
 import sre_constants
-from tempfile import TemporaryFile
 import os.path
+import subprocess
 from textwrap import dedent
 import time
 
@@ -84,6 +82,7 @@ class Stats:
     median = 0 # Median time per hit.
     std = 0 # Standard deviation per hit.
     var = 0 # Variance per hit.
+    ninetyninth_percentile_time = 0
     histogram = None # # Request times histogram.
 
     total_sqltime = 0 # Total time spent waiting for SQL to process.
@@ -98,27 +97,31 @@ class Stats:
     std_sqlstatements = 0
     var_sqlstatements = 0
 
+empty_stats = Stats() # Singleton.
+
 
 class Times:
     """Collection of request times."""
     def __init__(self, timeout):
-        self.spool = TemporaryFile()
+        self.total_hits = 0
+        self.total_time = 0
         self.request_times = []
         self.sql_statements = []
         self.sql_times = []
         self.ticks = []
-        self.timeout = timeout
+        self.histogram_width = int(1.5*timeout)
 
     def add(self, request):
-        """Add the application time from the request to the collection.
-
-        The application time is capped to our timeout.
-        """
-        print >> self.spool, "%s,%s,%s,%s" % (
-            min(request.app_seconds, self.timeout),
-            request.sql_statements or '',
-            request.sql_seconds or '',
-            request.ticks or '')
+        """Add the application time from the request to the collection."""
+        self.total_hits += 1
+        self.total_time += request.app_seconds
+        self.request_times.append(request.app_seconds)
+        if request.sql_statements is not None:
+            self.sql_statements.append(request.sql_statements)
+        if request.sql_seconds is not None:
+            self.sql_times.append(request.sql_seconds)
+        if request.ticks is not None:
+            self.ticks.append(request.ticks)
 
     _stats = None
 
@@ -133,58 +136,56 @@ class Times:
         1 and 2 seconds etc. histogram is None if there are no requests in
         this Category.
         """
+        if not self.total_hits:
+            return empty_stats
+
         if self._stats is not None:
             return self._stats
 
-        def iter_spool(index, cast):
-            """Generator returning one column from our spool file.
-
-            Skips None values.
-            """
-            self.spool.flush()
-            self.spool.seek(0)
-            for line in self.spool:
-                value = line.split(',')[index]
-                if value != '':
-                    yield cast(value)
-
         stats = Stats()
 
+        stats.total_hits = self.total_hits
+
         # Time stats
-        array = numpy.fromiter(iter_spool(0, numpy.float32), numpy.float32)
+        array = numpy.asarray(self.request_times, numpy.float32)
         stats.total_time = numpy.sum(array)
-        stats.total_hits = len(array)
         stats.mean = numpy.mean(array)
         stats.median = numpy.median(array)
         stats.std = numpy.std(array)
         stats.var = numpy.var(array)
+        # This is an approximation which may not be true: we don't know if we
+        # have a std distribution or not. We could just find the 99th
+        # percentile by counting. Shock. Horror; however this appears pretty
+        # good based on eyeballing things so far - once we're down in the 2-3
+        # second range for everything we may want to revisit.
+        stats.ninetyninth_percentile_time = stats.mean + stats.std*3
+        capped_times = (min(a_time, self.histogram_width) for a_time in
+            self.request_times)
+        array = numpy.fromiter(capped_times, numpy.float32,
+            len(self.request_times))
         histogram = numpy.histogram(
             array, normed=True,
-            range=(0, self.timeout), bins=self.timeout)
+            range=(0, self.histogram_width), bins=self.histogram_width)
         stats.histogram = zip(histogram[1], histogram[0])
 
-        # SQL query count.
-        array = numpy.fromiter(iter_spool(1, numpy.int), numpy.int)
-        stats.total_sqlstatements = numpy.sum(array)
-        stats.mean_sqlstatements = numpy.mean(array)
-        stats.median_sqlstatements = numpy.median(array)
-        stats.std_sqlstatements = numpy.std(array)
-        stats.var_sqlstatements = numpy.var(array)
-
         # SQL time stats.
-        array = numpy.fromiter(iter_spool(2, numpy.float32), numpy.float32)
+        array = numpy.asarray(self.sql_times, numpy.float32)
         stats.total_sqltime = numpy.sum(array)
         stats.mean_sqltime = numpy.mean(array)
         stats.median_sqltime = numpy.median(array)
         stats.std_sqltime = numpy.std(array)
         stats.var_sqltime = numpy.var(array)
 
+        # SQL query count.
+        array = numpy.asarray(self.sql_statements, numpy.int)
+        stats.total_sqlstatements = int(numpy.sum(array))
+        stats.mean_sqlstatements = numpy.mean(array)
+        stats.median_sqlstatements = numpy.median(array)
+        stats.std_sqlstatements = numpy.std(array)
+        stats.var_sqlstatements = numpy.var(array)
+
         # Cache for next invocation.
         self._stats = stats
-
-        # Clean up the spool file
-        self.spool = None
-
         return stats
 
     def __str__(self):
@@ -193,6 +194,9 @@ class Times:
         hstr = " ".join("%2d" % v for v in histogram)
         return "%2.2f %2.2f %2.2f %s" % (
             total, mean, median, std, hstr)
+
+    def __cmp__(self, b):
+        return cmp(self.total_time, b.total_time)
 
 
 def main():
@@ -203,10 +207,6 @@ def main():
         default=os.path.join(
             config.root, "utilities", "page-performance-report.ini"),
         metavar="FILE", help="Load configuration from FILE")
-    parser.add_option(
-        "--timeout", dest="timeout", type="int",
-        default=20, metavar="SECS",
-        help="Requests taking more than SECS seconds are timeouts")
     parser.add_option(
         "--from", dest="from_ts", type="datetime",
         default=None, metavar="TIMESTAMP",
@@ -224,9 +224,17 @@ def main():
         action="store_false", default=True,
         help="Do not produce pageids report")
     parser.add_option(
+        "--top-urls", dest="top_urls", type=int, metavar="N",
+        default=50, help="Generate report for top N urls by hitcount.")
+    parser.add_option(
         "--directory", dest="directory",
         default=os.getcwd(), metavar="DIR",
         help="Output reports in DIR directory")
+    parser.add_option(
+        "--timeout", dest="timeout",
+        # Default to 12: the staging timeout.
+        default=12, type="int",
+        help="The configured timeout value : determines high risk page ids.")
 
     options, args = parser.parse_args()
 
@@ -268,25 +276,51 @@ def main():
         parser.error("No data in [categories] section of configuration.")
 
     pageid_times = {}
+    url_times = {}
 
-    parse(args, categories, pageid_times, options)
+    parse(args, categories, pageid_times, url_times, options)
+
+    # Truncate the URL times to the top N.
+    if options.top_urls:
+        sorted_urls = sorted(
+            ((times, url) for url, times in url_times.items()
+                if times.total_hits > 0), reverse=True)
+        url_times = [(url, times)
+            for times, url in sorted_urls[:options.top_urls]]
+
+    def _report_filename(filename):
+        return os.path.join(options.directory, filename)
 
     # Category only report.
     if options.categories:
-        report_filename = os.path.join(options.directory,'categories.html')
+        report_filename = _report_filename('categories.html')
         log.info("Generating %s", report_filename)
-        html_report(open(report_filename, 'w'), categories, None)
+        html_report(open(report_filename, 'w'), categories, None, None)
 
     # Pageid only report.
     if options.pageids:
-        report_filename = os.path.join(options.directory,'pageids.html')
+        report_filename = _report_filename('pageids.html')
         log.info("Generating %s", report_filename)
-        html_report(open(report_filename, 'w'), None, pageid_times)
+        html_report(open(report_filename, 'w'), None, pageid_times, None)
+
+    # Top URL only report.
+    if options.top_urls:
+        report_filename = _report_filename('top%d.html' % options.top_urls)
+        log.info("Generating %s", report_filename)
+        html_report(open(report_filename, 'w'), None, None, url_times)
 
     # Combined report.
     if options.categories and options.pageids:
-        report_filename = os.path.join(options.directory,'combined.html')
-        html_report(open(report_filename, 'w'), categories, pageid_times)
+        report_filename = _report_filename('combined.html')
+        html_report(
+            open(report_filename, 'w'), categories, pageid_times, url_times)
+
+    # Report of likely timeout candidates
+    report_filename = _report_filename('timeout-candidates.html')
+    log.info("Generating %s", report_filename)
+    html_report(
+        open(report_filename, 'w'), None, pageid_times, None,
+        options.timeout - 2)
 
     return 0
 
@@ -298,9 +332,17 @@ def smart_open(filename, mode='r'):
     """
     ext = os.path.splitext(filename)[1]
     if ext == '.bz2':
-        return bz2.BZ2File(filename, mode)
+        p = subprocess.Popen(
+            ['bunzip2', '-c', filename],
+            stdout=subprocess.PIPE, stdin=subprocess.PIPE)
+        p.stdin.close()
+        return p.stdout
     elif ext == '.gz':
-        return gzip.open(filename, mode)
+        p = subprocess.Popen(
+            ['gunzip', '-c', filename],
+            stdout=subprocess.PIPE, stdin=subprocess.PIPE)
+        p.stdin.close()
+        return p.stdout
     else:
         return open(filename, mode)
 
@@ -321,7 +363,7 @@ def parse_timestamp(ts_string):
         *(int(elem) for elem in match.groups() if elem is not None))
 
 
-def parse(tracefiles, categories, pageid_times, options):
+def parse(tracefiles, categories, pageid_times, url_times, options):
     requests = {}
     total_requests = 0
     for tracefile in tracefiles:
@@ -402,12 +444,12 @@ def parse(tracefiles, categories, pageid_times, options):
                         log.debug("Parsed %d requests", total_requests)
 
                     # Add the request to any matching categories.
-                    if categories is not None:
+                    if options.categories:
                         for category in categories:
                             category.add(request)
 
                     # Add the request to the times for that pageid.
-                    if pageid_times is not None and request.pageid is not None:
+                    if options.pageids:
                         pageid = request.pageid
                         try:
                             times = pageid_times[pageid]
@@ -415,6 +457,21 @@ def parse(tracefiles, categories, pageid_times, options):
                             times = Times(options.timeout)
                             pageid_times[pageid] = times
                         times.add(request)
+
+                    # Add the request to the times for that URL.
+                    if options.top_urls:
+                        url = request.url
+                        # Hack to remove opstats from top N report. This
+                        # should go into a config file if we end up with
+                        # more pages that need to be ignored because
+                        # they are just noise.
+                        if not (url is None or url.endswith('+opstats')):
+                            try:
+                                times = url_times[url]
+                            except KeyError:
+                                times = Times(options.timeout)
+                                url_times[url] = times
+                            times.add(request)
 
                 else:
                     raise MalformedLine('Unknown record type %s', record_type)
@@ -442,7 +499,19 @@ def parse_extension_record(request, args):
             "Unknown extension prefix %s" % prefix)
 
 
-def html_report(outf, categories, pageid_times):
+def html_report(
+    outf, categories, pageid_times, url_times,
+    ninetyninth_percentile_threshold=None):
+    """Write an html report to outf.
+
+    :param outf: A file object to write the report to.
+    :param categories: Categories to report.
+    :param pageid_times: The time statistics for pageids.
+    :param url_times: The time statistics for the top XXX urls.
+    :param ninetyninth_percentile_threshold: Lower threshold for inclusion of
+        pages in the pageid section; pages where 99 percent of the requests are
+        served under this threshold will not be included.
+    """
 
     print >> outf, dedent('''\
         <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
@@ -502,6 +571,8 @@ def html_report(outf, categories, pageid_times):
 
             <th class="clickable">Total Time (secs)</th>
 
+            <th class="clickable">99% Under Time (secs)</th>
+
             <th class="clickable">Mean Time (secs)</th>
             <th class="clickable">Time Standard Deviation</th>
             <th class="clickable">Time Variance</th>
@@ -537,6 +608,7 @@ def html_report(outf, categories, pageid_times):
             <th class="category-title">%s</th>
             <td class="numeric total_hits">%d</td>
             <td class="numeric total_time">%.2f</td>
+            <td class="numeric 99pc_under">%.2f</td>
             <td class="numeric mean_time">%.2f</td>
             <td class="numeric std_time">%.2f</td>
             <td class="numeric var_time">%.2f</td>
@@ -559,6 +631,7 @@ def html_report(outf, categories, pageid_times):
             """ % (
                 html_title,
                 stats.total_hits, stats.total_time,
+                stats.ninetyninth_percentile_time,
                 stats.mean, stats.std, stats.var, stats.median,
                 len(histograms) - 1,
                 stats.total_sqltime, stats.mean_sqltime,
@@ -568,13 +641,14 @@ def html_report(outf, categories, pageid_times):
                 stats.median_sqlstatements))
 
     # Table of contents
-    if categories and pageid_times:
-        print >> outf, dedent('''\
-            <ol>
-            <li><a href="#catrep">Category Report</a></li>
-            <li><a href="#pageidrep">Pageid Report</a></li>
-            </ol>
-            ''')
+    print >> outf, '<ol>'
+    if categories:
+        print >> outf, '<li><a href="#catrep">Category Report</a></li>'
+    if pageid_times:
+        print >> outf, '<li><a href="#pageidrep">Pageid Report</a></li>'
+    if url_times:
+        print >> outf, '<li><a href="#topurlrep">Top URL Report</a></li>'
+    print >> outf, '</ol>'
 
     if categories:
         print >> outf, '<h2 id="catrep">Category Report</h2>'
@@ -589,7 +663,19 @@ def html_report(outf, categories, pageid_times):
         print >> outf, '<h2 id="pageidrep">Pageid Report</h2>'
         print >> outf, table_header
         for pageid, times in sorted(pageid_times.items()):
+            pageid = pageid or 'None'
+            if (ninetyninth_percentile_threshold is not None and
+                (times.stats().ninetyninth_percentile_time <
+                ninetyninth_percentile_threshold)):
+                continue
             handle_times(html_quote(pageid), times)
+        print >> outf, table_footer
+
+    if url_times:
+        print >> outf, '<h2 id="topurlrep">Top URL Report</h2>'
+        print >> outf, table_header
+        for url, times in url_times:
+            handle_times(html_quote(url), times)
         print >> outf, table_footer
 
     # Ourput the javascript to render our histograms nicely, replacing

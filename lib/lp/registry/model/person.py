@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 from __future__ import with_statement
 
@@ -190,6 +190,12 @@ class ValidPersonCache(SQLBase):
     """Flags if a Person is active and usable in Launchpad.
 
     This is readonly, as this is a view in the database.
+
+    Note that it performs poorly at least some of the time, and if
+    EmailAddress and Person are already being queried, its probably better to
+    query Account directly. See bug
+    https://bugs.edge.launchpad.net/launchpad-registry/+bug/615237 for some
+    corroborating information.
     """
 
 
@@ -1489,7 +1495,7 @@ class Person(
             columns.append(KarmaTotalCache)
         if need_ubuntu_coc:
             columns.append(Alias(Exists(Select(SignedCodeOfConduct,
-                AND(Person._is_ubuntu_coc_signer_condition(),
+                And(Person._is_ubuntu_coc_signer_condition(),
                     SignedCodeOfConduct.ownerID == Person.id))),
                 name='is_ubuntu_coc_signer'))
         if need_location:
@@ -1510,8 +1516,9 @@ class Person(
                 Archive.id == Select(Min(Archive.id),
                     Archive.owner == Person.id, Archive),
                 Archive.purpose == ArchivePurpose.PPA)))
-        if need_preferred_email:
-            # Teams don't have email.
+        # checking validity requires having a preferred email.
+        if need_preferred_email or need_validity:
+            # Teams don't have email, so a left join
             origin.append(
                 LeftJoin(EmailAddress, EmailAddress.person == Person.id))
             columns.append(EmailAddress)
@@ -1519,10 +1526,14 @@ class Person(
                 Or(EmailAddress.status == None,
                     EmailAddress.status == EmailAddressStatus.PREFERRED))
         if need_validity:
-            # May find invalid persons
+            # May find teams (teams are not valid people)
             origin.append(
-                LeftJoin(ValidPersonCache, ValidPersonCache.id == Person.id))
-            columns.append(ValidPersonCache)
+                LeftJoin(Account, Person.account == Account.id))
+            columns.append(Account)
+            conditions = And(conditions,
+                Or(
+                    Account.status == None,
+                    Account.status == AccountStatus.ACTIVE))
         if len(columns) == 1:
             columns = columns[0]
             # Return a simple ResultSet
@@ -1563,8 +1574,14 @@ class Person(
                 email = row[index]
                 index += 1
                 cache_property(result, '_preferredemail_cached', email)
+            #-- validity caching
             if need_validity:
-                valid = row[index] is not None
+                # valid if:
+                valid = (
+                    # -- valid account found
+                    row[index] is not None
+                    # -- preferred email found
+                    and result.preferredemail is not None)
                 index += 1
                 cache_property(result, '_is_valid_person_cached', valid)
             return result
@@ -2222,7 +2239,8 @@ class Person(
         if self.mailing_list is not None:
             mailing_list_email = getUtility(IEmailAddressSet).getByEmail(
                 self.mailing_list.address)
-            mailing_list_email = IMasterObject(mailing_list_email)
+            if mailing_list_email is not None:
+                mailing_list_email = IMasterObject(mailing_list_email)
         else:
             mailing_list_email = None
         all_addresses = IMasterStore(self).find(
@@ -2452,7 +2470,7 @@ class Person(
         """See `IPerson`."""
         # Also assigned to by self._all_members.
         store = Store.of(self)
-        query = AND(SignedCodeOfConduct.ownerID == self.id,
+        query = And(SignedCodeOfConduct.ownerID == self.id,
             Person._is_ubuntu_coc_signer_condition())
         # TODO: Using exists would be faster than count().
         return bool(store.find(SignedCodeOfConduct, query).count())
@@ -2462,7 +2480,7 @@ class Person(
         """Generate a Storm Expr for determing the coc signing status."""
         sigset = getUtility(ISignedCodeOfConductSet)
         lastdate = sigset.getLastAcceptedDate()
-        return AND(SignedCodeOfConduct.active == True,
+        return And(SignedCodeOfConduct.active == True,
             SignedCodeOfConduct.datecreated >= lastdate)
 
     @property
