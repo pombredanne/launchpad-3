@@ -49,6 +49,12 @@ class TestRemoveTree(TestCase):
 class TestUntilNoEINTR(TestCase):
     """Tests for until_no_eintr."""
 
+    # The maximum number of retries used in our tests.
+    MAX_RETRIES = 10
+
+    # A number of retries less than the maximum number used in tests.
+    SOME_RETRIES = MAX_RETRIES / 2
+
     def test_no_calls(self):
         # If the user has, bizarrely, asked for 0 attempts, then never try to
         # call the function.
@@ -59,7 +65,7 @@ class TestUntilNoEINTR(TestCase):
     def test_function_doesnt_raise(self):
         # If the function doesn't raise, call it only once.
         calls = []
-        until_no_eintr(10, calls.append, None)
+        until_no_eintr(self.MAX_RETRIES, calls.append, None)
         self.assertEqual(1, len(calls))
 
     def test_returns_function_return(self):
@@ -77,11 +83,11 @@ class TestUntilNoEINTR(TestCase):
         calls = []
         def function():
             calls.append(None)
-            if len(calls) < 5:
+            if len(calls) < self.SOME_RETRIES:
                 raise IOError(errno.EINTR, os.strerror(errno.EINTR))
             return 'orange'
-        ret = until_no_eintr(10, function)
-        self.assertEqual(5, len(calls))
+        ret = until_no_eintr(self.MAX_RETRIES, function)
+        self.assertEqual(self.SOME_RETRIES, len(calls))
         self.assertEqual('orange', ret)
 
     def test_retries_on_oserror_eintr(self):
@@ -89,11 +95,11 @@ class TestUntilNoEINTR(TestCase):
         calls = []
         def function():
             calls.append(None)
-            if len(calls) < 5:
+            if len(calls) < self.SOME_RETRIES:
                 raise OSError(errno.EINTR, os.strerror(errno.EINTR))
             return 'orange'
-        ret = until_no_eintr(10, function)
-        self.assertEqual(5, len(calls))
+        ret = until_no_eintr(self.MAX_RETRIES, function)
+        self.assertEqual(self.SOME_RETRIES, len(calls))
         self.assertEqual('orange', ret)
 
     def test_retries_on_socket_error_eintr(self):
@@ -103,11 +109,11 @@ class TestUntilNoEINTR(TestCase):
         calls = []
         def function():
             calls.append(None)
-            if len(calls) < 5:
+            if len(calls) < self.SOME_RETRIES:
                 raise socket.error(errno.EINTR, os.strerror(errno.EINTR))
             return 'orange'
-        ret = until_no_eintr(10, function)
-        self.assertEqual(5, len(calls))
+        ret = until_no_eintr(self.MAX_RETRIES, function)
+        self.assertEqual(self.SOME_RETRIES, len(calls))
         self.assertEqual('orange', ret)
 
     def test_raises_other_error_without_retry(self):
@@ -116,10 +122,11 @@ class TestUntilNoEINTR(TestCase):
         calls = []
         def function():
             calls.append(None)
-            if len(calls) < 5:
+            if len(calls) < self.SOME_RETRIES:
                 raise IOError(errno.ENOENT, os.strerror(errno.ENOENT))
             return 'orange'
-        error = self.assertRaises(IOError, until_no_eintr, 10, function)
+        error = self.assertRaises(
+            IOError, until_no_eintr, self.MAX_RETRIES, function)
         self.assertEqual(errno.ENOENT, error.errno)
         self.assertEqual(1, len(calls))
 
@@ -130,9 +137,10 @@ class TestUntilNoEINTR(TestCase):
         def function():
             calls.append(None)
             raise IOError(errno.EINTR, os.strerror(errno.EINTR))
-        error = self.assertRaises(IOError, until_no_eintr, 10, function)
+        error = self.assertRaises(
+            IOError, until_no_eintr, self.MAX_RETRIES, function)
         self.assertEqual(errno.EINTR, error.errno)
-        self.assertEqual(10, len(calls))
+        self.assertEqual(self.MAX_RETRIES, len(calls))
 
 
 def test_suite():
