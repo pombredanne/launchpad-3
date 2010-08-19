@@ -2078,11 +2078,11 @@ class Person(
         # Pull out the memberships directly used by this person.
         user_memberships = [
             membership for membership in
-            all_direct_memberships 
+            all_direct_memberships
             if membership.person == self]
-        
+
         all_direct_memberships = [
-            (membership.team, membership.person) for membership in 
+            (membership.team, membership.person) for membership in
             all_direct_memberships]
 
         # Create a graph from the edges provided by the other data sets.
