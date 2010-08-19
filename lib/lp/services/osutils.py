@@ -77,8 +77,15 @@ def until_no_eintr(retries, function, *args, **kwargs):
     for i in range(retries):
         try:
             return function(*args, **kwargs)
-        except (IOError, OSError, socket.error), e:
+        except (IOError, OSError), e:
             if e.errno == errno.EINTR:
+                continue
+            raise
+        except socket.error, e:
+            # In Python 2.6 we can use IOError instead.  It also has
+            # reason.errno but we might be using 2.5 here so use the
+            # index hack.
+            if e[0] == errno.EINTR:
                 continue
             raise
     else:
