@@ -290,8 +290,3 @@ def cachedproperty(name_or_function):
         name = name_or_function.__name__
         populate = name_or_function
         return CachedProperty(name=name, populate=populate)
-
-
-def test_suite():
-    from doctest import DocTestSuite, ELLIPSIS
-    return DocTestSuite(optionflags=ELLIPSIS)
