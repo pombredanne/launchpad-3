@@ -104,7 +104,7 @@ __all__ = [
 
 from functools import partial
 
-from zope.component import adapter, adapts, globalSiteManager
+from zope.component import adapter, adapts
 from zope.interface import Interface, implementer, implements
 from zope.schema import Object
 
@@ -169,8 +169,6 @@ def get_default_cache(target):
         target._property_cache = DefaultPropertyCache()
         return target._property_cache
 
-globalSiteManager.registerAdapter(get_default_cache)
-
 
 class PropertyCacheManager:
     """A simple `IPropertyCacheManager`.
@@ -189,8 +187,6 @@ class PropertyCacheManager:
         for name in list(self.cache):
             delattr(self.cache, name)
 
-globalSiteManager.registerAdapter(PropertyCacheManager)
-
 
 class DefaultPropertyCacheManager:
     """A `IPropertyCacheManager` specifically for `DefaultPropertyCache`.
@@ -206,8 +202,6 @@ class DefaultPropertyCacheManager:
 
     def clear(self):
         self.cache.__dict__.clear()
-
-globalSiteManager.registerAdapter(DefaultPropertyCacheManager)
 
 
 class CachedProperty:
