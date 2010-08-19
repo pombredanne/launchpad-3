@@ -19,7 +19,6 @@ from zope.component import getUtility
 from zope.interface import alsoProvides, implements
 
 from lp.archivepublisher.debversion import Version
-from canonical.cachedproperty import cachedproperty, clear_property
 from canonical.database.constants import UTC_NOW
 
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -30,7 +29,6 @@ from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet)
 from canonical.launchpad.components.storm_operators import FTQ, Match, RANK
 from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.lazr.utils import safe_hasattr
 from lp.registry.model.announcement import MakesAnnouncements
 from lp.soyuz.model.archive import Archive
 from lp.soyuz.model.binarypackagename import BinaryPackageName
@@ -119,6 +117,7 @@ from lp.answers.interfaces.faqtarget import IFAQTarget
 from lp.answers.interfaces.questioncollection import (
     QUESTION_STATUS_DEFAULT_SEARCH)
 from lp.answers.interfaces.questiontarget import IQuestionTarget
+from lp.services.propertycache import IPropertyCache, cachedproperty
 
 
 class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
@@ -381,7 +380,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             return (2, self.name)
         return (3, self.name)
 
-    @cachedproperty('_cached_series')
+    @cachedproperty
     def series(self):
         """See `IDistribution`."""
         ret = Store.of(self).find(
@@ -1619,7 +1618,8 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
 
         # May wish to add this to the series rather than clearing the cache --
         # RBC 20100816.
-        clear_property(self, '_cached_series')
+        del IPropertyCache(self).series
+
         return series
 
     @property

@@ -61,9 +61,6 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
     cursor, quote, quote_like, sqlvalues, SQLBase)
 
-from canonical.cachedproperty import (cachedproperty, cache_property,
-    clear_property)
-
 from canonical.lazr.utils import get_current_browser_request
 
 from canonical.launchpad.components.decoratedresultset import (
@@ -164,6 +161,8 @@ from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.validators.name import sanitize_name, valid_name
 from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
 from lp.registry.interfaces.person import validate_public_person
+
+from lp.services.propertycache import IPropertyCache, cachedproperty
 
 
 class JoinTeamEvent:
@@ -374,7 +373,7 @@ class Person(
 
     personal_standing_reason = StringCol(default=None)
 
-    @cachedproperty('_languages_cache')
+    @cachedproperty
     def languages(self):
         """See `IPerson`."""
         results = Store.of(self).find(
@@ -388,19 +387,19 @@ class Person(
 
         :raises AttributeError: If the cache doesn't exist.
         """
-        return self._languages_cache
+        return IPropertyCache(self).languages
 
     def setLanguagesCache(self, languages):
         """Set this person's cached languages.
 
         Order them by name if necessary.
         """
-        cache_property(self, '_languages_cache', sorted(
-            languages, key=attrgetter('englishname')))
+        IPropertyCache(self).languages = sorted(
+            languages, key=attrgetter('englishname'))
 
     def deleteLanguagesCache(self):
         """Delete this person's cached languages, if it exists."""
-        clear_property(self, '_languages_cache')
+        del IPropertyCache(self).languages
 
     def addLanguage(self, language):
         """See `IPerson`."""
@@ -467,7 +466,7 @@ class Person(
             Or(OAuthRequestToken.date_expires == None,
                OAuthRequestToken.date_expires > UTC_NOW))
 
-    @cachedproperty('_location')
+    @cachedproperty
     def location(self):
         """See `IObjectWithLocation`."""
         return PersonLocation.selectOneBy(person=self)
@@ -503,7 +502,8 @@ class Person(
         """See `ISetLocation`."""
         assert not self.is_team, 'Cannot edit team location.'
         if self.location is None:
-            self._location = PersonLocation(person=self, visible=visible)
+            IPropertyCache(self).location = PersonLocation(
+                person=self, visible=visible)
         else:
             self.location.visible = visible
 
@@ -521,7 +521,7 @@ class Person(
             self.location.last_modified_by = user
             self.location.date_last_modified = UTC_NOW
         else:
-            self._location = PersonLocation(
+            IPropertyCache(self).location = PersonLocation(
                 person=self, time_zone=time_zone, latitude=latitude,
                 longitude=longitude, last_modified_by=user)
 
@@ -1023,7 +1023,7 @@ class Person(
         result = result.order_by(KarmaCategory.title)
         return [karma_cache for (karma_cache, category) in result]
 
-    @cachedproperty('_karma_cached')
+    @cachedproperty
     def karma(self):
         """See `IPerson`."""
         # May also be loaded from _all_members
@@ -1044,7 +1044,7 @@ class Person(
 
         return self.is_valid_person
 
-    @cachedproperty('_is_valid_person_cached')
+    @cachedproperty
     def is_valid_person(self):
         """See `IPerson`."""
         if self.is_team:
@@ -1532,6 +1532,7 @@ class Person(
 
         def prepopulate_person(row):
             result = row[0]
+            cache = IPropertyCache(result)
             index = 1
             #-- karma caching
             if need_karma:
@@ -1541,31 +1542,31 @@ class Person(
                     karma_total = 0
                 else:
                     karma_total = karma.karma_total
-                cache_property(result, '_karma_cached', karma_total)
+                cache.karma = karma_total
             #-- ubuntu code of conduct signer status caching.
             if need_ubuntu_coc:
                 signed = row[index]
                 index += 1
-                cache_property(result, '_is_ubuntu_coc_signer_cached', signed)
+                cache.is_ubuntu_coc_signer = signed
             #-- location caching
             if need_location:
                 location = row[index]
                 index += 1
-                cache_property(result, '_location', location)
+                cache.location = location
             #-- archive caching
             if need_archive:
                 archive = row[index]
                 index += 1
-                cache_property(result, '_archive_cached', archive)
+                cache.archive = archive
             #-- preferred email caching
             if need_preferred_email:
                 email = row[index]
                 index += 1
-                cache_property(result, '_preferredemail_cached', email)
+                cache.preferredemail = email
             if need_validity:
                 valid = row[index] is not None
                 index += 1
-                cache_property(result, '_is_valid_person_cached', valid)
+                cache.is_valid_person = valid
             return result
         return DecoratedResultSet(raw_result,
             result_decorator=prepopulate_person)
@@ -1593,7 +1594,7 @@ class Person(
         result = self._getMembersWithPreferredEmails()
         person_list = []
         for person, email in result:
-            cache_property(person, '_preferredemail_cached', email)
+            IPropertyCache(person).preferredemail = email
             person_list.append(person)
         return person_list
 
@@ -1725,7 +1726,7 @@ class Person(
         # fetches the rows when they're needed.
         locations = self._getMappedParticipantsLocations(limit=limit)
         for location in locations:
-            location.person._location = location
+            IPropertyCache(location.person).location = location
         participants = set(location.person for location in locations)
         # Cache the ValidPersonCache query for all mapped participants.
         if len(participants) > 0:
@@ -1867,7 +1868,7 @@ class Person(
         self.account_status = AccountStatus.DEACTIVATED
         self.account_status_comment = comment
         IMasterObject(self.preferredemail).status = EmailAddressStatus.NEW
-        clear_property(self, '_preferredemail_cached')
+        del IPropertyCache(self).preferredemail
         base_new_name = self.name + '-deactivatedaccount'
         self.name = self._ensureNewName(base_new_name)
 
@@ -2200,7 +2201,7 @@ class Person(
         if email_address is not None:
             email_address.status = EmailAddressStatus.VALIDATED
             email_address.syncUpdate()
-        clear_property(self, '_preferredemail_cached')
+        del IPropertyCache(self).preferredemail
 
     def setPreferredEmail(self, email):
         """See `IPerson`."""
@@ -2237,9 +2238,9 @@ class Person(
         IMasterObject(email).syncUpdate()
 
         # Now we update our cache of the preferredemail.
-        cache_property(self, '_preferredemail_cached', email)
+        IPropertyCache(self).preferredemail = email
 
-    @cachedproperty('_preferredemail_cached')
+    @cachedproperty
     def preferredemail(self):
         """See `IPerson`."""
         emails = self._getEmailsByStatus(EmailAddressStatus.PREFERRED)
@@ -2404,7 +2405,7 @@ class Person(
             distribution.main_archive, self)
         return permissions.count() > 0
 
-    @cachedproperty('_is_ubuntu_coc_signer_cached')
+    @cachedproperty
     def is_ubuntu_coc_signer(self):
         """See `IPerson`."""
         # Also assigned to by self._all_members.
@@ -2434,7 +2435,7 @@ class Person(
         sCoC_util = getUtility(ISignedCodeOfConductSet)
         return sCoC_util.searchByUser(self.id, active=False)
 
-    @cachedproperty('_archive_cached')
+    @cachedproperty
     def archive(self):
         """See `IPerson`."""
         return getUtility(IArchiveSet).getPPAOwnedByPerson(self)
@@ -2758,8 +2759,8 @@ class PersonSet:
                 # Populate the previously empty 'preferredemail' cached
                 # property, so the Person record is up-to-date.
                 if master_email.status == EmailAddressStatus.PREFERRED:
-                    cache_property(account_person, '_preferredemail_cached',
-                        master_email)
+                    cache = IPropertyCache(account_person)
+                    cache.preferredemail = master_email
                 return account_person
             # There is no associated `Person` to the email `Account`.
             # This is probably because the account was created externally

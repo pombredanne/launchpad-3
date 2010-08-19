@@ -34,6 +34,8 @@ from canonical.cachedproperty import clear_cachedproperties
 from canonical.config import config, dbconfig
 from canonical.database.interfaces import ISQLBase
 
+from lp.services.propertycache import IPropertyCacheManager
+
 
 __all__ = [
     'alreadyInstalledMsg',
@@ -263,6 +265,7 @@ class SQLBase(storm.sqlobject.SQLObjectBase):
         # awesomely if its broken : its entirely unclear where tests for this
         # should be -- RBC 20100816.
         clear_cachedproperties(self)
+        IPropertyCacheManager(self).clear()
 
 
 alreadyInstalledMsg = ("A ZopelessTransactionManager with these settings is "
