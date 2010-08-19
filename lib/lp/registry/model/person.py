@@ -1712,7 +1712,6 @@ class Person(
         store = Store.of(self)
         return store.find(TeamMembership,
             And(TeamMembership.personID == self.id,
-                Team.id == TeamMembership.teamID,
                 TeamMembership.status.is_in(
                 [TeamMembershipStatus.APPROVED, TeamMembershipStatus.ADMIN])))
 
@@ -2080,7 +2079,7 @@ class Person(
 
         # Get all of the memberships for any of the teams this person is
         # a participant of. This must be ordered by date and id because
-        # because the graph the results will create needs to contain
+        # because the graph of the results will create needs to contain
         # the oldest path information to be consistent with results from
         # IPerson.findPathToTeam.
         store = Store.of(self)
@@ -2114,7 +2113,7 @@ class Person(
                 step = graph[step]
                 path.append(step)
             paths[team] = path
-        return  (paths, user_memberships)
+        return (paths, user_memberships)
 
     @property
     def teams_participated_in(self):

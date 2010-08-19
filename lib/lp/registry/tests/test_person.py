@@ -75,7 +75,7 @@ class TestPersonTeams(TestCaseWithFactory):
         memberships = [(m.person, m.team) for m in memberships]
         self.assertEqual([(self.user, self.a_team)], memberships)
 
-    def test_path_to_team_no_limit(self):
+    def test_path_to_team(self):
         path_to_a = self.user.findPathToTeam(self.a_team)
         path_to_b = self.user.findPathToTeam(self.b_team)
         path_to_c = self.user.findPathToTeam(self.c_team)
@@ -83,15 +83,6 @@ class TestPersonTeams(TestCaseWithFactory):
         self.assertEqual([self.a_team], path_to_a)
         self.assertEqual([self.a_team, self.b_team], path_to_b)
         self.assertEqual([self.a_team, self.b_team, self.c_team], path_to_c)
-
-    def test_path_to_team_with_limit(self):
-        path_to_c_0 = self.user.findPathToTeam(self.c_team, limit=0)
-        path_to_c_1 = self.user.findPathToTeam(self.c_team, limit=1)
-        path_to_c_2 = self.user.findPathToTeam(self.c_team, limit=2)
-
-        self.assertEqual([self.c_team], path_to_c_0)
-        self.assertEqual([self.b_team, self.c_team], path_to_c_1)
-        self.assertEqual([self.a_team, self.b_team, self.c_team], path_to_c_2)
 
     def test_teams_participated_in(self):
         teams = self.user.teams_participated_in
@@ -133,9 +124,9 @@ class TestPersonTeams(TestCaseWithFactory):
         self.assertEqual(expected_paths, paths)
 
         expected_memberships = [
-            (self.a_team, self.user),
-            (d_team, self.user),
             (e_team, self.user),
+            (d_team, self.user),
+            (self.a_team, self.user),
             ]
         memberships = [
             (membership.team, membership.person) for membership
