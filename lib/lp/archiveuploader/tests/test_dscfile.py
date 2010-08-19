@@ -45,14 +45,13 @@ class TestDscFile(TestCase):
         dangling symlink in an attempt to try and access files on the system
         processing the source packages."""
         os.symlink("/etc/passwd", self.copyright_path)
-        errors = list(findCopyright(
-            self.dsc_file, self.tmpdir, mock_logger_quiet))
-
-        self.assertEqual(len(errors), 1)
-        self.assertIsInstance(errors[0], UploadError)
-        self.assertEqual(
-            errors[0].args[0],
-            "Symbolic link for debian/copyright not allowed")
+        try:
+            findCopyright(self.tmpdir, mock_logger_quiet)
+            self.fail()
+        except UploadError, error:
+            self.assertEqual(
+                error.args[0],
+                "Symbolic link for debian/copyright not allowed")
 
     def testGoodDebianCopyright(self):
         """Test that a proper copyright file will be accepted"""
@@ -61,11 +60,8 @@ class TestDscFile(TestCase):
         file.write(copyright)
         file.close()
 
-        errors = list(findCopyright(
-            self.dsc_file, self.tmpdir, mock_logger_quiet))
-
-        self.assertEqual(len(errors), 0)
-        self.assertEqual(self.dsc_file.copyright, copyright)
+        self.assertEquals(
+            copyright, findCopyright(self.tmpdir, mock_logger_quiet))
 
     def testBadDebianChangelog(self):
         """Test that a symlink as debian/changelog will fail.
@@ -74,14 +70,13 @@ class TestDscFile(TestCase):
         dangling symlink in an attempt to try and access files on the system
         processing the source packages."""
         os.symlink("/etc/passwd", self.changelog_path)
-        errors = list(findChangelog(
-            self.dsc_file, self.tmpdir, mock_logger_quiet))
-
-        self.assertEqual(len(errors), 1)
-        self.assertIsInstance(errors[0], UploadError)
-        self.assertEqual(
-            errors[0].args[0],
-            "Symbolic link for debian/changelog not allowed")
+        try:
+            findChangelog(self.tmpdir, mock_logger_quiet)
+            self.fail()
+        except UploadError, error:
+            self.assertEqual(
+                error.args[0],
+                "Symbolic link for debian/changelog not allowed")
 
     def testGoodDebianChangelog(self):
         """Test that a proper changelog file will be accepted"""
@@ -90,12 +85,8 @@ class TestDscFile(TestCase):
         file.write(changelog)
         file.close()
 
-        errors = list(findChangelog(
-            self.dsc_file, self.tmpdir, mock_logger_quiet))
-
-        self.assertEqual(len(errors), 0)
-        self.assertEqual(self.dsc_file.changelog_path,
-                         self.changelog_path)
+        self.assertEquals(
+            changelog, findChangelog(self.tmpdir, mock_logger_quiet))
 
     def testOversizedFile(self):
         """Test that a file larger than 10MiB will fail.
@@ -114,13 +105,13 @@ class TestDscFile(TestCase):
         file.write(empty_file)
         file.close()
 
-        errors = list(findChangelog(
-            self.dsc_file, self.tmpdir, mock_logger_quiet))
-
-        self.assertIsInstance(errors[0], UploadError)
-        self.assertEqual(
-            errors[0].args[0],
-            "debian/changelog file too large, 10MiB max")
+        try:
+            findChangelog(self.tmpdir, mock_logger_quiet)
+            self.fail()
+        except UploadError, error:
+            self.assertEqual(
+                error.args[0],
+                "debian/changelog file too large, 10MiB max")
 
 
 class TestDscFileLibrarian(TestCaseWithFactory):
@@ -146,10 +137,7 @@ class TestDscFileLibrarian(TestCaseWithFactory):
         os.chmod(tempdir, 0555)
         try:
             dsc_file = self.getDscFile('bar_1.0-1')
-            try:
-                list(dsc_file.verify())
-            finally:
-                dsc_file.cleanUp()
+            list(dsc_file.verify())
         finally:
             os.chmod(tempdir, 0755)
 
