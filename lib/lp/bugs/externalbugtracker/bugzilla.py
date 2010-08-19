@@ -241,8 +241,9 @@ class Bugzilla(ExternalBugTracker):
                 ('INVALID', 'WORKSFORME', 'NOTABUG', 'CANTFIX',
                  'UNREPRODUCIBLE',
                  BugTaskStatus.INVALID),
-                (BugTaskStatus.UNKNOWN))),
-        ('REOPENED', 'NEW', 'UPSTREAM', 'DEFERRED', BugTaskStatus.CONFIRMED),
+                (BugTaskStatus.UNKNOWN,))),
+        ('REOPENED', 'NEW', 'UPSTREAM', 'DEFERRED',
+         BugTaskStatus.CONFIRMED),
         ('UNCONFIRMED', BugTaskStatus.NEW),
         )
 
