@@ -1108,7 +1108,7 @@
                             remote_product screenshotsurl
                             security_contact sourceforgeproject
                             summary title wikiurl"/>
-                            
+
 
         <!-- mark 2006-04-10 I put "name" in the admin group because
                         with Bazaar now in place, lots of people can have personal
