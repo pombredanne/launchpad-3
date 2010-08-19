@@ -903,7 +903,7 @@ class PersonMenuMixin(CommonMenuLinks):
         text = 'Change details'
         return Link(target, text, icon='edit')
 
-    @enabled_with_permission('launchpad.Admin')
+    @enabled_with_permission('launchpad.Moderate')
     def administer(self):
         target = '+review'
         text = 'Administer'

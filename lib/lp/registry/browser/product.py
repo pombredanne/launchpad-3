@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for products."""
@@ -495,12 +495,12 @@ class ProductEditLinksMixin(StructuralSubscriptionMenuMixin):
         text = 'Change people'
         return Link('+edit-people', text, icon='edit')
 
-    @enabled_with_permission('launchpad.ProjectReview')
+    @enabled_with_permission('launchpad.Moderate')
     def review_license(self):
         text = 'Review project'
         return Link('+review-license', text, icon='edit')
 
-    @enabled_with_permission('launchpad.Admin')
+    @enabled_with_permission('launchpad.Moderate')
     def administer(self):
         text = 'Administer'
         return Link('+admin', text, icon='edit')
@@ -1683,7 +1683,7 @@ class ProductSetNavigationMenu(RegistryCollectionActionMenuBase):
         'view_all_projects',
         ]
 
-    @enabled_with_permission('launchpad.ProjectReview')
+    @enabled_with_permission('launchpad.Moderate')
     def review_licenses(self):
         return Link('+review-licenses', 'Review projects', icon='edit')
 
