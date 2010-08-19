@@ -3083,7 +3083,7 @@ class PersonParticipationView(LaunchpadView):
 
         Method requires membership or team, not both.
         :param via: The team through which the membership in the indirect
-        is established.
+        team is established.
         """
         if ((membership is None and team is None) or
             (membership is not None and team is not None)):
@@ -3098,11 +3098,10 @@ class PersonParticipationView(LaunchpadView):
                 [via_team.displayname for via_team in via[1:-1]])
 
         if membership is None:
-            # Membership is via an indirect team; sane defaults exist.
-
-            # The user can only be a member of this team.
+            # Membership is via an indirect team so sane defaults exist.
+            # An indirect member cannot be an Owner or Admin of a team. 
             role = 'Member'
-            # The user never joined, and can't have a join date.
+            # The Person joined, and can't have a join date.
             datejoined = None
         else:
             # The member is a direct member; use the membership data.
@@ -3133,24 +3132,26 @@ class PersonParticipationView(LaunchpadView):
         """Return the participation information for active memberships."""
         paths, memberships = self.context.getPathsToTeams()
         direct_teams = [membership.team for membership in memberships]
-        indirect_teams = [team for team in paths.keys() if
+        indirect_teams = [
+            team for team in paths.keys() if 
             team not in direct_teams]
         participations = []
 
-        # First, create participation for all direct memberships.
+        # First, create a participation for all direct memberships.
         for membership in memberships:
             # Add a participation record for the membership if allowed.
             if check_permission('launchpad.View', membership.team):
-                participations.append(self._asParticipation(
-                    membership=membership))
+                participations.append(
+                    self._asParticipation(membership=membership))
 
-        # Second, create participation for all indirect memberships,
+        # Second, create a participation for all indirect memberships,
         # using the remaining paths.
         for indirect_team in indirect_teams:
             if not check_permission('launchpad.View', indirect_team):
                 continue
             participations.append(
-                self._asParticipation(via=paths[indirect_team],
+                self._asParticipation(
+                    via=paths[indirect_team],
                     team=indirect_team))
         return sorted(participations, key=itemgetter('displayname'))
 

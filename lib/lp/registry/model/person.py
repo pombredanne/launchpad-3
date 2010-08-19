@@ -753,15 +753,8 @@ class Person(
         packages.sort(key=lambda x: x.name)
         return packages
 
-    def findPathToTeam(self, team, limit=None):
-        """See `IPerson`.
-
-        The limit parameter sets the depth of traversal along the path. A
-        limit of 0 returns the passed in team, 1 returns the team
-        providing membership to the passed in team. 2 returns the membership
-        for the team returned with limit 1, and so on. None returns the path
-        all the way to the team Person has direct membership in.
-        """
+    def findPathToTeam(self, team):
+        """See `IPerson`."""
         # This is our guarantee that _getDirectMemberIParticipateIn() will
         # never return None
         assert self.hasParticipationEntryFor(team), (
@@ -770,13 +763,9 @@ class Person(
         assert team.is_team, "You can't pass a person to this method."
         path = [team]
         team = self._getDirectMemberIParticipateIn(team)
-        increment = 0
         while team != self:
-            if increment == limit:
-                break
             path.insert(0, team)
             team = self._getDirectMemberIParticipateIn(team)
-            increment += 1
         return path
 
     def _getDirectMemberIParticipateIn(self, team):
@@ -2062,7 +2051,8 @@ class Person(
     def getLatestApprovedMembershipsForPerson(self, limit=5):
         """See `IPerson`."""
         result = self.team_memberships
-        result = result.order_by(Desc(TeamMembership.datejoined),
+        result = result.order_by(
+            Desc(TeamMembership.datejoined),
             Desc(TeamMembership.id))
         return result[:limit]
 
@@ -2070,25 +2060,33 @@ class Person(
         """See `Iperson`."""
         # Get all of the teams this person participates in.
         teams = list(self.teams_participated_in)
-        all_user_memberships = [(self, team) for team in teams]
 
         # Get all of the memberships for any of the teams this person is
-        # a participant of.
+        # a participant of. This must be ordered by date and id because
+        # because the graph the results will create needs to contain
+        # the oldest path information to be consistent with results from
+        # IPerson.findPathToTeam.
         store = Store.of(self)
         all_direct_memberships = store.find(TeamMembership,
             TeamMembership.personID.is_in(
-                [team.id for team in teams] + [self.id]))
+                [team.id for team in teams] + [self.id])).order_by(
+                Desc(TeamMembership.datejoined), Desc(TeamMembership.id))
+        # Cast the results to list now, because they will be iterated over
+        # several times.
+        all_direct_memberships = list(all_direct_memberships)
 
         # Pull out the memberships directly used by this person.
-        user_memberships = [membership for membership in
-            all_direct_memberships if membership.person == self]
-        all_direct_memberships = [(membership.team, membership.person) for
-            membership in all_direct_memberships.order_by(
-                Desc(TeamMembership.datejoined), Desc(TeamMembership.id))]
+        user_memberships = [
+            membership for membership in
+            all_direct_memberships 
+            if membership.person == self]
+        
+        all_direct_memberships = [
+            (membership.team, membership.person) for membership in 
+            all_direct_memberships]
 
-        # Create a graph from the edges provided by the other data sets
+        # Create a graph from the edges provided by the other data sets.
         graph = dict(all_direct_memberships)
-        graph.update(all_user_memberships)
 
         # Build the teams paths from that graph.
         paths = {}
@@ -2099,7 +2097,7 @@ class Person(
                 step = graph[step]
                 path.append(step)
             paths[team] = path
-        return  paths, user_memberships
+        return  (paths, user_memberships)
 
     @property
     def teams_participated_in(self):
