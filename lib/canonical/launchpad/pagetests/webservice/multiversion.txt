@@ -31,26 +31,6 @@ In previous versions, the same named operations will return a
   >>> print collection['total_size']
   9
 
-Even if the entire collection fits on one page (so that the total size
-of the collection is obvious), 'total_size_link' will be served
-instead of 'total_size'. (It would be nice to fix this.)
-
-  >>> collection = get_collection("devel", size=100)
-  >>> print sorted(collection.keys())
-  [u'entries', u'start', u'total_size_link']
-  >>> print webservice.get(collection['total_size_link']).jsonBody()
-  9
-
-Even if the last page of the collection is fetched (so that the total
-size of the collection is semi-obvious), 'total_size_link' will be
-served instead of 'total_size'. (It would be nice to fix this.)
-
-  >>> collection = get_collection("devel", start=8)
-  >>> print sorted(collection.keys())
-  [u'entries', u'prev_collection_link', u'start', u'total_size_link']
-  >>> print webservice.get(collection['total_size_link']).jsonBody()
-  9
-
 Mutator operations
 ==================
 

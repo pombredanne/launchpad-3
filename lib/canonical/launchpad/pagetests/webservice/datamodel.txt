@@ -1,0 +1,35 @@
+***************************
+End-to-end data model tests
+***************************
+
+The lazr.restful tests use in-memory Python objects, and Launchpad
+uses Storm backed by a database. This means it's nice to have some
+end-to-end tests of code paths that, on the surface, look like they're
+already tested in lazr.restful.
+
+  >>> def get_collection(version, start=0, size=2):
+  ...     collection = webservice.get(
+  ...         ("/people?ws.op=find&text=s&ws.start=%s&ws.size=%s" %
+  ...          (start, size)),
+  ...         api_version=version)
+  ...     return collection.jsonBody()
+
+Even if an entire collection fits on one page (so that the total size
+of the collection is obvious), 'total_size_link' will be served
+instead of 'total_size'. (It would be nice to fix this.)
+
+  >>> collection = get_collection("devel", size=100)
+  >>> print sorted(collection.keys())
+  [u'entries', u'start', u'total_size_link']
+  >>> print webservice.get(collection['total_size_link']).jsonBody()
+  9
+
+Even if the last page of the collection is fetched (so that the total
+size of the collection is semi-obvious), 'total_size_link' will be
+served instead of 'total_size'. (It would be nice to fix this.)
+
+  >>> collection = get_collection("devel", start=8)
+  >>> print sorted(collection.keys())
+  [u'entries', u'prev_collection_link', u'start', u'total_size_link']
+  >>> print webservice.get(collection['total_size_link']).jsonBody()
+  9
