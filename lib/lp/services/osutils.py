@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Utilities for doing the sort of thing the os module does."""
@@ -10,10 +10,13 @@ __all__ = [
     'kill_by_pidfile',
     'remove_if_exists',
     'two_stage_kill',
+    'until_no_eintr',
     ]
 
 from contextlib import contextmanager
+import errno
 import os.path
+import socket
 import shutil
 
 
@@ -58,3 +61,25 @@ def override_environ(**kwargs):
         yield
     finally:
         set_environ(old_values)
+
+
+def until_no_eintr(retries, function, *args, **kwargs):
+    """Run 'function' until it doesn't raise EINTR errors.
+
+    :param retries: The maximum number of times to try running 'function'.
+    :param function: The function to run.
+    :param *args: Arguments passed to the function.
+    :param **kwargs: Keyword arguments passed to the function.
+    :return: The return value of 'function'.
+    """
+    if not retries:
+        return
+    for i in range(retries):
+        try:
+            return function(*args, **kwargs)
+        except (IOError, OSError, socket.error), e:
+            if e.errno == errno.EINTR:
+                continue
+            raise
+    else:
+        raise
