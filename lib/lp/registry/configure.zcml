@@ -1090,6 +1090,9 @@
             interface="lp.registry.interfaces.product.IProductEditRestricted"/>
         <require
             permission="launchpad.Edit"
+	    set_schema="lp.app.interfaces.launchpad.IServiceUsage"/>
+        <require
+            permission="launchpad.Edit"
             set_attributes="bug_reporting_guidelines
                             bug_reported_acknowledgement bugtracker
                             commercial_subscription description
