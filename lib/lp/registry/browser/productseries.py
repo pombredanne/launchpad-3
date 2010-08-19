@@ -441,11 +441,13 @@ class ProductSeriesDetailedDisplayView(ProductSeriesView):
 
     @cachedproperty
     def latest_milestones(self):
-        return self.context.milestones[:12]
+        # Convert to list to avoid the query being run multiple times.
+        return list(self.context.milestones[:12])
 
     @cachedproperty
     def latest_releases(self):
-        return self.context.releases[:12]
+        # Convert to list to avoid the query being run multiple times.
+        return list(self.context.releases[:12])
 
 
 class ProductSeriesUbuntuPackagingView(LaunchpadFormView):

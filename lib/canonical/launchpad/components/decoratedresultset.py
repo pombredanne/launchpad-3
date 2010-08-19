@@ -143,7 +143,3 @@ class DecoratedResultSet(object):
         new_result_set = self.result_set.order_by(*args, **kwargs)
         return DecoratedResultSet(
             new_result_set, self.result_decorator, self.pre_iter_hook)
-
-    def __len__(self):
-        """Handling len() helps when replacing a list."""
-        return self.count()

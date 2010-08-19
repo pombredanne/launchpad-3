@@ -27,8 +27,6 @@ from storm.expr import And, Desc, Coalesce
 from storm.store import Store
 
 
-from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet)
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.webapp.sorting import expand_numbers
 from lp.app.errors import NotFoundError
@@ -69,6 +67,9 @@ def milestone_sort_key(milestone):
 class HasMilestonesMixin:
     implements(IHasMilestones)
 
+    _milestone_order = (
+        'milestone_sort_key(Milestone.dateexpected, Milestone.name) DESC')
+
     def _getMilestoneCondition(self):
         """Provides condition for milestones and all_milestones properties.
 
@@ -84,7 +85,7 @@ class HasMilestonesMixin:
         """See `IHasMilestones`."""
         store = Store.of(self)
         result = store.find(Milestone, self._getMilestoneCondition())
-        return DecoratedResultSet(result.order_by(self._milestone_order))
+        return result.order_by(self._milestone_order)
 
     @property
     def milestones(self):
@@ -93,14 +94,7 @@ class HasMilestonesMixin:
         result = store.find(Milestone,
                             And(self._getMilestoneCondition(),
                                 Milestone.active == True))
-        return DecoratedResultSet(result.order_by(self._milestone_order))
-
-    @property
-    def _milestone_order(self):
-        return (
-            Desc(Coalesce(Milestone.dateexpected, FUTURE_NONE)),
-            'milestone_sort_key(Milestone.dateexpected, Milestone.name) DESC',
-            )
+        return result.order_by(self._milestone_order)
 
 
 class Milestone(SQLBase, StructuralSubscriptionTargetMixin, HasBugsBase):
