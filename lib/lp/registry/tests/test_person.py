@@ -1,11 +1,15 @@
 # Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+from __future__ import with_statement
+
 __metaclass__ = type
 
 from datetime import datetime
 import pytz
 import time
+
+from testtools.matchers import LessThan
 
 import transaction
 
@@ -26,6 +30,7 @@ from lp.registry.interfaces.person import (
     IPersonSet, ImmutableVisibilityError, NameAlreadyTaken,
     PersonCreationRationale, PersonVisibility)
 from canonical.launchpad.database import Bug
+from canonical.launchpad.testing.pages import LaunchpadWebServiceCaller
 from lp.registry.model.structuralsubscription import (
     StructuralSubscription)
 from lp.registry.model.karma import KarmaCategory
@@ -34,13 +39,52 @@ from lp.bugs.model.bugtask import get_related_bugtasks_search_params
 from lp.bugs.interfaces.bugtask import IllegalRelatedBugTasksParams
 from lp.answers.model.answercontact import AnswerContact
 from lp.blueprints.model.specification import Specification
-from lp.testing import login_person, logout, TestCase, TestCaseWithFactory
+from lp.testing import (
+    login_person, logout, person_logged_in, TestCase, TestCaseWithFactory,
+    )
+from lp.testing.matchers import HasQueryCount
 from lp.testing.views import create_initialized_view
+from lp.testing import celebrity_logged_in
+from lp.testing._webservice import QueryCollector
 from lp.registry.interfaces.person import PrivatePersonLinkageError
 from canonical.testing.layers import DatabaseFunctionalLayer, reconnect_stores
 
 
+class TestPersonTeams(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_teams_indirectly_participated_in(self):
+        self.user = self.factory.makePerson()
+        a_team = self.factory.makeTeam(name='a')
+        b_team = self.factory.makeTeam(name='b', owner=a_team)
+        c_team = self.factory.makeTeam(name='c', owner=b_team)
+        login_person(a_team.teamowner)
+        a_team.addMember(self.user, a_team.teamowner)
+        indirect_teams = self.user.teams_indirectly_participated_in
+        expected_teams = [b_team, c_team]
+        test_teams = sorted(indirect_teams,
+            key=lambda team: team.displayname)
+        self.assertEqual(expected_teams, test_teams)
+
+
 class TestPerson(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_getOwnedOrDrivenPillars(self):
+        user = self.factory.makePerson()
+        active_project = self.factory.makeProject(owner=user)
+        inactive_project = self.factory.makeProject(owner=user)
+        with celebrity_logged_in('admin'):
+            inactive_project.active = False
+        expected_pillars = [active_project.name]
+        received_pillars = [pillar.name for pillar in
+            user.getOwnedOrDrivenPillars()]
+        self.assertEqual(expected_pillars, received_pillars)
+
+
+class TestPersonStates(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
@@ -173,7 +217,8 @@ class TestPerson(TestCaseWithFactory):
 
     def test_person_snapshot(self):
         omitted = (
-            'activemembers', 'adminmembers', 'allmembers', 'approvedmembers',
+            'activemembers', 'adminmembers', 'allmembers',
+            'all_members_prepopulated', 'approvedmembers',
             'deactivatedmembers', 'expiredmembers', 'inactivemembers',
             'invited_members', 'member_memberships', 'pendingmembers',
             'proposedmembers', 'unmapped_participants',
@@ -249,8 +294,8 @@ class TestPersonSetMerge(TestCaseWithFactory):
         transaction.commit()
         logout()
 
-    def _get_testible_account(self, person, date_created, openid_identifier):
-        # Return a naked account with predicable attributes.
+    def _get_testable_account(self, person, date_created, openid_identifier):
+        # Return a naked account with predictable attributes.
         account = removeSecurityProxy(person.account)
         account.date_created = date_created
         account.openid_identifier = openid_identifier
@@ -264,7 +309,7 @@ class TestPersonSetMerge(TestCaseWithFactory):
             2010, 04, 01, 0, 0, 0, 0, tzinfo=pytz.timezone('UTC'))
         # Free an OpenID identifier using merge.
         first_duplicate = self.factory.makePerson()
-        first_account = self._get_testible_account(
+        first_account = self._get_testable_account(
             first_duplicate, test_date, test_identifier)
         first_person = self.factory.makePerson()
         self._do_premerge(first_duplicate, first_person)
@@ -276,7 +321,7 @@ class TestPersonSetMerge(TestCaseWithFactory):
         # Create an account that reuses the freed OpenID_identifier.
         test_date = test_date.replace(2010, 05)
         second_duplicate = self.factory.makePerson()
-        second_account = self._get_testible_account(
+        second_account = self._get_testable_account(
             second_duplicate, test_date, test_identifier)
         second_person = self.factory.makePerson()
         self._do_premerge(second_duplicate, second_person)
@@ -535,3 +580,32 @@ class TestPersonKarma(TestCaseWithFactory):
         names = [entry['project'].name for entry in results]
         self.assertEqual(
             ['cc', 'bb', 'aa', 'dd', 'ee'], names)
+
+
+class TestAPIPartipication(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_participation_query_limit(self):
+        # A team with 3 members should only query once for all their
+        # attributes.
+        team = self.factory.makeTeam()
+        with person_logged_in(team.teamowner):
+            team.addMember(self.factory.makePerson(), team.teamowner)
+            team.addMember(self.factory.makePerson(), team.teamowner)
+            team.addMember(self.factory.makePerson(), team.teamowner)
+        webservice = LaunchpadWebServiceCaller()
+        collector = QueryCollector()
+        collector.register()
+        self.addCleanup(collector.unregister)
+        url = "/~%s/participants" % team.name
+        logout()
+        response = webservice.get(url,
+            headers={'User-Agent': 'AnonNeedsThis'})
+        self.assertEqual(response.status, 200,
+            "Got %d for url %r with response %r" % (
+            response.status, url, response.body))
+        # XXX: This number should really be 10, but see
+        # https://bugs.launchpad.net/storm/+bug/619017 which is adding 3
+        # queries to the test.
+        self.assertThat(collector, HasQueryCount(LessThan(13)))

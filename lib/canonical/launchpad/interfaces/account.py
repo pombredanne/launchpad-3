@@ -24,7 +24,7 @@ from zope.schema import Bool, Choice, Datetime, Int, Text, TextLine
 from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import StrippedTextLine, PasswordField
+from lp.services.fields import StrippedTextLine, PasswordField
 from lazr.restful.fields import CollectionField, Reference
 
 

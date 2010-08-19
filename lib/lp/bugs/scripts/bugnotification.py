@@ -111,7 +111,7 @@ def construct_email_notifications(bug_notifications):
                 (email_person, recipient)
                 for email_person, recipient in recipients.items()
                 if recipient.person.inTeam(comment_syncing_team))
-    bug_notification_builder = BugNotificationBuilder(bug)
+    bug_notification_builder = BugNotificationBuilder(bug, person)
     sorted_recipients = sorted(
         recipients.items(), key=lambda t: t[0].preferredemail.email)
     for email_person, recipient in sorted_recipients:

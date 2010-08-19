@@ -19,12 +19,12 @@ import traceback
 
 from email import message_from_string
 
-from zope.component import getUtility
+from zope.component import getGlobalSiteManager, getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.errors import NotFoundError
-from lp.archiveuploader.uploadpolicy import (AbstractUploadPolicy,
-    findPolicyByOptions)
+from lp.archiveuploader.uploadpolicy import (
+    AbstractUploadPolicy, IArchiveUploadPolicy, findPolicyByName)
 from lp.archiveuploader.uploadprocessor import (UploadProcessor,
     parse_build_upload_leaf_name)
 from lp.buildmaster.interfaces.buildbase import BuildStatus
@@ -40,6 +40,7 @@ from lp.soyuz.model.publishing import (
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.soyuz.model.sourcepackagerelease import (
     SourcePackageRelease)
+from lp.soyuz.scripts.initialise_distroseries import InitialiseDistroSeries
 from canonical.launchpad.ftests import import_public_test_keys
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.series import SeriesStatus
@@ -62,7 +63,10 @@ from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
 from lp.services.mail import stub
 from canonical.launchpad.testing.fakepackager import FakePackager
-from lp.testing import TestCase, TestCaseWithFactory
+from lp.testing import (
+    TestCase,
+    TestCaseWithFactory,
+    )
 from lp.testing.mail_helpers import pop_notifications
 from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
 from canonical.testing import LaunchpadZopelessLayer
@@ -147,7 +151,9 @@ class TestUploadProcessorBase(TestCaseWithFactory):
     def getUploadProcessor(self, txn):
         def getPolicy(distro):
             self.options.distro = distro.name
-            return findPolicyByOptions(self.options)
+            policy = findPolicyByName(self.options.context)
+            policy.setOptions(self.options)
+            return policy
         return UploadProcessor(
             self.options.base_fsroot, self.options.dryrun,
             self.options.nomails, self.options.builds,
@@ -213,15 +219,13 @@ class TestUploadProcessorBase(TestCaseWithFactory):
             name, 'Breezy Badger',
             'The Breezy Badger', 'Black and White', 'Someone',
             '5.10', bat, bat.owner)
-        breezy_i386 = self.breezy.newArch(
-            'i386', bat['i386'].processorfamily, True, self.breezy.owner)
-        self.breezy.nominatedarchindep = breezy_i386
-
-        fake_chroot = self.addMockFile('fake_chroot.tar.gz')
-        breezy_i386.addOrUpdateChroot(fake_chroot)
 
         self.breezy.changeslist = 'breezy-changes@ubuntu.com'
-        self.breezy.initialiseFromParent()
+        ids = InitialiseDistroSeries(self.breezy)
+        ids.initialise()
+
+        fake_chroot = self.addMockFile('fake_chroot.tar.gz')
+        self.breezy['i386'].addOrUpdateChroot(fake_chroot)
 
         if permitted_formats is None:
             permitted_formats = [SourcePackageFormat.FORMAT_1_0]
@@ -536,9 +540,12 @@ class TestUploadProcessor(TestUploadProcessorBase):
 
         See bug 35965.
         """
-        # Register our broken upload policy
-        AbstractUploadPolicy._registerPolicy(BrokenUploadPolicy)
-        self.options.context = 'broken'
+        self.options.context = u'broken'
+        # Register our broken upload policy.
+        getGlobalSiteManager().registerUtility(
+            component=BrokenUploadPolicy, provided=IArchiveUploadPolicy,
+            name=self.options.context)
+
         uploadprocessor = self.getUploadProcessor(self.layer.txn)
 
         # Upload a package to Breezy.

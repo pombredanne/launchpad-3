@@ -8,7 +8,7 @@ __all__ = ['ProcessUpload']
 
 import os
 
-from lp.archiveuploader.uploadpolicy import findPolicyByOptions
+from lp.archiveuploader.uploadpolicy import findPolicyByName
 from lp.archiveuploader.uploadprocessor import UploadProcessor
 from lp.services.scripts.base import (
     LaunchpadCronScript, LaunchpadScriptFailure)
@@ -82,7 +82,9 @@ class ProcessUpload(LaunchpadCronScript):
         self.logger.debug("Initialising connection.")
         def getPolicy(distro):
             self.options.distro = distro.name
-            return findPolicyByOptions(self.options)
+            policy = findPolicyByName(self.options.context)
+            policy.setOptions(self.options)
+            return policy
         processor = UploadProcessor(self.options.base_fsroot, 
             self.options.dryrun, self.options.nomails, self.options.keep,
             getPolicy, self.txn, self.logger)

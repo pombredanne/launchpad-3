@@ -16,7 +16,7 @@ from zope.interface import Attribute, Interface
 from zope.schema import Bool, Datetime, TextLine
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import BugField
+from lp.services.fields import BugField
 from lp.registry.interfaces.role import IHasOwner
 
 

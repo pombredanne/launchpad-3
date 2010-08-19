@@ -3,6 +3,7 @@
 
 """Tests for Job-running facilities."""
 
+from __future__ import with_statement
 
 from unittest import TestLoader
 
@@ -15,6 +16,7 @@ from lp.code.enums import (
 from lp.code.model.branchjob import RevisionMailJob
 from lp.code.model.diff import StaticDiff
 from lp.services.job.runner import JobRunner
+from lp.services.osutils import override_environ
 from lp.testing import TestCaseWithFactory
 
 
@@ -34,7 +36,10 @@ class TestRevisionMailJob(TestCaseWithFactory):
         tree_transport = tree.bzrdir.root_transport
         tree_transport.put_bytes("hello.txt", "Hello World\n")
         tree.add('hello.txt')
-        to_revision_id = tree.commit('rev1', timestamp=1e9, timezone=0)
+        # XXX: AaronBentley 2010-08-06 bug=614404: a bzr username is
+        # required to generate the revision-id.
+        with override_environ(BZR_EMAIL='me@example.com'):
+            to_revision_id = tree.commit('rev1', timestamp=1e9, timezone=0)
         job = RevisionMailJob.create(
             branch, 1, 'from@example.org', 'body', True, 'subject')
         LaunchpadZopelessLayer.txn.commit()
