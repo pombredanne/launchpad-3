@@ -22,7 +22,7 @@ from lazr.enum import DBEnumeratedType, DBItem
 from canonical.launchpad.interfaces.message import IMessage
 from canonical.launchpad.interfaces.launchpad import IHasBug
 
-from canonical.launchpad.fields import Title
+from lp.services.fields import Title
 from canonical.launchpad import _
 
 from lazr.restful.fields import Reference

@@ -24,7 +24,7 @@ from lp.archiveuploader.nascentuploadfile import (
     UdebBinaryUploadFile,
     UploadError,
     )
-from lp.archiveuploader.uploadpolicy import AbsolutelyAnythingGoesUploadPolicy
+from lp.archiveuploader.tests import AbsolutelyAnythingGoesUploadPolicy
 from lp.testing import TestCase
 
 
@@ -108,8 +108,7 @@ class ChangesFileTests(TestCase):
         return contents
 
     def test_checkFileName(self):
-        # Test that checkFileName() yields an UploadError if the filename
-        # is invalid.
+        # checkFileName() yields an UploadError if the filename is invalid.
         contents = self.getBaseChanges()
         changes = self.createChangesFile("mypkg_0.1_i386.changes", contents)
         self.assertEquals([], list(changes.checkFileName()))
@@ -119,26 +118,25 @@ class ChangesFileTests(TestCase):
         self.assertEquals(1, len(errors))
 
     def test_filename(self):
-        # Test that filename gets set to the basename of the changes file
-        # on disk.
+        # Filename gets set to the basename of the changes file on disk.
         changes = self.createChangesFile(
             "mypkg_0.1_i386.changes", self.getBaseChanges())
         self.assertEquals("mypkg_0.1_i386.changes", changes.filename)
 
     def test_suite_name(self):
-        # Test that the suite name gets extracted from the changes file.
+        # The suite name gets extracted from the changes file.
         changes = self.createChangesFile(
             "mypkg_0.1_i386.changes", self.getBaseChanges())
         self.assertEquals("nifty", changes.suite_name)
 
     def test_version(self):
-        # Test that the version gets extracted from the changes file.
+        # The version gets extracted from the changes file.
         changes = self.createChangesFile(
             "mypkg_0.1_i386.changes", self.getBaseChanges())
         self.assertEquals("0.1", changes.version)
 
     def test_architectures(self):
-        # Test that the architectures get extracted from the changes file
+        # The architectures get extracted from the changes file
         # and parsed correctly.
         changes = self.createChangesFile(
             "mypkg_0.1_i386.changes", self.getBaseChanges())
@@ -146,14 +144,13 @@ class ChangesFileTests(TestCase):
         self.assertEquals(set(["i386"]), changes.architectures)
 
     def test_source(self):
-        # Test that the source package name gets extracted from the changes
-        # file.
+        # The source package name gets extracted from the changes file.
         changes = self.createChangesFile(
             "mypkg_0.1_i386.changes", self.getBaseChanges())
         self.assertEquals("mypkg", changes.source)
 
     def test_processAddresses(self):
-        # Test that processAddresses parses the changes file and sets the
+        # processAddresses parses the changes file and sets the
         # changed_by field.
         contents = self.getBaseChanges()
         changes = self.createChangesFile(
@@ -165,8 +162,8 @@ class ChangesFileTests(TestCase):
             "Somebody <somebody@ubuntu.com>", changes.changed_by['rfc822'])
 
     def test_simulated_changelog(self):
-        # Test that the simulated_changelog property returns a
-        # changelog entry based on the control fields.
+        # The simulated_changelog property returns a changelog entry based on
+        # the control fields.
         contents = self.getBaseChanges()
         changes = self.createChangesFile(
             "mypkg_0.1_i386.changes", contents)
@@ -178,8 +175,7 @@ class ChangesFileTests(TestCase):
             changes.simulated_changelog)
 
     def test_requires_changed_by(self):
-        # Test that a changes file is rejected if it does not have a
-        # Changed-By field.
+        # A changes file is rejected if it does not have a Changed-By field.
         contents = self.getBaseChanges()
         del contents["Changed-By"]
         self.assertRaises(

@@ -41,7 +41,7 @@ from lazr.restful.fields import Reference, ReferenceChoice
 from lazr.restful.interface import copy_field
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import (
+from lp.services.fields import (
     ContentNameField, PublicPersonChoice, URIField, Whiteboard)
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.validators import LaunchpadValidationError

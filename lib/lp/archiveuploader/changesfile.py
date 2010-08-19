@@ -41,7 +41,7 @@ class ChangesFile(SignableTagFile):
 
     mandatory_fields = set([
         "source", "binary", "architecture", "version", "distribution",
-        "maintainer", "files", "changes", "date", "description",
+        "maintainer", "files", "changes", "date",
         # Changed-By is not technically mandatory according to
         # Debian policy but Soyuz relies on it being set in
         # various places.

@@ -18,7 +18,7 @@ from lp.archiveuploader.nascentuploadfile import (
     CustomUploadFile,
     DebBinaryUploadFile,
     )
-from lp.archiveuploader.uploadpolicy import AbsolutelyAnythingGoesUploadPolicy
+from lp.archiveuploader.tests import AbsolutelyAnythingGoesUploadPolicy
 from lp.soyuz.interfaces.queue import PackageUploadCustomFormat
 from lp.testing import TestCaseWithFactory
 
@@ -65,8 +65,7 @@ class CustomUploadFileTests(NascentUploadFileTestCase):
         return uploadfile
 
     def test_custom_type(self):
-        # Test that the mime type gets set according to
-        # PackageUploadCustomFormat.
+        # The mime type gets set according to PackageUploadCustomFormat.
         uploadfile = self.createCustomUploadFile(
             "bla.txt", "data", "main/raw-installer", "extra")
         self.assertEquals(
@@ -74,7 +73,7 @@ class CustomUploadFileTests(NascentUploadFileTestCase):
             uploadfile.custom_type)
 
     def test_storeInDatabase(self):
-        # Test that storeInDatabase creates a library file.
+        # storeInDatabase creates a library file.
         uploadfile = self.createCustomUploadFile(
             "bla.txt", "data", "main/raw-installer", "extra")
         self.assertEquals("application/octet-stream", uploadfile.content_type)
@@ -152,8 +151,7 @@ class DSCFileTests(PackageUploadFileTestCase):
             version, changes, self.policy, self.logger)
 
     def test_filetype(self):
-        # Test that the filetype attribute is set based on the file
-        # extension.
+        # The filetype attribute is set based on the file extension.
         dsc = self.getBaseDsc()
         uploadfile = self.createDSCFile(
             "foo.dsc", dsc, "main/net", "extra", "dulwich", "0.42", None)
@@ -161,7 +159,7 @@ class DSCFileTests(PackageUploadFileTestCase):
             "text/x-debian-source-package", uploadfile.content_type)
 
     def test_storeInDatabase(self):
-        # Test that storeInDatabase creates a SourcePackageRelease.
+        # storeInDatabase creates a SourcePackageRelease.
         dsc = self.getBaseDsc()
         dsc["Build-Depends"] = "dpkg, bzr"
         changes = self.getBaseChanges()
@@ -224,13 +222,13 @@ class DebBinaryUploadFileTests(PackageUploadFileTestCase):
             version, changes, self.policy, self.logger)
 
     def test_unknown_priority(self):
-        # Test that unknown priorities automatically get changed to 'extra'.
+        # Unknown priorities automatically get changed to 'extra'.
         uploadfile = self.createDebBinaryUploadFile(
             "foo_0.42_i386.deb", "main/net", "unknown", "mypkg", "0.42", None)
         self.assertEquals("extra", uploadfile.priority_name)
 
     def test_parseControl(self):
-        # Test that parseControl sets various fields on DebBinaryUploadFile.
+        # parseControl sets various fields on DebBinaryUploadFile.
         uploadfile = self.createDebBinaryUploadFile(
             "foo_0.42_i386.deb", "main/python", "unknown", "mypkg", "0.42",
             None)
@@ -242,7 +240,7 @@ class DebBinaryUploadFileTests(PackageUploadFileTestCase):
         self.assertEquals("0.42", uploadfile.control_version)
 
     def test_storeInDatabase(self):
-        # Test that storeInDatabase creates a BinaryPackageRelease.
+        # storeInDatabase creates a BinaryPackageRelease.
         uploadfile = self.createDebBinaryUploadFile(
             "foo_0.42_i386.deb", "main/python", "unknown", "mypkg", "0.42",
             None)
@@ -257,7 +255,7 @@ class DebBinaryUploadFileTests(PackageUploadFileTestCase):
         self.assertEquals(False, bpr.essential)
         self.assertEquals(524, bpr.installedsize)
         self.assertEquals(True, bpr.architecturespecific)
-        self.assertEquals("", bpr.recommends)
+        self.assertEquals(u"", bpr.recommends)
         self.assertEquals("0.42", bpr.version)
 
     def test_user_defined_fields(self):

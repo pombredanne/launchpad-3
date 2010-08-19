@@ -20,7 +20,7 @@ from zope.schema import (
      Bool, Choice, Datetime,  Int, List, Object, Text, TextLine)
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import PublicPersonChoice
+from lp.services.fields import PublicPersonChoice
 from lp.registry.interfaces.role import IHasOwner
 
 from lp.answers.interfaces.faq import IFAQ

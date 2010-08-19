@@ -5,18 +5,19 @@ __metaclass__ = type
 
 import os.path
 import re
+import time
 
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
-    BugNotificationLevel, IDistroBugTask, IDistroSeriesBugTask,
-    IUpstreamBugTask)
+    IDistroBugTask, IDistroSeriesBugTask, IUpstreamBugTask)
 from canonical.launchpad.interfaces.mail import (
     EmailProcessingError, IWeaklyAuthenticatedPrincipal)
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.interaction import get_current_principal
 
+from lp.registry.enum import BugNotificationLevel
 from lp.registry.vocabularies import ValidPersonOrTeamVocabulary
 
 
@@ -74,7 +75,9 @@ def get_bugtask_type(bugtask):
         <...IDistroSeriesBugTask>
     """
     bugtask_interfaces = [
-        IUpstreamBugTask, IDistroBugTask, IDistroSeriesBugTask
+        IUpstreamBugTask,
+        IDistroBugTask,
+        IDistroSeriesBugTask,
         ]
     for interface in bugtask_interfaces:
         if interface.providedBy(bugtask):
@@ -133,6 +136,7 @@ def reformat_wiki_text(text):
     text = re_comment.sub('', text)
 
     return text
+
 
 def parse_commands(content, command_names):
     """Extract indented commands from email body.
@@ -219,4 +223,19 @@ def ensure_not_weakly_authenticated(signed_msg, context,
             error_message = get_error_message(
                 no_key_template, import_url=import_url,
                 context=context)
+        raise IncomingEmailError(error_message)
+
+
+def ensure_sane_signature_timestamp(signature, context,
+                                    error_template='old-signature.txt'):
+    """Ensure the signature was generated recently but not in the future."""
+    fourty_eight_hours = 48 * 60 * 60
+    ten_minutes = 10 * 60
+    now = time.time()
+    fourty_eight_hours_ago = now - fourty_eight_hours
+    ten_minutes_in_the_future = now + ten_minutes
+
+    if (signature.timestamp < fourty_eight_hours_ago
+            or signature.timestamp > ten_minutes_in_the_future):
+        error_message = get_error_message(error_template, context=context)
         raise IncomingEmailError(error_message)
