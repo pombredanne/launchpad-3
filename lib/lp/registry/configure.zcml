@@ -1090,6 +1090,9 @@
             interface="lp.registry.interfaces.product.IProductEditRestricted"/>
         <require
             permission="launchpad.Edit"
+	        set_schema="lp.app.interfaces.launchpad.IServiceUsage"/>
+        <require
+            permission="launchpad.Edit"
             set_attributes="bug_reporting_guidelines
                             bug_reported_acknowledgement bugtracker
                             commercial_subscription description
@@ -1104,10 +1107,7 @@
                             redeemSubscriptionVoucher releaseroot
                             remote_product screenshotsurl
                             security_contact sourceforgeproject
-                            summary title wikiurl
-                            answers_usage blueprints_usage
-                            bug_tracking_usage codehosting_usage
-                            translations_usage"/>
+                            summary title wikiurl"/>
                             
 
         <!-- mark 2006-04-10 I put "name" in the admin group because
@@ -1415,9 +1415,7 @@
                 icon logo mugshot enable_bug_expiration
                 bug_reporting_guidelines bug_reported_acknowledgement
                 official_blueprints official_malone
-                official_rosetta official_answers official_bug_tags
-                answers_usage blueprints_usage codehosting_usage
-                bug_tracking_usage translations_usage"/>
+                official_rosetta official_answers official_bug_tags"/>
         <require
             permission="launchpad.TranslationsAdmin"
             set_attributes="
