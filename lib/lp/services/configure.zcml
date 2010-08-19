@@ -6,4 +6,14 @@
   <adapter factory=".propertycache.get_default_cache"/>
   <adapter factory=".propertycache.PropertyCacheManager"/>
   <adapter factory=".propertycache.DefaultPropertyCacheManager"/>
+  <include package=".database" />
+  <include package=".features" />
+  <include package=".inlinehelp" file="meta.zcml" />
+  <include package=".job" />
+  <include package=".memcache" />
+  <include package=".openid" />
+  <include package=".profile" />
+  <include package=".salesforce" />
+  <include package=".scripts" />
+  <include package=".worlddata" />
 </configure>
