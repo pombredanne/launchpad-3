@@ -3099,7 +3099,7 @@ class PersonParticipationView(LaunchpadView):
 
         if membership is None:
             # Membership is via an indirect team so sane defaults exist.
-            # An indirect member cannot be an Owner or Admin of a team. 
+            # An indirect member cannot be an Owner or Admin of a team.
             role = 'Member'
             # The Person joined, and can't have a join date.
             datejoined = None
@@ -3133,7 +3133,7 @@ class PersonParticipationView(LaunchpadView):
         paths, memberships = self.context.getPathsToTeams()
         direct_teams = [membership.team for membership in memberships]
         indirect_teams = [
-            team for team in paths.keys() if 
+            team for team in paths.keys() if
             team not in direct_teams]
         participations = []
 

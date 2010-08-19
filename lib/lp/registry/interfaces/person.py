@@ -1332,7 +1332,7 @@ class IPersonViewRestricted(Interface):
 
     def getMembersWithPreferredEmailsCount():
         """Returns the count of persons/teams with preferred emails.
-        
+
         See also getMembersWithPreferredEmails.
         """
 
