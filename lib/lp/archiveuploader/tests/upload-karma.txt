@@ -86,7 +86,8 @@ will generate another different karma event for the uploader.
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> name16_ppa = getUtility(IArchiveSet).new(
-    ...     owner=name16, distribution=ubuntu, purpose=ArchivePurpose.PPA)
+    ...     owner=removeSecurityProxy(name16), distribution=ubuntu,
+    ...     purpose=ArchivePurpose.PPA)
     >>> bar_ppa_src = getPPAUploadForSource(
     ...     'suite/bar_1.0-1/bar_1.0-1_source.changes', name16_ppa)
     >>> bar_ppa_src.process()
