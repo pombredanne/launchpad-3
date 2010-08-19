@@ -239,5 +239,5 @@ class DebBinaryUploadFileTests(PackageUploadFileTestCase):
         self.assertEquals(False, bpr.essential)
         self.assertEquals(524, bpr.installedsize)
         self.assertEquals(True, bpr.architecturespecific)
-        self.assertEquals(None, bpr.recommends)
+        self.assertEquals(u"", bpr.recommends)
         self.assertEquals("0.42", bpr.version)
