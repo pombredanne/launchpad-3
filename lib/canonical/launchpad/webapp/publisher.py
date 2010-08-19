@@ -31,14 +31,22 @@ from zope.app import zapi
 from zope.app.publisher.interfaces.xmlrpc import IXMLRPCView
 from zope.app.publisher.xmlrpc import IMethodPublisher
 from zope.component import getUtility, queryMultiAdapter
-from zope.interface import implements
+from zope.component.interfaces import ComponentLookupError
+from zope.interface import directlyProvides, implements
 from zope.interface.advice import addClassAdvisor
 from zope.publisher.interfaces import NotFound
-from zope.publisher.interfaces.browser import IBrowserPublisher
+from zope.publisher.interfaces.browser import (
+    IBrowserPublisher,
+    IDefaultBrowserLayer,
+    )
 from zope.security.checker import ProxyFactory, NamesChecker
 from zope.traversing.browser.interfaces import IAbsoluteURL
 
-from canonical.launchpad.layers import setFirstLayer, WebServiceLayer
+from canonical.launchpad.layers import (
+    LaunchpadLayer,
+    WebServiceLayer,
+    setFirstLayer,
+    )
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.launchpad.webapp.interfaces import (
     ICanonicalUrlData, ILaunchBag, ILaunchpadApplication, ILaunchpadContainer,
@@ -408,6 +416,27 @@ class CanonicalAbsoluteURL:
     __call__ = __str__
 
 
+def layer_for_rootsite(rootsite):
+    """Return the registered layer for the specified rootsite.
+
+    'code' -> lp.code.publisher.CodeLayer
+    'translations' -> lp.translations.publisher.TranslationsLayer
+    et al.
+
+    The layer is defined in ZCML using a named utility with the name of the
+    rootsite, and providing IDefaultBrowserLayer.  If there is no utility
+    defined with the specified name, then LaunchpadLayer is returned.
+    """
+    try:
+        return getUtility(IDefaultBrowserLayer, rootsite)
+    except ComponentLookupError:
+        return LaunchpadLayer
+
+
+class FakeRequest:
+    """Used solely to provide a layer for the view check in canonical_url."""
+
+
 def canonical_url(
     obj, request=None, rootsite=None, path_only_if_possible=False,
     view_name=None, force_local_path=False):
@@ -472,14 +501,14 @@ def canonical_url(
             request = current_request
 
     if view_name is not None:
-        assert request is not None, (
-            "Cannot check view_name parameter when the request is not "
-            "available.")
-
+        # Make sure that the view is registered for the site requested.
+        fake_request = FakeRequest()
+        directlyProvides(fake_request, layer_for_rootsite(rootsite))
         # Look first for a view.
-        if queryMultiAdapter((obj, request), name=view_name) is None:
+        if queryMultiAdapter((obj, fake_request), name=view_name) is None:
             # Look if this is a special name defined by Navigation.
-            navigation = queryMultiAdapter((obj, request), IBrowserPublisher)
+            navigation = queryMultiAdapter(
+                (obj, fake_request), IBrowserPublisher)
             if isinstance(navigation, Navigation):
                 all_names = navigation.all_traversal_and_redirection_names
             else:
