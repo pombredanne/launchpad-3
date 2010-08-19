@@ -15,7 +15,6 @@ import transaction
 
 from zope.component import getUtility
 from zope.interface import providedBy
-from zope.interface.verify import verifyObject
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.sqlbase import cursor
@@ -28,7 +27,7 @@ from lp.registry.interfaces.karma import IKarmaCacheManager
 from lp.registry.interfaces.person import InvalidName
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.person import (
-    IPerson, IPersonSet, ImmutableVisibilityError, NameAlreadyTaken,
+    IPersonSet, ImmutableVisibilityError, NameAlreadyTaken,
     PersonCreationRationale, PersonVisibility)
 from canonical.launchpad.database import Bug
 from canonical.launchpad.testing.pages import LaunchpadWebServiceCaller
@@ -102,14 +101,14 @@ class TestPersonTeams(TestCaseWithFactory):
 
     def test_getPathsToTeams(self):
         paths, memberships = self.user.getPathsToTeams()
-        expected_paths = {self.a_team:[self.a_team, self.user],
-            self.b_team:[self.b_team, self.a_team, self.user],
-            self.c_team:[self.c_team, self.b_team, self.a_team, self.user]}
+        expected_paths = {self.a_team: [self.a_team, self.user],
+            self.b_team: [self.b_team, self.a_team, self.user],
+            self.c_team: [self.c_team, self.b_team, self.a_team, self.user]}
         self.assertEqual(expected_paths, paths)
-        
+
         expected_memberships = [(self.a_team, self.user)]
         memberships = [
-            (membership.team, membership.person) for membership 
+            (membership.team, membership.person) for membership
             in memberships]
         self.assertEqual(expected_memberships, memberships)
 
@@ -125,21 +124,21 @@ class TestPersonTeams(TestCaseWithFactory):
 
         paths, memberships = self.user.getPathsToTeams()
         expected_paths = {
-            self.a_team:[self.a_team, self.user],
-            self.b_team:[self.b_team, self.a_team, self.user],
-            self.c_team:[self.c_team, self.b_team, self.a_team, self.user],
-            d_team:[d_team, self.b_team, self.a_team, self.user],
-            e_team:[e_team, self.user],
-            f_team:[f_team, e_team, self.user]}
+            self.a_team: [self.a_team, self.user],
+            self.b_team: [self.b_team, self.a_team, self.user],
+            self.c_team: [self.c_team, self.b_team, self.a_team, self.user],
+            d_team: [d_team, self.b_team, self.a_team, self.user],
+            e_team: [e_team, self.user],
+            f_team: [f_team, e_team, self.user]}
         self.assertEqual(expected_paths, paths)
-        
+
         expected_memberships = [
-            (self.a_team, self.user), 
+            (self.a_team, self.user),
             (d_team, self.user),
             (e_team, self.user),
             ]
         memberships = [
-            (membership.team, membership.person) for membership 
+            (membership.team, membership.person) for membership
             in memberships]
         self.assertEqual(expected_memberships, memberships)
 
@@ -153,15 +152,15 @@ class TestPersonTeams(TestCaseWithFactory):
         # when multiples exist; it sorts to use the oldest path, so
         # the expected paths below should be the returned result.
         expected_paths = {
-            self.a_team:[self.a_team, self.user],
-            self.b_team:[self.b_team, self.a_team, self.user],
-            self.c_team:[self.c_team, self.b_team, self.a_team, self.user],
-            d_team:[d_team, self.b_team, self.a_team, self.user]}
+            self.a_team: [self.a_team, self.user],
+            self.b_team: [self.b_team, self.a_team, self.user],
+            self.c_team: [self.c_team, self.b_team, self.a_team, self.user],
+            d_team: [d_team, self.b_team, self.a_team, self.user]}
         self.assertEqual(expected_paths, paths)
-        
+
         expected_memberships = [(self.a_team, self.user)]
         memberships = [
-            (membership.team, membership.person) for membership 
+            (membership.team, membership.person) for membership
             in memberships]
         self.assertEqual(expected_memberships, memberships)
 
