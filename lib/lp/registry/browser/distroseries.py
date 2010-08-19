@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """View classes related to `IDistroSeries`."""
@@ -190,7 +190,7 @@ class DistroSeriesOverviewMenu(
         text = 'Add architecture'
         return Link('+addport', text, icon='add')
 
-    @enabled_with_permission('launchpad.Admin')
+    @enabled_with_permission('launchpad.Moderate')
     def admin(self):
         text = 'Administer'
         return Link('+admin', text, icon='edit')
@@ -317,7 +317,7 @@ class DistroSeriesView(MilestoneOverlayMixin):
     @cachedproperty
     def num_linked_packages(self):
         """The number of linked packagings for this distroseries."""
-        return len(self.context.packagings)
+        return self.context.packagings.count()
 
     @property
     def num_unlinked_packages(self):
@@ -332,7 +332,9 @@ class DistroSeriesView(MilestoneOverlayMixin):
     @cachedproperty
     def needs_linking(self):
         """Return a list of 10 packages most in need of upstream linking."""
-        return self.context.getPrioritizedUnlinkedSourcePackages()[:10]
+        # XXX sinzui 2010-02-26 bug=528648: This method causes a timeout.
+        # return self.context.getPrioritizedUnlinkedSourcePackages()[:10]
+        return None
 
     milestone_can_release = False
 

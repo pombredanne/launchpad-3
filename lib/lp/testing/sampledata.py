@@ -11,6 +11,8 @@ __metaclass__ = type
 __all__ = [
     'BUILDD_ADMIN_USERNAME',
     'CHROOT_LIBRARYFILEALIAS',
+    'ADMIN_EMAIL',
+    'COMMERCIAL_ADMIN_EMAIL',
     'HOARY_DISTROSERIES_NAME',
     'I386_ARCHITECTURE_NAME',
     'LAUNCHPAD_DBUSER_NAME',
@@ -19,7 +21,6 @@ __all__ = [
     'UBUNTU_DEVELOPER_ADMIN_NAME',
     'UBUNTU_DISTRIBUTION_NAME',
     'UBUNTU_UPLOAD_TEAM_NAME',
-    'UBUNTUTEST_DISTRIBUTION_NAME',
     'WARTY_DISTROSERIES_NAME',
     'WARTY_ONLY_SOURCEPACKAGENAME',
     'WARTY_ONLY_SOURCEPACKAGEVERSION',
@@ -40,6 +41,9 @@ I386_ARCHITECTURE_NAME = 'i386'
 LAUNCHPAD_DBUSER_NAME = 'launchpad'
 MAIN_COMPONENT_NAME = 'main'
 NO_PRIVILEGE_EMAIL = 'no-priv@canonical.com'
+COMMERCIAL_ADMIN_EMAIL = 'commercial-member@canonical.com'
+ADMIN_EMAIL = 'foo.bar@canonical.com'
+
 # A user that is an admin of ubuntu-team, which has upload rights
 # to Ubuntu.
 UBUNTU_DEVELOPER_ADMIN_NAME = 'name16'

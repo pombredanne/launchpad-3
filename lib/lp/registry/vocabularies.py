@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Vocabularies for content objects.
@@ -441,9 +441,7 @@ class ValidPersonOrTeamVocabulary(
                 # visible.
                 private_query = AND(
                     Not(Person.teamowner == None),
-                    OR(
-                        Person.visibility == PersonVisibility.PRIVATE,
-                        Person.visibility == PersonVisibility.PRIVATE_MEMBERSHIP))
+                    Person.visibility == PersonVisibility.PRIVATE)
             else:
                 private_query = AND(
                     TeamParticipation.person == logged_in_user.id,
@@ -1252,7 +1250,7 @@ class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
     A commercial project is one that does not qualify for free hosting.  For
     normal users only commercial projects for which the user is the
     maintainer, or in the maintainers team, will be listed.  For users with
-    launchpad.ProjectReview permission, all commercial projects are returned.
+    launchpad.Moderate permission, all commercial projects are returned.
     """
 
     implements(IHugeVocabulary)
@@ -1281,7 +1279,7 @@ class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
         if user is None:
             return self.emptySelectResults()
         product_set = getUtility(IProductSet)
-        if check_permission('launchpad.ProjectReview', product_set):
+        if check_permission('launchpad.Moderate', product_set):
             projects = product_set.forReview(
                 search_text=query, licenses=[License.OTHER_PROPRIETARY],
                 active=True)

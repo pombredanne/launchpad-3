@@ -1091,9 +1091,8 @@ class ProductBranchesMenu(ApplicationMenu):
         return Link('+branchvisibility', text, icon='edit', site='mainsite')
 
     def code_import(self):
-        text = 'Import your project'
-        enabled = not self.context.official_codehosting
-        return Link('+new-import', text, icon='add', enabled=enabled)
+        text = 'Import a branch'
+        return Link('+new-import', text, icon='add')
 
 
 class ProductBranchListingView(BranchListingView):

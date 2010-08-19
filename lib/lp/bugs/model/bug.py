@@ -49,7 +49,7 @@ from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
 from canonical.launchpad.database.librarian import LibraryFileAlias
 from canonical.launchpad.database.message import (
     Message, MessageChunk, MessageSet)
-from canonical.launchpad.fields import DuplicateBug
+from lp.services.fields import DuplicateBug
 from canonical.launchpad.helpers import shortlist
 from lp.hardwaredb.interfaces.hwdb import IHWSubmissionBugSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
@@ -57,8 +57,9 @@ from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.interfaces.message import (
     IMessage, IndexedMessage)
+from lp.registry.enum import BugNotificationLevel
 from lp.registry.interfaces.structuralsubscription import (
-    BugNotificationLevel, IStructuralSubscriptionTarget)
+    IStructuralSubscriptionTarget)
 from lp.bugs.mail.bugnotificationrecipients import BugNotificationRecipients
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp.interfaces import (
@@ -694,7 +695,8 @@ class Bug(SQLBase):
 
         if recipients is not None:
             for subscriber in dupe_subscribers:
-                recipients.addDupeSubscriber(subscriber, dupe_details[subscriber])
+                recipients.addDupeSubscriber(
+                    subscriber, dupe_details[subscriber])
 
         return sorted(
             dupe_subscribers, key=operator.attrgetter("displayname"))
@@ -959,13 +961,21 @@ class Bug(SQLBase):
 
         filealias = getUtility(ILibraryFileAliasSet).create(
             name=filename, size=len(filecontent),
-            file=StringIO(filecontent), contentType=content_type)
+            file=StringIO(filecontent), contentType=content_type,
+            restricted=self.private)
 
         return self.linkAttachment(
             owner, filealias, comment, is_patch, description)
 
     def linkAttachment(self, owner, file_alias, comment, is_patch=False,
                        description=None):
+        """See `IBug`.
+
+        This method should only be called by addAttachment() and
+        FileBugViewBase.submit_bug_action, otherwise
+        we may get inconsistent settings of bug.private and
+        file_alias.restricted.
+        """
         if is_patch:
             attach_type = BugAttachmentType.PATCH
         else:
@@ -1388,6 +1398,9 @@ class Bug(SQLBase):
                 self.who_made_private = None
                 self.date_made_private = None
 
+            for attachment in self.attachments:
+                attachment.libraryfile.restricted = private
+
             # Correct the heat for the bug immediately, so that we don't have
             # to wait for the next calculation job for the adjusted heat.
             self.updateHeat()
@@ -1493,11 +1506,6 @@ class Bug(SQLBase):
 
         self.updateHeat()
 
-    @property
-    def readonly_duplicateof(self):
-        """See `IBug`."""
-        return self.duplicateof
-
     def markAsDuplicate(self, duplicate_of):
         """See `IBug`."""
         field = DuplicateBug()
@@ -1506,6 +1514,16 @@ class Bug(SQLBase):
         try:
             if duplicate_of is not None:
                 field._validate(duplicate_of)
+            if self.duplicates:
+                for duplicate in self.duplicates:
+                    # Fire a notify event in model code since moving
+                    # duplicates of a duplicate does not normally fire an
+                    # event.
+                    dupe_before = Snapshot(
+                        duplicate, providing=providedBy(duplicate))
+                    duplicate.markAsDuplicate(duplicate_of)
+                    notify(ObjectModifiedEvent(
+                            duplicate, dupe_before, 'duplicateof'))
             self.duplicateof = duplicate_of
         except LaunchpadValidationError, validation_error:
             raise InvalidDuplicateValue(validation_error)
@@ -1941,4 +1959,3 @@ class FileBugData:
     def asDict(self):
         """Return the FileBugData instance as a dict."""
         return self.__dict__.copy()
-

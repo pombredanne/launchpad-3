@@ -43,7 +43,7 @@ class FAQCollectionMenu(NavigationMenu):
         url = canonical_url(collection, rootsite='answers') + '/+faqs'
         return Link(url, 'All FAQs', icon='info')
 
-    @enabled_with_permission('launchpad.Moderate')
+    @enabled_with_permission('launchpad.Append')
     def create_faq(self):
         """Return a Link to create a new FAQ."""
         collection = IFAQCollection(self.context)

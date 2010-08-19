@@ -19,7 +19,7 @@ from lp.code.enums import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
     CodeReviewNotificationLevel)
 from lp.code.interfaces.branch import IBranch
-from canonical.launchpad.fields import ParticipatingPersonChoice
+from lp.services.fields import PersonChoice
 from lazr.restful.declarations import (
     REQUEST_USER, call_with, export_as_webservice_entry,
     export_read_operation, exported)
@@ -32,7 +32,7 @@ class IBranchSubscription(Interface):
 
     id = Int(title=_('ID'), readonly=True, required=True)
     person = exported(
-        ParticipatingPersonChoice(
+        PersonChoice(
             title=_('Person'), required=True, vocabulary='ValidPersonOrTeam',
             readonly=True, description=_('Enter the launchpad id, or email '
             'address of the person you wish to subscribe to this branch. '
@@ -75,7 +75,7 @@ class IBranchSubscription(Interface):
                 'notifications.'
                 )))
 
-    subscribed_by = exported(ParticipatingPersonChoice(
+    subscribed_by = exported(PersonChoice(
         title=_('Subscribed by'), required=True,
         vocabulary='ValidPersonOrTeam', readonly=True,
         description=_("The person who created this subscription.")))

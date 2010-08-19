@@ -224,31 +224,35 @@ class EditByRegistryExpertsOrAdmins(AuthorizationBase):
         return user.in_admin or user.in_registry_experts
 
 
-class ReviewByRegistryExpertsOrAdmins(AuthorizationBase):
-    permission = 'launchpad.ProjectReview'
+class ModerateByRegistryExpertsOrAdmins(AuthorizationBase):
+    permission = 'launchpad.Moderate'
     usedfor = None
 
     def checkAuthenticated(self, user):
         return user.in_admin or user.in_registry_experts
 
 
-class ReviewProduct(ReviewByRegistryExpertsOrAdmins):
+class ModerateDistroSeries(ModerateByRegistryExpertsOrAdmins):
+    usedfor = IDistroSeries
+
+
+class ModerateProduct(ModerateByRegistryExpertsOrAdmins):
     usedfor = IProduct
 
 
-class ReviewProductSet(ReviewByRegistryExpertsOrAdmins):
+class ModerateProductSet(ModerateByRegistryExpertsOrAdmins):
     usedfor = IProductSet
 
 
-class ReviewProject(ReviewByRegistryExpertsOrAdmins):
+class ModerateProject(ModerateByRegistryExpertsOrAdmins):
     usedfor = IProjectGroup
 
 
-class ReviewProjectGroupSet(ReviewByRegistryExpertsOrAdmins):
+class ModerateProjectGroupSet(ModerateByRegistryExpertsOrAdmins):
     usedfor = IProjectGroupSet
 
 
-class ModeratePerson(ReviewByRegistryExpertsOrAdmins):
+class ModeratePerson(ModerateByRegistryExpertsOrAdmins):
     permission = 'launchpad.Moderate'
     usedfor = IPerson
 
@@ -588,7 +592,7 @@ class AdminMilestoneByLaunchpadAdmins(AuthorizationBase):
         return user.in_admin
 
 
-class ModeratePersonSetByExpertsOrAdmins(ReviewByRegistryExpertsOrAdmins):
+class ModeratePersonSetByExpertsOrAdmins(ModerateByRegistryExpertsOrAdmins):
     permission = 'launchpad.Moderate'
     usedfor = IPersonSet
 
@@ -615,7 +619,7 @@ class EditTeamByTeamOwnerOrTeamAdminsOrAdmins(AuthorizationBase):
         return can_edit_team(self.obj, user)
 
 
-class ModerateTeam(ReviewByRegistryExpertsOrAdmins):
+class ModerateTeam(ModerateByRegistryExpertsOrAdmins):
     permission = 'launchpad.Moderate'
     usedfor = ITeam
 
@@ -654,11 +658,12 @@ class ViewTeamMembership(AuthorizationBase):
         """Verify that the user can view the team's membership.
 
         Anyone can see a public team's membership. Only a team member or
-        a Launchpad admin can view a private membership.
+        commercial admin or a Launchpad admin can view a private team.
         """
         if self.obj.team.visibility == PersonVisibility.PUBLIC:
             return True
-        if user.in_admin or user.inTeam(self.obj.team):
+        if (user.in_admin or user.in_commercial_admin
+            or user.inTeam(self.obj.team)):
             return True
         return False
 
@@ -708,9 +713,9 @@ class EditPersonBySelf(AuthorizationBase):
 
 
 class ViewPublicOrPrivateTeamMembers(AuthorizationBase):
-    """Restrict viewing of private memberships of teams.
+    """Restrict viewing of private teams.
 
-    Only members of a team with a private membership can view the
+    Only members of a private team can view the
     membership list.
     """
     permission = 'launchpad.View'
@@ -725,12 +730,13 @@ class ViewPublicOrPrivateTeamMembers(AuthorizationBase):
     def checkAuthenticated(self, user):
         """Verify that the user can view the team's membership.
 
-        Anyone can see a public team's membership. Only a team member
-        or a Launchpad admin can view a private membership.
+        Anyone can see a public team's membership. Only a team member,
+        commercial admin, or a Launchpad admin can view a private team's
+        members.
         """
         if self.obj.visibility == PersonVisibility.PUBLIC:
             return True
-        if user.in_admin or user.inTeam(self.obj):
+        if user.in_admin or user.in_commercial_admin or user.inTeam(self.obj):
             return True
         # We also grant visibility of the private team to administrators of
         # other teams that have been invited to join the private team.
@@ -794,13 +800,13 @@ class EditDistributionByDistroOwnersOrAdmins(AuthorizationBase):
         return user.isOwner(self.obj) or user.in_admin
 
 
-class AppendDistributionByDriversOrOwnersOrAdmins(AuthorizationBase):
+class ModerateDistributionByDriversOrOwnersOrAdmins(AuthorizationBase):
     """Distribution drivers, owners, and admins may plan releases.
 
     Drivers of `IDerivativeDistribution`s can create series. Owners and
     admins can create series for all `IDistribution`s.
     """
-    permission = 'launchpad.Append'
+    permission = 'launchpad.Moderate'
     usedfor = IDistribution
 
     def checkAuthenticated(self, user):
@@ -1171,13 +1177,16 @@ class EditCodeImportMachine(OnlyBazaarExpertsAndAdmins):
     usedfor = ICodeImportMachine
 
 
-class DeleteSourcePackageRecipeBuilds(OnlyBazaarExpertsAndAdmins):
-    """Control who can delete SourcePackageRecipeBuilds.
+class AdminSourcePackageRecipeBuilds(AuthorizationBase):
+    """Control who can edit SourcePackageRecipeBuilds.
 
-    Access is restricted to members of ~bazaar-experts and Launchpad admins.
+    Access is restricted to members of ~bazaar-experts and Buildd Admins.
     """
-    permission = 'launchpad.Edit'
+    permission = 'launchpad.Admin'
     usedfor = ISourcePackageRecipeBuild
+
+    def checkAuthenticated(self, user):
+        return user.in_bazaar_experts or user.in_buildd_admin
 
 
 class AdminDistributionTranslations(AuthorizationBase):
@@ -1640,8 +1649,8 @@ class AdminQuestion(AdminByAdminsTeam):
                 user.inTeam(context.owner))
 
 
-class ModerateQuestion(AdminQuestion):
-    permission = 'launchpad.Moderate'
+class AppendQuestion(AdminQuestion):
+    permission = 'launchpad.Append'
     usedfor = IQuestion
 
     def checkAuthenticated(self, user):
@@ -1663,8 +1672,8 @@ class QuestionOwner(AuthorizationBase):
         return user.inTeam(self.obj.owner)
 
 
-class ModerateFAQTarget(EditByOwnersOrAdmins):
-    permission = 'launchpad.Moderate'
+class AppendFAQTarget(EditByOwnersOrAdmins):
+    permission = 'launchpad.Append'
     usedfor = IFAQTarget
 
     def checkAuthenticated(self, user):
@@ -1683,9 +1692,9 @@ class EditFAQ(AuthorizationBase):
     usedfor = IFAQ
 
     def checkAuthenticated(self, user):
-        """Everybody who has launchpad.Moderate on the FAQ target is allowed.
+        """Everybody who has launchpad.Append on the FAQ target is allowed.
         """
-        return ModerateFAQTarget(self.obj.target).checkAuthenticated(user)
+        return AppendFAQTarget(self.obj.target).checkAuthenticated(user)
 
 
 def can_edit_team(team, user):
@@ -2068,8 +2077,7 @@ class ViewHWDeviceClass(ViewHWDBBase):
 class ViewArchive(AuthorizationBase):
     """Restrict viewing of private archives.
 
-    Only admins or members of a team with a private membership can
-    view the archive.
+    Only admins or members of a private team can view the archive.
     """
     permission = 'launchpad.View'
     usedfor = IArchive

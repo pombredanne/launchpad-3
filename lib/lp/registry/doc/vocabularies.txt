@@ -769,7 +769,7 @@ address.
 
 Almost all teams have the word 'team' as part of their names, so a search
 for 'team' should give us some of them.  Notice that the
-PRIVATE_MEMBERSHIP_TEAM 'myteam' is not included in the results.
+PRIVATE_TEAM 'myteam' is not included in the results.
 
     >>> login_person(sample_person)
     >>> ephemeral = factory.makeTeam(owner=foo_bar, name='ephemeral-team')
@@ -790,15 +790,6 @@ Valid teams do not include teams that have been merged.
      u'no-team-memberships', u'otherteam', u'simple-team',
      u'testing-spanish-team', u'ubuntu-security', u'ubuntu-team',
      u'warty-gnome']
-
-Logging in as 'owner', who is a member of myteam shows that the token
-lookup still omits myteam.
-
-    >>> login('owner@canonical.com')
-    >>> sorted(person.name for person in vocab.search('team'))
-    [u'hwdb-team', u'name18', u'name20', u'name21', u'no-team-memberships',
-     u'otherteam', u'simple-team', u'testing-spanish-team',
-     u'ubuntu-security', u'ubuntu-team', u'warty-gnome']
 
 A PRIVATE team is displayed when the logged in user is a member of the team.
 
@@ -836,9 +827,10 @@ The PRIVATE team is not returned for a user who is not part of the team.
 
     >>> login('owner@canonical.com')
     >>> sorted(person.name for person in vocab.search('team'))
-    [u'hwdb-team', u'name18', u'name20', u'name21', u'no-team-memberships',
-     u'otherteam', u'simple-team', u'testing-spanish-team',
-     u'ubuntu-security', u'ubuntu-team', u'warty-gnome']
+    [u'hwdb-team', u'myteam', u'name18', u'name20', u'name21',
+     u'no-team-memberships', u'otherteam', u'simple-team',
+     u'testing-spanish-team', u'ubuntu-security', u'ubuntu-team',
+     u'warty-gnome']
 
 The anonymous user will not see the private team either.
 
@@ -1397,7 +1389,7 @@ change bzr's so we will get more interesting results.
     Mega Money Maker
 
 If the user is a member of Registry Experts, and therefore has
-launchpad.ProjectReview permission on IProductSet, then all commercial
+launchpad.Moderate permission on IProductSet, then all commercial
 projects are returned.
 
     >>> login('foo.bar@canonical.com')
@@ -1410,7 +1402,7 @@ projects are returned.
     >>> logout()
 
     >>> login_person(registry_member)
-    >>> check_permission('launchpad.ProjectReview', product_set)
+    >>> check_permission('launchpad.Moderate', product_set)
     True
 
     >>> comm_proj_vocab = get_naked_vocab(registry_member,

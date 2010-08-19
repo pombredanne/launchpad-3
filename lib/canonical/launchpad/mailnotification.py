@@ -43,8 +43,7 @@ from lp.bugs.adapters.bugchange import (
     BugDuplicateChange, get_bug_changes, BugTaskAssigneeChange)
 from lp.bugs.interfaces.bugchange import IBugChange
 from lp.bugs.mail.bugnotificationbuilder import get_bugmail_error_address
-from lp.registry.interfaces.structuralsubscription import (
-    BugNotificationLevel)
+from lp.registry.enum import BugNotificationLevel
 from lp.services.mail.mailwrapper import MailWrapper
 
 # XXX 2010-06-16 gmb bug=594985
@@ -187,6 +186,7 @@ def notify_errors_list(message, file_alias_url):
         template % {'url': file_alias_url, 'error_msg': message},
         headers={'X-Launchpad-Unhandled-Email': message})
 
+
 def generate_bug_add_email(bug, new_recipients=False, reason=None,
                            subscribed_by=None, event_creator=None):
     """Generate a new bug notification from the given IBug.
@@ -237,7 +237,8 @@ def generate_bug_add_email(bug, new_recipients=False, reason=None,
 
     if new_recipients:
         if "assignee" in reason:
-            contents += "You have been assigned a bug task for a %(visibility)s bug"
+            contents += (
+                "You have been assigned a bug task for a %(visibility)s bug")
             if event_creator is not None:
                 contents += " by %(assigner)s"
                 content_substitutions['assigner'] = (
@@ -1051,9 +1052,9 @@ def send_direct_contact_email(
     additions = u'\n'.join([
         u'',
         u'-- ',
-        u'This message was sent from Launchpad by the user',
+        u'This message was sent from Launchpad by',
         u'%s (%s)' % (sender_name, canonical_url(sender)),
-        u'using %s.',
+        u'%s.',
         u'For more information see',
         u'https://help.launchpad.net/YourAccount/ContactingPeople',
         ])

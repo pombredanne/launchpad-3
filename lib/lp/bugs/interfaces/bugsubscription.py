@@ -12,15 +12,18 @@ __all__ = [
     ]
 
 from zope.interface import Interface, Attribute
-from zope.schema import Int, Datetime
+from zope.schema import Int, Choice, Datetime
 from canonical.launchpad import _
-from canonical.launchpad.fields import ParticipatingPersonChoice
+
 from lp.bugs.interfaces.bug import IBug
+from lp.registry.enum import BugNotificationLevel
+from lp.services.fields import PersonChoice
 
 from lazr.restful.declarations import (
     REQUEST_USER, call_with, export_as_webservice_entry,
     export_read_operation, exported)
 from lazr.restful.fields import Reference
+
 
 class IBugSubscription(Interface):
     """The relationship between a person and a bug."""
@@ -28,15 +31,22 @@ class IBugSubscription(Interface):
     export_as_webservice_entry()
 
     id = Int(title=_('ID'), readonly=True, required=True)
-    person = exported(ParticipatingPersonChoice(
+    person = exported(PersonChoice(
         title=_('Person'), required=True, vocabulary='ValidPersonOrTeam',
         readonly=True, description=_("The person's Launchpad ID or "
         "e-mail address.")))
     bug = exported(Reference(
         IBug, title=_("Bug"), required=True, readonly=True))
+    bug_notification_level = Choice(
+        title=_("Bug notification level"), required=True,
+        vocabulary=BugNotificationLevel,
+        default=BugNotificationLevel.COMMENTS,
+        description=_(
+            "The volume and type of bug notifications "
+            "this subscription will generate."))
     date_created = exported(
         Datetime(title=_('Date subscribed'), required=True, readonly=True))
-    subscribed_by = exported(ParticipatingPersonChoice(
+    subscribed_by = exported(PersonChoice(
         title=_('Subscribed by'), required=True,
         vocabulary='ValidPersonOrTeam', readonly=True,
         description=_("The person who created this subscription.")))

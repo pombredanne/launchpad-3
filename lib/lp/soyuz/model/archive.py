@@ -25,6 +25,7 @@ from zope.interface import alsoProvides, implements
 from lp.app.errors import NotFoundError
 from lp.archivepublisher.debversion import Version
 from lp.archiveuploader.utils import re_issource, re_isadeb
+from canonical.cachedproperty import clear_property
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -101,8 +102,7 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.launchpad.webapp.url import urlappend
 from canonical.launchpad.validators.name import valid_name
-from lp.registry.interfaces.person import (
-    validate_person_not_private_membership)
+from lp.registry.interfaces.person import validate_person
 
 
 class Archive(SQLBase):
@@ -112,7 +112,7 @@ class Archive(SQLBase):
 
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
-        storm_validator=validate_person_not_private_membership, notNull=True)
+        storm_validator=validate_person, notNull=True)
 
     def _validate_archive_name(self, attr, value):
         """Only allow renaming of COPY archives.
@@ -172,6 +172,9 @@ class Archive(SQLBase):
 
     require_virtualized = BoolCol(
         dbName='require_virtualized', notNull=True, default=True)
+
+    build_debug_symbols = BoolCol(
+        dbName='build_debug_symbols', notNull=True, default=False)
 
     authorized_size = IntCol(
         dbName='authorized_size', notNull=False, default=2048)
@@ -1751,8 +1754,12 @@ class ArchiveSet:
 
         # Signing-key for the default PPA is reused when it's already present.
         signing_key = None
-        if purpose == ArchivePurpose.PPA and owner.archive is not None:
-            signing_key = owner.archive.signing_key
+        if purpose == ArchivePurpose.PPA:
+            if owner.archive is not None:
+                signing_key = owner.archive.signing_key
+            else:
+                # owner.archive is a cached property and we've just cached it.
+                clear_property(owner, '_archive_cached')
 
         new_archive = Archive(
             owner=owner, distribution=distribution, name=name,
@@ -1804,6 +1811,7 @@ class ArchiveSet:
 
     def getPPAOwnedByPerson(self, person, name=None):
         """See `IArchiveSet`."""
+        # See Person._all_members which also directly queries this.
         store = Store.of(person)
         clause = [
             Archive.purpose == ArchivePurpose.PPA,

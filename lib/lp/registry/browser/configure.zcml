@@ -126,7 +126,7 @@
         template="../../app/templates/generic-edit.pt"/>
     <browser:page
         for="lp.registry.interfaces.distroseries.IDistroSeries"
-        permission="launchpad.Admin"
+        permission="launchpad.Moderate"
         name="+admin"
         class="lp.registry.browser.distroseries.DistroSeriesAdminView"
         facet="overview"
@@ -362,7 +362,7 @@
         for="lp.registry.interfaces.projectgroup.IProjectGroup"
         class="lp.registry.browser.project.ProjectReviewView"
         facet="overview"
-        permission="launchpad.Admin"
+        permission="launchpad.Moderate"
         template="../templates/project-edit.pt"/>
     <browser:page
         name="+newproduct"
@@ -399,7 +399,7 @@
         for="lp.registry.interfaces.projectgroup.IProjectGroupSet"
         class="lp.registry.browser.project.ProjectAddView"
         facet="overview"
-        permission="launchpad.ProjectReview"
+        permission="launchpad.Moderate"
         template="../../app/templates/generic-edit.pt"/>
     <browser:url
         for="lp.registry.interfaces.projectgroup.IProjectGroupSeries"
@@ -781,7 +781,7 @@
             name="+review"
             for="lp.registry.interfaces.person.IPerson"
             class="lp.registry.browser.person.PersonAdministerView"
-            permission="launchpad.Admin"
+            permission="launchpad.Moderate"
             template="../templates/person-review.pt"/>
         <browser:page
             name="+reviewaccount"
@@ -1508,14 +1508,14 @@
         for="lp.registry.interfaces.product.IProduct"
         facet="overview"
         class="lp.registry.browser.product.ProductAdminView"
-        permission="launchpad.Admin"
+        permission="launchpad.Moderate"
         template="../../app/templates/generic-edit.pt"/>
     <browser:page
         name="+review-license"
         for="lp.registry.interfaces.product.IProduct"
         facet="overview"
         class="lp.registry.browser.product.ProductReviewLicenseView"
-        permission="launchpad.ProjectReview"
+        permission="launchpad.Moderate"
         template="../templates/product-review-license.pt"/>
     <browser:page
         name="+addseries"
@@ -1552,7 +1552,7 @@
         for="lp.registry.interfaces.product.IProductSet"
         class="lp.registry.browser.product.ProductSetReviewLicensesView"
         facet="overview"
-        permission="launchpad.ProjectReview">
+        permission="launchpad.Moderate">
         <browser:page
             name="+review-licenses"
             template="../templates/products-review-licenses.pt"/>

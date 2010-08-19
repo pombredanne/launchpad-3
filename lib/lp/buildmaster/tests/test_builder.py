@@ -3,6 +3,9 @@
 
 """Test Builder features."""
 
+import errno
+import socket
+
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -13,6 +16,7 @@ from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior)
+from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.buildmaster.model.buildfarmjobbehavior import IdleBuildBehavior
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.soyuz.interfaces.archive import ArchivePurpose
@@ -22,6 +26,63 @@ from lp.soyuz.model.binarypackagebuildbehavior import (
     BinaryPackageBuildBehavior)
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
+from lp.testing.fakemethod import FakeMethod
+
+
+class TestBuilder(TestCaseWithFactory):
+    """Basic unit tests for `Builder`."""
+
+    layer = LaunchpadZopelessLayer
+
+    def test_getBuildQueue(self):
+        buildqueueset = getUtility(IBuildQueueSet)
+        active_jobs = buildqueueset.getActiveBuildJobs()
+        [active_job] = active_jobs
+        builder = active_job.builder
+
+        bq = builder.getBuildQueue()
+        self.assertEqual(active_job, bq)
+
+        active_job.builder = None
+        bq = builder.getBuildQueue()
+        self.assertIs(None, bq)
+
+    def test_updateBuilderStatus_catches_repeated_EINTR(self):
+        # A single EINTR return from a socket operation should cause the
+        # operation to be retried, not fail/reset the builder.
+        builder = removeSecurityProxy(self.factory.makeBuilder())
+        builder.handleTimeout = FakeMethod()
+        builder.rescueIfLost = FakeMethod()
+
+        def _fake_checkSlaveAlive():
+            # Raise an EINTR error for all invocations.
+            raise socket.error(errno.EINTR, "fake eintr")
+
+        builder.checkSlaveAlive = _fake_checkSlaveAlive
+        builder.updateStatus()
+
+        # builder.updateStatus should eventually have called
+        # handleTimeout()
+        self.assertEqual(1, builder.handleTimeout.call_count)
+
+    def test_updateBuilderStatus_catches_single_EINTR(self):
+        builder = removeSecurityProxy(self.factory.makeBuilder())
+        builder.handleTimeout = FakeMethod()
+        builder.rescueIfLost = FakeMethod()
+        self.eintr_returned = False
+
+        def _fake_checkSlaveAlive():
+            # raise an EINTR error for the first invocation only.
+            if not self.eintr_returned:
+                self.eintr_returned = True
+                raise socket.error(errno.EINTR, "fake eintr")
+
+        builder.checkSlaveAlive = _fake_checkSlaveAlive
+        builder.updateStatus()
+
+        # builder.updateStatus should never call handleTimeout() for a
+        # single EINTR.
+        self.assertEqual(0, builder.handleTimeout.call_count)
 
 
 class TestFindBuildCandidateBase(TestCaseWithFactory):

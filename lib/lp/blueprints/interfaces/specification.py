@@ -34,7 +34,7 @@ from zope.component import getUtility
 from zope.schema import Datetime, Int, Choice, Text, TextLine, Bool
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import (
+from lp.services.fields import (
     ContentNameField, PublicPersonChoice, Summary, Title)
 from canonical.launchpad.validators import LaunchpadValidationError
 from lp.registry.interfaces.role import IHasOwner

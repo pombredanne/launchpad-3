@@ -137,7 +137,7 @@
                                  shedloads of data. -->
 
         <require
-            permission="launchpad.Admin"
+            permission="launchpad.Moderate"
             set_attributes="version name status owner nominatedarchindep                                                                                                 changeslist datereleased"/>
 
         <!-- IStructuralSubscriptionTarget -->
@@ -150,7 +150,8 @@
                 getSubscriptions
                 parent_subscription_target
                 target_type_display
-                userHasBugSubscriptions"/>
+                userHasBugSubscriptions
+                userCanAlterBugSubscription"/>
         <require
             permission="launchpad.AnyPerson"
             attributes="
@@ -165,7 +166,7 @@
             interface="lp.registry.interfaces.distroseries.IDistroSeriesSet"/>
     </securedutility>
     <adapter
-        provides="canonical.launchpad.interfaces.ILaunchpadUsage"
+        provides="lp.app.interfaces.launchpad.ILaunchpadUsage"
         for="lp.registry.interfaces.distroseries.IDistroSeries"
         factory="lp.registry.adapters.distroseries_to_launchpadusage"
         permission="zope.Public"/>
@@ -294,7 +295,8 @@
                 getBugNotificationsRecipients
                 parent_subscription_target
                 target_type_display
-                userHasBugSubscriptions"/>
+                userHasBugSubscriptions
+                userCanAlterBugSubscription"/>
         <require
             permission="launchpad.AnyPerson"
             attributes="
@@ -417,7 +419,8 @@
                 official_bug_tags
                 findRelatedArchives
                 findRelatedArchivePublications
-                userHasBugSubscriptions"/>
+                userHasBugSubscriptions
+                userCanAlterBugSubscription"/>
         <require
             permission="launchpad.AnyPerson"
             attributes="
@@ -924,7 +927,8 @@
                 getBugNotificationsRecipients
                 parent_subscription_target
                 target_type_display
-                userHasBugSubscriptions"/>
+                userHasBugSubscriptions
+                userCanAlterBugSubscription"/>
         <require
             permission="launchpad.AnyPerson"
             attributes="
@@ -1127,13 +1131,13 @@
             attributes="
                 qualifies_for_free_hosting"/>
         <require
-            permission="launchpad.ProjectReview"
+            permission="launchpad.Moderate"
             attributes="
                 reviewer_whiteboard
                 is_permitted
                 license_reviewed
                 license_approved"
-            set_schema="lp.registry.interfaces.product.IProductProjectReviewRestricted"
+            set_schema="lp.registry.interfaces.product.IProductModerateRestricted"
             set_attributes="active private_bugs "/>
 
         <!-- Changes to official_rosetta must be available to Launchpad
@@ -1181,7 +1185,7 @@
             attributes="
                 findSimilarFAQs"/>
         <require
-            permission="launchpad.Moderate"
+            permission="launchpad.Append"
             attributes="
                 newFAQ"/>
 
@@ -1195,7 +1199,8 @@
                 getBugNotificationsRecipients
                 parent_subscription_target
                 target_type_display
-                userHasBugSubscriptions"/>
+                userHasBugSubscriptions
+                userCanAlterBugSubscription"/>
         <require
             permission="launchpad.AnyPerson"
             attributes="
@@ -1275,7 +1280,7 @@
         <allow
             interface="lp.registry.interfaces.product.IProductSet"/>
         <require
-            permission="launchpad.ProjectReview"
+            permission="launchpad.Moderate"
             attributes="
                 forReview"/>
     </securedutility>
@@ -1344,7 +1349,8 @@
                 getSubscriptions
                 parent_subscription_target
                 target_type_display
-                userHasBugSubscriptions"/>
+                userHasBugSubscriptions
+                userCanAlterBugSubscription"/>
         <require
             permission="launchpad.AnyPerson"
             attributes="
@@ -1358,7 +1364,7 @@
         factory="lp.registry.adapters.productseries_to_product"
         permission="zope.Public"/>
     <adapter
-        provides="canonical.launchpad.interfaces.ILaunchpadUsage"
+        provides="lp.app.interfaces.launchpad.ILaunchpadUsage"
         for="lp.registry.interfaces.productseries.IProductSeries"
         factory="lp.registry.adapters.productseries_to_product"
         permission="zope.Public"/>
@@ -1396,7 +1402,7 @@
             permission="launchpad.Edit"
             interface="lp.registry.interfaces.distribution.IDistributionEditRestricted"/>
         <require
-            permission="launchpad.Append"
+            permission="launchpad.Moderate"
             interface="lp.registry.interfaces.distribution.IDistributionDriverRestricted"/>
         <require
             permission="launchpad.Edit"
@@ -1453,7 +1459,7 @@
             attributes="
                 findSimilarFAQs"/>
         <require
-            permission="launchpad.Moderate"
+            permission="launchpad.Append"
             attributes="
                 newFAQ"/>
 
@@ -1467,7 +1473,8 @@
                 getBugNotificationsRecipients
                 parent_subscription_target
                 target_type_display
-                userHasBugSubscriptions"/>
+                userHasBugSubscriptions
+                userCanAlterBugSubscription"/>
         <require
             permission="launchpad.AnyPerson"
             attributes="

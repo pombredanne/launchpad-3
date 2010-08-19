@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for distributions."""
@@ -17,7 +17,6 @@ __all__ = [
     'DistributionDisabledMirrorsView',
     'DistributionEditView',
     'DistributionFacets',
-    'DistributionLanguagePackAdminView',
     'DistributionNavigation',
     'DistributionPPASearchView',
     'DistributionPackageSearchView',
@@ -71,15 +70,13 @@ from lp.registry.interfaces.distributionmirror import (
     IDistributionMirrorSet, MirrorContent, MirrorSpeed)
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.product import IProduct
-from lp.soyuz.interfaces.publishedpackage import (
-    IPublishedPackageSet)
 from lp.registry.browser.structuralsubscription import (
     StructuralSubscriptionTargetTraversalMixin)
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, ContextMenu, custom_widget,
     enabled_with_permission, GetitemNavigation,
     LaunchpadFormView, LaunchpadView, Link, Navigation, redirection,
-    StandardLaunchpadFacets, stepthrough, stepto)
+    StandardLaunchpadFacets, stepthrough)
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.helpers import english_list
 from canonical.launchpad.webapp import NavigationMenu
@@ -133,10 +130,6 @@ class DistributionNavigation(
     @redirection('+source', status=301)
     def redirect_source(self):
         return canonical_url(self.context)
-
-    @stepto('+packages')
-    def packages(self):
-        return getUtility(IPublishedPackageSet)
 
     @stepthrough('+mirror')
     def traverse_mirrors(self, name):

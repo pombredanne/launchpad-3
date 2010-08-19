@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009-2010 Canonical Ltd.  All rights reserved.
 from __future__ import with_statement
 
 # pylint: disable-msg=W0105
@@ -6,7 +6,13 @@ from __future__ import with_statement
 
 __metaclass__ = type
 
-__all__ = []
+__all__ = [
+    'FakeOpenIDConsumer',
+    'FakeOpenIDResponse',
+    'IAccountSet_getByOpenIDIdentifier_monkey_patched',
+    'SRegResponse_fromSuccessResponse_stubbed',
+    'fill_login_form_and_submit',
+    ]
 
 from contextlib import contextmanager
 from datetime import datetime, timedelta
@@ -64,7 +70,8 @@ class StubbedOpenIDCallbackView(OpenIDCallbackView):
 
 
 class FakeConsumer:
-    """An OpenID consumer that stashes away arguments for test instection."""
+    """An OpenID consumer that stashes away arguments for test inspection."""
+
     def complete(self, params, requested_url):
         self.params = params
         self.requested_url = requested_url
@@ -72,6 +79,7 @@ class FakeConsumer:
 
 class FakeConsumerOpenIDCallbackView(OpenIDCallbackView):
     """An OpenID handler with fake consumer so arguments can be inspected."""
+
     def _getConsumer(self):
         self.fake_consumer = FakeConsumer()
         return self.fake_consumer
@@ -211,24 +219,6 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
         view = OpenIDCallbackView(context=None, request=None)
         self.assertRaises(ValueError, view._gather_params, request)
 
-    def test_csrfmiddlewaretoken_is_ignored(self):
-        # Show that the _gather_params filters out the errant
-        # csrfmiddlewaretoken form field.  See comment in _gather_params for
-        # more info.
-        request = LaunchpadTestRequest(
-            SERVER_URL='http://example.com',
-            QUERY_STRING='foo=bar',
-            form={'starting_url': 'http://launchpad.dev/after-login',
-                'csrfmiddlewaretoken': '12345'},
-            environ={'PATH_INFO': '/'})
-        view = OpenIDCallbackView(context=None, request=None)
-        params = view._gather_params(request)
-        expected_params = {
-            'starting_url': 'http://launchpad.dev/after-login',
-            'foo': 'bar',
-        }
-        self.assertEquals(params, expected_params)
-
     def test_get_requested_url(self):
         # The OpenIDCallbackView needs to pass the currently-being-requested
         # URL to the OpenID library.  OpenIDCallbackView._get_requested_url
@@ -260,7 +250,7 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
                 'foo': 'bar',
             })
         self.assertEquals(
-            view.fake_consumer.requested_url,'http://example.com?foo=bar')
+            view.fake_consumer.requested_url, 'http://example.com?foo=bar')
 
     def test_personless_account(self):
         # When there is no Person record associated with the account, we
@@ -420,8 +410,10 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
         # the response and redirect to the starting_url specified in the
         # OpenID response.
         test_account = self.factory.makeAccount('Test account')
+
         class StubbedOpenIDCallbackViewLoggedIn(StubbedOpenIDCallbackView):
             account = test_account
+
         view, html = self._createViewWithResponse(
             test_account, response_status=FAILURE,
             response_msg='Server denied check_authentication',
@@ -532,7 +524,7 @@ class TestOpenIDReplayAttack(TestCaseWithFactory):
         fill_login_form_and_submit(browser, 'test@canonical.com', 'test')
         login_status = extract_text(
             find_tag_by_id(browser.contents, 'logincontrol'))
-        self.assertIn('Sample Person', login_status)
+        self.assertIn('name12', login_status)
 
         # Now we look up (in urls_redirected_to) the +openid-callback URL that
         # was used to complete the authentication and open it on a different
@@ -569,11 +561,13 @@ class FakeOpenIDRequest:
 
 
 class FakeOpenIDConsumer:
+
     def begin(self, url):
         return FakeOpenIDRequest()
 
 
 class StubbedOpenIDLogin(OpenIDLogin):
+
     def _getConsumer(self):
         return FakeOpenIDConsumer()
 

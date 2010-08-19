@@ -12,7 +12,7 @@ from zope.security.interfaces import Unauthorized
 from lazr.enum import DBEnumeratedType, DBItem, EnumeratedType, Item
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import ParticipatingPersonChoice
+from lp.services.fields import PersonChoice
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.translations.interfaces.translationfileformat import (
     TranslationFileFormat)
@@ -189,7 +189,7 @@ class ITranslationImportQueueEntry(Interface):
             required=True))
 
     importer = exported(
-        ParticipatingPersonChoice(
+        PersonChoice(
             title=_("Uploader"),
             required=True,
             readonly=True,
@@ -585,11 +585,3 @@ class IEditTranslationImportQueueEntry(Interface):
             "For translations only: "
             "The language this PO file translates to."),
         vocabulary="Language")
-
-    variant = TextLine(
-        title=_("Variant"),
-        description=_(
-            "For translations only: "
-            "Language variant, usually used to note the script used to"
-            " write the translations (like 'Latn' for Latin)"),
-        required=False)

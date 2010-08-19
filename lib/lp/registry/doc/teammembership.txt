@@ -681,6 +681,7 @@ teams with automatic renewal don't need warnings.
 
     >>> print '\n'.join(
     ...     line for line in err.split('\n') if 'INFO' not in line)
+    DEBUG   ...
     DEBUG   Sent warning email to name16 in launchpad-buildd-admins team.
     DEBUG   Sent warning email to name12 in landscape-developers team.
     DEBUG   Removing lock file: /var/lock/launchpad-flag-expired-memberships.lock
@@ -1007,7 +1008,8 @@ Bad user joins a team, and he is approved. An admin later suspends him.
     >>> from canonical.launchpad.interfaces import IMasterObject
     >>> IMasterObject(bad_user.account).status = AccountStatus.SUSPENDED
     >>> IMasterObject(bad_user.preferredemail).status = EmailAddressStatus.OLD
-    >>> removeSecurityProxy(bad_user)._preferredemail_cached = None
+    >>> from canonical.cachedproperty import clear_property
+    >>> clear_property(removeSecurityProxy(bad_user), '_preferredemail_cached')
     >>> transaction.commit()
 
     >>> [m.displayname for m in t3.allmembers]
