@@ -80,7 +80,7 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
             self.ubuntu['breezy-autotest'])
         ids = InitialiseDistroSeries(foobuntu)
         self.assertRaisesWithContent(
-            InitialisationError,"Parent series queues are not empty.",
+            InitialisationError, "Parent series queues are not empty.",
             ids.check)
 
     def assertDistroSeriesInitialisedCorrectly(self, foobuntu):
@@ -200,7 +200,7 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
             list(foobuntu_test2.relatedSets()),
             [test2, test3, foobuntu_test3])
         self.assertEqual(
-            list(foobuntu_test3.relatedSets()), 
+            list(foobuntu_test3.relatedSets()),
             [test2, foobuntu_test2, test3])
         # The contents of the packagesets will have been copied
         foobuntu_srcs = foobuntu_test1.getSourcesIncluded(
