@@ -33,6 +33,13 @@ After accessing a cached property the cache is no longer empty.
     >>> cache.bar
     1
 
+Attempting to access an unknown name from the cache is an error.
+
+    >>> cache.baz
+    Traceback (most recent call last):
+    ...
+    AttributeError: 'DefaultPropertyCache' object has no attribute 'baz'
+
 Values in the cache can be deleted.
 
     >>> del cache.bar
