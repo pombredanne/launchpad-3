@@ -115,9 +115,12 @@ class DistributionSourcePackageMultipleBugsRecalculateBugHeatCacheTest(
         self.bugtask1 = self.factory.makeBugTask(target=self.target)
         self.bugtask2 = self.factory.makeBugTask(target=self.target)
         self.bugtask3 = self.factory.makeBugTask(target=self.target)
+        self.bugtask4 = self.factory.makeBugTask(target=self.target)
         # A closed bug is not include in DSP bug heat calculations.
         self.bugtask3.transitionToStatus(
             BugTaskStatus.FIXRELEASED, self.target.distribution.owner)
+        # A duplicate bug is not include in DSP bug heat calculations.
+        self.bugtask4.bug.markAsDuplicate(self.bugtask1.bug)
         # Bug heat gets calculated by complicated rules in a db
         # stored procedure. We will override them here to avoid
         # testing inconsitencies if those values are calculated
