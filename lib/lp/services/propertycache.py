@@ -107,6 +107,7 @@ from functools import partial
 from zope.component import adapter, adapts
 from zope.interface import Interface, implementer, implements
 from zope.schema import Object
+from zope.security.proxy import removeSecurityProxy
 
 
 class IPropertyCache(Interface):
@@ -163,11 +164,12 @@ class DefaultPropertyCache:
 @implementer(IPropertyCache)
 def get_default_cache(target):
     """Adapter to obtain a `DefaultPropertyCache` for any object."""
+    naked_target = removeSecurityProxy(target)
     try:
-        return target._property_cache
+        return naked_target._property_cache
     except AttributeError:
-        target._property_cache = DefaultPropertyCache()
-        return target._property_cache
+        naked_target._property_cache = DefaultPropertyCache()
+        return naked_target._property_cache
 
 
 class PropertyCacheManager:
