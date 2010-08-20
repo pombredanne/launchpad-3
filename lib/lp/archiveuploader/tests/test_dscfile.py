@@ -289,7 +289,7 @@ class UnpackedDirTests(TestCase):
             datadir(os.path.join('suite', 'bar_1.0-1', 'bar_1.0-1.dsc')))
         try:
             self.assertEquals(["bar-1.0"], os.listdir(unpacked_dir))
-            self.assertEquals(
+            self.assertContentEqual(
                 ["THIS_IS_BAR", "debian"],
                 os.listdir(os.path.join(unpacked_dir, "bar-1.0")))
         finally:
@@ -298,17 +298,21 @@ class UnpackedDirTests(TestCase):
     def test_cleanup(self):
         # cleanup_dir removes the temporary directory and all files under it.
         temp_dir = self.makeTemporaryDirectory()
-        os.mkdir(os.path.join(temp_dir, "bar_1.0"))
-        cleanup_unpacked_dir(temp_dir)
-        self.assertFalse(os.path.exists(temp_dir))
+        unpacked_dir = os.path.join(temp_dir)
+        os.mkdir(unpacked_dir)
+        os.mkdir(os.path.join(unpacked_dir, "bar_1.0"))
+        cleanup_unpacked_dir(unpacked_dir)
+        self.assertFalse(os.path.exists(unpacked_dir))
 
     def test_cleanup_invalid_mode(self):
         # cleanup_dir can remove a directory even if the mode does
         # not allow it.
         temp_dir = self.makeTemporaryDirectory()
-        bar_path = os.path.join(temp_dir, "bar_1.0")
+        unpacked_dir = os.path.join(temp_dir)
+        os.mkdir(unpacked_dir)
+        bar_path = os.path.join(unpacked_dir, "bar_1.0")
         os.mkdir(bar_path)
-        os.chmod(temp_dir, 0600)
+        os.chmod(unpacked_dir, 0600)
         os.chmod(bar_path, 0600)
-        cleanup_unpacked_dir(temp_dir)
-        self.assertFalse(os.path.exists(temp_dir))
+        cleanup_unpacked_dir(unpacked_dir)
+        self.assertFalse(os.path.exists(unpacked_dir))
