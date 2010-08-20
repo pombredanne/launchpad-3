@@ -224,31 +224,35 @@ class EditByRegistryExpertsOrAdmins(AuthorizationBase):
         return user.in_admin or user.in_registry_experts
 
 
-class ReviewByRegistryExpertsOrAdmins(AuthorizationBase):
-    permission = 'launchpad.ProjectReview'
+class ModerateByRegistryExpertsOrAdmins(AuthorizationBase):
+    permission = 'launchpad.Moderate'
     usedfor = None
 
     def checkAuthenticated(self, user):
         return user.in_admin or user.in_registry_experts
 
 
-class ReviewProduct(ReviewByRegistryExpertsOrAdmins):
+class ModerateDistroSeries(ModerateByRegistryExpertsOrAdmins):
+    usedfor = IDistroSeries
+
+
+class ModerateProduct(ModerateByRegistryExpertsOrAdmins):
     usedfor = IProduct
 
 
-class ReviewProductSet(ReviewByRegistryExpertsOrAdmins):
+class ModerateProductSet(ModerateByRegistryExpertsOrAdmins):
     usedfor = IProductSet
 
 
-class ReviewProject(ReviewByRegistryExpertsOrAdmins):
+class ModerateProject(ModerateByRegistryExpertsOrAdmins):
     usedfor = IProjectGroup
 
 
-class ReviewProjectGroupSet(ReviewByRegistryExpertsOrAdmins):
+class ModerateProjectGroupSet(ModerateByRegistryExpertsOrAdmins):
     usedfor = IProjectGroupSet
 
 
-class ModeratePerson(ReviewByRegistryExpertsOrAdmins):
+class ModeratePerson(ModerateByRegistryExpertsOrAdmins):
     permission = 'launchpad.Moderate'
     usedfor = IPerson
 
@@ -588,7 +592,7 @@ class AdminMilestoneByLaunchpadAdmins(AuthorizationBase):
         return user.in_admin
 
 
-class ModeratePersonSetByExpertsOrAdmins(ReviewByRegistryExpertsOrAdmins):
+class ModeratePersonSetByExpertsOrAdmins(ModerateByRegistryExpertsOrAdmins):
     permission = 'launchpad.Moderate'
     usedfor = IPersonSet
 
@@ -615,7 +619,7 @@ class EditTeamByTeamOwnerOrTeamAdminsOrAdmins(AuthorizationBase):
         return can_edit_team(self.obj, user)
 
 
-class ModerateTeam(ReviewByRegistryExpertsOrAdmins):
+class ModerateTeam(ModerateByRegistryExpertsOrAdmins):
     permission = 'launchpad.Moderate'
     usedfor = ITeam
 
@@ -796,13 +800,13 @@ class EditDistributionByDistroOwnersOrAdmins(AuthorizationBase):
         return user.isOwner(self.obj) or user.in_admin
 
 
-class AppendDistributionByDriversOrOwnersOrAdmins(AuthorizationBase):
+class ModerateDistributionByDriversOrOwnersOrAdmins(AuthorizationBase):
     """Distribution drivers, owners, and admins may plan releases.
 
     Drivers of `IDerivativeDistribution`s can create series. Owners and
     admins can create series for all `IDistribution`s.
     """
-    permission = 'launchpad.Append'
+    permission = 'launchpad.Moderate'
     usedfor = IDistribution
 
     def checkAuthenticated(self, user):
@@ -1645,8 +1649,8 @@ class AdminQuestion(AdminByAdminsTeam):
                 user.inTeam(context.owner))
 
 
-class ModerateQuestion(AdminQuestion):
-    permission = 'launchpad.Moderate'
+class AppendQuestion(AdminQuestion):
+    permission = 'launchpad.Append'
     usedfor = IQuestion
 
     def checkAuthenticated(self, user):
@@ -1668,8 +1672,8 @@ class QuestionOwner(AuthorizationBase):
         return user.inTeam(self.obj.owner)
 
 
-class ModerateFAQTarget(EditByOwnersOrAdmins):
-    permission = 'launchpad.Moderate'
+class AppendFAQTarget(EditByOwnersOrAdmins):
+    permission = 'launchpad.Append'
     usedfor = IFAQTarget
 
     def checkAuthenticated(self, user):
@@ -1688,9 +1692,9 @@ class EditFAQ(AuthorizationBase):
     usedfor = IFAQ
 
     def checkAuthenticated(self, user):
-        """Everybody who has launchpad.Moderate on the FAQ target is allowed.
+        """Everybody who has launchpad.Append on the FAQ target is allowed.
         """
-        return ModerateFAQTarget(self.obj.target).checkAuthenticated(user)
+        return AppendFAQTarget(self.obj.target).checkAuthenticated(user)
 
 
 def can_edit_team(team, user):

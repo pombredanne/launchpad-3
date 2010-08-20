@@ -115,7 +115,7 @@ class ProjectSetContextMenu(ContextMenu):
     usedfor = IProjectGroupSet
     links = ['register', 'listall']
 
-    @enabled_with_permission('launchpad.ProjectReview')
+    @enabled_with_permission('launchpad.Moderate')
     def register(self):
         text = 'Register a project group'
         return Link('+new', text, icon='add')
@@ -160,7 +160,7 @@ class ProjectFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
 
 class ProjectAdminMenuMixin:
 
-    @enabled_with_permission('launchpad.Admin')
+    @enabled_with_permission('launchpad.Moderate')
     def administer(self):
         text = 'Administer'
         return Link('+review', text, icon='edit')
@@ -457,7 +457,7 @@ class ProjectSetNavigationMenu(RegistryCollectionActionMenuBase):
         'view_all_project_groups',
         ]
 
-    @enabled_with_permission('launchpad.ProjectReview')
+    @enabled_with_permission('launchpad.Moderate')
     def register_project_group(self):
         text = 'Register a project group'
         return Link('+new', text, icon='add')

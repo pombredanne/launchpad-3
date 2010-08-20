@@ -931,7 +931,7 @@ makes it write out the emails it sends.
     >>> process.returncode
     0
     >>> print err
-    INFO    Creating lockfile: /var/lock/launchpad-send-bug-notifications.lock
+    DEBUG   ...
     INFO    Notifying mark@example.com about bug 2.
     ...
     INFO    Notifying support@ubuntu.com about bug 2.
