@@ -202,7 +202,7 @@ class SignableTagFile:
             "rfc2047": rfc2047,
             "name": name,
             "email": email,
-            "person": person
+            "person": person,
             }
 
 
@@ -273,7 +273,6 @@ class DSCFile(SourceUploadFile, SignableTagFile):
     #
     # Useful properties.
     #
-
     @property
     def source(self):
         """Return the DSC source name."""
@@ -307,12 +306,11 @@ class DSCFile(SourceUploadFile, SignableTagFile):
     #
     # DSC file checks.
     #
-
     def verify(self):
         """Verify the uploaded .dsc file.
 
-        This method is an error generator, i.e, it returns an iterator over all
-        exceptions that are generated while processing DSC file checks.
+        This method is an error generator, i.e, it returns an iterator over
+        all exceptions that are generated while processing DSC file checks.
         """
 
         for error in SourceUploadFile.verify(self):
@@ -713,6 +711,7 @@ class DSCUploadedFile(NascentUploadFile):
           validation inside DSCFile.verify(); there is no
           store_in_database() method.
     """
+
     def __init__(self, filepath, digest, size, policy, logger):
         component_and_section = priority = "--no-value--"
         NascentUploadFile.__init__(
@@ -732,7 +731,7 @@ def findFile(source_dir, filename):
 
     :param source_file: The directory where the source was extracted
     :param source_dir: The directory where the source was extracted.
-    :return fullpath: The full path of the file, else return None if the 
+    :return fullpath: The full path of the file, else return None if the
                       file is not found.
     """
     # Instead of trying to predict the unpacked source directory name,

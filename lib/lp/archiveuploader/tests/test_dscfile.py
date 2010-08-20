@@ -129,6 +129,7 @@ class TestDscFileLibrarian(TestCaseWithFactory):
 
     def getDscFile(self, name):
         dsc_path = datadir(os.path.join('suite', name, name + '.dsc'))
+
         class Changes:
             architectures = ['source']
         logger = QuietFakeLogger()
