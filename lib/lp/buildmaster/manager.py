@@ -149,10 +149,7 @@ def get_builder(name):
 
 
 def assessFailureCounts(builder, fail_notes):
-    """View builder/job failure_count and work out which needs to die.
-
-    :return: True if we disabled something, False if we did not.
-    """
+    """View builder/job failure_count and work out which needs to die.  """
     current_job = builder.currentjob
     build_job = current_job.specific_job.build
 
@@ -163,14 +160,13 @@ def assessFailureCounts(builder, fail_notes):
         # we can do is try them both again, and hope that the job
         # runs against a different builder.
         current_job.reset()
-        return False
+        return
 
     if builder.failure_count > build_job.failure_count:
         # The builder has failed more than the jobs it's been
         # running, so let's disable it and re-schedule the build.
         builder.failBuilder(fail_notes)
         current_job.reset()
-        return True
     else:
         # The job is the culprit!  Override its status to 'failed'
         # to make sure it won't get automatically dispatched again,
@@ -184,7 +180,6 @@ def assessFailureCounts(builder, fail_notes):
         # but that would cause us to query the slave for its status
         # again, and if the slave is non-responsive it holds up the
         # next buildd scan.
-        return True
 
 
 class BaseDispatchResult:
@@ -209,7 +204,7 @@ class BaseDispatchResult:
         :return: True if we disabled something, False if we did not.
         """
         builder = get_builder(self.slave.name)
-        return assessFailureCounts(builder, self.info)
+        assessFailureCounts(builder, self.info)
 
     def ___call__(self):
         raise NotImplementedError(
