@@ -14,145 +14,18 @@ from zope.component import getUtility
 from canonical.launchpad.ftests import login
 from canonical.launchpad.testing.pages import (
     find_main_content, get_feedback_messages, setupBrowser)
-from canonical.testing import (
-    DatabaseFunctionalLayer,
-    LaunchpadFunctionalLayer,
-    )
-
+from canonical.testing import LaunchpadFunctionalLayer
 from canonical.launchpad.ftests import syncUpdate
 
 from lazr.lifecycle.snapshot import Snapshot
-from lp.app.enums import ServiceUsage
+
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProduct, License
 from lp.registry.model.product import Product
 from lp.registry.model.productlicense import ProductLicense
 from lp.registry.model.commercialsubscription import (
     CommercialSubscription)
-from lp.testing import (
-    login_person,
-    TestCaseWithFactory,
-    )
-
-
-class TestProductUsageEnums(TestCaseWithFactory):
-    """Tests the usage enums for the product."""
-
-    layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        super(TestProductUsageEnums, self).setUp()
-        self.product = self.factory.makeProduct()
-
-    def test_answers_usage_no_data(self):
-        # By default, we don't know anything about a product
-        self.assertEqual(ServiceUsage.UNKNOWN, self.product.answers_usage)
-
-    def test_answers_usage_using_bool(self):
-        # If the old bool says they use Launchpad, return LAUNCHPAD
-        # if the ServiceUsage is unknown.
-        login_person(self.product.owner)
-        self.product.official_answers = True
-        self.assertEqual(ServiceUsage.LAUNCHPAD, self.product.answers_usage)
-
-    def test_answers_usage_with_enum_data(self):
-        # If the enum has something other than UNKNOWN as its status,
-        # use that.
-        login_person(self.product.owner)
-        self.product.answers_usage = ServiceUsage.EXTERNAL
-        self.assertEqual(ServiceUsage.EXTERNAL, self.product.answers_usage)
-
-    def test_answers_setter(self):
-        login_person(self.product.owner)
-        self.product.official_answers = True
-        self.product.answers_usage = ServiceUsage.EXTERNAL
-        self.assertEqual(
-            False,
-            self.product.official_answers)
-        self.product.answers_usage = ServiceUsage.LAUNCHPAD
-        self.assertEqual(
-            True,
-            self.product.official_answers)
-
-    def test_codehosting_usage(self):
-        # Only test get for codehosting; this has no setter because the
-        # state is derived from other data.
-        product = self.factory.makeProduct()
-        self.assertEqual(ServiceUsage.UNKNOWN, product.codehosting_usage)
-
-    def test_translations_usage_no_data(self):
-        # By default, we don't know anything about a product
-        self.assertEqual(
-            ServiceUsage.UNKNOWN,
-            self.product.translations_usage)
-
-    def test_translations_usage_using_bool(self):
-        # If the old bool says they use Launchpad, return LAUNCHPAD
-        # if the ServiceUsage is unknown.
-        login_person(self.product.owner)
-        self.product.official_rosetta = True
-        self.assertEqual(
-            ServiceUsage.LAUNCHPAD,
-            self.product.translations_usage)
-
-    def test_translations_usage_with_enum_data(self):
-        # If the enum has something other than UNKNOWN as its status,
-        # use that.
-        login_person(self.product.owner)
-        self.product.translations_usage = ServiceUsage.EXTERNAL
-        self.assertEqual(
-            ServiceUsage.EXTERNAL,
-            self.product.translations_usage)
-
-    def test_translations_setter(self):
-        login_person(self.product.owner)
-        self.product.official_rosetta = True
-        self.product.translations_usage = ServiceUsage.EXTERNAL
-        self.assertEqual(
-            False,
-            self.product.official_rosetta)
-        self.product.translations_usage = ServiceUsage.LAUNCHPAD
-        self.assertEqual(
-            True,
-            self.product.official_rosetta)
-
-    def test_bug_tracking_usage(self):
-        # Only test get for bug_tracking; this has no setter because the
-        # state is derived from other data.
-        product = self.factory.makeProduct()
-        self.assertEqual(ServiceUsage.UNKNOWN, product.bug_tracking_usage)
-
-    def test_blueprints_usage_no_data(self):
-        # By default, we don't know anything about a product
-        self.assertEqual(ServiceUsage.UNKNOWN, self.product.blueprints_usage)
-
-    def test_blueprints_usage_using_bool(self):
-        # If the old bool says they use Launchpad, return LAUNCHPAD
-        # if the ServiceUsage is unknown.
-        login_person(self.product.owner)
-        self.product.official_blueprints = True
-        self.assertEqual(
-            ServiceUsage.LAUNCHPAD,
-            self.product.blueprints_usage)
-
-    def test_blueprints_usage_with_enum_data(self):
-        # If the enum has something other than UNKNOWN as its status,
-        # use that.
-        login_person(self.product.owner)
-        self.product.blueprints_usage = ServiceUsage.EXTERNAL
-        self.assertEqual(ServiceUsage.EXTERNAL, self.product.blueprints_usage)
-
-    def test_blueprints_setter(self):
-        login_person(self.product.owner)
-        self.product.official_blueprints = True
-        self.product.blueprints_usage = ServiceUsage.EXTERNAL
-        self.assertEqual(
-            False,
-            self.product.official_blueprints)
-        self.product.blueprints_usage = ServiceUsage.LAUNCHPAD
-        self.assertEqual(
-            True,
-            self.product.official_blueprints)
+from lp.testing import TestCaseWithFactory
 
 
 class TestProduct(TestCaseWithFactory):
