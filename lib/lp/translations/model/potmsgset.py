@@ -1275,48 +1275,10 @@ class POTMsgSet(SQLBase):
     def clearCurrentTranslation(self, pofile, submitter, origin,
                                 share_with_other_side=False):
         """See `IPOTMsgSet`."""
-        template = pofile.potemplate
-        traits = getUtility(ITranslationSideTraitsSet).getTraits(
-            template.translation_side)
-
-        current = traits.getCurrentMessage(self, template, pofile.language)
-        if current is None:
-            # Trivial case: there's nothing to disable.
-            return
-
-        if current.is_diverged:
-            # Disable the current message.
-            if current.getSharedEquivalent() is not None:
-                current.destroySelf()
-            else:
-                traits.setFlag(current, False)
-
-            shared = traits.getCurrentMessage(self, template, pofile.language)
-            assert shared is None or not shared.is_diverged, (
-                "I killed a divergence but the current message is still "
-                "diverged.")
-            if shared is not None and not shared.is_empty:
-                # Mask the shared message with a diverged empty message.
-                existing_empty_message = self._findTranslationMessage(
-                    pofile, self._findPOTranslations([]), prefer_shared=True)
-                can_reuse = not (
-                    existing_empty_message is None or
-                    existing_empty_message.is_current_upstream or
-                    existing_empty_message.is_current_ubuntu)
-                if can_reuse:
-                    existing_empty_message.potemplate = template
-                    mask = existing_empty_message
-                else:
-                    mask = self._makeTranslationMessage(
-                        pofile, submitter, {}, origin, diverged=True)
-
-                Store.of(mask).add_flush_order(current, mask)
-                mask.markReviewed(submitter, UTC_NOW)
-                traits.setFlag(mask, True)
-        else:
-            traits.setFlag(current, False)
-            if share_with_other_side:
-                traits.other_side_traits.setFlag(current, False)
+        message = self.setCurrentTranslation(
+            pofile, submitter, [], origin,
+            share_with_other_side=share_with_other_side)
+        message.markReviewed(submitter)
 
     def applySanityFixes(self, text):
         """See `IPOTMsgSet`."""
