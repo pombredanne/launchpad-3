@@ -28,11 +28,11 @@ class ProjectTranslationsMenu(NavigationMenu):
     @enabled_with_permission('launchpad.TranslationsAdmin')
     def settings(self):
         text = 'Change permissions'
-        return Link('+settings', text, icon='edit')
+        return Link('+settings', text, icon='edit', site='translations')
 
     def products(self):
         text = 'Products'
-        return Link('', text)
+        return Link('', text, site='translations')
 
     def overview(self):
         text = 'Overview'
@@ -59,11 +59,9 @@ class ProjectSettingsView(TranslationsMixin, ProjectEditView):
 
     @property
     def cancel_url(self):
-        return canonical_url(self.context)
+        return canonical_url(self.context, rootsite="translations")
 
-    @property
-    def next_url(self):
-        return self.cancel_url
+    next_url = cancel_url
 
     @action('Change', name='change')
     def edit(self, action, data):
