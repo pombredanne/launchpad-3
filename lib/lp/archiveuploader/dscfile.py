@@ -13,8 +13,8 @@ __all__ = [
     'SignableTagFile',
     'DSCFile',
     'DSCUploadedFile',
-    'findChangelog',
-    'findCopyright',
+    'find_changelog',
+    'find_copyright',
     ]
 
 import apt_pkg
@@ -574,7 +574,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
             # Locate both the copyright and changelog files for later
             # processing.
             try:
-                self.copyright = findCopyright(unpacked_dir, self.logger)
+                self.copyright = find_copyright(unpacked_dir, self.logger)
             except UploadError, error:
                 yield error
                 return
@@ -582,7 +582,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
                 yield warning
 
             try:
-                self.changelog = findChangelog(unpacked_dir, self.logger)
+                self.changelog = find_changelog(unpacked_dir, self.logger)
             except UploadError, error:
                 yield error
                 return
@@ -754,7 +754,7 @@ def findFile(source_dir, filename):
     return None
 
 
-def findCopyright(source_dir, logger):
+def find_copyright(source_dir, logger):
     """Find and store any debian/copyright.
 
     :param source_dir: The directory where the source was extracted.
@@ -769,7 +769,7 @@ def findCopyright(source_dir, logger):
     return open(copyright_file).read().strip()
 
 
-def findChangelog(source_dir, logger):
+def find_changelog(source_dir, logger):
     """Find and move any debian/changelog.
 
     This function finds the changelog file within the source package. The

@@ -10,7 +10,7 @@ import os
 from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.archiveuploader.dscfile import (
-    DSCFile, findChangelog, findCopyright, format_to_file_checker_map)
+    DSCFile, find_changelog, find_copyright, format_to_file_checker_map)
 from lp.archiveuploader.nascentuploadfile import UploadError
 from lp.archiveuploader.tests import datadir, mock_logger_quiet
 from lp.archiveuploader.uploadpolicy import BuildDaemonUploadPolicy
@@ -46,7 +46,7 @@ class TestDscFile(TestCase):
         processing the source packages."""
         os.symlink("/etc/passwd", self.copyright_path)
         try:
-            findCopyright(self.tmpdir, mock_logger_quiet)
+            find_copyright(self.tmpdir, mock_logger_quiet)
             self.fail()
         except UploadError, error:
             self.assertEqual(
@@ -61,7 +61,7 @@ class TestDscFile(TestCase):
         file.close()
 
         self.assertEquals(
-            copyright, findCopyright(self.tmpdir, mock_logger_quiet))
+            copyright, find_copyright(self.tmpdir, mock_logger_quiet))
 
     def testBadDebianChangelog(self):
         """Test that a symlink as debian/changelog will fail.
@@ -71,7 +71,7 @@ class TestDscFile(TestCase):
         processing the source packages."""
         os.symlink("/etc/passwd", self.changelog_path)
         try:
-            findChangelog(self.tmpdir, mock_logger_quiet)
+            find_changelog(self.tmpdir, mock_logger_quiet)
             self.fail()
         except UploadError, error:
             self.assertEqual(
@@ -86,7 +86,7 @@ class TestDscFile(TestCase):
         file.close()
 
         self.assertEquals(
-            changelog, findChangelog(self.tmpdir, mock_logger_quiet))
+            changelog, find_changelog(self.tmpdir, mock_logger_quiet))
 
     def testOversizedFile(self):
         """Test that a file larger than 10MiB will fail.
@@ -106,7 +106,7 @@ class TestDscFile(TestCase):
         file.close()
 
         try:
-            findChangelog(self.tmpdir, mock_logger_quiet)
+            find_changelog(self.tmpdir, mock_logger_quiet)
             self.fail()
         except UploadError, error:
             self.assertEqual(
