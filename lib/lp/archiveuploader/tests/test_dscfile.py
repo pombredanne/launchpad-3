@@ -10,13 +10,25 @@ import os
 from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.archiveuploader.dscfile import (
-    DSCFile, find_changelog, find_copyright, format_to_file_checker_map)
+    cleanup_unpacked_dir,
+    DSCFile,
+    find_changelog,
+    find_copyright,
+    format_to_file_checker_map,
+    unpack_source,
+    )
 from lp.archiveuploader.nascentuploadfile import UploadError
-from lp.archiveuploader.tests import datadir, mock_logger_quiet
+from lp.archiveuploader.tests import (
+    datadir,
+    mock_logger_quiet,
+    )
 from lp.archiveuploader.uploadpolicy import BuildDaemonUploadPolicy
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
 from lp.soyuz.interfaces.sourcepackageformat import SourcePackageFormat
-from lp.testing import TestCase, TestCaseWithFactory
+from lp.testing import (
+    TestCase,
+    TestCaseWithFactory,
+    )
 
 ORIG_TARBALL = SourcePackageFileType.ORIG_TARBALL
 DEBIAN_TARBALL = SourcePackageFileType.DEBIAN_TARBALL
@@ -26,9 +38,6 @@ DIFF = SourcePackageFileType.DIFF
 
 class TestDscFile(TestCase):
 
-    class MockDSCFile:
-        copyright = None
-
     def setUp(self):
         super(TestDscFile, self).setUp()
         self.tmpdir = self.makeTemporaryDirectory()
@@ -36,7 +45,6 @@ class TestDscFile(TestCase):
         os.makedirs(self.dir_path)
         self.copyright_path = os.path.join(self.dir_path, "copyright")
         self.changelog_path = os.path.join(self.dir_path, "changelog")
-        self.dsc_file = self.MockDSCFile()
 
     def testBadDebianCopyright(self):
         """Test that a symlink as debian/copyright will fail.
@@ -269,3 +277,38 @@ class Test30QuiltSourceFormatVerification(BaseTestSourceFileVerification):
         # A 3.0 (native) source with component tarballs is invalid.
         self.assertErrorsForFiles(
             [self.wrong_files_error], {NATIVE_TARBALL: 1}, {'foo': 1})
+
+
+class UnpackedDirTests(TestCase):
+    """Tests for unpack_source and cleanup_unpacked_dir."""
+
+    def test_unpack_source(self):
+        # unpack_source unpacks in a temporary directory and returns the
+        # path.
+        unpacked_dir = unpack_source(
+            datadir(os.path.join('suite', 'bar_1.0-1', 'bar_1.0-1.dsc')))
+        try:
+            self.assertEquals(["bar-1.0"], os.listdir(unpacked_dir))
+            self.assertEquals(
+                ["THIS_IS_BAR", "debian"],
+                os.listdir(os.path.join(unpacked_dir, "bar-1.0")))
+        finally:
+            cleanup_unpacked_dir(unpacked_dir)
+
+    def test_cleanup(self):
+        # cleanup_dir removes the temporary directory and all files under it.
+        temp_dir = self.makeTemporaryDirectory()
+        os.mkdir(os.path.join(temp_dir, "bar_1.0"))
+        cleanup_unpacked_dir(temp_dir)
+        self.assertFalse(os.path.exists(temp_dir))
+
+    def test_cleanup_invalid_mode(self):
+        # cleanup_dir can remove a directory even if the mode does
+        # not allow it.
+        temp_dir = self.makeTemporaryDirectory()
+        bar_path = os.path.join(temp_dir, "bar_1.0")
+        os.mkdir(bar_path)
+        os.chmod(temp_dir, 0600)
+        os.chmod(bar_path, 0600)
+        cleanup_unpacked_dir(temp_dir)
+        self.assertFalse(os.path.exists(temp_dir))

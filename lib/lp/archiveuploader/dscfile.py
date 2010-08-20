@@ -97,11 +97,13 @@ def unpack_source(dsc_filepath):
 
 
 def cleanup_unpacked_dir(unpacked_dir):
-    """Remove the directory with an unpacked source package."""
+    """Remove the directory with an unpacked source package.
+
+    :param unpacked_dir: Path to the directory.
+    """
     try:
         shutil.rmtree(unpacked_dir)
     except OSError, error:
-        # XXX: dsilvers 2006-03-15: We currently lack a test for this.
         if errno.errorcode[error.errno] != 'EACCES':
             raise UploadError(
                 "couldn't remove tmp dir %s: code %s" % (
