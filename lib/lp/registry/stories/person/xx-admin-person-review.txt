@@ -106,10 +106,19 @@ admins.
     >>> print expert_browser.title
     Review person...
 
+    >>> expert_browser.getControl('Name', index=0).value = "no-way"
+    >>> expert_browser.getControl(
+    ...     'Display Name', index=0).value = 'Ray'
+    >>> expert_browser.getControl('Change').click()
+    >>> print expert_browser.title
+    Ray in Launchpad
+    >>> print expert_browser.url
+    http://launchpad.dev/~no-way
+
 However, members of the registry team only get partial access to the
 review account page to be able to suspend spam accounts.
 
-    >>> expert_browser.open('http://launchpad.dev/~no-priv/+reviewaccount')
+    >>> expert_browser.open('http://launchpad.dev/~no-way/+reviewaccount')
     >>> print expert_browser.title
     Review person's account...
 

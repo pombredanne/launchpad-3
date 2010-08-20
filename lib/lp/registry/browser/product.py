@@ -1474,7 +1474,13 @@ class ProductValidationMixin:
 class ProductAdminView(ProductEditView, ProductValidationMixin):
     """View for $project/+admin"""
     label = "Administer project details"
-    field_names = ["name", "owner", "active", "autoupdate", "private_bugs"]
+    default_field_names = [
+        "name",
+        "owner",
+        "active",
+        "autoupdate",
+        "private_bugs",
+        ]
 
     @property
     def page_title(self):
@@ -1488,9 +1494,16 @@ class ProductAdminView(ProductEditView, ProductValidationMixin):
         proper widget created by default.  Even though it is read-only, admins
         need the ability to change it.
         """
+        self.field_names = self.default_field_names[:]
+        admin = check_permission('launchpad.Admin', self.context)
+        if not admin:
+            self.field_names.remove('owner')
+            self.field_names.remove('autoupdate')
         super(ProductAdminView, self).setUpFields()
-        self.form_fields = (self._createAliasesField() + self.form_fields
-                            + self._createRegistrantField())
+        self.form_fields = self._createAliasesField() + self.form_fields
+        if admin:
+            self.form_fields = (
+                self.form_fields + self._createRegistrantField())
 
     def _createAliasesField(self):
         """Return a PillarAliases field for IProduct.aliases."""

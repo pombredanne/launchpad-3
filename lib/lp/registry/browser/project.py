@@ -43,6 +43,7 @@ from z3c.ptcompat import ViewPageTemplateFile
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from lp.app.errors import NotFoundError
+from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.menu import NavigationMenu
 from lp.blueprints.browser.specificationtarget import (
     HasSpecificationsMenuMixin)
@@ -328,7 +329,6 @@ class ProjectEditView(LaunchpadEditFormView):
         'homepageurl', 'bugtracker', 'sourceforgeproject',
         'freshmeatproject', 'wikiurl']
 
-
     @action('Change Details', name='change')
     def edit(self, action, data):
         self.updateContextFromData(data)
@@ -346,7 +346,7 @@ class ProjectEditView(LaunchpadEditFormView):
 class ProjectReviewView(ProjectEditView):
 
     label = "Review upstream project group details"
-    field_names = ['name', 'owner', 'active', 'reviewed']
+    default_field_names = ['name', 'owner', 'active', 'reviewed']
 
     def setUpFields(self):
         """Setup the normal fields from the schema plus adds 'Registrant'.
@@ -355,9 +355,16 @@ class ProjectReviewView(ProjectEditView):
         proper widget created by default.  Even though it is read-only, admins
         need the ability to change it.
         """
+        self.field_names = self.default_field_names[:]
+        admin = check_permission('launchpad.Admin', self.context)
+        if not admin:
+            self.field_names.remove('name')
+            self.field_names.remove('owner')
         super(ProjectReviewView, self).setUpFields()
-        self.form_fields = (self._createAliasesField() + self.form_fields
-                            + self._createRegistrantField())
+        self.form_fields = self._createAliasesField() + self.form_fields
+        if admin:
+            self.form_fields = (
+                self.form_fields + self._createRegistrantField())
 
     def _createAliasesField(self):
         """Return a PillarAliases field for IProjectGroup.aliases."""

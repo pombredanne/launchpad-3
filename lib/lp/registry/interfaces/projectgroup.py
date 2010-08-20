@@ -60,12 +60,21 @@ class ProjectNameField(PillarNameField):
         return IProjectGroup
 
 
+class IProjectGroupModerate(IPillar):
+    """IProjectGroup attributes used with launchpad.Moderate permission."""
+    reviewed = exported(
+        Bool(
+            title=_('Reviewed'), required=False,
+            description=_("Whether or not this project group has been "
+                          "reviewed.")))
+
+
 class IProjectGroupPublic(
     ICanGetMilestonesDirectly, IHasAppointedDriver, IHasBranches, IHasBugs,
     IHasDrivers, IHasBranchVisibilityPolicy, IHasIcon, IHasLogo,
     IHasMentoringOffers, IHasMergeProposals, IHasMilestones, IHasMugshot,
     IHasOwner, IHasSpecifications, IHasSprints, IMakesAnnouncements,
-    IKarmaContext, IPillar, IRootContext, IHasOfficialBugTags):
+    IKarmaContext, IRootContext, IHasOfficialBugTags):
     """Public IProjectGroup properties."""
 
     id = Int(title=_('ID'), readonly=True)
@@ -230,12 +239,6 @@ class IProjectGroupPublic(
                 "displayed on this project group's home page in Launchpad. "
                 "It should be no bigger than 100kb in size. ")))
 
-    reviewed = exported(
-        Bool(
-            title=_('Reviewed'), required=False,
-            description=_("Whether or not this project group has been "
-                          "reviewed.")))
-
     bugtracker = exported(
         ReferenceChoice(title=_('Bug Tracker'), required=False,
                vocabulary='BugTracker', schema=IBugTracker,
@@ -289,8 +292,10 @@ class IProjectGroupPublic(
         """Return a ProjectGroupSeries object with name `series_name`."""
 
 
-class IProjectGroup(IProjectGroupPublic, IStructuralSubscriptionTarget,
-               ITranslationPolicy):
+class IProjectGroup(IProjectGroupPublic,
+                    IProjectGroupModerate,
+                    IStructuralSubscriptionTarget,
+                    ITranslationPolicy):
     """A ProjectGroup."""
 
     export_as_webservice_entry('project_group')
