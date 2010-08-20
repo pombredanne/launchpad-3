@@ -8,6 +8,9 @@ Run the doctests and pagetests.
 import logging
 import os
 
+from canonical.launchpad.ftests.test_system_documentation import (
+    ProcessMailLayer,
+    )
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite,
     setUp,
