@@ -10,6 +10,6 @@ CREATE TABLE DistroSeriesDifference (
 );
 CREATE INDEX distroseriesdifference__derived_series__idx ON distroseriesdifference(derived_series);
 CREATE INDEX distroseriesdifference__spph__idx ON distroseriesdifference(source_package_publishing_history);
-CREATE INDEX distroseriesdifference__ignored__idx ON distroseriesdifference(ignored);
+CREATE INDEX distroseriesdifference__status__idx ON distroseriesdifference(status);
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 99, 0);
