@@ -260,31 +260,33 @@ class DistroSeriesTranslationsMenu(NavigationMenu):
         'latest_full_language_pack', 'latest_delta_language_pack', 'imports']
 
     def translations(self):
-        return Link('', 'Overview')
+        return Link('', 'Overview', site='translations')
 
     def imports(self):
-        return Link('+imports', 'Import queue')
+        return Link('+imports', 'Import queue', site='translations')
 
     @enabled_with_permission('launchpad.TranslationsAdmin')
     def admin(self):
-        return Link('+admin', 'Settings')
+        return Link('+admin', 'Settings', site='translations')
 
     @enabled_with_permission('launchpad.Edit')
     def templates(self):
-        return Link('+templates', 'Templates')
+        return Link('+templates', 'Templates', site='translations')
 
     def language_packs(self):
-        return Link('+language-packs', 'Language packs')
+        return Link('+language-packs', 'Language packs', site='translations')
 
     def latest_full_language_pack(self):
         return Link(
             '+latest-full-language-pack',
-            'Latest full language pack')
+            'Latest full language pack',
+            site='translations')
 
     def latest_delta_language_pack(self):
         return Link(
             '+latest-delta-language-pack',
-            'Latest delta language pack')
+            'Latest delta language pack',
+            site='translations')
 
 
 def check_distroseries_translations_viewable(distroseries):

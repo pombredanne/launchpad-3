@@ -61,12 +61,12 @@ class ProductSeriesTranslationsMenuMixIn:
 
     def overview(self):
         """Return a link to the overview page."""
-        return Link('', 'Overview')
+        return Link('', 'Overview', site='translations')
 
     @enabled_with_permission('launchpad.Edit')
     def templates(self):
         """Return a link to series PO templates."""
-        return Link('+templates', 'Templates')
+        return Link('+templates', 'Templates', site='translations')
 
     @enabled_with_permission('launchpad.Edit')
     def settings(self):

@@ -146,22 +146,24 @@ class PersonTranslationsMenu(NavigationMenu):
 
     def overview(self):
         text = 'Overview'
-        return Link('', text, icon='info')
+        return Link('', text, icon='info', site='translations')
 
     def imports(self):
         text = 'Import queue'
-        return Link('+imports', text, icon='info')
+        return Link('+imports', text, icon='info', site='translations')
 
     def licensing(self):
         text = 'Translations licensing'
         enabled = (self.person == self.user)
-        return Link('+licensing', text, enabled=enabled, icon='info')
+        return Link('+licensing', text, enabled=enabled, icon='info',
+                    site='translations')
 
     def translations_to_review(self):
         text = 'Translations to review'
         enabled = person_is_reviewer(self.person)
         return Link(
-            '+translations-to-review', text, enabled=enabled, icon='info')
+            '+translations-to-review', text, enabled=enabled, icon='info',
+            site='translations')
 
 
 class PersonTranslationView(LaunchpadView):
@@ -449,19 +451,20 @@ class PersonTranslationRelicensingView(LaunchpadFormView):
     @property
     def relicensing_url(self):
         """Return an URL for this view."""
-        return canonical_url(self.context, view_name='+licensing')
+        return canonical_url(self.context, view_name='+licensing',
+                             rootsite='translations')
 
     @property
     def cancel_url(self):
         """Escape to the person's main Translations page."""
-        return canonical_url(self.context)
+        return canonical_url(self.context, rootsite='translations')
 
     def getSafeRedirectURL(self, url):
         """Successful form submission should send to this URL."""
         if url and url.startswith(self.request.getApplicationURL()):
             return url
         else:
-            return canonical_url(self.context)
+            return canonical_url(self.context, rootsite='translations')
 
     @action(_("Confirm"), name="submit")
     def submit_action(self, action, data):
