@@ -679,7 +679,8 @@ class POFileTranslateView(BaseTranslationView):
                 url = url + '?' + self.request['QUERY_STRING']
 
             return self.request.response.redirect(
-                canonical_url(self.user, view_name='+licensing') +
+                canonical_url(self.user, view_name='+licensing',
+                              rootsite='translations') +
                 '?' + urllib.urlencode({'back_to': url}))
 
         # The handling of errors is slightly tricky here. Because this

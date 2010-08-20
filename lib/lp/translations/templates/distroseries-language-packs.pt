@@ -25,7 +25,7 @@
              Peter Langomat
            </tal:admin><a
                tal:condition="context/distribution/required:launchpad.Edit"
-               tal:attributes="href string:${context/distribution/fmt:url}/+select-language-pack-admin"
+               tal:attributes="href context/distribution/fmt:url:translations/+select-language-pack-admin"
                title="Change language pack administrator"><img
                class="edit sprite"/></a>.
          </p>
