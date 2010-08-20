@@ -101,7 +101,7 @@ class TranslationMessageMixIn:
     def markReviewed(self, reviewer, timestamp=None):
         """See `ITranslationMessage`."""
         if timestamp is None:
-            timestamp = datetime.now(UTC)
+            timestamp = UTC_NOW
 
         self.reviewer = reviewer
         self.date_reviewed = timestamp

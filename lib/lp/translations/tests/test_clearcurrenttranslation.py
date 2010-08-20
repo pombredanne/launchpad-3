@@ -5,10 +5,19 @@
 
 __metaclass__ = type
 
+from datetime import (
+    datetime,
+    timedelta,
+    )
+
+from pytz import UTC
+
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.database.constants import UTC_NOW
 from canonical.testing import DatabaseFunctionalLayer
+
 from lp.testing import TestCaseWithFactory
 from lp.translations.interfaces.side import ITranslationSideTraitsSet
 from lp.translations.interfaces.translationmessage import (
@@ -59,16 +68,15 @@ class ScenarioMixin:
     def _makeTranslationMessage(self, potmsgset, pofile, translations=None,
                                 diverged=False):
         """Create a (non-current) TranslationMessage for potmsgset."""
-        if translations is None:
-            translations = {0: self.factory.getUniqueString()}
-        message = potmsgset.submitSuggestion(
-            pofile, pofile.potemplate.owner, translations)
-
+        message = self.factory.makeSuggestion(
+            pofile=pofile, potmsgset=potmsgset, translations=translations)
         if diverged:
             removeSecurityProxy(message).potemplate = pofile.potemplate
         return message
 
-    def test_does_nothing_if_not_translated(self):
+    def test_creates_empty_message(self):
+        # Even if there is no current message, clearCurrentTranslation
+        # will create an empty message so as to mark the review time.
         pofile = self._makePOFile()
         template = pofile.potemplate
         potmsgset = self.factory.makePOTMsgSet(template, sequence=1)
@@ -77,7 +85,9 @@ class ScenarioMixin:
 
         current = get_traits(template).getCurrentMessage(
             potmsgset, template, pofile.language)
-        self.assertIs(None, current)
+        self.assertEqual(
+            [],
+            [msgstr for msgstr in current.translations if msgstr is not None])
 
     def test_deactivates_shared_message(self):
         pofile = self._makePOFile()
@@ -176,22 +186,6 @@ class ScenarioMixin:
         self.assertFalse(traits.getFlag(tm))
         self.assertFalse(traits.other_side_traits.getFlag(tm))
 
-    def test_discards_redundant_suggestion(self):
-        translations = [self.factory.getUniqueString()]
-        pofile = self._makePOFile()
-        template = pofile.potemplate
-        potmsgset = self.factory.makePOTMsgSet(template, sequence=1)
-        tm = self._makeTranslationMessage(potmsgset, pofile, translations)
-        get_traits(template).setFlag(tm, True)
-        suggestion = self._makeTranslationMessage(
-            potmsgset, pofile, translations)
-
-        potmsgset.clearCurrentTranslation(pofile, template.owner, ORIGIN)
-
-        remaining_tms = list(potmsgset.getAllTranslationMessages())
-        self.assertEqual(1, len(remaining_tms))
-        self.assertIn(remaining_tms[0], [tm, suggestion])
-
     def test_converges_with_empty_shared_message(self):
         pofile = self._makePOFile()
         template = pofile.potemplate
@@ -209,6 +203,51 @@ class ScenarioMixin:
         current = traits.getCurrentMessage(
             potmsgset, template, pofile.language)
         self.assertEqual(blank_shared_tm, current)
+
+    def test_reviews_new_blank(self):
+        # When clearCurrentTranslation creates a blank message in order
+        # to mark the review, the blank message does indeed have its
+        # review fields set.
+        pofile = self._makePOFile()
+        template = pofile.potemplate
+        potmsgset = self.factory.makePOTMsgSet(template, sequence=1)
+        reviewer = self.factory.makePerson()
+
+        potmsgset.clearCurrentTranslation(pofile, reviewer, ORIGIN)
+
+        blank = get_traits(template).getCurrentMessage(
+            potmsgset, template, pofile.language)
+
+        self.assertNotEqual(None, blank.date_reviewed)
+        self.assertEqual(reviewer, blank.reviewer)
+
+    def test_reviews_existing_blank(self):
+        # When clearCurrentTranslation reuses an existing blank message
+        # in order to mark the review, the blank message's review
+        # information is updated.
+        pofile = self._makePOFile()
+        template = pofile.potemplate
+        traits = get_traits(template)
+        potmsgset = self.factory.makePOTMsgSet(template, sequence=1)
+        blank = self.factory.makeSuggestion(
+            potmsgset=potmsgset, pofile=pofile, translations=[])
+
+        old_review_date = datetime.now(UTC) - timedelta(days=7)
+        old_reviewer = self.factory.makePerson()
+        blank.markReviewed(old_reviewer, timestamp=old_review_date)
+
+        current = self.factory.makeCurrentTranslationMessage(
+            pofile=pofile, potmsgset=potmsgset)
+
+        new_reviewer = self.factory.makePerson()
+
+        potmsgset.clearCurrentTranslation(pofile, new_reviewer, ORIGIN)
+
+        current = traits.getCurrentMessage(
+            potmsgset, template, pofile.language)
+
+        self.assertEqual(new_reviewer, current.reviewer)
+        self.assertSqlAttributeEqualsDate(current, 'date_reviewed', UTC_NOW)
 
 
 class TestClearCurrentTranslationUpstream(TestCaseWithFactory,
