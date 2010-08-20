@@ -17,7 +17,6 @@ from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior)
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
-from lp.buildmaster.model.builder import rescueBuilderIfLost
 from lp.buildmaster.model.buildfarmjobbehavior import IdleBuildBehavior
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.soyuz.interfaces.archive import ArchivePurpose
@@ -97,13 +96,15 @@ class Test_rescueBuilderIfLost(TestCaseWithFactory):
 
     def test_recovery_of_aborted_slave(self):
         # If a slave is in the ABORTED state, rescueBuilderIfLost should
-        # clean it.
+        # clean it if we don't think it's currently building anything.
+        # See bug 463046.
         aborted_slave = AbortedSlave()
         # The slave's clean() method is normally an XMLRPC call, so we
         # can just stub it out and check that it got called.
         aborted_slave.clean = FakeMethod()
         builder = MockBuilder("mock_builder", aborted_slave)
-        rescueBuilderIfLost(builder)
+        builder.currentjob = None
+        builder.rescueIfLost()
 
         self.assertEqual(1, aborted_slave.clean.call_count)
 
