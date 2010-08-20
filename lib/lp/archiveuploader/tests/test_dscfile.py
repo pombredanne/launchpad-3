@@ -53,13 +53,10 @@ class TestDscFile(TestCase):
         dangling symlink in an attempt to try and access files on the system
         processing the source packages."""
         os.symlink("/etc/passwd", self.copyright_path)
-        try:
-            find_copyright(self.tmpdir, mock_logger_quiet)
-            self.fail()
-        except UploadError, error:
-            self.assertEqual(
-                error.args[0],
-                "Symbolic link for debian/copyright not allowed")
+        error = self.assertRaises(
+            UploadError, find_copyright, self.tmpdir, mock_logger_quiet)
+        self.assertEqual(
+            error.args[0], "Symbolic link for debian/copyright not allowed")
 
     def testGoodDebianCopyright(self):
         """Test that a proper copyright file will be accepted"""
@@ -78,13 +75,10 @@ class TestDscFile(TestCase):
         dangling symlink in an attempt to try and access files on the system
         processing the source packages."""
         os.symlink("/etc/passwd", self.changelog_path)
-        try:
-            find_changelog(self.tmpdir, mock_logger_quiet)
-            self.fail()
-        except UploadError, error:
-            self.assertEqual(
-                error.args[0],
-                "Symbolic link for debian/changelog not allowed")
+        error = self.assertRaises(
+            UploadError, find_changelog, self.tmpdir, mock_logger_quiet)
+        self.assertEqual(
+            error.args[0], "Symbolic link for debian/changelog not allowed")
 
     def testGoodDebianChangelog(self):
         """Test that a proper changelog file will be accepted"""
@@ -113,13 +107,10 @@ class TestDscFile(TestCase):
         file.write(empty_file)
         file.close()
 
-        try:
-            find_changelog(self.tmpdir, mock_logger_quiet)
-            self.fail()
-        except UploadError, error:
-            self.assertEqual(
-                error.args[0],
-                "debian/changelog file too large, 10MiB max")
+        error = self.assertRaises(
+            UploadError, find_changelog, self.tmpdir, mock_logger_quiet)
+        self.assertEqual(
+            error.args[0], "debian/changelog file too large, 10MiB max")
 
 
 class TestDscFileLibrarian(TestCaseWithFactory):
