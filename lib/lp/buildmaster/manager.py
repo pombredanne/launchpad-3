@@ -141,9 +141,54 @@ class RecordingSlave:
         return d
 
 
+def get_builder(name):
+    """Helper to return the builder given the slave for this request."""
+    # Avoiding circular imports.
+    from lp.buildmaster.interfaces.builder import IBuilderSet
+    return getUtility(IBuilderSet)[name]
+
+
+def assessFailureCounts(builder, fail_notes):
+    """View builder/job failure_count and work out which needs to die.
+
+    :return: True if we disabled something, False if we did not.
+    """
+    current_job = builder.currentjob
+    build_job = current_job.specific_job.build
+
+    if builder.failure_count == build_job.failure_count:
+        # If the failure count for the builder is the same as the
+        # failure count for the job being built, then we cannot
+        # tell whether the job or the builder is at fault. The  best
+        # we can do is try them both again, and hope that the job
+        # runs against a different builder.
+        current_job.reset()
+        return False
+
+    if builder.failure_count > build_job.failure_count:
+        # The builder has failed more than the jobs it's been
+        # running, so let's disable it and re-schedule the build.
+        builder.failBuilder(fail_notes)
+        current_job.reset()
+        return True
+    else:
+        # The job is the culprit!  Override its status to 'failed'
+        # to make sure it won't get automatically dispatched again,
+        # and remove the buildqueue request.  The failure should
+        # have already caused any relevant slave data to be stored
+        # on the build record so don't worry about that here.
+        build_job.status = BuildStatus.FAILEDTOBUILD
+        builder.currentjob.destroySelf()
+
+        # N.B. We could try and call _handleStatus_PACKAGEFAIL here
+        # but that would cause us to query the slave for its status
+        # again, and if the slave is non-responsive it holds up the
+        # next buildd scan.
+        return True
+
+
 class BaseDispatchResult:
     """Base class for *DispatchResult variations.
-
 
     It will be extended to represent dispatching results and allow
     homogeneous processing.
@@ -158,51 +203,13 @@ class BaseDispatchResult:
         if job is not None:
             job.reset()
 
-    def _getBuilder(self):
-        # Helper to return the builder given the slave for this request.
-        # Avoiding circular imports.
-        from lp.buildmaster.interfaces.builder import IBuilderSet
-        return getUtility(IBuilderSet)[self.slave.name]
-
-    def assessFailureCounts(self, builder=None):
+    def assessFailureCounts(self):
         """View builder/job failure_count and work out which needs to die.
-        
+
         :return: True if we disabled something, False if we did not.
         """
-        # Avoiding circular imports.
-        if builder is None:
-            builder = self._getBuilder()
-        build_job = builder.currentjob.specific_job.build
-
-        if builder.failure_count == build_job.failure_count:
-            # This is either the first failure for this job on this
-            # builder, or by some chance the job was re-dispatched to
-            # the same builder.  This make it impossible to determine
-            # whether the job or the builder is at fault, so don't fail
-            # either.  We reset the builder and job to try again.
-            self._cleanJob(builder.currentjob)
-            return False
-
-        if builder.failure_count > build_job.failure_count:
-            # The builder has failed more than the jobs it's been
-            # running, so let's disable it and re-schedule the build.
-            builder.failBuilder(self.info)
-            self._cleanJob(builder.currentjob)
-            return True
-        else:
-            # The job is the culprit!  Override its status to 'failed'
-            # to make sure it won't get automatically dispatched again,
-            # and remove the buildqueue request.  The failure should
-            # have already caused any relevant slave data to be stored
-            # on the build record so don't worry about that here.
-            build_job.status = BuildStatus.FAILEDTOBUILD
-            builder.currentjob.destroySelf()
-
-            # N.B. We could try and call _handleStatus_PACKAGEFAIL here
-            # but that would cause us to query the slave for its status
-            # again, and if the slave is non-responsive it holds up the
-            # next buildd scan.
-            return True
+        builder = get_builder(self.slave.name)
+        return assessFailureCounts(builder, self.info)
 
     def ___call__(self):
         raise NotImplementedError(
@@ -237,7 +244,7 @@ class ResetDispatchResult(BaseDispatchResult):
 
     @write_transaction
     def __call__(self):
-        builder = self._getBuilder()
+        builder = get_builder(self.slave.name)
         # Builders that fail to reset should be disabled as per bug
         # 563353.
         # XXX Julian bug=586362
@@ -283,18 +290,16 @@ class SlaveScanner:
             self.logger.info("Scanning failed with: %s\n%s" %
                 (error.getErrorMessage(), error.getTraceback()))
 
-            # Avoid circular import.
-            from lp.buildmaster.interfaces.builder import IBuilderSet
-            builder = getUtility(IBuilderSet)[self.builder_name]
+            builder = get_builder(self.builder_name)
 
             # Decide if we need to terminate the job or fail the
             # builder.
             self._incrementFailureCounts(builder)
             self.logger.info(
-                "builder failure count: %s, job failure count: %s" % ( 
+                "builder failure count: %s, job failure count: %s" % (
                     builder.failure_count,
-                    builder.currentjob.specific_job.build.failure_count))
-            BaseDispatchResult(slave=None).assessFailureCounts(builder)
+                    builder.getCurrentBuildFarmJob().failure_count))
+            assessFailureCounts(builder, error.getErrorMessage())
             transaction.commit()
 
             self.scheduleNextScanCycle()
@@ -311,10 +316,7 @@ class SlaveScanner:
         # We need to re-fetch the builder object on each cycle as the
         # Storm store is invalidated over transaction boundaries.
 
-        # Avoid circular import.
-        from lp.buildmaster.interfaces.builder import IBuilderSet
-        builder_set = getUtility(IBuilderSet)
-        self.builder = builder_set[self.builder_name]
+        self.builder = get_builder(self.builder_name)
 
         if self.builder.builderok:
             self.builder.updateStatus(self.logger)
@@ -496,9 +498,8 @@ class SlaveScanner:
         return self.reset_result(slave, error_text)
 
     def _incrementFailureCounts(self, builder):
-        # Avoid circular import.
         builder.failure_count += 1
-        builder.currentjob.specific_job.build.failure_count += 1
+        builder.getCurrentBuildFarmJob().failure_count += 1
 
     def checkDispatch(self, response, method, slave):
         """Verify the results of a slave xmlrpc call.

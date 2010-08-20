@@ -281,6 +281,9 @@ class IBuilder(IHasOwner):
         :return: A BuildQueue, or None.
         """
 
+    def getCurrentBuildFarmJob():
+        """Return a `BuildFarmJob` for this builder."""
+
 
 class IBuilderSet(Interface):
     """Collections of builders.

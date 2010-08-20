@@ -645,6 +645,11 @@ class Builder(SQLBase):
             Job._status == JobStatus.RUNNING,
             Job.date_started != None).one()
 
+    def getCurrentBuildFarmJob(self):
+        """See `IBuilder`."""
+        # Don't make this a property, it's masking a few queries.
+        return self.currentjob.specific_job.build
+
 
 class BuilderSet(object):
     """See IBuilderSet"""

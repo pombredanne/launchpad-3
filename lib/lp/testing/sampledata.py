@@ -9,9 +9,11 @@ just a small number, then you should define it as a constant here.
 
 __metaclass__ = type
 __all__ = [
+    'BOB_THE_BUILDER_NAME',
     'BUILDD_ADMIN_USERNAME',
     'CHROOT_LIBRARYFILEALIAS',
     'COMMERCIAL_ADMIN_EMAIL',
+    'FROG_THE_BUILDER_NAME',
     'HOARY_DISTROSERIES_NAME',
     'I386_ARCHITECTURE_NAME',
     'LAUNCHPAD_DBUSER_NAME',
@@ -34,6 +36,9 @@ __all__ = [
 
 # A user with buildd admin rights and upload rights to Ubuntu.
 BUILDD_ADMIN_USERNAME = 'cprov'
+# A couple of builders.
+BOB_THE_BUILDER_NAME = 'bob'
+FROG_THE_BUILDER_NAME = 'frog'
 # The LibraryFileAlias of a chroot for attaching to a DistroArchSeries
 CHROOT_LIBRARYFILEALIAS = 1
 HOARY_DISTROSERIES_NAME = 'hoary'

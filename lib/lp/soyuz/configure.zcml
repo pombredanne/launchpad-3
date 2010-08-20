@@ -513,6 +513,9 @@
                             status dependencies upload_log"/>
 
         <!-- XXX bigjools 2010-07-27 bug=570939
+             Work around the fact that not all BuildFarmJobs are concrete
+             objects.
+
              This should not be required once the old BuildFarmJob stuff is
              removed when the Translation Template jobs and Recipe jobs
              use the new infrastructure -->

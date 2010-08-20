@@ -43,8 +43,17 @@ class TestBuilder(TestCaseWithFactory):
 
     def test_default_values(self):
         builder = self.factory.makeBuilder()
+        # Make sure the Storm cache gets the values that the database
+        # initialises.
         flush_database_updates()
         self.assertEqual(0, builder.failure_count)
+
+    def test_getCurrentBuildFarmJob(self):
+        bq = self.factory.makeSourcePackageRecipeBuildJob(3333)
+        builder = self.factory.makeBuilder()
+        bq.markAsBuilding(builder)
+        self.assertEqual(
+            bq, builder.getCurrentBuildFarmJob().buildqueue_record)
 
     def test_getBuildQueue(self):
         buildqueueset = getUtility(IBuildQueueSet)

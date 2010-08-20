@@ -7,7 +7,6 @@ import os
 import signal
 import time
 import transaction
-import unittest
 
 from twisted.internet import defer, reactor, task
 from twisted.internet.error import ConnectionClosed
@@ -38,6 +37,7 @@ from lp.soyuz.tests.soyuzbuilddhelpers import BuildingSlave
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.fakemethod import FakeMethod
+from lp.testing.sampledata import BOB_THE_BUILDER_NAME
 from lp.testing import TestCase as LaunchpadTestCase
 
 
@@ -225,7 +225,8 @@ class TestSlaveScanner(TrialTestCase):
 
     def setUp(self):
         TrialTestCase.setUp(self)
-        self.manager = TestingSlaveScanner("bob", BufferLogger())
+        self.manager = TestingSlaveScanner(
+            BOB_THE_BUILDER_NAME, BufferLogger())
 
         # We will use an instrumented SlaveScanner instance for tests in
         # this context.
@@ -362,7 +363,8 @@ class TestSlaveScanner(TrialTestCase):
 
     def _setUpSlaveAndBuilder(self):
         # Helper function to set up a builder and its recording slave.
-        slave = RecordingSlave('bob', 'http://foo.buildd:8221/', 'foo.host')
+        slave = RecordingSlave(
+            BOB_THE_BUILDER_NAME, 'http://foo.buildd:8221/', 'foo.host')
         bob_builder = getUtility(IBuilderSet)[slave.name]
         return slave, bob_builder
 
@@ -509,7 +511,8 @@ class TestSlaveScanner(TrialTestCase):
             dl.addCallback(check_events)
 
         # A functional slave charged with some interactions.
-        slave = RecordingSlave('bob', 'http://bob.buildd:8221/', 'bob.host')
+        slave = RecordingSlave(
+            BOB_THE_BUILDER_NAME, 'http://bob.buildd:8221/', 'bob.host')
         slave.ensurepresent('arg1', 'arg2', 'arg3')
         slave.build('arg1', 'arg2', 'arg3')
 
@@ -541,7 +544,8 @@ class TestSlaveScanner(TrialTestCase):
         # Create a broken slave and insert interaction that will
         # cause the builder to be marked as fail.
         self.test_proxy = TestingXMLRPCProxy('very broken slave')
-        slave = RecordingSlave('bob', 'http://bob.buildd:8221/', 'bob.host')
+        slave = RecordingSlave(
+            BOB_THE_BUILDER_NAME, 'http://bob.buildd:8221/', 'bob.host')
         slave.ensurepresent('arg1', 'arg2', 'arg3')
         slave.build('arg1', 'arg2', 'arg3')
 
@@ -623,7 +627,7 @@ class TestSlaveScannerScan(TrialTestCase):
 
         Replace its default logging handler by a testing version.
         """
-        manager = SlaveScanner("bob", BufferLogger())
+        manager = SlaveScanner(BOB_THE_BUILDER_NAME, BufferLogger())
         manager.logger.name = 'slave-scanner'
 
         return manager
@@ -672,7 +676,7 @@ class TestSlaveScannerScan(TrialTestCase):
         # A job gets dispatched to the sampledata builder after it's reset.
 
         # Reset sampledata builder.
-        builder = getUtility(IBuilderSet)['bob']
+        builder = getUtility(IBuilderSet)[BOB_THE_BUILDER_NAME]
         self._resetBuilder(builder)
         # Set this to 1 here so that _checkDispatch can make sure it's
         # reset to 0 after a successful dispatch.
@@ -705,7 +709,7 @@ class TestSlaveScannerScan(TrialTestCase):
         # and the builder used should remain active and IDLE.
 
         # Reset sampledata builder.
-        builder = getUtility(IBuilderSet)['bob']
+        builder = getUtility(IBuilderSet)[BOB_THE_BUILDER_NAME]
         self._resetBuilder(builder)
 
         # Remove hoary/i386 chroot.
@@ -746,7 +750,7 @@ class TestSlaveScannerScan(TrialTestCase):
         # The job assigned to a broken builder is rescued.
 
         # Sampledata builder is enabled and is assigned to an active job.
-        builder = getUtility(IBuilderSet)['bob']
+        builder = getUtility(IBuilderSet)[BOB_THE_BUILDER_NAME]
         self.assertTrue(builder.builderok)
         job = builder.currentjob
         self.assertBuildingJob(job, builder)
@@ -783,7 +787,7 @@ class TestSlaveScannerScan(TrialTestCase):
 
         # Enable sampledata builder attached to an appropriate testing
         # slave. It will respond as if it was building the sampledata job.
-        builder = getUtility(IBuilderSet)['bob']
+        builder = getUtility(IBuilderSet)[BOB_THE_BUILDER_NAME]
 
         login('foo.bar@canonical.com')
         builder.builderok = True
@@ -804,12 +808,13 @@ class TestSlaveScannerScan(TrialTestCase):
     def test_scan_assesses_failure_exceptions(self):
         # If scan() fails with an exception, failure_counts should be
         # incremented and tested.
-        def fake_scan():
+        def failing_scan():
             raise Exception("fake exception")
         manager = self._getManager()
-        manager.scan = fake_scan
+        manager.scan = failing_scan
         manager.scheduleNextScanCycle = FakeMethod()
-        self.patch(BaseDispatchResult, 'assessFailureCounts', FakeMethod())
+        from lp.buildmaster import manager as manager_module
+        self.patch(manager_module, 'assessFailureCounts', FakeMethod())
         builder = getUtility(IBuilderSet)[manager.builder_name]
 
         # Failure counts start at zero.
@@ -828,10 +833,10 @@ class TestSlaveScannerScan(TrialTestCase):
             1, builder.currentjob.specific_job.build.failure_count)
 
         self.assertEqual(
-            1, BaseDispatchResult.assessFailureCounts.call_count)
+            1, manager_module.assessFailureCounts.call_count)
 
 
-class TestDispatchResult(unittest.TestCase):
+class TestDispatchResult(LaunchpadTestCase):
     """Tests `BaseDispatchResult` variations.
 
     Variations of `BaseDispatchResult` when evaluated update the database
@@ -874,12 +879,12 @@ class TestDispatchResult(unittest.TestCase):
     def assertBuilderIsClean(self, builder):
         # Check that the builder is ready for a new build.
         self.assertTrue(builder.builderok)
-        self.assertTrue(builder.failnotes is None)
-        self.assertTrue(builder.currentjob is None)
+        self.assertIs(None, builder.failnotes)
+        self.assertIs(None, builder.currentjob)
 
     def testResetDispatchResult(self):
         # Test that `ResetDispatchResult` resets the builder and job.
-        builder, job_id = self._getBuilder('bob')
+        builder, job_id = self._getBuilder(BOB_THE_BUILDER_NAME)
         buildqueue_id = builder.currentjob.id
         builder.builderok = True
         builder.failure_count = 1
@@ -899,8 +904,11 @@ class TestDispatchResult(unittest.TestCase):
         self.assertBuilderIsClean(builder)
 
     def testFailDispatchResult(self):
-        # Test that `FailDispatchResult` calls assessFailureCounts().
-        builder, job_id = self._getBuilder('bob')
+        # Test that `FailDispatchResult` calls assessFailureCounts() so
+        # that we know the builders and jobs are failed as necessary
+        # when a FailDispatchResult is called at the end of the dispatch
+        # chain.
+        builder, job_id = self._getBuilder(BOB_THE_BUILDER_NAME)
 
         # Setup a interaction to satisfy 'write_transaction' decorator.
         login(ANONYMOUS)
@@ -914,7 +922,7 @@ class TestDispatchResult(unittest.TestCase):
     def _setup_failing_dispatch_result(self):
         # assessFailureCounts should fail jobs or builders depending on
         # whether it sees the failure_counts on each increasing.
-        builder, job_id = self._getBuilder('bob')
+        builder, job_id = self._getBuilder(BOB_THE_BUILDER_NAME)
         slave = RecordingSlave(builder.name, builder.url, builder.vm_host)
         result = FailDispatchResult(slave, 'does not work!')
         return builder, result
