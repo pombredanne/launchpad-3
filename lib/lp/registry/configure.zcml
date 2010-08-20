@@ -1090,7 +1090,7 @@
             interface="lp.registry.interfaces.product.IProductEditRestricted"/>
         <require
             permission="launchpad.Edit"
-	        set_schema="lp.app.interfaces.launchpad.IServiceUsage"/>
+            set_schema="lp.app.interfaces.launchpad.IServiceUsage"/>
         <require
             permission="launchpad.Edit"
             set_attributes="bug_reporting_guidelines
@@ -1108,7 +1108,6 @@
                             remote_product screenshotsurl
                             security_contact sourceforgeproject
                             summary title wikiurl"/>
-
 
         <!-- mark 2006-04-10 I put "name" in the admin group because
                         with Bazaar now in place, lots of people can have personal
@@ -1377,6 +1376,7 @@
         for="lp.registry.interfaces.productseries.IProductSeries"
         factory="lp.registry.browser.productseries.ProductSeriesBreadcrumb"
         permission="zope.Public"/>
+
     <!-- ProductSeriesSet -->
 
     <class
@@ -1406,7 +1406,7 @@
             interface="lp.registry.interfaces.distribution.IDistributionEditRestricted"/>
         <require
             permission="launchpad.Edit"
-	        set_schema="lp.app.interfaces.launchpad.IServiceUsage"/>
+            set_schema="lp.app.interfaces.launchpad.IServiceUsage"/>
         <require
             permission="launchpad.Moderate"
             interface="lp.registry.interfaces.distribution.IDistributionDriverRestricted"/>
