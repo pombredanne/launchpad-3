@@ -9,4 +9,4 @@ ALTER TABLE BuildFarmJob
 
 
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2207, 78, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 4, 0);
