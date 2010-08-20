@@ -152,7 +152,8 @@ class BaseExportView(LaunchpadView):
         self.request.response.addInfoNotification(_(
             "Your request has been received. Expect to receive an email "
             "shortly."))
-        self.request.response.redirect(canonical_url(self.context))
+        self.request.response.redirect(
+            canonical_url(self.context, rootsite='translations'))
 
     def formats(self):
         """Return a list of formats available for translation exports."""
