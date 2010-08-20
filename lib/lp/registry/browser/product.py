@@ -69,6 +69,7 @@ from lazr.delegates import delegates
 from lazr.restful.interface import copy_field
 from canonical.launchpad import _
 from lp.services.fields import PillarAliases, PublicPersonChoice
+from lp.app.enums import ServiceUsage
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.headings import IEditableContextTitle
 from lp.blueprints.browser.specificationtarget import (
@@ -371,11 +372,13 @@ class ProductInvolvementView(PillarView):
         """
         states = {}
         states['configure_bugtracker'] = (
-            self.official_malone or self.context.bugtracker is not None)
-        states['configure_answers'] = self.official_answers
-        states['configure_translations'] = self.official_rosetta
+            self.context.bug_tracking_usage != ServiceUsage.UNKNOWN)
+        states['configure_answers'] = (
+            self.context.answers_usage != ServiceUsage.UNKNOWN)
+        states['configure_translations'] = (
+            self.context.translations_usage != ServiceUsage.UNKNOWN)
         states['configure_codehosting'] = (
-            self.context.development_focus.branch is not None)
+            self.context.codehosting_usage != ServiceUsage.UNKNOWN)
         return states
 
     @property
