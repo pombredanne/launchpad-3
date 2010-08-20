@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009-2010 Canonical Ltd.  All rights reserved.
 from __future__ import with_statement
 
 # pylint: disable-msg=W0105
@@ -70,7 +70,7 @@ class StubbedOpenIDCallbackView(OpenIDCallbackView):
 
 
 class FakeConsumer:
-    """An OpenID consumer that stashes away arguments for test instection."""
+    """An OpenID consumer that stashes away arguments for test inspection."""
 
     def complete(self, params, requested_url):
         self.params = params
@@ -250,7 +250,7 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
                 'foo': 'bar',
             })
         self.assertEquals(
-            view.fake_consumer.requested_url,'http://example.com?foo=bar')
+            view.fake_consumer.requested_url, 'http://example.com?foo=bar')
 
     def test_personless_account(self):
         # When there is no Person record associated with the account, we

@@ -137,7 +137,7 @@
                                  shedloads of data. -->
 
         <require
-            permission="launchpad.Admin"
+            permission="launchpad.Moderate"
             set_attributes="version name status owner nominatedarchindep                                                                                                 changeslist datereleased"/>
 
         <!-- IStructuralSubscriptionTarget -->
@@ -1135,13 +1135,13 @@
             attributes="
                 qualifies_for_free_hosting"/>
         <require
-            permission="launchpad.ProjectReview"
+            permission="launchpad.Moderate"
             attributes="
                 reviewer_whiteboard
                 is_permitted
                 license_reviewed
                 license_approved"
-            set_schema="lp.registry.interfaces.product.IProductProjectReviewRestricted"
+            set_schema="lp.registry.interfaces.product.IProductModerateRestricted"
             set_attributes="active private_bugs "/>
 
         <!-- Changes to official_rosetta must be available to Launchpad
@@ -1189,7 +1189,7 @@
             attributes="
                 findSimilarFAQs"/>
         <require
-            permission="launchpad.Moderate"
+            permission="launchpad.Append"
             attributes="
                 newFAQ"/>
 
@@ -1284,7 +1284,7 @@
         <allow
             interface="lp.registry.interfaces.product.IProductSet"/>
         <require
-            permission="launchpad.ProjectReview"
+            permission="launchpad.Moderate"
             attributes="
                 forReview"/>
     </securedutility>
@@ -1408,7 +1408,7 @@
             permission="launchpad.Edit"
 	        set_schema="lp.app.interfaces.launchpad.IServiceUsage"/>
         <require
-            permission="launchpad.Append"
+            permission="launchpad.Moderate"
             interface="lp.registry.interfaces.distribution.IDistributionDriverRestricted"/>
         <require
             permission="launchpad.Edit"
@@ -1465,7 +1465,7 @@
             attributes="
                 findSimilarFAQs"/>
         <require
-            permission="launchpad.Moderate"
+            permission="launchpad.Append"
             attributes="
                 newFAQ"/>
 

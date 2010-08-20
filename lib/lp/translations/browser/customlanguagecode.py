@@ -103,16 +103,18 @@ class CustomLanguageCodeAddView(LaunchpadFormView):
 
     @property
     def action_url(self):
-        return "%s/+add-custom-language-code" % canonical_url(self.context)
+        return canonical_url(
+            self.context, rootsite='translations',
+            view_name='+add-custom-language-code')
 
     @property
     def next_url(self):
         """See `LaunchpadFormView`."""
-        return "%s/+custom-language-codes" % canonical_url(self.context)
+        return canonical_url(
+            self.context, rootsite='translations',
+            view_name='+custom-language-codes')
 
-    @property
-    def cancel_url(self):
-        return self.next_url
+    cancel_url = next_url
 
 
 class CustomLanguageCodeView(LaunchpadView):
@@ -145,12 +147,12 @@ class CustomLanguageCodeRemoveView(LaunchpadFormView):
 
     @property
     def next_url(self):
-        return "%s/+custom-language-codes" % canonical_url(
-            self.context.translation_target)
+        """See `LaunchpadFormView`."""
+        return canonical_url(
+            self.context.translation_target, rootsite='translations',
+            view_name='+custom-language-codes')
 
-    @property
-    def cancel_url(self):
-        return self.next_url
+    cancel_url = next_url
 
 
 class HasCustomLanguageCodesTraversalMixin:

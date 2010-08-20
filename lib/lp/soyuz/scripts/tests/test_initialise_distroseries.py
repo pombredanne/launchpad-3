@@ -15,6 +15,7 @@ from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.soyuz.interfaces.sourcepackageformat import SourcePackageFormat
+from lp.soyuz.model.distroarchseries import DistroArchSeries
 from lp.soyuz.scripts.initialise_distroseries import (
     InitialiseDistroSeries, InitialisationError)
 from lp.testing import TestCaseWithFactory
@@ -22,6 +23,8 @@ from lp.testing import TestCaseWithFactory
 from canonical.config import config
 from canonical.launchpad.interfaces import IDistributionSet
 from canonical.launchpad.ftests import login
+from canonical.launchpad.webapp.interfaces import (
+    IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 from canonical.testing.layers import LaunchpadZopelessLayer
 
 
@@ -128,6 +131,21 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
         # Test a full initialise with no errors
         foobuntu = self._full_initialise()
         self.assertDistroSeriesInitialisedCorrectly(foobuntu)
+
+    def test_initialise_only_i386(self):
+        # Test a full initialise with no errors, but only copy i386 to
+        # the child
+        foobuntu = self._create_distroseries(self.hoary)
+        self._set_pending_to_failed(self.hoary)
+        transaction.commit()
+        ids = InitialiseDistroSeries(foobuntu, ('i386',))
+        ids.check()
+        ids.initialise()
+        self.assertDistroSeriesInitialisedCorrectly(foobuntu)
+        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        das = list(store.find(DistroArchSeries, distroseries = foobuntu))
+        self.assertEqual(len(das), 1)
+        self.assertEqual(das[0].architecturetag, 'i386')
 
     def test_check_no_builds(self):
         # Test that there is no build for pmount 0.1-2 in the

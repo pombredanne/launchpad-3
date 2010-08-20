@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """View classes related to `IDistroSeries`."""
@@ -190,7 +190,7 @@ class DistroSeriesOverviewMenu(
         text = 'Add architecture'
         return Link('+addport', text, icon='add')
 
-    @enabled_with_permission('launchpad.Admin')
+    @enabled_with_permission('launchpad.Moderate')
     def admin(self):
         text = 'Administer'
         return Link('+admin', text, icon='edit')
