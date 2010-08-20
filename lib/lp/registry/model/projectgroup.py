@@ -54,7 +54,7 @@ from lp.registry.model.karma import KarmaContextMixin
 from lp.services.worlddata.model.language import Language
 from lp.registry.model.mentoringoffer import MentoringOffer
 from lp.registry.model.milestone import (
-    Milestone, ProjectMilestone, milestone_sort_key)
+    Milestone, ProjectMilestone)
 from lp.registry.model.announcement import MakesAnnouncements
 from lp.registry.model.pillar import HasAliasMixin
 from lp.registry.model.product import Product
@@ -381,10 +381,25 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
         result.group_by(Milestone.name)
         if only_active:
             result.having('BOOL_OR(Milestone.active) = TRUE')
-        milestones = shortlist(
+        # MIN(Milestone.dateexpected) has to be used to match the
+        # aggregate function in the `columns` variable.
+        result.order_by(
+            'milestone_sort_key(MIN(Milestone.dateexpected), Milestone.name) '
+            'DESC')
+        return shortlist(
             [ProjectMilestone(self, name, dateexpected, active)
              for name, dateexpected, active in result])
-        return sorted(milestones, key=milestone_sort_key, reverse=True)
+
+    @property
+    def has_milestones(self):
+        """See `IHasMilestones`."""
+        store = Store.of(self)
+        result = store.find(
+            Milestone.id,
+            And(Milestone.product == Product.id,
+                Product.project == self,
+                Product.active == True))
+        return result.any() is not None
 
     @property
     def milestones(self):

@@ -23,10 +23,11 @@ from sqlobject import (
     StringCol)
 
 
-from storm.expr import And, Desc, Coalesce
+from storm.expr import And
 from storm.store import Store
 
 
+from canonical.cachedproperty import cachedproperty
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.webapp.sorting import expand_numbers
 from lp.app.errors import NotFoundError
@@ -79,6 +80,10 @@ class HasMilestonesMixin:
         """
         raise NotImplementedError(
             "Unexpected class for mixin: %r" % self)
+
+    @property
+    def has_milestones(self):
+        return self.all_milestones.any() is not None
 
     @property
     def all_milestones(self):
