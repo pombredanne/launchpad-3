@@ -793,14 +793,13 @@ class TestBugTaskSearch(TestCaseWithFactory):
         self.assertEqual([task2], list(result))
 
     def test_omit_targeted_default_is_false(self):
-        # the default value of omit_targeted is false so bugs are not
-        # hidden
+        # The default value of omit_targeted is false so bugs targeted
+        # to a series are not hidden.
         target = self.factory.makeDistroRelease()
         self.login()
         task1 = self.factory.makeBugTask(target=target)
         default_result = target.searchTasks(None)
-        false_result = target.searchTasks(None, omit_targeted=False)
-        self.assertEqual([task1], list(false_result))
+        self.assertEqual([task1], list(default_result))
 
 
 def test_suite():
