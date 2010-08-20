@@ -36,27 +36,35 @@ class TestDistributionUsageEnums(TestCaseWithFactory):
 
     def test_answers_usage_no_data(self):
         # By default, we don't know anything about a distribution
-        self.assertEqual(ServiceUsage.UNKNOWN, self.distribution.answers_usage)
+        self.assertEqual(
+            ServiceUsage.UNKNOWN,
+            self.distribution.answers_usage)
 
     def test_answers_usage_using_bool(self):
         # If the old bool says they use Launchpad, return LAUNCHPAD
         # if the ServiceUsage is unknown.
         login_person(self.distribution.owner)
         self.distribution.official_answers = True
-        self.assertEqual(ServiceUsage.LAUNCHPAD, self.distribution.answers_usage)
+        self.assertEqual(
+            ServiceUsage.LAUNCHPAD,
+            self.distribution.answers_usage)
 
     def test_answers_usage_with_enum_data(self):
         # If the enum has something other than UNKNOWN as its status,
         # use that.
         login_person(self.distribution.owner)
         self.distribution.answers_usage = ServiceUsage.EXTERNAL
-        self.assertEqual(ServiceUsage.EXTERNAL, self.distribution.answers_usage)
+        self.assertEqual(
+            ServiceUsage.EXTERNAL,
+            self.distribution.answers_usage)
 
     def test_codehosting_usage(self):
         # Only test get for codehosting; this has no setter because the
         # state is derived from other data.
         distribution = self.factory.makeDistribution()
-        self.assertEqual(ServiceUsage.NOT_APPLICABLE, distribution.codehosting_usage)
+        self.assertEqual(
+            ServiceUsage.NOT_APPLICABLE,
+            distribution.codehosting_usage)
 
     def test_translations_usage_no_data(self):
         # By default, we don't know anything about a distribution
@@ -86,11 +94,15 @@ class TestDistributionUsageEnums(TestCaseWithFactory):
         # Only test get for bug_tracking; this has no setter because the
         # state is derived from other data.
         distribution = self.factory.makeDistribution()
-        self.assertEqual(ServiceUsage.UNKNOWN, distribution.bug_tracking_usage)
+        self.assertEqual(
+            ServiceUsage.UNKNOWN,
+            distribution.bug_tracking_usage)
 
     def test_blueprints_usage_no_data(self):
         # By default, we don't know anything about a distribution
-        self.assertEqual(ServiceUsage.UNKNOWN, self.distribution.blueprints_usage)
+        self.assertEqual(
+            ServiceUsage.UNKNOWN,
+            self.distribution.blueprints_usage)
 
     def test_blueprints_usage_using_bool(self):
         # If the old bool says they use Launchpad, return LAUNCHPAD
@@ -106,7 +118,9 @@ class TestDistributionUsageEnums(TestCaseWithFactory):
         # use that.
         login_person(self.distribution.owner)
         self.distribution.blueprints_usage = ServiceUsage.EXTERNAL
-        self.assertEqual(ServiceUsage.EXTERNAL, self.distribution.blueprints_usage)
+        self.assertEqual(
+            ServiceUsage.EXTERNAL,
+            self.distribution.blueprints_usage)
 
 
 class TestDistribution(TestCaseWithFactory):

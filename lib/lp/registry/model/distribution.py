@@ -30,7 +30,6 @@ from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet)
 from canonical.launchpad.components.storm_operators import FTQ, Match, RANK
 from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.lazr.utils import safe_hasattr
 from lp.registry.model.announcement import MakesAnnouncements
 from lp.soyuz.model.archive import Archive
 from lp.soyuz.model.binarypackagename import BinaryPackageName
@@ -198,7 +197,6 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         else:
             alsoProvides(self, IDerivativeDistribution)
 
-
     @property
     def uploaders(self):
         """See `IDistribution`."""
@@ -235,7 +233,6 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         return True in (self.official_malone, self.official_rosetta,
                         self.official_blueprints, self.official_answers)
 
-    
     _answers_usage = EnumCol(
         dbName="answers_usage", notNull=True,
         schema=ServiceUsage,
@@ -298,7 +295,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         _get_translations_usage,
         _set_translations_usage,
         doc="Indicates if the product uses the translations service.")
-    
+
     @property
     def codehosting_usage(self):
         return ServiceUsage.NOT_APPLICABLE
@@ -529,9 +526,9 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         if not self.full_functionality:
             return None
 
-        urls = {'http_base_url' : http_base_url,
-                'ftp_base_url' : ftp_base_url,
-                'rsync_base_url' : rsync_base_url}
+        urls = {'http_base_url': http_base_url,
+                'ftp_base_url': ftp_base_url,
+                'rsync_base_url': rsync_base_url}
         for name, value in urls.items():
             if value is not None:
                 urls[name] = IDistributionMirror[name].normalize(value)
@@ -744,7 +741,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
 
         # filter based on completion. see the implementation of
         # Specification.is_complete() for more details
-        completeness =  Specification.completeness_clause
+        completeness = Specification.completeness_clause
 
         if SpecificationFilter.COMPLETE in filter:
             query += ' AND ( %s ) ' % completeness
@@ -1069,15 +1066,15 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         find_spec = (
             DistributionSourcePackageCache,
             SourcePackageName,
-            SQL('rank(fti, ftq(%s)) AS rank' % sqlvalues(text))
+            SQL('rank(fti, ftq(%s)) AS rank' % sqlvalues(text)),
             )
         origin = [
             DistributionSourcePackageCache,
             Join(
                 SourcePackageName,
                 DistributionSourcePackageCache.sourcepackagename ==
-                    SourcePackageName.id
-                )
+                    SourcePackageName.id,
+                ),
             ]
 
         publishing_condition = ''
@@ -1118,8 +1115,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                    quote(text), quote_like(text), has_packaging_condition,
                    publishing_condition)
         dsp_caches_with_ranks = store.using(*origin).find(
-            find_spec, condition
-            ).order_by('rank DESC')
+            find_spec, condition).order_by('rank DESC')
 
         return dsp_caches_with_ranks
 
@@ -1138,8 +1134,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             cache, source_package_name, rank = result
             return DistributionSourcePackage(
                 self,
-                source_package_name
-                )
+                source_package_name)
 
         # Return the decorated result set so the consumer of these
         # results will only see DSPs
@@ -1203,7 +1198,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         extra_clauses = (
             BinaryPackageRelease.binarypackagenameID ==
                 DistroSeriesPackageCache.binarypackagenameID,
-            Match(search_vector_column, query_function)
+            Match(search_vector_column, query_function),
             )
         where_spec = (self._binaryPackageSearchClause + extra_clauses)
 
@@ -1459,11 +1454,11 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         # XXX Julian 2007-08-16
         # These component names should be Soyuz-wide constants.
         componentMapToArchivePurpose = {
-            'main' : ArchivePurpose.PRIMARY,
-            'restricted' : ArchivePurpose.PRIMARY,
-            'universe' : ArchivePurpose.PRIMARY,
-            'multiverse' : ArchivePurpose.PRIMARY,
-            'partner' : ArchivePurpose.PARTNER,
+            'main': ArchivePurpose.PRIMARY,
+            'restricted': ArchivePurpose.PRIMARY,
+            'universe': ArchivePurpose.PRIMARY,
+            'multiverse': ArchivePurpose.PRIMARY,
+            'partner': ArchivePurpose.PARTNER,
             'contrib': ArchivePurpose.PRIMARY,
             'non-free': ArchivePurpose.PRIMARY,
             }
