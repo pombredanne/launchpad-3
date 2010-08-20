@@ -1250,7 +1250,7 @@ class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
     A commercial project is one that does not qualify for free hosting.  For
     normal users only commercial projects for which the user is the
     maintainer, or in the maintainers team, will be listed.  For users with
-    launchpad.ProjectReview permission, all commercial projects are returned.
+    launchpad.Moderate permission, all commercial projects are returned.
     """
 
     implements(IHugeVocabulary)
@@ -1279,7 +1279,7 @@ class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
         if user is None:
             return self.emptySelectResults()
         product_set = getUtility(IProductSet)
-        if check_permission('launchpad.ProjectReview', product_set):
+        if check_permission('launchpad.Moderate', product_set):
             projects = product_set.forReview(
                 search_text=query, licenses=[License.OTHER_PROPRIETARY],
                 active=True)

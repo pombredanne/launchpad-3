@@ -8,4 +8,4 @@ ALTER TABLE BinaryPackageRelease
 ALTER TABLE SourcePackageRelease
     ADD COLUMN user_defined_fields TEXT;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2207, 82, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 00, 0);

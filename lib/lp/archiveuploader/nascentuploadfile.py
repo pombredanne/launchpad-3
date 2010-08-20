@@ -321,7 +321,6 @@ class PackageUploadFile(NascentUploadFile):
                 "%s: Unknown component %r" % (
                 self.filename, self.component_name))
 
-
     @property
     def component(self):
         """Return an IComponent for self.component.name."""
@@ -331,6 +330,14 @@ class PackageUploadFile(NascentUploadFile):
     def section(self):
         """Return an ISection for self.section_name."""
         return getUtility(ISectionSet)[self.section_name]
+
+    def extractUserDefinedFields(self, control):
+        """Extract the user defined fields out of a control file list.
+        """
+        return [
+            (field, contents)
+            for (field, contents) in
+            control if field not in self.known_fields]
 
 
 class SourceUploadFile(SourceFileMixin, PackageUploadFile):
@@ -376,6 +383,25 @@ class BaseBinaryUploadFile(PackageUploadFile):
 
     # Capitalised because we extract these directly from the control file.
     mandatory_fields = set(["Package", "Architecture", "Version"])
+
+    known_fields = mandatory_fields.union(set([
+        "Depends",
+        "Conflicts",
+        "Breaks",
+        "Recommends",
+        "Suggests",
+        "Replaces",
+        "Provides",
+        "Pre-Depends",
+        "Enhances",
+        "Essential",
+        "Description",
+        "Installed-Size",
+        "Priority",
+        "Section",
+        "Maintainer",
+        "Source",
+        ]))
 
     # Map priorities to their dbschema valuesa
     # We treat a priority of '-' as EXTRA since some packages in some distros
@@ -492,12 +518,15 @@ class BaseBinaryUploadFile(PackageUploadFile):
                 yield UploadError(
                     "%s: control file lacks mandatory field %r"
                      % (self.filename, mandatory_field))
+        control = {}
+        for key in control_lines.keys():
+            control[key] = control_lines.Find(key)
+        self.parseControl(control)
 
+    def parseControl(self, control):
         # XXX kiko 2007-02-15: We never use the Maintainer information in
         # the control file for anything. Should we? --
-        self.control = {}
-        for key in control_lines.keys():
-            self.control[key] = control_lines.Find(key)
+        self.control = control
 
         control_source = self.control.get("Source", None)
         if control_source is not None:
@@ -871,6 +900,9 @@ class BaseBinaryUploadFile(PackageUploadFile):
         else:
             debug_package = None
 
+        user_defined_fields = self.extractUserDefinedFields(
+            [(field, encoded[field]) for field in self.control.iterkeys()])
+
         binary = build.createBinaryPackageRelease(
             binarypackagename=binary_name,
             version=self.control_version,
@@ -893,6 +925,7 @@ class BaseBinaryUploadFile(PackageUploadFile):
             essential=is_essential,
             installedsize=installedsize,
             architecturespecific=architecturespecific,
+            user_defined_fields=user_defined_fields,
             debug_package=debug_package)
 
         library_file = self.librarian.create(self.filename,

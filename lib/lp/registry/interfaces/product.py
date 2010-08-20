@@ -10,7 +10,7 @@ __metaclass__ = type
 __all__ = [
     'InvalidProductName',
     'IProduct',
-    'IProductProjectReviewRestricted',
+    'IProductModerateRestricted',
     'IProductDriverRestricted',
     'IProductEditRestricted',
     'IProductPublic',
@@ -34,7 +34,7 @@ from zope.schema.vocabulary import SimpleVocabulary
 from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import (
+from lp.services.fields import (
     Description, IconImageUpload, LogoImageUpload, MugshotImageUpload,
     PersonChoice, ProductBugTracker, ProductNameField,
     PublicPersonChoice, Summary, Title, URIField)
@@ -300,8 +300,8 @@ class IProductEditRestricted(IOfficialBugTagTargetRestricted):
     """`IProduct` properties which require launchpad.Edit permission."""
 
 
-class IProductProjectReviewRestricted(Interface):
-    """`IProduct` properties which require launchpad.ProjectReview."""
+class IProductModerateRestricted(Interface):
+    """`IProduct` properties which require launchpad.Moderate."""
 
     qualifies_for_free_hosting = exported(
         Bool(
@@ -732,7 +732,7 @@ class IProductPublic(
 
 class IProduct(
     IHasBugSupervisor, IProductEditRestricted,
-    IProductProjectReviewRestricted, IProductDriverRestricted,
+    IProductModerateRestricted, IProductDriverRestricted,
     IProductPublic, IRootContext, IStructuralSubscriptionTarget):
     """A Product.
 

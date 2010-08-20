@@ -23,7 +23,7 @@ from zope.interface import Interface, Attribute
 from zope.schema import Bool, Choice, Field, Int, Text, TextLine
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import Title, Description
+from lp.services.fields import Title, Description
 from lp.registry.interfaces.role import IHasOwner
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.validators.url import builder_url_validator
