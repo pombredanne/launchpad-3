@@ -503,6 +503,14 @@ COMMENT ON COLUMN DistributionSourcePackageCache.binpkgdescriptions IS 'The aggr
 COMMENT ON COLUMN DistributionSourcePackageCache.changelog IS 'A concatenation of the source package release changelogs for this source package, where the status is not REMOVED.';
 COMMENT ON COLUMN DistributionSourcePackageCache.archive IS 'The archive where the source is published.';
 
+-- DistroSeriesDifference
+COMMENT ON TABLE DistroSeriesDifference IS 'A difference of versions for a package in a derived distroseries and its parent distroseries.';
+COMMENT ON COLUMN DistroSeriesDifference.derived_series IS 'The derived distroseries with the difference from its parent.';
+COMMENT ON COLUMN DistroSeriesDifference.source_package_publishing_history IS 'The latest published version of the package in the derived distro series.';
+COMMENT ON COLUMN DistroSeriesDifference.parent_source_package_publishing_history IS 'The latest published version of the package in the parent distro series.';
+COMMENT ON COLUMN DistroSeriesDifference.comment IS 'An editable comment used to note action being taken.';
+COMMENT ON COLUMN DistroSeriesDifference.status IS 'A distroseries difference can be ignored or resolved.';
+
 -- DistroSeriesPackageCache
 
 COMMENT ON TABLE DistroSeriesPackageCache IS 'A cache of the text associated with binary packages in the distroseries. This table allows for fast queries to find a binary packagename that matches a given text.';
@@ -533,13 +541,13 @@ COMMENT ON TABLE FeatureFlag IS
 can be changed without restarting Launchpad
 <https://dev.launchpad.net/LEP/FeatureFlags>';
 
-COMMENT ON COLUMN FeatureFlag.scope IS 
+COMMENT ON COLUMN FeatureFlag.scope IS
     'Scope in which this setting is active';
 
-COMMENT ON COLUMN FeatureFlag.priority IS 
+COMMENT ON COLUMN FeatureFlag.priority IS
     'Higher priority flags override lower';
 
-COMMENT ON COLUMN FeatureFlag.flag IS 
+COMMENT ON COLUMN FeatureFlag.flag IS
     'Name of the flag being controlled';
 
 -- KarmaCategory
