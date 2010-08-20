@@ -37,8 +37,8 @@ from canonical.launchpad.webapp.interaction import (
 from canonical import lp
 from canonical.config import config
 
+# these are intentional re-exports, apparently, used by *many* files.
 from canonical.launchpad.scripts.logger import (
-    # these are intentional re-exports, apparently, used by *many* files.
     logger_options, logger, log, BufferLogger, FakeLogger, QuietFakeLogger)
 # Intentional re-export, following along the lines of the logger module.
 from canonical.launchpad.scripts.loghandlers import WatchedFileHandler
