@@ -14,8 +14,8 @@ __all__ = [
     ]
 
 
-# Ensure correct plugins are loaded. Do not delete this comment or the line
-# below this comment.
+# FIRST Ensure correct plugins are loaded. Do not delete this comment or the
+# line below this comment.
 import lp.codehosting
 from bzrlib.branch import (
     BranchReferenceFormat, BzrBranchFormat4, BzrBranchFormat5,
