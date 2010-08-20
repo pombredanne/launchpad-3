@@ -12,13 +12,10 @@
               tal:content="view/available_official_tags_js" />
       <script type="text/javascript">
         LPS.use('base', 'node', 'oop', 'event', 'lp.bugs.bugtask_index',
-                  'lp.code.branchmergeproposal.diff',
-                  'lp.bugs.bug_subscription_widget', function(Y) {
+                  'lp.code.branchmergeproposal.diff', function(Y) {
             Y.lp.bugs.bugtask_index.setup_bugtask_index();
             Y.on('load', function(e) {
               Y.lp.code.branchmergeproposal.diff.connect_diff_links();
-              var ol = Y.lp.bugs.bug_subscription_widget.create_subscription_overlay();
-              ol.show();
             }, window);
         });
       </script>

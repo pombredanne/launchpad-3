@@ -12,15 +12,13 @@ __all__ = [
 
 from simplejson import dumps
 
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp import (
-    action, canonical_url, LaunchpadFormView, LaunchpadView)
-
 from lazr.delegates import delegates
 
 from lp.bugs.browser.bug import BugViewMixin
 from lp.bugs.interfaces.bugsubscription import IBugSubscription
-from lp.services.features import getFeatureFlag
+from canonical.launchpad.webapp import (
+    action, canonical_url, LaunchpadFormView, LaunchpadView)
+from canonical.launchpad.webapp.authorization import check_permission
 
 
 class BugSubscriptionAddView(LaunchpadFormView):
@@ -28,13 +26,7 @@ class BugSubscriptionAddView(LaunchpadFormView):
 
     schema = IBugSubscription
 
-    @property
-    def field_names(self):
-        """Return the field names to be used in this form."""
-        if getFeatureFlag('bugs.new_subscriptions.enabled'):
-            return ['person', 'bug_notification_level']
-        else:
-            return ['person']
+    field_names = ['person']
 
     def setUpFields(self):
         """Set up 'person' as an input field."""
