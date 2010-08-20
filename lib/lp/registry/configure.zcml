@@ -1405,6 +1405,9 @@
             permission="launchpad.Edit"
             interface="lp.registry.interfaces.distribution.IDistributionEditRestricted"/>
         <require
+            permission="launchpad.Edit"
+	        set_schema="lp.app.interfaces.launchpad.IServiceUsage"/>
+        <require
             permission="launchpad.Append"
             interface="lp.registry.interfaces.distribution.IDistributionDriverRestricted"/>
         <require

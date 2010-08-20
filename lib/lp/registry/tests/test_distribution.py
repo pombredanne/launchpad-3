@@ -56,7 +56,7 @@ class TestDistributionUsageEnums(TestCaseWithFactory):
         # Only test get for codehosting; this has no setter because the
         # state is derived from other data.
         distribution = self.factory.makeDistribution()
-        self.assertEqual(ServiceUsage.UNKNOWN, distribution.codehosting_usage)
+        self.assertEqual(ServiceUsage.NOT_APPLICABLE, distribution.codehosting_usage)
 
     def test_translations_usage_no_data(self):
         # By default, we don't know anything about a distribution
