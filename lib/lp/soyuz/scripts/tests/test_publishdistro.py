@@ -197,8 +197,7 @@ class TestPublishDistro(TestNativePublishingBase):
 
         ubuntutest = getUtility(IDistributionSet)['ubuntutest']
         name16 = getUtility(IPersonSet).getByName('name16')
-        getUtility(IArchiveSet).new(
-            purpose=ArchivePurpose.PPA, owner=removeSecurityProxy(name16),
+        getUtility(IArchiveSet).new(purpose=ArchivePurpose.PPA, owner=name16,
             distribution=ubuntutest)
         pub_source3 = self.getPubSource(
             sourcename='bar', filecontent='bar', archive=name16.archive)

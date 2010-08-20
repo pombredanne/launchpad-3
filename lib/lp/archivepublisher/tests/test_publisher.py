@@ -96,8 +96,7 @@ class TestPublisher(TestPublisherBase):
         """Test deleting a PPA"""
         ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
         test_archive = getUtility(IArchiveSet).new(
-            distribution=self.ubuntutest,
-            owner=removeSecurityProxy(ubuntu_team),
+            distribution=self.ubuntutest, owner=ubuntu_team,
             purpose=ArchivePurpose.PPA)
         publisher = getPublisher(test_archive, None, self.logger)
 
@@ -126,8 +125,7 @@ class TestPublisher(TestPublisherBase):
     def testDeletingPPAWithoutMetaData(self):
         ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
         test_archive = getUtility(IArchiveSet).new(
-            distribution=self.ubuntutest,
-            owner=removeSecurityProxy(ubuntu_team),
+            distribution=self.ubuntutest, owner=ubuntu_team,
             purpose=ArchivePurpose.PPA)
         publisher = getPublisher(test_archive, None, self.logger)
 
@@ -323,8 +321,7 @@ class TestPublisher(TestPublisherBase):
 
         ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
         test_archive = getUtility(IArchiveSet).new(
-            owner=removeSecurityProxy(ubuntu_team),
-            purpose=ArchivePurpose.PPA)
+            owner=ubuntu_team, purpose=ArchivePurpose.PPA)
 
         pub_source = self.getPubSource(
             sourcename="foo", filename="foo_1.dsc", filecontent='Hello world',
@@ -344,8 +341,7 @@ class TestPublisher(TestPublisherBase):
         """Publisher also works as expected for another archives."""
         ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
         test_archive = getUtility(IArchiveSet).new(
-            distribution=self.ubuntutest,
-            owner=removeSecurityProxy(ubuntu_team),
+            distribution=self.ubuntutest, owner=ubuntu_team,
             purpose=ArchivePurpose.PPA)
 
         test_pool_dir = tempfile.mkdtemp()
@@ -443,12 +439,10 @@ class TestPublisher(TestPublisherBase):
 
         spiv = person_set.getByName('spiv')
         archive_set.new(
-            owner=removeSecurityProxy(spiv), distribution=ubuntu,
-            purpose=ArchivePurpose.PPA)
+            owner=spiv, distribution=ubuntu, purpose=ArchivePurpose.PPA)
         name16 = person_set.getByName('name16')
         archive_set.new(
-            owner=removeSecurityProxy(name16), distribution=ubuntu,
-            purpose=ArchivePurpose.PPA)
+            owner=name16, distribution=ubuntu, purpose=ArchivePurpose.PPA)
 
         self.getPubSource(
             sourcename="foo", filename="foo_1.dsc", filecontent='Hello world',

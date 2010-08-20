@@ -1781,7 +1781,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             return distribution.main_archive
 
         archive = getUtility(IArchiveSet).new(
-            owner=removeSecurityProxy(owner), purpose=purpose,
+            owner=owner, purpose=purpose,
             distribution=distribution, name=name, displayname=displayname,
             enabled=enabled, require_virtualized=virtualized,
             description=description)

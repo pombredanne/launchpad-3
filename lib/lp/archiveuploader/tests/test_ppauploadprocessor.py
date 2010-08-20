@@ -64,7 +64,7 @@ class TestPPAUploadProcessorBase(TestUploadProcessorBase):
 
         # create name16 PPA
         self.name16_ppa = getUtility(IArchiveSet).new(
-            owner=removeSecurityProxy(self.name16), distribution=self.ubuntu,
+            owner=self.name16, distribution=self.ubuntu,
             purpose=ArchivePurpose.PPA)
         # Extra setup for breezy and allowing PPA builds on breezy/i386.
         self.setupBreezy()
@@ -276,8 +276,8 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         """Test PPA uploads to a named PPA."""
         # Create a PPA named 'testing' for 'name16' user.
         other_ppa = getUtility(IArchiveSet).new(
-            owner=removeSecurityProxy(self.name16), name='testing',
-            distribution=self.ubuntu, purpose=ArchivePurpose.PPA)
+            owner=self.name16, name='testing', distribution=self.ubuntu,
+            purpose=ArchivePurpose.PPA)
 
         # Upload to a named PPA.
         upload_dir = self.queueUpload("bar_1.0-1", "~name16/testing/ubuntu")
@@ -549,7 +549,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         """
         ubuntu_team = getUtility(IPersonSet).getByName("ubuntu-team")
         getUtility(IArchiveSet).new(
-            owner=removeSecurityProxy(ubuntu_team), distribution=self.ubuntu,
+            owner=ubuntu_team, distribution=self.ubuntu,
             purpose=ArchivePurpose.PPA)
         self.layer.commit()
 
@@ -585,8 +585,8 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         ubuntu_translators = getUtility(IPersonSet).getByName(
             "ubuntu-translators")
         getUtility(IArchiveSet).new(
-            owner=removeSecurityProxy(ubuntu_translators),
-            distribution=self.ubuntu, purpose=ArchivePurpose.PPA)
+            owner=ubuntu_translators, distribution=self.ubuntu,
+            purpose=ArchivePurpose.PPA)
         self.layer.commit()
 
         upload_dir = self.queueUpload(
@@ -600,7 +600,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         """Upload to a someone else's PPA gets rejected."""
         kinnison = getUtility(IPersonSet).getByName("kinnison")
         getUtility(IArchiveSet).new(
-            owner=removeSecurityProxy(kinnison), distribution=self.ubuntu,
+            owner=kinnison, distribution=self.ubuntu,
             purpose=ArchivePurpose.PPA)
         self.layer.commit()
 

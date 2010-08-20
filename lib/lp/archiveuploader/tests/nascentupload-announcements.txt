@@ -256,7 +256,6 @@ changes file is enclosed as an attachment.
 
 A PPA upload will contain the X-Launchpad-PPA header.
 
-  >>> from zope.security.proxy import removeSecurityProxy
   >>> from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
   >>> from lp.registry.interfaces.distribution import IDistributionSet
   >>> from lp.registry.interfaces.person import IPersonSet
@@ -264,8 +263,7 @@ A PPA upload will contain the X-Launchpad-PPA header.
   >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
   >>> name16 = getUtility(IPersonSet).getByName('name16')
   >>> name16_ppa = getUtility(IArchiveSet).new(
-  ...     owner=removeSecurityProxy(name16), distribution=ubuntu,
-  ...     purpose=ArchivePurpose.PPA)
+  ...     owner=name16, distribution=ubuntu, purpose=ArchivePurpose.PPA)
 
   >>> ppa_policy = getPolicy(
   ...     name='insecure', distro='ubuntu', distroseries=None)
