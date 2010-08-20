@@ -478,8 +478,6 @@ def canonical_url(
         if obj_urldata is None:
             raise NoCanonicalUrl(obj, obj)
         rootsite = obj_urldata.rootsite
-        if rootsite is None:
-            rootsite = 'mainsite'
 
     # The request is needed when there's no rootsite specified and when
     # handling the different shipit sites.
@@ -520,11 +518,15 @@ def canonical_url(
             if view_name not in all_names:
                 raise AssertionError(
                     'Name "%s" is not registered as a view or navigation '
-                    'step for "%s" on %s.' % (
+                    'step for "%s" on "%s".' % (
                         view_name, obj.__class__.__name__, rootsite))
         urlparts.insert(0, view_name)
 
     if request is None:
+        # Yes this really does need to be here, as rootsite can be None, and
+        # we don't want to make the getRootURL from the request break.
+        if rootsite is None:
+            rootsite = 'mainsite'
         root_url = allvhosts.configs[rootsite].rooturl
     else:
         root_url = request.getRootURL(rootsite)

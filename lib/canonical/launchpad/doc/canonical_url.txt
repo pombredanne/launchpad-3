@@ -469,7 +469,7 @@ Giving an unregistered view name will trigger an assertion failure.
     Traceback (most recent call last):
       ...
     AssertionError: Name "+does-not-exist" is not registered as a view 
-    or navigation step for "Country".
+    or navigation step for "Country" on "bugs".
 
 
 == The 'nearest' helper function ==
