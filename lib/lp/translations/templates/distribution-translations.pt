@@ -78,7 +78,7 @@
 
     <ul id="distroseries-list">
       <li tal:repeat="distroseries view/secondary_translatable_series">
-        <a tal:attributes="href distroseries/fmt:url"
+        <a tal:attributes="href distroseries/fmt:url:translations"
           tal:content="distroseries/named_version">Hoary (5.04)</a>
       </li>
     </ul>

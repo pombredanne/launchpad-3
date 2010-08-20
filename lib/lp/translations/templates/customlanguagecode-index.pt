@@ -28,7 +28,7 @@
       <ul class="horizontal">
         <li tal:condition="context/required:launchpad.Admin">
           <a class="remove sprite"
-             tal:attributes="href context/fmt:url/+remove">
+             tal:attributes="href context/fmt:url:translations/+remove">
             remove custom language code
           </a>
         </li>

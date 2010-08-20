@@ -122,7 +122,7 @@ class ProductSeriesTranslationsExportView(BaseExportView):
 
     @property
     def cancel_url(self):
-        return canonical_url(self.context)
+        return canonical_url(self.context, rootsite='translations')
 
 
 class ProductSeriesTranslationsMixin(TranslationsMixin):
@@ -173,7 +173,7 @@ class ProductSeriesUploadView(LaunchpadView, TranslationsMixin):
 
     @property
     def cancel_url(self):
-        return canonical_url(self.context)
+        return canonical_url(self.context, rootsite='translations')
 
     def processForm(self):
         """Process a form if it was submitted."""
@@ -247,7 +247,7 @@ class ProductSeriesUploadView(LaunchpadView, TranslationsMixin):
                     'administrator in the coming few days.  You can track '
                     'your upload\'s status in the '
                     '<a href="%s/+imports">Translation Import Queue</a>' %(
-                        canonical_url(self.context))))
+                        canonical_url(self.context, rootsite='translations'))))
 
         elif is_tar_filename(filename):
             # Add the whole tarball to the import queue.
@@ -274,7 +274,7 @@ class ProductSeriesUploadView(LaunchpadView, TranslationsMixin):
                     'your upload\'s status in the '
                     '<a href="%s/+imports">Translation Import Queue</a>' %(
                         num, plural_s, plural_s, itthey,
-                        canonical_url(self.context))))
+                        canonical_url(self.context, rootsite='translations'))))
                 if len(conflicts) > 0:
                     if len(conflicts) == 1:
                         warning = (
@@ -430,7 +430,7 @@ class ProductSeriesTranslationsSettingsView(LaunchpadEditFormView,
     def __init__(self, context, request):
         super(ProductSeriesTranslationsSettingsView, self).__init__(
             context, request)
-        self.cancel_url = canonical_url(self.context)
+        self.cancel_url = canonical_url(self.context, rootsite='translations')
 
     @action(u"Save settings", name="save_settings")
     def change_settings_action(self, action, data):
@@ -459,12 +459,9 @@ class ProductSeriesTranslationsBzrImportView(LaunchpadFormView,
 
     @property
     def next_url(self):
-        return canonical_url(self.context)
+        return canonical_url(self.context, rootsite='translations')
 
-    def __init__(self, context, request):
-        super(ProductSeriesTranslationsBzrImportView, self).__init__(
-            context, request)
-        self.cancel_url = canonical_url(self.context)
+    cancel_url = next_url
 
     def validate(self, action):
         """See `LaunchpadFormView`."""
