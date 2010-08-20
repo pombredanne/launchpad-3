@@ -43,11 +43,9 @@ class DistroSeriesTranslationsAdminView(LaunchpadEditFormView):
 
     @property
     def cancel_url(self):
-        return canonical_url(self.context)
+        return canonical_url(self.context, rootsite="translations")
 
-    @property
-    def next_url(self):
-        return canonical_url(self.context)
+    next_url = cancel_url
 
     @action("Change")
     def change_action(self, action, data):
@@ -174,14 +172,15 @@ class DistroSeriesLanguagePackView(LaunchpadEditFormView):
         self._request_full_export()
         self.request.response.addInfoNotification(
             'Your changes have been applied.')
-        self.next_url = '%s/+language-packs' % canonical_url(self.context)
+        self.next_url = canonical_url(
+            self.context, rootsite='translations', view_name='+language-packs')
 
     @action("Request", condition=is_langpack_admin)
     def request_action(self, action, data):
         self.updateContextFromData(data)
         self._request_full_export()
-        self.next_url = '/'.join(
-            [canonical_url(self.context), '+language-packs'])
+        self.next_url = canonical_url(
+            self.context, rootsite='translations', view_name='+language-packs')
 
 
 class DistroSeriesTemplatesView(BaseSeriesTemplatesView):

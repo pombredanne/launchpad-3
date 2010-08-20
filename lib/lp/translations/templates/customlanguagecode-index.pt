@@ -34,7 +34,7 @@
         </li>
         <li>
           <a class="info sprite"
-             tal:attributes="href context/translation_target/fmt:url/+custom-language-codes">
+             tal:attributes="href context/translation_target/fmt:url:translations/+custom-language-codes">
             custom language codes overview
           </a>
         </li>

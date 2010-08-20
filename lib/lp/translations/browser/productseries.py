@@ -71,25 +71,27 @@ class ProductSeriesTranslationsMenuMixIn:
     @enabled_with_permission('launchpad.Edit')
     def settings(self):
         """Return a link to configure the translations settings."""
-        return Link('+translations-settings', 'Settings')
+        return Link('+translations-settings', 'Settings', site='translations')
 
     @enabled_with_permission('launchpad.Edit')
     def requestbzrimport(self):
         """Return a link to request a bazaar import."""
-        return Link('+request-bzr-import', 'Request Bazaar import')
+        return Link(
+            '+request-bzr-import', 'Request Bazaar import',
+            site="translations")
 
     @enabled_with_permission('launchpad.Edit')
     def translationupload(self):
         """Return a link to upload translations."""
-        return Link('+translations-upload', 'Upload')
+        return Link('+translations-upload', 'Upload', site="translations")
 
     def translationdownload(self):
         """Return a link to download the translations."""
-        return Link('+export', 'Download')
+        return Link('+export', 'Download', site="translations")
 
     def imports(self):
         """Return a link to the import queue."""
-        return Link('+imports', 'Import queue')
+        return Link('+imports', 'Import queue', site="translations")
 
 
 class ProductSeriesTranslationsMenu(NavigationMenu,
@@ -142,7 +144,8 @@ class ProductSeriesTranslationsMixin(TranslationsMixin):
     def request_bzr_import_url(self):
         """URL to request a bazaar import."""
         return canonical_url(self.context,
-                             view_name="+request-bzr-import")
+                             view_name="+request-bzr-import",
+                             rootsite="translations")
 
     @property
     def link_branch_url(self):
@@ -153,7 +156,7 @@ class ProductSeriesTranslationsMixin(TranslationsMixin):
     @property
     def translations_settings_url(self):
         """URL to change the translations for the series."""
-        return canonical_url(self.context,
+        return canonical_url(self.context, rootsite="translations",
                              view_name="+translations-settings")
 
 
@@ -500,12 +503,12 @@ class LinkTranslationsBranchView(LaunchpadEditFormView):
     page_title = "Export to branch"
 
     @property
-    def cancel_url(self):
-        return canonical_url(self.context) + '/+translations-settings'
-
-    @property
     def next_url(self):
-        return canonical_url(self.context) + '/+translations-settings'
+        return canonical_url(
+            self.context, rootsite='translations',
+            view_name='+translations-settings')
+
+    cancel_url = next_url
 
     @action(_('Update'), name='update')
     def update_action(self, action, data):

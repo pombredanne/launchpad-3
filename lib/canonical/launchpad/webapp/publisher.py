@@ -436,6 +436,8 @@ def layer_for_rootsite(rootsite):
 class FakeRequest:
     """Used solely to provide a layer for the view check in canonical_url."""
 
+    form_ng = None
+
 
 def canonical_url(
     obj, request=None, rootsite=None, path_only_if_possible=False,

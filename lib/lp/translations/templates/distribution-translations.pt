@@ -48,7 +48,7 @@
             <h3>Administration</h3>
             <p>To see all the translation files that are waiting to be
               imported, please look at
-              <a tal:attributes="href context/fmt:url/+imports"
+              <a tal:attributes="href context/fmt:url:translations/+imports"
                  tal:content="string:${context/displayname} import queue">
                 import queue</a>.
             </p>

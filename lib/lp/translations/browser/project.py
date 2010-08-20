@@ -59,11 +59,9 @@ class ProjectSettingsView(TranslationsMixin, ProjectEditView):
 
     @property
     def cancel_url(self):
-        return canonical_url(self.context)
+        return canonical_url(self.context, rootsite="translations")
 
-    @property
-    def next_url(self):
-        return self.cancel_url
+    next_url = cancel_url
 
     @action('Change', name='change')
     def edit(self, action, data):

@@ -49,7 +49,7 @@
                     <tal:owner-or-admin condition="admin_user">
                       or
                       <a tal:attributes="
-                          href target/fmt:url/+translations-upload"
+                          href target/fmt:url:translations/+translations-upload"
                        >upload</a>
                     </tal:owner-or-admin>
                     translations for
