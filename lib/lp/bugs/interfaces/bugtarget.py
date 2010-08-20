@@ -146,7 +146,6 @@ modifiable_params = {
     }
 modified_params = modifiable_params.copy()
 modified_params["omit_targeted"] = copy_field(IBugTaskSearch['omit_targeted'],
-                                              title=_('Modified'), # REMOVE
                                               default=False)
 
 
