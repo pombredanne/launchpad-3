@@ -15,16 +15,36 @@ __all__ = [
     'IBinaryPackageReleaseSet',
     ]
 
-from lazr.enum import DBEnumeratedType, DBItem
-from lazr.restful.declarations import exported, export_as_webservice_entry
-from lazr.restful.fields import Reference, ReferenceChoice
-from zope.schema import Bool, Date, Datetime, Int, Object, Text, TextLine
-from zope.interface import Interface, Attribute
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    )
+from lazr.restful.declarations import (
+    export_as_webservice_entry,
+    exported,
+    )
+from lazr.restful.fields import (
+    Reference,
+    ReferenceChoice,
+    )
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Bool,
+    Date,
+    Datetime,
+    Int,
+    Object,
+    Text,
+    TextLine,
+    )
 
 from canonical.launchpad import _
 from canonical.launchpad.validators.version import valid_debian_version
-from lp.soyuz.interfaces.archive import IArchive
 from lp.services.worlddata.interfaces.country import ICountry
+from lp.soyuz.interfaces.archive import IArchive
 
 
 class IBinaryPackageRelease(Interface):

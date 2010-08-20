@@ -6,11 +6,17 @@
 __metaclass__ = type
 __all__ = ['PersonRoles']
 
+from zope.component import (
+    adapts,
+    getUtility,
+    )
 from zope.interface import implements
-from zope.component import adapts, getUtility
-from canonical.launchpad.interfaces import (
-    IHasDrivers, ILaunchpadCelebrities, IPersonRoles)
 
+from canonical.launchpad.interfaces import (
+    IHasDrivers,
+    ILaunchpadCelebrities,
+    IPersonRoles,
+    )
 from lp.registry.interfaces.person import IPerson
 
 

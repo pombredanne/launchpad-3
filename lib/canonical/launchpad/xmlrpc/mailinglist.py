@@ -17,13 +17,20 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.launchpad.interfaces import (
-    EmailAddressStatus, IEmailAddressSet, IMailingListAPIView,
-    IMailingListSet, IMessageApprovalSet, IMessageSet, IPersonSet,
-    MailingListStatus, PersonalStanding, PostedMessageStatus)
-from lp.registry.interfaces.person import PersonVisibility
+    EmailAddressStatus,
+    IEmailAddressSet,
+    IMailingListAPIView,
+    IMailingListSet,
+    IMessageApprovalSet,
+    IMessageSet,
+    IPersonSet,
+    MailingListStatus,
+    PersonalStanding,
+    PostedMessageStatus,
+    )
 from canonical.launchpad.webapp import LaunchpadXMLRPCView
 from canonical.launchpad.xmlrpc import faults
-
+from lp.registry.interfaces.person import PersonVisibility
 
 # Not all developers will have built the Mailman instance (via
 # 'make mailman_instance').  In that case, this import will fail, but in that

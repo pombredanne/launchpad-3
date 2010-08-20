@@ -10,17 +10,28 @@ import unittest
 
 from zope.component import getUtility
 
+from canonical.launchpad.database import (
+    ComponentSelection,
+    LibraryFileAlias,
+    )
+from canonical.launchpad.ftests import (
+    import_public_test_keys,
+    login,
+    logout,
+    )
+from canonical.launchpad.testing.systemdocs import (
+    LayeredDocFileSuite,
+    setGlobs,
+    )
+from canonical.testing import LaunchpadZopelessLayer
 from lp.archiveuploader.nascentupload import NascentUpload
 from lp.archiveuploader.tests import (
-    datadir, getPolicy, mock_logger_quiet)
-from canonical.launchpad.database import (
-    ComponentSelection, LibraryFileAlias)
-from canonical.launchpad.ftests import import_public_test_keys, login, logout
-from lp.soyuz.interfaces.component import IComponentSet
+    datadir,
+    getPolicy,
+    mock_logger_quiet,
+    )
 from lp.registry.interfaces.distribution import IDistributionSet
-from canonical.launchpad.testing.systemdocs import (
-    LayeredDocFileSuite, setGlobs)
-from canonical.testing import LaunchpadZopelessLayer
+from lp.soyuz.interfaces.component import IComponentSet
 
 
 def getUploadForSource(upload_path):

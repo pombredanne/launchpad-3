@@ -15,12 +15,17 @@ import operator
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.webapp import (
-    action, canonical_url, enabled_with_permission, LaunchpadEditFormView,
-    LaunchpadView, Link)
+    action,
+    canonical_url,
+    enabled_with_permission,
+    LaunchpadEditFormView,
+    LaunchpadView,
+    Link,
+    )
 from canonical.launchpad.webapp.menu import NavigationMenu
+from lp.registry.browser.distribution import DistributionEditView
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.series import SeriesStatus
-from lp.registry.browser.distribution import DistributionEditView
 from lp.translations.browser.translations import TranslationsMixin
 
 

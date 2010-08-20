@@ -8,130 +8,194 @@
 __metaclass__ = type
 __all__ = ['AuthorizationBase']
 
-from zope.interface import implements, Interface
-from zope.component import getAdapter, getUtility
+from zope.component import (
+    getAdapter,
+    getUtility,
+    )
+from zope.interface import (
+    implements,
+    Interface,
+    )
 
 from canonical.config import config
 from canonical.launchpad.interfaces.account import IAccount
 from canonical.launchpad.interfaces.emailaddress import IEmailAddress
+from canonical.launchpad.interfaces.launchpad import (
+    IHasBug,
+    IHasDrivers,
+    ILaunchpadCelebrities,
+    IPersonRoles,
+    )
 from canonical.launchpad.interfaces.librarian import (
-    ILibraryFileAliasWithParent)
-from lp.registry.interfaces.announcement import IAnnouncement
-from lp.soyuz.interfaces.archive import IArchive
-from lp.soyuz.interfaces.archivepermission import (
-    IArchivePermissionSet)
-from lp.soyuz.interfaces.archiveauthtoken import IArchiveAuthToken
-from lp.soyuz.interfaces.archivesubscriber import (
-    IArchiveSubscriber, IArchiveSubscriberSet, IPersonalArchiveSubscription)
-from lp.code.interfaces.branch import (
-    IBranch, user_has_special_branch_access)
-from lp.code.interfaces.branchmergeproposal import (
-    IBranchMergeProposal)
-from lp.code.interfaces.sourcepackagerecipe import ISourcePackageRecipe
-from lp.code.interfaces.sourcepackagerecipebuild import (
-    ISourcePackageRecipeBuild)
+    ILibraryFileAliasWithParent,
+    )
+from canonical.launchpad.interfaces.message import IMessage
+from canonical.launchpad.interfaces.oauth import (
+    IOAuthAccessToken,
+    IOAuthRequestToken,
+    )
+from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.interfaces import (
+    IAuthorization,
+    ILaunchpadRoot,
+    )
+from lp.answers.interfaces.faq import IFAQ
+from lp.answers.interfaces.faqtarget import IFAQTarget
+from lp.answers.interfaces.question import IQuestion
+from lp.answers.interfaces.questiontarget import IQuestionTarget
+from lp.blueprints.interfaces.specification import ISpecification
+from lp.blueprints.interfaces.specificationbranch import ISpecificationBranch
+from lp.blueprints.interfaces.specificationsubscription import (
+    ISpecificationSubscription,
+    )
+from lp.blueprints.interfaces.sprint import ISprint
+from lp.blueprints.interfaces.sprintspecification import ISprintSpecification
 from lp.bugs.interfaces.bug import IBug
 from lp.bugs.interfaces.bugattachment import IBugAttachment
 from lp.bugs.interfaces.bugbranch import IBugBranch
 from lp.bugs.interfaces.bugnomination import IBugNomination
 from lp.bugs.interfaces.bugsubscription import IBugSubscription
 from lp.bugs.interfaces.bugtracker import IBugTracker
-from lp.buildmaster.interfaces.builder import IBuilder, IBuilderSet
+from lp.buildmaster.interfaces.builder import (
+    IBuilder,
+    IBuilderSet,
+    )
 from lp.buildmaster.interfaces.buildfarmbranchjob import IBuildFarmBranchJob
 from lp.buildmaster.interfaces.buildfarmjob import (
-    IBuildFarmJob, IBuildFarmJobOld)
+    IBuildFarmJob,
+    IBuildFarmJobOld,
+    )
 from lp.buildmaster.interfaces.packagebuild import IPackageBuild
+from lp.code.interfaces.branch import (
+    IBranch,
+    user_has_special_branch_access,
+    )
+from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
 from lp.code.interfaces.codeimport import ICodeImport
 from lp.code.interfaces.codeimportjob import (
-    ICodeImportJobSet, ICodeImportJobWorkflow)
-from lp.code.interfaces.codeimportmachine import (
-    ICodeImportMachine)
+    ICodeImportJobSet,
+    ICodeImportJobWorkflow,
+    )
+from lp.code.interfaces.codeimportmachine import ICodeImportMachine
 from lp.code.interfaces.codereviewcomment import (
-    ICodeReviewComment, ICodeReviewCommentDeletion)
-from lp.code.interfaces.codereviewvote import (
-    ICodeReviewVoteReference)
+    ICodeReviewComment,
+    ICodeReviewCommentDeletion,
+    )
+from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
 from lp.code.interfaces.diff import IPreviewDiff
+from lp.code.interfaces.seriessourcepackagebranch import (
+    IMakeOfficialBranchLinks,
+    ISeriesSourcePackageBranch,
+    )
+from lp.code.interfaces.sourcepackagerecipe import ISourcePackageRecipe
+from lp.code.interfaces.sourcepackagerecipebuild import (
+    ISourcePackageRecipeBuild,
+    )
+from lp.hardwaredb.interfaces.hwdb import (
+    IHWDBApplication,
+    IHWDevice,
+    IHWDeviceClass,
+    IHWDriver,
+    IHWDriverName,
+    IHWDriverPackageName,
+    IHWSubmission,
+    IHWSubmissionDevice,
+    IHWVendorID,
+    )
+from lp.registry.interfaces.announcement import IAnnouncement
 from lp.registry.interfaces.distribution import IDistribution
-from lp.registry.interfaces.distributionmirror import (
-    IDistributionMirror)
+from lp.registry.interfaces.distributionmirror import IDistributionMirror
 from lp.registry.interfaces.distributionsourcepackage import (
-    IDistributionSourcePackage)
+    IDistributionSourcePackage,
+    )
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.entitlement import IEntitlement
-from lp.hardwaredb.interfaces.hwdb import (
-    IHWDBApplication, IHWDevice, IHWDeviceClass, IHWDriver, IHWDriverName,
-    IHWDriverPackageName, IHWSubmission, IHWSubmissionDevice, IHWVendorID)
-from lp.services.worlddata.interfaces.language import ILanguage, ILanguageSet
-from lp.translations.interfaces.languagepack import ILanguagePack
-from canonical.launchpad.interfaces.launchpad import (
-    IHasBug, IHasDrivers, ILaunchpadCelebrities, IPersonRoles)
-from lp.registry.interfaces.role import IHasOwner
+from lp.registry.interfaces.gpg import IGPGKey
+from lp.registry.interfaces.irc import IIrcID
 from lp.registry.interfaces.location import IPersonLocation
 from lp.registry.interfaces.mailinglist import IMailingListSet
 from lp.registry.interfaces.milestone import (
-    IMilestone, IProjectGroupMilestone)
-from canonical.launchpad.interfaces.message import IMessage
-from canonical.launchpad.interfaces.oauth import (
-    IOAuthAccessToken, IOAuthRequestToken)
-from lp.soyuz.interfaces.packageset import IPackageset, IPackagesetSet
-from lp.translations.interfaces.pofile import IPOFile
-from lp.translations.interfaces.potemplate import IPOTemplate
-from lp.soyuz.interfaces.binarypackagerelease import (
-    IBinaryPackageReleaseDownloadCount)
-from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuild
-from lp.soyuz.interfaces.buildfarmbuildjob import IBuildFarmBuildJob
-from lp.soyuz.interfaces.publishing import (
-    IBinaryPackagePublishingHistory, IPublishingEdit,
-    ISourcePackagePublishingHistory)
-from lp.soyuz.interfaces.queue import (
-    IPackageUpload, IPackageUploadQueue)
+    IMilestone,
+    IProjectGroupMilestone,
+    )
 from lp.registry.interfaces.packaging import IPackaging
 from lp.registry.interfaces.person import (
-    IPerson, IPersonSet, ITeam, PersonVisibility)
+    IPerson,
+    IPersonSet,
+    ITeam,
+    PersonVisibility,
+    )
 from lp.registry.interfaces.pillar import IPillar
 from lp.registry.interfaces.poll import (
-    IPoll, IPollOption, IPollSubset)
-from lp.registry.interfaces.product import IProduct, IProductSet
+    IPoll,
+    IPollOption,
+    IPollSubset,
+    )
+from lp.registry.interfaces.product import (
+    IProduct,
+    IProductSet,
+    )
 from lp.registry.interfaces.productrelease import (
-    IProductRelease, IProductReleaseFile)
+    IProductRelease,
+    IProductReleaseFile,
+    )
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import (
-    IProjectGroup, IProjectGroupSet)
-from lp.registry.interfaces.gpg import IGPGKey
-from lp.registry.interfaces.irc import IIrcID
-from lp.registry.interfaces.wikiname import IWikiName
-from lp.code.interfaces.seriessourcepackagebranch import (
-    IMakeOfficialBranchLinks, ISeriesSourcePackageBranch)
+    IProjectGroup,
+    IProjectGroupSet,
+    )
+from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.sourcepackage import ISourcePackage
-from lp.soyuz.interfaces.sourcepackagerelease import (
-    ISourcePackageRelease)
-from lp.blueprints.interfaces.specification import ISpecification
-from lp.blueprints.interfaces.specificationbranch import (
-    ISpecificationBranch)
-from lp.blueprints.interfaces.specificationsubscription import (
-    ISpecificationSubscription)
-from lp.blueprints.interfaces.sprint import ISprint
-from lp.blueprints.interfaces.sprintspecification import (
-    ISprintSpecification)
 from lp.registry.interfaces.teammembership import ITeamMembership
-from lp.translations.interfaces.translationgroup import (
-    ITranslationGroup, ITranslationGroupSet)
-from lp.translations.interfaces.translationimportqueue import (
-    ITranslationImportQueue, ITranslationImportQueueEntry)
-from lp.translations.interfaces.translationsperson import (
-    ITranslationsPerson)
-from lp.translations.interfaces.translator import (
-    ITranslator, IEditTranslator)
-
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.interfaces import (
-    IAuthorization, ILaunchpadRoot)
-
-from lp.answers.interfaces.faq import IFAQ
-from lp.answers.interfaces.faqtarget import IFAQTarget
-from lp.answers.interfaces.question import IQuestion
-from lp.answers.interfaces.questiontarget import IQuestionTarget
+from lp.registry.interfaces.wikiname import IWikiName
 from lp.services.worlddata.interfaces.country import ICountry
+from lp.services.worlddata.interfaces.language import (
+    ILanguage,
+    ILanguageSet,
+    )
+from lp.soyuz.interfaces.archive import IArchive
+from lp.soyuz.interfaces.archiveauthtoken import IArchiveAuthToken
+from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
+from lp.soyuz.interfaces.archivesubscriber import (
+    IArchiveSubscriber,
+    IArchiveSubscriberSet,
+    IPersonalArchiveSubscription,
+    )
+from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuild
+from lp.soyuz.interfaces.binarypackagerelease import (
+    IBinaryPackageReleaseDownloadCount,
+    )
+from lp.soyuz.interfaces.buildfarmbuildjob import IBuildFarmBuildJob
+from lp.soyuz.interfaces.packageset import (
+    IPackageset,
+    IPackagesetSet,
+    )
+from lp.soyuz.interfaces.publishing import (
+    IBinaryPackagePublishingHistory,
+    IPublishingEdit,
+    ISourcePackagePublishingHistory,
+    )
+from lp.soyuz.interfaces.queue import (
+    IPackageUpload,
+    IPackageUploadQueue,
+    )
+from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
+from lp.translations.interfaces.languagepack import ILanguagePack
+from lp.translations.interfaces.pofile import IPOFile
+from lp.translations.interfaces.potemplate import IPOTemplate
+from lp.translations.interfaces.translationgroup import (
+    ITranslationGroup,
+    ITranslationGroupSet,
+    )
+from lp.translations.interfaces.translationimportqueue import (
+    ITranslationImportQueue,
+    ITranslationImportQueueEntry,
+    )
+from lp.translations.interfaces.translationsperson import ITranslationsPerson
+from lp.translations.interfaces.translator import (
+    IEditTranslator,
+    ITranslator,
+    )
 
 
 class AuthorizationBase:

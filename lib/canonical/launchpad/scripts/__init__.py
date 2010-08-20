@@ -24,24 +24,31 @@ import sys
 from textwrap import dedent
 import threading
 
-import zope.sendmail.delivery
-import zope.site.hooks
 from zope.configuration.config import ConfigurationMachine
 from zope.security.management import setSecurityPolicy
 from zope.security.simplepolicies import PermissiveSecurityPolicy
-
-from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
-from canonical.launchpad.webapp.interaction import (
-    ANONYMOUS, setupInteractionByEmail)
+import zope.sendmail.delivery
+import zope.site.hooks
 
 from canonical import lp
 from canonical.config import config
-
 # these are intentional re-exports, apparently, used by *many* files.
 from canonical.launchpad.scripts.logger import (
-    logger_options, logger, log, BufferLogger, FakeLogger, QuietFakeLogger)
+    BufferLogger,
+    FakeLogger,
+    log,
+    logger,
+    logger_options,
+    QuietFakeLogger,
+    )
 # Intentional re-export, following along the lines of the logger module.
 from canonical.launchpad.scripts.loghandlers import WatchedFileHandler
+from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
+from canonical.launchpad.webapp.interaction import (
+    ANONYMOUS,
+    setupInteractionByEmail,
+    )
+
 
 def execute_zcml_for_scripts(use_web_security=False):
     """Execute the zcml rooted at launchpad/script.zcml

@@ -1,11 +1,22 @@
-from zope.interface import Attribute, Interface
-from zope.schema import Int, Object
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    )
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Int,
+    Object,
+    )
 
 from canonical.launchpad import _
-
-from lazr.enum import DBEnumeratedType, DBItem
-
-from lp.services.job.interfaces.job import IJob, IJobSource, IRunnableJob
+from lp.services.job.interfaces.job import (
+    IJob,
+    IJobSource,
+    IRunnableJob,
+    )
 from lp.soyuz.interfaces.archive import IArchive
 
 

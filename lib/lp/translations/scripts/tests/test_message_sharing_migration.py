@@ -6,25 +6,25 @@ __metaclass__ = type
 from datetime import timedelta
 import gc
 from logging import ERROR
-import transaction
 from unittest import TestLoader
 
+import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.testing import LaunchpadZopelessLayer
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing import (
     record_statements,
     TestCaseWithFactory,
     )
-from lp.translations.interfaces.pofiletranslator import (
-    IPOFileTranslatorSet)
+from lp.translations.interfaces.pofiletranslator import IPOFileTranslatorSet
 from lp.translations.model.pomsgid import POMsgID
 from lp.translations.model.potemplate import POTemplate
 from lp.translations.model.potranslation import POTranslation
 from lp.translations.scripts.message_sharing_migration import (
-    MessageSharingMerge)
-from canonical.testing import LaunchpadZopelessLayer
+    MessageSharingMerge,
+    )
 
 
 class TranslatableProductMixin:

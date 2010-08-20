@@ -7,8 +7,8 @@ __metaclass__ = type
 
 import unittest
 
-from lp.testing import TestCase
 from canonical.launchpad.webapp.servers import WebServicePublication
+from lp.testing import TestCase
 
 
 class FakeContext:

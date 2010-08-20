@@ -11,16 +11,27 @@ from calendar import timegm
 import datetime
 import time
 
+import pytz
+from sqlobject import (
+    IntCol,
+    StringCol,
+    )
+from storm.expr import (
+    And,
+    Or,
+    Select,
+    )
+from zope.interface import implements
+
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
-import pytz
-from sqlobject import IntCol, StringCol
-from storm.expr import Select, And, Or
-from zope.interface import implements
-
-from lp.services.job.interfaces.job import IJob, JobStatus, LeaseHeld
+from lp.services.job.interfaces.job import (
+    IJob,
+    JobStatus,
+    LeaseHeld,
+    )
 
 
 UTC = pytz.timezone('UTC')

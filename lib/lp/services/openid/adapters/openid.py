@@ -10,14 +10,20 @@ __all__ = [
     'OpenIDPersistentIdentity',
     ]
 
-from zope.component import adapter, adapts
-from zope.interface import implementer, implements
+from zope.component import (
+    adapter,
+    adapts,
+    )
+from zope.interface import (
+    implementer,
+    implements,
+    )
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.interfaces.account import IAccount
 from canonical.launchpad.webapp.vhosts import allvhosts
-from lp.services.openid.interfaces.openid import IOpenIDPersistentIdentity
 from lp.registry.interfaces.person import IPerson
+from lp.services.openid.interfaces.openid import IOpenIDPersistentIdentity
 
 
 class CurrentOpenIDEndPoint:

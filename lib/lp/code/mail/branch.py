@@ -10,8 +10,10 @@ from canonical.launchpad.mail import format_address
 from canonical.launchpad.webapp import canonical_url
 from lp.code.adapters.branch import BranchDelta
 from lp.code.enums import (
-    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
-    CodeReviewNotificationLevel)
+    BranchSubscriptionDiffSize,
+    BranchSubscriptionNotificationLevel,
+    CodeReviewNotificationLevel,
+    )
 from lp.registry.interfaces.person import IPerson
 from lp.services.mail import basemailer
 from lp.services.mail.basemailer import BaseMailer

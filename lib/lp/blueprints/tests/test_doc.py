@@ -9,10 +9,10 @@ import logging
 import os
 
 from canonical.launchpad.testing.systemdocs import (
-    LayeredDocFileSuite, setUp, tearDown)
-from canonical.launchpad.ftests.test_system_documentation import(
-    ProcessMailLayer)
-
+    LayeredDocFileSuite,
+    setUp,
+    tearDown,
+    )
 from lp.services.testing import build_test_suite
 
 
