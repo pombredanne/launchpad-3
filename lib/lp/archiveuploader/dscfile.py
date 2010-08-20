@@ -65,7 +65,7 @@ class DpkgSourceError(Exception):
 def unpack_source(dsc_filepath):
     """Unpack a source package into a temporary directory
 
-    :param dsc_filenpath: Path to the dsc file
+    :param dsc_filepath: Path to the dsc file
     :return: Path to the temporary directory with the unpacked sources
     """
     # Get a temporary dir together.

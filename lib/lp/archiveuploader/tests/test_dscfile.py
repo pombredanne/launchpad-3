@@ -313,7 +313,7 @@ class UnpackedDirTests(TestCase):
         os.mkdir(unpacked_dir)
         bar_path = os.path.join(unpacked_dir, "bar_1.0")
         os.mkdir(bar_path)
-        os.chmod(unpacked_dir, 0600)
         os.chmod(bar_path, 0600)
+        os.chmod(unpacked_dir, 0600)
         cleanup_unpacked_dir(unpacked_dir)
         self.assertFalse(os.path.exists(unpacked_dir))
