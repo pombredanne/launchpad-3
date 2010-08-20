@@ -847,7 +847,7 @@
                 permission="launchpad.Special"
                 interface="lp.registry.interfaces.person.IPersonSpecialRestricted"/>
             <require
-                permission="launchpad.Edit"
+                permission="launchpad.Moderate"
                 set_schema="lp.registry.interfaces.person.IHasStanding"/>
         </class>
 

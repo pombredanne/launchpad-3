@@ -109,6 +109,9 @@ admins.
     >>> expert_browser.getControl('Name', index=0).value = "no-way"
     >>> expert_browser.getControl(
     ...     'Display Name', index=0).value = 'Ray'
+    >>> expert_browser.getControl('Personal standing').value = ['GOOD']
+    >>> expert_browser.getControl(
+    ...     name='field.personal_standing_reason').value = 'good guy'
     >>> expert_browser.getControl('Change').click()
     >>> print expert_browser.title
     Ray in Launchpad
