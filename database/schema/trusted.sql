@@ -1719,10 +1719,10 @@ AS $_$
 
     date_expected, name = args
 
-    def substitude_filled_numbers(match):
+    def substitute_filled_numbers(match):
         return match.group(0).zfill(5)
 
-    name = re.sub(u'\d+', substitude_filled_numbers, name)
+    name = re.sub(u'\d+', substitute_filled_numbers, name)
     if date_expected is None:
         # NULL dates are considered to be in the future.
         date_expected = datetime.datetime(datetime.MAXYEAR, 1, 1)
