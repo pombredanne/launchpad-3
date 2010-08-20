@@ -299,7 +299,7 @@ class UnpackedDirTests(TestCase):
     def test_cleanup(self):
         # cleanup_dir removes the temporary directory and all files under it.
         temp_dir = self.makeTemporaryDirectory()
-        unpacked_dir = os.path.join(temp_dir)
+        unpacked_dir = os.path.join(temp_dir, "unpacked")
         os.mkdir(unpacked_dir)
         os.mkdir(os.path.join(unpacked_dir, "bar_1.0"))
         cleanup_unpacked_dir(unpacked_dir)
@@ -309,7 +309,7 @@ class UnpackedDirTests(TestCase):
         # cleanup_dir can remove a directory even if the mode does
         # not allow it.
         temp_dir = self.makeTemporaryDirectory()
-        unpacked_dir = os.path.join(temp_dir)
+        unpacked_dir = os.path.join(temp_dir, "unpacked")
         os.mkdir(unpacked_dir)
         bar_path = os.path.join(unpacked_dir, "bar_1.0")
         os.mkdir(bar_path)
