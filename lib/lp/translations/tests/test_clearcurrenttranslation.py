@@ -15,7 +15,9 @@ from pytz import UTC
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.database.constants import UTC_NOW
 from canonical.testing import DatabaseFunctionalLayer
+
 from lp.testing import TestCaseWithFactory
 from lp.translations.interfaces.side import ITranslationSideTraitsSet
 from lp.translations.interfaces.translationmessage import (
@@ -230,7 +232,7 @@ class ScenarioMixin:
         blank = self.factory.makeSuggestion(
             potmsgset=potmsgset, pofile=pofile, translations=[])
 
-        old_review_date = datetime.now(UTC) - timedelta(days=7, seconds=1)
+        old_review_date = datetime.now(UTC) - timedelta(days=7)
         old_reviewer = self.factory.makePerson()
         blank.markReviewed(old_reviewer, timestamp=old_review_date)
 
@@ -245,10 +247,7 @@ class ScenarioMixin:
             potmsgset, template, pofile.language)
 
         self.assertEqual(new_reviewer, current.reviewer)
-        self.assertBetween(
-            old_review_date + timedelta(days=7),
-            current.date_reviewed,
-            datetime.now(UTC) + timedelta(seconds=1))
+        self.assertSqlAttributeEqualsDate(current, 'date_reviewed', UTC_NOW)
 
 
 class TestClearCurrentTranslationUpstream(TestCaseWithFactory,

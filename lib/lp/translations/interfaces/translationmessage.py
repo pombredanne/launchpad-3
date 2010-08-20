@@ -8,6 +8,8 @@ from zope.schema import (
     Bool, Choice, Datetime, Int, List, Object, Text, TextLine)
 from lazr.enum import DBEnumeratedType, DBItem
 
+from canonical.database.constants import UTC_NOW
+
 from canonical.launchpad import _
 from lp.registry.interfaces.person import IPerson
 from lp.translations.interfaces.pofile import IPOFile
@@ -255,7 +257,7 @@ class ITranslationMessage(Interface):
             HTML element id.
         """
 
-    def markReviewed(reviewer, timestamp=None):
+    def markReviewed(reviewer, timestamp=UTC_NOW):
         """Mark this message as reviewed.
 
         Sets the reviewer and review date for this message.

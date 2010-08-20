@@ -98,11 +98,8 @@ class TranslationMessageMixIn:
         """See `ITranslationMessage`."""
         self.browser_pofile = pofile
 
-    def markReviewed(self, reviewer, timestamp=None):
+    def markReviewed(self, reviewer, timestamp=UTC_NOW):
         """See `ITranslationMessage`."""
-        if timestamp is None:
-            timestamp = datetime.now(UTC)
-
         self.reviewer = reviewer
         self.date_reviewed = timestamp
 
