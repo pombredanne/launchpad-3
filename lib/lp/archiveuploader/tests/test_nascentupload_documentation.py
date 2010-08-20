@@ -42,7 +42,6 @@ def getUploadForBinary(upload_path):
     """Return a NascentUpload object for binaries."""
     policy = getPolicy(name='sync', distro='ubuntu', distroseries='hoary')
     policy.can_upload_binaries = True
-    policy.can_upload_mixed = True
     return NascentUpload.from_changesfile_path(
         datadir(upload_path), policy, mock_logger_quiet)
 
