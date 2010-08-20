@@ -33,7 +33,7 @@ from lazr.restful.interface import copy_field
 from lazr.restful.declarations import (
     call_with, export_as_webservice_entry, export_read_operation,
     export_write_operation, exported, LAZR_WEBSERVICE_EXPORTED,
-    operation_for_version, operation_parameters, operation_removed_in_version,
+    operation_parameters, operation_removed_in_version,
     operation_returns_collection_of, REQUEST_USER)
 
 
