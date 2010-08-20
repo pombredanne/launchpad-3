@@ -1,4 +1,4 @@
-launchpad-buildd (69) hardy-cat; urgency=low
+launchpad-buildd (70~0) hardy-cat; urgency=low
 
   [ James Westby ]
   * buildrecipe: Specify BZR_EMAIL via sudo so that the called command
@@ -8,7 +8,16 @@ launchpad-buildd (69) hardy-cat; urgency=low
   * buildrecipe: flush stdout before calling another command so that
     the build log has the output correctly interleaved.
 
- -- James Westby <james.westby@linaro.org>  Fri, 20 Aug 2010 13:20:15 -0400
+  [ William Grant ]
+  * correct arch_tag arguments.
+
+ -- LaMont Jones <lamont@canonical.com>  Fri, 20 Aug 2010 13:27:55 -0600
+
+launchpad-buildd (69) hardy-cat; urgency=low
+
+  * REVERT all of version 68 except for BZR_EMAIL LP#617072
+
+ -- LaMont Jones <lamont@canonical.com>  Tue, 17 Aug 2010 10:40:03 -0600
 
 launchpad-buildd (68) hardy-cat; urgency=low
 
