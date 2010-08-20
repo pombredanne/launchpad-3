@@ -248,6 +248,10 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def _set_answers_usage(self, val):
         self._answers_usage = val
+        if val == ServiceUsage.LAUNCHPAD:
+            self.official_answers = True
+        else:
+            self.official_answers = False
 
     answers_usage = property(
         _get_answers_usage,
@@ -269,6 +273,10 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def _set_blueprints_usage(self, val):
         self._blueprints_usage = val
+        if val == ServiceUsage.LAUNCHPAD:
+            self.official_blueprints = True
+        else:
+            self.official_blueprints = False
 
     blueprints_usage = property(
         _get_blueprints_usage,
@@ -290,6 +298,10 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def _set_translations_usage(self, val):
         self._translations_usage = val
+        if val == ServiceUsage.LAUNCHPAD:
+            self.official_rosetta = True
+        else:
+            self.official_rosetta = False
 
     translations_usage = property(
         _get_translations_usage,

@@ -58,6 +58,18 @@ class TestDistributionUsageEnums(TestCaseWithFactory):
             ServiceUsage.EXTERNAL,
             self.distribution.answers_usage)
 
+    def test_answers_setter(self):
+        login_person(self.distribution.owner)
+        self.distribution.official_answers = True
+        self.distribution.answers_usage = ServiceUsage.EXTERNAL
+        self.assertEqual(
+            False,
+            self.distribution.official_answers)
+        self.distribution.answers_usage = ServiceUsage.LAUNCHPAD
+        self.assertEqual(
+            True,
+            self.distribution.official_answers)
+
     def test_codehosting_usage(self):
         # Only test get for codehosting; this has no setter because the
         # state is derived from other data.
@@ -90,6 +102,18 @@ class TestDistributionUsageEnums(TestCaseWithFactory):
             ServiceUsage.EXTERNAL,
             self.distribution.translations_usage)
 
+    def test_translations_setter(self):
+        login_person(self.distribution.owner)
+        self.distribution.official_rosetta = True
+        self.distribution.translations_usage = ServiceUsage.EXTERNAL
+        self.assertEqual(
+            False,
+            self.distribution.official_rosetta)
+        self.distribution.translations_usage = ServiceUsage.LAUNCHPAD
+        self.assertEqual(
+            True,
+            self.distribution.official_rosetta)
+
     def test_bug_tracking_usage(self):
         # Only test get for bug_tracking; this has no setter because the
         # state is derived from other data.
@@ -121,6 +145,18 @@ class TestDistributionUsageEnums(TestCaseWithFactory):
         self.assertEqual(
             ServiceUsage.EXTERNAL,
             self.distribution.blueprints_usage)
+
+    def test_blueprints_setter(self):
+        login_person(self.distribution.owner)
+        self.distribution.official_blueprints = True
+        self.distribution.blueprints_usage = ServiceUsage.EXTERNAL
+        self.assertEqual(
+            False,
+            self.distribution.official_blueprints)
+        self.distribution.blueprints_usage = ServiceUsage.LAUNCHPAD
+        self.assertEqual(
+            True,
+            self.distribution.official_blueprints)
 
 
 class TestDistribution(TestCaseWithFactory):

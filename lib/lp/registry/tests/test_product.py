@@ -62,6 +62,18 @@ class TestProductUsageEnums(TestCaseWithFactory):
         self.product.answers_usage = ServiceUsage.EXTERNAL
         self.assertEqual(ServiceUsage.EXTERNAL, self.product.answers_usage)
 
+    def test_answers_setter(self):
+        login_person(self.product.owner)
+        self.product.official_answers = True
+        self.product.answers_usage = ServiceUsage.EXTERNAL
+        self.assertEqual(
+            False,
+            self.product.official_answers)
+        self.product.answers_usage = ServiceUsage.LAUNCHPAD
+        self.assertEqual(
+            True,
+            self.product.official_answers)
+
     def test_codehosting_usage(self):
         # Only test get for codehosting; this has no setter because the
         # state is derived from other data.
@@ -92,6 +104,18 @@ class TestProductUsageEnums(TestCaseWithFactory):
             ServiceUsage.EXTERNAL,
             self.product.translations_usage)
 
+    def test_translations_setter(self):
+        login_person(self.product.owner)
+        self.product.official_rosetta = True
+        self.product.translations_usage = ServiceUsage.EXTERNAL
+        self.assertEqual(
+            False,
+            self.product.official_rosetta)
+        self.product.translations_usage = ServiceUsage.LAUNCHPAD
+        self.assertEqual(
+            True,
+            self.product.official_rosetta)
+
     def test_bug_tracking_usage(self):
         # Only test get for bug_tracking; this has no setter because the
         # state is derived from other data.
@@ -117,6 +141,18 @@ class TestProductUsageEnums(TestCaseWithFactory):
         login_person(self.product.owner)
         self.product.blueprints_usage = ServiceUsage.EXTERNAL
         self.assertEqual(ServiceUsage.EXTERNAL, self.product.blueprints_usage)
+
+    def test_blueprints_setter(self):
+        login_person(self.product.owner)
+        self.product.official_blueprints = True
+        self.product.blueprints_usage = ServiceUsage.EXTERNAL
+        self.assertEqual(
+            False,
+            self.product.official_blueprints)
+        self.product.blueprints_usage = ServiceUsage.LAUNCHPAD
+        self.assertEqual(
+            True,
+            self.product.official_blueprints)
 
 
 class TestProduct(TestCaseWithFactory):
