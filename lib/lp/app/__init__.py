@@ -5,9 +5,7 @@
 
 It contains the code and templates that glue all the other components
 together. As such, it can import from any modules, but nothing should import
-
-
-
+from it.
 """
 
 __metaclass__ = type
@@ -17,5 +15,7 @@ __all__ = []
 # values, but they kindly left this global variable for you to monkey patch if
 # you want the old behavior, just like we do.
 from zope.app.form.browser import itemswidgets
+
+
 itemswidgets.EXPLICIT_EMPTY_SELECTION = False
 
