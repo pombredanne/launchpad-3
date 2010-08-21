@@ -6,16 +6,20 @@
 __metaclass__ = type
 
 from zope.app.form.browser import TextAreaWidget
-
 from zope.component import getUtility
 from zope.interface import Interface
 
 from canonical.launchpad import _
 from canonical.launchpad.helpers import english_list
 from canonical.launchpad.webapp import (
-    LaunchpadFormView, action, canonical_url, custom_widget)
+    action,
+    canonical_url,
+    custom_widget,
+    LaunchpadFormView,
+    )
 from lp.blueprints.interfaces.specificationfeedback import (
-    ISpecificationFeedback)
+    ISpecificationFeedback,
+    )
 from lp.registry.interfaces.person import IPersonSet
 
 

@@ -15,35 +15,58 @@ __all__ = [
     ]
 
 from contextlib import contextmanager
-from datetime import datetime, timedelta
+from datetime import (
+    datetime,
+    timedelta,
+    )
 import httplib
 import unittest
 
 import mechanize
-
-from openid.consumer.consumer import FAILURE, SUCCESS
+from openid.consumer.consumer import (
+    FAILURE,
+    SUCCESS,
+    )
 from openid.extensions import sreg
-
 from zope.component import getUtility
 from zope.security.management import newInteraction
 from zope.security.proxy import removeSecurityProxy
 from zope.session.interfaces import ISession
 
-from canonical.launchpad.interfaces.account import AccountStatus, IAccountSet
+from canonical.launchpad.interfaces.account import (
+    AccountStatus,
+    IAccountSet,
+    )
+from canonical.launchpad.testing.browser import (
+    Browser,
+    setUp,
+    tearDown,
+    )
 from canonical.launchpad.testing.pages import (
-    extract_text, find_main_content, find_tag_by_id, find_tags_by_class)
+    extract_text,
+    find_main_content,
+    find_tag_by_id,
+    find_tags_by_class,
+    )
 from canonical.launchpad.testing.systemdocs import LayeredDocFileSuite
-from canonical.launchpad.testing.browser import Browser, setUp, tearDown
 from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
-from canonical.launchpad.webapp.login import OpenIDCallbackView, OpenIDLogin
 from canonical.launchpad.webapp.interfaces import IStoreSelector
+from canonical.launchpad.webapp.login import (
+    OpenIDCallbackView,
+    OpenIDLogin,
+    )
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import (
-    AppServerLayer, DatabaseFunctionalLayer, FunctionalLayer)
-
+    AppServerLayer,
+    DatabaseFunctionalLayer,
+    FunctionalLayer,
+    )
 from lp.registry.interfaces.person import IPerson
+from lp.testing import (
+    logout,
+    TestCaseWithFactory,
+    )
 from lp.testopenid.interfaces.server import ITestOpenIDPersistentIdentity
-from lp.testing import logout, TestCaseWithFactory
 
 
 class FakeOpenIDResponse:

@@ -10,7 +10,6 @@ import unittest
 from storm.store import Store
 
 from canonical.testing import LaunchpadZopelessLayer
-
 from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.testing import TestCaseWithFactory
 from lp.testing.factory import LaunchpadObjectFactory

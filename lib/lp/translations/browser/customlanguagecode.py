@@ -16,18 +16,22 @@ __all__ = [
 
 import re
 
-from canonical.lazr.utils import smartquote
-
-from lp.app.errors import NotFoundError
-from lp.translations.interfaces.customlanguagecode import (
-    ICustomLanguageCode, IHasCustomLanguageCodes)
-
 from canonical.launchpad.webapp import (
-    action, canonical_url, LaunchpadFormView, LaunchpadView, Navigation,
-    stepthrough)
+    action,
+    canonical_url,
+    LaunchpadFormView,
+    LaunchpadView,
+    Navigation,
+    stepthrough,
+    )
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.menu import structured
-
+from canonical.lazr.utils import smartquote
+from lp.app.errors import NotFoundError
+from lp.translations.interfaces.customlanguagecode import (
+    ICustomLanguageCode,
+    IHasCustomLanguageCodes,
+    )
 
 # Regex for allowable custom language codes.
 CODE_PATTERN = "[a-zA-Z0-9_-]+$"

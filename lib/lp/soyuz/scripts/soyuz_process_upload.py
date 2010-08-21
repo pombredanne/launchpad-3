@@ -11,7 +11,9 @@ import os
 from lp.archiveuploader.uploadpolicy import findPolicyByName
 from lp.archiveuploader.uploadprocessor import UploadProcessor
 from lp.services.scripts.base import (
-    LaunchpadCronScript, LaunchpadScriptFailure)
+    LaunchpadCronScript,
+    LaunchpadScriptFailure,
+    )
 
 
 class ProcessUpload(LaunchpadCronScript):

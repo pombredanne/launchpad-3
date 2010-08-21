@@ -7,8 +7,10 @@
 import hashlib
 import xmlrpclib
 
-from Mailman import Errors
-from Mailman import mm_cfg
+from Mailman import (
+    Errors,
+    mm_cfg,
+    )
 from Mailman.Logging.Syslog import syslog
 
 

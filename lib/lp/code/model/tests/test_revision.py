@@ -5,32 +5,48 @@
 
 __metaclass__ = type
 
-from datetime import datetime, timedelta
+from datetime import (
+    datetime,
+    timedelta,
+    )
 import time
-from unittest import TestCase, TestLoader
+from unittest import (
+    TestCase,
+    TestLoader,
+    )
 
 import psycopg2
 import pytz
 from storm.store import Store
-
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.sqlbase import cursor
-from canonical.launchpad.ftests import login, logout
-from canonical.launchpad.interfaces.lpstorm import IMasterObject
+from canonical.launchpad.ftests import (
+    login,
+    logout,
+    )
 from canonical.launchpad.interfaces.account import AccountStatus
+from canonical.launchpad.interfaces.lpstorm import IMasterObject
 from canonical.launchpad.scripts.garbo import RevisionAuthorEmailLinker
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 from canonical.testing import DatabaseFunctionalLayer
-
 from lp.code.enums import BranchLifecycleStatus
-from lp.code.interfaces.revision import IRevisionSet
 from lp.code.interfaces.branchlookup import IBranchLookup
-from lp.code.model.revision import RevisionCache, RevisionSet
+from lp.code.interfaces.revision import IRevisionSet
+from lp.code.model.revision import (
+    RevisionCache,
+    RevisionSet,
+    )
 from lp.registry.model.karma import Karma
-from lp.testing import TestCaseWithFactory, time_counter
+from lp.testing import (
+    TestCaseWithFactory,
+    time_counter,
+    )
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.logger import MockLogger
 

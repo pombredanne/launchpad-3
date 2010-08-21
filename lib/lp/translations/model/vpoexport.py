@@ -12,21 +12,27 @@ __all__ = [
     'VPOExport'
     ]
 
+from storm.expr import (
+    And,
+    Or,
+    )
 from zope.component import getUtility
 from zope.interface import implements
 
-from storm.expr import And, Or
-
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, SLAVE_FLAVOR)
+    IStoreSelector,
+    MAIN_STORE,
+    SLAVE_FLAVOR,
+    )
 from lp.soyuz.model.component import Component
-from lp.soyuz.model.publishing import (
-    SourcePackagePublishingHistory)
+from lp.soyuz.model.publishing import SourcePackagePublishingHistory
+from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
+from lp.translations.interfaces.vpoexport import (
+    IVPOExport,
+    IVPOExportSet,
+    )
 from lp.translations.model.pofile import POFile
 from lp.translations.model.potemplate import POTemplate
-from lp.soyuz.model.sourcepackagerelease import (
-    SourcePackageRelease)
-from lp.translations.interfaces.vpoexport import IVPOExport, IVPOExportSet
 
 
 class VPOExportSet:

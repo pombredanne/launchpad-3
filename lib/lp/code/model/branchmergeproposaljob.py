@@ -29,50 +29,84 @@ __all__ = [
     ]
 
 import contextlib
-from datetime import datetime, timedelta
+from datetime import (
+    datetime,
+    timedelta,
+    )
 from email.utils import parseaddr
 
 from lazr.delegates import delegates
-from lazr.enum import DBEnumeratedType, DBItem
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    )
 import pytz
 import simplejson
 from sqlobject import SQLObjectNotFound
 from storm.base import Storm
-from storm.expr import And, Desc, Or
+from storm.expr import (
+    And,
+    Desc,
+    Or,
+    )
 from storm.info import ClassAlias
-from storm.locals import Int, Reference, Unicode
+from storm.locals import (
+    Int,
+    Reference,
+    Unicode,
+    )
 from storm.store import Store
 from zope.component import getUtility
-from zope.interface import classProvides, implements
+from zope.interface import (
+    classProvides,
+    implements,
+    )
 
 from canonical.config import config
 from canonical.database.enumcol import EnumCol
-from canonical.launchpad.database.message import MessageJob, MessageJobAction
+from canonical.launchpad.database.message import (
+    MessageJob,
+    MessageJobAction,
+    )
 from canonical.launchpad.interfaces.message import IMessageJob
 from canonical.launchpad.webapp import errorlog
 from canonical.launchpad.webapp.interaction import setupInteraction
 from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR, IPlacelessAuthUtility, IStoreSelector, MAIN_STORE,
-    MASTER_FLAVOR)
+    DEFAULT_FLAVOR,
+    IPlacelessAuthUtility,
+    IStoreSelector,
+    MAIN_STORE,
+    MASTER_FLAVOR,
+    )
 from lp.code.enums import BranchType
 from lp.code.interfaces.branchmergeproposal import (
-    IBranchMergeProposalJob, IBranchMergeProposalJobSource,
-    ICodeReviewCommentEmailJob, ICodeReviewCommentEmailJobSource,
-    ICreateMergeProposalJob, ICreateMergeProposalJobSource,
-    IMergeProposalCreatedJob, IMergeProposalCreatedJobSource,
-    IMergeProposalUpdatedEmailJob, IMergeProposalUpdatedEmailJobSource,
-    IReviewRequestedEmailJob, IReviewRequestedEmailJobSource,
-    IUpdatePreviewDiffJob, IUpdatePreviewDiffJobSource,
+    IBranchMergeProposalJob,
+    IBranchMergeProposalJobSource,
+    ICodeReviewCommentEmailJob,
+    ICodeReviewCommentEmailJobSource,
+    ICreateMergeProposalJob,
+    ICreateMergeProposalJobSource,
+    IMergeProposalCreatedJob,
+    IMergeProposalCreatedJobSource,
+    IMergeProposalUpdatedEmailJob,
+    IMergeProposalUpdatedEmailJobSource,
+    IReviewRequestedEmailJob,
+    IReviewRequestedEmailJobSource,
+    IUpdatePreviewDiffJob,
+    IUpdatePreviewDiffJobSource,
     )
 from lp.code.mail.branch import RecipientReason
 from lp.code.mail.branchmergeproposal import BMPMailer
 from lp.code.mail.codereviewcomment import CodeReviewCommentMailer
 from lp.code.model.branchmergeproposal import BranchMergeProposal
 from lp.code.model.diff import PreviewDiff
-from lp.codehosting.vfs import get_ro_server, get_rw_server
+from lp.codehosting.vfs import (
+    get_ro_server,
+    get_rw_server,
+    )
 from lp.registry.interfaces.person import IPersonSet
-from lp.services.job.model.job import Job
 from lp.services.job.interfaces.job import JobStatus
+from lp.services.job.model.job import Job
 from lp.services.job.runner import BaseRunnableJob
 from lp.services.mail.sendmail import format_address_for_person
 

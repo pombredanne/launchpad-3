@@ -7,30 +7,43 @@ __metaclass__ = type
 __all__ = ['ExportTranslationsToBranch']
 
 
+from datetime import (
+    datetime,
+    timedelta,
+    )
 import os.path
-from datetime import datetime, timedelta
-
-import pytz
-
-from zope.component import getUtility
 
 from bzrlib.errors import NotBranchError
-
-from storm.expr import Join, SQL
+import pytz
+from storm.expr import (
+    Join,
+    SQL,
+    )
+from zope.component import getUtility
 
 from canonical.config import config
 from canonical.launchpad.helpers import (
-    get_contact_email_addresses, get_email_template, shortlist)
-from lp.services.mail.sendmail import format_address, simple_sendmail
-from lp.codehosting.vfs import get_rw_server
-from lp.translations.interfaces.potemplate import IPOTemplateSet
+    get_contact_email_addresses,
+    get_email_template,
+    shortlist,
+    )
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, SLAVE_FLAVOR)
-
+    IStoreSelector,
+    MAIN_STORE,
+    SLAVE_FLAVOR,
+    )
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource
 from lp.code.model.directbranchcommit import (
-    ConcurrentUpdateError, DirectBranchCommit)
+    ConcurrentUpdateError,
+    DirectBranchCommit,
+    )
+from lp.codehosting.vfs import get_rw_server
+from lp.services.mail.sendmail import (
+    format_address,
+    simple_sendmail,
+    )
 from lp.services.scripts.base import LaunchpadCronScript
+from lp.translations.interfaces.potemplate import IPOTemplateSet
 
 
 class ExportTranslationsToBranch(LaunchpadCronScript):

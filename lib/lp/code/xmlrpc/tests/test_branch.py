@@ -12,18 +12,20 @@ import unittest
 import xmlrpclib
 
 from bzrlib import urlutils
-
+from lazr.uri import URI
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.launchpad.ftests import login, logout
-from lp.code.enums import BranchType
-from lp.testing import TestCaseWithFactory
-from lazr.uri import URI
-from lp.code.xmlrpc.branch import PublicCodehostingAPI
-from lp.services.xmlrpc import LaunchpadFault
+from canonical.launchpad.ftests import (
+    login,
+    logout,
+    )
 from canonical.launchpad.xmlrpc import faults
 from canonical.testing import DatabaseFunctionalLayer
+from lp.code.enums import BranchType
+from lp.code.xmlrpc.branch import PublicCodehostingAPI
+from lp.services.xmlrpc import LaunchpadFault
+from lp.testing import TestCaseWithFactory
 
 
 NON_ASCII_NAME = u'nam\N{LATIN SMALL LETTER E WITH ACUTE}'

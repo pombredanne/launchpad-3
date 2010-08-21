@@ -13,23 +13,31 @@ __all__ = [
     ]
 
 from itertools import groupby
-from operator import attrgetter, itemgetter
+from operator import (
+    attrgetter,
+    itemgetter,
+    )
 
 import transaction
-
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.launchpad.helpers import emailPeople, get_email_template
+from canonical.launchpad.helpers import (
+    emailPeople,
+    get_email_template,
+    )
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.mailnotification import (
-    MailWrapper, generate_bug_add_email)
+    generate_bug_add_email,
+    MailWrapper,
+    )
 from canonical.launchpad.scripts.logger import log
 from canonical.launchpad.webapp import canonical_url
-
 from lp.bugs.interfaces.bugmessage import IBugMessageSet
 from lp.bugs.mail.bugnotificationbuilder import (
-    BugNotificationBuilder, get_bugmail_from_address)
+    BugNotificationBuilder,
+    get_bugmail_from_address,
+    )
 from lp.registry.interfaces.person import IPersonSet
 
 

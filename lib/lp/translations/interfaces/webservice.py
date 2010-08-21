@@ -13,12 +13,12 @@ __all__ = [
     'ITranslationImportQueueEntry',
     ]
 
+from lp.translations.interfaces.pofile import IPOFile
+from lp.translations.interfaces.potemplate import IPOTemplate
 from lp.translations.interfaces.translationimportqueue import (
     IHasTranslationImports,
     ITranslationImportQueue,
-    ITranslationImportQueueEntry)
+    ITranslationImportQueueEntry,
+    )
 
-from lp.translations.interfaces.potemplate import (
-    IPOTemplate)
-from lp.translations.interfaces.pofile import (
-    IPOFile)
+

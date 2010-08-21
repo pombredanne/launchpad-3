@@ -11,20 +11,29 @@ __all__ = [
 
 
 from datetime import datetime
-import pytz
 
-from sqlobject import ForeignKey, IntCol, StringCol
+import pytz
+from sqlobject import (
+    ForeignKey,
+    IntCol,
+    StringCol,
+    )
 from zope.interface import implements
 
 from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.database.sqlbase import (
+    SQLBase,
+    sqlvalues,
+    )
 from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.webapp.url import urlparse
 from canonical.launchpad.webapp.vhosts import allvhosts
 from lp.services.openid.interfaces.openid import IOpenIDPersistentIdentity
 from lp.services.openid.interfaces.openidrpsummary import (
-    IOpenIDRPSummary, IOpenIDRPSummarySet)
+    IOpenIDRPSummary,
+    IOpenIDRPSummarySet,
+    )
 
 
 class OpenIDRPSummary(SQLBase):

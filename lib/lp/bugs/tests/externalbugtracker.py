@@ -7,43 +7,71 @@
 
 __metaclass__ = type
 
+from datetime import (
+    datetime,
+    timedelta,
+    )
+from httplib import HTTPMessage
 import os
-import re
 import random
+import re
+from StringIO import StringIO
 import time
+from urllib2 import (
+    BaseHandler,
+    Request,
+    )
 import urlparse
 import xmlrpclib
-
-from StringIO import StringIO
-from datetime import datetime, timedelta
-from httplib import HTTPMessage
-from urllib2 import BaseHandler, Request
 
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.database.sqlbase import commit, ZopelessTransactionManager
-from lp.bugs.externalbugtracker import (
-    BATCH_SIZE_UNLIMITED, BugNotFound, BugTrackerConnectError, Bugzilla,
-    DebBugs, ExternalBugTracker, Mantis, RequestTracker, Roundup, SourceForge,
-    Trac)
-from lp.bugs.externalbugtracker.trac import (
-    FAULT_TICKET_NOT_FOUND, LP_PLUGIN_BUG_IDS_ONLY, LP_PLUGIN_FULL,
-    LP_PLUGIN_METADATA_AND_COMMENTS, LP_PLUGIN_METADATA_ONLY)
-from lp.bugs.externalbugtracker.xmlrpc import (
-    UrlLib2Transport)
-from canonical.launchpad.ftests import login, logout
-from lp.bugs.interfaces.bugtask import BugTaskImportance, BugTaskStatus
-from lp.bugs.interfaces.externalbugtracker import (
-    UNKNOWN_REMOTE_IMPORTANCE, UNKNOWN_REMOTE_STATUS)
+from canonical.database.sqlbase import (
+    commit,
+    ZopelessTransactionManager,
+    )
 from canonical.launchpad.database import BugTracker
-from lp.bugs.interfaces.bugtracker import IBugTrackerSet
-from lp.registry.interfaces.person import IPersonSet
+from canonical.launchpad.ftests import (
+    login,
+    logout,
+    )
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
-from lp.bugs.scripts import debbugs
 from canonical.launchpad.testing.systemdocs import ordered_dict_as_string
 from canonical.launchpad.xmlrpc import ExternalBugTrackerTokenAPI
 from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.bugs.externalbugtracker import (
+    BATCH_SIZE_UNLIMITED,
+    BugNotFound,
+    BugTrackerConnectError,
+    Bugzilla,
+    DebBugs,
+    ExternalBugTracker,
+    Mantis,
+    RequestTracker,
+    Roundup,
+    SourceForge,
+    Trac,
+    )
+from lp.bugs.externalbugtracker.trac import (
+    FAULT_TICKET_NOT_FOUND,
+    LP_PLUGIN_BUG_IDS_ONLY,
+    LP_PLUGIN_FULL,
+    LP_PLUGIN_METADATA_AND_COMMENTS,
+    LP_PLUGIN_METADATA_ONLY,
+    )
+from lp.bugs.externalbugtracker.xmlrpc import UrlLib2Transport
+from lp.bugs.interfaces.bugtask import (
+    BugTaskImportance,
+    BugTaskStatus,
+    )
+from lp.bugs.interfaces.bugtracker import IBugTrackerSet
+from lp.bugs.interfaces.externalbugtracker import (
+    UNKNOWN_REMOTE_IMPORTANCE,
+    UNKNOWN_REMOTE_STATUS,
+    )
+from lp.bugs.scripts import debbugs
+from lp.registry.interfaces.person import IPersonSet
 
 
 def new_bugtracker(bugtracker_type, base_url='http://bugs.some.where'):
