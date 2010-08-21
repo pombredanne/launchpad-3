@@ -47,11 +47,6 @@
       #homepage-blogposts {
           padding-right: 4em;
       }
-      .homepage-getstarted h2 {
-          border-bottom: 1px solid;
-          margin-top: 1em;
-          font-size: 161%;
-          }
       #homepage-getstarted ul {
           padding-top: 0.5em;
           }
