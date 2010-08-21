@@ -141,7 +141,7 @@
     }
 
 html, body {
-    font-family: "dejavu sans", "bitstream vera sans", verdana, sans-serif;
+    font-family: 'Ubuntu Beta', 'Ubuntu', 'Bitstream Vera Sans', 'DejaVu Sans', Tahoma, sans-serif;
     font-size: 93%;
     }
 body.private {
@@ -1749,7 +1749,7 @@ a.unofficial-tag {
 pre.changelog, table.diff,
 .bug-comment, .bug-activity, .codereviewcomment {
     font-size: 116%;
-    font-family: monospace;
+    font-family: 'UbuntuBeta Mono', 'Ubuntu Mono', monospace;
     }
 .cloud-size-smallest {
     font-size: 77%;
