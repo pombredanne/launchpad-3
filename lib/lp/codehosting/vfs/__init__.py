@@ -25,7 +25,8 @@ from lp.codehosting.vfs.branchfs import (
     make_branch_mirrorer,
     )
 from lp.codehosting.vfs.branchfsclient import (
-    BlockingProxy,BranchFileSystemClient,
+    BlockingProxy,
+    BranchFileSystemClient,
     )
 
 
