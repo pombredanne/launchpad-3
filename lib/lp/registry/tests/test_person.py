@@ -63,12 +63,6 @@ class TestPersonTeams(TestCaseWithFactory):
         login_person(self.a_team.teamowner)
         self.a_team.addMember(self.user, self.a_team.teamowner)
 
-    def test_jon_is_sane(self):
-        foobar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')	
-        team_list1 = [(t.team.displayname, t.team.name) for t in foobar.myactivememberships]
-        team_list2 = [(t.team.displayname, t.team.name) for t in foobar.team_memberships]
-        self.assertEqual(team_list1, team_list2)
-
     def test_teams_indirectly_participated_in(self):
         indirect_teams = self.user.teams_indirectly_participated_in
         expected_teams = [self.b_team, self.c_team]
