@@ -44,17 +44,16 @@ class MailingList_getSubscribers_TestCase(TestCaseWithFactory):
         self.team.addMember(active_member, reviewer=self.team.teamowner)
         # Even though our 3 members want to subscribe to the team's mailing
         # list, only the active member is considered a subscriber.
-        subscribers = [active_member]
         self.assertEqual(
-            subscribers, list(self.mailing_list.getSubscribers()))
+            [active_member], list(self.mailing_list.getSubscribers()))
 
-    def test_getSubscribers_with_same_displayname(self):
-        person_1 = self.factory.makePerson(name="p1", displayname="Me")
+    def test_getSubscribers_order(self):
+        person_1 = self.factory.makePerson(name="pb1", displayname="Me")
         with person_logged_in(person_1):
             person_1.mailing_list_auto_subscribe_policy = (
                 MailingListAutoSubscribePolicy.ALWAYS)
             person_1.join(self.team)
-        person_2 = self.factory.makePerson(name="p2", displayname="Me")
+        person_2 = self.factory.makePerson(name="pa2", displayname="Me")
         with person_logged_in(person_2):
             person_2.mailing_list_auto_subscribe_policy = (
                 MailingListAutoSubscribePolicy.ALWAYS)
@@ -62,4 +61,4 @@ class MailingList_getSubscribers_TestCase(TestCaseWithFactory):
         subscribers = self.mailing_list.getSubscribers()
         self.assertEqual(2, subscribers.count())
         self.assertEqual(
-            ['p1', 'p2'], [person.name for person in subscribers])
+            ['pa2', 'pb1'], [person.name for person in subscribers])
