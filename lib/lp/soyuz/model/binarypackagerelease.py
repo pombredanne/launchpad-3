@@ -12,7 +12,6 @@ __all__ = [
 
 
 import simplejson
-
 from sqlobject import (
     BoolCol,
     ForeignKey,
