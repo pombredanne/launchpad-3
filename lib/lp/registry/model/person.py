@@ -1710,13 +1710,13 @@ class Person(
         """See `IPerson`."""
         Team = ClassAlias(Person, "Team")
         store = Store.of(self)
-        # Join on team to sort by team names. Upper is used in the sort so 
+        # Join on team to sort by team names. Upper is used in the sort so
         # sorting works as is user expected, e.g. (A b C) not (A C b).
         return store.find(TeamMembership,
             And(TeamMembership.personID == self.id,
                 TeamMembership.teamID == Team.id,
                 TeamMembership.status.is_in([
-                    TeamMembershipStatus.APPROVED, 
+                    TeamMembershipStatus.APPROVED,
                     TeamMembershipStatus.ADMIN,
                     ]))).order_by(
                         Upper(Team.displayname),
