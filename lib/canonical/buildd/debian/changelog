@@ -1,4 +1,4 @@
-launchpad-buildd (70~0) hardy-cat; urgency=low
+launchpad-buildd (70) hardy-cat; urgency=low
 
   [ James Westby ]
   * buildrecipe: Specify BZR_EMAIL via sudo so that the called command
