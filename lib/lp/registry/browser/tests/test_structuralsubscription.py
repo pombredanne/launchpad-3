@@ -8,19 +8,22 @@ import unittest
 from lazr.restful.testing.webservice import FakeRequest
 from zope.publisher.interfaces import NotFound
 
-from canonical.launchpad.webapp.servers import StepsToGo
+from canonical.launchpad.ftests import (
+    login,
+    logout,
+    )
 from canonical.launchpad.webapp.publisher import canonical_url
+from canonical.launchpad.webapp.servers import StepsToGo
+from canonical.testing import DatabaseFunctionalLayer
+from lp.registry.browser.distribution import DistributionNavigation
+from lp.registry.browser.distributionsourcepackage import (
+    DistributionSourcePackageNavigation,
+    )
+from lp.registry.browser.distroseries import DistroSeriesNavigation
+from lp.registry.browser.milestone import MilestoneNavigation
 from lp.registry.browser.product import ProductNavigation
 from lp.registry.browser.productseries import ProductSeriesNavigation
-from lp.registry.browser.milestone import MilestoneNavigation
 from lp.registry.browser.project import ProjectNavigation
-from lp.registry.browser.distribution import DistributionNavigation
-from lp.registry.browser.distroseries import DistroSeriesNavigation
-from lp.registry.browser.distributionsourcepackage import (
-    DistributionSourcePackageNavigation)
-
-from canonical.launchpad.ftests import login, logout
-from canonical.testing import DatabaseFunctionalLayer
 from lp.testing import TestCaseWithFactory
 
 

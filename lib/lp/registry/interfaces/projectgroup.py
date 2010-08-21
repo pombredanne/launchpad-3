@@ -14,43 +14,80 @@ __all__ = [
     'IProjectGroupSet',
     ]
 
-from zope.interface import Interface, Attribute
-from zope.schema import Bool, Datetime, Int, Object, Text, TextLine
+from lazr.restful.declarations import (
+    collection_default_content,
+    export_as_webservice_collection,
+    export_as_webservice_entry,
+    export_read_operation,
+    exported,
+    operation_parameters,
+    operation_returns_collection_of,
+    )
+from lazr.restful.fields import (
+    CollectionField,
+    Reference,
+    ReferenceChoice,
+    )
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Bool,
+    Datetime,
+    Int,
+    Object,
+    Text,
+    TextLine,
+    )
 
 from canonical.launchpad import _
-from lp.services.fields import (
-    PublicPersonChoice, Summary, Title, URIField)
-from lp.app.interfaces.headings import IRootContext
-from lp.code.interfaces.branchvisibilitypolicy import (
-    IHasBranchVisibilityPolicy)
-from lp.code.interfaces.hasbranches import IHasBranches, IHasMergeProposals
-from lp.bugs.interfaces.bugtarget import IHasBugs, IHasOfficialBugTags
-from lp.bugs.interfaces.bugtracker import IBugTracker
-from lp.registry.interfaces.karma import IKarmaContext
 from canonical.launchpad.interfaces.launchpad import (
-    IHasAppointedDriver, IHasDrivers, IHasIcon, IHasLogo, IHasMugshot)
-from lp.registry.interfaces.role import IHasOwner
+    IHasAppointedDriver,
+    IHasDrivers,
+    IHasIcon,
+    IHasLogo,
+    IHasMugshot,
+    )
+from canonical.launchpad.validators.name import name_validator
+from lp.app.interfaces.headings import IRootContext
+from lp.blueprints.interfaces.specificationtarget import IHasSpecifications
+from lp.blueprints.interfaces.sprint import IHasSprints
+from lp.bugs.interfaces.bugtarget import (
+    IHasBugs,
+    IHasOfficialBugTags,
+    )
+from lp.bugs.interfaces.bugtracker import IBugTracker
+from lp.code.interfaces.branchvisibilitypolicy import (
+    IHasBranchVisibilityPolicy,
+    )
+from lp.code.interfaces.hasbranches import (
+    IHasBranches,
+    IHasMergeProposals,
+    )
+from lp.registry.interfaces.announcement import IMakesAnnouncements
+from lp.registry.interfaces.karma import IKarmaContext
 from lp.registry.interfaces.mentoringoffer import IHasMentoringOffers
 from lp.registry.interfaces.milestone import (
-    ICanGetMilestonesDirectly, IHasMilestones)
-from lp.registry.interfaces.announcement import IMakesAnnouncements
+    ICanGetMilestonesDirectly,
+    IHasMilestones,
+    )
 from lp.registry.interfaces.pillar import IPillar
-from lp.blueprints.interfaces.specificationtarget import (
-    IHasSpecifications)
-from lp.blueprints.interfaces.sprint import IHasSprints
-from lp.translations.interfaces.translationgroup import (
-    ITranslationPolicy)
+from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.structuralsubscription import (
-    IStructuralSubscriptionTarget)
-from canonical.launchpad.validators.name import name_validator
+    IStructuralSubscriptionTarget,
+    )
 from lp.services.fields import (
-    IconImageUpload, LogoImageUpload, MugshotImageUpload, PillarNameField)
-
-from lazr.restful.fields import CollectionField, Reference, ReferenceChoice
-from lazr.restful.declarations import (
-    collection_default_content, export_as_webservice_collection,
-    export_as_webservice_entry, export_read_operation, exported,
-    operation_parameters, operation_returns_collection_of)
+    IconImageUpload,
+    LogoImageUpload,
+    MugshotImageUpload,
+    PillarNameField,
+    PublicPersonChoice,
+    Summary,
+    Title,
+    URIField,
+    )
+from lp.translations.interfaces.translationgroup import ITranslationPolicy
 
 
 class ProjectNameField(PillarNameField):

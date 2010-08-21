@@ -44,94 +44,155 @@ __all__ = [
 
 
 from cgi import escape
-from datetime import datetime, timedelta
+from datetime import (
+    datetime,
+    timedelta,
+    )
 from operator import attrgetter
 
-import pytz
-
-from zope.component import getUtility
-from zope.event import notify
-from zope.app.form.browser import CheckBoxWidget, TextAreaWidget, TextWidget
-from zope.lifecycleevent import ObjectCreatedEvent
-from zope.interface import implements, Interface
-from zope.formlib import form
-from zope.schema import Bool, Choice
-from zope.schema.vocabulary import (
-    SimpleVocabulary, SimpleTerm)
-from zope.security.proxy import removeSecurityProxy
-
-from z3c.ptcompat import ViewPageTemplateFile
-
-from canonical.cachedproperty import cachedproperty
-
-from canonical.config import config
 from lazr.delegates import delegates
 from lazr.restful.interface import copy_field
-from canonical.launchpad import _
-from lp.services.fields import PillarAliases, PublicPersonChoice
-from lp.app.errors import NotFoundError
-from lp.app.interfaces.headings import IEditableContextTitle
-from lp.blueprints.browser.specificationtarget import (
-    HasSpecificationsMenuMixin)
-from lp.bugs.interfaces.bugtask import RESOLVED_BUGTASK_STATUSES
-from lp.code.browser.sourcepackagerecipelisting import HasRecipesMenuMixin
-from lp.services.worlddata.interfaces.country import ICountry
+import pytz
+from z3c.ptcompat import ViewPageTemplateFile
+from zope.app.form.browser import (
+    CheckBoxWidget,
+    TextAreaWidget,
+    TextWidget,
+    )
+from zope.component import getUtility
+from zope.event import notify
+from zope.formlib import form
+from zope.interface import (
+    implements,
+    Interface,
+    )
+from zope.lifecycleevent import ObjectCreatedEvent
+from zope.schema import (
+    Bool,
+    Choice,
+    )
+from zope.schema.vocabulary import (
+    SimpleTerm,
+    SimpleVocabulary,
+    )
+from zope.security.proxy import removeSecurityProxy
+
+from canonical.cachedproperty import cachedproperty
+from canonical.config import config
+from canonical.launchpad import (
+    _,
+    helpers,
+    )
+from canonical.launchpad.browser.feeds import FeedsMixin
+from canonical.launchpad.browser.multistep import (
+    MultiStepView,
+    StepView,
+    )
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.launchpad.webapp.interfaces import (
-    ILaunchBag, UnsafeFormGetSubmissionError)
-from lp.registry.interfaces.pillar import IPillarNameSet
-from lp.registry.interfaces.product import IProductReviewSearch, License
-from lp.registry.interfaces.series import SeriesStatus
-from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
-from lp.registry.interfaces.product import (
-    IProduct, IProductSet, LicenseStatus)
-from lp.registry.interfaces.productrelease import (
-    IProductRelease, IProductReleaseSet)
-from lp.registry.interfaces.productseries import IProductSeries
-from canonical.launchpad import helpers
-from lp.registry.browser.announcement import HasAnnouncementsView
-from lp.registry.browser.branding import BrandingChangeView
-from lp.code.browser.branchref import BranchRef
-from lp.bugs.browser.bugtask import (
-    BugTargetTraversalMixin, get_buglisting_search_filter_url)
-from lp.registry.browser.distribution import UsesLaunchpadMixin
-from lp.registry.browser.menu import (
-    IRegistryCollectionNavigationMenu, RegistryCollectionActionMenuBase)
-from lp.registry.browser.pillar import PillarBugsMenu
-from lp.answers.browser.faqtarget import FAQTargetNavigationMixin
-from canonical.launchpad.browser.feeds import FeedsMixin
-from lp.registry.browser.pillar import PillarView
-from lp.registry.browser.productseries import get_series_branch_error
-from lp.translations.browser.customlanguagecode import (
-    HasCustomLanguageCodesTraversalMixin)
-from canonical.launchpad.browser.multistep import MultiStepView, StepView
-from lp.answers.browser.questiontarget import (
-    QuestionTargetFacetMixin, QuestionTargetTraversalMixin)
-from lp.registry.browser.structuralsubscription import (
-    StructuralSubscriptionMenuMixin,
-    StructuralSubscriptionTargetTraversalMixin)
-from canonical.launchpad.mail import format_address, simple_sendmail
+from canonical.launchpad.mail import (
+    format_address,
+    simple_sendmail,
+    )
 from canonical.launchpad.webapp import (
-    ApplicationMenu, canonical_url, enabled_with_permission, LaunchpadView,
-    Link, Navigation, sorted_version_numbers, StandardLaunchpadFacets,
-    stepthrough, stepto, structured)
+    ApplicationMenu,
+    canonical_url,
+    enabled_with_permission,
+    LaunchpadView,
+    Link,
+    Navigation,
+    sorted_version_numbers,
+    StandardLaunchpadFacets,
+    stepthrough,
+    stepto,
+    structured,
+    )
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
+from canonical.launchpad.webapp.interfaces import (
+    ILaunchBag,
+    UnsafeFormGetSubmissionError,
+    )
 from canonical.launchpad.webapp.launchpadform import (
-    action, custom_widget, LaunchpadEditFormView, LaunchpadFormView,
-    ReturnToReferrerMixin, safe_action)
+    action,
+    custom_widget,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    ReturnToReferrerMixin,
+    safe_action,
+    )
 from canonical.launchpad.webapp.menu import NavigationMenu
 from canonical.launchpad.webapp.tales import MenuAPI
-from canonical.widgets.popup import PersonPickerWidget
 from canonical.widgets.date import DateWidget
 from canonical.widgets.itemswidgets import (
-    CheckBoxMatrixWidget, LaunchpadRadioWidget)
+    CheckBoxMatrixWidget,
+    LaunchpadRadioWidget,
+    )
 from canonical.widgets.lazrjs import TextLineEditorWidget
+from canonical.widgets.popup import PersonPickerWidget
 from canonical.widgets.product import (
-    LicenseWidget, GhostWidget, ProductNameWidget)
+    GhostWidget,
+    LicenseWidget,
+    ProductNameWidget,
+    )
 from canonical.widgets.textwidgets import StrippedTextWidget
+from lp.answers.browser.faqtarget import FAQTargetNavigationMixin
+from lp.answers.browser.questiontarget import (
+    QuestionTargetFacetMixin,
+    QuestionTargetTraversalMixin,
+    )
+from lp.app.errors import NotFoundError
+from lp.app.interfaces.headings import IEditableContextTitle
+from lp.blueprints.browser.specificationtarget import (
+    HasSpecificationsMenuMixin,
+    )
+from lp.bugs.browser.bugtask import (
+    BugTargetTraversalMixin,
+    get_buglisting_search_filter_url,
+    )
+from lp.bugs.interfaces.bugtask import RESOLVED_BUGTASK_STATUSES
+from lp.code.browser.branchref import BranchRef
+from lp.code.browser.sourcepackagerecipelisting import HasRecipesMenuMixin
+from lp.registry.browser.announcement import HasAnnouncementsView
+from lp.registry.browser.branding import BrandingChangeView
+from lp.registry.browser.distribution import UsesLaunchpadMixin
+from lp.registry.browser.menu import (
+    IRegistryCollectionNavigationMenu,
+    RegistryCollectionActionMenuBase,
+    )
+from lp.registry.browser.pillar import (
+    PillarBugsMenu,
+    PillarView,
+    )
+from lp.registry.browser.productseries import get_series_branch_error
+from lp.registry.browser.structuralsubscription import (
+    StructuralSubscriptionMenuMixin,
+    StructuralSubscriptionTargetTraversalMixin,
+    )
+from lp.registry.interfaces.pillar import IPillarNameSet
+from lp.registry.interfaces.product import (
+    IProduct,
+    IProductReviewSearch,
+    IProductSet,
+    License,
+    LicenseStatus,
+    )
+from lp.registry.interfaces.productrelease import (
+    IProductRelease,
+    IProductReleaseSet,
+    )
+from lp.registry.interfaces.productseries import IProductSeries
+from lp.registry.interfaces.series import SeriesStatus
+from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.services.fields import (
+    PillarAliases,
+    PublicPersonChoice,
+    )
+from lp.services.worlddata.interfaces.country import ICountry
+from lp.translations.browser.customlanguagecode import (
+    HasCustomLanguageCodesTraversalMixin,
+    )
 
 
 OR = '|'

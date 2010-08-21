@@ -708,7 +708,7 @@ and SHA256) for each index published.
   Version: 6.6.6
   Codename: breezy-autotest
   Date: ...
-  Architectures: 
+  Architectures:
   Components: main restricted universe multiverse
   Description: ubuntutest Breezy Badger Autotest 6.6.6
   MD5Sum:

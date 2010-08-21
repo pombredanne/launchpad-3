@@ -13,13 +13,17 @@ __all__ = [
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.webapp import (
-    LaunchpadView, Link, canonical_url, enabled_with_permission)
+    canonical_url,
+    enabled_with_permission,
+    LaunchpadView,
+    Link,
+    )
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.menu import NavigationMenu
+from lp.registry.browser.product import ProductEditView
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.series import SeriesStatus
-from lp.registry.browser.product import ProductEditView
 from lp.translations.browser.translations import TranslationsMixin
 
 

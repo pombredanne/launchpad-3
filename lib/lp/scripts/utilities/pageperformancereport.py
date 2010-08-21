@@ -9,15 +9,15 @@ __all__ = ['main']
 from cgi import escape as html_quote
 from ConfigParser import RawConfigParser
 from datetime import datetime
-import re
-import sre_constants
 import os.path
+import re
 import subprocess
 from textwrap import dedent
 import time
 
 import numpy
 import simplejson as json
+import sre_constants
 import zc.zservertracelog.tracereport
 
 from canonical.config import config

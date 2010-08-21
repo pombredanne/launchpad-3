@@ -11,8 +11,14 @@ from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 
 from canonical.testing import DatabaseFunctionalLayer
-from lp.bugs.model.bugbranch import BugBranch, BugBranchSet
-from lp.bugs.interfaces.bugbranch import IBugBranch, IBugBranchSet
+from lp.bugs.interfaces.bugbranch import (
+    IBugBranch,
+    IBugBranchSet,
+    )
+from lp.bugs.model.bugbranch import (
+    BugBranch,
+    BugBranchSet,
+    )
 from lp.testing import (
     anonymous_logged_in,
     celebrity_logged_in,

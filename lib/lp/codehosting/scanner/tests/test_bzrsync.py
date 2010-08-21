@@ -11,30 +11,38 @@ import datetime
 import os
 import random
 import time
-import transaction
 import unittest
 
-from bzrlib.revision import NULL_REVISION, Revision as BzrRevision
-from bzrlib.uncommit import uncommit
+from bzrlib.revision import (
+    NULL_REVISION,
+    Revision as BzrRevision,
+    )
 from bzrlib.tests import TestCaseWithTransport
+from bzrlib.uncommit import uncommit
 import pytz
+import transaction
 from twisted.python.util import mergeFunctionMetadata
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.launchpad.interfaces.lpstorm import IStore
-from lp.translations.interfaces.translations import (
-    TranslationsBranchImportMode)
+from canonical.testing import LaunchpadZopelessLayer
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.revision import IRevisionSet
 from lp.code.model.branchrevision import BranchRevision
-from lp.code.model.revision import Revision, RevisionAuthor, RevisionParent
+from lp.code.model.revision import (
+    Revision,
+    RevisionAuthor,
+    RevisionParent,
+    )
 from lp.codehosting.scanner.bzrsync import BzrSync
-from lp.testing import TestCaseWithFactory
-from canonical.testing import LaunchpadZopelessLayer
 from lp.services.osutils import override_environ
+from lp.testing import TestCaseWithFactory
+from lp.translations.interfaces.translations import (
+    TranslationsBranchImportMode,
+    )
 
 
 def run_as_db_user(username):

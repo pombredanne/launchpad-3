@@ -7,9 +7,13 @@ from __future__ import with_statement
 
 __metaclass__ = type
 
+from mocker import (
+    KWARGS,
+    Mocker,
+    )
+
 from canonical.launchpad.windmill.testing.widgets import OnPageWidget
 from lp.testing import TestCase
-from mocker import Mocker, KWARGS
 
 
 class TestOnPageWidget(TestCase):

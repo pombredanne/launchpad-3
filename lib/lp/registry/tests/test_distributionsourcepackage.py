@@ -5,14 +5,16 @@
 
 __metaclass__ = type
 
-import transaction
 import unittest
 
+import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.testing import DatabaseFunctionalLayer, LaunchpadZopelessLayer
-
+from canonical.testing import (
+    DatabaseFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.model.karma import KarmaTotalCache
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus

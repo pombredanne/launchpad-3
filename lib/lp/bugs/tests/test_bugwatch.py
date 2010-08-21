@@ -5,33 +5,47 @@
 
 __metaclass__ = type
 
-import transaction
 import unittest
-
 from urlparse import urlunsplit
 
+import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.constants import UTC_NOW
-
-from canonical.launchpad.ftests import login, ANONYMOUS
+from canonical.launchpad.ftests import (
+    ANONYMOUS,
+    login,
+    )
 from canonical.launchpad.scripts.garbo import BugWatchActivityPruner
 from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.launchpad.webapp import urlsplit
 from canonical.testing import (
-    DatabaseFunctionalLayer, LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
-
-from lp.bugs.interfaces.bugtask import BugTaskImportance, BugTaskStatus
-from lp.bugs.interfaces.bugtracker import BugTrackerType, IBugTrackerSet
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
+from lp.bugs.interfaces.bugtask import (
+    BugTaskImportance,
+    BugTaskStatus,
+    )
+from lp.bugs.interfaces.bugtracker import (
+    BugTrackerType,
+    IBugTrackerSet,
+    )
 from lp.bugs.interfaces.bugwatch import (
-    BugWatchActivityStatus, IBugWatchSet, NoBugTrackerFound,
-    UnrecognizedBugTrackerURL)
+    BugWatchActivityStatus,
+    IBugWatchSet,
+    NoBugTrackerFound,
+    UnrecognizedBugTrackerURL,
+    )
 from lp.bugs.model.bugwatch import get_bug_watch_ids
 from lp.bugs.scripts.checkwatches.scheduler import MAX_SAMPLE_SIZE
 from lp.registry.interfaces.person import IPersonSet
-
-from lp.testing import TestCaseWithFactory, login_person
+from lp.testing import (
+    login_person,
+    TestCaseWithFactory,
+    )
 
 
 class ExtractBugTrackerAndBugTestBase:
