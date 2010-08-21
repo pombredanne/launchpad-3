@@ -125,7 +125,7 @@ class TeamFormMixin:
         "name", "visibility", "displayname", "contactemail",
         "teamdescription", "subscriptionpolicy",
         "defaultmembershipperiod", "renewal_policy",
-        "defaultrenewalperiod",  "teamowner",
+        "defaultrenewalperiod", "teamowner",
         ]
     private_prefix = PRIVATE_TEAM_PREFIX
 
@@ -742,7 +742,7 @@ class TeamMailingListSubscribersView(LaunchpadView):
 
     def renderTable(self):
         html = ['<table style="max-width: 80em">']
-        items = self.subscribers.currentBatch()
+        items = list(self.subscribers.currentBatch())
         assert len(items) > 0, (
             "Don't call this method if there are no subscribers to show.")
         # When there are more than 10 items, we use multiple columns, but
