@@ -45,36 +45,83 @@ __all__ = [
     'UserCannotEditBugTaskStatus',
     'valid_remote_bug_url']
 
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    EnumeratedType,
+    Item,
+    use_template,
+    )
+from lazr.restful.declarations import (
+    call_with,
+    export_as_webservice_entry,
+    export_read_operation,
+    export_write_operation,
+    exported,
+    mutator_for,
+    operation_parameters,
+    operation_returns_collection_of,
+    rename_parameters_as,
+    REQUEST_USER,
+    webservice_error,
+    )
+from lazr.restful.fields import (
+    CollectionField,
+    Reference,
+    ReferenceChoice,
+    )
+from lazr.restful.interface import copy_field
 from zope.component import getUtility
-from zope.interface import Attribute, Interface
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
 from zope.schema import (
-    Bool, Choice, Datetime, Field, Int, List, Text, TextLine)
-from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
+    Bool,
+    Choice,
+    Datetime,
+    Field,
+    Int,
+    List,
+    Text,
+    TextLine,
+    )
+from zope.schema.vocabulary import (
+    SimpleTerm,
+    SimpleVocabulary,
+    )
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import isinstance as zope_isinstance
-from lazr.enum import (
-    DBEnumeratedType, DBItem, EnumeratedType, Item, use_template)
 
 from canonical.launchpad import _
-from lp.services.fields import (
-    BugField, PersonChoice, ProductNameField, SearchTag,
-    StrippedTextLine, Summary)
-from lp.bugs.interfaces.bugwatch import (
-    IBugWatch, IBugWatchSet, NoBugTrackerFound, UnrecognizedBugTrackerURL)
-from lp.soyuz.interfaces.component import IComponent
-from canonical.launchpad.interfaces.launchpad import IHasDateCreated, IHasBug
-from lp.registry.interfaces.mentoringoffer import ICanBeMentored
-from canonical.launchpad.searchbuilder import all, any, NULL
+from canonical.launchpad.interfaces.launchpad import (
+    IHasBug,
+    IHasDateCreated,
+    )
+from canonical.launchpad.searchbuilder import (
+    all,
+    any,
+    NULL,
+    )
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
-from lazr.restful.interface import copy_field
-from lazr.restful.declarations import (
-    REQUEST_USER, call_with, export_as_webservice_entry,
-    export_read_operation, export_write_operation, exported,
-    operation_returns_collection_of, operation_parameters, mutator_for,
-    rename_parameters_as, webservice_error)
-from lazr.restful.fields import CollectionField, Reference, ReferenceChoice
+from lp.bugs.interfaces.bugwatch import (
+    IBugWatch,
+    IBugWatchSet,
+    NoBugTrackerFound,
+    UnrecognizedBugTrackerURL,
+    )
+from lp.registry.interfaces.mentoringoffer import ICanBeMentored
+from lp.services.fields import (
+    BugField,
+    PersonChoice,
+    ProductNameField,
+    SearchTag,
+    StrippedTextLine,
+    Summary,
+    )
+from lp.soyuz.interfaces.component import IComponent
 
 
 class BugTaskImportance(DBEnumeratedType):

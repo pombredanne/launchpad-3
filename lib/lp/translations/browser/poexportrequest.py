@@ -13,16 +13,19 @@ from zope.component import getUtility
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
+from canonical.launchpad.webapp import (
+    canonical_url,
+    LaunchpadView,
+    )
 from canonical.launchpad.webapp.tales import DurationFormatterAPI
-from lp.translations.interfaces.poexportrequest import (
-    IPOExportRequestSet)
-from lp.translations.interfaces.potemplate import (
-    IHasTranslationTemplates)
+from lp.translations.interfaces.poexportrequest import IPOExportRequestSet
+from lp.translations.interfaces.potemplate import IHasTranslationTemplates
 from lp.translations.interfaces.translationexporter import (
-    ITranslationExporter)
+    ITranslationExporter,
+    )
 from lp.translations.interfaces.translationfileformat import (
-    TranslationFileFormat)
-from canonical.launchpad.webapp import (canonical_url, LaunchpadView)
+    TranslationFileFormat,
+    )
 
 
 class BaseExportView(LaunchpadView):

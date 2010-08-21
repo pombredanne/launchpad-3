@@ -9,8 +9,12 @@ __metaclass__ = type
 
 import unittest
 
-from lp.archivepublisher.debversion import (BadInputError, BadUpstreamError,
-    Version, VersionError)
+from lp.archivepublisher.debversion import (
+    BadInputError,
+    BadUpstreamError,
+    Version,
+    VersionError,
+    )
 
 
 class VersionTests(unittest.TestCase):

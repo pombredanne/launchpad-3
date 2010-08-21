@@ -17,7 +17,10 @@ from optparse import OptionParser
 import os.path
 import sys
 
-from contrib.glock import GlobalLock, LockAlreadyAcquired
+from contrib.glock import (
+    GlobalLock,
+    LockAlreadyAcquired,
+    )
 import pytz
 from zope.component import getUtility
 
@@ -26,7 +29,9 @@ from canonical.database.sqlbase import ISOLATION_LEVEL_DEFAULT
 from canonical.launchpad import scripts
 from canonical.launchpad.interfaces import IScriptActivitySet
 from canonical.launchpad.webapp.interaction import (
-    ANONYMOUS, setupInteractionByEmail)
+    ANONYMOUS,
+    setupInteractionByEmail,
+    )
 from canonical.lp import initZopeless
 
 

@@ -19,12 +19,16 @@ from canonical.launchpad.database import BugTask
 from canonical.launchpad.helpers import get_contact_email_addresses
 from canonical.launchpad.interfaces.message import IMessageSet
 from canonical.testing import LaunchpadZopelessLayer
-
-from lp.bugs.interfaces.bug import IBug, IBugSet
+from lp.bugs.interfaces.bug import (
+    IBug,
+    IBugSet,
+    )
 from lp.bugs.mail.bugnotificationrecipients import BugNotificationRecipients
 from lp.bugs.scripts.bugnotification import (
-    get_email_notifications, notification_batches,
-    notification_comment_batches)
+    get_email_notifications,
+    notification_batches,
+    notification_comment_batches,
+    )
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
 

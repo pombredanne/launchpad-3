@@ -3,18 +3,20 @@
 
 __metaclass__ = type
 
+from doctest import DocTestSuite
 import email
 import time
 import unittest
-
-from doctest import DocTestSuite
 
 from canonical.database.sqlbase import commit
 from canonical.launchpad.mail.commands import BugEmailCommand
 from canonical.launchpad.mail.handlers import MaloneHandler
 from canonical.testing import LaunchpadFunctionalLayer
 from lp.services.mail import stub
-from lp.testing import TestCaseWithFactory, person_logged_in
+from lp.testing import (
+    person_logged_in,
+    TestCaseWithFactory,
+    )
 
 
 class TestMaloneHandler(TestCaseWithFactory):

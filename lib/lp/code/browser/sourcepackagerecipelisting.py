@@ -15,7 +15,10 @@ __all__ = [
 
 from canonical.config import config
 from canonical.launchpad.browser.feeds import FeedsMixin
-from canonical.launchpad.webapp import LaunchpadView, Link
+from canonical.launchpad.webapp import (
+    LaunchpadView,
+    Link,
+    )
 from lp.code.interfaces.branch import IBranch
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import IProduct

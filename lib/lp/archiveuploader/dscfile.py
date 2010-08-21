@@ -17,7 +17,6 @@ __all__ = [
     'findCopyright',
     ]
 
-import apt_pkg
 import errno
 import glob
 import os
@@ -25,28 +24,52 @@ import shutil
 import subprocess
 import tempfile
 
+import apt_pkg
 from zope.component import getUtility
 
 from canonical.encoding import guess as guess_encoding
 from canonical.launchpad.interfaces import (
-    GPGVerificationError, IGPGHandler, IGPGKeySet,
-    ISourcePackageNameSet)
+    GPGVerificationError,
+    IGPGHandler,
+    IGPGKeySet,
+    ISourcePackageNameSet,
+    )
 from canonical.librarian.utils import copy_and_close
 from lp.app.errors import NotFoundError
 from lp.archiveuploader.nascentuploadfile import (
-    UploadWarning, UploadError, NascentUploadFile, SourceUploadFile)
+    NascentUploadFile,
+    SourceUploadFile,
+    UploadError,
+    UploadWarning,
+    )
 from lp.archiveuploader.tagfiles import (
-    parse_tagfile, TagFileParseError)
+    parse_tagfile,
+    TagFileParseError,
+    )
 from lp.archiveuploader.utils import (
-    determine_source_file_type, get_source_file_extension,
-    ParseMaintError, prefix_multi_line_string, re_is_component_orig_tar_ext,
-    re_issource, re_valid_pkg_name, re_valid_version, safe_fix_maintainer)
+    determine_source_file_type,
+    get_source_file_extension,
+    ParseMaintError,
+    prefix_multi_line_string,
+    re_is_component_orig_tar_ext,
+    re_issource,
+    re_valid_pkg_name,
+    re_valid_version,
+    safe_fix_maintainer,
+    )
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.code.interfaces.sourcepackagerecipebuild import (
-    ISourcePackageRecipeBuildSource)
-from lp.registry.interfaces.person import IPersonSet, PersonCreationRationale
+    ISourcePackageRecipeBuildSource,
+    )
+from lp.registry.interfaces.person import (
+    IPersonSet,
+    PersonCreationRationale,
+    )
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
-from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
+from lp.soyuz.interfaces.archive import (
+    ArchivePurpose,
+    IArchiveSet,
+    )
 from lp.soyuz.interfaces.sourcepackageformat import SourcePackageFormat
 
 

@@ -9,36 +9,44 @@ __all__ = [
 
 __metaclass__ = type
 
+from datetime import datetime
 import hashlib
 import logging
 import os
 import shutil
 
 from debian.deb822 import Release
-
-from datetime import datetime
-
 from zope.component import getUtility
 
+from canonical.database.sqlbase import sqlvalues
+from canonical.librarian.client import LibrarianClient
 from lp.archivepublisher import HARDCODED_COMPONENT_ORDER
+from lp.archivepublisher.config import (
+    getPubConfig,
+    LucilleConfigError,
+    )
 from lp.archivepublisher.diskpool import DiskPool
-from lp.archivepublisher.config import getPubConfig, LucilleConfigError
 from lp.archivepublisher.domination import Dominator
 from lp.archivepublisher.ftparchive import FTPArchiveHandler
 from lp.archivepublisher.interfaces.archivesigningkey import (
-    IArchiveSigningKey)
+    IArchiveSigningKey,
+    )
 from lp.archivepublisher.utils import (
-    RepositoryIndexFile, get_ppa_reference)
-from canonical.database.sqlbase import sqlvalues
+    get_ppa_reference,
+    RepositoryIndexFile,
+    )
 from lp.registry.interfaces.pocket import (
-    PackagePublishingPocket, pocketsuffix)
-from lp.soyuz.interfaces.archive import ArchivePurpose, ArchiveStatus
-from lp.soyuz.interfaces.binarypackagerelease import (
-    BinaryPackageFormat)
+    PackagePublishingPocket,
+    pocketsuffix,
+    )
+from lp.soyuz.interfaces.archive import (
+    ArchivePurpose,
+    ArchiveStatus,
+    )
+from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFormat
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 
-from canonical.librarian.client import LibrarianClient
 
 suffixpocket = dict((v, k) for (k, v) in pocketsuffix.items())
 

@@ -5,12 +5,12 @@
 
 __metaclass__ = type
 
-from debian.deb822 import Changes
 import os
+
+from debian.deb822 import Changes
 
 from canonical.launchpad.scripts.logger import BufferLogger
 from canonical.testing import LaunchpadZopelessLayer
-
 from lp.archiveuploader.changesfile import (
     CannotDetermineFileTypeError,
     ChangesFile,
@@ -18,8 +18,8 @@ from lp.archiveuploader.changesfile import (
     )
 from lp.archiveuploader.dscfile import DSCFile
 from lp.archiveuploader.nascentuploadfile import (
-    DebBinaryUploadFile,
     DdebBinaryUploadFile,
+    DebBinaryUploadFile,
     SourceUploadFile,
     UdebBinaryUploadFile,
     UploadError,

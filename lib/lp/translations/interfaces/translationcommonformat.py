@@ -8,10 +8,21 @@
 
 from zope.interface import Interface
 from zope.schema import (
-    Bool, Choice, Datetime, Int, List, Object, Set, Text, TextLine)
+    Bool,
+    Choice,
+    Datetime,
+    Int,
+    List,
+    Object,
+    Set,
+    Text,
+    TextLine,
+    )
 
 from lp.translations.interfaces.translationfileformat import (
-    TranslationFileFormat)
+    TranslationFileFormat,
+    )
+
 
 __metaclass__ = type
 

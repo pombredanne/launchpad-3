@@ -1,11 +1,13 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-import __builtin__
 import atexit
 import itertools
-import types
 from operator import attrgetter
+import types
+
+import __builtin__
+
 
 original_import = __builtin__.__import__
 database_root = 'canonical.launchpad.database'

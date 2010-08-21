@@ -8,28 +8,37 @@ __metaclass__ = type
 import unittest
 
 from lazr.uri import URI
-
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.code.errors import (
-    CannotHaveLinkedBranch, InvalidNamespace, NoLinkedBranch, NoSuchBranch)
+    CannotHaveLinkedBranch,
+    InvalidNamespace,
+    NoLinkedBranch,
+    NoSuchBranch,
+    )
 from lp.code.interfaces.branchlookup import (
-    IBranchLookup, ILinkedBranchTraverser)
+    IBranchLookup,
+    ILinkedBranchTraverser,
+    )
 from lp.code.interfaces.branchnamespace import get_branch_namespace
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from lp.registry.interfaces.distroseries import NoSuchDistroSeries
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.person import NoSuchPerson
-from lp.registry.interfaces.product import (
-    InvalidProductName, NoSuchProduct)
-from lp.registry.interfaces.productseries import NoSuchProductSeries
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.registry.interfaces.sourcepackagename import (
-    NoSuchSourcePackageName)
-from lp.testing import run_with_login, TestCaseWithFactory
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.registry.interfaces.product import (
+    InvalidProductName,
+    NoSuchProduct,
+    )
+from lp.registry.interfaces.productseries import NoSuchProductSeries
+from lp.registry.interfaces.sourcepackagename import NoSuchSourcePackageName
+from lp.testing import (
+    run_with_login,
+    TestCaseWithFactory,
+    )
 
 
 class TestGetByUniqueName(TestCaseWithFactory):

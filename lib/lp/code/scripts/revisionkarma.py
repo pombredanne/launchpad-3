@@ -7,11 +7,10 @@ __metaclass__ = type
 __all__ = ['RevisionKarmaAllocator']
 
 import transaction
-
 from zope.component import getUtility
 
-from lp.services.scripts.base import LaunchpadCronScript
 from lp.code.interfaces.revision import IRevisionSet
+from lp.services.scripts.base import LaunchpadCronScript
 
 
 class RevisionKarmaAllocator(LaunchpadCronScript):

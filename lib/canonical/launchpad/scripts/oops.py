@@ -12,9 +12,13 @@ __all__ = [
     'prune_empty_oops_directories',
     ]
 
-from datetime import date, timedelta, datetime
-import re
+from datetime import (
+    date,
+    datetime,
+    timedelta,
+    )
 import os
+import re
 
 from pytz import utc
 
@@ -22,6 +26,7 @@ from canonical.database.sqlbase import cursor
 from canonical.launchpad.webapp.dbpolicy import SlaveOnlyDatabasePolicy
 from lp.app.browser.stringformatter import FormattersAPI
 from lp.services.log import uniquefileallocator
+
 
 def referenced_oops():
     '''Return a set of OOPS codes that are referenced somewhere in the

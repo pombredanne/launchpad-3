@@ -9,9 +9,9 @@ import unittest
 
 from canonical.launchpad.ftests import login
 from canonical.testing import LaunchpadFunctionalLayer
-
 from lp.registry.interfaces.mailinglistsubscription import (
-    MailingListAutoSubscribePolicy)
+    MailingListAutoSubscribePolicy,
+    )
 from lp.registry.interfaces.person import TeamSubscriptionPolicy
 from lp.testing import TestCaseWithFactory
 

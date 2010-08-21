@@ -3,20 +3,30 @@
 
 import os
 from select import select
-import subprocess
 from StringIO import StringIO
+import subprocess
 
-from storm.expr import Desc, In, Join
+from storm.expr import (
+    Desc,
+    In,
+    Join,
+    )
 from storm.store import EmptyResultSet
 from zope.component import getUtility
 
 from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet)
+    DecoratedResultSet,
+    )
 from canonical.launchpad.webapp.interfaces import (
-     DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE)
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 from lp.archivepublisher.utils import process_in_batches
 from lp.registry.interfaces.pocket import (
-    PackagePublishingPocket, pocketsuffix)
+    PackagePublishingPocket,
+    pocketsuffix,
+    )
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.model.component import Component

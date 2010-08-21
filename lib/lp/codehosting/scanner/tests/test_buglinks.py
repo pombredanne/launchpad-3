@@ -10,21 +10,26 @@ __metaclass__ = type
 import unittest
 
 from bzrlib.revision import Revision
-from zope.event import notify
 from zope.component import getUtility
+from zope.event import notify
 
 from canonical.config import config
-from canonical.launchpad.interfaces import IBugBranchSet, IBugSet
+from canonical.launchpad.interfaces import (
+    IBugBranchSet,
+    IBugSet,
+    )
 from canonical.testing.layers import LaunchpadZopelessLayer
-
 from lp.app.errors import NotFoundError
 from lp.code.interfaces.revision import IRevisionSet
 from lp.codehosting.scanner import events
 from lp.codehosting.scanner.buglinks import BugBranchLinker
 from lp.codehosting.scanner.tests.test_bzrsync import BzrSyncTestCase
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.testing import TestCase, TestCaseWithFactory
 from lp.services.osutils import override_environ
+from lp.testing import (
+    TestCase,
+    TestCaseWithFactory,
+    )
 
 
 class RevisionPropertyParsing(TestCase):

@@ -13,11 +13,13 @@ from zope.component import getUtility
 
 from canonical.launchpad.database.librarian import LibraryFileAliasSet
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from canonical.launchpad.webapp.testing import verifyObject
 from canonical.librarian.client import LibrarianClient
 from canonical.librarian.interfaces import ILibrarianClient
-from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing import (
-    DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
 from lp.testing import TestCaseWithFactory
 from lp.testing.fakelibrarian import FakeLibrarian
 
