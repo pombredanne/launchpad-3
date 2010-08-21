@@ -20,6 +20,7 @@
           border-bottom: 1px solid;
           margin-top: 2em;
           font-size: 167%;
+          padding-bottom: 2px;
           }
       .homepage-whatslaunchpad h2 {
           font-size: 189%;
@@ -50,6 +51,9 @@
           border-bottom: 1px solid;
           margin-top: 1em;
           font-size: 161%;
+          }
+      #homepage-getstarted ul {
+          padding-top: 0.5em;
           }
       .featured-project-top h3 {
           font-size: 131%;
