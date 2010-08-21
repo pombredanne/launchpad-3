@@ -88,13 +88,13 @@ def new_bugtracker(bugtracker_type, base_url='http://bugs.some.where'):
     owner = getUtility(IPersonSet).getByEmail('no-priv@canonical.com')
     bugtracker_set = getUtility(IBugTrackerSet)
     index = 1
-    name = '%s-checkwatches' % (bugtracker_type.name.lower(),)
+    name = '%s-checkwatches' % (bugtracker_type.name.lower())
     while bugtracker_set.getByName("%s-%d" % (name, index)) is not None:
         index += 1
     name += '-%d' % index
     BugTracker(
         name=name,
-        title='%s *TESTING*' % (bugtracker_type.title,),
+        title='%s *TESTING*' % (bugtracker_type.title),
         bugtrackertype=bugtracker_type,
         baseurl=base_url,
         summary='-', contactdetails='-',
@@ -158,10 +158,11 @@ def convert_python_status(status, resolution):
         'rejected': 8,
         'remind': 9,
         'wontfix': 10,
-        'worksforme': 11
-    }
+        'worksforme': 11,
+        }
 
     return "%s:%s" % (status_map[status], resolution_map[resolution])
+
 
 def set_bugwatch_error_type(bug_watch, error_type):
     """Set the last_error_type field of a bug watch to a given error type."""
@@ -272,9 +273,10 @@ class TestBugzilla(Bugzilla):
         return self
 
     def _getBugsToTest(self):
-        """Return a dict with bugs in the form bug_id: (status, resolution)"""
-        return {3224: ('RESOLVED', 'FIXED'),
-                328430: ('UNCONFIRMED', '')}
+        """Return a dict with bugs in the form
+           bug_id: (status, resolution, priority, severity)"""
+        return {3224: ('RESOLVED', 'FIXED', 'MINOR', 'URGENT'),
+                328430: ('UNCONFIRMED', '', 'MEDIUM', 'NORMAL')}
 
     def _readBugItemFile(self):
         """Reads in the file for an individual bug item.
@@ -316,17 +318,20 @@ class TestBugzilla(Bugzilla):
                 if bug_id not in self.bugzilla_bugs:
                     #Unknown bugs aren't included in the resulting xml.
                     continue
-                bug_status, bug_resolution = self.bugzilla_bugs[int(bug_id)]
+                bug_status, bug_resolution, bug_priority, bug_severity = \
+                            self.bugzilla_bugs[int(bug_id)]
                 bug_item = self._readBugItemFile() % {
                     'bug_id': bug_id,
                     'status': bug_status,
                     'resolution': bug_resolution,
+                    'priority': bug_priority,
+                    'severity': bug_severity,
                     }
                 bug_li_items.append(bug_item)
             return buglist_xml % {
                 'bug_li_items': '\n'.join(bug_li_items),
-                'page': page
-            }
+                'page': page,
+                }
         else:
             raise AssertionError('Unknown page: %s' % page)
 
@@ -340,8 +345,8 @@ class TestWeirdBugzilla(TestBugzilla):
     bug_item_file = 'weird_non_ascii_bug_li_item.xml'
 
     def _getBugsToTest(self):
-        return {2000: ('ASSIGNED', ''),
-                123543: ('RESOLVED', 'FIXED')}
+        return {2000: ('ASSIGNED', '', 'HIGH', 'BLOCKER'),
+                123543: ('RESOLVED', 'FIXED', 'HIGH', 'BLOCKER')}
 
 
 class TestBrokenBugzilla(TestBugzilla):
@@ -349,8 +354,8 @@ class TestBrokenBugzilla(TestBugzilla):
     bug_item_file = 'broken_bug_li_item.xml'
 
     def _getBugsToTest(self):
-        return {42: ('ASSIGNED', ''),
-                2000: ('RESOLVED', 'FIXED')}
+        return {42: ('ASSIGNED', '', 'HIGH', 'BLOCKER'),
+                2000: ('RESOLVED', 'FIXED', 'LOW', 'BLOCKER')}
 
 
 class TestIssuezilla(TestBugzilla):
@@ -363,8 +368,8 @@ class TestIssuezilla(TestBugzilla):
     bug_id_form_element = 'id'
 
     def _getBugsToTest(self):
-        return {2000: ('RESOLVED', 'FIXED'),
-                123543: ('ASSIGNED', '')}
+        return {2000: ('RESOLVED', 'FIXED', 'LOW', 'BLOCKER'),
+                123543: ('ASSIGNED', '', 'HIGH', 'BLOCKER')}
 
 
 class TestOldBugzilla(TestBugzilla):
@@ -377,12 +382,13 @@ class TestOldBugzilla(TestBugzilla):
     bug_id_form_element = 'id'
 
     def _getBugsToTest(self):
-        return {42: ('RESOLVED', 'FIXED'),
-                123543: ('ASSIGNED', '')}
+        return {42: ('RESOLVED', 'FIXED', 'LOW', 'BLOCKER'),
+                123543: ('ASSIGNED', '', 'HIGH', 'BLOCKER')}
 
 
 class FakeHTTPConnection:
     """A fake HTTP connection."""
+
     def putheader(self, header, value):
         print "%s: %s" % (header, value)
 
@@ -480,7 +486,7 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
             'time',
             'set_link',
             ],
-        'Test': ['login_required']
+        'Test': ['login_required'],
         }
 
     # Methods that require authentication.
@@ -1082,7 +1088,7 @@ class TestMantis(Mantis):
 
     def _getPage(self, page):
         if self.trace_calls:
-            print "CALLED _getPage(%r)" % (page,)
+            print "CALLED _getPage(%r)" % (page)
         if page == "csv_export.php":
             return read_test_file('mantis_example_bug_export.csv')
         elif page.startswith('view.php?id='):
@@ -1093,7 +1099,7 @@ class TestMantis(Mantis):
 
     def _postPage(self, page, form):
         if self.trace_calls:
-            print "CALLED _postPage(%r, ...)" % (page,)
+            print "CALLED _postPage(%r, ...)" % (page)
         return ''
 
     def cleanCache(self):
@@ -1133,7 +1139,7 @@ class TestTrac(Trac):
         file_path = os.path.join(os.path.dirname(__file__), 'testfiles')
 
         if self.trace_calls:
-            print "CALLED urlopen(%r)" % (url,)
+            print "CALLED urlopen(%r)" % (url)
 
         if self.csv_export_file is not None:
             csv_export_file = self.csv_export_file
@@ -1165,7 +1171,8 @@ class MockTracRemoteBug:
         return {
             'id': self.id,
             'status': self.status,
-            'resolution': self.resolution,}
+            'resolution': self.resolution,
+            }
 
 
 class TestInternalXMLRPCTransport:
@@ -1470,7 +1477,7 @@ class TestRoundup(Roundup):
 
     def urlopen(self, url):
         if self.trace_calls:
-            print "CALLED urlopen(%r)" % (url,)
+            print "CALLED urlopen(%r)" % (url)
 
         file_path = os.path.join(os.path.dirname(__file__), 'testfiles')
 
@@ -1522,7 +1529,7 @@ class TestSourceForge(SourceForge):
 
     def _getPage(self, page):
         if self.trace_calls:
-            print "CALLED _getPage(%r)" % (page,)
+            print "CALLED _getPage(%r)" % (page)
 
         page_re = re.compile('support/tracker.php\?aid=([0-9]+)')
         bug_id = page_re.match(page).groups()[0]
@@ -1610,6 +1617,7 @@ class Urlib2TransportTestInfo:
     a hard-coded cookie header.
     """
     cookies = 'foo=bar'
+
     def getheaders(self, header):
         """Return the hard-coded cookie header."""
         if header.lower() in ('cookie', 'set-cookie', 'set-cookie2'):
@@ -1661,7 +1669,7 @@ class Urlib2TransportTestHandler(BaseHandler):
                 'http', req, response, 302, 'Moved', headers)
         else:
             xmlrpc_response = xmlrpclib.dumps(
-                (req.get_full_url(),), methodresponse=True)
+                (req.get_full_url(), ), methodresponse=True)
             response = StringIO(xmlrpc_response)
             info = Urlib2TransportTestInfo()
             response.info = lambda: info
@@ -1670,6 +1678,7 @@ class Urlib2TransportTestHandler(BaseHandler):
             response.msg = ''
 
         return response
+
 
 def patch_transport_opener(transport):
     """Patch the transport's opener to use a test handler."""
