@@ -608,6 +608,15 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
                         readonly=True, required=False,
                         value_type=Reference(schema=IJabberID)),
         exported_as='jabber_ids')
+    
+    myactivememberships = exported(
+        CollectionField(
+            title=_("All TeamMemberships for Teams this Team or Person is an "
+                    "active member of."),
+            value_type=Reference(schema=ITeamMembership),
+            readonly=True, required=False),
+        exported_as='memberships_details_prime')
+    
     team_memberships = exported(
         CollectionField(
             title=_("All TeamMemberships for Teams this Team or Person is an "

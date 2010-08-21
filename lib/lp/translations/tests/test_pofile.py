@@ -34,7 +34,7 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
         # Create a product with two series and a shared POTemplate
         # in different series ('devel' and 'stable').
         super(TestTranslationSharedPOFile, self).setUp()
-        self.foo = self.factory.makeProduct()
+        self.foo = self.factory.makeProduct(name='foo')
         self.foo_devel = self.factory.makeProductSeries(
             name='devel', product=self.foo)
         self.foo_stable = self.factory.makeProductSeries(
@@ -57,6 +57,15 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
         # and add it to only one of the POTemplates.
         self.potmsgset = self.factory.makePOTMsgSet(self.devel_potemplate)
         self.potmsgset.setSequence(self.devel_potemplate, 1)
+
+    def test_POFile_canonical_url(self):
+        # Test the canonical_url of the POFile.
+        self.assertEqual(
+            'http://translations.launchpad.dev/foo/devel/+pots/messages/sr',
+            canonical_url(self.devel_sr_pofile))
+        self.assertEqual(
+            'http://translations.launchpad.dev/foo/devel/+pots/messages/sr/+details',
+            canonical_url(self.devel_sr_pofile, view_name="+details"))
 
     def test_findPOTMsgSetsContaining(self):
         # Test that search works correctly.

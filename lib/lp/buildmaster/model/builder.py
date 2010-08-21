@@ -12,7 +12,6 @@ __all__ = [
     'updateBuilderStatus',
     ]
 
-import errno
 import httplib
 import gzip
 import logging
@@ -53,6 +52,7 @@ from canonical.database.sqlbase import SQLBase, sqlvalues
 from lp.registry.interfaces.person import validate_public_person
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
+from lp.services.osutils import until_no_eintr
 # XXX Michael Nelson 2010-01-13 bug=491330
 # These dependencies on soyuz will be removed when getBuildRecords()
 # is moved.
@@ -196,43 +196,40 @@ def rescueBuilderIfLost(builder, logger=None):
                 (builder.name, slave_build_id, reason))
 
 
+def _update_builder_status(builder, logger=None):
+    """Really update the builder status."""
+    try:
+        builder.checkSlaveAlive()
+        builder.rescueIfLost(logger)
+    # Catch only known exceptions.
+    # XXX cprov 2007-06-15 bug=120571: ValueError & TypeError catching is
+    # disturbing in this context. We should spend sometime sanitizing the
+    # exceptions raised in the Builder API since we already started the
+    # main refactoring of this area.
+    except (ValueError, TypeError, xmlrpclib.Fault,
+            BuildDaemonError), reason:
+        builder.failBuilder(str(reason))
+        if logger:
+            logger.warn(
+                "%s (%s) marked as failed due to: %s",
+                builder.name, builder.url, builder.failnotes, exc_info=True)
+
+
 def updateBuilderStatus(builder, logger=None):
     """See `IBuilder`."""
     if logger:
         logger.debug('Checking %s' % builder.name)
 
     MAX_EINTR_RETRIES = 42 # pulling a number out of my a$$ here
-    eintr_retry_count = 0
-
-    while True:
-        try:
-            builder.checkSlaveAlive()
-            builder.rescueIfLost(logger)
-        # Catch only known exceptions.
-        # XXX cprov 2007-06-15 bug=120571: ValueError & TypeError catching is
-        # disturbing in this context. We should spend sometime sanitizing the
-        # exceptions raised in the Builder API since we already started the
-        # main refactoring of this area.
-        except (ValueError, TypeError, xmlrpclib.Fault,
-                BuildDaemonError), reason:
-            builder.failBuilder(str(reason))
-            if logger:
-                logger.warn(
-                    "%s (%s) marked as failed due to: %s",
-                    builder.name, builder.url, builder.failnotes, exc_info=True)
-        except socket.error, reason:
-            # In Python 2.6 we can use IOError instead.  It also has
-            # reason.errno but we might be using 2.5 here so use the
-            # index hack.
-            if reason[0] == errno.EINTR:
-                eintr_retry_count += 1
-                if eintr_retry_count != MAX_EINTR_RETRIES:
-                    # It was an EINTR. Just retry.
-                    continue
-            error_message = str(reason)
-            builder.handleTimeout(logger, error_message)
-
-        return
+    try:
+        return until_no_eintr(
+            MAX_EINTR_RETRIES, _update_builder_status, builder, logger=logger)
+    except socket.error, reason:
+        # In Python 2.6 we can use IOError instead.  It also has
+        # reason.errno but we might be using 2.5 here so use the
+        # index hack.
+        error_message = str(reason)
+        builder.handleTimeout(logger, error_message)
 
 
 class Builder(SQLBase):

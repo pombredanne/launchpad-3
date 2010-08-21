@@ -34,16 +34,17 @@ class SourcePackageTranslationsMenu(NavigationMenu):
 
     def imports(self):
         text = 'Import queue'
-        return Link('+imports', text)
+        return Link('+imports', text, site='translations')
 
     @enabled_with_permission('launchpad.ExpensiveRequest')
     def download(self):
         text = 'Download'
         enabled = bool(self.context.getCurrentTranslationTemplates().any())
-        return Link('+export', text, icon='download', enabled=enabled)
+        return Link('+export', text, icon='download', enabled=enabled,
+                    site='translations')
 
     def overview(self):
-        return Link('', 'Overview', icon='info')
+        return Link('', 'Overview', icon='info', site='translations')
 
 
 class SourcePackageTranslationsExportView(BaseExportView):

@@ -50,7 +50,7 @@ from sqlobject.sqlbuilder import AND, OR, SQLConstant
 from storm.store import EmptyResultSet, Store
 from storm.expr import (
     Alias, And, Desc, Exists, In, Join, LeftJoin, Lower, Min, Not, Or, Select,
-    SQL)
+    SQL, Upper)
 from storm.info import ClassAlias
 
 from canonical.config import config
@@ -1706,14 +1706,32 @@ class Person(
             orderBy=self._sortingColumnsForSetOperations)
 
     @property
+    def myactivememberships(self):
+        """See `IPerson`."""
+        return TeamMembership.select("""
+            TeamMembership.person = %s AND status in %s AND
+            Person.id = TeamMembership.team
+            """ % sqlvalues(self.id, [TeamMembershipStatus.APPROVED,
+                                      TeamMembershipStatus.ADMIN]),
+            clauseTables=['Person'],
+            orderBy=Person.sortingColumns)
+
+    @property
     def team_memberships(self):
         """See `IPerson`."""
         Team = ClassAlias(Person, "Team")
         store = Store.of(self)
+        # Join on team to sort by team names. Upper is used in the sort so 
+        # sorting works as is user expected, e.g. (A b C) not (A C b).
         return store.find(TeamMembership,
             And(TeamMembership.personID == self.id,
-                TeamMembership.status.is_in(
-                [TeamMembershipStatus.APPROVED, TeamMembershipStatus.ADMIN])))
+                TeamMembership.teamID == Team.id,
+                TeamMembership.status.is_in([
+                    TeamMembershipStatus.APPROVED, 
+                    TeamMembershipStatus.ADMIN,
+                    ]))).order_by(
+                        Upper(Team.displayname),
+                        Upper(Team.name))
 
     def _getMappedParticipantsLocations(self, limit=None):
         """See `IPersonViewRestricted`."""

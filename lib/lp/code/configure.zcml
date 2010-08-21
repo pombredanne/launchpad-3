@@ -14,8 +14,12 @@
   <authorizations module="lp.code.security" />
 
   <publisher
-     name="code"
-     factory="lp.code.publisher.code_request_publication_factory"/>
+      name="code"
+      factory="lp.code.publisher.code_request_publication_factory"/>
+  <utility
+      component="lp.code.publisher.CodeLayer"
+      provides="zope.publisher.interfaces.browser.IDefaultBrowserLayer"
+      name="code" />
 
   <!-- Branch Merge Queue -->
 

@@ -740,6 +740,7 @@ def findCopyright(dsc_file, source_dir, logger):
     logger.debug("Copying copyright contents.")
     dsc_file.copyright = open(copyright_file).read().strip()
 
+
 def findChangelog(dsc_file, source_dir, logger):
     """Find and move any debian/changelog.
 
