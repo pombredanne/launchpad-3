@@ -6,11 +6,14 @@
 __metaclass__ = type
 
 import datetime
-import unittest
 import time
+import unittest
 
 from canonical.launchpad.validators import LaunchpadValidationError
-from lp.services.fields import (StrippableText, FormattableDate)
+from lp.services.fields import (
+    FormattableDate,
+    StrippableText,
+    )
 from lp.testing import TestCase
 
 

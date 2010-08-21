@@ -8,33 +8,58 @@ __all__ = [
     'BugEmailCommands',
     'get_error_message']
 
+from lazr.lifecycle.event import (
+    ObjectCreatedEvent,
+    ObjectModifiedEvent,
+    )
+from lazr.lifecycle.interfaces import (
+    IObjectCreatedEvent,
+    IObjectModifiedEvent,
+    )
+from lazr.lifecycle.snapshot import Snapshot
 from zope.component import getUtility
 from zope.event import notify
-from zope.interface import implements, providedBy
+from zope.interface import (
+    implements,
+    providedBy,
+    )
 from zope.schema import ValidationError
 
-from lazr.lifecycle.snapshot import Snapshot
-
 from canonical.launchpad.interfaces import (
-        BugTaskImportance, IProduct, IDistribution, IDistroSeries, IBug,
-        IBugEmailCommand, IBugTaskEmailCommand, IBugEditEmailCommand,
-        IBugTaskEditEmailCommand, IBugSet, ICveSet, ILaunchBag,
-        IMessageSet, IDistroBugTask,
-        IDistributionSourcePackage, EmailProcessingError,
-        CreateBugParams, IPillarNameSet,
-        BugTargetNotFound, IProjectGroup, ISourcePackage, IProductSeries,
-        BugTaskStatus)
-from lazr.lifecycle.event import (
-    ObjectModifiedEvent, ObjectCreatedEvent)
-from lazr.lifecycle.interfaces import (
-    IObjectCreatedEvent, IObjectModifiedEvent)
-
+    BugTargetNotFound,
+    BugTaskImportance,
+    BugTaskStatus,
+    CreateBugParams,
+    EmailProcessingError,
+    IBug,
+    IBugEditEmailCommand,
+    IBugEmailCommand,
+    IBugSet,
+    IBugTaskEditEmailCommand,
+    IBugTaskEmailCommand,
+    ICveSet,
+    IDistribution,
+    IDistributionSourcePackage,
+    IDistroBugTask,
+    IDistroSeries,
+    ILaunchBag,
+    IMessageSet,
+    IPillarNameSet,
+    IProduct,
+    IProductSeries,
+    IProjectGroup,
+    ISourcePackage,
+    )
 from canonical.launchpad.mail.helpers import (
-    get_error_message, get_person_or_team)
+    get_error_message,
+    get_person_or_team,
+    )
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.webapp.authorization import check_permission
-
-from lp.app.errors import NotFoundError, UserCannotUnsubscribePerson
+from lp.app.errors import (
+    NotFoundError,
+    UserCannotUnsubscribePerson,
+    )
 
 
 def normalize_arguments(string_args):

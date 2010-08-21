@@ -13,33 +13,52 @@ __all__ = [
 
 from bzrlib.plugins.builder.recipe import RecipeParser
 from lazr.delegates import delegates
-
 from storm.locals import (
-    Bool, Desc, Int, Reference, ReferenceSet, Store, Storm,
-    Unicode)
-
+    Bool,
+    Desc,
+    Int,
+    Reference,
+    ReferenceSet,
+    Store,
+    Storm,
+    Unicode,
+    )
 from zope.component import getUtility
-from zope.interface import classProvides, implements
+from zope.interface import (
+    classProvides,
+    implements,
+    )
 
 from canonical.config import config
 from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.launchpad.interfaces.lpstorm import IMasterStore, IStore
-
+from canonical.launchpad.interfaces.lpstorm import (
+    IMasterStore,
+    IStore,
+    )
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.packagebuild import PackageBuild
-from lp.code.errors import (BuildAlreadyPending, BuildNotAllowedForDistro,
-    TooManyBuilds)
+from lp.code.errors import (
+    BuildAlreadyPending,
+    BuildNotAllowedForDistro,
+    TooManyBuilds,
+    )
 from lp.code.interfaces.sourcepackagerecipe import (
-    ISourcePackageRecipe, ISourcePackageRecipeSource,
-    ISourcePackageRecipeData)
+    ISourcePackageRecipe,
+    ISourcePackageRecipeData,
+    ISourcePackageRecipeSource,
+    )
 from lp.code.interfaces.sourcepackagerecipebuild import (
-    ISourcePackageRecipeBuildSource)
+    ISourcePackageRecipeBuildSource,
+    )
 from lp.code.model.sourcepackagerecipebuild import SourcePackageRecipeBuild
 from lp.code.model.sourcepackagerecipedata import SourcePackageRecipeData
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.model.distroseries import DistroSeries
-from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
+from lp.soyuz.interfaces.archive import (
+    ArchivePurpose,
+    IArchiveSet,
+    )
 from lp.soyuz.interfaces.component import IComponentSet
 
 

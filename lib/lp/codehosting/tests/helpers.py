@@ -22,16 +22,21 @@ import unittest
 from bzrlib.bzrdir import BzrDir
 from bzrlib.errors import FileExists
 from bzrlib.plugins.loom import branch as loom_branch
-from bzrlib.tests import TestNotApplicable, TestSkipped
-
-from lp.code.enums import BranchType
-from lp.codehosting.vfs import branch_id_to_path
-from canonical.config import config
-from canonical.testing import TwistedLayer
-
-from twisted.internet import defer, threads
+from bzrlib.tests import (
+    TestNotApplicable,
+    TestSkipped,
+    )
+from twisted.internet import (
+    defer,
+    threads,
+    )
 from twisted.python.util import mergeFunctionMetadata
 from twisted.trial.unittest import TestCase as TrialTestCase
+
+from canonical.config import config
+from canonical.testing import TwistedLayer
+from lp.code.enums import BranchType
+from lp.codehosting.vfs import branch_id_to_path
 
 
 class AvatarTestCase(TrialTestCase):

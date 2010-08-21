@@ -3,17 +3,17 @@
 
 import logging
 import re
-
 from unittest import TestLoader
 
-from lp.testing import TestCaseWithFactory
 from canonical.launchpad.webapp import errorlog
 from canonical.testing.layers import LaunchpadScriptLayer
-
+from lp.testing import TestCaseWithFactory
 from lp.translations.interfaces.translationimportqueue import (
-    RosettaImportStatus)
+    RosettaImportStatus,
+    )
 from lp.translations.model.translationimportqueue import (
-    TranslationImportQueue)
+    TranslationImportQueue,
+    )
 from lp.translations.scripts.po_import import TranslationsImport
 
 

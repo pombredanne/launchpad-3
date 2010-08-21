@@ -6,11 +6,15 @@ __metaclass__ = type
 import unittest
 
 from canonical.testing.layers import DatabaseFunctionalLayer
-
 from lp.blueprints.interfaces.specificationtarget import (
-    IHasSpecifications, ISpecificationTarget)
+    IHasSpecifications,
+    ISpecificationTarget,
+    )
 from lp.blueprints.publisher import BlueprintsLayer
-from lp.testing import login_person, TestCaseWithFactory
+from lp.testing import (
+    login_person,
+    TestCaseWithFactory,
+    )
 from lp.testing.views import create_view
 
 

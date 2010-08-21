@@ -5,12 +5,13 @@
 __metaclass__ = type
 
 import os
-import unittest
 import shutil
 import tempfile
+import unittest
 
-from canonical.testing import PageTestLayer
 from canonical.launchpad.testing.pages import PageTestSuite
+from canonical.testing import PageTestLayer
+
 
 class TestMakeStoryTest(unittest.TestCase):
     layer = PageTestLayer

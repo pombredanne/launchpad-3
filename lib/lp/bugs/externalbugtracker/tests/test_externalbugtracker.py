@@ -11,10 +11,11 @@ from zope.interface import implements
 
 from lp.bugs.externalbugtracker.base import ExternalBugTracker
 from lp.bugs.externalbugtracker.debbugs import DebBugs
-
 from lp.bugs.interfaces.externalbugtracker import (
-    ISupportsBackLinking, ISupportsCommentImport, ISupportsCommentPushing)
-
+    ISupportsBackLinking,
+    ISupportsCommentImport,
+    ISupportsCommentPushing,
+    )
 from lp.testing import TestCase
 
 

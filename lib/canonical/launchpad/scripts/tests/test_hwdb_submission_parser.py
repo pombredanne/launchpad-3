@@ -4,6 +4,8 @@
 """Tests of the HWDB submissions parser."""
 
 from cStringIO import StringIO
+
+
 try:
     import xml.etree.cElementTree as etree
 except ImportError:

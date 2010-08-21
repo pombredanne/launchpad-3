@@ -14,14 +14,19 @@ __all__ = [
     "UploadPolicyError",
     ]
 
-from zope.component import getGlobalSiteManager, getUtility
-from zope.interface import implements, Interface
+from zope.component import (
+    getGlobalSiteManager,
+    getUtility,
+    )
+from zope.interface import (
+    implements,
+    Interface,
+    )
 
 from canonical.launchpad.interfaces import ILaunchpadCelebrities
 from lp.registry.interfaces.distribution import IDistributionSet
-from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-
+from lp.registry.interfaces.series import SeriesStatus
 
 # Defined here so that uploadpolicy.py doesn't depend on lp.code.
 SOURCE_PACKAGE_RECIPE_UPLOAD_POLICY_NAME = 'recipe'

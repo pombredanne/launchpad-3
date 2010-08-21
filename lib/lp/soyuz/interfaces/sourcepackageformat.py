@@ -11,8 +11,14 @@ __all__ = [
     'ISourcePackageFormatSelectionSet',
     ]
 
-from zope.interface import Attribute, Interface
-from lazr.enum import DBEnumeratedType, DBItem
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    )
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
 
 
 class SourcePackageFormat(DBEnumeratedType):

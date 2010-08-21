@@ -59,59 +59,105 @@ __all__ = [
 
 from operator import attrgetter
 
-from sqlobject import AND, CONTAINSSTRING, OR
-
-from storm.expr import Alias, And, Desc, Join, LeftJoin, Lower, Not, Or, SQL
-
+from sqlobject import (
+    AND,
+    CONTAINSSTRING,
+    OR,
+    )
+from storm.expr import (
+    Alias,
+    And,
+    Desc,
+    Join,
+    LeftJoin,
+    Lower,
+    Not,
+    Or,
+    SQL,
+    )
 from zope.component import getUtility
 from zope.interface import implements
 from zope.schema.interfaces import IVocabularyTokenized
-from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
+from zope.schema.vocabulary import (
+    SimpleTerm,
+    SimpleVocabulary,
+    )
 from zope.security.interfaces import Unauthorized
-from zope.security.proxy import isinstance as zisinstance
-from zope.security.proxy import removeSecurityProxy
+from zope.security.proxy import (
+    isinstance as zisinstance,
+    removeSecurityProxy,
+    )
 
 from canonical.cachedproperty import cachedproperty
-from canonical.database.sqlbase import SQLBase, quote_like, quote, sqlvalues
+from canonical.database.sqlbase import (
+    quote,
+    quote_like,
+    SQLBase,
+    sqlvalues,
+    )
 from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet)
+    DecoratedResultSet,
+    )
 from canonical.launchpad.database.account import Account
 from canonical.launchpad.database.emailaddress import EmailAddress
 from canonical.launchpad.database.stormsugar import StartsWith
 from canonical.launchpad.helpers import shortlist
-from lp.bugs.interfaces.bugtask import (
-    IBugTask, IDistroBugTask, IDistroSeriesBugTask, IProductSeriesBugTask,
-    IUpstreamBugTask)
+from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import IStore
-from lp.blueprints.interfaces.specification import ISpecification
-from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import (
-    ILaunchBag, IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+    DEFAULT_FLAVOR,
+    ILaunchBag,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 from canonical.launchpad.webapp.tales import DateTimeFormatterAPI
 from canonical.launchpad.webapp.vocabulary import (
-    BatchedCountableIterator, CountableIterator, IHugeVocabulary,
-    NamedSQLObjectHugeVocabulary, NamedSQLObjectVocabulary,
-    SQLObjectVocabularyBase)
-
+    BatchedCountableIterator,
+    CountableIterator,
+    IHugeVocabulary,
+    NamedSQLObjectHugeVocabulary,
+    NamedSQLObjectVocabulary,
+    SQLObjectVocabularyBase,
+    )
+from lp.blueprints.interfaces.specification import ISpecification
+from lp.bugs.interfaces.bugtask import (
+    IBugTask,
+    IDistroBugTask,
+    IDistroSeriesBugTask,
+    IProductSeriesBugTask,
+    IUpstreamBugTask,
+    )
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
-    IDistributionSourcePackage)
+    IDistributionSourcePackage,
+    )
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.mailinglist import (
-    IMailingListSet, MailingListStatus)
+    IMailingListSet,
+    MailingListStatus,
+    )
 from lp.registry.interfaces.milestone import (
-    IMilestoneSet, IProjectGroupMilestone)
+    IMilestoneSet,
+    IProjectGroupMilestone,
+    )
 from lp.registry.interfaces.person import (
-    IPerson, IPersonSet, ITeam, PersonVisibility)
+    IPerson,
+    IPersonSet,
+    ITeam,
+    PersonVisibility,
+    )
 from lp.registry.interfaces.pillar import IPillarName
-from lp.registry.interfaces.product import IProduct, IProductSet, License
+from lp.registry.interfaces.product import (
+    IProduct,
+    IProductSet,
+    License,
+    )
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
-from lp.registry.model.teammembership import TeamParticipation
 from lp.registry.model.distribution import Distribution
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.featuredproject import FeaturedProject
@@ -125,6 +171,7 @@ from lp.registry.model.productrelease import ProductRelease
 from lp.registry.model.productseries import ProductSeries
 from lp.registry.model.projectgroup import ProjectGroup
 from lp.registry.model.sourcepackagename import SourcePackageName
+from lp.registry.model.teammembership import TeamParticipation
 
 
 class BasePersonVocabulary:

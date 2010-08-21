@@ -13,35 +13,61 @@ import tempfile
 import time
 import unittest
 
-from bzrlib.branch import Branch, BranchReferenceFormat
-from bzrlib.bzrdir import BzrDir, BzrDirFormat, format_registry
-from bzrlib.errors import NoSuchFile, NotBranchError
+from bzrlib.branch import (
+    Branch,
+    BranchReferenceFormat,
+    )
+from bzrlib.bzrdir import (
+    BzrDir,
+    BzrDirFormat,
+    format_registry,
+    )
+from bzrlib.errors import (
+    NoSuchFile,
+    NotBranchError,
+    )
 from bzrlib.tests import TestCaseWithTransport
 from bzrlib.transport import get_transport
 from bzrlib.upgrade import upgrade
-from bzrlib.urlutils import join as urljoin, local_path_from_url
-
-from CVS import Repository, tree as CVSTree
-
+from bzrlib.urlutils import (
+    join as urljoin,
+    local_path_from_url,
+    )
+from CVS import (
+    Repository,
+    tree as CVSTree,
+    )
 from dulwich.repo import Repo as GitRepo
+import pysvn
 
 from canonical.config import config
 from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.testing import BaseLayer
-
 from lp.codehosting import load_optional_plugin
-from lp.codehosting.codeimport.tarball import create_tarball, extract_tarball
-from lp.codehosting.codeimport.worker import (
-    BazaarBranchStore, BzrSvnImportWorker, CodeImportWorkerExitCode,
-    ForeignTreeStore, GitImportWorker, HgImportWorker, ImportDataStore,
-    ImportWorker, CSCVSImportWorker, get_default_bazaar_branch_store)
+from lp.codehosting.codeimport.tarball import (
+    create_tarball,
+    extract_tarball,
+    )
 from lp.codehosting.codeimport.tests.servers import (
-    CVSServer, GitServer, MercurialServer, SubversionServer)
-from lp.codehosting.tests.helpers import (
-    create_branch_with_one_revision)
+    CVSServer,
+    GitServer,
+    MercurialServer,
+    SubversionServer,
+    )
+from lp.codehosting.codeimport.worker import (
+    BazaarBranchStore,
+    BzrSvnImportWorker,
+    CodeImportWorkerExitCode,
+    CSCVSImportWorker,
+    ForeignTreeStore,
+    get_default_bazaar_branch_store,
+    GitImportWorker,
+    HgImportWorker,
+    ImportDataStore,
+    ImportWorker,
+    )
+from lp.codehosting.tests.helpers import create_branch_with_one_revision
 from lp.testing import TestCase
-
-import pysvn
 
 
 class ForeignBranchPluginLayer(BaseLayer):

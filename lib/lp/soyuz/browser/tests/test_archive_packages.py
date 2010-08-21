@@ -16,7 +16,11 @@ from zope.security.interfaces import Unauthorized
 
 from canonical.testing import LaunchpadFunctionalLayer
 from lp.soyuz.browser.archive import ArchiveNavigationMenu
-from lp.testing import login, login_person, TestCaseWithFactory
+from lp.testing import (
+    login,
+    login_person,
+    TestCaseWithFactory,
+    )
 from lp.testing.views import create_initialized_view
 
 

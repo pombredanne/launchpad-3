@@ -8,24 +8,29 @@ __metaclass__ = type
 import os
 import subprocess
 import sys
+
 import transaction
 from zope.component import getUtility
 
+from canonical.config import config
+from canonical.launchpad.ftests import login
+from canonical.launchpad.interfaces import IDistributionSet
+from canonical.launchpad.webapp.interfaces import (
+    IStoreSelector,
+    MAIN_STORE,
+    MASTER_FLAVOR,
+    )
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.soyuz.interfaces.sourcepackageformat import SourcePackageFormat
 from lp.soyuz.model.distroarchseries import DistroArchSeries
 from lp.soyuz.scripts.initialise_distroseries import (
-    InitialiseDistroSeries, InitialisationError)
+    InitialisationError,
+    InitialiseDistroSeries,
+    )
 from lp.testing import TestCaseWithFactory
-
-from canonical.config import config
-from canonical.launchpad.interfaces import IDistributionSet
-from canonical.launchpad.ftests import login
-from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
-from canonical.testing.layers import LaunchpadZopelessLayer
 
 
 class TestInitialiseDistroSeries(TestCaseWithFactory):

@@ -30,46 +30,73 @@ __all__ = [
     'ProjectView',
     ]
 
-from zope.lifecycleevent import ObjectCreatedEvent
+from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form.browser import TextWidget
 from zope.component import getUtility
 from zope.event import notify
 from zope.formlib import form
-from zope.interface import implements, Interface
+from zope.interface import (
+    implements,
+    Interface,
+    )
+from zope.lifecycleevent import ObjectCreatedEvent
 from zope.schema import Choice
-
-from z3c.ptcompat import ViewPageTemplateFile
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
-from lp.app.errors import NotFoundError
-from canonical.launchpad.webapp.menu import NavigationMenu
-from lp.blueprints.browser.specificationtarget import (
-    HasSpecificationsMenuMixin)
-from lp.registry.interfaces.product import IProductSet
-from lp.registry.interfaces.projectgroup import (
-    IProjectGroup, IProjectGroupSeries, IProjectGroupSet)
-from lp.registry.browser.announcement import HasAnnouncementsView
-from lp.registry.browser.menu import (
-    IRegistryCollectionNavigationMenu, RegistryCollectionActionMenuBase)
-from lp.registry.browser.product import (
-    ProductAddView, ProjectAddStepOne, ProjectAddStepTwo)
-from lp.registry.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.feeds import FeedsMixin
-from lp.registry.browser.structuralsubscription import (
-    StructuralSubscriptionTargetTraversalMixin)
+from canonical.launchpad.webapp import (
+    action,
+    ApplicationMenu,
+    canonical_url,
+    ContextMenu,
+    custom_widget,
+    enabled_with_permission,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    LaunchpadView,
+    Link,
+    Navigation,
+    StandardLaunchpadFacets,
+    stepthrough,
+    structured,
+    )
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
+from canonical.launchpad.webapp.menu import NavigationMenu
 from lp.answers.browser.question import QuestionAddView
 from lp.answers.browser.questiontarget import (
-    QuestionTargetFacetMixin, QuestionCollectionAnswersMenu)
-from lp.registry.browser.objectreassignment import (
-    ObjectReassignmentView)
-from lp.services.fields import PillarAliases, PublicPersonChoice
-from canonical.launchpad.webapp import (
-    ApplicationMenu, ContextMenu, LaunchpadEditFormView, LaunchpadFormView,
-    LaunchpadView, Link, Navigation, StandardLaunchpadFacets, action,
-    canonical_url, custom_widget, enabled_with_permission, stepthrough,
-    structured)
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
+    QuestionCollectionAnswersMenu,
+    QuestionTargetFacetMixin,
+    )
+from lp.app.errors import NotFoundError
+from lp.blueprints.browser.specificationtarget import (
+    HasSpecificationsMenuMixin,
+    )
+from lp.registry.browser.announcement import HasAnnouncementsView
+from lp.registry.browser.branding import BrandingChangeView
+from lp.registry.browser.menu import (
+    IRegistryCollectionNavigationMenu,
+    RegistryCollectionActionMenuBase,
+    )
+from lp.registry.browser.objectreassignment import ObjectReassignmentView
+from lp.registry.browser.product import (
+    ProductAddView,
+    ProjectAddStepOne,
+    ProjectAddStepTwo,
+    )
+from lp.registry.browser.structuralsubscription import (
+    StructuralSubscriptionTargetTraversalMixin,
+    )
+from lp.registry.interfaces.product import IProductSet
+from lp.registry.interfaces.projectgroup import (
+    IProjectGroup,
+    IProjectGroupSeries,
+    IProjectGroupSet,
+    )
+from lp.services.fields import (
+    PillarAliases,
+    PublicPersonChoice,
+    )
 
 
 class ProjectNavigation(Navigation,

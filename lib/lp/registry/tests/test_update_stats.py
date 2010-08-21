@@ -14,11 +14,11 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.database.sqlbase import cursor
-from lp.services.worlddata.interfaces.language import ILanguageSet
-from lp.translations.interfaces.potemplate import IPOTemplateSet
+from canonical.testing import LaunchpadZopelessLayer
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
-from canonical.testing import LaunchpadZopelessLayer
+from lp.services.worlddata.interfaces.language import ILanguageSet
+from lp.translations.interfaces.potemplate import IPOTemplateSet
 
 
 def get_script():

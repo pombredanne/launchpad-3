@@ -14,6 +14,7 @@
 # where the final argument is the name of the site list, which must exist.
 
 import sys
+
 from Mailman.mm_cfg import MAILMAN_SITE_LIST
 
 

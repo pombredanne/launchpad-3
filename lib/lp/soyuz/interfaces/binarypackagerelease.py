@@ -23,8 +23,8 @@ from zope.interface import Interface, Attribute
 
 from canonical.launchpad import _
 from canonical.launchpad.validators.version import valid_debian_version
-from lp.soyuz.interfaces.archive import IArchive
 from lp.services.worlddata.interfaces.country import ICountry
+from lp.soyuz.interfaces.archive import IArchive
 
 
 class IBinaryPackageRelease(Interface):

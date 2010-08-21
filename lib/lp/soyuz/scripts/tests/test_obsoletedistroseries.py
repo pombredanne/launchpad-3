@@ -13,16 +13,19 @@ from zope.component import getUtility
 from canonical.config import config
 from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.scripts import FakeLogger
-from lp.soyuz.scripts.ftpmaster import (
-    ObsoleteDistroseries, SoyuzScriptError)
-from lp.soyuz.model.publishing import (
-    BinaryPackagePublishingHistory,
-    SourcePackagePublishingHistory)
+from canonical.testing import LaunchpadZopelessLayer
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.series import SeriesStatus
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+from lp.soyuz.model.publishing import (
+    BinaryPackagePublishingHistory,
+    SourcePackagePublishingHistory,
+    )
+from lp.soyuz.scripts.ftpmaster import (
+    ObsoleteDistroseries,
+    SoyuzScriptError,
+    )
 from lp.testing.fakemethod import FakeMethod
-from canonical.testing import LaunchpadZopelessLayer
 
 
 class TestObsoleteDistroseriesScript(unittest.TestCase):

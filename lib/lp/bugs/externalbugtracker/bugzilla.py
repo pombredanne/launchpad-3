@@ -11,34 +11,47 @@ __all__ = [
     'needs_authentication',
     ]
 
-import pytz
+from email.Utils import parseaddr
 import re
+from xml.dom import minidom
 import xml.parsers.expat
 import xmlrpclib
 
-from email.Utils import parseaddr
-from xml.dom import minidom
-
+import pytz
 from zope.component import getUtility
 from zope.interface import implements
 
 from canonical import encoding
 from canonical.config import config
 from canonical.launchpad.interfaces.message import IMessageSet
-from canonical.launchpad.webapp.url import urlappend, urlparse
-
+from canonical.launchpad.webapp.url import (
+    urlappend,
+    urlparse,
+    )
 from lp.bugs.externalbugtracker.base import (
-    BugNotFound, BugTrackerAuthenticationError, BugTrackerConnectError,
-    ExternalBugTracker, InvalidBugId, LookupTree,
-    UnknownRemoteImportanceError, UnknownRemoteStatusError,
-    UnparseableBugData, UnparseableBugTrackerVersion)
+    BugNotFound,
+    BugTrackerAuthenticationError,
+    BugTrackerConnectError,
+    ExternalBugTracker,
+    InvalidBugId,
+    LookupTree,
+    UnknownRemoteImportanceError,
+    UnknownRemoteStatusError,
+    UnparseableBugData,
+    UnparseableBugTrackerVersion,
+    )
 from lp.bugs.externalbugtracker.isolation import ensure_no_transaction
-from lp.bugs.externalbugtracker.xmlrpc import (
-    UrlLib2Transport)
-from lp.bugs.interfaces.bugtask import BugTaskImportance, BugTaskStatus
-from lp.bugs.interfaces.externalbugtracker import UNKNOWN_REMOTE_IMPORTANCE
+from lp.bugs.externalbugtracker.xmlrpc import UrlLib2Transport
+from lp.bugs.interfaces.bugtask import (
+    BugTaskImportance,
+    BugTaskStatus,
+    )
 from lp.bugs.interfaces.externalbugtracker import (
-    ISupportsBackLinking, ISupportsCommentImport, ISupportsCommentPushing)
+    ISupportsBackLinking,
+    ISupportsCommentImport,
+    ISupportsCommentPushing,
+    UNKNOWN_REMOTE_IMPORTANCE,
+    )
 
 
 class Bugzilla(ExternalBugTracker):

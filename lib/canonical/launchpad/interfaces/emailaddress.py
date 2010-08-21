@@ -13,16 +13,26 @@ __all__ = [
     'IEmailAddressSet',
     'InvalidEmailAddress']
 
-from zope.schema import Choice, Int, Object, TextLine
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    )
+from lazr.restful.declarations import (
+    export_as_webservice_entry,
+    exported,
+    )
+from lazr.restful.fields import Reference
 from zope.interface import Interface
-from lazr.enum import DBEnumeratedType, DBItem
+from zope.schema import (
+    Choice,
+    Int,
+    Object,
+    TextLine,
+    )
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.account import IAccount
 from lp.registry.interfaces.role import IHasOwner
-from lazr.restful.declarations import (
-    export_as_webservice_entry, exported)
-from lazr.restful.fields import Reference
 
 
 class InvalidEmailAddress(Exception):
