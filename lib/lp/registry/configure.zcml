@@ -833,10 +833,11 @@
             <require
                 permission="launchpad.Edit"
                 set_schema="lp.registry.interfaces.person.IPersonPublic
-                            lp.registry.interfaces.person.ITeamPublic"/>
+                            lp.registry.interfaces.person.ITeamPublic"
+                set_attributes="displayname"/>
             <require
-	        permission="launchpad.Moderate"
-                set_attributes="name displayname"/>
+                permission="launchpad.Moderate"
+                set_attributes="name"/>
             <require
                 permission="launchpad.Moderate"
                 interface="lp.registry.interfaces.person.IPersonModerate" />
