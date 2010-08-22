@@ -2222,7 +2222,7 @@ class Person(
                     TeamMembershipStatus.APPROVED,
                     TeamMembershipStatus.ADMIN,
                     ]))).order_by(
-                        Desc(TeamMembership.datejoined), 
+                        Desc(TeamMembership.datejoined),
                         Desc(TeamMembership.id))
         # Cast the results to list now, because they will be iterated over
         # several times.
