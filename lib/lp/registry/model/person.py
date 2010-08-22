@@ -2205,7 +2205,7 @@ class Person(
 
         # For cases where self is a team, we don't need self as a team
         # participated in.
-        teams = [team for team in teams if team != self]
+        teams = [team for team in teams if team is not self]
 
         # Get all of the memberships for any of the teams this person is
         # a participant of. This must be ordered by date and id because
