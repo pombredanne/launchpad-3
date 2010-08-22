@@ -14,13 +14,10 @@ from lp.testing import (
     )
 
 
-class UsageEnumsBaseTestCase(TestCaseWithFactory):
+class UsageEnumsMixin(object):
     """Base class for testing the UsageEnums on their pillars."""
 
-    layer = DatabaseFunctionalLayer
-
     def setUp(self):
-        super(UsageEnumsBaseTestCase, self).setUp()
         self.target = None
 
     def test_answers_usage_no_data(self):
@@ -146,8 +143,10 @@ class UsageEnumsBaseTestCase(TestCaseWithFactory):
             self.target.official_blueprints)
 
 
-class TestDistributionUsageEnums(UsageEnumsBaseTestCase):
+class TestDistributionUsageEnums(TestCaseWithFactory, UsageEnumsMixin):
     """Tests the usage enums for the distribution."""
+
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         super(TestDistributionUsageEnums, self).setUp()
@@ -161,20 +160,15 @@ class TestDistributionUsageEnums(UsageEnumsBaseTestCase):
             self.target.codehosting_usage)
 
 
-class TestProductUsageEnums(UsageEnumsBaseTestCase):
+class TestProductUsageEnums(TestCaseWithFactory, UsageEnumsMixin):
     """Tests the usage enums for the product."""
+
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         super(TestProductUsageEnums, self).setUp()
         self.target = self.factory.makeProduct()
 
-# Manually create the TestLoader list, because the UsageEnumsBaseTestCase
-# shouldn't run.
-test_list = [
-    __name__ + ".TestDistributionUsageEnums",
-    __name__ + ".TestProductUsageEnums",
-    ]
-
 
 def test_suite():
-    return unittest.TestLoader().loadTestsFromNames(test_list)
+    return unittest.TestLoader().loadTestsFromName(__name__)
