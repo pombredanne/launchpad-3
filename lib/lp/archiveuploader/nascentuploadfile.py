@@ -408,6 +408,7 @@ class BaseBinaryUploadFile(PackageUploadFile):
         "Section",
         "Maintainer",
         "Source",
+        "Homepage",
         ]))
 
     # Map priorities to their dbschema valuesa
@@ -929,6 +930,7 @@ class BaseBinaryUploadFile(PackageUploadFile):
             pre_depends=encoded.get('Pre-Depends', ''),
             enhances=encoded.get('Enhances', ''),
             breaks=encoded.get('Breaks', ''),
+            homepage=encoded.get('Homepage'),
             essential=is_essential,
             installedsize=installedsize,
             architecturespecific=architecturespecific,

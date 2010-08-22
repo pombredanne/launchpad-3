@@ -140,7 +140,7 @@ class IBinaryPackageBuildView(IPackageBuild):
         shlibdeps=None, depends=None, recommends=None, suggests=None,
         conflicts=None, replaces=None, provides=None, pre_depends=None,
         enhances=None, breaks=None, essential=False, debug_package=None,
-        user_defined_fields=None):
+        user_defined_fields=None, homepage=None):
         """Create and return a `BinaryPackageRelease`.
 
         The binarypackagerelease will be attached to this specific build.

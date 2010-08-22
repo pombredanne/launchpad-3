@@ -192,6 +192,20 @@ class DSCFileTests(PackageUploadFileTestCase):
         self.assertEquals(
             [["python-version", u"2.5"]], release.user_defined_fields)
 
+    def test_homepage(self):
+        # Test that storeInDatabase updates homepage.
+        dsc = self.getBaseDsc()
+        dsc["Homepage"] = "http://samba.org/~jelmer/bzr"
+        changes = self.getBaseChanges()
+        uploadfile = self.createDSCFile(
+            "foo.dsc", dsc, "main/net", "extra", "dulwich", "0.42",
+            self.createChangesFile("foo.changes", changes))
+        (uploadfile.changelog_path, changelog_digest, changelog_size) = (
+            self.writeUploadFile("changelog", "DUMMY"))
+        uploadfile.files = []
+        release = uploadfile.storeInDatabase(None)
+        self.assertEquals(u"http://samba.org/~jelmer/bzr", release.homepage)
+
 
 class DebBinaryUploadFileTests(PackageUploadFileTestCase):
     """Tests for DebBinaryUploadFile."""
@@ -272,10 +286,7 @@ class DebBinaryUploadFileTests(PackageUploadFileTestCase):
         build = self.factory.makeBinaryPackageBuild()
         bpr = uploadfile.storeInDatabase(build)
         self.assertEquals(
-            [
-                [u"Homepage", u"http://samba.org/~jelmer/dulwich"],
-                [u"Python-Version", u"2.5"]
-            ], bpr.user_defined_fields)
+            [[u"Python-Version", u"2.5"]], bpr.user_defined_fields)
 
     def test_user_defined_fields_newlines(self):
         # storeInDatabase stores user defined fields and keeps newlines.
@@ -290,5 +301,17 @@ class DebBinaryUploadFileTests(PackageUploadFileTestCase):
         self.assertEquals(
             [
                 [u"RandomData", u"Foo\nbar\nbla\n"],
-                [u"Homepage", u"http://samba.org/~jelmer/dulwich"],
             ], bpr.user_defined_fields)
+
+    def test_homepage(self):
+        # storeInDatabase stores homepage field.
+        uploadfile = self.createDebBinaryUploadFile(
+            "foo_0.42_i386.deb", "main/python", "unknown", "mypkg", "0.42",
+            None)
+        control = self.getBaseControl()
+        control["Python-Version"] = "2.5"
+        uploadfile.parseControl(control)
+        build = self.factory.makeBinaryPackageBuild()
+        bpr = uploadfile.storeInDatabase(build)
+        self.assertEquals(u"http://samba.org/~jelmer/dulwich",
+            bpr.homepage)
