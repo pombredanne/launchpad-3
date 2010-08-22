@@ -80,7 +80,8 @@ msgstr ""
 #, c-format
 msgid "%s"
 msgstr ""
-''' % (TEST_MSGID_ERROR)
+''' % TEST_MSGID_ERROR
+
 
 TEST_TRANSLATION_FILE_WITH_ERROR = r'''
 msgid ""
@@ -93,7 +94,8 @@ msgstr ""
 #, c-format
 msgid "%s"
 msgstr "format specifier changes %%s"
-'''  % (TEST_MSGID_ERROR)
+''' % TEST_MSGID_ERROR
+
 
 class FileImporterTestCase(TestCaseWithFactory):
     """Class test for translation importer component"""
@@ -118,8 +120,7 @@ class FileImporterTestCase(TestCaseWithFactory):
             productseries=potemplate.productseries,
             potemplate=potemplate)
         self.fake_librarian.pretendCommit()
-        return POTFileImporter(
-            template_entry, GettextPOImporter(), None )
+        return POTFileImporter(template_entry, GettextPOImporter(), None)
 
     def _createPOFileImporter(self,
             pot_importer, po_content, is_published, existing_pofile=None,
@@ -137,8 +138,7 @@ class FileImporterTestCase(TestCaseWithFactory):
             pofile.path, po_content, is_published, person,
             productseries=potemplate.productseries, pofile=pofile)
         self.fake_librarian.pretendCommit()
-        return POFileImporter(
-            translation_entry, GettextPOImporter(), None )
+        return POFileImporter(translation_entry, GettextPOImporter(), None)
 
     def _createImporterForExportedEntries(self):
         """Set up entries that where exported from LP, i.e. that contain the
@@ -163,8 +163,7 @@ class FileImporterTestCase(TestCaseWithFactory):
             productseries=potemplate.productseries,
             potemplate=potemplate)
         self.fake_librarian.pretendCommit()
-        return FileImporter(
-            template_entry, GettextPOImporter(), None )
+        return FileImporter(template_entry, GettextPOImporter(), None)
 
     def setUp(self):
         super(FileImporterTestCase, self).setUp()
@@ -284,7 +283,7 @@ class FileImporterTestCase(TestCaseWithFactory):
             "POTFileImporter had no reference to an IPOTemplate.")
         self.failUnless(pot_importer.pofile is None or
             pot_importer.pofile.language == "en",
-            "POTFileImporter referenced an IPOFile which was not English." )
+            "POTFileImporter referenced an IPOFile which was not English.")
         # Test if POFileImporter gets initialised correctly.
         self.failUnless(po_importer.potemplate is not None,
             "POTFileImporter had no reference to an IPOTemplate.")
@@ -344,9 +343,9 @@ class FileImporterTestCase(TestCaseWithFactory):
         # Test correct import operation for both
         # exported and published files.
         importers = (
-                     self._createImporterForExportedEntries(),
-                     self._createImporterForPublishedEntries()
-                     )
+            self._createImporterForExportedEntries(),
+            self._createImporterForPublishedEntries(),
+            )
         for (pot_importer, po_importer) in importers:
             # Run the import and see if PotMsgSet and TranslationMessage
             # entries are correctly created in the DB.
@@ -401,7 +400,8 @@ class FileImporterTestCase(TestCaseWithFactory):
         self.failUnlessEqual(len(errors), 1,
             "No error detected when importing a pofile with an earlier "
             "export timestamp (update conflict).")
-        self.failUnless( errors[0]['error-message'].find(
+        self.failUnless(
+            errors[0]['error-message'].find(
                 u"updated by someone else after you") != -1,
             "importFile() failed to detect a message update conflict.")
 
@@ -525,13 +525,14 @@ class CreateFileImporterTestCase(TestCaseWithFactory):
 
     def test_raises_OutdatedTranslationError_on_user_uploads(self):
         queue_entry = self._make_queue_entry(False)
-        self.assertRaises(OutdatedTranslationError, POFileImporter,
-            queue_entry, GettextPOImporter(), None )
+        self.assertRaises(
+            OutdatedTranslationError,
+            POFileImporter, queue_entry, GettextPOImporter(), None)
 
     def test_not_raises_OutdatedTranslationError_on_published_uploads(self):
         queue_entry = self._make_queue_entry(True)
         try:
-            importer = POFileImporter(queue_entry, GettextPOImporter(), None )
+            importer = POFileImporter(queue_entry, GettextPOImporter(), None)
         except OutdatedTranslationError:
             self.fail("OutdatedTranslationError raised.")
 
@@ -539,5 +540,5 @@ class CreateFileImporterTestCase(TestCaseWithFactory):
         queue_entry = self._make_queue_entry(True)
         pofile = queue_entry.pofile
         old_raw_header = pofile.header
-        importer = POFileImporter(queue_entry, GettextPOImporter(), None )
+        importer = POFileImporter(queue_entry, GettextPOImporter(), None)
         self.assertEqual(old_raw_header, pofile.header)
