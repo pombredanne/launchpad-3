@@ -18,24 +18,37 @@ Documentation on general design
 
 __metaclass__ = type
 
-import apt_pkg
 import os
 
+import apt_pkg
 from zope.component import getUtility
 
+from canonical.launchpad.interfaces import (
+    IBinaryPackageNameSet,
+    IDistributionSet,
+    ILibraryFileAliasSet,
+    ISourcePackageNameSet,
+    QueueInconsistentStateError,
+    )
 from lp.app.errors import NotFoundError
 from lp.archiveuploader.changesfile import ChangesFile
 from lp.archiveuploader.dscfile import DSCFile
 from lp.archiveuploader.nascentuploadfile import (
-    UploadError, UploadWarning, CustomUploadFile, SourceUploadFile,
-    BaseBinaryUploadFile, DdebBinaryUploadFile, DebBinaryUploadFile)
+    BaseBinaryUploadFile,
+    CustomUploadFile,
+    DdebBinaryUploadFile,
+    DebBinaryUploadFile,
+    SourceUploadFile,
+    UploadError,
+    UploadWarning,
+    )
 from lp.archiveuploader.utils import determine_source_file_type
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
-from lp.soyuz.interfaces.archive import ArchivePurpose, MAIN_ARCHIVE_PURPOSES
-from canonical.launchpad.interfaces import (
-    IBinaryPackageNameSet, IDistributionSet, ILibraryFileAliasSet,
-    ISourcePackageNameSet, QueueInconsistentStateError)
+from lp.soyuz.interfaces.archive import (
+    ArchivePurpose,
+    MAIN_ARCHIVE_PURPOSES,
+    )
 
 
 PARTNER_COMPONENT_NAME = 'partner'

@@ -11,113 +11,194 @@ __all__ = [
     ]
 
 
-from sqlobject import BoolCol, ForeignKey, SQLObjectNotFound, StringCol
+from sqlobject import (
+    BoolCol,
+    ForeignKey,
+    SQLObjectNotFound,
+    StringCol,
+    )
 from sqlobject.sqlbuilder import SQLConstant
-from storm.locals import Desc, In, Int, Join, Or, SQL
+from storm.locals import (
+    Desc,
+    In,
+    Int,
+    Join,
+    Or,
+    SQL,
+    )
 from storm.store import Store
 from zope.component import getUtility
-from zope.interface import alsoProvides, implements
+from zope.interface import (
+    alsoProvides,
+    implements,
+    )
 
-from lp.archivepublisher.debversion import Version
-from canonical.cachedproperty import cachedproperty, clear_property
+from canonical.cachedproperty import (
+    cachedproperty,
+    clear_property,
+    )
 from canonical.database.constants import UTC_NOW
-
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
-    quote, quote_like, SQLBase, sqlvalues, cursor)
+    cursor,
+    quote,
+    quote_like,
+    SQLBase,
+    sqlvalues,
+    )
 from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet)
-from canonical.launchpad.components.storm_operators import FTQ, Match, RANK
+    DecoratedResultSet,
+    )
+from canonical.launchpad.components.storm_operators import (
+    FTQ,
+    Match,
+    RANK,
+    )
+from canonical.launchpad.helpers import shortlist
+from canonical.launchpad.interfaces.launchpad import (
+    IHasIcon,
+    IHasLogo,
+    IHasMugshot,
+    ILaunchpadCelebrities,
+    )
 from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.registry.model.announcement import MakesAnnouncements
 from lp.soyuz.model.archive import Archive
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import (
     BinaryPackageRelease)
-from lp.bugs.model.bug import (
-    BugSet, get_bug_tags, get_bug_tags_open_count)
-from lp.bugs.model.bugtarget import (
-    BugTargetBase, HasBugHeatMixin, OfficialBugTagTargetMixin)
-from lp.bugs.model.bugtask import BugTask
-from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
-from lp.registry.model.distributionmirror import DistributionMirror
-from lp.registry.model.distributionsourcepackage import (
-    DistributionSourcePackage)
-from lp.soyuz.model.distributionsourcepackagecache import (
-    DistributionSourcePackageCache)
-from lp.soyuz.model.distributionsourcepackagerelease import (
-    DistributionSourcePackageRelease)
-from lp.soyuz.model.distroarchseries import (
-    DistroArchSeries, DistroArchSeriesSet)
-from lp.registry.model.distroseries import DistroSeries
-from lp.soyuz.model.distroseriespackagecache import (
-    DistroSeriesPackageCache)
-from lp.answers.model.faq import FAQ, FAQSearch
-from lp.registry.model.karma import KarmaContextMixin
-from lp.registry.model.mentoringoffer import MentoringOffer
-from lp.registry.model.milestone import (
-    HasMilestonesMixin, Milestone)
-from lp.registry.model.pillar import HasAliasMixin
-from lp.soyuz.model.publishing import (
-    BinaryPackageFilePublishing, BinaryPackagePublishingHistory,
-    SourcePackageFilePublishing, SourcePackagePublishingHistory)
+from canonical.launchpad.validators.name import (
+    sanitize_name,
+    valid_name,
+    )
+from canonical.launchpad.webapp.url import urlparse
+from canonical.lazr.utils import safe_hasattr
+from lp.answers.interfaces.faqtarget import IFAQTarget
+from lp.answers.interfaces.questioncollection import (
+    QUESTION_STATUS_DEFAULT_SEARCH,
+    )
+from lp.answers.interfaces.questiontarget import IQuestionTarget
+from lp.answers.model.faq import (
+    FAQ,
+    FAQSearch,
+    )
+from lp.answers.model.question import (
+    QuestionTargetMixin,
+    QuestionTargetSearch,
+    )
+from lp.app.enums import ServiceUsage
+from lp.app.errors import NotFoundError
+from lp.app.interfaces.launchpad import (
+    ILaunchpadUsage,
+    IServiceUsage,
+    )
+from lp.archivepublisher.debversion import Version
+from lp.blueprints.interfaces.specification import (
+    SpecificationDefinitionStatus,
+    SpecificationFilter,
+    SpecificationImplementationStatus,
+    SpecificationSort,
+    )
 from lp.blueprints.model.specification import (
-    HasSpecificationsMixin, Specification)
+    HasSpecificationsMixin,
+    Specification,
+    )
 from lp.blueprints.model.sprint import HasSprintsMixin
-from lp.registry.model.sourcepackagename import SourcePackageName
-from lp.soyuz.model.sourcepackagerelease import (
-    SourcePackageRelease)
-from lp.registry.model.structuralsubscription import (
-    StructuralSubscriptionTargetMixin)
-from lp.translations.model.translationimportqueue import (
-    HasTranslationImportsMixin)
-from canonical.launchpad.helpers import shortlist
-from lp.soyuz.interfaces.archive import (
-    ArchivePurpose, ArchiveStatus, IArchiveSet, MAIN_ARCHIVE_PURPOSES)
-from lp.soyuz.interfaces.archivepermission import (
-    IArchivePermissionSet)
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
 from lp.bugs.interfaces.bugtarget import IHasBugHeat
 from lp.bugs.interfaces.bugtask import (
-    BugTaskStatus, UNRESOLVED_BUGTASK_STATUSES)
+    BugTaskStatus,
+    UNRESOLVED_BUGTASK_STATUSES,
+    )
+from lp.bugs.model.bug import (
+    BugSet,
+    get_bug_tags,
+    get_bug_tags_open_count,
+    )
+from lp.bugs.model.bugtarget import (
+    BugTargetBase,
+    HasBugHeatMixin,
+    OfficialBugTagTargetMixin,
+    )
+from lp.bugs.model.bugtask import BugTask
+from lp.registry.interfaces.distribution import (
+    IBaseDistribution,
+    IDerivativeDistribution,
+    IDistribution,
+    IDistributionSet,
+    )
+from lp.registry.interfaces.distributionmirror import (
+    IDistributionMirror,
+    MirrorContent,
+    MirrorStatus,
+    )
+from lp.registry.interfaces.distroseries import NoSuchDistroSeries
+from lp.registry.interfaces.packaging import PackagingType
+from lp.registry.interfaces.person import (
+    validate_person,
+    validate_public_person,
+    )
+from lp.registry.interfaces.pillar import IPillarNameSet
+from lp.registry.interfaces.series import SeriesStatus
+from lp.registry.interfaces.sourcepackagename import ISourcePackageName
+from lp.registry.model.announcement import MakesAnnouncements
+from lp.registry.model.distributionmirror import DistributionMirror
+from lp.registry.model.distributionsourcepackage import (
+    DistributionSourcePackage,
+    )
+from lp.registry.model.distroseries import DistroSeries
+from lp.registry.model.karma import KarmaContextMixin
+from lp.registry.model.mentoringoffer import MentoringOffer
+from lp.registry.model.milestone import (
+    HasMilestonesMixin,
+    Milestone,
+    )
+from lp.registry.model.pillar import HasAliasMixin
+from lp.registry.model.sourcepackagename import SourcePackageName
+from lp.registry.model.structuralsubscription import (
+    StructuralSubscriptionTargetMixin,
+    )
+from lp.soyuz.interfaces.archive import (
+    ArchivePurpose,
+    ArchiveStatus,
+    IArchiveSet,
+    MAIN_ARCHIVE_PURPOSES,
+    )
+from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
-from lp.registry.interfaces.distribution import (
-    IBaseDistribution, IDerivativeDistribution, IDistribution,
-    IDistributionSet)
-from lp.registry.interfaces.distributionmirror import (
-    IDistributionMirror, MirrorContent, MirrorStatus)
-from lp.registry.interfaces.series import SeriesStatus
-from lp.registry.interfaces.distroseries import NoSuchDistroSeries
-from canonical.launchpad.interfaces.launchpad import (
-    IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities)
-from lp.app.interfaces.launchpad import ILaunchpadUsage, IServiceUsage
-from lp.app.enums import ServiceUsage
-from lp.soyuz.interfaces.queue import PackageUploadStatus
-from lp.registry.interfaces.packaging import PackagingType
-from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.soyuz.interfaces.publishing import (
-    active_publishing_status, PackagePublishingStatus)
-from lp.registry.interfaces.sourcepackagename import (
-    ISourcePackageName)
-from lp.blueprints.interfaces.specification import (
-    SpecificationDefinitionStatus, SpecificationFilter,
-    SpecificationImplementationStatus, SpecificationSort)
-from lp.translations.interfaces.translationgroup import (
-    TranslationPermission)
-from canonical.launchpad.validators.name import sanitize_name, valid_name
-from lp.app.errors import NotFoundError
-from lp.registry.interfaces.person import (
-    validate_person, validate_public_person)
-from canonical.launchpad.webapp.url import urlparse
-
-from lp.answers.model.question import (
-    QuestionTargetSearch, QuestionTargetMixin)
-from lp.answers.interfaces.faqtarget import IFAQTarget
-from lp.answers.interfaces.questioncollection import (
-    QUESTION_STATUS_DEFAULT_SEARCH)
-from lp.answers.interfaces.questiontarget import IQuestionTarget
+    active_publishing_status,
+    PackagePublishingStatus,
+    )
+from lp.soyuz.interfaces.queue import PackageUploadStatus
+from lp.soyuz.model.archive import Archive
+from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
+from lp.soyuz.model.binarypackagename import BinaryPackageName
+from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
+from lp.soyuz.model.distributionsourcepackagecache import (
+    DistributionSourcePackageCache,
+    )
+from lp.soyuz.model.distributionsourcepackagerelease import (
+    DistributionSourcePackageRelease,
+    )
+from lp.soyuz.model.distroarchseries import (
+    DistroArchSeries,
+    DistroArchSeriesSet,
+    )
+from lp.soyuz.model.distroseriespackagecache import DistroSeriesPackageCache
+from lp.soyuz.model.publishing import (
+    BinaryPackageFilePublishing,
+    BinaryPackagePublishingHistory,
+    SourcePackageFilePublishing,
+    SourcePackagePublishingHistory,
+    )
+from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
+from lp.translations.interfaces.translationgroup import TranslationPermission
+from lp.translations.model.translationimportqueue import (
+    HasTranslationImportsMixin,
+    )
 
 
 class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,

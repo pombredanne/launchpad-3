@@ -5,20 +5,23 @@
 
 __metaclass__ = type
 
+from lazr.lifecycle.snapshot import Snapshot
 from zope.security.proxy import removeSecurityProxy
 
-from lazr.lifecycle.snapshot import Snapshot
-from lp.registry.tests.test_distroseries import (
-    TestDistroSeriesCurrentSourceReleases)
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
+from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import NoSuchDistroSeries
 from lp.registry.interfaces.series import SeriesStatus
-from lp.registry.interfaces.distribution import IDistribution
-
+from lp.registry.tests.test_distroseries import (
+    TestDistroSeriesCurrentSourceReleases,
+    )
 from lp.soyuz.interfaces.distributionsourcepackagerelease import (
-    IDistributionSourcePackageRelease)
+    IDistributionSourcePackageRelease,
+    )
 from lp.testing import TestCaseWithFactory
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
 
 
 class TestDistribution(TestCaseWithFactory):

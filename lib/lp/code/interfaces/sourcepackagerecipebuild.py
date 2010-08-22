@@ -13,22 +13,29 @@ __all__ = [
     'ISourcePackageRecipeBuildJobSource',
     ]
 
-from lazr.restful.fields import CollectionField, Reference
 from lazr.restful.declarations import export_as_webservice_entry
-
+from lazr.restful.fields import (
+    CollectionField,
+    Reference,
+    )
 from zope.interface import Interface
-from zope.schema import Bool, Int, Object
+from zope.schema import (
+    Bool,
+    Int,
+    Object,
+    )
 
 from canonical.launchpad import _
-
 from lp.buildmaster.interfaces.packagebuild import IPackageBuild
+from lp.code.interfaces.sourcepackagerecipe import (
+    ISourcePackageRecipe,
+    ISourcePackageRecipeData,
+    )
+from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.person import IPerson
+from lp.services.job.interfaces.job import IJob
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuild
 from lp.soyuz.interfaces.buildfarmbuildjob import IBuildFarmBuildJob
-from lp.code.interfaces.sourcepackagerecipe import (
-    ISourcePackageRecipe, ISourcePackageRecipeData)
-from lp.registry.interfaces.person import IPerson
-from lp.registry.interfaces.distroseries import IDistroSeries
-from lp.services.job.interfaces.job import IJob
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
 
 

@@ -6,9 +6,14 @@ __metaclass__ = type
 
 import unittest
 
-from canonical.launchpad.ftests import ANONYMOUS, login, logout
 from canonical.launchpad.components.request_country import request_country
+from canonical.launchpad.ftests import (
+    ANONYMOUS,
+    login,
+    logout,
+    )
 from canonical.testing import LaunchpadFunctionalLayer
+
 
 class RequestCountryTestCase(unittest.TestCase):
     """request_country needs functional tests because it accesses GeoIP

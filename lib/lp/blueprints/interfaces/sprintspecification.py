@@ -12,9 +12,20 @@ __all__ = [
     'SprintSpecificationStatus'
     ]
 
-from zope.interface import Interface, Attribute
-from zope.schema import Choice, Int, Text, Datetime
-from lazr.enum import DBEnumeratedType, DBItem
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    )
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Choice,
+    Datetime,
+    Int,
+    Text,
+    )
 
 from canonical.launchpad import _
 from lp.services.fields import PublicPersonChoice

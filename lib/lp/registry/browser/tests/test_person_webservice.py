@@ -8,9 +8,9 @@ import unittest
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.ftests import login
-from lp.testing import TestCaseWithFactory
 from canonical.launchpad.testing.pages import LaunchpadWebServiceCaller
 from canonical.testing import DatabaseFunctionalLayer
+from lp.testing import TestCaseWithFactory
 
 
 class TestPersonRepresentation(TestCaseWithFactory):

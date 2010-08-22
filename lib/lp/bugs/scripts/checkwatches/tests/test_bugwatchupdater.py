@@ -5,19 +5,21 @@
 
 __metaclass__ = type
 
-import transaction
+from datetime import datetime
 import unittest
 
-from datetime import datetime
+import transaction
 
 from canonical.testing import LaunchpadZopelessLayer
-
 from lp.bugs.externalbugtracker.bugzilla import BugzillaAPI
-from lp.bugs.interfaces.bugtask import BugTaskImportance, BugTaskStatus
+from lp.bugs.interfaces.bugtask import (
+    BugTaskImportance,
+    BugTaskStatus,
+    )
 from lp.bugs.interfaces.bugwatch import BugWatchActivityStatus
 from lp.bugs.scripts.checkwatches.bugwatchupdater import BugWatchUpdater
-from lp.bugs.scripts.checkwatches.remotebugupdater import RemoteBugUpdater
 from lp.bugs.scripts.checkwatches.core import CheckwatchesMaster
+from lp.bugs.scripts.checkwatches.remotebugupdater import RemoteBugUpdater
 from lp.bugs.tests.externalbugtracker import TestExternalBugTracker
 from lp.testing import TestCaseWithFactory
 

@@ -26,9 +26,11 @@ __all__ = [
     'WikiName',
     'WikiNameSet']
 
-from datetime import datetime, timedelta
+from datetime import (
+    datetime,
+    timedelta,
+    )
 from operator import attrgetter
-import pytz
 import random
 import re
 import subprocess
@@ -36,134 +38,249 @@ import time
 import weakref
 
 from bzrlib.plugins.builder.recipe import RecipeParser
-from zope.lifecycleevent import ObjectCreatedEvent
-from zope.interface import alsoProvides, implementer, implements
-from zope.component import adapter, getUtility
-from zope.component.interfaces import ComponentLookupError
-from zope.event import notify
-from zope.publisher.interfaces import Unauthorized
-from zope.security.proxy import ProxyFactory, removeSecurityProxy
+import pytz
 from sqlobject import (
-    BoolCol, ForeignKey, IntCol, SQLMultipleJoin, SQLObjectNotFound,
-    StringCol)
-from sqlobject.sqlbuilder import AND, OR, SQLConstant
-from storm.store import EmptyResultSet, Store
+    BoolCol,
+    ForeignKey,
+    IntCol,
+    SQLMultipleJoin,
+    SQLObjectNotFound,
+    StringCol,
+    )
+from sqlobject.sqlbuilder import (
+    AND,
+    OR,
+    SQLConstant,
+    )
 from storm.expr import (
-    Alias, And, Exists, In, Join, LeftJoin, Lower, Min, Not, Or, Select, SQL,
+    Alias,
+    And,
+    Exists,
+    In,
+    Join,
+    LeftJoin,
+    Lower,
+    Min,
+    Not,
+    Or,
+    Select,
+    SQL,
     )
 from storm.info import ClassAlias
+from storm.store import (
+    EmptyResultSet,
+    Store,
+    )
+from zope.component import (
+    adapter,
+    getUtility,
+    )
+from zope.component.interfaces import ComponentLookupError
+from zope.event import notify
+from zope.interface import (
+    alsoProvides,
+    implementer,
+    implements,
+    )
+from zope.lifecycleevent import ObjectCreatedEvent
+from zope.publisher.interfaces import Unauthorized
+from zope.security.proxy import (
+    ProxyFactory,
+    removeSecurityProxy,
+    )
 
+from canonical.cachedproperty import (
+    cache_property,
+    cachedproperty,
+    clear_property,
+    )
 from canonical.config import config
 from canonical.database import postgresql
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
-    cursor, quote, quote_like, sqlvalues, SQLBase)
-
-from canonical.cachedproperty import (cachedproperty, cache_property,
-    clear_property)
-
-from canonical.lazr.utils import get_current_browser_request
-
+    cursor,
+    quote,
+    quote_like,
+    SQLBase,
+    sqlvalues,
+    )
 from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet)
-from canonical.launchpad.database.account import Account, AccountPassword
-from canonical.launchpad.interfaces.account import AccountSuspendedError
-from lp.bugs.model.bugtarget import HasBugsBase
-from canonical.launchpad.database.stormsugar import StartsWith
-from lp.registry.model.karma import KarmaCategory
-from lp.services.salesforce.interfaces import (
-    ISalesforceVoucherProxy, REDEEMABLE_VOUCHER_STATUSES,
-    VOUCHER_STATUSES)
-from lp.services.worlddata.model.language import Language
+    DecoratedResultSet,
+    )
+from canonical.launchpad.database.account import (
+    Account,
+    AccountPassword,
+    )
+from canonical.launchpad.database.emailaddress import (
+    EmailAddress,
+    HasOwnerMixin,
+    )
+from canonical.launchpad.database.logintoken import LoginToken
 from canonical.launchpad.database.oauth import (
-    OAuthAccessToken, OAuthRequestToken)
-from lp.registry.model.personlocation import PersonLocation
-from lp.registry.model.structuralsubscription import (
-    StructuralSubscription)
+    OAuthAccessToken,
+    OAuthRequestToken,
+    )
+from canonical.launchpad.database.stormsugar import StartsWith
 from canonical.launchpad.event.interfaces import (
-    IJoinTeamEvent, ITeamInvitationEvent)
+    IJoinTeamEvent,
+    ITeamInvitationEvent,
+    )
 from canonical.launchpad.helpers import (
-    get_contact_email_addresses, get_email_template, shortlist)
-
-from canonical.launchpad.interfaces.lpstorm import IMasterObject, IMasterStore
+    get_contact_email_addresses,
+    get_email_template,
+    shortlist,
+    )
 from canonical.launchpad.interfaces.account import (
-    AccountCreationRationale, AccountStatus, IAccount, IAccountSet,
-    INACTIVE_ACCOUNT_STATUSES)
-from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
-from lp.soyuz.interfaces.archivepermission import (
-    IArchivePermissionSet)
-from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
+    AccountCreationRationale,
+    AccountStatus,
+    AccountSuspendedError,
+    IAccount,
+    IAccountSet,
+    INACTIVE_ACCOUNT_STATUSES,
+    )
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
-from lp.code.model.hasbranches import (
-    HasBranchesMixin, HasMergeProposalsMixin, HasRequestedReviewsMixin)
-from lp.bugs.interfaces.bugtask import (
-    BugTaskSearchParams, IBugTaskSet, IllegalRelatedBugTasksParams)
-from lp.bugs.interfaces.bugtarget import IBugTarget
-from lp.registry.interfaces.codeofconduct import (
-    ISignedCodeOfConductSet)
-from lp.registry.interfaces.distribution import IDistribution
 from canonical.launchpad.interfaces.emailaddress import (
-    EmailAddressStatus, IEmailAddress, IEmailAddressSet, InvalidEmailAddress)
-from lp.registry.interfaces.gpg import IGPGKeySet
-from lp.registry.interfaces.irc import IIrcID, IIrcIDSet
-from lp.registry.interfaces.jabber import IJabberID, IJabberIDSet
+    EmailAddressStatus,
+    IEmailAddress,
+    IEmailAddressSet,
+    InvalidEmailAddress,
+    )
 from canonical.launchpad.interfaces.launchpad import (
-    IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities)
+    IHasIcon,
+    IHasLogo,
+    IHasMugshot,
+    ILaunchpadCelebrities,
+    )
 from canonical.launchpad.interfaces.launchpadstatistic import (
-    ILaunchpadStatisticSet)
+    ILaunchpadStatisticSet,
+    )
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
+from canonical.launchpad.interfaces.lpstorm import (
+    IMasterObject,
+    IMasterStore,
+    IStore,
+    )
+from canonical.launchpad.validators.email import valid_email
+from canonical.launchpad.validators.name import (
+    sanitize_name,
+    valid_name,
+    )
+from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
+from canonical.launchpad.webapp.interfaces import ILaunchBag
+from canonical.lazr.utils import get_current_browser_request
+from lp.blueprints.interfaces.specification import (
+    SpecificationDefinitionStatus,
+    SpecificationFilter,
+    SpecificationImplementationStatus,
+    SpecificationSort,
+    )
+from lp.blueprints.model.specification import (
+    HasSpecificationsMixin,
+    Specification,
+    )
+from lp.bugs.interfaces.bugtarget import IBugTarget
+from lp.bugs.interfaces.bugtask import (
+    BugTaskSearchParams,
+    IBugTaskSet,
+    IllegalRelatedBugTasksParams,
+    )
+from lp.bugs.model.bugtarget import HasBugsBase
+from lp.bugs.model.bugtask import (
+    BugTask,
+    get_related_bugtasks_search_params,
+    )
+from lp.code.model.hasbranches import (
+    HasBranchesMixin,
+    HasMergeProposalsMixin,
+    HasRequestedReviewsMixin,
+    )
+from lp.registry.interfaces.codeofconduct import ISignedCodeOfConductSet
+from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.gpg import IGPGKeySet
+from lp.registry.interfaces.irc import (
+    IIrcID,
+    IIrcIDSet,
+    )
+from lp.registry.interfaces.jabber import (
+    IJabberID,
+    IJabberIDSet,
+    )
 from lp.registry.interfaces.mailinglist import (
-    IMailingListSet, MailingListStatus, PostedMessageStatus)
+    IMailingListSet,
+    MailingListStatus,
+    PostedMessageStatus,
+    )
 from lp.registry.interfaces.mailinglistsubscription import (
-    MailingListAutoSubscribePolicy)
+    MailingListAutoSubscribePolicy,
+    )
 from lp.registry.interfaces.person import (
-    IPerson, IPersonSet, ITeam, ImmutableVisibilityError, InvalidName,
-    JoinNotAllowed, NameAlreadyTaken, PersonCreationRationale,
-    PersonVisibility, PersonalStanding, TeamMembershipRenewalPolicy,
-    TeamSubscriptionPolicy)
-from lp.registry.interfaces.personnotification import (
-    IPersonNotificationSet)
+    ImmutableVisibilityError,
+    InvalidName,
+    IPerson,
+    IPersonSet,
+    ITeam,
+    JoinNotAllowed,
+    NameAlreadyTaken,
+    PersonalStanding,
+    PersonCreationRationale,
+    PersonVisibility,
+    TeamMembershipRenewalPolicy,
+    TeamSubscriptionPolicy,
+    validate_public_person,
+    )
+from lp.registry.interfaces.personnotification import IPersonNotificationSet
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
-from lp.blueprints.interfaces.specification import (
-    SpecificationDefinitionStatus, SpecificationFilter,
-    SpecificationImplementationStatus, SpecificationSort)
-from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.registry.interfaces.ssh import (
-    ISSHKey, ISSHKeySet, SSHKeyAdditionError, SSHKeyCompromisedError,
-    SSHKeyType)
-from lp.registry.interfaces.teammembership import (
-    TeamMembershipStatus)
-from lp.registry.interfaces.wikiname import IWikiName, IWikiNameSet
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-
-from lp.soyuz.model.archive import Archive
+    ISSHKey,
+    ISSHKeySet,
+    SSHKeyAdditionError,
+    SSHKeyCompromisedError,
+    SSHKeyType,
+    )
+from lp.registry.interfaces.teammembership import TeamMembershipStatus
+from lp.registry.interfaces.wikiname import (
+    IWikiName,
+    IWikiNameSet,
+    )
 from lp.registry.model.codeofconduct import SignedCodeOfConduct
-from lp.bugs.model.bugtask import (
-    BugTask, get_related_bugtasks_search_params)
-from canonical.launchpad.database.emailaddress import (
-    EmailAddress, HasOwnerMixin)
-from lp.registry.model.karma import KarmaCache, KarmaTotalCache
-from canonical.launchpad.database.logintoken import LoginToken
-from lp.registry.model.pillar import PillarName
-from lp.registry.model.karma import KarmaAction, KarmaAssignedEvent, Karma
+from lp.registry.model.karma import (
+    Karma,
+    KarmaAction,
+    KarmaAssignedEvent,
+    KarmaCache,
+    KarmaCategory,
+    KarmaTotalCache,
+    )
 from lp.registry.model.mentoringoffer import MentoringOffer
-from lp.soyuz.model.sourcepackagerelease import (
-    SourcePackageRelease)
-from lp.blueprints.model.specification import (
-    HasSpecificationsMixin, Specification)
-from lp.translations.model.translationimportqueue import (
-    HasTranslationImportsMixin)
+from lp.registry.model.personlocation import PersonLocation
+from lp.registry.model.pillar import PillarName
+from lp.registry.model.structuralsubscription import StructuralSubscription
 from lp.registry.model.teammembership import (
-    TeamMembership, TeamMembershipSet, TeamParticipation)
-
-from canonical.launchpad.validators.email import valid_email
-from canonical.launchpad.validators.name import sanitize_name, valid_name
-from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
-from lp.registry.interfaces.person import validate_public_person
+    TeamMembership,
+    TeamMembershipSet,
+    TeamParticipation,
+    )
+from lp.services.salesforce.interfaces import (
+    ISalesforceVoucherProxy,
+    REDEEMABLE_VOUCHER_STATUSES,
+    VOUCHER_STATUSES,
+    )
+from lp.services.worlddata.model.language import Language
+from lp.soyuz.interfaces.archive import (
+    ArchivePurpose,
+    IArchiveSet,
+    )
+from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
+from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
+from lp.soyuz.model.archive import Archive
+from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
+from lp.translations.model.translationimportqueue import (
+    HasTranslationImportsMixin,
+    )
 
 
 class JoinTeamEvent:

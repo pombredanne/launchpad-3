@@ -11,9 +11,8 @@ __all__ = [
     'IHasSecurityContact',
     ]
 
-from zope.interface import Interface
-
 from lazr.restful.declarations import exported
+from zope.interface import Interface
 
 from canonical.launchpad import _
 from lp.services.fields import PublicPersonChoice

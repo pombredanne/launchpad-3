@@ -8,10 +8,13 @@ __all__ = []
 
 import unittest
 
-from canonical.launchpad.windmill.testing import lpuser, widgets
-
+from canonical.launchpad.windmill.testing import (
+    lpuser,
+    widgets,
+    )
 from lp.registry.windmill.testing import RegistryWindmillLayer
 from lp.testing import WindmillTestCase
+
 
 class TestProductIndexPage(WindmillTestCase):
     """Test product index page."""

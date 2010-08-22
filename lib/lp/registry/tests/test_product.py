@@ -3,28 +3,33 @@
 
 __metaclass__ = type
 
-import unittest
-import datetime
-import pytz
-import transaction
 from cStringIO import StringIO
-
-from zope.component import getUtility
-
-from canonical.launchpad.ftests import login
-from canonical.launchpad.testing.pages import (
-    find_main_content, get_feedback_messages, setupBrowser)
-from canonical.testing import LaunchpadFunctionalLayer
-from canonical.launchpad.ftests import syncUpdate
+import datetime
+import unittest
 
 from lazr.lifecycle.snapshot import Snapshot
+import pytz
+import transaction
+from zope.component import getUtility
 
+from canonical.launchpad.ftests import (
+    login,
+    syncUpdate,
+    )
+from canonical.launchpad.testing.pages import (
+    find_main_content,
+    get_feedback_messages,
+    setupBrowser,
+    )
+from canonical.testing import LaunchpadFunctionalLayer
 from lp.registry.interfaces.person import IPersonSet
-from lp.registry.interfaces.product import IProduct, License
+from lp.registry.interfaces.product import (
+    IProduct,
+    License,
+    )
+from lp.registry.model.commercialsubscription import CommercialSubscription
 from lp.registry.model.product import Product
 from lp.registry.model.productlicense import ProductLicense
-from lp.registry.model.commercialsubscription import (
-    CommercialSubscription)
 from lp.testing import TestCaseWithFactory
 
 

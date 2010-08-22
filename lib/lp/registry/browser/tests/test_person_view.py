@@ -7,24 +7,39 @@ import transaction
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.launchpad.ftests import ANONYMOUS, login
+from canonical.launchpad.ftests import (
+    ANONYMOUS,
+    login,
+    )
 from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from lp.app.errors import NotFoundError
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import (
-    DatabaseFunctionalLayer, LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
+from lp.app.errors import NotFoundError
 from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.registry.browser.person import (
+    PersonEditView,
+    PersonView,
+    )
 from lp.registry.interfaces.karma import IKarmaCacheManager
-from lp.registry.browser.person import PersonEditView, PersonView
 from lp.registry.interfaces.person import PersonVisibility
 from lp.registry.interfaces.teammembership import TeamMembershipStatus
 from lp.registry.model.karma import KarmaCategory
-from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.soyuz.interfaces.archive import ArchiveStatus
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
-from lp.testing import TestCaseWithFactory, login_person
-from lp.testing.views import create_initialized_view, create_view
+from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
+from lp.testing import (
+    login_person,
+    TestCaseWithFactory,
+    )
+from lp.testing.views import (
+    create_initialized_view,
+    create_view,
+    )
 
 
 class TestPersonViewKarma(TestCaseWithFactory):

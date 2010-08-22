@@ -5,20 +5,27 @@
 
 __metaclass__ = type
 
-from datetime import datetime, timedelta
+from datetime import (
+    datetime,
+    timedelta,
+    )
 import unittest
 
 import pytz
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from lp.code.enums import BranchType
-from lp.code.interfaces.branch import IBranchCloud
-from lp.testing import TestCaseWithFactory, time_counter
 from canonical.launchpad.testing.databasehelpers import (
-    remove_all_sample_data_branches)
+    remove_all_sample_data_branches,
+    )
 from canonical.launchpad.webapp.interfaces import MASTER_FLAVOR
 from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.code.enums import BranchType
+from lp.code.interfaces.branch import IBranchCloud
+from lp.testing import (
+    TestCaseWithFactory,
+    time_counter,
+    )
 
 
 class TestBranchCloud(TestCaseWithFactory):

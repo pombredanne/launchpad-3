@@ -16,18 +16,24 @@ __metaclass__ = type
 
 from datetime import datetime
 
+from zope.app.security.interfaces import IUnauthenticatedPrincipal
 from zope.interface import implements
 from zope.session.interfaces import ISession
 
 from canonical.config import config
 from canonical.launchpad.webapp.interfaces import (
-        INotificationRequest, INotificationResponse, BrowserNotificationLevel,
-        INotification, INotificationList
-        )
-from canonical.launchpad.webapp.menu import escape, structured
-from canonical.launchpad.webapp.publisher import LaunchpadView
+    BrowserNotificationLevel,
+    INotification,
+    INotificationList,
+    INotificationRequest,
+    INotificationResponse,
+    )
 from canonical.launchpad.webapp.login import allowUnauthenticatedSession
-from zope.app.security.interfaces import IUnauthenticatedPrincipal
+from canonical.launchpad.webapp.menu import (
+    escape,
+    structured,
+    )
+from canonical.launchpad.webapp.publisher import LaunchpadView
 
 
 SESSION_KEY = 'launchpad'

@@ -7,9 +7,9 @@ __metaclass__ = type
 __all__ = []
 
 from canonical.database.sqlbase import block_implicit_flushes
-
-from lp.registry.interfaces.person import IPerson
 from lp.answers.karma import assignKarmaUsingQuestionContext
+from lp.registry.interfaces.person import IPerson
+
 
 @block_implicit_flushes
 def question_bug_added(questionbug, event):
