@@ -18,13 +18,14 @@ import unittest
 from zope.component import getUtility
 
 from canonical.config import config
+from canonical.launchpad.scripts.logger import QuietFakeLogger
+from canonical.testing import LaunchpadZopelessLayer
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.scripts.ftpmaster import (
-    ArchiveCruftChecker, ArchiveCruftCheckerError)
-from canonical.launchpad.scripts.logger import QuietFakeLogger
-from canonical.testing import LaunchpadZopelessLayer
-
+    ArchiveCruftChecker,
+    ArchiveCruftCheckerError,
+    )
 
 # XXX cprov 2006-05-15: {create, remove}TestArchive functions should be
 # moved to the publisher test domain as soon as we have it.

@@ -9,10 +9,13 @@ from __future__ import with_statement
 __metaclass__ = type
 
 
-from canonical.testing.layers import DatabaseFunctionalLayer
 from canonical.launchpad.ftests import login_person
 from canonical.launchpad.testing.pages import find_tag_by_id
-from lp.testing import TestCaseWithFactory, person_logged_in
+from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing import (
+    person_logged_in,
+    TestCaseWithFactory,
+    )
 from lp.testing.views import create_view
 
 

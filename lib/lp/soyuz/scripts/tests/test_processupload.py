@@ -4,9 +4,9 @@
 __metaclass__ = type
 
 import os
+import shutil
 import subprocess
 import sys
-import shutil
 import tempfile
 import unittest
 
@@ -14,9 +14,7 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.testing import LaunchpadZopelessLayer
-
-from lp.services.scripts.interfaces.scriptactivity import (
-    IScriptActivitySet)
+from lp.services.scripts.interfaces.scriptactivity import IScriptActivitySet
 
 
 class TestProcessUpload(unittest.TestCase):

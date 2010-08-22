@@ -9,8 +9,8 @@ import datetime
 
 import pytz
 
-from lp.bugs.interfaces.bug import IBug
 from canonical.launchpad.interfaces.launchpad import IHasBug
+from lp.bugs.interfaces.bug import IBug
 
 
 def update_bug_date_last_updated(object, event):

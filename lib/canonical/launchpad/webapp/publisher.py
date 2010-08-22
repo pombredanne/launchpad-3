@@ -30,31 +30,46 @@ __all__ = [
 from zope.app import zapi
 from zope.app.publisher.interfaces.xmlrpc import IXMLRPCView
 from zope.app.publisher.xmlrpc import IMethodPublisher
-from zope.component import getUtility, queryMultiAdapter
+from zope.component import (
+    getUtility,
+    queryMultiAdapter,
+    )
 from zope.component.interfaces import ComponentLookupError
-from zope.interface import directlyProvides, implements
+from zope.interface import (
+    directlyProvides,
+    implements,
+    )
 from zope.interface.advice import addClassAdvisor
 from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.browser import (
     IBrowserPublisher,
     IDefaultBrowserLayer,
     )
-from zope.security.checker import ProxyFactory, NamesChecker
+from zope.security.checker import (
+    NamesChecker,
+    ProxyFactory,
+    )
 from zope.traversing.browser.interfaces import IAbsoluteURL
 
 from canonical.launchpad.layers import (
     LaunchpadLayer,
-    WebServiceLayer,
     setFirstLayer,
+    WebServiceLayer,
     )
-from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.launchpad.webapp.interfaces import (
-    ICanonicalUrlData, ILaunchBag, ILaunchpadApplication, ILaunchpadContainer,
-    ILaunchpadRoot, IOpenLaunchBag, IStructuredString, NoCanonicalUrl)
+    ICanonicalUrlData,
+    ILaunchBag,
+    ILaunchpadApplication,
+    ILaunchpadContainer,
+    ILaunchpadRoot,
+    IOpenLaunchBag,
+    IStructuredString,
+    NoCanonicalUrl,
+    )
 from canonical.launchpad.webapp.url import urlappend
+from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.lazr.utils import get_current_browser_request
 from lp.app.errors import NotFoundError
-
 
 # HTTP Status code constants - define as appropriate.
 HTTP_MOVED_PERMANENTLY = 301

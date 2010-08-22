@@ -9,49 +9,79 @@ __metaclass__ = type
 
 from datetime import datetime
 from difflib import unified_diff
-from unittest import TestCase, TestLoader
+from unittest import (
+    TestCase,
+    TestLoader,
+    )
 
+from lazr.lifecycle.event import ObjectModifiedEvent
 from pytz import UTC
 from sqlobject import SQLObjectNotFound
 from storm.locals import Store
-from zope.component import getUtility
 import transaction
+from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.constants import UTC_NOW
-from canonical.testing import (
-    DatabaseFunctionalLayer, LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
-from lazr.lifecycle.event import ObjectModifiedEvent
-
+from canonical.launchpad.ftests import (
+    ANONYMOUS,
+    import_secret_test_key,
+    login,
+    syncUpdate,
+    )
 from canonical.launchpad.interfaces import IPrivacy
 from canonical.launchpad.interfaces.message import IMessageJob
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.testing import verifyObject
-from lp.code.errors import (
-    BadStateTransition, WrongBranchMergeProposal)
-from lp.code.event.branchmergeproposal import (
-    NewBranchMergeProposalEvent, NewCodeReviewCommentEvent,
-    ReviewerNominatedEvent)
-from canonical.launchpad.ftests import (
-    ANONYMOUS, import_secret_test_key, login, syncUpdate)
+from canonical.testing import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
 from lp.code.enums import (
-    BranchMergeProposalStatus, BranchSubscriptionNotificationLevel,
-    CodeReviewNotificationLevel, CodeReviewVote,
-    BranchVisibilityRule)
+    BranchMergeProposalStatus,
+    BranchSubscriptionNotificationLevel,
+    BranchVisibilityRule,
+    CodeReviewNotificationLevel,
+    CodeReviewVote,
+    )
+from lp.code.errors import (
+    BadStateTransition,
+    WrongBranchMergeProposal,
+    )
+from lp.code.event.branchmergeproposal import (
+    NewBranchMergeProposalEvent,
+    NewCodeReviewCommentEvent,
+    ReviewerNominatedEvent,
+    )
 from lp.code.interfaces.branchmergeproposal import (
     BRANCH_MERGE_PROPOSAL_FINAL_STATES as FINAL_STATES,
-    IBranchMergeProposal, IBranchMergeProposalGetter,
-    ICreateMergeProposalJob, ICreateMergeProposalJobSource,
-    notify_modified)
-from lp.code.model.branchmergeproposaljob import (
-    BranchMergeProposalJob, CreateMergeProposalJob,
-    MergeProposalCreatedJob, UpdatePreviewDiffJob)
+    IBranchMergeProposal,
+    IBranchMergeProposalGetter,
+    ICreateMergeProposalJob,
+    ICreateMergeProposalJobSource,
+    notify_modified,
+    )
 from lp.code.model.branchmergeproposal import (
-    BranchMergeProposalGetter, is_valid_transition)
+    BranchMergeProposalGetter,
+    is_valid_transition,
+    )
+from lp.code.model.branchmergeproposaljob import (
+    BranchMergeProposalJob,
+    CreateMergeProposalJob,
+    MergeProposalCreatedJob,
+    UpdatePreviewDiffJob,
+    )
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
-from lp.testing import login_person, TestCaseWithFactory
-from lp.testing.factory import GPGSigningContext, LaunchpadObjectFactory
+from lp.testing import (
+    login_person,
+    TestCaseWithFactory,
+    )
+from lp.testing.factory import (
+    GPGSigningContext,
+    LaunchpadObjectFactory,
+    )
 
 
 class TestBranchMergeProposalInterface(TestCaseWithFactory):

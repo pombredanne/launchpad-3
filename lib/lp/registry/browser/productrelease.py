@@ -18,30 +18,46 @@ __all__ = [
 import cgi
 import mimetypes
 
-from zope.event import notify
-from zope.lifecycleevent import ObjectCreatedEvent
-from zope.app.form.browser import TextAreaWidget, TextWidget
-
-from zope.formlib.form import FormFields
-from zope.schema import Bool
-from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
-
-from z3c.ptcompat import ViewPageTemplateFile
-
-from lp.registry.interfaces.productrelease import (
-    IProductRelease, IProductReleaseFileAddForm)
-
 from lazr.restful.interface import copy_field
-from canonical.launchpad import _
-from canonical.lazr.utils import smartquote
-from lp.registry.browser.product import ProductDownloadFileMixin
-from canonical.launchpad.webapp import (
-    action, canonical_url, ContextMenu, custom_widget,
-    enabled_with_permission, LaunchpadEditFormView, LaunchpadFormView,
-    LaunchpadView, Link, Navigation, stepthrough)
-from canonical.widgets import DateTimeWidget
+from z3c.ptcompat import ViewPageTemplateFile
+from zope.app.form.browser import (
+    TextAreaWidget,
+    TextWidget,
+    )
+from zope.event import notify
+from zope.formlib.form import FormFields
+from zope.lifecycleevent import ObjectCreatedEvent
+from zope.schema import Bool
+from zope.schema.vocabulary import (
+    SimpleTerm,
+    SimpleVocabulary,
+    )
 
-from lp.registry.browser import MilestoneOverlayMixin, RegistryDeleteViewMixin
+from canonical.launchpad import _
+from canonical.launchpad.webapp import (
+    action,
+    canonical_url,
+    ContextMenu,
+    custom_widget,
+    enabled_with_permission,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    LaunchpadView,
+    Link,
+    Navigation,
+    stepthrough,
+    )
+from canonical.lazr.utils import smartquote
+from canonical.widgets import DateTimeWidget
+from lp.registry.browser import (
+    MilestoneOverlayMixin,
+    RegistryDeleteViewMixin,
+    )
+from lp.registry.browser.product import ProductDownloadFileMixin
+from lp.registry.interfaces.productrelease import (
+    IProductRelease,
+    IProductReleaseFileAddForm,
+    )
 
 
 class ProductReleaseNavigation(Navigation):

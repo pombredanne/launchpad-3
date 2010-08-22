@@ -14,16 +14,16 @@ from zope.interface import implements
 
 from canonical.cachedproperty import cachedproperty
 from canonical.database.sqlbase import sqlvalues
-from lp.soyuz.model.binarypackagerelease import (
-    BinaryPackageRelease)
-from lp.soyuz.model.distroseriespackagecache import (
-    DistroSeriesPackageCache)
-from lp.soyuz.model.distroseriessourcepackagerelease import (
-    DistroSeriesSourcePackageRelease)
-from lp.soyuz.model.publishing import (
-    BinaryPackagePublishingHistory)
 from lp.soyuz.interfaces.distroseriesbinarypackage import (
-    IDistroSeriesBinaryPackage)
+    IDistroSeriesBinaryPackage,
+    )
+from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
+from lp.soyuz.model.distroseriespackagecache import DistroSeriesPackageCache
+from lp.soyuz.model.distroseriessourcepackagerelease import (
+    DistroSeriesSourcePackageRelease,
+    )
+from lp.soyuz.model.publishing import BinaryPackagePublishingHistory
+
 
 class DistroSeriesBinaryPackage:
     """A binary package, like "apache2.1", in a distro series like "hoary".

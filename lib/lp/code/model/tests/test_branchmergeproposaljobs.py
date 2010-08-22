@@ -7,40 +7,54 @@ from __future__ import with_statement
 
 __metaclass__ = type
 
-from datetime import datetime, timedelta
-import transaction
+from datetime import (
+    datetime,
+    timedelta,
+    )
 import unittest
 
+from lazr.lifecycle.event import ObjectModifiedEvent
 import pytz
 from sqlobject import SQLObjectNotFound
 from storm.locals import Select
 from storm.store import Store
+import transaction
 from zope.component import getUtility
 
 from canonical.config import config
 from canonical.launchpad.webapp.testing import verifyObject
-from canonical.testing import DatabaseFunctionalLayer, LaunchpadZopelessLayer
-
-from lazr.lifecycle.event import ObjectModifiedEvent
+from canonical.testing import (
+    DatabaseFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
 from lp.code.adapters.branch import BranchMergeProposalDelta
 from lp.code.interfaces.branchmergeproposal import (
-    IBranchMergeProposalJob, IBranchMergeProposalJobSource,
-    ICodeReviewCommentEmailJob, ICodeReviewCommentEmailJobSource,
-    IMergeProposalCreatedJob, IMergeProposalUpdatedEmailJob,
+    IBranchMergeProposalJob,
+    IBranchMergeProposalJobSource,
+    ICodeReviewCommentEmailJob,
+    ICodeReviewCommentEmailJobSource,
+    IMergeProposalCreatedJob,
+    IMergeProposalUpdatedEmailJob,
     IMergeProposalUpdatedEmailJobSource,
-    IReviewRequestedEmailJob, IReviewRequestedEmailJobSource,
-    IUpdatePreviewDiffJob, IUpdatePreviewDiffJobSource,
+    IReviewRequestedEmailJob,
+    IReviewRequestedEmailJobSource,
+    IUpdatePreviewDiffJob,
+    IUpdatePreviewDiffJobSource,
     )
 from lp.code.model.branchmergeproposaljob import (
-     BranchMergeProposalJob, BranchMergeProposalJobDerived,
-     BranchMergeProposalJobType, CodeReviewCommentEmailJob,
-     MergeProposalCreatedJob, MergeProposalUpdatedEmailJob,
-     ReviewRequestedEmailJob, UpdatePreviewDiffJob,
-     )
+    BranchMergeProposalJob,
+    BranchMergeProposalJobDerived,
+    BranchMergeProposalJobType,
+    CodeReviewCommentEmailJob,
+    MergeProposalCreatedJob,
+    MergeProposalUpdatedEmailJob,
+    ReviewRequestedEmailJob,
+    UpdatePreviewDiffJob,
+    )
 from lp.code.model.tests.test_diff import DiffTestCase
 from lp.code.subscribers.branchmergeproposal import merge_proposal_modified
-from lp.services.job.runner import JobRunner
 from lp.services.job.model.job import Job
+from lp.services.job.runner import JobRunner
 from lp.services.osutils import override_environ
 from lp.testing import TestCaseWithFactory
 from lp.testing.mail_helpers import pop_notifications

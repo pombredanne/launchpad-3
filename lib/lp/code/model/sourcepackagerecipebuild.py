@@ -13,44 +13,62 @@ __all__ = [
 import datetime
 import sys
 
-from pytz import utc
-
-from canonical.database.constants import UTC_NOW
-from canonical.launchpad.browser.librarian import (
-    ProxiedLibraryFileAlias)
-from canonical.launchpad.interfaces.lpstorm import IMasterStore, IStore
-
 from psycopg2 import ProgrammingError
-from storm.locals import Int, Reference, Storm
+from pytz import utc
+from storm.locals import (
+    Int,
+    Reference,
+    Storm,
+    )
 from storm.store import Store
-
-from zope.component import getGlobalSiteManager, getUtility
-from zope.interface import classProvides, implements
+from zope.component import (
+    getGlobalSiteManager,
+    getUtility,
+    )
+from zope.interface import (
+    classProvides,
+    implements,
+    )
 from zope.security.proxy import ProxyFactory
 
+from canonical.database.constants import UTC_NOW
+from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
+from canonical.launchpad.interfaces.lpstorm import (
+    IMasterStore,
+    IStore,
+    )
 from canonical.launchpad.webapp import errorlog
 from lp.app.errors import NotFoundError
 from lp.archiveuploader.uploadpolicy import (
-    BuildDaemonUploadPolicy, IArchiveUploadPolicy,
-    SOURCE_PACKAGE_RECIPE_UPLOAD_POLICY_NAME)
-from lp.buildmaster.model.packagebuild import (
-    PackageBuild, PackageBuildDerived)
+    BuildDaemonUploadPolicy,
+    IArchiveUploadPolicy,
+    SOURCE_PACKAGE_RECIPE_UPLOAD_POLICY_NAME,
+    )
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
 from lp.buildmaster.model.buildbase import BuildBase
-from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.buildmaster.model.buildfarmjob import BuildFarmJobOldDerived
+from lp.buildmaster.model.buildqueue import BuildQueue
+from lp.buildmaster.model.packagebuild import (
+    PackageBuild,
+    PackageBuildDerived,
+    )
 from lp.code.errors import BuildAlreadyPending
 from lp.code.interfaces.sourcepackagerecipebuild import (
-    ISourcePackageRecipeBuildJob, ISourcePackageRecipeBuildJobSource,
-    ISourcePackageRecipeBuild, ISourcePackageRecipeBuildSource)
+    ISourcePackageRecipeBuild,
+    ISourcePackageRecipeBuildJob,
+    ISourcePackageRecipeBuildJobSource,
+    ISourcePackageRecipeBuildSource,
+    )
 from lp.code.mail.sourcepackagerecipebuild import (
-    SourcePackageRecipeBuildMailer)
+    SourcePackageRecipeBuildMailer,
+    )
 from lp.code.model.sourcepackagerecipedata import SourcePackageRecipeData
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.job.model.job import Job
 from lp.soyuz.adapters.archivedependencies import (
-    default_component_dependency_name,)
+    default_component_dependency_name,
+    )
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.buildfarmbuildjob import BuildFarmBuildJob

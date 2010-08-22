@@ -19,15 +19,31 @@ __all__ = [
     'OptionIsNotFromSimplePoll'
     ]
 
-from datetime import datetime, timedelta
-import pytz
+from datetime import (
+    datetime,
+    timedelta,
+    )
 
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    )
+import pytz
 from zope.component import getUtility
-from zope.interface import Attribute, Interface
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
 from zope.interface.exceptions import Invalid
 from zope.interface.interface import invariant
-from zope.schema import Bool, Choice, Datetime, Int, Text, TextLine
-from lazr.enum import DBEnumeratedType, DBItem
+from zope.schema import (
+    Bool,
+    Choice,
+    Datetime,
+    Int,
+    Text,
+    TextLine,
+    )
 
 from canonical.launchpad import _
 from canonical.launchpad.validators.name import name_validator

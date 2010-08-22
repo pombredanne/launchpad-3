@@ -6,9 +6,8 @@
 __metaclass__ = type
 __all__ = ['prejoin']
 
-from storm.zope.interfaces import IResultSet
-
 from lazr.delegates import delegates
+from storm.zope.interfaces import IResultSet
 
 
 class PrejoinResultSet:

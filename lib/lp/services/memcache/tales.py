@@ -17,16 +17,21 @@ import os.path
 
 from zope.component import getUtility
 from zope.interface import implements
-from zope.tal.talinterpreter import TALInterpreter, I18nMessageTypes
+from zope.tal.talinterpreter import (
+    I18nMessageTypes,
+    TALInterpreter,
+    )
+from zope.tales.expressions import (
+    PathExpr,
+    simpleTraverse,
+    )
 from zope.tales.interfaces import ITALESExpression
-from zope.tales.expressions import simpleTraverse, PathExpr
 
 from canonical.base import base
 from canonical.config import config
 from canonical.launchpad import versioninfo
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.services.memcache.interfaces import IMemcacheClient
-
 
 # Request annotation key.
 COUNTER_KEY = 'lp.services.memcache.tales.counter'

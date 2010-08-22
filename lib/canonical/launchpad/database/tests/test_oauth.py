@@ -9,13 +9,19 @@ __all__ = []
 import unittest
 
 from storm.zope.interfaces import IZStorm
-
 from zope.component import getUtility
 
 from canonical.launchpad.database.oauth import (
-    OAuthAccessToken, OAuthConsumer, OAuthNonce, OAuthRequestToken)
+    OAuthAccessToken,
+    OAuthConsumer,
+    OAuthNonce,
+    OAuthRequestToken,
+    )
+from canonical.launchpad.webapp.interfaces import (
+    MAIN_STORE,
+    MASTER_FLAVOR,
+    )
 from canonical.testing.layers import DatabaseFunctionalLayer
-from canonical.launchpad.webapp.interfaces import MAIN_STORE, MASTER_FLAVOR
 
 
 class BaseOAuthTestCase(unittest.TestCase):
