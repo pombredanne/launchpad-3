@@ -2203,6 +2203,10 @@ class Person(
         # Get all of the teams this person participates in.
         teams = list(self.teams_participated_in)
 
+        # For cases where self is a team, we don't need self as a team
+        # participated in.
+        teams = [team for team in teams if team != self]
+
         # Get all of the memberships for any of the teams this person is
         # a participant of. This must be ordered by date and id because
         # because the graph of the results will create needs to contain
@@ -2210,9 +2214,16 @@ class Person(
         # IPerson.findPathToTeam.
         store = Store.of(self)
         all_direct_memberships = store.find(TeamMembership,
-            TeamMembership.personID.is_in(
-                [team.id for team in teams] + [self.id])).order_by(
-                Desc(TeamMembership.datejoined), Desc(TeamMembership.id))
+            And(
+                TeamMembership.personID.is_in(
+                    [team.id for team in teams] + [self.id]),
+                TeamMembership.teamID != self.id,
+                TeamMembership.status.is_in([
+                    TeamMembershipStatus.APPROVED,
+                    TeamMembershipStatus.ADMIN,
+                    ]))).order_by(
+                        Desc(TeamMembership.datejoined), 
+                        Desc(TeamMembership.id))
         # Cast the results to list now, because they will be iterated over
         # several times.
         all_direct_memberships = list(all_direct_memberships)
