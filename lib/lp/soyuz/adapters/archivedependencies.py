@@ -41,11 +41,17 @@ __all__ = [
 import logging
 import traceback
 
-from lp.registry.interfaces.pocket import (
-    PackagePublishingPocket, pocketsuffix)
-from lp.soyuz.interfaces.archive import ArchivePurpose, ALLOW_RELEASE_BUILDS
-from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lazr.uri import URI
+
+from lp.registry.interfaces.pocket import (
+    PackagePublishingPocket,
+    pocketsuffix,
+    )
+from lp.soyuz.interfaces.archive import (
+    ALLOW_RELEASE_BUILDS,
+    ArchivePurpose,
+    )
+from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 
 
 component_dependencies = {

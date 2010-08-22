@@ -4,14 +4,18 @@
 """A pipeline handler for holding list non-members postings for approval.
 """
 
+from email.iterators import typed_subpart_iterator
+from email.Utils import (
+    formatdate,
+    make_msgid,
+    )
 import xmlrpclib
 
-from email.iterators import typed_subpart_iterator
-from email.Utils import formatdate, make_msgid
-
 # pylint: disable-msg=F0401
-from Mailman import Errors
-from Mailman import mm_cfg
+from Mailman import (
+    Errors,
+    mm_cfg,
+    )
 from Mailman.Logging.Syslog import syslog
 
 

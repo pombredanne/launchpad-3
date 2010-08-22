@@ -4,23 +4,28 @@
 __metaclass__ = type
 
 from textwrap import dedent
+
 from zope.interface.verify import verifyObject
 
 from canonical.launchpad.helpers import test_diff
-from lp.translations.interfaces.translationexporter import (
-    ITranslationFormatExporter)
-from lp.translations.interfaces.translationfileformat import (
-    TranslationFileFormat)
+from canonical.testing import LaunchpadZopelessLayer
 from lp.testing import TestCaseWithFactory
+from lp.translations.interfaces.translationexporter import (
+    ITranslationFormatExporter,
+    )
+from lp.translations.interfaces.translationfileformat import (
+    TranslationFileFormat,
+    )
 from lp.translations.utilities.gettext_po_exporter import (
-    comments_text_representation, strip_last_newline)
-from lp.translations.utilities.gettext_po_exporter import (
-    GettextPOExporter)
+    comments_text_representation,
+    GettextPOExporter,
+    strip_last_newline,
+    )
 from lp.translations.utilities.gettext_po_parser import POParser
 from lp.translations.utilities.translation_common_format import (
-    TranslationMessageData)
+    TranslationMessageData,
+    )
 from lp.translations.utilities.translation_export import ExportFileStorage
-from canonical.testing import LaunchpadZopelessLayer
 
 
 class GettextPOExporterTestCase(TestCaseWithFactory):

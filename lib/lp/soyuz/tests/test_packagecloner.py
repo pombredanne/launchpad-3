@@ -7,17 +7,18 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.testing import LaunchpadZopelessLayer
-
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.adapters.packagelocation import PackageLocation
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.archivearch import IArchiveArchSet
-from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
+from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packagecloner import IPackageCloner
 from lp.soyuz.interfaces.publishing import (
-    IPublishingSet, PackagePublishingStatus)
+    IPublishingSet,
+    PackagePublishingStatus,
+    )
 from lp.soyuz.model.processor import ProcessorFamilySet
 from lp.testing import TestCaseWithFactory
 

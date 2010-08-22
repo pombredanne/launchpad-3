@@ -11,9 +11,14 @@ from zope.component import getUtility
 
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.bugs.interfaces.bugtask import IBugTaskSet
-from lp.testing import ANONYMOUS, login_person, login, TestCaseWithFactory
-from lp.testing.views import create_initialized_view
+from lp.testing import (
+    ANONYMOUS,
+    login,
+    login_person,
+    TestCaseWithFactory,
+    )
 from lp.testing.memcache import MemcacheTestCase
+from lp.testing.views import create_initialized_view
 
 
 class TestMilestoneViews(TestCaseWithFactory):

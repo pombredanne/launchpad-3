@@ -9,49 +9,75 @@ __metaclass__ = type
 
 from difflib import unified_diff
 from textwrap import dedent
-import transaction
 import unittest
 
 from bzrlib.branch import Branch
 from bzrlib.urlutils import join as urljoin
 from bzrlib.workingtree import WorkingTree
 from storm.store import Store
+import transaction
 from zope.component import getUtility
-from zope.interface import directlyProvides, directlyProvidedBy
+from zope.interface import (
+    directlyProvidedBy,
+    directlyProvides,
+    )
 from zope.security.management import setSecurityPolicy
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.launchpad.database import MessageSet
 from canonical.launchpad.interfaces.mail import (
-    EmailProcessingError, IWeaklyAuthenticatedPrincipal)
+    EmailProcessingError,
+    IWeaklyAuthenticatedPrincipal,
+    )
 from canonical.launchpad.mail.handlers import mail_handlers
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 from canonical.launchpad.webapp.interaction import (
-    get_current_principal, setupInteraction)
+    get_current_principal,
+    setupInteraction,
+    )
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
-from canonical.testing import LaunchpadZopelessLayer, ZopelessAppServerLayer
-
+from canonical.testing import (
+    LaunchpadZopelessLayer,
+    ZopelessAppServerLayer,
+    )
 from lp.code.enums import (
-    BranchMergeProposalStatus, BranchSubscriptionNotificationLevel,
-    BranchType, CodeReviewNotificationLevel, CodeReviewVote)
-from lp.code.enums import BranchVisibilityRule
+    BranchMergeProposalStatus,
+    BranchSubscriptionNotificationLevel,
+    BranchType,
+    BranchVisibilityRule,
+    CodeReviewNotificationLevel,
+    CodeReviewVote,
+    )
 from lp.code.interfaces.branchlookup import IBranchLookup
-from lp.code.model.branchmergeproposaljob import (
-    BranchMergeProposalJob, BranchMergeProposalJobType,
-    CreateMergeProposalJob, MergeProposalCreatedJob)
 from lp.code.mail.codehandler import (
-    AddReviewerEmailCommand, CodeEmailCommands, CodeHandler,
+    AddReviewerEmailCommand,
+    CodeEmailCommands,
+    CodeHandler,
     CodeReviewEmailCommandExecutionContext,
     InvalidBranchMergeProposalAddress,
-    MissingMergeDirective, NonLaunchpadTarget,
-    UpdateStatusEmailCommand, VoteEmailCommand)
+    MissingMergeDirective,
+    NonLaunchpadTarget,
+    UpdateStatusEmailCommand,
+    VoteEmailCommand,
+    )
+from lp.code.model.branchmergeproposaljob import (
+    BranchMergeProposalJob,
+    BranchMergeProposalJobType,
+    CreateMergeProposalJob,
+    MergeProposalCreatedJob,
+    )
 from lp.code.model.diff import PreviewDiff
 from lp.codehosting.vfs import get_lp_server
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.job.runner import JobRunner
 from lp.services.osutils import override_environ
-from lp.testing import login, login_person, TestCase, TestCaseWithFactory
+from lp.testing import (
+    login,
+    login_person,
+    TestCase,
+    TestCaseWithFactory,
+    )
 from lp.testing.mail_helpers import pop_notifications
 
 

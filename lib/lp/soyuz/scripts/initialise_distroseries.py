@@ -11,14 +11,20 @@ __all__ = [
     ]
 
 from zope.component import getUtility
+
 from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
-
+    IStoreSelector,
+    MAIN_STORE,
+    MASTER_FLAVOR,
+    )
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.adapters.packagelocation import PackageLocation
-from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
+from lp.soyuz.interfaces.archive import (
+    ArchivePurpose,
+    IArchiveSet,
+    )
 from lp.soyuz.interfaces.queue import PackageUploadStatus
 from lp.soyuz.model.packagecloner import clone_packages
 

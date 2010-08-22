@@ -7,9 +7,9 @@ __metaclass__ = type
 __all__ = []
 
 from canonical.testing import DatabaseFunctionalLayer
-
 from lp.registry.interfaces.mailinglistsubscription import (
-    MailingListAutoSubscribePolicy)
+    MailingListAutoSubscribePolicy,
+    )
 from lp.registry.interfaces.person import TeamSubscriptionPolicy
 from lp.testing import login_celebrity, person_logged_in, TestCaseWithFactory
 

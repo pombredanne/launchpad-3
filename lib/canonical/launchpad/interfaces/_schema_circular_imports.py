@@ -19,30 +19,37 @@ from lazr.restful.declarations import LAZR_WEBSERVICE_EXPORTED
 from lazr.restful.fields import Reference
 
 from canonical.launchpad.components.apihelpers import (
-    patch_entry_return_type, patch_collection_property,
-    patch_collection_return_type, patch_list_parameter_type,
-    patch_plain_parameter_type, patch_choice_parameter_type,
-    patch_reference_property)
-
+    patch_choice_parameter_type,
+    patch_collection_property,
+    patch_collection_return_type,
+    patch_entry_return_type,
+    patch_list_parameter_type,
+    patch_plain_parameter_type,
+    patch_reference_property,
+    )
 from canonical.launchpad.interfaces.message import (
-    IIndexedMessage, IMessage, IUserToUserEmail)
-from lp.registry.interfaces.structuralsubscription import (
-    IStructuralSubscription, IStructuralSubscriptionTarget)
-from lp.bugs.interfaces.bug import IBug, IFrontPageBugAddForm
+    IIndexedMessage,
+    IMessage,
+    IUserToUserEmail,
+    )
+from lp.blueprints.interfaces.specification import ISpecification
+from lp.blueprints.interfaces.specificationbranch import ISpecificationBranch
+from lp.bugs.interfaces.bug import (
+    IBug,
+    IFrontPageBugAddForm,
+    )
 from lp.bugs.interfaces.bugbranch import IBugBranch
 from lp.bugs.interfaces.bugnomination import IBugNomination
+from lp.bugs.interfaces.bugtarget import (
+    IBugTarget,
+    IHasBugs,
+    )
 from lp.bugs.interfaces.bugtask import IBugTask
-from lp.bugs.interfaces.bugtarget import IHasBugs, IBugTarget
 from lp.bugs.interfaces.bugtracker import IBugTracker
 from lp.bugs.interfaces.bugwatch import IBugWatch
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
-from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuild
-from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
-from lp.blueprints.interfaces.specification import ISpecification
-from lp.blueprints.interfaces.specificationbranch import (
-    ISpecificationBranch)
 from lp.code.interfaces.branch import IBranch
 from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
 from lp.code.interfaces.branchsubscription import IBranchSubscription
@@ -51,40 +58,63 @@ from lp.code.interfaces.codereviewcomment import ICodeReviewComment
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
 from lp.code.interfaces.diff import IPreviewDiff
 from lp.code.interfaces.hasbranches import (
-    IHasBranches, IHasCodeImports, IHasMergeProposals, IHasRequestedReviews)
-from lp.code.interfaces.sourcepackagerecipe import (
-    ISourcePackageRecipe)
+    IHasBranches,
+    IHasCodeImports,
+    IHasMergeProposals,
+    IHasRequestedReviews,
+    )
+from lp.code.interfaces.sourcepackagerecipe import ISourcePackageRecipe
 from lp.code.interfaces.sourcepackagerecipebuild import (
-    ISourcePackageRecipeBuild)
-from lp.hardwaredb.interfaces.hwdb import HWBus, IHWSubmission
+    ISourcePackageRecipeBuild,
+    )
+from lp.hardwaredb.interfaces.hwdb import (
+    HWBus,
+    IHWSubmission,
+    )
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionmirror import IDistributionMirror
 from lp.registry.interfaces.distributionsourcepackage import (
-    IDistributionSourcePackage)
+    IDistributionSourcePackage,
+    )
 from lp.registry.interfaces.distroseries import IDistroSeries
-from lp.registry.interfaces.person import IPerson, IPersonPublic
+from lp.registry.interfaces.person import (
+    IPerson,
+    IPersonPublic,
+    )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.sourcepackage import ISourcePackage
+from lp.registry.interfaces.structuralsubscription import (
+    IStructuralSubscription,
+    IStructuralSubscriptionTarget,
+    )
 from lp.soyuz.interfaces.archive import IArchive
-from lp.soyuz.interfaces.archivepermission import (
-    IArchivePermission)
-from lp.soyuz.interfaces.archivesubscriber import (
-    IArchiveSubscriber)
-from lp.soyuz.interfaces.archivedependency import (
-    IArchiveDependency)
+from lp.soyuz.interfaces.archivedependency import IArchiveDependency
+from lp.soyuz.interfaces.archivepermission import IArchivePermission
+from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriber
+from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuild
+from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
-from lp.soyuz.interfaces.publishing import (
-    IBinaryPackagePublishingHistory, ISourcePackagePublishingHistory,
-    ISourcePackagePublishingHistoryPublic, PackagePublishingStatus)
 from lp.soyuz.interfaces.packageset import IPackageset
+from lp.soyuz.interfaces.publishing import (
+    IBinaryPackagePublishingHistory,
+    ISourcePackagePublishingHistory,
+    ISourcePackagePublishingHistoryPublic,
+    PackagePublishingStatus,
+    )
 from lp.soyuz.interfaces.queue import (
-    IPackageUpload, PackageUploadCustomFormat, PackageUploadStatus)
+    IPackageUpload,
+    PackageUploadCustomFormat,
+    PackageUploadStatus,
+    )
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
 from lp.translations.interfaces.pofile import IPOFile
 from lp.translations.interfaces.potemplate import (
-    IPOTemplate, IPOTemplateSharingSubset, IPOTemplateSubset)
+    IPOTemplate,
+    IPOTemplateSharingSubset,
+    IPOTemplateSubset,
+    )
 
 
 IBranch['bug_branches'].value_type.schema = IBugBranch

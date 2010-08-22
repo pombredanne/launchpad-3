@@ -14,9 +14,8 @@ import unittest
 from openid.association import Association
 from openid.store import nonce
 
+from canonical.launchpad.database.baseopenidstore import BaseStormOpenIDStore
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
-from canonical.launchpad.database.baseopenidstore import (
-    BaseStormOpenIDStore)
 
 
 class BaseStormOpenIDStoreTestsMixin:

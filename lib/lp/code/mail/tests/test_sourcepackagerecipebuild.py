@@ -15,8 +15,10 @@ from canonical.config import config
 from canonical.testing import LaunchpadFunctionalLayer
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.code.mail.sourcepackagerecipebuild import (
-    SourcePackageRecipeBuildMailer)
+    SourcePackageRecipeBuildMailer,
+    )
 from lp.testing import TestCaseWithFactory
+
 
 expected_body = u"""\
  * State: Successfully built
