@@ -19,71 +19,126 @@ __all__ = [
     ]
 
 
+from cStringIO import StringIO
+from datetime import (
+    datetime,
+    timedelta,
+    )
+from email.Utils import make_msgid
 import operator
 import re
-from cStringIO import StringIO
-from datetime import datetime, timedelta
-from email.Utils import make_msgid
-from pytz import timezone
-
-from zope.contenttype import guess_content_type
-from zope.component import getUtility
-from zope.event import notify
-from zope.interface import implements, providedBy
-
-from sqlobject import BoolCol, IntCol, ForeignKey, StringCol
-from sqlobject import SQLMultipleJoin, SQLRelatedJoin
-from sqlobject import SQLObjectNotFound
-from storm.expr import (
-    And, Count, Func, In, LeftJoin, Max, Not, Or, Select, SQL, SQLRaw, Union)
-from storm.store import EmptyResultSet, Store
 
 from lazr.lifecycle.event import (
-    ObjectCreatedEvent, ObjectDeletedEvent, ObjectModifiedEvent)
+    ObjectCreatedEvent,
+    ObjectDeletedEvent,
+    ObjectModifiedEvent,
+    )
 from lazr.lifecycle.snapshot import Snapshot
+from pytz import timezone
+from sqlobject import (
+    BoolCol,
+    ForeignKey,
+    IntCol,
+    SQLMultipleJoin,
+    SQLObjectNotFound,
+    SQLRelatedJoin,
+    StringCol,
+    )
+from storm.expr import (
+    And,
+    Count,
+    Func,
+    In,
+    LeftJoin,
+    Max,
+    Not,
+    Or,
+    Select,
+    SQL,
+    SQLRaw,
+    Union,
+    )
+from storm.store import (
+    EmptyResultSet,
+    Store,
+    )
+from zope.component import getUtility
+from zope.contenttype import guess_content_type
+from zope.event import notify
+from zope.interface import (
+    implements,
+    providedBy,
+    )
 
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
+from canonical.database.sqlbase import (
+    cursor,
+    SQLBase,
+    sqlvalues,
+    )
 from canonical.launchpad.database.librarian import LibraryFileAlias
 from canonical.launchpad.database.message import (
-    Message, MessageChunk, MessageSet)
-from canonical.launchpad.fields import DuplicateBug
+    Message,
+    MessageChunk,
+    MessageSet,
+    )
 from canonical.launchpad.helpers import shortlist
-from lp.hardwaredb.interfaces.hwdb import IHWSubmissionBugSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.interfaces.message import (
-    IMessage, IndexedMessage)
-from lp.registry.interfaces.structuralsubscription import (
-    BugNotificationLevel, IStructuralSubscriptionTarget)
-from lp.bugs.mail.bugnotificationrecipients import BugNotificationRecipients
+    IMessage,
+    IndexedMessage,
+    )
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, DEFAULT_FLAVOR, MAIN_STORE, NotFoundError)
-
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 from lp.answers.interfaces.questiontarget import IQuestionTarget
-from lp.app.errors import UserCannotUnsubscribePerson
+from lp.app.errors import (
+    NotFoundError,
+    UserCannotUnsubscribePerson,
+    )
 from lp.bugs.adapters.bugchange import (
-    BranchLinkedToBug, BranchUnlinkedFromBug, BugConvertedToQuestion,
-    BugWatchAdded, BugWatchRemoved, SeriesNominated, UnsubscribedFromBug)
+    BranchLinkedToBug,
+    BranchUnlinkedFromBug,
+    BugConvertedToQuestion,
+    BugWatchAdded,
+    BugWatchRemoved,
+    SeriesNominated,
+    UnsubscribedFromBug,
+    )
 from lp.bugs.interfaces.bug import (
-    IBug, IBugBecameQuestionEvent, IBugSet, IFileBugData,
-    InvalidDuplicateValue)
+    IBug,
+    IBugBecameQuestionEvent,
+    IBugSet,
+    IFileBugData,
+    InvalidDuplicateValue,
+    )
 from lp.bugs.interfaces.bugactivity import IBugActivitySet
 from lp.bugs.interfaces.bugattachment import (
-    BugAttachmentType, IBugAttachmentSet)
+    BugAttachmentType,
+    IBugAttachmentSet,
+    )
 from lp.bugs.interfaces.bugmessage import IBugMessageSet
 from lp.bugs.interfaces.bugnomination import (
-    NominationError, NominationSeriesObsoleteError)
+    NominationError,
+    NominationSeriesObsoleteError,
+    )
 from lp.bugs.interfaces.bugnotification import IBugNotificationSet
 from lp.bugs.interfaces.bugtask import (
-    BugTaskStatus, IBugTaskSet, UNRESOLVED_BUGTASK_STATUSES)
+    BugTaskStatus,
+    IBugTaskSet,
+    UNRESOLVED_BUGTASK_STATUSES,
+    )
 from lp.bugs.interfaces.bugtracker import BugTrackerType
 from lp.bugs.interfaces.bugwatch import IBugWatchSet
 from lp.bugs.interfaces.cve import ICveSet
+from lp.bugs.mail.bugnotificationrecipients import BugNotificationRecipients
 from lp.bugs.model.bugattachment import BugAttachment
 from lp.bugs.model.bugbranch import BugBranch
 from lp.bugs.model.bugcve import BugCve
@@ -92,22 +147,38 @@ from lp.bugs.model.bugnomination import BugNomination
 from lp.bugs.model.bugnotification import BugNotification
 from lp.bugs.model.bugsubscription import BugSubscription
 from lp.bugs.model.bugtask import (
-    BugTask, BugTaskSet, NullBugTask, bugtask_sort_key,
-    get_bug_privacy_filter)
+    BugTask,
+    bugtask_sort_key,
+    BugTaskSet,
+    get_bug_privacy_filter,
+    NullBugTask,
+    )
 from lp.bugs.model.bugwatch import BugWatch
+from lp.hardwaredb.interfaces.hwdb import IHWSubmissionBugSet
+from lp.registry.enum import BugNotificationLevel
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
-    IDistributionSourcePackage)
-from lp.registry.interfaces.series import SeriesStatus
+    IDistributionSourcePackage,
+    )
 from lp.registry.interfaces.distroseries import IDistroSeries
-from lp.registry.interfaces.person import IPersonSet
-from lp.registry.interfaces.person import validate_public_person
+from lp.registry.interfaces.person import (
+    IPersonSet,
+    validate_public_person,
+    )
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
+from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackage import ISourcePackage
+from lp.registry.interfaces.structuralsubscription import (
+    IStructuralSubscriptionTarget,
+    )
 from lp.registry.model.mentoringoffer import MentoringOffer
-from lp.registry.model.person import Person, ValidPersonCache
+from lp.registry.model.person import (
+    Person,
+    ValidPersonCache,
+    )
 from lp.registry.model.pillar import pillar_sort_key
+from lp.services.fields import DuplicateBug
 
 
 _bug_tag_query_template = """
@@ -494,8 +565,12 @@ class Bug(SQLBase):
     @property
     def initial_message(self):
         """See `IBug`."""
-        messages = sorted(self.messages, key=lambda ob: ob.id)
-        return messages[0]
+        store = Store.of(self)
+        messages = store.find(
+            Message,
+            BugMessage.bug == self,
+            BugMessage.message == Message.id).order_by('id')
+        return messages.first()
 
     def followup_subject(self):
         """See `IBug`."""
@@ -690,7 +765,8 @@ class Bug(SQLBase):
 
         if recipients is not None:
             for subscriber in dupe_subscribers:
-                recipients.addDupeSubscriber(subscriber, dupe_details[subscriber])
+                recipients.addDupeSubscriber(
+                    subscriber, dupe_details[subscriber])
 
         return sorted(
             dupe_subscribers, key=operator.attrgetter("displayname"))
@@ -955,13 +1031,21 @@ class Bug(SQLBase):
 
         filealias = getUtility(ILibraryFileAliasSet).create(
             name=filename, size=len(filecontent),
-            file=StringIO(filecontent), contentType=content_type)
+            file=StringIO(filecontent), contentType=content_type,
+            restricted=self.private)
 
         return self.linkAttachment(
             owner, filealias, comment, is_patch, description)
 
     def linkAttachment(self, owner, file_alias, comment, is_patch=False,
                        description=None):
+        """See `IBug`.
+
+        This method should only be called by addAttachment() and
+        FileBugViewBase.submit_bug_action, otherwise
+        we may get inconsistent settings of bug.private and
+        file_alias.restricted.
+        """
         if is_patch:
             attach_type = BugAttachmentType.PATCH
         else:
@@ -1384,6 +1468,9 @@ class Bug(SQLBase):
                 self.who_made_private = None
                 self.date_made_private = None
 
+            for attachment in self.attachments:
+                attachment.libraryfile.restricted = private
+
             # Correct the heat for the bug immediately, so that we don't have
             # to wait for the next calculation job for the adjusted heat.
             self.updateHeat()
@@ -1489,11 +1576,6 @@ class Bug(SQLBase):
 
         self.updateHeat()
 
-    @property
-    def readonly_duplicateof(self):
-        """See `IBug`."""
-        return self.duplicateof
-
     def markAsDuplicate(self, duplicate_of):
         """See `IBug`."""
         field = DuplicateBug()
@@ -1502,6 +1584,16 @@ class Bug(SQLBase):
         try:
             if duplicate_of is not None:
                 field._validate(duplicate_of)
+            if self.duplicates:
+                for duplicate in self.duplicates:
+                    # Fire a notify event in model code since moving
+                    # duplicates of a duplicate does not normally fire an
+                    # event.
+                    dupe_before = Snapshot(
+                        duplicate, providing=providedBy(duplicate))
+                    duplicate.markAsDuplicate(duplicate_of)
+                    notify(ObjectModifiedEvent(
+                            duplicate, dupe_before, 'duplicateof'))
             self.duplicateof = duplicate_of
         except LaunchpadValidationError, validation_error:
             raise InvalidDuplicateValue(validation_error)
@@ -1937,4 +2029,3 @@ class FileBugData:
     def asDict(self):
         """Return the FileBugData instance as a dict."""
         return self.__dict__.copy()
-

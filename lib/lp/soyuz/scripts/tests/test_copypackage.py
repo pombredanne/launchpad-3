@@ -1,15 +1,15 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
 import datetime
 import os
-import pytz
 import subprocess
 import sys
 import unittest
 
+import pytz
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -19,36 +19,58 @@ from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.scripts import BufferLogger
 from canonical.librarian.ftests.harness import fillLibrarianFile
 from canonical.testing import (
-    DatabaseLayer, LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
+    DatabaseLayer,
+    LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
 from lp.bugs.interfaces.bug import (
-    CreateBugParams, IBugSet)
+    CreateBugParams,
+    IBugSet,
+    )
 from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.registry.interfaces.distribution import IDistributionSet
-from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.interfaces.series import SeriesStatus
 from lp.soyuz.adapters.packagelocation import PackageLocationError
 from lp.soyuz.interfaces.archive import (
-    ArchivePurpose, CannotCopy)
+    ArchivePurpose,
+    CannotCopy,
+    )
 from lp.soyuz.interfaces.binarypackagebuild import BuildSetStatus
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.publishing import (
-    IBinaryPackagePublishingHistory, ISourcePackagePublishingHistory,
-    PackagePublishingStatus, active_publishing_status)
+    active_publishing_status,
+    IBinaryPackagePublishingHistory,
+    ISourcePackagePublishingHistory,
+    PackagePublishingStatus,
+    )
 from lp.soyuz.interfaces.queue import (
-    PackageUploadCustomFormat, PackageUploadStatus,
-    QueueInconsistentStateError)
+    PackageUploadCustomFormat,
+    PackageUploadStatus,
+    QueueInconsistentStateError,
+    )
 from lp.soyuz.interfaces.sourcepackageformat import (
-    ISourcePackageFormatSelectionSet, SourcePackageFormat)
-from lp.soyuz.model.publishing import (
-    SourcePackagePublishingHistory,
-    BinaryPackagePublishingHistory)
+    ISourcePackageFormatSelectionSet,
+    SourcePackageFormat,
+    )
 from lp.soyuz.model.processor import ProcessorFamily
+from lp.soyuz.model.publishing import (
+    BinaryPackagePublishingHistory,
+    SourcePackagePublishingHistory,
+    )
 from lp.soyuz.scripts.ftpmasterbase import SoyuzScriptError
 from lp.soyuz.scripts.packagecopier import (
-    CopyChecker, do_copy, _do_delayed_copy, _do_direct_copy, PackageCopier,
-    re_upload_file, UnembargoSecurityPackage, update_files_privacy)
+    _do_delayed_copy,
+    _do_direct_copy,
+    CopyChecker,
+    do_copy,
+    PackageCopier,
+    re_upload_file,
+    UnembargoSecurityPackage,
+    update_files_privacy,
+    )
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
 
@@ -1352,8 +1374,7 @@ class CopyPackageTestCase(TestCaseWithFactory):
         self.assertEqual(
             sorted(copied_ids), sorted(pending_ids),
             "The copy did not succeed.\nExpected IDs: %s\nFound IDs: %s" % (
-                sorted(copied_ids), sorted(pending_ids))
-            )
+                sorted(copied_ids), sorted(pending_ids)))
 
     def testCopyBetweenDistroSeries(self):
         """Check the copy operation between distroseries."""
@@ -2275,7 +2296,7 @@ class CopyPackageTestCase(TestCaseWithFactory):
             "--ppa", "joe",
             "--ppa-name", "ppa",
             "-s", "%s" % ppa_source.distroseries.name + "-security",
-            "foo"
+            "foo",
             ]
 
         script = UnembargoSecurityPackage(
@@ -2324,7 +2345,7 @@ class CopyPackageTestCase(TestCaseWithFactory):
         test_args = [
             "--ppa", "cprov",
             "-s", "warty-backports",
-            "foo"
+            "foo",
             ]
 
         script = UnembargoSecurityPackage(
@@ -2641,7 +2662,3 @@ class CopyPackageTestCase(TestCaseWithFactory):
             None,
             checker.checkCopy(test2_source, warty,
             PackagePublishingPocket.RELEASE))
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

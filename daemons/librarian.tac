@@ -19,6 +19,7 @@ from canonical.librarian.interfaces import DUMP_FILE, SIGDUMPMEM
 from canonical.librarian.libraryprotocol import FileUploadFactory
 from canonical.librarian import storage, db
 from canonical.librarian import web as fatweb
+from lp.services.twistedsupport.loggingsupport import set_up_oops_reporting
 
 # Connect to database
 dbconfig.setConfigSection('librarian')
@@ -69,6 +70,9 @@ setUpListener(uploadPort, webPort, restricted=False)
 webPort = config.librarian.restricted_download_port
 uploadPort = config.librarian.restricted_upload_port
 setUpListener(uploadPort, webPort, restricted=True)
+
+# Log OOPS reports
+set_up_oops_reporting('librarian', 'librarian')
 
 # Setup a signal handler to dump the process' memory upon 'kill -44'.
 def sigdumpmem_handler(signum, frame):

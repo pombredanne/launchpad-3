@@ -15,14 +15,23 @@ __all__ = [
     'IncompatibleArguments',
     ]
 
-from zope.interface import Interface
-from zope.schema import Choice, TextLine
 from lazr.enum import DBEnumeratedType
+from lazr.restful.declarations import (
+    call_with,
+    export_read_operation,
+    operation_parameters,
+    operation_returns_collection_of,
+    rename_parameters_as,
+    REQUEST_USER,
+    webservice_error,
+    )
+from zope.interface import Interface
+from zope.schema import (
+    Choice,
+    TextLine,
+    )
 
 from canonical.launchpad import _
-from lazr.restful.declarations import (
-    REQUEST_USER, call_with, export_read_operation, operation_parameters,
-    operation_returns_collection_of, rename_parameters_as, webservice_error)
 
 
 class IncompatibleArguments(Exception):

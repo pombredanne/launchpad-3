@@ -11,24 +11,26 @@ __all__ = [
     'DistroArchSeriesBinaryPackage',
     ]
 
-from storm.locals import Desc, In
+from storm.locals import (
+    Desc,
+    In,
+    )
 from zope.interface import implements
 
 from canonical.cachedproperty import cachedproperty
 from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.interfaces import IStore
-from lp.soyuz.model.binarypackagerelease import (
-    BinaryPackageRelease)
-from lp.soyuz.model.distroarchseriesbinarypackagerelease import (
-    DistroArchSeriesBinaryPackageRelease)
-from lp.soyuz.model.distroseriespackagecache import (
-    DistroSeriesPackageCache)
-from lp.soyuz.model.publishing import (
-    BinaryPackagePublishingHistory)
-from canonical.launchpad.webapp.interfaces import NotFoundError
+from lp.app.errors import NotFoundError
 from lp.soyuz.interfaces.distroarchseriesbinarypackage import (
-    IDistroArchSeriesBinaryPackage)
+    IDistroArchSeriesBinaryPackage,
+    )
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
+from lp.soyuz.model.distroarchseriesbinarypackagerelease import (
+    DistroArchSeriesBinaryPackageRelease,
+    )
+from lp.soyuz.model.distroseriespackagecache import DistroSeriesPackageCache
+from lp.soyuz.model.publishing import BinaryPackagePublishingHistory
 
 
 class DistroArchSeriesBinaryPackage:

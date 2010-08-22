@@ -35,10 +35,11 @@ from textwrap import dedent
 from zope.interface import implements
 from zope.security.proxy import isinstance as zope_isinstance
 
+from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
+from canonical.launchpad.webapp.publisher import canonical_url
 from lp.bugs.interfaces.bugchange import IBugChange
 from lp.bugs.interfaces.bugtask import IBugTask
 from lp.registry.interfaces.product import IProduct
-from canonical.launchpad.webapp.publisher import canonical_url
 
 
 class NoBugChangeFoundError(Exception):
@@ -527,6 +528,12 @@ class BugTagsChange(AttributeChange):
         return {'text': "\n".join(messages)}
 
 
+def download_url_of_bugattachment(attachment):
+    """Return the URL of the ProxiedLibraryFileAlias for the attachment."""
+    return ProxiedLibraryFileAlias(
+        attachment.libraryfile, attachment).http_url
+
+
 class BugAttachmentChange(AttributeChange):
     """Used to represent a change to an `IBug`'s attachments."""
 
@@ -535,12 +542,14 @@ class BugAttachmentChange(AttributeChange):
             what_changed = "attachment added"
             old_value = None
             new_value = "%s %s" % (
-                self.new_value.title, self.new_value.libraryfile.http_url)
+                self.new_value.title,
+                download_url_of_bugattachment(self.new_value))
         else:
             what_changed = "attachment removed"
             attachment = self.new_value
             old_value = "%s %s" % (
-                self.old_value.title, self.old_value.libraryfile.http_url)
+                self.old_value.title,
+                download_url_of_bugattachment(self.old_value))
             new_value = None
 
         return {
@@ -557,7 +566,7 @@ class BugAttachmentChange(AttributeChange):
                 attachment_str = 'Attachment'
             message = '** %s added: "%s"\n   %s' % (
                 attachment_str, self.new_value.title,
-                self.new_value.libraryfile.http_url)
+                download_url_of_bugattachment(self.new_value))
         else:
             if self.old_value.is_patch:
                 attachment_str = 'Patch'
@@ -565,7 +574,7 @@ class BugAttachmentChange(AttributeChange):
                 attachment_str = 'Attachment'
             message = '** %s removed: "%s"\n   %s' % (
                 attachment_str, self.old_value.title,
-                self.old_value.libraryfile.http_url)
+                download_url_of_bugattachment(self.old_value))
 
         return {'text': message}
 

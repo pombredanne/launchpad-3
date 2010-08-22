@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """View classes related to `IDistroSeries`."""
@@ -17,46 +17,68 @@ __all__ = [
     'DistroSeriesView',
     ]
 
-from zope.lifecycleevent import ObjectCreatedEvent
 from zope.component import getUtility
 from zope.event import notify
 from zope.formlib import form
+from zope.lifecycleevent import ObjectCreatedEvent
 from zope.schema import Choice
-from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
+from zope.schema.vocabulary import (
+    SimpleTerm,
+    SimpleVocabulary,
+    )
 
 from canonical.cachedproperty import cachedproperty
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad import _
-from canonical.launchpad import helpers
-from lp.blueprints.browser.specificationtarget import (
-    HasSpecificationsMenuMixin)
-from lp.bugs.browser.bugtask import BugTargetTraversalMixin
-from lp.soyuz.browser.packagesearch import PackageSearchViewBase
-from lp.services.worlddata.interfaces.country import ICountry
-from lp.registry.interfaces.series import SeriesStatus
-from lp.registry.interfaces.distroseries import IDistroSeries
-from lp.translations.browser.distroseries import (
-    check_distroseries_translations_viewable)
-from lp.services.worlddata.interfaces.language import ILanguageSet
-from lp.registry.browser.structuralsubscription import (
-    StructuralSubscriptionMenuMixin,
-    StructuralSubscriptionTargetTraversalMixin)
-from canonical.launchpad.interfaces.launchpad import (
-    ILaunchBag, NotFoundError)
+from canonical.launchpad import (
+    _,
+    helpers,
+    )
+from canonical.launchpad.interfaces.launchpad import ILaunchBag
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, GetitemNavigation, action, custom_widget)
+    action,
+    custom_widget,
+    GetitemNavigation,
+    StandardLaunchpadFacets,
+    )
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.launchpadform import (
-    LaunchpadEditFormView, LaunchpadFormView)
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    )
 from canonical.launchpad.webapp.menu import (
-    ApplicationMenu, Link, NavigationMenu, enabled_with_permission)
+    ApplicationMenu,
+    enabled_with_permission,
+    Link,
+    NavigationMenu,
+    )
 from canonical.launchpad.webapp.publisher import (
-    canonical_url, LaunchpadView, stepthrough, stepto)
+    canonical_url,
+    LaunchpadView,
+    stepthrough,
+    stepto,
+    )
 from canonical.widgets.itemswidgets import LaunchpadDropdownWidget
-from lp.soyuz.interfaces.queue import IPackageUploadSet
+from lp.app.errors import NotFoundError
+from lp.blueprints.browser.specificationtarget import (
+    HasSpecificationsMenuMixin,
+    )
+from lp.bugs.browser.bugtask import BugTargetTraversalMixin
 from lp.registry.browser import MilestoneOverlayMixin
+from lp.registry.browser.structuralsubscription import (
+    StructuralSubscriptionMenuMixin,
+    StructuralSubscriptionTargetTraversalMixin,
+    )
+from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.series import SeriesStatus
+from lp.services.worlddata.interfaces.country import ICountry
+from lp.services.worlddata.interfaces.language import ILanguageSet
+from lp.soyuz.browser.packagesearch import PackageSearchViewBase
+from lp.soyuz.interfaces.queue import IPackageUploadSet
+from lp.translations.browser.distroseries import (
+    check_distroseries_translations_viewable,
+    )
 
 
 class DistroSeriesNavigation(GetitemNavigation, BugTargetTraversalMixin,
@@ -180,7 +202,6 @@ class DistroSeriesOverviewMenu(
 
     # A search link isn't needed because the distro series overview
     # has a search form.
-
     def answers(self):
         text = 'Ask a question'
         url = canonical_url(self.context.distribution) + '/+addquestion'
@@ -191,7 +212,7 @@ class DistroSeriesOverviewMenu(
         text = 'Add architecture'
         return Link('+addport', text, icon='add')
 
-    @enabled_with_permission('launchpad.Admin')
+    @enabled_with_permission('launchpad.Moderate')
     def admin(self):
         text = 'Administer'
         return Link('+admin', text, icon='edit')
@@ -318,7 +339,7 @@ class DistroSeriesView(MilestoneOverlayMixin):
     @cachedproperty
     def num_linked_packages(self):
         """The number of linked packagings for this distroseries."""
-        return len(self.context.packagings)
+        return self.context.packagings.count()
 
     @property
     def num_unlinked_packages(self):
@@ -332,7 +353,7 @@ class DistroSeriesView(MilestoneOverlayMixin):
 
     @cachedproperty
     def needs_linking(self):
-        """Return a list of 10 packages most in need of upstream linking.""" 
+        """Return a list of 10 packages most in need of upstream linking."""
         # XXX sinzui 2010-02-26 bug=528648: This method causes a timeout.
         # return self.context.getPrioritizedUnlinkedSourcePackages()[:10]
         return None
@@ -481,7 +502,7 @@ class DistroSeriesPackagesView(LaunchpadView):
     @cachedproperty
     def cached_packagings(self):
         """The batched upstream packaging links."""
-        packagings = self.context.getPrioritizedlPackagings()
+        packagings = self.context.getPrioritizedPackagings()
         navigator = BatchNavigator(packagings, self.request, size=20)
         navigator.setHeadings('packaging', 'packagings')
         return navigator

@@ -3,15 +3,14 @@
 
 __metaclass__ = type
 
+from doctest import DocTestSuite
 from email.Message import Message
 import unittest
 
-from zope.testing.doctest import DocTestSuite
-
 from canonical.launchpad.helpers import is_ascii_only
-from lp.testing import TestCase
 from lp.services.mail import sendmail
 from lp.services.mail.sendmail import MailController
+from lp.testing import TestCase
 
 
 class TestMailController(TestCase):

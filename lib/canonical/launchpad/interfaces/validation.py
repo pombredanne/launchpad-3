@@ -23,20 +23,20 @@ __all__ = [
     ]
 
 from cgi import escape
-import urllib
 from textwrap import dedent
+import urllib
 
-from zope.component import getUtility
 from zope.app.form.interfaces import WidgetsError
+from zope.component import getUtility
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces import NotFoundError
 from canonical.launchpad.interfaces.launchpad import ILaunchBag
 from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.validators.cve import valid_cve
+from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.validators.url import valid_absolute_url
 from canonical.launchpad.webapp.menu import structured
+from lp.app.errors import NotFoundError
 
 
 def can_be_nominated_for_series(series):

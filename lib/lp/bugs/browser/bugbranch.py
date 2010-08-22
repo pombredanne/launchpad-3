@@ -12,22 +12,31 @@ __all__ = [
     'BugBranchView',
     ]
 
-from zope.component import adapts, getMultiAdapter
-from zope.interface import implements, Interface
-
 from lazr.restful.interfaces import IWebServiceClientRequest
+from zope.component import (
+    adapts,
+    getMultiAdapter,
+    )
+from zope.interface import (
+    implements,
+    Interface,
+    )
 
 from canonical.cachedproperty import cachedproperty
-from canonical.lazr.utils import smartquote
-
 from canonical.launchpad import _
 from canonical.launchpad.webapp import (
-    action, canonical_url, LaunchpadEditFormView, LaunchpadFormView,
-    LaunchpadView)
+    action,
+    canonical_url,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    LaunchpadView,
+    )
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
+from canonical.lazr.utils import smartquote
 from lp.bugs.interfaces.bugbranch import IBugBranch
 from lp.code.browser.branchmergeproposal import (
-    latest_proposals_for_each_branch)
+    latest_proposals_for_each_branch,
+    )
 from lp.code.enums import BranchLifecycleStatus
 
 
@@ -94,8 +103,6 @@ class BugBranchDeleteView(LaunchpadEditFormView):
 
 class BugBranchView(LaunchpadView):
     """Simple view to cache related branch information."""
-
-    __used_for__ = IBugBranch
 
     @cachedproperty
     def merge_proposals(self):

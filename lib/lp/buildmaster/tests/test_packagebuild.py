@@ -5,7 +5,6 @@
 
 __metaclass__ = type
 
-import unittest
 import hashlib
 
 from storm.store import Store
@@ -14,15 +13,21 @@ from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.testing.layers import LaunchpadFunctionalLayer
-
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
 from lp.buildmaster.interfaces.packagebuild import (
-    IPackageBuild, IPackageBuildSet, IPackageBuildSource)
+    IPackageBuild,
+    IPackageBuildSet,
+    IPackageBuildSource,
+    )
 from lp.buildmaster.model.packagebuild import PackageBuild
 from lp.buildmaster.tests.test_buildbase import TestBuildBaseMixin
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.testing import login, login_person, TestCaseWithFactory
+from lp.testing import (
+    login,
+    login_person,
+    TestCaseWithFactory,
+    )
 
 
 class TestPackageBuildBase(TestCaseWithFactory):
@@ -169,7 +174,6 @@ class TestPackageBuild(TestPackageBuildBase):
             Unauthorized, setattr, self.package_build,
             'dependencies', u'my deps')
 
-
     def test_admin_package_build(self):
         # Users with edit access can update attributes.
         login('admin@canonical.com')
@@ -217,7 +221,3 @@ class TestPackageBuildSet(TestPackageBuildBase):
             self.package_builds[:1],
             self.package_build_set.getBuildsForArchive(
                 self.archive, pocket=PackagePublishingPocket.UPDATES))
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

@@ -1,4 +1,5 @@
-== List of owned or driven projects ==
+List of owned or driven projects
+================================
 
 A Team home page displays a list of projects owned or driven by that
 team.
@@ -8,16 +9,16 @@ team.
     ...     anon_browser.contents, 'portlet-related-projects')
     >>> for tr in related_projects.findAll('tr'):
     ...     print extract_text(tr)
-    Ubuntu Linux
-    Ubuntu Test
+    Ubuntu
+    ubuntutest
     Tomcat
 
 The +related-software page displays a table with links to open bugs,
 unimplemented specs and open questions.
 
     >>> anon_browser.getLink('Show related projects').click()
-    >>> anon_browser.title
-    'Software related to Ubuntu Team...
+    >>> print anon_browser.title
+    Related software : ...Ubuntu Team... team
 
     >>> related_projects = find_tag_by_id(
     ...     anon_browser.contents, 'related-projects')
@@ -44,7 +45,7 @@ accessible through the main navigation menu.
     >>> print anon_browser.url
     http://launchpad.dev/~mark/+related-software
     >>> print anon_browser.title
-    Software related to Mark Shuttleworth...
+    Related software : Mark Shuttleworth
 
 In the case of a person that owns/drives more than
 config.launchpad.default_batch_size, a message is displayed and the
@@ -55,14 +56,14 @@ the config.launchpad.default_batch_size threshold.
 
     >>> print extract_text(
     ...     find_tag_by_id(anon_browser.contents, 'limit-encountered'))
-    Displaying first 5 projects out of 10 total
+    Displaying first 5 projects out of 7 total
 
     >>> related_projects = find_tag_by_id(
     ...     anon_browser.contents, 'related-projects')
     >>> print extract_text(related_projects)
     Name                            Bugs    Blueprints  Questions
-    Ubuntu Linux                    4       1           8
-    Redhat Advanced Server          0       0           0
     Debian GNU/Linux                3       0           0
     The Gentoo Linux                0       0           0
     Kubuntu - Free KDE-based Linux  0       4           0
+    Redhat Advanced Server          0       0           0
+    Apache                          1       0           0

@@ -299,6 +299,7 @@ build created during the copy is ready to be dispatched.
     James Blackwell
     PPA for James Blackwell
     i386 build of pmount 0.1-1
+    ...
     Build status Needs building
     Start (2505) What's this?
     Build details

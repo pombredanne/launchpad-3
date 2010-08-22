@@ -1,18 +1,22 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+from doctest import DocTestSuite
 import unittest
 
-from canonical.testing import LaunchpadFunctionalLayer
-from zope.testing.doctest import DocTestSuite
-from zope.publisher.interfaces.browser import IBrowserRequest
 from zope.interface import implements
+from zope.publisher.interfaces.browser import IBrowserRequest
 
 from canonical.launchpad import helpers
 from canonical.launchpad.ftests import login
-from lp.translations.utilities.translation_export import LaunchpadWriteTarFile
-from canonical.launchpad.interfaces import ILanguageSet, IPerson, ILaunchBag
+from canonical.launchpad.interfaces import (
+    ILanguageSet,
+    ILaunchBag,
+    IPerson,
+    )
+from canonical.testing import LaunchpadFunctionalLayer
 from lp.testing.factory import LaunchpadObjectFactory
+from lp.translations.utilities.translation_export import LaunchpadWriteTarFile
 
 
 def make_test_tarball_1():

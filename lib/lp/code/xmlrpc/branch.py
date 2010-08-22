@@ -13,35 +13,47 @@ __all__ = [
 
 
 from bzrlib import urlutils
-
 from zope.component import getUtility
-from zope.interface import Interface, implements
+from zope.interface import (
+    implements,
+    Interface,
+    )
 
 from canonical.config import config
-from lp.bugs.interfaces.bug import IBugSet
-from canonical.launchpad.webapp.interfaces import ILaunchBag, NotFoundError
-from lp.code.enums import BranchType
-from lp.code.interfaces.branch import (
-    BranchCreationException, BranchCreationForbidden, IBranch)
-from lp.registry.interfaces.person import IPersonSet
-from lp.registry.interfaces.product import IProductSet
-from lp.code.interfaces.branch import NoSuchBranch
-from lp.code.interfaces.branchlookup import IBranchLookup
-from lp.code.interfaces.branchnamespace import (
-    get_branch_namespace, InvalidNamespace)
-from lp.code.interfaces.linkedbranch import (
-    CannotHaveLinkedBranch, NoLinkedBranch)
-from lp.registry.interfaces.distroseries import NoSuchDistroSeries
-from lp.registry.interfaces.person import NoSuchPerson
-from lp.registry.interfaces.product import (
-    InvalidProductName, NoSuchProduct)
-from lp.registry.interfaces.productseries import NoSuchProductSeries
-from lp.registry.interfaces.sourcepackagename import (
-    NoSuchSourcePackageName)
 from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.launchpad.webapp import LaunchpadXMLRPCView, canonical_url
+from canonical.launchpad.webapp import (
+    canonical_url,
+    LaunchpadXMLRPCView,
+    )
+from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.xmlrpc import faults
 from canonical.launchpad.xmlrpc.helpers import return_fault
+from lp.app.errors import NotFoundError
+from lp.bugs.interfaces.bug import IBugSet
+from lp.code.enums import BranchType
+from lp.code.errors import (
+    BranchCreationException,
+    BranchCreationForbidden,
+    CannotHaveLinkedBranch,
+    InvalidNamespace,
+    NoLinkedBranch,
+    NoSuchBranch,
+    )
+from lp.code.interfaces.branch import IBranch
+from lp.code.interfaces.branchlookup import IBranchLookup
+from lp.code.interfaces.branchnamespace import get_branch_namespace
+from lp.registry.interfaces.distroseries import NoSuchDistroSeries
+from lp.registry.interfaces.person import (
+    IPersonSet,
+    NoSuchPerson,
+    )
+from lp.registry.interfaces.product import (
+    InvalidProductName,
+    IProductSet,
+    NoSuchProduct,
+    )
+from lp.registry.interfaces.productseries import NoSuchProductSeries
+from lp.registry.interfaces.sourcepackagename import NoSuchSourcePackageName
 
 
 class IBranchSetAPI(Interface):

@@ -21,16 +21,27 @@ __all__ = [
     ]
 
 
-from bzrlib.errors import (
-    BzrError, InProcessTransport, NoSuchFile, TransportNotPossible)
 from bzrlib import urlutils
+from bzrlib.errors import (
+    BzrError,
+    InProcessTransport,
+    NoSuchFile,
+    TransportNotPossible,
+    )
 from bzrlib.transport import (
-    chroot, get_transport, register_transport, Server, Transport,
-    unregister_transport)
-
+    chroot,
+    get_transport,
+    register_transport,
+    Server,
+    Transport,
+    unregister_transport,
+    )
 from twisted.internet import defer
 
-from lp.services.twistedsupport import extract_result, gatherResults
+from lp.services.twistedsupport import (
+    extract_result,
+    gatherResults,
+    )
 
 
 class TranslationError(BzrError):

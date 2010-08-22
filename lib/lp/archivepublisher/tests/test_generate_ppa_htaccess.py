@@ -1,35 +1,38 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test the generate_ppa_htaccess.py script. """
 
 import crypt
-from datetime import datetime, timedelta
+from datetime import (
+    datetime,
+    timedelta,
+    )
 import os
-import pytz
 import subprocess
 import sys
 import tempfile
-import unittest
 
-
+import pytz
 from zope.component import getUtility
 
 from canonical.config import config
 from canonical.launchpad.interfaces import (
-    IDistributionSet, IPersonSet, TeamMembershipStatus)
+    IDistributionSet,
+    IPersonSet,
+    TeamMembershipStatus,
+    )
 from canonical.launchpad.scripts import QuietFakeLogger
 from canonical.testing.layers import LaunchpadZopelessLayer
-
 from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.scripts.generate_ppa_htaccess import (
-    HtaccessTokenGenerator)
+    HtaccessTokenGenerator,
+    )
+from lp.services.mail import stub
 from lp.soyuz.interfaces.archive import ArchiveStatus
-from lp.soyuz.interfaces.archivesubscriber import (
-    ArchiveSubscriberStatus)
+from lp.soyuz.interfaces.archivesubscriber import ArchiveSubscriberStatus
 from lp.testing import TestCaseWithFactory
 from lp.testing.mail_helpers import pop_notifications
-from lp.services.mail import stub
 
 
 class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
@@ -127,7 +130,7 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
 
         expected_contents = [
             "user:XXq2wKiyI43A2",
-            "user2:XXaQB8b5Gtwi."
+            "user2:XXaQB8b5Gtwi.",
             ]
 
         file = open(filename, "r")
@@ -568,7 +571,3 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
             "feedback@launchpad.net\n\n"
             "Regards,\n"
             "The Launchpad team")
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

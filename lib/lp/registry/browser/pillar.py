@@ -14,19 +14,30 @@ __all__ = [
 
 from operator import attrgetter
 
-from zope.interface import implements, Interface
+from zope.interface import (
+    implements,
+    Interface,
+    )
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.webapp.menu import (
-    ApplicationMenu, enabled_with_permission, Link, NavigationMenu)
-from canonical.launchpad.webapp.publisher import LaunchpadView, nearest
+    ApplicationMenu,
+    enabled_with_permission,
+    Link,
+    NavigationMenu,
+    )
+from canonical.launchpad.webapp.publisher import (
+    LaunchpadView,
+    nearest,
+    )
 from canonical.launchpad.webapp.tales import MenuAPI
-
 from lp.registry.browser.structuralsubscription import (
-    StructuralSubscriptionMenuMixin)
-from lp.registry.interfaces.distroseries import IDistroSeries
+    StructuralSubscriptionMenuMixin,
+    )
 from lp.registry.interfaces.distributionsourcepackage import (
-    IDistributionSourcePackage)
+    IDistributionSourcePackage,
+    )
+from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.pillar import IPillar
 from lp.registry.interfaces.projectgroup import IProjectGroup
 
@@ -153,6 +164,14 @@ class PillarView(LaunchpadView):
         return sorted([
             link for link in important_links if not link.enabled],
             key=attrgetter('sort_key'))
+
+    @property
+    def registration_completeness(self):
+        """The percent complete for registration.
+
+        Not used by all pillars.
+        """
+        return None
 
 
 class PillarBugsMenu(ApplicationMenu, StructuralSubscriptionMenuMixin):

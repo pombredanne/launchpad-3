@@ -88,7 +88,7 @@ team.
     ...                  '2.0', None, gentoo.owner)
     Traceback (most recent call last):
     ...
-    Unauthorized: (<Distribution...>, 'newSeries', 'launchpad.Append')
+    Unauthorized: (<Distribution...>, 'newSeries', 'launchpad.Moderate')
 
     >>> login('mark@example.com')
     >>> from canonical.launchpad.interfaces import IDistroSeriesSet
@@ -171,6 +171,27 @@ differs:
 
     >>> print_guessed_names('linux-2.6.12')
     source: u'linux-source-2.6.15'
+    binary: u'linux-2.6.12'
+
+If there are multiple matching binary packages, the source of the latest
+publication is used. If we create a new 'linux' source with a 'linux-2.6.12'
+binary, 'linux' will be returned instead of 'linux-source-2.6.15'.
+
+    >>> from lp.soyuz.tests.test_publishing import (
+    ...     SoyuzTestPublisher)
+    >>> test_publisher = SoyuzTestPublisher()
+    >>> hoary = test_publisher.setUpDefaultDistroSeries(
+    ...     ubuntu.getSeries('hoary'))
+    >>> fake_chroot = test_publisher.addMockFile('fake_chroot.tar.gz')
+    >>> unused = hoary['i386'].addOrUpdateChroot(fake_chroot)
+    >>> login('admin@canonical.com')
+    >>> test_publisher.getPubBinaries(
+    ...     'linux-2.6.12', architecturespecific=True)
+    [<BinaryPackagePublishingHistory ...>]
+    >>> login(ANONYMOUS)
+
+    >>> print_guessed_names('linux-2.6.12')
+    source: u'linux'
     binary: u'linux-2.6.12'
 
 

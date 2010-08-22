@@ -3,15 +3,22 @@
 
 __metaclass__ = type
 
-from datetime import datetime, timedelta
-import pytz
+from datetime import (
+    datetime,
+    timedelta,
+    )
 from unittest import TestLoader
 
-from canonical.launchpad.interfaces.launchpad import UnexpectedFormData
+import pytz
+
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import LaunchpadZopelessLayer
+from lp.app.errors import UnexpectedFormData
 from lp.testing import TestCaseWithFactory
-from lp.translations.browser.pofile import POFileBaseView, POFileTranslateView
+from lp.translations.browser.pofile import (
+    POFileBaseView,
+    POFileTranslateView,
+    )
 
 
 class TestPOFileBaseViewFiltering(TestCaseWithFactory):

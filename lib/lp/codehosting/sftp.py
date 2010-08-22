@@ -16,7 +16,6 @@ __metaclass__ = type
 __all__ = [
     'avatar_to_sftp_server',
     'TransportSFTPServer',
-    'FileIsADirectory',
     ]
 
 
@@ -25,29 +24,29 @@ import errno
 import os
 import stat
 
-from bzrlib import errors as bzr_errors
-from bzrlib import osutils, urlutils
+from bzrlib import (
+    errors as bzr_errors,
+    osutils,
+    urlutils,
+    )
 from bzrlib.transport.local import LocalTransport
-from twisted.conch.ssh import filetransfer
+from twisted.conch.interfaces import (
+    ISFTPFile,
+    ISFTPServer,
+    )
 from twisted.conch.ls import lsLine
-from twisted.conch.interfaces import ISFTPFile, ISFTPServer
+from twisted.conch.ssh import filetransfer
 from twisted.internet import defer
 from twisted.python import util
-
 from zope.interface import implements
 
 from canonical.config import config
-from lp.codehosting.vfs import AsyncLaunchpadTransport, LaunchpadServer
+from lp.codehosting.vfs import (
+    AsyncLaunchpadTransport,
+    LaunchpadServer,
+    )
+from lp.services.sshserver.sftp import FileIsADirectory
 from lp.services.twistedsupport import gatherResults
-
-
-class FileIsADirectory(bzr_errors.PathError):
-    """Raised when writeChunk is called on a directory.
-
-    This exists mainly to be translated into the appropriate SFTP error.
-    """
-
-    _fmt = 'File is a directory: %(path)r%(extra)s'
 
 
 class FatLocalTransport(LocalTransport):

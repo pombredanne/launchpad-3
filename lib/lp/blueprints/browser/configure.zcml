@@ -18,7 +18,7 @@
     <browser:defaultView
         for="lp.blueprints.interfaces.sprint.ISprint"
         name="+specs"
-        layer="canonical.launchpad.layers.BlueprintLayer"/>
+        layer="lp.blueprints.publisher.BlueprintsLayer"/>
     <browser:url
         for="lp.blueprints.interfaces.sprint.ISprint"
         path_expression="name"
@@ -133,7 +133,7 @@
     <browser:url
         for="lp.blueprints.interfaces.sprint.ISprintSet"
         path_expression="string:sprints"
-        parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"/>
+        parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"/>
     <browser:defaultView
         for="lp.blueprints.interfaces.sprint.ISprintSet"
         name="+index"/>
@@ -450,7 +450,7 @@
         <browser:url
             for="lp.blueprints.interfaces.specification.ISpecificationSet"
             path_expression="string:"
-            parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
+            parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
             rootsite="blueprints"/>
         <browser:defaultView
             for="lp.blueprints.interfaces.specification.ISpecificationSet"
@@ -562,7 +562,7 @@
     <browser:defaultView
         for="lp.registry.interfaces.distroseries.IDistroSeries"
         name="+specs"
-        layer="canonical.launchpad.layers.BlueprintLayer"/>
+        layer="lp.blueprints.publisher.BlueprintsLayer"/>
     <browser:page
         name="+addspec"
         for="lp.registry.interfaces.distroseries.IDistroSeries"

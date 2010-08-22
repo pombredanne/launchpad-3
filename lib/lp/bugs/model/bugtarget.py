@@ -14,30 +14,57 @@ __all__ = [
     'OfficialBugTagTargetMixin',
     ]
 
-from storm.locals import Int, Reference, Storm, Unicode
+from storm.locals import (
+    Int,
+    Reference,
+    Storm,
+    Unicode,
+    )
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.database.sqlbase import cursor, sqlvalues
-from lp.bugs.model.bugtask import (
-    BugTaskSet, get_bug_privacy_filter)
-from canonical.launchpad.searchbuilder import any, NULL, not_equals
-from canonical.launchpad.interfaces.lpstorm import IMasterObject, IMasterStore
-from canonical.launchpad.webapp.interfaces import ILaunchBag
+from canonical.database.sqlbase import (
+    cursor,
+    sqlvalues,
+    )
+from canonical.launchpad.interfaces.lpstorm import (
+    IMasterObject,
+    IMasterStore,
+    )
+from canonical.launchpad.searchbuilder import (
+    any,
+    not_equals,
+    NULL,
+    )
+from canonical.launchpad.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    ILaunchBag,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 from lp.bugs.interfaces.bugtarget import IOfficialBugTag
+from lp.bugs.interfaces.bugtask import (
+    BugTagsSearchCombinator,
+    BugTaskImportance,
+    BugTaskSearchParams,
+    BugTaskStatus,
+    RESOLVED_BUGTASK_STATUSES,
+    UNRESOLVED_BUGTASK_STATUSES,
+    )
+from lp.bugs.model.bugtask import (
+    BugTaskSet,
+    get_bug_privacy_filter,
+    )
 from lp.registry.interfaces.distribution import IDistribution
-from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.distributionsourcepackage import (
-    IDistributionSourcePackage)
+    IDistributionSourcePackage,
+    )
+from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
-from lp.bugs.interfaces.bugtask import (
-    BugTagsSearchCombinator, BugTaskImportance, BugTaskSearchParams,
-    BugTaskStatus, RESOLVED_BUGTASK_STATUSES, UNRESOLVED_BUGTASK_STATUSES)
-from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+
 
 class HasBugsBase:
     """Standard functionality for IHasBugs.
@@ -251,29 +278,25 @@ class HasBugHeatMixin:
             return
 
         if IDistribution.providedBy(self):
-            sql = ["""SELECT Bug.heat
+            sql = ["""SELECT MAX(Bug.heat)
                       FROM Bug, Bugtask
                       WHERE Bugtask.bug = Bug.id
-                      AND Bugtask.distribution = %s
-                      ORDER BY Bug.heat DESC LIMIT 1""" % sqlvalues(self),
-                   """SELECT Bug.heat
+                      AND Bugtask.distribution = %s""" % sqlvalues(self),
+                   """SELECT MAX(Bug.heat)
                       FROM Bug, Bugtask, DistroSeries
                       WHERE Bugtask.bug = Bug.id
                       AND Bugtask.distroseries = DistroSeries.id
-                      AND DistroSeries.distribution = %s
-                      ORDER BY Bug.heat DESC LIMIT 1""" % sqlvalues(self)]
+                      AND DistroSeries.distribution = %s""" % sqlvalues(self)]
         elif IProduct.providedBy(self):
-            sql = ["""SELECT Bug.heat
+            sql = ["""SELECT MAX(Bug.heat)
                       FROM Bug, Bugtask
                       WHERE Bugtask.bug = Bug.id
-                      AND Bugtask.product = %s
-                      ORDER BY Bug.heat DESC LIMIT 1""" % sqlvalues(self),
-                   """SELECT Bug.heat
+                      AND Bugtask.product = %s""" % sqlvalues(self),
+                   """SELECT MAX(Bug.heat)
                       FROM Bug, Bugtask, ProductSeries
                       WHERE Bugtask.bug = Bug.id
                       AND Bugtask.productseries = ProductSeries.id
-                      AND ProductSeries.product = %s
-                      ORDER BY Bug.heat DESC LIMIT 1""" % sqlvalues(self)]
+                      AND ProductSeries.product = %s""" % sqlvalues(self)]
         elif IProjectGroup.providedBy(self):
             sql = ["""SELECT MAX(heat)
                       FROM Bug, Bugtask, Product

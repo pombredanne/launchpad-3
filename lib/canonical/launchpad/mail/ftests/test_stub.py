@@ -3,12 +3,14 @@
 
 __metaclass__ = type
 
-import unittest
+from doctest import DocTestSuite
 import re
-from zope.testing.doctest import DocTestSuite
+import unittest
+
 from zope.testing.renormalizing import RENormalizing
 
 from canonical.testing import LaunchpadFunctionalLayer
+
 
 def test_simple_sendmail():
     r"""

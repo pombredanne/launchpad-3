@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Functions to copy translations from parent to child distroseries."""
@@ -8,7 +8,10 @@ __metaclass__ = type
 __all__ = [ 'copy_active_translations' ]
 
 from canonical.database.multitablecopy import MultiTableCopy
-from canonical.database.sqlbase import cursor, quote
+from canonical.database.sqlbase import (
+    cursor,
+    quote,
+    )
 
 
 def copy_active_translations(child, transaction, logger):
@@ -44,7 +47,7 @@ def copy_active_translations(child, transaction, logger):
     copier = MultiTableCopy(full_name, translation_tables, logger=logger)
 
     # Incremental copy of updates is no longer supported
-    assert len(list(child.getTranslationTemplates())) == 0, (
+    assert not child.has_translation_templates, (
            "The child series must not yet have any translation templates.")
 
     logger.info(

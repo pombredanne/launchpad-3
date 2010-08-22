@@ -1,15 +1,12 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test top-level publication API in Soyuz."""
 
-from unittest import TestLoader
-
-from lp.soyuz.tests.test_publishing import TestNativePublishingBase
-
-from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.interfaces.series import SeriesStatus
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+from lp.soyuz.tests.test_publishing import TestNativePublishingBase
 
 
 class TestICanPublishPackagesAPI(TestNativePublishingBase):
@@ -118,7 +115,7 @@ class TestICanPublishPackagesAPI(TestNativePublishingBase):
 
         # source and binary PUBLISHED on disk.
         foo_dsc = "%s/main/f/foo/foo_666.dsc" % self.pool_dir
-        self.assertEqual(open(foo_dsc).read().strip(),'Hello')
+        self.assertEqual(open(foo_dsc).read().strip(), 'Hello')
         foo_deb = "%s/main/f/foo/foo-bin_666_all.deb" % self.pool_dir
         self.assertEqual(open(foo_deb).read().strip(), 'World')
 
@@ -207,8 +204,9 @@ class TestICanPublishPackagesAPI(TestNativePublishingBase):
     def testPublicationLookUpForUnstableDistroSeries(self):
         """Source publishing record lookup for a unstable DistroSeries.
 
-        Check if the ICanPublishPackages.getPendingPublications() works properly
-        for a DistroSeries when it is still in development, 'unreleased'.
+        Check if the ICanPublishPackages.getPendingPublications() works
+        properly for a DistroSeries when it is still in development,
+        'unreleased'.
         """
         pub_pending_release, pub_published_release, pub_pending_updates = (
             self._createDefaulSourcePublications())
@@ -241,9 +239,9 @@ class TestICanPublishPackagesAPI(TestNativePublishingBase):
     def testPublicationLookUpForStableDistroSeries(self):
         """Source publishing record lookup for a stable/released DistroSeries.
 
-        Check if the ICanPublishPackages.getPendingPublications() works properly
-        for a DistroSeries when it is not in development anymore, i.e.,
-        'released'.
+        Check if the ICanPublishPackages.getPendingPublications() works
+        properly for a DistroSeries when it is not in development anymore,
+        i.e., 'released'.
         """
         pub_pending_release, pub_published_release, pub_pending_updates = (
             self._createDefaulSourcePublications())
@@ -276,8 +274,8 @@ class TestICanPublishPackagesAPI(TestNativePublishingBase):
     def testPublicationLookUpForFrozenDistroSeries(self):
         """Source publishing record lookup for a frozen DistroSeries.
 
-        Check if the ICanPublishPackages.getPendingPubliations() works properly
-        for a DistroSeries when it is in FROZEN state.
+        Check if the ICanPublishPackages.getPendingPubliations() works
+        properly for a DistroSeries when it is in FROZEN state.
         """
         pub_pending_release, pub_published_release, pub_pending_updates = (
             self._createDefaulSourcePublications())
@@ -313,9 +311,9 @@ class TestICanPublishPackagesAPI(TestNativePublishingBase):
     def testPublicationLookUpForUnstableDistroArchSeries(self):
         """Binary publishing record lookup for a unstable DistroArchSeries.
 
-        Check if the ICanPublishPackages.getPendingPublications() works properly
-        for a DistroArchSeries when it is still in DEVELOPMENT, i.e.,
-        'unstable'.
+        Check if the ICanPublishPackages.getPendingPublications() works
+        properly for a DistroArchSeries when it is still in DEVELOPMENT,
+        i.e., 'unstable'.
         """
         pub_pending_release, pub_published_release, pub_pending_updates = (
             self._createDefaulBinaryPublications())
@@ -421,7 +419,3 @@ class TestICanPublishPackagesAPI(TestNativePublishingBase):
         self.checkBinaryLookupForPocket(
             PackagePublishingPocket.RELEASE, is_careful=True,
             expected_result=[pub_published_release, pub_pending_release])
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

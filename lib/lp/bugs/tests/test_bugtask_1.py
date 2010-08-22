@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Bugtask related tests that are too complex to be readable as doctests."""
@@ -10,18 +10,28 @@ import unittest
 from zope.component import getUtility
 
 from canonical.database.sqlbase import flush_database_updates
-from canonical.launchpad.ftests import ANONYMOUS, login, logout
-from lp.bugs.tests.bug import create_old_bug, sync_bugtasks
+from canonical.launchpad.ftests import (
+    ANONYMOUS,
+    login,
+    logout,
+    )
 from canonical.launchpad.webapp.interfaces import ILaunchBag
+from canonical.testing import DatabaseFunctionalLayer
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugtask import (
-    BugTaskStatus, IBugTaskSet, IUpstreamBugTask)
+    BugTaskStatus,
+    IBugTaskSet,
+    IUpstreamBugTask,
+    )
 from lp.bugs.interfaces.bugwatch import IBugWatchSet
+from lp.bugs.tests.bug import (
+    create_old_bug,
+    sync_bugtasks,
+    )
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.projectgroup import IProjectGroupSet
 from lp.testing.factory import LaunchpadObjectFactory
-from canonical.testing import DatabaseFunctionalLayer
 
 
 class BugTaskSearchBugsElsewhereTest(unittest.TestCase):
@@ -164,7 +174,6 @@ class BugTaskSearchBugsElsewhereTest(unittest.TestCase):
             len(resolved_related_tasks) > 0,
             'Bugtask %s on %s has no resolved related tasks.' % (
                 bugtask.id, bugtask.target.displayname))
-
 
     def assertBugTaskIsOpenUpstream(self, bugtask):
         """Make sure at least one of the related upstream tasks is open.
@@ -333,8 +342,3 @@ class BugTaskSetTest(unittest.TestCase):
         # empty dictionary.
         bugs_and_tasks = getUtility(IBugTaskSet).getBugTasks([])
         self.failUnlessEqual(bugs_and_tasks, {})
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
-

@@ -4,7 +4,7 @@ A widget used when setting the geographic location of a given person.
 
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> from lp.registry.interfaces.person import IPersonSet
-    >>> from canonical.launchpad.fields import LocationField
+    >>> from lp.services.fields import LocationField
     >>> from canonical.widgets.location import LocationWidget
     >>> salgado = getUtility(IPersonSet).getByName('salgado')
     >>> field = LocationField(__name__='location', title=u'Location')
@@ -177,9 +177,9 @@ access ba-ws.geonames.net's service.
     >>> print widget.map_javascript
     <BLANKLINE>
     <script type="text/javascript">
-        YUI().use('node', 'lp.mapping', function(Y) {
+        YUI().use('node', 'lp.app.mapping', function(Y) {
             function renderMap() {
-                Y.lp.mapping.renderPersonMap(
+                Y.lp.app.mapping.renderPersonMap(
                     52.2, 0.3, "Colin Watson",
                     'kamion', '<img ... />', 'totoro',
                     'field.location.latitude', 'field.location.longitude',

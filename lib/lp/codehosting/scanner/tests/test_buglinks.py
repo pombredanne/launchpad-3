@@ -3,25 +3,33 @@
 
 """Tests for creating BugBranch items based on Bazaar revisions."""
 
+from __future__ import with_statement
+
 __metaclass__ = type
 
 import unittest
 
 from bzrlib.revision import Revision
-from zope.event import notify
 from zope.component import getUtility
+from zope.event import notify
 
 from canonical.config import config
 from canonical.launchpad.interfaces import (
-    IBugBranchSet, IBugSet, NotFoundError)
+    IBugBranchSet,
+    IBugSet,
+    )
 from canonical.testing.layers import LaunchpadZopelessLayer
-
+from lp.app.errors import NotFoundError
 from lp.code.interfaces.revision import IRevisionSet
 from lp.codehosting.scanner import events
 from lp.codehosting.scanner.buglinks import BugBranchLinker
 from lp.codehosting.scanner.tests.test_bzrsync import BzrSyncTestCase
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.testing import TestCase, TestCaseWithFactory
+from lp.services.osutils import override_environ
+from lp.testing import (
+    TestCase,
+    TestCaseWithFactory,
+    )
 
 
 class RevisionPropertyParsing(TestCase):
@@ -189,28 +197,31 @@ class TestBugLinking(BzrSyncTestCase):
         """Don't add BugBranches based on non-mainline revisions."""
         # Make the base revision.
         author = self.factory.getUniqueString()
-        self.bzr_tree.commit(
-            u'common parent', committer=author, rev_id='r1',
-            allow_pointless=True)
+        # XXX: AaronBentley 2010-08-06 bug=614404: a bzr username is
+        # required to generate the revision-id.
+        with override_environ(BZR_EMAIL='me@example.com'):
+            self.bzr_tree.commit(
+                u'common parent', committer=author, rev_id='r1',
+                allow_pointless=True)
 
-        # Branch from the base revision.
-        new_tree = self.make_branch_and_tree('bzr_branch_merged')
-        new_tree.pull(self.bzr_branch)
+            # Branch from the base revision.
+            new_tree = self.make_branch_and_tree('bzr_branch_merged')
+            new_tree.pull(self.bzr_branch)
 
-        # Commit to both branches
-        self.bzr_tree.commit(
-            u'commit one', committer=author, rev_id='r2',
-            allow_pointless=True)
-        new_tree.commit(
-            u'commit two', committer=author, rev_id='r1.1.1',
-            allow_pointless=True,
-            revprops={'bugs': '%s fixed' % self.getBugURL(self.bug1)})
+            # Commit to both branches
+            self.bzr_tree.commit(
+                u'commit one', committer=author, rev_id='r2',
+                allow_pointless=True)
+            new_tree.commit(
+                u'commit two', committer=author, rev_id='r1.1.1',
+                allow_pointless=True,
+                revprops={'bugs': '%s fixed' % self.getBugURL(self.bug1)})
 
-        # Merge and commit.
-        self.bzr_tree.merge_from_branch(new_tree.branch)
-        self.bzr_tree.commit(
-            u'merge', committer=author, rev_id='r3',
-            allow_pointless=True)
+            # Merge and commit.
+            self.bzr_tree.merge_from_branch(new_tree.branch)
+            self.bzr_tree.commit(
+                u'merge', committer=author, rev_id='r3',
+                allow_pointless=True)
 
         self.syncBazaarBranchToDatabase(self.bzr_branch, self.db_branch)
         self.assertEqual(
@@ -251,8 +262,12 @@ class TestSubscription(TestCaseWithFactory):
         bug = self.factory.makeBug()
         self.layer.txn.commit()
         LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
-        revision_id = tree.commit('fix revision',
-            revprops={'bugs': 'https://launchpad.net/bugs/%d fixed' % bug.id})
+        # XXX: AaronBentley 2010-08-06 bug=614404: a bzr username is
+        # required to generate the revision-id.
+        with override_environ(BZR_EMAIL='me@example.com'):
+            revision_id = tree.commit('fix revision',
+                revprops={
+                    'bugs': 'https://launchpad.net/bugs/%d fixed' % bug.id})
         bzr_revision = tree.branch.repository.get_revision(revision_id)
         revno = 1
         revision_set = getUtility(IRevisionSet)

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests related to bug notifications."""
@@ -7,22 +7,30 @@ __metaclass__ = type
 
 import unittest
 
-from zope.event import notify
-from zope.interface import providedBy
-
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
+from zope.event import notify
+from zope.interface import providedBy
 
 from canonical.config import config
 from canonical.launchpad.database.message import MessageSet
 from canonical.launchpad.ftests import login
-from lp.bugs.interfaces.bugtask import BugTaskStatus, IUpstreamBugTask
-from lp.bugs.model.bugnotification import BugNotification, BugNotificationSet
+from canonical.testing import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
+from lp.bugs.interfaces.bugtask import (
+    BugTaskStatus,
+    IUpstreamBugTask,
+    )
+from lp.bugs.model.bugnotification import (
+    BugNotification,
+    BugNotificationSet,
+    )
 from lp.testing import TestCaseWithFactory
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.mail_helpers import pop_notifications
-from canonical.testing import (
-    DatabaseFunctionalLayer, LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
 
 
 class TestNotificationRecipientsOfPrivateBugs(unittest.TestCase):
@@ -155,7 +163,7 @@ class TestNotificationsForDuplicates(TestCaseWithFactory):
             user='test@canonical.com')
         self.bug = self.factory.makeBug()
         self.dupe_bug = self.factory.makeBug()
-        self.dupe_bug.duplicateof = self.bug
+        self.dupe_bug.markAsDuplicate(self.bug)
         self.dupe_subscribers = set(
             self.dupe_bug.getDirectSubscribers() +
             self.dupe_bug.getIndirectSubscribers())
@@ -198,8 +206,3 @@ class TestNotificationsForDuplicates(TestCaseWithFactory):
             recipient.person
             for recipient in latest_notification.recipients)
         self.assertEqual(self.dupe_subscribers, recipients)
-
-
-def test_suite():
-    """Return the test suite for the tests in this module."""
-    return unittest.TestLoader().loadTestsFromName(__name__)

@@ -24,56 +24,97 @@ __all__ = [
     'MaloneView',
     ]
 
-from datetime import datetime, timedelta
+from datetime import (
+    datetime,
+    timedelta,
+    )
 from email.MIMEMultipart import MIMEMultipart
 from email.MIMEText import MIMEText
 import re
 
-import pytz
-
-from zope.app.form.browser import TextWidget
-from zope.component import adapter, getUtility
-from zope.event import notify
-from zope import formlib
-from zope.interface import implements, implementer, providedBy, Interface
-from zope.schema import Bool, Choice
-from zope.schema.interfaces import IText
-from zope.security.interfaces import Unauthorized
-
-from lazr.enum import EnumeratedType, Item
+from lazr.enum import (
+    EnumeratedType,
+    Item,
+    )
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
 from lazr.restful.interfaces import (
-    IFieldHTMLRenderer, IWebServiceClientRequest)
+    IFieldHTMLRenderer,
+    IWebServiceClientRequest,
+    )
+import pytz
+from zope import formlib
+from zope.app.form.browser import TextWidget
+from zope.component import (
+    adapter,
+    getUtility,
+    )
+from zope.event import notify
+from zope.interface import (
+    implementer,
+    implements,
+    Interface,
+    providedBy,
+    )
+from zope.schema import (
+    Bool,
+    Choice,
+    )
+from zope.schema.interfaces import IText
+from zope.security.interfaces import Unauthorized
 
 from canonical.cachedproperty import cachedproperty
-
 from canonical.launchpad import _
-from canonical.launchpad.webapp.interfaces import ILaunchBag, NotFoundError
-from lp.bugs.interfaces.bug import IBug, IBugSet
-from lp.bugs.interfaces.bugattachment import BugAttachmentType
+from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
+from canonical.launchpad.mailnotification import MailWrapper
+from canonical.launchpad.searchbuilder import (
+    any,
+    greater_than,
+    )
+from canonical.launchpad.webapp import (
+    action,
+    canonical_url,
+    ContextMenu,
+    custom_widget,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    LaunchpadView,
+    Link,
+    Navigation,
+    redirection,
+    StandardLaunchpadFacets,
+    stepthrough,
+    structured,
+    )
+from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.interfaces import (
+    ICanonicalUrlData,
+    ILaunchBag,
+    )
+from canonical.widgets.bug import BugTagsWidget
+from canonical.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
+from canonical.widgets.project import ProjectScopeWidget
+from lp.app.browser.stringformatter import FormattersAPI
+from lp.app.errors import NotFoundError
+from lp.bugs.interfaces.bug import (
+    IBug,
+    IBugSet,
+    )
+from lp.bugs.interfaces.bugattachment import (
+    BugAttachmentType,
+    IBugAttachmentSet,
+    )
+from lp.bugs.interfaces.bugnomination import IBugNominationSet
 from lp.bugs.interfaces.bugtask import (
-    BugTaskSearchParams, BugTaskStatus, IBugTask, IFrontPageBugTaskSearch)
+    BugTaskSearchParams,
+    BugTaskStatus,
+    IBugTask,
+    IFrontPageBugTaskSearch,
+    )
 from lp.bugs.interfaces.bugwatch import IBugWatchSet
 from lp.bugs.interfaces.cve import ICveSet
-from lp.bugs.interfaces.bugattachment import IBugAttachmentSet
-from lp.bugs.interfaces.bugnomination import IBugNominationSet
 from lp.bugs.mail.bugnotificationbuilder import format_rfc2822_date
-
-from canonical.launchpad.mailnotification import (
-    MailWrapper)
-from canonical.launchpad.searchbuilder import any, greater_than
-from canonical.launchpad.webapp import (
-    ContextMenu, LaunchpadEditFormView, LaunchpadFormView, LaunchpadView,
-    Link, Navigation, StandardLaunchpadFacets, action, canonical_url,
-    custom_widget, redirection, stepthrough, structured)
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
-from lp.app.browser.stringformatter import FormattersAPI
-
-from canonical.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
-from canonical.widgets.bug import BugTagsWidget
-from canonical.widgets.project import ProjectScopeWidget
+from lp.services.fields import DuplicateBug
 
 
 class BugNavigation(Navigation):
@@ -248,7 +289,7 @@ class BugContextMenu(ContextMenu):
         return Link('+addbranch', text, icon='add')
 
     def linktocve(self):
-        """Return the 'Link tp CVE' Link."""
+        """Return the 'Link to CVE' Link."""
         text = structured(
             'Link to '
             '<abbr title="Common Vulnerabilities and Exposures Index">'
@@ -314,6 +355,8 @@ class MaloneView(LaunchpadFormView):
 
     # Test: standalone/xx-slash-malone-slash-bugs.txt
     error_message = None
+
+    page_title = 'Launchpad Bugs'
 
     @property
     def target_css_class(self):
@@ -470,16 +513,26 @@ class BugViewMixin:
     @property
     def regular_attachments(self):
         """The list of bug attachments that are not patches."""
-        return [attachment
-                for attachment in self.context.attachments
-                if attachment.type != BugAttachmentType.PATCH]
+        return [
+            {
+                'attachment': attachment,
+                'file': ProxiedLibraryFileAlias(
+                    attachment.libraryfile, attachment),
+                }
+            for attachment in self.context.attachments
+            if attachment.type != BugAttachmentType.PATCH]
 
     @property
     def patches(self):
         """The list of bug attachments that are patches."""
-        return [attachment
-                for attachment in self.context.attachments
-                if attachment.type == BugAttachmentType.PATCH]
+        return [
+            {
+                'attachment': attachment,
+                'file': ProxiedLibraryFileAlias(
+                    attachment.libraryfile, attachment),
+                }
+            for attachment in self.context.attachments
+            if attachment.type == BugAttachmentType.PATCH]
 
 
 class BugView(LaunchpadView, BugViewMixin):
@@ -540,6 +593,11 @@ class BugView(LaunchpadView, BugViewMixin):
             dupes.append(dupe)
 
         return dupes
+
+    def proxiedUrlForLibraryFile(self, attachment):
+        """Return the proxied download URL for a Librarian file."""
+        return ProxiedLibraryFileAlias(
+            attachment.libraryfile, attachment).http_url
 
 
 class BugWithoutContextView:
@@ -656,9 +714,35 @@ class BugMarkAsDuplicateView(BugEditViewBase):
     field_names = ['duplicateof']
     label = "Mark bug report as a duplicate"
 
+    def setUpFields(self):
+        """Make the readonly version of duplicateof available."""
+        super(BugMarkAsDuplicateView, self).setUpFields()
+
+        duplicateof_field = DuplicateBug(
+            __name__='duplicateof', title=_('Duplicate Of'), required=False)
+
+        self.form_fields = self.form_fields.omit('duplicateof')
+        self.form_fields = formlib.form.Fields(duplicateof_field)
+
+    @property
+    def initial_values(self):
+        """See `LaunchpadFormView.`"""
+        return {'duplicateof': self.context.bug.duplicateof}
+
     @action('Change', name='change')
     def change_action(self, action, data):
         """Update the bug."""
+        data = dict(data)
+        # We handle duplicate changes by hand instead of leaving it to
+        # the usual machinery because we must use bug.markAsDuplicate().
+        bug = self.context.bug
+        bug_before_modification = Snapshot(
+            bug, providing=providedBy(bug))
+        duplicateof = data.pop('duplicateof')
+        bug.markAsDuplicate(duplicateof)
+        notify(
+            ObjectModifiedEvent(bug, bug_before_modification, 'duplicateof'))
+        # Apply other changes.
         self.updateBugFromData(data)
 
 
@@ -738,6 +822,7 @@ class DeprecatedAssignedBugsView:
     to put the assigned bugs report, we'll redirect to the appropriate
     FOAF URL.
     """
+
     def __init__(self, context, request):
         self.context = context
         self.request = request
@@ -751,8 +836,10 @@ class DeprecatedAssignedBugsView:
 
 normalize_mime_type = re.compile(r'\s+')
 
+
 class BugTextView(LaunchpadView):
     """View for simple text page displaying information for a bug."""
+
     @cachedproperty
     def bugtasks(self):
         """Cache bugtasks and avoid hitting the DB twice."""
@@ -851,7 +938,9 @@ class BugTextView(LaunchpadView):
         """Return a text representation of a bug attachment."""
         mime_type = normalize_mime_type.sub(
             ' ', attachment.libraryfile.mimetype)
-        return "%s %s" % (attachment.libraryfile.http_url, mime_type)
+        download_url = ProxiedLibraryFileAlias(
+            attachment.libraryfile, attachment).http_url
+        return "%s %s" % (download_url, mime_type)
 
     def comment_text(self):
         """Return a text representation of bug comments."""
@@ -973,8 +1062,10 @@ class BugMarkAsAffectingUserView(LaunchpadFormView):
 def bug_description_xhtml_representation(context, field, request):
     """Render `IBug.description` as XHTML using the webservice."""
     formatter = FormattersAPI
+
     def renderer(value):
-        nomail  = formatter(value).obfuscate_email()
-        html    = formatter(nomail).text_to_html()
+        nomail = formatter(value).obfuscate_email()
+        html = formatter(nomail).text_to_html()
         return html.encode('utf-8')
+
     return renderer
