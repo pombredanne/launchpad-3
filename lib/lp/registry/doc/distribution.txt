@@ -585,7 +585,7 @@ Milestones for distros can only be created by distro owners or admins.
     ...     name='impossible', dateexpected=datetime(2028, 10, 1))
     Traceback (most recent call last):
     ...
-    Unauthorized: (<DistroSeries at ...>, 'newMilestone', 'launchpad.Edit')
+    Unauthorized: (<DistroSeries u'woody'>, 'newMilestone', 'launchpad.Edit')
     >>> login('mark@example.com')
     >>> debian_milestone = woody.newMilestone(
     ...     name='woody-rc1', dateexpected=datetime(2028, 10, 1))

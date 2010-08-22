@@ -270,6 +270,9 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See `IDistroSeries`."""
         return self.getDistroArchSeries(archtag)
 
+    def __repr__(self):
+        return '<%s %r>' % (self.__class__.__name__, self.name)
+
     def __str__(self):
         return '%s %s' % (self.distribution.name, self.name)
 

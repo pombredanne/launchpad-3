@@ -3197,25 +3197,8 @@ class TextualBugTaskSearchListingView(BugTaskSearchListingView):
         else:
             raise AssertionError('Uknown context type: %s' % self.context)
 
-        # XXX flacoste 2008/04/25 bug=221947 This should be moved to an
-        # IBugTaskSet.findBugIds(search_params) method.
-        # buildQuery() is part of the internal API.
-        taskset = removeSecurityProxy(getUtility(IBugTaskSet))
-        query, clauseTables, orderBy = taskset.buildQuery(search_params)
-
-        # Convert list of SQLObject order by spec into SQL.
-        order_by_clause = []
-        for field in orderBy:
-            if field[0] == '-':
-                field = "%s DESC" % field[1:]
-            order_by_clause.append(field)
-
-        sql = 'SELECT BugTask.bug FROM %s WHERE %s ORDER BY %s' % (
-            ', '.join(clauseTables), query, ', '.join(order_by_clause))
-
-        cur = cursor()
-        cur.execute(sql)
-        return u"".join("%d\n" % row[0] for row in cur.fetchall())
+        return u"".join("%d\n" % bug_id for bug_id in 
+            getUtility(IBugTaskSet).searchBugIds(search_params))
 
 
 def _by_targetname(bugtask):
