@@ -55,6 +55,7 @@ from sqlobject.sqlbuilder import (
 from storm.expr import (
     Alias,
     And,
+    Desc,
     Exists,
     In,
     Join,
@@ -65,6 +66,7 @@ from storm.expr import (
     Or,
     Select,
     SQL,
+    Upper,
     )
 from storm.info import ClassAlias
 from storm.store import (
@@ -1618,7 +1620,8 @@ class Person(
         if need_location:
             # New people have no location rows
             origin.append(
-                LeftJoin(PersonLocation, PersonLocation.person == Person.id))
+                LeftJoin(PersonLocation,
+                    PersonLocation.person == Person.id))
             columns.append(PersonLocation)
         if need_archive:
             # Not everyone has PPA's
@@ -1821,19 +1824,22 @@ class Person(
             self.invited_members,
             orderBy=self._sortingColumnsForSetOperations)
 
-    # XXX: kiko 2005-10-07:
-    # myactivememberships should be renamed to team_memberships and be
-    # described as the set of memberships for the object's teams.
     @property
-    def myactivememberships(self):
+    def team_memberships(self):
         """See `IPerson`."""
-        return TeamMembership.select("""
-            TeamMembership.person = %s AND status in %s AND
-            Person.id = TeamMembership.team
-            """ % sqlvalues(self.id, [TeamMembershipStatus.APPROVED,
-                                      TeamMembershipStatus.ADMIN]),
-            clauseTables=['Person'],
-            orderBy=Person.sortingColumns)
+        Team = ClassAlias(Person, "Team")
+        store = Store.of(self)
+        # Join on team to sort by team names. Upper is used in the sort so
+        # sorting works as is user expected, e.g. (A b C) not (A C b).
+        return store.find(TeamMembership,
+            And(TeamMembership.personID == self.id,
+                TeamMembership.teamID == Team.id,
+                TeamMembership.status.is_in([
+                    TeamMembershipStatus.APPROVED,
+                    TeamMembershipStatus.ADMIN,
+                    ]))).order_by(
+                        Upper(Team.displayname),
+                        Upper(Team.name))
 
     def _getMappedParticipantsLocations(self, limit=None):
         """See `IPersonViewRestricted`."""
@@ -1939,7 +1945,7 @@ class Person(
         assert self.is_valid_person, (
             "You can only deactivate an account of a valid person.")
 
-        for membership in self.myactivememberships:
+        for membership in self.team_memberships:
             self.leave(membership.team)
 
         # Deactivate CoC signatures, invalidate email addresses, unassign bug
@@ -2186,9 +2192,65 @@ class Person(
 
     def getLatestApprovedMembershipsForPerson(self, limit=5):
         """See `IPerson`."""
-        result = self.myactivememberships
-        result = result.orderBy(['-date_joined', '-id'])
+        result = self.team_memberships
+        result = result.order_by(
+            Desc(TeamMembership.datejoined),
+            Desc(TeamMembership.id))
         return result[:limit]
+
+    def getPathsToTeams(self):
+        """See `Iperson`."""
+        # Get all of the teams this person participates in.
+        teams = list(self.teams_participated_in)
+
+        # For cases where self is a team, we don't need self as a team
+        # participated in.
+        teams = [team for team in teams if team is not self]
+
+        # Get all of the memberships for any of the teams this person is
+        # a participant of. This must be ordered by date and id because
+        # because the graph of the results will create needs to contain
+        # the oldest path information to be consistent with results from
+        # IPerson.findPathToTeam.
+        store = Store.of(self)
+        all_direct_memberships = store.find(TeamMembership,
+            And(
+                TeamMembership.personID.is_in(
+                    [team.id for team in teams] + [self.id]),
+                TeamMembership.teamID != self.id,
+                TeamMembership.status.is_in([
+                    TeamMembershipStatus.APPROVED,
+                    TeamMembershipStatus.ADMIN,
+                    ]))).order_by(
+                        Desc(TeamMembership.datejoined),
+                        Desc(TeamMembership.id))
+        # Cast the results to list now, because they will be iterated over
+        # several times.
+        all_direct_memberships = list(all_direct_memberships)
+
+        # Pull out the memberships directly used by this person.
+        user_memberships = [
+            membership for membership in
+            all_direct_memberships
+            if membership.person == self]
+
+        all_direct_memberships = [
+            (membership.team, membership.person) for membership in
+            all_direct_memberships]
+
+        # Create a graph from the edges provided by the other data sets.
+        graph = dict(all_direct_memberships)
+
+        # Build the teams paths from that graph.
+        paths = {}
+        for team in teams:
+            path = [team]
+            step = team
+            while path[-1] != self:
+                step = graph[step]
+                path.append(step)
+            paths[team] = path
+        return (paths, user_memberships)
 
     @property
     def teams_participated_in(self):

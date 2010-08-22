@@ -3162,31 +3162,33 @@ class PersonParticipationView(LaunchpadView):
     def label(self):
         return 'Team participation for ' + self.context.displayname
 
-    def _asParticipation(self, membership=None, team=None, team_path=None):
+    def _asParticipation(self, membership=None, team=None, via=None):
         """Return a dict of participation information for the membership.
 
         Method requires membership or team, not both.
+        :param via: The team through which the membership in the indirect
+        team is established.
         """
         if ((membership is None and team is None) or
             (membership is not None and team is not None)):
             raise AssertionError(
                 "The membership or team argument must be provided, not both.")
 
-        if team_path is None:
-            via = None
-        else:
-            via = COMMASPACE.join(team.displayname for team in team_path)
+        if via is not None:
+            # When showing the path, it's unnecessary to show the team in
+            # question at the beginning of the path, or the user at the
+            # end of the path.
+            via = COMMASPACE.join(
+                [via_team.displayname for via_team in via[1:-1]])
 
         if membership is None:
-            #we have membership via an indirect team, and can use
-            #sane defaults
-
-            #the user can only be a member of this team
+            # Membership is via an indirect team so sane defaults exist.
+            # An indirect member cannot be an Owner or Admin of a team.
             role = 'Member'
-            #the user never joined, and can't have a join date
+            # The Person never joined, and can't have a join date.
             datejoined = None
         else:
-            #the member is a direct member, so we can use membership data
+            # The member is a direct member; use the membership data.
             team = membership.team
             datejoined = membership.datejoined
             if membership.person == team.teamowner:
@@ -3212,18 +3214,29 @@ class PersonParticipationView(LaunchpadView):
     @cachedproperty
     def active_participations(self):
         """Return the participation information for active memberships."""
-        participations = [self._asParticipation(membership=membership)
-                for membership in self.context.myactivememberships
-                if check_permission('launchpad.View', membership.team)]
-        membership_set = getUtility(ITeamMembershipSet)
-        for team in self.context.teams_indirectly_participated_in:
-            if not check_permission('launchpad.View', team):
+        paths, memberships = self.context.getPathsToTeams()
+        direct_teams = [membership.team for membership in memberships]
+        indirect_teams = [
+            team for team in paths.keys()
+            if team not in direct_teams]
+        participations = []
+
+        # First, create a participation for all direct memberships.
+        for membership in memberships:
+            # Add a participation record for the membership if allowed.
+            if check_permission('launchpad.View', membership.team):
+                participations.append(
+                    self._asParticipation(membership=membership))
+
+        # Second, create a participation for all indirect memberships,
+        # using the remaining paths.
+        for indirect_team in indirect_teams:
+            if not check_permission('launchpad.View', indirect_team):
                 continue
-            # The key points of the path for presentation are:
-            # [-?] indirect memberships, [-2] direct membership, [-1] team.
-            team_path = self.context.findPathToTeam(team)
             participations.append(
-                self._asParticipation(team_path=team_path[:-1], team=team))
+                self._asParticipation(
+                    via=paths[indirect_team],
+                    team=indirect_team))
         return sorted(participations, key=itemgetter('displayname'))
 
     @cachedproperty
