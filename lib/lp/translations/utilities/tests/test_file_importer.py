@@ -1,19 +1,17 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Translation File Importer tests."""
 
 __metaclass__ = type
 
-import unittest
-
-import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing import ZopelessDatabaseLayer
 from lp.registry.interfaces.person import IPersonSet
 from lp.testing import TestCaseWithFactory
+from lp.testing.fakelibrarian import FakeLibrarian
 from lp.translations.interfaces.translationgroup import TranslationPermission
 from lp.translations.interfaces.translationimporter import (
     OutdatedTranslationError,
@@ -99,7 +97,7 @@ msgstr "format specifier changes %%s"
 
 class FileImporterTestCase(TestCaseWithFactory):
     """Class test for translation importer component"""
-    layer = LaunchpadZopelessLayer
+    layer = ZopelessDatabaseLayer
 
     def _createFileImporters(self, pot_content, po_content, is_published):
         """Create queue entries from POT and PO content strings.
@@ -119,7 +117,7 @@ class FileImporterTestCase(TestCaseWithFactory):
             is_published, self.importer_person,
             productseries=potemplate.productseries,
             potemplate=potemplate)
-        transaction.commit()
+        self.fake_librarian.pretendCommit()
         return POTFileImporter(
             template_entry, GettextPOImporter(), None )
 
@@ -138,7 +136,7 @@ class FileImporterTestCase(TestCaseWithFactory):
         translation_entry = self.translation_import_queue.addOrUpdateEntry(
             pofile.path, po_content, is_published, person,
             productseries=potemplate.productseries, pofile=pofile)
-        transaction.commit()
+        self.fake_librarian.pretendCommit()
         return POFileImporter(
             translation_entry, GettextPOImporter(), None )
 
@@ -164,14 +162,20 @@ class FileImporterTestCase(TestCaseWithFactory):
             False, self.importer_person,
             productseries=potemplate.productseries,
             potemplate=potemplate)
-        transaction.commit()
+        self.fake_librarian.pretendCommit()
         return FileImporter(
             template_entry, GettextPOImporter(), None )
 
     def setUp(self):
         super(FileImporterTestCase, self).setUp()
+        self.fake_librarian = FakeLibrarian()
+        self.fake_librarian.installAsLibrarian()
         self.translation_import_queue = getUtility(ITranslationImportQueue)
         self.importer_person = self.factory.makePerson()
+
+    def tearDown(self):
+        self.fake_librarian.uninstall()
+        super(FileImporterTestCase, self).tearDown()
 
     def test_FileImporter_importMessage_NotImplemented(self):
         importer = self._createFileImporter()
@@ -241,7 +245,7 @@ class FileImporterTestCase(TestCaseWithFactory):
         product.translationpermission = TranslationPermission.CLOSED
         product.translationgroup = self.factory.makeTranslationGroup(
             self.importer_person)
-        transaction.commit()
+        self.fake_librarian.pretendCommit()
 
         # Get one POTMsgSet to do storeTranslationsInDatabase on.
         message = pot_importer.translation_file.messages[0]
@@ -385,7 +389,7 @@ class FileImporterTestCase(TestCaseWithFactory):
         self.failUnlessEqual(len(errors), 0,
             "POFileImporter.importFile returned errors where there should "
             "be none.")
-        transaction.commit()
+        self.fake_librarian.pretendCommit()
 
         # Create new POFileImporter with an earlier timestamp and
         # a different translation (msgstr).
@@ -441,7 +445,7 @@ class FileImporterTestCase(TestCaseWithFactory):
                 TEST_TRANSLATION_FILE_WITH_ERROR, False)
         pot_importer.importFile()
         po_importer.importFile()
-        transaction.commit()
+        self.fake_librarian.pretendCommit()
 
         po_importer2 = self._createPOFileImporter(
             pot_importer, TEST_TRANSLATION_EXPORTED_EARLIER, False,
@@ -477,7 +481,7 @@ class FileImporterTestCase(TestCaseWithFactory):
             "Last-Translator: Hector Atlas <??@??.??>\\n"
             "Content-Type: text/plain; charset=UTF-8\\n"
             "X-Launchpad-Export-Date: 2008-11-05 13:31+0000\\n"
-            
+
             msgid "%s"
             msgstr "Dankuwel"
             """ % TEST_MSGID
@@ -493,12 +497,18 @@ class FileImporterTestCase(TestCaseWithFactory):
 
 class CreateFileImporterTestCase(TestCaseWithFactory):
     """Class test for translation importer creation."""
-    layer = LaunchpadZopelessLayer
+    layer = ZopelessDatabaseLayer
 
     def setUp(self):
         super(CreateFileImporterTestCase, self).setUp()
+        self.fake_librarian = FakeLibrarian()
+        self.fake_librarian.installAsLibrarian()
         self.translation_import_queue = getUtility(ITranslationImportQueue)
         self.importer_person = self.factory.makePerson()
+
+    def tearDown(self):
+        self.fake_librarian.uninstall()
+        super(CreateFileImporterTestCase, self).tearDown()
 
     def _make_queue_entry(self, is_published):
         pofile = self.factory.makePOFile('eo')
@@ -510,7 +520,7 @@ class CreateFileImporterTestCase(TestCaseWithFactory):
         queue_entry = self.translation_import_queue.addOrUpdateEntry(
             pofile.path, po_content, is_published, self.importer_person,
             productseries=pofile.potemplate.productseries, pofile=pofile)
-        transaction.commit()
+        self.fake_librarian.pretendCommit()
         return queue_entry
 
     def test_raises_OutdatedTranslationError_on_user_uploads(self):
@@ -531,7 +541,3 @@ class CreateFileImporterTestCase(TestCaseWithFactory):
         old_raw_header = pofile.header
         importer = POFileImporter(queue_entry, GettextPOImporter(), None )
         self.assertEqual(old_raw_header, pofile.header)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
