@@ -17,6 +17,7 @@ import unittest
 from canonical.testing.layers import DatabaseLayer
 from lp.testing import TestCase
 
+
 class SampleDataTestCase(TestCase):
     layer = DatabaseLayer
 

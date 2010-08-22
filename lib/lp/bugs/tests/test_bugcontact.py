@@ -8,11 +8,14 @@ implementations.
 import unittest
 
 from canonical.launchpad.testing.systemdocs import (
-    LayeredDocFileSuite, tearDown)
+    LayeredDocFileSuite,
+    tearDown,
+    )
 from canonical.testing import DatabaseFunctionalLayer
-
 from lp.registry.tests.test_structuralsubscriptiontarget import (
-    distributionSetUp, productSetUp)
+    distributionSetUp,
+    productSetUp,
+    )
 
 
 def test_suite():

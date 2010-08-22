@@ -23,10 +23,14 @@ __all__ = [
 import datetime
 from operator import attrgetter, itemgetter
 
+from lazr.enum import DBItem
+import pytz
 from sqlobject import (
-    ForeignKey, StringCol, SQLObjectNotFound)
+    ForeignKey,
+    SQLObjectNotFound,
+    StringCol,
+    )
 from sqlobject.sqlbuilder import SQLConstant
-
 from storm.expr import (
     Alias,
     And,
@@ -40,73 +44,118 @@ from storm.expr import (
     )
 from storm.sqlobject import SQLObjectResultSet
 from storm.store import EmptyResultSet
-from storm.zope.interfaces import IResultSet, ISQLObjectResultSet
-
-import pytz
-
+from storm.zope.interfaces import (
+    IResultSet,
+    ISQLObjectResultSet,
+    )
 from zope.component import getUtility
-from zope.interface import implements, alsoProvides
+from zope.interface import (
+    alsoProvides,
+    implements,
+    )
 from zope.interface.interfaces import IMethod
 from zope.security.proxy import (
-    isinstance as zope_isinstance, removeSecurityProxy)
-from lazr.enum import DBItem
+    isinstance as zope_isinstance,
+    removeSecurityProxy,
+    )
 
-from canonical.config import config
 from canonical.cachedproperty import cache_property
-from canonical.database.sqlbase import (
-    SQLBase, block_implicit_flushes, convert_storm_clause_to_string, cursor,
-    quote, quote_like, sqlvalues)
+from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.nl_search import nl_phrase_search
 from canonical.database.enumcol import EnumCol
-
+from canonical.database.nl_search import nl_phrase_search
+from canonical.database.sqlbase import (
+    block_implicit_flushes,
+    convert_storm_clause_to_string,
+    cursor,
+    quote,
+    quote_like,
+    SQLBase,
+    sqlvalues,
+    )
 from canonical.launchpad.components.decoratedresultset import DecoratedResultSet
-from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-
-from lp.registry.model.pillar import pillar_sort_key
 from canonical.launchpad.helpers import shortlist
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.lpstorm import IStore
+from canonical.launchpad.searchbuilder import (
+    all,
+    any,
+    greater_than,
+    not_equals,
+    NULL,
+    )
+from canonical.launchpad.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    ILaunchBag,
+    IStoreSelector,
+    MAIN_STORE,
+    SLAVE_FLAVOR,
+    )
+from lp.app.errors import NotFoundError
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugattachment import BugAttachmentType
 from lp.bugs.interfaces.bugnomination import BugNominationStatus
 from lp.bugs.interfaces.bugtask import (
-    BUG_SUPERVISOR_BUGTASK_STATUSES, BugBranchSearch, BugTaskImportance,
-    BugTaskSearchParams, BugTaskStatus, BugTaskStatusSearch,
-    ConjoinedBugTaskEditError, IBugTask, IBugTaskDelta, IBugTaskSet,
-    IDistroBugTask, IDistroSeriesBugTask, INullBugTask, IProductSeriesBugTask,
-    IUpstreamBugTask, IllegalRelatedBugTasksParams, IllegalTarget,
-    RESOLVED_BUGTASK_STATUSES, UNRESOLVED_BUGTASK_STATUSES,
-    UserCannotEditBugTaskAssignee, UserCannotEditBugTaskImportance,
-    UserCannotEditBugTaskMilestone, UserCannotEditBugTaskStatus)
+    BUG_SUPERVISOR_BUGTASK_STATUSES,
+    BugBranchSearch,
+    BugTaskImportance,
+    BugTaskSearchParams,
+    BugTaskStatus,
+    BugTaskStatusSearch,
+    ConjoinedBugTaskEditError,
+    IBugTask,
+    IBugTaskDelta,
+    IBugTaskSet,
+    IDistroBugTask,
+    IDistroSeriesBugTask,
+    IllegalRelatedBugTasksParams,
+    IllegalTarget,
+    INullBugTask,
+    IProductSeriesBugTask,
+    IUpstreamBugTask,
+    RESOLVED_BUGTASK_STATUSES,
+    UNRESOLVED_BUGTASK_STATUSES,
+    UserCannotEditBugTaskAssignee,
+    UserCannotEditBugTaskImportance,
+    UserCannotEditBugTaskMilestone,
+    UserCannotEditBugTaskStatus,
+    )
 from lp.bugs.model.bugnomination import BugNomination
 from lp.bugs.model.bugsubscription import BugSubscription
 from lp.registry.interfaces.distribution import (
-    IDistribution, IDistributionSet)
+    IDistribution,
+    IDistributionSet,
+    )
 from lp.registry.interfaces.distributionsourcepackage import (
-    IDistributionSourcePackage)
+    IDistributionSourcePackage,
+    )
 from lp.registry.interfaces.distroseries import (
-    IDistroSeries, IDistroSeriesSet)
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+    IDistroSeries,
+    IDistroSeriesSet,
+    )
 from lp.registry.interfaces.milestone import IProjectGroupMilestone
-from lp.registry.interfaces.product import IProduct, IProductSet
+from lp.registry.interfaces.person import (
+    IPerson,
+    validate_person,
+    validate_public_person,
+    )
+from lp.registry.interfaces.product import (
+    IProduct,
+    IProductSet,
+    )
 from lp.registry.interfaces.productseries import (
-    IProductSeries, IProductSeriesSet)
+    IProductSeries,
+    IProductSeriesSet,
+    )
 from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.registry.interfaces.sourcepackage import ISourcePackage
+from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.registry.model.pillar import pillar_sort_key
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
-from lp.registry.interfaces.sourcepackage import ISourcePackage
-from lp.registry.interfaces.sourcepackagename import (
-    ISourcePackageNameSet)
 from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
-from canonical.launchpad.searchbuilder import (
-    all, any, greater_than, NULL, not_equals)
-from lp.registry.interfaces.person import (
-    IPerson, validate_person, validate_public_person)
-from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, DEFAULT_FLAVOR, MAIN_STORE, SLAVE_FLAVOR)
-from lp.app.errors import NotFoundError
 
 
 debbugsseveritymap = {None:        BugTaskImportance.UNDECIDED,
@@ -2123,15 +2172,6 @@ class BugTaskSet:
         _noprejoins = kwargs.get('_noprejoins', False)
         store = IStore(BugTask)
         query, clauseTables, orderby, bugtask_decorator = self.buildQuery(params)
-        if False:#True:
-            print "***************************************"
-            print query
-            print "***************************************"
-            print clauseTables
-            print "***************************************"
-            print orderby
-            print "***************************************"
-            print bugtask_decorator
         if len(args) == 0:
             if _noprejoins:
                 resultset = store.find(BugTask,
@@ -2148,9 +2188,18 @@ class BugTaskSet:
                         SourcePackageName,
                         BugTask.sourcepackagename == SourcePackageName.id),
                     ]
+                # NB: these may work with AutoTables, but its hard to tell,
+                # this way is known to work.
                 if BugNomination in tables:
                     # The relation is already in query.
                     origin.append(BugNomination)
+                if BugSubscription in tables:
+                    # The relation is already in query.
+                    origin.append(BugSubscription)
+                if SourcePackageRelease in tables:
+                    origin.append(SourcePackageRelease)
+                if SourcePackagePublishingHistory in tables:
+                    origin.append(SourcePackagePublishingHistory)
                 resultset = store.using(*origin).find(
                     (BugTask, Product, SourcePackageName, Bug),
                     AutoTables(SQL("1=1"), tables),
@@ -2194,6 +2243,16 @@ class BugTaskSet:
         result.order_by(orderby)
         return DecoratedResultSet(result, result_decorator=decorator)
 
+    def searchBugIds(self, params):
+        """See `IBugTaskSet`."""
+        query, clauseTables, orderby, decorator = self.buildQuery(
+            params)
+        store = IStore(BugTask)
+        resultset = store.find(BugTask.bugID,
+            AutoTables(SQL("1=1"), clauseTables), query)
+        resultset.order_by(orderby)
+        return resultset
+
     def getAssignedMilestonesFromSearch(self, search_results):
         """See `IBugTaskSet`."""
         # XXX: Gavin Panella 2009-03-05 bug=338184: There is currently
@@ -2220,7 +2279,14 @@ class BugTaskSet:
             # Import here because of cyclic references.
             from lp.registry.model.milestone import (
                 Milestone, milestone_sort_key)
-            milestones = search_results._store.find(
+            # We need the store that was used, we have no objects to key off of
+            # other than the search result, and Store.of() doesn't currently
+            # work on result sets. Additionally it may be a DecoratedResultSet.
+            if zope_isinstance(search_results, DecoratedResultSet):
+                store = removeSecurityProxy(search_results).result_set._store
+            else:
+                store = search_results._store
+            milestones = store.find(
                 Milestone, In(Milestone.id, milestone_ids))
             return sorted(milestones, key=milestone_sort_key, reverse=True)
 

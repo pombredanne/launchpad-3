@@ -12,14 +12,20 @@ __all__ = [
 
 import os
 
-from zope.component import getUtility, getMultiAdapter
-from zope.security.management import endInteraction, newInteraction
+from zope.component import (
+    getMultiAdapter,
+    getUtility,
+    )
+from zope.security.management import (
+    endInteraction,
+    newInteraction,
+    )
 
 from canonical.config import config
-from canonical.lazr import ExportedFolder
 from canonical.launchpad.layers import setFirstLayer
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+from canonical.lazr import ExportedFolder
 
 
 def create_view(context, name, form=None, layer=None, server_url=None,

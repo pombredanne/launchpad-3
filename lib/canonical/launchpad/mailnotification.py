@@ -10,52 +10,70 @@ __metaclass__ = type
 
 import datetime
 from difflib import unified_diff
-import operator
-
 from email.Header import Header
-from email.MIMEText import MIMEText
-from email.MIMEMultipart import MIMEMultipart
 from email.MIMEMessage import MIMEMessage
-from email.Utils import formataddr, make_msgid
-
+from email.MIMEMultipart import MIMEMultipart
+from email.MIMEText import MIMEText
+from email.Utils import (
+    formataddr,
+    make_msgid,
+    )
+import operator
 import re
 
-from zope.component import getAdapter, getUtility
+from zope.component import (
+    getAdapter,
+    getUtility,
+    )
 
 from canonical.config import config
 from canonical.database.sqlbase import block_implicit_flushes
 from canonical.launchpad.helpers import (
-    get_contact_email_addresses, get_email_template)
+    get_contact_email_addresses,
+    get_email_template,
+    )
 from canonical.launchpad.interfaces import (
-    IHeldMessageDetails, IPerson, IPersonSet, ISpecification,
-    IStructuralSubscriptionTarget, ITeamMembershipSet, IUpstreamBugTask,
-    TeamMembershipStatus)
+    IHeldMessageDetails,
+    IPerson,
+    IPersonSet,
+    ISpecification,
+    IStructuralSubscriptionTarget,
+    ITeamMembershipSet,
+    IUpstreamBugTask,
+    TeamMembershipStatus,
+    )
 from canonical.launchpad.interfaces.launchpad import ILaunchpadRoot
 from canonical.launchpad.interfaces.message import (
-    IDirectEmailAuthorization, QuotaReachedError)
+    IDirectEmailAuthorization,
+    QuotaReachedError,
+    )
 from canonical.launchpad.mail import (
-    sendmail, simple_sendmail, simple_sendmail_from_person, format_address)
+    format_address,
+    sendmail,
+    simple_sendmail,
+    simple_sendmail_from_person,
+    )
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.url import urlappend
-
-from lp.bugs.adapters.bugdelta import BugDelta
 from lp.bugs.adapters.bugchange import (
-    BugDuplicateChange, get_bug_changes, BugTaskAssigneeChange)
+    BugDuplicateChange,
+    BugTaskAssigneeChange,
+    get_bug_changes,
+    )
+from lp.bugs.adapters.bugdelta import BugDelta
 from lp.bugs.interfaces.bugchange import IBugChange
-from lp.bugs.mail.bugnotificationbuilder import get_bugmail_error_address
-from lp.registry.interfaces.structuralsubscription import (
-    BugNotificationLevel)
+from lp.bugs.mail.bugnotificationbuilder import (
+    BugNotificationBuilder,
+    get_bugmail_error_address,
+    )
+from lp.bugs.mail.bugnotificationrecipients import BugNotificationRecipients
+from lp.registry.enum import BugNotificationLevel
 from lp.services.mail.mailwrapper import MailWrapper
-
 # XXX 2010-06-16 gmb bug=594985
 #     This shouldn't be here, but if we take it out lots of things cry,
 #     which is sad.
-from lp.services.mail.notificationrecipientset import (
-    NotificationRecipientSet)
+from lp.services.mail.notificationrecipientset import NotificationRecipientSet
 
-from lp.bugs.mail.bugnotificationbuilder import (
-    BugNotificationBuilder)
-from lp.bugs.mail.bugnotificationrecipients import BugNotificationRecipients
 
 CC = "CC"
 
@@ -187,6 +205,7 @@ def notify_errors_list(message, file_alias_url):
         template % {'url': file_alias_url, 'error_msg': message},
         headers={'X-Launchpad-Unhandled-Email': message})
 
+
 def generate_bug_add_email(bug, new_recipients=False, reason=None,
                            subscribed_by=None, event_creator=None):
     """Generate a new bug notification from the given IBug.
@@ -237,7 +256,8 @@ def generate_bug_add_email(bug, new_recipients=False, reason=None,
 
     if new_recipients:
         if "assignee" in reason:
-            contents += "You have been assigned a bug task for a %(visibility)s bug"
+            contents += (
+                "You have been assigned a bug task for a %(visibility)s bug")
             if event_creator is not None:
                 contents += " by %(assigner)s"
                 content_substitutions['assigner'] = (
@@ -1051,9 +1071,9 @@ def send_direct_contact_email(
     additions = u'\n'.join([
         u'',
         u'-- ',
-        u'This message was sent from Launchpad by the user',
+        u'This message was sent from Launchpad by',
         u'%s (%s)' % (sender_name, canonical_url(sender)),
-        u'using %s.',
+        u'%s.',
         u'For more information see',
         u'https://help.launchpad.net/YourAccount/ContactingPeople',
         ])

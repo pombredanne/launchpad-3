@@ -8,76 +8,115 @@
 __metaclass__ = type
 
 import cgi
-import pytz
+from datetime import datetime
 import threading
 import xmlrpclib
-from datetime import datetime
 
+from lazr.restful.interfaces import (
+    IWebServiceConfiguration,
+    IWebServiceVersion,
+    )
+from lazr.restful.publisher import (
+    WebServicePublicationMixin,
+    WebServiceRequestTraversal,
+    )
+from lazr.uri import URI
+import pytz
 import transaction
 from transaction.interfaces import ISynchronizer
-
+from zc.zservertracelog.tracelog import Server as ZServerTracelogServer
+from zope.app.form.browser.itemswidgets import MultiDataHelper
 from zope.app.form.browser.widget import SimpleInputWidget
-from zope.app.form.browser.itemswidgets import  MultiDataHelper
-from zope.session.interfaces import ISession
 from zope.app.publication.httpfactory import HTTPPublicationRequestFactory
 from zope.app.publication.interfaces import IRequestPublicationFactory
 from zope.app.publication.requestpublicationregistry import (
-    factoryRegistry as publisher_factory_registry)
+    factoryRegistry as publisher_factory_registry,
+    )
 from zope.app.server import wsgi
 from zope.app.wsgi import WSGIPublisherApplication
 from zope.component import getUtility
-from zope.interface import alsoProvides, implements
+from zope.interface import (
+    alsoProvides,
+    implements,
+    )
 from zope.publisher.browser import (
-    BrowserRequest, BrowserResponse, TestRequest)
+    BrowserRequest,
+    BrowserResponse,
+    TestRequest,
+    )
 from zope.publisher.interfaces import NotFound
-from zope.publisher.xmlrpc import XMLRPCRequest, XMLRPCResponse
-from zope.security.interfaces import IParticipation, Unauthorized
+from zope.publisher.xmlrpc import (
+    XMLRPCRequest,
+    XMLRPCResponse,
+    )
+from zope.security.interfaces import (
+    IParticipation,
+    Unauthorized,
+    )
 from zope.security.proxy import (
-    isinstance as zope_isinstance, removeSecurityProxy)
+    isinstance as zope_isinstance,
+    removeSecurityProxy,
+    )
 from zope.server.http.commonaccesslogger import CommonAccessLogger
 from zope.server.http.wsgihttpserver import PMDBWSGIHTTPServer
+from zope.session.interfaces import ISession
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
-
-from canonical.lazr.interfaces.feed import IFeed
-from lazr.restful.interfaces import (
-    IWebServiceConfiguration, IWebServiceVersion)
-from lazr.restful.publisher import (
-    WebServicePublicationMixin, WebServiceRequestTraversal)
-
-from lp.app.errors import UnexpectedFormData
-from lp.testopenid.interfaces.server import ITestOpenIDApplication
 from canonical.launchpad.interfaces.launchpad import (
-    IFeedsApplication, IPrivateApplication, IWebServiceApplication)
+    IFeedsApplication,
+    IPrivateApplication,
+    IWebServiceApplication,
+    )
 from canonical.launchpad.interfaces.oauth import (
-    ClockSkew, IOAuthConsumerSet, IOAuthSignedRequest, NonceAlreadyUsed,
-    TimestampOrderingError)
+    ClockSkew,
+    IOAuthConsumerSet,
+    IOAuthSignedRequest,
+    NonceAlreadyUsed,
+    TimestampOrderingError,
+    )
 import canonical.launchpad.layers
-
 from canonical.launchpad.webapp.adapter import (
-    get_request_duration, RequestExpired)
-from canonical.launchpad.webapp.authorization import (
-    LAUNCHPAD_SECURITY_POLICY_CACHE_KEY)
-from canonical.launchpad.webapp.notifications import (
-    NotificationRequest, NotificationResponse, NotificationList)
-from canonical.launchpad.webapp.interfaces import (
-    IAPIDocRoot, IBasicLaunchpadRequest, IBrowserFormNG,
-    ILaunchpadBrowserApplicationRequest, ILaunchpadProtocolError,
-    INotificationRequest, INotificationResponse, IPlacelessAuthUtility,
-    IPlacelessLoginSource, OAuthPermission)
+    get_request_duration,
+    RequestExpired,
+    )
 from canonical.launchpad.webapp.authentication import (
-    check_oauth_signature, get_oauth_authorization)
+    check_oauth_signature,
+    get_oauth_authorization,
+    )
+from canonical.launchpad.webapp.authorization import (
+    LAUNCHPAD_SECURITY_POLICY_CACHE_KEY,
+    )
 from canonical.launchpad.webapp.errorlog import ErrorReportRequest
-from lazr.uri import URI
-from canonical.launchpad.webapp.vhosts import allvhosts
+from canonical.launchpad.webapp.interfaces import (
+    IAPIDocRoot,
+    IBasicLaunchpadRequest,
+    IBrowserFormNG,
+    ILaunchpadBrowserApplicationRequest,
+    ILaunchpadProtocolError,
+    INotificationRequest,
+    INotificationResponse,
+    IPlacelessAuthUtility,
+    IPlacelessLoginSource,
+    OAuthPermission,
+    )
+from canonical.launchpad.webapp.notifications import (
+    NotificationList,
+    NotificationRequest,
+    NotificationResponse,
+    )
+from canonical.launchpad.webapp.opstats import OpStats
 from canonical.launchpad.webapp.publication import LaunchpadBrowserPublication
 from canonical.launchpad.webapp.publisher import (
-    get_current_browser_request, RedirectionView)
-from canonical.launchpad.webapp.opstats import OpStats
-from zc.zservertracelog.tracelog import Server as ZServerTracelogServer
-
+    get_current_browser_request,
+    RedirectionView,
+    )
+from canonical.launchpad.webapp.vhosts import allvhosts
+from canonical.lazr.interfaces.feed import IFeed
 from canonical.lazr.timeout import set_default_timeout_function
+from lp.app.errors import UnexpectedFormData
+from lp.services.features.flags import NullFeatureController
+from lp.testopenid.interfaces.server import ITestOpenIDApplication
 
 
 class StepsToGo:
@@ -838,6 +877,9 @@ class LaunchpadTestRequest(TestRequest, ErrorReportRequest,
         self.needs_datetimepicker_iframe = False
         self.needs_json = False
         self.needs_gmap2 = False
+        # stub out the FeatureController that would normally be provided by
+        # the publication mechanism
+        self.features = NullFeatureController()
 
     @property
     def uuid(self):

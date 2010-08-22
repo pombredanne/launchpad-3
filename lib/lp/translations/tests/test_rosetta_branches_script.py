@@ -14,19 +14,23 @@ __metaclass__ = type
 from unittest import TestLoader
 
 from bzrlib.revision import NULL_REVISION
-from canonical.testing import ZopelessAppServerLayer
 import transaction
 from zope.component import getUtility
 
-from lp.code.model.branchjob import RosettaUploadJob
-from lp.translations.interfaces.translations import (
-    TranslationsBranchImportMode)
-from lp.translations.interfaces.translationimportqueue import (
-    ITranslationImportQueue, RosettaImportStatus)
 from canonical.launchpad.scripts.tests import run_script
-from lp.testing import TestCaseWithFactory
-from lp.services.osutils import override_environ
 from canonical.launchpad.webapp.errorlog import globalErrorUtility
+from canonical.testing import ZopelessAppServerLayer
+from lp.code.model.branchjob import RosettaUploadJob
+from lp.services.osutils import override_environ
+from lp.testing import TestCaseWithFactory
+from lp.translations.interfaces.translationimportqueue import (
+    ITranslationImportQueue,
+    RosettaImportStatus,
+    )
+from lp.translations.interfaces.translations import (
+    TranslationsBranchImportMode,
+    )
+
 
 class TestRosettaBranchesScript(TestCaseWithFactory):
     """Testing the rosetta-bazaar cronscript."""

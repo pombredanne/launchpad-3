@@ -10,9 +10,11 @@ __metaclass__ = type
 __all__ = ['IBugCve']
 
 from zope.schema import Object
+
 from canonical.launchpad import _
 from lp.bugs.interfaces.buglink import IBugLink
 from lp.bugs.interfaces.cve import ICve
+
 
 class IBugCve(IBugLink):
     """A link between a bug and a CVE entry."""

@@ -5,6 +5,7 @@ __metaclass__ = type
 
 from doctest import DocTestSuite
 
+
 def test_suite():
     return DocTestSuite('canonical.launchpad.helpers')
 

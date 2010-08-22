@@ -160,7 +160,7 @@
             </p>
 
             <div id="project-admin-whiteboard" class="whiteboard"
-              tal:condition="context/required:launchpad.ProjectReview">
+              tal:condition="context/required:launchpad.Moderate">
               <div>
                 <strong>Whiteboard</strong>
                 <a tal:replace="structure overview_menu/review_license/fmt:icon"/>

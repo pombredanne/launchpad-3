@@ -14,15 +14,30 @@ __all__ = [
     'TranslationPermission',
     ]
 
-from zope.interface import Attribute, Interface
-from zope.schema import Choice, Datetime, Int, TextLine
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    )
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Choice,
+    Datetime,
+    Int,
+    TextLine,
+    )
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import (
-    PublicPersonChoice, Summary, Title, URIField)
 from canonical.launchpad.validators.name import name_validator
 from lp.registry.interfaces.role import IHasOwner
-from lazr.enum import DBEnumeratedType, DBItem
+from lp.services.fields import (
+    PublicPersonChoice,
+    Summary,
+    Title,
+    URIField,
+    )
 
 
 class TranslationPermission(DBEnumeratedType):

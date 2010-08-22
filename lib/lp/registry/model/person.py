@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 from __future__ import with_statement
 
@@ -26,9 +26,11 @@ __all__ = [
     'WikiName',
     'WikiNameSet']
 
-from datetime import datetime, timedelta
+from datetime import (
+    datetime,
+    timedelta,
+    )
 from operator import attrgetter
-import pytz
 import random
 import re
 import subprocess
@@ -36,132 +38,249 @@ import time
 import weakref
 
 from bzrlib.plugins.builder.recipe import RecipeParser
-from zope.lifecycleevent import ObjectCreatedEvent
-from zope.interface import alsoProvides, implementer, implements
-from zope.component import adapter, getUtility
-from zope.component.interfaces import ComponentLookupError
-from zope.event import notify
-from zope.publisher.interfaces import Unauthorized
-from zope.security.proxy import ProxyFactory, removeSecurityProxy
+import pytz
 from sqlobject import (
-    BoolCol, ForeignKey, IntCol, SQLMultipleJoin, SQLObjectNotFound,
-    StringCol)
-from sqlobject.sqlbuilder import AND, OR, SQLConstant
-from storm.store import EmptyResultSet, Store
+    BoolCol,
+    ForeignKey,
+    IntCol,
+    SQLMultipleJoin,
+    SQLObjectNotFound,
+    StringCol,
+    )
+from sqlobject.sqlbuilder import (
+    AND,
+    OR,
+    SQLConstant,
+    )
 from storm.expr import (
-    Alias, And, Exists, In, Join, LeftJoin, Lower, Min, Not, Or, Select, SQL,
+    Alias,
+    And,
+    Exists,
+    In,
+    Join,
+    LeftJoin,
+    Lower,
+    Min,
+    Not,
+    Or,
+    Select,
+    SQL,
     )
 from storm.info import ClassAlias
+from storm.store import (
+    EmptyResultSet,
+    Store,
+    )
+from zope.component import (
+    adapter,
+    getUtility,
+    )
+from zope.component.interfaces import ComponentLookupError
+from zope.event import notify
+from zope.interface import (
+    alsoProvides,
+    implementer,
+    implements,
+    )
+from zope.lifecycleevent import ObjectCreatedEvent
+from zope.publisher.interfaces import Unauthorized
+from zope.security.proxy import (
+    ProxyFactory,
+    removeSecurityProxy,
+    )
 
+from canonical.cachedproperty import (
+    cache_property,
+    cachedproperty,
+    clear_property,
+    )
 from canonical.config import config
 from canonical.database import postgresql
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
-    cursor, quote, quote_like, sqlvalues, SQLBase)
-
-from canonical.cachedproperty import cachedproperty, cache_property, clear_property
-
-from canonical.lazr.utils import get_current_browser_request, safe_hasattr
-
-from canonical.launchpad.components.decoratedresultset import DecoratedResultSet
-from canonical.launchpad.database.account import Account, AccountPassword
-from canonical.launchpad.interfaces.account import AccountSuspendedError
-from lp.bugs.model.bugtarget import HasBugsBase
-from canonical.launchpad.database.stormsugar import StartsWith
-from lp.registry.model.karma import KarmaCategory
-from lp.services.salesforce.interfaces import (
-    ISalesforceVoucherProxy, REDEEMABLE_VOUCHER_STATUSES,
-    VOUCHER_STATUSES)
-from lp.services.worlddata.model.language import Language
+    cursor,
+    quote,
+    quote_like,
+    SQLBase,
+    sqlvalues,
+    )
+from canonical.launchpad.components.decoratedresultset import (
+    DecoratedResultSet,
+    )
+from canonical.launchpad.database.account import (
+    Account,
+    AccountPassword,
+    )
+from canonical.launchpad.database.emailaddress import (
+    EmailAddress,
+    HasOwnerMixin,
+    )
+from canonical.launchpad.database.logintoken import LoginToken
 from canonical.launchpad.database.oauth import (
-    OAuthAccessToken, OAuthRequestToken)
-from lp.registry.model.personlocation import PersonLocation
-from lp.registry.model.structuralsubscription import (
-    StructuralSubscription)
+    OAuthAccessToken,
+    OAuthRequestToken,
+    )
+from canonical.launchpad.database.stormsugar import StartsWith
 from canonical.launchpad.event.interfaces import (
-    IJoinTeamEvent, ITeamInvitationEvent)
+    IJoinTeamEvent,
+    ITeamInvitationEvent,
+    )
 from canonical.launchpad.helpers import (
-    get_contact_email_addresses, get_email_template, shortlist)
-
-from canonical.launchpad.interfaces.lpstorm import IMasterObject, IMasterStore
+    get_contact_email_addresses,
+    get_email_template,
+    shortlist,
+    )
 from canonical.launchpad.interfaces.account import (
-    AccountCreationRationale, AccountStatus, IAccount, IAccountSet,
-    INACTIVE_ACCOUNT_STATUSES)
-from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
-from lp.soyuz.interfaces.archivepermission import (
-    IArchivePermissionSet)
-from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
+    AccountCreationRationale,
+    AccountStatus,
+    AccountSuspendedError,
+    IAccount,
+    IAccountSet,
+    INACTIVE_ACCOUNT_STATUSES,
+    )
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
-from lp.code.model.hasbranches import (
-    HasBranchesMixin, HasMergeProposalsMixin, HasRequestedReviewsMixin)
-from lp.bugs.interfaces.bugtask import (
-    BugTaskSearchParams, IBugTaskSet, IllegalRelatedBugTasksParams)
-from lp.bugs.interfaces.bugtarget import IBugTarget
-from lp.registry.interfaces.codeofconduct import (
-    ISignedCodeOfConductSet)
-from lp.registry.interfaces.distribution import IDistribution
 from canonical.launchpad.interfaces.emailaddress import (
-    EmailAddressStatus, IEmailAddress, IEmailAddressSet, InvalidEmailAddress)
-from lp.registry.interfaces.gpg import IGPGKeySet
-from lp.registry.interfaces.irc import IIrcID, IIrcIDSet
-from lp.registry.interfaces.jabber import IJabberID, IJabberIDSet
+    EmailAddressStatus,
+    IEmailAddress,
+    IEmailAddressSet,
+    InvalidEmailAddress,
+    )
 from canonical.launchpad.interfaces.launchpad import (
-    IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities)
+    IHasIcon,
+    IHasLogo,
+    IHasMugshot,
+    ILaunchpadCelebrities,
+    )
 from canonical.launchpad.interfaces.launchpadstatistic import (
-    ILaunchpadStatisticSet)
+    ILaunchpadStatisticSet,
+    )
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
+from canonical.launchpad.interfaces.lpstorm import (
+    IMasterObject,
+    IMasterStore,
+    IStore,
+    )
+from canonical.launchpad.validators.email import valid_email
+from canonical.launchpad.validators.name import (
+    sanitize_name,
+    valid_name,
+    )
+from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
+from canonical.launchpad.webapp.interfaces import ILaunchBag
+from canonical.lazr.utils import get_current_browser_request
+from lp.blueprints.interfaces.specification import (
+    SpecificationDefinitionStatus,
+    SpecificationFilter,
+    SpecificationImplementationStatus,
+    SpecificationSort,
+    )
+from lp.blueprints.model.specification import (
+    HasSpecificationsMixin,
+    Specification,
+    )
+from lp.bugs.interfaces.bugtarget import IBugTarget
+from lp.bugs.interfaces.bugtask import (
+    BugTaskSearchParams,
+    IBugTaskSet,
+    IllegalRelatedBugTasksParams,
+    )
+from lp.bugs.model.bugtarget import HasBugsBase
+from lp.bugs.model.bugtask import (
+    BugTask,
+    get_related_bugtasks_search_params,
+    )
+from lp.code.model.hasbranches import (
+    HasBranchesMixin,
+    HasMergeProposalsMixin,
+    HasRequestedReviewsMixin,
+    )
+from lp.registry.interfaces.codeofconduct import ISignedCodeOfConductSet
+from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.gpg import IGPGKeySet
+from lp.registry.interfaces.irc import (
+    IIrcID,
+    IIrcIDSet,
+    )
+from lp.registry.interfaces.jabber import (
+    IJabberID,
+    IJabberIDSet,
+    )
 from lp.registry.interfaces.mailinglist import (
-    IMailingListSet, MailingListStatus, PostedMessageStatus)
+    IMailingListSet,
+    MailingListStatus,
+    PostedMessageStatus,
+    )
 from lp.registry.interfaces.mailinglistsubscription import (
-    MailingListAutoSubscribePolicy)
+    MailingListAutoSubscribePolicy,
+    )
 from lp.registry.interfaces.person import (
-    IPerson, IPersonSet, ITeam, ImmutableVisibilityError, InvalidName,
-    JoinNotAllowed, NameAlreadyTaken, PersonCreationRationale,
-    PersonVisibility, PersonalStanding, TeamMembershipRenewalPolicy,
-    TeamSubscriptionPolicy)
-from lp.registry.interfaces.personnotification import (
-    IPersonNotificationSet)
+    ImmutableVisibilityError,
+    InvalidName,
+    IPerson,
+    IPersonSet,
+    ITeam,
+    JoinNotAllowed,
+    NameAlreadyTaken,
+    PersonalStanding,
+    PersonCreationRationale,
+    PersonVisibility,
+    TeamMembershipRenewalPolicy,
+    TeamSubscriptionPolicy,
+    validate_public_person,
+    )
+from lp.registry.interfaces.personnotification import IPersonNotificationSet
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
-from lp.blueprints.interfaces.specification import (
-    SpecificationDefinitionStatus, SpecificationFilter,
-    SpecificationImplementationStatus, SpecificationSort)
-from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.registry.interfaces.ssh import (
-    ISSHKey, ISSHKeySet, SSHKeyAdditionError, SSHKeyCompromisedError,
-    SSHKeyType)
-from lp.registry.interfaces.teammembership import (
-    TeamMembershipStatus)
-from lp.registry.interfaces.wikiname import IWikiName, IWikiNameSet
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-
-from lp.soyuz.model.archive import Archive
+    ISSHKey,
+    ISSHKeySet,
+    SSHKeyAdditionError,
+    SSHKeyCompromisedError,
+    SSHKeyType,
+    )
+from lp.registry.interfaces.teammembership import TeamMembershipStatus
+from lp.registry.interfaces.wikiname import (
+    IWikiName,
+    IWikiNameSet,
+    )
 from lp.registry.model.codeofconduct import SignedCodeOfConduct
-from lp.bugs.model.bugtask import (
-    BugTask, get_related_bugtasks_search_params)
-from canonical.launchpad.database.emailaddress import (
-    EmailAddress, HasOwnerMixin)
-from lp.registry.model.karma import KarmaCache, KarmaTotalCache
-from canonical.launchpad.database.logintoken import LoginToken
-from lp.registry.model.pillar import PillarName
-from lp.registry.model.karma import KarmaAction, KarmaAssignedEvent, Karma
+from lp.registry.model.karma import (
+    Karma,
+    KarmaAction,
+    KarmaAssignedEvent,
+    KarmaCache,
+    KarmaCategory,
+    KarmaTotalCache,
+    )
 from lp.registry.model.mentoringoffer import MentoringOffer
-from lp.soyuz.model.sourcepackagerelease import (
-    SourcePackageRelease)
-from lp.blueprints.model.specification import (
-    HasSpecificationsMixin, Specification)
-from lp.translations.model.translationimportqueue import (
-    HasTranslationImportsMixin)
+from lp.registry.model.personlocation import PersonLocation
+from lp.registry.model.pillar import PillarName
+from lp.registry.model.structuralsubscription import StructuralSubscription
 from lp.registry.model.teammembership import (
-    TeamMembership, TeamMembershipSet, TeamParticipation)
-
-from canonical.launchpad.validators.email import valid_email
-from canonical.launchpad.validators.name import sanitize_name, valid_name
-from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
-from lp.registry.interfaces.person import validate_public_person
+    TeamMembership,
+    TeamMembershipSet,
+    TeamParticipation,
+    )
+from lp.services.salesforce.interfaces import (
+    ISalesforceVoucherProxy,
+    REDEEMABLE_VOUCHER_STATUSES,
+    VOUCHER_STATUSES,
+    )
+from lp.services.worlddata.model.language import Language
+from lp.soyuz.interfaces.archive import (
+    ArchivePurpose,
+    IArchiveSet,
+    )
+from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
+from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
+from lp.soyuz.model.archive import Archive
+from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
+from lp.translations.model.translationimportqueue import (
+    HasTranslationImportsMixin,
+    )
 
 
 class JoinTeamEvent:
@@ -188,6 +307,12 @@ class ValidPersonCache(SQLBase):
     """Flags if a Person is active and usable in Launchpad.
 
     This is readonly, as this is a view in the database.
+
+    Note that it performs poorly at least some of the time, and if
+    EmailAddress and Person are already being queried, its probably better to
+    query Account directly. See bug
+    https://bugs.edge.launchpad.net/launchpad-registry/+bug/615237 for some
+    corroborating information.
     """
 
 
@@ -890,14 +1015,16 @@ class Person(
                 SELECT name, 3 as kind, displayname
                 FROM product
                 WHERE
-                    driver = %(person)s
-                    OR owner = %(person)s
+                    active = True AND
+                    (driver = %(person)s
+                    OR owner = %(person)s)
                 UNION
                 SELECT name, 2 as kind, displayname
                 FROM project
                 WHERE
-                    driver = %(person)s
-                    OR owner = %(person)s
+                    active = True AND
+                    (driver = %(person)s
+                    OR owner = %(person)s)
                 UNION
                 SELECT name, 1 as kind, displayname
                 FROM distribution
@@ -909,7 +1036,12 @@ class Person(
             """ % sqlvalues(person=self))
         results = IStore(self).using(origin).find(find_spec)
         results = results.order_by('kind', 'displayname')
-        return [pillar_name for pillar_name, kind, displayname in results]
+
+        def get_pillar_name(result):
+            pillar_name, kind, displayname = result
+            return pillar_name
+
+        return DecoratedResultSet(results, get_pillar_name)
 
     def getOwnedProjects(self, match_name=None):
         """See `IPerson`."""
@@ -1447,7 +1579,7 @@ class Person(
         need_location=False, need_archive=False, need_preferred_email=False,
         need_validity=False):
         """Lookup all members of the team with optional precaching.
-        
+
         :param need_karma: The karma attribute will be cached.
         :param need_ubuntu_coc: The is_ubuntu_coc_signer attribute will be
             cached.
@@ -1475,11 +1607,12 @@ class Person(
         if need_karma:
             # New people have no karmatotalcache rows.
             origin.append(
-                LeftJoin(KarmaTotalCache, KarmaTotalCache.person == Person.id))
+                LeftJoin(KarmaTotalCache,
+                    KarmaTotalCache.person == Person.id))
             columns.append(KarmaTotalCache)
         if need_ubuntu_coc:
             columns.append(Alias(Exists(Select(SignedCodeOfConduct,
-                AND(Person._is_ubuntu_coc_signer_condition(),
+                And(Person._is_ubuntu_coc_signer_condition(),
                     SignedCodeOfConduct.ownerID == Person.id))),
                 name='is_ubuntu_coc_signer'))
         if need_location:
@@ -1488,9 +1621,9 @@ class Person(
                 LeftJoin(PersonLocation, PersonLocation.person == Person.id))
             columns.append(PersonLocation)
         if need_archive:
-            # Not everyone has PPA's 
-            # It would be nice to cleanly expose the soyuz rules for this to avoid
-            # duplicating the relationships.
+            # Not everyone has PPA's
+            # It would be nice to cleanly expose the soyuz rules for this to
+            # avoid duplicating the relationships.
             origin.append(
                 LeftJoin(Archive, Archive.owner == Person.id))
             columns.append(Archive)
@@ -1499,8 +1632,9 @@ class Person(
                 Archive.id == Select(Min(Archive.id),
                     Archive.owner == Person.id, Archive),
                 Archive.purpose == ArchivePurpose.PPA)))
-        if need_preferred_email:
-            # Teams don't have email.
+        # checking validity requires having a preferred email.
+        if need_preferred_email or need_validity:
+            # Teams don't have email, so a left join
             origin.append(
                 LeftJoin(EmailAddress, EmailAddress.person == Person.id))
             columns.append(EmailAddress)
@@ -1508,10 +1642,14 @@ class Person(
                 Or(EmailAddress.status == None,
                     EmailAddress.status == EmailAddressStatus.PREFERRED))
         if need_validity:
-            # May find invalid persons
+            # May find teams (teams are not valid people)
             origin.append(
-                LeftJoin(ValidPersonCache, ValidPersonCache.id == Person.id))
-            columns.append(ValidPersonCache)
+                LeftJoin(Account, Person.account == Account.id))
+            columns.append(Account)
+            conditions = And(conditions,
+                Or(
+                    Account.status == None,
+                    Account.status == AccountStatus.ACTIVE))
         if len(columns) == 1:
             columns = columns[0]
             # Return a simple ResultSet
@@ -1519,6 +1657,7 @@ class Person(
         # Adapt the result into a cached Person.
         columns = tuple(columns)
         raw_result = store.using(*origin).find(columns, conditions)
+
         def prepopulate_person(row):
             result = row[0]
             index = 1
@@ -1551,12 +1690,19 @@ class Person(
                 email = row[index]
                 index += 1
                 cache_property(result, '_preferredemail_cached', email)
+            #-- validity caching
             if need_validity:
-                valid = row[index] is not None
+                # valid if:
+                valid = (
+                    # -- valid account found
+                    row[index] is not None
+                    # -- preferred email found
+                    and result.preferredemail is not None)
                 index += 1
                 cache_property(result, '_is_valid_person_cached', valid)
             return result
-        return DecoratedResultSet(raw_result, result_decorator=prepopulate_person)
+        return DecoratedResultSet(raw_result,
+            result_decorator=prepopulate_person)
 
     def _getMembersWithPreferredEmails(self):
         """Helper method for public getMembersWithPreferredEmails.
@@ -2167,7 +2313,8 @@ class Person(
         if self.mailing_list is not None:
             mailing_list_email = getUtility(IEmailAddressSet).getByEmail(
                 self.mailing_list.address)
-            mailing_list_email = IMasterObject(mailing_list_email)
+            if mailing_list_email is not None:
+                mailing_list_email = IMasterObject(mailing_list_email)
         else:
             mailing_list_email = None
         all_addresses = IMasterStore(self).find(
@@ -2397,7 +2544,7 @@ class Person(
         """See `IPerson`."""
         # Also assigned to by self._all_members.
         store = Store.of(self)
-        query = AND(SignedCodeOfConduct.ownerID == self.id,
+        query = And(SignedCodeOfConduct.ownerID == self.id,
             Person._is_ubuntu_coc_signer_condition())
         # TODO: Using exists would be faster than count().
         return bool(store.find(SignedCodeOfConduct, query).count())
@@ -2407,7 +2554,7 @@ class Person(
         """Generate a Storm Expr for determing the coc signing status."""
         sigset = getUtility(ISignedCodeOfConductSet)
         lastdate = sigset.getLastAcceptedDate()
-        return AND(SignedCodeOfConduct.active == True,
+        return And(SignedCodeOfConduct.active == True,
             SignedCodeOfConduct.datecreated >= lastdate)
 
     @property

@@ -18,11 +18,14 @@ __all__ = [
 
 
 import errno
-import sys
 import os
-import time
-from signal import SIGTERM, SIGKILL
+from signal import (
+    SIGKILL,
+    SIGTERM,
+    )
 import subprocess
+import sys
+import time
 
 from twisted.application import service
 from twisted.python import log

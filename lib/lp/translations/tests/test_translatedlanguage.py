@@ -7,12 +7,13 @@ from zope.component import getUtility
 from zope.interface.verify import verifyObject
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.testing import ZopelessDatabaseLayer
+from lp.testing import TestCaseWithFactory
 from lp.translations.interfaces.productserieslanguage import (
-    IProductSeriesLanguageSet)
+    IProductSeriesLanguageSet,
+    )
 from lp.translations.interfaces.translatedlanguage import ITranslatedLanguage
 from lp.translations.model.pofile import DummyPOFile
-from lp.testing import TestCaseWithFactory
-from canonical.testing import ZopelessDatabaseLayer
 
 
 class TestTranslatedLanguageMixin(TestCaseWithFactory):

@@ -11,6 +11,7 @@ import unittest
 from canonical.database.sqlbase import cursor
 from canonical.testing import LaunchpadZopelessLayer
 
+
 class PillarNameTriggersTestCase(unittest.TestCase):
     layer = LaunchpadZopelessLayer
 
