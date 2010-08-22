@@ -104,6 +104,7 @@ def get_register_upstream_url(source_package):
         'field.name': source_package.name,
         'field.displayname': displayname,
         'field.title': displayname,
+        'field.homepage': source_package.homepage,
         'field.__visited_steps__': ProjectAddStepOne.step_name,
         'field.actions.continue': 'Continue',
         }
