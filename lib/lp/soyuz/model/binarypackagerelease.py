@@ -81,6 +81,7 @@ class BinaryPackageRelease(SQLBase):
     installedsize = IntCol(dbName='installedsize')
     architecturespecific = BoolCol(dbName='architecturespecific',
                                    notNull=True)
+    homepage = StringCol(dbName='homepage')
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     debug_package = ForeignKey(dbName='debug_package',
                               foreignKey='BinaryPackageRelease')
