@@ -149,6 +149,19 @@ class FakeLibrarian(object):
         alias.checkCommitted()
         return StringIO(alias.content_string)
 
+    def pretendCommit(self):
+        """Pretend that there's been a commit.
+
+        When you add a file to the librarian (real or fake), it is not
+        fully available until the transaction that added the file has
+        been committed.  Call this method to make the FakeLibrarian act
+        as if there's been a commit, without actually committing a
+        database transaction.
+        """
+        # Note that all files have been committed to storage.
+        for alias in self.aliases.itervalues():
+            alias.file_committed = True
+
     def _makeAlias(self, file_id, name, content, content_type):
         """Create a `LibraryFileAlias`."""
         alias = InstrumentedLibraryFileAlias(
@@ -193,9 +206,7 @@ class FakeLibrarian(object):
 
     def afterCompletion(self, txn):
         """See `ISynchronizer`."""
-        # Note that all files have been committed to storage.
-        for alias in self.aliases.itervalues():
-            alias.file_committed = True
+        self.pretendCommit()
 
     def newTransaction(self, txn):
         """See `ISynchronizer`."""
