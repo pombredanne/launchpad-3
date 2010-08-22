@@ -21,11 +21,12 @@ class DoInitialiseDistroSeriesJobTests(TestCaseWithFactory):
         self.assertIn(('distroseries_job_type', job.context.job_type.title), vars)
 
     def _getJobs(self):
-        """Return the pending DoFooJobs as a list."""
+        """Return the pending DoInitialiseDistroSeriesJobs as a list."""
         return list(DoInitialiseDistroSeriesJob.iterReady())
         
     def _getJobCount(self):
-        """Return the number of DoFooJobs in the queue."""
+        """Return the number of DoInitialiseDistroSeriesJobs in
+        the queue."""
         return len(self._getJobs())
         
     def test_create_only_creates_one(self):

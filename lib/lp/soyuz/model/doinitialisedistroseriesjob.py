@@ -15,17 +15,19 @@ from canonical.launchpad.webapp.interfaces import (
 
 from lp.services.job.model.job import Job
 from lp.soyuz.interfaces.initialisedistroseriesjob import (
-    InitialiseDistroSeriesJobType, IDoInitialiseDistroSeriesJob,
+    IDoInitialiseDistroSeriesJob,
     IDoInitialiseDistroSeriesJobSource)
 from lp.soyuz.model.initialisedistroseriesjob import (
-    InitialiseDistroSeriesJob, InitialiseDistroSeriesJobDerived)
+    InitialiseDistroSeriesJob,
+    InitialiseDistroSeriesJobDerived)
+from lp.soyuz.scripts.initialise_distroseries import (
+    InitialiseDistroSeries)
 
 
 class DoInitialiseDistroSeriesJob(InitialiseDistroSeriesJobDerived):
 
     implements(IDoInitialiseDistroSeriesJob)
 
-    class_job_type = InitialiseDistroSeriesJobType.DO_INITIALISE
     classProvides(IDoInitialiseDistroSeriesJobSource)
 
     @classmethod
@@ -36,7 +38,6 @@ class DoInitialiseDistroSeriesJob(InitialiseDistroSeriesJobDerived):
         existing_job = store.find(
             InitialiseDistroSeriesJob,
             InitialiseDistroSeriesJob.distroseries == distroseries,
-            InitialiseDistroSeriesJob.job_type == cls.class_job_type,
             InitialiseDistroSeriesJob.job == Job.id,
             Job.id.is_in(Job.ready_jobs)
             ).any()
@@ -49,5 +50,6 @@ class DoInitialiseDistroSeriesJob(InitialiseDistroSeriesJobDerived):
 
     def run(self):
         """See `IRunnableJob`."""
-        self.distroseries.initialiseFromParent()
-
+	ids = InitialiseDistroSeries(self.distroseries)
+	ids.check()
+	ids.initialise()

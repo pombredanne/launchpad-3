@@ -5,8 +5,6 @@ import unittest
 
 from canonical.testing import LaunchpadZopelessLayer
 
-from lp.soyuz.interfaces.initialisedistroseriesjob import (
-    InitialiseDistroSeriesJobType)
 from lp.soyuz.model.initialisedistroseriesjob import (
     InitialiseDistroSeriesJob, InitialiseDistroSeriesJobDerived)
 from lp.testing import TestCaseWithFactory
@@ -22,15 +20,14 @@ class InitialiseDistroSeriesJobTestCase(TestCaseWithFactory):
 
         metadata = ('some', 'arbitrary', 'metadata')
         distroseries_job = InitialiseDistroSeriesJob(
-            distroseries, InitialiseDistroSeriesJobType.DO_INITIALISE, metadata)
+            distroseries, metadata)
 
         self.assertEqual(distroseries, distroseries_job.distroseries)
-        self.assertEqual(InitialiseDistroSeriesJobType.DO_INITIALISE, distroseries_job.job_type)
 
-        # When we actually access the InitialiseDistroSeriesJob's metadata it gets
-        # deserialized from JSON, so the representation returned by
-        # foo_job.metadata will be different from what we originally
-        # passed in.
+        # When we actually access the InitialiseDistroSeriesJob's
+        # metadata it gets deserialized from JSON, so the representation
+        # returned by distroseries_job.metadata will be different from what
+        # we originally passed in.
         metadata_expected = [u'some', u'arbitrary', u'metadata']
         self.assertEqual(metadata_expected, distroseries_job.metadata)
 
