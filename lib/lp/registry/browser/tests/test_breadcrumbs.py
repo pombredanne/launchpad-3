@@ -9,7 +9,6 @@ from zope.component import getUtility
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.publisher import canonical_url
-
 from lp.testing import login_person
 from lp.testing.breadcrumbs import BaseBreadcrumbTestCase
 

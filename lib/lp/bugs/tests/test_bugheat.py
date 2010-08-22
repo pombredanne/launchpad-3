@@ -14,7 +14,6 @@ from storm.store import Store
 from lazr.delegates import delegates
 
 from canonical.testing import LaunchpadZopelessLayer
-
 from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)

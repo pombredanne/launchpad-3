@@ -5,12 +5,13 @@
 
 __metaclass__ = type
 
-from lp.archiveuploader.tests.test_securityuploads import (
-    TestStagedBinaryUploadBase)
-from lp.registry.interfaces.pocket import PackagePublishingPocket
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad.interfaces import PackagePublishingStatus
 from canonical.launchpad.ftests import import_public_test_keys
+from canonical.launchpad.interfaces import PackagePublishingStatus
+from lp.archiveuploader.tests.test_securityuploads import (
+    TestStagedBinaryUploadBase,
+    )
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 
 
 class TestBuilddUploads(TestStagedBinaryUploadBase):

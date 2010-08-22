@@ -11,10 +11,14 @@ __all__ = [
     ]
 
 from canonical.launchpad.webapp import (
-    canonical_url, enabled_with_permission, Link, NavigationMenu)
+    canonical_url,
+    enabled_with_permission,
+    Link,
+    NavigationMenu,
+    )
+from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.translations.browser.poexportrequest import BaseExportView
 from lp.translations.browser.translations import TranslationsMixin
-from lp.registry.interfaces.sourcepackage import ISourcePackage
 
 
 class SourcePackageTranslationsView(TranslationsMixin):

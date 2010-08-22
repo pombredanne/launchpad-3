@@ -13,7 +13,11 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.testing import LaunchpadFunctionalLayer
-from lp.testing import login, TestCaseWithFactory, test_tales
+from lp.testing import (
+    login,
+    test_tales,
+    TestCaseWithFactory,
+    )
 
 
 class TestPreviewDiffFormatter(TestCaseWithFactory):

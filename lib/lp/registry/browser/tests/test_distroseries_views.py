@@ -6,7 +6,6 @@ __metaclass__ = type
 import unittest
 
 from storm.zope.interfaces import IResultSet
-
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 

@@ -15,12 +15,14 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import isinstance as zope_isinstance
 
+from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchtarget import (
-    check_default_stacked_on, IBranchTarget)
+    check_default_stacked_on,
+    IBranchTarget,
+    )
 from lp.code.interfaces.codeimport import ICodeImportSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 
 
 def branch_to_target(branch):

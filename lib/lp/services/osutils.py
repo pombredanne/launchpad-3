@@ -16,9 +16,8 @@ __all__ = [
 from contextlib import contextmanager
 import errno
 import os.path
-import socket
 import shutil
-
+import socket
 
 from canonical.launchpad.daemons.tachandler import (
     kill_by_pidfile,

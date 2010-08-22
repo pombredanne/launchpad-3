@@ -5,9 +5,8 @@ __metaclass__ = type
 
 
 from canonical.database.sqlbase import block_implicit_flushes
+from lp.blueprints.interfaces.specification import SpecificationGoalStatus
 from lp.registry.interfaces.person import IPerson
-from lp.blueprints.interfaces.specification import (
-    SpecificationGoalStatus)
 
 
 @block_implicit_flushes

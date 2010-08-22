@@ -9,15 +9,23 @@ import unittest
 
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.ftests import ANONYMOUS, login, login_person
+from canonical.launchpad.ftests import (
+    ANONYMOUS,
+    login,
+    login_person,
+    )
 from canonical.launchpad.testing.systemdocs import (
-    LayeredDocFileSuite, setUp, tearDown)
+    LayeredDocFileSuite,
+    setUp,
+    tearDown,
+    )
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import LaunchpadFunctionalLayer
-
 from lp.bugs.browser import bugtask
 from lp.bugs.browser.bugtask import (
-    BugTaskEditView, BugTasksAndNominationsView)
+    BugTaskEditView,
+    BugTasksAndNominationsView,
+    )
 from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.testing import TestCaseWithFactory
 

@@ -23,75 +23,132 @@ __all__ = [
 import datetime
 from operator import attrgetter
 
+from lazr.enum import DBItem
+import pytz
 from sqlobject import (
-    ForeignKey, StringCol, SQLObjectNotFound)
+    ForeignKey,
+    SQLObjectNotFound,
+    StringCol,
+    )
 from sqlobject.sqlbuilder import SQLConstant
-
-from storm.expr import And, Alias, AutoTables, In, Join, LeftJoin, Or, SQL
+from storm.expr import (
+    Alias,
+    And,
+    AutoTables,
+    In,
+    Join,
+    LeftJoin,
+    Or,
+    SQL,
+    )
 from storm.sqlobject import SQLObjectResultSet
 from storm.store import EmptyResultSet
-from storm.zope.interfaces import IResultSet, ISQLObjectResultSet
-
-import pytz
-
+from storm.zope.interfaces import (
+    IResultSet,
+    ISQLObjectResultSet,
+    )
 from zope.component import getUtility
-from zope.interface import implements, alsoProvides
+from zope.interface import (
+    alsoProvides,
+    implements,
+    )
 from zope.interface.interfaces import IMethod
 from zope.security.proxy import (
-    isinstance as zope_isinstance, removeSecurityProxy)
-from lazr.enum import DBItem
+    isinstance as zope_isinstance,
+    removeSecurityProxy,
+    )
 
 from canonical.config import config
-
-from canonical.database.sqlbase import (
-    SQLBase, block_implicit_flushes, convert_storm_clause_to_string, cursor,
-    quote, quote_like, sqlvalues)
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.nl_search import nl_phrase_search
 from canonical.database.enumcol import EnumCol
-
-from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-
-from lp.registry.model.pillar import pillar_sort_key
+from canonical.database.nl_search import nl_phrase_search
+from canonical.database.sqlbase import (
+    block_implicit_flushes,
+    convert_storm_clause_to_string,
+    cursor,
+    quote,
+    quote_like,
+    SQLBase,
+    sqlvalues,
+    )
 from canonical.launchpad.helpers import shortlist
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.lpstorm import IStore
+from canonical.launchpad.searchbuilder import (
+    all,
+    any,
+    greater_than,
+    not_equals,
+    NULL,
+    )
+from canonical.launchpad.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    ILaunchBag,
+    IStoreSelector,
+    MAIN_STORE,
+    SLAVE_FLAVOR,
+    )
+from lp.app.errors import NotFoundError
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugattachment import BugAttachmentType
 from lp.bugs.interfaces.bugnomination import BugNominationStatus
 from lp.bugs.interfaces.bugtask import (
-    BUG_SUPERVISOR_BUGTASK_STATUSES, BugBranchSearch, BugTaskImportance,
-    BugTaskSearchParams, BugTaskStatus, BugTaskStatusSearch,
-    ConjoinedBugTaskEditError, IBugTask, IBugTaskDelta, IBugTaskSet,
-    IDistroBugTask, IDistroSeriesBugTask, INullBugTask, IProductSeriesBugTask,
-    IUpstreamBugTask, IllegalRelatedBugTasksParams, IllegalTarget,
-    RESOLVED_BUGTASK_STATUSES, UNRESOLVED_BUGTASK_STATUSES,
-    UserCannotEditBugTaskAssignee, UserCannotEditBugTaskImportance,
-    UserCannotEditBugTaskMilestone, UserCannotEditBugTaskStatus)
+    BUG_SUPERVISOR_BUGTASK_STATUSES,
+    BugBranchSearch,
+    BugTaskImportance,
+    BugTaskSearchParams,
+    BugTaskStatus,
+    BugTaskStatusSearch,
+    ConjoinedBugTaskEditError,
+    IBugTask,
+    IBugTaskDelta,
+    IBugTaskSet,
+    IDistroBugTask,
+    IDistroSeriesBugTask,
+    IllegalRelatedBugTasksParams,
+    IllegalTarget,
+    INullBugTask,
+    IProductSeriesBugTask,
+    IUpstreamBugTask,
+    RESOLVED_BUGTASK_STATUSES,
+    UNRESOLVED_BUGTASK_STATUSES,
+    UserCannotEditBugTaskAssignee,
+    UserCannotEditBugTaskImportance,
+    UserCannotEditBugTaskMilestone,
+    UserCannotEditBugTaskStatus,
+    )
 from lp.bugs.model.bugsubscription import BugSubscription
 from lp.registry.interfaces.distribution import (
-    IDistribution, IDistributionSet)
+    IDistribution,
+    IDistributionSet,
+    )
 from lp.registry.interfaces.distributionsourcepackage import (
-    IDistributionSourcePackage)
+    IDistributionSourcePackage,
+    )
 from lp.registry.interfaces.distroseries import (
-    IDistroSeries, IDistroSeriesSet)
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+    IDistroSeries,
+    IDistroSeriesSet,
+    )
 from lp.registry.interfaces.milestone import IProjectGroupMilestone
-from lp.registry.interfaces.product import IProduct, IProductSet
-from lp.registry.interfaces.productseries import (
-    IProductSeries, IProductSeriesSet)
-from lp.registry.interfaces.projectgroup import IProjectGroup
-from lp.soyuz.interfaces.publishing import PackagePublishingStatus
-from lp.registry.interfaces.sourcepackage import ISourcePackage
-from lp.registry.interfaces.sourcepackagename import (
-    ISourcePackageNameSet)
-from canonical.launchpad.searchbuilder import (
-    all, any, greater_than, NULL, not_equals)
 from lp.registry.interfaces.person import (
-    IPerson, validate_person, validate_public_person)
-from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, DEFAULT_FLAVOR, MAIN_STORE, SLAVE_FLAVOR)
-from lp.app.errors import NotFoundError
+    IPerson,
+    validate_person,
+    validate_public_person,
+    )
+from lp.registry.interfaces.product import (
+    IProduct,
+    IProductSet,
+    )
+from lp.registry.interfaces.productseries import (
+    IProductSeries,
+    IProductSeriesSet,
+    )
+from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.registry.interfaces.sourcepackage import ISourcePackage
+from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.registry.model.pillar import pillar_sort_key
+from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 
 
 debbugsseveritymap = {None:        BugTaskImportance.UNDECIDED,

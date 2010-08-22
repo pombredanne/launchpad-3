@@ -7,22 +7,23 @@ __all__ = [
     'XMLRPCRunner',
     ]
 
-import os
-import sys
+from cStringIO import StringIO
 import errno
+import os
+from random import shuffle
 import shutil
 import socket
+import sys
 import tarfile
 import traceback
 import xmlrpclib
 
-from cStringIO import StringIO
-from random import shuffle
-
 # pylint: disable-msg=F0401
-from Mailman import Errors
-from Mailman import Utils
-from Mailman import mm_cfg
+from Mailman import (
+    Errors,
+    mm_cfg,
+    Utils,
+    )
 from Mailman.LockFile import TimeOutError
 from Mailman.Logging.Syslog import syslog
 from Mailman.MailList import MailList

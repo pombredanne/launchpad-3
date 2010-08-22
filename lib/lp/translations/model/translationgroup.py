@@ -9,33 +9,38 @@ __all__ = [
     'TranslationGroupSet'
     ]
 
+from sqlobject import (
+    ForeignKey,
+    SQLMultipleJoin,
+    SQLObjectNotFound,
+    SQLRelatedJoin,
+    StringCol,
+    )
+from storm.expr import Join
+from storm.store import Store
 from zope.component import getUtility
 from zope.interface import implements
 
-from sqlobject import (
-    ForeignKey, StringCol, SQLMultipleJoin, SQLRelatedJoin,
-    SQLObjectNotFound)
-
-from storm.expr import Join
-from storm.store import Store
-
+from canonical.database.constants import DEFAULT
+from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.database.sqlbase import SQLBase
+from canonical.launchpad.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 from lp.app.errors import NotFoundError
-from lp.translations.interfaces.translationgroup import (
-    ITranslationGroup, ITranslationGroupSet)
+from lp.registry.interfaces.person import validate_public_person
 from lp.registry.model.person import Person
 from lp.registry.model.product import Product
 from lp.registry.model.projectgroup import ProjectGroup
 from lp.registry.model.teammembership import TeamParticipation
 from lp.services.worlddata.model.language import Language
+from lp.translations.interfaces.translationgroup import (
+    ITranslationGroup,
+    ITranslationGroupSet,
+    )
 from lp.translations.model.translator import Translator
-from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE)
-
-from canonical.database.sqlbase import SQLBase
-from canonical.database.constants import DEFAULT
-from canonical.database.datetimecol import UtcDateTimeCol
-
-from lp.registry.interfaces.person import validate_public_person
 
 
 class TranslationGroup(SQLBase):

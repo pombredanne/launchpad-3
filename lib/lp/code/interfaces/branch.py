@@ -26,29 +26,53 @@ __all__ = [
 from cgi import escape
 import re
 
-from zope.component import getUtility
-from zope.interface import Interface, Attribute
-from zope.schema import (
-    Bool, Int, Choice, List, Text, TextLine, Datetime)
-
-from lazr.restful.fields import CollectionField, Reference, ReferenceChoice
 from lazr.restful.declarations import (
-    REQUEST_USER, call_with, collection_default_content,
-    export_as_webservice_collection, export_as_webservice_entry,
-    export_destructor_operation, export_factory_operation,
-    export_operation_as, export_read_operation, export_write_operation,
-    exported, mutator_for, operation_parameters, operation_returns_entry)
+    call_with,
+    collection_default_content,
+    export_as_webservice_collection,
+    export_as_webservice_entry,
+    export_destructor_operation,
+    export_factory_operation,
+    export_operation_as,
+    export_read_operation,
+    export_write_operation,
+    exported,
+    mutator_for,
+    operation_parameters,
+    operation_returns_entry,
+    REQUEST_USER,
+    )
+from lazr.restful.fields import (
+    CollectionField,
+    Reference,
+    ReferenceChoice,
+    )
+from zope.component import getUtility
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Bool,
+    Choice,
+    Datetime,
+    Int,
+    List,
+    Text,
+    TextLine,
+    )
 
 from canonical.config import config
-
 from canonical.launchpad import _
-from lp.services.fields import (
-    PersonChoice, PublicPersonChoice, URIField, Whiteboard)
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
 from canonical.launchpad.webapp.menu import structured
-from lp.code.bzr import BranchFormat, ControlFormat, RepositoryFormat
+from lp.code.bzr import (
+    BranchFormat,
+    ControlFormat,
+    RepositoryFormat,
+    )
 from lp.code.enums import (
     BranchLifecycleStatus,
     BranchMergeControlStatus,
@@ -59,12 +83,18 @@ from lp.code.enums import (
     )
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchtarget import IHasBranchTarget
-from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from lp.code.interfaces.hasbranches import IHasMergeProposals
 from lp.code.interfaces.hasrecipes import IHasRecipes
-from lp.registry.interfaces.role import IHasOwner
+from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.interfaces.role import IHasOwner
+from lp.services.fields import (
+    PersonChoice,
+    PublicPersonChoice,
+    URIField,
+    Whiteboard,
+    )
 
 
 DEFAULT_BRANCH_STATUS_IN_LISTING = (

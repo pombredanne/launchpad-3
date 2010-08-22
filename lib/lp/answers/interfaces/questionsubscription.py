@@ -11,7 +11,11 @@ __all__ = [
     'IQuestionSubscription',
     ]
 
-from zope.interface import Interface, Attribute
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+
 
 class IQuestionSubscription(Interface):
     """A subscription for a person to a question."""

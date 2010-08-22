@@ -22,10 +22,18 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.database.sqlbase import commit
-from canonical.database.sqlbase import flush_database_caches
-from canonical.launchpad.ftests import login, logout
-from canonical.launchpad.interfaces import IEmailAddressSet, IPersonSet
+from canonical.database.sqlbase import (
+    commit,
+    flush_database_caches,
+    )
+from canonical.launchpad.ftests import (
+    login,
+    logout,
+    )
+from canonical.launchpad.interfaces import (
+    IEmailAddressSet,
+    IPersonSet,
+    )
 
 
 class SyncDetails:
