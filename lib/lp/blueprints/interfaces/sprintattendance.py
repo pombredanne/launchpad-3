@@ -12,7 +12,12 @@ __all__ = [
     ]
 
 from zope.interface import Interface
-from zope.schema import Bool, Choice, Datetime
+from zope.schema import (
+    Bool,
+    Choice,
+    Datetime,
+    )
+
 from canonical.launchpad import _
 from lp.services.fields import PublicPersonChoice
 

@@ -7,9 +7,9 @@
 
 import unittest
 
+from canonical.launchpad.scripts.tests import run_script
 from canonical.testing import ZopelessAppServerLayer
 from lp.testing import TestCaseWithFactory
-from canonical.launchpad.scripts.tests import run_script
 
 
 class TestMergeProposalJobScript(TestCaseWithFactory):

@@ -10,61 +10,83 @@ __all__ = [
     "TestUploadProcessorBase",
     ]
 
+from email import message_from_string
 import os
 import shutil
-import sys
 from StringIO import StringIO
+import sys
 import tempfile
 import traceback
 
-from email import message_from_string
-
-from zope.component import getGlobalSiteManager, getUtility
+from zope.component import (
+    getGlobalSiteManager,
+    getUtility,
+    )
 from zope.security.proxy import removeSecurityProxy
 
-from lp.app.errors import NotFoundError
-from lp.archiveuploader.uploadpolicy import (
-    AbstractUploadPolicy, IArchiveUploadPolicy, findPolicyByName)
-from lp.archiveuploader.uploadprocessor import UploadProcessor
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
-from lp.soyuz.model.archivepermission import ArchivePermission
-from lp.soyuz.model.binarypackagename import BinaryPackageName
-from lp.soyuz.model.binarypackagerelease import (
-    BinaryPackageRelease)
-from lp.soyuz.model.component import Component
-from lp.soyuz.model.publishing import (
-    SourcePackagePublishingHistory, BinaryPackagePublishingHistory)
-from lp.registry.model.sourcepackagename import SourcePackageName
-from lp.soyuz.model.sourcepackagerelease import (
-    SourcePackageRelease)
-from lp.soyuz.scripts.initialise_distroseries import InitialiseDistroSeries
 from canonical.launchpad.ftests import import_public_test_keys
-from lp.registry.interfaces.distribution import IDistributionSet
-from lp.registry.interfaces.series import SeriesStatus
-from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.registry.interfaces.sourcepackage import SourcePackageFileType
-from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
-from lp.soyuz.interfaces.queue import PackageUploadStatus
-from lp.soyuz.interfaces.publishing import (
-    IPublishingSet, PackagePublishingStatus)
-from lp.soyuz.interfaces.queue import QueueInconsistentStateError
 from canonical.launchpad.interfaces import ILibraryFileAliasSet
-from lp.soyuz.interfaces.packageset import IPackagesetSet
-from lp.soyuz.interfaces.archivepermission import (
-    ArchivePermissionType, IArchivePermissionSet)
-from lp.soyuz.interfaces.component import IComponentSet
-from lp.soyuz.interfaces.sourcepackageformat import (
-    ISourcePackageFormatSelectionSet, SourcePackageFormat)
-from lp.registry.interfaces.person import IPersonSet
-from lp.registry.interfaces.sourcepackagename import (
-    ISourcePackageNameSet)
-from lp.services.mail import stub
 from canonical.launchpad.testing.fakepackager import FakePackager
-from lp.testing import TestCaseWithFactory
-from lp.testing.mail_helpers import pop_notifications
 from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
 from canonical.testing import LaunchpadZopelessLayer
+from lp.app.errors import NotFoundError
+from lp.archiveuploader.uploadpolicy import (
+    AbstractUploadPolicy,
+    findPolicyByName,
+    IArchiveUploadPolicy,
+    )
+from lp.archiveuploader.uploadprocessor import (
+    parse_build_upload_leaf_name,
+    UploadProcessor,
+    )
+from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.interfaces.series import SeriesStatus
+from lp.registry.interfaces.sourcepackage import SourcePackageFileType
+from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.registry.model.sourcepackagename import SourcePackageName
+from lp.services.mail import stub
+from lp.soyuz.interfaces.archive import (
+    ArchivePurpose,
+    IArchiveSet,
+    )
+from lp.soyuz.interfaces.archivepermission import (
+    ArchivePermissionType,
+    IArchivePermissionSet,
+    )
+from lp.soyuz.interfaces.component import IComponentSet
+from lp.soyuz.interfaces.packageset import IPackagesetSet
+from lp.soyuz.interfaces.publishing import (
+    IPublishingSet,
+    PackagePublishingStatus,
+    )
+from lp.soyuz.interfaces.queue import (
+    PackageUploadStatus,
+    QueueInconsistentStateError,
+    )
+from lp.soyuz.interfaces.sourcepackageformat import (
+    ISourcePackageFormatSelectionSet,
+    SourcePackageFormat,
+    )
+from lp.soyuz.model.archivepermission import ArchivePermission
+from lp.soyuz.model.binarypackagename import BinaryPackageName
+from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
+from lp.soyuz.model.component import Component
+from lp.soyuz.model.publishing import (
+    BinaryPackagePublishingHistory,
+    SourcePackagePublishingHistory,
+    )
+from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
+from lp.soyuz.scripts.initialise_distroseries import InitialiseDistroSeries
+from lp.testing import (
+    TestCase,
+    TestCaseWithFactory,
+    )
+from lp.testing.mail_helpers import pop_notifications
 
 
 class MockOptions:
@@ -125,6 +147,7 @@ class TestUploadProcessorBase(TestCaseWithFactory):
 
         self.options = MockOptions()
         self.options.base_fsroot = self.queue_folder
+        self.options.builds = True
         self.options.leafname = None
         self.options.distro = "ubuntu"
         self.options.distroseries = None
@@ -150,7 +173,7 @@ class TestUploadProcessorBase(TestCaseWithFactory):
             return policy
         return UploadProcessor(
             self.options.base_fsroot, self.options.dryrun,
-            self.options.nomails,
+            self.options.nomails, self.options.builds,
             self.options.keep, getPolicy, txn, self.log)
 
     def publishPackage(self, packagename, version, source=True,
@@ -434,7 +457,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
             # Move it
             self.options.base_fsroot = testdir
             up = self.getUploadProcessor(None)
-            up.moveUpload(upload, target_name)
+            up.moveUpload(upload, target_name, self.log)
 
             # Check it moved
             self.assertTrue(os.path.exists(os.path.join(target, upload_name)))
@@ -455,7 +478,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
             # Remove it
             self.options.base_fsroot = testdir
             up = self.getUploadProcessor(None)
-            up.moveProcessedUpload(upload, "accepted")
+            up.moveProcessedUpload(upload, "accepted", self.log)
 
             # Check it was removed, not moved
             self.assertFalse(os.path.exists(os.path.join(
@@ -478,7 +501,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
             # Move it
             self.options.base_fsroot = testdir
             up = self.getUploadProcessor(None)
-            up.moveProcessedUpload(upload, "rejected")
+            up.moveProcessedUpload(upload, "rejected", self.log)
 
             # Check it moved
             self.assertTrue(os.path.exists(os.path.join(testdir,
@@ -501,7 +524,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
             # Remove it
             self.options.base_fsroot = testdir
             up = self.getUploadProcessor(None)
-            up.removeUpload(upload)
+            up.removeUpload(upload, self.log)
 
             # Check it was removed, not moved
             self.assertFalse(os.path.exists(os.path.join(
@@ -1316,6 +1339,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         used.
         That exception will then initiate the creation of an OOPS report.
         """
+        self.options.builds = False
         processor = self.getUploadProcessor(self.layer.txn)
 
         upload_dir = self.queueUpload("foocomm_1.0-1_proposed")
@@ -1825,3 +1849,101 @@ class TestUploadProcessor(TestUploadProcessorBase):
         pubrec.datepublished = UTC_NOW
         queue_item.setDone()
         self.PGPSignatureNotPreserved(archive=self.breezy.main_archive)
+
+
+class TestBuildUploadProcessor(TestUploadProcessorBase):
+    """Test that processing build uploads works."""
+
+    def setUp(self):
+        super(TestBuildUploadProcessor, self).setUp()
+        self.uploadprocessor = self.setupBreezyAndGetUploadProcessor()
+
+    def testInvalidLeafName(self):
+        upload_dir = self.queueUpload("bar_1.0-1")
+        self.uploadprocessor.processBuildUpload(upload_dir, "bar_1.0-1")
+        self.assertLogContains('Unable to extract build id from leaf '
+                               'name bar_1.0-1, skipping.')
+
+    def testNoBuildEntry(self):
+        upload_dir = self.queueUpload("bar_1.0-1", queue_entry="42-60")
+        self.assertRaises(NotFoundError, self.uploadprocessor.processBuildUpload,
+                upload_dir, "42-60")
+
+    def testNoFiles(self):
+        # Upload a source package
+        upload_dir = self.queueUpload("bar_1.0-1")
+        self.processUpload(self.uploadprocessor, upload_dir)
+        source_pub = self.publishPackage('bar', '1.0-1')
+        [build] = source_pub.createMissingBuilds()
+
+        # Move the source from the accepted queue.
+        [queue_item] = self.breezy.getQueueItems(
+            status=PackageUploadStatus.ACCEPTED,
+            version="1.0-1", name="bar")
+        queue_item.setDone()
+
+        build.jobStarted()
+        build.builder = self.factory.makeBuilder()
+
+        # Upload and accept a binary for the primary archive source.
+        shutil.rmtree(upload_dir)
+        self.layer.txn.commit()
+        leaf_name = "%d-%d" % (build.id, 60)
+        os.mkdir(os.path.join(self.incoming_folder, leaf_name))
+        self.options.context = 'buildd'
+        self.options.builds = True
+        self.uploadprocessor.processBuildUpload(self.incoming_folder, leaf_name)
+        self.layer.txn.commit()
+        self.assertEquals(BuildStatus.FAILEDTOUPLOAD, build.status)
+        log_contents = build.upload_log.read()
+        self.assertTrue('ERROR: Exception while processing upload '
+            in log_contents)
+        self.assertTrue('DEBUG: Moving upload directory '
+            in log_contents)
+
+    def testSuccess(self):
+        # Upload a source package
+        upload_dir = self.queueUpload("bar_1.0-1")
+        self.processUpload(self.uploadprocessor, upload_dir)
+        source_pub = self.publishPackage('bar', '1.0-1')
+        [build] = source_pub.createMissingBuilds()
+
+        # Move the source from the accepted queue.
+        [queue_item] = self.breezy.getQueueItems(
+            status=PackageUploadStatus.ACCEPTED,
+            version="1.0-1", name="bar")
+        queue_item.setDone()
+
+        build.jobStarted()
+        build.builder = self.factory.makeBuilder()
+
+        # Upload and accept a binary for the primary archive source.
+        shutil.rmtree(upload_dir)
+        self.layer.txn.commit()
+        leaf_name = "%d-%d" % (build.id, 60)
+        upload_dir = self.queueUpload("bar_1.0-1_binary",
+                queue_entry=leaf_name)
+        self.options.context = 'buildd'
+        self.options.builds = True
+        self.uploadprocessor.processBuildUpload(self.incoming_folder, leaf_name)
+        self.layer.txn.commit()
+        self.assertEquals(BuildStatus.FULLYBUILT, build.status)
+        log_lines = build.upload_log.read().splitlines()
+        self.assertTrue(
+            'INFO: Processing upload bar_1.0-1_i386.changes' in log_lines)
+        self.assertTrue(
+            'INFO: Committing the transaction and any mails associated with '
+            'this upload.' in log_lines)
+
+
+class ParseBuildUploadLeafNameTests(TestCase):
+    """Tests for parse_build_upload_leaf_name."""
+
+    def test_valid(self):
+        self.assertEquals((42, 60), parse_build_upload_leaf_name("42-60"))
+
+    def test_invalid_chars(self):
+        self.assertRaises(ValueError, parse_build_upload_leaf_name, "a42-460")
+
+    def test_no_dash(self):
+        self.assertRaises(ValueError, parse_build_upload_leaf_name, "32")

@@ -11,32 +11,45 @@ through the possibilities should go here.
 from __future__ import with_statement
 
 from contextlib import contextmanager
-from datetime import datetime, timedelta
-from pytz import UTC
+from datetime import (
+    datetime,
+    timedelta,
+    )
 
+from pytz import UTC
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
-
+from canonical.launchpad.webapp.testing import verifyObject
+from canonical.testing import LaunchpadZopelessLayer
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.model.distribution import Distribution
 from lp.registry.model.sourcepackagename import (
     SourcePackageName,
-    SourcePackageNameSet)
+    SourcePackageNameSet,
+    )
+from lp.services.worlddata.model.language import (
+    Language,
+    LanguageSet,
+    )
+from lp.testing import TestCaseWithFactory
 from lp.testing.fakemethod import FakeMethod
-from lp.services.worlddata.model.language import Language, LanguageSet
-from lp.translations.model.customlanguagecode import CustomLanguageCode
-from lp.translations.model.pofile import POFile
-from lp.translations.model.potemplate import POTemplateSet, POTemplateSubset
-from lp.translations.model.translationimportqueue import (
-    TranslationImportQueue, TranslationImportQueueEntry)
 from lp.translations.interfaces.customlanguagecode import ICustomLanguageCode
 from lp.translations.interfaces.translationimportqueue import (
-    RosettaImportStatus, translation_import_queue_entry_age)
-from lp.testing import TestCaseWithFactory
-from canonical.launchpad.webapp.testing import verifyObject
-from canonical.testing import LaunchpadZopelessLayer
+    RosettaImportStatus,
+    translation_import_queue_entry_age,
+    )
+from lp.translations.model.customlanguagecode import CustomLanguageCode
+from lp.translations.model.pofile import POFile
+from lp.translations.model.potemplate import (
+    POTemplateSet,
+    POTemplateSubset,
+    )
+from lp.translations.model.translationimportqueue import (
+    TranslationImportQueue,
+    TranslationImportQueueEntry,
+    )
 
 
 class GardenerDbUserMixin(object):

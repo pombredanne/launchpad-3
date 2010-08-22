@@ -681,6 +681,7 @@ teams with automatic renewal don't need warnings.
 
     >>> print '\n'.join(
     ...     line for line in err.split('\n') if 'INFO' not in line)
+    DEBUG   ...
     DEBUG   Sent warning email to name16 in launchpad-buildd-admins team.
     DEBUG   Sent warning email to name12 in landscape-developers team.
     DEBUG   Removing lock file: /var/lock/launchpad-flag-expired-memberships.lock

@@ -235,25 +235,22 @@ Regular Joes can't edit any old project:
     ...
     Unauthorized:...
 
-Even if we add them to the Registry Experts team:
+Tf we add them to the Registry Experts team:
 
     >>> admin_browser.open("http://launchpad.dev/~registry/+addmember")
     >>> admin_browser.getControl('New member').value = 'no-priv'
     >>> admin_browser.getControl('Add Member').click()
 
-They still cannot edit projects.
+They cannot edit projects.
 
     >>> browser.open('http://launchpad.dev/firefox/+edit')
     Traceback (most recent call last):
     ...
     Unauthorized:...
 
-And they still can't access +admin.
+But they still can access +admin.
 
     >>> browser.open('http://launchpad.dev/firefox/+admin')
-    Traceback (most recent call last):
-    ...
-    Unauthorized...
 
 
 Display error when trying to remove all licenses

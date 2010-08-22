@@ -9,12 +9,14 @@ import unittest
 
 from canonical.config import config
 from canonical.testing.layers import FunctionalLayer
-
 from lp.testing import TestCase
 from lp.testing.publication import get_request_and_publication
-
 from lp.vostok.publisher import (
-    VostokBrowserResponse, VostokBrowserRequest, VostokLayer, VostokRoot)
+    VostokBrowserRequest,
+    VostokBrowserResponse,
+    VostokLayer,
+    VostokRoot,
+    )
 
 
 class TestRegistration(TestCase):

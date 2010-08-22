@@ -27,19 +27,33 @@ import os
 import sys
 import threading
 
-from bzrlib import config, trace
+from bzrlib import (
+    config,
+    trace,
+    )
 from bzrlib.branch import Branch
 from bzrlib.bzrdir import BzrDir
 from bzrlib.errors import (
-    NotStacked, UnstackableBranchFormat, UnstackableRepositoryFormat)
-from bzrlib.remote import RemoteBranch, RemoteBzrDir, RemoteRepository
-from bzrlib.transport import register_transport, unregister_transport
+    NotStacked,
+    UnstackableBranchFormat,
+    UnstackableRepositoryFormat,
+    )
+from bzrlib.remote import (
+    RemoteBranch,
+    RemoteBzrDir,
+    RemoteRepository,
+    )
+from bzrlib.transport import (
+    register_transport,
+    unregister_transport,
+    )
 from bzrlib.transport.local import LocalTransport
+from lazr.uri import URI
 
 from canonical.launchpad.webapp.errorlog import (
-    ErrorReportingUtility, ScriptRequest)
-
-from lazr.uri import URI
+    ErrorReportingUtility,
+    ScriptRequest,
+    )
 
 
 def is_branch_stackable(bzr_branch):

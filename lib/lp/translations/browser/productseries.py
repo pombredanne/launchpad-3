@@ -19,8 +19,8 @@ __all__ = [
 
 import cgi
 import os.path
-from bzrlib.revision import NULL_REVISION
 
+from bzrlib.revision import NULL_REVISION
 from zope.component import getUtility
 from zope.publisher.browser import FileUpload
 
@@ -36,24 +36,27 @@ from canonical.launchpad.webapp import (
     LaunchpadFormView,
     LaunchpadView,
     Link,
-    NavigationMenu)
+    NavigationMenu,
+    )
 from canonical.launchpad.webapp.menu import structured
-from canonical.widgets.itemswidgets import (
-    LaunchpadRadioWidgetWithDescription)
-
-from lp.translations.browser.poexportrequest import BaseExportView
-from lp.translations.browser.translations import TranslationsMixin
-from lp.translations.browser.potemplate import BaseSeriesTemplatesView
+from canonical.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource
-from lp.translations.interfaces.productserieslanguage import (
-    IProductSeriesLanguageSet)
-from lp.translations.interfaces.translations import (
-    TranslationsBranchImportMode)
-from lp.translations.interfaces.translationimporter import (
-    ITranslationImporter)
-from lp.translations.interfaces.translationimportqueue import (
-    ITranslationImportQueue)
 from lp.registry.interfaces.productseries import IProductSeries
+from lp.translations.browser.poexportrequest import BaseExportView
+from lp.translations.browser.potemplate import BaseSeriesTemplatesView
+from lp.translations.browser.translations import TranslationsMixin
+from lp.translations.interfaces.productserieslanguage import (
+    IProductSeriesLanguageSet,
+    )
+from lp.translations.interfaces.translationimporter import (
+    ITranslationImporter,
+    )
+from lp.translations.interfaces.translationimportqueue import (
+    ITranslationImportQueue,
+    )
+from lp.translations.interfaces.translations import (
+    TranslationsBranchImportMode,
+    )
 
 
 class ProductSeriesTranslationsMenuMixIn:

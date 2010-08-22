@@ -7,7 +7,10 @@
 
 __metaclass__ = type
 
-from datetime import datetime, timedelta
+from datetime import (
+    datetime,
+    timedelta,
+    )
 from difflib import unified_diff
 import operator
 import unittest
@@ -18,23 +21,38 @@ from zope.component import getMultiAdapter
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from lp.code.browser.branch import RegisterBranchMergeProposalView
-from lp.code.browser.branchmergeproposal import (
-    BranchMergeProposalAddVoteView, BranchMergeProposalChangeStatusView,
-    BranchMergeProposalContextMenu, BranchMergeProposalMergedView,
-    BranchMergeProposalVoteView, DecoratedCodeReviewVoteReference,
-    latest_proposals_for_each_branch)
-from lp.code.enums import BranchMergeProposalStatus, CodeReviewVote
-from lp.code.tests.helpers import add_revision_to_branch
-from lp.testing import (
-    login_person, TestCaseWithFactory, time_counter)
-from lp.testing.views import create_initialized_view
-from lp.code.model.diff import PreviewDiff, StaticDiff
 from canonical.launchpad.database.message import MessageSet
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import (
-    DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
+from lp.code.browser.branch import RegisterBranchMergeProposalView
+from lp.code.browser.branchmergeproposal import (
+    BranchMergeProposalAddVoteView,
+    BranchMergeProposalChangeStatusView,
+    BranchMergeProposalContextMenu,
+    BranchMergeProposalMergedView,
+    BranchMergeProposalVoteView,
+    DecoratedCodeReviewVoteReference,
+    latest_proposals_for_each_branch,
+    )
+from lp.code.enums import (
+    BranchMergeProposalStatus,
+    CodeReviewVote,
+    )
+from lp.code.model.diff import (
+    PreviewDiff,
+    StaticDiff,
+    )
+from lp.code.tests.helpers import add_revision_to_branch
+from lp.testing import (
+    login_person,
+    TestCaseWithFactory,
+    time_counter,
+    )
+from lp.testing.views import create_initialized_view
 
 
 class TestBranchMergeProposalPrimaryContext(TestCaseWithFactory):

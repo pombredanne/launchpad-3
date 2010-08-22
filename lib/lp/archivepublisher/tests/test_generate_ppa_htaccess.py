@@ -4,31 +4,35 @@
 """Test the generate_ppa_htaccess.py script. """
 
 import crypt
-from datetime import datetime, timedelta
+from datetime import (
+    datetime,
+    timedelta,
+    )
 import os
-import pytz
 import subprocess
 import sys
 import tempfile
 
-
+import pytz
 from zope.component import getUtility
 
 from canonical.config import config
 from canonical.launchpad.interfaces import (
-    IDistributionSet, IPersonSet, TeamMembershipStatus)
+    IDistributionSet,
+    IPersonSet,
+    TeamMembershipStatus,
+    )
 from canonical.launchpad.scripts import QuietFakeLogger
 from canonical.testing.layers import LaunchpadZopelessLayer
-
 from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.scripts.generate_ppa_htaccess import (
-    HtaccessTokenGenerator)
+    HtaccessTokenGenerator,
+    )
+from lp.services.mail import stub
 from lp.soyuz.interfaces.archive import ArchiveStatus
-from lp.soyuz.interfaces.archivesubscriber import (
-    ArchiveSubscriberStatus)
+from lp.soyuz.interfaces.archivesubscriber import ArchiveSubscriberStatus
 from lp.testing import TestCaseWithFactory
 from lp.testing.mail_helpers import pop_notifications
-from lp.services.mail import stub
 
 
 class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):

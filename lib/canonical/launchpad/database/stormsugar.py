@@ -20,12 +20,24 @@ __all__ = [
     ]
 
 
-from storm.expr import Like, SQLRaw
-from storm.locals import Int, Reference, Store, Storm
+from storm.expr import (
+    Like,
+    SQLRaw,
+    )
+from storm.locals import (
+    Int,
+    Reference,
+    Store,
+    Storm,
+    )
 from zope.component import getUtility
 
 from canonical.launchpad.webapp.interfaces import (
-     DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    MASTER_FLAVOR,
+    )
 from lp.app.errors import NotFoundError
 
 

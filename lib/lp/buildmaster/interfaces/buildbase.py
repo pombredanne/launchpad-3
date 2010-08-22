@@ -13,20 +13,32 @@ __all__ = [
     'IBuildBase',
     ]
 
-from zope.interface import Attribute, Interface
-from zope.schema import Choice, Datetime, Object, TextLine, Timedelta
-from lazr.enum import DBEnumeratedType, DBItem
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    )
 from lazr.restful.declarations import exported
 from lazr.restful.fields import Reference
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Choice,
+    Datetime,
+    Object,
+    TextLine,
+    Timedelta,
+    )
 
+from canonical.launchpad import _
+from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from lp.buildmaster.interfaces.builder import IBuilder
 from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.archive import IArchive
-from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
-from canonical.launchpad import _
 
 
 BUILDD_MANAGER_LOG_NAME = "slave-scanner"

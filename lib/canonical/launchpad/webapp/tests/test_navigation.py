@@ -3,15 +3,22 @@
 
 __metaclass__ = type
 
-from zope.component import ComponentLookupError, getMultiAdapter
+from zope.component import (
+    ComponentLookupError,
+    getMultiAdapter,
+    )
 from zope.configuration import xmlconfig
-from zope.interface import implements, Interface
+from zope.interface import (
+    implements,
+    Interface,
+    )
 from zope.publisher.interfaces.browser import (
-    IBrowserPublisher, IDefaultBrowserLayer)
+    IBrowserPublisher,
+    IDefaultBrowserLayer,
+    )
 from zope.testing.cleanup import cleanUp
 
 from canonical.launchpad.webapp import Navigation
-
 from lp.testing import TestCase
 
 

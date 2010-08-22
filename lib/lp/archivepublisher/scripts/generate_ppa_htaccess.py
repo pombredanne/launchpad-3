@@ -5,26 +5,35 @@
 
 # pylint: disable-msg=C0103,W0403
 
-import crypt, filecmp, os, pytz, tempfile
+import crypt
 from datetime import datetime
+import filecmp
 from operator import attrgetter
+import os
+import tempfile
 
+import pytz
 from zope.component import getUtility
 
 from canonical.config import config
 from canonical.launchpad.helpers import get_email_template
-from canonical.launchpad.mail import format_address, simple_sendmail
+from canonical.launchpad.mail import (
+    format_address,
+    simple_sendmail,
+    )
 from canonical.launchpad.webapp import canonical_url
-
 from lp.archivepublisher.config import getPubConfig
-from lp.soyuz.interfaces.archive import IArchiveSet, ArchiveStatus
-from lp.soyuz.interfaces.archiveauthtoken import (
-    IArchiveAuthTokenSet)
-from lp.soyuz.interfaces.archivesubscriber import (
-    ArchiveSubscriberStatus, IArchiveSubscriberSet)
 from lp.services.mail.mailwrapper import MailWrapper
 from lp.services.scripts.base import LaunchpadCronScript
-
+from lp.soyuz.interfaces.archive import (
+    ArchiveStatus,
+    IArchiveSet,
+    )
+from lp.soyuz.interfaces.archiveauthtoken import IArchiveAuthTokenSet
+from lp.soyuz.interfaces.archivesubscriber import (
+    ArchiveSubscriberStatus,
+    IArchiveSubscriberSet,
+    )
 
 # These PPAs should never have their htaccess/pwd files touched.
 BLACKLISTED_PPAS = {

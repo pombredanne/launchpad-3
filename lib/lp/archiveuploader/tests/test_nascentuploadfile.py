@@ -1,0 +1,246 @@
+# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
+"""Test NascentUploadFile functionality."""
+
+__metaclass__ = type
+
+import hashlib
+import os
+
+from debian.deb822 import (
+    Changes,
+    Dsc,
+    )
+
+from canonical.launchpad.scripts.logger import BufferLogger
+from canonical.testing import LaunchpadZopelessLayer
+from lp.archiveuploader.changesfile import ChangesFile
+from lp.archiveuploader.dscfile import DSCFile
+from lp.archiveuploader.nascentuploadfile import (
+    CustomUploadFile,
+    DebBinaryUploadFile,
+    )
+from lp.archiveuploader.tests import AbsolutelyAnythingGoesUploadPolicy
+from lp.soyuz.interfaces.queue import PackageUploadCustomFormat
+from lp.testing import TestCaseWithFactory
+
+
+class NascentUploadFileTestCase(TestCaseWithFactory):
+    """Base class for all tests of classes deriving from NascentUploadFile."""
+
+    def setUp(self):
+        super(NascentUploadFileTestCase, self).setUp()
+        self.logger = BufferLogger()
+        self.policy = AbsolutelyAnythingGoesUploadPolicy()
+        self.distro = self.factory.makeDistribution()
+        self.policy.archive = self.factory.makeArchive(
+            distribution=self.distro)
+
+    def writeUploadFile(self, filename, contents):
+        """Write a temporary file but with a specific filename.
+
+        :param filename: Filename to use
+        :param contents: Contents of the file
+        :return: Tuple with path, digest and size
+        """
+        path = os.path.join(self.makeTemporaryDirectory(), filename)
+        f = open(path, 'w')
+        try:
+            f.write(contents)
+        finally:
+            f.close()
+        return (path, hashlib.sha1(contents), len(contents))
+
+
+class CustomUploadFileTests(NascentUploadFileTestCase):
+    """Tests for CustomUploadFile."""
+
+    layer = LaunchpadZopelessLayer
+
+    def createCustomUploadFile(self, filename, contents,
+                               component_and_section, priority_name):
+        """Simple wrapper to create a CustomUploadFile."""
+        (path, digest, size) = self.writeUploadFile(filename, contents)
+        uploadfile = CustomUploadFile(
+            path, digest, size, component_and_section, priority_name,
+            self.policy, self.logger)
+        return uploadfile
+
+    def test_custom_type(self):
+        # The mime type gets set according to PackageUploadCustomFormat.
+        uploadfile = self.createCustomUploadFile(
+            "bla.txt", "data", "main/raw-installer", "extra")
+        self.assertEquals(
+            PackageUploadCustomFormat.DEBIAN_INSTALLER,
+            uploadfile.custom_type)
+
+    def test_storeInDatabase(self):
+        # storeInDatabase creates a library file.
+        uploadfile = self.createCustomUploadFile(
+            "bla.txt", "data", "main/raw-installer", "extra")
+        self.assertEquals("application/octet-stream", uploadfile.content_type)
+        libraryfile = uploadfile.storeInDatabase()
+        self.assertEquals("bla.txt", libraryfile.filename)
+        self.assertEquals("application/octet-stream", libraryfile.mimetype)
+
+
+class PackageUploadFileTestCase(NascentUploadFileTestCase):
+    """Base class for all tests of classes deriving from PackageUploadFile."""
+
+    def setUp(self):
+        super(PackageUploadFileTestCase, self).setUp()
+        self.policy.distroseries = self.factory.makeDistroSeries(
+            distribution=self.distro)
+
+    def getBaseChanges(self):
+        contents = Changes()
+        contents["Source"] = "mypkg"
+        contents["Binary"] = "binary"
+        contents["Architecture"] = "i386"
+        contents["Version"] = "0.1"
+        contents["Distribution"] = "nifty"
+        contents["Description"] = "\n Foo"
+        contents["Maintainer"] = "Somebody"
+        contents["Changes"] = "Something changed"
+        contents["Date"] = "Fri, 25 Jun 2010 11:20:22 -0600"
+        contents["Urgency"] = "low"
+        contents["Changed-By"] = "Seombody Else <somebody@example.com>"
+        contents["Files"] = [{
+            "md5sum": "d2bd347b3fed184fe28e112695be491c",
+            "size": "1791",
+            "section": "python",
+            "priority": "optional",
+            "name": "dulwich_0.4.1-1.dsc"}]
+        return contents
+
+    def createChangesFile(self, filename, changes):
+        tempdir = self.makeTemporaryDirectory()
+        path = os.path.join(tempdir, filename)
+        changes_fd = open(path, "w")
+        try:
+            changes.dump(changes_fd)
+        finally:
+            changes_fd.close()
+        return ChangesFile(path, self.policy, self.logger)
+
+
+class DSCFileTests(PackageUploadFileTestCase):
+    """Tests for DSCFile."""
+
+    layer = LaunchpadZopelessLayer
+
+    def getBaseDsc(self):
+        dsc = Dsc()
+        dsc["Architecture"] = "all"
+        dsc["Version"] = "0.42"
+        dsc["Source"] = "dulwich"
+        dsc["Binary"] = "python-dulwich"
+        dsc["Standards-Version"] = "0.2.2"
+        dsc["Maintainer"] = "Jelmer Vernooij <jelmer@ubuntu.com>"
+        dsc["Files"] = [{
+            "md5sum": "5e8ba79b4074e2f305ddeaf2543afe83",
+            "size": "182280",
+            "name": "dulwich_0.42.tar.gz"}]
+        return dsc
+
+    def createDSCFile(self, filename, dsc, component_and_section,
+                      priority_name, package, version, changes):
+        (path, digest, size) = self.writeUploadFile(filename, dsc.dump())
+        if changes:
+            self.assertEquals([], list(changes.processAddresses()))
+        return DSCFile(
+            path, digest, size, component_and_section, priority_name, package,
+            version, changes, self.policy, self.logger)
+
+    def test_filetype(self):
+        # The filetype attribute is set based on the file extension.
+        dsc = self.getBaseDsc()
+        uploadfile = self.createDSCFile(
+            "foo.dsc", dsc, "main/net", "extra", "dulwich", "0.42", None)
+        self.assertEquals(
+            "text/x-debian-source-package", uploadfile.content_type)
+
+    def test_storeInDatabase(self):
+        # storeInDatabase creates a SourcePackageRelease.
+        dsc = self.getBaseDsc()
+        dsc["Build-Depends"] = "dpkg, bzr"
+        changes = self.getBaseChanges()
+        uploadfile = self.createDSCFile(
+            "foo.dsc", dsc, "main/net", "extra", "dulwich", "0.42",
+            self.createChangesFile("foo.changes", changes))
+        (uploadfile.changelog_path, changelog_digest, changelog_size) = (
+            self.writeUploadFile("changelog", "DUMMY"))
+        uploadfile.files = []
+        release = uploadfile.storeInDatabase(None)
+        self.assertEquals("0.42", release.version)
+        self.assertEquals("dpkg, bzr", release.builddepends)
+
+
+class DebBinaryUploadFileTests(PackageUploadFileTestCase):
+    """Tests for DebBinaryUploadFile."""
+
+    layer = LaunchpadZopelessLayer
+
+    def getBaseControl(self):
+        return {
+            "Package": "python-dulwich",
+            "Source": "dulwich",
+            "Version": "0.42",
+            "Architecture": "i386",
+            "Maintainer": "Jelmer Vernooij <jelmer@debian.org>",
+            "Installed-Size": "524",
+            "Depends": "python (<< 2.7), python (>= 2.5)",
+            "Provides": "python2.5-dulwich, python2.6-dulwich",
+            "Section": "python",
+            "Priority": "optional",
+            "Homepage": "http://samba.org/~jelmer/dulwich",
+            "Description": "Pure-python Git library\n"
+                "Dulwich is a Python implementation of the file formats and "
+                "protocols"
+            }
+
+    def createDebBinaryUploadFile(self, filename, component_and_section,
+                                  priority_name, package, version, changes):
+        """Create a DebBinaryUploadFile."""
+        (path, digest, size) = self.writeUploadFile(filename, "DUMMY DATA")
+        return DebBinaryUploadFile(
+            path, digest, size, component_and_section, priority_name, package,
+            version, changes, self.policy, self.logger)
+
+    def test_unknown_priority(self):
+        # Unknown priorities automatically get changed to 'extra'.
+        uploadfile = self.createDebBinaryUploadFile(
+            "foo_0.42_i386.deb", "main/net", "unknown", "mypkg", "0.42", None)
+        self.assertEquals("extra", uploadfile.priority_name)
+
+    def test_parseControl(self):
+        # parseControl sets various fields on DebBinaryUploadFile.
+        uploadfile = self.createDebBinaryUploadFile(
+            "foo_0.42_i386.deb", "main/python", "unknown", "mypkg", "0.42",
+            None)
+        control = self.getBaseControl()
+        uploadfile.parseControl(control)
+        self.assertEquals("python", uploadfile.section_name)
+        self.assertEquals("dulwich", uploadfile.source_name)
+        self.assertEquals("0.42", uploadfile.source_version)
+        self.assertEquals("0.42", uploadfile.control_version)
+
+    def test_storeInDatabase(self):
+        # storeInDatabase creates a BinaryPackageRelease.
+        uploadfile = self.createDebBinaryUploadFile(
+            "foo_0.42_i386.deb", "main/python", "unknown", "mypkg", "0.42",
+            None)
+        control = self.getBaseControl()
+        uploadfile.parseControl(control)
+        build = self.factory.makeBinaryPackageBuild()
+        bpr = uploadfile.storeInDatabase(build)
+        self.assertEquals(u'python (<< 2.7), python (>= 2.5)', bpr.depends)
+        self.assertEquals(
+            u"Dulwich is a Python implementation of the file formats "
+            u"and protocols", bpr.description)
+        self.assertEquals(False, bpr.essential)
+        self.assertEquals(524, bpr.installedsize)
+        self.assertEquals(True, bpr.architecturespecific)
+        self.assertEquals(u"", bpr.recommends)
+        self.assertEquals("0.42", bpr.version)

@@ -7,41 +7,55 @@ __metaclass__ = type
 
 import datetime
 import os
-import pytz
 import unittest
 
 from bzrlib import bzrdir
 from bzrlib.tests import multiply_tests
 from bzrlib.urlutils import escape
-
+import pytz
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad.ftests import ANONYMOUS, login, logout
-from lp.services.scripts.interfaces.scriptactivity import (
-    IScriptActivitySet)
-from lp.code.interfaces.codehosting import (
-    BRANCH_ALIAS_PREFIX, BRANCH_TRANSPORT, CONTROL_TRANSPORT)
+from canonical.launchpad.ftests import (
+    ANONYMOUS,
+    login,
+    logout,
+    )
 from canonical.launchpad.interfaces.launchpad import ILaunchBag
-from lp.testing import TestCaseWithFactory
-from lp.testing.factory import LaunchpadObjectFactory
 from canonical.launchpad.xmlrpc import faults
-from canonical.testing import DatabaseFunctionalLayer, FunctionalLayer
-
+from canonical.testing import (
+    DatabaseFunctionalLayer,
+    FunctionalLayer,
+    )
 from lp.app.errors import NotFoundError
-from lp.code.bzr import BranchFormat, ControlFormat, RepositoryFormat
+from lp.code.bzr import (
+    BranchFormat,
+    ControlFormat,
+    RepositoryFormat,
+    )
 from lp.code.enums import BranchType
 from lp.code.errors import UnknownBranchTypeError
 from lp.code.interfaces.branch import BRANCH_NAME_VALIDATION_ERROR_MESSAGE
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchtarget import IBranchTarget
+from lp.code.interfaces.codehosting import (
+    BRANCH_ALIAS_PREFIX,
+    BRANCH_TRANSPORT,
+    CONTROL_TRANSPORT,
+    )
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from lp.code.model.tests.test_branchpuller import AcquireBranchToPullTests
 from lp.code.xmlrpc.codehosting import (
-    CodehostingAPI, LAUNCHPAD_ANONYMOUS, LAUNCHPAD_SERVICES, run_with_login)
-
+    CodehostingAPI,
+    LAUNCHPAD_ANONYMOUS,
+    LAUNCHPAD_SERVICES,
+    run_with_login,
+    )
 from lp.codehosting.inmemory import InMemoryFrontend
+from lp.services.scripts.interfaces.scriptactivity import IScriptActivitySet
+from lp.testing import TestCaseWithFactory
+from lp.testing.factory import LaunchpadObjectFactory
 
 
 UTC = pytz.timezone('UTC')

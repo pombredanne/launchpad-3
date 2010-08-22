@@ -7,21 +7,39 @@ __metaclass__ = type
 
 import logging
 
+from lazr.batchnavigator.interfaces import IBatchNavigator
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    use_template,
+    )
+import zope.app.publication.interfaces
+from zope.app.security.interfaces import (
+    IAuthentication,
+    IPrincipal,
+    IPrincipalSource,
+    )
+from zope.component.interfaces import IObjectEvent
+from zope.interface import (
+    Attribute,
+    implements,
+    Interface,
+    )
+from zope.schema import (
+    Bool,
+    Choice,
+    Datetime,
+    Int,
+    Object,
+    Text,
+    TextLine,
+    )
+from zope.traversing.interfaces import IContainmentRoot
+
+from canonical.launchpad import _
 # Import only added to allow change to land.  Needs to be removed when shipit
 # is updated.
 from lp.app.errors import UnexpectedFormData
-
-import zope.app.publication.interfaces
-from zope.component.interfaces import IObjectEvent
-from zope.interface import Interface, Attribute, implements
-from zope.app.security.interfaces import (
-    IAuthentication, IPrincipal, IPrincipalSource)
-from zope.traversing.interfaces import IContainmentRoot
-from zope.schema import Bool, Choice, Datetime, Int, Object, Text, TextLine
-from lazr.batchnavigator.interfaces import IBatchNavigator
-from lazr.enum import DBEnumeratedType, DBItem, use_template
-
-from canonical.launchpad import _
 
 
 class IAPIDocRoot(IContainmentRoot):
