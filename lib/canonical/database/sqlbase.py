@@ -269,7 +269,7 @@ class SQLBase(storm.sqlobject.SQLObjectBase):
     def __storm_invalidated__(self):
         """Flush cached properties."""
         # XXX: RobertCollins 2010-08-16 bug=622648: Note this is not directly
-        # tested; but the entire test suite blows up awesomely if its broken.
+        # tested, but the entire test suite blows up awesomely if it's broken.
         # It's entirely unclear where tests for this should be.
 
         # While canonical.cachedproperty and lp.services.propertycache are
