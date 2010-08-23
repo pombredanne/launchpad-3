@@ -226,7 +226,7 @@ to the mailing list.
 Non-ascii messages
 ==================
 
-Messages with non-ascii in their headers or bodies are not exactly legal
+Messages with non-ascii in their headers are not exactly legal
 (they should be encoded) but do occur especially in spam.  These
 messages can be held for moderator approval too. To avoid blowing up
 later if the string is converted to a unicode object, the non-ascii
@@ -239,8 +239,7 @@ characters are replaced.
     ... Message-ID: <fifth-post\xa9>
     ... Date: Fri, 01 Aug 2000 01:08:59 -0000
     ...
-    ... Watch out for badgers! \xa9
-    ... Don't double quote characters: =E3=F6=FC
+    ... Don't escape non-ascii characters in the body! \xa9
     ... """)
 
     >>> import xmlrpclib
@@ -269,8 +268,7 @@ characters are replaced.
      'Message-ID: <fifth-post\\xa9>',
      'Date: Fri, 01 Aug 2000 01:08:59 -0000',
      '',
-     'Watch out for badgers! \\xa9',
-     "Don't double quote characters: =E3=F6=FC"]
+     "Don't escape non-ascii characters in the body! \xa9"]
 
     >>> held_message_spam.status
      <DBItem PostedMessageStatus.NEW, (0) New status>
