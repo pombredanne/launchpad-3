@@ -29,22 +29,41 @@ __all__ = [
     'name_priority_map',
     ]
 
-from zope.schema import Choice, Date, Datetime, Int, TextLine, Text
-from zope.interface import Interface, Attribute
-from lazr.enum import DBEnumeratedType, DBItem
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    )
+from lazr.restful.declarations import (
+    call_with,
+    export_as_webservice_entry,
+    export_read_operation,
+    export_write_operation,
+    exported,
+    operation_parameters,
+    operation_returns_collection_of,
+    REQUEST_USER,
+    )
+from lazr.restful.fields import Reference
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Choice,
+    Date,
+    Datetime,
+    Int,
+    Text,
+    TextLine,
+    )
 
 from canonical.launchpad import _
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.binarypackagerelease import (
-    IBinaryPackageReleaseDownloadCount)
-
-from lazr.restful.fields import Reference
-from lazr.restful.declarations import (
-    REQUEST_USER, call_with, export_as_webservice_entry,
-    export_read_operation, export_write_operation, exported,
-    operation_parameters, operation_returns_collection_of)
+    IBinaryPackageReleaseDownloadCount,
+    )
 
 #
 # Exceptions
@@ -278,12 +297,7 @@ class IPublishingView(Interface):
         """
 
     def supersede():
-        """Supersede this publication.
-
-        :return: The superseded publishing records, either a
-            `ISourcePackagePublishingHistory` or
-            `IBinaryPackagePublishingHistory`.
-        """
+        """Supersede this publication."""
 
     def requestObsolescence():
         """Make this publication obsolete.
@@ -632,6 +646,15 @@ class ISourcePackagePublishingHistoryPublic(IPublishingView):
         :return: a list of `ILibraryFileAlias`.
         """
 
+    def supersede(dominant=None, logger=None):
+        """Supersede this publication.
+
+        :param dominant: optional `ISourcePackagePublishingHistory` which is
+            triggering the domination.
+        :param logger: optional object to which debug information will be
+            logged.
+        """
+
     def changeOverride(new_component=None, new_section=None):
         """Change the component and/or section of this publication
 
@@ -837,6 +860,15 @@ class IBinaryPackagePublishingHistoryPublic(IPublishingView):
         TextLine(
             title=_("Priority Name"),
             required=False, readonly=True))
+
+    def supersede(dominant=None, logger=None):
+        """Supersede this publication.
+
+        :param dominant: optional `IBinaryPackagePublishingHistory` which is
+            triggering the domination.
+        :param logger: optional object to which debug information will be
+            logged.
+        """
 
     def changeOverride(new_component=None, new_section=None,
                        new_priority=None):

@@ -3,19 +3,33 @@
 
 __metaclass__ = type
 
+from doctest import DocTestSuite
+import time
 import unittest
 
-from zope.interface import directlyProvides, directlyProvidedBy
-from zope.testing.doctest import DocTestSuite
+from zope.interface import (
+    directlyProvidedBy,
+    directlyProvides,
+    )
 
 from canonical.launchpad.interfaces.mail import (
-    EmailProcessingError, IWeaklyAuthenticatedPrincipal)
+    EmailProcessingError,
+    IWeaklyAuthenticatedPrincipal,
+    )
 from canonical.launchpad.mail.helpers import (
-    ensure_not_weakly_authenticated, get_person_or_team,
-    IncomingEmailError, parse_commands)
-from lp.testing import login_person, TestCase, TestCaseWithFactory
-from canonical.testing import DatabaseFunctionalLayer
+    ensure_not_weakly_authenticated,
+    ensure_sane_signature_timestamp,
+    get_person_or_team,
+    IncomingEmailError,
+    parse_commands,
+    )
 from canonical.launchpad.webapp.interaction import get_current_principal
+from canonical.testing import DatabaseFunctionalLayer
+from lp.testing import (
+    login_person,
+    TestCase,
+    TestCaseWithFactory,
+    )
 
 
 class TestParseCommands(TestCase):
@@ -75,6 +89,50 @@ class TestParseCommands(TestCase):
         self.assertEqual(
             [('command', [])],
             parse_commands(' command:', ['command']))
+
+
+class FakeSignature:
+
+    def __init__(self, timestamp):
+        self.timestamp = timestamp
+
+
+class TestEnsureSaneSignatureTimestamp(unittest.TestCase):
+    """Tests for ensure_sane_signature_timestamp"""
+
+    def test_too_old_timestamp(self):
+        # signature timestamps shouldn't be too old
+        now = time.time()
+        one_week = 60 * 60 * 24 * 7
+        signature = FakeSignature(timestamp=now-one_week)
+        self.assertRaises(
+            IncomingEmailError, ensure_sane_signature_timestamp,
+            signature, 'bug report')
+
+    def test_future_timestamp(self):
+        # signature timestamps shouldn't be (far) in the future
+        now = time.time()
+        one_week = 60 * 60 * 24 * 7
+        signature = FakeSignature(timestamp=now+one_week)
+        self.assertRaises(
+            IncomingEmailError, ensure_sane_signature_timestamp,
+            signature, 'bug report')
+
+    def test_near_future_timestamp(self):
+        # signature timestamps in the near future are OK
+        now = time.time()
+        one_minute = 60
+        signature = FakeSignature(timestamp=now+one_minute)
+        # this should not raise an exception
+        ensure_sane_signature_timestamp(signature, 'bug report')
+
+    def test_recent_timestamp(self):
+        # signature timestamps in the recent past are OK
+        now = time.time()
+        one_hour = 60 * 60
+        signature = FakeSignature(timestamp=now-one_hour)
+        # this should not raise an exception
+        ensure_sane_signature_timestamp(signature, 'bug report')
 
 
 class TestEnsureNotWeaklyAuthenticated(TestCaseWithFactory):

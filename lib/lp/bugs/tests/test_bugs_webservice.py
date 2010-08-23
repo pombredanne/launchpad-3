@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Webservice unit tests related to Launchpad Bugs."""
@@ -6,22 +6,23 @@
 __metaclass__ = type
 
 import re
-import unittest
 
 from BeautifulSoup import BeautifulSoup
-from simplejson import dumps
-
-from zope.component import getMultiAdapter
 from lazr.lifecycle.interfaces import IDoNotSnapshot
+from simplejson import dumps
+from zope.component import getMultiAdapter
 
-from lp.bugs.browser.bugtask import get_comments_for_bugtask
-from lp.bugs.interfaces.bug import IBug
-from canonical.launchpad.ftests import login, logout
-from lp.testing import TestCaseWithFactory
+from canonical.launchpad.ftests import (
+    login,
+    logout,
+    )
 from canonical.launchpad.testing.pages import LaunchpadWebServiceCaller
 from canonical.launchpad.webapp import snapshot
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import DatabaseFunctionalLayer
+from lp.bugs.browser.bugtask import get_comments_for_bugtask
+from lp.bugs.interfaces.bug import IBug
+from lp.testing import TestCaseWithFactory
 
 
 class TestBugDescriptionRepresentation(TestCaseWithFactory):
@@ -201,7 +202,3 @@ class TestPostBugWithLargeCollections(TestCaseWithFactory):
             self.failUnlessEqual(200, response.status)
         finally:
             snapshot.HARD_LIMIT_FOR_SNAPSHOT = real_hard_limit_for_snapshot
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

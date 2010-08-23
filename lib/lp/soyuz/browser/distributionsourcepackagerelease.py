@@ -17,16 +17,19 @@ from zope.component import getUtility
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
 from canonical.launchpad.webapp import (
-    LaunchpadView, Navigation, stepthrough)
+    LaunchpadView,
+    Navigation,
+    stepthrough,
+    )
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.interfaces import NotFoundError
+from canonical.lazr.utils import smartquote
+from lp.app.errors import NotFoundError
 from lp.archivepublisher.debversion import Version
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.distributionsourcepackagerelease import (
-    IDistributionSourcePackageRelease)
+    IDistributionSourcePackageRelease,
+    )
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
-
-from canonical.lazr.utils import smartquote
 
 
 class DistributionSourcePackageReleaseBreadcrumb(Breadcrumb):

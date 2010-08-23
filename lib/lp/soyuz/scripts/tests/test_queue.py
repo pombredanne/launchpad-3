@@ -13,38 +13,55 @@ import hashlib
 import os
 import shutil
 import tempfile
-
-from unittest import TestCase, TestLoader
+from unittest import (
+    TestCase,
+    TestLoader,
+    )
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from lp.archiveuploader.tests import (
-    datadir, getPolicy, insertFakeChangesFileForAllPackageUploads,
-    mock_logger_quiet)
-from lp.archiveuploader.nascentupload import NascentUpload
 from canonical.config import config
 from canonical.database.sqlbase import ISOLATION_LEVEL_READ_COMMITTED
 from canonical.launchpad.database import (
-    LibraryFileAlias, PackageUploadBuild)
+    LibraryFileAlias,
+    PackageUploadBuild,
+    )
+from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from canonical.librarian.ftests.harness import (
+    cleanupLibrarianFiles,
+    fillLibrarianFile,
+    )
+from canonical.librarian.utils import filechunks
+from canonical.testing import LaunchpadZopelessLayer
+from lp.archiveuploader.nascentupload import NascentUpload
+from lp.archiveuploader.tests import (
+    datadir,
+    getPolicy,
+    insertFakeChangesFileForAllPackageUploads,
+    mock_logger_quiet,
+    )
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugtask import IBugTaskSet
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from lp.registry.interfaces.distribution import IDistributionSet
-from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
-from lp.soyuz.interfaces.queue import PackageUploadStatus
-from lp.soyuz.interfaces.publishing import PackagePublishingStatus
-from lp.soyuz.interfaces.queue import IPackageUploadSet
+from lp.registry.interfaces.series import SeriesStatus
 from lp.services.mail import stub
+from lp.soyuz.interfaces.archive import (
+    ArchivePurpose,
+    IArchiveSet,
+    )
+from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+from lp.soyuz.interfaces.queue import (
+    IPackageUploadSet,
+    PackageUploadStatus,
+    )
 from lp.soyuz.scripts.queue import (
-    CommandRunner, CommandRunnerError, name_queue_map)
-from canonical.librarian.ftests.harness import (
-    fillLibrarianFile, cleanupLibrarianFiles)
-from canonical.testing import LaunchpadZopelessLayer
-from canonical.librarian.utils import filechunks
+    CommandRunner,
+    CommandRunnerError,
+    name_queue_map,
+    )
 
 
 class TestQueueBase(TestCase):
@@ -123,7 +140,7 @@ class TestQueueTool(TestQueueBase):
         LaunchpadZopelessLayer.switchDbUser("uploader")
         sync_policy = getPolicy(
             name='sync', distro='ubuntu', distroseries='breezy-autotest')
-        bar_src = NascentUpload(
+        bar_src = NascentUpload.from_changesfile_path(
             datadir(changesfile),
             sync_policy, mock_logger_quiet)
         bar_src.process()
@@ -719,6 +736,7 @@ class TestQueueTool(TestQueueBase):
             component_name='universe', section_name='editors')
         # 'netapplet' appears 3 times, alsa-utils once.
         self.assertEqual(4, queue_action.items_size)
+        self.assertEqual(2, queue_action.overrides_performed)
         # Check results.
         queue_items = list(breezy_autotest.getQueueItems(
             status=PackageUploadStatus.NEW, name='alsa-utils'))
@@ -814,6 +832,7 @@ class TestQueueTool(TestQueueBase):
             priority_name='optional')
         # Check results.
         self.assertEqual(2, queue_action.items_size)
+        self.assertEqual(2, queue_action.overrides_performed)
         queue_items = list(breezy_autotest.getQueueItems(
             status=PackageUploadStatus.NEW, name='pmount'))
         queue_items.extend(list(breezy_autotest.getQueueItems(
@@ -861,7 +880,13 @@ class TestQueueTool(TestQueueBase):
             component_name='restricted', section_name='editors',
             priority_name='optional')
 
-        self.assertEqual(2, queue_action.items_size)
+        # There are three binaries to override on this PackageUpload:
+        #  - mozilla-firefox in breezy-autotest
+        #  - mozilla-firefox and mozilla-firefox-data in warty
+        # Each should be overridden exactly once.
+        self.assertEqual(1, queue_action.items_size)
+        self.assertEqual(3, queue_action.overrides_performed)
+
         queue_items = list(breezy_autotest.getQueueItems(
             status=PackageUploadStatus.NEW, name='mozilla-firefox-data'))
         queue_items.extend(list(breezy_autotest.getQueueItems(

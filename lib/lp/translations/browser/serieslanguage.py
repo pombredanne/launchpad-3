@@ -15,21 +15,21 @@ __all__ = [
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.readonly import is_read_only
 from canonical.launchpad.webapp import LaunchpadView
-from canonical.launchpad.webapp.tales import PersonFormatterAPI
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.publisher import Navigation
+from canonical.launchpad.webapp.tales import PersonFormatterAPI
 from lp.translations.interfaces.distroserieslanguage import (
-    IDistroSeriesLanguage)
-from lp.translations.interfaces.translationsperson import (
-    ITranslationsPerson)
-from lp.translations.interfaces.translationgroup import (
-    TranslationPermission)
+    IDistroSeriesLanguage,
+    )
 from lp.translations.interfaces.productserieslanguage import (
-    IProductSeriesLanguage)
+    IProductSeriesLanguage,
+    )
+from lp.translations.interfaces.translationgroup import TranslationPermission
+from lp.translations.interfaces.translationsperson import ITranslationsPerson
 
 
 class BaseSeriesLanguageView(LaunchpadView):
-    """View base class to render translation status for an 
+    """View base class to render translation status for an
     `IDistroSeries` and `IProductSeries`
 
     This class should not be directly instantiated.
@@ -46,12 +46,15 @@ class BaseSeriesLanguageView(LaunchpadView):
         self.translationgroup = translationgroup
         self.form = self.request.form
 
-        self.batchnav = BatchNavigator(
-            self.series.getCurrentTranslationTemplates(),
-            self.request)
-
-        self.pofiles = self.context.getPOFilesFor(
-            self.batchnav.currentBatch())
+        if IDistroSeriesLanguage.providedBy(self.context):
+            self.batchnav = BatchNavigator(
+                self.series.getCurrentTranslationTemplates(),
+                self.request)
+            self.pofiles = self.context.getPOFilesFor(
+                self.batchnav.currentBatch())
+        else:
+            self.batchnav = BatchNavigator(self.context.pofiles, self.request)
+            self.pofiles = self.batchnav.currentBatch()
 
     @property
     def translation_group(self):
@@ -77,7 +80,7 @@ class BaseSeriesLanguageView(LaunchpadView):
     @property
     def access_level_description(self):
         """Must not be called when there's no translation group."""
-        
+
         if is_read_only():
             return (
                 "No work can be done on these translations while Launchpad "

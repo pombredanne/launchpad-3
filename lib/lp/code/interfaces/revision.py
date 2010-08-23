@@ -10,11 +10,20 @@ __all__ = [
     'IRevision', 'IRevisionAuthor', 'IRevisionParent', 'IRevisionProperty',
     'IRevisionSet']
 
-from zope.interface import Interface, Attribute
-from zope.schema import Bool, Datetime, Int, Text, TextLine
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Bool,
+    Datetime,
+    Int,
+    Text,
+    TextLine,
+    )
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import PublicPersonChoice
+from lp.services.fields import PublicPersonChoice
 
 
 class IRevision(Interface):
@@ -35,7 +44,11 @@ class IRevision(Interface):
         title=_("Has karma been allocated for this revision?"),
         required=True, default=False)
     parents = Attribute("The RevisionParents for this revision.")
-    parent_ids = Attribute("The revision_ids of the parent Revisions.")
+    parent_ids = Attribute(
+        "The revision_ids of the parent Revisions. Parent revisions are "
+        "identified by their revision_id rather than a foreign key "
+        "so that ghosts and parents that actually exist can be modelled "
+        "in the same way.")
     properties = Attribute("The `RevisionProperty`s for this revision.")
 
     def getProperties():

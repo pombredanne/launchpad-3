@@ -1,11 +1,13 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-import __builtin__
 import atexit
 import itertools
-import types
 from operator import attrgetter
+import types
+
+import __builtin__
+
 
 original_import = __builtin__.__import__
 database_root = 'canonical.launchpad.database'
@@ -21,7 +23,6 @@ def text_lines_to_set(text):
     return set(line.strip() for line in text.splitlines() if line.strip())
 
 
-# zope.testing.doctest: called as part of creating a DocTestSuite.
 permitted_database_imports = text_lines_to_set("""
     canonical.archivepublisher.deathrow
     canonical.archivepublisher.domination
@@ -38,7 +39,8 @@ permitted_database_imports = text_lines_to_set("""
     lp.registry.vocabularies
     canonical.librarian.client
     canonical.librarian.db
-    zope.testing.doctest
+    doctest
+    lp.shipit
     """)
 
 
@@ -172,13 +174,13 @@ class NotFoundPolicyViolation(JackbootError):
 
     def format_message(self):
         return ('%s\nDo not import zope.exceptions.NotFoundError.\n'
-                'Use canonical.launchpad.interfaces.NotFoundError instead.'
+                'Use lp.app.errors.NotFoundError instead.'
                 % self.import_into)
 
 
-# The names of the arguments form part of the interface of __import__(...), and
-# must not be changed, as code may choose to invoke __import__ using keyword
-# arguments - e.g. the encodings module in Python 2.6.
+# The names of the arguments form part of the interface of __import__(...),
+# and must not be changed, as code may choose to invoke __import__ using
+# keyword arguments - e.g. the encodings module in Python 2.6.
 # pylint: disable-msg=W0102,W0602
 def import_fascist(name, globals={}, locals={}, fromlist=[], level=-1):
     global naughty_imports

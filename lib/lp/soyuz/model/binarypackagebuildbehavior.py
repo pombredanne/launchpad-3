@@ -14,16 +14,17 @@ __all__ = [
 from zope.interface import implements
 
 from canonical.launchpad.webapp import urlappend
-
+from lp.buildmaster.interfaces.builder import CannotBuild
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
-    IBuildFarmJobBehavior)
-from lp.buildmaster.model.buildfarmjobbehavior import (
-    BuildFarmJobBehaviorBase)
+    IBuildFarmJobBehavior,
+    )
+from lp.buildmaster.model.buildfarmjobbehavior import BuildFarmJobBehaviorBase
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.adapters.archivedependencies import (
-    get_primary_current_component, get_sources_list_for_building)
+    get_primary_current_component,
+    get_sources_list_for_building,
+    )
 from lp.soyuz.interfaces.archive import ArchivePurpose
-from lp.buildmaster.interfaces.builder import CannotBuild
 
 
 class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):
@@ -174,7 +175,7 @@ class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):
                          "(%s, %s)" % (
                             self._builder.url, file_name, url, sha1))
             self._builder.slave.sendFileToSlave(
-                sha1, url,  "buildd", archive.buildd_secret)
+                sha1, url, "buildd", archive.buildd_secret)
 
     def _extraBuildArgs(self, build):
         """
@@ -191,6 +192,8 @@ class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):
         if build.pocket != PackagePublishingPocket.RELEASE:
             suite += "-%s" % (build.pocket.name.lower())
         args['suite'] = suite
+
+        args['arch_tag'] = build.distro_arch_series.architecturetag
 
         archive_purpose = build.archive.purpose
         if (archive_purpose == ArchivePurpose.PPA and
@@ -210,8 +213,7 @@ class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):
 
         args['archives'] = get_sources_list_for_building(build,
             build.distro_arch_series, build.source_package_release.name)
-
-        # Let the build slave know whether this is a build in a private
-        # archive.
         args['archive_private'] = build.archive.private
+        args['build_debug_symbols'] = build.archive.build_debug_symbols
+
         return args

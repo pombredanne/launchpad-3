@@ -25,83 +25,118 @@ import cgi
 from cStringIO import StringIO
 from datetime import datetime
 from operator import itemgetter
-from pytz import timezone
-from simplejson import dumps
 import urllib
 
+from lazr.restful.interface import copy_field
+from pytz import timezone
+from simplejson import dumps
 from sqlobject import SQLObjectNotFound
-
 from z3c.ptcompat import ViewPageTemplateFile
+from zope import formlib
 from zope.app.form.browser import TextWidget
 from zope.app.form.interfaces import InputErrors
 from zope.component import getUtility
-from zope import formlib
-from zope.interface import alsoProvides, implements, Interface
+from zope.interface import (
+    alsoProvides,
+    implements,
+    Interface,
+    )
 from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.browser import IBrowserPublisher
-from zope.schema import Bool, Choice
+from zope.schema import (
+    Bool,
+    Choice,
+    )
 from zope.schema.vocabulary import SimpleVocabulary
 from zope.security.proxy import removeSecurityProxy
 
-from lazr.restful.interface import copy_field
-
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
-from lp.bugs.browser.bugtask import BugTaskSearchListingView
-from lp.bugs.interfaces.apportjob import IProcessApportBlobJobSource
-from lp.bugs.interfaces.bug import IBug
-from lp.bugs.interfaces.bugtask import BugTaskSearchParams
-from lp.bugs.interfaces.bugtracker import IBugTracker
-from lp.bugs.interfaces.securitycontact import IHasSecurityContact
-from lp.bugs.browser.bugrole import BugRoleMixin
 from canonical.launchpad import _
 from canonical.launchpad.browser.feeds import (
-    BugFeedLink, BugTargetLatestBugsFeedLink, FeedsMixin)
+    BugFeedLink,
+    BugTargetLatestBugsFeedLink,
+    FeedsMixin,
+    )
+from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
+from canonical.launchpad.interfaces.launchpad import (
+    IHasExternalBugTracker,
+    ILaunchpadCelebrities,
+    )
+from canonical.launchpad.searchbuilder import any
+from canonical.launchpad.validators.name import valid_name_pattern
+from canonical.launchpad.webapp import (
+    action,
+    canonical_url,
+    custom_widget,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    LaunchpadView,
+    safe_action,
+    urlappend,
+    )
+from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
+from canonical.launchpad.webapp.interfaces import ILaunchBag
+from canonical.launchpad.webapp.menu import structured
+from canonical.launchpad.webapp.publisher import HTTP_MOVED_PERMANENTLY
+from canonical.launchpad.webapp.tales import BugTrackerFormatterAPI
+from canonical.widgets.bug import (
+    BugTagsWidget,
+    LargeBugTagsWidget,
+    )
+from canonical.widgets.bugtask import NewLineToSpacesWidget
+from canonical.widgets.product import (
+    GhostCheckBoxWidget,
+    GhostWidget,
+    ProductBugTrackerWidget,
+    )
+from lp.app.errors import (
+    NotFoundError,
+    UnexpectedFormData,
+    )
+from lp.app.interfaces.launchpad import ILaunchpadUsage
+from lp.bugs.browser.bugrole import BugRoleMixin
+from lp.bugs.browser.bugtask import BugTaskSearchListingView
+from lp.bugs.interfaces.apportjob import IProcessApportBlobJobSource
+from lp.bugs.interfaces.bug import (
+    CreateBugParams,
+    IBug,
+    IBugAddForm,
+    IBugSet,
+    IProjectGroupBugAddForm,
+    )
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
 from lp.bugs.interfaces.bugtarget import (
-    IBugTarget, IOfficialBugTagTargetPublic, IOfficialBugTagTargetRestricted)
-from lp.bugs.interfaces.bug import IBugSet
+    IBugTarget,
+    IOfficialBugTagTargetPublic,
+    IOfficialBugTagTargetRestricted,
+    )
 from lp.bugs.interfaces.bugtask import (
-    BugTaskStatus, IBugTaskSet, UNRESOLVED_BUGTASK_STATUSES)
-from canonical.launchpad.interfaces.launchpad import (
-    IHasExternalBugTracker, ILaunchpadUsage)
-from lp.hardwaredb.interfaces.hwdb import IHWSubmissionSet
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.searchbuilder import any
-from canonical.launchpad.webapp import urlappend
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.interfaces import (
-    ILaunchBag, NotFoundError, UnexpectedFormData)
-from lp.bugs.interfaces.bug import (
-    CreateBugParams, IBugAddForm, IProjectGroupBugAddForm)
+    BugTaskSearchParams,
+    BugTaskStatus,
+    IBugTaskSet,
+    UNRESOLVED_BUGTASK_STATUSES,
+    )
+from lp.bugs.interfaces.bugtracker import IBugTracker
 from lp.bugs.interfaces.malone import IMaloneApplication
+from lp.bugs.interfaces.securitycontact import IHasSecurityContact
 from lp.bugs.utilities.filebugdataparser import FileBugData
+from lp.hardwaredb.interfaces.hwdb import IHWSubmissionSet
+from lp.registry.browser.product import ProductConfigureBase
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
-    IDistributionSourcePackage)
+    IDistributionSourcePackage,
+    )
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
-from lp.services.job.interfaces.job import JobStatus
-from lp.registry.browser.product import ProductConfigureBase
-from canonical.launchpad.webapp import (
-    LaunchpadEditFormView, LaunchpadFormView, LaunchpadView, action,
-    canonical_url, custom_widget, safe_action)
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.tales import BugTrackerFormatterAPI
-from canonical.launchpad.validators.name import valid_name_pattern
-from canonical.launchpad.webapp.menu import structured
-from canonical.launchpad.webapp.publisher import HTTP_MOVED_PERMANENTLY
-from canonical.widgets.bug import BugTagsWidget, LargeBugTagsWidget
-from canonical.widgets.bugtask import NewLineToSpacesWidget
-from canonical.widgets.product import (
-    ProductBugTrackerWidget, GhostCheckBoxWidget, GhostWidget)
 from lp.registry.vocabularies import ValidPersonOrTeamVocabulary
-
+from lp.services.job.interfaces.job import JobStatus
 
 # A simple vocabulary for the subscribe_to_existing_bug form field.
 SUBSCRIBE_TO_BUG_VOCABULARY = SimpleVocabulary.fromItems(
@@ -167,11 +202,13 @@ class ProductConfigureBugTrackerView(BugRoleMixin, ProductConfigureBase):
 
     @action("Change", name='change')
     def change_action(self, action, data):
-        # bug_supervisor requires a transition method, so it must be
-        # handled separately and removed for the updateContextFromData
-        # to work as expected.
+        # bug_supervisor and security_contactrequires a transition method,
+        # so it must be handled separately and removed for the
+        # updateContextFromData to work as expected.
         self.changeBugSupervisor(data['bug_supervisor'])
         del data['bug_supervisor']
+        self.changeSecurityContact(data['security_contact'])
+        del data['security_contact']
         self.updateContextFromData(data)
 
 
@@ -929,13 +966,8 @@ class FilebugShowSimilarBugsView(FileBugViewBase):
 
         matching_bugtasks = getUtility(IBugTaskSet).findSimilar(
             self.user, title, **context_params)
-        # Remove all the prejoins, since we won't use them and they slow
-        # down the query significantly.
-        matching_bugtasks = matching_bugtasks.prejoin([])
-
         matching_bugs = getUtility(IBugSet).getDistinctBugsForBugTasks(
             matching_bugtasks, self.user, self._MATCHING_BUGS_LIMIT)
-
         return matching_bugs
 
     @property
@@ -1467,3 +1499,7 @@ class BugsPatchesView(LaunchpadView):
         """Return a timedelta object for the age of a patch attachment."""
         now = datetime.now(timezone('UTC'))
         return now - patch.message.datecreated
+
+    def proxiedUrlForLibraryFile(self, patch):
+        """Return the proxied download URL for a Librarian file."""
+        return ProxiedLibraryFileAlias(patch.libraryfile, patch).http_url

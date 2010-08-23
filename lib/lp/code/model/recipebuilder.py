@@ -14,17 +14,19 @@ from zope.component import adapts
 from zope.interface import implements
 
 from canonical.config import config
-
-from lp.buildmaster.interfaces.buildfarmjobbehavior import (
-    IBuildFarmJobBehavior)
 from lp.buildmaster.interfaces.builder import CannotBuild
-from lp.buildmaster.model.buildfarmjobbehavior import (
-    BuildFarmJobBehaviorBase)
+from lp.buildmaster.interfaces.buildfarmjobbehavior import (
+    IBuildFarmJobBehavior,
+    )
+from lp.buildmaster.model.buildfarmjobbehavior import BuildFarmJobBehaviorBase
 from lp.code.interfaces.sourcepackagerecipebuild import (
-    ISourcePackageRecipeBuildJob)
+    ISourcePackageRecipeBuildJob,
+    )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.adapters.archivedependencies import (
-    get_primary_current_component, get_sources_list_for_building)
+    get_primary_current_component,
+    get_sources_list_for_building,
+    )
 
 
 class RecipeBuildBehavior(BuildFarmJobBehaviorBase):
@@ -62,8 +64,15 @@ class RecipeBuildBehavior(BuildFarmJobBehaviorBase):
         if self.build.pocket != PackagePublishingPocket.RELEASE:
             suite += "-%s" % (self.build.pocket.name.lower())
         args['suite'] = suite
-        args["author_name"] = self.build.requester.displayname
-        args["author_email"] = self.build.requester.preferredemail.email
+        args['arch_tag'] = distroarchseries.architecturetag
+        requester = self.build.requester
+        if requester.preferredemail is None:
+            # Use a constant, known, name and email.
+            args["author_name"] = 'Launchpad Package Builder'
+            args["author_email"] = config.canonical.noreply_from_address
+        else:
+            args["author_name"] = requester.displayname
+            args["author_email"] = requester.preferredemail.email
         args["recipe_text"] = str(self.build.recipe.builder_recipe)
         args['archive_purpose'] = self.build.archive.purpose.name
         args["ogrecomponent"] = get_primary_current_component(

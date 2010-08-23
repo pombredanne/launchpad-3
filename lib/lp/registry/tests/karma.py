@@ -5,9 +5,11 @@
 
 __metaclass__ = type
 
-from canonical.launchpad.ftests.event import TestEventListener
 from canonical.launchpad.event.interfaces import IKarmaAssignedEvent
+from canonical.launchpad.ftests.event import TestEventListener
 from lp.registry.interfaces.person import IPerson
+
+
 class KarmaAssignedEventListener:
     """Test helper class that registers a listener printing information
     whenever Karma is assigned.

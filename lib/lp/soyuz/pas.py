@@ -1,12 +1,13 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-import os
 import operator
+import os
 
 from sqlobject import SQLObjectNotFound
 
 from lp.soyuz.interfaces.archive import ArchivePurpose
+
 
 class BuildDaemonPackagesArchSpecific:
     """Parse and implement "PackagesArchSpecific"."""
@@ -132,8 +133,8 @@ def determineArchitecturesToBuild(pubrec, legal_archseries,
     known-failures build attempts and thus saving build-farm time.
 
     For PPA publications we only consider architectures supported by PPA
-    subsystem (`DistroArchSeries`.supports_virtualized flag) and P-a-s is turned
-    off to give the users the chance to test their fixes for upstream
+    subsystem (`DistroArchSeries`.supports_virtualized flag) and P-a-s is
+    turned off to give the users the chance to test their fixes for upstream
     problems.
 
     :param: pubrec: `ISourcePackagePublishingHistory` representing the
@@ -167,7 +168,10 @@ def determineArchitecturesToBuild(pubrec, legal_archseries,
 
     legal_arch_tags = set(arch.architecturetag for arch in legal_archseries)
 
-    if hint_string == 'any':
+    # We need to support arch tags like any-foo and linux-foo, so remove
+    # supported kernel prefixes, Also allow linux-any but not any-any.
+    # See bugs #73761 and #605002.
+    if hint_string in ['any', 'linux-any']:
         package_tags = legal_arch_tags
     elif hint_string == 'all':
         nominated_arch = distroseries.nominatedarchindep
@@ -178,11 +182,9 @@ def determineArchitecturesToBuild(pubrec, legal_archseries,
         package_tags = set([nominated_arch.architecturetag])
     else:
         my_archs = hint_string.split()
-        # Allow any-foo or linux-foo to mean foo. See bug 73761.
-        my_archs = [arch.replace("any-", "") for arch in my_archs]
-        my_archs = [arch.replace("linux-", "") for arch in my_archs]
-        my_archs = set(my_archs)
-        package_tags = my_archs.intersection(legal_arch_tags)
+        for kernel in ['linux', 'any']:
+            my_archs = [arch.replace("%s-" % kernel, "") for arch in my_archs]
+        package_tags = set(my_archs).intersection(legal_arch_tags)
 
     if pas_verify:
         build_tags = set()

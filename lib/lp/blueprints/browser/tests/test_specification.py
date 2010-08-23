@@ -1,21 +1,21 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
 import unittest
 
+from lazr.restful.testing.webservice import FakeRequest
 from zope.publisher.interfaces import NotFound
 
-from lp.testing import TestCaseWithFactory
 from canonical.launchpad.webapp.servers import StepsToGo
 from canonical.testing.layers import DatabaseFunctionalLayer
-
-from lazr.restful.testing.webservice import FakeRequest
-
 from lp.blueprints.browser import specification
+from lp.testing import TestCaseWithFactory
+
 
 class LocalFakeRequest(FakeRequest):
+
     @property
     def stepstogo(self):
         """See IBasicLaunchpadRequest.
@@ -134,4 +134,3 @@ def test_suite():
 
 if __name__ == '__main__':
     unittest.TextTestRunner().run(test_suite())
-

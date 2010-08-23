@@ -1,6 +1,7 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+from datetime import datetime
 import httplib
 import itertools
 import logging
@@ -8,21 +9,25 @@ import os
 import urllib2
 import urlparse
 
-from datetime import datetime
-
+from twisted.internet import (
+    defer,
+    protocol,
+    reactor,
+    )
+from twisted.internet.defer import DeferredSemaphore
+from twisted.python.failure import Failure
+from twisted.web.http import HTTPClient
 from zope.component import getUtility
 
-from twisted.internet import defer, protocol, reactor
-from twisted.internet.defer import DeferredSemaphore
-from twisted.web.http import HTTPClient
-from twisted.python.failure import Failure
-
 from canonical.config import config
-from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.distributionmirror import (
-    MirrorFreshness, UnableToFetchCDImageFileList)
+    MirrorFreshness,
+    UnableToFetchCDImageFileList,
+    )
 from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
+
 # The requests/timeouts ratio has to be at least 3 for us to keep issuing
 # requests on a given host. (This ratio is per run, rather than held long
 # term)

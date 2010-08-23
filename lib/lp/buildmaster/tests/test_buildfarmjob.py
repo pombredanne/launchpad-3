@@ -5,10 +5,12 @@
 
 __metaclass__ = type
 
-from datetime import datetime, timedelta
-import pytz
-import unittest
+from datetime import (
+    datetime,
+    timedelta,
+    )
 
+import pytz
 from storm.store import Store
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
@@ -17,14 +19,22 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.testing.layers import (
-    DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
-
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.interfaces.buildfarmjob import (
-    BuildFarmJobType, IBuildFarmJob, IBuildFarmJobSet, IBuildFarmJobSource,
-    InconsistentBuildFarmJobError)
+    BuildFarmJobType,
+    IBuildFarmJob,
+    IBuildFarmJobSet,
+    IBuildFarmJobSource,
+    InconsistentBuildFarmJobError,
+    )
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
-from lp.testing import login, TestCaseWithFactory
+from lp.testing import (
+    login,
+    TestCaseWithFactory,
+    )
 
 
 class TestBuildFarmJobMixin:
@@ -50,6 +60,7 @@ class TestBuildFarmJobMixin:
         build_farm_job = getUtility(IBuildFarmJobSource).new(
             job_type=job_type, status=status)
         removeSecurityProxy(build_farm_job).builder = builder
+        removeSecurityProxy(build_farm_job).date_started = date_finished
         removeSecurityProxy(build_farm_job).date_finished = date_finished
         return build_farm_job
 
@@ -302,7 +313,3 @@ class TestBuildFarmJobSet(TestBuildFarmJobMixin, TestCaseWithFactory):
         result = self.build_farm_job_set.getBuildsForBuilder(self.builder)
 
         self.assertEqual([build_1, build_2], list(result))
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

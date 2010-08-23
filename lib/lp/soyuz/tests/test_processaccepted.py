@@ -9,7 +9,6 @@ from canonical.config import config
 from canonical.launchpad.scripts import QuietFakeLogger
 from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
 from canonical.testing import LaunchpadZopelessLayer
-
 from lp.registry.interfaces.series import SeriesStatus
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus

@@ -1,13 +1,17 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-import gpgme
 import unittest
 
+import gpgme
 from zope.component import getUtility
 
 from canonical.launchpad.ftests import (
-    ANONYMOUS, keys_for_tests, login, logout)
+    ANONYMOUS,
+    keys_for_tests,
+    login,
+    logout,
+    )
 from canonical.launchpad.interfaces.gpghandler import IGPGHandler
 from canonical.testing import LaunchpadFunctionalLayer
 

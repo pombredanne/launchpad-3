@@ -1,28 +1,32 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for recording changes done to a bug."""
 
 import unittest
 
+from lazr.lifecycle.event import (
+    ObjectCreatedEvent,
+    ObjectModifiedEvent,
+    )
+from lazr.lifecycle.snapshot import Snapshot
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import providedBy
 
-from lazr.lifecycle.event import ObjectCreatedEvent, ObjectModifiedEvent
-from lazr.lifecycle.snapshot import Snapshot
-
+from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
 from canonical.launchpad.database import BugNotification
 from canonical.launchpad.ftests import login
-from lp.bugs.interfaces.bug import IBug
-from lp.bugs.interfaces.cve import ICveSet
-from lp.bugs.interfaces.bugtask import (
-    BugTaskImportance, BugTaskStatus)
-from lp.registry.interfaces.structuralsubscription import (
-    BugNotificationLevel)
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.testing import LaunchpadFunctionalLayer
+from lp.bugs.interfaces.bug import IBug
+from lp.bugs.interfaces.bugtask import (
+    BugTaskImportance,
+    BugTaskStatus,
+    )
+from lp.bugs.interfaces.cve import ICveSet
+from lp.registry.enum import BugNotificationLevel
 from lp.testing.factory import LaunchpadObjectFactory
 
 
@@ -90,7 +94,10 @@ class TestBugChanges(unittest.TestCase):
         :return: The value of `attribute` before modification.
         """
         obj_before_modification = Snapshot(obj, providing=providedBy(obj))
-        setattr(obj, attribute, new_value)
+        if attribute == 'duplicateof':
+            obj.markAsDuplicate(new_value)
+        else:
+            setattr(obj, attribute, new_value)
         notify(ObjectModifiedEvent(
             obj, obj_before_modification, [attribute], self.user))
 
@@ -686,13 +693,17 @@ class TestBugChanges(unittest.TestCase):
             'whatchanged': 'attachment added',
             'oldvalue': None,
             'newvalue': '%s %s' % (
-                attachment.title, attachment.libraryfile.http_url),
+                attachment.title,
+                ProxiedLibraryFileAlias(
+                    attachment.libraryfile, attachment).http_url),
             }
 
         attachment_added_notification = {
             'person': self.user,
             'text': '** Attachment added: "%s"\n   %s' % (
-                attachment.title, attachment.libraryfile.http_url),
+                attachment.title,
+                ProxiedLibraryFileAlias(
+                    attachment.libraryfile, attachment).http_url),
             }
 
         self.assertRecordedChange(
@@ -705,7 +716,9 @@ class TestBugChanges(unittest.TestCase):
         attachment = self.factory.makeBugAttachment(
             bug=self.bug, owner=self.user)
         self.saveOldChanges()
-        download_url = attachment.libraryfile.http_url
+        download_url = ProxiedLibraryFileAlias(
+            attachment.libraryfile, attachment).http_url
+
         attachment.removeFromBug(user=self.user)
 
         attachment_removed_activity = {
@@ -746,7 +759,7 @@ class TestBugChanges(unittest.TestCase):
                 '   Importance: %s\n'
                 '       Status: %s' % (
                     target.bugtargetname, added_task.importance.title,
-                    added_task.status.title))
+                    added_task.status.title)),
             }
 
         self.assertRecordedChange(
@@ -776,7 +789,7 @@ class TestBugChanges(unittest.TestCase):
                 '       Status: %s' % (
                     target.bugtargetname, added_task.importance.title,
                     added_task.assignee.displayname, added_task.assignee.name,
-                    added_task.status.title))
+                    added_task.status.title)),
             }
 
         self.assertRecordedChange(
@@ -807,7 +820,7 @@ class TestBugChanges(unittest.TestCase):
                 '   Importance: %s\n'
                 '       Status: %s' % (
                     target.bugtargetname, bug_watch.url,
-                    added_task.importance.title, added_task.status.title))
+                    added_task.importance.title, added_task.status.title)),
             }
 
         self.assertRecordedChange(
@@ -1304,7 +1317,7 @@ class TestBugChanges(unittest.TestCase):
         duplicate_bug = self.factory.makeBug()
         duplicate_bug_recipients = duplicate_bug.getBugNotificationRecipients(
             level=BugNotificationLevel.METADATA).getRecipients()
-        duplicate_bug.duplicateof = self.bug
+        duplicate_bug.markAsDuplicate(self.bug)
         self.saveOldChanges(duplicate_bug)
         self.changeAttribute(duplicate_bug, 'duplicateof', None)
 
@@ -1335,7 +1348,7 @@ class TestBugChanges(unittest.TestCase):
         bug_two = self.factory.makeBug()
         bug_recipients = self.bug.getBugNotificationRecipients(
             level=BugNotificationLevel.METADATA).getRecipients()
-        self.bug.duplicateof = bug_one
+        self.bug.markAsDuplicate(bug_one)
         self.saveOldChanges()
         self.changeAttribute(self.bug, 'duplicateof', bug_two)
 
@@ -1498,7 +1511,7 @@ class TestBugChanges(unittest.TestCase):
             'person': self.user,
             'text': (
                 '** Converted to question:\n'
-                '   %s' % canonical_url(converted_question))
+                '   %s' % canonical_url(converted_question)),
             }
         status_notification = {
             'text': (
@@ -1537,7 +1550,3 @@ class TestBugChanges(unittest.TestCase):
             expected_activity=expected_activity,
             expected_notification=expected_notification,
             bug=new_bug)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

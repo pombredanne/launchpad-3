@@ -12,12 +12,15 @@ import os
 import threading
 
 from bzrlib.lsprof import BzrProfiler
-from zope.error.interfaces import IErrorReportingUtility
 from zope.component import getUtility
+from zope.error.interfaces import IErrorReportingUtility
 
 from canonical.config import config
 import canonical.launchpad.webapp.adapter as da
-from canonical.mem import memory, resident
+from canonical.mem import (
+    memory,
+    resident,
+    )
 
 
 class ProfilingOops(Exception):

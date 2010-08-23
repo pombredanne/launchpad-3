@@ -3,18 +3,15 @@
 
 """Test ArchiveArch features."""
 
-import unittest
-
 from zope.component import getUtility
 
 from canonical.testing import LaunchpadZopelessLayer
-
-from lp.testing import TestCaseWithFactory
-
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.soyuz.interfaces.archivearch import IArchiveArchSet
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
+from lp.testing import TestCaseWithFactory
+
 
 class TestArchiveArch(TestCaseWithFactory):
 
@@ -53,7 +50,7 @@ class TestArchiveArch(TestCaseWithFactory):
         results = dict(
             (row[0].name, row[1] is not None) for row in result_set)
         self.assertEquals(
-            {'arm' : False, 'cell-proc' : True, 'omap' : False},
+            {'arm': False, 'cell-proc': True, 'omap': False},
             results)
 
     def test_getRestrictedFamilies_archive_only(self):
@@ -66,7 +63,7 @@ class TestArchiveArch(TestCaseWithFactory):
         results = dict(
             (row[0].name, row[1] is not None) for row in result_set)
         self.assertEquals(
-            {'arm' : False, 'cell-proc' : True, 'omap' : False},
+            {'arm': False, 'cell-proc': True, 'omap': False},
             results)
 
     def test_getByArchive_no_other_archives(self):
@@ -78,7 +75,3 @@ class TestArchiveArch(TestCaseWithFactory):
         self.assertEquals(1, len(result_set))
         self.assertEquals(self.ppa, result_set[0].archive)
         self.assertEquals(self.cell_proc, result_set[0].processorfamily)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

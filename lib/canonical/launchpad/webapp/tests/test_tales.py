@@ -3,9 +3,14 @@
 
 """tales.py doctests."""
 
+from doctest import DocTestSuite
 import unittest
 
-from zope.testing.doctestunit import DocTestSuite
+from zope.component import getAdapter
+from zope.traversing.interfaces import IPathAdapter
+
+from canonical.testing import DatabaseFunctionalLayer
+from lp.testing import TestCaseWithFactory
 
 
 def test_requestapi():
@@ -96,6 +101,21 @@ def test_dbschemaapi():
     LocationError: 'NotADBSchema'
 
     """
+
+
+class TestPersonFormatterAPI(TestCaseWithFactory):
+    """Tests for PersonFormatterAPI"""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_nameLink(self):
+        """The nameLink links to the URL with the person name as the text."""
+        person = self.factory.makePerson()
+        formatter = getAdapter(person, IPathAdapter, 'fmt')
+        result = formatter.nameLink(None)
+        expected = '<a href="%s" class="sprite person">%s</a>' % (
+            formatter.url(), person.name)
+        self.assertEqual(expected, result)
 
 
 

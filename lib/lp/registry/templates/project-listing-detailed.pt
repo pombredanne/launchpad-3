@@ -5,7 +5,7 @@
   omit-tag="">
 
 <a tal:replace="structure context/fmt:link" />
-<tal:review tal:condition="context/required:launchpad.ProjectReview">
+<tal:review tal:condition="context/required:launchpad.Moderate">
   (<a tal:attributes="href context/fmt:url/+review">Review</a>)
 </tal:review>
 

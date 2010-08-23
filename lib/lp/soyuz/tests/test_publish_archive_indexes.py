@@ -1,14 +1,16 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test native archive index generation for Soyuz."""
 
-import apt_pkg
 import os
 import tempfile
 import unittest
 
+import apt_pkg
+
 from lp.soyuz.tests.test_publishing import TestNativePublishingBase
+
 
 class TestNativeArchiveIndexes(TestNativePublishingBase):
 
@@ -57,11 +59,11 @@ class TestNativeArchiveIndexes(TestNativePublishingBase):
         See also testSourceStanza, it must present something similar for
         binary packages.
         """
-        pub_binary = self.getPubBinaries(
+        pub_binaries = self.getPubBinaries(
             depends='biscuit', recommends='foo-dev', suggests='pyfoo',
             conflicts='old-foo', replaces='old-foo', provides='foo-master',
-            pre_depends='master-foo', enhances='foo-super', breaks='old-foo'
-            )[0]
+            pre_depends='master-foo', enhances='foo-super', breaks='old-foo')
+        pub_binary = pub_binaries[0]
         self.assertEqual(
             [u'Package: foo-bin',
              u'Source: foo',
@@ -135,7 +137,7 @@ class TestNativeArchiveIndexes(TestNativePublishingBase):
              u' .',
              u' .',
              u' .',
-             u' %s' % ('x' * 100)
+             u' %s' % ('x' * 100),
              ],
             pub_binary.getIndexStanza().splitlines())
 
@@ -175,6 +177,7 @@ class TestNativeArchiveIndexesReparsing(TestNativePublishingBase):
     """Tests for ensuring the native archive indexes that we publish
     can be parsed correctly by apt_get.ParseTagFiles.
     """
+
     def setUp(self):
         """Setup global attributes."""
         TestNativePublishingBase.setUp(self)
@@ -299,6 +302,7 @@ class TestNativeArchiveIndexesReparsing(TestNativePublishingBase):
 
 
 class TestIndexStanzaFieldsHelper(unittest.TestCase):
+
     def testIndexStanzaFields(self):
         """Check how this auxiliary class works...
 
@@ -307,6 +311,7 @@ class TestIndexStanzaFieldsHelper(unittest.TestCase):
 
         Provides an method to format the option in a ready-to-use string.
         """
+        # Avoid circular imports.
         from lp.soyuz.model.publishing import IndexStanzaFields
 
         fields = IndexStanzaFields()
@@ -338,7 +343,3 @@ class TestIndexStanzaFieldsHelper(unittest.TestCase):
 
         self.assertEqual(
             ['one: um', 'Files:<no_sep>'], fields.makeOutput().splitlines())
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

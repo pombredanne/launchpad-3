@@ -12,11 +12,13 @@ __all__ = [
 
 from zope.component import getUtility
 
+from lp.app.errors import NotFoundError
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.section import ISectionSet
-from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.soyuz.scripts.ftpmasterbase import (
-    SoyuzScript, SoyuzScriptError)
+    SoyuzScript,
+    SoyuzScriptError,
+    )
 
 
 class ArchiveOverriderError(SoyuzScriptError):

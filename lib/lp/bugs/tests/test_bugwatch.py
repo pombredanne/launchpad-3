@@ -1,37 +1,51 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for BugWatchSet."""
 
 __metaclass__ = type
 
-import transaction
 import unittest
-
 from urlparse import urlunsplit
 
+import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.constants import UTC_NOW
-
-from canonical.launchpad.ftests import login, ANONYMOUS
+from canonical.launchpad.ftests import (
+    ANONYMOUS,
+    login,
+    )
 from canonical.launchpad.scripts.garbo import BugWatchActivityPruner
 from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.launchpad.webapp import urlsplit
 from canonical.testing import (
-    DatabaseFunctionalLayer, LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
-
-from lp.bugs.interfaces.bugtask import BugTaskImportance, BugTaskStatus
-from lp.bugs.interfaces.bugtracker import BugTrackerType, IBugTrackerSet
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
+from lp.bugs.interfaces.bugtask import (
+    BugTaskImportance,
+    BugTaskStatus,
+    )
+from lp.bugs.interfaces.bugtracker import (
+    BugTrackerType,
+    IBugTrackerSet,
+    )
 from lp.bugs.interfaces.bugwatch import (
-    BugWatchActivityStatus, IBugWatchSet, NoBugTrackerFound,
-    UnrecognizedBugTrackerURL)
+    BugWatchActivityStatus,
+    IBugWatchSet,
+    NoBugTrackerFound,
+    UnrecognizedBugTrackerURL,
+    )
 from lp.bugs.model.bugwatch import get_bug_watch_ids
 from lp.bugs.scripts.checkwatches.scheduler import MAX_SAMPLE_SIZE
 from lp.registry.interfaces.person import IPersonSet
-
-from lp.testing import TestCaseWithFactory, login_person
+from lp.testing import (
+    login_person,
+    TestCaseWithFactory,
+    )
 
 
 class ExtractBugTrackerAndBugTestBase:
@@ -173,6 +187,7 @@ class DebbugsExtractBugTrackerAndBugShorthandTest(
     def test_unregistered_tracker_url(self):
         # bugs.debian.org is already registered, so no dice.
         pass
+
 
 class SFExtractBugTrackerAndBugTest(
     ExtractBugTrackerAndBugTestBase, unittest.TestCase):
@@ -657,7 +672,3 @@ class TestBugWatchActivityPruner(TestCaseWithFactory):
         messages = [activity.message for activity in self.bug_watch.activity]
         for i in range(MAX_SAMPLE_SIZE):
             self.failUnless("Activity %s" % i in messages)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

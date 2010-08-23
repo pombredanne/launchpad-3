@@ -6,8 +6,11 @@
 
 import os
 import random
+from string import (
+    ascii_letters,
+    digits,
+    )
 
-from string import ascii_letters, digits
 
 __all__ = [
     'configure_prefix',

@@ -11,22 +11,41 @@ __all__ = [
     ]
 
 
+from sqlobject import (
+    BoolCol,
+    ForeignKey,
+    IntCol,
+    SQLMultipleJoin,
+    StringCol,
+    )
+from storm.locals import (
+    Date,
+    Int,
+    Reference,
+    Storm,
+    )
 from zope.interface import implements
 
-from sqlobject import StringCol, ForeignKey, IntCol, SQLMultipleJoin, BoolCol
-from storm.locals import Date, Int, Reference, Storm
-
-from canonical.database.sqlbase import SQLBase, quote, sqlvalues, quote_like
-
-from lp.soyuz.interfaces.binarypackagerelease import (
-    BinaryPackageFileType, BinaryPackageFormat, IBinaryPackageRelease,
-    IBinaryPackageReleaseDownloadCount, IBinaryPackageReleaseSet)
-from lp.soyuz.interfaces.publishing import (
-    PackagePublishingPriority, PackagePublishingStatus)
-from canonical.database.enumcol import EnumCol
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
-
+from canonical.database.enumcol import EnumCol
+from canonical.database.sqlbase import (
+    quote,
+    quote_like,
+    SQLBase,
+    sqlvalues,
+    )
+from lp.soyuz.interfaces.binarypackagerelease import (
+    BinaryPackageFileType,
+    BinaryPackageFormat,
+    IBinaryPackageRelease,
+    IBinaryPackageReleaseDownloadCount,
+    IBinaryPackageReleaseSet,
+    )
+from lp.soyuz.interfaces.publishing import (
+    PackagePublishingPriority,
+    PackagePublishingStatus,
+    )
 from lp.soyuz.model.files import BinaryPackageFile
 
 
@@ -62,6 +81,8 @@ class BinaryPackageRelease(SQLBase):
     architecturespecific = BoolCol(dbName='architecturespecific',
                                    notNull=True)
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
+    debug_package = ForeignKey(dbName='debug_package',
+                              foreignKey='BinaryPackageRelease')
 
     files = SQLMultipleJoin('BinaryPackageFile',
         joinColumn='binarypackagerelease', orderBy="libraryfile")

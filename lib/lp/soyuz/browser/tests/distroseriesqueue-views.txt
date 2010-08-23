@@ -260,7 +260,7 @@ Now that "foo" is published in Hoary, we can upload a new build.
     ...    distroseries='hoary')
     >>> sync_policy.can_upload_binaries = True
     >>> sync_policy.can_upload_mixed = True
-    >>> foo_upload = NascentUpload(
+    >>> foo_upload = NascentUpload.from_changesfile_path(
     ...    datadir('suite/foo_1.0-2_multi_binary/foo_1.0-2_i386.changes'),
     ...    sync_policy, mock_logger_quiet)
     >>> foo_upload.process()

@@ -1,12 +1,14 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test the expire-archive-files.py script. """
 
-from datetime import datetime, timedelta
-import pytz
-import unittest
+from datetime import (
+    datetime,
+    timedelta,
+    )
 
+import pytz
 from zope.component import getUtility
 
 from canonical.config import config
@@ -99,9 +101,10 @@ class ArchiveExpiryTestBase(TestCaseWithFactory):
 
 class ArchiveExpiryCommonTests(object):
     """Common source/binary expiration test cases.
-    
+
     These will be shared irrespective of archive type (ppa/partner).
     """
+
     def testNoExpirationWithNoDateremoved(self):
         """Test that no expiring happens if no dateremoved set."""
         pkg1 = self.stp.getPubSource(
@@ -216,7 +219,7 @@ class ArchiveExpiryCommonTests(object):
 
 class TestPPAExpiry(ArchiveExpiryTestBase, ArchiveExpiryCommonTests):
     """Test the expire-archive-files.py script.
-    
+
     Here we make use of the common test cases defined in the base class but
     also add tests specific to PPAs (excluding particular PPAs from expiry
     based on a "black list" or on the fact that PPA is private).
@@ -262,7 +265,3 @@ class TestPartnerExpiry(ArchiveExpiryTestBase, ArchiveExpiryCommonTests):
             purpose=ArchivePurpose.PARTNER)
         self.archive2 = self.factory.makeArchive(
             purpose=ArchivePurpose.PARTNER)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

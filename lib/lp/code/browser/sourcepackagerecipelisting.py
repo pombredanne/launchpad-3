@@ -15,7 +15,10 @@ __all__ = [
 
 from canonical.config import config
 from canonical.launchpad.browser.feeds import FeedsMixin
-from canonical.launchpad.webapp import LaunchpadView, Link
+from canonical.launchpad.webapp import (
+    LaunchpadView,
+    Link,
+    )
 from lp.code.interfaces.branch import IBranch
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import IProduct
@@ -50,18 +53,13 @@ class RecipeListingView(LaunchpadView, FeedsMixin):
 
 class BranchRecipeListingView(RecipeListingView):
 
-    __used_for__ = IBranch
-
     branch_enabled = False
 
 
 class PersonRecipeListingView(RecipeListingView):
 
-    __used_for__ = IPerson
-
     owner_enabled = False
 
 
 class ProductRecipeListingView(RecipeListingView):
-
-    __used_for__ = IProduct
+    pass

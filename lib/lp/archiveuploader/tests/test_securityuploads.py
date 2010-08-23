@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test security uploads use-cases."""
@@ -6,18 +6,19 @@
 __metaclass__ = type
 
 import os
-import unittest
 
 from zope.component import getUtility
 
+from canonical.launchpad.interfaces import (
+    IDistributionSet,
+    PackageUploadStatus,
+    )
 from lp.archiveuploader.tests.test_uploadprocessor import (
-    TestUploadProcessorBase)
-from lp.archiveuploader.uploadprocessor import UploadProcessor
+    TestUploadProcessorBase,
+    )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.processor import ProcessorFamily
-from canonical.launchpad.interfaces import (
-    IDistributionSet, PackageUploadStatus)
 
 
 class TestStagedBinaryUploadBase(TestUploadProcessorBase):
@@ -60,7 +61,7 @@ class TestStagedBinaryUploadBase(TestUploadProcessorBase):
         """Setup environment for staged binaries upload via security policy.
 
         1. Setup queue directory and other basic attributes
-        2. Override policy options to get security policy and to not send emails
+        2. Override policy options to get security policy and not send emails
         3. Setup a common UploadProcessor with the overridden options
         4. Store number of build present before issuing any upload
         5. Upload the source package via security policy
@@ -71,8 +72,7 @@ class TestStagedBinaryUploadBase(TestUploadProcessorBase):
         self.options.context = self.policy
         self.options.nomails = self.no_mails
         # Set up the uploadprocessor with appropriate options and logger
-        self.uploadprocessor = UploadProcessor(
-            self.options, self.layer.txn, self.log)
+        self.uploadprocessor = self.getUploadProcessor(self.layer.txn)
         self.builds_before_upload = BinaryPackageBuild.select().count()
         self.source_queue = None
         self._uploadSource()
@@ -233,8 +233,7 @@ class TestStagedSecurityUploads(TestStagedBinaryUploadBase):
         """
         build_candidate = self._createBuild('i386')
         self.options.buildid = str(build_candidate.id)
-        self.uploadprocessor = UploadProcessor(
-            self.options, self.layer.txn, self.log)
+        self.uploadprocessor = self.getUploadProcessor(self.layer.txn)
 
         build_used = self._uploadBinary('i386')
 
@@ -255,17 +254,10 @@ class TestStagedSecurityUploads(TestStagedBinaryUploadBase):
         """
         build_candidate = self._createBuild('hppa')
         self.options.buildid = str(build_candidate.id)
-        self.uploadprocessor = UploadProcessor(
-            self.options, self.layer.txn, self.log)
+        self.uploadprocessor = self.getUploadProcessor(self.layer.txn)
 
         self.assertRaises(AssertionError, self._uploadBinary, 'i386')
 
         self.assertLogContains(
             "UploadError: Attempt to upload binaries specifying build %d, "
-            "where they don't fit.\n" % (build_candidate.id,))
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
-
-
+            "where they don't fit.\n" % (build_candidate.id, ))

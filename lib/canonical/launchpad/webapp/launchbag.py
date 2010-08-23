@@ -9,19 +9,32 @@ The collection of stuff we have traversed.
 __metaclass__ = type
 
 import pytz
-
-from zope.interface import implements
-from zope.component import getUtility
 from zope import thread
+from zope.component import getUtility
+from zope.interface import implements
 
 from canonical.database.sqlbase import block_implicit_flushes
 from canonical.launchpad.interfaces import (
-        IAccount, IBug, IDistribution, IDistroSeries, IPerson,
-        IProjectGroup, IProduct, ISourcePackage, IDistroArchSeries,
-        ISpecification, IBugTask, ILaunchpadCelebrities)
+    IAccount,
+    IBug,
+    IBugTask,
+    IDistribution,
+    IDistroArchSeries,
+    IDistroSeries,
+    ILaunchpadCelebrities,
+    IPerson,
+    IProduct,
+    IProjectGroup,
+    ISourcePackage,
+    ISpecification,
+    )
 from canonical.launchpad.webapp.interaction import get_current_principal
 from canonical.launchpad.webapp.interfaces import (
-    ILaunchBag, ILaunchpadApplication, ILoggedInEvent, IOpenLaunchBag)
+    ILaunchBag,
+    ILoggedInEvent,
+    IOpenLaunchBag,
+    )
+
 
 _utc_tz = pytz.timezone('UTC')
 
@@ -32,7 +45,6 @@ class LaunchBag:
 
     # Map Interface to attribute name.
     _registry = {
-        ILaunchpadApplication: 'site',
         IPerson: 'person',
         IProjectGroup: 'project',
         IProduct: 'product',
@@ -87,10 +99,6 @@ class LaunchBag:
         store.time_zone = None
 
     @property
-    def site(self):
-        return self._store.site
-
-    @property
     def person(self):
         return self._store.person
 
@@ -141,7 +149,7 @@ class LaunchBag:
 
     @property
     def bugtask(self):
-        return self._store.bugtask
+        return getattr(self._store, "bugtask", None)
 
     @property
     def time_zone(self):

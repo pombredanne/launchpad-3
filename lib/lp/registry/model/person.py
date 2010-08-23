@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 from __future__ import with_statement
 
@@ -26,139 +26,263 @@ __all__ = [
     'WikiName',
     'WikiNameSet']
 
-from datetime import datetime, timedelta
+from datetime import (
+    datetime,
+    timedelta,
+    )
 from operator import attrgetter
-import pytz
 import random
 import re
 import subprocess
 import time
 import weakref
 
-from bzrlib.plugins.builder import RecipeParser
-from zope.lifecycleevent import ObjectCreatedEvent
-from zope.interface import alsoProvides, implementer, implements
-from zope.component import adapter, getUtility
+from bzrlib.plugins.builder.recipe import RecipeParser
+import pytz
+from sqlobject import (
+    BoolCol,
+    ForeignKey,
+    IntCol,
+    SQLMultipleJoin,
+    SQLObjectNotFound,
+    StringCol,
+    )
+from sqlobject.sqlbuilder import (
+    AND,
+    OR,
+    SQLConstant,
+    )
+from storm.expr import (
+    Alias,
+    And,
+    Desc,
+    Exists,
+    In,
+    Join,
+    LeftJoin,
+    Lower,
+    Min,
+    Not,
+    Or,
+    Select,
+    SQL,
+    Upper,
+    )
+from storm.info import ClassAlias
+from storm.store import (
+    EmptyResultSet,
+    Store,
+    )
+from zope.component import (
+    adapter,
+    getUtility,
+    )
 from zope.component.interfaces import ComponentLookupError
 from zope.event import notify
+from zope.interface import (
+    alsoProvides,
+    implementer,
+    implements,
+    )
+from zope.lifecycleevent import ObjectCreatedEvent
 from zope.publisher.interfaces import Unauthorized
-from zope.security.proxy import ProxyFactory, removeSecurityProxy
-from sqlobject import (
-    BoolCol, ForeignKey, IntCol, SQLMultipleJoin, SQLObjectNotFound,
-    StringCol)
-from sqlobject.sqlbuilder import AND, OR, SQLConstant
-from storm.store import EmptyResultSet, Store
-from storm.expr import And, In, Join, Lower, Not, Or, SQL
-from storm.info import ClassAlias
+from zope.security.proxy import (
+    ProxyFactory,
+    removeSecurityProxy,
+    )
 
+from canonical.cachedproperty import (
+    cache_property,
+    cachedproperty,
+    clear_property,
+    )
 from canonical.config import config
 from canonical.database import postgresql
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
-    cursor, quote, quote_like, sqlvalues, SQLBase)
-
-from canonical.cachedproperty import cachedproperty
-
-from canonical.lazr.utils import get_current_browser_request, safe_hasattr
-
-from canonical.launchpad.database.account import Account, AccountPassword
-from canonical.launchpad.interfaces.account import AccountSuspendedError
-from lp.bugs.model.bugtarget import HasBugsBase
-from canonical.launchpad.database.stormsugar import StartsWith
-from lp.registry.model.karma import KarmaCategory
-from lp.services.salesforce.interfaces import (
-    ISalesforceVoucherProxy, REDEEMABLE_VOUCHER_STATUSES,
-    VOUCHER_STATUSES)
-from lp.services.worlddata.model.language import Language
+    cursor,
+    quote,
+    quote_like,
+    SQLBase,
+    sqlvalues,
+    )
+from canonical.launchpad.components.decoratedresultset import (
+    DecoratedResultSet,
+    )
+from canonical.launchpad.database.account import (
+    Account,
+    AccountPassword,
+    )
+from canonical.launchpad.database.emailaddress import (
+    EmailAddress,
+    HasOwnerMixin,
+    )
+from canonical.launchpad.database.logintoken import LoginToken
 from canonical.launchpad.database.oauth import (
-    OAuthAccessToken, OAuthRequestToken)
-from lp.registry.model.personlocation import PersonLocation
-from lp.registry.model.structuralsubscription import (
-    StructuralSubscription)
+    OAuthAccessToken,
+    OAuthRequestToken,
+    )
+from canonical.launchpad.database.stormsugar import StartsWith
 from canonical.launchpad.event.interfaces import (
-    IJoinTeamEvent, ITeamInvitationEvent)
+    IJoinTeamEvent,
+    ITeamInvitationEvent,
+    )
 from canonical.launchpad.helpers import (
-    get_contact_email_addresses, get_email_template, shortlist)
-
-from canonical.launchpad.interfaces.lpstorm import IMasterObject, IMasterStore
+    get_contact_email_addresses,
+    get_email_template,
+    shortlist,
+    )
 from canonical.launchpad.interfaces.account import (
-    AccountCreationRationale, AccountStatus, IAccount, IAccountSet,
-    INACTIVE_ACCOUNT_STATUSES)
-from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
-from lp.soyuz.interfaces.archivepermission import (
-    IArchivePermissionSet)
-from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
+    AccountCreationRationale,
+    AccountStatus,
+    AccountSuspendedError,
+    IAccount,
+    IAccountSet,
+    INACTIVE_ACCOUNT_STATUSES,
+    )
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
-from lp.code.model.hasbranches import (
-    HasBranchesMixin, HasMergeProposalsMixin, HasRequestedReviewsMixin)
-from lp.bugs.interfaces.bugtask import (
-    BugTaskSearchParams, IBugTaskSet, IllegalRelatedBugTasksParams)
-from lp.bugs.interfaces.bugtarget import IBugTarget
-from lp.registry.interfaces.codeofconduct import (
-    ISignedCodeOfConductSet)
-from lp.registry.interfaces.distribution import IDistribution
 from canonical.launchpad.interfaces.emailaddress import (
-    EmailAddressStatus, IEmailAddress, IEmailAddressSet, InvalidEmailAddress)
-from lp.registry.interfaces.gpg import IGPGKeySet
-from lp.registry.interfaces.irc import IIrcID, IIrcIDSet
-from lp.registry.interfaces.jabber import IJabberID, IJabberIDSet
+    EmailAddressStatus,
+    IEmailAddress,
+    IEmailAddressSet,
+    InvalidEmailAddress,
+    )
 from canonical.launchpad.interfaces.launchpad import (
-    IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities)
+    IHasIcon,
+    IHasLogo,
+    IHasMugshot,
+    ILaunchpadCelebrities,
+    )
 from canonical.launchpad.interfaces.launchpadstatistic import (
-    ILaunchpadStatisticSet)
+    ILaunchpadStatisticSet,
+    )
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
+from canonical.launchpad.interfaces.lpstorm import (
+    IMasterObject,
+    IMasterStore,
+    IStore,
+    )
+from canonical.launchpad.validators.email import valid_email
+from canonical.launchpad.validators.name import (
+    sanitize_name,
+    valid_name,
+    )
+from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
+from canonical.launchpad.webapp.interfaces import ILaunchBag
+from canonical.lazr.utils import get_current_browser_request
+from lp.blueprints.interfaces.specification import (
+    SpecificationDefinitionStatus,
+    SpecificationFilter,
+    SpecificationImplementationStatus,
+    SpecificationSort,
+    )
+from lp.blueprints.model.specification import (
+    HasSpecificationsMixin,
+    Specification,
+    )
+from lp.bugs.interfaces.bugtarget import IBugTarget
+from lp.bugs.interfaces.bugtask import (
+    BugTaskSearchParams,
+    IBugTaskSet,
+    IllegalRelatedBugTasksParams,
+    )
+from lp.bugs.model.bugtarget import HasBugsBase
+from lp.bugs.model.bugtask import (
+    BugTask,
+    get_related_bugtasks_search_params,
+    )
+from lp.code.model.hasbranches import (
+    HasBranchesMixin,
+    HasMergeProposalsMixin,
+    HasRequestedReviewsMixin,
+    )
+from lp.registry.interfaces.codeofconduct import ISignedCodeOfConductSet
+from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.gpg import IGPGKeySet
+from lp.registry.interfaces.irc import (
+    IIrcID,
+    IIrcIDSet,
+    )
+from lp.registry.interfaces.jabber import (
+    IJabberID,
+    IJabberIDSet,
+    )
 from lp.registry.interfaces.mailinglist import (
-    IMailingListSet, MailingListStatus, PostedMessageStatus)
+    IMailingListSet,
+    MailingListStatus,
+    PostedMessageStatus,
+    )
 from lp.registry.interfaces.mailinglistsubscription import (
-    MailingListAutoSubscribePolicy)
+    MailingListAutoSubscribePolicy,
+    )
 from lp.registry.interfaces.person import (
-    IPerson, IPersonSet, ITeam, ImmutableVisibilityError, InvalidName,
-    JoinNotAllowed, NameAlreadyTaken, PersonCreationRationale,
-    PersonVisibility, PersonalStanding, TeamMembershipRenewalPolicy,
-    TeamSubscriptionPolicy)
-from lp.registry.interfaces.personnotification import (
-    IPersonNotificationSet)
+    ImmutableVisibilityError,
+    InvalidName,
+    IPerson,
+    IPersonSet,
+    ITeam,
+    JoinNotAllowed,
+    NameAlreadyTaken,
+    PersonalStanding,
+    PersonCreationRationale,
+    PersonVisibility,
+    TeamMembershipRenewalPolicy,
+    TeamSubscriptionPolicy,
+    validate_public_person,
+    )
+from lp.registry.interfaces.personnotification import IPersonNotificationSet
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
-from lp.blueprints.interfaces.specification import (
-    SpecificationDefinitionStatus, SpecificationFilter,
-    SpecificationImplementationStatus, SpecificationSort)
-from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.registry.interfaces.ssh import (
-    ISSHKey, ISSHKeySet, SSHKeyAdditionError, SSHKeyCompromisedError,
-    SSHKeyType)
-from lp.registry.interfaces.teammembership import (
-    TeamMembershipStatus)
-from lp.registry.interfaces.wikiname import IWikiName, IWikiNameSet
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-
-from lp.soyuz.model.archive import Archive
+    ISSHKey,
+    ISSHKeySet,
+    SSHKeyAdditionError,
+    SSHKeyCompromisedError,
+    SSHKeyType,
+    )
+from lp.registry.interfaces.teammembership import TeamMembershipStatus
+from lp.registry.interfaces.wikiname import (
+    IWikiName,
+    IWikiNameSet,
+    )
 from lp.registry.model.codeofconduct import SignedCodeOfConduct
-from lp.bugs.model.bugtask import (
-    BugTask, get_related_bugtasks_search_params)
-from canonical.launchpad.database.emailaddress import (
-    EmailAddress, HasOwnerMixin)
-from lp.registry.model.karma import KarmaCache, KarmaTotalCache
-from canonical.launchpad.database.logintoken import LoginToken
-from lp.registry.model.pillar import PillarName
-from lp.registry.model.karma import KarmaAction, KarmaAssignedEvent, Karma
+from lp.registry.model.karma import (
+    Karma,
+    KarmaAction,
+    KarmaAssignedEvent,
+    KarmaCache,
+    KarmaCategory,
+    KarmaTotalCache,
+    )
 from lp.registry.model.mentoringoffer import MentoringOffer
-from lp.soyuz.model.sourcepackagerelease import (
-    SourcePackageRelease)
-from lp.blueprints.model.specification import (
-    HasSpecificationsMixin, Specification)
-from lp.translations.model.translationimportqueue import (
-    HasTranslationImportsMixin)
+from lp.registry.model.personlocation import PersonLocation
+from lp.registry.model.pillar import PillarName
+from lp.registry.model.structuralsubscription import StructuralSubscription
 from lp.registry.model.teammembership import (
-    TeamMembership, TeamMembershipSet, TeamParticipation)
-
-from canonical.launchpad.validators.email import valid_email
-from canonical.launchpad.validators.name import sanitize_name, valid_name
-from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
-from lp.registry.interfaces.person import validate_public_person
+    TeamMembership,
+    TeamMembershipSet,
+    TeamParticipation,
+    )
+from lp.services.salesforce.interfaces import (
+    ISalesforceVoucherProxy,
+    REDEEMABLE_VOUCHER_STATUSES,
+    VOUCHER_STATUSES,
+    )
+from lp.services.worlddata.model.language import Language
+from lp.soyuz.interfaces.archive import (
+    ArchivePurpose,
+    IArchiveSet,
+    )
+from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
+from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
+from lp.soyuz.model.archive import Archive
+from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
+from lp.translations.model.translationimportqueue import (
+    HasTranslationImportsMixin,
+    )
 
 
 class JoinTeamEvent:
@@ -185,14 +309,19 @@ class ValidPersonCache(SQLBase):
     """Flags if a Person is active and usable in Launchpad.
 
     This is readonly, as this is a view in the database.
+
+    Note that it performs poorly at least some of the time, and if
+    EmailAddress and Person are already being queried, its probably better to
+    query Account directly. See bug
+    https://bugs.edge.launchpad.net/launchpad-registry/+bug/615237 for some
+    corroborating information.
     """
 
 
 def validate_person_visibility(person, attr, value):
     """Validate changes in visibility.
 
-    * Prevent teams with inconsistent connections from being made private
-    * Prevent private membership teams with mailing lists from going public.
+    * Prevent teams with inconsistent connections from being made private.
     * Prevent private teams from any transition.
     """
 
@@ -201,15 +330,6 @@ def validate_person_visibility(person, attr, value):
     if person.visibility == PersonVisibility.PRIVATE:
         raise ImmutableVisibilityError(
             'A private team cannot change visibility.')
-
-    mailing_list = getUtility(IMailingListSet).get(person.name)
-
-    if (value == PersonVisibility.PUBLIC and
-        person.visibility == PersonVisibility.PRIVATE_MEMBERSHIP and
-        mailing_list is not None and
-        mailing_list.status != MailingListStatus.PURGED):
-        raise ImmutableVisibilityError(
-            'This team cannot be made public since it has a mailing list')
 
     # If transitioning to a non-public visibility, check for existing
     # relationships that could leak data.
@@ -332,15 +452,6 @@ class Person(
     account_status_comment = property(
             _get_account_status_comment, _set_account_status_comment)
 
-    city = StringCol(default=None)
-    phone = StringCol(default=None)
-    country = ForeignKey(dbName='country', foreignKey='Country', default=None)
-    province = StringCol(default=None)
-    postcode = StringCol(default=None)
-    addressline1 = StringCol(default=None)
-    addressline2 = StringCol(default=None)
-    organization = StringCol(default=None)
-
     teamowner = ForeignKey(dbName='teamowner', foreignKey='Person',
                            default=None,
                            storm_validator=validate_public_person)
@@ -409,13 +520,12 @@ class Person(
 
         Order them by name if necessary.
         """
-        self._languages_cache = sorted(
-            languages, key=attrgetter('englishname'))
+        cache_property(self, '_languages_cache', sorted(
+            languages, key=attrgetter('englishname')))
 
     def deleteLanguagesCache(self):
         """Delete this person's cached languages, if it exists."""
-        if safe_hasattr(self, '_languages_cache'):
-            del self._languages_cache
+        clear_property(self, '_languages_cache')
 
     def addLanguage(self, language):
         """See `IPerson`."""
@@ -907,14 +1017,16 @@ class Person(
                 SELECT name, 3 as kind, displayname
                 FROM product
                 WHERE
-                    driver = %(person)s
-                    OR owner = %(person)s
+                    active = True AND
+                    (driver = %(person)s
+                    OR owner = %(person)s)
                 UNION
                 SELECT name, 2 as kind, displayname
                 FROM project
                 WHERE
-                    driver = %(person)s
-                    OR owner = %(person)s
+                    active = True AND
+                    (driver = %(person)s
+                    OR owner = %(person)s)
                 UNION
                 SELECT name, 1 as kind, displayname
                 FROM distribution
@@ -926,7 +1038,12 @@ class Person(
             """ % sqlvalues(person=self))
         results = IStore(self).using(origin).find(find_spec)
         results = results.order_by('kind', 'displayname')
-        return [pillar_name for pillar_name, kind, displayname in results]
+
+        def get_pillar_name(result):
+            pillar_name, kind, displayname = result
+            return pillar_name
+
+        return DecoratedResultSet(results, get_pillar_name)
 
     def getOwnedProjects(self, match_name=None):
         """See `IPerson`."""
@@ -1031,9 +1148,10 @@ class Person(
         result = result.order_by(KarmaCategory.title)
         return [karma_cache for (karma_cache, category) in result]
 
-    @property
+    @cachedproperty('_karma_cached')
     def karma(self):
         """See `IPerson`."""
+        # May also be loaded from _all_members
         cache = KarmaTotalCache.selectOneBy(person=self)
         if cache is None:
             # Newly created accounts may not be in the cache yet, meaning the
@@ -1051,7 +1169,7 @@ class Person(
 
         return self.is_valid_person
 
-    @property
+    @cachedproperty('_is_valid_person_cached')
     def is_valid_person(self):
         """See `IPerson`."""
         if self.is_team:
@@ -1450,14 +1568,146 @@ class Person(
     @property
     def allmembers(self):
         """See `IPerson`."""
-        query = """
-            Person.id = TeamParticipation.person AND
-            TeamParticipation.team = %s AND
-            TeamParticipation.person != %s
-            """ % sqlvalues(self.id, self.id)
-        return Person.select(query, clauseTables=['TeamParticipation'])
+        return self._all_members()
 
-    def _getMembersWithPreferredEmails(self, include_teams=False):
+    @property
+    def all_members_prepopulated(self):
+        """See `IPerson`."""
+        return self._all_members(need_karma=True, need_ubuntu_coc=True,
+            need_location=True, need_archive=True, need_preferred_email=True,
+            need_validity=True)
+
+    def _all_members(self, need_karma=False, need_ubuntu_coc=False,
+        need_location=False, need_archive=False, need_preferred_email=False,
+        need_validity=False):
+        """Lookup all members of the team with optional precaching.
+
+        :param need_karma: The karma attribute will be cached.
+        :param need_ubuntu_coc: The is_ubuntu_coc_signer attribute will be
+            cached.
+        :param need_location: The location attribute will be cached.
+        :param need_archive: The archive attribute will be cached.
+        :param need_preferred_email: The preferred email attribute will be
+            cached.
+        :param need_validity: The is_valid attribute will be cached.
+        """
+        # TODO: consolidate this with getMembersWithPreferredEmails.
+        #       The difference between the two is that
+        #       getMembersWithPreferredEmails includes self, which is arguably
+        #       wrong, but perhaps deliberate.
+        store = Store.of(self)
+        origin = [
+            Person,
+            Join(TeamParticipation, TeamParticipation.person == Person.id),
+            ]
+        conditions = And(
+            # Members of this team,
+            TeamParticipation.team == self.id,
+            # But not the team itself.
+            TeamParticipation.person != self.id)
+        columns = [Person]
+        if need_karma:
+            # New people have no karmatotalcache rows.
+            origin.append(
+                LeftJoin(KarmaTotalCache,
+                    KarmaTotalCache.person == Person.id))
+            columns.append(KarmaTotalCache)
+        if need_ubuntu_coc:
+            columns.append(Alias(Exists(Select(SignedCodeOfConduct,
+                And(Person._is_ubuntu_coc_signer_condition(),
+                    SignedCodeOfConduct.ownerID == Person.id))),
+                name='is_ubuntu_coc_signer'))
+        if need_location:
+            # New people have no location rows
+            origin.append(
+                LeftJoin(PersonLocation,
+                    PersonLocation.person == Person.id))
+            columns.append(PersonLocation)
+        if need_archive:
+            # Not everyone has PPA's
+            # It would be nice to cleanly expose the soyuz rules for this to
+            # avoid duplicating the relationships.
+            origin.append(
+                LeftJoin(Archive, Archive.owner == Person.id))
+            columns.append(Archive)
+            conditions = And(conditions,
+                Or(Archive.id == None, And(
+                Archive.id == Select(Min(Archive.id),
+                    Archive.owner == Person.id, Archive),
+                Archive.purpose == ArchivePurpose.PPA)))
+        # checking validity requires having a preferred email.
+        if need_preferred_email or need_validity:
+            # Teams don't have email, so a left join
+            origin.append(
+                LeftJoin(EmailAddress, EmailAddress.person == Person.id))
+            columns.append(EmailAddress)
+            conditions = And(conditions,
+                Or(EmailAddress.status == None,
+                    EmailAddress.status == EmailAddressStatus.PREFERRED))
+        if need_validity:
+            # May find teams (teams are not valid people)
+            origin.append(
+                LeftJoin(Account, Person.account == Account.id))
+            columns.append(Account)
+            conditions = And(conditions,
+                Or(
+                    Account.status == None,
+                    Account.status == AccountStatus.ACTIVE))
+        if len(columns) == 1:
+            columns = columns[0]
+            # Return a simple ResultSet
+            return store.using(*origin).find(columns, conditions)
+        # Adapt the result into a cached Person.
+        columns = tuple(columns)
+        raw_result = store.using(*origin).find(columns, conditions)
+
+        def prepopulate_person(row):
+            result = row[0]
+            index = 1
+            #-- karma caching
+            if need_karma:
+                karma = row[index]
+                index += 1
+                if karma is None:
+                    karma_total = 0
+                else:
+                    karma_total = karma.karma_total
+                cache_property(result, '_karma_cached', karma_total)
+            #-- ubuntu code of conduct signer status caching.
+            if need_ubuntu_coc:
+                signed = row[index]
+                index += 1
+                cache_property(result, '_is_ubuntu_coc_signer_cached', signed)
+            #-- location caching
+            if need_location:
+                location = row[index]
+                index += 1
+                cache_property(result, '_location', location)
+            #-- archive caching
+            if need_archive:
+                archive = row[index]
+                index += 1
+                cache_property(result, '_archive_cached', archive)
+            #-- preferred email caching
+            if need_preferred_email:
+                email = row[index]
+                index += 1
+                cache_property(result, '_preferredemail_cached', email)
+            #-- validity caching
+            if need_validity:
+                # valid if:
+                valid = (
+                    # -- valid account found
+                    row[index] is not None
+                    # -- preferred email found
+                    and result.preferredemail is not None)
+                index += 1
+                cache_property(result, '_is_valid_person_cached', valid)
+            return result
+        return DecoratedResultSet(raw_result,
+            result_decorator=prepopulate_person)
+
+    def _getMembersWithPreferredEmails(self):
         """Helper method for public getMembersWithPreferredEmails.
 
         We can't return the preferred email address directly to the
@@ -1475,20 +1725,18 @@ class Person(
             EmailAddress.status == EmailAddressStatus.PREFERRED)
         return store.using(*origin).find((Person, EmailAddress), conditions)
 
-    def getMembersWithPreferredEmails(self, include_teams=False):
+    def getMembersWithPreferredEmails(self):
         """See `IPerson`."""
-        result = self._getMembersWithPreferredEmails(
-            include_teams=include_teams)
+        result = self._getMembersWithPreferredEmails()
         person_list = []
         for person, email in result:
-            person._preferredemail_cached = email
+            cache_property(person, '_preferredemail_cached', email)
             person_list.append(person)
         return person_list
 
-    def getMembersWithPreferredEmailsCount(self, include_teams=False):
+    def getMembersWithPreferredEmailsCount(self):
         """See `IPerson`."""
-        result = self._getMembersWithPreferredEmails(
-            include_teams=include_teams)
+        result = self._getMembersWithPreferredEmails()
         return result.count()
 
     @property
@@ -1576,19 +1824,22 @@ class Person(
             self.invited_members,
             orderBy=self._sortingColumnsForSetOperations)
 
-    # XXX: kiko 2005-10-07:
-    # myactivememberships should be renamed to team_memberships and be
-    # described as the set of memberships for the object's teams.
     @property
-    def myactivememberships(self):
+    def team_memberships(self):
         """See `IPerson`."""
-        return TeamMembership.select("""
-            TeamMembership.person = %s AND status in %s AND
-            Person.id = TeamMembership.team
-            """ % sqlvalues(self.id, [TeamMembershipStatus.APPROVED,
-                                      TeamMembershipStatus.ADMIN]),
-            clauseTables=['Person'],
-            orderBy=Person.sortingColumns)
+        Team = ClassAlias(Person, "Team")
+        store = Store.of(self)
+        # Join on team to sort by team names. Upper is used in the sort so
+        # sorting works as is user expected, e.g. (A b C) not (A C b).
+        return store.find(TeamMembership,
+            And(TeamMembership.personID == self.id,
+                TeamMembership.teamID == Team.id,
+                TeamMembership.status.is_in([
+                    TeamMembershipStatus.APPROVED,
+                    TeamMembershipStatus.ADMIN,
+                    ]))).order_by(
+                        Upper(Team.displayname),
+                        Upper(Team.name))
 
     def _getMappedParticipantsLocations(self, limit=None):
         """See `IPersonViewRestricted`."""
@@ -1694,7 +1945,7 @@ class Person(
         assert self.is_valid_person, (
             "You can only deactivate an account of a valid person.")
 
-        for membership in self.myactivememberships:
+        for membership in self.team_memberships:
             self.leave(membership.team)
 
         # Deactivate CoC signatures, invalidate email addresses, unassign bug
@@ -1756,7 +2007,7 @@ class Person(
         self.account_status = AccountStatus.DEACTIVATED
         self.account_status_comment = comment
         IMasterObject(self.preferredemail).status = EmailAddressStatus.NEW
-        self._preferredemail_cached = None
+        clear_property(self, '_preferredemail_cached')
         base_new_name = self.name + '-deactivatedaccount'
         self.name = self._ensureNewName(base_new_name)
 
@@ -1941,9 +2192,65 @@ class Person(
 
     def getLatestApprovedMembershipsForPerson(self, limit=5):
         """See `IPerson`."""
-        result = self.myactivememberships
-        result = result.orderBy(['-date_joined', '-id'])
+        result = self.team_memberships
+        result = result.order_by(
+            Desc(TeamMembership.datejoined),
+            Desc(TeamMembership.id))
         return result[:limit]
+
+    def getPathsToTeams(self):
+        """See `Iperson`."""
+        # Get all of the teams this person participates in.
+        teams = list(self.teams_participated_in)
+
+        # For cases where self is a team, we don't need self as a team
+        # participated in.
+        teams = [team for team in teams if team is not self]
+
+        # Get all of the memberships for any of the teams this person is
+        # a participant of. This must be ordered by date and id because
+        # because the graph of the results will create needs to contain
+        # the oldest path information to be consistent with results from
+        # IPerson.findPathToTeam.
+        store = Store.of(self)
+        all_direct_memberships = store.find(TeamMembership,
+            And(
+                TeamMembership.personID.is_in(
+                    [team.id for team in teams] + [self.id]),
+                TeamMembership.teamID != self.id,
+                TeamMembership.status.is_in([
+                    TeamMembershipStatus.APPROVED,
+                    TeamMembershipStatus.ADMIN,
+                    ]))).order_by(
+                        Desc(TeamMembership.datejoined),
+                        Desc(TeamMembership.id))
+        # Cast the results to list now, because they will be iterated over
+        # several times.
+        all_direct_memberships = list(all_direct_memberships)
+
+        # Pull out the memberships directly used by this person.
+        user_memberships = [
+            membership for membership in
+            all_direct_memberships
+            if membership.person == self]
+
+        all_direct_memberships = [
+            (membership.team, membership.person) for membership in
+            all_direct_memberships]
+
+        # Create a graph from the edges provided by the other data sets.
+        graph = dict(all_direct_memberships)
+
+        # Build the teams paths from that graph.
+        paths = {}
+        for team in teams:
+            path = [team]
+            step = team
+            while path[-1] != self:
+                step = graph[step]
+                path.append(step)
+            paths[team] = path
+        return (paths, user_memberships)
 
     @property
     def teams_participated_in(self):
@@ -1959,27 +2266,23 @@ class Person(
     @property
     def teams_indirectly_participated_in(self):
         """See `IPerson`."""
-        return Person.select("""
-              -- we are looking for teams, so we want "people" that are on the
-              -- teamparticipation.team side of teamparticipation
-            Person.id = TeamParticipation.team AND
-              -- where this person participates in the team
-            TeamParticipation.person = %s AND
-              -- but not the teamparticipation for "this person in himself"
-              -- which exists for every person
-            TeamParticipation.team != %s AND
-              -- nor do we want teams in which the person is a direct
-              -- participant, so we exclude the teams in which there is
-              -- a teammembership for this person
-            TeamParticipation.team NOT IN
-              (SELECT TeamMembership.team FROM TeamMembership WHERE
-                      TeamMembership.person = %s AND
-                      TeamMembership.status IN (%s, %s))
-            """ % sqlvalues(self.id, self.id, self.id,
-                            TeamMembershipStatus.APPROVED,
-                            TeamMembershipStatus.ADMIN),
-            clauseTables=['TeamParticipation'],
-            orderBy=Person.sortingColumns)
+        Team = ClassAlias(Person, "Team")
+        store = Store.of(self)
+        origin = [
+            Team,
+            Join(TeamParticipation, Team.id == TeamParticipation.teamID),
+            LeftJoin(TeamMembership,
+                And(TeamMembership.person == self.id,
+                    TeamMembership.teamID == TeamParticipation.teamID,
+                    TeamMembership.status.is_in([
+                        TeamMembershipStatus.APPROVED,
+                        TeamMembershipStatus.ADMIN])))]
+        find_objects = (Team)
+        return store.using(*origin).find(find_objects,
+            And(
+                TeamParticipation.person == self.id,
+                TeamParticipation.person != TeamParticipation.teamID,
+                TeamMembership.id == None))
 
     @property
     def teams_with_icons(self):
@@ -2072,12 +2375,17 @@ class Person(
         if self.mailing_list is not None:
             mailing_list_email = getUtility(IEmailAddressSet).getByEmail(
                 self.mailing_list.address)
-            mailing_list_email = IMasterObject(mailing_list_email)
+            if mailing_list_email is not None:
+                mailing_list_email = IMasterObject(mailing_list_email)
         else:
             mailing_list_email = None
         all_addresses = IMasterStore(self).find(
             EmailAddress, EmailAddress.personID == self.id)
         for address in all_addresses:
+            # Delete all email addresses that are not the preferred email
+            # address, or the team's email address. If this method was called
+            # with None, and there is no mailing list, then this condidition
+            # is (None, None), causing all email addresses to be deleted.
             if address not in (email, mailing_list_email):
                 address.destroySelf()
 
@@ -2089,7 +2397,7 @@ class Person(
         if email_address is not None:
             email_address.status = EmailAddressStatus.VALIDATED
             email_address.syncUpdate()
-        self._preferredemail_cached = None
+        clear_property(self, '_preferredemail_cached')
 
     def setPreferredEmail(self, email):
         """See `IPerson`."""
@@ -2126,7 +2434,7 @@ class Person(
         IMasterObject(email).syncUpdate()
 
         # Now we update our cache of the preferredemail.
-        self._preferredemail_cached = email
+        cache_property(self, '_preferredemail_cached', email)
 
     @cachedproperty('_preferredemail_cached')
     def preferredemail(self):
@@ -2275,9 +2583,11 @@ class Person(
         """See `IPerson`."""
         from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
         builder_recipe = RecipeParser(recipe_text).parse()
-        return SourcePackageRecipe.new(
+        recipe = SourcePackageRecipe.new(
             registrant, self, name, builder_recipe, description, distroseries,
             daily_build_archive, build_daily)
+        Store.of(recipe).flush()
+        return recipe
 
     def getRecipe(self, name):
         from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
@@ -2291,17 +2601,23 @@ class Person(
             distribution.main_archive, self)
         return permissions.count() > 0
 
-    @cachedproperty
+    @cachedproperty('_is_ubuntu_coc_signer_cached')
     def is_ubuntu_coc_signer(self):
         """See `IPerson`."""
+        # Also assigned to by self._all_members.
+        store = Store.of(self)
+        query = And(SignedCodeOfConduct.ownerID == self.id,
+            Person._is_ubuntu_coc_signer_condition())
+        # TODO: Using exists would be faster than count().
+        return bool(store.find(SignedCodeOfConduct, query).count())
+
+    @staticmethod
+    def _is_ubuntu_coc_signer_condition():
+        """Generate a Storm Expr for determing the coc signing status."""
         sigset = getUtility(ISignedCodeOfConductSet)
         lastdate = sigset.getLastAcceptedDate()
-
-        query = AND(SignedCodeOfConduct.q.active==True,
-                    SignedCodeOfConduct.q.ownerID==self.id,
-                    SignedCodeOfConduct.q.datecreated>=lastdate)
-
-        return bool(SignedCodeOfConduct.select(query).count())
+        return And(SignedCodeOfConduct.active == True,
+            SignedCodeOfConduct.datecreated >= lastdate)
 
     @property
     def activesignatures(self):
@@ -2315,7 +2631,7 @@ class Person(
         sCoC_util = getUtility(ISignedCodeOfConductSet)
         return sCoC_util.searchByUser(self.id, active=False)
 
-    @property
+    @cachedproperty('_archive_cached')
     def archive(self):
         """See `IPerson`."""
         return getUtility(IArchiveSet).getPPAOwnedByPerson(self)
@@ -2505,7 +2821,7 @@ class PersonSet:
                     creation_rationale, comment=comment)
                 db_updated = True
 
-        return IPerson(account), db_updated
+            return IPerson(account), db_updated
 
     def newTeam(self, teamowner, name, displayname, teamdescription=None,
                 subscriptionpolicy=TeamSubscriptionPolicy.MODERATED,
@@ -2639,7 +2955,8 @@ class PersonSet:
                 # Populate the previously empty 'preferredemail' cached
                 # property, so the Person record is up-to-date.
                 if master_email.status == EmailAddressStatus.PREFERRED:
-                    account_person._preferredemail_cached = master_email
+                    cache_property(account_person, '_preferredemail_cached',
+                        master_email)
                 return account_person
             # There is no associated `Person` to the email `Account`.
             # This is probably because the account was created externally
