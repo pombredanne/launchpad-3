@@ -8,7 +8,6 @@ __all__ = [
     'MailingListAPIView',
     ]
 
-
 import xmlrpclib
 
 from zope.component import getUtility
@@ -16,6 +15,7 @@ from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
+from canonical.encoding import escape_nonascii_uniquely
 from canonical.launchpad.interfaces import (
     EmailAddressStatus, IEmailAddressSet, IMailingListAPIView,
     IMailingListSet, IMessageApprovalSet, IMessageSet, IPersonSet,
@@ -233,6 +233,10 @@ class MailingListAPIView(LaunchpadXMLRPCView):
         # though it's much more convenient to just pass 8-bit strings.
         if isinstance(bytes, xmlrpclib.Binary):
             bytes = bytes.data
+        # Although it is illegal for an email to have unencoded non-ascii
+        # characters, it is better to let the list owner process the
+        # message than to cause an oops.
+        bytes = escape_nonascii_uniquely(bytes)
         mailing_list = getUtility(IMailingListSet).get(team_name)
         message = getUtility(IMessageSet).fromEmail(bytes)
         mailing_list.holdMessage(message)
