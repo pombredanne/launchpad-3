@@ -38,11 +38,12 @@ class InitialiseDistroSeriesJobDerivedTestCase(TestCaseWithFactory):
     layer = LaunchpadZopelessLayer
         
     def test_create_explodes(self):
-        # InitialiseDistroSeriesJobDerived.create() will blow up because it needs to be
-        # subclassed to work properly.
+        # InitialiseDistroSeriesJobDerived.create() will blow up
+        # because it needs to be subclassed to work properly.
         distroseries = self.factory.makeDistroSeries()
         self.assertRaises(
-            AttributeError, InitialiseDistroSeriesJobDerived.create, distroseries)
+            AttributeError, InitialiseDistroSeriesJobDerived.create,
+            distroseries)
         
         
 def test_suite():

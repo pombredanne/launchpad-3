@@ -3,6 +3,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.soyuz.model.doinitialisedistroseriesjob import (
     DoInitialiseDistroSeriesJob)
+from lp.soyuz.scripts.initialise_distroseries import InitialisationError
 from lp.testing import TestCaseWithFactory
 from lp.testing.fakemethod import FakeMethod
 
@@ -18,7 +19,6 @@ class DoInitialiseDistroSeriesJobTests(TestCaseWithFactory):
         vars = job.getOopsVars()
         self.assertIn(('distroseries_id', distroseries.id), vars)
         self.assertIn(('distroseries_job_id', job.context.id), vars)
-        self.assertIn(('distroseries_job_type', job.context.job_type.title), vars)
 
     def _getJobs(self):
         """Return the pending DoInitialiseDistroSeriesJobs as a list."""
@@ -50,12 +50,11 @@ class DoInitialiseDistroSeriesJobTests(TestCaseWithFactory):
         """Test that DoInitialiseDistroSeriesJob.run() actually
         initialises builds and copies from the parent."""
         distroseries = self.factory.makeDistroSeries()
-	distroseries.fake_initialiseFromParent = FakeMethod(result=True)
-        removeSecurityProxy(distroseries).initialiseFromParent = (
-            distroseries.fake_initialiseFromParent)
 
         job = DoInitialiseDistroSeriesJob.create(distroseries)
-        job.run()
 
-        self.assertEqual(1, distroseries.fake_initialiseFromParent.call_count)
-
+        # Since our new distroseries doesn't have a parent set, and the first
+        # thing that run() will execute is checking the distroseries, if it
+        # returns an InitialisationError, then it's good.
+        self.assertRaisesWithContent(
+            InitialisationError, "Parent series required.", job.run)

@@ -17,7 +17,6 @@ CREATE TABLE InitialiseDistroSeriesJob (
 );
 
 ALTER TABLE InitialiseDistroSeriesJob ADD CONSTRAINT initialisedistroseriesjob__job__key UNIQUE (job);
-CREATE INDEX initialisedistroseriesjob__distroseries__job_type__idx ON InitialiseDistroSeriesJob(distroseries, job_type);
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2207, 99, 0);
 
