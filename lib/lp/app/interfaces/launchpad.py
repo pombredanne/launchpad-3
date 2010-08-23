@@ -14,7 +14,10 @@ __all__ = [
     ]
 
 from zope.interface import Interface
-from zope.schema import Bool, Choice
+from zope.schema import (
+    Bool,
+    Choice,
+    )
 
 from canonical.launchpad import _
 from lp.app.enums import ServiceUsage

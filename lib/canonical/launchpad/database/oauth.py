@@ -10,35 +10,53 @@ __all__ = [
     'OAuthRequestToken',
     'OAuthRequestTokenSet']
 
-import pytz
-from datetime import datetime, timedelta
+from datetime import (
+    datetime,
+    timedelta,
+    )
 
+import pytz
+from sqlobject import (
+    BoolCol,
+    ForeignKey,
+    StringCol,
+    )
+from storm.expr import And
 from zope.component import getUtility
 from zope.interface import implements
-
-from sqlobject import BoolCol, ForeignKey, StringCol
-from storm.expr import And
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
-
 from canonical.launchpad.components.tokens import (
-    create_token, create_unique_token_for_table)
-
+    create_token,
+    create_unique_token_for_table,
+    )
+from canonical.launchpad.interfaces import (
+    ClockSkew,
+    IOAuthAccessToken,
+    IOAuthConsumer,
+    IOAuthConsumerSet,
+    IOAuthNonce,
+    IOAuthRequestToken,
+    IOAuthRequestTokenSet,
+    NonceAlreadyUsed,
+    TimestampOrderingError,
+    )
+from canonical.launchpad.webapp.interfaces import (
+    AccessLevel,
+    IStoreSelector,
+    MAIN_STORE,
+    MASTER_FLAVOR,
+    OAuthPermission,
+    )
 from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.distributionsourcepackage import (
+    IDistributionSourcePackage,
+    )
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
-from lp.registry.interfaces.distributionsourcepackage import (
-    IDistributionSourcePackage)
-from canonical.launchpad.interfaces import (
-    IOAuthAccessToken, IOAuthConsumer, IOAuthConsumerSet, IOAuthNonce,
-    IOAuthRequestToken, IOAuthRequestTokenSet, NonceAlreadyUsed,
-    TimestampOrderingError, ClockSkew)
-from canonical.launchpad.webapp.interfaces import (
-    AccessLevel, OAuthPermission, IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
-
 
 # How many hours should a request token be valid for?
 REQUEST_TOKEN_VALIDITY = 12

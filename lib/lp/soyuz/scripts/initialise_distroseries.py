@@ -11,14 +11,20 @@ __all__ = [
     ]
 
 from zope.component import getUtility
+
 from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
-
+    IStoreSelector,
+    MAIN_STORE,
+    MASTER_FLAVOR,
+    )
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.adapters.packagelocation import PackageLocation
-from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
+from lp.soyuz.interfaces.archive import (
+    ArchivePurpose,
+    IArchiveSet,
+    )
 from lp.soyuz.interfaces.queue import PackageUploadStatus
 from lp.soyuz.model.packagecloner import clone_packages
 
@@ -54,9 +60,10 @@ class InitialiseDistroSeries:
       in the initialisation of a derivative.
     """
 
-    def __init__(self, distroseries):
+    def __init__(self, distroseries, arches=()):
         self.distroseries = distroseries
         self.parent = self.distroseries.parent_series
+        self.arches = arches
         self._store = getUtility(
             IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
 
@@ -118,15 +125,19 @@ class InitialiseDistroSeries:
     def initialise(self):
         self._copy_architectures()
         self._copy_packages()
+        self._copy_packagesets()
 
     def _copy_architectures(self):
+        include = ''
+        if self.arches:
+            include = "AND architecturetag IN %s" % sqlvalues(self.arches)
         self._store.execute("""
             INSERT INTO DistroArchSeries
             (distroseries, processorfamily, architecturetag, owner, official)
             SELECT %s, processorfamily, architecturetag, %s, official
-            FROM DistroArchSeries WHERE distroseries = %s
-            """ % sqlvalues(self.distroseries, self.distroseries.owner,
-            self.parent))
+            FROM DistroArchSeries WHERE distroseries = %s %s
+            """ % (sqlvalues(self.distroseries, self.distroseries.owner,
+            self.parent) + (include,)))
 
         self.distroseries.nominatedarchindep = self.distroseries[
             self.parent.nominatedarchindep.architecturetag]
@@ -139,6 +150,8 @@ class InitialiseDistroSeries:
         # shall be copied.
         distroarchseries_list = []
         for arch in self.distroseries.architectures:
+            if self.arches and (arch.architecturetag not in self.arches):
+                continue
             parent_arch = self.parent[arch.architecturetag]
             distroarchseries_list.append((parent_arch, arch))
         # Now copy source and binary packages.
@@ -254,3 +267,13 @@ class InitialiseDistroSeries:
                         )
                     )
             """ % self.distroseries.id)
+
+    def _copy_packagesets(self):
+        """Copy packagesets from the parent distroseries."""
+        self._store.execute("""
+            INSERT INTO Packageset
+            (distroseries, owner, name, description, packagesetgroup)
+            SELECT %s, %s, name, description, packagesetgroup
+            FROM Packageset WHERE distroseries = %s
+            """ % sqlvalues(
+            self.distroseries, self.distroseries.owner, self.parent))

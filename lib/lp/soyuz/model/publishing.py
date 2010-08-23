@@ -16,33 +16,52 @@ __all__ = [
     ]
 
 
-import apt_pkg
 from datetime import datetime
 import operator
 import os
-import pytz
 import re
 import sys
 
+import apt_pkg
+import pytz
+from sqlobject import (
+    ForeignKey,
+    StringCol,
+    )
+from storm.expr import (
+    Desc,
+    In,
+    LeftJoin,
+    Sum,
+    )
+from storm.store import Store
 from zope.component import getUtility
 from zope.interface import implements
 
-from sqlobject import ForeignKey, StringCol
-
-from storm.expr import Desc, In, LeftJoin, Sum
-from storm.store import Store
-
-from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
+from canonical.database.sqlbase import (
+    SQLBase,
+    sqlvalues,
+    )
 from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet)
+    DecoratedResultSet,
+    )
+from canonical.launchpad.database.librarian import (
+    LibraryFileAlias,
+    LibraryFileContent,
+    )
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
-from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.launchpad.webapp.errorlog import (
-    ErrorReportingUtility, ScriptRequest)
+    ErrorReportingUtility,
+    ScriptRequest,
+    )
+from canonical.launchpad.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 from lp.app.errors import NotFoundError
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
@@ -50,26 +69,36 @@ from lp.buildmaster.model.packagebuild import PackageBuild
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.worlddata.model.country import Country
-from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFormat
-from lp.soyuz.model.binarypackagename import BinaryPackageName
-from lp.soyuz.model.binarypackagerelease import (BinaryPackageRelease,
-    BinaryPackageReleaseDownloadCount)
 from lp.soyuz.interfaces.archive import ArchivePurpose
-from lp.soyuz.model.files import (
-    BinaryPackageFile, SourcePackageReleaseFile)
-from canonical.launchpad.database.librarian import (
-    LibraryFileAlias, LibraryFileContent)
-from lp.soyuz.model.packagediff import PackageDiff
 from lp.soyuz.interfaces.archivearch import IArchiveArchSet
 from lp.soyuz.interfaces.binarypackagebuild import (
-    BuildSetStatus, IBinaryPackageBuildSet)
+    BuildSetStatus,
+    IBinaryPackageBuildSet,
+    )
+from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFormat
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.publishing import (
-    active_publishing_status, IBinaryPackageFilePublishing,
-    IBinaryPackagePublishingHistory, IPublishingSet,
-    ISourcePackageFilePublishing, ISourcePackagePublishingHistory,
-    PackagePublishingPriority, PackagePublishingStatus, PoolFileOverwriteError)
+    active_publishing_status,
+    IBinaryPackageFilePublishing,
+    IBinaryPackagePublishingHistory,
+    IPublishingSet,
+    ISourcePackageFilePublishing,
+    ISourcePackagePublishingHistory,
+    PackagePublishingPriority,
+    PackagePublishingStatus,
+    PoolFileOverwriteError,
+    )
 from lp.soyuz.interfaces.queue import PackageUploadStatus
+from lp.soyuz.model.binarypackagename import BinaryPackageName
+from lp.soyuz.model.binarypackagerelease import (
+    BinaryPackageRelease,
+    BinaryPackageReleaseDownloadCount,
+    )
+from lp.soyuz.model.files import (
+    BinaryPackageFile,
+    SourcePackageReleaseFile,
+    )
+from lp.soyuz.model.packagediff import PackageDiff
 from lp.soyuz.pas import determineArchitecturesToBuild
 from lp.soyuz.scripts.changeoverride import ArchiveOverriderError
 
@@ -324,6 +353,11 @@ class IndexStanzaFields:
         Then we can use the FIFO-like behaviour in makeOutput().
         """
         self.fields.append((name, value))
+
+    def extend(self, entries):
+        """Extend the internal list with the key-value pairs in entries.
+        """
+        self.fields.extend(entries)
 
     def makeOutput(self):
         """Return a line-by-line aggregation of appended fields.
@@ -672,6 +706,8 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         fields.append('Format', spr.dsc_format)
         fields.append('Directory', pool_path)
         fields.append('Files', files_subsection)
+        if spr.user_defined_fields:
+            fields.extend(spr.user_defined_fields)
 
         return fields
 
@@ -941,6 +977,8 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         fields.append('MD5sum', bin_md5)
         fields.append('SHA1', bin_sha1)
         fields.append('Description', bin_description)
+        if bpr.user_defined_fields:
+            fields.extend(bpr.user_defined_fields)
 
         # XXX cprov 2006-11-03: the extra override fields (Bugs, Origin and
         # Task) included in the template be were not populated.

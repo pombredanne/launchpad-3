@@ -16,18 +16,22 @@ __all__ = [
 
 import re
 
-from canonical.lazr.utils import smartquote
-
-from lp.app.errors import NotFoundError
-from lp.translations.interfaces.customlanguagecode import (
-    ICustomLanguageCode, IHasCustomLanguageCodes)
-
 from canonical.launchpad.webapp import (
-    action, canonical_url, LaunchpadFormView, LaunchpadView, Navigation,
-    stepthrough)
+    action,
+    canonical_url,
+    LaunchpadFormView,
+    LaunchpadView,
+    Navigation,
+    stepthrough,
+    )
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.menu import structured
-
+from canonical.lazr.utils import smartquote
+from lp.app.errors import NotFoundError
+from lp.translations.interfaces.customlanguagecode import (
+    ICustomLanguageCode,
+    IHasCustomLanguageCodes,
+    )
 
 # Regex for allowable custom language codes.
 CODE_PATTERN = "[a-zA-Z0-9_-]+$"
@@ -103,16 +107,18 @@ class CustomLanguageCodeAddView(LaunchpadFormView):
 
     @property
     def action_url(self):
-        return "%s/+add-custom-language-code" % canonical_url(self.context)
+        return canonical_url(
+            self.context, rootsite='translations',
+            view_name='+add-custom-language-code')
 
     @property
     def next_url(self):
         """See `LaunchpadFormView`."""
-        return "%s/+custom-language-codes" % canonical_url(self.context)
+        return canonical_url(
+            self.context, rootsite='translations',
+            view_name='+custom-language-codes')
 
-    @property
-    def cancel_url(self):
-        return self.next_url
+    cancel_url = next_url
 
 
 class CustomLanguageCodeView(LaunchpadView):
@@ -145,12 +151,12 @@ class CustomLanguageCodeRemoveView(LaunchpadFormView):
 
     @property
     def next_url(self):
-        return "%s/+custom-language-codes" % canonical_url(
-            self.context.translation_target)
+        """See `LaunchpadFormView`."""
+        return canonical_url(
+            self.context.translation_target, rootsite='translations',
+            view_name='+custom-language-codes')
 
-    @property
-    def cancel_url(self):
-        return self.next_url
+    cancel_url = next_url
 
 
 class HasCustomLanguageCodesTraversalMixin:

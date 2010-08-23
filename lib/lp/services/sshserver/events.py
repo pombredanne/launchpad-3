@@ -21,7 +21,11 @@ __all__ = [
 
 import logging
 
-from zope.interface import Attribute, implements, Interface
+from zope.interface import (
+    Attribute,
+    implements,
+    Interface,
+    )
 
 
 class ILoggingEvent(Interface):

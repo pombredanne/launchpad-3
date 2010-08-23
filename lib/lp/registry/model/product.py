@@ -12,103 +12,160 @@ __all__ = [
     ]
 
 
-import operator
-import datetime
 import calendar
+import datetime
+import operator
+
+from lazr.delegates import delegates
 import pytz
 from sqlobject import (
-    BoolCol, ForeignKey, SQLMultipleJoin, SQLObjectNotFound, StringCol)
-from storm.locals import And, Desc, Int, Join, SQL, Store, Unicode
-from zope.interface import implements
+    BoolCol,
+    ForeignKey,
+    SQLMultipleJoin,
+    SQLObjectNotFound,
+    StringCol,
+    )
+from storm.locals import (
+    And,
+    Desc,
+    Int,
+    Join,
+    SQL,
+    Store,
+    Unicode,
+    )
 from zope.component import getUtility
+from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.cachedproperty import cachedproperty
-from lazr.delegates import delegates
-from canonical.lazr.utils import safe_hasattr
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import quote, SQLBase, sqlvalues
+from canonical.database.sqlbase import (
+    quote,
+    SQLBase,
+    sqlvalues,
+    )
+from canonical.launchpad.interfaces.launchpad import (
+    IHasIcon,
+    IHasLogo,
+    IHasMugshot,
+    ILaunchpadCelebrities,
+    )
+from canonical.launchpad.interfaces.launchpadstatistic import (
+    ILaunchpadStatisticSet,
+    )
 from canonical.launchpad.interfaces.lpstorm import IStore
-from lp.app.errors import NotFoundError
-from lp.app.interfaces.launchpad import ILaunchpadUsage, IServiceUsage
+from canonical.launchpad.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
+from canonical.launchpad.webapp.sorting import sorted_version_numbers
+from canonical.lazr.utils import safe_hasattr
+from lp.answers.interfaces.faqtarget import IFAQTarget
+from lp.answers.interfaces.questioncollection import (
+    QUESTION_STATUS_DEFAULT_SEARCH,
+    )
+from lp.answers.interfaces.questiontarget import IQuestionTarget
+from lp.answers.model.faq import (
+    FAQ,
+    FAQSearch,
+    )
+from lp.answers.model.question import (
+    QuestionTargetMixin,
+    QuestionTargetSearch,
+    )
 from lp.app.enums import ServiceUsage
-from lp.code.enums import BranchType
-from lp.code.model.branchvisibilitypolicy import (
-    BranchVisibilityPolicyMixin)
-from lp.code.model.hasbranches import (
-    HasBranchesMixin, HasCodeImportsMixin, HasMergeProposalsMixin)
-from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
-from lp.code.model.sourcepackagerecipedata import SourcePackageRecipeData
+from lp.app.errors import NotFoundError
+from lp.app.interfaces.launchpad import (
+    ILaunchpadUsage,
+    IServiceUsage,
+    )
+from lp.blueprints.interfaces.specification import (
+    SpecificationDefinitionStatus,
+    SpecificationFilter,
+    SpecificationImplementationStatus,
+    SpecificationSort,
+    )
+from lp.blueprints.model.specification import (
+    HasSpecificationsMixin,
+    Specification,
+    )
+from lp.blueprints.model.sprint import HasSprintsMixin
+from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
 from lp.bugs.interfaces.bugtarget import IHasBugHeat
 from lp.bugs.model.bug import (
-    BugSet, get_bug_tags, get_bug_tags_open_count)
+    BugSet,
+    get_bug_tags,
+    get_bug_tags_open_count,
+    )
 from lp.bugs.model.bugtarget import (
-    BugTargetBase, HasBugHeatMixin, OfficialBugTagTargetMixin)
+    BugTargetBase,
+    HasBugHeatMixin,
+    OfficialBugTagTargetMixin,
+    )
 from lp.bugs.model.bugtask import BugTask
 from lp.bugs.model.bugtracker import BugTracker
 from lp.bugs.model.bugwatch import BugWatch
-from lp.registry.model.commercialsubscription import (
-    CommercialSubscription)
-from lp.translations.model.customlanguagecode import (
-    CustomLanguageCode, HasCustomLanguageCodesMixin)
-from lp.translations.model.potemplate import POTemplate
-from lp.registry.model.distroseries import DistroSeries
+from lp.code.enums import BranchType
+from lp.code.interfaces.branch import DEFAULT_BRANCH_STATUS_IN_LISTING
+from lp.code.model.branchvisibilitypolicy import BranchVisibilityPolicyMixin
+from lp.code.model.hasbranches import (
+    HasBranchesMixin,
+    HasCodeImportsMixin,
+    HasMergeProposalsMixin,
+    )
+from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
+from lp.code.model.sourcepackagerecipedata import SourcePackageRecipeData
+from lp.registry.interfaces.person import (
+    IPersonSet,
+    validate_person,
+    validate_public_person,
+    )
+from lp.registry.interfaces.pillar import IPillarNameSet
+from lp.registry.interfaces.product import (
+    IProduct,
+    IProductSet,
+    License,
+    LicenseStatus,
+    )
+from lp.registry.model.announcement import MakesAnnouncements
+from lp.registry.model.commercialsubscription import CommercialSubscription
 from lp.registry.model.distribution import Distribution
+from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.karma import KarmaContextMixin
-from lp.answers.model.faq import FAQ, FAQSearch
 from lp.registry.model.mentoringoffer import MentoringOffer
 from lp.registry.model.milestone import (
-    HasMilestonesMixin, Milestone)
-from lp.registry.interfaces.person import (
-    validate_person, validate_public_person)
-from lp.registry.model.announcement import MakesAnnouncements
+    HasMilestonesMixin,
+    Milestone,
+    )
 from lp.registry.model.packaging import Packaging
-from lp.registry.model.pillar import HasAliasMixin
 from lp.registry.model.person import Person
+from lp.registry.model.pillar import HasAliasMixin
 from lp.registry.model.productlicense import ProductLicense
 from lp.registry.model.productrelease import ProductRelease
 from lp.registry.model.productseries import ProductSeries
-from lp.services.database.prejoin import prejoin
-from lp.answers.model.question import (
-    QuestionTargetSearch, QuestionTargetMixin)
-from lp.blueprints.model.specification import (
-    HasSpecificationsMixin, Specification)
-from lp.blueprints.model.sprint import HasSprintsMixin
-from lp.translations.interfaces.translationimportqueue import (
-    ITranslationImportQueue)
-from lp.translations.model.translationimportqueue import (
-    HasTranslationImportsMixin)
 from lp.registry.model.structuralsubscription import (
-    StructuralSubscriptionTargetMixin)
-
-from lp.code.interfaces.branch import DEFAULT_BRANCH_STATUS_IN_LISTING
-from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
-from canonical.launchpad.interfaces.launchpad import (
-    IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities)
+    StructuralSubscriptionTargetMixin,
+    )
+from lp.services.database.prejoin import prejoin
 from lp.translations.interfaces.customlanguagecode import (
-    IHasCustomLanguageCodes)
-from canonical.launchpad.interfaces.launchpadstatistic import (
-    ILaunchpadStatisticSet)
-from lp.registry.interfaces.person import IPersonSet
-from lp.registry.interfaces.pillar import IPillarNameSet
-from lp.registry.interfaces.product import (
-    IProduct, IProductSet, License, LicenseStatus)
-from lp.blueprints.interfaces.specification import (
-    SpecificationDefinitionStatus, SpecificationFilter,
-    SpecificationImplementationStatus, SpecificationSort)
-from lp.translations.interfaces.translationgroup import (
-    TranslationPermission)
-from canonical.launchpad.webapp.sorting import sorted_version_numbers
-from canonical.launchpad.webapp.interfaces import (
-        IStoreSelector, DEFAULT_FLAVOR, MAIN_STORE)
-
-
-from lp.answers.interfaces.faqtarget import IFAQTarget
-from lp.answers.interfaces.questioncollection import (
-    QUESTION_STATUS_DEFAULT_SEARCH)
-from lp.answers.interfaces.questiontarget import IQuestionTarget
+    IHasCustomLanguageCodes,
+    )
+from lp.translations.interfaces.translationgroup import TranslationPermission
+from lp.translations.interfaces.translationimportqueue import (
+    ITranslationImportQueue,
+    )
+from lp.translations.model.customlanguagecode import (
+    CustomLanguageCode,
+    HasCustomLanguageCodesMixin,
+    )
+from lp.translations.model.potemplate import POTemplate
+from lp.translations.model.translationimportqueue import (
+    HasTranslationImportsMixin,
+    )
 
 
 def get_license_status(license_approved, license_reviewed, licenses):
@@ -509,9 +566,8 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def __storm_invalidated__(self):
         """Clear cached non-storm attributes when the transaction ends."""
+        super(Product, self).__storm_invalidated__()
         self._cached_licenses = None
-        if safe_hasattr(self, '_commercial_subscription_cached'):
-            del self._commercial_subscription_cached
 
     def _getLicenses(self):
         """Get the licenses as a tuple."""

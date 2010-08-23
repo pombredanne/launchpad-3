@@ -9,22 +9,29 @@ __all__ = [
     'SilentLaunchpadScriptFailure'
     ]
 
+from ConfigParser import SafeConfigParser
 from cProfile import Profile
 import datetime
 import logging
 from optparse import OptionParser
-import os
+import os.path
 import sys
 
-from contrib.glock import GlobalLock, LockAlreadyAcquired
+from contrib.glock import (
+    GlobalLock,
+    LockAlreadyAcquired,
+    )
 import pytz
 from zope.component import getUtility
 
+from canonical.config import config
 from canonical.database.sqlbase import ISOLATION_LEVEL_DEFAULT
 from canonical.launchpad import scripts
 from canonical.launchpad.interfaces import IScriptActivitySet
 from canonical.launchpad.webapp.interaction import (
-    ANONYMOUS, setupInteractionByEmail)
+    ANONYMOUS,
+    setupInteractionByEmail,
+    )
 from canonical.lp import initZopeless
 
 
@@ -185,8 +192,8 @@ class LaunchpadScript:
     def setup_lock(self):
         """Create lockfile.
 
-        Note that this will create a lockfile even if you don't actually use it.
-        GlobalLock.__del__ is meant to clean it up though.
+        Note that this will create a lockfile even if you don't actually
+        use it. GlobalLock.__del__ is meant to clean it up though.
         """
         self.lock = GlobalLock(self.lockfilepath, logger=self.logger)
 
@@ -290,6 +297,22 @@ class LaunchpadScript:
 class LaunchpadCronScript(LaunchpadScript):
     """Logs successful script runs in the database."""
 
+    def __init__(self, name=None, dbuser=None, test_args=None):
+        """Initialize, and sys.exit() if the cronscript is disabled.
+
+        Rather than hand editing crontab files, cronscripts can be
+        enabled and disabled using a config file.
+
+        The control file location is specified by
+        config.canonical.cron_control_file.
+        """
+        super(LaunchpadCronScript, self).__init__(name, dbuser, test_args)
+
+        enabled = cronscript_enabled(
+            config.canonical.cron_control_file, self.name, self.logger)
+        if not enabled:
+            sys.exit(0)
+
     def record_activity(self, date_started, date_completed):
         """Record the successful completion of the script."""
         self.txn.begin()
@@ -299,3 +322,45 @@ class LaunchpadCronScript(LaunchpadScript):
             date_started=date_started,
             date_completed=date_completed)
         self.txn.commit()
+
+
+def cronscript_enabled(control_path, name, log):
+    """Return True if the cronscript is enabled."""
+    if not os.path.isabs(control_path):
+        control_path = os.path.abspath(
+            os.path.join(config.root, control_path))
+
+    cron_config = SafeConfigParser({'enabled': str(True)})
+
+    if not os.path.exists(control_path):
+        # No control file exists. Everything enabled by default.
+        log.debug("Cronscript control file not found at %s", control_path)
+    else:
+        log.debug("Cronscript control file found at %s", control_path)
+
+        # Try reading the config file. If it fails, we log the
+        # traceback and continue on using the defaults.
+        try:
+            cron_config.read(control_path)
+        except:
+            log.exception("Error parsing %s", control_path)
+
+    if cron_config.has_option(name, 'enabled'):
+        section = name
+    else:
+        section = 'DEFAULT'
+
+    try:
+        enabled = cron_config.getboolean(section, 'enabled')
+    except:
+        log.exception(
+            "Failed to load value from %s section of %s",
+            section, control_path)
+        enabled = True
+
+    if enabled:
+        log.debug("Enabled by %s section", section)
+    else:
+        log.info("Disabled by %s section", section)
+
+    return enabled

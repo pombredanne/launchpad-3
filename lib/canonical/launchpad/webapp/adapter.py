@@ -11,37 +11,57 @@ import re
 import sys
 import thread
 import threading
-import traceback
 from time import time
+import traceback
 import warnings
 
 import psycopg2
 from psycopg2.extensions import (
-    ISOLATION_LEVEL_AUTOCOMMIT, ISOLATION_LEVEL_READ_COMMITTED,
-    ISOLATION_LEVEL_SERIALIZABLE, QueryCanceledError)
-
+    ISOLATION_LEVEL_AUTOCOMMIT,
+    ISOLATION_LEVEL_READ_COMMITTED,
+    ISOLATION_LEVEL_SERIALIZABLE,
+    QueryCanceledError,
+    )
 from storm.database import register_scheme
 from storm.databases.postgres import (
-    Postgres, PostgresConnection, PostgresTimeoutTracer)
+    Postgres,
+    PostgresConnection,
+    PostgresTimeoutTracer,
+    )
 from storm.exceptions import TimeoutError
 from storm.store import Store
 from storm.tracer import install_tracer
 from storm.zope.interfaces import IZStorm
-
 import transaction
 from zope.component import getUtility
 from zope.interface import (
-    classImplements, classProvides, alsoProvides, implements)
+    alsoProvides,
+    classImplements,
+    classProvides,
+    implements,
+    )
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config, dbconfig, DatabaseConfig
+from canonical.config import (
+    config,
+    DatabaseConfig,
+    dbconfig,
+    )
 from canonical.database.interfaces import IRequestExpired
-from canonical.launchpad.interfaces import IMasterObject, IMasterStore
+from canonical.launchpad.interfaces import (
+    IMasterObject,
+    IMasterStore,
+    )
 from canonical.launchpad.readonly import is_read_only
 from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
 from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE, MASTER_FLAVOR,
-    ReadOnlyModeViolation, SLAVE_FLAVOR)
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    MASTER_FLAVOR,
+    ReadOnlyModeViolation,
+    SLAVE_FLAVOR,
+    )
 from canonical.launchpad.webapp.opstats import OpStats
 from canonical.lazr.utils import safe_hasattr
 

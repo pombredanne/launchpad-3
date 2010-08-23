@@ -5,6 +5,8 @@
 
 __metaclass__ = type
 
+import unittest
+
 from canonical.testing import DatabaseFunctionalLayer
 from lp.testing import TestCase
 
@@ -22,3 +24,7 @@ class TestSomething(TestCase):
 
         # XXX: Assertions take expected value first, actual value second.
         self.assertEqual(4, 2 + 2)
+
+
+def test_suite():
+    return unittest.TestLoader().loadTestsFromName(__name__)

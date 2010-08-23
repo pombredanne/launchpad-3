@@ -15,23 +15,34 @@ __all__ = [
     'IBinaryPackageBuildSet',
     ]
 
-from zope.interface import Interface, Attribute
-from zope.schema import Bool, Int, Text
-from lazr.enum import EnumeratedType, Item
+from lazr.enum import (
+    EnumeratedType,
+    Item,
+    )
+from lazr.restful.declarations import (
+    export_as_webservice_entry,
+    export_write_operation,
+    exported,
+    operation_parameters,
+    webservice_error,
+    )
+from lazr.restful.fields import Reference
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Bool,
+    Int,
+    Text,
+    )
 
 from canonical.launchpad import _
 from lp.buildmaster.interfaces.buildbase import BuildStatus
-from lp.buildmaster.interfaces.packagebuild import (
-    IPackageBuild)
+from lp.buildmaster.interfaces.packagebuild import IPackageBuild
 from lp.soyuz.interfaces.processor import IProcessor
-from lp.soyuz.interfaces.publishing import (
-    ISourcePackagePublishingHistory)
-from lp.soyuz.interfaces.sourcepackagerelease import (
-    ISourcePackageRelease)
-from lazr.restful.fields import Reference
-from lazr.restful.declarations import (
-    export_as_webservice_entry, exported, export_write_operation,
-    operation_parameters, webservice_error)
+from lp.soyuz.interfaces.publishing import ISourcePackagePublishingHistory
+from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
 
 
 class CannotBeRescored(Exception):

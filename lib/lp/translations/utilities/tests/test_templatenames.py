@@ -4,7 +4,11 @@
 import unittest
 
 from lp.translations.utilities.template import (
-    make_domain, make_name, make_name_from_path)
+    make_domain,
+    make_name,
+    make_name_from_path,
+    )
+
 
 class TemplateNamesTest(unittest.TestCase):
     """Test template name conversion utility function."""

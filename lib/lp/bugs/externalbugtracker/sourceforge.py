@@ -11,12 +11,21 @@ import urllib
 
 from BeautifulSoup import BeautifulSoup
 
-from lp.bugs.externalbugtracker import (
-    BugNotFound, ExternalBugTracker, InvalidBugId, LookupTree,
-    PrivateRemoteBug, UnknownRemoteStatusError, UnparseableBugData)
-from lp.bugs.interfaces.bugtask import BugTaskImportance, BugTaskStatus
-from lp.bugs.interfaces.externalbugtracker import UNKNOWN_REMOTE_IMPORTANCE
 from canonical.launchpad.webapp import urlsplit
+from lp.bugs.externalbugtracker import (
+    BugNotFound,
+    ExternalBugTracker,
+    InvalidBugId,
+    LookupTree,
+    PrivateRemoteBug,
+    UnknownRemoteStatusError,
+    UnparseableBugData,
+    )
+from lp.bugs.interfaces.bugtask import (
+    BugTaskImportance,
+    BugTaskStatus,
+    )
+from lp.bugs.interfaces.externalbugtracker import UNKNOWN_REMOTE_IMPORTANCE
 
 
 class SourceForge(ExternalBugTracker):

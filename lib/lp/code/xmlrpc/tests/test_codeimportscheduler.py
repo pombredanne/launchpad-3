@@ -13,16 +13,18 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces import ILaunchpadCelebrities
+from canonical.launchpad.testing.codeimporthelpers import make_running_import
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.xmlrpc.faults import NoSuchCodeImportJob
-from canonical.launchpad.testing.codeimporthelpers import make_running_import
 from canonical.testing.layers import LaunchpadFunctionalLayer
-
 from lp.code.enums import CodeImportResultStatus
 from lp.code.model.codeimportjob import CodeImportJob
 from lp.code.xmlrpc.codeimportscheduler import CodeImportSchedulerAPI
 from lp.codehosting.codeimport.worker import CodeImportSourceDetails
-from lp.testing import run_with_login, TestCaseWithFactory
+from lp.testing import (
+    run_with_login,
+    TestCaseWithFactory,
+    )
 
 
 class TestCodeImportSchedulerAPI(TestCaseWithFactory):

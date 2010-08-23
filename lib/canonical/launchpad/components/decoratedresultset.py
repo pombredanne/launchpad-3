@@ -8,12 +8,11 @@ __all__ = [
     'DecoratedResultSet',
     ]
 
-from zope.security.proxy import removeSecurityProxy
-
+from lazr.delegates import delegates
 from storm.expr import Column
 from storm.zope.interfaces import IResultSet
+from zope.security.proxy import removeSecurityProxy
 
-from lazr.delegates import delegates
 
 class DecoratedResultSet(object):
     """A decorated Storm ResultSet for 'Magic' (presenter) classes.
