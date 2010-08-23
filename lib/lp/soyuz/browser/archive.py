@@ -121,6 +121,7 @@ from lp.soyuz.browser.sourceslist import (
     SourcesListEntriesView,
     )
 from lp.soyuz.enums import (
+    ArchivePermissionType,
     ArchivePurpose,
     ArchiveStatus,
     )
@@ -133,7 +134,6 @@ from lp.soyuz.interfaces.archive import (
     NoSuchPPA,
     )
 from lp.soyuz.interfaces.archivepermission import (
-    ArchivePermissionType,
     IArchivePermissionSet,
     )
 from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet

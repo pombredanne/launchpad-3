@@ -92,6 +92,7 @@ from lp.services.job.interfaces.job import JobStatus
 from lp.soyuz.adapters.archivedependencies import expand_dependencies
 from lp.soyuz.adapters.packagelocation import PackageLocation
 from lp.soyuz.enums import (
+    ArchivePermissionType,
     ArchivePurpose,
     ArchiveStatus,
 )
@@ -126,7 +127,6 @@ from lp.soyuz.interfaces.archive import (
 from lp.soyuz.interfaces.archivearch import IArchiveArchSet
 from lp.soyuz.interfaces.archiveauthtoken import IArchiveAuthTokenSet
 from lp.soyuz.interfaces.archivepermission import (
-    ArchivePermissionType,
     IArchivePermissionSet,
     )
 from lp.soyuz.interfaces.archivesubscriber import (

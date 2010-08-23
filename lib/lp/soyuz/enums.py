@@ -5,9 +5,10 @@
 
 __metaclass__ = type
 __all__ = [
+    'ArchiveJobType',
+    'ArchivePermissionType',
     'ArchivePurpose',
     'ArchiveStatus',
-    'ArchiveJobType',
     ]
 
 from lazr.enum import (
@@ -17,6 +18,38 @@ from lazr.enum import (
     Item,
     use_template,
     )
+
+
+class ArchiveJobType(DBEnumeratedType):
+    """Values that IArchiveJob.job_type can take."""
+
+    COPY_ARCHIVE = DBItem(0, """
+        Create a copy archive.
+
+        This job creates a copy archive from the current state of
+        the archive.
+        """)
+
+
+class ArchivePermissionType(DBEnumeratedType):
+    """Archive Permission Type.
+
+    The permission being granted, such as upload rights, or queue
+    manipulation rights.
+    """
+
+    UPLOAD = DBItem(1, """
+        Archive Upload Rights
+
+        This permission allows a user to upload.
+        """)
+
+    QUEUE_ADMIN = DBItem(2, """
+        Queue Administration Rights
+
+        This permission allows a user to administer the distroseries
+        upload queue.
+        """)
 
 
 class ArchivePurpose(DBEnumeratedType):
@@ -82,17 +115,6 @@ class ArchiveStatus(DBEnumeratedType):
         Deleted
 
         This archive has been deleted and removed from disk.
-        """)
-
-
-class ArchiveJobType(DBEnumeratedType):
-    """Values that IArchiveJob.job_type can take."""
-
-    COPY_ARCHIVE = DBItem(0, """
-        Create a copy archive.
-
-        This job creates a copy archive from the current state of
-        the archive.
         """)
 
 

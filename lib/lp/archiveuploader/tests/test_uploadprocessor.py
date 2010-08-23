@@ -50,12 +50,14 @@ from lp.registry.interfaces.sourcepackage import SourcePackageFileType
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.mail import stub
-from lp.soyuz.enums import ArchivePurpose
+from lp.soyuz.enums import (
+    ArchivePermissionType,
+    ArchivePurpose,
+    )
 from lp.soyuz.interfaces.archive import (
     IArchiveSet,
     )
 from lp.soyuz.interfaces.archivepermission import (
-    ArchivePermissionType,
     IArchivePermissionSet,
     )
 from lp.soyuz.interfaces.component import IComponentSet

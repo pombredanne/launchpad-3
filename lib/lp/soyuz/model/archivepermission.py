@@ -55,8 +55,8 @@ from lp.soyuz.interfaces.archive import (
     ComponentNotFound,
     IArchive,
     )
+from lp.soyuz.enums import ArchivePermissionType
 from lp.soyuz.interfaces.archivepermission import (
-    ArchivePermissionType,
     IArchivePermission,
     IArchivePermissionSet,
     IArchiveQueueAdmin,
