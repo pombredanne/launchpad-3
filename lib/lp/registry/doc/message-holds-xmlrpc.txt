@@ -226,9 +226,11 @@ to the mailing list.
 Non-ascii messages
 ==================
 
-Messages with non-ascii in their headers or bodies are not exactly legal (they
-should be encoded) but do occur especially in spam.  These messages can be
-held for moderator approval too. To avoid blowing up later if the string is converted to a unicode object, replace the non-ascii characters.
+Messages with non-ascii in their headers or bodies are not exactly legal
+(they should be encoded) but do occur especially in spam.  These
+messages can be held for moderator approval too. To avoid blowing up
+later if the string is converted to a unicode object, the non-ascii
+characters are replaced.
 
     >>> spam_message = message_from_string("""\
     ... From: Anne \xa9 Person <anne.person@example.com>
