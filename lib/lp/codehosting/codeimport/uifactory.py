@@ -10,7 +10,10 @@ __all__ = ['LoggingUIFactory']
 import sys
 import time
 
-from bzrlib.ui.text import TextUIFactory, TextProgressView
+from bzrlib.ui.text import (
+    TextProgressView,
+    TextUIFactory,
+    )
 
 
 class LoggingUIFactory(TextUIFactory):

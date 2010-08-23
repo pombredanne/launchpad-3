@@ -29,21 +29,25 @@ __all__ = [
     ]
 
 
-import hashlib
-
 from binascii import b2a_qp
-from email.Encoders import encode_base64
-from email.Utils import getaddresses, make_msgid, formatdate, formataddr
-from email.Message import Message
-from email.Header import Header
-from email.MIMEText import MIMEText
-from email.MIMEMultipart import MIMEMultipart
 from email import Charset
+from email.Encoders import encode_base64
+from email.Header import Header
+from email.Message import Message
+from email.MIMEMultipart import MIMEMultipart
+from email.MIMEText import MIMEText
+from email.Utils import (
+    formataddr,
+    formatdate,
+    getaddresses,
+    make_msgid,
+    )
+import hashlib
 from smtplib import SMTP
 
 from zope.app import zapi
-from zope.sendmail.interfaces import IMailDelivery
 from zope.security.proxy import isinstance as zisinstance
+from zope.sendmail.interfaces import IMailDelivery
 
 from canonical.config import config
 from canonical.launchpad import versioninfo

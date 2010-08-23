@@ -11,7 +11,11 @@ __metaclass__ = type
 import os
 import re
 from StringIO import StringIO
-from subprocess import PIPE, Popen, STDOUT
+from subprocess import (
+    PIPE,
+    Popen,
+    STDOUT,
+    )
 import textwrap
 import unittest
 
@@ -21,21 +25,23 @@ from bzrlib.errors import NotStacked
 from bzrlib.tests import TestCaseWithTransport
 from bzrlib.transport import get_transport
 from bzrlib.transport.chroot import ChrootServer
-
 from lazr.uri import URI
-
 import transaction
 
 from canonical.config import config
+from canonical.launchpad.scripts.logger import (
+    FakeLogger,
+    QuietFakeLogger,
+    )
 from canonical.testing.layers import LaunchpadZopelessLayer
-from canonical.launchpad.scripts.logger import FakeLogger, QuietFakeLogger
-
-from lp.codehosting.branchdistro import DistroBrancher, switch_branches
+from lp.codehosting.branchdistro import (
+    DistroBrancher,
+    switch_branches,
+    )
 from lp.codehosting.vfs import branch_id_to_path
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.testing import TestCaseWithFactory
 from lp.services.osutils import override_environ
-
+from lp.testing import TestCaseWithFactory
 
 # We say "RELEASE" often enough to not want to say "PackagePublishingPocket."
 # each time.

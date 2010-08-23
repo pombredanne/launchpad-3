@@ -19,36 +19,43 @@ __all__ = [
     'splitComponentAndSection',
     ]
 
-import apt_inst
-import apt_pkg
 import hashlib
 import os
 import subprocess
 import sys
 import time
 
+import apt_inst
+import apt_pkg
 from zope.component import getUtility
 
-from lp.archiveuploader.utils import (
-    prefix_multi_line_string, re_taint_free, re_isadeb, re_issource,
-    re_no_epoch, re_no_revision, re_valid_version, re_valid_pkg_name,
-    re_extract_src_version, determine_source_file_type)
 from canonical.encoding import guess as guess_encoding
-from lp.buildmaster.interfaces.buildbase import BuildStatus
-from lp.soyuz.interfaces.binarypackagename import (
-    IBinaryPackageNameSet)
-from lp.soyuz.interfaces.binarypackagerelease import (
-    BinaryPackageFormat)
-from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
-from lp.soyuz.interfaces.component import IComponentSet
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from canonical.librarian.utils import filechunks
+from lp.archiveuploader.utils import (
+    determine_source_file_type,
+    prefix_multi_line_string,
+    re_extract_src_version,
+    re_isadeb,
+    re_issource,
+    re_no_epoch,
+    re_no_revision,
+    re_taint_free,
+    re_valid_pkg_name,
+    re_valid_version,
+    )
+from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
+from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
+from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFormat
+from lp.soyuz.interfaces.component import IComponentSet
+from lp.soyuz.interfaces.publishing import PackagePublishingPriority
 from lp.soyuz.interfaces.queue import (
-    PackageUploadCustomFormat, PackageUploadStatus)
-from lp.soyuz.interfaces.publishing import (
-    PackagePublishingPriority)
+    PackageUploadCustomFormat,
+    PackageUploadStatus,
+    )
 from lp.soyuz.interfaces.section import ISectionSet
 from lp.soyuz.model.files import SourceFileMixin
-from canonical.librarian.utils import filechunks
 
 
 apt_pkg.InitSystem()
@@ -321,7 +328,6 @@ class PackageUploadFile(NascentUploadFile):
                 "%s: Unknown component %r" % (
                 self.filename, self.component_name))
 
-
     @property
     def component(self):
         """Return an IComponent for self.component.name."""
@@ -492,12 +498,15 @@ class BaseBinaryUploadFile(PackageUploadFile):
                 yield UploadError(
                     "%s: control file lacks mandatory field %r"
                      % (self.filename, mandatory_field))
+        control = {}
+        for key in control_lines.keys():
+            control[key] = control_lines.Find(key)
+        self.parseControl(control)
 
+    def parseControl(self, control):
         # XXX kiko 2007-02-15: We never use the Maintainer information in
         # the control file for anything. Should we? --
-        self.control = {}
-        for key in control_lines.keys():
-            self.control[key] = control_lines.Find(key)
+        self.control = control
 
         control_source = self.control.get("Source", None)
         if control_source is not None:

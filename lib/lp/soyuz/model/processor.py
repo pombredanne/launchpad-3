@@ -6,18 +6,26 @@
 __metaclass__ = type
 __all__ = ['Processor', 'ProcessorFamily', 'ProcessorFamilySet']
 
+from sqlobject import (
+    ForeignKey,
+    SQLMultipleJoin,
+    StringCol,
+    )
+from storm.locals import Bool
 from zope.component import getUtility
 from zope.interface import implements
 
-from sqlobject import StringCol, ForeignKey, SQLMultipleJoin
-from storm.locals import Bool
-
 from canonical.database.sqlbase import SQLBase
-
-from lp.soyuz.interfaces.processor import (
-    IProcessor, IProcessorFamily, IProcessorFamilySet)
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
+from lp.soyuz.interfaces.processor import (
+    IProcessor,
+    IProcessorFamily,
+    IProcessorFamilySet,
+    )
 
 
 class Processor(SQLBase):

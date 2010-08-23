@@ -6,24 +6,25 @@ __all__ = [
     'TranslationsPerson',
     ]
 
-from storm.expr import And, Coalesce, Desc, Join, LeftJoin, Or
+from storm.expr import (
+    And,
+    Coalesce,
+    Desc,
+    Join,
+    LeftJoin,
+    Or,
+    )
 from storm.info import ClassAlias
 from storm.store import Store
-
-from zope.component import adapts, getUtility
+from zope.component import (
+    adapts,
+    getUtility,
+    )
 from zope.interface import implements
 
 from canonical.database.sqlbase import sqlvalues
-
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-
 from lp.registry.interfaces.person import IPerson
-from lp.translations.interfaces.translationgroup import (
-    ITranslationGroupSet, TranslationPermission)
-from lp.translations.interfaces.translationsperson import (
-    ITranslationsPerson)
-from lp.translations.interfaces.translator import ITranslatorSet
-
 from lp.registry.model.distribution import Distribution
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.product import Product
@@ -31,13 +32,20 @@ from lp.registry.model.productseries import ProductSeries
 from lp.registry.model.projectgroup import ProjectGroup
 from lp.registry.model.teammembership import TeamParticipation
 from lp.services.worlddata.model.language import Language
+from lp.translations.interfaces.translationgroup import (
+    ITranslationGroupSet,
+    TranslationPermission,
+    )
+from lp.translations.interfaces.translationsperson import ITranslationsPerson
+from lp.translations.interfaces.translator import ITranslatorSet
 from lp.translations.model.pofile import POFile
 from lp.translations.model.pofiletranslator import POFileTranslator
 from lp.translations.model.potemplate import POTemplate
-from lp.translations.model.translator import Translator
 from lp.translations.model.translationgroup import TranslationGroup
 from lp.translations.model.translationrelicensingagreement import (
-    TranslationRelicensingAgreement)
+    TranslationRelicensingAgreement,
+    )
+from lp.translations.model.translator import Translator
 
 
 class TranslationsPerson:

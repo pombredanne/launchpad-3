@@ -3,19 +3,33 @@
 
 __metaclass__ = type
 
-from zope.interface import implements, Interface
-from zope.interface.verify import verifyObject
+from testtools.matchers import (
+    Is,
+    LessThan,
+    Not,
+    )
+from zope.interface import (
+    implements,
+    Interface,
+    )
 from zope.interface.exceptions import BrokenImplementation
+from zope.interface.verify import verifyObject
 from zope.security.checker import NamesChecker
 from zope.security.proxy import ProxyFactory
 
 from lp.testing import TestCase
-from lp.testing.matchers import (
-    DoesNotCorrectlyProvide, DoesNotProvide, DoesNotStartWith, HasQueryCount,
-    IsNotProxied, IsProxied, Provides, ProvidesAndIsProxied, StartsWith)
 from lp.testing._webservice import QueryCollector
-
-from testtools.matchers import Is, Not, LessThan
+from lp.testing.matchers import (
+    DoesNotCorrectlyProvide,
+    DoesNotProvide,
+    DoesNotStartWith,
+    HasQueryCount,
+    IsNotProxied,
+    IsProxied,
+    Provides,
+    ProvidesAndIsProxied,
+    StartsWith,
+    )
 
 
 class ITestInterface(Interface):

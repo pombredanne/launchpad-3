@@ -550,7 +550,7 @@ makes it write out the emails it sends.
     >>> process.returncode
     0
     >>> print err
-    INFO    Creating lockfile: /var/lock/launchpad-send-bug-notifications.lock
+    DEBUG   ...
     INFO    Notifying mark@example.com about bug 2.
     ...
     INFO    Notifying support@ubuntu.com about bug 2.
@@ -1025,9 +1025,8 @@ notification level of the subscription.
     >>> flush_notifications()
     >>> switch_db_to_launchpad()
 
+    >>> from lp.registry.enum import BugNotificationLevel
     >>> from lp.registry.interfaces.product import IProductSet
-    >>> from lp.registry.interfaces.structuralsubscription import (
-    ...     BugNotificationLevel)
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> mr_no_privs = getUtility(IPersonSet).getByName('no-priv')
     >>> subscription_no_priv = firefox.addBugSubscription(

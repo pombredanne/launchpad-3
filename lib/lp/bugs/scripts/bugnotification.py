@@ -13,21 +13,27 @@ __all__ = [
     ]
 
 from itertools import groupby
-from operator import attrgetter, itemgetter
+from operator import (
+    attrgetter,
+    itemgetter,
+    )
 
 import transaction
-
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.launchpad.helpers import emailPeople, get_email_template
+from canonical.launchpad.helpers import (
+    emailPeople,
+    get_email_template,
+    )
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.scripts.logger import log
 from canonical.launchpad.webapp import canonical_url
-
 from lp.bugs.interfaces.bugmessage import IBugMessageSet
 from lp.bugs.mail.bugnotificationbuilder import (
-    BugNotificationBuilder, get_bugmail_from_address)
+    BugNotificationBuilder,
+    get_bugmail_from_address,
+    )
 from lp.bugs.mail.newbug import generate_bug_add_email
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.mail.mailwrapper import MailWrapper
@@ -121,7 +127,7 @@ def construct_email_notifications(bug_notifications):
                 (email_person, recipient)
                 for email_person, recipient in recipients.items()
                 if recipient.person.inTeam(comment_syncing_team))
-    bug_notification_builder = BugNotificationBuilder(bug)
+    bug_notification_builder = BugNotificationBuilder(bug, person)
     sorted_recipients = sorted(
         recipients.items(), key=lambda t: t[0].preferredemail.email)
     for email_person, recipient in sorted_recipients:

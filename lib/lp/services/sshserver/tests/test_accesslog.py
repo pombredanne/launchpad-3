@@ -9,12 +9,11 @@ import codecs
 import logging
 import os
 from StringIO import StringIO
+import sys
 import tempfile
 import unittest
-import sys
 
 from bzrlib.tests import TestCase as BzrTestCase
-
 import zope.component.event
 
 from canonical.launchpad.scripts import WatchedFileHandler

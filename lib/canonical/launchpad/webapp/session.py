@@ -6,12 +6,11 @@
 __metaclass__ = type
 
 from cookielib import domain_match
-from zope.component import getUtility
-from zope.session.http import CookieClientIdManager
-
-from storm.zope.interfaces import IZStorm
 
 from lazr.uri import URI
+from storm.zope.interfaces import IZStorm
+from zope.component import getUtility
+from zope.session.http import CookieClientIdManager
 
 from canonical.config import config
 

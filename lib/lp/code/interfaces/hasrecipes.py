@@ -9,7 +9,10 @@ __all__ = [
     ]
 
 
-from zope.interface import Attribute, Interface
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
 
 
 class IHasRecipes(Interface):

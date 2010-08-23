@@ -11,15 +11,24 @@ from __future__ import with_statement
 from storm.locals import Store
 import transaction
 
-from canonical.testing import ZopelessAppServerLayer
-from lp.testing import TestCaseWithFactory
 from canonical.launchpad.scripts.tests import run_script
+from canonical.testing import ZopelessAppServerLayer
 from lp.code.enums import (
-    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
-    CodeReviewNotificationLevel)
-from lp.code.model.branchjob import BranchJob, BranchJobType, BranchScanJob
-from lp.services.job.model.job import Job, JobStatus
+    BranchSubscriptionDiffSize,
+    BranchSubscriptionNotificationLevel,
+    CodeReviewNotificationLevel,
+    )
+from lp.code.model.branchjob import (
+    BranchJob,
+    BranchJobType,
+    BranchScanJob,
+    )
+from lp.services.job.model.job import (
+    Job,
+    JobStatus,
+    )
 from lp.services.osutils import override_environ
+from lp.testing import TestCaseWithFactory
 
 
 class TestScanBranches(TestCaseWithFactory):

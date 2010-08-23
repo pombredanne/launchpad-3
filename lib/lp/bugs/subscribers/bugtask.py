@@ -10,11 +10,12 @@ __all__ = [
 
 from canonical.database.sqlbase import block_implicit_flushes
 from canonical.launchpad.webapp.publisher import canonical_url
-
 from lp.bugs.adapters.bugdelta import BugDelta
 from lp.bugs.interfaces.bugtask import IUpstreamBugTask
 from lp.bugs.subscribers.bug import (
-    add_bug_change_notifications, send_bug_details_to_new_bug_subscribers)
+    add_bug_change_notifications,
+    send_bug_details_to_new_bug_subscribers,
+    )
 from lp.registry.interfaces.person import IPerson
 
 
