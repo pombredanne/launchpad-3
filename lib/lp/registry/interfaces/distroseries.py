@@ -15,40 +15,70 @@ __all__ = [
     'NoSuchDistroSeries',
     ]
 
-from zope.component import getUtility
-from zope.interface import Interface, Attribute
-from zope.schema import Bool, Datetime, Choice, Object, TextLine
-
 from lazr.enum import DBEnumeratedType
 from lazr.restful.declarations import (
-    LAZR_WEBSERVICE_EXPORTED, export_as_webservice_entry,
-    export_factory_operation, export_read_operation, exported,
-    operation_parameters, operation_returns_collection_of,
-    operation_returns_entry, rename_parameters_as, webservice_error)
-from lazr.restful.fields import Reference, ReferenceChoice
+    export_as_webservice_entry,
+    export_factory_operation,
+    export_read_operation,
+    exported,
+    LAZR_WEBSERVICE_EXPORTED,
+    operation_parameters,
+    operation_returns_collection_of,
+    operation_returns_entry,
+    rename_parameters_as,
+    webservice_error,
+    )
+from lazr.restful.fields import (
+    Reference,
+    ReferenceChoice,
+    )
+from zope.component import getUtility
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Bool,
+    Choice,
+    Datetime,
+    Object,
+    TextLine,
+    )
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import (
-    ContentNameField, Description, PublicPersonChoice, Title,
-    UniqueField)
 from canonical.launchpad.interfaces.launchpad import IHasAppointedDriver
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.email import email_validator
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.validators.version import sane_version
-
 from lp.app.errors import NameLookupFailed
-from lp.blueprints.interfaces.specificationtarget import (
-    ISpecificationGoal)
+from lp.blueprints.interfaces.specificationtarget import ISpecificationGoal
 from lp.bugs.interfaces.bugtarget import (
-    IBugTarget, IHasBugs, IHasOfficialBugTags)
-from lp.registry.interfaces.milestone import IHasMilestones, IMilestone
+    IBugTarget,
+    IHasBugs,
+    IHasOfficialBugTags,
+    )
+from lp.registry.interfaces.milestone import (
+    IHasMilestones,
+    IMilestone,
+    )
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.role import IHasOwner
-from lp.registry.interfaces.series import ISeriesMixin, SeriesStatus
+from lp.registry.interfaces.series import (
+    ISeriesMixin,
+    SeriesStatus,
+    )
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.interfaces.structuralsubscription import (
-    IStructuralSubscriptionTarget)
+    IStructuralSubscriptionTarget,
+    )
+from lp.services.fields import (
+    ContentNameField,
+    Description,
+    PublicPersonChoice,
+    Title,
+    UniqueField,
+    )
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.translations.interfaces.languagepack import ILanguagePack
 from lp.translations.interfaces.potemplate import IHasTranslationTemplates

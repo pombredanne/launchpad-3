@@ -1,26 +1,36 @@
 
 __metaclass__ = object
 
+from lazr.delegates import delegates
 import simplejson
-
 from sqlobject import SQLObjectNotFound
 from storm.base import Storm
 from storm.expr import And
-from storm.locals import Int, Reference, Unicode
-
+from storm.locals import (
+    Int,
+    Reference,
+    Unicode,
+    )
 from zope.component import getUtility
-from zope.interface import classProvides, implements
+from zope.interface import (
+    classProvides,
+    implements,
+    )
 
 from canonical.database.enumcol import EnumCol
 from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
-
-from lazr.delegates import delegates
-
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    MASTER_FLAVOR,
+    )
 from lp.services.job.model.job import Job
 from lp.services.job.runner import BaseRunnableJob
 from lp.soyuz.interfaces.archivejob import (
-    ArchiveJobType, IArchiveJob, IArchiveJobSource)
+    ArchiveJobType,
+    IArchiveJob,
+    IArchiveJobSource,
+    )
 from lp.soyuz.model.archive import Archive
 
 

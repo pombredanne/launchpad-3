@@ -10,19 +10,18 @@ from __future__ import with_statement
 
 __metaclass__ = type
 
-from datetime import datetime, timedelta
+from datetime import (
+    datetime,
+    timedelta,
+    )
 from unittest import TestLoader
 
 from bzrlib.bzrdir import BzrDir
 from bzrlib.revision import NULL_REVISION
-
 from pytz import UTC
-
-from storm.locals import Store
 from sqlobject import SQLObjectNotFound
-
+from storm.locals import Store
 import transaction
-
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -30,60 +29,107 @@ from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad import _
 from canonical.launchpad.ftests import (
-    ANONYMOUS, login, login_person, logout, syncUpdate)
+    ANONYMOUS,
+    login,
+    login_person,
+    logout,
+    syncUpdate,
+    )
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
-from canonical.testing import DatabaseFunctionalLayer, LaunchpadZopelessLayer
-
-from lp.buildmaster.model.buildqueue import BuildQueue
+from canonical.testing import (
+    DatabaseFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
 from lp.blueprints.interfaces.specification import (
-    ISpecificationSet, SpecificationDefinitionStatus)
-from lp.blueprints.model.specificationbranch import (
-    SpecificationBranch)
-from lp.bugs.interfaces.bug import CreateBugParams, IBugSet
+    ISpecificationSet,
+    SpecificationDefinitionStatus,
+    )
+from lp.blueprints.model.specificationbranch import SpecificationBranch
+from lp.bugs.interfaces.bug import (
+    CreateBugParams,
+    IBugSet,
+    )
 from lp.bugs.model.bugbranch import BugBranch
-from lp.code.bzr import BranchFormat, ControlFormat, RepositoryFormat
+from lp.buildmaster.model.buildqueue import BuildQueue
+from lp.code.bzr import (
+    BranchFormat,
+    ControlFormat,
+    RepositoryFormat,
+    )
 from lp.code.enums import (
-    BranchLifecycleStatus, BranchSubscriptionNotificationLevel, BranchType,
-    BranchVisibilityRule, CodeReviewNotificationLevel)
+    BranchLifecycleStatus,
+    BranchSubscriptionNotificationLevel,
+    BranchType,
+    BranchVisibilityRule,
+    CodeReviewNotificationLevel,
+    )
 from lp.code.errors import (
-    BranchCannotBePrivate, BranchCannotBePublic,
-    BranchCreatorNotMemberOfOwnerTeam, BranchCreatorNotOwner,
-    BranchTargetError, CannotDeleteBranch, InvalidBranchMergeProposal)
+    BranchCannotBePrivate,
+    BranchCannotBePublic,
+    BranchCreatorNotMemberOfOwnerTeam,
+    BranchCreatorNotOwner,
+    BranchTargetError,
+    CannotDeleteBranch,
+    InvalidBranchMergeProposal,
+    )
 from lp.code.interfaces.branch import (
-    DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch)
+    DEFAULT_BRANCH_STATUS_IN_LISTING,
+    IBranch,
+    )
 from lp.code.interfaces.branchjob import (
-    IBranchUpgradeJobSource, IBranchScanJobSource)
+    IBranchScanJobSource,
+    IBranchUpgradeJobSource,
+    )
 from lp.code.interfaces.branchlookup import IBranchLookup
-from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
 from lp.code.interfaces.branchmergeproposal import (
-    BRANCH_MERGE_PROPOSAL_FINAL_STATES as FINAL_STATES)
+    BRANCH_MERGE_PROPOSAL_FINAL_STATES as FINAL_STATES,
+    )
+from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
 from lp.code.interfaces.branchrevision import IBranchRevision
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from lp.code.interfaces.seriessourcepackagebranch import (
-    IFindOfficialBranchLinks)
+    IFindOfficialBranchLinks,
+    )
 from lp.code.model.branch import (
-    ClearDependentBranch, ClearOfficialPackageBranch, ClearSeriesBranch,
-    DeleteCodeImport, DeletionCallable, DeletionOperation,
-    update_trigger_modified_fields)
+    ClearDependentBranch,
+    ClearOfficialPackageBranch,
+    ClearSeriesBranch,
+    DeleteCodeImport,
+    DeletionCallable,
+    DeletionOperation,
+    update_trigger_modified_fields,
+    )
 from lp.code.model.branchjob import (
-    BranchDiffJob, BranchJob, BranchJobType, ReclaimBranchSpaceJob)
-from lp.code.model.branchmergeproposal import (
-    BranchMergeProposal)
-from lp.code.model.codeimport import CodeImport, CodeImportSet
+    BranchDiffJob,
+    BranchJob,
+    BranchJobType,
+    ReclaimBranchSpaceJob,
+    )
+from lp.code.model.branchmergeproposal import BranchMergeProposal
+from lp.code.model.codeimport import (
+    CodeImport,
+    CodeImportSet,
+    )
 from lp.code.model.codereviewcomment import CodeReviewComment
 from lp.code.tests.helpers import add_revision_to_branch
 from lp.codehosting.bzrutils import UnsafeUrlSeen
 from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.product import ProductSet
 from lp.registry.model.sourcepackage import SourcePackage
-from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.osutils import override_environ
 from lp.testing import (
-    person_logged_in, run_with_login, TestCase, TestCaseWithFactory,
-    time_counter)
+    person_logged_in,
+    run_with_login,
+    TestCase,
+    TestCaseWithFactory,
+    time_counter,
+    )
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.translations.model.translationtemplatesbuildjob import (
-    ITranslationTemplatesBuildJobSource)
+    ITranslationTemplatesBuildJobSource,
+    )
 
 
 class TestCodeImport(TestCase):
@@ -2573,7 +2619,10 @@ class TestGetBzrBranch(TestCaseWithFactory):
         # safe_open returns the underlying bzr branch of a database branch in
         # the simple, unstacked, case.
         db_branch, tree = self.create_branch_and_tree()
-        revid = tree.commit('')
+        # XXX: AaronBentley 2010-08-06 bug=614404: a bzr username is
+        # required to generate the revision-id.
+        with override_environ(BZR_EMAIL='me@example.com'):
+            revid = tree.commit('')
         bzr_branch = db_branch.getBzrBranch()
         self.assertEqual(revid, bzr_branch.last_revision())
 

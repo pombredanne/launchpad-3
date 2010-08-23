@@ -10,63 +10,84 @@ __all__ = [
     "TestUploadProcessorBase",
     ]
 
+from email import message_from_string
 import os
 import shutil
-import sys
 from StringIO import StringIO
+import sys
 import tempfile
 import traceback
 
-from email import message_from_string
-
-from zope.component import getUtility
+from zope.component import (
+    getGlobalSiteManager,
+    getUtility,
+    )
 from zope.security.proxy import removeSecurityProxy
 
-from lp.app.errors import NotFoundError
-from lp.archiveuploader.uploadpolicy import (AbstractUploadPolicy,
-    findPolicyByOptions)
-from lp.archiveuploader.uploadprocessor import (UploadProcessor,
-    parse_build_upload_leaf_name)
-from lp.buildmaster.interfaces.buildbase import BuildStatus
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
-from lp.soyuz.model.archivepermission import ArchivePermission
-from lp.soyuz.model.binarypackagename import BinaryPackageName
-from lp.soyuz.model.binarypackagerelease import (
-    BinaryPackageRelease)
-from lp.soyuz.model.component import Component
-from lp.soyuz.model.publishing import (
-    SourcePackagePublishingHistory, BinaryPackagePublishingHistory)
-from lp.registry.model.sourcepackagename import SourcePackageName
-from lp.soyuz.model.sourcepackagerelease import (
-    SourcePackageRelease)
-from lp.soyuz.scripts.initialise_distroseries import InitialiseDistroSeries
 from canonical.launchpad.ftests import import_public_test_keys
-from lp.registry.interfaces.distribution import IDistributionSet
-from lp.registry.interfaces.series import SeriesStatus
-from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.registry.interfaces.sourcepackage import SourcePackageFileType
-from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
-from lp.soyuz.interfaces.queue import PackageUploadStatus
-from lp.soyuz.interfaces.publishing import (
-    IPublishingSet, PackagePublishingStatus)
-from lp.soyuz.interfaces.queue import QueueInconsistentStateError
 from canonical.launchpad.interfaces import ILibraryFileAliasSet
-from lp.soyuz.interfaces.packageset import IPackagesetSet
-from lp.soyuz.interfaces.archivepermission import (
-    ArchivePermissionType, IArchivePermissionSet)
-from lp.soyuz.interfaces.component import IComponentSet
-from lp.soyuz.interfaces.sourcepackageformat import (
-    ISourcePackageFormatSelectionSet, SourcePackageFormat)
-from lp.registry.interfaces.person import IPersonSet
-from lp.registry.interfaces.sourcepackagename import (
-    ISourcePackageNameSet)
-from lp.services.mail import stub
 from canonical.launchpad.testing.fakepackager import FakePackager
-from lp.testing import TestCase, TestCaseWithFactory
-from lp.testing.mail_helpers import pop_notifications
 from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
 from canonical.testing import LaunchpadZopelessLayer
+
+from lp.app.errors import NotFoundError
+from lp.archiveuploader.uploadpolicy import (
+    AbstractUploadPolicy,
+    findPolicyByName,
+    IArchiveUploadPolicy,
+    )
+from lp.archiveuploader.uploadprocessor import (
+    parse_build_upload_leaf_name,
+    UploadProcessor,
+    )
+from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.interfaces.series import SeriesStatus
+from lp.registry.interfaces.sourcepackage import SourcePackageFileType
+from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.registry.model.sourcepackagename import SourcePackageName
+from lp.services.mail import stub
+from lp.soyuz.interfaces.archive import (
+    ArchivePurpose,
+    IArchiveSet,
+    )
+from lp.soyuz.interfaces.archivepermission import (
+    ArchivePermissionType,
+    IArchivePermissionSet,
+    )
+from lp.soyuz.interfaces.component import IComponentSet
+from lp.soyuz.interfaces.packageset import IPackagesetSet
+from lp.soyuz.interfaces.publishing import (
+    IPublishingSet,
+    PackagePublishingStatus,
+    )
+from lp.soyuz.interfaces.queue import (
+    PackageUploadStatus,
+    QueueInconsistentStateError,
+    )
+from lp.soyuz.interfaces.sourcepackageformat import (
+    ISourcePackageFormatSelectionSet,
+    SourcePackageFormat,
+    )
+from lp.soyuz.model.archivepermission import ArchivePermission
+from lp.soyuz.model.binarypackagename import BinaryPackageName
+from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
+from lp.soyuz.model.component import Component
+from lp.soyuz.model.publishing import (
+    BinaryPackagePublishingHistory,
+    SourcePackagePublishingHistory,
+    )
+from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
+from lp.soyuz.scripts.initialise_distroseries import InitialiseDistroSeries
+from lp.testing import (
+    TestCase,
+    TestCaseWithFactory,
+    )
+from lp.testing.mail_helpers import pop_notifications
 
 
 class MockOptions:
@@ -148,7 +169,9 @@ class TestUploadProcessorBase(TestCaseWithFactory):
     def getUploadProcessor(self, txn):
         def getPolicy(distro):
             self.options.distro = distro.name
-            return findPolicyByOptions(self.options)
+            policy = findPolicyByName(self.options.context)
+            policy.setOptions(self.options)
+            return policy
         return UploadProcessor(
             self.options.base_fsroot, self.options.dryrun,
             self.options.nomails, self.options.builds,
@@ -535,9 +558,12 @@ class TestUploadProcessor(TestUploadProcessorBase):
 
         See bug 35965.
         """
-        # Register our broken upload policy
-        AbstractUploadPolicy._registerPolicy(BrokenUploadPolicy)
-        self.options.context = 'broken'
+        self.options.context = u'broken'
+        # Register our broken upload policy.
+        getGlobalSiteManager().registerUtility(
+            component=BrokenUploadPolicy, provided=IArchiveUploadPolicy,
+            name=self.options.context)
+
         uploadprocessor = self.getUploadProcessor(self.layer.txn)
 
         # Upload a package to Breezy.

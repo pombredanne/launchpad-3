@@ -10,11 +10,17 @@ __all__ = [
     ]
 
 
+from lazr.restful.fields import (
+    CollectionField,
+    Reference,
+    )
 from zope.interface import Interface
-from zope.schema import Bool, TextLine
+from zope.schema import (
+    Bool,
+    TextLine,
+    )
 
 from canonical.launchpad import _
-from lazr.restful.fields import CollectionField, Reference
 
 
 class IComment(Interface):

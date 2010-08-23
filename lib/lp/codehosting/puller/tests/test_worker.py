@@ -12,26 +12,57 @@ from StringIO import StringIO
 import unittest
 
 import bzrlib.branch
-from bzrlib.branch import BranchReferenceFormat, BzrBranchFormat7
-from bzrlib.bzrdir import BzrDir, BzrDirMetaFormat1
-from bzrlib.errors import IncompatibleRepositories, NotBranchError, NotStacked
-from bzrlib.tests.http_server import HttpServer
+from bzrlib.branch import (
+    BranchReferenceFormat,
+    BzrBranchFormat7,
+    )
+from bzrlib.bzrdir import (
+    BzrDir,
+    BzrDirMetaFormat1,
+    )
+from bzrlib.errors import (
+    IncompatibleRepositories,
+    NotBranchError,
+    NotStacked,
+    )
 from bzrlib.repofmt.pack_repo import RepositoryFormatKnitPack1
 from bzrlib.revision import NULL_REVISION
-from bzrlib.tests import TestCaseInTempDir, TestCaseWithTransport
+from bzrlib.tests import (
+    TestCaseInTempDir,
+    TestCaseWithTransport,
+    )
+from bzrlib.tests.http_server import HttpServer
 from bzrlib.transport import get_transport
 
-from lp.codehosting.puller.worker import (
-    BranchLoopError, BranchMirrorer, BranchReferenceForbidden,
-    PullerWorkerProtocol, install_worker_ui_factory, WORKER_ACTIVITY_NETWORK)
-from lp.codehosting.puller.tests import (
-    AcceptAnythingPolicy, BlacklistPolicy, PullerWorkerMixin, WhitelistPolicy)
-from lp.codehosting.vfs.branchfs import (
-    BadUrl, BadUrlLaunchpad, BadUrlScheme, BadUrlSsh, BranchPolicy,
-    ImportedBranchPolicy, MirroredBranchPolicy)
 from lp.code.enums import BranchType
+from lp.codehosting.puller.tests import (
+    AcceptAnythingPolicy,
+    BlacklistPolicy,
+    PullerWorkerMixin,
+    WhitelistPolicy,
+    )
+from lp.codehosting.puller.worker import (
+    BranchLoopError,
+    BranchMirrorer,
+    BranchReferenceForbidden,
+    install_worker_ui_factory,
+    PullerWorkerProtocol,
+    WORKER_ACTIVITY_NETWORK,
+    )
+from lp.codehosting.vfs.branchfs import (
+    BadUrl,
+    BadUrlLaunchpad,
+    BadUrlScheme,
+    BadUrlSsh,
+    BranchPolicy,
+    ImportedBranchPolicy,
+    MirroredBranchPolicy,
+    )
 from lp.testing import TestCase
-from lp.testing.factory import LaunchpadObjectFactory, ObjectFactory
+from lp.testing.factory import (
+    LaunchpadObjectFactory,
+    ObjectFactory,
+    )
 
 
 def get_netstrings(line):

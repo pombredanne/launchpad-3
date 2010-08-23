@@ -22,10 +22,11 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical import encoding
 from canonical.librarian.interfaces import ILibrarianClient
-
 from lp.buildmaster.interfaces.builder import CorruptBuildCookie
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
-    BuildBehaviorMismatch, IBuildFarmJobBehavior)
+    BuildBehaviorMismatch,
+    IBuildFarmJobBehavior,
+    )
 from lp.services.job.interfaces.job import JobStatus
 
 

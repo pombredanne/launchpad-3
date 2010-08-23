@@ -7,47 +7,71 @@ from __future__ import with_statement
 
 __metaclass__ = type
 
-from datetime import datetime, timedelta
+from datetime import (
+    datetime,
+    timedelta,
+    )
 import textwrap
 import unittest
 
 from bzrlib.plugins.builder.recipe import RecipeParser
-
 from pytz import UTC
 from storm.locals import Store
-
 import transaction
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.testing.layers import DatabaseFunctionalLayer, AppServerLayer
-
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.testing import verifyObject
-from lp.soyuz.interfaces.archive import (
-    ArchiveDisabled, ArchivePurpose, CannotUploadToArchive,
-    InvalidPocketForPPA)
+from canonical.testing.layers import (
+    AppServerLayer,
+    DatabaseFunctionalLayer,
+    )
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.code.errors import (
-    BuildAlreadyPending, ForbiddenInstruction, PrivateBranchRecipe,
-    TooManyBuilds, TooNewRecipeFormat)
+    BuildAlreadyPending,
+    ForbiddenInstruction,
+    PrivateBranchRecipe,
+    TooManyBuilds,
+    TooNewRecipeFormat,
+    )
 from lp.code.interfaces.sourcepackagerecipe import (
-    ISourcePackageRecipe, ISourcePackageRecipeSource, MINIMAL_RECIPE_TEXT)
+    ISourcePackageRecipe,
+    ISourcePackageRecipeSource,
+    MINIMAL_RECIPE_TEXT,
+    )
 from lp.code.interfaces.sourcepackagerecipebuild import (
-    ISourcePackageRecipeBuild, ISourcePackageRecipeBuildJob)
-from lp.code.model.sourcepackagerecipebuild import (
-    SourcePackageRecipeBuildJob)
+    ISourcePackageRecipeBuild,
+    ISourcePackageRecipeBuildJob,
+    )
 from lp.code.model.sourcepackagerecipe import (
-    NonPPABuildRequest, SourcePackageRecipe)
+    NonPPABuildRequest,
+    SourcePackageRecipe,
+    )
+from lp.code.model.sourcepackagerecipebuild import SourcePackageRecipeBuildJob
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.job.interfaces.job import (
-    IJob, JobStatus)
+    IJob,
+    JobStatus,
+    )
+from lp.soyuz.interfaces.archive import (
+    ArchiveDisabled,
+    ArchivePurpose,
+    CannotUploadToArchive,
+    InvalidPocketForPPA,
+    )
 from lp.testing import (
-    ANONYMOUS, launchpadlib_for, login, login_person, person_logged_in,
-    TestCaseWithFactory, ws_object)
+    ANONYMOUS,
+    launchpadlib_for,
+    login,
+    login_person,
+    person_logged_in,
+    TestCaseWithFactory,
+    ws_object,
+    )
 
 
 class TestSourcePackageRecipe(TestCaseWithFactory):

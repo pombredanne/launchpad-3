@@ -16,23 +16,32 @@ __all__ = [
     'BuildBase',
     ]
 
+from cStringIO import StringIO
 import datetime
 import logging
 import os
+import subprocess
+
 import pytz
-from cStringIO import StringIO
 
 from storm.store import Store
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
+from canonical.database.sqlbase import (
+    clear_current_connection_cache,
+    cursor,
+    flush_database_updates,
+    )
 from canonical.launchpad.helpers import filenameToContentType
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.librarian.utils import copy_and_close
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.buildmaster.interfaces.buildbase import (
+    BUILDD_MANAGER_LOG_NAME,
+    BuildStatus,
+    )
 from lp.buildmaster.model.buildqueue import BuildQueue
-from lp.buildmaster.interfaces.buildbase import BUILDD_MANAGER_LOG_NAME
 
 
 def handle_status_for_build(build, status, librarian, slave_status,

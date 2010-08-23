@@ -10,7 +10,7 @@ import unittest
 from storm.store import Store
 
 from canonical.testing import LaunchpadZopelessLayer
-
+from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.testing import TestCaseWithFactory
 from lp.testing.factory import LaunchpadObjectFactory
 
@@ -110,9 +110,13 @@ class DistributionSourcePackageMultipleBugsRecalculateBugHeatCacheTest(
 
     def setUp(self):
         TestCaseWithFactory.setUp(self)
-        self.target = self.factory.makeDistributionSourcePackage()
+        self.target = self.factory.makeDistributionSourcePackage(with_db=True)
         self.bugtask1 = self.factory.makeBugTask(target=self.target)
         self.bugtask2 = self.factory.makeBugTask(target=self.target)
+        self.bugtask3 = self.factory.makeBugTask(target=self.target)
+        # A closed bug is not include in DSP bug heat calculations.
+        self.bugtask3.transitionToStatus(
+            BugTaskStatus.FIXRELEASED, self.target.distribution.owner)
         # Bug heat gets calculated by complicated rules in a db
         # stored procedure. We will override them here to avoid
         # testing inconsitencies if those values are calculated
@@ -121,8 +125,10 @@ class DistributionSourcePackageMultipleBugsRecalculateBugHeatCacheTest(
         # automatically by bug.setHeat().
         bug1 = self.bugtask1.bug
         bug2 = self.bugtask2.bug
+        bug3 = self.bugtask3.bug
         bug1.setHeat(7)
         bug2.setHeat(19)
+        bug3.setHeat(11)
         Store.of(bug1).flush()
         self.max_heat = max(bug1.heat, bug2.heat)
         self.total_heat = sum([bug1.heat, bug2.heat])

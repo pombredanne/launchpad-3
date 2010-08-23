@@ -6,12 +6,14 @@ __all__ = ['TranslationsOverview']
 
 from zope.interface import implements
 
-from lp.translations.interfaces.translationsoverview import (
-    ITranslationsOverview, MalformedKarmaCacheData)
 from canonical.database.sqlbase import cursor
-
 from lp.registry.model.distribution import Distribution
 from lp.registry.model.product import Product
+from lp.translations.interfaces.translationsoverview import (
+    ITranslationsOverview,
+    MalformedKarmaCacheData,
+    )
+
 
 class TranslationsOverview:
     implements(ITranslationsOverview)

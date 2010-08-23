@@ -49,30 +49,40 @@ __metaclass__ = type
 
 import datetime
 import os
-import pytz
 import shutil
 import stat
 import sys
 
+from contrib.glock import GlobalLock
+import pytz
 from sqlobject import SQLObjectNotFound
-
 from zope.component import getUtility
 
-from lp.app.errors import NotFoundError
-from lp.archiveuploader.nascentupload import (
-    NascentUpload, FatalUploadError, EarlyReturnUploadError)
-from lp.archiveuploader.uploadpolicy import (
-    UploadPolicyError)
-from lp.buildmaster.interfaces.buildbase import BuildStatus
-from lp.soyuz.interfaces.archive import IArchiveSet, NoSuchPPA
-from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
-from lp.registry.interfaces.distribution import IDistributionSet
-from lp.registry.interfaces.person import IPersonSet
 from canonical.launchpad.scripts.logger import BufferLogger
 from canonical.launchpad.webapp.errorlog import (
-    ErrorReportingUtility, ScriptRequest)
+    ErrorReportingUtility,
+    ScriptRequest,
+    )
+from lp.app.errors import NotFoundError
+from lp.archiveuploader.nascentupload import (
+    EarlyReturnUploadError,
+    FatalUploadError,
+    NascentUpload,
+    )
+from lp.archiveuploader.uploadpolicy import (
+    BuildDaemonUploadPolicy,
+    SOURCE_PACKAGE_RECIPE_UPLOAD_POLICY_NAME,
+    UploadPolicyError,
+    )
+from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.person import IPersonSet
+from lp.soyuz.interfaces.archive import (
+    IArchiveSet,
+    NoSuchPPA,
+    )
+from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 
-from contrib.glock import GlobalLock
 
 __all__ = [
     'UploadProcessor',
@@ -424,10 +434,10 @@ class UploadProcessor:
 
         # Reject source upload to buildd upload paths.
         first_path = relative_path.split(os.path.sep)[0]
-        # XXX: JonathanLange 2010-01-15 bug=510894: We should not be re-using
-        # magical string literals. Zombie Dijkstra will come and kill us in
-        # our sleep.
-        if first_path.isdigit() and policy.name not in ('buildd', 'recipe'):
+        is_not_buildd_nor_recipe_policy = policy.name not in [
+            SOURCE_PACKAGE_RECIPE_UPLOAD_POLICY_NAME,
+            BuildDaemonUploadPolicy.name]
+        if first_path.isdigit() and is_not_buildd_nor_recipe_policy:
             error_message = (
                 "Invalid upload path (%s) for this policy (%s)" %
                 (relative_path, policy.name))
@@ -522,8 +532,6 @@ class UploadProcessor:
         if self.keep or self.dry_run:
             logger.debug("Keeping contents untouched")
             return
-
-        pathname = os.path.basename(upload)
 
         logger.debug("Removing upload directory %s", upload)
         shutil.rmtree(upload)
@@ -622,7 +630,7 @@ def _getDistributionAndSuite(parts, exc_type):
 
     suite_name = parts[1]
     try:
-        suite = distribution.getDistroSeriesAndPocket(suite_name)
+        distribution.getDistroSeriesAndPocket(suite_name)
     except NotFoundError:
         raise exc_type("Could not find suite '%s'." % suite_name)
 
