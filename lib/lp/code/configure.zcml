@@ -14,8 +14,12 @@
   <authorizations module="lp.code.security" />
 
   <publisher
-     name="code"
-     factory="lp.code.publisher.code_request_publication_factory"/>
+      name="code"
+      factory="lp.code.publisher.code_request_publication_factory"/>
+  <utility
+      component="lp.code.publisher.CodeLayer"
+      provides="zope.publisher.interfaces.browser.IDefaultBrowserLayer"
+      name="code" />
 
   <!-- Branch Merge Queue -->
 
@@ -999,6 +1003,11 @@
   <utility component="lp.code.model.sourcepackagerecipebuild.SourcePackageRecipeBuildJob"
         name="RECIPEBRANCHBUILD"
         provides="lp.buildmaster.interfaces.buildfarmjob.IBuildFarmJob"/>
+
+  <call
+    callable="lp.code.model.sourcepackagerecipebuild.register_archive_upload_policy_adapter"
+    />
+
   <webservice:register module="lp.code.interfaces.webservice" />
     <adapter
         provides="lp.buildmaster.interfaces.buildfarmjob.ISpecificBuildFarmJob"

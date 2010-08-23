@@ -35,10 +35,19 @@ from canonical.launchpad.interfaces import ILaunchBag
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing import reset_logging
 from lp.testing import (
-    ANONYMOUS, launchpadlib_credentials_for, launchpadlib_for, login,
-    login_person, logout, oauth_access_token_for)
+    ANONYMOUS,
+    launchpadlib_credentials_for,
+    launchpadlib_for,
+    login,
+    login_person,
+    logout,
+    oauth_access_token_for,
+    )
 from lp.testing.factory import LaunchpadObjectFactory
-from lp.testing.views import create_view, create_initialized_view
+from lp.testing.views import (
+    create_initialized_view,
+    create_view,
+    )
 
 
 default_optionflags = (doctest.REPORT_NDIFF |

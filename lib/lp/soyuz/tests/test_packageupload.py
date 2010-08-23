@@ -3,6 +3,7 @@
 
 """Test Build features."""
 
+from email import message_from_string
 import os
 import shutil
 
@@ -11,18 +12,20 @@ from zope.component import getUtility
 from canonical.config import config
 from canonical.launchpad.scripts import BufferLogger
 from canonical.testing import LaunchpadZopelessLayer
-from email import message_from_string
 from lp.archiveuploader.tests import datadir
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.registry.interfaces.distribution import IDistributionSet
-from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.interfaces.series import SeriesStatus
 from lp.services.mail import stub
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.interfaces.queue import (
-    IPackageUploadSet, PackageUploadCustomFormat, PackageUploadStatus)
+    IPackageUploadSet,
+    PackageUploadCustomFormat,
+    PackageUploadStatus,
+    )
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
 

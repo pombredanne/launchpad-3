@@ -5,8 +5,8 @@
 
 __metaclass__ = type
 
-import re
 from cgi import escape
+import re
 from textwrap import dedent
 
 from canonical.launchpad import _

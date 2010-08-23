@@ -18,6 +18,7 @@ import os
 import tempfile
 import urllib2
 
+from lazr.delegates import delegates
 from zope.interface import implements
 from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.browser import IBrowserPublisher
@@ -26,17 +27,23 @@ from zope.security.interfaces import Unauthorized
 from canonical.launchpad.interfaces import ILibraryFileAlias
 from canonical.launchpad.layers import WebServiceLayer
 from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.publisher import (
-    LaunchpadView, RedirectionView, canonical_url, stepthrough)
 from canonical.launchpad.webapp.interfaces import (
-    IWebBrowserOriginatingRequest)
+    IWebBrowserOriginatingRequest,
+    )
+from canonical.launchpad.webapp.publisher import (
+    canonical_url,
+    LaunchpadView,
+    RedirectionView,
+    stepthrough,
+    )
 from canonical.launchpad.webapp.url import urlappend
 from canonical.lazr.utils import get_current_browser_request
 from canonical.librarian.client import url_path_quote
 from canonical.librarian.interfaces import LibrarianServerError
-from canonical.librarian.utils import filechunks, guess_librarian_encoding
-
-from lazr.delegates import delegates
+from canonical.librarian.utils import (
+    filechunks,
+    guess_librarian_encoding,
+    )
 
 
 class LibraryFileAliasView(LaunchpadView):

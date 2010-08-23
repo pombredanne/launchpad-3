@@ -14,24 +14,38 @@ __metaclass__ = type
 __all__ = ['SourcePackageRecipeData']
 
 from bzrlib.plugins.builder.recipe import (
-    BaseRecipeBranch, MergeInstruction, NestInstruction, RecipeBranch)
-
-from lazr.enum import DBEnumeratedType, DBItem
-
+    BaseRecipeBranch,
+    MergeInstruction,
+    NestInstruction,
+    RecipeBranch,
+    )
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    )
 from storm.expr import Union
 from storm.locals import (
-    And, Int, Reference, ReferenceSet, Select, Store, Storm, Unicode)
-
+    And,
+    Int,
+    Reference,
+    ReferenceSet,
+    Select,
+    Store,
+    Storm,
+    Unicode,
+    )
 from zope.component import getUtility
 
 from canonical.database.enumcol import EnumCol
 from canonical.launchpad.interfaces.lpstorm import IStore
-
 from lp.code.errors import (
-    ForbiddenInstruction, NoSuchBranch, PrivateBranchRecipe,
-    TooNewRecipeFormat)
-from lp.code.model.branch import Branch
+    ForbiddenInstruction,
+    NoSuchBranch,
+    PrivateBranchRecipe,
+    TooNewRecipeFormat,
+    )
 from lp.code.interfaces.branchlookup import IBranchLookup
+from lp.code.model.branch import Branch
 
 
 class InstructionType(DBEnumeratedType):

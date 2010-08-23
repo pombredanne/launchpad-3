@@ -25,38 +25,63 @@ __all__ = [
 from operator import attrgetter
 from urllib import urlencode
 
-from zope.app.form.browser import DropdownWidget
-from zope.component import getUtility, queryMultiAdapter
-from zope.formlib import form
-from zope.schema import Bool, Choice, List
-from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
-
 from z3c.ptcompat import ViewPageTemplateFile
+from zope.app.form.browser import DropdownWidget
+from zope.component import (
+    getUtility,
+    queryMultiAdapter,
+    )
+from zope.formlib import form
+from zope.schema import (
+    Bool,
+    Choice,
+    List,
+    )
+from zope.schema.vocabulary import (
+    SimpleTerm,
+    SimpleVocabulary,
+    )
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
-from lp.services.fields import PublicPersonChoice
 from canonical.launchpad.helpers import (
-    browserLanguages, is_english_variant, preferred_or_request_languages)
+    browserLanguages,
+    is_english_variant,
+    preferred_or_request_languages,
+    )
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp import (
-    action, canonical_url, custom_widget, LaunchpadFormView, Link,
-    safe_action, stepto, stepthrough, urlappend)
+    action,
+    canonical_url,
+    custom_widget,
+    LaunchpadFormView,
+    Link,
+    safe_action,
+    stepthrough,
+    stepto,
+    urlappend,
+    )
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.menu import structured
 from canonical.widgets import LabeledMultiCheckBoxWidget
-from lp.app.errors import NotFoundError
-from lp.services.worlddata.interfaces.language import ILanguageSet
-from lp.registry.interfaces.projectgroup import IProjectGroup
-from lp.registry.interfaces.distribution import IDistribution
-from lp.answers.interfaces.questionenums import QuestionStatus
+from lp.answers.browser.faqcollection import FAQCollectionMenu
 from lp.answers.interfaces.faqcollection import IFAQCollection
 from lp.answers.interfaces.questioncollection import (
-    IQuestionCollection, IQuestionSet, ISearchableByQuestionOwner)
+    IQuestionCollection,
+    IQuestionSet,
+    ISearchableByQuestionOwner,
+    )
+from lp.answers.interfaces.questionenums import QuestionStatus
 from lp.answers.interfaces.questiontarget import (
-    IQuestionTarget, ISearchQuestionsForm)
-from lp.answers.browser.faqcollection import FAQCollectionMenu
+    IQuestionTarget,
+    ISearchQuestionsForm,
+    )
+from lp.app.errors import NotFoundError
+from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.services.fields import PublicPersonChoice
+from lp.services.worlddata.interfaces.language import ILanguageSet
 
 
 class AskAQuestionButtonView:

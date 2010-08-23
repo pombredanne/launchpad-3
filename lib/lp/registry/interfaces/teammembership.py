@@ -17,16 +17,33 @@ __all__ = [
     'UserCannotChangeMembershipSilently',
     ]
 
-from zope.schema import Bool, Choice, Datetime, Int, Text
-from zope.interface import Attribute, Interface
-from zope.security.interfaces import Unauthorized
-from lazr.enum import DBEnumeratedType, DBItem
-
-from lazr.restful.interface import copy_field
-from lazr.restful.fields import Reference
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    )
 from lazr.restful.declarations import (
-   call_with, export_as_webservice_entry, export_write_operation, exported,
-   operation_parameters, REQUEST_USER, webservice_error)
+    call_with,
+    export_as_webservice_entry,
+    export_write_operation,
+    exported,
+    operation_parameters,
+    REQUEST_USER,
+    webservice_error,
+    )
+from lazr.restful.fields import Reference
+from lazr.restful.interface import copy_field
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Bool,
+    Choice,
+    Datetime,
+    Int,
+    Text,
+    )
+from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad import _
 

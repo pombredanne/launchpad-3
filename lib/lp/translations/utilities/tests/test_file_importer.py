@@ -6,23 +6,28 @@
 __metaclass__ = type
 
 import unittest
+
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from lp.registry.interfaces.person import IPersonSet
-from lp.translations.interfaces.translationimporter import (
-    OutdatedTranslationError)
-from lp.translations.interfaces.translationimportqueue import (
-    ITranslationImportQueue)
-from lp.translations.interfaces.translationgroup import (
-    TranslationPermission)
-from lp.testing import TestCaseWithFactory
-from lp.translations.utilities.gettext_po_importer import (
-    GettextPOImporter)
-from lp.translations.utilities.translation_import import (
-    FileImporter, POTFileImporter, POFileImporter)
 from canonical.testing import LaunchpadZopelessLayer
+from lp.registry.interfaces.person import IPersonSet
+from lp.testing import TestCaseWithFactory
+from lp.translations.interfaces.translationgroup import TranslationPermission
+from lp.translations.interfaces.translationimporter import (
+    OutdatedTranslationError,
+    )
+from lp.translations.interfaces.translationimportqueue import (
+    ITranslationImportQueue,
+    )
+from lp.translations.utilities.gettext_po_importer import GettextPOImporter
+from lp.translations.utilities.translation_import import (
+    FileImporter,
+    POFileImporter,
+    POTFileImporter,
+    )
+
 
 TEST_LANGUAGE = "eo"
 TEST_MSGID = "Thank You"

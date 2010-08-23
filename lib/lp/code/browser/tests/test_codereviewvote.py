@@ -12,9 +12,11 @@ import unittest
 
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import DatabaseFunctionalLayer
-from lp.testing import (
-    login_person, TestCaseWithFactory)
 from lp.code.browser.codereviewvote import CodeReviewVoteReassign
+from lp.testing import (
+    login_person,
+    TestCaseWithFactory,
+    )
 
 
 class TestReassignReviewer(TestCaseWithFactory):

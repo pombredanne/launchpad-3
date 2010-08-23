@@ -9,48 +9,82 @@ __all__ = ['BugAlsoAffectsProductMetaView', 'BugAlsoAffectsDistroMetaView',
 import cgi
 from textwrap import dedent
 
+from lazr.enum import (
+    EnumeratedType,
+    Item,
+    )
+from lazr.lifecycle.event import ObjectCreatedEvent
+from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form.browser import DropdownWidget
-from zope.app.form.interfaces import MissingInputError, WidgetsError
+from zope.app.form.interfaces import (
+    MissingInputError,
+    WidgetsError,
+    )
 from zope.component import getUtility
 from zope.event import notify
 from zope.formlib import form
 from zope.schema import Choice
-from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
-
-from z3c.ptcompat import ViewPageTemplateFile
-from lazr.enum import EnumeratedType, Item
-from lazr.lifecycle.event import ObjectCreatedEvent
+from zope.schema.vocabulary import (
+    SimpleTerm,
+    SimpleVocabulary,
+    )
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
-from canonical.launchpad.browser.multistep import MultiStepView, StepView
-from lp.services.fields import StrippedTextLine
+from canonical.launchpad.browser.multistep import (
+    MultiStepView,
+    StepView,
+    )
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.validation import (
-    valid_upstreamtask, validate_new_distrotask)
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from lp.bugs.interfaces.bug import IBug
-from lp.bugs.interfaces.bugtask import (
-    BugTaskImportance, BugTaskStatus, IAddBugTaskForm,
-    IAddBugTaskWithProductCreationForm, valid_remote_bug_url)
-from lp.bugs.interfaces.bugtracker import BugTrackerType, IBugTrackerSet
-from lp.bugs.interfaces.bugwatch import (
-    IBugWatchSet, NoBugTrackerFound, UnrecognizedBugTrackerURL)
-from lp.registry.interfaces.distributionsourcepackage import (
-    IDistributionSourcePackage)
-from lp.registry.interfaces.packaging import IPackagingUtil, PackagingType
-from lp.registry.interfaces.product import (IProductSet, License)
+    valid_upstreamtask,
+    validate_new_distrotask,
+    )
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.email import email_validator
 from canonical.launchpad.webapp import (
-    custom_widget, action, canonical_url, LaunchpadFormView)
+    action,
+    canonical_url,
+    custom_widget,
+    LaunchpadFormView,
+    )
+from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.menu import structured
-
 from canonical.widgets.bugtask import (
-    BugTaskAlsoAffectsSourcePackageNameWidget)
+    BugTaskAlsoAffectsSourcePackageNameWidget,
+    )
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
-from canonical.widgets.textwidgets import StrippedTextWidget
 from canonical.widgets.popup import SearchForUpstreamPopupWidget
+from canonical.widgets.textwidgets import StrippedTextWidget
+from lp.bugs.interfaces.bug import IBug
+from lp.bugs.interfaces.bugtask import (
+    BugTaskImportance,
+    BugTaskStatus,
+    IAddBugTaskForm,
+    IAddBugTaskWithProductCreationForm,
+    valid_remote_bug_url,
+    )
+from lp.bugs.interfaces.bugtracker import (
+    BugTrackerType,
+    IBugTrackerSet,
+    )
+from lp.bugs.interfaces.bugwatch import (
+    IBugWatchSet,
+    NoBugTrackerFound,
+    UnrecognizedBugTrackerURL,
+    )
+from lp.registry.interfaces.distributionsourcepackage import (
+    IDistributionSourcePackage,
+    )
+from lp.registry.interfaces.packaging import (
+    IPackagingUtil,
+    PackagingType,
+    )
+from lp.registry.interfaces.product import (
+    IProductSet,
+    License,
+    )
+from lp.services.fields import StrippedTextLine
 
 
 class BugAlsoAffectsProductMetaView(MultiStepView):

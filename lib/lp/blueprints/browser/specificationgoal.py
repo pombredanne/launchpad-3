@@ -12,13 +12,14 @@ __all__ = [
 
 from zope.component import getUtility
 
-from lp.blueprints.browser.specificationtarget import (
-    HasSpecificationsView)
-
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from lp.blueprints.interfaces.specification import SpecificationFilter
 from canonical.cachedproperty import cachedproperty
-from canonical.launchpad.webapp import canonical_url, LaunchpadView
+from canonical.launchpad.webapp import (
+    canonical_url,
+    LaunchpadView,
+    )
+from canonical.launchpad.webapp.interfaces import ILaunchBag
+from lp.blueprints.browser.specificationtarget import HasSpecificationsView
+from lp.blueprints.interfaces.specification import SpecificationFilter
 
 
 class GoalDecideView(HasSpecificationsView, LaunchpadView):

@@ -6,14 +6,17 @@
 __metaclass__ = type
 
 
-import os
 import errno
-import tempfile
-import unittest
-
+import os
 # Don't use cStringIO in case Unicode leaks through.
 from StringIO import StringIO
-from subprocess import Popen, PIPE, STDOUT
+from subprocess import (
+    PIPE,
+    Popen,
+    STDOUT,
+    )
+import tempfile
+import unittest
 
 import transaction
 
@@ -21,11 +24,16 @@ from canonical.launchpad.ftests import login
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
 from canonical.launchpad.scripts import FakeLogger
 from canonical.launchpad.scripts.mlistimport import Importer
-from lp.registry.interfaces.person import (
-    PersonVisibility, TeamSubscriptionPolicy)
-from lp.testing.factory import LaunchpadObjectFactory
 from canonical.testing.layers import (
-    AppServerLayer, DatabaseFunctionalLayer, LayerProcessController)
+    AppServerLayer,
+    DatabaseFunctionalLayer,
+    LayerProcessController,
+    )
+from lp.registry.interfaces.person import (
+    PersonVisibility,
+    TeamSubscriptionPolicy,
+    )
+from lp.testing.factory import LaunchpadObjectFactory
 
 
 factory = LaunchpadObjectFactory()
