@@ -235,12 +235,14 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
 
     def test_POFile_canonical_url(self):
         # Test the canonical_url of the POFile.
+        pofile_url = (
+            'http://translations.launchpad.dev/foo/devel/+pots/messages/'
+            '%s' % self.devel_pofile.language.code )
+        self.assertEqual(pofile_url, canonical_url(self.devel_pofile))
+        view_name = '+details'
+        view_url = "%s/%s" % (pofile_url, view_name)
         self.assertEqual(
-            'http://translations.launchpad.dev/foo/devel/+pots/messages/sr',
-            canonical_url(self.devel_sr_pofile))
-        self.assertEqual(
-            'http://translations.launchpad.dev/foo/devel/+pots/messages/sr/+details',
-            canonical_url(self.devel_sr_pofile, view_name="+details"))
+            view_url, canonical_url(self.devel_pofile, view_name=view_name))
 
     def test_findPOTMsgSetsContaining(self):
         # Test that search works correctly.
