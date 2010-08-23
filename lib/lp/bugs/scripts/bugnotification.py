@@ -31,7 +31,9 @@ from canonical.launchpad.scripts.logger import log
 from canonical.launchpad.webapp import canonical_url
 from lp.bugs.interfaces.bugmessage import IBugMessageSet
 from lp.bugs.mail.bugnotificationbuilder import (
-    BugNotificationBuilder, get_bugmail_from_address)
+    BugNotificationBuilder,
+    get_bugmail_from_address,
+    )
 from lp.bugs.mail.newbug import generate_bug_add_email
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.mail.mailwrapper import MailWrapper

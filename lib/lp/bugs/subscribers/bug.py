@@ -17,25 +17,31 @@ __all__ = [
 
 
 import datetime
-
 from operator import attrgetter
 
 from canonical.config import config
 from canonical.database.sqlbase import block_implicit_flushes
 from canonical.launchpad.helpers import get_contact_email_addresses
-from canonical.launchpad.mail import format_address, sendmail
+from canonical.launchpad.mail import (
+    format_address,
+    sendmail,
+    )
 from canonical.launchpad.webapp.publisher import canonical_url
-
-from lp.bugs.adapters.bugdelta import BugDelta
-from lp.bugs.mail.bugnotificationbuilder import BugNotificationBuilder
-from lp.bugs.mail.newbug import generate_bug_add_email
-from lp.registry.interfaces.person import IPerson
 from lp.bugs.adapters.bugchange import (
-    BugDuplicateChange, BugTaskAssigneeChange, get_bug_changes)
+    BugDuplicateChange,
+    BugTaskAssigneeChange,
+    get_bug_changes,
+    )
+from lp.bugs.adapters.bugdelta import BugDelta
 from lp.bugs.interfaces.bugchange import IBugChange
+from lp.bugs.mail.bugnotificationbuilder import BugNotificationBuilder
 from lp.bugs.mail.bugnotificationrecipients import BugNotificationRecipients
-from lp.registry.interfaces.structuralsubscription import IStructuralSubscriptionTarget
+from lp.bugs.mail.newbug import generate_bug_add_email
 from lp.registry.enum import BugNotificationLevel
+from lp.registry.interfaces.person import IPerson
+from lp.registry.interfaces.structuralsubscription import (
+    IStructuralSubscriptionTarget,
+    )
 
 
 @block_implicit_flushes
