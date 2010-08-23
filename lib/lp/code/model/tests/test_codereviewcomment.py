@@ -7,12 +7,17 @@ from textwrap import dedent
 import unittest
 
 from canonical.launchpad.database.message import MessageSet
+from canonical.testing import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
 from lp.code.enums import CodeReviewVote
 from lp.code.event.branchmergeproposal import NewCodeReviewCommentEvent
 from lp.code.model.codereviewcomment import quote_text_as_email
-from lp.testing import TestCaseWithFactory, TestCase
-from canonical.testing import (
-    DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
+from lp.testing import (
+    TestCase,
+    TestCaseWithFactory,
+    )
 
 
 class TestCodeReviewComment(TestCaseWithFactory):

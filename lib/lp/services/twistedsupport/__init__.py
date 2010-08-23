@@ -15,7 +15,10 @@ __all__ = [
 import StringIO
 import sys
 
-from twisted.internet import defer, threads
+from twisted.internet import (
+    defer,
+    threads,
+    )
 from twisted.python.util import mergeFunctionMetadata
 
 

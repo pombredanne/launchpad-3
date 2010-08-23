@@ -9,18 +9,20 @@ __metaclass__ = type
 
 import datetime
 import os
-import pytz
 import shutil
 import tempfile
 from unittest import TestLoader
 
 from bzrlib import errors as bzr_errors
-from bzrlib.branch import Branch, BzrBranchFormat7
+from bzrlib.branch import (
+    Branch,
+    BzrBranchFormat7,
+    )
 from bzrlib.bzrdir import BzrDirMetaFormat1
 from bzrlib.repofmt.pack_repo import RepositoryFormatKnitPack6
 from bzrlib.revision import NULL_REVISION
 from bzrlib.transport import get_transport
-from canonical.testing import DatabaseFunctionalLayer, LaunchpadZopelessLayer
+import pytz
 from sqlobject import SQLObjectNotFound
 from storm.locals import Store
 import transaction
@@ -29,36 +31,64 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
+from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
+from canonical.launchpad.testing.librarianhelpers import (
+    get_newest_librarian_file,
+    )
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.testing import verifyObject
-from lp.translations.interfaces.translations import (
-    TranslationsBranchImportMode)
-from lp.translations.interfaces.translationimportqueue import (
-    ITranslationImportQueue, RosettaImportStatus)
-from lp.testing import TestCaseWithFactory
-from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
-from canonical.launchpad.testing.librarianhelpers import (
-    get_newest_librarian_file)
-from lp.testing.mail_helpers import pop_notifications
-from lp.services.job.interfaces.job import JobStatus
-from lp.services.job.model.job import Job
-from lp.services.osutils import override_environ
-from lp.code.bzr import BranchFormat, RepositoryFormat
+from canonical.testing import (
+    DatabaseFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
+from lp.code.bzr import (
+    BranchFormat,
+    RepositoryFormat,
+    )
 from lp.code.enums import (
-    BranchMergeProposalStatus, BranchSubscriptionDiffSize,
-    BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel)
+    BranchMergeProposalStatus,
+    BranchSubscriptionDiffSize,
+    BranchSubscriptionNotificationLevel,
+    CodeReviewNotificationLevel,
+    )
 from lp.code.interfaces.branchjob import (
-    IBranchDiffJob, IBranchJob, IBranchScanJob, IBranchUpgradeJob,
-    IReclaimBranchSpaceJob, IReclaimBranchSpaceJobSource, IRevisionMailJob,
-    IRosettaUploadJob)
+    IBranchDiffJob,
+    IBranchJob,
+    IBranchScanJob,
+    IBranchUpgradeJob,
+    IReclaimBranchSpaceJob,
+    IReclaimBranchSpaceJobSource,
+    IRevisionMailJob,
+    IRosettaUploadJob,
+    )
 from lp.code.model.branchjob import (
-    BranchDiffJob, BranchJob, BranchJobDerived, BranchJobType,
-    BranchScanJob, BranchUpgradeJob, ReclaimBranchSpaceJob, RevisionMailJob,
-    RevisionsAddedJob, RosettaUploadJob)
+    BranchDiffJob,
+    BranchJob,
+    BranchJobDerived,
+    BranchJobType,
+    BranchScanJob,
+    BranchUpgradeJob,
+    ReclaimBranchSpaceJob,
+    RevisionMailJob,
+    RevisionsAddedJob,
+    RosettaUploadJob,
+    )
 from lp.code.model.branchrevision import BranchRevision
 from lp.code.model.revision import RevisionSet
 from lp.codehosting.vfs import branch_id_to_path
+from lp.services.job.interfaces.job import JobStatus
+from lp.services.job.model.job import Job
+from lp.services.osutils import override_environ
+from lp.testing import TestCaseWithFactory
+from lp.testing.mail_helpers import pop_notifications
+from lp.translations.interfaces.translationimportqueue import (
+    ITranslationImportQueue,
+    RosettaImportStatus,
+    )
+from lp.translations.interfaces.translations import (
+    TranslationsBranchImportMode,
+    )
 
 
 class TestBranchJob(TestCaseWithFactory):

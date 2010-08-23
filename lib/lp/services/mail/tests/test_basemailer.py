@@ -9,11 +9,10 @@ from smtplib import SMTPException
 import unittest
 
 from canonical.testing import LaunchpadZopelessLayer
-
-from lp.testing import TestCaseWithFactory
-from lp.testing.mail_helpers import pop_notifications
 from lp.services.mail.basemailer import BaseMailer
 from lp.services.mail.sendmail import MailController
+from lp.testing import TestCaseWithFactory
+from lp.testing.mail_helpers import pop_notifications
 
 
 class FakeSubscription:

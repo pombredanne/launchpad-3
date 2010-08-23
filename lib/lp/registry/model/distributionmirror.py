@@ -10,55 +10,90 @@ __all__ = ['DistributionMirror', 'MirrorDistroArchSeries',
            'MirrorDistroSeriesSource', 'MirrorProbeRecord',
            'DistributionMirrorSet', 'MirrorCDImageDistroSeries']
 
-from datetime import datetime, timedelta, MINYEAR
-import pytz
+from datetime import (
+    datetime,
+    MINYEAR,
+    timedelta,
+    )
 
+import pytz
+from sqlobject import (
+    BoolCol,
+    ForeignKey,
+    StringCol,
+    )
+from sqlobject.sqlbuilder import AND
+from storm.expr import Func
 from zope.component import getUtility
 from zope.interface import implements
 
-from storm.expr import Func
-from sqlobject import ForeignKey, StringCol, BoolCol
-from sqlobject.sqlbuilder import AND
-
 from canonical.config import config
-
-from lp.archivepublisher.diskpool import poolify
-
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.enumcol import EnumCol
-from canonical.launchpad.interfaces.lpstorm import IStore
-
-from lp.registry.interfaces.pocket import (
-    PackagePublishingPocket, pocketsuffix)
-from lp.services.worlddata.model.country import Country
-from lp.soyuz.model.files import (
-    BinaryPackageFile, SourcePackageReleaseFile)
-from lp.soyuz.model.publishing import (
-    SourcePackagePublishingHistory,
-    BinaryPackagePublishingHistory)
+from canonical.database.sqlbase import (
+    SQLBase,
+    sqlvalues,
+    )
 from canonical.launchpad.helpers import (
-    get_email_template, get_contact_email_addresses, shortlist)
-from lp.soyuz.interfaces.binarypackagerelease import (
-    BinaryPackageFileType)
-from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
+    get_contact_email_addresses,
+    get_email_template,
+    shortlist,
+    )
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+from canonical.launchpad.interfaces.lpstorm import IStore
+from canonical.launchpad.mail import (
+    format_address,
+    simple_sendmail,
+    )
+from canonical.launchpad.webapp import (
+    canonical_url,
+    urlappend,
+    )
+from canonical.launchpad.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
+from lp.archivepublisher.diskpool import poolify
 from lp.registry.interfaces.distributionmirror import (
-    CannotTransitionToCountryMirror, CountryMirrorAlreadySet,
-    IDistributionMirror, IDistributionMirrorSet, IMirrorCDImageDistroSeries,
-    IMirrorDistroArchSeries, IMirrorDistroSeriesSource, IMirrorProbeRecord,
-    MirrorContent, MirrorFreshness, MirrorHasNoHTTPURL, MirrorNotOfficial,
-    MirrorNotProbed, MirrorSpeed, MirrorStatus, PROBE_INTERVAL)
+    CannotTransitionToCountryMirror,
+    CountryMirrorAlreadySet,
+    IDistributionMirror,
+    IDistributionMirrorSet,
+    IMirrorCDImageDistroSeries,
+    IMirrorDistroArchSeries,
+    IMirrorDistroSeriesSource,
+    IMirrorProbeRecord,
+    MirrorContent,
+    MirrorFreshness,
+    MirrorHasNoHTTPURL,
+    MirrorNotOfficial,
+    MirrorNotProbed,
+    MirrorSpeed,
+    MirrorStatus,
+    PROBE_INTERVAL,
+    )
 from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.person import validate_public_person
+from lp.registry.interfaces.pocket import (
+    PackagePublishingPocket,
+    pocketsuffix,
+    )
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
-from canonical.launchpad.mail import simple_sendmail, format_address
-from lp.registry.interfaces.person import validate_public_person
-from canonical.launchpad.webapp import urlappend, canonical_url
-from canonical.launchpad.webapp.interfaces import (
-        IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+from lp.services.worlddata.model.country import Country
+from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFileType
+from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
+from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+from lp.soyuz.model.files import (
+    BinaryPackageFile,
+    SourcePackageReleaseFile,
+    )
+from lp.soyuz.model.publishing import (
+    BinaryPackagePublishingHistory,
+    SourcePackagePublishingHistory,
+    )
 
 
 class DistributionMirror(SQLBase):

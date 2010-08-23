@@ -22,13 +22,19 @@ import xmlrpclib
 
 from zope.component import getUtility
 
-from canonical.database.sqlbase import flush_database_updates
 from canonical.config import config
+from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.mailinglist import (
-    IMailingListSet, IMessageApprovalSet, MailingListStatus,
-    PostedMessageStatus)
-from lp.registry.interfaces.person import IPersonSet, TeamSubscriptionPolicy
+    IMailingListSet,
+    IMessageApprovalSet,
+    MailingListStatus,
+    PostedMessageStatus,
+    )
+from lp.registry.interfaces.person import (
+    IPersonSet,
+    TeamSubscriptionPolicy,
+    )
 
 
 COMMASPACE = ', '

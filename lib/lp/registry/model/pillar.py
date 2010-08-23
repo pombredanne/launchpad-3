@@ -12,27 +12,51 @@ __metaclass__ = type
 
 import warnings
 
-from zope.component import getUtility
-from zope.interface import implements
-
-from storm.expr import LeftJoin, NamedFunc, Select
+from sqlobject import (
+    BoolCol,
+    ForeignKey,
+    StringCol,
+    )
+from storm.expr import (
+    LeftJoin,
+    NamedFunc,
+    Select,
+    )
 from storm.info import ClassAlias
 from storm.locals import SQL
 from storm.store import Store
-from sqlobject import ForeignKey, StringCol, BoolCol
+from zope.component import getUtility
+from zope.interface import implements
 
 from canonical.config import config
-from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
+from canonical.database.sqlbase import (
+    cursor,
+    SQLBase,
+    sqlvalues,
+    )
+from canonical.launchpad.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 from lp.app.errors import NotFoundError
+from lp.registry.interfaces.distribution import (
+    IDistribution,
+    IDistributionSet,
+    )
+from lp.registry.interfaces.pillar import (
+    IPillarName,
+    IPillarNameSet,
+    )
+from lp.registry.interfaces.product import (
+    IProduct,
+    IProductSet,
+    License,
+    )
+from lp.registry.interfaces.projectgroup import IProjectGroupSet
 from lp.registry.model.featuredproject import FeaturedProject
 from lp.registry.model.productlicense import ProductLicense
-from lp.registry.interfaces.distribution import (
-    IDistribution, IDistributionSet)
-from lp.registry.interfaces.pillar import IPillarName, IPillarNameSet
-from lp.registry.interfaces.product import IProduct, IProductSet, License
-from lp.registry.interfaces.projectgroup import IProjectGroupSet
-from canonical.launchpad.webapp.interfaces import (
-        IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+
 
 __all__ = [
     'pillar_sort_key',

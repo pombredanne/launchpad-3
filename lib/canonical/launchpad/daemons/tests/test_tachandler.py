@@ -5,11 +5,14 @@
 
 __metaclass__ = type
 
-import unittest
-import tempfile
 import os.path
+import tempfile
+import unittest
 
-from canonical.launchpad.daemons.tachandler import TacTestSetup, TacException
+from canonical.launchpad.daemons.tachandler import (
+    TacException,
+    TacTestSetup,
+    )
 
 
 class TacTestSetupTestCase(unittest.TestCase):

@@ -9,12 +9,16 @@ import unittest
 
 from zope.component import getUtility
 
+from canonical.launchpad.ftests import (
+    ANONYMOUS,
+    login,
+    logout,
+    )
+from canonical.testing import LaunchpadFunctionalLayer
 from lp.app.errors import NotFoundError
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.milestone import IMilestoneSet
 from lp.registry.interfaces.product import IProductSet
-from canonical.launchpad.ftests import login, logout, ANONYMOUS
-from canonical.testing import LaunchpadFunctionalLayer
 
 
 class MilestoneTest(unittest.TestCase):

@@ -13,7 +13,6 @@ __all__ = [
 from functools import wraps
 
 import psycopg2.extensions
-
 from storm.zope.interfaces import IZStorm
 from zope.component import getUtility
 

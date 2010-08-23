@@ -28,8 +28,11 @@ __all__ = [
 import email.Header
 import re
 
+from canonical.encoding import (
+    ascii_smash,
+    guess as guess_encoding,
+    )
 from lp.archiveuploader.tagfiles import TagFileParseError
-from canonical.encoding import guess as guess_encoding, ascii_smash
 
 
 re_taint_free = re.compile(r"^[-+~/\.\w]+$")

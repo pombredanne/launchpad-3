@@ -13,8 +13,11 @@ __all__ = [
     'IBinaryPackageNameSet',
     ]
 
-from zope.schema import Int, TextLine
 from zope.interface import Interface
+from zope.schema import (
+    Int,
+    TextLine,
+    )
 
 from canonical.launchpad import _
 from canonical.launchpad.validators.name import name_validator
