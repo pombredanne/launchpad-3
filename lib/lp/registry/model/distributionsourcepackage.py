@@ -566,6 +566,7 @@ class DistributionSourcePackage(BugTargetBase,
         dsp.sourcepackagename = sourcepackagename
         dsp.is_upstream_link_allowed = is_upstream_link_allowed
         Store.of(distribution).add(dsp)
+        Store.of(distribution).flush()
         return dsp
 
     @classmethod
