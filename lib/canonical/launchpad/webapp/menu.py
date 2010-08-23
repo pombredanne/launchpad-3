@@ -23,22 +23,40 @@ __all__ = [
 import cgi
 import types
 
-from zope.i18n import translate, Message
-from zope.interface import implements
-from zope.component import getMultiAdapter
-from zope.security.proxy import (
-    isinstance as zope_isinstance, removeSecurityProxy)
-
 from lazr.delegates import delegates
+from lazr.uri import (
+    InvalidURIError,
+    URI,
+    )
+from zope.component import getMultiAdapter
+from zope.i18n import (
+    Message,
+    translate,
+    )
+from zope.interface import implements
+from zope.security.proxy import (
+    isinstance as zope_isinstance,
+    removeSecurityProxy,
+    )
 
-from canonical.launchpad.webapp.interfaces import (
-    IApplicationMenu, IContextMenu, IFacetLink, IFacetMenu, ILink, ILinkData,
-    IMenuBase, INavigationMenu, IStructuredString)
-from canonical.launchpad.webapp.publisher import (
-    canonical_url, get_current_browser_request,
-    LaunchpadView, UserAttributeCache)
 from canonical.launchpad.webapp.authorization import check_permission
-from lazr.uri import InvalidURIError, URI
+from canonical.launchpad.webapp.interfaces import (
+    IApplicationMenu,
+    IContextMenu,
+    IFacetLink,
+    IFacetMenu,
+    ILink,
+    ILinkData,
+    IMenuBase,
+    INavigationMenu,
+    IStructuredString,
+    )
+from canonical.launchpad.webapp.publisher import (
+    canonical_url,
+    get_current_browser_request,
+    LaunchpadView,
+    UserAttributeCache,
+    )
 from canonical.launchpad.webapp.vhosts import allvhosts
 
 

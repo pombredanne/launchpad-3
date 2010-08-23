@@ -11,14 +11,18 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.testing import DatabaseFunctionalLayer
-
 from lp.code.enums import (
-    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
-    CodeReviewNotificationLevel)
+    BranchSubscriptionDiffSize,
+    BranchSubscriptionNotificationLevel,
+    CodeReviewNotificationLevel,
+    )
 from lp.code.tests.helpers import make_official_package_branch
 from lp.code.xmlrpc.branch import PublicCodehostingAPI
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
-from lp.testing import run_with_login, TestCaseWithFactory
+from lp.testing import (
+    run_with_login,
+    TestCaseWithFactory,
+    )
 
 
 class PermissionTest(TestCaseWithFactory):

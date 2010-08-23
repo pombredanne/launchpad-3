@@ -18,12 +18,19 @@ from zope.schema import Int
 
 from canonical.launchpad.browser.librarian import FileNavigationMixin
 from canonical.launchpad.webapp import (
-    action, canonical_url, ContextMenu, enabled_with_permission,
-    LaunchpadView, LaunchpadFormView, Link, Navigation)
-
+    action,
+    canonical_url,
+    ContextMenu,
+    enabled_with_permission,
+    LaunchpadFormView,
+    LaunchpadView,
+    Link,
+    Navigation,
+    )
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.code.interfaces.sourcepackagerecipebuild import (
-    ISourcePackageRecipeBuild)
+    ISourcePackageRecipeBuild,
+    )
 from lp.services.job.interfaces.job import JobStatus
 
 
@@ -47,7 +54,7 @@ class SourcePackageRecipeBuildContextMenu(ContextMenu):
 
     links = ('cancel', 'rescore')
 
-    @enabled_with_permission('launchpad.Edit')
+    @enabled_with_permission('launchpad.Admin')
     def cancel(self):
         if self.context.status in UNEDITABLE_BUILD_STATES:
             enabled = False
@@ -55,7 +62,7 @@ class SourcePackageRecipeBuildContextMenu(ContextMenu):
             enabled = True
         return Link('+cancel', 'Cancel build', icon='remove', enabled=enabled)
 
-    @enabled_with_permission('launchpad.Edit')
+    @enabled_with_permission('launchpad.Admin')
     def rescore(self):
         if self.context.status in UNEDITABLE_BUILD_STATES:
             enabled = False
@@ -70,7 +77,7 @@ class SourcePackageRecipeBuildView(LaunchpadView):
     @property
     def status(self):
         """A human-friendly status string."""
-        if (self.context.buildstate == BuildStatus.NEEDSBUILD
+        if (self.context.status == BuildStatus.NEEDSBUILD
             and self.eta is None):
             return 'No suitable builders'
         return {
@@ -83,7 +90,7 @@ class SourcePackageRecipeBuildView(LaunchpadView):
             BuildStatus.SUPERSEDED: (
                 'Could not build because source package was superseded'),
             BuildStatus.FAILEDTOUPLOAD: 'Could not be uploaded correctly',
-            }.get(self.context.buildstate, self.context.buildstate.title)
+            }.get(self.context.status, self.context.status.title)
 
     @property
     def eta(self):
@@ -109,12 +116,12 @@ class SourcePackageRecipeBuildView(LaunchpadView):
         """The date when the build completed or is estimated to complete."""
         if self.estimate:
             return self.eta
-        return self.context.datebuilt
+        return self.context.date_finished
 
     @property
     def estimate(self):
         """If true, the date value is an estimate."""
-        if self.context.datebuilt is not None:
+        if self.context.date_finished is not None:
             return False
         return self.eta is not None
 

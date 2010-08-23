@@ -12,21 +12,31 @@ __all__ = [
     ]
 
 
+import shutil
+import tempfile
+
+from launchpadlib.credentials import (
+    AccessToken,
+    Credentials,
+    )
+from launchpadlib.launchpad import Launchpad
 import transaction
 from zope.app.publication.interfaces import IEndRequestEvent
 from zope.app.testing import ztapi
 from zope.component import getUtility
+import zope.testing.cleanup
 
-from launchpadlib.credentials import AccessToken, Credentials
-from launchpadlib.launchpad import Launchpad
-
+from canonical.launchpad.interfaces import (
+    IOAuthConsumerSet,
+    IPersonSet,
+    )
 from canonical.launchpad.webapp.adapter import get_request_statements
 from canonical.launchpad.webapp.interaction import ANONYMOUS
 from canonical.launchpad.webapp.interfaces import OAuthPermission
-from canonical.launchpad.interfaces import (
-    IOAuthConsumerSet, IPersonSet)
-
-from lp.testing._login import login, logout
+from lp.testing._login import (
+    login,
+    logout,
+    )
 
 
 def oauth_access_token_for(consumer_name, person, permission, context=None):
@@ -105,6 +115,11 @@ def launchpadlib_credentials_for(
                        access_token=launchpadlib_token)
 
 
+def _clean_up_cache(cache):
+    """"Clean up a temporary launchpadlib cache directory."""
+    shutil.rmtree(cache, ignore_errors=True)
+
+
 def launchpadlib_for(
     consumer_name, person, permission=OAuthPermission.WRITE_PRIVATE,
     context=None, version=None, service_root="http://api.launchpad.dev/"):
@@ -125,7 +140,9 @@ def launchpadlib_for(
         consumer_name, person, permission, context)
     transaction.commit()
     version = version or Launchpad.DEFAULT_VERSION
-    return Launchpad(credentials, service_root, version=version)
+    cache = tempfile.mkdtemp(prefix='launchpadlib-cache-')
+    zope.testing.cleanup.addCleanUp(_clean_up_cache, (cache,))
+    return Launchpad(credentials, service_root, version=version, cache=cache)
 
 
 class QueryCollector:
@@ -148,7 +165,7 @@ class QueryCollector:
 
     def register(self):
         """Start counting queries.
-        
+
         Be sure to call unregister when finished with the collector.
 
         After each web request the count and queries attributes are updated.
@@ -163,5 +180,3 @@ class QueryCollector:
 
     def unregister(self):
         self._active = False
-
-

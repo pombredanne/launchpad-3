@@ -10,31 +10,42 @@ __all__ = [
     ]
 
 import datetime
+
 import pytz
 import simplejson
+from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form.browser import DropdownWidget
 from zope.component import getUtility
 from zope.formlib import form
 from zope.interface import implements
 from zope.schema import Choice
 from zope.schema.interfaces import IContextSourceBinder
-from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
-
-from z3c.ptcompat import ViewPageTemplateFile
+from zope.schema.vocabulary import (
+    SimpleTerm,
+    SimpleVocabulary,
+    )
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
+from canonical.launchpad.webapp import (
+    action,
+    custom_widget,
+    LaunchpadFormView,
+    safe_action,
+    )
+from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.batching import TableBatchNavigator
+from canonical.launchpad.webapp.vocabulary import ForgivingSimpleVocabulary
+from canonical.widgets.lazrjs import vocabulary_to_choice_edit_items
 from lp.app.errors import UnexpectedFormData
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.translations.interfaces.translationimportqueue import (
-    IHasTranslationImports, ITranslationImportQueue, RosettaImportStatus,
-    SpecialTranslationImportTargetFilter)
-from canonical.launchpad.webapp import (
-    LaunchpadFormView, action, custom_widget, safe_action)
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.batching import TableBatchNavigator
-from canonical.widgets.lazrjs import vocabulary_to_choice_edit_items
+    IHasTranslationImports,
+    ITranslationImportQueue,
+    RosettaImportStatus,
+    SpecialTranslationImportTargetFilter,
+    )
 
 
 class HasTranslationImportsView(LaunchpadFormView):
@@ -391,10 +402,13 @@ class TranslationImportFileExtensionVocabularyFactory:
 
     def __call__(self, context):
         file_extensions = ('po', 'pot')
-
-        terms = [SimpleTerm('all', 'all', 'All files')]
+        all_files = SimpleTerm('all', 'all', 'All files')
+        terms = [all_files]
         for extension in file_extensions:
             title = 'Only %s files' % extension
             terms.append(SimpleTerm(extension, extension, title))
-        return SimpleVocabulary(terms)
 
+        # We use a ForgivingSimpleVocabulary because we don't care if a user
+        # provides an invalid value.  If they do we just ignore it and show
+        # them all files.
+        return ForgivingSimpleVocabulary(terms, default_term=all_files)

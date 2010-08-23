@@ -20,23 +20,42 @@ __all__ = [
 from textwrap import dedent
 
 from lazr.restful.declarations import (
-    call_with, export_as_webservice_entry, export_write_operation, exported,
-    operation_parameters, REQUEST_USER)
-from lazr.restful.fields import CollectionField, Reference
-from zope.interface import Attribute, Interface
-from zope.schema import Bool, Choice, Datetime, Int, Object, Text, TextLine
+    call_with,
+    export_as_webservice_entry,
+    export_write_operation,
+    exported,
+    operation_parameters,
+    REQUEST_USER,
+    )
+from lazr.restful.fields import (
+    CollectionField,
+    Reference,
+    )
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Bool,
+    Choice,
+    Datetime,
+    Int,
+    Object,
+    Text,
+    TextLine,
+    )
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import (
-    ParticipatingPersonChoice, PublicPersonChoice
-)
 from canonical.launchpad.validators.name import name_validator
-
 from lp.code.interfaces.branch import IBranch
-from lp.soyuz.interfaces.archive import IArchive
+from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.role import IHasOwner
-from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.services.fields import (
+    PersonChoice,
+    PublicPersonChoice,
+    )
+from lp.soyuz.interfaces.archive import IArchive
 
 
 MINIMAL_RECIPE_TEXT = dedent(u'''\
@@ -84,7 +103,7 @@ class ISourcePackageRecipe(IHasOwner, ISourcePackageRecipeData):
             vocabulary='ValidPersonOrTeam'))
 
     owner = exported(
-        ParticipatingPersonChoice(
+        PersonChoice(
             title=_('Owner'),
             required=True, readonly=False,
             vocabulary='UserTeamsParticipationPlusSelf',

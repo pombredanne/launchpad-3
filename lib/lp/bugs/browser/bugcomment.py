@@ -15,23 +15,37 @@ __all__ = [
     'should_display_remote_comments',
     ]
 
-from datetime import datetime, timedelta
-from pytz import utc
-
-from zope.component import adapts, getMultiAdapter, getUtility
-from zope.interface import implements, Interface
+from datetime import (
+    datetime,
+    timedelta,
+    )
 
 from lazr.restful.interfaces import IWebServiceClientRequest
-
-from lp.bugs.interfaces.bugmessage import (
-    IBugComment, IBugMessageSet)
-from lp.registry.interfaces.person import IPersonSet
-from canonical.launchpad.webapp import canonical_url, LaunchpadView
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
+from pytz import utc
+from zope.component import (
+    adapts,
+    getMultiAdapter,
+    getUtility,
+    )
+from zope.interface import (
+    implements,
+    Interface,
+    )
 
 from canonical.config import config
+from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
+from canonical.launchpad.webapp import (
+    canonical_url,
+    LaunchpadView,
+    )
+from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
+from canonical.launchpad.webapp.interfaces import ILaunchBag
+from lp.bugs.interfaces.bugmessage import (
+    IBugComment,
+    IBugMessageSet,
+    )
+from lp.registry.interfaces.person import IPersonSet
 
 
 def should_display_remote_comments(user):
@@ -265,13 +279,22 @@ class BugCommentView(LaunchpadView):
             self.comment.index, self.context.bug.id)
 
 
-class BugCommentBoxView(LaunchpadView):
+class BugCommentBoxViewMixin:
+    """A class which provides proxied Librarian URLs for bug attachments."""
+
+    def proxiedUrlOfLibraryFileAlias(self, attachment):
+        """Return the proxied URL for the Librarian file of the attachment."""
+        return ProxiedLibraryFileAlias(
+            attachment.libraryfile, attachment).http_url
+
+
+class BugCommentBoxView(LaunchpadView, BugCommentBoxViewMixin):
     """Render a comment box with reply field collapsed."""
 
     expand_reply_box = False
 
 
-class BugCommentBoxExpandedReplyView(LaunchpadView):
+class BugCommentBoxExpandedReplyView(LaunchpadView, BugCommentBoxViewMixin):
     """Render a comment box with reply field expanded."""
 
     expand_reply_box = True

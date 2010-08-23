@@ -19,36 +19,43 @@ __all__ = [
     'splitComponentAndSection',
     ]
 
-import apt_inst
-import apt_pkg
 import hashlib
 import os
 import subprocess
 import sys
 import time
 
+import apt_inst
+import apt_pkg
 from zope.component import getUtility
 
-from lp.archiveuploader.utils import (
-    prefix_multi_line_string, re_taint_free, re_isadeb, re_issource,
-    re_no_epoch, re_no_revision, re_valid_version, re_valid_pkg_name,
-    re_extract_src_version, determine_source_file_type)
 from canonical.encoding import guess as guess_encoding
-from lp.buildmaster.interfaces.buildbase import BuildStatus
-from lp.soyuz.interfaces.binarypackagename import (
-    IBinaryPackageNameSet)
-from lp.soyuz.interfaces.binarypackagerelease import (
-    BinaryPackageFormat)
-from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
-from lp.soyuz.interfaces.component import IComponentSet
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from canonical.librarian.utils import filechunks
+from lp.archiveuploader.utils import (
+    determine_source_file_type,
+    prefix_multi_line_string,
+    re_extract_src_version,
+    re_isadeb,
+    re_issource,
+    re_no_epoch,
+    re_no_revision,
+    re_taint_free,
+    re_valid_pkg_name,
+    re_valid_version,
+    )
+from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
+from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
+from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFormat
+from lp.soyuz.interfaces.component import IComponentSet
+from lp.soyuz.interfaces.publishing import PackagePublishingPriority
 from lp.soyuz.interfaces.queue import (
-    PackageUploadCustomFormat, PackageUploadStatus)
-from lp.soyuz.interfaces.publishing import (
-    PackagePublishingPriority)
+    PackageUploadCustomFormat,
+    PackageUploadStatus,
+    )
 from lp.soyuz.interfaces.section import ISectionSet
 from lp.soyuz.model.files import SourceFileMixin
-from canonical.librarian.utils import filechunks
 
 
 apt_pkg.InitSystem()
@@ -321,7 +328,6 @@ class PackageUploadFile(NascentUploadFile):
                 "%s: Unknown component %r" % (
                 self.filename, self.component_name))
 
-
     @property
     def component(self):
         """Return an IComponent for self.component.name."""
@@ -372,6 +378,7 @@ class BaseBinaryUploadFile(PackageUploadFile):
     """Base methods for binary upload modeling."""
 
     format = None
+    ddeb_file = None
 
     # Capitalised because we extract these directly from the control file.
     mandatory_fields = set(["Package", "Architecture", "Version"])
@@ -491,12 +498,15 @@ class BaseBinaryUploadFile(PackageUploadFile):
                 yield UploadError(
                     "%s: control file lacks mandatory field %r"
                      % (self.filename, mandatory_field))
+        control = {}
+        for key in control_lines.keys():
+            control[key] = control_lines.Find(key)
+        self.parseControl(control)
 
+    def parseControl(self, control):
         # XXX kiko 2007-02-15: We never use the Maintainer information in
         # the control file for anything. Should we? --
-        self.control = {}
-        for key in control_lines.keys():
-            self.control[key] = control_lines.Find(key)
+        self.control = control
 
         control_source = self.control.get("Source", None)
         if control_source is not None:
@@ -864,6 +874,12 @@ class BaseBinaryUploadFile(PackageUploadFile):
         binary_name = getUtility(
             IBinaryPackageNameSet).getOrCreateByName(self.package)
 
+        if self.ddeb_file:
+            debug_package = build.getBinaryPackageFileByName(
+                self.ddeb_file.filename).binarypackagerelease
+        else:
+            debug_package = None
+
         binary = build.createBinaryPackageRelease(
             binarypackagename=binary_name,
             version=self.control_version,
@@ -885,7 +901,8 @@ class BaseBinaryUploadFile(PackageUploadFile):
             breaks=encoded.get('Breaks', ''),
             essential=is_essential,
             installedsize=installedsize,
-            architecturespecific=architecturespecific)
+            architecturespecific=architecturespecific,
+            debug_package=debug_package)
 
         library_file = self.librarian.create(self.filename,
              self.size, open(self.filepath, "rb"), self.content_type,
@@ -932,22 +949,6 @@ class DebBinaryUploadFile(BaseBinaryUploadFile):
 
 
 class DdebBinaryUploadFile(DebBinaryUploadFile):
-    """Represents an uploaded binary package file in ddeb format.
-
-    DDEBs are never considered 'NEW', they don't require review since
-    they are automatically generated.
-    """
+    """Represents an uploaded binary package file in ddeb format."""
     format = BinaryPackageFormat.DDEB
-
-    # Override the 'new' flag in a way any values set are ignored and
-    # it always return False.
-    def _get_new(self):
-        """DDEBs are never considered NEW."""
-        return False
-
-    def _set_new(self, value):
-        """DDEBs cannot be made NEW."""
-        pass
-
-    new = property(
-        _get_new, _set_new, doc="DDEBs are never flagged as NEW.")
+    deb_file = None

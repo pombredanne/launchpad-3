@@ -20,20 +20,42 @@ __all__ = [
     'IOfficialBugTagTargetRestricted',
     ]
 
-from zope.interface import Interface, Attribute
-from zope.schema import Bool, Choice, Datetime, List, Object, Text, TextLine
-
-from canonical.launchpad import _
-from canonical.launchpad.fields import Tag
-from lp.bugs.interfaces.bugtask import (
-    BugBranchSearch, BugTagsSearchCombinator, IBugTask, IBugTaskSearch)
 from lazr.enum import DBEnumeratedType
+from lazr.restful.declarations import (
+    call_with,
+    export_as_webservice_entry,
+    export_read_operation,
+    export_write_operation,
+    exported,
+    LAZR_WEBSERVICE_EXPORTED,
+    operation_parameters,
+    operation_returns_collection_of,
+    REQUEST_USER,
+    )
 from lazr.restful.fields import Reference
 from lazr.restful.interface import copy_field
-from lazr.restful.declarations import (
-    LAZR_WEBSERVICE_EXPORTED, REQUEST_USER, call_with,
-    export_as_webservice_entry, export_read_operation, export_write_operation,
-    exported, operation_parameters, operation_returns_collection_of)
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Bool,
+    Choice,
+    Datetime,
+    List,
+    Object,
+    Text,
+    TextLine,
+    )
+
+from canonical.launchpad import _
+from lp.bugs.interfaces.bugtask import (
+    BugBranchSearch,
+    BugTagsSearchCombinator,
+    IBugTask,
+    IBugTaskSearch,
+    )
+from lp.services.fields import Tag
 
 
 class IHasBugs(Interface):

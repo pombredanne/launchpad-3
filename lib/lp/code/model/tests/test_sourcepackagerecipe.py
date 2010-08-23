@@ -7,47 +7,71 @@ from __future__ import with_statement
 
 __metaclass__ = type
 
-from datetime import datetime, timedelta
+from datetime import (
+    datetime,
+    timedelta,
+    )
 import textwrap
 import unittest
 
 from bzrlib.plugins.builder.recipe import RecipeParser
-
 from pytz import UTC
 from storm.locals import Store
-
 import transaction
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.testing.layers import DatabaseFunctionalLayer, AppServerLayer
-
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.testing import verifyObject
-from lp.soyuz.interfaces.archive import (
-    ArchiveDisabled, ArchivePurpose, CannotUploadToArchive,
-    InvalidPocketForPPA)
+from canonical.testing.layers import (
+    AppServerLayer,
+    DatabaseFunctionalLayer,
+    )
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.code.errors import (
-    BuildAlreadyPending, ForbiddenInstruction, PrivateBranchRecipe,
-    TooManyBuilds, TooNewRecipeFormat)
+    BuildAlreadyPending,
+    ForbiddenInstruction,
+    PrivateBranchRecipe,
+    TooManyBuilds,
+    TooNewRecipeFormat,
+    )
 from lp.code.interfaces.sourcepackagerecipe import (
-    ISourcePackageRecipe, ISourcePackageRecipeSource, MINIMAL_RECIPE_TEXT)
+    ISourcePackageRecipe,
+    ISourcePackageRecipeSource,
+    MINIMAL_RECIPE_TEXT,
+    )
 from lp.code.interfaces.sourcepackagerecipebuild import (
-    ISourcePackageRecipeBuild, ISourcePackageRecipeBuildJob)
-from lp.code.model.sourcepackagerecipebuild import (
-    SourcePackageRecipeBuildJob)
+    ISourcePackageRecipeBuild,
+    ISourcePackageRecipeBuildJob,
+    )
 from lp.code.model.sourcepackagerecipe import (
-    NonPPABuildRequest, SourcePackageRecipe)
+    NonPPABuildRequest,
+    SourcePackageRecipe,
+    )
+from lp.code.model.sourcepackagerecipebuild import SourcePackageRecipeBuildJob
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.job.interfaces.job import (
-    IJob, JobStatus)
+    IJob,
+    JobStatus,
+    )
+from lp.soyuz.interfaces.archive import (
+    ArchiveDisabled,
+    ArchivePurpose,
+    CannotUploadToArchive,
+    InvalidPocketForPPA,
+    )
 from lp.testing import (
-    ANONYMOUS, launchpadlib_for, login, login_person, person_logged_in,
-    TestCaseWithFactory, ws_object)
+    ANONYMOUS,
+    launchpadlib_for,
+    login,
+    login_person,
+    person_logged_in,
+    TestCaseWithFactory,
+    ws_object,
+    )
 
 
 class TestSourcePackageRecipe(TestCaseWithFactory):
@@ -355,7 +379,7 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         def request_build():
             build = recipe.requestBuild(archive, requester, series,
                     PackagePublishingPocket.RELEASE)
-            removeSecurityProxy(build).buildstate = BuildStatus.FULLYBUILT
+            removeSecurityProxy(build).status = BuildStatus.FULLYBUILT
         [request_build() for num in range(5)]
         e = self.assertRaises(TooManyBuilds, request_build)
         self.assertIn(
@@ -382,7 +406,7 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         recipe.requestBuild(archive, recipe.owner,
             new_distroseries, PackagePublishingPocket.RELEASE)
         # Changing status of old build allows new build.
-        removeSecurityProxy(old_build).buildstate = BuildStatus.FULLYBUILT
+        removeSecurityProxy(old_build).status = BuildStatus.FULLYBUILT
         recipe.requestBuild(archive, recipe.owner, series,
                 PackagePublishingPocket.RELEASE)
 
@@ -477,18 +501,21 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
             SourcePackageRecipe.findStaleDailyBuilds())
 
     def test_getMedianBuildDuration(self):
+        def set_duration(build, minutes):
+            duration = timedelta(minutes=minutes)
+            build = removeSecurityProxy(build)
+            build.date_started = self.factory.getUniqueDate()
+            build.date_finished = build.date_started + duration
         recipe = removeSecurityProxy(self.factory.makeSourcePackageRecipe())
         self.assertIs(None, recipe.getMedianBuildDuration())
-        build = removeSecurityProxy(
-            self.factory.makeSourcePackageRecipeBuild(recipe=recipe))
-        build.buildduration = timedelta(minutes=10)
+        build = self.factory.makeSourcePackageRecipeBuild(recipe=recipe)
+        set_duration(build, 10)
         self.assertEqual(
             timedelta(minutes=10), recipe.getMedianBuildDuration())
 
         def addBuild(minutes):
-            build = removeSecurityProxy(
-                self.factory.makeSourcePackageRecipeBuild(recipe=recipe))
-            build.buildduration = timedelta(minutes=minutes)
+            build = self.factory.makeSourcePackageRecipeBuild(recipe=recipe)
+            set_duration(build, minutes)
         addBuild(20)
         self.assertEqual(
             timedelta(minutes=10), recipe.getMedianBuildDuration())

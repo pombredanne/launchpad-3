@@ -8,28 +8,35 @@ __all__ = [
     'BinaryPackageName',
     'BinaryPackageNameSet',
     'BinaryPackageNameVocabulary',
-    'getBinaryPackageDescriptions'
+    'getBinaryPackageDescriptions',
 ]
 
+# SQLObject/SQLBase
+from sqlobject import (
+    CONTAINSSTRING,
+    SQLObjectNotFound,
+    StringCol,
+    )
+from storm.store import EmptyResultSet
 # Zope imports
 from zope.interface import implements
 from zope.schema.vocabulary import SimpleTerm
 
-# SQLObject/SQLBase
-from sqlobject import (
-    SQLObjectNotFound, StringCol, SQLMultipleJoin, CONTAINSSTRING)
-
-from storm.store import EmptyResultSet
-
-from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.database.sqlbase import (
+    SQLBase,
+    sqlvalues,
+    )
 from canonical.launchpad.webapp.vocabulary import (
-    NamedSQLObjectHugeVocabulary, BatchedCountableIterator)
+    BatchedCountableIterator,
+    NamedSQLObjectHugeVocabulary,
+    )
 from lp.app.errors import NotFoundError
 from lp.soyuz.interfaces.binarypackagename import (
-    IBinaryPackageName, IBinaryPackageNameSet)
+    IBinaryPackageName,
+    IBinaryPackageNameSet,
+    )
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
-from lp.soyuz.model.binarypackagerelease import (
-    BinaryPackageRelease)
+from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
 
 
 class BinaryPackageName(SQLBase):
@@ -38,10 +45,6 @@ class BinaryPackageName(SQLBase):
     _table = 'BinaryPackageName'
     name = StringCol(dbName='name', notNull=True, unique=True,
                      alternateID=True)
-
-    binarypackages = SQLMultipleJoin(
-        'BinaryPackage', joinColumn='binarypackagename'
-        )
 
     def __unicode__(self):
         return self.name
@@ -72,12 +75,6 @@ class BinaryPackageNameSet:
     def new(self, name):
         return BinaryPackageName(name=name)
 
-    def getOrCreateByName(self, name):
-        try:
-            return self[name]
-        except NotFoundError:
-            return self.new(name)
-
     def ensure(self, name):
         """Ensure that the given BinaryPackageName exists, creating it
         if necessary.
@@ -85,9 +82,11 @@ class BinaryPackageNameSet:
         Returns the BinaryPackageName
         """
         try:
-            return BinaryPackageName.byName(name)
-        except SQLObjectNotFound:
-            return BinaryPackageName(name=name)
+            return self[name]
+        except NotFoundError:
+            return self.new(name)
+
+    getOrCreateByName = ensure
 
     def getNotNewByNames(self, name_ids, distroseries, archive_ids):
         """See `IBinaryPackageNameSet`."""
@@ -125,6 +124,7 @@ class BinaryPackageNameIterator(BatchedCountableIterator):
 
     Builds descriptions based on releases of that binary package name.
     """
+
     def getTermsWithDescriptions(self, results):
         # Prefill the descriptions dictionary with the latest
         # description uploaded for that package name.
@@ -148,6 +148,8 @@ def getBinaryPackageDescriptions(results, use_names=False,
 
     See sourcepackage.py:getSourcePackageDescriptions, which is analogous.
     """
+    if len(list(results)) < 1:
+        return {}
     if use_names:
         clause = ("BinaryPackageName.name in %s" %
                  sqlvalues([pn.name for pn in results]))
@@ -165,11 +167,10 @@ def getBinaryPackageDescriptions(results, use_names=False,
 
     for release in releases:
         binarypackagename = release.binarypackagename.name
-        if not descriptions.has_key(binarypackagename):
+        if binarypackagename not in descriptions:
             description = release.description.strip().replace("\n", " ")
             if len(description) > max_title_length:
                 description = (release.description[:max_title_length]
                               + "...")
             descriptions[binarypackagename] = description
     return descriptions
-

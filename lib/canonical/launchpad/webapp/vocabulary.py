@@ -12,6 +12,7 @@ docstring in __init__.py for details.
 __metaclass__ = type
 
 __all__ = [
+    'ForgivingSimpleVocabulary',
     'IHugeVocabulary',
     'SQLObjectVocabularyBase',
     'NamedSQLObjectVocabulary',
@@ -20,14 +21,45 @@ __all__ = [
     'BatchedCountableIterator',
 ]
 
-from sqlobject import AND, CONTAINSSTRING
-
-from zope.interface import implements, Attribute, Interface
-from zope.schema.interfaces import IVocabulary, IVocabularyTokenized
-from zope.schema.vocabulary import SimpleTerm
+from sqlobject import (
+    AND,
+    CONTAINSSTRING,
+    )
+from zope.interface import (
+    Attribute,
+    implements,
+    Interface,
+    )
+from zope.schema.interfaces import (
+    IVocabulary,
+    IVocabularyTokenized,
+    )
+from zope.schema.vocabulary import (
+    SimpleTerm,
+    SimpleVocabulary,
+    )
 from zope.security.proxy import isinstance as zisinstance
 
 from canonical.database.sqlbase import SQLBase
+
+
+class ForgivingSimpleVocabulary(SimpleVocabulary):
+    """A vocabulary that returns a default term for unrecognized values."""
+
+    def __init__(self, *args, **kws):
+        missing = object()
+        self._default_term = kws.pop('default_term', missing)
+        if self._default_term is missing:
+            raise TypeError('required argument "default_term" not provided')
+        return super(ForgivingSimpleVocabulary, self).__init__(*args, **kws)
+
+
+    def getTerm(self, value):
+        """Look up a value, returning the default if it is not found."""
+        try:
+            return super(ForgivingSimpleVocabulary, self).getTerm(value)
+        except LookupError:
+            return self._default_term
 
 
 class IHugeVocabulary(IVocabulary, IVocabularyTokenized):

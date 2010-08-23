@@ -14,9 +14,19 @@ __all__ = [
     'PackageDiffStatus',
     ]
 
-from zope.interface import Interface, Attribute
-from zope.schema import Choice, Datetime, Object
-from lazr.enum import DBEnumeratedType, DBItem
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    )
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Choice,
+    Datetime,
+    Object,
+    )
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias

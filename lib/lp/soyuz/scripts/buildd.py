@@ -22,7 +22,9 @@ from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.scripts.base import (
-    LaunchpadCronScript, LaunchpadScriptFailure)
+    LaunchpadCronScript,
+    LaunchpadScriptFailure,
+    )
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.pas import BuildDaemonPackagesArchSpecific
 

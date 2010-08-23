@@ -7,8 +7,9 @@ __metaclass__ = type
 __all__ = []
 
 from canonical.launchpad.windmill.testing import lpuser
-from lp.translations.windmill.testing import TranslationsWindmillLayer
 from lp.testing import WindmillTestCase
+from lp.translations.windmill.testing import TranslationsWindmillLayer
+
 
 class EnableActionLinksTest(WindmillTestCase):
     """Test that action links are enabled on mouseover."""

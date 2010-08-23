@@ -12,12 +12,12 @@ __all__ = [
 from operator import attrgetter
 
 from canonical.cachedproperty import cachedproperty
-from lp.bugs.browser.bugtask import (
-    get_buglisting_search_filter_url)
 from canonical.launchpad.webapp.publisher import (
-    canonical_url, LaunchpadView)
+    canonical_url,
+    LaunchpadView,
+    )
 from canonical.launchpad.webapp.url import urlappend
-
+from lp.bugs.browser.bugtask import get_buglisting_search_filter_url
 
 # TODO: fix column sorting to work for the different colspans, or
 #       alternatively implement a sort option box.

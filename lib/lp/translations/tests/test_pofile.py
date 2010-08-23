@@ -5,24 +5,36 @@
 
 __metaclass__ = type
 
-from datetime import datetime, timedelta
-import pytz
+from datetime import (
+    datetime,
+    timedelta,
+    )
 from textwrap import dedent
 
-from zope.component import getAdapter, getUtility
+import pytz
+from zope.component import (
+    getAdapter,
+    getUtility,
+    )
 from zope.interface.verify import verifyObject
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.launchpad.webapp.publisher import canonical_url
+from canonical.testing import (
+    LaunchpadZopelessLayer,
+    ZopelessDatabaseLayer,
+    )
+from lp.testing import TestCaseWithFactory
 from lp.translations.interfaces.pofile import IPOFileSet
 from lp.translations.interfaces.translatablemessage import (
-    ITranslatableMessage)
-from lp.translations.interfaces.translationmessage import (
-    TranslationValidationStatus)
+    ITranslatableMessage,
+    )
 from lp.translations.interfaces.translationcommonformat import (
-    ITranslationFileData)
-from lp.testing import TestCaseWithFactory
-from canonical.testing import LaunchpadZopelessLayer, ZopelessDatabaseLayer
-from canonical.launchpad.webapp.publisher import canonical_url
+    ITranslationFileData,
+    )
+from lp.translations.interfaces.translationmessage import (
+    TranslationValidationStatus,
+    )
 
 
 class TestTranslationSharedPOFile(TestCaseWithFactory):
@@ -34,7 +46,7 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
         # Create a product with two series and a shared POTemplate
         # in different series ('devel' and 'stable').
         super(TestTranslationSharedPOFile, self).setUp()
-        self.foo = self.factory.makeProduct()
+        self.foo = self.factory.makeProduct(name='foo')
         self.foo_devel = self.factory.makeProductSeries(
             name='devel', product=self.foo)
         self.foo_stable = self.factory.makeProductSeries(
@@ -57,6 +69,15 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
         # and add it to only one of the POTemplates.
         self.potmsgset = self.factory.makePOTMsgSet(self.devel_potemplate)
         self.potmsgset.setSequence(self.devel_potemplate, 1)
+
+    def test_POFile_canonical_url(self):
+        # Test the canonical_url of the POFile.
+        self.assertEqual(
+            'http://translations.launchpad.dev/foo/devel/+pots/messages/sr',
+            canonical_url(self.devel_sr_pofile))
+        self.assertEqual(
+            'http://translations.launchpad.dev/foo/devel/+pots/messages/sr/+details',
+            canonical_url(self.devel_sr_pofile, view_name="+details"))
 
     def test_findPOTMsgSetsContaining(self):
         # Test that search works correctly.
@@ -163,10 +184,13 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
         self.assertEquals(found_translations, [translation])
 
         # Adding a translation for same POTMsgSet, but to a different
-        # POFile (i.e. language or variant) will not add the translation
+        # POFile (different language) will not add the translation
         # to the list of submitter's translations for *former* POFile.
+        serbian_latin = self.factory.makeLanguage(
+            'sr@latin', 'Serbian Latin')
+
         self.devel_sr_latin_pofile = self.factory.makePOFile(
-            'sr', variant=u'latin', potemplate=self.devel_potemplate)
+            'sr@latin', potemplate=self.devel_potemplate)
         self.factory.makeTranslationMessage(
             pofile=self.devel_sr_latin_pofile, potmsgset=potmsgset,
             translations=[u"Yet another translation"],

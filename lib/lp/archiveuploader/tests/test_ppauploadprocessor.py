@@ -17,28 +17,36 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from lp.app.errors import NotFoundError
-from lp.archiveuploader.uploadprocessor import UploadProcessor
-from lp.archiveuploader.tests.test_uploadprocessor import (
-    TestUploadProcessorBase)
 from canonical.config import config
 from canonical.launchpad.database import Component
-from lp.soyuz.model.publishing import (
-    BinaryPackagePublishingHistory)
+from canonical.launchpad.interfaces import (
+    ILaunchpadCelebrities,
+    ILibraryFileAliasSet,
+    )
+from canonical.launchpad.testing.fakepackager import FakePackager
+from lp.app.errors import NotFoundError
+from lp.archiveuploader.tests.test_uploadprocessor import (
+    TestUploadProcessorBase,
+    )
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
-from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
-from lp.soyuz.interfaces.queue import PackageUploadStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.soyuz.interfaces.publishing import PackagePublishingStatus
-from lp.soyuz.interfaces.queue import NonBuildableSourceUploadError
-from lp.soyuz.interfaces.sourcepackageformat import (
-    ISourcePackageFormatSelectionSet, SourcePackageFormat)
-from canonical.launchpad.interfaces import (
-    ILaunchpadCelebrities, ILibraryFileAliasSet)
-from canonical.launchpad.testing.fakepackager import FakePackager
-from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.services.mail import stub
+from lp.soyuz.interfaces.archive import (
+    ArchivePurpose,
+    IArchiveSet,
+    )
+from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+from lp.soyuz.interfaces.queue import (
+    NonBuildableSourceUploadError,
+    PackageUploadStatus,
+    )
+from lp.soyuz.interfaces.sourcepackageformat import (
+    ISourcePackageFormatSelectionSet,
+    SourcePackageFormat,
+    )
+from lp.soyuz.model.publishing import BinaryPackagePublishingHistory
+from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 
 
 class TestPPAUploadProcessorBase(TestUploadProcessorBase):
@@ -74,8 +82,7 @@ class TestPPAUploadProcessorBase(TestUploadProcessorBase):
 
         # Set up the uploadprocessor with appropriate options and logger
         self.options.context = 'insecure'
-        self.uploadprocessor = UploadProcessor(
-            self.options, self.layer.txn, self.log)
+        self.uploadprocessor = self.getUploadProcessor(self.layer.txn)
 
     def assertEmail(self, contents=None, recipients=None,
                     ppa_header='name16'):
@@ -1224,8 +1231,7 @@ class TestPPAUploadProcessorQuotaChecks(TestPPAUploadProcessorBase):
 
         # Re-initialize uploadprocessor since it depends on the new
         # transaction reset by switchDbUser.
-        self.uploadprocessor = UploadProcessor(
-            self.options, self.layer.txn, self.log)
+        self.uploadprocessor = self.getUploadProcessor(self.layer.txn)
 
     def testPPASizeQuotaSourceRejection(self):
         """Verify the size quota check for PPA uploads.

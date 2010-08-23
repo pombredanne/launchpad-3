@@ -19,14 +19,26 @@ __all__ = [
     'ProtocolVersionMismatch',
     ]
 
-from zope.interface import Interface, Attribute
-from zope.schema import Bool, Choice, Field, Text, TextLine
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Bool,
+    Choice,
+    Field,
+    Text,
+    TextLine,
+    )
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import Title, Description
-from lp.registry.interfaces.role import IHasOwner
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.validators.url import builder_url_validator
+from lp.registry.interfaces.role import IHasOwner
+from lp.services.fields import (
+    Description,
+    Title,
+    )
 
 
 class BuildDaemonError(Exception):
@@ -269,6 +281,12 @@ class IBuilder(IHasOwner):
         :param buildd_slave: An optional buildd slave that this builder should
             talk to.
         :return: the `IBuildQueue` instance found or None if no job was found.
+        """
+
+    def getBuildQueue():
+        """Return a `BuildQueue` if there's an active job on this builder.
+
+        :return: A BuildQueue, or None.
         """
 
 
