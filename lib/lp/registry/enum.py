@@ -6,6 +6,7 @@
 __metaclass__ = type
 __all__ = [
     'BugNotificationLevel',
+    'DistroSeriesDifferenceStatus',
     ]
 
 from lazr.enum import DBEnumeratedType, DBItem
@@ -43,4 +44,30 @@ class BugNotificationLevel(DBEnumeratedType):
         Send bug lifecycle notifications, detail change notifications and
         notifications about new events in the bugs's discussion, like new
         comments.
+        """)
+
+
+class DistroSeriesDifferenceStatus(DBEnumeratedType):
+    """Distribution series difference status.
+
+    The status of a package difference between two DistroSeries.
+    """
+
+    NEEDS_ATTENTION = DBItem(1, """
+        Needs attention
+
+        This difference is current and needs attention.
+        """)
+
+    IGNORED = DBItem(2, """
+        Ignored
+
+        This difference is being ignored until a new package is uploaded
+        or the status is manually updated.
+        """)
+
+    IGNORED_ALWAYS = DBItem(3, """
+        Ignored always
+
+        This difference should always be ignored.
         """)
