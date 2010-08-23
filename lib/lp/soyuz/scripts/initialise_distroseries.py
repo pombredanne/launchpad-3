@@ -20,6 +20,7 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.adapters.packagelocation import PackageLocation
 from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
 from lp.soyuz.interfaces.queue import PackageUploadStatus
+from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.soyuz.model.packagecloner import clone_packages
 from lp.soyuz.model.packageset import Packageset
 
@@ -260,23 +261,13 @@ class InitialiseDistroSeries:
     def _copy_packagesets(self):
         """Copy packagesets from the parent distroseries."""
         packagesets = self._store.find(Packageset, distroseries=self.parent)
+        parent_to_child = {}
+        # Create the packagesets, and any archivepermissions
         for parent_ps in packagesets:
-            self._store.execute("""
-            INSERT INTO Packageset
-            (distroseries, owner, name, description, packagesetgroup)
-            SELECT %s, %s, name, description, packagesetgroup
-            FROM Packageset WHERE id = %s
-            """ % sqlvalues(
-            self.distroseries, self.distroseries.owner, parent_ps.id))
-            child_ps = self._store.find(
-                Packageset, distroseries=self.distroseries,
-                name=parent_ps.name).one()
-            self._store.execute("""
-            INSERT INTO Packagesetsources
-            (packageset, sourcepackagename)
-            SELECT %s, sourcepackagename FROM Packagesetsources
-            WHERE packageset = %s
-            """ % sqlvalues(child_ps.id, parent_ps.id))
+            child_ps = getUtility(IPackagesetSet).new(
+                parent_ps.name, parent_ps.description,
+                self.distroseries.owner, distroseries=self.distroseries,
+                related_set=parent_ps)
             self._store.execute("""
             INSERT INTO Archivepermission
             (person, permission, archive, packageset, explicit)
@@ -284,3 +275,11 @@ class InitialiseDistroSeries:
             FROM Archivepermission WHERE packageset = %s
             """ % sqlvalues(
             self.distroseries.main_archive, child_ps.id, parent_ps.id))
+            parent_to_child[parent_ps] = child_ps
+        # Copy the relations between sets, and the contents
+        for old_series_ps, new_series_ps in parent_to_child.items():
+            for old_series_child in old_series_ps.setsIncluded(
+                direct_inclusion=True):
+                new_series_ps.add(parent_to_child[old_series_child])
+            new_series_ps.add(old_series_ps.sourcesIncluded(
+                direct_inclusion=True))
