@@ -16,7 +16,6 @@ from lp.translations.utilities.translation_import import (
     )
 
 
-
 class TestSuperFastImports(TestCaseWithFactory):
     """Test how ExistingPOFileInDatabase cache works."""
 

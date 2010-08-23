@@ -12,7 +12,6 @@ import unittest
 import gettextpo
 from pytz import timezone
 import transaction
-
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -24,7 +23,6 @@ from lp.translations.interfaces.translationmessage import (
     TranslationValidationStatus,
     )
 from lp.translations.utilities.validate import GettextValidationError
-from lp.testing.factory import LaunchpadObjectFactory
 
 
 class TestTranslationSuggestions(unittest.TestCase):

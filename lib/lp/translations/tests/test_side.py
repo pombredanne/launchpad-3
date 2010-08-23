@@ -5,16 +5,16 @@
 
 __metaclass__ = type
 
-from canonical.testing import DatabaseFunctionalLayer
-from lp.testing import TestCaseWithFactory
-
 from zope.component import getUtility
 from zope.interface.verify import verifyObject
 
+from canonical.testing import DatabaseFunctionalLayer
+from lp.testing import TestCaseWithFactory
 from lp.translations.interfaces.side import (
     ITranslationSideTraits,
     ITranslationSideTraitsSet,
-    TranslationSide)
+    TranslationSide,
+    )
 
 
 class TestTranslationSideTraitsSet(TestCaseWithFactory):

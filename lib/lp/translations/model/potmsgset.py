@@ -12,9 +12,9 @@ __all__ = [
 
 import datetime
 import logging
+import re
 
 import pytz
-import re
 from sqlobject import (
     ForeignKey,
     IntCol,
@@ -82,7 +82,6 @@ from lp.translations.utilities.validate import (
     GettextValidationError,
     validate_translation,
     )
-
 
 # Msgids that indicate translation credit messages, and their
 # contexts and type.

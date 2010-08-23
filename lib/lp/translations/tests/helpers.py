@@ -7,16 +7,18 @@ __all__ = [
     'make_translationmessage_for_context',
     ]
 
-from zope.security.proxy import removeSecurityProxy
-
+from storm.expr import (
+    Coalesce,
+    Or,
+    )
 from storm.store import Store
-from storm.expr import Coalesce, Or
+from zope.security.proxy import removeSecurityProxy
 
 from lp.translations.interfaces.translationmessage import (
     RosettaTranslationOrigin,
-    TranslationValidationStatus)
-from lp.translations.model.translationmessage import (
-    TranslationMessage)
+    TranslationValidationStatus,
+    )
+from lp.translations.model.translationmessage import TranslationMessage
 
 
 def make_translationmessage_for_context(factory, pofile, potmsgset=None,

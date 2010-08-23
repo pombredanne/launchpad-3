@@ -22,7 +22,6 @@ from sqlobject import (
 from storm.expr import And
 from storm.locals import SQL
 from storm.store import Store
-
 from zope.interface import implements
 
 from canonical.cachedproperty import cachedproperty

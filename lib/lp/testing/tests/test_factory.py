@@ -9,7 +9,6 @@ from datetime import datetime
 import unittest
 
 import pytz
-
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 

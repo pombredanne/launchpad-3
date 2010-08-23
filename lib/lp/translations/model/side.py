@@ -14,7 +14,8 @@ from zope.interface import implements
 from lp.translations.interfaces.side import (
     ITranslationSideTraits,
     ITranslationSideTraitsSet,
-    TranslationSide)
+    TranslationSide,
+    )
 
 
 class TranslationSideTraits:

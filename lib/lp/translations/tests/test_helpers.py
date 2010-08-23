@@ -7,12 +7,11 @@ from zope.component import getUtility
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.testing import ZopelessDatabaseLayer
-
 from lp.testing import TestCaseWithFactory
-
 from lp.translations.tests.helpers import (
     make_translationmessage,
-    summarize_current_translations)
+    summarize_current_translations,
+    )
 
 
 class TestTranslationMessageHelpers(TestCaseWithFactory):
