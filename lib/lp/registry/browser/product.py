@@ -668,7 +668,7 @@ class ProductOverviewMenu(ApplicationMenu, ProductEditLinksMixin,
     def branch_add(self):
         text = 'Register a branch'
         summary = "Register a new Bazaar branch for this project"
-        return Link('+addbranch', text, summary, icon='add')
+        return Link('+addbranch', text, summary, icon='add', site='code')
 
 
 class ProductBugsMenu(PillarBugsMenu,

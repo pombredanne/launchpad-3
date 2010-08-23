@@ -943,7 +943,9 @@ class PersonBranchesMenu(ApplicationMenu):
             enabled = self.user.inTeam(self.context)
         text = 'Register a branch'
         summary = 'Register a new Bazaar branch'
-        return Link('+addbranch', text, summary, icon='add', enabled=enabled)
+        return Link(
+            '+addbranch', text, summary, icon='add', enabled=enabled,
+            site='code')
 
 
 class PersonProductBranchesMenu(PersonBranchesMenu):
