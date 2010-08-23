@@ -92,8 +92,6 @@ class TestProduct(TestCaseWithFactory):
             expected,
             list(product.getMilestonesAndReleases()))
 
-        
-
 
 class TestProductFiles(unittest.TestCase):
     """Tests for downloadable product files."""
