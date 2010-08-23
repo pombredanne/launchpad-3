@@ -166,7 +166,6 @@
     <!-- No view needed -->
     <browser:pages
         for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal"
-        layer="lp.code.publisher.CodeLayer"
         facet="branches"
         permission="launchpad.View">
       <browser:page
@@ -195,7 +194,6 @@
     </browser:pages>
     <browser:pages
         for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal"
-        layer="lp.code.publisher.CodeLayer"
         class="lp.code.browser.branchmergeproposal.BranchMergeProposalVoteView"
         facet="branches"
         permission="launchpad.View">
@@ -307,7 +305,6 @@
     <browser:page
         name="+link-summary"
         for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal"
-        layer="lp.code.publisher.CodeLayer"
         class="lp.code.browser.branchmergeproposal.BranchMergeCandidateView"
         facet="branches"
         permission="zope.Public"
