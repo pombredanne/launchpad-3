@@ -7,14 +7,16 @@ import unittest
 
 from zope.component import getUtility
 
-from lp.translations.browser.serieslanguage import (
-    ProductSeriesLanguageView)
-from lp.translations.interfaces.translator import ITranslatorSet
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import LaunchpadZopelessLayer
-from lp.translations.browser.productseries import ProductSeriesView
 from lp.services.worlddata.interfaces.language import ILanguageSet
-from lp.testing import TestCaseWithFactory, login_person
+from lp.testing import (
+    login_person,
+    TestCaseWithFactory,
+    )
+from lp.translations.browser.productseries import ProductSeriesView
+from lp.translations.browser.serieslanguage import ProductSeriesLanguageView
+from lp.translations.interfaces.translator import ITranslatorSet
 
 
 class TestProductSeries(TestCaseWithFactory):

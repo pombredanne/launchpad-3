@@ -15,14 +15,15 @@ __all__ = [
     ]
 
 
+from lazr.delegates import delegates
 from zope.component import getUtility
 
 from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
 from lp.soyuz.interfaces.publishing import (
-    IPublishingSet, ISourcePackagePublishingHistory)
-from lp.soyuz.interfaces.sourcepackagerelease import (
-    ISourcePackageRelease)
-from lazr.delegates import delegates
+    IPublishingSet,
+    ISourcePackagePublishingHistory,
+    )
+from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
 
 
 class ArchiveSourcePackageRelease:

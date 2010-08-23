@@ -8,35 +8,51 @@
 
 __metaclass__ = type
 
-import re
-
 from difflib import unified_diff
 from email.Header import Header
-from email.MIMEText import MIMEText
-from email.MIMEMultipart import MIMEMultipart
 from email.MIMEMessage import MIMEMessage
-from email.Utils import formataddr, make_msgid
+from email.MIMEMultipart import MIMEMultipart
+from email.MIMEText import MIMEText
+from email.Utils import (
+    formataddr,
+    make_msgid,
+    )
+import re
 
-from zope.component import getAdapter, getUtility
+from zope.component import (
+    getAdapter,
+    getUtility,
+    )
 
 from canonical.config import config
 from canonical.database.sqlbase import block_implicit_flushes
 from canonical.launchpad.helpers import (
-    get_contact_email_addresses, get_email_template)
+    get_contact_email_addresses,
+    get_email_template,
+    )
 from canonical.launchpad.interfaces import (
-    IHeldMessageDetails, IPerson, IPersonSet, ISpecification,
-    ITeamMembershipSet, TeamMembershipStatus)
+    IHeldMessageDetails,
+    IPerson,
+    IPersonSet,
+    ISpecification,
+    ITeamMembershipSet,
+    TeamMembershipStatus,
+    )
 from canonical.launchpad.interfaces.launchpad import ILaunchpadRoot
 from canonical.launchpad.interfaces.message import (
-    IDirectEmailAuthorization, QuotaReachedError)
+    IDirectEmailAuthorization,
+    QuotaReachedError,
+    )
 from canonical.launchpad.mail import (
-    format_address, sendmail, simple_sendmail, simple_sendmail_from_person)
+    format_address,
+    sendmail,
+    simple_sendmail,
+    simple_sendmail_from_person,
+    )
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.url import urlappend
-
 from lp.bugs.mail.bugnotificationbuilder import get_bugmail_error_address
 from lp.services.mail.mailwrapper import MailWrapper
-
 # XXX 2010-06-16 gmb bug=594985
 #     This shouldn't be here, but if we take it out lots of things cry,
 #     which is sad.
@@ -625,9 +641,9 @@ def send_direct_contact_email(
     additions = u'\n'.join([
         u'',
         u'-- ',
-        u'This message was sent from Launchpad by the user',
+        u'This message was sent from Launchpad by',
         u'%s (%s)' % (sender_name, canonical_url(sender)),
-        u'using %s.',
+        u'%s.',
         u'For more information see',
         u'https://help.launchpad.net/YourAccount/ContactingPeople',
         ])

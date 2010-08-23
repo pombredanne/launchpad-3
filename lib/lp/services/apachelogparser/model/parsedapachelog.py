@@ -4,17 +4,24 @@
 __metaclass__ = type
 __all__ = ['ParsedApacheLog']
 
+from storm.locals import (
+    Int,
+    Storm,
+    Unicode,
+    )
 from zope.component import getUtility
 from zope.interface import implements
-
-from storm.locals import Int, Storm, Unicode
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 from lp.services.apachelogparser.interfaces.parsedapachelog import (
-    IParsedApacheLog)
+    IParsedApacheLog,
+    )
 
 
 class ParsedApacheLog(Storm):

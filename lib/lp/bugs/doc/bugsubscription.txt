@@ -252,8 +252,7 @@ subscription is currently set to COMMENTS.
 With this subscription level, No Privileges Person is returned for all
 parameter values of level.
 
-    >>> from lp.registry.interfaces.structuralsubscription import (
-    ...     BugNotificationLevel)
+    >>> from lp.registry.enum import BugNotificationLevel
     >>> print_displayname(linux_source_bug.getAlsoNotifiedSubscribers(
     ...     level=BugNotificationLevel.COMMENTS))
     No Privileges Person
@@ -542,14 +541,19 @@ IBug.subscribe and IBug.unsubscribe:
 
     >>> bug.isSubscribed(foobar)
     False
-    >>> bug.subscribe(foobar, foobar)
-    <BugSubscription at ...>
+    >>> subscription = bug.subscribe(foobar, foobar)
     >>> bug.isSubscribed(foobar)
     True
 
     >>> bug.unsubscribe(foobar, foobar)
     >>> bug.isSubscribed(foobar)
     False
+
+By default, the bug_notification_level of the new subscription will be
+COMMENTS, so the user will receive all notifications about the bug.
+
+    >>> print subscription.bug_notification_level.name
+    COMMENTS
 
 To unsubscribe from all dupes for a bug, call
 IBug.unsubscribeFromDupes. This is useful because direct subscribers

@@ -11,13 +11,18 @@ __all__ = [
     ]
 
 from zope.interface import Interface
-from zope.schema import Datetime, Int, Object
+from zope.schema import (
+    Datetime,
+    Int,
+    Object,
+    )
 
 from lp.registry.interfaces.person import IPerson
 from lp.translations.interfaces.pofile import IPOFile
 from lp.translations.interfaces.potemplate import IPOTemplate
 from lp.translations.interfaces.translationfileformat import (
-    TranslationFileFormat)
+    TranslationFileFormat,
+    )
 
 
 class IPOExportRequestSet(Interface):

@@ -34,8 +34,8 @@ from lp.bugs.adapters.bugchange import (
     BugDuplicateChange, BugTaskAssigneeChange, get_bug_changes)
 from lp.bugs.interfaces.bugchange import IBugChange
 from lp.bugs.mail.bugnotificationrecipients import BugNotificationRecipients
-from lp.registry.interfaces.structuralsubscription import (
-    BugNotificationLevel, IStructuralSubscriptionTarget)
+from lp.registry.interfaces.structuralsubscription import IStructuralSubscriptionTarget
+from lp.registry.enum import BugNotificationLevel
 
 
 @block_implicit_flushes

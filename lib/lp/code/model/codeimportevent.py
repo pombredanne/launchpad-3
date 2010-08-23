@@ -13,20 +13,28 @@ __all__ = [
     ]
 
 
-from sqlobject import StringCol, ForeignKey
-
-from zope.interface import implements
 from lazr.enum import DBItem
+from sqlobject import (
+    ForeignKey,
+    StringCol,
+    )
+from zope.interface import implements
 
 from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
 from lp.code.enums import (
-    CodeImportEventDataType, CodeImportEventType,
-    CodeImportMachineOfflineReason, RevisionControlSystems)
+    CodeImportEventDataType,
+    CodeImportEventType,
+    CodeImportMachineOfflineReason,
+    RevisionControlSystems,
+    )
 from lp.code.interfaces.codeimportevent import (
-    ICodeImportEvent, ICodeImportEventSet, ICodeImportEventToken)
+    ICodeImportEvent,
+    ICodeImportEventSet,
+    ICodeImportEventToken,
+    )
 from lp.registry.interfaces.person import validate_public_person
 
 

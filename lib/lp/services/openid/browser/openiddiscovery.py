@@ -9,11 +9,13 @@ __all__ = [
     ]
 
 from openid.yadis.accept import getAcceptable
-from openid.yadis.constants import YADIS_CONTENT_TYPE, YADIS_HEADER_NAME
+from openid.yadis.constants import (
+    YADIS_CONTENT_TYPE,
+    YADIS_HEADER_NAME,
+    )
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.webapp import canonical_url
-
 from lp.services.openid.adapters.openid import CurrentOpenIDEndPoint
 
 

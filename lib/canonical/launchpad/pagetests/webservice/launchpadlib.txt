@@ -71,7 +71,8 @@ results in an error.
     >>> print lp_anon.me.name
     Traceback (most recent call last):
       ...
-    HTTPError: HTTP Error 401: Unauthorized...
+    Unauthorized: HTTP Error 401: Unauthorized...
+
 
 Caching
 =======

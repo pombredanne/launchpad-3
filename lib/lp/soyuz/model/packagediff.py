@@ -14,7 +14,10 @@ import subprocess
 import tempfile
 
 from sqlobject import ForeignKey
-from storm.expr import Desc, In
+from storm.expr import (
+    Desc,
+    In,
+    )
 from storm.store import EmptyResultSet
 from zope.component import getUtility
 from zope.interface import implements
@@ -22,13 +25,22 @@ from zope.interface import implements
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.database.sqlbase import (
+    SQLBase,
+    sqlvalues,
+    )
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from lp.soyuz.interfaces.packagediff import (
-    IPackageDiff, IPackageDiffSet, PackageDiffStatus)
 from canonical.launchpad.webapp.interfaces import (
-        IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 from canonical.librarian.utils import copy_and_close
+from lp.soyuz.interfaces.packagediff import (
+    IPackageDiff,
+    IPackageDiffSet,
+    PackageDiffStatus,
+    )
 
 
 def perform_deb_diff(tmp_dir, out_filename, from_files, to_files):

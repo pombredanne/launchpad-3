@@ -42,63 +42,114 @@ __all__ = [
     ]
 
 
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    EnumeratedType,
+    Item,
+    )
+from lazr.lifecycle.snapshot import doNotSnapshot
+from lazr.restful.declarations import (
+    call_with,
+    collection_default_content,
+    export_as_webservice_collection,
+    export_as_webservice_entry,
+    export_factory_operation,
+    export_read_operation,
+    export_write_operation,
+    exported,
+    LAZR_WEBSERVICE_EXPORTED,
+    operation_parameters,
+    operation_returns_collection_of,
+    operation_returns_entry,
+    rename_parameters_as,
+    REQUEST_USER,
+    webservice_error,
+    )
+from lazr.restful.fields import (
+    CollectionField,
+    Reference,
+    )
+from lazr.restful.interface import copy_field
+from zope.component import getUtility
 from zope.formlib.form import NoInputData
-from zope.schema import (
-    Bool, Choice, Datetime, Int, List, Object, Text, TextLine)
-from zope.interface import Attribute, Interface
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
 from zope.interface.exceptions import Invalid
 from zope.interface.interface import invariant
-from zope.component import getUtility
-
-from lazr.enum import DBEnumeratedType, DBItem, EnumeratedType, Item
-from lazr.lifecycle.snapshot import doNotSnapshot
-from lazr.restful.interface import copy_field
-from lazr.restful.declarations import (
-    LAZR_WEBSERVICE_EXPORTED, REQUEST_USER, call_with,
-    collection_default_content, export_as_webservice_collection,
-    export_as_webservice_entry, export_factory_operation,
-    export_read_operation, export_write_operation, exported,
-    operation_parameters, operation_returns_collection_of,
-    operation_returns_entry, rename_parameters_as, webservice_error)
-from lazr.restful.fields import CollectionField, Reference
+from zope.schema import (
+    Bool,
+    Choice,
+    Datetime,
+    Int,
+    List,
+    Object,
+    Text,
+    TextLine,
+    )
 
 from canonical.database.sqlbase import block_implicit_flushes
 from canonical.launchpad import _
-from canonical.launchpad.fields import (
-    BlacklistableContentNameField, IconImageUpload, LogoImageUpload,
-    MugshotImageUpload, PasswordField, PersonChoice, PublicPersonChoice,
-    StrippedTextLine, is_public_person)
-from canonical.launchpad.interfaces.account import AccountStatus, IAccount
+from canonical.launchpad.interfaces.account import (
+    AccountStatus,
+    IAccount,
+    )
 from canonical.launchpad.interfaces.emailaddress import IEmailAddress
 from canonical.launchpad.interfaces.launchpad import (
-    IHasIcon, IHasLogo, IHasMugshot, IPrivacy)
+    IHasIcon,
+    IHasLogo,
+    IHasMugshot,
+    IPrivacy,
+    )
 from canonical.launchpad.interfaces.validation import validate_new_team_email
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.email import email_validator
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
-
 from lp.app.errors import NameLookupFailed
 from lp.app.interfaces.headings import IRootContext
-from lp.blueprints.interfaces.specificationtarget import (
-    IHasSpecifications)
+from lp.blueprints.interfaces.specificationtarget import IHasSpecifications
 from lp.bugs.interfaces.bugtarget import IHasBugs
 from lp.code.interfaces.hasbranches import (
-    IHasBranches, IHasMergeProposals, IHasRequestedReviews)
+    IHasBranches,
+    IHasMergeProposals,
+    IHasRequestedReviews,
+    )
 from lp.code.interfaces.hasrecipes import IHasRecipes
 from lp.registry.interfaces.gpg import IGPGKey
 from lp.registry.interfaces.irc import IIrcID
 from lp.registry.interfaces.jabber import IJabberID
 from lp.registry.interfaces.location import (
-    IHasLocation, ILocationRecord, IObjectWithLocation, ISetLocation)
+    IHasLocation,
+    ILocationRecord,
+    IObjectWithLocation,
+    ISetLocation,
+    )
 from lp.registry.interfaces.mailinglistsubscription import (
-    MailingListAutoSubscribePolicy)
+    MailingListAutoSubscribePolicy,
+    )
 from lp.registry.interfaces.mentoringoffer import IHasMentoringOffers
 from lp.registry.interfaces.ssh import ISSHKey
 from lp.registry.interfaces.teammembership import (
-    ITeamMembership, ITeamParticipation, TeamMembershipStatus)
+    ITeamMembership,
+    ITeamParticipation,
+    TeamMembershipStatus,
+    )
 from lp.registry.interfaces.wikiname import IWikiName
+from lp.services.fields import (
+    BlacklistableContentNameField,
+    IconImageUpload,
+    is_public_person,
+    LogoImageUpload,
+    MugshotImageUpload,
+    PasswordField,
+    PersonChoice,
+    PublicPersonChoice,
+    StrippedTextLine,
+    )
 from lp.services.worlddata.interfaces.language import ILanguage
 
 
@@ -138,10 +189,8 @@ def validate_person(obj, attr, value):
 
 def validate_public_person(obj, attr, value):
     """Validate that the person identified by value is public."""
-
     def validate(person):
         return is_public_person(person)
-
     return validate_person_common(obj, attr, value, validate)
 
 
@@ -610,9 +659,9 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
                         readonly=True, required=False,
                         value_type=Reference(schema=IJabberID)),
         exported_as='jabber_ids')
-    myactivememberships = exported(
+    team_memberships = exported(
         CollectionField(
-            title=_("All TeamMemberships for Teams this Person is an "
+            title=_("All TeamMemberships for Teams this Team or Person is an "
                     "active member of."),
             value_type=Reference(schema=ITeamMembership),
             readonly=True, required=False),
@@ -928,8 +977,7 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
     # @operation_returns_collection_of(Interface) # Really IPerson
     # @export_read_operation()
     def findPathToTeam(team):
-        """Return the teams that cause this person to be a participant of the
-        given team.
+        """Return the teams providing membership to the given team.
 
         If there is more than one path leading this person to the given team,
         only the one with the oldest teams is returned.
@@ -1105,6 +1153,9 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
 
     def getLatestApprovedMembershipsForPerson(limit=5):
         """Return the <limit> latest approved membrships for this person."""
+
+    def getPathsToTeams():
+        """Return the paths to all teams related to this person."""
 
     def addLanguage(language):
         """Add a language to this person's preferences.
@@ -1332,7 +1383,7 @@ class IPersonViewRestricted(Interface):
 
     def getMembersWithPreferredEmailsCount():
         """Returns the count of persons/teams with preferred emails.
-        
+
         See also getMembersWithPreferredEmails.
         """
 

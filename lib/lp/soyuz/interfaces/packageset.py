@@ -14,19 +14,32 @@ __all__ = [
     'NoSuchPackageSet',
     ]
 
+from lazr.restful.declarations import (
+    collection_default_content,
+    export_as_webservice_collection,
+    export_as_webservice_entry,
+    export_factory_operation,
+    export_read_operation,
+    export_write_operation,
+    exported,
+    operation_parameters,
+    operation_returns_collection_of,
+    operation_returns_entry,
+    webservice_error,
+    )
+from lazr.restful.fields import Reference
+from lazr.restful.interface import copy_field
 from zope.interface import Interface
-from zope.schema import Bool, Datetime, Int, List, TextLine
+from zope.schema import (
+    Bool,
+    Datetime,
+    Int,
+    List,
+    TextLine,
+    )
 
 from canonical.launchpad import _
 from canonical.launchpad.validators.name import name_validator
-from lazr.restful.declarations import (
-    collection_default_content, export_as_webservice_collection,
-    export_as_webservice_entry, export_factory_operation,
-    export_read_operation, export_write_operation, exported,
-    operation_parameters, operation_returns_collection_of,
-    operation_returns_entry, webservice_error)
-from lazr.restful.fields import Reference
-from lazr.restful.interface import copy_field
 from lp.app.errors import NameLookupFailed
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import IPerson
