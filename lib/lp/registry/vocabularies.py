@@ -95,9 +95,6 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet,
-    )
 from canonical.launchpad.database.account import Account
 from canonical.launchpad.database.emailaddress import EmailAddress
 from canonical.launchpad.database.stormsugar import StartsWith
@@ -624,12 +621,8 @@ class ValidPersonOrTeamVocabulary(
             combined_result = public_result.union(private_result)
             # Eliminate default ordering.
             combined_result.order_by()
-            # XXX: BradCrittenden 2009-04-26 bug=217644: The use of Alias and
-            # is a work-around for .count() not working with the 'distinct'
-            # option.
-            subselect = Alias(combined_result._get_select(), 'Person')
             exact_match = (Person.name == text)
-            result = self.store.using(subselect).find((Person, exact_match))
+            result = combined_result(Person, exact_match)
         # XXX: BradCrittenden 2009-05-07 bug=373228: A bug in Storm prevents
         # setting the 'distinct' and 'limit' options in a single call to
         # .config().  The work-around is to split them up.  Note the limit has
@@ -648,10 +641,7 @@ class ValidPersonOrTeamVocabulary(
         else:
             result.order_by(Person.displayname, Person.name)
         result.config(limit=self.LIMIT)
-        # XXX: BradCrittenden 2009-04-24 bug=217644: Wrap the results to
-        # ensure the .count() method works until the Storm bug is fixed and
-        # integrated.
-        return DecoratedResultSet(result)
+        return result
 
     def search(self, text):
         """Return people/teams whose fti or email address match :text:."""
@@ -727,10 +717,7 @@ class ValidTeamVocabulary(ValidPersonOrTeamVocabulary):
         result.config(distinct=True)
         result.order_by(Person.displayname, Person.name)
         result.config(limit=self.LIMIT)
-        # XXX: BradCrittenden 2009-04-24 bug=217644: Wrap the results to
-        # ensure the .count() method works until the Storm bug is fixed and
-        # integrated.
-        return DecoratedResultSet(result)
+        return result
 
 
 class ValidPersonVocabulary(ValidPersonOrTeamVocabulary):

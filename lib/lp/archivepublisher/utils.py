@@ -108,12 +108,8 @@ class PublishingTunableLoop(object):
         start = self.offset
         end = start + chunk_size
 
-        # The reason why we listify the sliced ResultSet is because we
-        # cannot very it's size using 'count' (see bug #217644). However,
-        # It's not exactly a problem considering non-empty set will be
-        # iterated anyway.
-        batch = list(self.input[start:end])
-        if len(batch) == 0:
+        batch = self.input[start:end]
+        if batch.is_empty():
             self.done = True
             return
 
