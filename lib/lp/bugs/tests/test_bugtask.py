@@ -25,6 +25,7 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
     BugTaskSearchParams,
     BugTaskStatus,
+    IBugTaskSet,
     )
 from lp.bugs.model.bugtask import build_tag_search_clause
 from lp.hardwaredb.interfaces.hwdb import (
@@ -32,7 +33,7 @@ from lp.hardwaredb.interfaces.hwdb import (
     IHWDeviceSet,
     )
 from lp.registry.interfaces.distribution import IDistributionSet
-from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.person import IPerson, IPersonSet
 from lp.testing import (
     ANONYMOUS,
     login,
@@ -806,6 +807,28 @@ class TestBugTaskSearch(TestCaseWithFactory):
         task2.bug.date_last_updated += timedelta(days=1)
         result = target.searchTasks(None, modified_since=date)
         self.assertEqual([task2], list(result))
+
+    def test_private_bug_view_permissions_cached(self):
+        """Private bugs from a search know the user can see the bugs."""
+        target = self.makeBugTarget()
+        person = self.login()
+        self.factory.makeBug(product=target, private=True, owner=person)
+        self.factory.makeBug(product=target, private=True, owner=person)
+        # Search style and parameters taken from the milestone index view where
+        # the issue was discovered.
+        login_person(person)
+        tasks = target.searchTasks(BugTaskSearchParams(person, omit_dupes=True,
+            orderby=['status', '-importance', 'id']))
+        # We must be finding the bugs.
+        self.assertEqual(2, tasks.count())
+        # Cache in the storm cache the account->person lookup so its not
+        # distorting what we're testing.
+        _ = IPerson(person.account, None)
+        # One query and only one should be issued to get the tasks, bugs and
+        # allow access to getConjoinedMaster attribute - an attribute that
+        # triggers a permission check (nb: id does not trigger such a check)
+        self.assertStatementCount(1,
+            lambda:[task.getConjoinedMaster for task in tasks])
 
 
 def test_suite():
