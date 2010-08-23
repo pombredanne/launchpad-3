@@ -104,8 +104,15 @@ __all__ = [
 
 from functools import partial
 
-from zope.component import adapter, adapts
-from zope.interface import Interface, implementer, implements
+from zope.component import (
+    adapter,
+    adapts,
+    )
+from zope.interface import (
+    implementer,
+    implements,
+    Interface,
+    )
 from zope.schema import Object
 from zope.security.proxy import removeSecurityProxy
 
