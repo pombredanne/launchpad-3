@@ -4,17 +4,19 @@
 from datetime import datetime
 import gzip
 import os
-import pytz
-from zope.component import getUtility
-
-from lazr.uri import URI
 
 from contrib import apachelog
+from lazr.uri import URI
+import pytz
+from zope.component import getUtility
 
 from canonical.config import config
 from canonical.launchpad.interfaces.geoip import IGeoIP
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 from lp.services.apachelogparser.model.parsedapachelog import ParsedApacheLog
 
 

@@ -10,16 +10,13 @@ __metaclass__ = type
 import os
 
 from canonical.testing import layers
-from lp.testing import TestCase
-
 from lp.services.features import (
     getFeatureFlag,
     model,
     per_thread,
     )
-from lp.services.features.flags import (
-    FeatureController,
-    )
+from lp.services.features.flags import FeatureController
+from lp.testing import TestCase
 
 
 notification_name = 'notification.global.text'

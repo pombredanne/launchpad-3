@@ -10,14 +10,25 @@ __all__ = [
     'IBugJobSource',
     ]
 
-from zope.interface import Attribute, Interface
-from zope.schema import Int, Object
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    )
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Int,
+    Object,
+    )
 
 from canonical.launchpad import _
-
-from lazr.enum import DBEnumeratedType, DBItem
 from lp.bugs.interfaces.bug import IBug
-from lp.services.job.interfaces.job import IJob, IJobSource
+from lp.services.job.interfaces.job import (
+    IJob,
+    IJobSource,
+    )
 
 
 class BugJobType(DBEnumeratedType):

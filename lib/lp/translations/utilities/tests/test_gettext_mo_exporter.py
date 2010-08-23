@@ -13,7 +13,8 @@ from lp.testing import TestCaseWithFactory
 from lp.translations.utilities.gettext_mo_exporter import GettextMOExporter
 from lp.translations.utilities.gettext_po_parser import POParser
 from lp.translations.utilities.translation_common_format import (
-    TranslationMessageData)
+    TranslationMessageData,
+    )
 from lp.translations.utilities.translation_export import ExportFileStorage
 
 

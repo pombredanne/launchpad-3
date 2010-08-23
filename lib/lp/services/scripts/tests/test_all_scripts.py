@@ -9,7 +9,10 @@ import os
 import unittest
 
 from lp.services.scripts.tests import find_lp_scripts
-from lp.testing import run_script, TestCase
+from lp.testing import (
+    run_script,
+    TestCase,
+    )
 
 
 class ScriptsTestCase(TestCase):

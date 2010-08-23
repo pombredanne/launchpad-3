@@ -7,16 +7,29 @@ from doctest import DocTestSuite
 import time
 import unittest
 
-from zope.interface import directlyProvides, directlyProvidedBy
+from zope.interface import (
+    directlyProvidedBy,
+    directlyProvides,
+    )
 
 from canonical.launchpad.interfaces.mail import (
-    EmailProcessingError, IWeaklyAuthenticatedPrincipal)
+    EmailProcessingError,
+    IWeaklyAuthenticatedPrincipal,
+    )
 from canonical.launchpad.mail.helpers import (
-    ensure_not_weakly_authenticated, get_person_or_team,
-    IncomingEmailError, parse_commands, ensure_sane_signature_timestamp)
-from lp.testing import login_person, TestCase, TestCaseWithFactory
-from canonical.testing import DatabaseFunctionalLayer
+    ensure_not_weakly_authenticated,
+    ensure_sane_signature_timestamp,
+    get_person_or_team,
+    IncomingEmailError,
+    parse_commands,
+    )
 from canonical.launchpad.webapp.interaction import get_current_principal
+from canonical.testing import DatabaseFunctionalLayer
+from lp.testing import (
+    login_person,
+    TestCase,
+    TestCaseWithFactory,
+    )
 
 
 class TestParseCommands(TestCase):

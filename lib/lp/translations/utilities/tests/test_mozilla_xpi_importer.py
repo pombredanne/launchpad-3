@@ -6,15 +6,17 @@
 __metaclass__ = type
 
 import unittest
+
 from zope.interface.verify import verifyObject
 
-from lp.translations.utilities.mozilla_xpi_importer import (
-    MozillaXpiImporter)
-from lp.translations.interfaces.translationfileformat import (
-    TranslationFileFormat)
-from lp.translations.interfaces.translationimporter import (
-    ITranslationFormatImporter)
 from canonical.testing import LaunchpadZopelessLayer
+from lp.translations.interfaces.translationfileformat import (
+    TranslationFileFormat,
+    )
+from lp.translations.interfaces.translationimporter import (
+    ITranslationFormatImporter,
+    )
+from lp.translations.utilities.mozilla_xpi_importer import MozillaXpiImporter
 
 
 class MozillaXpiImporterTestCase(unittest.TestCase):

@@ -12,12 +12,16 @@ __all__ = [
     'IIrcIDSet',
     ]
 
-from zope.schema import Int, TextLine
-from zope.interface import Interface
-
 from lazr.restful.declarations import (
-    export_as_webservice_entry, exported)
+    export_as_webservice_entry,
+    exported,
+    )
 from lazr.restful.fields import Reference
+from zope.interface import Interface
+from zope.schema import (
+    Int,
+    TextLine,
+    )
 
 from canonical.launchpad import _
 from lp.registry.interfaces.role import IHasOwner

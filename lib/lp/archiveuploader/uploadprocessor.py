@@ -49,32 +49,40 @@ __metaclass__ = type
 
 import datetime
 import os
-import pytz
 import shutil
 import stat
 import sys
 
+from contrib.glock import GlobalLock
+import pytz
 from sqlobject import SQLObjectNotFound
-
 from zope.component import getUtility
 
+from canonical.launchpad.scripts.logger import BufferLogger
+from canonical.launchpad.webapp.errorlog import (
+    ErrorReportingUtility,
+    ScriptRequest,
+    )
 from lp.app.errors import NotFoundError
 from lp.archiveuploader.nascentupload import (
-    NascentUpload, FatalUploadError, EarlyReturnUploadError)
+    EarlyReturnUploadError,
+    FatalUploadError,
+    NascentUpload,
+    )
 from lp.archiveuploader.uploadpolicy import (
     BuildDaemonUploadPolicy,
     SOURCE_PACKAGE_RECIPE_UPLOAD_POLICY_NAME,
-    UploadPolicyError)
+    UploadPolicyError,
+    )
 from lp.buildmaster.interfaces.buildbase import BuildStatus
-from lp.soyuz.interfaces.archive import IArchiveSet, NoSuchPPA
-from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
-from canonical.launchpad.scripts.logger import BufferLogger
-from canonical.launchpad.webapp.errorlog import (
-    ErrorReportingUtility, ScriptRequest)
+from lp.soyuz.interfaces.archive import (
+    IArchiveSet,
+    NoSuchPPA,
+    )
+from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 
-from contrib.glock import GlobalLock
 
 __all__ = [
     'UploadProcessor',

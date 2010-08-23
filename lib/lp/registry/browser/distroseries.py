@@ -17,46 +17,68 @@ __all__ = [
     'DistroSeriesView',
     ]
 
-from zope.lifecycleevent import ObjectCreatedEvent
 from zope.component import getUtility
 from zope.event import notify
 from zope.formlib import form
+from zope.lifecycleevent import ObjectCreatedEvent
 from zope.schema import Choice
-from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
+from zope.schema.vocabulary import (
+    SimpleTerm,
+    SimpleVocabulary,
+    )
 
 from canonical.cachedproperty import cachedproperty
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad import _
-from canonical.launchpad import helpers
-from lp.app.errors import NotFoundError
-from lp.blueprints.browser.specificationtarget import (
-    HasSpecificationsMenuMixin)
-from lp.bugs.browser.bugtask import BugTargetTraversalMixin
-from lp.soyuz.browser.packagesearch import PackageSearchViewBase
-from lp.services.worlddata.interfaces.country import ICountry
-from lp.registry.interfaces.series import SeriesStatus
-from lp.registry.interfaces.distroseries import IDistroSeries
-from lp.translations.browser.distroseries import (
-    check_distroseries_translations_viewable)
-from lp.services.worlddata.interfaces.language import ILanguageSet
-from lp.registry.browser.structuralsubscription import (
-    StructuralSubscriptionMenuMixin,
-    StructuralSubscriptionTargetTraversalMixin)
+from canonical.launchpad import (
+    _,
+    helpers,
+    )
 from canonical.launchpad.interfaces.launchpad import ILaunchBag
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, GetitemNavigation, action, custom_widget)
+    action,
+    custom_widget,
+    GetitemNavigation,
+    StandardLaunchpadFacets,
+    )
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.launchpadform import (
-    LaunchpadEditFormView, LaunchpadFormView)
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    )
 from canonical.launchpad.webapp.menu import (
-    ApplicationMenu, Link, NavigationMenu, enabled_with_permission)
+    ApplicationMenu,
+    enabled_with_permission,
+    Link,
+    NavigationMenu,
+    )
 from canonical.launchpad.webapp.publisher import (
-    canonical_url, LaunchpadView, stepthrough, stepto)
+    canonical_url,
+    LaunchpadView,
+    stepthrough,
+    stepto,
+    )
 from canonical.widgets.itemswidgets import LaunchpadDropdownWidget
-from lp.soyuz.interfaces.queue import IPackageUploadSet
+from lp.app.errors import NotFoundError
+from lp.blueprints.browser.specificationtarget import (
+    HasSpecificationsMenuMixin,
+    )
+from lp.bugs.browser.bugtask import BugTargetTraversalMixin
 from lp.registry.browser import MilestoneOverlayMixin
+from lp.registry.browser.structuralsubscription import (
+    StructuralSubscriptionMenuMixin,
+    StructuralSubscriptionTargetTraversalMixin,
+    )
+from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.series import SeriesStatus
+from lp.services.worlddata.interfaces.country import ICountry
+from lp.services.worlddata.interfaces.language import ILanguageSet
+from lp.soyuz.browser.packagesearch import PackageSearchViewBase
+from lp.soyuz.interfaces.queue import IPackageUploadSet
+from lp.translations.browser.distroseries import (
+    check_distroseries_translations_viewable,
+    )
 
 
 class DistroSeriesNavigation(GetitemNavigation, BugTargetTraversalMixin,

@@ -8,7 +8,10 @@ __all__ = [
     'BugNotificationLevel',
     ]
 
-from lazr.enum import DBEnumeratedType, DBItem
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    )
 
 
 class BugNotificationLevel(DBEnumeratedType):
