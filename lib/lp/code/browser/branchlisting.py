@@ -1104,12 +1104,12 @@ class ProductBranchesMenu(ApplicationMenu):
     def branch_add(self):
         text = 'Register a branch'
         summary = 'Register a new Bazaar branch for this project'
-        return Link('+addbranch', text, summary, icon='add')
+        return Link('+addbranch', text, summary, icon='add', site='code')
 
     def list_branches(self):
         text = 'List branches'
         summary = 'List the branches for this project'
-        return Link('+branches', text, summary, icon='add')
+        return Link('+branches', text, summary, icon='add', site='code')
 
     @cachedproperty
     def active_review_count(self):
@@ -1122,7 +1122,7 @@ class ProductBranchesMenu(ApplicationMenu):
             self.active_review_count,
             'active review or unmerged proposal',
             'active reviews or unmerged proposals')
-        return Link('+activereviews', text)
+        return Link('+activereviews', text, site='code')
 
     @enabled_with_permission('launchpad.Commercial')
     def branch_visibility(self):
@@ -1131,7 +1131,7 @@ class ProductBranchesMenu(ApplicationMenu):
 
     def code_import(self):
         text = 'Import a branch'
-        return Link('+new-import', text, icon='add')
+        return Link('+new-import', text, icon='add', site='code')
 
 
 class ProductBranchListingView(BranchListingView):

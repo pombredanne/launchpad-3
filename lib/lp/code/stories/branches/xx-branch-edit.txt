@@ -17,26 +17,26 @@ The link to edit the branch details is only available to the branch owner,
 Launchpad administrators or members of the Bazaar Experts team.
 
     >>> admin_browser.open(
-    ...     'http://launchpad.dev/~name12/gnome-terminal/klingon')
+    ...     'http://code.launchpad.dev/~name12/gnome-terminal/klingon')
     >>> link = admin_browser.getLink('Change branch details')
 
     >>> bazaar_expert_browser = setupBrowser(
     ...     auth='Basic tim@canonical.com:test')
     >>> bazaar_expert_browser.open(
-    ...     'http://launchpad.dev/~name12/gnome-terminal/klingon')
+    ...     'http://code.launchpad.dev/~name12/gnome-terminal/klingon')
     >>> link = bazaar_expert_browser.getLink('Change branch details')
 
     >>> nopriv_browser = setupBrowser(
     ...     auth='Basic nopriv@canonical.com:test')
     >>> nopriv_browser.open(
-    ...     'http://launchpad.dev/~name12/gnome-terminal/klingon')
+    ...     'http://code.launchpad.dev/~name12/gnome-terminal/klingon')
     >>> link = nopriv_browser.getLink('Change branch details')
     Traceback (most recent call last):
     LinkNotFoundError
 
     >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
     >>> browser.open(
-    ...     'http://launchpad.dev/~name12/gnome-terminal/klingon')
+    ...     'http://code.launchpad.dev/~name12/gnome-terminal/klingon')
     >>> browser.getLink('Change branch details').click()
     >>> browser.url
     'http://code.launchpad.dev/~name12/gnome-terminal/klingon/+edit'
@@ -84,7 +84,7 @@ are no subscribers so there whould be no emails.
 
 To change the branch status, the +edit page is also used:
 
-    >>> browser.open('http://launchpad.dev'
+    >>> browser.open('http://code.launchpad.dev'
     ...     '/~name12/gnome-terminal/klingon/+edit')
 
 The form displays the branch current status.
@@ -112,7 +112,7 @@ The branch page is displayed with the new status:
 
 Set the branch status back to its initial state.
 
-    >>> browser.open('http://launchpad.dev'
+    >>> browser.open('http://code.launchpad.dev'
     ...     '/~name12/gnome-terminal/klingon/+edit')
     >>> browser.getControl('Experimental').click()
     >>> browser.getControl('Change Branch').click()
@@ -162,7 +162,7 @@ about conflicts when changing the branch name.
 Let's try to change the name of the branch to the name of some branch we
 already own in the same product.
 
-    >>> browser.open('http://launchpad.dev'
+    >>> browser.open('http://code.launchpad.dev'
     ...     '/~name12/gnome-terminal/main/+edit')
     >>> browser.getControl('Name').value = '2.6'
     >>> browser.getControl('Change Branch').click()
@@ -178,7 +178,7 @@ already own in the same product.
 
 Edit forms do the same URL validation checks as the add forms.
 
-    >>> browser.open('http://launchpad.dev/~name12/gnome-terminal/main')
+    >>> browser.open('http://code.launchpad.dev/~name12/gnome-terminal/main')
     >>> browser.getLink('Change branch details').click()
     >>> browser.getControl('Branch URL').value = (
     ...     'http://bazaar.launchpad.dev/~foo/bar/baz')
@@ -192,7 +192,8 @@ Edit forms do the same URL validation checks as the add forms.
 
 Check that when editing a hosted branch the URL field is not shown.
 
-    >>> browser.open('http://launchpad.dev/~name12/gnome-terminal/scanned')
+    >>> browser.open(
+    ...     'http://code.launchpad.dev/~name12/gnome-terminal/scanned')
     >>> browser.getLink('Change branch details').click()
     >>> browser.getControl('Branch URL').value = (
     ...     'http://acme.example.com/~foo/bar/baz')
@@ -227,7 +228,7 @@ by any user.
     >>> logout()
 
     >>> nopriv_browser = setupBrowser(auth='Basic no-priv@canonical.com:test')
-    >>> nopriv_browser.open('http://launchpad.dev'
+    >>> nopriv_browser.open('http://code.launchpad.dev'
     ...     '/~name12/foogoo/foogoo-svn')
     >>> whiteboard_tag = find_tag_by_id(
     ...     nopriv_browser.contents, 'branch-whiteboard-value')
@@ -280,7 +281,7 @@ details of the branch.
 The user is able to change the owner of the branch using the edit details
 page.
 
-    >>> browser.open('http://launchpad.dev/~name12/gnome-terminal/main')
+    >>> browser.open('http://code.launchpad.dev/~name12/gnome-terminal/main')
     >>> browser.getLink('Change branch details').click()
     >>> browser.getControl('Owner').displayValue = ['Landscape Developers']
     >>> browser.getControl('Change Branch').click()
@@ -297,7 +298,7 @@ When the owner is changed a notification is shown.
 Bazaar Experts and Launchpad administrators are able to reassign a branch
 to any valid person or team.
 
-    >>> admin_browser.open('http://launchpad.dev/~name12/firefox/main')
+    >>> admin_browser.open('http://code.launchpad.dev/~name12/firefox/main')
     >>> admin_browser.getLink('Change branch details').click()
     >>> admin_browser.getControl('Owner').value = 'mark'
     >>> admin_browser.getControl('Change Branch').click()
