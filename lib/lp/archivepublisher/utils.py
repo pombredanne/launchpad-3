@@ -108,8 +108,13 @@ class PublishingTunableLoop(object):
         start = self.offset
         end = start + chunk_size
 
-        batch = self.input[start:end]
-        if batch.is_empty():
+        # The reason why we listify the sliced ResultSet is because we
+        # cannot very it's size using 'count' (see bug #217644 and note
+        # that it was fixed in storm but not SQLObjectResultSet). However,
+        # It's not exactly a problem considering non-empty set will be
+        # iterated anyway.
+        batch = list(self.input[start:end])
+        if len(batch) == 0:
             self.done = True
             return
 
