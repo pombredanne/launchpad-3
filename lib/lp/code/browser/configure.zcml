@@ -638,7 +638,6 @@
     <browser:page
         name="+branchvisibility"
         for="lp.code.interfaces.branchvisibilitypolicy.IHasBranchVisibilityPolicy"
-        layer="lp.code.publisher.CodeLayer"
         facet="overview"
         class="lp.code.browser.branchvisibilitypolicy.BranchVisibilityPolicyView"
         permission="launchpad.Commercial"
@@ -646,7 +645,6 @@
     <browser:page
         name="+addbranchvisibilitypolicy"
         for="lp.code.interfaces.branchvisibilitypolicy.IHasBranchVisibilityPolicy"
-        layer="lp.code.publisher.CodeLayer"
         facet="overview"
         class="lp.code.browser.branchvisibilitypolicy.AddBranchVisibilityTeamPolicyView"
         permission="launchpad.Commercial"
@@ -654,7 +652,6 @@
     <browser:page
         name="+removebranchvisibilitypolicy"
         for="lp.code.interfaces.branchvisibilitypolicy.IHasBranchVisibilityPolicy"
-        layer="lp.code.publisher.CodeLayer"
         facet="overview"
         class="lp.code.browser.branchvisibilitypolicy.RemoveBranchVisibilityTeamPolicyView"
         permission="launchpad.Commercial"
