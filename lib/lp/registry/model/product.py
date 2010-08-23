@@ -1130,7 +1130,9 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             And(ProductRelease.milestone == Milestone.id,
                 Milestone.productseries == ProductSeries.id,
                 ProductSeries.product == self))
-        return result.order_by(Desc(ProductRelease.datereleased))
+        return result.order_by(
+            Desc(ProductRelease.datereleased),
+            Desc(Milestone.name))
 
     def packagedInDistros(self):
         return IStore(Distribution).find(
