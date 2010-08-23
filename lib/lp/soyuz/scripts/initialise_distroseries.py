@@ -269,17 +269,19 @@ class InitialiseDistroSeries:
                 self.distroseries.owner, distroseries=self.distroseries,
                 related_set=parent_ps)
             self._store.execute("""
-            INSERT INTO Archivepermission
-            (person, permission, archive, packageset, explicit)
-            SELECT person, permission, %s, %s, explicit
-            FROM Archivepermission WHERE packageset = %s
-            """ % sqlvalues(
-            self.distroseries.main_archive, child_ps.id, parent_ps.id))
+                INSERT INTO Archivepermission
+                (person, permission, archive, packageset, explicit)
+                SELECT person, permission, %s, %s, explicit
+                FROM Archivepermission WHERE packageset = %s
+                """ % sqlvalues(
+                    self.distroseries.main_archive, child_ps.id,
+                    parent_ps.id))
             parent_to_child[parent_ps] = child_ps
         # Copy the relations between sets, and the contents
         for old_series_ps, new_series_ps in parent_to_child.items():
-            for old_series_child in old_series_ps.setsIncluded(
-                direct_inclusion=True):
+            old_series_sets = old_series_ps.setsIncluded(
+                direct_inclusion=True)
+            for old_series_child in old_series_sets:
                 new_series_ps.add(parent_to_child[old_series_child])
             new_series_ps.add(old_series_ps.sourcesIncluded(
                 direct_inclusion=True))

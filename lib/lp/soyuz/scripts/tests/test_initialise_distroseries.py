@@ -169,7 +169,7 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
 
     def test_copying_packagesets(self):
         # If a parent series has packagesets, we should copy them
-        joe = self.factory.makePerson(name='joe')
+        uploader = self.factory.makePerson()
         test1 = getUtility(IPackagesetSet).new(
             u'test1', u'test 1 packageset', self.hoary.owner,
             distroseries=self.hoary)
@@ -181,7 +181,7 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
             distroseries=self.hoary, related_set=test2)
         test1.addSources('pmount')
         getUtility(IArchivePermissionSet).newPackagesetUploader(
-            self.hoary.main_archive, joe, test1)
+            self.hoary.main_archive, uploader, test1)
         foobuntu = self._full_initialise()
         # We can fetch the copied sets from foobuntu
         foobuntu_test1 = getUtility(IPackagesetSet).getByName(
@@ -202,19 +202,20 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
         self.assertEqual(
             list(foobuntu_test3.relatedSets()),
             [test2, foobuntu_test2, test3])
-        # The contents of the packagesets will have been copied
+        # The contents of the packagesets will have been copied.
         foobuntu_srcs = foobuntu_test1.getSourcesIncluded(
             direct_inclusion=True)
         hoary_srcs = test1.getSourcesIncluded(direct_inclusion=True)
         self.assertEqual(foobuntu_srcs, hoary_srcs)
-        # joe can also upload to the new distroseries
+        # The uploader can also upload to the new distroseries.
         self.assertTrue(
             getUtility(IArchivePermissionSet).isSourceUploadAllowed(
-            self.hoary.main_archive, 'pmount', joe,
-            distroseries=self.hoary))
+                self.hoary.main_archive, 'pmount', uploader,
+                distroseries=self.hoary))
         self.assertTrue(
             getUtility(IArchivePermissionSet).isSourceUploadAllowed(
-            foobuntu.main_archive, 'pmount', joe, distroseries=foobuntu))
+                foobuntu.main_archive, 'pmount', uploader,
+                distroseries=foobuntu))
 
     def test_script(self):
         # Do an end-to-end test using the command-line tool
