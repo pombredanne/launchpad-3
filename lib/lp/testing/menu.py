@@ -6,8 +6,12 @@
 __metaclass__ = type
 
 from zope.component import getMultiAdapter
+from zope.interface import directlyProvides
 
-from canonical.launchpad.webapp.publisher import canonical_url
+from canonical.launchpad.webapp.publisher import (
+    canonical_url,
+    layer_for_rootsite,
+    )
 from canonical.lazr.testing.menus import make_fake_request
 
 
@@ -21,10 +25,12 @@ def check_menu_links(menu):
             view_name, _args = link.target.split('?')
         else:
             view_name = link.target
-        url = canonical_url(context, view_name=view_name)
+        url = canonical_url(context, view_name=view_name, rootsite=link.site)
         request = make_fake_request(url)
+        if link.site is not None:
+            directlyProvides(request, layer_for_rootsite(link.site))
         try:
-            view = getMultiAdapter((context, request), name=view_name)
+            getMultiAdapter((context, request), name=view_name)
         except:
             return 'Bad link %s: %s' % (link.name, url)
     return True
