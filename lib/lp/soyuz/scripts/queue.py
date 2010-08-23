@@ -17,23 +17,25 @@ __all__ = [
     ]
 
 
+from datetime import datetime
 import errno
 import hashlib
+
 import pytz
-
-from datetime import datetime
-
 from zope.component import getUtility
 
-from lp.app.errors import NotFoundError
-from lp.soyuz.interfaces.component import IComponentSet
-from lp.soyuz.interfaces.section import ISectionSet
-from lp.soyuz.interfaces.queue import (
-    IPackageUploadSet, PackageUploadStatus, QueueInconsistentStateError)
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad.webapp.tales import DurationFormatterAPI
 from canonical.librarian.utils import filechunks
+from lp.app.errors import NotFoundError
+from lp.soyuz.interfaces.component import IComponentSet
+from lp.soyuz.interfaces.queue import (
+    IPackageUploadSet,
+    PackageUploadStatus,
+    QueueInconsistentStateError,
+    )
+from lp.soyuz.interfaces.section import ISectionSet
 
 
 name_queue_map = {

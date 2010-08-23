@@ -25,12 +25,18 @@ import time
 import pytz
 from zope.component import getUtility
 
+from canonical.launchpad.utilities.unicode_csv import (
+    UnicodeDictReader,
+    UnicodeDictWriter,
+    )
 from lp.app.errors import NotFoundError
 from lp.registry.interfaces.entitlement import (
-    EntitlementState, EntitlementType, IEntitlementSet)
+    EntitlementState,
+    EntitlementType,
+    IEntitlementSet,
+    )
 from lp.registry.interfaces.person import IPersonSet
-from canonical.launchpad.utilities.unicode_csv import (
-    UnicodeDictReader, UnicodeDictWriter)
+
 
 COMMENT = '#'
 COMMA = ','

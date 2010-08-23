@@ -15,12 +15,17 @@ import operator
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.webapp import (
-    action, canonical_url, enabled_with_permission, LaunchpadEditFormView,
-    LaunchpadView, Link)
+    action,
+    canonical_url,
+    enabled_with_permission,
+    LaunchpadEditFormView,
+    LaunchpadView,
+    Link,
+    )
 from canonical.launchpad.webapp.menu import NavigationMenu
+from lp.registry.browser.distribution import DistributionEditView
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.series import SeriesStatus
-from lp.registry.browser.distribution import DistributionEditView
 from lp.translations.browser.translations import TranslationsMixin
 
 
@@ -38,16 +43,18 @@ class DistributionTranslationsMenu(NavigationMenu):
     @enabled_with_permission('launchpad.TranslationsAdmin')
     def settings(self):
         text = 'Change permissions'
-        return Link('+settings', text, icon='edit')
+        return Link('+settings', text, icon='edit', site='translations')
 
     @enabled_with_permission('launchpad.TranslationsAdmin')
     def language_pack_admin(self):
         text = 'Language pack admin'
-        return Link('+select-language-pack-admin', text, icon='edit')
+        return Link(
+            '+select-language-pack-admin', text, icon='edit',
+            site='translations')
 
     def imports(self):
         text = 'Import queue'
-        return Link('+imports', text)
+        return Link('+imports', text, site='translations')
 
 
 class DistributionLanguagePackAdminView(LaunchpadEditFormView):
@@ -59,11 +66,9 @@ class DistributionLanguagePackAdminView(LaunchpadEditFormView):
 
     @property
     def cancel_url(self):
-        return canonical_url(self.context)
+        return canonical_url(self.context, rootsite="translations")
 
-    @property
-    def next_url(self):
-        return canonical_url(self.context)
+    next_url = cancel_url
 
     @property
     def page_title(self):
@@ -119,11 +124,9 @@ class DistributionSettingsView(TranslationsMixin, DistributionEditView):
 
     @property
     def cancel_url(self):
-        return canonical_url(self.context)
+        return canonical_url(self.context, rootsite="translations")
 
-    @property
-    def next_url(self):
-        return self.cancel_url
+    next_url = cancel_url
 
     @action('Change', name='change')
     def edit(self, action, data):

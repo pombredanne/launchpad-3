@@ -6,9 +6,9 @@
 # to managing the archive publisher's configuration as stored in the
 # distribution and distroseries tables
 
+from ConfigParser import ConfigParser
 import os
 from StringIO import StringIO
-from ConfigParser import ConfigParser
 
 from canonical.config import config
 from lp.soyuz.interfaces.archive import ArchivePurpose

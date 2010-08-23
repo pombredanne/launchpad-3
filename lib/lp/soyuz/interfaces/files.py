@@ -14,8 +14,12 @@ __all__ = [
     'ISourcePackageReleaseFileSet',
     ]
 
-from zope.schema import Bool, Int
 from zope.interface import Interface
+from zope.schema import (
+    Bool,
+    Int,
+    )
+
 from canonical.launchpad import _
 
 

@@ -15,12 +15,13 @@ __all__ = [
     ]
 
 import os
-import sys
 import re
+import sys
+from textwrap import dedent
+
 import cssutils
 import Image
 import simplejson
-from textwrap import dedent
 
 
 class SpriteUtil:

@@ -5,39 +5,62 @@ __metaclass__ = type
 
 import inspect
 
-import zope.app.form.browser.metadirectives
-import zope.app.publisher.browser.metadirectives
-import zope.configuration.config
+import z3c.ptcompat.zcml
+from z3c.ptcompat.zcml import (
+    page_directive as original_page,
+    pages_directive as original_pages,
+    )
+from zope.app.component.contentdirective import ClassDirective
 from zope.app.file.image import Image
+import zope.app.form.browser.metadirectives
 from zope.app.pagetemplate.engine import TrustedEngine
 from zope.app.publication.metaconfigure import publisher
+import zope.app.publisher.browser.metadirectives
 from zope.component import getUtility
 from zope.component.security import PublicPermission
-from zope.component.zcml import adapter, handler, utility, view
+from zope.component.zcml import (
+    adapter,
+    handler,
+    utility,
+    view,
+    )
+import zope.configuration.config
 from zope.configuration.fields import (
-    GlobalInterface, GlobalObject, Path, PythonIdentifier, Tokens)
-from zope.interface import Interface, implements
+    GlobalInterface,
+    GlobalObject,
+    Path,
+    PythonIdentifier,
+    Tokens,
+    )
+from zope.interface import (
+    implements,
+    Interface,
+    )
 from zope.publisher.interfaces.browser import (
-    IBrowserPublisher, IBrowserRequest, IDefaultBrowserLayer)
+    IBrowserPublisher,
+    IBrowserRequest,
+    IDefaultBrowserLayer,
+    )
 from zope.schema import TextLine
-from zope.security.checker import Checker, CheckerPublic
+from zope.security.checker import (
+    Checker,
+    CheckerPublic,
+    )
 from zope.security.interfaces import IPermission
 from zope.security.permission import Permission
 from zope.security.proxy import ProxyFactory
-
-from zope.app.component.contentdirective import ClassDirective
-
 from zope.security.zcml import IPermissionDirective
-
-import z3c.ptcompat.zcml
-from z3c.ptcompat.zcml import page_directive as original_page
-from z3c.ptcompat.zcml import pages_directive as original_pages
 
 from canonical.config import config
 from canonical.launchpad.layers import FeedsLayer
 from canonical.launchpad.webapp.interfaces import (
-    IApplicationMenu, IAuthorization, ICanonicalUrlData, IContextMenu,
-    IFacetMenu, INavigationMenu)
+    IApplicationMenu,
+    IAuthorization,
+    ICanonicalUrlData,
+    IContextMenu,
+    IFacetMenu,
+    INavigationMenu,
+    )
 from canonical.launchpad.webapp.publisher import RenamedView
 
 
@@ -616,6 +639,22 @@ class SchemaDisplayDirective(
 
         z3c.ptcompat.zcml.SchemaDisplayDirective.__call__(
             self)
+
+
+class ICallDirective(Interface):
+    """Call the given callable.
+
+    This is useful when you have something that you want to call at startup
+    but don't want it tied to a specific zope event.  Or when you need to
+    register utilities in python at the time the zcml is processed.
+    """
+
+    callable = GlobalObject(
+        title=u"The thing that will be called.", required=True)
+
+
+def call(_context, callable):
+    callable()
 
 
 class IDefineLaunchpadPermissionDirective(IPermissionDirective):

@@ -88,7 +88,7 @@ team.
     ...                  '2.0', None, gentoo.owner)
     Traceback (most recent call last):
     ...
-    Unauthorized: (<Distribution...>, 'newSeries', 'launchpad.Append')
+    Unauthorized: (<Distribution...>, 'newSeries', 'launchpad.Moderate')
 
     >>> login('mark@example.com')
     >>> from canonical.launchpad.interfaces import IDistroSeriesSet

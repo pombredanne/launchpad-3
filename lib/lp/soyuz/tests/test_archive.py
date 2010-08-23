@@ -8,7 +8,6 @@ from __future__ import with_statement
 from datetime import date
 
 import transaction
-
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
@@ -16,13 +15,19 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
-from canonical.testing import DatabaseFunctionalLayer, LaunchpadZopelessLayer
-
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
+from canonical.testing import (
+    DatabaseFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.job.interfaces.job import JobStatus
+from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.soyuz.interfaces.archive import (
     ArchiveDisabled,
     ArchivePurpose,
@@ -35,8 +40,8 @@ from lp.soyuz.interfaces.archive import (
     InvalidPocketForPartnerArchive,
     InvalidPocketForPPA,
     NoRightsForArchive,
-    NoRightsForComponent)
-from lp.services.worlddata.interfaces.country import ICountrySet
+    NoRightsForComponent,
+    )
 from lp.soyuz.interfaces.archivearch import IArchiveArchSet
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
@@ -44,10 +49,16 @@ from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.model.binarypackagerelease import (
-    BinaryPackageReleaseDownloadCount)
+    BinaryPackageReleaseDownloadCount,
+    )
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
-    ANONYMOUS, login, login_person, person_logged_in, TestCaseWithFactory)
+    ANONYMOUS,
+    login,
+    login_person,
+    person_logged_in,
+    TestCaseWithFactory,
+    )
 from lp.testing.sampledata import COMMERCIAL_ADMIN_EMAIL
 
 

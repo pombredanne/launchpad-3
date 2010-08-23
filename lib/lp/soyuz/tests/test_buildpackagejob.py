@@ -9,9 +9,14 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
-from canonical.testing import DatabaseFunctionalLayer, LaunchpadZopelessLayer
-
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
+from canonical.testing import (
+    DatabaseFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.soyuz.interfaces.archive import ArchivePurpose

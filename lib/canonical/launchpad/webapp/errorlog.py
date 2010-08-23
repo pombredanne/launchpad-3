@@ -19,6 +19,7 @@ import threading
 import types
 import urllib
 
+from lazr.restful.utils import get_current_browser_request
 import pytz
 from zope.component.interfaces import ObjectEvent
 from zope.error.interfaces import IErrorReportingUtility
@@ -28,18 +29,23 @@ from zope.interface import implements
 from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
 from zope.traversing.namespace import view
 
-from lazr.restful.utils import get_current_browser_request
-from canonical.lazr.utils import safe_hasattr
 from canonical.config import config
 from canonical.launchpad import versioninfo
 from canonical.launchpad.layers import WebServiceLayer
 from canonical.launchpad.webapp.adapter import (
-    get_request_statements, get_request_duration,
-    soft_timeout_expired)
+    get_request_duration,
+    get_request_statements,
+    soft_timeout_expired,
+    )
 from canonical.launchpad.webapp.interfaces import (
-    IErrorReport, IErrorReportEvent, IErrorReportRequest)
-from lp.services.log.uniquefileallocator import UniqueFileAllocator
+    IErrorReport,
+    IErrorReportEvent,
+    IErrorReportRequest,
+    )
 from canonical.launchpad.webapp.opstats import OpStats
+from canonical.lazr.utils import safe_hasattr
+from lp.services.log.uniquefileallocator import UniqueFileAllocator
+
 
 UTC = pytz.utc
 
