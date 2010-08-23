@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = [
     'ArchivePurpose',
     'ArchiveStatus',
+    'ArchiveJobType',
     ]
 
 from lazr.enum import (
@@ -81,6 +82,17 @@ class ArchiveStatus(DBEnumeratedType):
         Deleted
 
         This archive has been deleted and removed from disk.
+        """)
+
+
+class ArchiveJobType(DBEnumeratedType):
+    """Values that IArchiveJob.job_type can take."""
+
+    COPY_ARCHIVE = DBItem(0, """
+        Create a copy archive.
+
+        This job creates a copy archive from the current state of
+        the archive.
         """)
 
 
