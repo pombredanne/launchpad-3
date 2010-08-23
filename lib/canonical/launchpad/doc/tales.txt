@@ -113,8 +113,8 @@ Then distribution main archives (primary, partner and debug).
 
 And finally Copy archives.
 
-    >>> from lp.soyuz.interfaces.archive import (
-    ...     ArchivePurpose, IArchiveSet)
+    >>> from lp.soyuz.interfaces.archive import IArchiveSet
+    >>> from lp.soyuz.enums import ArchivePurpose
     >>> copy = getUtility(IArchiveSet).new(
     ...     owner=mark, purpose=ArchivePurpose.COPY,
     ...     distribution=ubuntu, name='rebuild')

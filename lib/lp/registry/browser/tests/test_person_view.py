@@ -29,7 +29,7 @@ from lp.registry.interfaces.karma import IKarmaCacheManager
 from lp.registry.interfaces.person import PersonVisibility
 from lp.registry.interfaces.teammembership import TeamMembershipStatus
 from lp.registry.model.karma import KarmaCategory
-from lp.soyuz.interfaces.archive import ArchiveStatus
+from lp.soyuz.enums import ArchiveStatus
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (

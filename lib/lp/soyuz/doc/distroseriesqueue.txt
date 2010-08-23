@@ -912,7 +912,8 @@ Filtering by status:
 
 Filtering by archive:
 
-    >>> from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
+    >>> from lp.soyuz.enums import ArchivePurpose
+    >>> from lp.soyuz.interfaces.archive import IArchiveSet
     >>> partner_archive = getUtility(IArchiveSet).getByDistroPurpose(
     ...     warty.distribution, ArchivePurpose.PARTNER)
     >>> warty.getPackageUploads(archive=partner_archive).count()

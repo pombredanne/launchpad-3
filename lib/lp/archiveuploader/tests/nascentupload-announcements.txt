@@ -256,7 +256,8 @@ changes file is enclosed as an attachment.
 
 A PPA upload will contain the X-Launchpad-PPA header.
 
-  >>> from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
+  >>> from lp.soyuz.enums import ArchivePurpose
+  >>> from lp.soyuz.interfaces.archive import IArchiveSet
   >>> from lp.registry.interfaces.distribution import IDistributionSet
   >>> from lp.registry.interfaces.person import IPersonSet
 

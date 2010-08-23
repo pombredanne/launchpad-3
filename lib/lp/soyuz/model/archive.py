@@ -91,13 +91,15 @@ from lp.registry.model.teammembership import TeamParticipation
 from lp.services.job.interfaces.job import JobStatus
 from lp.soyuz.adapters.archivedependencies import expand_dependencies
 from lp.soyuz.adapters.packagelocation import PackageLocation
+from lp.soyuz.enums import (
+    ArchivePurpose,
+    ArchiveStatus,
+)
 from lp.soyuz.interfaces.archive import (
     AlreadySubscribed,
     ArchiveDependencyError,
     ArchiveDisabled,
     ArchiveNotPrivate,
-    ArchivePurpose,
-    ArchiveStatus,
     CannotCopy,
     CannotRestrictArchitectures,
     CannotSwitchPrivacy,

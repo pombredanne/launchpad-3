@@ -113,9 +113,9 @@ from lp.registry.model.structuralsubscription import (
     StructuralSubscriptionTargetMixin,
     )
 from lp.services.worlddata.model.language import Language
+from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.archive import (
     ALLOW_RELEASE_BUILDS,
-    ArchivePurpose,
     )
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageName

@@ -255,8 +255,8 @@ they all have a fixed score of -10. They will get built in the order
 they were created.
 
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-    >>> from canonical.launchpad.interfaces import (
-    ...     ArchivePurpose, IArchiveSet)
+    >>> from lp.soyuz.enums import ArchivePurpose
+    >>> from canonical.launchpad.interfaces import IArchiveSet
     >>> copy = getUtility(IArchiveSet).new(
     ...     owner=ubuntu.owner, purpose=ArchivePurpose.COPY,
     ...     name='test-rebuild')

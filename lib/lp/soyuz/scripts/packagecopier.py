@@ -27,8 +27,8 @@ from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.librarian.utils import copy_and_close
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.soyuz.adapters.packagelocation import build_package_location
+from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.archive import (
-    ArchivePurpose,
     CannotCopy,
     )
 from lp.soyuz.interfaces.binarypackagebuild import BuildSetStatus

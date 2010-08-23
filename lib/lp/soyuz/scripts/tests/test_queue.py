@@ -48,8 +48,8 @@ from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.mail import stub
+from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.archive import (
-    ArchivePurpose,
     IArchiveSet,
     )
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus

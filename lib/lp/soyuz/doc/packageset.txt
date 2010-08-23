@@ -636,8 +636,8 @@ happy hacker.
 Introduce a copy archive that will be used to disambiguate archive
 permissions.
 
-    >>> from lp.soyuz.interfaces.archive import (
-    ...     ArchivePurpose, IArchiveSet)
+    >>> from lp.soyuz.enums import ArchivePurpose
+    >>> from lp.soyuz.interfaces.archive import IArchiveSet
     >>> rebuild_archive = getUtility(IArchiveSet).new(
     ...     owner=person1, purpose=ArchivePurpose.COPY,
     ...     distribution=ubuntu, name='copy-archive',

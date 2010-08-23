@@ -5,6 +5,8 @@
 
 __metaclass__ = type
 __all__ = [
+    'ArchivePurpose',
+    'ArchiveStatus',
     ]
 
 from lazr.enum import (

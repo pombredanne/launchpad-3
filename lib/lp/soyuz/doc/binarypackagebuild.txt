@@ -627,7 +627,7 @@ domain of SourcePackage.
     # Create a rebuild archive, copy the 'old-source' source
     # publications to it and create builds in the rebuild archive
     # context.
-    >>> from lp.soyuz.interfaces.archive import ArchivePurpose
+    >>> from lp.soyuz.enums import ArchivePurpose
     >>> login('foo.bar@canonical.com')
     >>> rebuild_archive = factory.makeArchive(
     ...     ubuntutest, ubuntutest.owner, 'test-rebuild',

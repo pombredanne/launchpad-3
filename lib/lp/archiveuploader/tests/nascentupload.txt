@@ -932,8 +932,8 @@ Now try the "bar" upload:
 
 Uploads to copy archives are not allowed.
 
-    >>> from lp.soyuz.interfaces.archive import (
-    ...     ArchivePurpose, IArchiveSet)
+    >>> from lp.soyuz.enums import ArchivePurpose
+    >>> from lp.soyuz.interfaces.archive import IArchiveSet
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
     >>> copy_archive = getUtility(IArchiveSet).new(
     ...     owner=cprov, purpose=ArchivePurpose.COPY,

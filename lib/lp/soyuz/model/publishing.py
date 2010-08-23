@@ -69,8 +69,6 @@ from lp.buildmaster.model.packagebuild import PackageBuild
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.worlddata.model.country import Country
-from lp.soyuz.interfaces.archive import ArchivePurpose
-from lp.soyuz.interfaces.archivearch import IArchiveArchSet
 from lp.soyuz.interfaces.binarypackagebuild import (
     BuildSetStatus,
     IBinaryPackageBuildSet,
@@ -557,7 +555,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
     def createMissingBuilds(self, architectures_available=None,
                             pas_verify=None, logger=None):
         """See `ISourcePackagePublishingHistory`."""
-        if self.archive.purpose == ArchivePurpose.PPA:
+        if self.archive.is_ppa:
             pas_verify = None
 
         if architectures_available is None:
@@ -1718,7 +1716,7 @@ class PublishingSet:
         augmented_summary = summary
         if (source_publication.status in active_publishing_status and
                 summary['status'] == BuildSetStatus.FULLYBUILT and
-                source_publication.archive.purpose != ArchivePurpose.COPY):
+                not source_publication.archive.is_copy):
 
             unpublished_builds = list(
                 source_publication.getUnpublishedBuilds())

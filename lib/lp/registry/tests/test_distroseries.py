@@ -24,8 +24,8 @@ from lp.registry.interfaces.distroseries import (
     NoSuchDistroSeries,
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.archive import (
-    ArchivePurpose,
     IArchiveSet,
     )
 from lp.soyuz.interfaces.component import IComponentSet

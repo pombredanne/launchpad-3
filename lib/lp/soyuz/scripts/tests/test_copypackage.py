@@ -34,8 +34,8 @@ from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.soyuz.adapters.packagelocation import PackageLocationError
+from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.archive import (
-    ArchivePurpose,
     CannotCopy,
     )
 from lp.soyuz.interfaces.binarypackagebuild import BuildSetStatus

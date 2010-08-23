@@ -11,8 +11,8 @@ Let's prepare a few things we'll need for the subsequent tests.
     ...     build_package_location)
     >>> from lp.soyuz.interfaces.packagecopyrequest import (
     ...     IPackageCopyRequest, IPackageCopyRequestSet, PackageCopyStatus)
-    >>> from lp.soyuz.interfaces.archive import (
-    ...     ArchivePurpose, IArchiveSet)
+    >>> from lp.soyuz.enums import ArchivePurpose
+    >>> from lp.soyuz.interfaces.archive import IArchiveSet
     >>> from canonical.launchpad.interfaces import (
     ...     IPersonSet, IDistributionSet)
     >>> from canonical.launchpad.webapp.testing import verifyObject

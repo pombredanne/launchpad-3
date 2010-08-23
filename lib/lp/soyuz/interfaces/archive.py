@@ -13,8 +13,6 @@ __all__ = [
     'ArchiveDependencyError',
     'ArchiveDisabled',
     'ArchiveNotPrivate',
-    'ArchivePurpose',
-    'ArchiveStatus',
     'CannotCopy',
     'CannotSwitchPrivacy',
     'ComponentNotFound',

@@ -70,8 +70,8 @@ from lp.registry.interfaces.sourcepackage import (
     )
 from lp.registry.model.packaging import Packaging
 from lp.registry.model.suitesourcepackage import SuiteSourcePackage
+from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.archive import (
-    ArchivePurpose,
     IArchiveSet,
     )
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords

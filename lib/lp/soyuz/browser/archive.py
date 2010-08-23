@@ -120,9 +120,11 @@ from lp.soyuz.browser.sourceslist import (
     SourcesListEntries,
     SourcesListEntriesView,
     )
-from lp.soyuz.interfaces.archive import (
+from lp.soyuz.enums import (
     ArchivePurpose,
     ArchiveStatus,
+    )
+from lp.soyuz.interfaces.archive import (
     CannotCopy,
     IArchive,
     IArchiveEditDependenciesForm,
@@ -140,7 +142,6 @@ from lp.soyuz.interfaces.binarypackagebuild import (
     IBinaryPackageBuildSet,
     )
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
-from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packagecopyrequest import IPackageCopyRequestSet
 from lp.soyuz.interfaces.packageset import IPackagesetSet

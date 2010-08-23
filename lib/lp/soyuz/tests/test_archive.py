@@ -28,10 +28,12 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.worlddata.interfaces.country import ICountrySet
-from lp.soyuz.interfaces.archive import (
-    ArchiveDisabled,
+from lp.soyuz.enums import (
     ArchivePurpose,
     ArchiveStatus,
+    )
+from lp.soyuz.interfaces.archive import (
+    ArchiveDisabled,
     CannotRestrictArchitectures,
     CannotUploadToPocket,
     CannotUploadToPPA,
