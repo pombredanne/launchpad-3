@@ -31,9 +31,9 @@ from lp.soyuz.interfaces.archive import (
     )
 from lp.soyuz.interfaces.archiveauthtoken import IArchiveAuthTokenSet
 from lp.soyuz.interfaces.archivesubscriber import (
-    ArchiveSubscriberStatus,
     IArchiveSubscriberSet,
     )
+from lp.soyuz.enums import ArchiveSubscriberStatus
 
 # These PPAs should never have their htaccess/pwd files touched.
 BLACKLISTED_PPAS = {

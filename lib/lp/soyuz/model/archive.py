@@ -95,6 +95,7 @@ from lp.soyuz.enums import (
     ArchivePermissionType,
     ArchivePurpose,
     ArchiveStatus,
+    ArchiveSubscriberStatus,
 )
 from lp.soyuz.interfaces.archive import (
     AlreadySubscribed,
@@ -130,7 +131,6 @@ from lp.soyuz.interfaces.archivepermission import (
     IArchivePermissionSet,
     )
 from lp.soyuz.interfaces.archivesubscriber import (
-    ArchiveSubscriberStatus,
     ArchiveSubscriptionError,
     IArchiveSubscriberSet,
     )

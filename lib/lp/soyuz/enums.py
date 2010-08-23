@@ -9,6 +9,7 @@ __all__ = [
     'ArchivePermissionType',
     'ArchivePurpose',
     'ArchiveStatus',
+    'ArchiveSubscriberStatus',
     ]
 
 from lazr.enum import (
@@ -117,4 +118,25 @@ class ArchiveStatus(DBEnumeratedType):
         This archive has been deleted and removed from disk.
         """)
 
+
+class ArchiveSubscriberStatus(DBEnumeratedType):
+    """The status of an `ArchiveSubscriber`."""
+    
+    CURRENT = DBItem(1, """
+        Active
+
+        The subscription is current.
+        """)
+    
+    EXPIRED = DBItem(2, """
+        Expired
+
+        The subscription has expired.
+        """)
+    
+    CANCELLED = DBItem(3, """
+        Cancelled
+
+        The subscription was cancelled.
+        """)
 

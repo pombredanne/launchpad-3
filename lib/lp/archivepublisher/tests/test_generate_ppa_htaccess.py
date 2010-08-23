@@ -29,8 +29,10 @@ from lp.archivepublisher.scripts.generate_ppa_htaccess import (
     HtaccessTokenGenerator,
     )
 from lp.services.mail import stub
-from lp.soyuz.enums import ArchiveStatus
-from lp.soyuz.interfaces.archivesubscriber import ArchiveSubscriberStatus
+from lp.soyuz.enums import (
+    ArchiveStatus,
+    ArchiveSubscriberStatus,
+    )
 from lp.testing import TestCaseWithFactory
 from lp.testing.mail_helpers import pop_notifications
 
