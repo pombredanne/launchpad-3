@@ -36,7 +36,7 @@ collection obvious), 'total_size' is served instead of
 
 If the last page of the collection is fetched (making the total size
 of the collection semi-obvious), 'total_size' is served instead of
-'total_size'.
+'total_size_link'.
 
   >>> collection = get_collection(start=8)
   >>> print sorted(collection.keys())
