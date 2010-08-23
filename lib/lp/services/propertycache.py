@@ -67,6 +67,9 @@ class DefaultPropertyCache:
 
     implements(IPropertyCache)
 
+    # __getattr__ -- well, __getattribute__ -- and __setattr__ are inherited
+    # from object.
+
     def __delattr__(self, name):
         """See `IPropertyCache`."""
         self.__dict__.pop(name, None)
