@@ -12,7 +12,8 @@ __all__ = [
 from zope.interface import implements
 
 from lp.translations.interfaces.translatablemessage import (
-    ITranslatableMessage)
+    ITranslatableMessage,
+    )
 
 
 class TranslatableMessage(object):

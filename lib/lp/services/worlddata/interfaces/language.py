@@ -13,15 +13,31 @@ __all__ = [
     'TextDirection',
     ]
 
-from zope.schema import TextLine, Int, Choice, Bool, Field, Set
-from zope.interface import Interface, Attribute
-from lazr.enum import DBEnumeratedType, DBItem
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    )
 from lazr.lifecycle.snapshot import doNotSnapshot
-
 from lazr.restful.declarations import (
-    collection_default_content, exported, export_as_webservice_collection,
-    export_as_webservice_entry, export_read_operation,
-    operation_returns_collection_of)
+    collection_default_content,
+    export_as_webservice_collection,
+    export_as_webservice_entry,
+    export_read_operation,
+    exported,
+    operation_returns_collection_of,
+    )
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Bool,
+    Choice,
+    Field,
+    Int,
+    Set,
+    TextLine,
+    )
 
 
 class TextDirection(DBEnumeratedType):

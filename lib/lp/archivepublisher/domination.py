@@ -59,13 +59,15 @@ import operator
 
 import apt_pkg
 
-from lp.archivepublisher import ELIGIBLE_DOMINATION_STATES
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import (
-    sqlvalues, flush_database_updates, cursor,
-    clear_current_connection_cache)
-
+    clear_current_connection_cache,
+    cursor,
+    flush_database_updates,
+    sqlvalues,
+    )
 from canonical.launchpad.interfaces import PackagePublishingStatus
+from lp.archivepublisher import ELIGIBLE_DOMINATION_STATES
 from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFormat
 
 

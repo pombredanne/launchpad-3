@@ -7,12 +7,12 @@ from unittest import TestLoader
 
 from zope.security.proxy import removeSecurityProxy
 
-from lp.testing import TestCaseWithFactory
-from canonical.testing import LaunchpadZopelessLayer
-
 from canonical.launchpad.webapp import canonical_url
+from canonical.testing import LaunchpadZopelessLayer
+from lp.testing import TestCaseWithFactory
 from lp.translations.browser.translationlinksaggregator import (
-    TranslationLinksAggregator)
+    TranslationLinksAggregator,
+    )
 from lp.translations.model.productserieslanguage import ProductSeriesLanguage
 
 

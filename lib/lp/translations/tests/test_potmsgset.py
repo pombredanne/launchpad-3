@@ -5,32 +5,45 @@
 
 __metaclass__ = type
 
-from datetime import datetime, timedelta
+from datetime import (
+    datetime,
+    timedelta,
+    )
+
 import pytz
-
 import transaction
-
 from zope.component import getUtility
-from zope.security.proxy import isinstance as zope_isinstance
-from zope.security.proxy import removeSecurityProxy
+from zope.security.proxy import (
+    isinstance as zope_isinstance,
+    removeSecurityProxy,
+    )
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.testing import (
+    DatabaseFunctionalLayer,
+    ZopelessDatabaseLayer,
+    )
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
 from lp.services.worlddata.interfaces.language import ILanguageSet
+from lp.testing import TestCaseWithFactory
 from lp.translations.interfaces.potmsgset import (
-    POTMsgSetInIncompatibleTemplatesError, TranslationCreditsType)
+    POTMsgSetInIncompatibleTemplatesError,
+    TranslationCreditsType,
+    )
 from lp.translations.interfaces.translationfileformat import (
-    TranslationFileFormat)
+    TranslationFileFormat,
+    )
 from lp.translations.interfaces.translationmessage import (
-    RosettaTranslationOrigin, TranslationConflict)
+    RosettaTranslationOrigin,
+    TranslationConflict,
+    )
 from lp.translations.interfaces.side import TranslationSide
 from lp.translations.model.potmsgset import make_message_side_helpers
 from lp.translations.model.translationmessage import (
-    DummyTranslationMessage)
-
+    DummyTranslationMessage,
+    )
 from lp.testing import TestCaseWithFactory
-from canonical.testing import DatabaseFunctionalLayer, ZopelessDatabaseLayer
 
 
 class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):

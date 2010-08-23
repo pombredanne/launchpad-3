@@ -10,24 +10,26 @@ be better as a method on an existing content object or IFooSet object.
 
 __metaclass__ = type
 
+from difflib import unified_diff
 import hashlib
 import os
 import random
 import re
+from StringIO import StringIO
 import subprocess
 import tarfile
 import warnings
 
-from StringIO import StringIO
-from difflib import unified_diff
-
+import gettextpo
 from zope.component import getUtility
 from zope.security.interfaces import ForbiddenAttribute
 
 import canonical
 from canonical.launchpad.interfaces import (
-    ILaunchBag, IRequestPreferredLanguages, IRequestLocalLanguages)
-
+    ILaunchBag,
+    IRequestLocalLanguages,
+    IRequestPreferredLanguages,
+    )
 
 # pylint: disable-msg=W0102
 def text_replaced(text, replacements, _cache={}):

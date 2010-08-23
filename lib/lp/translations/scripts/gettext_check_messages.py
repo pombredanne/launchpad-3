@@ -5,10 +5,12 @@ __metaclass__ = type
 
 __all__ = ['GettextCheckMessages']
 
-from datetime import timedelta, datetime
+from datetime import (
+    datetime,
+    timedelta,
+    )
 
 from storm.locals import Store
-
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -17,6 +19,9 @@ from lp.translations.interfaces.translationmessage import (
 from lp.translations.utilities.validate import (
     GettextValidationError, validate_translation)
 from lp.services.scripts.base import LaunchpadScript
+from lp.translations.interfaces.translationmessage import (
+    ITranslationMessageSet,
+    )
 
 
 class GettextCheckMessages(LaunchpadScript):

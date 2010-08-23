@@ -9,8 +9,8 @@ __all__ = [
     'KarmaRecorder',
     ]
 
-from canonical.lazr.testing.event import TestEventListener
 from canonical.launchpad.event.interfaces import IKarmaAssignedEvent
+from canonical.launchpad.ftests.event import TestEventListener
 from lp.registry.interfaces.person import IPerson
 
 

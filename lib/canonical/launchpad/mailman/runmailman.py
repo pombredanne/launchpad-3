@@ -10,11 +10,11 @@ __all__ = [
     ]
 
 
-import os
-import sys
 import errno
+import os
 import signal
 import subprocess
+import sys
 
 import canonical
 from canonical.launchpad.mailman.config import configure_prefix

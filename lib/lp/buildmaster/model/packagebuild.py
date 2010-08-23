@@ -10,30 +10,46 @@ __all__ = [
 
 
 from lazr.delegates import delegates
-
-from storm.locals import Int, Reference, Storm, Unicode
 from storm.expr import Desc
-
+from storm.locals import (
+    Int,
+    Reference,
+    Storm,
+    Unicode,
+    )
 from zope.component import getUtility
-from zope.interface import classProvides, implements
+from zope.interface import (
+    classProvides,
+    implements,
+    )
 
 from canonical.database.enumcol import DBEnum
-from canonical.launchpad.browser.librarian import (
-    ProxiedLibraryFileAlias)
+from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.launchpad.webapp.interfaces import (
-        IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
-
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSource
 from lp.buildmaster.interfaces.packagebuild import (
-    IPackageBuild, IPackageBuildSet, IPackageBuildSource)
-from lp.buildmaster.model.buildbase import handle_status_for_build, BuildBase
+    IPackageBuild,
+    IPackageBuildSet,
+    IPackageBuildSource,
+    )
+from lp.buildmaster.model.buildbase import (
+    BuildBase,
+    handle_status_for_build,
+    )
 from lp.buildmaster.model.buildfarmjob import (
-    BuildFarmJob, BuildFarmJobDerived)
+    BuildFarmJob,
+    BuildFarmJobDerived,
+    )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.adapters.archivedependencies import (
-    default_component_dependency_name)
+    default_component_dependency_name,
+    )
 from lp.soyuz.interfaces.component import IComponentSet
 
 

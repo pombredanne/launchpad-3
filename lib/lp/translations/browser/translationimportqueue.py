@@ -14,32 +14,53 @@ __all__ = [
     ]
 
 import os
-from os.path import basename, splitext
+from os.path import (
+    basename,
+    splitext,
+    )
+
 from zope.app.form.interfaces import ConversionError
 from zope.component import getUtility
 from zope.interface import implements
 from zope.schema.interfaces import IContextSourceBinder
-from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
+from zope.schema.vocabulary import (
+    SimpleTerm,
+    SimpleVocabulary,
+    )
 
 from canonical.database.constants import UTC_NOW
+from canonical.launchpad.validators.name import valid_name
+from canonical.launchpad.webapp import (
+    action,
+    canonical_url,
+    GetitemNavigation,
+    LaunchpadFormView,
+    )
 from canonical.launchpad.webapp.tales import DateTimeFormatterAPI
-from lp.app.errors import NotFoundError, UnexpectedFormData
-from lp.translations.browser.hastranslationimports import (
-    HasTranslationImportsView)
+from lp.app.errors import (
+    NotFoundError,
+    UnexpectedFormData,
+    )
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.sourcepackage import ISourcePackageFactory
 from lp.services.worlddata.interfaces.language import ILanguageSet
-from lp.translations.interfaces.translationimportqueue import (
-    ITranslationImportQueueEntry, IEditTranslationImportQueueEntry,
-    ITranslationImportQueue, RosettaImportStatus,
-    SpecialTranslationImportTargetFilter, TranslationFileType)
+from lp.translations.browser.hastranslationimports import (
+    HasTranslationImportsView,
+    )
 from lp.translations.interfaces.pofile import IPOFileSet
 from lp.translations.interfaces.potemplate import IPOTemplateSet
-from lp.translations.utilities.template import make_domain, make_name
-
-from canonical.launchpad.webapp import (
-    action, canonical_url, GetitemNavigation, LaunchpadFormView)
-from canonical.launchpad.validators.name import valid_name
+from lp.translations.interfaces.translationimportqueue import (
+    IEditTranslationImportQueueEntry,
+    ITranslationImportQueue,
+    ITranslationImportQueueEntry,
+    RosettaImportStatus,
+    SpecialTranslationImportTargetFilter,
+    TranslationFileType,
+    )
+from lp.translations.utilities.template import (
+    make_domain,
+    make_name,
+    )
 
 
 def replace(string, replacement):

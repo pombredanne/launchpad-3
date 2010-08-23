@@ -9,9 +9,16 @@ __all__ = []
 import transaction
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.windmill.testing import constants, lpuser
+from canonical.launchpad.windmill.testing import (
+    constants,
+    lpuser,
+    )
+from lp.testing import (
+    login,
+    logout,
+    WindmillTestCase,
+    )
 from lp.translations.windmill.testing import TranslationsWindmillLayer
-from lp.testing import login, logout, WindmillTestCase
 
 
 class POFileNewTranslationFieldKeybindings(WindmillTestCase):

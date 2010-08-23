@@ -3,15 +3,20 @@
 
 __metaclass__ = type
 
-from datetime import datetime, timedelta
-import pytz
+from datetime import (
+    datetime,
+    timedelta,
+    )
 from unittest import TestLoader
 
-from lp.translations.browser.translationmessage import (
-    CurrentTranslationMessageView)
+import pytz
+
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import ZopelessDatabaseLayer
 from lp.testing import TestCaseWithFactory
+from lp.translations.browser.translationmessage import (
+    CurrentTranslationMessageView,
+    )
 
 
 class TestCurrentTranslationMessage_can_dismiss(TestCaseWithFactory):

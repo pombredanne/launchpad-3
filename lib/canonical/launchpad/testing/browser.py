@@ -26,12 +26,19 @@ __all__ = [
 import base64
 import urllib2
 import weakref
-import transaction
 
-from zope.testbrowser.browser import Browser as _Browser, fix_exception_name
+import transaction
+from zope.testbrowser.browser import (
+    Browser as _Browser,
+    fix_exception_name,
+    )
 
 from canonical.launchpad.testing.pages import (
-    extract_text, find_main_content, find_tag_by_id, get_feedback_messages)
+    extract_text,
+    find_main_content,
+    find_tag_by_id,
+    get_feedback_messages,
+    )
 
 
 class SocketClosingOnErrorHandler(urllib2.BaseHandler):

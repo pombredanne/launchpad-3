@@ -3,12 +3,26 @@
 
 # pylint: disable-msg=E0211,E0213
 
-from zope.interface import Interface, Attribute
-from zope.schema import Bool, Choice, Int, List, Object, Text
-from lazr.enum import EnumeratedType, Item
+from lazr.enum import (
+    EnumeratedType,
+    Item,
+    )
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Bool,
+    Choice,
+    Int,
+    List,
+    Object,
+    Text,
+    )
 
 from canonical.launchpad import _
 from lp.translations.interfaces.pomsgid import IPOMsgID
+
 
 __metaclass__ = type
 

@@ -19,10 +19,19 @@ __all__ = [
     ]
 
 from zope.app.form.browser.interfaces import IAddFormCustomization
-from zope.schema import Int, Datetime, Choice, Text, TextLine
-from zope.interface import Interface, Attribute
-from canonical.launchpad import _
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Choice,
+    Datetime,
+    Int,
+    Text,
+    TextLine,
+    )
 
+from canonical.launchpad import _
 
 
 class IKarma(Interface):

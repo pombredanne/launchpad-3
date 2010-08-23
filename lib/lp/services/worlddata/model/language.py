@@ -11,17 +11,28 @@ __all__ = [
 
 
 from sqlobject import (
-    BoolCol, CONTAINSSTRING, IntCol, SQLObjectNotFound, SQLRelatedJoin,
-    StringCol)
+    BoolCol,
+    CONTAINSSTRING,
+    IntCol,
+    SQLObjectNotFound,
+    SQLRelatedJoin,
+    StringCol,
+    )
 from storm.locals import Or
 from zope.interface import implements
 
-from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.enumcol import EnumCol
+from canonical.database.sqlbase import (
+    SQLBase,
+    sqlvalues,
+    )
 from canonical.launchpad.interfaces import ISlaveStore
 from lp.app.errors import NotFoundError
 from lp.services.worlddata.interfaces.language import (
-    ILanguage, ILanguageSet, TextDirection)
+    ILanguage,
+    ILanguageSet,
+    TextDirection,
+    )
 
 
 class Language(SQLBase):

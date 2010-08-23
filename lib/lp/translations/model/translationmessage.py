@@ -11,9 +11,14 @@ __all__ = [
     ]
 
 from datetime import datetime
-import pytz
 
-from sqlobject import BoolCol, ForeignKey, SQLObjectNotFound, StringCol
+import pytz
+from sqlobject import (
+    BoolCol,
+    ForeignKey,
+    SQLObjectNotFound,
+    StringCol,
+    )
 from storm.expr import And
 from storm.locals import SQL
 from storm.store import Store
@@ -21,15 +26,25 @@ from storm.store import Store
 from zope.interface import implements
 
 from canonical.cachedproperty import cachedproperty
-from canonical.database.constants import DEFAULT, UTC_NOW
+from canonical.database.constants import (
+    DEFAULT,
+    UTC_NOW,
+    )
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import quote, SQLBase, sqlvalues
-from lp.translations.interfaces.translationmessage import (
-    ITranslationMessage, ITranslationMessageSet, RosettaTranslationOrigin,
-    TranslationValidationStatus)
-from lp.translations.interfaces.translations import TranslationConstants
+from canonical.database.sqlbase import (
+    quote,
+    SQLBase,
+    sqlvalues,
+    )
 from lp.registry.interfaces.person import validate_public_person
+from lp.translations.interfaces.translationmessage import (
+    ITranslationMessage,
+    ITranslationMessageSet,
+    RosettaTranslationOrigin,
+    TranslationValidationStatus,
+    )
+from lp.translations.interfaces.translations import TranslationConstants
 
 
 UTC = pytz.timezone('UTC')

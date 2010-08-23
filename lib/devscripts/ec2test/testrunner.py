@@ -454,11 +454,8 @@ class EC2TestRunner:
         # close ssh connection
         user_connection.close()
 
-    def run_tests(self):
-        self.configure_system()
-        self.prepare_tests()
-        user_connection = self._instance.connect()
-
+    def _build_command(self):
+        """Build the command that we'll use to run the tests."""
         # Make sure we activate the failsafe --shutdown feature.  This will
         # make the server shut itself down after the test run completes, or
         # if the test harness suffers a critical failure.
@@ -496,6 +493,12 @@ class EC2TestRunner:
 
         # Add any additional options for ec2test-remote.py
         cmd.extend(['--', self.test_options])
+        return ' '.join(cmd)
+
+    def run_tests(self):
+        self.configure_system()
+        self.prepare_tests()
+
         self.log(
             'Running tests... (output is available on '
             'http://%s/)\n' % self._instance.hostname)
@@ -513,7 +516,9 @@ class EC2TestRunner:
 
         # Run the remote script!  Our execution will block here until the
         # remote side disconnects from the terminal.
-        user_connection.perform(' '.join(cmd))
+        cmd = self._build_command()
+        user_connection = self._instance.connect()
+        user_connection.perform(cmd)
         self._running = True
 
         if not self.headless:

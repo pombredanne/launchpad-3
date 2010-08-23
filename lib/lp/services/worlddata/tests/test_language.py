@@ -3,8 +3,9 @@
 
 __metaclass__ = type
 
-from canonical.testing import DatabaseFunctionalLayer
 from lazr.lifecycle.interfaces import IDoNotSnapshot
+
+from canonical.testing import DatabaseFunctionalLayer
 from lp.services.worlddata.interfaces.language import ILanguage
 from lp.testing import TestCaseWithFactory
 

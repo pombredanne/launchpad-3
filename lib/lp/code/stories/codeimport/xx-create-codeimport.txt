@@ -27,7 +27,7 @@ For projects that don't officially use Launchpad for code, there is also a
 link on the main branch listing page for the product.
 
     >>> browser.open('http://code.launchpad.dev/firefox')
-    >>> browser.getLink('Import your project').click()
+    >>> browser.getLink('Import a branch').click()
 
 
 Requesting a Subversion import

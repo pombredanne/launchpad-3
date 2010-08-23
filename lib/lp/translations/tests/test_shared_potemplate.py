@@ -16,6 +16,7 @@ from canonical.testing import ZopelessDatabaseLayer
 from lp.testing import TestCaseWithFactory
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 
+
 class TestTranslationSharingPOTemplate(TestCaseWithFactory):
     """Test behaviour of "sharing" PO templates."""
 
