@@ -401,8 +401,6 @@ mark owns many packages, so he's a better test for some pages:
 >>> check("/~mark/+packagebugs")
 >>> check("/~mark/+related-software")
 
->>> check("/+code")
-
 >>> check("/builders")
 >>> check("/builders/bob/")
 >>> check_redirect("/+builds", status=301)
