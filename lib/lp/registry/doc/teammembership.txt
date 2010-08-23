@@ -427,7 +427,7 @@ an extra check to ensure that doesn't happen.
     # Foo Bar is a launchpad admin, but even so he can't change a membership's
     # status/expiry-date by hand.
     >>> login_person(foobar)
-    >>> membership = foobar.myactivememberships[0]
+    >>> membership = foobar.team_memberships[0]
     >>> membership.status = None
     Traceback (most recent call last):
     ...
@@ -638,13 +638,13 @@ on the expiration day.
     >>> autorenewal_team.defaultrenewalperiod = 73
     >>> otto = factory.makePerson(name='otto')
     >>> ignore = autorenewal_team.addMember(otto, salgado)
-    >>> otto_membership = otto.myactivememberships[0]
+    >>> otto_membership = otto.team_memberships[0]
     >>> otto_membership.setExpirationDate(utc_now, salgado)
     >>> original_otto_date_expires = otto_membership.dateexpires
 
     >>> do_not_warn = factory.makePerson(name='do-not-warn')
     >>> ignore = autorenewal_team.addMember(do_not_warn, salgado)
-    >>> do_not_warn.myactivememberships[0].setExpirationDate(
+    >>> do_not_warn.team_memberships[0].setExpirationDate(
     ...     tomorrow, salgado)
 
     # Not excluding teams with automatic renewals.
@@ -788,10 +788,10 @@ expire soon.
 
 == Querying team memberships ==
 
-You can check a person's direct memberships by using myactivememberships:
+You can check a person's direct memberships by using team_memberships:
 
     >>> [(membership.team.name, membership.status.title)
-    ...  for membership in salgado.myactivememberships]
+    ...  for membership in salgado.team_memberships]
     [(u'hwdb-team', 'Approved'), (u'landscape-developers', 'Approved'),
      (u'admins', 'Administrator'), (u't4', 'Approved')]
 

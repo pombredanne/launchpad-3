@@ -7,8 +7,8 @@ __metaclass__ = type
 
 from zope.component import getMultiAdapter
 
-from canonical.lazr.testing.menus import make_fake_request
 from canonical.launchpad.webapp.publisher import canonical_url
+from canonical.lazr.testing.menus import make_fake_request
 
 
 def check_menu_links(menu):

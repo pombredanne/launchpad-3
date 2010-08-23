@@ -7,28 +7,28 @@
 
 __metaclass__ = type
 
-from unittest import TestLoader
-
 import re
 from StringIO import StringIO
 import tarfile
-import transaction
+from unittest import TestLoader
 
+import transaction
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.testing import LaunchpadZopelessLayer
-from lp.testing import TestCaseWithFactory
-from canonical.launchpad.scripts.tests import run_script
-
 from canonical.launchpad.database.librarian import LibraryFileAliasSet
+from canonical.launchpad.scripts.tests import run_script
+from canonical.testing import LaunchpadZopelessLayer
 from lp.registry.model.sourcepackage import SourcePackage
 from lp.soyuz.model.sourcepackagerelease import (
-    _filter_ubuntu_translation_file)
+    _filter_ubuntu_translation_file,
+    )
+from lp.testing import TestCaseWithFactory
 from lp.translations.model.translationimportqueue import (
-    TranslationImportQueue)
-
+    TranslationImportQueue,
+    )
 from lp.translations.scripts.reupload_translations import (
-    ReuploadPackageTranslations)
+    ReuploadPackageTranslations,
+    )
 
 
 class UploadInjector:

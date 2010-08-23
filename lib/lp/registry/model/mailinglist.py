@@ -16,46 +16,83 @@ __all__ = [
 
 
 from email import message_from_string
-from email.Header import decode_header, make_header
+from email.Header import (
+    decode_header,
+    make_header,
+    )
 from itertools import repeat
 from socket import getfqdn
 from string import Template
 
-from storm.info import ClassAlias
-from storm.expr import And, Join, LeftJoin
-from storm.store import Store
-
-from sqlobject import ForeignKey, StringCol
-
-from zope.component import getUtility, queryAdapter
-from zope.event import notify
-from zope.interface import implements, providedBy
-from zope.security.proxy import removeSecurityProxy
-
-from lazr.lifecycle.event import ObjectCreatedEvent, ObjectModifiedEvent
+from lazr.lifecycle.event import (
+    ObjectCreatedEvent,
+    ObjectModifiedEvent,
+    )
 from lazr.lifecycle.snapshot import Snapshot
+from sqlobject import (
+    ForeignKey,
+    StringCol,
+    )
+from storm.expr import (
+    And,
+    Join,
+    LeftJoin,
+    )
+from storm.info import ClassAlias
+from storm.store import Store
+from zope.component import (
+    getUtility,
+    queryAdapter,
+    )
+from zope.event import notify
+from zope.interface import (
+    implements,
+    providedBy,
+    )
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
-from canonical.database.constants import DEFAULT, UTC_NOW
+from canonical.database.constants import (
+    DEFAULT,
+    UTC_NOW,
+    )
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.database.sqlbase import (
+    SQLBase,
+    sqlvalues,
+    )
 from canonical.launchpad import _
 from canonical.launchpad.database.account import Account
 from canonical.launchpad.database.emailaddress import EmailAddress
-from canonical.launchpad.interfaces.emailaddress import (
-    EmailAddressStatus, IEmailAddressSet)
 from canonical.launchpad.interfaces.account import AccountStatus
+from canonical.launchpad.interfaces.emailaddress import (
+    EmailAddressStatus,
+    IEmailAddressSet,
+    )
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, SLAVE_FLAVOR)
+    IStoreSelector,
+    MAIN_STORE,
+    SLAVE_FLAVOR,
+    )
 from canonical.lazr.interfaces.objectprivacy import IObjectPrivacy
-from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.mailinglist import (
-    CannotChangeSubscription, CannotSubscribe, CannotUnsubscribe,
-    IHeldMessageDetails, IMailingList, IMailingListSet,
-    IMailingListSubscription, IMessageApproval, IMessageApprovalSet,
-    MailingListStatus, PURGE_STATES, PostedMessageStatus, UnsafeToPurge)
+    CannotChangeSubscription,
+    CannotSubscribe,
+    CannotUnsubscribe,
+    IHeldMessageDetails,
+    IMailingList,
+    IMailingListSet,
+    IMailingListSubscription,
+    IMessageApproval,
+    IMessageApprovalSet,
+    MailingListStatus,
+    PostedMessageStatus,
+    PURGE_STATES,
+    UnsafeToPurge,
+    )
+from lp.registry.interfaces.person import validate_public_person
 from lp.registry.model.person import Person
 from lp.registry.model.teammembership import TeamParticipation
 

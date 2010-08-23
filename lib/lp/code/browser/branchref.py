@@ -12,8 +12,12 @@ from zope.interface import implements
 from zope.publisher.interfaces.browser import IBrowserPublisher
 
 from canonical.config import config
+from canonical.launchpad.webapp import (
+    Navigation,
+    stepthrough,
+    stepto,
+    )
 from lp.code.interfaces.branchref import IBranchRef
-from canonical.launchpad.webapp import Navigation, stepto, stepthrough
 
 
 class BranchRef:

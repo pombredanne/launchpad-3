@@ -11,25 +11,32 @@ __all__ = [
     'getBinaryPackageDescriptions',
 ]
 
+# SQLObject/SQLBase
+from sqlobject import (
+    CONTAINSSTRING,
+    SQLObjectNotFound,
+    StringCol,
+    )
+from storm.store import EmptyResultSet
 # Zope imports
 from zope.interface import implements
 from zope.schema.vocabulary import SimpleTerm
 
-# SQLObject/SQLBase
-from sqlobject import (
-    SQLObjectNotFound, StringCol, CONTAINSSTRING)
-
-from storm.store import EmptyResultSet
-
-from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.database.sqlbase import (
+    SQLBase,
+    sqlvalues,
+    )
 from canonical.launchpad.webapp.vocabulary import (
-    NamedSQLObjectHugeVocabulary, BatchedCountableIterator)
+    BatchedCountableIterator,
+    NamedSQLObjectHugeVocabulary,
+    )
 from lp.app.errors import NotFoundError
 from lp.soyuz.interfaces.binarypackagename import (
-    IBinaryPackageName, IBinaryPackageNameSet)
+    IBinaryPackageName,
+    IBinaryPackageNameSet,
+    )
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
-from lp.soyuz.model.binarypackagerelease import (
-    BinaryPackageRelease)
+from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
 
 
 class BinaryPackageName(SQLBase):

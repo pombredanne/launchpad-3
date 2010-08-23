@@ -10,8 +10,17 @@ __all__ = [
     'IRevision', 'IRevisionAuthor', 'IRevisionParent', 'IRevisionProperty',
     'IRevisionSet']
 
-from zope.interface import Interface, Attribute
-from zope.schema import Bool, Datetime, Int, Text, TextLine
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Bool,
+    Datetime,
+    Int,
+    Text,
+    TextLine,
+    )
 
 from canonical.launchpad import _
 from lp.services.fields import PublicPersonChoice

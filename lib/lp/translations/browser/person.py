@@ -11,33 +11,44 @@ __all__ = [
     'TranslationActivityView',
 ]
 
-from datetime import datetime, timedelta
-import pytz
+from datetime import (
+    datetime,
+    timedelta,
+    )
 import urllib
 
+import pytz
 from zope.app.form.browser import TextWidget
 from zope.component import getUtility
-from zope.interface import implements, Interface
+from zope.interface import (
+    implements,
+    Interface,
+    )
 
-from canonical.launchpad import _
-from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.cachedproperty import cachedproperty
+from canonical.launchpad import _
 from canonical.launchpad.webapp import (
-    LaunchpadFormView, Link, action, canonical_url, custom_widget)
-from canonical.launchpad.webapp.menu import NavigationMenu
+    action,
+    canonical_url,
+    custom_widget,
+    LaunchpadFormView,
+    Link,
+    )
 from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.interfaces import ILaunchBag
+from canonical.launchpad.webapp.menu import NavigationMenu
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.widgets import LaunchpadRadioWidget
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.translations.browser.translationlinksaggregator import (
-    TranslationLinksAggregator)
-from lp.translations.interfaces.pofiletranslator import (
-    IPOFileTranslatorSet)
+    TranslationLinksAggregator,
+    )
+from lp.translations.interfaces.pofiletranslator import IPOFileTranslatorSet
 from lp.translations.interfaces.translationrelicensingagreement import (
     ITranslationRelicensingAgreementEdit,
-    TranslationRelicensingAgreementOptions)
-from lp.translations.interfaces.translationsperson import (
-    ITranslationsPerson)
+    TranslationRelicensingAgreementOptions,
+    )
+from lp.translations.interfaces.translationsperson import ITranslationsPerson
 
 
 class WorkListLinksAggregator(TranslationLinksAggregator):

@@ -10,13 +10,24 @@ import os
 from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.archiveuploader.dscfile import (
-    DSCFile, findChangelog, findCopyright, format_to_file_checker_map)
+    DSCFile,
+    findChangelog,
+    findCopyright,
+    format_to_file_checker_map,
+    )
 from lp.archiveuploader.nascentuploadfile import UploadError
-from lp.archiveuploader.tests import datadir, mock_logger_quiet
+from lp.archiveuploader.tests import (
+    datadir,
+    mock_logger_quiet,
+    )
 from lp.archiveuploader.uploadpolicy import BuildDaemonUploadPolicy
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
 from lp.soyuz.interfaces.sourcepackageformat import SourcePackageFormat
-from lp.testing import TestCase, TestCaseWithFactory
+from lp.testing import (
+    TestCase,
+    TestCaseWithFactory,
+    )
+
 
 ORIG_TARBALL = SourcePackageFileType.ORIG_TARBALL
 DEBIAN_TARBALL = SourcePackageFileType.DEBIAN_TARBALL

@@ -11,20 +11,28 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from lp.registry.model.person import PersonSet
-from lp.registry.interfaces.mailinglistsubscription import (
-    MailingListAutoSubscribePolicy)
-from lp.registry.interfaces.person import (
-    PersonCreationRationale, IPersonSet)
-from lp.testing import (
-    TestCaseWithFactory, login_person, logout)
-
 from canonical.database.sqlbase import cursor
 from canonical.launchpad.interfaces.account import (
-    AccountStatus, AccountSuspendedError)
+    AccountStatus,
+    AccountSuspendedError,
+    )
 from canonical.launchpad.testing.databasehelpers import (
-    remove_all_sample_data_branches)
+    remove_all_sample_data_branches,
+    )
 from canonical.testing import DatabaseFunctionalLayer
+from lp.registry.interfaces.mailinglistsubscription import (
+    MailingListAutoSubscribePolicy,
+    )
+from lp.registry.interfaces.person import (
+    IPersonSet,
+    PersonCreationRationale,
+    )
+from lp.registry.model.person import PersonSet
+from lp.testing import (
+    login_person,
+    logout,
+    TestCaseWithFactory,
+    )
 
 
 class TestPersonSetBranchCounts(TestCaseWithFactory):

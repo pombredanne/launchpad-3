@@ -7,15 +7,24 @@ __metaclass__ = type
 __all__ = []
 
 
-import transaction
 import unittest
 
-from canonical.launchpad.ftests import login, login_person, ANONYMOUS, logout
+import transaction
+
+from canonical.launchpad.ftests import (
+    ANONYMOUS,
+    login,
+    login_person,
+    logout,
+    )
+from canonical.launchpad.xmlrpc.mailinglist import (
+    BYUSER,
+    ENABLED,
+    MailingListAPIView,
+    )
+from canonical.testing import LaunchpadFunctionalLayer
 from lp.registry.tests.mailinglists_helper import new_team
 from lp.testing.factory import LaunchpadObjectFactory
-from canonical.launchpad.xmlrpc.mailinglist import (
-    MailingListAPIView, BYUSER, ENABLED)
-from canonical.testing import LaunchpadFunctionalLayer
 
 
 class MailingListAPITestCase(unittest.TestCase):

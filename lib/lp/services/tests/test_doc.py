@@ -9,7 +9,6 @@ import os
 
 from canonical.launchpad.testing.systemdocs import LayeredDocFileSuite
 from canonical.testing import BaseLayer
-
 from lp.services.testing import build_test_suite
 
 
