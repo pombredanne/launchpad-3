@@ -7,6 +7,8 @@ __metaclass__ = type
 
 import unittest
 
+from storm.store import Store
+
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing import DatabaseFunctionalLayer
 from lp.testing import TestCaseWithFactory
@@ -23,11 +25,10 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
     def test_implements_interface(self):
         # The implementation implements the interface correctly.
         ds_diff = self.factory.makeDistroSeriesDifference()
+        # Flush the store to ensure db constraints are triggered.
+        Store.of(ds_diff).flush()
 
         verifyObject(IDistroSeriesDifference, ds_diff)
-
-    def test_at_least_one_source_package(self):
-        self.fail('Not implemented. Waiting on implementation feedback.')
 
     def test_new_non_derived_series(self):
         # A DistroSeriesDifference cannot be created with a non-derived

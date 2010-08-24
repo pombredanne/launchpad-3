@@ -19,7 +19,10 @@ from zope.interface import implements
 
 from canonical.database.enumcol import DBEnum
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
-from lp.registry.enum import DistroSeriesDifferenceStatus
+from lp.registry.enum import (
+    DistroSeriesDifferenceStatus,
+    DistroSeriesDifferenceType,
+    )
 from lp.registry.exceptions import NotADerivedSeriesError
 from lp.registry.interfaces.distroseriesdifference import (
     IDistroSeriesDifference,
@@ -37,24 +40,24 @@ class DistroSeriesDifference(Storm):
     derived_series = Reference(
         derived_series_id, 'DistroSeries.id')
 
-    source_package_id = Int(
-        name='source_package_publishing_history', allow_none=True)
-    source_package = Reference(
-        source_package_id,
-        'SourcePackagePublishingHistory.id')
+    source_package_name_id = Int(
+        name='source_package_name', allow_none=False)
+    source_package_name = Reference(
+        source_package_name_id, 'SourcePackageName.id')
 
-    parent_source_package_id = Int(
-        name='parent_source_package_publishing_history', allow_none=True)
-    parent_source_package = Reference(
-        parent_source_package_id,
-        'SourcePackagePublishingHistory.id')
+    last_package_diff_id = Int(
+        name='last_package_diff', allow_none=True)
+    last_package_diff = Reference(
+        last_package_diff_id, 'PackageDiff.id')
 
-    comment = Unicode(name='comment', allow_none=True)
+    activity_log = Unicode(name='activity_log', allow_none=True)
     status = DBEnum(name='status', allow_none=False,
                     enum=DistroSeriesDifferenceStatus)
+    difference_type = DBEnum(name='difference_type', allow_none=False,
+                             enum=DistroSeriesDifferenceType)
 
     @staticmethod
-    def new(derived_series, source_package=None, parent_source_package=None,
+    def new(derived_series, source_package_name, difference_type,
             status=DistroSeriesDifferenceStatus.NEEDS_ATTENTION):
         """See `IDistroSeriesDifference`."""
         if derived_series.parent_series is None:
@@ -63,7 +66,7 @@ class DistroSeriesDifference(Storm):
         store = IMasterStore(DistroSeriesDifference)
         diff = DistroSeriesDifference()
         diff.derived_series = derived_series
-        diff.source_package = source_package
-        diff.parent_source_package = parent_source_package
-        diff.status = DistroSeriesDifferenceStatus.NEEDS_ATTENTION
+        diff.source_package_name = source_package_name
+        diff.status = status
+        diff.difference_type = difference_type
         return store.add(diff)
