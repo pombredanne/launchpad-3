@@ -5,13 +5,13 @@
 
 __metaclass__ = type
 
-from lp.archiveuploader.tests.test_securityuploads import (
-    TestStagedBinaryUploadBase)
-from lp.archiveuploader.uploadprocessor import UploadProcessor
-from lp.registry.interfaces.pocket import PackagePublishingPocket
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad.interfaces import PackagePublishingStatus
 from canonical.launchpad.ftests import import_public_test_keys
+from canonical.launchpad.interfaces import PackagePublishingStatus
+from lp.archiveuploader.tests.test_securityuploads import (
+    TestStagedBinaryUploadBase,
+    )
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 
 
 class TestBuilddUploads(TestStagedBinaryUploadBase):
@@ -84,8 +84,8 @@ class TestBuilddUploads(TestStagedBinaryUploadBase):
         """Setup an UploadProcessor instance for a given buildd context."""
         self.options.context = self.policy
         self.options.buildid = str(build_candidate.id)
-        self.uploadprocessor = UploadProcessor(
-            self.options, self.layer.txn, self.log)
+        self.uploadprocessor = self.getUploadProcessor(
+            self.layer.txn)
 
     def testDelayedBinaryUpload(self):
         """Check if Soyuz copes with delayed binary uploads.

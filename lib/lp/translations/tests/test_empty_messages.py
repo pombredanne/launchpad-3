@@ -4,14 +4,14 @@
 __metaclass__ = type
 
 from datetime import datetime
-from pytz import timezone
 import unittest
 
+from pytz import timezone
 from zope.component import getUtility
 
+from canonical.testing import LaunchpadZopelessLayer
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing.factory import LaunchpadObjectFactory
-from canonical.testing import LaunchpadZopelessLayer
 
 
 class TestTranslationEmptyMessages(unittest.TestCase):

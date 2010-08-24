@@ -6,30 +6,40 @@ __all__ = [
     'TranslationTemplatesBuildJob',
     ]
 
-import re
 from datetime import timedelta
-
-from zope.component import getUtility
-from zope.interface import classProvides, implements
-from zope.security.proxy import removeSecurityProxy
+import re
 
 from storm.store import Store
+from zope.component import getUtility
+from zope.interface import (
+    classProvides,
+    implements,
+    )
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-
 from canonical.launchpad.interfaces import ILaunchpadCelebrities
-from canonical.launchpad.interfaces.lpstorm import IMasterStore, IStore
-
+from canonical.launchpad.interfaces.lpstorm import (
+    IMasterStore,
+    IStore,
+    )
+from lp.buildmaster.interfaces.buildfarmbranchjob import IBuildFarmBranchJob
 from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.buildmaster.model.buildfarmjob import (
-    BuildFarmJobOld, BuildFarmJobOldDerived)
+    BuildFarmJobOld,
+    BuildFarmJobOldDerived,
+    )
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource
-from lp.buildmaster.interfaces.buildfarmbranchjob import IBuildFarmBranchJob
-from lp.code.model.branchjob import BranchJob, BranchJobDerived, BranchJobType
+from lp.code.model.branchjob import (
+    BranchJob,
+    BranchJobDerived,
+    BranchJobType,
+    )
 from lp.translations.interfaces.translationtemplatesbuildjob import (
-    ITranslationTemplatesBuildJobSource)
+    ITranslationTemplatesBuildJobSource,
+    )
 from lp.translations.pottery.detect_intltool import is_intltool_structure
 
 

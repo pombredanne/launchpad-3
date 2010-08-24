@@ -16,17 +16,21 @@ __all__ = [
 
 from operator import attrgetter
 
+from storm.store import Store
 from zope.component import getUtility
 
-from storm.store import Store
-
-from lp.bugs.interfaces.bugtask import BugTaskSearchParams, IBugTaskSet
-from lp.registry.interfaces.productseries import IProductSeries
-from lp.registry.interfaces.series import SeriesStatus
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.launchpadform import (
-    action, LaunchpadEditFormView)
+    action,
+    LaunchpadEditFormView,
+    )
 from canonical.launchpad.webapp.publisher import canonical_url
+from lp.bugs.interfaces.bugtask import (
+    BugTaskSearchParams,
+    IBugTaskSet,
+    )
+from lp.registry.interfaces.productseries import IProductSeries
+from lp.registry.interfaces.series import SeriesStatus
 
 
 class StatusCount:
@@ -115,10 +119,11 @@ class MilestoneOverlayMixin:
                     var create_milestone_link = Y.get(
                         '.menu-link-create_milestone');
                     create_milestone_link.addClass('js-action');
+                    var milestone_table = Y.lp.registry.milestonetable;
                     var config = {
                         milestone_form_uri: milestone_form_uri,
                         series_uri: series_uri,
-                        next_step: Y.lp.registry.milestonetable.get_milestone_row,
+                        next_step: milestone_table.get_milestone_row,
                         activate_node: create_milestone_link
                         };
                     Y.lp.registry.milestoneoverlay.attach_widget(config);
@@ -216,7 +221,10 @@ class RegistryDeleteViewMixin:
         """Delete a milestone and unlink related objects."""
         self._unsubscribe_structure(milestone)
         for bugtask in self._getBugtasks(milestone):
-            bugtask.milestone = None
+            if bugtask.conjoined_master is not None:
+                Store.of(bugtask).remove(bugtask.conjoined_master)
+            else:
+                bugtask.milestone = None
         for spec in self._getSpecifications(milestone):
             spec.milestone = None
         self._deleteRelease(milestone.product_release)

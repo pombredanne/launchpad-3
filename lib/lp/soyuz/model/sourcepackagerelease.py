@@ -12,26 +12,44 @@ __all__ = [
 
 import datetime
 import operator
-import pytz
-from StringIO import StringIO
 import re
+from StringIO import StringIO
 
-from sqlobject import StringCol, ForeignKey, SQLMultipleJoin
+import pytz
+import simplejson
+from sqlobject import (
+    ForeignKey,
+    SQLMultipleJoin,
+    StringCol,
+    )
 from storm.expr import Join
-from storm.locals import Int, Reference
+from storm.locals import (
+    Int,
+    Reference,
+    )
 from storm.store import Store
-from zope.interface import implements
 from zope.component import getUtility
+from zope.interface import implements
 
 from canonical.cachedproperty import cachedproperty
-from canonical.database.constants import DEFAULT, UTC_NOW
+from canonical.database.constants import (
+    DEFAULT,
+    UTC_NOW,
+    )
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import SQLBase, cursor, sqlvalues
+from canonical.database.sqlbase import (
+    cursor,
+    SQLBase,
+    sqlvalues,
+    )
 from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet)
+    DecoratedResultSet,
+    )
 from canonical.launchpad.database.librarian import (
-    LibraryFileAlias, LibraryFileContent)
+    LibraryFileAlias,
+    LibraryFileContent,
+    )
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.errors import NotFoundError
@@ -39,11 +57,18 @@ from lp.archiveuploader.utils import determine_source_file_type
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.sourcepackage import (
-    SourcePackageType, SourcePackageUrgency)
-from lp.soyuz.interfaces.archive import IArchiveSet, MAIN_ARCHIVE_PURPOSES
+    SourcePackageType,
+    SourcePackageUrgency,
+    )
+from lp.soyuz.interfaces.archive import (
+    IArchiveSet,
+    MAIN_ARCHIVE_PURPOSES,
+    )
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.packagediff import (
-    PackageDiffAlreadyRequested, PackageDiffStatus)
+    PackageDiffAlreadyRequested,
+    PackageDiffStatus,
+    )
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
@@ -51,10 +76,13 @@ from lp.soyuz.model.files import SourcePackageReleaseFile
 from lp.soyuz.model.packagediff import PackageDiff
 from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 from lp.soyuz.model.queue import (
-    PackageUpload, PackageUploadSource)
+    PackageUpload,
+    PackageUploadSource,
+    )
 from lp.soyuz.scripts.queue import QueueActionError
 from lp.translations.interfaces.translationimportqueue import (
-    ITranslationImportQueue)
+    ITranslationImportQueue,
+    )
 
 
 def _filter_ubuntu_translation_file(filename):
@@ -146,6 +174,22 @@ class SourcePackageRelease(SQLBase):
         joinColumn='sourcepackagerelease', orderBy="-datecreated")
     package_diffs = SQLMultipleJoin(
         'PackageDiff', joinColumn='to_source', orderBy="-date_requested")
+
+    _user_defined_fields = StringCol(dbName='user_defined_fields')
+
+    def __init__(self, *args, **kwargs):
+        if 'user_defined_fields' in kwargs:
+            kwargs['_user_defined_fields'] = simplejson.dumps(
+                kwargs['user_defined_fields'])
+            del kwargs['user_defined_fields']
+        super(SourcePackageRelease, self).__init__(*args, **kwargs)
+
+    @property
+    def user_defined_fields(self):
+        """See `IBinaryPackageRelease`."""
+        if self._user_defined_fields is None:
+            return []
+        return simplejson.loads(self._user_defined_fields)
 
     @property
     def builds(self):

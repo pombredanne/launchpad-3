@@ -6,39 +6,56 @@
 __metaclass__ = type
 
 import datetime
-import pytz
+import os
 import unittest
 
 from bzrlib import bzrdir
 from bzrlib.tests import multiply_tests
 from bzrlib.urlutils import escape
-
+import pytz
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad.ftests import ANONYMOUS, login, logout
-from lp.services.scripts.interfaces.scriptactivity import (
-    IScriptActivitySet)
-from lp.code.interfaces.codehosting import BRANCH_TRANSPORT, CONTROL_TRANSPORT
+from canonical.launchpad.ftests import (
+    ANONYMOUS,
+    login,
+    logout,
+    )
 from canonical.launchpad.interfaces.launchpad import ILaunchBag
-from lp.testing import TestCaseWithFactory
-from lp.testing.factory import LaunchpadObjectFactory
 from canonical.launchpad.xmlrpc import faults
-from canonical.testing import DatabaseFunctionalLayer, FunctionalLayer
-
+from canonical.testing import (
+    DatabaseFunctionalLayer,
+    FunctionalLayer,
+    )
 from lp.app.errors import NotFoundError
-from lp.code.bzr import BranchFormat, ControlFormat, RepositoryFormat
+from lp.code.bzr import (
+    BranchFormat,
+    ControlFormat,
+    RepositoryFormat,
+    )
 from lp.code.enums import BranchType
 from lp.code.errors import UnknownBranchTypeError
 from lp.code.interfaces.branch import BRANCH_NAME_VALIDATION_ERROR_MESSAGE
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchtarget import IBranchTarget
+from lp.code.interfaces.codehosting import (
+    BRANCH_ALIAS_PREFIX,
+    BRANCH_TRANSPORT,
+    CONTROL_TRANSPORT,
+    )
+from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from lp.code.model.tests.test_branchpuller import AcquireBranchToPullTests
 from lp.code.xmlrpc.codehosting import (
-    CodehostingAPI, LAUNCHPAD_ANONYMOUS, LAUNCHPAD_SERVICES, run_with_login)
-
+    CodehostingAPI,
+    LAUNCHPAD_ANONYMOUS,
+    LAUNCHPAD_SERVICES,
+    run_with_login,
+    )
 from lp.codehosting.inmemory import InMemoryFrontend
+from lp.services.scripts.interfaces.scriptactivity import IScriptActivitySet
+from lp.testing import TestCaseWithFactory
+from lp.testing.factory import LaunchpadObjectFactory
 
 
 UTC = pytz.timezone('UTC')
@@ -410,6 +427,120 @@ class CodehostingTest(TestCaseWithFactory):
         message = "No such source package: 'ningnangnong'."
         self.assertEqual(faults.NotFound(message), fault)
 
+    def test_createBranch_using_branch_alias(self):
+        # Branches can be created using the branch alias and the full unique
+        # name of the branch.
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct()
+        branch_name = self.factory.getUniqueString('branch-name')
+        unique_name = u'~%s/%s/%s' % (owner.name, product.name, branch_name)
+        path = u'/%s/%s' % (BRANCH_ALIAS_PREFIX, unique_name)
+        branch_id = self.codehosting_api.createBranch(owner.id, escape(path))
+        login(ANONYMOUS)
+        branch = self.branch_lookup.get(branch_id)
+        self.assertEqual(unique_name, branch.unique_name)
+
+    def test_createBranch_using_branch_alias_then_lookup(self):
+        # A branch newly created using createBranch is immediately traversable
+        # using translatePath.
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct()
+        branch_name = self.factory.getUniqueString('branch-name')
+        unique_name = u'~%s/%s/%s' % (owner.name, product.name, branch_name)
+        path = escape(u'/%s/%s' % (BRANCH_ALIAS_PREFIX, unique_name))
+        branch_id = self.codehosting_api.createBranch(owner.id, path)
+        login(ANONYMOUS)
+        translation = self.codehosting_api.translatePath(owner.id, path)
+        self.assertEqual(
+            (BRANCH_TRANSPORT, {'id': branch_id, 'writable': True}, ''),
+            translation)
+
+    def test_createBranch_using_branch_alias_product(self):
+        # If the person creating the branch has permission to link the new
+        # branch to the alias, then they are able to create a branch and link
+        # it.
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(owner=owner)
+        path = u'/%s/%s' % (BRANCH_ALIAS_PREFIX, product.name)
+        branch_id = self.codehosting_api.createBranch(owner.id, escape(path))
+        login(ANONYMOUS)
+        branch = self.branch_lookup.get(branch_id)
+        self.assertEqual(owner, branch.owner)
+        self.assertEqual('trunk', branch.name)
+        self.assertEqual(product, branch.product)
+        self.assertEqual(ICanHasLinkedBranch(product).branch, branch)
+
+    def test_createBranch_using_branch_alias_product_then_lookup(self):
+        # A branch newly created using createBranch using a product alias is
+        # immediately traversable using translatePath.
+        product = self.factory.makeProduct()
+        owner = product.owner
+        path = escape(u'/%s/%s' % (BRANCH_ALIAS_PREFIX, product.name))
+        branch_id = self.codehosting_api.createBranch(owner.id, path)
+        login(ANONYMOUS)
+        translation = self.codehosting_api.translatePath(owner.id, path)
+        self.assertEqual(
+            (BRANCH_TRANSPORT, {'id': branch_id, 'writable': True}, ''),
+            translation)
+
+    def test_createBranch_using_branch_alias_product_not_auth(self):
+        # If the person creating the branch does not have permission to link
+        # the new branch to the alias, then can't create the branch.
+        owner = self.factory.makePerson(name='eric')
+        product = self.factory.makeProduct('wibble')
+        path = u'/%s/%s' % (BRANCH_ALIAS_PREFIX, product.name)
+        fault = self.codehosting_api.createBranch(owner.id, escape(path))
+        message = "Cannot create linked branch at 'wibble'."
+        self.assertEqual(faults.PermissionDenied(message), fault)
+        # Make sure that the branch doesn't exist.
+        login(ANONYMOUS)
+        branch = self.branch_lookup.getByUniqueName('~eric/wibble/trunk')
+        self.assertIs(None, branch)
+
+    def test_createBranch_using_branch_alias_product_not_exist(self):
+        # If the product doesn't exist, we don't (yet) create one.
+        owner = self.factory.makePerson()
+        path = u'/%s/foible' % (BRANCH_ALIAS_PREFIX,)
+        fault = self.codehosting_api.createBranch(owner.id, escape(path))
+        message = "Project 'foible' does not exist."
+        self.assertEqual(faults.NotFound(message), fault)
+
+    def test_createBranch_using_branch_alias_productseries(self):
+        # If the person creating the branch has permission to link the new
+        # branch to the alias, then they are able to create a branch and link
+        # it.
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(owner=owner)
+        series = self.factory.makeProductSeries(product=product)
+        path = u'/%s/%s/%s' % (BRANCH_ALIAS_PREFIX, product.name, series.name)
+        branch_id = self.codehosting_api.createBranch(owner.id, escape(path))
+        login(ANONYMOUS)
+        branch = self.branch_lookup.get(branch_id)
+        self.assertEqual(owner, branch.owner)
+        self.assertEqual('trunk', branch.name)
+        self.assertEqual(product, branch.product)
+        self.assertEqual(ICanHasLinkedBranch(series).branch, branch)
+
+    def test_createBranch_using_branch_alias_productseries_not_auth(self):
+        # If the person creating the branch does not have permission to link
+        # the new branch to the alias, then can't create the branch.
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(name='wibble')
+        self.factory.makeProductSeries(product=product, name='nip')
+        path = u'/%s/wibble/nip' % (BRANCH_ALIAS_PREFIX,)
+        fault = self.codehosting_api.createBranch(owner.id, escape(path))
+        message = "Cannot create linked branch at 'wibble/nip'."
+        self.assertEqual(faults.PermissionDenied(message), fault)
+
+    def test_createBranch_using_branch_alias_productseries_not_exist(self):
+        # If the product series doesn't exist, we don't (yet) create it.
+        owner = self.factory.makePerson()
+        self.factory.makeProduct(name='wibble')
+        path = u'/%s/wibble/nip' % (BRANCH_ALIAS_PREFIX,)
+        fault = self.codehosting_api.createBranch(owner.id, escape(path))
+        message = "No such product series: 'nip'."
+        self.assertEqual(faults.NotFound(message), fault)
+
     def test_requestMirror(self):
         # requestMirror should set the next_mirror_time field to be the
         # current time.
@@ -741,6 +872,109 @@ class CodehostingTest(TestCaseWithFactory):
         self.assertEqual(
             (BRANCH_TRANSPORT, {'id': branch.id, 'writable': False}, ''),
             translation)
+
+    def test_translatePath_branch_alias_short_name(self):
+        # translatePath translates the short name of a branch if it's prefixed
+        # by +branch.
+        requester = self.factory.makePerson()
+        branch = self.factory.makeProductBranch()
+        removeSecurityProxy(branch.product.development_focus).branch = branch
+        short_name = ICanHasLinkedBranch(branch.product).bzr_path
+        path_in_branch = '.bzr/branch-format'
+        path = escape(u'/%s' % os.path.join(
+                BRANCH_ALIAS_PREFIX, short_name, path_in_branch))
+        translation = self.codehosting_api.translatePath(requester.id, path)
+        login(ANONYMOUS)
+        self.assertEqual(
+            (BRANCH_TRANSPORT, {'id': branch.id, 'writable': False},
+             path_in_branch), translation)
+
+    def test_translatePath_branch_alias_unique_name(self):
+        # translatePath translates +branch paths that are followed by the
+        # unique name as if they didn't have the prefix at all.
+        requester = self.factory.makePerson()
+        branch = self.factory.makeBranch()
+        path_in_branch = '.bzr/branch-format'
+        path = escape(u'/%s' % os.path.join(
+                BRANCH_ALIAS_PREFIX, branch.unique_name, path_in_branch))
+        translation = self.codehosting_api.translatePath(requester.id, path)
+        login(ANONYMOUS)
+        self.assertEqual(
+            (BRANCH_TRANSPORT, {'id': branch.id, 'writable': False},
+             path_in_branch), translation)
+
+    def test_translatePath_branch_alias_no_such_branch(self):
+        # translatePath returns a not found when there's no such branch, given
+        # a unique name after +branch.
+        requester = self.factory.makePerson()
+        product = self.factory.makeProduct()
+        path = '/%s/~%s/%s/doesntexist' % (
+            BRANCH_ALIAS_PREFIX, requester.name, product.name)
+        self.assertNotFound(requester, path)
+
+    def test_translatePath_branch_alias_no_such_person(self):
+        # translatePath returns a not found when there's no such person, given
+        # a unique name after +branch.
+        requester = self.factory.makePerson()
+        path = '/%s/~doesntexist/dontcare/noreally' % (BRANCH_ALIAS_PREFIX,)
+        self.assertNotFound(requester, path)
+
+    def test_translatePath_branch_alias_no_such_product(self):
+        # translatePath returns a not found when there's no such product,
+        # given a unique name after +branch.
+        requester = self.factory.makePerson()
+        path = '/%s/~%s/doesntexist/branchname' % (
+            BRANCH_ALIAS_PREFIX, requester.name)
+        self.assertNotFound(requester, path)
+
+    def test_translatePath_branch_alias_no_such_distro(self):
+        # translatePath returns a not found when there's no such distro, given
+        # a unique name after +branch.
+        requester = self.factory.makePerson()
+        path = '/%s/~%s/doesntexist/lucid/openssh/branchname' % (
+            BRANCH_ALIAS_PREFIX, requester.name)
+        self.assertNotFound(requester, path)
+
+    def test_translatePath_branch_alias_no_such_distroseries(self):
+        # translatePath returns a not found when there's no such distroseries,
+        # given a unique name after +branch.
+        requester = self.factory.makePerson()
+        distro = self.factory.makeDistribution()
+        path = '/%s/~%s/%s/doesntexist/openssh/branchname' % (
+            BRANCH_ALIAS_PREFIX, requester.name, distro.name)
+        self.assertNotFound(requester, path)
+
+    def test_translatePath_branch_alias_no_such_sourcepackagename(self):
+        # translatePath returns a not found when there's no such
+        # sourcepackagename, given a unique name after +branch.
+        requester = self.factory.makePerson()
+        distroseries = self.factory.makeDistroSeries()
+        distro = distroseries.distribution
+        path = '/%s/~%s/%s/%s/doesntexist/branchname' % (
+            BRANCH_ALIAS_PREFIX, requester.name, distro.name,
+            distroseries.name)
+        self.assertNotFound(requester, path)
+
+    def test_translatePath_branch_alias_product_with_no_branch(self):
+        # translatePath returns a not found when we look up a product that has
+        # no linked branch.
+        requester = self.factory.makePerson()
+        product = self.factory.makeProduct()
+        path = '/%s/%s' % (BRANCH_ALIAS_PREFIX, product.name)
+        self.assertNotFound(requester, path)
+
+    def test_translatePath_branch_alias_bzrdir_content(self):
+        # translatePath('/+branch/.bzr/.*') *must* return not found, otherwise
+        # bzr will look for it and we don't have a global bzr dir.
+        requester = self.factory.makePerson()
+        self.assertNotFound(
+            requester, '/%s/.bzr/branch-format' % BRANCH_ALIAS_PREFIX)
+
+    def test_translatePath_branch_alias_bzrdir(self):
+        # translatePath('/+branch/.bzr') *must* return not found, otherwise
+        # bzr will look for it and we don't have a global bzr dir.
+        requester = self.factory.makePerson()
+        self.assertNotFound(requester, '/%s/.bzr' % BRANCH_ALIAS_PREFIX)
 
     def assertTranslationIsControlDirectory(self, translation,
                                             default_stacked_on,

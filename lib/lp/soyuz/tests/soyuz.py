@@ -16,7 +16,10 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.launchpad.database import LibraryFileAlias
-from canonical.launchpad.ftests import import_public_test_keys, syncUpdate
+from canonical.launchpad.ftests import (
+    import_public_test_keys,
+    syncUpdate,
+    )
 from canonical.launchpad.testing.fakepackager import FakePackager
 from canonical.testing import LaunchpadZopelessLayer
 from lp.registry.interfaces.distribution import IDistributionSet
@@ -25,12 +28,18 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.packagediff import IPackageDiffSet
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.model.publishing import (
+    BinaryPackagePublishingHistory,
     SourcePackagePublishingHistory,
-    BinaryPackagePublishingHistory)
+    )
 from lp.testing.sampledata import (
-    BUILDD_ADMIN_USERNAME, CHROOT_LIBRARYFILEALIAS, I386_ARCHITECTURE_NAME,
-    LAUNCHPAD_DBUSER_NAME, UBUNTU_DISTRIBUTION_NAME, WARTY_DISTROSERIES_NAME,
-    WARTY_UPDATES_SUITE_NAME)
+    BUILDD_ADMIN_USERNAME,
+    CHROOT_LIBRARYFILEALIAS,
+    I386_ARCHITECTURE_NAME,
+    LAUNCHPAD_DBUSER_NAME,
+    UBUNTU_DISTRIBUTION_NAME,
+    WARTY_DISTROSERIES_NAME,
+    WARTY_UPDATES_SUITE_NAME,
+    )
 
 
 class SoyuzTestHelper:

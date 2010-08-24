@@ -22,40 +22,74 @@ __all__ = [
     'InvalidDuplicateValue',
     ]
 
+from lazr.lifecycle.snapshot import doNotSnapshot
+from lazr.restful.declarations import (
+    call_with,
+    export_as_webservice_entry,
+    export_factory_operation,
+    export_operation_as,
+    export_read_operation,
+    export_write_operation,
+    exported,
+    mutator_for,
+    operation_parameters,
+    operation_returns_collection_of,
+    operation_returns_entry,
+    rename_parameters_as,
+    REQUEST_USER,
+    webservice_error,
+    )
+from lazr.restful.fields import (
+    CollectionField,
+    Reference,
+    )
+from lazr.restful.interface import copy_field
 from zope.component import getUtility
-from zope.interface import Interface, Attribute
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
 from zope.schema import (
-    Bool, Bytes, Choice, Datetime, Int, List, Object, Text, TextLine)
+    Bool,
+    Bytes,
+    Choice,
+    Datetime,
+    Int,
+    List,
+    Object,
+    Text,
+    TextLine,
+    )
 from zope.schema.vocabulary import SimpleVocabulary
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import (
-    BugField, ContentNameField, DuplicateBug, PublicPersonChoice, Tag, Title)
-from lazr.lifecycle.snapshot import doNotSnapshot
-from lp.bugs.interfaces.bugattachment import IBugAttachment
-from lp.bugs.interfaces.bugtask import (
-    BugTaskImportance, BugTaskStatus, IBugTask)
-from lp.bugs.interfaces.bugwatch import IBugWatch
-from lp.bugs.interfaces.bugbranch import IBugBranch
-from lp.bugs.interfaces.cve import ICve
-from canonical.launchpad.interfaces.launchpad import  IPrivacy
-from lp.app.errors import NotFoundError
+from canonical.launchpad.interfaces.launchpad import IPrivacy
 from canonical.launchpad.interfaces.message import IMessage
+from canonical.launchpad.validators.attachment import (
+    attachment_size_constraint,
+    )
+from canonical.launchpad.validators.name import name_validator
+from lp.app.errors import NotFoundError
+from lp.bugs.interfaces.bugattachment import IBugAttachment
+from lp.bugs.interfaces.bugbranch import IBugBranch
+from lp.bugs.interfaces.bugtask import (
+    BugTaskImportance,
+    BugTaskStatus,
+    IBugTask,
+    )
+from lp.bugs.interfaces.bugwatch import IBugWatch
+from lp.bugs.interfaces.cve import ICve
 from lp.code.interfaces.branchlink import IHasLinkedBranches
 from lp.registry.interfaces.mentoringoffer import ICanBeMentored
 from lp.registry.interfaces.person import IPerson
-from canonical.launchpad.validators.name import name_validator
-from canonical.launchpad.validators.attachment import (
-    attachment_size_constraint)
-
-from lazr.restful.declarations import (
-    REQUEST_USER, call_with, export_as_webservice_entry,
-    export_factory_operation, export_operation_as, export_read_operation,
-    export_write_operation, exported, mutator_for, operation_parameters,
-    operation_returns_collection_of, operation_returns_entry,
-    rename_parameters_as, webservice_error)
-from lazr.restful.fields import CollectionField, Reference
-from lazr.restful.interface import copy_field
+from lp.services.fields import (
+    BugField,
+    ContentNameField,
+    DuplicateBug,
+    PublicPersonChoice,
+    Tag,
+    Title,
+    )
 
 
 class CreateBugParams:

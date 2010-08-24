@@ -5,9 +5,13 @@ import unittest
 
 from canonical.launchpad.windmill.testing import lpuser
 from canonical.launchpad.windmill.testing.constants import (
-    PAGE_LOAD, FOR_ELEMENT, SLEEP)
+    FOR_ELEMENT,
+    PAGE_LOAD,
+    SLEEP,
+    )
 from lp.bugs.windmill.testing import BugsWindmillLayer
 from lp.testing import WindmillTestCase
+
 
 BUG_URL = u'http://bugs.launchpad.dev:8085/bugs/%s'
 SUBSCRIPTION_LINK = u'//div[@id="portlet-subscribers"]/div/div/a'

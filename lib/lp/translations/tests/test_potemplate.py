@@ -6,13 +6,16 @@ __metaclass__ = type
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from lp.services.worlddata.interfaces.language import ILanguageSet
-from lp.translations.model.pofile import DummyPOFile
-from lp.translations.model.potemplate import get_pofiles_for, POTemplateSet
-from lp.translations.interfaces.potemplate import IPOTemplateSet
 from canonical.testing import DatabaseFunctionalLayer
 from lp.registry.interfaces.distribution import IDistributionSet
+from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing import TestCaseWithFactory
+from lp.translations.interfaces.potemplate import IPOTemplateSet
+from lp.translations.model.pofile import DummyPOFile
+from lp.translations.model.potemplate import (
+    get_pofiles_for,
+    POTemplateSet,
+    )
 
 
 class TestPOTemplate(TestCaseWithFactory):

@@ -15,32 +15,46 @@ __all__ = [
 
 import datetime
 
+from sqlobject import (
+    AND,
+    BoolCol,
+    DateCol,
+    ForeignKey,
+    SQLMultipleJoin,
+    SQLObjectNotFound,
+    StringCol,
+    )
+from storm.locals import (
+    And,
+    Store,
+    )
 from zope.component import getUtility
 from zope.interface import implements
 
-from sqlobject import (
-    AND, BoolCol, DateCol, ForeignKey, SQLMultipleJoin, SQLObjectNotFound,
-    StringCol)
-
-
-from storm.expr import And
-from storm.store import Store
-
-
-from canonical.cachedproperty import cachedproperty
-from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.database.sqlbase import (
+    SQLBase,
+    sqlvalues,
+    )
 from canonical.launchpad.webapp.sorting import expand_numbers
 from lp.app.errors import NotFoundError
-from lp.bugs.model.bugtarget import HasBugsBase
 from lp.blueprints.model.specification import Specification
+from lp.bugs.interfaces.bugtarget import IHasBugs
+from lp.bugs.interfaces.bugtask import (
+    BugTaskSearchParams,
+    BugTaskStatus,
+    IBugTaskSet,
+    )
+from lp.bugs.model.bugtarget import HasBugsBase
+from lp.registry.interfaces.milestone import (
+    IHasMilestones,
+    IMilestone,
+    IMilestoneSet,
+    IProjectGroupMilestone,
+    )
 from lp.registry.model.productrelease import ProductRelease
 from lp.registry.model.structuralsubscription import (
-    StructuralSubscriptionTargetMixin)
-from lp.bugs.interfaces.bugtask import (
-    BugTaskSearchParams, BugTaskStatus, IBugTaskSet)
-from lp.bugs.interfaces.bugtarget import IHasBugs
-from lp.registry.interfaces.milestone import (
-    IHasMilestones, IMilestone, IMilestoneSet, IProjectGroupMilestone)
+    StructuralSubscriptionTargetMixin,
+    )
 
 
 FUTURE_NONE = datetime.date(datetime.MAXYEAR, 1, 1)

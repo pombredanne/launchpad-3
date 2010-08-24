@@ -81,7 +81,7 @@ key registered, point to the SSH keys form.
 First, unregister the existing SSH key for Sample Person.
 
     >>> name12_browser.open('http://launchpad.dev/')
-    >>> name12_browser.getLink('Sample Person').click()
+    >>> name12_browser.getLink('name12').click()
     >>> name12_browser.getLink(url='editsshkeys').click()
     >>> name12_browser.getControl('Remove').click()
 

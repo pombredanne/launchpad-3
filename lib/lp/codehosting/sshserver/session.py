@@ -11,10 +11,9 @@ __all__ = [
 import os
 import urlparse
 
-from zope.event import notify
-
 from twisted.internet.process import ProcessExitedAlready
 from twisted.python import log
+from zope.event import notify
 
 from canonical.config import config
 from lp.codehosting import get_bzr_path

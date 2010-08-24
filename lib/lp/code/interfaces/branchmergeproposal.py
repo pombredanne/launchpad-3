@@ -30,27 +30,62 @@ __all__ = [
 
 
 from lazr.lifecycle.event import ObjectModifiedEvent
+from lazr.restful.declarations import (
+    call_with,
+    export_as_webservice_entry,
+    export_factory_operation,
+    export_read_operation,
+    export_write_operation,
+    exported,
+    operation_parameters,
+    operation_returns_entry,
+    rename_parameters_as,
+    REQUEST_USER,
+    )
+from lazr.restful.fields import (
+    CollectionField,
+    Reference,
+    )
 from zope.event import notify
-from zope.interface import Attribute, Interface
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
 from zope.schema import (
-    Bytes, Bool, Choice, Datetime, Int, Object, Text, TextLine)
+    Bool,
+    Bytes,
+    Choice,
+    Datetime,
+    Int,
+    Object,
+    Text,
+    TextLine,
+    )
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import PublicPersonChoice, Summary, Whiteboard
 from canonical.launchpad.interfaces.launchpad import IPrivacy
-from lp.bugs.interfaces.bug import IBug
-from lp.code.enums import BranchMergeProposalStatus, CodeReviewVote
-from lp.code.interfaces.branch import IBranch
-from lp.registry.interfaces.person import IPerson
-from lp.code.interfaces.diff import IPreviewDiff, IStaticDiff
-from lp.services.job.interfaces.job import IJob, IJobSource, IRunnableJob
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
-from lazr.restful.fields import CollectionField, Reference
-from lazr.restful.declarations import (
-    call_with, export_as_webservice_entry, export_factory_operation,
-    export_read_operation, export_write_operation, exported,
-    operation_parameters, operation_returns_entry, rename_parameters_as,
-    REQUEST_USER)
+from lp.bugs.interfaces.bug import IBug
+from lp.code.enums import (
+    BranchMergeProposalStatus,
+    CodeReviewVote,
+    )
+from lp.code.interfaces.branch import IBranch
+from lp.code.interfaces.diff import (
+    IPreviewDiff,
+    IStaticDiff,
+    )
+from lp.registry.interfaces.person import IPerson
+from lp.services.fields import (
+    PublicPersonChoice,
+    Summary,
+    Whiteboard,
+    )
+from lp.services.job.interfaces.job import (
+    IJob,
+    IJobSource,
+    IRunnableJob,
+    )
 
 
 BRANCH_MERGE_PROPOSAL_FINAL_STATES = (

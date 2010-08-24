@@ -11,62 +11,99 @@ __all__ = [
     'ProjectGroupSet',
     ]
 
+from sqlobject import (
+    AND,
+    BoolCol,
+    ForeignKey,
+    SQLObjectNotFound,
+    StringCol,
+    )
+from storm.expr import (
+    And,
+    In,
+    SQL,
+    )
+from storm.locals import Int
+from storm.store import Store
 from zope.component import getUtility
 from zope.interface import implements
 
-from sqlobject import (
-    AND, ForeignKey, StringCol, BoolCol, SQLObjectNotFound)
-from storm.expr import And, In, SQL
-from storm.locals import Int
-from storm.store import Store
-
-from canonical.database.sqlbase import SQLBase, sqlvalues, quote
-from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.constants import UTC_NOW
+from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-
+from canonical.database.sqlbase import (
+    quote,
+    SQLBase,
+    sqlvalues,
+    )
+from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces.launchpad import (
-    IHasIcon, IHasLogo, IHasMugshot)
-from lp.app.errors import NotFoundError
-from lp.blueprints.interfaces.specification import (
-    SpecificationFilter, SpecificationImplementationStatus, SpecificationSort)
-from lp.blueprints.interfaces.sprintspecification import (
-    SprintSpecificationStatus)
-from lp.translations.interfaces.translationgroup import (
-    TranslationPermission)
+    IHasIcon,
+    IHasLogo,
+    IHasMugshot,
+    )
 from lp.answers.interfaces.faqcollection import IFAQCollection
 from lp.answers.interfaces.questioncollection import (
-    ISearchableByQuestionOwner, QUESTION_STATUS_DEFAULT_SEARCH)
-from lp.registry.interfaces.product import IProduct
-from lp.registry.interfaces.projectgroup import (
-    IProjectGroup, IProjectGroupSeries, IProjectGroupSet)
-from lp.registry.interfaces.pillar import IPillarNameSet
-from lp.code.model.branchvisibilitypolicy import (
-    BranchVisibilityPolicyMixin)
-from lp.code.model.hasbranches import HasBranchesMixin, HasMergeProposalsMixin
+    ISearchableByQuestionOwner,
+    QUESTION_STATUS_DEFAULT_SEARCH,
+    )
+from lp.answers.model.faq import (
+    FAQ,
+    FAQSearch,
+    )
+from lp.answers.model.question import QuestionTargetSearch
+from lp.app.errors import NotFoundError
+from lp.blueprints.interfaces.specification import (
+    SpecificationFilter,
+    SpecificationImplementationStatus,
+    SpecificationSort,
+    )
+from lp.blueprints.interfaces.sprintspecification import (
+    SprintSpecificationStatus,
+    )
+from lp.blueprints.model.specification import (
+    HasSpecificationsMixin,
+    Specification,
+    )
+from lp.blueprints.model.sprint import HasSprintsMixin
 from lp.bugs.interfaces.bugtarget import IHasBugHeat
 from lp.bugs.model.bug import (
-    get_bug_tags, get_bug_tags_open_count)
-from lp.bugs.model.bugtarget import BugTargetBase, HasBugHeatMixin
+    get_bug_tags,
+    get_bug_tags_open_count,
+    )
+from lp.bugs.model.bugtarget import (
+    BugTargetBase,
+    HasBugHeatMixin,
+    )
 from lp.bugs.model.bugtask import BugTask
-from lp.answers.model.faq import FAQ, FAQSearch
+from lp.code.model.branchvisibilitypolicy import BranchVisibilityPolicyMixin
+from lp.code.model.hasbranches import (
+    HasBranchesMixin,
+    HasMergeProposalsMixin,
+    )
+from lp.registry.interfaces.person import validate_public_person
+from lp.registry.interfaces.pillar import IPillarNameSet
+from lp.registry.interfaces.product import IProduct
+from lp.registry.interfaces.projectgroup import (
+    IProjectGroup,
+    IProjectGroupSeries,
+    IProjectGroupSet,
+    )
+from lp.registry.model.announcement import MakesAnnouncements
 from lp.registry.model.karma import KarmaContextMixin
-from lp.services.worlddata.model.language import Language
 from lp.registry.model.mentoringoffer import MentoringOffer
 from lp.registry.model.milestone import (
-    Milestone, ProjectMilestone)
-from lp.registry.model.announcement import MakesAnnouncements
+    Milestone,
+    ProjectMilestone,
+    )
 from lp.registry.model.pillar import HasAliasMixin
 from lp.registry.model.product import Product
 from lp.registry.model.productseries import ProductSeries
-from lp.blueprints.model.specification import (
-    HasSpecificationsMixin, Specification)
-from lp.blueprints.model.sprint import HasSprintsMixin
-from lp.answers.model.question import QuestionTargetSearch
 from lp.registry.model.structuralsubscription import (
-    StructuralSubscriptionTargetMixin)
-from canonical.launchpad.helpers import shortlist
-from lp.registry.interfaces.person import validate_public_person
+    StructuralSubscriptionTargetMixin,
+    )
+from lp.services.worlddata.model.language import Language
+from lp.translations.interfaces.translationgroup import TranslationPermission
 
 
 class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
@@ -125,8 +162,6 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
     bug_reporting_guidelines = StringCol(default=None)
     bug_reported_acknowledgement = StringCol(default=None)
     max_bug_heat = Int()
-
-    # convenient joins
 
     @property
     def products(self):

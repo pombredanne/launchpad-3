@@ -7,6 +7,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'BRANCH_ALIAS_PREFIX',
     'BRANCH_TRANSPORT',
     'CONTROL_TRANSPORT',
     'ICodehostingAPI',
@@ -19,8 +20,8 @@ __all__ = [
 
 from zope.interface import Interface
 
-from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 from canonical.launchpad.validators.name import valid_name
+from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 
 # When LAUNCHPAD_SERVICES is provided as a login ID to XML-RPC methods, they
 # bypass the normal security checks and give read-only access to all branches.
@@ -44,6 +45,9 @@ WRITABLE = 'w'
 BRANCH_TRANSPORT = 'BRANCH_TRANSPORT'
 # Indicates that a path points to a control directory.
 CONTROL_TRANSPORT = 'CONTROL_TRANSPORT'
+
+# The path prefix for getting at branches via their short name.
+BRANCH_ALIAS_PREFIX = '+branch'
 
 
 class ICodehostingApplication(ILaunchpadApplication):

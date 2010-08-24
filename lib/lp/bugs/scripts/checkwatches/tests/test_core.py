@@ -6,33 +6,49 @@ from __future__ import with_statement
 
 __metaclass__ = type
 
+from datetime import datetime
 import threading
 import unittest
 
 import transaction
-
-from datetime import datetime
 from zope.component import getUtility
 
 from canonical.config import config
 from canonical.launchpad.ftests import login
 from canonical.launchpad.interfaces import (
-    BugTaskStatus, BugTrackerType, IBugSet, IBugTaskSet,
-    ILaunchpadCelebrities, IPersonSet, IProductSet, IQuestionSet)
+    BugTaskStatus,
+    BugTrackerType,
+    IBugSet,
+    IBugTaskSet,
+    ILaunchpadCelebrities,
+    IPersonSet,
+    IProductSet,
+    IQuestionSet,
+    )
 from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.testing import LaunchpadZopelessLayer
-
 from lp.bugs.externalbugtracker.bugzilla import BugzillaAPI
 from lp.bugs.interfaces.bugtracker import IBugTrackerSet
 from lp.bugs.scripts import checkwatches
 from lp.bugs.scripts.checkwatches.base import (
-    CheckWatchesErrorUtility, WorkingBase)
+    CheckWatchesErrorUtility,
+    WorkingBase,
+    )
 from lp.bugs.scripts.checkwatches.core import (
-    CheckwatchesMaster, LOGIN, TwistedThreadScheduler)
+    CheckwatchesMaster,
+    LOGIN,
+    TwistedThreadScheduler,
+    )
 from lp.bugs.scripts.checkwatches.remotebugupdater import RemoteBugUpdater
 from lp.bugs.tests.externalbugtracker import (
-    TestBugzillaAPIXMLRPCTransport, TestExternalBugTracker, new_bugtracker)
-from lp.testing import TestCaseWithFactory, ZopeTestInSubProcess
+    new_bugtracker,
+    TestBugzillaAPIXMLRPCTransport,
+    TestExternalBugTracker,
+    )
+from lp.testing import (
+    TestCaseWithFactory,
+    ZopeTestInSubProcess,
+    )
 
 
 class BugzillaAPIWithoutProducts(BugzillaAPI):

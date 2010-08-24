@@ -6,7 +6,6 @@
 __metaclass__ = type
 
 from canonical.testing import LaunchpadFunctionalLayer
-
 from lp.testing import TestCaseWithFactory
 
 
@@ -30,3 +29,12 @@ class TestSourcePackageRelease(TestCaseWithFactory):
         spr = self.factory.makeSourcePackageRelease(
             source_package_recipe_build=recipe_build)
         self.assertEqual(recipe_build.requester, spr.uploader)
+
+    def test_user_defined_fields(self):
+        release = self.factory.makeSourcePackageRelease(
+                user_defined_fields=[
+                    ("Python-Version", ">= 2.4"),
+                    ("Other", "Bla")])
+        self.assertEquals([
+            ["Python-Version", ">= 2.4"],
+            ["Other", "Bla"]], release.user_defined_fields)

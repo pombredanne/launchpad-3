@@ -5,6 +5,7 @@
 
 import _pythonpath
 
+
 __metaclass__ = type
 __all__ = []
 
@@ -88,10 +89,8 @@ class SanitizeDb(LaunchpadScript):
             'oauthnonce',
             'oauthrequesttoken',
             'openidassociation',
-            'openidauthorization',
             'openidconsumerassociation',
             'openidconsumernonce',
-            'openidnonce',
             'openidrpsummary',
             'requestedcds',
             'scriptactivity',

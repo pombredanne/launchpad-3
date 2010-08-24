@@ -40,10 +40,15 @@ from zope.interface import implements
 from zope.publisher.interfaces import IPublicationRequest
 from zope.security.interfaces import IParticipation
 from zope.security.management import (
-    endInteraction, newInteraction, queryInteraction)
+    endInteraction,
+    newInteraction,
+    queryInteraction,
+    )
 
 from canonical.launchpad.webapp.interfaces import (
-    IOpenLaunchBag, IPlacelessAuthUtility)
+    IOpenLaunchBag,
+    IPlacelessAuthUtility,
+    )
 
 
 __all__ = [
@@ -52,6 +57,7 @@ __all__ = [
     'setupInteraction',
     'setupInteractionByEmail',
     'setupInteractionForPerson',
+    'Participation',
     ]
 
 

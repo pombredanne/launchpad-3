@@ -11,10 +11,9 @@ __all__ = [
 
 from cStringIO import StringIO
 
+from lazr.restful.interfaces import IByteStorage
 from zope.component import getUtility
 from zope.interface import implements
-
-from lazr.restful.interfaces import IByteStorage
 
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData

@@ -310,20 +310,8 @@ given build record entry.
     >>> section = firefox_build.source_package_release.section.id
     >>> from canonical.launchpad.interfaces import PackagePublishingPriority
     >>> priority = PackagePublishingPriority.STANDARD
-    >>> shlibdeps = None
-    >>> depends = None
-    >>> recommends = None
-    >>> suggests = None
-    >>> conflicts = None
-    >>> replaces = None
-    >>> provides = None
-    >>> essential = False
     >>> installedsize = 0
     >>> architecturespecific = False
-    >>> pre_depends = None
-    >>> enhances = None
-    >>> breaks = None
-    >>> debug_package = None
 
 Invoke createBinaryPackageRelease with all required arguments.
 
@@ -331,11 +319,11 @@ Invoke createBinaryPackageRelease with all required arguments.
     >>> pmount_build = getUtility(IBinaryPackageBuildSet).getByBuildID(19)
 
     >>> bin = pmount_build.createBinaryPackageRelease(
-    ...     binarypackagename, version, summary, description,
-    ...     binpackageformat, component, section, priority, shlibdeps,
-    ...     depends, recommends, suggests, conflicts, replaces, provides,
-    ...     pre_depends, enhances, breaks, essential, installedsize,
-    ...     architecturespecific, debug_package)
+    ...     binarypackagename=binarypackagename, version=version,
+    ...     summary=summary, description=description,
+    ...     binpackageformat=binpackageformat, component=component,
+    ...     section=section, priority=priority, installedsize=installedsize,
+    ...     architecturespecific=architecturespecific)
 
     >>> from canonical.launchpad.interfaces import IBinaryPackageRelease
     >>> from canonical.launchpad.webapp.testing import verifyObject
@@ -364,11 +352,12 @@ Emulate a huge list of binaries for 'pmount':
     ...     version = "%d" % i
     ...     binarypackagename = bpnameset.ensure("test-%d" % i).id
     ...     b = pmount_build.createBinaryPackageRelease(
-    ...         binarypackagename, version, summary, description,
-    ...         binpackageformat, component, section, priority, shlibdeps,
-    ...         depends, recommends, suggests, conflicts, replaces, provides,
-    ...         pre_depends, enhances, breaks, essential, installedsize,
-    ...         architecturespecific, debug_package)
+    ...         binarypackagename=binarypackagename, version=version,
+    ...         summary=summary, description=description,
+    ...         binpackageformat=binpackageformat, component=component,
+    ...         section=section, priority=priority,
+    ...         installedsize=installedsize,
+    ...         architecturespecific=architecturespecific)
 
 
 Check if the property is still working:

@@ -6,31 +6,48 @@
 __metaclass__ = type
 __all__ = ['Diff', 'PreviewDiff', 'StaticDiff']
 
-import sys
-
 from cStringIO import StringIO
+import sys
+from uuid import uuid1
 
+from bzrlib import trace
 from bzrlib.branch import Branch
 from bzrlib.diff import show_diff_trees
-from bzrlib.patches import parse_patches, Patch
 from bzrlib.merge import Merge3Merger
-from bzrlib import trace
+from bzrlib.patches import (
+    parse_patches,
+    Patch,
+    )
 from lazr.delegates import delegates
 import simplejson
-from sqlobject import ForeignKey, IntCol, StringCol
-from storm.locals import Int, Reference, Storm, Unicode
+from sqlobject import (
+    ForeignKey,
+    IntCol,
+    StringCol,
+    )
+from storm.locals import (
+    Int,
+    Reference,
+    Storm,
+    Unicode,
+    )
 from zope.component import getUtility
 from zope.error.interfaces import IErrorReportingUtility
-from zope.interface import classProvides, implements
+from zope.interface import (
+    classProvides,
+    implements,
+    )
 
 from canonical.config import config
 from canonical.database.sqlbase import SQLBase
-from uuid import uuid1
-
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from lp.app.errors import NotFoundError
 from lp.code.interfaces.diff import (
-    IDiff, IPreviewDiff, IStaticDiff, IStaticDiffSource)
+    IDiff,
+    IPreviewDiff,
+    IStaticDiff,
+    IStaticDiffSource,
+    )
 
 
 class Diff(SQLBase):
@@ -140,7 +157,7 @@ class Diff(SQLBase):
             source_revision)
         merger = Merge3Merger(
             merge_target, merge_target, merge_base, merge_source,
-            do_merge=False)
+            this_branch=target_branch, do_merge=False)
         def dummy_warning(self, *args, **kwargs):
             pass
         real_warning = trace.warning

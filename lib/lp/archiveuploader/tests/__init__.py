@@ -1,19 +1,34 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+"""Tests for the archive uploader."""
+
+from __future__ import with_statement
+
 __metaclass__ = type
 
-__all__ = ['datadir', 'getPolicy', 'insertFakeChangesFile',
-           'insertFakeChangesFileForAllPackageUploads', 'mock_options',
-           'mock_logger', 'mock_logger_quiet']
+__all__ = [
+    'datadir',
+    'getPolicy',
+    'insertFakeChangesFile',
+    'insertFakeChangesFileForAllPackageUploads',
+    'mock_logger',
+    'mock_logger_quiet',
+    ]
 
 import os
 import sys
 import traceback
 
-from lp.archiveuploader.uploadpolicy import findPolicyByName
-from lp.soyuz.model.queue import PackageUploadSet
+from zope.component import getGlobalSiteManager
+
 from canonical.librarian.ftests.harness import fillLibrarianFile
+from lp.archiveuploader.uploadpolicy import (
+    AbstractUploadPolicy,
+    findPolicyByName,
+    IArchiveUploadPolicy,
+    )
+from lp.soyuz.model.queue import PackageUploadSet
 
 
 here = os.path.dirname(os.path.realpath(__file__))
@@ -25,6 +40,7 @@ def datadir(path):
         raise ValueError("Path is not relative: %s" % path)
     return os.path.join(here, 'data', path)
 
+
 def insertFakeChangesFile(fileID, path=None):
     """Insert a fake changes file into the librarian.
 
@@ -34,10 +50,10 @@ def insertFakeChangesFile(fileID, path=None):
     """
     if path is None:
         path = datadir("ed-0.2-21/ed_0.2-21_source.changes")
-    changes_file_obj = open(path, 'r')
-    test_changes_file = changes_file_obj.read()
-    changes_file_obj.close()
+    with open(path, 'r') as changes_file_obj:
+        test_changes_file = changes_file_obj.read()
     fillLibrarianFile(fileID, content=test_changes_file)
+
 
 def insertFakeChangesFileForAllPackageUploads():
     """Ensure all the PackageUpload records point to a valid changes file."""
@@ -52,6 +68,7 @@ class MockUploadOptions:
         self.distro = distro
         self.distroseries = distroseries
         self.buildid = buildid
+
 
 def getPolicy(name='anything', distro='ubuntu', distroseries=None,
               buildid=None):
@@ -92,6 +109,54 @@ class MockUploadLogger:
         self.print_traceback(exc_info)
 
 
-mock_options = MockUploadOptions()
+class AnythingGoesUploadPolicy(AbstractUploadPolicy):
+    """This policy is invoked when processing uploads from the test process.
+
+    We require a signed changes file but that's it.
+    """
+
+    name = 'anything'
+
+    def __init__(self):
+        AbstractUploadPolicy.__init__(self)
+        # We require the changes to be signed but not the dsc
+        self.unsigned_dsc_ok = True
+
+    def policySpecificChecks(self, upload):
+        """Nothing, let it go."""
+        pass
+
+    def rejectPPAUploads(self, upload):
+        """We allow PPA uploads."""
+        return False
+
+
+class AbsolutelyAnythingGoesUploadPolicy(AnythingGoesUploadPolicy):
+    """This policy is invoked when processing uploads from the test process.
+
+    Absolutely everything is allowed, for when you don't want the hassle
+    of dealing with inappropriate checks in tests.
+    """
+
+    name = 'absolutely-anything'
+
+    def __init__(self):
+        AnythingGoesUploadPolicy.__init__(self)
+        self.unsigned_changes_ok = True
+
+    def policySpecificChecks(self, upload):
+        """Nothing, let it go."""
+        pass
+
+
+def register_archive_upload_policy_adapters():
+    policies = [
+        AnythingGoesUploadPolicy, AbsolutelyAnythingGoesUploadPolicy]
+    sm = getGlobalSiteManager()
+    for policy in policies:
+        sm.registerUtility(
+            component=policy, provided=IArchiveUploadPolicy, name=policy.name)
+
+
 mock_logger = MockUploadLogger()
 mock_logger_quiet = MockUploadLogger(verbose=False)

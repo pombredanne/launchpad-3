@@ -5,24 +5,31 @@
 
 __metaclass__ = type
 
+import difflib
 import os
 import re
 import shutil
-import difflib
 from tempfile import mkdtemp
 import unittest
 
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.launchpad.scripts.logger import QuietFakeLogger
+from canonical.launchpad.scripts.logger import (
+    BufferLogger,
+    QuietFakeLogger,
+    )
 from canonical.testing import LaunchpadZopelessLayer
 from lp.archivepublisher.config import Config
 from lp.archivepublisher.diskpool import DiskPool
-from lp.archivepublisher.ftparchive import FTPArchiveHandler, f_touch
+from lp.archivepublisher.ftparchive import (
+    f_touch,
+    FTPArchiveHandler,
+    )
 from lp.archivepublisher.publishing import Publisher
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.testing import TestCaseWithFactory
 
 
 def sanitize_apt_ftparchive_Sources_output(text):
@@ -55,10 +62,11 @@ class FakeSelectResult:
         return self._result[i:j]
 
 
-class TestFTPArchive(unittest.TestCase):
+class TestFTPArchive(TestCaseWithFactory):
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
+        super(TestFTPArchive, self).setUp()
         self.layer.switchDbUser(config.archivepublisher.dbuser)
 
         self._distribution = getUtility(IDistributionSet)['ubuntutest']
@@ -79,6 +87,7 @@ class TestFTPArchive(unittest.TestCase):
         self._publisher = SamplePublisher(self._archive)
 
     def tearDown(self):
+        super(TestFTPArchive, self).tearDown()
         shutil.rmtree(self._config.distroroot)
 
     def _verifyFile(self, filename, directory, output_filter=None):
@@ -115,6 +124,19 @@ class TestFTPArchive(unittest.TestCase):
             self._logger, self._config, self._dp, self._distribution,
             self._publisher)
         return fa
+
+    def test_NoLucilleConfig(self):
+        # Distroseries without a lucille configuration get ignored
+        # and trigger a warning, they don't break the publisher
+        logger = BufferLogger()
+        publisher = Publisher(
+            logger, self._config, self._dp, self._archive)
+        self.factory.makeDistroSeries(self._distribution, name="somename")
+        fa = FTPArchiveHandler(logger, self._config, self._dp,
+                               self._distribution, publisher)
+        fa.createEmptyPocketRequests(fullpublish=True)
+        self.assertEquals("WARNING: Distroseries somename in ubuntutest doesn't "
+            "have a lucille configuration.\n", logger.buffer.getvalue())
 
     def test_getSourcesForOverrides(self):
         # getSourcesForOverrides returns a list of tuples containing:
