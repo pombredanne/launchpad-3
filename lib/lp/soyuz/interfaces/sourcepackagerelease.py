@@ -14,8 +14,14 @@ __all__ = [
 
 
 from lazr.restful.fields import Reference
-from zope.schema import List, TextLine
-from zope.interface import Interface, Attribute
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    List,
+    TextLine,
+    )
 
 from canonical.launchpad import _
 

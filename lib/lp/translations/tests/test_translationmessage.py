@@ -5,22 +5,24 @@
 
 __metaclass__ = type
 
-from datetime import datetime, timedelta
-from pytz import UTC
+from datetime import (
+    datetime,
+    timedelta,
+    )
 
+from pytz import UTC
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.webapp.testing import verifyObject
+from canonical.testing import ZopelessDatabaseLayer
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing import TestCaseWithFactory
+from lp.translations.interfaces.side import ITranslationSideTraitsSet
+from lp.translations.interfaces.translationmessage import ITranslationMessage
+from lp.translations.interfaces.translations import TranslationConstants
 from lp.translations.model.potranslation import POTranslation
 from lp.translations.model.translationmessage import DummyTranslationMessage
-from lp.translations.interfaces.side import ITranslationSideTraitsSet
-from lp.translations.interfaces.translationmessage import (
-    ITranslationMessage)
-from lp.translations.interfaces.translations import TranslationConstants
-from canonical.testing import ZopelessDatabaseLayer
 
 
 class TestTranslationMessage(TestCaseWithFactory):

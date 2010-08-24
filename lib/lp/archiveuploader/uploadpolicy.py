@@ -14,14 +14,19 @@ __all__ = [
     "UploadPolicyError",
     ]
 
-from zope.component import getGlobalSiteManager, getUtility
-from zope.interface import implements, Interface
+from zope.component import (
+    getGlobalSiteManager,
+    getUtility,
+    )
+from zope.interface import (
+    implements,
+    Interface,
+    )
 
 from canonical.launchpad.interfaces import ILaunchpadCelebrities
 from lp.registry.interfaces.distribution import IDistributionSet
-from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-
+from lp.registry.interfaces.series import SeriesStatus
 
 # Defined here so that uploadpolicy.py doesn't depend on lp.code.
 SOURCE_PACKAGE_RECIPE_UPLOAD_POLICY_NAME = 'recipe'
@@ -290,7 +295,8 @@ class BuildDaemonUploadPolicy(AbstractUploadPolicy):
     def setOptions(self, options):
         AbstractUploadPolicy.setOptions(self, options)
         # We require a buildid to be provided
-        if getattr(options, 'buildid', None) is None:
+        if (getattr(options, 'buildid', None) is None and
+            not getattr(options, 'builds', False)):
             raise UploadPolicyError("BuildID required for buildd context")
 
     def policySpecificChecks(self, upload):

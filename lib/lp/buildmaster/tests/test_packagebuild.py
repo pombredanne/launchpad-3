@@ -13,15 +13,21 @@ from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.testing.layers import LaunchpadFunctionalLayer
-
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
 from lp.buildmaster.interfaces.packagebuild import (
-    IPackageBuild, IPackageBuildSet, IPackageBuildSource)
+    IPackageBuild,
+    IPackageBuildSet,
+    IPackageBuildSource,
+    )
 from lp.buildmaster.model.packagebuild import PackageBuild
 from lp.buildmaster.tests.test_buildbase import TestBuildBaseMixin
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.testing import login, login_person, TestCaseWithFactory
+from lp.testing import (
+    login,
+    login_person,
+    TestCaseWithFactory,
+    )
 
 
 class TestPackageBuildBase(TestCaseWithFactory):

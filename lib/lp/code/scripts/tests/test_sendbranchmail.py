@@ -8,17 +8,22 @@
 from __future__ import with_statement
 
 import unittest
+
 import transaction
 
-from canonical.testing import ZopelessAppServerLayer
 from canonical.launchpad.scripts.tests import run_script
+from canonical.testing import ZopelessAppServerLayer
 from lp.code.enums import (
-    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
-    CodeReviewNotificationLevel)
+    BranchSubscriptionDiffSize,
+    BranchSubscriptionNotificationLevel,
+    CodeReviewNotificationLevel,
+    )
 from lp.code.model.branchjob import (
-    RevisionMailJob, RevisionsAddedJob)
-from lp.testing import TestCaseWithFactory
+    RevisionMailJob,
+    RevisionsAddedJob,
+    )
 from lp.services.osutils import override_environ
+from lp.testing import TestCaseWithFactory
 
 
 class TestSendbranchmail(TestCaseWithFactory):

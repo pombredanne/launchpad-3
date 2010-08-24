@@ -5,20 +5,22 @@
 
 __metaclass__ = type
 
-from datetime import timedelta, datetime
-from pytz import timezone
+from datetime import (
+    datetime,
+    timedelta,
+    )
 from unittest import TestLoader
 
+from pytz import timezone
 import transaction
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.testing import DatabaseFunctionalLayer
+from lp.services.worlddata.model.language import LanguageSet
+from lp.testing import TestCaseWithFactory
 from lp.translations.interfaces.translationsperson import ITranslationsPerson
 from lp.translations.model.pofiletranslator import POFileTranslatorSet
 from lp.translations.model.translator import TranslatorSet
-from canonical.testing import DatabaseFunctionalLayer
-
-from lp.testing import TestCaseWithFactory
-from lp.services.worlddata.model.language import LanguageSet
 
 
 UTC = timezone('UTC')

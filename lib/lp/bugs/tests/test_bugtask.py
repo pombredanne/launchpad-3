@@ -7,26 +7,41 @@ from datetime import timedelta
 from doctest import DocTestSuite
 import unittest
 
+from lazr.lifecycle.snapshot import Snapshot
 from zope.component import getUtility
 from zope.interface import providedBy
 
-from lazr.lifecycle.snapshot import Snapshot
-
-from lp.hardwaredb.interfaces.hwdb import HWBus, IHWDeviceSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.searchbuilder import all, any
+from canonical.launchpad.searchbuilder import (
+    all,
+    any,
+    )
 from canonical.testing import (
-    DatabaseFunctionalLayer, LaunchpadZopelessLayer)
-
+    DatabaseFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
 from lp.bugs.interfaces.bugtarget import IBugTarget
 from lp.bugs.interfaces.bugtask import (
-    BugTaskImportance, BugTaskSearchParams, BugTaskStatus)
+    BugTaskImportance,
+    BugTaskSearchParams,
+    BugTaskStatus,
+    )
 from lp.bugs.model.bugtask import build_tag_search_clause
+from lp.hardwaredb.interfaces.hwdb import (
+    HWBus,
+    IHWDeviceSet,
+    )
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.testing import (
-    ANONYMOUS, TestCase, TestCaseWithFactory, login, login_person, logout,
-    normalize_whitespace)
+    ANONYMOUS,
+    login,
+    login_person,
+    logout,
+    normalize_whitespace,
+    TestCase,
+    TestCaseWithFactory,
+    )
 
 
 class TestBugTaskDelta(TestCaseWithFactory):

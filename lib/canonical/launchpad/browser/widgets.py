@@ -22,22 +22,24 @@ __all__ = [
 
 import sys
 
+from lazr.uri import (
+    InvalidURIError,
+    URI,
+    )
 from zope.app.form.browser import TextAreaWidget
 from zope.app.form.interfaces import ConversionError
 from zope.component import getUtility
 
-from lp.code.enums import BranchType
-from lp.code.interfaces.branch import IBranch
-from lp.code.interfaces.branchlookup import IBranchLookup
-from lp.code.interfaces.branchnamespace import (
-    get_branch_namespace)
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.tales import BranchFormatterAPI
-from lazr.uri import InvalidURIError, URI
 from canonical.widgets import StrippedTextWidget
 from canonical.widgets.popup import VocabularyPickerWidget
+from lp.code.enums import BranchType
+from lp.code.interfaces.branch import IBranch
+from lp.code.interfaces.branchlookup import IBranchLookup
+from lp.code.interfaces.branchnamespace import get_branch_namespace
 
 
 class AlreadyRegisteredError(Exception):

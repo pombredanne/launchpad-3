@@ -5,6 +5,7 @@
 
 from zope.interface import Interface
 
+
 __metaclass__ = type
 
 __all__ = ('IRosettaStats', )

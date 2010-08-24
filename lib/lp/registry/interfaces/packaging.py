@@ -13,9 +13,19 @@ __all__ = [
     'PackagingType',
     ]
 
-from zope.schema import Choice, Datetime, Int
-from zope.interface import Interface, Attribute
-from lazr.enum import DBEnumeratedType, DBItem
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    )
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Choice,
+    Datetime,
+    Int,
+    )
 
 from canonical.launchpad import _
 from lp.registry.interfaces.role import IHasOwner

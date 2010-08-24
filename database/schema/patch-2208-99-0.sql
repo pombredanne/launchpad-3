@@ -36,4 +36,4 @@ ALTER INDEX translationmessage__language__variant__submitter__idx
 RENAME TO tm__language__variant__submitter__idx;
 
 -- XXX: Update patch number!
-INSERT INTO LaunchpadDatabaseRevision VALUES (2207, 99, 0)
+INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 99, 0)

@@ -7,7 +7,10 @@ import unittest
 
 from lp.testing import TestCase
 from lp.translations.utilities.sanitize import (
-    MixedNewlineMarkersError, Sanitizer, sanitize_translations_from_webui)
+    MixedNewlineMarkersError,
+    sanitize_translations_from_webui,
+    Sanitizer,
+    )
 
 
 class TestSanitizer(TestCase):

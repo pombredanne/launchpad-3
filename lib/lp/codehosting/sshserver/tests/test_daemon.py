@@ -13,9 +13,12 @@ from twisted.test.proto_helpers import StringTransport
 from twisted.trial.unittest import TestCase as TrialTestCase
 
 from canonical.testing.layers import TwistedLayer
-
 from lp.codehosting.sshserver.daemon import (
-    get_key_path, get_portal, PRIVATE_KEY_FILE, PUBLIC_KEY_FILE)
+    get_key_path,
+    get_portal,
+    PRIVATE_KEY_FILE,
+    PUBLIC_KEY_FILE,
+    )
 from lp.services.sshserver.auth import SSHUserAuthServer
 from lp.services.sshserver.service import Factory
 

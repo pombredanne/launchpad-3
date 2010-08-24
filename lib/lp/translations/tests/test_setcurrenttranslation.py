@@ -9,17 +9,15 @@ from zope.component import getUtility
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.testing import ZopelessDatabaseLayer
-
 from lp.testing import TestCaseWithFactory
 from lp.translations.interfaces.translationmessage import (
-    RosettaTranslationOrigin)
-from lp.translations.model.translationmessage import (
-    TranslationMessage)
-
+    RosettaTranslationOrigin,
+    )
+from lp.translations.model.translationmessage import TranslationMessage
 from lp.translations.tests.helpers import (
     make_translationmessage_for_context,
-    summarize_current_translations)
-
+    summarize_current_translations,
+    )
 
 # This test is based on the matrix described on:
 #  https://dev.launchpad.net/Translations/Specs

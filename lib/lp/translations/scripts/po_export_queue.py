@@ -9,28 +9,34 @@ __all__ = [
     ]
 
 import os
-import psycopg2
-import traceback
 from StringIO import StringIO
-from zope.component import getAdapter, getUtility
+import traceback
+
+import psycopg2
+from zope.component import (
+    getAdapter,
+    getUtility,
+    )
 
 from canonical.config import config
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from canonical.launchpad.mail import simple_sendmail
 from canonical.launchpad.webapp import canonical_url
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.sourcepackage import ISourcePackage
-from lp.translations.interfaces.poexportrequest import (
-    IPOExportRequestSet)
-from lp.translations.interfaces.potemplate import IPOTemplate
+from lp.translations.interfaces.poexportrequest import IPOExportRequestSet
 from lp.translations.interfaces.pofile import IPOFile
+from lp.translations.interfaces.potemplate import IPOTemplate
 from lp.translations.interfaces.translationcommonformat import (
-    ITranslationFileData)
+    ITranslationFileData,
+    )
 from lp.translations.interfaces.translationexporter import (
-    ITranslationExporter)
+    ITranslationExporter,
+    )
 from lp.translations.interfaces.translationfileformat import (
-    TranslationFileFormat)
-from canonical.launchpad.mail import simple_sendmail
+    TranslationFileFormat,
+    )
 
 
 class ExportResult:

@@ -6,16 +6,22 @@
 __metaclass__ = type
 
 from datetime import datetime
-import pytz
+import unittest
 
+import pytz
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.testing.layers import (
-    DatabaseFunctionalLayer, LaunchpadZopelessLayer)
+    DatabaseFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
 from lp.buildmaster.interfaces.buildbase import BuildStatus
-from lp.code.enums import BranchType, CodeImportReviewStatus
+from lp.code.enums import (
+    BranchType,
+    CodeImportReviewStatus,
+    )
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
@@ -24,19 +30,34 @@ from lp.services.worlddata.interfaces.language import ILanguage
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuild
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageName
 from lp.soyuz.interfaces.binarypackagerelease import (
-    BinaryPackageFileType, BinaryPackageFormat, IBinaryPackageRelease)
+    BinaryPackageFileType,
+    BinaryPackageFormat,
+    IBinaryPackageRelease,
+    )
 from lp.soyuz.interfaces.files import (
-    IBinaryPackageFile, ISourcePackageReleaseFile)
+    IBinaryPackageFile,
+    ISourcePackageReleaseFile,
+    )
 from lp.soyuz.interfaces.publishing import (
-    IBinaryPackagePublishingHistory, ISourcePackagePublishingHistory,
-    PackagePublishingPriority, PackagePublishingPocket,
-    PackagePublishingStatus)
-from lp.soyuz.interfaces.queue import IPackageUpload, PackageUploadStatus
+    IBinaryPackagePublishingHistory,
+    ISourcePackagePublishingHistory,
+    PackagePublishingPocket,
+    PackagePublishingPriority,
+    PackagePublishingStatus,
+    )
+from lp.soyuz.interfaces.queue import (
+    IPackageUpload,
+    PackageUploadStatus,
+    )
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
 from lp.testing import TestCaseWithFactory
 from lp.testing.factory import is_security_proxied_or_harmless
 from lp.testing.matchers import (
-    IsProxied, Provides, ProvidesAndIsProxied, StartsWith)
+    IsProxied,
+    Provides,
+    ProvidesAndIsProxied,
+    StartsWith,
+    )
 
 
 class TestFactory(TestCaseWithFactory):

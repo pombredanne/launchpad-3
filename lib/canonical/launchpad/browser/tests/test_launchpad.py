@@ -17,10 +17,15 @@ from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.launchpad.webapp.url import urlappend
 from canonical.testing.layers import DatabaseFunctionalLayer
-
 from lp.app.errors import GoneError
-from lp.registry.interfaces.person import IPersonSet, PersonVisibility
-from lp.testing import login_person, TestCaseWithFactory
+from lp.registry.interfaces.person import (
+    IPersonSet,
+    PersonVisibility,
+    )
+from lp.testing import (
+    login_person,
+    TestCaseWithFactory,
+    )
 from lp.testing.views import create_view
 
 

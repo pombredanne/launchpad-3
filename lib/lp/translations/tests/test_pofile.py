@@ -3,26 +3,37 @@
 
 __metaclass__ = type
 
-from datetime import datetime, timedelta
-import pytz
+from datetime import (
+    datetime,
+    timedelta,
+    )
 from textwrap import dedent
 
-from zope.component import getAdapter, getUtility
+import pytz
+from zope.component import (
+    getAdapter,
+    getUtility,
+    )
 from zope.interface.verify import verifyObject
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.constants import UTC_NOW
-
+from canonical.launchpad.webapp.publisher import canonical_url
+from canonical.testing import (
+    LaunchpadZopelessLayer,
+    ZopelessDatabaseLayer,
+    )
+from lp.testing import TestCaseWithFactory
 from lp.translations.interfaces.pofile import IPOFileSet
 from lp.translations.interfaces.translatablemessage import (
-    ITranslatableMessage)
-from lp.translations.interfaces.translationmessage import (
-    TranslationValidationStatus)
+    ITranslatableMessage,
+    )
 from lp.translations.interfaces.translationcommonformat import (
-    ITranslationFileData)
-from lp.testing import TestCaseWithFactory
-from canonical.testing import LaunchpadZopelessLayer, ZopelessDatabaseLayer
-from canonical.launchpad.webapp.publisher import canonical_url
+    ITranslationFileData,
+    )
+from lp.translations.interfaces.translationmessage import (
+    TranslationValidationStatus,
+    )
 
 
 class TestTranslationSharedPOFileSourcePackage(TestCaseWithFactory):
@@ -199,7 +210,7 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
         # Create a product with two series and a shared POTemplate
         # in different series ('devel' and 'stable').
         super(TestTranslationSharedPOFile, self).setUp()
-        self.foo = self.factory.makeProduct()
+        self.foo = self.factory.makeProduct(name='foo')
         self.foo_devel = self.factory.makeProductSeries(
             name='devel', product=self.foo)
         self.foo_stable = self.factory.makeProductSeries(
@@ -222,6 +233,17 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
         # The POTMsgSet is added to only one of the POTemplates.
         self.potmsgset = self.factory.makePOTMsgSet(
             self.devel_potemplate, sequence=1)
+
+    def test_POFile_canonical_url(self):
+        # Test the canonical_url of the POFile.
+        pofile_url = (
+            'http://translations.launchpad.dev/foo/devel/+pots/messages/'
+            '%s' % self.devel_pofile.language.code )
+        self.assertEqual(pofile_url, canonical_url(self.devel_pofile))
+        view_name = '+details'
+        view_url = "%s/%s" % (pofile_url, view_name)
+        self.assertEqual(
+            view_url, canonical_url(self.devel_pofile, view_name=view_name))
 
     def test_findPOTMsgSetsContaining(self):
         # Test that search works correctly.

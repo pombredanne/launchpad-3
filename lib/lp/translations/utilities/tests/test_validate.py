@@ -7,7 +7,9 @@ import unittest
 
 from lp.testing import TestCase
 from lp.translations.utilities.validate import (
-    GettextValidationError, validate_translation)
+    GettextValidationError,
+    validate_translation,
+    )
 
 
 class TestTranslationValidation(TestCase):

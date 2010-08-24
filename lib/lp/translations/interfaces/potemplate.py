@@ -3,25 +3,45 @@
 
 # pylint: disable-msg=E0211,E0213
 
-from zope.interface import Attribute, Interface
-from zope.schema import (
-    Bool, Bytes, Choice, Datetime, Int, Object, Text, TextLine)
-from lazr.enum import DBEnumeratedType, DBItem
-from lazr.restful.fields import CollectionField, Reference
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    )
 from lazr.restful.declarations import (
-    exported, export_as_webservice_entry, export_read_operation,
-    operation_returns_collection_of)
+    export_as_webservice_entry,
+    export_read_operation,
+    exported,
+    operation_returns_collection_of,
+    )
+from lazr.restful.fields import (
+    CollectionField,
+    Reference,
+    )
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Bool,
+    Bytes,
+    Choice,
+    Datetime,
+    Int,
+    Object,
+    Text,
+    TextLine,
+    )
 
-from lp.services.fields import PersonChoice
+from canonical.launchpad import _
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from lp.app.errors import NotFoundError
 from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.sourcepackagename import ISourcePackageName
+from lp.services.fields import PersonChoice
 from lp.translations.interfaces.rosettastats import IRosettaStats
-from lp.registry.interfaces.sourcepackagename import (
-    ISourcePackageName)
 from lp.translations.interfaces.translationfileformat import (
-    TranslationFileFormat)
-from canonical.launchpad import _
+    TranslationFileFormat,
+    )
 
 
 __metaclass__ = type

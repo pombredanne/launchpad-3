@@ -11,26 +11,41 @@ __all__ = [
     'IPOFileAlternativeLanguage',
     ]
 
+from lazr.restful.declarations import (
+    export_as_webservice_entry,
+    exported,
+    )
 from zope.component import getUtility
-from zope.interface import Attribute, implements, Interface
+from zope.interface import (
+    Attribute,
+    implements,
+    Interface,
+    )
 from zope.schema import (
-    Bool, Choice, Datetime, Field, Int, List, Object, Text, TextLine)
+    Bool,
+    Choice,
+    Datetime,
+    Field,
+    Int,
+    List,
+    Object,
+    Text,
+    TextLine,
+    )
 from zope.schema.interfaces import IContextSourceBinder
 from zope.schema.vocabulary import (
-    getVocabularyRegistry, SimpleTerm, SimpleVocabulary)
-
-from lazr.restful.declarations import (
-    exported, export_as_webservice_entry)
+    getVocabularyRegistry,
+    SimpleTerm,
+    SimpleVocabulary,
+    )
 
 from canonical.launchpad import _
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.registry.interfaces.person import IPerson
 from lp.translations.interfaces.potemplate import IPOTemplate
 from lp.translations.interfaces.rosettastats import IRosettaStats
-from lp.translations.interfaces.translationgroup import (
-    TranslationPermission)
-from lp.translations.interfaces.translationsperson import (
-    ITranslationsPerson)
+from lp.translations.interfaces.translationgroup import TranslationPermission
+from lp.translations.interfaces.translationsperson import ITranslationsPerson
 
 
 class IPOFile(IRosettaStats):

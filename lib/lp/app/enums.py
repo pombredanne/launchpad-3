@@ -8,7 +8,10 @@ __all__ = [
     'ServiceUsage',
     ]
 
-from lazr.enum import DBEnumeratedType, DBItem
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    )
 
 
 class ServiceUsage(DBEnumeratedType):

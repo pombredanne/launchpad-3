@@ -6,22 +6,32 @@
 __metaclass__ = type
 __all__ = ['DailyDatabaseGarbageCollector', 'HourlyDatabaseGarbageCollector']
 
-from datetime import datetime, timedelta
+from datetime import (
+    datetime,
+    timedelta,
+    )
 import time
 
-import pytz
-import transaction
 from psycopg2 import IntegrityError
+import pytz
+from storm.locals import (
+    In,
+    Max,
+    Min,
+    SQL,
+    )
+import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
-from storm.locals import In, SQL, Max, Min
 
 from canonical.config import config
 from canonical.database import postgresql
 from canonical.database.constants import THIRTY_DAYS_AGO
-from canonical.database.sqlbase import cursor, sqlvalues
+from canonical.database.sqlbase import (
+    cursor,
+    sqlvalues,
+    )
 from canonical.launchpad.database.emailaddress import EmailAddress
-from lp.hardwaredb.model.hwdb import HWSubmission
 from canonical.launchpad.database.librarian import LibraryFileAlias
 from canonical.launchpad.database.oauth import OAuthNonce
 from canonical.launchpad.database.openidconsumer import OpenIDConsumerNonce
@@ -29,22 +39,33 @@ from canonical.launchpad.interfaces import IMasterStore
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
 from canonical.launchpad.utilities.looptuner import TunableLoop
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
+    IStoreSelector,
+    MAIN_STORE,
+    MASTER_FLAVOR,
+    )
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.model.bug import Bug
 from lp.bugs.model.bugattachment import BugAttachment
 from lp.bugs.model.bugnotification import BugNotification
 from lp.bugs.model.bugwatch import BugWatch
 from lp.bugs.scripts.checkwatches.scheduler import (
-    BugWatchScheduler, MAX_SAMPLE_SIZE)
+    BugWatchScheduler,
+    MAX_SAMPLE_SIZE,
+    )
 from lp.code.interfaces.revision import IRevisionSet
 from lp.code.model.branchjob import BranchJob
 from lp.code.model.codeimportresult import CodeImportResult
-from lp.code.model.revision import RevisionAuthor, RevisionCache
+from lp.code.model.revision import (
+    RevisionAuthor,
+    RevisionCache,
+    )
+from lp.hardwaredb.model.hwdb import HWSubmission
 from lp.registry.model.person import Person
 from lp.services.job.model.job import Job
 from lp.services.scripts.base import (
-    LaunchpadCronScript, SilentLaunchpadScriptFailure)
+    LaunchpadCronScript,
+    SilentLaunchpadScriptFailure,
+    )
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 
 

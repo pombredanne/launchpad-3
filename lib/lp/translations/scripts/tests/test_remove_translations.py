@@ -8,27 +8,33 @@
 __metaclass__ = type
 
 from datetime import datetime
-from optparse import OptionParser, OptionValueError
 import logging
-from pytz import timezone
+from optparse import (
+    OptionParser,
+    OptionValueError,
+    )
 from unittest import TestLoader
 
+from pytz import timezone
+from storm.store import Store
 from zope.component import getUtility
 
-from storm.store import Store
-
 from canonical.launchpad.ftests import sync
-from lp.translations.model.translationrelicensingagreement import (
-    TranslationRelicensingAgreement)
+from canonical.testing import LaunchpadZopelessLayer
 from lp.registry.interfaces.person import IPersonSet
-from lp.translations.interfaces.translationmessage import (
-    RosettaTranslationOrigin)
 from lp.services.scripts.base import LaunchpadScriptFailure
-from lp.translations.scripts.remove_translations import (
-    RemoveTranslations, remove_translations)
 from lp.testing import TestCase
 from lp.testing.factory import LaunchpadObjectFactory
-from canonical.testing import LaunchpadZopelessLayer
+from lp.translations.interfaces.translationmessage import (
+    RosettaTranslationOrigin,
+    )
+from lp.translations.model.translationrelicensingagreement import (
+    TranslationRelicensingAgreement,
+    )
+from lp.translations.scripts.remove_translations import (
+    remove_translations,
+    RemoveTranslations,
+    )
 
 
 def make_script(args=None):

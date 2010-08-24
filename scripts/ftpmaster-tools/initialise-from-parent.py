@@ -36,6 +36,11 @@ def main():
                       default="ubuntu",
                       help="Distribution name")
 
+    parser.add_option(
+        "-a", "--arches", dest="arches",
+        help="A comma-seperated list of arches to limit the child "
+        "distroseries to inheriting")
+
     (options, args) = parser.parse_args()
 
     log = logger(options, "initialise")
@@ -69,7 +74,10 @@ def main():
         log.debug('Check for no pending builds in parentseries')
         log.debug('Copying distroarchseries from parent '
                       'and setting nominatedarchindep.')
-        ids = InitialiseDistroSeries(distroseries)
+        arches = ()
+        if options.arches is not None:
+            arches = tuple(options.arches.split(','))
+        ids = InitialiseDistroSeries(distroseries, arches)
         ids.check()
         log.debug('initialising from parent, copying publishing records.')
         ids.initialise()

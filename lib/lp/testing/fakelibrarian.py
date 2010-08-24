@@ -19,20 +19,22 @@ import hashlib
 from StringIO import StringIO
 from urlparse import urljoin
 
-import zope.component
-from zope.interface import implements
 import transaction
 from transaction.interfaces import ISynchronizer
+import zope.component
+from zope.interface import implements
 
 from canonical.config import config
-
 from canonical.launchpad.database.librarian import (
-    LibraryFileContent, LibraryFileAlias)
+    LibraryFileAlias,
+    LibraryFileContent,
+    )
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.librarian.client import get_libraryfilealias_download_path
 from canonical.librarian.interfaces import (
     ILibrarianClient,
-    LIBRARIAN_SERVER_DEFAULT_TIMEOUT)
+    LIBRARIAN_SERVER_DEFAULT_TIMEOUT,
+    )
 
 
 class InstrumentedLibraryFileAlias(LibraryFileAlias):

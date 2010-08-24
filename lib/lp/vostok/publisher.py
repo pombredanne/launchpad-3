@@ -13,17 +13,26 @@ __all__ = [
 
 
 from zope.component import getUtility
-from zope.interface import implements, Interface
+from zope.interface import (
+    implements,
+    Interface,
+    )
 from zope.publisher.interfaces.browser import (
-    IBrowserRequest, IDefaultBrowserLayer)
+    IBrowserRequest,
+    IDefaultBrowserLayer,
+    )
 
-from canonical.launchpad.webapp import canonical_url, Navigation
+from canonical.launchpad.webapp import (
+    canonical_url,
+    Navigation,
+    )
 from canonical.launchpad.webapp.publication import LaunchpadBrowserPublication
 from canonical.launchpad.webapp.servers import (
-    LaunchpadBrowserRequest, LaunchpadBrowserResponse,
-    VirtualHostRequestPublicationFactory)
+    LaunchpadBrowserRequest,
+    LaunchpadBrowserResponse,
+    VirtualHostRequestPublicationFactory,
+    )
 from canonical.launchpad.webapp.vhosts import allvhosts
-
 from lp.registry.interfaces.distribution import IDistributionSet
 
 

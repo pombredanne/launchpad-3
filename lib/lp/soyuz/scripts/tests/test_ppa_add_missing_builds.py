@@ -7,17 +7,18 @@ import os
 import subprocess
 import sys
 
+from canonical.config import config
+from canonical.database.sqlbase import (
+    clear_current_connection_cache,
+    flush_database_updates,
+    )
+from canonical.launchpad.scripts import QuietFakeLogger
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.scripts.ppa_add_missing_builds import PPAMissingBuilds
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
-
-from canonical.config import config
-from canonical.database.sqlbase import (
-    clear_current_connection_cache, flush_database_updates)
-from canonical.launchpad.scripts import QuietFakeLogger
-from canonical.testing.layers import LaunchpadZopelessLayer
 
 
 class TestPPAAddMissingBuilds(TestCaseWithFactory):

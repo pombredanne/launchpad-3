@@ -11,9 +11,14 @@ import unittest
 
 from canonical.launchpad.testing.pages import PageTestSuite
 from canonical.launchpad.testing.systemdocs import (
-    LayeredDocFileSuite, setUp, tearDown)
+    LayeredDocFileSuite,
+    setUp,
+    tearDown,
+    )
 from canonical.testing import (
-    LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
+    LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
 
 
 here = os.path.dirname(os.path.realpath(__file__))
