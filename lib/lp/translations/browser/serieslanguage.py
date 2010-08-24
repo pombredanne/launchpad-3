@@ -15,17 +15,17 @@ __all__ = [
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.readonly import is_read_only
 from canonical.launchpad.webapp import LaunchpadView
-from canonical.launchpad.webapp.tales import PersonFormatterAPI
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.publisher import Navigation
+from canonical.launchpad.webapp.tales import PersonFormatterAPI
 from lp.translations.interfaces.distroserieslanguage import (
-    IDistroSeriesLanguage)
-from lp.translations.interfaces.translationsperson import (
-    ITranslationsPerson)
-from lp.translations.interfaces.translationgroup import (
-    TranslationPermission)
+    IDistroSeriesLanguage,
+    )
 from lp.translations.interfaces.productserieslanguage import (
-    IProductSeriesLanguage)
+    IProductSeriesLanguage,
+    )
+from lp.translations.interfaces.translationgroup import TranslationPermission
+from lp.translations.interfaces.translationsperson import ITranslationsPerson
 
 
 class BaseSeriesLanguageView(LaunchpadView):

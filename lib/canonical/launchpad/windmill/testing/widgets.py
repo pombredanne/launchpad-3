@@ -17,8 +17,10 @@ __all__ = [
 
 from windmill.authoring import WindmillTestClient
 
-from canonical.launchpad.windmill.testing import constants
-from canonical.launchpad.windmill.testing import lpuser
+from canonical.launchpad.windmill.testing import (
+    constants,
+    lpuser,
+    )
 
 
 class OnPageWidget:

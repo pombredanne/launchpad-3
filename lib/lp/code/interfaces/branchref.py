@@ -13,6 +13,7 @@ from zope.schema import Choice
 
 from canonical.launchpad import _
 
+
 class IBranchRef(Interface):
     """A branch reference '.bzr' directory.
 

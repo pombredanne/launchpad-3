@@ -9,14 +9,24 @@ import unittest
 
 from zope.component import getUtility
 
+from canonical.launchpad.ftests import (
+    ANONYMOUS,
+    login,
+    )
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.scripts.librarian_apache_log_parser import (
-    get_library_file_id)
-from lp.services.apachelogparser.base import parse_file, get_method_and_path
+    get_library_file_id,
+    )
 from canonical.launchpad.scripts.logger import BufferLogger
-from canonical.launchpad.ftests import ANONYMOUS, login
+from canonical.testing import (
+    DatabaseFunctionalLayer,
+    ZopelessLayer,
+    )
+from lp.services.apachelogparser.base import (
+    get_method_and_path,
+    parse_file,
+    )
 from lp.testing import TestCase
-from canonical.testing import DatabaseFunctionalLayer, ZopelessLayer
 
 
 here = os.path.dirname(__file__)

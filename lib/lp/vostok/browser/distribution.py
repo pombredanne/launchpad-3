@@ -9,8 +9,10 @@ __all__ = [
     'DistributionNavigation',
     ]
 
-from canonical.launchpad.webapp import GetitemNavigation, stepthrough
-
+from canonical.launchpad.webapp import (
+    GetitemNavigation,
+    stepthrough,
+    )
 from lp.registry.interfaces.distribution import IDistribution
 
 

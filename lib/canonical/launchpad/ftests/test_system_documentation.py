@@ -19,21 +19,35 @@ from zope.testing.cleanup import cleanUp
 
 from canonical.config import config
 from canonical.database.sqlbase import commit
-from canonical.launchpad.ftests import ANONYMOUS, login
+from canonical.launchpad.ftests import (
+    ANONYMOUS,
+    login,
+    )
 from canonical.launchpad.interfaces import (
-    IDistributionSet, ILanguageSet, IPersonSet)
-from lp.bugs.interfaces.bug import CreateBugParams
-from lp.bugs.interfaces.bugtask import IBugTaskSet
+    IDistributionSet,
+    ILanguageSet,
+    IPersonSet,
+    )
 from canonical.launchpad.testing import browser
 from canonical.launchpad.testing.systemdocs import (
-    LayeredDocFileSuite, setUp, setGlobs, tearDown)
-from lp.testing.mail_helpers import pop_notifications
+    LayeredDocFileSuite,
+    setGlobs,
+    setUp,
+    tearDown,
+    )
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 from canonical.launchpad.webapp.tests import test_notifications
 from canonical.testing.layers import (
-    AppServerLayer, BaseLayer, FunctionalLayer,
-    GoogleLaunchpadFunctionalLayer, LaunchpadFunctionalLayer,
-    LaunchpadZopelessLayer)
+    AppServerLayer,
+    BaseLayer,
+    FunctionalLayer,
+    GoogleLaunchpadFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
+from lp.bugs.interfaces.bug import CreateBugParams
+from lp.bugs.interfaces.bugtask import IBugTaskSet
+from lp.testing.mail_helpers import pop_notifications
 
 
 here = os.path.dirname(os.path.realpath(__file__))

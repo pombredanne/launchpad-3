@@ -6,66 +6,167 @@ from __future__ import with_statement
 __metaclass__ = type
 
 from datetime import datetime
-import pytz
 import time
 
+from lazr.lifecycle.snapshot import Snapshot
+import pytz
 from testtools.matchers import LessThan
-
 import transaction
-
 from zope.component import getUtility
 from zope.interface import providedBy
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.sqlbase import cursor
-from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
-from canonical.launchpad.ftests import ANONYMOUS, login
-from canonical.launchpad.interfaces.emailaddress import (
-    EmailAddressAlreadyTaken, InvalidEmailAddress)
-from lazr.lifecycle.snapshot import Snapshot
-from lp.registry.interfaces.karma import IKarmaCacheManager
-from lp.registry.interfaces.person import InvalidName
-from lp.registry.interfaces.product import IProductSet
-from lp.registry.interfaces.person import (
-    IPersonSet, ImmutableVisibilityError, NameAlreadyTaken,
-    PersonCreationRationale, PersonVisibility)
 from canonical.launchpad.database import Bug
+from canonical.launchpad.ftests import (
+    ANONYMOUS,
+    login,
+    )
+from canonical.launchpad.interfaces.emailaddress import (
+    EmailAddressAlreadyTaken,
+    EmailAddressStatus,
+    InvalidEmailAddress,
+    )
 from canonical.launchpad.testing.pages import LaunchpadWebServiceCaller
-from lp.registry.model.structuralsubscription import (
-    StructuralSubscription)
-from lp.registry.model.karma import KarmaCategory
-from lp.registry.model.person import Person
-from lp.bugs.model.bugtask import get_related_bugtasks_search_params
-from lp.bugs.interfaces.bugtask import IllegalRelatedBugTasksParams
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer,
+    reconnect_stores,
+    )
 from lp.answers.model.answercontact import AnswerContact
 from lp.blueprints.model.specification import Specification
-from lp.testing import (
-    login_person, logout, person_logged_in, TestCase, TestCaseWithFactory,
+from lp.bugs.interfaces.bugtask import IllegalRelatedBugTasksParams
+from lp.bugs.model.bugtask import get_related_bugtasks_search_params
+from lp.registry.interfaces.karma import IKarmaCacheManager
+from lp.registry.interfaces.person import (
+    ImmutableVisibilityError,
+    InvalidName,
+    IPersonSet,
+    NameAlreadyTaken,
+    PersonCreationRationale,
+    PersonVisibility,
+    PrivatePersonLinkageError,
     )
+from lp.registry.interfaces.product import IProductSet
+from lp.registry.model.karma import KarmaCategory
+from lp.registry.model.person import Person
+from lp.registry.model.structuralsubscription import StructuralSubscription
+from lp.testing import (
+    celebrity_logged_in,
+    login_person,
+    logout,
+    person_logged_in,
+    TestCase,
+    TestCaseWithFactory,
+    )
+from lp.testing._webservice import QueryCollector
 from lp.testing.matchers import HasQueryCount
 from lp.testing.views import create_initialized_view
-from lp.testing import celebrity_logged_in
-from lp.testing._webservice import QueryCollector
-from lp.registry.interfaces.person import PrivatePersonLinkageError
-from canonical.testing.layers import DatabaseFunctionalLayer, reconnect_stores
 
 
 class TestPersonTeams(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def test_teams_indirectly_participated_in(self):
+    def setUp(self):
+        super(TestPersonTeams, self).setUp()
         self.user = self.factory.makePerson()
-        a_team = self.factory.makeTeam(name='a')
-        b_team = self.factory.makeTeam(name='b', owner=a_team)
-        c_team = self.factory.makeTeam(name='c', owner=b_team)
-        login_person(a_team.teamowner)
-        a_team.addMember(self.user, a_team.teamowner)
+        self.a_team = self.factory.makeTeam(name='a')
+        self.b_team = self.factory.makeTeam(name='b', owner=self.a_team)
+        self.c_team = self.factory.makeTeam(name='c', owner=self.b_team)
+        login_person(self.a_team.teamowner)
+        self.a_team.addMember(self.user, self.a_team.teamowner)
+
+    def test_teams_indirectly_participated_in(self):
         indirect_teams = self.user.teams_indirectly_participated_in
-        expected_teams = [b_team, c_team]
+        expected_teams = [self.b_team, self.c_team]
         test_teams = sorted(indirect_teams,
             key=lambda team: team.displayname)
         self.assertEqual(expected_teams, test_teams)
+
+    def test_team_memberships(self):
+        memberships = self.user.team_memberships
+        memberships = [(m.person, m.team) for m in memberships]
+        self.assertEqual([(self.user, self.a_team)], memberships)
+
+    def test_path_to_team(self):
+        path_to_a = self.user.findPathToTeam(self.a_team)
+        path_to_b = self.user.findPathToTeam(self.b_team)
+        path_to_c = self.user.findPathToTeam(self.c_team)
+
+        self.assertEqual([self.a_team], path_to_a)
+        self.assertEqual([self.a_team, self.b_team], path_to_b)
+        self.assertEqual([self.a_team, self.b_team, self.c_team], path_to_c)
+
+    def test_teams_participated_in(self):
+        teams = self.user.teams_participated_in
+        teams = sorted(list(teams), key=lambda x: x.displayname)
+        expected_teams = [self.a_team, self.b_team, self.c_team]
+        self.assertEqual(expected_teams, teams)
+
+    def test_getPathsToTeams(self):
+        paths, memberships = self.user.getPathsToTeams()
+        expected_paths = {self.a_team: [self.a_team, self.user],
+            self.b_team: [self.b_team, self.a_team, self.user],
+            self.c_team: [self.c_team, self.b_team, self.a_team, self.user]}
+        self.assertEqual(expected_paths, paths)
+
+        expected_memberships = [(self.a_team, self.user)]
+        memberships = [
+            (membership.team, membership.person) for membership
+            in memberships]
+        self.assertEqual(expected_memberships, memberships)
+
+    def test_getPathsToTeamsComplicated(self):
+        d_team = self.factory.makeTeam(name='d', owner=self.b_team)
+        e_team = self.factory.makeTeam(name='e')
+        f_team = self.factory.makeTeam(name='f', owner=e_team)
+        unrelated_team = self.factory.makeTeam(name='unrelated')
+        login_person(self.a_team.teamowner)
+        d_team.addMember(self.user, d_team.teamowner)
+        login_person(e_team.teamowner)
+        e_team.addMember(self.user, e_team.teamowner)
+
+        paths, memberships = self.user.getPathsToTeams()
+        expected_paths = {
+            self.a_team: [self.a_team, self.user],
+            self.b_team: [self.b_team, self.a_team, self.user],
+            self.c_team: [self.c_team, self.b_team, self.a_team, self.user],
+            d_team: [d_team, self.b_team, self.a_team, self.user],
+            e_team: [e_team, self.user],
+            f_team: [f_team, e_team, self.user]}
+        self.assertEqual(expected_paths, paths)
+
+        expected_memberships = [
+            (e_team, self.user),
+            (d_team, self.user),
+            (self.a_team, self.user),
+            ]
+        memberships = [
+            (membership.team, membership.person) for membership
+            in memberships]
+        self.assertEqual(expected_memberships, memberships)
+
+    def test_getPathsToTeamsMultiplePaths(self):
+        d_team = self.factory.makeTeam(name='d', owner=self.b_team)
+        login_person(self.a_team.teamowner)
+        self.c_team.addMember(d_team, self.c_team.teamowner)
+
+        paths, memberships = self.user.getPathsToTeams()
+        # getPathsToTeams should not randomly pick one path or another
+        # when multiples exist; it sorts to use the oldest path, so
+        # the expected paths below should be the returned result.
+        expected_paths = {
+            self.a_team: [self.a_team, self.user],
+            self.b_team: [self.b_team, self.a_team, self.user],
+            self.c_team: [self.c_team, self.b_team, self.a_team, self.user],
+            d_team: [d_team, self.b_team, self.a_team, self.user]}
+        self.assertEqual(expected_paths, paths)
+
+        expected_memberships = [(self.a_team, self.user)]
+        memberships = [
+            (membership.team, membership.person) for membership
+            in memberships]
+        self.assertEqual(expected_memberships, memberships)
 
 
 class TestPerson(TestCaseWithFactory):

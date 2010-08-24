@@ -5,21 +5,27 @@
 
 __metaclass__ = type
 
+import difflib
 import os
 import re
 import shutil
-import difflib
 from tempfile import mkdtemp
 import unittest
 
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.launchpad.scripts.logger import BufferLogger, QuietFakeLogger
+from canonical.launchpad.scripts.logger import (
+    BufferLogger,
+    QuietFakeLogger,
+    )
 from canonical.testing import LaunchpadZopelessLayer
 from lp.archivepublisher.config import Config
 from lp.archivepublisher.diskpool import DiskPool
-from lp.archivepublisher.ftparchive import FTPArchiveHandler, f_touch
+from lp.archivepublisher.ftparchive import (
+    f_touch,
+    FTPArchiveHandler,
+    )
 from lp.archivepublisher.publishing import Publisher
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket

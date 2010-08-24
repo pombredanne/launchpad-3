@@ -11,18 +11,28 @@ __all__ = [
     'IBugSubscription',
     ]
 
-from zope.interface import Interface, Attribute
-from zope.schema import Int, Choice, Datetime
-from canonical.launchpad import _
+from lazr.restful.declarations import (
+    call_with,
+    export_as_webservice_entry,
+    export_read_operation,
+    exported,
+    REQUEST_USER,
+    )
+from lazr.restful.fields import Reference
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Choice,
+    Datetime,
+    Int,
+    )
 
+from canonical.launchpad import _
 from lp.bugs.interfaces.bug import IBug
 from lp.registry.enum import BugNotificationLevel
 from lp.services.fields import PersonChoice
-
-from lazr.restful.declarations import (
-    REQUEST_USER, call_with, export_as_webservice_entry,
-    export_read_operation, exported)
-from lazr.restful.fields import Reference
 
 
 class IBugSubscription(Interface):

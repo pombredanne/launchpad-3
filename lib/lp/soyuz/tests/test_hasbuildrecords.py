@@ -7,20 +7,21 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.testing import LaunchpadZopelessLayer
-
-from lp.registry.model.sourcepackage import SourcePackage
 from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.buildmaster.interfaces.buildfarmjob import (
-    BuildFarmJobType, IBuildFarmJob)
-from lp.buildmaster.interfaces.packagebuild import (
-    IPackageBuildSource)
+    BuildFarmJobType,
+    IBuildFarmJob,
+    )
+from lp.buildmaster.interfaces.packagebuild import IPackageBuildSource
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.model.sourcepackage import SourcePackage
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuild
 from lp.soyuz.interfaces.buildrecords import (
-    IHasBuildRecords, IncompatibleArguments)
+    IHasBuildRecords,
+    IncompatibleArguments,
+    )
 from lp.soyuz.model.processor import ProcessorFamilySet
-from lp.soyuz.tests.test_binarypackagebuild import (
-    BaseTestCaseWithThreeBuilds)
+from lp.soyuz.tests.test_binarypackagebuild import BaseTestCaseWithThreeBuilds
 
 
 class TestHasBuildRecordsInterface(BaseTestCaseWithThreeBuilds):

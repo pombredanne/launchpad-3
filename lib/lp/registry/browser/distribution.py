@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for distributions."""
@@ -17,7 +17,6 @@ __all__ = [
     'DistributionDisabledMirrorsView',
     'DistributionEditView',
     'DistributionFacets',
-    'DistributionLanguagePackAdminView',
     'DistributionNavigation',
     'DistributionPPASearchView',
     'DistributionPackageSearchView',
@@ -39,54 +38,81 @@ __all__ = [
 
 import datetime
 
-from zope.lifecycleevent import ObjectCreatedEvent
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
+from zope.lifecycleevent import ObjectCreatedEvent
 from zope.security.interfaces import Unauthorized
 
 from canonical.cachedproperty import cachedproperty
-from lp.blueprints.browser.specificationtarget import (
-    HasSpecificationsMenuMixin)
-from lp.registry.browser.announcement import HasAnnouncementsView
-from lp.registry.browser.menu import (
-    IRegistryCollectionNavigationMenu, RegistryCollectionActionMenuBase)
-from lp.registry.browser.pillar import PillarBugsMenu
-from lp.bugs.browser.bugtask import BugTargetTraversalMixin
-from lp.answers.browser.faqtarget import FAQTargetNavigationMixin
 from canonical.launchpad.browser.feeds import FeedsMixin
-from lp.soyuz.browser.packagesearch import PackageSearchViewBase
 from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet)
+    DecoratedResultSet,
+    )
 from canonical.launchpad.components.request_country import (
-    ipaddress_from_request, request_country)
-from lp.answers.browser.questiontarget import (
-    QuestionTargetFacetMixin, QuestionTargetTraversalMixin)
-from lp.soyuz.interfaces.archive import (
-    IArchiveSet, ArchivePurpose)
-from lp.registry.interfaces.distribution import (
-    IDerivativeDistribution, IDistribution, IDistributionMirrorMenuMarker,
-    IDistributionSet)
-from lp.registry.interfaces.distributionmirror import (
-    IDistributionMirrorSet, MirrorContent, MirrorSpeed)
-from lp.registry.interfaces.series import SeriesStatus
-from lp.registry.interfaces.product import IProduct
-from lp.registry.browser.structuralsubscription import (
-    StructuralSubscriptionTargetTraversalMixin)
-from canonical.launchpad.webapp import (
-    action, ApplicationMenu, canonical_url, ContextMenu, custom_widget,
-    enabled_with_permission, GetitemNavigation,
-    LaunchpadFormView, LaunchpadView, Link, Navigation, redirection,
-    StandardLaunchpadFacets, stepthrough)
-from canonical.launchpad.webapp.interfaces import ILaunchBag
+    ipaddress_from_request,
+    request_country,
+    )
 from canonical.launchpad.helpers import english_list
-from canonical.launchpad.webapp import NavigationMenu
+from canonical.launchpad.webapp import (
+    action,
+    ApplicationMenu,
+    canonical_url,
+    ContextMenu,
+    custom_widget,
+    enabled_with_permission,
+    GetitemNavigation,
+    LaunchpadFormView,
+    LaunchpadView,
+    Link,
+    Navigation,
+    NavigationMenu,
+    redirection,
+    StandardLaunchpadFacets,
+    stepthrough,
+    )
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
+from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.widgets.image import ImageChangeWidget
-
+from lp.answers.browser.faqtarget import FAQTargetNavigationMixin
+from lp.answers.browser.questiontarget import (
+    QuestionTargetFacetMixin,
+    QuestionTargetTraversalMixin,
+    )
 from lp.app.errors import NotFoundError
+from lp.blueprints.browser.specificationtarget import (
+    HasSpecificationsMenuMixin,
+    )
+from lp.bugs.browser.bugtask import BugTargetTraversalMixin
 from lp.registry.browser import RegistryEditFormView
+from lp.registry.browser.announcement import HasAnnouncementsView
+from lp.registry.browser.menu import (
+    IRegistryCollectionNavigationMenu,
+    RegistryCollectionActionMenuBase,
+    )
+from lp.registry.browser.pillar import PillarBugsMenu
+from lp.registry.browser.structuralsubscription import (
+    StructuralSubscriptionTargetTraversalMixin,
+    )
+from lp.registry.interfaces.distribution import (
+    IDerivativeDistribution,
+    IDistribution,
+    IDistributionMirrorMenuMarker,
+    IDistributionSet,
+    )
+from lp.registry.interfaces.distributionmirror import (
+    IDistributionMirrorSet,
+    MirrorContent,
+    MirrorSpeed,
+    )
+from lp.registry.interfaces.product import IProduct
+from lp.registry.interfaces.series import SeriesStatus
+from lp.soyuz.browser.packagesearch import PackageSearchViewBase
+from lp.soyuz.interfaces.archive import (
+    ArchivePurpose,
+    IArchiveSet,
+    )
 
 
 class UsesLaunchpadMixin:
@@ -448,18 +474,7 @@ class DistributionPackageSearchView(PackageSearchViewBase):
         """See `AbstractPackageSearchView`."""
 
         if self.search_by_binary_name:
-            non_exact_matches = self.context.searchBinaryPackages(self.text)
-
-            # XXX Michael Nelson 20090605 bug=217644
-            # We are only using a decorated resultset here to conveniently
-            # get around the storm bug whereby count returns the count
-            # of non-distinct results, even though this result set
-            # is configured for distinct results.
-            def dummy_func(result):
-                return result
-            non_exact_matches = DecoratedResultSet(
-                non_exact_matches, dummy_func)
-
+            return self.context.searchBinaryPackages(self.text)
         else:
             non_exact_matches = self.context.searchSourcePackageCaches(
                 self.text)

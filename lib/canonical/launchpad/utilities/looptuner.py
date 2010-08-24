@@ -17,10 +17,13 @@ import transaction
 from zope.component import getUtility
 from zope.interface import implements
 
+from canonical.launchpad.interfaces.looptuner import ITunableLoop
 import canonical.launchpad.scripts
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
-from canonical.launchpad.interfaces.looptuner import ITunableLoop
+    IStoreSelector,
+    MAIN_STORE,
+    MASTER_FLAVOR,
+    )
 
 
 class LoopTuner:

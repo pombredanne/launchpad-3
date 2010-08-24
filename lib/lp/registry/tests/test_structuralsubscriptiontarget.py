@@ -10,26 +10,37 @@ import unittest
 
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
-from zope.security.proxy import ProxyFactory, removeSecurityProxy
+from zope.security.proxy import (
+    ProxyFactory,
+    removeSecurityProxy,
+    )
 
-from lp.bugs.interfaces.bug import CreateBugParams
-from lp.registry.interfaces.distribution import IDistributionSet
-from lp.registry.interfaces.product import IProductSet
-from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
-from lp.bugs.tests.test_bugtarget import (
-    bugtarget_filebug)
 from canonical.launchpad.testing.systemdocs import (
-    LayeredDocFileSuite, setUp, tearDown)
+    LayeredDocFileSuite,
+    setUp,
+    tearDown,
+    )
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing import LaunchpadFunctionalLayer
-from lp.testing import (
-    ANONYMOUS, login, login_person, TestCaseWithFactory)
-from lp.testing._login import login_celebrity
+from lp.bugs.interfaces.bug import CreateBugParams
+from lp.bugs.tests.test_bugtarget import bugtarget_filebug
+from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.product import IProductSet
+from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.interfaces.structuralsubscription import (
-    DeleteSubscriptionError, IStructuralSubscriptionTarget,
-    UserCannotSubscribePerson)
+    DeleteSubscriptionError,
+    IStructuralSubscriptionTarget,
+    UserCannotSubscribePerson,
+    )
 from lp.registry.model.structuralsubscription import StructuralSubscription
+from lp.testing import (
+    ANONYMOUS,
+    login,
+    login_person,
+    TestCaseWithFactory,
+    )
+from lp.testing._login import login_celebrity
 
 
 class StructuralSubscriptionTestBase:

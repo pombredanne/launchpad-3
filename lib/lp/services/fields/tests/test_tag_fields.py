@@ -7,9 +7,11 @@ import unittest
 
 from zope.schema.interfaces import ConstraintNotSatisfied
 
-from lp.services.fields import SearchTag, Tag
 from canonical.testing import LaunchpadFunctionalLayer
-
+from lp.services.fields import (
+    SearchTag,
+    Tag,
+    )
 from lp.testing import TestCase
 
 

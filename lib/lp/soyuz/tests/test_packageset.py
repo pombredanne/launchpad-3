@@ -6,12 +6,13 @@
 from zope.component import getUtility
 
 from canonical.testing import LaunchpadZopelessLayer
-
-from lp.testing import TestCaseWithFactory
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.series import SeriesStatus
 from lp.soyuz.interfaces.packageset import (
-    DuplicatePackagesetName, IPackagesetSet)
+    DuplicatePackagesetName,
+    IPackagesetSet,
+    )
+from lp.testing import TestCaseWithFactory
 
 
 class TestPackagesetSet(TestCaseWithFactory):
