@@ -29,12 +29,70 @@ from devscripts.ec2test.remote import (
     FlagFallStream,
     gunzip_data,
     gzip_data,
+    LaunchpadTester,
     remove_pidfile,
     Request,
     SummaryResult,
     WebTestLogger,
     write_pidfile,
     )
+
+
+class RequestHelpers:
+
+    def make_trunk(self, parent_url='http://example.com/bzr/trunk'):
+        """Make a trunk branch suitable for use with `Request`.
+
+        `Request` expects to be given a path to a working tree that has a
+        branch with a configured parent URL, so this helper returns such a
+        working tree.
+        """
+        nick = parent_url.strip('/').split('/')[-1]
+        tree = self.make_branch_and_tree(nick)
+        tree.branch.set_parent(parent_url)
+        return tree
+
+    def make_request(self, branch_url=None, revno=None,
+                     trunk=None, sourcecode_path=None,
+                     emails=None, pqm_message=None):
+        """Make a request to test, specifying only things we care about.
+
+        Note that the returned request object will not ever send email, but
+        will instead log "sent" emails to `request.emails_sent`.
+        """
+        if trunk is None:
+            trunk = self.make_trunk()
+        if sourcecode_path is None:
+            sourcecode_path = self.make_sourcecode(
+                [('a', 'http://example.com/bzr/a', 2),
+                 ('b', 'http://example.com/bzr/b', 3),
+                 ('c', 'http://example.com/bzr/c', 5)])
+        request = Request(
+            branch_url, revno, trunk.basedir, sourcecode_path, emails,
+            pqm_message)
+        request.emails_sent = []
+        request._send_email = request.emails_sent.append
+        return request
+
+    def make_sourcecode(self, branches):
+        """Make a sourcecode directory with sample branches.
+
+        :param branches: A list of (name, parent_url, revno) tuples.
+        :return: The path to the sourcecode directory.
+        """
+        self.build_tree(['sourcecode/'])
+        for name, parent_url, revno in branches:
+            tree = self.make_branch_and_tree('sourcecode/%s' % (name,))
+            tree.branch.set_parent(parent_url)
+            for i in range(revno):
+                tree.commit(message=str(i))
+        return 'sourcecode/'
+
+    def make_logger(self, request=None, echo_to_stdout=False):
+        if request is None:
+            request = self.make_request()
+        return WebTestLogger(
+            'full.log', 'summary.log', 'index.html', request, echo_to_stdout)
 
 
 class TestFlagFallStream(TestCase):
@@ -122,6 +180,80 @@ class TestSummaryResult(TestCase):
         self.assertEqual(1, len(flush_calls))
 
 
+class FakePopen:
+    """Fake Popen object so we don't have to spawn processes in tests."""
+
+    def __init__(self, output, exit_status):
+        self.stdout = StringIO(output)
+        self._exit_status = exit_status
+
+    def wait(self):
+        return self._exit_status
+
+
+class TestLaunchpadTester(TestCaseWithTransport, RequestHelpers):
+
+    def test_build_test_command_no_options(self):
+        # The LaunchpadTester runs "make check" if given no options.
+        tester = LaunchpadTester(None, None)
+        command = tester.build_test_command()
+        self.assertEqual(['make', 'check'], command)
+
+    def test_build_test_command_options(self):
+        # The LaunchpadTester runs 'make check TESTOPTIONS="<options>"' if
+        # given options.
+        tester = LaunchpadTester(
+            None, None, test_options=('-vvv', '--subunit'))
+        command = tester.build_test_command()
+        self.assertEqual(
+            ['make', 'check', 'TESTOPTS="-vvv --subunit"'], command)
+
+    def test_running_test(self):
+        # LaunchpadTester.test() runs the test command, and then calls
+        # got_result with the result.  This test is more of a smoke test to
+        # make sure that everything integrates well.
+        message = {'Subject': "One Crowded Hour"}
+        request = self.make_request(pqm_message=message)
+        logger = self.make_logger(request=request)
+        tester = LaunchpadTester(logger, None)
+        output = "test output\n"
+        tester._spawn_test_process = lambda: FakePopen(output, 0)
+        tester.test()
+        # Message being sent implies got_result thought it got a success.
+        self.assertEqual([message], request.emails_sent)
+
+    def test_error_in_testrunner(self):
+        # Any exception is raised within LaunchpadTester.test() is an error in
+        # the testrunner. When we detect these, we do three things:
+        #   1. Log the error to the logger using error_in_testrunner
+        #   2. Call got_result with a False value, indicating test suite
+        #      failure.
+        #   3. Re-raise the error. In the script, this triggers an email.
+        message = {'Subject': "One Crowded Hour"}
+        request = self.make_request(pqm_message=message)
+        logger = self.make_logger(request=request)
+        tester = LaunchpadTester(logger, None)
+        # Break the test runner deliberately. In production, this is more
+        # likely to be a system error than a programming error.
+        tester._spawn_test_process = lambda: 1/0
+        self.assertRaises(ZeroDivisionError, tester.test)
+        # Message not being sent implies got_result thought it got a failure.
+        self.assertEqual([], request.emails_sent)
+        self.assertIn("ERROR IN TESTRUNNER", logger.get_summary_contents())
+        self.assertIn("ZeroDivisionError", logger.get_summary_contents())
+
+    def test_nonzero_exit_code(self):
+        message = {'Subject': "One Crowded Hour"}
+        request = self.make_request(pqm_message=message)
+        logger = self.make_logger(request=request)
+        tester = LaunchpadTester(logger, None)
+        output = "test output\n"
+        tester._spawn_test_process = lambda: FakePopen(output, 10)
+        tester.test()
+        # Message not being sent implies got_result thought it got a failure.
+        self.assertEqual([], request.emails_sent)
+
+
 class TestPidfileHelpers(TestCase):
     """Tests for `write_pidfile` and `remove_pidfile`."""
 
@@ -161,63 +293,6 @@ class TestGzip(TestCase):
         data = 'foobarbaz\n'
         compressed = gzip_data(data)
         self.assertEqual(data, gunzip_data(compressed))
-
-
-class RequestHelpers:
-
-    def make_trunk(self, parent_url='http://example.com/bzr/trunk'):
-        """Make a trunk branch suitable for use with `Request`.
-
-        `Request` expects to be given a path to a working tree that has a
-        branch with a configured parent URL, so this helper returns such a
-        working tree.
-        """
-        nick = parent_url.strip('/').split('/')[-1]
-        tree = self.make_branch_and_tree(nick)
-        tree.branch.set_parent(parent_url)
-        return tree
-
-    def make_request(self, branch_url=None, revno=None,
-                     trunk=None, sourcecode_path=None,
-                     emails=None, pqm_message=None):
-        """Make a request to test, specifying only things we care about.
-
-        Note that the returned request object will not ever send email, but
-        will instead log "sent" emails to `request.emails_sent`.
-        """
-        if trunk is None:
-            trunk = self.make_trunk()
-        if sourcecode_path is None:
-            sourcecode_path = self.make_sourcecode(
-                [('a', 'http://example.com/bzr/a', 2),
-                 ('b', 'http://example.com/bzr/b', 3),
-                 ('c', 'http://example.com/bzr/c', 5)])
-        request = Request(
-            branch_url, revno, trunk.basedir, sourcecode_path, emails,
-            pqm_message)
-        request.emails_sent = []
-        request._send_email = request.emails_sent.append
-        return request
-
-    def make_sourcecode(self, branches):
-        """Make a sourcecode directory with sample branches.
-
-        :param branches: A list of (name, parent_url, revno) tuples.
-        :return: The path to the sourcecode directory.
-        """
-        self.build_tree(['sourcecode/'])
-        for name, parent_url, revno in branches:
-            tree = self.make_branch_and_tree('sourcecode/%s' % (name,))
-            tree.branch.set_parent(parent_url)
-            for i in range(revno):
-                tree.commit(message=str(i))
-        return 'sourcecode/'
-
-    def make_logger(self, request=None, echo_to_stdout=False):
-        if request is None:
-            request = self.make_request()
-        return WebTestLogger(
-            'full.log', 'summary.log', 'index.html', request, echo_to_stdout)
 
 
 class TestRequest(TestCaseWithTransport, RequestHelpers):
