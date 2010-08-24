@@ -37,7 +37,6 @@ from lp.code.interfaces.seriessourcepackagebranch import (
     IMakeOfficialBranchLinks,
     )
 from lp.code.model.branch import Branch
-from lp.code.publisher import CodeLayer
 from lp.registry.interfaces.person import PersonVisibility
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.person import Owner
@@ -143,7 +142,7 @@ class TestPersonOwnedBranchesView(TestCaseWithFactory):
         branch_ids = set([self.branches[0].id])
 
         view = create_initialized_view(
-            self.barney, name="+branches", layer=CodeLayer)
+            self.barney, name="+branches", rootsite='code')
         self.assertEqual(
             view.branches().branch_ids_with_bug_links,
             branch_ids)
@@ -154,7 +153,7 @@ class TestPersonOwnedBranchesView(TestCaseWithFactory):
         branch_ids = set([self.branches[1].id])
 
         view = create_initialized_view(
-            self.barney, name="+branches", layer=CodeLayer)
+            self.barney, name="+branches", rootsite='code')
         self.assertEqual(
             view.branches().branch_ids_with_spec_links,
             branch_ids)
@@ -164,7 +163,7 @@ class TestPersonOwnedBranchesView(TestCaseWithFactory):
         # the current batch.
         branch_ids = set([])
         view = create_initialized_view(
-            self.barney, name="+branches", layer=CodeLayer)
+            self.barney, name="+branches", rootsite='code')
         self.assertEqual(
             view.branches().branch_ids_with_merge_proposals,
             branch_ids)
@@ -178,7 +177,7 @@ class TestPersonOwnedBranchesView(TestCaseWithFactory):
             tip_revisions[branch_id] = None
 
         view = create_initialized_view(
-            self.barney, name="+branches", layer=CodeLayer)
+            self.barney, name="+branches", rootsite='code')
         self.assertEqual(
             view.branches().tip_revisions,
             tip_revisions)
@@ -357,7 +356,7 @@ class TestDevelopmentFocusPackageBranches(TestCaseWithFactory):
         self.assertEqual(identity, branch.bzr_identity)
         # Now confirm that we get the same through the view.
         view = create_initialized_view(
-            branch.distribution, name='+branches', layer=CodeLayer)
+            branch.distribution, name='+branches', rootsite='code')
         # There is only one branch.
         batch = view.branches()
         [view_branch] = batch.branches
