@@ -49,9 +49,7 @@ headers will not be shown.
     # translations.
     >>> admin_browser.open(
     ...   'http://launchpad.dev/netapplet/+configure-translations')
-    >>> admin_browser.getControl(
-    ...     'Translations for this project are done in Launchpad'
-    ...     ).selected = True
+    >>> admin_browser.getControl('Launchpad').click()
     >>> admin_browser.getControl('Change').click()
     >>> anon_browser.open(
     ...     'http://translations.launchpad.dev/netapplet/trunk/+pots/'

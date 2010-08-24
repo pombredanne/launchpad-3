@@ -1399,6 +1399,7 @@ class ProductBrandingView(BrandingChangeView):
 class ProductConfigureBase(ReturnToReferrerMixin, LaunchpadEditFormView):
     implements(IProductEditMenu)
     schema = IProduct
+    usage_fieldname = None
 
     @property
     def page_title(self):
@@ -1408,32 +1409,51 @@ class ProductConfigureBase(ReturnToReferrerMixin, LaunchpadEditFormView):
     def change_action(self, action, data):
         self.updateContextFromData(data)
 
+    def setUpFields(self):
+        super(ProductConfigureBase, self).setUpFields()
+        # The usage fields are shared among pillars.  But when referring to an
+        # individual object in Launchpad it is better to call it by its real
+        # name, i.e. 'project' instead of 'pillar'.
+        field = self.form_fields.get(self.usage_fieldname)
+        if field:
+            field.field.description = (
+                field.field.description.replace('pillar', 'project'))
+
 
 class ProductConfigureBlueprintsView(ProductConfigureBase):
     """View class to configure the Launchpad Blueprints for a project."""
 
     label = "Configure Blueprints"
+    usage_fieldname = 'blueprints_usage'
     field_names = [
-        "official_blueprints",
+        usage_fieldname,
         ]
+    custom_widget(usage_fieldname, LaunchpadRadioWidget,
+                  orientation='vertical')
 
 
 class ProductConfigureTranslationsView(ProductConfigureBase):
     """View class to configure the Launchpad Translations for a project."""
 
     label = "Configure Translations"
+    usage_fieldname = 'translations_usage'
     field_names = [
-        "official_rosetta",
+        usage_fieldname,
         ]
+    custom_widget(usage_fieldname, LaunchpadRadioWidget,
+                  orientation='vertical')
 
 
 class ProductConfigureAnswersView(ProductConfigureBase):
     """View class to configure the Launchpad Answers for a project."""
 
     label = "Configure Answers"
+    usage_fieldname = 'answers_usage'
     field_names = [
-        "official_answers",
+        usage_fieldname,
         ]
+    custom_widget(usage_fieldname, LaunchpadRadioWidget,
+                  orientation='vertical')
 
 
 class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):

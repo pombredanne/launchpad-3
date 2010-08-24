@@ -137,20 +137,17 @@ Translations, there is no language chart shown.
 
 If the netapplet project is updated to use Launchpad for translations...
 
-    >>> admin_browser.open('http://translations.launchpad.dev/netapplet')
-    >>> admin_browser.getLink('Overview').click()
-    >>> print admin_browser.title
-    Network Applet in Launchpad
+    >>> admin_browser.open('http://launchpad.dev/netapplet')
     >>> admin_browser.getLink('Configure translations').click()
-    >>> admin_browser.getControl(
-    ...     'Translations for this project are done in Launchpad').selected
-    False
-    >>> admin_browser.getControl(
-    ...     'Translations for this project are done in Launchpad'
-    ...     ).selected = True
+    >>> print_radio_button_field(admin_browser.contents, "translations_usage")
+    (*) Unknown
+    ( ) Launchpad
+    ( ) External
+    ( ) Not Applicable
+    >>> admin_browser.getControl('Launchpad').click()
     >>> admin_browser.getControl('Change').click()
 
-...there are no longer any obsolete entires.
+...there are no longer any obsolete entries.
 
     >>> admin_browser.getLink('Translations').click()
     >>> print admin_browser.title
