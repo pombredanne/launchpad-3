@@ -40,6 +40,12 @@ from devscripts.ec2test.remote import (
 
 class RequestHelpers:
 
+    def patch(self, obj, name, value):
+        orig = getattr(obj, name)
+        setattr(obj, name, value)
+        self.addCleanup(setattr, obj, name, orig)
+        return orig
+
     def make_trunk(self, parent_url='http://example.com/bzr/trunk'):
         """Make a trunk branch suitable for use with `Request`.
 
@@ -207,6 +213,24 @@ class TestLaunchpadTester(TestCaseWithTransport, RequestHelpers):
         command = tester.build_test_command()
         self.assertEqual(
             ['make', 'check', 'TESTOPTS="-vvv --subunit"'], command)
+
+    def test_spawn_test_process(self):
+        # _spawn_test_process uses subprocess.Popen to run the command
+        # returned by build_test_command. stdout & stderr are piped together,
+        # the cwd is the test directory specified in the constructor, and the
+        # bufsize is zore, meaning "don't buffer".
+        popen_calls = []
+        self.patch(
+            subprocess, 'Popen',
+            lambda *args, **kwargs: popen_calls.append((args, kwargs)))
+        tester = LaunchpadTester(self.make_logger(), 'test-directory')
+        tester._spawn_test_process()
+        self.assertEqual(
+            [((tester.build_test_command(),),
+              {'bufsize': 0,
+               'stdout': subprocess.PIPE,
+               'stderr': subprocess.STDOUT,
+               'cwd': 'test-directory'})], popen_calls)
 
     def test_running_test(self):
         # LaunchpadTester.test() runs the test command, and then calls
@@ -511,12 +535,6 @@ class TestRequest(TestCaseWithTransport, RequestHelpers):
 
 
 class TestWebTestLogger(TestCaseWithTransport, RequestHelpers):
-
-    def patch(self, obj, name, value):
-        orig = getattr(obj, name)
-        setattr(obj, name, value)
-        self.addCleanup(setattr, obj, name, orig)
-        return orig
 
     def test_make_in_directory(self):
         # WebTestLogger.make_in_directory constructs a logger that writes to a
