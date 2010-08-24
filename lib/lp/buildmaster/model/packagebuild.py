@@ -35,7 +35,10 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.config import config
 from canonical.database.enumcol import DBEnum
 from canonical.database.sqlbase import (
-    clear_current_connection_cache, cursor, flush_database_updates)
+    clear_current_connection_cache,
+    cursor,
+    flush_database_updates,
+    )
 from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
 from canonical.launchpad.helpers import filenameToContentType
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
@@ -62,7 +65,9 @@ from lp.buildmaster.model.buildfarmjob import (
     )
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.registry.interfaces.pocket import (
-    PackagePublishingPocket, pocketsuffix)
+    PackagePublishingPocket,
+    pocketsuffix,
+    )
 from lp.soyuz.adapters.archivedependencies import (
     default_component_dependency_name,
     )
