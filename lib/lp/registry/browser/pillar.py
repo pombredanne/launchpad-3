@@ -93,7 +93,7 @@ class PillarView(LaunchpadView):
 
     def __init__(self, context, request):
         super(PillarView, self).__init__(context, request)
-        self.bug_tracking_usage = ServiceUsage.UNKNOWN
+        self.official_malone = False
         self.official_answers = False
         self.official_blueprints = False
         self.official_rosetta = False
@@ -121,7 +121,8 @@ class PillarView(LaunchpadView):
         """Does the pillar officially use launchpad."""
         # This if structure is required because it may be called many
         # times to build the complete set of official applications.
-        self.bug_tracking_usage = pillar.get_bug_tracking_usage
+        if pillar.official_malone:
+            self.official_malone = True
         if pillar.official_answers:
             self.official_answers = True
         if pillar.official_blueprints:
