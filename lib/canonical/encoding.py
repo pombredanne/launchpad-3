@@ -5,9 +5,9 @@
 
 __metaclass__ = type
 __all__ = [
-    'guess',
     'ascii_smash',
     'escape_nonascii_uniquely',
+    'guess',
     ]
 
 import re
