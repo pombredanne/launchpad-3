@@ -18,7 +18,7 @@ from storm.locals import (
 from zope.interface import implements
 
 from canonical.database.enumcol import DBEnum
-from lp.registry.enums import DistroSeriesDifferenceStatus
+from lp.registry.enum import DistroSeriesDifferenceStatus
 from lp.registry.interfaces.distroseriesdifference import (
     IDistroSeriesDifference,
     )
@@ -36,16 +36,16 @@ class DistroSeriesDifference(Storm):
         derived_series_id, 'DistroSeriesDifference.id')
 
     source_package_id = Int(
-        name='source_package', allow_none=True)
+        name='source_package_publishing_history', allow_none=True)
     source_package = Reference(
         source_package_id,
-        'DistroSeriesDifference.source_package_publishing_history')
+        'SourcePackagePublishingHistory.id')
 
     parent_source_package_id = Int(
-        name='parent_source_package', allow_none=True)
+        name='parent_source_package_publishing_history', allow_none=True)
     parent_source_package = Reference(
         parent_source_package_id,
-        'DistroSeriesDifference.parent_source_package_publishing_history')
+        'SourcePackagePublishingHistory.id')
 
     comment = Unicode(name='comment', allow_none=True)
     status = DBEnum(name='status', allow_none=False,
