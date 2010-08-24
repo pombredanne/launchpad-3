@@ -417,6 +417,14 @@ class POFileMixIn(RosettaStats):
         """See `IPOFile`."""
         return TranslatableMessage(potmsgset, self)
 
+    def markChanged(self, translator=None, timestamp=None):
+        """See `IPOFile`."""
+        if timestamp is None:
+            timestamp = UTC_NOW
+        self.date_changed = timestamp
+        if translator is not None:
+            self.lasttranslator = translator
+
 
 class POFile(SQLBase, POFileMixIn):
     implements(IPOFile)

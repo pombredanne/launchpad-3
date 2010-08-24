@@ -11,6 +11,8 @@ from zope.component import getAdapter, getUtility
 from zope.interface.verify import verifyObject
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.database.constants import UTC_NOW
+
 from lp.translations.interfaces.pofile import IPOFileSet
 from lp.translations.interfaces.translatablemessage import (
     ITranslatableMessage)
@@ -1775,6 +1777,26 @@ class TestPOFile(TestCaseWithFactory):
                 row.sequence, self.EXPECTED_SEQUENCE[rownum],
                 "getTranslationRows does not sort obsolete messages "
                 "(sequence=0) to the end of the file.")
+
+    def test_markChanged_sets_date(self):
+        timestamp = datetime.now(pytz.UTC) - timedelta(days=14)
+        self.pofile.markChanged(timestamp=timestamp)
+        self.assertEqual(timestamp, self.pofile.date_changed)
+
+    def test_markChanged_defaults_to_now(self):
+        self.pofile.date_changed = datetime.now(pytz.UTC) - timedelta(days=99)
+        self.pofile.markChanged()
+        self.assertEqual(UTC_NOW, self.pofile.date_changed)
+
+    def test_markChanged_leaves_lasttranslator_unchanged(self):
+        old_lasttranslator = self.pofile.lasttranslator
+        self.pofile.markChanged()
+        self.assertEqual(old_lasttranslator, self.pofile.lasttranslator)
+
+    def test_markChanged_sets_lasttranslator(self):
+        translator = self.factory.makePerson()
+        self.pofile.markChanged(translator=translator)
+        self.assertEqual(translator, self.pofile.lasttranslator)
 
 
 class TestPOFileToTranslationFileDataAdapter(TestCaseWithFactory):
