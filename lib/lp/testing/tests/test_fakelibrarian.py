@@ -109,6 +109,15 @@ class TestFakeLibrarian(LibraryAccessScenarioMixin, TestCaseWithFactory):
         self.assertTrue(verifyObject(ISynchronizer, self.fake_librarian))
         self.assertIsInstance(self.fake_librarian, FakeLibrarian)
 
+    def test_pretend_commit(self):
+        name, text, alias_id = self._storeFile()
+
+        self.fake_librarian.pretendCommit()
+
+        retrieved_alias = getUtility(ILibraryFileAliasSet)[alias_id]
+        retrieved_alias.open()
+        self.assertEqual(text, retrieved_alias.read())
+
 
 class TestRealLibrarian(LibraryAccessScenarioMixin, TestCaseWithFactory):
     """Test the supported interface subset on the real librarian."""

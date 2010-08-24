@@ -10,7 +10,7 @@
 
     <style type="text/css">
             body {
-                font-family: sans-serif;
+                font-family: UbuntuBeta, Ubuntu, 'Bitstream Vera Sans', 'DejaVu Sans', Tahoma, sans-serif;
                 font-size: 0.85em;
                 margin: 2em 8em;
             }
