@@ -75,44 +75,48 @@ class AbstractUploadPolicy:
         self.unsigned_changes_ok = False
         self.unsigned_dsc_ok = False
         self.create_people = True
+        # Accept uploads containing source packages.
         self.can_upload_source = True
+        # Accept uploads containing binary packages.
         self.can_upload_binaries = True
-        self.can_upload_mixed = True
+        # Accept uploads containing source and binary packages.
+        self.can_upload_mixed = False
         # future_time_grace is in seconds. 28800 is 8 hours
         self.future_time_grace = 8 * HOURS
         # The earliest year we accept in a deb's file's mtime
         self.earliest_year = 1984
 
     def validateUploadType(self, upload):
-        if upload.sourceful and not self.can_upload_source:
-            upload.reject("Upload is sourceful, but policy refuses "
-                          "sourceful uploads.")
+        """Check that the type of the given upload is accepted by this policy.
 
-        elif upload.binaryful and not self.can_upload_binaries:
-            messages = [
-                "Upload rejected because it contains binary packages.",
-                "Ensure you are using `debuild -S`, or an equivalent",
-                "command, to generate only the source package before",
-                "re-uploading.",
-                ]
-            if upload.is_ppa:
-                messages.append(
-                "See https://help.launchpad.net/Packaging/PPA for more "
-                "information.")
-            upload.reject(" ".join(messages))
+        When the type (e.g. sourceful, binaryful or mixed) is not accepted,
+        the upload is rejected.
+        """
+        if upload.sourceful and upload.binaryful:
+            if not self.can_upload_mixed:
+                upload.reject(
+                    "Source/binary (i.e. mixed) uploads are not allowed.")
 
-        elif (upload.sourceful and upload.binaryful and
-              not self.can_upload_mixed):
-            upload.reject("Upload is source/binary but policy refuses "
-                          "mixed uploads.")
-
-        elif upload.sourceful and not upload.changes.dsc:
-            upload.reject(
-                "Unable to find the DSC file in the source upload.")
+        elif upload.sourceful:
+            if not self.can_upload_source:
+                upload.reject(
+                    "Sourceful uploads are not accepted by this policy.")
 
         else:
-            # Upload content is consistent with the policy.
-            pass
+            assert upload.binaryful, (
+                "Upload is not sourceful, binaryful or mixed.")
+            if not self.can_upload_binaries:
+                messages = [
+                    "Upload rejected because it contains binary packages.",
+                    "Ensure you are using `debuild -S`, or an equivalent",
+                    "command, to generate only the source package before",
+                    "re-uploading.",
+                    ]
+                if upload.is_ppa:
+                    messages.append(
+                    "See https://help.launchpad.net/Packaging/PPA for more "
+                    "information.")
+                upload.reject(" ".join(messages))
 
     def getUploader(self, changes):
         """Get the person who is doing the uploading."""
@@ -206,7 +210,6 @@ class InsecureUploadPolicy(AbstractUploadPolicy):
     def __init__(self):
         AbstractUploadPolicy.__init__(self)
         self.can_upload_binaries = False
-        self.can_upload_mixed = False
 
     def rejectPPAUploads(self, upload):
         """Insecure policy allows PPA upload."""
@@ -321,7 +324,6 @@ class BuildDaemonUploadPolicy(AbstractUploadPolicy):
         self.unsigned_changes_ok = True
         self.unsigned_dsc_ok = True
         self.can_upload_source = False
-        self.can_upload_mixed = False
 
     def setOptions(self, options):
         AbstractUploadPolicy.setOptions(self, options)
@@ -352,7 +354,6 @@ class SyncUploadPolicy(AbstractUploadPolicy):
         self.unsigned_changes_ok = True
         self.unsigned_dsc_ok = True
         # We don't want binaries in a sync
-        self.can_upload_mixed = False
         self.can_upload_binaries = False
 
     def policySpecificChecks(self, upload):

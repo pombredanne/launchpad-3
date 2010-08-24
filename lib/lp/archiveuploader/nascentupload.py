@@ -146,10 +146,11 @@ class NascentUpload:
         UploadError will be raised and sent up to the caller. If this happens
         the caller should call the reject method and process a rejection.
         """
+        policy = self.policy
         self.logger.debug("Beginning processing.")
 
         try:
-            self.policy.setDistroSeriesAndPocket(self.changes.suite_name)
+            policy.setDistroSeriesAndPocket(self.changes.suite_name)
         except NotFoundError:
             self.reject(
                 "Unable to find distroseries: %s" % self.changes.suite_name)
@@ -185,7 +186,11 @@ class NascentUpload:
             isinstance(self.changes.files[0], CustomUploadFile)):
             self.logger.debug("Single Custom Upload detected.")
         else:
-            self.policy.validateUploadType(self)
+            policy.validateUploadType(self)
+
+            if self.sourceful and not self.changes.dsc:
+                self.reject(
+                    "Unable to find the DSC file in the source upload.")
 
             # Apply the overrides from the database. This needs to be done
             # before doing component verifications because the component
@@ -199,7 +204,7 @@ class NascentUpload:
         self.verify_acl()
 
         # Perform policy checks.
-        self.policy.checkUpload(self)
+        policy.checkUpload(self)
 
         # That's all folks.
         self.logger.debug("Finished checking upload.")
@@ -968,6 +973,7 @@ class NascentUpload:
                     # so late in the game is that in the
                     # mixed-upload case we only have a
                     # sourcepackagerelease to verify here!
+                    # XXX: This check may be redundant and possible to remove.
                     assert self.policy.can_upload_mixed, (
                         "Current policy does not allow mixed uploads.")
                     assert sourcepackagerelease, (
