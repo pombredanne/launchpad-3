@@ -199,17 +199,23 @@ class FakePopen:
 
 class TestLaunchpadTester(TestCaseWithTransport, RequestHelpers):
 
+    def make_tester(self, logger=None, test_directory=None, test_options=()):
+        if not logger:
+            logger = self.make_logger()
+        if not test_directory:
+            test_directory = 'unspecified-test-directory'
+        return LaunchpadTester(logger, test_directory, test_options)
+
     def test_build_test_command_no_options(self):
         # The LaunchpadTester runs "make check" if given no options.
-        tester = LaunchpadTester(None, None)
+        tester = self.make_tester()
         command = tester.build_test_command()
         self.assertEqual(['make', 'check'], command)
 
     def test_build_test_command_options(self):
         # The LaunchpadTester runs 'make check TESTOPTIONS="<options>"' if
         # given options.
-        tester = LaunchpadTester(
-            None, None, test_options=('-vvv', '--subunit'))
+        tester = self.make_tester(test_options=('-vvv', '--subunit'))
         command = tester.build_test_command()
         self.assertEqual(
             ['make', 'check', 'TESTOPTS="-vvv --subunit"'], command)
@@ -223,7 +229,7 @@ class TestLaunchpadTester(TestCaseWithTransport, RequestHelpers):
         self.patch(
             subprocess, 'Popen',
             lambda *args, **kwargs: popen_calls.append((args, kwargs)))
-        tester = LaunchpadTester(self.make_logger(), 'test-directory')
+        tester = self.make_tester(test_directory='test-directory')
         tester._spawn_test_process()
         self.assertEqual(
             [((tester.build_test_command(),),
@@ -239,7 +245,7 @@ class TestLaunchpadTester(TestCaseWithTransport, RequestHelpers):
         message = {'Subject': "One Crowded Hour"}
         request = self.make_request(pqm_message=message)
         logger = self.make_logger(request=request)
-        tester = LaunchpadTester(logger, None)
+        tester = self.make_tester(logger=logger)
         output = "test output\n"
         tester._spawn_test_process = lambda: FakePopen(output, 0)
         tester.test()
@@ -256,7 +262,7 @@ class TestLaunchpadTester(TestCaseWithTransport, RequestHelpers):
         message = {'Subject': "One Crowded Hour"}
         request = self.make_request(pqm_message=message)
         logger = self.make_logger(request=request)
-        tester = LaunchpadTester(logger, None)
+        tester = self.make_tester(logger=logger)
         # Break the test runner deliberately. In production, this is more
         # likely to be a system error than a programming error.
         tester._spawn_test_process = lambda: 1/0
@@ -270,7 +276,7 @@ class TestLaunchpadTester(TestCaseWithTransport, RequestHelpers):
         message = {'Subject': "One Crowded Hour"}
         request = self.make_request(pqm_message=message)
         logger = self.make_logger(request=request)
-        tester = LaunchpadTester(logger, None)
+        tester = self.make_tester(logger=logger)
         output = "test output\n"
         tester._spawn_test_process = lambda: FakePopen(output, 10)
         tester.test()
