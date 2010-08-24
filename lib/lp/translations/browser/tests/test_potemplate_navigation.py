@@ -25,27 +25,20 @@ class TestPOTemplateNavigation(TestCaseWithFactory):
     def test_traverse_to_existing_pofile(self):
         pofile = self.factory.makePOFile('nl')
         nav = self._makeNavigation(pofile.potemplate)
-
         destination = nav.traverse('nl')
-
         self.assertEqual(pofile, destination)
 
     def test_traverse_to_dummy_pofile(self):
-        potemplate = self.factory.makePOTemplate()
-        nav = self._makeNavigation(potemplate)
-
+        nav = self._makeNavigation(self.factory.makePOTemplate())
         destination = nav.traverse('de')
         self.assertIsInstance(destination, DummyPOFile)
         self.assertEqual('de', destination.language.code)
 
     def test_traverse_nonexistent_language(self):
-        potemplate = self.factory.makePOTemplate()
-        nav = self._makeNavigation(potemplate)
-
+        nav = self._makeNavigation(self.factory.makePOTemplate())
         self.assertRaises(NotFoundError, nav.traverse, 'bzyzzyx_GRQ@UTF-13')
 
     def test_unsupported_method(self):
         pofile = self.factory.makePOFile('sr')
         nav = self._makeNavigation(pofile.potemplate, method='PUT')
-
         self.assertRaises(AssertionError, nav.traverse, 'sr')
