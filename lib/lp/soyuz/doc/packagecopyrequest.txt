@@ -10,8 +10,8 @@ Let's prepare a few things we'll need for the subsequent tests.
     >>> from lp.soyuz.adapters.packagelocation import (
     ...     build_package_location)
     >>> from lp.soyuz.interfaces.packagecopyrequest import (
-    ...     IPackageCopyRequest, IPackageCopyRequestSet, PackageCopyStatus)
-    >>> from lp.soyuz.enums import ArchivePurpose
+    ...     IPackageCopyRequest, IPackageCopyRequestSet)
+    >>> from lp.soyuz.enums import ArchivePurpose, PackageCopyStatus
     >>> from lp.soyuz.interfaces.archive import IArchiveSet
     >>> from canonical.launchpad.interfaces import (
     ...     IPersonSet, IDistributionSet)
