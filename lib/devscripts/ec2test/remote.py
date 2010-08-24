@@ -213,12 +213,6 @@ class EC2Runner:
 class LaunchpadTester:
     """Runs Launchpad tests and gathers their results in a useful way."""
 
-    # A string we expect to see in the output of the test running process that
-    # signals that the pre-test stuff is finished and all we'll see from now
-    # is test output.
-    RUNNING_TESTS_FLAG = 'Running tests.\n'
-    TESTS_FINISHED_FLAG = 'Test suite profiling information\n'
-
     def __init__(self, logger, test_directory, test_options=()):
         """Construct a TestOnMergeRunner.
 
@@ -276,9 +270,6 @@ class LaunchpadTester:
             exit_status = 1
             raise
         finally:
-            # XXX: I think instead of passing in a boolean here, we want to
-            # pass in the actual SummaryResult instance.  Then got_result can
-            # use it to generate an email.
             self._logger.got_result(not exit_status)
 
     def _gather_test_output(self, input_stream, logger):
