@@ -113,7 +113,8 @@ class Parser:
             return (None, line)
 
         insert_pattern = re.compile('''
-            ^INSERT \s+ INTO \s+ \S+ \s+ \([^)]+\) \s+ VALUES \s+ \((\d+)
+            ^INSERT \s+ INTO \s+ \S+ \s+ \([^)]+\) \s+ VALUES \s+ \(
+            ('\w+'|\d+)
             ''', re.X)
         match = insert_pattern.match(line)
 
