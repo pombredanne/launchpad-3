@@ -281,6 +281,9 @@ class IPOFile(IRosettaStats):
         :return: a list of `VPOExport` objects.
         """
 
+    def markChanged(translator=None, timestamp=None):
+        """Note a change to this `POFile` or its contents."""
+
 
 class AlternativeLanguageVocabularyFactory:
     """Gets vocab for user's preferred languages, or all languages if not set.
