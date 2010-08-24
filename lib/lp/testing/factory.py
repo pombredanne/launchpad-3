@@ -2108,7 +2108,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if isinstance(translations, dict):
             return translations
         assert isinstance(translations, (list, tuple)), (
-                "Expecting either a dict or a sequence." )
+                "Expecting either a dict or a sequence.")
         return dict(enumerate(translations))
 
     def makeSuggestion(self, pofile=None, potmsgset=None, translator=None,
