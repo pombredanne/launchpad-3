@@ -59,7 +59,6 @@ from zope.security.proxy import (
     removeSecurityProxy,
     )
 
-from canonical.cachedproperty import cache_property
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -156,6 +155,9 @@ from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
+from lp.services.propertycache import (
+    IPropertyCache,
+    )
 
 
 debbugsseveritymap = {None:        BugTaskImportance.UNDECIDED,
@@ -1324,7 +1326,7 @@ def _make_cache_user_can_view_bug(user):
     """
     userid = user.id
     def cache_user_can_view_bug(bugtask):
-        cache_property(bugtask.bug, '_cached_viewers', set([userid]))
+        IPropertyCache(bugtask.bug)._known_viewers = set([userid])
         return bugtask
     return cache_user_can_view_bug
 
