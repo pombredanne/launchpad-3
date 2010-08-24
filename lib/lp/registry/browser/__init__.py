@@ -16,17 +16,21 @@ __all__ = [
 
 from operator import attrgetter
 
+from storm.store import Store
 from zope.component import getUtility
 
-from storm.store import Store
-
-from lp.bugs.interfaces.bugtask import BugTaskSearchParams, IBugTaskSet
-from lp.registry.interfaces.productseries import IProductSeries
-from lp.registry.interfaces.series import SeriesStatus
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.launchpadform import (
-    action, LaunchpadEditFormView)
+    action,
+    LaunchpadEditFormView,
+    )
 from canonical.launchpad.webapp.publisher import canonical_url
+from lp.bugs.interfaces.bugtask import (
+    BugTaskSearchParams,
+    IBugTaskSet,
+    )
+from lp.registry.interfaces.productseries import IProductSeries
+from lp.registry.interfaces.series import SeriesStatus
 
 
 class StatusCount:

@@ -14,22 +14,29 @@ __all__ = [
 
 import shutil
 import tempfile
+
+from launchpadlib.credentials import (
+    AccessToken,
+    Credentials,
+    )
+from launchpadlib.launchpad import Launchpad
 import transaction
 from zope.app.publication.interfaces import IEndRequestEvent
 from zope.app.testing import ztapi
 from zope.component import getUtility
 import zope.testing.cleanup
 
-from launchpadlib.credentials import AccessToken, Credentials
-from launchpadlib.launchpad import Launchpad
-
+from canonical.launchpad.interfaces import (
+    IOAuthConsumerSet,
+    IPersonSet,
+    )
 from canonical.launchpad.webapp.adapter import get_request_statements
 from canonical.launchpad.webapp.interaction import ANONYMOUS
 from canonical.launchpad.webapp.interfaces import OAuthPermission
-from canonical.launchpad.interfaces import (
-    IOAuthConsumerSet, IPersonSet)
-
-from lp.testing._login import login, logout
+from lp.testing._login import (
+    login,
+    logout,
+    )
 
 
 def oauth_access_token_for(consumer_name, person, permission, context=None):

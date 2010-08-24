@@ -74,7 +74,7 @@ Products are supported.
     register_blueprint
 
 Products subclass the view to display disabled links to encourage
-configuring that service in Launchpad for the project. The project
+configuring that service in Launchpad for the project. The product
 also has configuration links that make it easy to figure out where
 to configure each service.
 
@@ -112,16 +112,17 @@ dictionary, which makes it easy for use in the page template.
     {'done': 0,
      'undone': 100}
 
-Changing the product's official usage is reflected in the view properties.
+Changing the product's usage is reflected in the view properties.
 
-    >>> product.official_malone = True
+    >>> from lp.app.enums import ServiceUsage
+    >>> product.translations_usage = ServiceUsage.LAUNCHPAD
     >>> view = create_view(product, '+get-involved')
     >>> for key in sorted(view.configuration_states.keys()):
     ...     print key, view.configuration_states[key]
     configure_answers False
-    configure_bugtracker True
+    configure_bugtracker False
     configure_codehosting False
-    configure_translations False
+    configure_translations True
 
     >>> print pretty(view.registration_completeness)
     {'done': 25,
@@ -143,11 +144,11 @@ indicator showing whether it has been configured or not.
     >>> print find_tag_by_id(rendered, 'configuration_links')
     <table...
     <a href="http://launchpad.dev/bread/+configure-bugtracker"...
-    <span class="sprite yes">...
+    <span class="sprite no">...
     <a href="http://launchpad.dev/bread/+configure-answers"...
     <span class="sprite no">...
     <a href="http://launchpad.dev/bread/+configure-translations"...
-    <span class="sprite no">...
+    <span class="sprite yes">...
     <a href="http://launchpad.dev/bread/trunk/+setbranch"...
     <span class="sprite no">...
     </table>

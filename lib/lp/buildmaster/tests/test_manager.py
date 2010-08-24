@@ -6,39 +6,57 @@
 import os
 import signal
 import time
-import transaction
 import unittest
 
-from twisted.internet import defer, reactor, task
+import transaction
+from twisted.internet import (
+    defer,
+    reactor,
+    task,
+    )
 from twisted.internet.error import ConnectionClosed
-from twisted.internet.task import Clock, deferLater
+from twisted.internet.task import (
+    Clock,
+    deferLater,
+    )
 from twisted.python.failure import Failure
 from twisted.trial.unittest import TestCase as TrialTestCase
-
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.buildd.tests import BuilddSlaveTestSetup
 from canonical.config import config
-from canonical.launchpad.ftests import ANONYMOUS, login
+from canonical.launchpad.ftests import (
+    ANONYMOUS,
+    login,
+    )
 from canonical.launchpad.scripts.logger import BufferLogger
 from canonical.testing.layers import (
-    LaunchpadScriptLayer, LaunchpadZopelessLayer, TwistedLayer)
+    LaunchpadScriptLayer,
+    LaunchpadZopelessLayer,
+    TwistedLayer,
+    )
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.buildmaster.manager import (
-    BaseDispatchResult, BuilddManager, SlaveScanner, FailDispatchResult,
-    NewBuildersScanner, RecordingSlave, ResetDispatchResult,
-    buildd_success_result_map)
+    BaseDispatchResult,
+    buildd_success_result_map,
+    BuilddManager,
+    FailDispatchResult,
+    NewBuildersScanner,
+    RecordingSlave,
+    ResetDispatchResult,
+    SlaveScanner,
+    )
 from lp.buildmaster.tests.harness import BuilddManagerTestSetup
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.tests.soyuzbuilddhelpers import BuildingSlave
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
+from lp.testing import TestCase as LaunchpadTestCase
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.fakemethod import FakeMethod
-from lp.testing import TestCase as LaunchpadTestCase
 
 
 class TestRecordingSlaves(TrialTestCase):

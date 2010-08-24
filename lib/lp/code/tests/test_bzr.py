@@ -5,10 +5,15 @@
 
 __metaclass__ = type
 
-from lp.code.bzr import (
-    BranchFormat, ControlFormat, get_branch_formats, RepositoryFormat)
-from lp.testing import TestCase
 from bzrlib.tests import TestCaseInTempDir
+
+from lp.code.bzr import (
+    BranchFormat,
+    ControlFormat,
+    get_branch_formats,
+    RepositoryFormat,
+    )
+from lp.testing import TestCase
 
 
 class TestBazaarFormatEnum(TestCase):

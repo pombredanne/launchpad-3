@@ -26,9 +26,11 @@ __all__ = [
     'WikiName',
     'WikiNameSet']
 
-from datetime import datetime, timedelta
+from datetime import (
+    datetime,
+    timedelta,
+    )
 from operator import attrgetter
-import pytz
 import random
 import re
 import subprocess
@@ -36,134 +38,251 @@ import time
 import weakref
 
 from bzrlib.plugins.builder.recipe import RecipeParser
-from zope.lifecycleevent import ObjectCreatedEvent
-from zope.interface import alsoProvides, implementer, implements
-from zope.component import adapter, getUtility
-from zope.component.interfaces import ComponentLookupError
-from zope.event import notify
-from zope.publisher.interfaces import Unauthorized
-from zope.security.proxy import ProxyFactory, removeSecurityProxy
+import pytz
 from sqlobject import (
-    BoolCol, ForeignKey, IntCol, SQLMultipleJoin, SQLObjectNotFound,
-    StringCol)
-from sqlobject.sqlbuilder import AND, OR, SQLConstant
-from storm.store import EmptyResultSet, Store
+    BoolCol,
+    ForeignKey,
+    IntCol,
+    SQLMultipleJoin,
+    SQLObjectNotFound,
+    StringCol,
+    )
+from sqlobject.sqlbuilder import (
+    AND,
+    OR,
+    SQLConstant,
+    )
 from storm.expr import (
-    Alias, And, Exists, In, Join, LeftJoin, Lower, Min, Not, Or, Select, SQL,
+    Alias,
+    And,
+    Desc,
+    Exists,
+    In,
+    Join,
+    LeftJoin,
+    Lower,
+    Min,
+    Not,
+    Or,
+    Select,
+    SQL,
+    Upper,
     )
 from storm.info import ClassAlias
+from storm.store import (
+    EmptyResultSet,
+    Store,
+    )
+from zope.component import (
+    adapter,
+    getUtility,
+    )
+from zope.component.interfaces import ComponentLookupError
+from zope.event import notify
+from zope.interface import (
+    alsoProvides,
+    implementer,
+    implements,
+    )
+from zope.lifecycleevent import ObjectCreatedEvent
+from zope.publisher.interfaces import Unauthorized
+from zope.security.proxy import (
+    ProxyFactory,
+    removeSecurityProxy,
+    )
 
+from canonical.cachedproperty import (
+    cache_property,
+    cachedproperty,
+    clear_property,
+    )
 from canonical.config import config
 from canonical.database import postgresql
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
-    cursor, quote, quote_like, sqlvalues, SQLBase)
-
-from canonical.cachedproperty import (cachedproperty, cache_property,
-    clear_property)
-
-from canonical.lazr.utils import get_current_browser_request
-
+    cursor,
+    quote,
+    quote_like,
+    SQLBase,
+    sqlvalues,
+    )
 from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet)
-from canonical.launchpad.database.account import Account, AccountPassword
-from canonical.launchpad.interfaces.account import AccountSuspendedError
-from lp.bugs.model.bugtarget import HasBugsBase
-from canonical.launchpad.database.stormsugar import StartsWith
-from lp.registry.model.karma import KarmaCategory
-from lp.services.salesforce.interfaces import (
-    ISalesforceVoucherProxy, REDEEMABLE_VOUCHER_STATUSES,
-    VOUCHER_STATUSES)
-from lp.services.worlddata.model.language import Language
+    DecoratedResultSet,
+    )
+from canonical.launchpad.database.account import (
+    Account,
+    AccountPassword,
+    )
+from canonical.launchpad.database.emailaddress import (
+    EmailAddress,
+    HasOwnerMixin,
+    )
+from canonical.launchpad.database.logintoken import LoginToken
 from canonical.launchpad.database.oauth import (
-    OAuthAccessToken, OAuthRequestToken)
-from lp.registry.model.personlocation import PersonLocation
-from lp.registry.model.structuralsubscription import (
-    StructuralSubscription)
+    OAuthAccessToken,
+    OAuthRequestToken,
+    )
+from canonical.launchpad.database.stormsugar import StartsWith
 from canonical.launchpad.event.interfaces import (
-    IJoinTeamEvent, ITeamInvitationEvent)
+    IJoinTeamEvent,
+    ITeamInvitationEvent,
+    )
 from canonical.launchpad.helpers import (
-    get_contact_email_addresses, get_email_template, shortlist)
-
-from canonical.launchpad.interfaces.lpstorm import IMasterObject, IMasterStore
+    get_contact_email_addresses,
+    get_email_template,
+    shortlist,
+    )
 from canonical.launchpad.interfaces.account import (
-    AccountCreationRationale, AccountStatus, IAccount, IAccountSet,
-    INACTIVE_ACCOUNT_STATUSES)
-from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
-from lp.soyuz.interfaces.archivepermission import (
-    IArchivePermissionSet)
-from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
+    AccountCreationRationale,
+    AccountStatus,
+    AccountSuspendedError,
+    IAccount,
+    IAccountSet,
+    INACTIVE_ACCOUNT_STATUSES,
+    )
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
-from lp.code.model.hasbranches import (
-    HasBranchesMixin, HasMergeProposalsMixin, HasRequestedReviewsMixin)
-from lp.bugs.interfaces.bugtask import (
-    BugTaskSearchParams, IBugTaskSet, IllegalRelatedBugTasksParams)
-from lp.bugs.interfaces.bugtarget import IBugTarget
-from lp.registry.interfaces.codeofconduct import (
-    ISignedCodeOfConductSet)
-from lp.registry.interfaces.distribution import IDistribution
 from canonical.launchpad.interfaces.emailaddress import (
-    EmailAddressStatus, IEmailAddress, IEmailAddressSet, InvalidEmailAddress)
-from lp.registry.interfaces.gpg import IGPGKeySet
-from lp.registry.interfaces.irc import IIrcID, IIrcIDSet
-from lp.registry.interfaces.jabber import IJabberID, IJabberIDSet
+    EmailAddressStatus,
+    IEmailAddress,
+    IEmailAddressSet,
+    InvalidEmailAddress,
+    )
 from canonical.launchpad.interfaces.launchpad import (
-    IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities)
+    IHasIcon,
+    IHasLogo,
+    IHasMugshot,
+    ILaunchpadCelebrities,
+    )
 from canonical.launchpad.interfaces.launchpadstatistic import (
-    ILaunchpadStatisticSet)
+    ILaunchpadStatisticSet,
+    )
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
+from canonical.launchpad.interfaces.lpstorm import (
+    IMasterObject,
+    IMasterStore,
+    IStore,
+    )
+from canonical.launchpad.validators.email import valid_email
+from canonical.launchpad.validators.name import (
+    sanitize_name,
+    valid_name,
+    )
+from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
+from canonical.launchpad.webapp.interfaces import ILaunchBag
+from canonical.lazr.utils import get_current_browser_request
+from lp.blueprints.interfaces.specification import (
+    SpecificationDefinitionStatus,
+    SpecificationFilter,
+    SpecificationImplementationStatus,
+    SpecificationSort,
+    )
+from lp.blueprints.model.specification import (
+    HasSpecificationsMixin,
+    Specification,
+    )
+from lp.bugs.interfaces.bugtarget import IBugTarget
+from lp.bugs.interfaces.bugtask import (
+    BugTaskSearchParams,
+    IBugTaskSet,
+    IllegalRelatedBugTasksParams,
+    )
+from lp.bugs.model.bugtarget import HasBugsBase
+from lp.bugs.model.bugtask import (
+    BugTask,
+    get_related_bugtasks_search_params,
+    )
+from lp.code.model.hasbranches import (
+    HasBranchesMixin,
+    HasMergeProposalsMixin,
+    HasRequestedReviewsMixin,
+    )
+from lp.registry.interfaces.codeofconduct import ISignedCodeOfConductSet
+from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.gpg import IGPGKeySet
+from lp.registry.interfaces.irc import (
+    IIrcID,
+    IIrcIDSet,
+    )
+from lp.registry.interfaces.jabber import (
+    IJabberID,
+    IJabberIDSet,
+    )
 from lp.registry.interfaces.mailinglist import (
-    IMailingListSet, MailingListStatus, PostedMessageStatus)
+    IMailingListSet,
+    MailingListStatus,
+    PostedMessageStatus,
+    )
 from lp.registry.interfaces.mailinglistsubscription import (
-    MailingListAutoSubscribePolicy)
+    MailingListAutoSubscribePolicy,
+    )
 from lp.registry.interfaces.person import (
-    IPerson, IPersonSet, ITeam, ImmutableVisibilityError, InvalidName,
-    JoinNotAllowed, NameAlreadyTaken, PersonCreationRationale,
-    PersonVisibility, PersonalStanding, TeamMembershipRenewalPolicy,
-    TeamSubscriptionPolicy)
-from lp.registry.interfaces.personnotification import (
-    IPersonNotificationSet)
+    ImmutableVisibilityError,
+    InvalidName,
+    IPerson,
+    IPersonSet,
+    ITeam,
+    JoinNotAllowed,
+    NameAlreadyTaken,
+    PersonalStanding,
+    PersonCreationRationale,
+    PersonVisibility,
+    TeamMembershipRenewalPolicy,
+    TeamSubscriptionPolicy,
+    validate_public_person,
+    )
+from lp.registry.interfaces.personnotification import IPersonNotificationSet
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
-from lp.blueprints.interfaces.specification import (
-    SpecificationDefinitionStatus, SpecificationFilter,
-    SpecificationImplementationStatus, SpecificationSort)
-from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.registry.interfaces.ssh import (
-    ISSHKey, ISSHKeySet, SSHKeyAdditionError, SSHKeyCompromisedError,
-    SSHKeyType)
-from lp.registry.interfaces.teammembership import (
-    TeamMembershipStatus)
-from lp.registry.interfaces.wikiname import IWikiName, IWikiNameSet
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-
-from lp.soyuz.model.archive import Archive
+    ISSHKey,
+    ISSHKeySet,
+    SSHKeyAdditionError,
+    SSHKeyCompromisedError,
+    SSHKeyType,
+    )
+from lp.registry.interfaces.teammembership import TeamMembershipStatus
+from lp.registry.interfaces.wikiname import (
+    IWikiName,
+    IWikiNameSet,
+    )
 from lp.registry.model.codeofconduct import SignedCodeOfConduct
-from lp.bugs.model.bugtask import (
-    BugTask, get_related_bugtasks_search_params)
-from canonical.launchpad.database.emailaddress import (
-    EmailAddress, HasOwnerMixin)
-from lp.registry.model.karma import KarmaCache, KarmaTotalCache
-from canonical.launchpad.database.logintoken import LoginToken
-from lp.registry.model.pillar import PillarName
-from lp.registry.model.karma import KarmaAction, KarmaAssignedEvent, Karma
+from lp.registry.model.karma import (
+    Karma,
+    KarmaAction,
+    KarmaAssignedEvent,
+    KarmaCache,
+    KarmaCategory,
+    KarmaTotalCache,
+    )
 from lp.registry.model.mentoringoffer import MentoringOffer
-from lp.soyuz.model.sourcepackagerelease import (
-    SourcePackageRelease)
-from lp.blueprints.model.specification import (
-    HasSpecificationsMixin, Specification)
-from lp.translations.model.translationimportqueue import (
-    HasTranslationImportsMixin)
+from lp.registry.model.personlocation import PersonLocation
+from lp.registry.model.pillar import PillarName
+from lp.registry.model.structuralsubscription import StructuralSubscription
 from lp.registry.model.teammembership import (
-    TeamMembership, TeamMembershipSet, TeamParticipation)
-
-from canonical.launchpad.validators.email import valid_email
-from canonical.launchpad.validators.name import sanitize_name, valid_name
-from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
-from lp.registry.interfaces.person import validate_public_person
+    TeamMembership,
+    TeamMembershipSet,
+    TeamParticipation,
+    )
+from lp.services.salesforce.interfaces import (
+    ISalesforceVoucherProxy,
+    REDEEMABLE_VOUCHER_STATUSES,
+    VOUCHER_STATUSES,
+    )
+from lp.services.worlddata.model.language import Language
+from lp.soyuz.interfaces.archive import (
+    ArchivePurpose,
+    IArchiveSet,
+    )
+from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
+from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
+from lp.soyuz.model.archive import Archive
+from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
+from lp.translations.model.translationimportqueue import (
+    HasTranslationImportsMixin,
+    )
 
 
 class JoinTeamEvent:
@@ -1501,7 +1620,8 @@ class Person(
         if need_location:
             # New people have no location rows
             origin.append(
-                LeftJoin(PersonLocation, PersonLocation.person == Person.id))
+                LeftJoin(PersonLocation,
+                    PersonLocation.person == Person.id))
             columns.append(PersonLocation)
         if need_archive:
             # Not everyone has PPA's
@@ -1704,19 +1824,22 @@ class Person(
             self.invited_members,
             orderBy=self._sortingColumnsForSetOperations)
 
-    # XXX: kiko 2005-10-07:
-    # myactivememberships should be renamed to team_memberships and be
-    # described as the set of memberships for the object's teams.
     @property
-    def myactivememberships(self):
+    def team_memberships(self):
         """See `IPerson`."""
-        return TeamMembership.select("""
-            TeamMembership.person = %s AND status in %s AND
-            Person.id = TeamMembership.team
-            """ % sqlvalues(self.id, [TeamMembershipStatus.APPROVED,
-                                      TeamMembershipStatus.ADMIN]),
-            clauseTables=['Person'],
-            orderBy=Person.sortingColumns)
+        Team = ClassAlias(Person, "Team")
+        store = Store.of(self)
+        # Join on team to sort by team names. Upper is used in the sort so
+        # sorting works as is user expected, e.g. (A b C) not (A C b).
+        return store.find(TeamMembership,
+            And(TeamMembership.personID == self.id,
+                TeamMembership.teamID == Team.id,
+                TeamMembership.status.is_in([
+                    TeamMembershipStatus.APPROVED,
+                    TeamMembershipStatus.ADMIN,
+                    ]))).order_by(
+                        Upper(Team.displayname),
+                        Upper(Team.name))
 
     def _getMappedParticipantsLocations(self, limit=None):
         """See `IPersonViewRestricted`."""
@@ -1822,7 +1945,7 @@ class Person(
         assert self.is_valid_person, (
             "You can only deactivate an account of a valid person.")
 
-        for membership in self.myactivememberships:
+        for membership in self.team_memberships:
             self.leave(membership.team)
 
         # Deactivate CoC signatures, invalidate email addresses, unassign bug
@@ -2069,9 +2192,65 @@ class Person(
 
     def getLatestApprovedMembershipsForPerson(self, limit=5):
         """See `IPerson`."""
-        result = self.myactivememberships
-        result = result.orderBy(['-date_joined', '-id'])
+        result = self.team_memberships
+        result = result.order_by(
+            Desc(TeamMembership.datejoined),
+            Desc(TeamMembership.id))
         return result[:limit]
+
+    def getPathsToTeams(self):
+        """See `Iperson`."""
+        # Get all of the teams this person participates in.
+        teams = list(self.teams_participated_in)
+
+        # For cases where self is a team, we don't need self as a team
+        # participated in.
+        teams = [team for team in teams if team is not self]
+
+        # Get all of the memberships for any of the teams this person is
+        # a participant of. This must be ordered by date and id because
+        # because the graph of the results will create needs to contain
+        # the oldest path information to be consistent with results from
+        # IPerson.findPathToTeam.
+        store = Store.of(self)
+        all_direct_memberships = store.find(TeamMembership,
+            And(
+                TeamMembership.personID.is_in(
+                    [team.id for team in teams] + [self.id]),
+                TeamMembership.teamID != self.id,
+                TeamMembership.status.is_in([
+                    TeamMembershipStatus.APPROVED,
+                    TeamMembershipStatus.ADMIN,
+                    ]))).order_by(
+                        Desc(TeamMembership.datejoined),
+                        Desc(TeamMembership.id))
+        # Cast the results to list now, because they will be iterated over
+        # several times.
+        all_direct_memberships = list(all_direct_memberships)
+
+        # Pull out the memberships directly used by this person.
+        user_memberships = [
+            membership for membership in
+            all_direct_memberships
+            if membership.person == self]
+
+        all_direct_memberships = [
+            (membership.team, membership.person) for membership in
+            all_direct_memberships]
+
+        # Create a graph from the edges provided by the other data sets.
+        graph = dict(all_direct_memberships)
+
+        # Build the teams paths from that graph.
+        paths = {}
+        for team in teams:
+            path = [team]
+            step = team
+            while path[-1] != self:
+                step = graph[step]
+                path.append(step)
+            paths[team] = path
+        return (paths, user_memberships)
 
     @property
     def teams_participated_in(self):

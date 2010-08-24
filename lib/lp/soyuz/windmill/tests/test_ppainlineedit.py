@@ -3,8 +3,10 @@
 
 import unittest
 
-from canonical.launchpad.windmill.testing import lpuser
-from canonical.launchpad.windmill.testing import widgets
+from canonical.launchpad.windmill.testing import (
+    lpuser,
+    widgets,
+    )
 from lp.soyuz.windmill.testing import SoyuzWindmillLayer
 
 

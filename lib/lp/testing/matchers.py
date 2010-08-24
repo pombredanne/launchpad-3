@@ -14,14 +14,22 @@ __all__ = [
     'StartsWith',
     ]
 
-from zope.interface.verify import verifyObject
-from zope.interface.exceptions import (
-    BrokenImplementation, BrokenMethodImplementation, DoesNotImplement)
-from zope.security.proxy import builtin_isinstance, Proxy
-
 from testtools.content import Content
 from testtools.content_type import ContentType
-from testtools.matchers import Matcher, Mismatch
+from testtools.matchers import (
+    Matcher,
+    Mismatch,
+    )
+from zope.interface.exceptions import (
+    BrokenImplementation,
+    BrokenMethodImplementation,
+    DoesNotImplement,
+    )
+from zope.interface.verify import verifyObject
+from zope.security.proxy import (
+    builtin_isinstance,
+    Proxy,
+    )
 
 
 class DoesNotProvide(Mismatch):

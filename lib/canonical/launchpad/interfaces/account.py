@@ -19,13 +19,29 @@ __all__ = [
     ]
 
 
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    )
+from lazr.restful.fields import (
+    CollectionField,
+    Reference,
+    )
 from zope.interface import Interface
-from zope.schema import Bool, Choice, Datetime, Int, Text, TextLine
-from lazr.enum import DBEnumeratedType, DBItem
+from zope.schema import (
+    Bool,
+    Choice,
+    Datetime,
+    Int,
+    Text,
+    TextLine,
+    )
 
 from canonical.launchpad import _
-from lp.services.fields import StrippedTextLine, PasswordField
-from lazr.restful.fields import CollectionField, Reference
+from lp.services.fields import (
+    PasswordField,
+    StrippedTextLine,
+    )
 
 
 class AccountSuspendedError(Exception):

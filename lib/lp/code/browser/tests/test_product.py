@@ -5,20 +5,30 @@
 
 __metaclass__ = type
 
-from datetime import datetime, timedelta
+from datetime import (
+    datetime,
+    timedelta,
+    )
 import unittest
 
 from mechanize import LinkNotFoundError
 import pytz
-
-from zope.component import getMultiAdapter, getUtility
+from zope.component import (
+    getMultiAdapter,
+    getUtility,
+    )
 
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import DatabaseFunctionalLayer
 from lp.code.interfaces.revision import IRevisionSet
 from lp.testing import (
-    ANONYMOUS, login, login_person, time_counter, TestCaseWithFactory)
+    ANONYMOUS,
+    login,
+    login_person,
+    TestCaseWithFactory,
+    time_counter,
+    )
 
 
 class TestProductCodeIndexView(TestCaseWithFactory):

@@ -6,13 +6,16 @@
 __metaclass__ = type
 __all__ = ['CveReference']
 
+from sqlobject import (
+    ForeignKey,
+    StringCol,
+    )
 from zope.interface import implements
 
-from sqlobject import ForeignKey, StringCol
-
 from canonical.database.sqlbase import SQLBase
-
 from lp.bugs.interfaces.cvereference import ICveReference
+
+
 class CveReference(SQLBase):
     """A CVE reference to some other tracking system."""
 

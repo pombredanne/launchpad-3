@@ -10,15 +10,17 @@ from unittest import TestLoader
 from zope.component import getUtility
 
 from canonical.launchpad.ftests import login
-from canonical.testing import LaunchpadFunctionalLayer
-from canonical.testing import ZopelessDatabaseLayer
-
-from lp.testing import TestCaseWithFactory
+from canonical.testing import (
+    LaunchpadFunctionalLayer,
+    ZopelessDatabaseLayer,
+    )
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.interfaces.productseries import IProductSeriesSet
+from lp.testing import TestCaseWithFactory
 from lp.translations.interfaces.translations import (
-    TranslationsBranchImportMode)
+    TranslationsBranchImportMode,
+    )
 
 
 class TestProductSeriesSetPackaging(TestCaseWithFactory):

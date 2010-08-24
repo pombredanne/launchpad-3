@@ -5,26 +5,44 @@
 
 __metaclass__ = type
 
-from doctest import DocTestSuite, NORMALIZE_WHITESPACE, ELLIPSIS
+from doctest import (
+    DocTestSuite,
+    ELLIPSIS,
+    NORMALIZE_WHITESPACE,
+    )
 import StringIO
 import unittest
 
-from zope.component import getGlobalSiteManager, getUtility
-from zope.interface import implements, Interface
-
 from lazr.restful.interfaces import (
-    IServiceRootResource, IWebServiceConfiguration)
+    IServiceRootResource,
+    IWebServiceConfiguration,
+    )
 from lazr.restful.simple import RootResource
 from lazr.restful.testing.webservice import (
-    IGenericCollection, IGenericEntry, WebServiceTestCase)
-
-from lp.testing import TestCase
+    IGenericCollection,
+    IGenericEntry,
+    WebServiceTestCase,
+    )
+from zope.component import (
+    getGlobalSiteManager,
+    getUtility,
+    )
+from zope.interface import (
+    implements,
+    Interface,
+    )
 
 from canonical.launchpad.webapp.servers import (
-    ApplicationServerSettingRequestFactory, LaunchpadBrowserRequest,
+    ApplicationServerSettingRequestFactory,
+    LaunchpadBrowserRequest,
     VHostWebServiceRequestPublicationFactory,
-    VirtualHostRequestPublicationFactory, WebServiceRequestPublicationFactory,
-    WebServiceClientRequest, WebServicePublication, WebServiceTestRequest)
+    VirtualHostRequestPublicationFactory,
+    WebServiceClientRequest,
+    WebServicePublication,
+    WebServiceRequestPublicationFactory,
+    WebServiceTestRequest,
+    )
+from lp.testing import TestCase
 
 
 class SetInWSGIEnvironmentTestCase(TestCase):

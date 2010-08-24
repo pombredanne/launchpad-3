@@ -3,22 +3,25 @@
 
 __metaclass__ = type
 
-from datetime import datetime, timedelta
-from pytz import timezone
-import transaction
+from datetime import (
+    datetime,
+    timedelta,
+    )
 import unittest
 
 import gettextpo
-
+from pytz import timezone
+import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from lp.services.worlddata.interfaces.language import ILanguageSet
-from lp.translations.interfaces.translationmessage import (
-    TranslationValidationStatus)
-from lp.testing.factory import LaunchpadObjectFactory
 from canonical.testing import LaunchpadZopelessLayer
+from lp.services.worlddata.interfaces.language import ILanguageSet
+from lp.testing.factory import LaunchpadObjectFactory
+from lp.translations.interfaces.translationmessage import (
+    TranslationValidationStatus,
+    )
 
 
 class TestTranslationSuggestions(unittest.TestCase):

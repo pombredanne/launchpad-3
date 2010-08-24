@@ -5,23 +5,40 @@ __metaclass__ = type
 __all__ = ['Packageset', 'PackagesetSet']
 
 import pytz
-
 from storm.exceptions import IntegrityError
-from storm.expr import In, SQL
-from storm.locals import DateTime, Int, Reference, Storm, Unicode
-
+from storm.expr import (
+    In,
+    SQL,
+    )
+from storm.locals import (
+    DateTime,
+    Int,
+    Reference,
+    Storm,
+    Unicode,
+    )
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.launchpad.interfaces.lpstorm import IMasterStore, IStore
+from canonical.launchpad.interfaces.lpstorm import (
+    IMasterStore,
+    IStore,
+    )
 from lp.app.errors import NotFoundError
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.sourcepackagename import (
-    ISourcePackageName, ISourcePackageNameSet)
+    ISourcePackageName,
+    ISourcePackageNameSet,
+    )
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.soyuz.interfaces.packageset import (
-    DuplicatePackagesetName, IPackageset, IPackagesetSet, NoSuchPackageSet)
+    DuplicatePackagesetName,
+    IPackageset,
+    IPackagesetSet,
+    NoSuchPackageSet,
+    )
 from lp.soyuz.model.packagesetgroup import PackagesetGroup
+
 
 def _order_result_set(result_set):
     """Default order for package set and source package name result sets."""

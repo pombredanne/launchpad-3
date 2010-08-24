@@ -35,11 +35,11 @@ from textwrap import dedent
 from zope.interface import implements
 from zope.security.proxy import isinstance as zope_isinstance
 
+from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
+from canonical.launchpad.webapp.publisher import canonical_url
 from lp.bugs.interfaces.bugchange import IBugChange
 from lp.bugs.interfaces.bugtask import IBugTask
 from lp.registry.interfaces.product import IProduct
-from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
-from canonical.launchpad.webapp.publisher import canonical_url
 
 
 class NoBugChangeFoundError(Exception):

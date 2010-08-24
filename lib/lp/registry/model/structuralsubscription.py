@@ -5,32 +5,39 @@ __metaclass__ = type
 __all__ = ['StructuralSubscription',
            'StructuralSubscriptionTargetMixin']
 
+from sqlobject import ForeignKey
 from zope.component import getUtility
 from zope.interface import implements
-
-from sqlobject import ForeignKey
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import quote, SQLBase
-
+from canonical.database.sqlbase import (
+    quote,
+    SQLBase,
+    )
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.enum import BugNotificationLevel
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
-    IDistributionSourcePackage)
+    IDistributionSourcePackage,
+    )
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.milestone import IMilestone
+from lp.registry.interfaces.person import (
+    validate_person,
+    validate_public_person,
+    )
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.structuralsubscription import (
-    BlueprintNotificationLevel, DeleteSubscriptionError,
-    IStructuralSubscription, IStructuralSubscriptionTarget,
-    UserCannotSubscribePerson)
-from lp.registry.interfaces.person import (
-    validate_person, validate_public_person)
+    BlueprintNotificationLevel,
+    DeleteSubscriptionError,
+    IStructuralSubscription,
+    IStructuralSubscriptionTarget,
+    UserCannotSubscribePerson,
+    )
 
 
 class StructuralSubscription(SQLBase):
