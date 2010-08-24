@@ -331,28 +331,6 @@ class SyncUploadPolicy(AbstractUploadPolicy):
         pass
 
 
-class SecurityUploadPolicy(AbstractUploadPolicy):
-    """The security-upload policy.
-
-    It allows unsigned changes and binary uploads.
-    """
-
-    name = 'security'
-
-    def __init__(self):
-        AbstractUploadPolicy.__init__(self)
-        self.unsigned_dsc_ok = True
-        self.unsigned_changes_ok = True
-        self.can_upload_mixed = True
-        self.can_upload_binaries = True
-
-    def policySpecificChecks(self, upload):
-        """Deny uploads to any pocket other than the security pocket."""
-        if self.pocket != PackagePublishingPocket.SECURITY:
-            upload.reject(
-                "Not permitted to do security upload to non SECURITY pocket")
-
-
 def findPolicyByName(policy_name):
     """Return a new policy instance for the given policy name."""
     return getUtility(IArchiveUploadPolicy, policy_name)()
@@ -362,8 +340,7 @@ def register_archive_upload_policy_adapters():
     policies = [
         BuildDaemonUploadPolicy,
         InsecureUploadPolicy,
-        SyncUploadPolicy, 
-        SecurityUploadPolicy]
+        SyncUploadPolicy]
     sm = getGlobalSiteManager()
     for policy in policies:
         sm.registerUtility(
