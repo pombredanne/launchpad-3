@@ -18,7 +18,9 @@ from lp.translations.model.potranslation import POTranslation
 from lp.translations.model.translationmessage import DummyTranslationMessage
 from lp.translations.interfaces.side import ITranslationSideTraitsSet
 from lp.translations.interfaces.translationmessage import (
-    ITranslationMessage)
+    ITranslationMessage,
+    TranslationConflict,
+    )
 from lp.translations.interfaces.translations import TranslationConstants
 from canonical.testing import ZopelessDatabaseLayer
 
@@ -249,6 +251,19 @@ class TestApprove(TestCaseWithFactory):
         suggestion.approve(pofile, translator)
 
         self.assertEqual([], karmarecorder.karma_events)
+
+    def test_approve_detects_conflict(self):
+        pofile = self.factory.makePOFile('bo')
+        current = self.factory.makeCurrentTranslationMessage(pofile=pofile)
+        potmsgset = current.potmsgset
+        suggestion = self.factory.makeSuggestion(
+            pofile=pofile, potmsgset=potmsgset)
+        old = datetime.now(UTC) - timedelta(days=1)
+
+        self.assertRaises(
+            TranslationConflict,
+            suggestion.approve,
+            pofile, self.factory.makePerson(), lock_timestamp=old)
 
 
 class TestTranslationMessageFindIdenticalMessage(TestCaseWithFactory):

@@ -5,7 +5,6 @@
 
 __metaclass__ = type
 __all__ = [
-    'make_message_side_helpers',
     'POTMsgSet',
     ]
 
@@ -38,8 +37,7 @@ from lp.translations.interfaces.potmsgset import (
     IPOTMsgSet,
     POTMsgSetInIncompatibleTemplatesError,
     TranslationCreditsType)
-from lp.translations.interfaces.side import (
-    ITranslationSideTraitsSet, TranslationSide)
+from lp.translations.interfaces.side import ITranslationSideTraitsSet
 from lp.translations.interfaces.translationfileformat import (
     TranslationFileFormat)
 from lp.translations.interfaces.translationimporter import (
@@ -90,65 +88,20 @@ credits_message_str = (u'This is a dummy translation so that the '
 incumbent_unknown = object()
 
 
-class MessageSideHelper:
-    """Helper for manipulating messages on one `TranslationSide`.
+def dictify_msgstrs(potranslations):
+    """Represent `potranslations` as a normalized dict.
 
-    Does some caching so that the caller doesn't need to worry about
-    unnecessary queries e.g. when disabling a previously current
-    message.
+    :param potranslations: a dict or sequence of `POTranslation`s per
+        plural form.
+    :return: a dict mapping each translated plural form to a
+        `POTranslation`.  Untranslated forms are omitted.
     """
-
-    # The TranslationSideTraits that this helper is for.
-    traits = None
-
-    # MessageSideHelper for this message on the "other side."
-    other_side = None
-
-    _incumbent = incumbent_unknown
-
-    def __init__(self, side, potmsgset, potemplate=None, language=None):
-        self.traits = getUtility(ITranslationSideTraitsSet).getTraits(side)
-        self.potmsgset = potmsgset
-        self.potemplate = potemplate
-        self.language = language
-
-    @property
-    def incumbent_message(self):
-        """Message that currently has the flag."""
-        if self._incumbent == incumbent_unknown:
-            self._incumbent = self.traits.getCurrentMessage(
-                self.potmsgset, self.potemplate, self.language)
-        return self._incumbent
-
-    def setFlag(self, translationmessage, value):
-        """Set or clear a message's "current" flag for this side."""
-        if value == self.traits.getFlag(translationmessage):
-            return
-
-        if value:
-            if self.incumbent_message is not None:
-                Store.of(self.incumbent_message).add_flush_order(
-                    self.incumbent_message, translationmessage)
-                self.setFlag(self.incumbent_message, False)
-            self._incumbent = translationmessage
-        else:
-            self._incumbent = incumbent_unknown
-
-        self.traits.setFlag(translationmessage, value)
-
-
-def make_message_side_helpers(side, potmsgset, potemplate, language):
-    """Create `MessageSideHelper` object of the appropriate subtype."""
-    upstream = MessageSideHelper(
-        TranslationSide.UPSTREAM, potmsgset, potemplate, language)
-    ubuntu = MessageSideHelper(
-        TranslationSide.UBUNTU, potmsgset, potemplate, language)
-    upstream.other_side = ubuntu
-    ubuntu.other_side = upstream
-    mapping = dict(
-        (helper.traits.side, helper)
-        for helper in (ubuntu, upstream))
-    return mapping[side]
+    if not isinstance(potranslations, dict):
+        potranslations = dict(enumerate(potranslations))
+    return dict(
+        (form, msgstr)
+        for form, msgstr in potranslations.iteritems()
+        if msgstr is not None)
 
 
 class POTMsgSet(SQLBase):
@@ -994,6 +947,60 @@ class POTMsgSet(SQLBase):
             origin=RosettaTranslationOrigin.ROSETTAWEB, submitter=submitter,
             **forms)
 
+    def _checkForConflict(self, current_message, lock_timestamp,
+                          potranslations=None):
+        """Check `message` for conflicting changes since `lock_timestamp`.
+
+        Call this before changing this message's translations, to ensure
+        that a read-modify-write operation on a message does not
+        accidentally overwrite newer changes based on older information.
+
+        One example of a read-modify-write operation is: user downloads
+        translation file, translates a message, then re-uploads.
+        Another is: user looks at a message in the web UI, decides that
+        neither the current translation nor any of the suggestions are
+        right, and clears the message.
+
+        In these scenarios, it's possible for someone else to come along
+        and change the message's translation between the time we provide
+        the user with a view of the current state and the time we
+        receive a change from the user.  We call this a conflict.
+
+        Raises `TranslationConflict` if a conflict exists.
+
+        :param currentmessage: The `TranslationMessage` that is current
+            now.  This is where we'll see any conflicting changes
+            reflected in the date_reviewed timestamp.
+        :param lock_timestamp: The timestamp of the translation state
+            that the change is based on.
+        :param potranslations: `POTranslation`s dict for the new
+            translation.  If these are given, and identical to those of
+            `current_message`, there is no conflict.
+        """
+        if lock_timestamp is None:
+            # We're not really being asked to check for conflicts.
+            return
+        if current_message is None:
+            # There is no current message to conflict with.
+            return
+        try:
+            self._maybeRaiseTranslationConflict(
+                current_message, lock_timestamp)
+        except TranslationConflict:
+            if potranslations is None:
+                # We don't know what translations are going to be set;
+                # based on the timestamps this is a conflict.
+                raise
+            old_msgstrs = dictify_msgstrs(current_message.all_msgstrs)
+            new_msgstrs = dictify_msgstrs(potranslations)
+            if new_msgstrs != old_msgstrs:
+                # Yup, there really is a difference.  This is a proper
+                # conflict.
+                raise
+            else:
+                # Two identical translations crossed.  Not a conflict.
+                pass
+
     def _maybeRaiseTranslationConflict(self, message, lock_timestamp):
         """Checks if there is a translation conflict for the message.
 
@@ -1070,7 +1077,7 @@ class POTMsgSet(SQLBase):
             **translation_args)
 
     def approveSuggestion(self, pofile, suggestion, reviewer,
-                          share_with_other_side=False):
+                          share_with_other_side=False, lock_timestamp=None):
         """Approve a suggestion.
 
         :param pofile: The `POFile` that the suggestion is being approved for.
@@ -1079,6 +1086,8 @@ class POTMsgSet(SQLBase):
             suggestion.
         :param share_with_other_side: Policy selector: share this change with
             the other translation side if possible?
+        :param lock_timestamp: Timestamp of the original translation state
+            that this change is based on.
         """
         template = pofile.potemplate
         traits = getUtility(ITranslationSideTraitsSet).getTraits(
@@ -1092,7 +1101,7 @@ class POTMsgSet(SQLBase):
         activated_message = self._setTranslation(
             pofile, translator, suggestion.origin, potranslations,
             share_with_other_side=share_with_other_side,
-            identical_message=suggestion)
+            identical_message=suggestion, lock_timestamp=lock_timestamp)
 
         activated_message.markReviewed(reviewer)
         if reviewer != translator:
@@ -1100,7 +1109,8 @@ class POTMsgSet(SQLBase):
             template.awardKarma(reviewer, 'translationreview')
 
     def setCurrentTranslation(self, pofile, submitter, translations, origin,
-                              share_with_other_side=False):
+                              share_with_other_side=False,
+                              lock_timestamp=None):
         """See `IPOTMsgSet`."""
         potranslations = self._findPOTranslations(translations)
         identical_message = self._findTranslationMessage(
@@ -1108,10 +1118,12 @@ class POTMsgSet(SQLBase):
         return self._setTranslation(
             pofile, submitter, origin, potranslations,
             share_with_other_side=share_with_other_side,
-            identical_message=identical_message)
+            identical_message=identical_message,
+            lock_timestamp=lock_timestamp)
 
     def _setTranslation(self, pofile, submitter, origin, potranslations,
-                        identical_message=None, share_with_other_side=False):
+                        identical_message=None, share_with_other_side=False,
+                        lock_timestamp=None):
         """Set the current translation.
 
         :param pofile: The `POFile` to set the translation in.
@@ -1122,19 +1134,24 @@ class POTMsgSet(SQLBase):
         :param identical_message: The already existing message, if any,
             that's either shared or diverged for `pofile.potemplate`,
             whose translations are identical to the ones we're setting.
-        :param share_with_other_side:
-        :return:
+        :param share_with_other_side: Propagate this change to the other
+            translation side if appropriate.
+        :param lock_timestamp: The timestamp of the translation state
+            that the change is based on.
+        :return: The `TranslationMessage` that is current after
+            completion.
         """
-        # XXX JeroenVermeulen 2010-08-16: Update pofile.date_changed.
-
         twin = identical_message
 
-        translation_side = pofile.potemplate.translation_side
-        helper = make_message_side_helpers(
-            translation_side, self, pofile.potemplate, pofile.language)
+        traits = getUtility(ITranslationSideTraitsSet).getTraits(
+            pofile.potemplate.translation_side)
 
         # The current message on this translation side, if any.
-        incumbent_message = helper.incumbent_message
+        incumbent_message = traits.getCurrentMessage(
+            self, pofile.potemplate, pofile.language)
+
+        self._checkForConflict(
+            incumbent_message, lock_timestamp, potranslations=potranslations)
 
         # Summary of the matrix:
         #  * If the incumbent message is diverged and we're setting a
@@ -1178,8 +1195,8 @@ class POTMsgSet(SQLBase):
         }
 
         incumbent_state = "incumbent_%s" % self._nameMessageStatus(
-            incumbent_message, helper.traits)
-        twin_state = "twin_%s" % self._nameMessageStatus(twin, helper.traits)
+            incumbent_message, traits)
+        twin_state = "twin_%s" % self._nameMessageStatus(twin, traits)
 
         decisions = decision_matrix[incumbent_state][twin_state]
         assert re.match('[ABZ]?[124567]?[+*]?$', decisions), (
@@ -1189,11 +1206,11 @@ class POTMsgSet(SQLBase):
             if character == 'A':
                 # Deactivate & converge.
                 # There may be an identical shared message.
-                helper.traits.setFlag(incumbent_message, False)
+                traits.setFlag(incumbent_message, False)
                 incumbent_message.shareIfPossible()
             elif character == 'B':
                 # Deactivate.
-                helper.setFlag(incumbent_message, False)
+                traits.setFlag(incumbent_message, False)
             elif character == 'Z':
                 # There is no incumbent message, so do nothing to it.
                 assert incumbent_message is None, (
@@ -1214,14 +1231,14 @@ class POTMsgSet(SQLBase):
                 # (If not, it's already active and has been unmasked by
                 # our deactivating the incumbent).
                 message = twin
-                if not helper.traits.getFlag(twin):
-                    assert not helper.other_side.traits.getFlag(twin), (
+                if not traits.getFlag(twin):
+                    assert not traits.other_side_traits.getFlag(twin), (
                         "Trying to diverge a message that is current on the "
                         "other side.")
                     message.potemplate = pofile.potemplate
             elif character == '6':
                 # If other is not active, fork a diverged message.
-                if helper.traits.getFlag(twin):
+                if traits.getFlag(twin):
                     message = twin
                 else:
                     # The twin is used on the other side, so we can't
@@ -1236,11 +1253,14 @@ class POTMsgSet(SQLBase):
                 message.shareIfPossible()
             elif character == '*':
                 if share_with_other_side:
-                    if helper.other_side.incumbent_message is None:
-                        helper.other_side.setFlag(message, True)
+                    other_incumbent = (
+                        traits.other_side_traits.getCurrentMessage(
+                            self, pofile.potemplate, pofile.language))
+                    if other_incumbent is None:
+                        traits.other_side_traits.setFlag(message, True)
             elif character == '+':
                 if share_with_other_side:
-                    helper.other_side.setFlag(message, True)
+                    traits.other_side_traits.setFlag(message, True)
             else:
                 raise AssertionError(
                     "Bad character in decision string: %s" % character)
@@ -1248,7 +1268,9 @@ class POTMsgSet(SQLBase):
         if decisions == '':
             message = twin
 
-        helper.setFlag(message, True)
+        if not traits.getFlag(message):
+            traits.setFlag(message, True)
+            pofile.markChanged(translator=submitter)
 
         return message
 
@@ -1273,11 +1295,13 @@ class POTMsgSet(SQLBase):
             pofile.date_changed = UTC_NOW
 
     def clearCurrentTranslation(self, pofile, submitter, origin,
-                                share_with_other_side=False):
+                                share_with_other_side=False,
+                                lock_timestamp=None):
         """See `IPOTMsgSet`."""
         message = self.setCurrentTranslation(
             pofile, submitter, [], origin,
-            share_with_other_side=share_with_other_side)
+            share_with_other_side=share_with_other_side,
+            lock_timestamp=lock_timestamp)
         message.markReviewed(submitter)
 
     def applySanityFixes(self, text):
