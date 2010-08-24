@@ -1033,7 +1033,6 @@
     <browser:page
         name="+diff"
         for="lp.code.interfaces.diff.IPreviewDiff"
-        layer="lp.code.publisher.CodeLayer"
         class="lp.code.browser.branchmergeproposal.FormatPreviewDiffView"
         permission="launchpad.AnyPerson"
         template="../templates/branchmergeproposal-diff.pt"/>
