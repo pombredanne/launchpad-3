@@ -20,7 +20,7 @@ collection; it's available by following the total_size_link.
 
   >>> collection = get_collection()
   >>> print sorted(collection.keys())
-  [u'entries', u'start', u'total_size_link']
+  [u'entries', u'next_collection_link', u'start', u'total_size_link']
   >>> print webservice.get(collection['total_size_link']).jsonBody()
   9
 
