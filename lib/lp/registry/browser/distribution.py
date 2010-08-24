@@ -474,18 +474,7 @@ class DistributionPackageSearchView(PackageSearchViewBase):
         """See `AbstractPackageSearchView`."""
 
         if self.search_by_binary_name:
-            non_exact_matches = self.context.searchBinaryPackages(self.text)
-
-            # XXX Michael Nelson 20090605 bug=217644
-            # We are only using a decorated resultset here to conveniently
-            # get around the storm bug whereby count returns the count
-            # of non-distinct results, even though this result set
-            # is configured for distinct results.
-            def dummy_func(result):
-                return result
-            non_exact_matches = DecoratedResultSet(
-                non_exact_matches, dummy_func)
-
+            return self.context.searchBinaryPackages(self.text)
         else:
             non_exact_matches = self.context.searchSourcePackageCaches(
                 self.text)
