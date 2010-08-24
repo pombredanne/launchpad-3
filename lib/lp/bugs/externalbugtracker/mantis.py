@@ -18,7 +18,7 @@ from BeautifulSoup import (
     SoupStrainer,
     )
 
-from canonical.cachedproperty import cachedproperty
+from lp.services.propertycache import cachedproperty
 from canonical.launchpad.webapp.url import urlparse
 from lp.bugs.externalbugtracker import (
     BugNotFound,

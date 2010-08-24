@@ -26,7 +26,7 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.cachedproperty import cachedproperty
+from lp.services.propertycache import cachedproperty
 from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.browser.feeds import (

@@ -44,7 +44,7 @@ from zope.interface import implements
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.security.interfaces import Unauthorized
 
-from canonical.cachedproperty import cachedproperty
+from lp.services.propertycache import cachedproperty
 from canonical.launchpad.browser.feeds import FeedsMixin
 from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet,

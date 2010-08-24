@@ -38,7 +38,7 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.buildd.slave import BuilderStatus
-from canonical.cachedproperty import cachedproperty
+from lp.services.propertycache import cachedproperty
 from canonical.config import config
 from canonical.database.sqlbase import (
     SQLBase,

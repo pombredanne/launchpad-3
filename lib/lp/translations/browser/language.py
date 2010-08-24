@@ -21,7 +21,7 @@ from zope.interface import Interface
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.schema import TextLine
 
-from canonical.cachedproperty import cachedproperty
+from lp.services.propertycache import cachedproperty
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp import (
     action,

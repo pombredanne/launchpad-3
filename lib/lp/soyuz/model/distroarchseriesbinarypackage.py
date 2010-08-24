@@ -17,7 +17,7 @@ from storm.locals import (
     )
 from zope.interface import implements
 
-from canonical.cachedproperty import cachedproperty
+from lp.services.propertycache import cachedproperty
 from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.interfaces import IStore
 from lp.app.errors import NotFoundError

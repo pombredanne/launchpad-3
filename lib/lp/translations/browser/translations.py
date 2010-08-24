@@ -17,7 +17,7 @@ __all__ = [
 
 from zope.component import getUtility
 
-from canonical.cachedproperty import cachedproperty
+from lp.services.propertycache import cachedproperty
 from canonical.config import config
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces.geoip import IRequestPreferredLanguages

@@ -6,7 +6,7 @@ __all__ = ['DiskPoolEntry', 'DiskPool', 'poolify', 'unpoolify']
 import os
 import tempfile
 
-from canonical.cachedproperty import cachedproperty
+from lp.services.propertycache import cachedproperty
 from canonical.librarian.utils import (
     copy_and_close,
     sha1_from_path,

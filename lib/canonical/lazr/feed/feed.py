@@ -32,7 +32,7 @@ from zope.interface import implements
 
 from z3c.ptcompat import ViewPageTemplateFile
 
-from canonical.cachedproperty import cachedproperty
+from lp.services.propertycache import cachedproperty
 from canonical.config import config
 # XXX: bac 2007-09-20 bug=153795: modules in canonical.lazr should not import
 # from canonical.launchpad, but we're doing it here as an expediency to get a

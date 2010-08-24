@@ -9,7 +9,7 @@ __all__ = [
     ]
 
 
-from canonical.cachedproperty import cachedproperty
+from lp.services.propertycache import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from lp.code.interfaces.branch import DEFAULT_BRANCH_STATUS_IN_LISTING

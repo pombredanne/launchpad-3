@@ -20,7 +20,7 @@ from xmlrpclib import (
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.cachedproperty import cachedproperty
+from lp.services.propertycache import cachedproperty
 from canonical.config import config
 from canonical.lazr.timeout import SafeTransportWithTimeout
 from lp.registry.interfaces.product import IProductSet

@@ -10,7 +10,7 @@ __all__ = [
 
 import os
 
-from canonical.cachedproperty import cachedproperty
+from lp.services.propertycache import cachedproperty
 from canonical.config import config
 from canonical.launchpad.mail import (
     format_address,

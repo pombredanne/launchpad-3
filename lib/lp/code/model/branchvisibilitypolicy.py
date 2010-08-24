@@ -15,7 +15,7 @@ __all__ = [
 from sqlobject import ForeignKey
 from zope.interface import implements
 
-from canonical.cachedproperty import cachedproperty
+from lp.services.propertycache import cachedproperty
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.helpers import shortlist

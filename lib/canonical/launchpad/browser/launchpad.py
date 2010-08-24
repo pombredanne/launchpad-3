@@ -53,7 +53,7 @@ from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
 from zope.security.interfaces import Unauthorized
 
-from canonical.cachedproperty import cachedproperty
+from lp.services.propertycache import cachedproperty
 from canonical.config import config
 from canonical.launchpad.helpers import intOrZero
 from canonical.launchpad.interfaces.account import AccountStatus

@@ -14,7 +14,7 @@ import operator
 
 from zope.component import getUtility
 
-from canonical.cachedproperty import cachedproperty
+from lp.services.propertycache import cachedproperty
 from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
 from canonical.launchpad.webapp import (
     LaunchpadView,

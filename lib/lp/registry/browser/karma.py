@@ -13,7 +13,7 @@ from operator import attrgetter
 
 from zope.component import getUtility
 
-from canonical.cachedproperty import cachedproperty
+from lp.services.propertycache import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.webapp import (
     action,

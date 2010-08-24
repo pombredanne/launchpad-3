@@ -63,7 +63,7 @@ from zope.schema import (
 from zope.schema.interfaces import IText
 from zope.security.interfaces import Unauthorized
 
-from canonical.cachedproperty import cachedproperty
+from lp.services.propertycache import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
 from canonical.launchpad.mailnotification import MailWrapper

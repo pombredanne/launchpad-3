@@ -22,7 +22,7 @@ from zope.component import getUtility
 from zope.exceptions.exceptionformatter import format_exception
 from zope.interface import implements
 
-from canonical.cachedproperty import cachedproperty
+from lp.services.propertycache import cachedproperty
 from canonical.config import config
 import canonical.launchpad.layers
 from canonical.launchpad.webapp.adapter import (

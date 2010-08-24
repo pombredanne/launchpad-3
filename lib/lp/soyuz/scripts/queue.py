@@ -24,7 +24,7 @@ import hashlib
 import pytz
 from zope.component import getUtility
 
-from canonical.cachedproperty import cachedproperty
+from lp.services.propertycache import cachedproperty
 from canonical.config import config
 from canonical.launchpad.webapp.tales import DurationFormatterAPI
 from canonical.librarian.utils import filechunks

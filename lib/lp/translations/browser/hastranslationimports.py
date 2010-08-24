@@ -25,7 +25,7 @@ from zope.schema.vocabulary import (
     SimpleVocabulary,
     )
 
-from canonical.cachedproperty import cachedproperty
+from lp.services.propertycache import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.webapp import (
     action,

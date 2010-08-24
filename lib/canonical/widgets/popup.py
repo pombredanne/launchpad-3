@@ -18,7 +18,7 @@ from zope.app.form.browser.itemswidgets import (
 from z3c.ptcompat import ViewPageTemplateFile
 
 from canonical.launchpad.webapp import canonical_url
-from canonical.cachedproperty import cachedproperty
+from lp.services.propertycache import cachedproperty
 
 
 class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):

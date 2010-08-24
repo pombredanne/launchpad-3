@@ -10,7 +10,7 @@ import email
 import urllib
 import urllib2
 
-from canonical.cachedproperty import cachedproperty
+from lp.services.propertycache import cachedproperty
 from canonical.config import config
 from canonical.launchpad.webapp.url import urlparse
 from lp.bugs.externalbugtracker import (

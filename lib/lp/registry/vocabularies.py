@@ -88,7 +88,7 @@ from zope.security.proxy import (
     removeSecurityProxy,
     )
 
-from canonical.cachedproperty import cachedproperty
+from lp.services.propertycache import cachedproperty
 from canonical.database.sqlbase import (
     quote,
     quote_like,

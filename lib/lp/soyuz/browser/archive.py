@@ -56,7 +56,7 @@ from zope.schema.vocabulary import (
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.cachedproperty import cachedproperty
+from lp.services.propertycache import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.browser.librarian import FileNavigationMixin
 from canonical.launchpad.components.tokens import create_token

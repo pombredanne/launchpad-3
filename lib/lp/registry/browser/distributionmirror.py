@@ -22,7 +22,7 @@ from zope.event import notify
 from zope.interface import implements
 from zope.lifecycleevent import ObjectCreatedEvent
 
-from canonical.cachedproperty import cachedproperty
+from lp.services.propertycache import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.webapp import (
     action,

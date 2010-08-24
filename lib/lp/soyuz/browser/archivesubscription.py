@@ -30,7 +30,7 @@ from zope.schema import (
     Text,
     )
 
-from canonical.cachedproperty import cachedproperty
+from lp.services.propertycache import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.webapp.launchpadform import (
     action,

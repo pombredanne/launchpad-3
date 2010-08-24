@@ -16,7 +16,7 @@ __all__ = [
 
 from zope.component import getUtility
 
-from canonical.cachedproperty import cachedproperty
+from lp.services.propertycache import cachedproperty
 from canonical.launchpad import helpers
 from canonical.launchpad.webapp import action
 from canonical.launchpad.webapp.authorization import check_permission

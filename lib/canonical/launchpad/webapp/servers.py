@@ -61,7 +61,7 @@ from zope.server.http.commonaccesslogger import CommonAccessLogger
 from zope.server.http.wsgihttpserver import PMDBWSGIHTTPServer
 from zope.session.interfaces import ISession
 
-from canonical.cachedproperty import cachedproperty
+from lp.services.propertycache import cachedproperty
 from canonical.config import config
 from canonical.launchpad.interfaces.launchpad import (
     IFeedsApplication,

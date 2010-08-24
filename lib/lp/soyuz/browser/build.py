@@ -19,7 +19,7 @@ from lazr.delegates import delegates
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.cachedproperty import cachedproperty
+from lp.services.propertycache import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.browser.librarian import (
     FileNavigationMixin,

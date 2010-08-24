@@ -11,7 +11,7 @@ __all__ = [
 
 from zope.component import getUtility
 
-from canonical.cachedproperty import cachedproperty
+from lp.services.propertycache import cachedproperty
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.searchbuilder import any
 from canonical.launchpad.webapp import LaunchpadView

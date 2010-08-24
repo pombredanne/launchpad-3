@@ -24,7 +24,7 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.security.interfaces import Unauthorized
 
-from canonical.cachedproperty import cachedproperty
+from lp.services.propertycache import cachedproperty
 from canonical.config import config
 from canonical.launchpad.webapp import (
     canonical_url,

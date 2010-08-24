@@ -29,7 +29,7 @@ from zope.formlib import form
 from zope.interface import Interface
 from zope.schema import Choice
 
-from canonical.cachedproperty import cachedproperty
+from lp.services.propertycache import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp import (

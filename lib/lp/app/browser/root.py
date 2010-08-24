@@ -20,7 +20,7 @@ from zope.error.interfaces import IErrorReportingUtility
 from zope.schema.interfaces import TooLong
 from zope.schema.vocabulary import getVocabularyRegistry
 
-from canonical.cachedproperty import cachedproperty
+from lp.services.propertycache import cachedproperty
 from canonical.config import config
 from canonical.launchpad.interfaces.launchpad import (
     ILaunchpadCelebrities,

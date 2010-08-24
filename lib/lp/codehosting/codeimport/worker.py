@@ -45,7 +45,7 @@ from cscvs.cmds import totla
 import CVS
 import SCM
 
-from canonical.cachedproperty import cachedproperty
+from lp.services.propertycache import cachedproperty
 from canonical.config import config
 from lp.code.enums import RevisionControlSystems
 from lp.codehosting.codeimport.foreigntree import (

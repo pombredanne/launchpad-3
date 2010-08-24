@@ -27,7 +27,7 @@ from zope.schema.vocabulary import (
     SimpleVocabulary,
     )
 
-from canonical.cachedproperty import cachedproperty
+from lp.services.propertycache import cachedproperty
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad import (
     _,

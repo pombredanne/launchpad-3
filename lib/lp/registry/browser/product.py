@@ -75,7 +75,7 @@ from zope.schema.vocabulary import (
     )
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.cachedproperty import cachedproperty
+from lp.services.propertycache import cachedproperty
 from canonical.config import config
 from lazr.delegates import delegates
 from lazr.restful.interface import copy_field

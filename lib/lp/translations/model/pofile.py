@@ -44,7 +44,7 @@ from zope.component import (
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.cachedproperty import cachedproperty
+from lp.services.propertycache import cachedproperty
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import (

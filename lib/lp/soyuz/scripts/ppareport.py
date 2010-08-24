@@ -19,7 +19,7 @@ from storm.locals import Join
 from storm.store import Store
 from zope.component import getUtility
 
-from canonical.cachedproperty import cachedproperty
+from lp.services.propertycache import cachedproperty
 from canonical.config import config
 from canonical.launchpad.helpers import emailPeople
 from canonical.launchpad.webapp import canonical_url

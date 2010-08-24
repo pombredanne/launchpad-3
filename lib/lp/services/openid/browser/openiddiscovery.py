@@ -14,7 +14,7 @@ from openid.yadis.constants import (
     YADIS_HEADER_NAME,
     )
 
-from canonical.cachedproperty import cachedproperty
+from lp.services.propertycache import cachedproperty
 from canonical.launchpad.webapp import canonical_url
 from lp.services.openid.adapters.openid import CurrentOpenIDEndPoint
 
