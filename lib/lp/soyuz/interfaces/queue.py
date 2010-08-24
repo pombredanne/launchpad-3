@@ -22,6 +22,10 @@ __all__ = [
     'QueueStateWriteProtectedError',
     ]
 
+from lazr.enum import (
+    DBEnumeratedType,
+    )
+
 from lazr.restful.declarations import (
     export_as_webservice_entry,
     exported,
