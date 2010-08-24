@@ -193,6 +193,7 @@ from canonical.widgets.lazrjs import (
     )
 from canonical.widgets.project import ProjectScopeWidget
 from lp.answers.interfaces.questiontarget import IQuestionTarget
+from lp.app.enums import ServiceUsage
 from lp.app.errors import (
     NotFoundError,
     UnexpectedFormData,
