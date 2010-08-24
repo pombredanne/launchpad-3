@@ -255,7 +255,8 @@ class ITranslationMessage(Interface):
         It must not be referenced by any other object.
         """
 
-    def approve(pofile, reviewer, share_with_other_side=False):
+    def approve(pofile, reviewer, share_with_other_side=False,
+                lock_timestamp=None):
         """Approve this suggestion, making it a current translation."""
 
     # XXX CarlosPerelloMarin 20071022: We should move this into browser code.

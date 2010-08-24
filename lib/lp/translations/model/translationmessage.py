@@ -340,11 +340,13 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
             date_reviewed = current.date_created
         return date_reviewed > self.date_created
 
-    def approve(self, pofile, reviewer, share_with_other_side=False):
+    def approve(self, pofile, reviewer, share_with_other_side=False,
+                lock_timestamp=None):
         """See `ITranslationMessage`."""
         self.potmsgset.approveSuggestion(
             pofile, self, reviewer,
-            share_with_other_side=share_with_other_side)
+            share_with_other_side=share_with_other_side,
+            lock_timestamp=lock_timestamp)
 
     def getOnePOFile(self):
         """See `ITranslationMessage`."""

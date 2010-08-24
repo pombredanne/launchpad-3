@@ -954,11 +954,10 @@ class TestPOTMsgSetResetTranslation(TestCaseWithFactory):
             name='main', product=self.foo)
         removeSecurityProxy(self.foo).official_rosetta = True
 
-        self.potemplate = self.factory.makePOTemplate(
+        template = self.potemplate = self.factory.makePOTemplate(
             productseries=self.foo_main, name="messages")
-        self.potmsgset = self.factory.makePOTMsgSet(self.potemplate,
-                                                    sequence=1)
-        self.pofile = self.factory.makePOFile('eo', self.potemplate)
+        self.potmsgset = self.factory.makePOTMsgSet(template, sequence=1)
+        self.pofile = self.factory.makePOFile('eo', template)
 
     def test_resetCurrentTranslation_shared(self):
         # Resetting a shared current translation will change iscurrent=False
@@ -1634,3 +1633,75 @@ class TestSetCurrentTranslation(TestCaseWithFactory):
 
         self.assertEqual(message, potmsgset.getImportedTranslationMessage(
             pofile.potemplate, pofile.language))
+
+    def test_detects_conflict(self):
+        pofile, potmsgset = self._makePOFileAndPOTMsgSet()
+        translations = self._makeTranslations(potmsgset)
+        origin = RosettaTranslationOrigin.ROSETTAWEB
+
+        # A translator bases a change on a page view from 5 minutes ago.
+        lock_timestamp = datetime.now(pytz.UTC) - timedelta(minutes=5)
+
+        # Meanwhile someone else changes the same message's translation.
+        newer_translation = self.factory.makeCurrentTranslationMessage(
+            pofile=pofile, potmsgset=potmsgset)
+
+        # This raises a translation conflict.
+        self.assertRaises(
+            TranslationConflict,
+            potmsgset.setCurrentTranslation,
+            pofile, pofile.potemplate.owner, translations, origin,
+            lock_timestamp=lock_timestamp)
+
+
+class TestCheckForConflict(TestCaseWithFactory):
+    """Test POTMsgSet._checkForConflict."""
+
+    layer = ZopelessDatabaseLayer
+
+    def test_passes_nonconflict(self):
+        # If there is no conflict, _checkForConflict completes normally.
+        current_tm = self.factory.makeCurrentTranslationMessage()
+        potmsgset = removeSecurityProxy(current_tm.potmsgset)
+        newer = current_tm.date_reviewed + timedelta(days=1)
+
+        potmsgset._checkForConflict(current_tm, newer)
+
+    def test_detects_conflict(self):
+        # If there's been another translation since lock_timestamp,
+        # _checkForConflict raises TranslationConflict.
+        current_tm = self.factory.makeCurrentTranslationMessage()
+        potmsgset = removeSecurityProxy(current_tm.potmsgset)
+        older = current_tm.date_reviewed - timedelta(days=1)
+
+        self.assertRaises(
+            TranslationConflict,
+            potmsgset._checkForConflict,
+            current_tm, older)
+
+    def test_passes_identical_change(self):
+        # When concurrent translations are identical, there is no
+        # conflict.
+        current_tm = self.factory.makeCurrentTranslationMessage()
+        potmsgset = removeSecurityProxy(current_tm.potmsgset)
+        older = current_tm.date_reviewed - timedelta(days=1)
+
+        potmsgset._checkForConflict(
+            current_tm, older, potranslations=current_tm.all_msgstrs)
+
+    def test_quiet_if_no_current_message(self):
+        # If there is no current translation, _checkForConflict accepts
+        # that as conflict-free.
+        potemplate = self.factory.makePOTemplate()
+        potmsgset = self.factory.makePOTMsgSet(potemplate, sequence=1)
+        old = datetime.now(pytz.UTC) - timedelta(days=366)
+
+        removeSecurityProxy(potmsgset)._checkForConflict(None, old)
+
+    def test_quiet_if_no_timestamp(self):
+        # If there is no lock_timestamp, _checkForConflict does not
+        # check for conflicts.
+        current_tm = self.factory.makeCurrentTranslationMessage()
+        potmsgset = removeSecurityProxy(current_tm.potmsgset)
+
+        removeSecurityProxy(potmsgset)._checkForConflict(current_tm, None)

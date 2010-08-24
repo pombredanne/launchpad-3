@@ -281,7 +281,8 @@ class IPOTMsgSet(Interface):
         """
 
     def setCurrentTranslation(pofile, submitter, translations, origin,
-                              share_with_other_side=False):
+                              share_with_other_side=False,
+                              lock_timestamp=None):
         """Set the message's translation in Ubuntu, or upstream, or both.
 
         :param pofile: `POFile` you're setting translations in.  Other
@@ -293,6 +294,8 @@ class IPOTMsgSet(Interface):
         :param origin: A `RosettaTranslationOrigin`.
         :param share_with_other_side: When sharing this translation,
             share it with the other `TranslationSide` as well.
+        :param lock_timestamp: Timestamp of the original translation state
+            that this change is based on.
         """
 
     def resetCurrentTranslation(pofile, lock_timestamp):
@@ -308,7 +311,8 @@ class IPOTMsgSet(Interface):
         """
 
     def clearCurrentTranslation(pofile, submitter, origin,
-                                share_with_other_side=False):
+                                share_with_other_side=False,
+                                lock_timestamp=None):
         """Set the current message in `pofile` to be untranslated.
 
         If the current message is shared, this will also clear it in
@@ -324,6 +328,8 @@ class IPOTMsgSet(Interface):
             current on the other side (i.e. the Ubuntu side if working
             upstream, or vice versa) then should it be cleared there as
             well?
+        :param lock_timestamp: Timestamp of the original translation state
+            that this change is based on.
         """
 
     def applySanityFixes(unicode_text):

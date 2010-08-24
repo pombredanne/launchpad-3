@@ -20,6 +20,7 @@ from lp.testing import TestCaseWithFactory
 from lp.translations.interfaces.side import ITranslationSideTraitsSet
 from lp.translations.interfaces.translationmessage import (
     RosettaTranslationOrigin,
+    TranslationConflict,
     )
 
 
@@ -248,6 +249,17 @@ class ScenarioMixin:
 
         self.assertEqual(new_reviewer, current.reviewer)
         self.assertSqlAttributeEqualsDate(current, 'date_reviewed', UTC_NOW)
+
+    def test_detects_conflict(self):
+        pofile = self._makePOFile()
+        current_message = self.factory.makeCurrentTranslationMessage(
+            pofile=pofile)
+        old = datetime.now(UTC) - timedelta(days=7)
+
+        self.assertRaises(
+            TranslationConflict,
+            current_message.potmsgset.clearCurrentTranslation,
+            pofile, self.factory.makePerson(), ORIGIN, lock_timestamp=old)
 
 
 class TestClearCurrentTranslationUpstream(TestCaseWithFactory,
