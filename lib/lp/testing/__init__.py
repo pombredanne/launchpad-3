@@ -50,7 +50,6 @@ __all__ = [
     ]
 
 from contextlib import contextmanager
-from cStringIO import StringIO
 from datetime import (
     datetime,
     timedelta,
@@ -86,6 +85,8 @@ from storm.tracer import (
     )
 import subunit
 import testtools
+from testtools.content import Content
+from testtools.content_type import UTF8_TEXT
 import transaction
 # zope.exception demands more of frame objects than twisted.python.failure
 # provides in its fake frames.  This is enough to make it work with them
@@ -442,11 +443,8 @@ class TestCase(testtools.TestCase):
 
     def attachOopses(self):
         if len(self.oopses) > 0:
-            content_type = testtools.content_type.ContentType(
-                "text", "plain", {"charset": "utf8"})
             for (i, oops) in enumerate(self.oopses):
-                content = testtools.content.Content(
-                    content_type, oops.get_chunks)
+                content = Content(UTF8_TEXT, oops.get_chunks)
                 self.addDetail("oops-%d" % i, content)
 
     def setUp(self):
