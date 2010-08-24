@@ -925,7 +925,7 @@ Filtering by pocket:
 
 Filtering by custom_type.  We need to add some custom uploads to show this.
 
-    >>> from lp.soyuz.interfaces.queue import PackageUploadCustomFormat
+    >>> from lp.soyuz.enums import PackageUploadCustomFormat
     >>> static_xlat = PackageUploadCustomFormat.STATIC_TRANSLATIONS
     >>> def add_static_xlat_upload():
     ...     upload = warty.createQueueEntry(

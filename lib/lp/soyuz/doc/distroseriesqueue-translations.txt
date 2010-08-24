@@ -346,7 +346,7 @@ different interpretations of "importer" in attachTranslationFiles.
   ...     IArchive, ArchivePurpose)
   >>> from lp.soyuz.interfaces.queue import (
   ...     IPackageUpload, IPackageUploadCustom)
-  >>> from lp.soyuz.interfaces.queue import PackageUploadCustomFormat
+  >>> from lp.soyuz.enums import PackageUploadCustomFormat
   >>> from lp.soyuz.interfaces.component import IComponentSet
   >>> from lp.registry.interfaces.person import IPerson
   >>> from lp.soyuz.interfaces.sourcepackagerelease import (
