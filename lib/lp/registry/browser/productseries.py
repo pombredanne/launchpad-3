@@ -429,7 +429,8 @@ class ProductSeriesView(LaunchpadView, MilestoneOverlayMixin):
     @property
     def request_import_link(self):
         """A link to the page for requesting a new code import."""
-        return canonical_url(self.context.product, view_name='+new-import')
+        return canonical_url(
+            self.context.product, view_name='+new-import', rootsite='code')
 
     @property
     def user_branch_visible(self):
