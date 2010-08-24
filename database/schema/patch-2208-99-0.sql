@@ -2,7 +2,7 @@ SET client_min_messages=ERROR;
 
 CREATE TABLE DistroSeriesDifference (
     id serial PRIMARY KEY,
-    derived_series integer CONSTRAINT distroseriesdifference__derived_series__fk REFERENCES distroseries,
+    derived_series integer NOT NULL CONSTRAINT distroseriesdifference__derived_series__fk REFERENCES distroseries,
     source_package_publishing_history integer CONSTRAINT distroseriesdifference__spph__fk REFERENCES sourcepackagepublishinghistory,
     parent_source_package_publishing_history integer CONSTRAINT distroseriesdifference__parent_spph__fk REFERENCES sourcepackagepublishinghistory,
     comment text,
