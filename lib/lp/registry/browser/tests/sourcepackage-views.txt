@@ -293,8 +293,8 @@ set then the view property is false.
     >>> view = create_initialized_view(
     ...     package, name='+upstream-connections')
 
-    >>> print product.official_malone
-    False
+    >>> print product.bug_tracking_usage
+    <DBItem ServiceUsage.UNKNOWN, (10) Unknown>
     >>> print product.bugtracker
     None
     >>> print view.has_bugtracker

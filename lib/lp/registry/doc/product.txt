@@ -259,7 +259,7 @@ one.
 
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> firefox.official_malone
-    True
+    <DBItem ServiceUsage.LAUNCHPAD, (20) Launchpad>
     >>> print firefox.bug_tracking_usage.name
     LAUNCHPAD
     >>> firefox.getExternalBugTracker() is None
