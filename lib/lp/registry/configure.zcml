@@ -102,6 +102,13 @@
                 date_last_modified
                 person"/>
     </class>
+
+    <!-- DistroSeriesDifference -->
+    <securedutility
+        component="lp.registry.model.distroseriesdifference.DistroSeriesDifference"
+        provides="lp.registry.interfaces.distroseriesdifference.IDistroSeriesDifferenceSource">
+        <allow interface="lp.registry.interfaces.distroseriesdifference.IDistroSeriesDifferenceSource"/>
+    </securedutility>
     <class
         class="lp.registry.model.distroseries.DistroSeries">
         <allow

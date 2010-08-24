@@ -56,3 +56,24 @@ class IDistroSeriesDifference(Interface):
         description=_('The current status of this difference.'),
         vocabulary=DistroSeriesDifferenceStatus,
         required=True, readonly=False)
+
+
+class IDistroSeriesDifferenceSource(Interface):
+    """A utility of this interface can be used to create differences."""
+
+    def new(derived_series, source_package=None, parent_source_package=None,
+            status=DistroSeriesDifferenceStatus.NEEDS_ATTENTION):
+        """Create an `IDistroSeriesDifference`.
+
+        :param derived_series: The distribution series which was derived
+            from a parent. If a series without a parent is passed an
+            exception is raised.
+        :type derived_series: `IDistroSeries`.
+        :param source_package: A source package in the derived series.
+        :type source_package: `ISourcePackagePublishingHistory`.
+        :param parent_source_package: A source package in the parent series.
+        :type source_package: `ISourcePackagePublishingHistory`.
+        :param status: The current status of this difference.
+        :type status: `DistorSeriesDifferenceStatus`.
+        """
+

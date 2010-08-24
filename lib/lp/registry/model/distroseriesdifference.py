@@ -18,6 +18,7 @@ from storm.locals import (
 from zope.interface import implements
 
 from canonical.database.enumcol import DBEnum
+from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from lp.registry.enum import DistroSeriesDifferenceStatus
 from lp.registry.interfaces.distroseriesdifference import (
     IDistroSeriesDifference,
@@ -50,3 +51,15 @@ class DistroSeriesDifference(Storm):
     comment = Unicode(name='comment', allow_none=True)
     status = DBEnum(name='status', allow_none=False,
                     enum=DistroSeriesDifferenceStatus)
+
+    @staticmethod
+    def new(derived_series, source_package=None, parent_source_package=None,
+            status=DistroSeriesDifferenceStatus.NEEDS_ATTENTION):
+        """See `IDistroSeriesDifference`."""
+        store = IMasterStore(DistroSeriesDifference)
+        diff = DistroSeriesDifference()
+        diff.derived_series = derived_series
+        diff.source_package = source_package
+        diff.parent_source_package = parent_source_package
+        diff.status = DistroSeriesDifferenceStatus.NEEDS_ATTENTION
+        return store.add(diff)

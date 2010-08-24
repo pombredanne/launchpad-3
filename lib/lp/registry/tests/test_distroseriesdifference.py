@@ -24,6 +24,12 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
 
         verifyObject(IDistroSeriesDifference, ds_diff)
 
+    def test_at_least_one_source_package(self):
+        self.fail('Not implemented')
+
+    def test_derived_series_has_parent(self):
+        self.fail('Not implemented')
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
