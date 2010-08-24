@@ -344,6 +344,10 @@ class BuildFarmJob(BuildFarmJobOld, Storm):
 
         return build_without_outer_proxy
 
+    def gotFailure(self):
+        """See `IBuildFarmJob`."""
+        self.failure_count += 1
+
 
 class BuildFarmJobDerived:
     implements(IBuildFarmJob)

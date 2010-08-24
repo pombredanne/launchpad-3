@@ -294,6 +294,14 @@ class Builder(SQLBase):
     current_build_behavior = property(
         _getCurrentBuildBehavior, _setCurrentBuildBehavior)
 
+    def gotFailure(self):
+        """See `IBuilder`."""
+        self.failure_count += 1
+
+    def resetFailureCount(self):
+        """See `IBuilder`."""
+        self.failure_count = 0
+
     def checkSlaveAlive(self):
         """See IBuilder."""
         if self.slave.echo("Test")[0] != "Test":
@@ -311,6 +319,8 @@ class Builder(SQLBase):
         """See IBuilder."""
         return self.slave.clean()
 
+    # XXX 2010-08-24 Julian bug=623281
+    # This should not be a property!  It's masking a complicated query.
     @property
     def currentjob(self):
         """See IBuilder"""

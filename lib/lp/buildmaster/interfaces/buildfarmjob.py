@@ -270,6 +270,9 @@ class IBuildFarmJob(IBuildFarmJobOld):
             returned.
         """
 
+    def gotFailure():
+        """Increment the failure_count for this job."""
+
     title = exported(TextLine(title=_("Title"), required=False))
 
     was_built = Attribute("Whether or not modified by the builddfarm.")

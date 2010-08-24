@@ -154,6 +154,12 @@ class IBuilder(IHasOwner):
         title=u"The current behavior of the builder for the current job.",
         required=False)
 
+    def gotFailure():
+        """Increment failure_count on the builder."""
+
+    def resetFailureCount():
+        """Set the failure_count back to zero."""
+
     def checkSlaveAlive():
         """Check that the buildd slave is alive.
 

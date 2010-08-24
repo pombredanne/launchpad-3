@@ -150,6 +150,8 @@ def get_builder(name):
 
 def assessFailureCounts(builder, fail_notes):
     """View builder/job failure_count and work out which needs to die.  """
+    # builder.currentjob hides a complicated query, don't run it twice.
+    # See bug 623281.
     current_job = builder.currentjob
     build_job = current_job.specific_job.build
 
@@ -361,7 +363,7 @@ class SlaveScanner:
         if self.builder.currentjob is not None:
             # After a successful dispatch we can reset the
             # failure_count.
-            self.builder.failure_count = 0
+            self.builder.resetFailureCount()
             transaction.commit()
             return slave
 
@@ -493,8 +495,8 @@ class SlaveScanner:
         return self.reset_result(slave, error_text)
 
     def _incrementFailureCounts(self, builder):
-        builder.failure_count += 1
-        builder.getCurrentBuildFarmJob().failure_count += 1
+        builder.gotFailure()
+        builder.getCurrentBuildFarmJob().gotFailure()
 
     def checkDispatch(self, response, method, slave):
         """Verify the results of a slave xmlrpc call.
