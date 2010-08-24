@@ -65,12 +65,10 @@ launchpad.Edit on the records:
 Construct an upload.
 
   >>> anything_policy = getPolicy(
-  ...     name='anything', distro='ubuntu', distroseries='hoary')
-  >>> anything_policy.can_upload_binaries = True
-  >>> anything_policy.can_upload_mixed = True
+  ...     name='absolutely-anything', distro='ubuntu', distroseries='hoary')
 
   >>> ed_upload = NascentUpload.from_changesfile_path(
-  ...     datadir('ed_0.2-20_i386.changes'),
+  ...     datadir("ed_0.2-20_i386.changes.source-only-unsigned"),
   ...     anything_policy, mock_logger_quiet)
 
   >>> ed_upload.process()
@@ -110,8 +108,6 @@ XXX cprov 20051209: need to build a broken upload to test it properly
   ...     pub_records = item.realiseUpload(mock_logger)
   ed
   DEBUG: Publishing source ed/0.2-20 to ubuntu/hoary in the primary archive
-  DEBUG: Publishing build to ubuntu/hoary/i386
-  DEBUG: ... ed/0.2-20 (Arch Specific)
 
 
 Confirm we can now find ed published in hoary.
