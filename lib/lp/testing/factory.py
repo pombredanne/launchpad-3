@@ -2207,9 +2207,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if pofile is None:
             pofile = self.makePOFile('lt')
 
-        # XXX JeroenVermeulen 2010-08-24: This creates a suggestion,
-        # then diverges it, then activates it.  Once we have a method
-        # for diverging messages, do this in a more proper way.
+        # This creates a suggestion, then diverges it, then activates it.
+        # Once we have a method for diverging messages, do this in a more
+        # proper way.
         message = self.makeSharedTranslationMessage(
             pofile=pofile, potmsgset=potmsgset, translator=translator,
             reviewer=reviewer, translations=translations, suggestion=True)
