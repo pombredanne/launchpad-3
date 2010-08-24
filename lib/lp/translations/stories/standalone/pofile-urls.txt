@@ -1,0 +1,60 @@
+Translation URLs
+================
+
+A template's translations (i.e. a POTemplate's POFiles) are addressed in
+http as children of the template.
+
+    >>> def translation_to(potemplate, language_code):
+    ...     """Return URL for translating potemplate to language_code."""
+    ...     return "%s/%s/+translate" % (
+    ...         canonical_url(potemplate, rootsite='translations'),
+    ...         language_code)
+
+    >>> login(ANONYMOUS)
+    >>> template = factory.makePOTemplate()
+    >>> print translation_to(template, 'el')
+    http.../+pots/.../el/+translate
+    >>> logout()
+
+
+Accessing an existing translation
+---------------------------------
+
+A translation can represent an existing POFile.  This is
+straightforward.
+
+    >>> login(ANONYMOUS)
+    >>> pofile = factory.makePOFile('nl', potemplate=template)
+    >>> nl_url = translation_to(template, 'nl')
+    >>> logout()
+
+    >>> user_browser.open(nl_url)
+
+
+Accessing a new translation
+---------------------------
+
+It's also possible that the child represents a language for which the
+template has no translations yet.  In that case, the view substitutes a
+DummyPOFile which acts like a proper POFile.
+
+    >>> login(ANONYMOUS)
+    >>> de_url = translation_to(template, 'de')
+    >>> logout()
+
+    >>> user_browser.open(de_url)
+
+
+Translation to non-existent languages
+-------------------------------------
+
+Sometimes users (or crawlers) attempt to access translations for invalid
+language codes.  They get a NotFound error.
+
+    >>> login(ANONYMOUS)
+    >>> bogus_url = translation_to(template, 'ptbr')
+    >>> logout()
+    >>> user_browser.open(bogus_url)
+    Traceback (most recent call last):
+    ...
+    NotFound: ...
