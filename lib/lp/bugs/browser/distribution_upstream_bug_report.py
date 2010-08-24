@@ -167,7 +167,7 @@ class PackageBugReportData(BugReportData):
         # references to it.
         self.official_malone = bool(
             product 
-            and product.bug_tracking_usage = ServiceUsage.LAUNCHPAD)
+            and product.bug_tracking_usage == ServiceUsage.LAUNCHPAD)
         # pages which allow filling out required information. The
         # template ensures they are only visible to people who can
         # actually change the product.
