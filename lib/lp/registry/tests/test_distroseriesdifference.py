@@ -39,6 +39,18 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             self.factory.makeDistroSeriesDifference,
             derived_series=distro_series)
 
+    def test_source_pub(self):
+        self.fail("Unimplemented")
+
+    def test_parent_source_pub(self):
+        self.fail("Unimplemented")
+
+    def test_appendActivityLog(self):
+        self.fail("Unimplemented")
+
+    def test_checkDifferenceType(self):
+        self.fail("Unimplemented")
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
