@@ -97,7 +97,10 @@ from lp.app.errors import (
     UnexpectedFormData,
     )
 from lp.app.enums import ServiceUsage
-from lp.app.interfaces.launchpad import ILaunchpadUsage
+from lp.app.interfaces.launchpad import (
+    ILaunchpadUsage,
+    IServiceUsage,
+    )
 from lp.bugs.browser.bugrole import BugRoleMixin
 from lp.bugs.browser.bugtask import BugTaskSearchListingView
 from lp.bugs.interfaces.apportjob import IProcessApportBlobJobSource
@@ -1256,8 +1259,8 @@ class BugTargetBugsView(BugTaskSearchListingView, FeedsMixin):
 
         :returns: boolean
         """
-        launchpad_usage = ILaunchpadUsage(self.context)
-        return launchpad_usage.official_malone
+        service_usage = IServiceUsage(self.context)
+        return service_usage.bug_tracking_usage == ServiceUsage.LAUNCHPAD
 
     @property
     def external_bugtracker(self):
