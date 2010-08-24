@@ -4,12 +4,16 @@
 """Character encoding utilities"""
 
 __metaclass__ = type
+__all__ = [
+    'guess',
+    'ascii_smash',
+    'escape_nonascii_uniquely',
+    ]
+
 import re
 import codecs
 import unicodedata
 from cStringIO import StringIO
-
-__all__ = ['guess', 'ascii_smash']
 
 _boms = [
     (codecs.BOM_UTF16_BE, 'utf_16_be'),
