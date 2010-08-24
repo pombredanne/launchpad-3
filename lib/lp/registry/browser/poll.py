@@ -17,22 +17,40 @@ __all__ = [
     'PollBreadcrumb',
     ]
 
-from zope.event import notify
-from zope.component import getUtility
-from zope.interface import implements, Interface
-from zope.lifecycleevent import ObjectCreatedEvent
 from zope.app.form.browser import TextWidget
+from zope.component import getUtility
+from zope.event import notify
+from zope.interface import (
+    implements,
+    Interface,
+    )
+from zope.lifecycleevent import ObjectCreatedEvent
 
+from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.webapp import (
-    action, ApplicationMenu, canonical_url, custom_widget,
-    enabled_with_permission, LaunchpadEditFormView, LaunchpadFormView, Link,
-    Navigation, NavigationMenu, stepthrough)
-from canonical.launchpad.webapp import LaunchpadView
+    action,
+    ApplicationMenu,
+    canonical_url,
+    custom_widget,
+    enabled_with_permission,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    LaunchpadView,
+    Link,
+    Navigation,
+    NavigationMenu,
+    stepthrough,
+    )
 from canonical.launchpad.webapp.breadcrumb import TitleBreadcrumb
 from lp.registry.interfaces.poll import (
-    IPoll, IPollOption, IPollOptionSet, IPollSubset, IVoteSet, PollAlgorithm,
-    PollSecrecy)
-from canonical.launchpad.helpers import shortlist
+    IPoll,
+    IPollOption,
+    IPollOptionSet,
+    IPollSubset,
+    IVoteSet,
+    PollAlgorithm,
+    PollSecrecy,
+    )
 
 
 class PollEditLinksMixin:

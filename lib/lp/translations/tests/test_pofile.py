@@ -5,24 +5,36 @@
 
 __metaclass__ = type
 
-from datetime import datetime, timedelta
-import pytz
+from datetime import (
+    datetime,
+    timedelta,
+    )
 from textwrap import dedent
 
-from zope.component import getAdapter, getUtility
+import pytz
+from zope.component import (
+    getAdapter,
+    getUtility,
+    )
 from zope.interface.verify import verifyObject
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.launchpad.webapp.publisher import canonical_url
+from canonical.testing import (
+    LaunchpadZopelessLayer,
+    ZopelessDatabaseLayer,
+    )
+from lp.testing import TestCaseWithFactory
 from lp.translations.interfaces.pofile import IPOFileSet
 from lp.translations.interfaces.translatablemessage import (
-    ITranslatableMessage)
-from lp.translations.interfaces.translationmessage import (
-    TranslationValidationStatus)
+    ITranslatableMessage,
+    )
 from lp.translations.interfaces.translationcommonformat import (
-    ITranslationFileData)
-from lp.testing import TestCaseWithFactory
-from canonical.testing import LaunchpadZopelessLayer, ZopelessDatabaseLayer
-from canonical.launchpad.webapp.publisher import canonical_url
+    ITranslationFileData,
+    )
+from lp.translations.interfaces.translationmessage import (
+    TranslationValidationStatus,
+    )
 
 
 class TestTranslationSharedPOFile(TestCaseWithFactory):

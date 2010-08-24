@@ -7,19 +7,22 @@ __metaclass__ = type
 __all__ = []
 
 import transaction
-
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.windmill.testing.constants import (
-    FOR_ELEMENT, PAGE_LOAD, SLEEP)
 from canonical.launchpad.windmill.testing import lpuser
+from canonical.launchpad.windmill.testing.constants import (
+    FOR_ELEMENT,
+    PAGE_LOAD,
+    SLEEP,
+    )
 from canonical.launchpad.windmill.testing.lpuser import login_person
-from lp.translations.interfaces.translationimportqueue import (
-    ITranslationImportQueue)
-from lp.translations.windmill.testing import TranslationsWindmillLayer
 from lp.testing import WindmillTestCase
+from lp.translations.interfaces.translationimportqueue import (
+    ITranslationImportQueue,
+    )
+from lp.translations.windmill.testing import TranslationsWindmillLayer
 
 
 class ImportQueueEntryTest(WindmillTestCase):

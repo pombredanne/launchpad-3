@@ -8,10 +8,12 @@
 from zope.component import getUtility
 
 from canonical.database.sqlbase import sqlvalues
-
-from lp.services.scripts.base import LaunchpadCronScript
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
+from lp.services.scripts.base import LaunchpadCronScript
 
 # PPAs that we never want to expire.
 BLACKLISTED_PPAS = """

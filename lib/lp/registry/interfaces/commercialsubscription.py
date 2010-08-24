@@ -11,12 +11,19 @@ __all__ = [
     'ICommercialSubscription',
     ]
 
-from zope.interface import Interface
-from zope.schema import Bool, Datetime, Int, Text, TextLine
-
-from lazr.restful.fields import ReferenceChoice
 from lazr.restful.declarations import (
-    export_as_webservice_entry, exported)
+    export_as_webservice_entry,
+    exported,
+    )
+from lazr.restful.fields import ReferenceChoice
+from zope.interface import Interface
+from zope.schema import (
+    Bool,
+    Datetime,
+    Int,
+    Text,
+    TextLine,
+    )
 
 from canonical.launchpad import _
 from lp.services.fields import PublicPersonChoice

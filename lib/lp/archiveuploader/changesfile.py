@@ -17,18 +17,36 @@ __all__ = [
 
 import os
 
-from lp.archiveuploader.dscfile import DSCFile, SignableTagFile
+from lp.archiveuploader.dscfile import (
+    DSCFile,
+    SignableTagFile,
+    )
 from lp.archiveuploader.nascentuploadfile import (
-    BaseBinaryUploadFile, CustomUploadFile, DdebBinaryUploadFile,
-    DebBinaryUploadFile, SourceUploadFile, UdebBinaryUploadFile,
-    UploadError, UploadWarning, splitComponentAndSection)
-from lp.archiveuploader.utils import (
-    determine_binary_file_type, determine_source_file_type,
-    re_isadeb, re_issource, re_changes_file_name)
+    BaseBinaryUploadFile,
+    CustomUploadFile,
+    DdebBinaryUploadFile,
+    DebBinaryUploadFile,
+    SourceUploadFile,
+    splitComponentAndSection,
+    UdebBinaryUploadFile,
+    UploadError,
+    UploadWarning,
+    )
 from lp.archiveuploader.tagfiles import (
-    parse_tagfile, TagFileParseError)
-from lp.registry.interfaces.sourcepackage import (SourcePackageFileType,
-    SourcePackageUrgency)
+    parse_tagfile,
+    TagFileParseError,
+    )
+from lp.archiveuploader.utils import (
+    determine_binary_file_type,
+    determine_source_file_type,
+    re_changes_file_name,
+    re_isadeb,
+    re_issource,
+    )
+from lp.registry.interfaces.sourcepackage import (
+    SourcePackageFileType,
+    SourcePackageUrgency,
+    )
 from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFileType
 
 

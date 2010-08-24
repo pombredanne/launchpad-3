@@ -30,6 +30,7 @@ from lp.testing import (
     TestCaseWithFactory,
     )
 
+
 ORIG_TARBALL = SourcePackageFileType.ORIG_TARBALL
 DEBIAN_TARBALL = SourcePackageFileType.DEBIAN_TARBALL
 NATIVE_TARBALL = SourcePackageFileType.NATIVE_TARBALL

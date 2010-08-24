@@ -9,7 +9,10 @@ __all__ = [
     ]
 
 from zope.component import getUtility
-from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
+from zope.schema.vocabulary import (
+    SimpleTerm,
+    SimpleVocabulary,
+    )
 
 from canonical.launchpad.interfaces import ILaunchBag
 from canonical.launchpad.webapp.authorization import check_permission

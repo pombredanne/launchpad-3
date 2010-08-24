@@ -132,9 +132,33 @@ And going directly to the URL is not allowed.
     ...
     Unauthorized...
 
-Registry experts do have full access to administer project groups.
+Registry experts do have access to administer project groups, though
+there are fewer fields available.
 
     >>> expert_browser.open('http://launchpad.dev/new-name')
     >>> expert_browser.getLink('Administer').click()
     >>> print expert_browser.url
     http://launchpad.dev/new-name/+review
+
+    >>> expert_browser.getControl('Maintainer')
+    Traceback (most recent call last):
+    ...
+    LookupError: label 'Maintainer'
+    >>> expert_browser.getControl('Registrant')
+    Traceback (most recent call last):
+    ...
+    LookupError: label 'Registrant'
+    >>> expert_browser.getControl('Name')
+    Traceback (most recent call last):
+    ...
+    LookupError: label 'Name'
+
+    >>> expert_browser.getControl('Aliases').value = 'sleepy'
+    >>> expert_browser.getControl('Active').selected = False
+    >>> expert_browser.getControl('Reviewed').selected = False
+    >>> expert_browser.getControl('Change').click()
+
+    >>> expert_browser.open('http://launchpad.dev/new-name')
+    >>> expert_browser.getLink('Administer').click()
+    >>> print expert_browser.getControl('Aliases').value
+    sleepy

@@ -6,8 +6,8 @@
 __metaclass__ = type
 
 
-from lp.testing import BrowserTestCase
 from canonical.testing import DatabaseFunctionalLayer
+from lp.testing import BrowserTestCase
 
 
 class TestSourcePackageRecipeListing(BrowserTestCase):
