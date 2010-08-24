@@ -31,7 +31,6 @@ from lp.translations.interfaces.potmsgset import (
     POTMsgSetInIncompatibleTemplatesError,
     TranslationCreditsType,
     )
-from lp.translations.interfaces.side import TranslationSide
 from lp.translations.interfaces.translationfileformat import (
     TranslationFileFormat,
     )
@@ -39,7 +38,6 @@ from lp.translations.interfaces.translationmessage import (
     RosettaTranslationOrigin,
     TranslationConflict,
     )
-from lp.translations.model.potmsgset import make_message_side_helpers
 from lp.translations.model.translationmessage import DummyTranslationMessage
 
 
@@ -1606,63 +1604,6 @@ class TestSetCurrentTranslation(TestCaseWithFactory):
         self.assertEqual(message, potmsgset.getImportedTranslationMessage(
             pofile.potemplate, pofile.language))
         self.assertEqual(origin, message.origin)
-
-    def test_make_message_side_helpers(self):
-        # make_message_side_helpers is a factory for helpers that help
-        # setCurrentTranslations deal with the dichotomy between
-        # upstream and Ubuntu translations.
-        pofile, potmsgset = self._makePOFileAndPOTMsgSet()
-        sides = (TranslationSide.UPSTREAM, TranslationSide.UBUNTU)
-        for side in sides:
-            helper = make_message_side_helpers(
-                side, potmsgset, pofile.potemplate, pofile.language)
-            self.assertEqual(side, helper.traits.side)
-            self.assertNotEqual(side, helper.other_side.traits.side)
-            self.assertIn(helper.other_side.traits.side, sides)
-            self.assertIs(helper, helper.other_side.other_side)
-
-    def test_UpstreamSideTraits_upstream(self):
-        pofile, potmsgset = self._makePOFileAndPOTMsgSet()
-        message = self.factory.makeTranslationMessage(
-            pofile=pofile, potmsgset=potmsgset)
-
-        helper = make_message_side_helpers(
-            TranslationSide.UPSTREAM, potmsgset, pofile.potemplate,
-            pofile.language)
-
-        self.assertEqual('is_current_upstream', helper.traits.flag_name)
-
-        self.assertFalse(helper.traits.getFlag(message))
-        self.assertFalse(message.is_current_upstream)
-        self.assertEquals(None, helper.incumbent_message)
-
-        helper.setFlag(message, True)
-
-        self.assertTrue(helper.traits.getFlag(message))
-        self.assertTrue(message.is_current_upstream)
-        self.assertEquals(message, helper.incumbent_message)
-
-    def test_UpstreamSideTraits_ubuntu(self):
-        pofile, potmsgset = self._makePOFileAndPOTMsgSet()
-        message = self.factory.makeTranslationMessage(
-            pofile=pofile, potmsgset=potmsgset)
-        message.makeCurrentUbuntu(False)
-
-        helper = make_message_side_helpers(
-            TranslationSide.UBUNTU, potmsgset, pofile.potemplate,
-            pofile.language)
-
-        self.assertEqual('is_current_ubuntu', helper.traits.flag_name)
-
-        self.assertFalse(helper.traits.getFlag(message))
-        self.assertFalse(message.is_current_ubuntu)
-        self.assertEquals(None, helper.incumbent_message)
-
-        helper.setFlag(message, True)
-
-        self.assertTrue(helper.traits.getFlag(message))
-        self.assertTrue(message.is_current_ubuntu)
-        self.assertEquals(message, helper.incumbent_message)
 
     def test_identical(self):
         # Setting the same message twice leaves the original as-is.
