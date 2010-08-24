@@ -165,6 +165,7 @@ from lp.testing import (
     time_counter,
     )
 from lp.translations.interfaces.potemplate import IPOTemplateSet
+from lp.translations.interfaces.side import ITranslationSideTraitsSet
 from lp.translations.interfaces.translationimportqueue import (
     RosettaImportStatus)
 from lp.translations.interfaces.translationfileformat import (
@@ -2107,7 +2108,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if isinstance(translations, dict):
             return translations
         assert isinstance(translations, (list, tuple)), (
-                "Expecting either a dict or a sequence." )
+                "Expecting either a dict or a sequence.")
         return dict(enumerate(translations))
 
     def makeSuggestion(self, pofile=None, potmsgset=None, translator=None,
@@ -2196,6 +2197,26 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if diverged:
             removeSecurityProxy(message).potemplate = pofile.potemplate
 
+        message.markReviewed(reviewer)
+        return message
+
+    def makeDivergedTranslationMessage(self, pofile=None, potmsgset=None,
+                                       translator=None, reviewer=None,
+                                       translations=None):
+        """Create a diverged, current `TranslationMessage`."""
+        if pofile is None:
+            pofile = self.makePOFile('lt')
+
+        # This creates a suggestion, then diverges it, then activates it.
+        # Once we have a method for diverging messages, do this in a more
+        # proper way.
+        message = self.makeSharedTranslationMessage(
+            pofile=pofile, potmsgset=potmsgset, translator=translator,
+            reviewer=reviewer, translations=translations, suggestion=True)
+        traits = getUtility(ITranslationSideTraitsSet).getTraits(
+            pofile.potemplate.translation_side)
+        removeSecurityProxy(message).potemplate = pofile.potemplate
+        traits.setFlag(message, True)
         return message
 
     def makeTranslation(self, pofile, sequence,

@@ -281,6 +281,14 @@ class IPOFile(IRosettaStats):
         :return: a list of `VPOExport` objects.
         """
 
+    def markChanged(translator=None, timestamp=None):
+        """Note a change to this `POFile` or its contents.
+
+        :param translator: The person making this change.  If given,
+            `lasttranslator` will be updated to refer to this person.
+        :param timestamp: Time of the change.  Defaults to "now."
+        """
+
 
 class AlternativeLanguageVocabularyFactory:
     """Gets vocab for user's preferred languages, or all languages if not set.
