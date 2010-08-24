@@ -6,7 +6,6 @@ from __future__ import with_statement
 
 __metaclass__ = type
 
-import cgi
 import urllib
 
 from datetime import datetime, timedelta
@@ -311,6 +310,8 @@ class OpenIDCallbackView(OpenIDLogin):
         the changes we just did.
         """
         identifier = self.openid_response.identity_url.split('/')[-1]
+        # XXX: What character set? US-ASCII or ISO-8859-1?
+        identifier = identifier.decode('ascii')
         should_update_last_write = False
         # Force the use of the master database to make sure a lagged slave
         # doesn't fool us into creating a Person/Account when one already
@@ -489,7 +490,7 @@ class CookieLogoutPage:
         openid_root = allvhosts.configs[openid_vhost].rooturl
         target = '%s+logout?%s' % (
             config.codehosting.secure_codebrowse_root,
-            urllib.urlencode(dict(next_to='%s+logout' % (openid_root,))))
+            urllib.urlencode(dict(next_to='%s+logout' % (openid_root, ))))
         self.request.response.redirect(target)
         return ''
 

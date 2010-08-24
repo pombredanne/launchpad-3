@@ -29,4 +29,8 @@ class TestOpenIDPersistentIdentity(OpenIDPersistentIdentity):
     def openid_identity_url(self):
         """See `IOpenIDPersistentIdentity`."""
         identity_root_url = allvhosts.configs['testopenid'].rooturl
-        return identity_root_url + self.openid_identifier.encode('ascii')
+        identifier = self.openid_identifier
+        if identifier is None:
+            return None
+        else:
+            return identity_root_url + self.openid_identifier

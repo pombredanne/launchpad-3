@@ -30,6 +30,7 @@ from zope.security.proxy import removeSecurityProxy
 from zope.session.interfaces import ISession
 
 from canonical.launchpad.interfaces.account import AccountStatus, IAccountSet
+from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.testing.pages import (
     extract_text, find_main_content, find_tag_by_id, find_tags_by_class)
 from canonical.launchpad.testing.systemdocs import LayeredDocFileSuite
@@ -42,6 +43,7 @@ from canonical.testing.layers import (
     AppServerLayer, DatabaseFunctionalLayer, FunctionalLayer)
 
 from lp.registry.interfaces.person import IPerson
+from lp.services.openid.model.openididentifier import OpenIdIdentifier
 from lp.testopenid.interfaces.server import ITestOpenIDPersistentIdentity
 from lp.testing import logout, TestCaseWithFactory
 
@@ -276,7 +278,7 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
         # seen, we automatically register an account with that identity
         # because someone who registered on login.lp.net or login.u.c should
         # be able to login here without any further steps.
-        identifier = '4w7kmzU'
+        identifier = u'4w7kmzU'
         account_set = getUtility(IAccountSet)
         self.assertRaises(
             LookupError, account_set.getByOpenIDIdentifier, identifier)
@@ -304,7 +306,7 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
         # When we get a positive assertion about an identity URL we've never
         # seen but whose email address is already registered, we just change
         # the identity URL that's associated with the existing email address.
-        identifier = '4w7kmzU'
+        identifier = u'4w7kmzU'
         email = 'test@example.com'
         account = self.factory.makeAccount(
             'Test account', email=email, status=AccountStatus.DEACTIVATED)
@@ -341,7 +343,11 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
         account = self.factory.makeAccount(
             'Test account', email=email, status=AccountStatus.DEACTIVATED)
         self.assertIs(None, IPerson(account, None))
-        openid_identifier = removeSecurityProxy(account).openid_identifier
+        openid_identifier = IStore(OpenIdIdentifier).find(
+            OpenIdIdentifier.identifier,
+            OpenIdIdentifier.account_id == account.id).order_by(
+                OpenIdIdentifier.account_id).order_by(
+                    OpenIdIdentifier.account_id).first()
         openid_response = FakeOpenIDResponse(
             'http://testopenid.dev/+id/%s' % openid_identifier,
             status=SUCCESS, email=email, full_name=account.displayname)
@@ -367,7 +373,11 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
         account = self.factory.makeAccount(
             'Test account', email=email, status=AccountStatus.NOACCOUNT)
         self.assertIs(None, IPerson(account, None))
-        openid_identifier = removeSecurityProxy(account).openid_identifier
+        openid_identifier = IStore(OpenIdIdentifier).find(
+            OpenIdIdentifier.identifier,
+            OpenIdIdentifier.account_id == account.id).order_by(
+                OpenIdIdentifier.account_id).order_by(
+                    OpenIdIdentifier.account_id).first()
         openid_response = FakeOpenIDResponse(
             'http://testopenid.dev/+id/%s' % openid_identifier,
             status=SUCCESS, email=email, full_name=account.displayname)
@@ -432,7 +442,7 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
         with IAccountSet_getByOpenIDIdentifier_monkey_patched():
             self.assertRaises(
                 AssertionError,
-                getUtility(IAccountSet).getByOpenIDIdentifier, 'foo')
+                getUtility(IAccountSet).getByOpenIDIdentifier, u'foo')
 
     def assertLastWriteIsSet(self, request):
         last_write = ISession(request)['lp.dbpolicy']['last_write']

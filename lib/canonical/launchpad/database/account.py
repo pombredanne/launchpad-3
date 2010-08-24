@@ -25,6 +25,7 @@ from canonical.launchpad.interfaces.account import (
 from canonical.launchpad.interfaces.emailaddress import (
     EmailAddressStatus, IEmailAddress, IEmailAddressSet)
 from canonical.launchpad.interfaces.launchpad import IPasswordEncryptor
+from lp.services.openid.model.openididentifier import OpenIdIdentifier
 
 
 class Account(SQLBase):
@@ -43,9 +44,6 @@ class Account(SQLBase):
         enum=AccountStatus, default=AccountStatus.NOACCOUNT, notNull=True)
     date_status_set = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     status_comment = StringCol(dbName='status_comment', default=None)
-
-    openid_identifier = StringCol(
-        dbName='openid_identifier', notNull=True, default=DEFAULT)
 
     def __repr__(self):
         displayname = self.displayname.encode('ASCII', 'backslashreplace')
@@ -110,7 +108,7 @@ class Account(SQLBase):
     def validateAndEnsurePreferredEmail(self, email):
         """See `IAccount`."""
         if not IEmailAddress.providedBy(email):
-            raise TypeError, (
+            raise TypeError(
                 "Any person's email address must provide the IEmailAddress "
                 "interface. %s doesn't." % email)
 
@@ -222,12 +220,19 @@ class AccountSet:
     implements(IAccountSet)
 
     def new(self, rationale, displayname, password=None,
-            password_is_encrypted=False, openid_identifier=DEFAULT):
+            password_is_encrypted=False, openid_identifier=None):
         """See `IAccountSet`."""
 
         account = Account(
-            displayname=displayname, creation_rationale=rationale,
-            openid_identifier=openid_identifier)
+            displayname=displayname, creation_rationale=rationale)
+
+        # Create an OpenIdIdentifier record if requested.
+        if openid_identifier is not None:
+            assert isinstance(openid_identifier, unicode)
+            identifier = OpenIdIdentifier()
+            identifier.account = account
+            identifier.identifier = openid_identifier
+            IMasterStore(OpenIdIdentifier).add(identifier)
 
         # Create the password record.
         if password is not None:
@@ -246,7 +251,7 @@ class AccountSet:
 
     def createAccountAndEmail(self, email, rationale, displayname, password,
                               password_is_encrypted=False,
-                              openid_identifier=DEFAULT):
+                              openid_identifier=None):
         """See `IAccountSet`."""
         # Convert the PersonCreationRationale to an AccountCreationRationale.
         account_rationale = getattr(AccountCreationRationale, rationale.name)
@@ -272,8 +277,11 @@ class AccountSet:
     def getByOpenIDIdentifier(self, openid_identifier):
         """See `IAccountSet`."""
         store = IStore(Account)
+        assert isinstance(openid_identifier, unicode)
         account = store.find(
-            Account, Account.openid_identifier == openid_identifier).one()
+            Account,
+            Account.id == OpenIdIdentifier.account_id,
+            OpenIdIdentifier.identifier == openid_identifier).one()
         if account is None:
             raise LookupError(openid_identifier)
         return account
@@ -288,4 +296,3 @@ class AccountPassword(SQLBase):
     account = ForeignKey(
         dbName='account', foreignKey='Account', alternateID=True)
     password = StringCol(dbName='password', notNull=True)
-
