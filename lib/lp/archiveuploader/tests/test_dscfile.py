@@ -22,7 +22,7 @@ from lp.archiveuploader.tests import (
     )
 from lp.archiveuploader.uploadpolicy import BuildDaemonUploadPolicy
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
-from lp.soyuz.interfaces.sourcepackageformat import SourcePackageFormat
+from lp.soyuz.enums import SourcePackageFormat
 from lp.testing import (
     TestCase,
     TestCaseWithFactory,

@@ -38,6 +38,7 @@ from lp.soyuz.enums import (
     ArchivePurpose,
     PackageUploadCustomFormat,
     PackageUploadStatus,
+    SourcePackageFormat,
     )
 from lp.soyuz.interfaces.archive import (
     CannotCopy,
@@ -55,7 +56,6 @@ from lp.soyuz.interfaces.queue import (
     )
 from lp.soyuz.interfaces.sourcepackageformat import (
     ISourcePackageFormatSelectionSet,
-    SourcePackageFormat,
     )
 from lp.soyuz.model.processor import ProcessorFamily
 from lp.soyuz.model.publishing import (

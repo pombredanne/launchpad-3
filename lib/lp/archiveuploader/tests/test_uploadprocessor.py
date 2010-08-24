@@ -54,6 +54,7 @@ from lp.soyuz.enums import (
     ArchivePermissionType,
     ArchivePurpose,
     PackageUploadStatus,
+    SourcePackageFormat,
     )
 from lp.soyuz.interfaces.archive import (
     IArchiveSet,
@@ -72,7 +73,6 @@ from lp.soyuz.interfaces.queue import (
     )
 from lp.soyuz.interfaces.sourcepackageformat import (
     ISourcePackageFormatSelectionSet,
-    SourcePackageFormat,
     )
 from lp.soyuz.model.archivepermission import ArchivePermission
 from lp.soyuz.model.binarypackagename import BinaryPackageName

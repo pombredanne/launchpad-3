@@ -43,7 +43,7 @@ from lp.soyuz.interfaces.queue import (
     IPackageUploadCustom,
     IPackageUploadSet,
     )
-from lp.soyuz.interfaces.sourcepackageformat import SourcePackageFormat
+from lp.soyuz.enums import SourcePackageFormat
 from lp.soyuz.scripts.ftpmasterbase import (
     SoyuzScript,
     SoyuzScriptError,
