@@ -621,8 +621,12 @@ class ValidPersonOrTeamVocabulary(
             combined_result = public_result.union(private_result)
             # Eliminate default ordering.
             combined_result.order_by()
+            # XXX: BradCrittenden 2009-04-26 bug=217644: The use of Alias and
+            # is a work-around for .count() not working with the 'distinct'
+            # option.
+            subselect = Alias(combined_result._get_select(), 'Person')
             exact_match = (Person.name == text)
-            result = combined_result(Person, exact_match)
+            result = self.store.using(subselect).find((Person, exact_match))
         # XXX: BradCrittenden 2009-05-07 bug=373228: A bug in Storm prevents
         # setting the 'distinct' and 'limit' options in a single call to
         # .config().  The work-around is to split them up.  Note the limit has
