@@ -74,6 +74,7 @@ from lp.soyuz.adapters.archivedependencies import (
 from lp.soyuz.interfaces.component import IComponentSet
 
 
+SLAVE_LOG_FILENAME = 'buildlog'
 UPLOAD_LOG_FILENAME = 'uploader.log'
 
 
@@ -160,10 +161,10 @@ class PackageBuild(BuildFarmJobDerived, Storm):
 
     def getUploadDirLeaf(self, build_cookie, now=None):
         """See `IPackageBuild`."""
-        # UPLOAD_LEAF: <TIMESTAMP>-<BUILD-COOKIE>
         if now is None:
             now = datetime.datetime.now()
-        return '%s-%s' % (now.strftime("%Y%m%d-%H%M%S"), build_cookie)
+        timestamp = now.strftime("%Y%m%d-%H%M%S")
+        return '%s-%s' % (timestamp, build_cookie)
 
     def getUploadDir(self, upload_leaf):
         """See `IPackageBuild`."""
@@ -175,12 +176,12 @@ class PackageBuild(BuildFarmJobDerived, Storm):
         root = os.path.abspath(config.builddmaster.root)
         uploader_command = list(config.builddmaster.uploader.split())
 
-        # add extra arguments for processing a binary upload
+        # Add extra arguments for processing a package upload.
         extra_args = [
             "--log-file", "%s" % upload_logfilename,
             "-d", "%s" % package_build.distribution.name,
-            "-s", "%s" % (package_build.distro_series.name +
-                          pocketsuffix[package_build.pocket]),
+            "-s", "%s" % (
+                package_build.distro_series.getSuite(package_build.pocket)),
             "-b", "%s" % package_build.id,
             "-J", "%s" % upload_leaf,
             '--context=%s' % package_build.policy_name,
@@ -195,7 +196,8 @@ class PackageBuild(BuildFarmJobDerived, Storm):
         """See `IPackageBuild`."""
         builder = package_build.buildqueue_record.builder
         return builder.transferSlaveFileToLibrarian(
-            'buildlog', package_build.buildqueue_record.getLogFileName(),
+            SLAVE_LOG_FILENAME,
+            package_build.buildqueue_record.getLogFileName(),
             package_build.is_private)
 
     @staticmethod
@@ -225,6 +227,8 @@ class PackageBuild(BuildFarmJobDerived, Storm):
     @staticmethod
     def storeBuildInfo(build, librarian, slave_status):
         """See `IPackageBuild`."""
+        # log, builder and date_finished are read-only, so we must
+        # currently remove the security proxy to set them.
         naked_build = removeSecurityProxy(build)
         naked_build.log = build.getLogFromSlave(build)
         naked_build.builder = build.buildqueue_record.builder
@@ -338,11 +342,11 @@ class PackageBuildDerived:
                 "%s (%s) can not be built for pocket %s: illegal status"
                 % (self.title, self.id, self.pocket.name))
 
-        # ensure we have the correct build root as:
+        # Ensure we have the correct build root as:
         # <BUILDMASTER_ROOT>/incoming/<UPLOAD_LEAF>/<TARGET_PATH>/[FILES]
         root = os.path.abspath(config.builddmaster.root)
 
-        # create a single directory to store build result files
+        # Create a single directory to store build result files.
         upload_leaf = self.getUploadDirLeaf(
             '%s-%s' % (self.id, self.buildqueue_record.id))
         upload_dir = self.getUploadDir(upload_leaf)

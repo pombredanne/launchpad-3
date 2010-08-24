@@ -257,7 +257,8 @@ class TestGetUploadMethodsMixin:
         """If there is no log file there, a string explanation is returned.
         """
         self.useTempDir()
-        self.assertEquals('Could not find upload log file',
+        self.assertEquals(
+            'Could not find upload log file',
             self.build.getUploadLogContent(os.getcwd(), "myleaf"))
 
     def test_getUploadLogContent_only_dir(self):
@@ -265,7 +266,8 @@ class TestGetUploadMethodsMixin:
         not an exception."""
         self.useTempDir()
         os.makedirs("accepted/myleaf")
-        self.assertEquals('Could not find upload log file',
+        self.assertEquals(
+            'Could not find upload log file',
             self.build.getUploadLogContent(os.getcwd(), "myleaf"))
 
     def test_getUploadLogContent_readsfile(self):
@@ -274,8 +276,8 @@ class TestGetUploadMethodsMixin:
         os.makedirs("accepted/myleaf")
         with open('accepted/myleaf/uploader.log', 'w') as f:
             f.write('foo')
-        self.assertEquals('foo',
-            self.build.getUploadLogContent(os.getcwd(), "myleaf"))
+        self.assertEquals(
+            'foo', self.build.getUploadLogContent(os.getcwd(), "myleaf"))
 
     def test_getUploaderCommand(self):
         upload_leaf = self.factory.getUniqueString('upload-leaf')
