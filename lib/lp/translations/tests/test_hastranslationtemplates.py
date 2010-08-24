@@ -6,10 +6,11 @@ __metaclass__ = type
 from zope.interface.verify import verifyObject
 
 from canonical.testing import ZopelessDatabaseLayer
+from lp.testing import TestCaseWithFactory
 from lp.translations.interfaces.potemplate import IHasTranslationTemplates
 from lp.translations.interfaces.translationfileformat import (
-    TranslationFileFormat)
-from lp.testing import TestCaseWithFactory
+    TranslationFileFormat,
+    )
 
 
 class HasTranslationTemplatesTestMixin:

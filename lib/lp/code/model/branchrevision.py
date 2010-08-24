@@ -6,14 +6,18 @@
 __metaclass__ = type
 __all__ = ['BranchRevision', 'BranchRevisionSet']
 
+from storm.locals import (
+    Int,
+    Reference,
+    Storm,
+    )
 from zope.interface import implements
 
-from storm.locals import (Int, Reference, Storm)
-
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
-
 from lp.code.interfaces.branchrevision import (
-    IBranchRevision, IBranchRevisionSet)
+    IBranchRevision,
+    IBranchRevisionSet,
+    )
 
 
 class BranchRevision(Storm):

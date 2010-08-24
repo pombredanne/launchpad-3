@@ -4,8 +4,11 @@
 __metaclass__ = type
 
 import re
+
 from zope.component import getUtility
+
 from canonical.launchpad.interfaces import IGeoIP
+
 
 __all__ = ['request_country', 'ipaddress_from_request']
 

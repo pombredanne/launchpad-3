@@ -11,12 +11,15 @@ from unittest import TestLoader
 from storm.expr import Lower
 from zope.component import getUtility
 
+from canonical.launchpad.database.stormsugar import StartsWith
+from canonical.launchpad.webapp.interfaces import (
+    IStoreSelector,
+    MAIN_STORE,
+    MASTER_FLAVOR,
+    )
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.model.person import Person
-from canonical.launchpad.database.stormsugar import StartsWith
 from lp.testing import TestCaseWithFactory
-from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 
 
 class TestStormExpressions(TestCaseWithFactory):

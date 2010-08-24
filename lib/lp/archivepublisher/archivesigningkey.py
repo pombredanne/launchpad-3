@@ -13,17 +13,20 @@ __all__ = [
 import os
 
 import gpgme
-
 from zope.component import getUtility
 from zope.interface import implements
 
-from lp.archivepublisher.config import getPubConfig
-from lp.archivepublisher.interfaces.archivesigningkey import (
-    IArchiveSigningKey)
 from canonical.config import config
 from canonical.launchpad.interfaces.gpghandler import IGPGHandler
-from lp.registry.interfaces.gpg import IGPGKeySet, GPGKeyAlgorithm
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.archivepublisher.config import getPubConfig
+from lp.archivepublisher.interfaces.archivesigningkey import (
+    IArchiveSigningKey,
+    )
+from lp.registry.interfaces.gpg import (
+    GPGKeyAlgorithm,
+    IGPGKeySet,
+    )
 
 
 class ArchiveSigningKey:

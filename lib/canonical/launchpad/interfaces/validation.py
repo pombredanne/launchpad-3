@@ -23,20 +23,20 @@ __all__ = [
     ]
 
 from cgi import escape
-import urllib
 from textwrap import dedent
+import urllib
 
-from zope.component import getUtility
 from zope.app.form.interfaces import WidgetsError
+from zope.component import getUtility
 
 from canonical.launchpad import _
-from lp.app.errors import NotFoundError
 from canonical.launchpad.interfaces.launchpad import ILaunchBag
 from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.validators.cve import valid_cve
+from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.validators.url import valid_absolute_url
 from canonical.launchpad.webapp.menu import structured
+from lp.app.errors import NotFoundError
 
 
 def can_be_nominated_for_series(series):
@@ -312,7 +312,7 @@ def valid_upstreamtask(bug, product):
     errors = []
     user = getUtility(ILaunchBag).user
     params = BugTaskSearchParams(user, bug=bug)
-    if product.searchTasks(params):
+    if not product.searchTasks(params).is_empty():
         errors.append(LaunchpadValidationError(_(
             'A fix for this bug has already been requested for ${product}',
             mapping={'product': product.displayname})))

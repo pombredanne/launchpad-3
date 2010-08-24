@@ -2403,3 +2403,9 @@ COMMENT ON TABLE DatabaseTableStats IS 'Snapshots of pg_stat_user_tables to let 
 -- DatabaseCpuStats
 COMMENT ON TABLE DatabaseCpuStats IS 'Snapshots of CPU utilization per database username.';
 COMMENT ON COLUMN DatabaseCpuStats.cpu IS '% CPU utilization * 100, as reported by ps -o cp';
+
+
+-- SuggestivePOTemplate
+COMMENT ON TABLE SuggestivePOTemplate IS
+'Cache of POTemplates that can provide external translation suggestions.';
+

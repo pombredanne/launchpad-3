@@ -14,12 +14,19 @@ __all__ = [
     'IStaticDiffSource',
     ]
 
-from zope.schema import Bool, Bytes, Int, Text, TextLine
-from zope.interface import Interface
-
-from lazr.restful.fields import Reference
 from lazr.restful.declarations import (
-    export_as_webservice_entry, exported)
+    export_as_webservice_entry,
+    exported,
+    )
+from lazr.restful.fields import Reference
+from zope.interface import Interface
+from zope.schema import (
+    Bool,
+    Bytes,
+    Int,
+    Text,
+    TextLine,
+    )
 
 from canonical.launchpad import _
 

@@ -11,6 +11,7 @@ find out why Windmill has such issues.
 
 import os
 
+
 FILE_NAME = 'lib/canonical/launchpad/icing/build/launchpad.js'
 MAX_FILE_SIZE = 512 * 1024
 

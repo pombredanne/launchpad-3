@@ -12,25 +12,35 @@ import unittest
 
 from bzrlib.revision import NULL_REVISION
 import transaction
-
 from zope.component import getUtility
 from zope.event import notify
 
 from canonical.config import config
 from canonical.launchpad.interfaces import IStore
 from canonical.testing import LaunchpadZopelessLayer
-
-from lp.codehosting.scanner import events
-from lp.codehosting.scanner import mergedetection
-from lp.codehosting.scanner.tests.test_bzrsync import (
-    BzrSyncTestCase, run_as_db_user)
-from lp.code.enums import BranchLifecycleStatus, BranchMergeProposalStatus
-from lp.code.model.branchmergeproposaljob import (
-    BranchMergeProposalJob, BranchMergeProposalJobFactory,
-    BranchMergeProposalJobType)
+from lp.code.enums import (
+    BranchLifecycleStatus,
+    BranchMergeProposalStatus,
+    )
 from lp.code.interfaces.branchlookup import IBranchLookup
+from lp.code.model.branchmergeproposaljob import (
+    BranchMergeProposalJob,
+    BranchMergeProposalJobFactory,
+    BranchMergeProposalJobType,
+    )
+from lp.codehosting.scanner import (
+    events,
+    mergedetection,
+    )
+from lp.codehosting.scanner.tests.test_bzrsync import (
+    BzrSyncTestCase,
+    run_as_db_user,
+    )
 from lp.services.osutils import override_environ
-from lp.testing import TestCase, TestCaseWithFactory
+from lp.testing import (
+    TestCase,
+    TestCaseWithFactory,
+    )
 from lp.testing.mail_helpers import pop_notifications
 
 

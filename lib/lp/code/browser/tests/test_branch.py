@@ -7,36 +7,52 @@ from __future__ import with_statement
 
 __metaclass__ = type
 
-from datetime import datetime, timedelta
+from datetime import (
+    datetime,
+    timedelta,
+    )
 from textwrap import dedent
 import unittest
 
 import pytz
 import simplejson
-
-
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
-
-from lp.app.interfaces.headings import IRootContext
-from lp.bugs.interfaces.bugtask import (
-    BugTaskStatus, UNRESOLVED_BUGTASK_STATUSES)
-from lp.code.browser.branch import (
-    BranchAddView, BranchMirrorStatusView, BranchReviewerEditView,
-    BranchSparkView, BranchView)
-from lp.code.browser.branchlisting import PersonOwnedBranchesView
-from lp.code.interfaces.branchtarget import IBranchTarget
 from canonical.launchpad.helpers import truncate_text
-from lp.code.enums import BranchLifecycleStatus, BranchType
-from lp.testing import (
-    login, login_person, logout, person_logged_in, ANONYMOUS,
-    TestCaseWithFactory)
-from lp.testing.views import create_initialized_view
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import (
-    DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
+from lp.app.interfaces.headings import IRootContext
+from lp.bugs.interfaces.bugtask import (
+    BugTaskStatus,
+    UNRESOLVED_BUGTASK_STATUSES,
+    )
+from lp.code.browser.branch import (
+    BranchAddView,
+    BranchMirrorStatusView,
+    BranchReviewerEditView,
+    BranchSparkView,
+    BranchView,
+    )
+from lp.code.browser.branchlisting import PersonOwnedBranchesView
+from lp.code.enums import (
+    BranchLifecycleStatus,
+    BranchType,
+    )
+from lp.code.interfaces.branchtarget import IBranchTarget
+from lp.testing import (
+    ANONYMOUS,
+    login,
+    login_person,
+    logout,
+    person_logged_in,
+    TestCaseWithFactory,
+    )
+from lp.testing.views import create_initialized_view
 
 
 class TestBranchMirrorHidden(TestCaseWithFactory):

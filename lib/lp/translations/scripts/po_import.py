@@ -10,22 +10,26 @@ __all__ = [
     'TranslationsImport',
     ]
 
-from datetime import datetime, timedelta
+from datetime import (
+    datetime,
+    timedelta,
+    )
 import sys
 
 import pytz
-
 from zope.component import getUtility
 
 from canonical.config import config
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from lp.translations.interfaces.translationimportqueue import (
-    ITranslationImportQueue, RosettaImportStatus)
 from canonical.launchpad.mail import simple_sendmail
 from canonical.launchpad.mailnotification import MailWrapper
 from canonical.launchpad.webapp import errorlog
 from lp.services.scripts.base import LaunchpadCronScript
+from lp.translations.interfaces.translationimportqueue import (
+    ITranslationImportQueue,
+    RosettaImportStatus,
+    )
 
 
 class TranslationsImport(LaunchpadCronScript):

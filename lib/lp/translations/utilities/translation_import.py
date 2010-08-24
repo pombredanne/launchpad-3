@@ -9,52 +9,52 @@ __all__ = [
     'is_identical_translation',
     ]
 
-import gettextpo
 import datetime
+from operator import attrgetter
 import os
+
+import gettextpo
 import posixpath
 import pytz
+from storm.exceptions import TimeoutError
+import transaction
 from zope.component import getUtility
 from zope.interface import implements
 
-from operator import attrgetter
-
-import transaction
-
-from canonical.config import config
-from canonical.database.sqlbase import cursor, quote
-
-from storm.exceptions import TimeoutError
-
 from canonical.cachedproperty import cachedproperty
+from canonical.config import config
+from canonical.database.sqlbase import (
+    cursor,
+    quote,
+    )
+from canonical.launchpad.interfaces.emailaddress import InvalidEmailAddress
+from canonical.launchpad.webapp import canonical_url
 from lp.registry.interfaces.person import (
     IPersonSet,
-    PersonCreationRationale)
+    PersonCreationRationale,
+    )
 from lp.translations.interfaces.translationexporter import (
-    ITranslationExporter)
+    ITranslationExporter,
+    )
+from lp.translations.interfaces.translationfileformat import (
+    TranslationFileFormat,
+    )
 from lp.translations.interfaces.translationimporter import (
     ITranslationImporter,
     NotExportedFromLaunchpad,
-    OutdatedTranslationError)
+    OutdatedTranslationError,
+    )
 from lp.translations.interfaces.translationimportqueue import (
-    RosettaImportStatus)
-from lp.translations.interfaces.translationmessage import (
-    TranslationConflict)
-from lp.translations.interfaces.translationfileformat import (
-    TranslationFileFormat)
-from lp.translations.interfaces.translations import (
-    TranslationConstants)
-from canonical.launchpad.interfaces.emailaddress import InvalidEmailAddress
-from lp.translations.utilities.kde_po_importer import (
-    KdePOImporter)
-from lp.translations.utilities.gettext_po_importer import (
-    GettextPOImporter)
-from lp.translations.utilities.mozilla_xpi_importer import (
-    MozillaXpiImporter)
+    RosettaImportStatus,
+    )
+from lp.translations.interfaces.translationmessage import TranslationConflict
+from lp.translations.interfaces.translations import TranslationConstants
+from lp.translations.utilities.gettext_po_importer import GettextPOImporter
+from lp.translations.utilities.kde_po_importer import KdePOImporter
+from lp.translations.utilities.mozilla_xpi_importer import MozillaXpiImporter
 from lp.translations.utilities.translation_common_format import (
-    TranslationMessageData)
-
-from canonical.launchpad.webapp import canonical_url
+    TranslationMessageData,
+    )
 
 
 importers = {

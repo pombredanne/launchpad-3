@@ -12,21 +12,26 @@ __all__ = [
 
 from datetime import datetime
 
-from zope.component import getUtility
-
 import bzrlib
+from zope.component import getUtility
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
+from canonical.launchpad.webapp import (
+    canonical_url,
+    LaunchpadView,
+    )
 from canonical.launchpad.webapp.authorization import (
-    precache_permission_for_objects)
-
+    precache_permission_for_objects,
+    )
 from lp.code.enums import CodeImportReviewStatus
-from lp.code.interfaces.branch import IBranchCloud, IBranchSet
+from lp.code.interfaces.branch import (
+    IBranchCloud,
+    IBranchSet,
+    )
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.codeimport import ICodeImportSet
 from lp.registry.interfaces.product import IProductSet
-from canonical.launchpad.webapp import canonical_url, LaunchpadView
 
 
 class BazaarApplicationView(LaunchpadView):

@@ -8,6 +8,7 @@ __metaclass__ = type
 # XXX flacoste 2009/03/18 We should use specific imports instead of
 # importing from this module.
 
+# SKIP this file when formatting imports.
 from canonical.launchpad.interfaces.launchpad import *
 from lp.bugs.interfaces.malone import *
 from canonical.launchpad.interfaces.validation import *

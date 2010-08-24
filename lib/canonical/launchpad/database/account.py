@@ -6,24 +6,39 @@
 __metaclass__ = type
 __all__ = ['Account', 'AccountPassword', 'AccountSet']
 
-from zope.component import getUtility
-from zope.security.proxy import removeSecurityProxy
-from zope.interface import implements
-
+from sqlobject import (
+    ForeignKey,
+    StringCol,
+    )
 from storm.store import Store
+from zope.component import getUtility
+from zope.interface import implements
+from zope.security.proxy import removeSecurityProxy
 
-from sqlobject import ForeignKey, StringCol
-
-from canonical.database.constants import UTC_NOW, DEFAULT
+from canonical.database.constants import (
+    DEFAULT,
+    UTC_NOW,
+    )
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.database.emailaddress import EmailAddress
-from canonical.launchpad.interfaces import IMasterObject, IMasterStore, IStore
+from canonical.launchpad.interfaces import (
+    IMasterObject,
+    IMasterStore,
+    IStore,
+    )
 from canonical.launchpad.interfaces.account import (
-    AccountCreationRationale, AccountStatus, IAccount, IAccountSet)
+    AccountCreationRationale,
+    AccountStatus,
+    IAccount,
+    IAccountSet,
+    )
 from canonical.launchpad.interfaces.emailaddress import (
-    EmailAddressStatus, IEmailAddress, IEmailAddressSet)
+    EmailAddressStatus,
+    IEmailAddress,
+    IEmailAddressSet,
+    )
 from canonical.launchpad.interfaces.launchpad import IPasswordEncryptor
 from lp.services.openid.model.openididentifier import OpenIdIdentifier
 
