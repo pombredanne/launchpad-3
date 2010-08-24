@@ -47,8 +47,9 @@ class FiniteSequenceAdapter:
         # before running the count() query, just as __getitem__ sets
         # those values before running its query.
         resultset = removeSecurityProxy(self.context)
-        resultset._select.limit = Undef
-        resultset._select.offset = Undef
+        if hasattr(resultset, 'select'):
+            resultset._select.limit = Undef
+            resultset._select.offset = Undef
         return self.context.count()
 
 
