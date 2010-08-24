@@ -64,9 +64,6 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet,
-    )
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.validators.name import valid_name
@@ -347,13 +344,7 @@ class HWSubmissionSet:
         # DISTINCT clause.
         result_set.config(distinct=True)
         result_set.order_by(HWSubmission.id)
-        # The Storm implementation of ResultSet.count() is incorrect if
-        # the select query uses the distinct directive (see bug #217644).
-        # DecoratedResultSet solves this problem by modifying the query
-        # to count only the records appearing in a subquery.
-        # We don't actually need to transform the results, which is why
-        # the second argument is a no-op.
-        return DecoratedResultSet(result_set, lambda result: result)
+        return result_set
 
     def _submissionsSubmitterSelects(
         self, target_column, bus, vendor_id, product_id, driver_name,
