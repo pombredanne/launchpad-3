@@ -72,8 +72,8 @@ from lp.registry.interfaces.pocket import (
     PackagePublishingPocket,
     pocketsuffix,
     )
+from lp.soyuz.enums import BinaryPackageFormat
 from lp.soyuz.interfaces.archive import MAIN_ARCHIVE_PURPOSES
-from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFormat
 from lp.soyuz.interfaces.publishing import (
     IPublishingSet,
     ISourcePackagePublishingHistory,

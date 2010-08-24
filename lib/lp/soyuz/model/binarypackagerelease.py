@@ -35,9 +35,11 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from lp.soyuz.interfaces.binarypackagerelease import (
+from lp.soyuz.enums import (
     BinaryPackageFileType,
     BinaryPackageFormat,
+    )
+from lp.soyuz.interfaces.binarypackagerelease import (
     IBinaryPackageRelease,
     IBinaryPackageReleaseDownloadCount,
     IBinaryPackageReleaseSet,

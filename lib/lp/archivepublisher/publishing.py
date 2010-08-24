@@ -42,8 +42,8 @@ from lp.registry.interfaces.pocket import (
 from lp.soyuz.enums import (
     ArchivePurpose,
     ArchiveStatus,
+    BinaryPackageFormat,
     )
-from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFormat
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 

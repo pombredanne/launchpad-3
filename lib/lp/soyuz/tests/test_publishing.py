@@ -35,13 +35,15 @@ from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
-from lp.soyuz.enums import ArchivePurpose
+from lp.soyuz.enums import (
+    ArchivePurpose,
+    BinaryPackageFormat,
+    )
 from lp.soyuz.interfaces.archive import (
     IArchiveSet,
     )
 from lp.soyuz.interfaces.archivearch import IArchiveArchSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
-from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFormat
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.publishing import (
     IPublishingSet,
@@ -58,7 +60,6 @@ from lp.soyuz.model.publishing import (
 from lp.testing import TestCaseWithFactory
 from lp.testing.factory import (
     LaunchpadObjectFactory,
-    remove_security_proxy_and_shout_at_engineer,
     )
 from lp.testing.fakemethod import FakeMethod
 

@@ -83,7 +83,7 @@ from lp.registry.interfaces.pocket import (
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
 from lp.services.worlddata.model.country import Country
-from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFileType
+from lp.soyuz.enums import BinaryPackageFileType
 from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.model.files import (

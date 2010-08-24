@@ -304,7 +304,7 @@ given build record entry.
     >>> version = '0.0.1-demo'
     >>> summary = 'Summmmmmmmary'
     >>> description = 'Descripppppppption'
-    >>> from canonical.launchpad.interfaces import BinaryPackageFormat
+    >>> from lp.soyuz.enums import BinaryPackageFormat
     >>> binpackageformat = BinaryPackageFormat.DEB
     >>> component = firefox_build.source_package_release.component.id
     >>> section = firefox_build.source_package_release.section.id

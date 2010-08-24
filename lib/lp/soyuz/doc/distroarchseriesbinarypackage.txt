@@ -35,7 +35,7 @@ existing builds that are in sampledata!
 
   >>> main_component = Component.selectOneBy(name="main")
   >>> misc_section = Section.selectOneBy(name="base")
-  >>> from canonical.launchpad.interfaces import BinaryPackageFormat
+  >>> from lp.soyuz.enums import BinaryPackageFormat
   >>> binpackageformat = BinaryPackageFormat.DEB
   >>> from canonical.launchpad.interfaces import (
   ...     PackagePublishingPriority, PackagePublishingStatus,

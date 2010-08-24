@@ -29,9 +29,11 @@ from lp.registry.interfaces.suitesourcepackage import ISuiteSourcePackage
 from lp.services.worlddata.interfaces.language import ILanguage
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuild
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageName
-from lp.soyuz.interfaces.binarypackagerelease import (
+from lp.soyuz.enums import (
     BinaryPackageFileType,
     BinaryPackageFormat,
+    )
+from lp.soyuz.interfaces.binarypackagerelease import (
     IBinaryPackageRelease,
     )
 from lp.soyuz.interfaces.files import (

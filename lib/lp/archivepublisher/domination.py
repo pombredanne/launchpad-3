@@ -68,7 +68,7 @@ from canonical.database.sqlbase import (
     )
 from canonical.launchpad.interfaces import PackagePublishingStatus
 from lp.archivepublisher import ELIGIBLE_DOMINATION_STATES
-from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFormat
+from lp.soyuz.enums import BinaryPackageFormat
 
 
 def clear_cache():

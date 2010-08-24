@@ -10,6 +10,8 @@ __all__ = [
     'ArchivePurpose',
     'ArchiveStatus',
     'ArchiveSubscriberStatus',
+    'BinaryPackageFileType',
+    'BinaryPackageFormat',
     ]
 
 from lazr.enum import (
@@ -139,4 +141,84 @@ class ArchiveSubscriberStatus(DBEnumeratedType):
 
         The subscription was cancelled.
         """)
+
+
+class BinaryPackageFileType(DBEnumeratedType):
+    """Binary Package File Type
+
+    Launchpad handles a variety of packaging systems and binary package
+    formats. This schema documents the known binary package file types.
+    """
+
+    DEB = DBItem(1, """
+        DEB Format
+
+        This format is the standard package format used on Ubuntu and other
+        similar operating systems.
+        """)
+
+    RPM = DBItem(2, """
+        RPM Format
+
+        This format is used on mandrake, Red Hat, Suse and other similar
+        distributions.
+        """)
+
+    UDEB = DBItem(3, """
+        UDEB Format
+
+        This format is the standard package format used on Ubuntu and other
+        similar operating systems for the installation system.
+        """)
+
+    DDEB = DBItem(4, """
+        DDEB Format
+
+        This format is the standard package format used on Ubuntu and other
+        similar operating systems for distributing debug symbols.
+        """)
+
+
+class BinaryPackageFormat(DBEnumeratedType):
+    """Binary Package Format
+
+    Launchpad tracks a variety of binary package formats. This schema
+    documents the list of binary package formats that are supported
+    in Launchpad.
+    """
+
+    DEB = DBItem(1, """
+        Ubuntu Package
+
+        This is the binary package format used by Ubuntu and all similar
+        distributions. It includes dependency information to allow the
+        system to ensure it always has all the software installed to make
+        any new package work correctly.  """)
+
+    UDEB = DBItem(2, """
+        Ubuntu Installer Package
+
+        This is the binary package format used by the installer in Ubuntu and
+        similar distributions.  """)
+
+    EBUILD = DBItem(3, """
+        Gentoo Ebuild Package
+
+        This is the Gentoo binary package format. While Gentoo is primarily
+        known for being a build-it-from-source-yourself kind of
+        distribution, it is possible to exchange binary packages between
+        Gentoo systems.  """)
+
+    RPM = DBItem(4, """
+        RPM Package
+
+        This is the format used by Mandrake and other similar distributions.
+        It does not include dependency tracking information.  """)
+
+    DDEB = DBItem(5, """
+        Ubuntu Debug Package
+
+        This is the binary package format used for shipping debug symbols
+        in Ubuntu and similar distributions.""")
+
 

@@ -33,6 +33,7 @@ from canonical.encoding import (
     guess as guess_encoding,
     )
 from lp.archiveuploader.tagfiles import TagFileParseError
+from lp.soyuz.enums import BinaryPackageFileType
 
 
 re_taint_free = re.compile(r"^[-+~/\.\w]+$")
@@ -94,9 +95,6 @@ def determine_source_file_type(filename):
 
 def determine_binary_file_type(filename):
     """Determine the BinaryPackageFileType of the given filename."""
-    # Avoid circular imports.
-    from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFileType
-
     if filename.endswith(".deb"):
         return BinaryPackageFileType.DEB
     elif filename.endswith(".udeb"):
