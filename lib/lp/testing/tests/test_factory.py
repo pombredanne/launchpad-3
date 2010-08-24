@@ -517,6 +517,41 @@ class TestFactory(TestCaseWithFactory):
             translations, [tm.msgstr0.translation, tm.msgstr1.translation])
         self.assertIs(None, tm.msgstr2)
 
+    def test_makeCurrentTranslationMessage_sets_reviewer(self):
+        reviewer = self.factory.makePerson()
+
+        tm = self.factory.makeCurrentTranslationMessage(reviewer=reviewer)
+
+        self.assertEqual(reviewer, tm.reviewer)
+
+    def test_makeCurrentTranslationMessage_creates_reviewer(self):
+        tm = self.factory.makeCurrentTranslationMessage(reviewer=None)
+
+        self.assertNotEqual(None, tm.reviewer)
+
+    def test_makeDivergedTranslationMessage_upstream(self):
+        pofile = self.factory.makePOFile('ca')
+
+        tm = self.factory.makeDivergedTranslationMessage(pofile=pofile)
+
+        self.assertTrue(tm.is_current_upstream)
+        self.assertFalse(tm.is_current_ubuntu)
+        self.assertTrue(tm.is_diverged)
+        self.assertEqual(pofile.potemplate, tm.potemplate)
+
+    def test_makeDivergedTranslationMessage_ubuntu(self):
+        potemplate = self.factory.makePOTemplate(
+            distroseries=self.factory.makeDistroSeries(),
+            sourcepackagename=self.factory.makeSourcePackageName())
+        pofile = self.factory.makePOFile('eu', potemplate=potemplate)
+
+        tm = self.factory.makeDivergedTranslationMessage(pofile=pofile)
+
+        self.assertTrue(tm.is_current_ubuntu)
+        self.assertFalse(tm.is_current_upstream)
+        self.assertTrue(tm.is_diverged)
+        self.assertEqual(pofile.potemplate, tm.potemplate)
+
 
 class TestFactoryWithLibrarian(TestCaseWithFactory):
 
