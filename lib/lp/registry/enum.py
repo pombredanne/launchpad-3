@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = [
     'BugNotificationLevel',
     'DistroSeriesDifferenceStatus',
+    'DistroSeriesDifferenceType',
     ]
 
 from lazr.enum import (
@@ -73,4 +74,27 @@ class DistroSeriesDifferenceStatus(DBEnumeratedType):
         Ignored always
 
         This difference should always be ignored.
+        """)
+
+class DistroSeriesDifferenceType(DBEnumeratedType):
+    """Distribution series difference type."""
+
+    UNIQUE_TO_DERIVED_SERIES = DBItem(1, """
+        Unique to derived series
+
+        This package is present in the derived series but not the parent
+        series.
+        """)
+
+    MISSING_FROM_DERIVED_SERIES = DBItem(2, """
+        Missing from derived series
+
+        This package is present in the parent series but missing from the
+        derived series.
+        """)
+
+    DIFFERENT_VERSIONS = DBItem(3, """
+        Different versions
+
+        This package is present in both series with different versions.
         """)

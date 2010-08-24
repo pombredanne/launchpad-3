@@ -19,9 +19,13 @@ from zope.schema import (
     )
 
 from canonical.launchpad import _
-from lp.registry.enum import DistroSeriesDifferenceStatus
+from lp.registry.enum import (
+    DistroSeriesDifferenceStatus,
+    DistroSeriesDifferenceType,
+    )
 from lp.registry.interfaces.distroseries import IDistroSeries
-from lp.soyuz.interfaces.publishing import ISourcePackagePublishingHistory
+from lp.registry.interfaces.sourcepackagename import ISourcePackageName
+from lp.soyuz.interfaces.packagediff import IPackageDiff
 
 
 class IDistroSeriesDifference(Interface):
@@ -35,26 +39,32 @@ class IDistroSeriesDifference(Interface):
             "The distribution series which, together with its parent, "
             "identifies the two series with the difference."))
 
-    source_package = Reference(
-        ISourcePackagePublishingHistory,
-        title=_("Source package"), required=False,
-        readonly=True, description=_(
-            "The package in this distribution series."))
+    source_package_name = Reference(
+        ISourcePackageName,
+        title=_("Source package name"), required=True, readonly=True,
+        description=_(
+            "The package with a difference between the derived series "
+            "and its parent."))
 
-    parent_source_package = Reference(
-        ISourcePackagePublishingHistory,
-        title=_("Parent source package"), required=False,
+    last_package_diff = Reference(
+        IPackageDiff, title=_("Last package diff"), required=False,
         readonly=True, description=_(
-            "The package in the parent distribution series."))
+            "The most recently generated package diff for this difference."))
 
-    comment = Text(
-        title=_('Custom information about the current status of this '
-                'difference'), required=False, readonly=False)
+    activity_log = Text(
+        title=_('A log of activity and comments for this difference'),
+        required=False, readonly=False)
 
     status = Choice(
         title=_('Distro series difference status.'),
         description=_('The current status of this difference.'),
         vocabulary=DistroSeriesDifferenceStatus,
+        required=True, readonly=False)
+
+    difference_type = Choice(
+        title=_('Difference type'),
+        description=_('The type of difference for this package.'),
+        vocabulary=DistroSeriesDifferenceType,
         required=True, readonly=False)
 
 
