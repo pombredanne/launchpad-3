@@ -44,7 +44,6 @@ from zope.component import (
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
-from lp.services.propertycache import cachedproperty
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import (
@@ -66,6 +65,7 @@ from canonical.launchpad.webapp.interfaces import (
 from canonical.launchpad.webapp.publisher import canonical_url
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.model.person import Person
+from lp.services.propertycache import cachedproperty
 from lp.translations.interfaces.pofile import (
     IPOFile,
     IPOFileSet,

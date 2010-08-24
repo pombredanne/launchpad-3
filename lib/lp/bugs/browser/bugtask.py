@@ -125,7 +125,6 @@ from zope.security.proxy import (
     )
 from zope.traversing.interfaces import IPathAdapter
 
-from lp.services.propertycache import cachedproperty
 from canonical.config import config
 from canonical.database.sqlbase import cursor
 from canonical.launchpad import (
@@ -260,6 +259,7 @@ from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.vocabularies import MilestoneVocabulary
 from lp.services.fields import PersonChoice
+from lp.services.propertycache import cachedproperty
 
 
 @component.adapter(IBugTask, IReferenceChoice, IWebServiceClientRequest)

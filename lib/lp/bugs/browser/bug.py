@@ -63,7 +63,6 @@ from zope.schema import (
 from zope.schema.interfaces import IText
 from zope.security.interfaces import Unauthorized
 
-from lp.services.propertycache import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
 from canonical.launchpad.mailnotification import MailWrapper
@@ -115,6 +114,7 @@ from lp.bugs.interfaces.bugwatch import IBugWatchSet
 from lp.bugs.interfaces.cve import ICveSet
 from lp.bugs.mail.bugnotificationbuilder import format_rfc2822_date
 from lp.services.fields import DuplicateBug
+from lp.services.propertycache import cachedproperty
 
 
 class BugNavigation(Navigation):

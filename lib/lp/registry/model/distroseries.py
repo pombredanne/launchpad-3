@@ -33,7 +33,6 @@ from storm.store import Store
 from zope.component import getUtility
 from zope.interface import implements
 
-from lp.services.propertycache import cachedproperty
 from canonical.database.constants import (
     DEFAULT,
     UTC_NOW,
@@ -112,6 +111,7 @@ from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.registry.model.structuralsubscription import (
     StructuralSubscriptionTargetMixin,
     )
+from lp.services.propertycache import cachedproperty
 from lp.services.worlddata.model.language import Language
 from lp.soyuz.interfaces.archive import (
     ALLOW_RELEASE_BUILDS,

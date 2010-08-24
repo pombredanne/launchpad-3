@@ -72,7 +72,6 @@ from canonical.config import (
 from canonical.database.interfaces import ISQLBase
 from lp.services.propertycache import IPropertyCacheManager
 
-
 # Default we want for scripts, and the PostgreSQL default. Note psycopg1 will
 # use SERIALIZABLE unless we override, but psycopg2 will not.
 ISOLATION_LEVEL_DEFAULT = ISOLATION_LEVEL_READ_COMMITTED

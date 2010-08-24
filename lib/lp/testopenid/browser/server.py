@@ -32,10 +32,6 @@ from zope.interface import implements
 from zope.security.proxy import isinstance as zisinstance
 from zope.session.interfaces import ISession
 
-from lp.services.propertycache import (
-    cachedproperty,
-    IPropertyCache,
-    )
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.account import (
     AccountStatus,
@@ -63,6 +59,10 @@ from lp.app.errors import UnexpectedFormData
 from lp.registry.interfaces.person import IPerson
 from lp.services.openid.browser.openiddiscovery import (
     XRDSContentNegotiationMixin,
+    )
+from lp.services.propertycache import (
+    cachedproperty,
+    IPropertyCache,
     )
 from lp.testopenid.interfaces.server import (
     get_server_url,

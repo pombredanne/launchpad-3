@@ -26,7 +26,6 @@ from zope.interface import (
     Interface,
     )
 
-from lp.services.propertycache import cachedproperty
 from canonical.launchpad.webapp import (
     action,
     canonical_url,
@@ -60,6 +59,7 @@ from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
     )
 from lp.registry.interfaces.pocket import pocketsuffix
+from lp.services.propertycache import cachedproperty
 from lp.soyuz.browser.sourcepackagerelease import (
     extract_bug_numbers,
     extract_email_addresses,

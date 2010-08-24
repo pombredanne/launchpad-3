@@ -42,7 +42,6 @@ from zope.schema.vocabulary import (
     SimpleVocabulary,
     )
 
-from lp.services.propertycache import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.helpers import (
     browserLanguages,
@@ -81,6 +80,7 @@ from lp.app.errors import NotFoundError
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.services.fields import PublicPersonChoice
+from lp.services.propertycache import cachedproperty
 from lp.services.worlddata.interfaces.language import ILanguageSet
 
 

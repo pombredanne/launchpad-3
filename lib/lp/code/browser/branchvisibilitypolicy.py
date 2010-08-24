@@ -22,7 +22,6 @@ from zope.schema.vocabulary import (
     SimpleVocabulary,
     )
 
-from lp.services.propertycache import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.webapp import (
     action,
@@ -42,6 +41,7 @@ from lp.code.enums import (
 from lp.code.interfaces.branchvisibilitypolicy import (
     IBranchVisibilityTeamPolicy,
     )
+from lp.services.propertycache import cachedproperty
 
 
 class BaseBranchVisibilityTeamPolicyView(LaunchpadFormView):

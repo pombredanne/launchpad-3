@@ -28,7 +28,6 @@ from zope.interface import implements
 from zope.schema import Choice
 from zope.schema.vocabulary import SimpleVocabulary
 
-from lp.services.propertycache import cachedproperty
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad import _
 from canonical.launchpad.helpers import (
@@ -68,6 +67,7 @@ from lp.bugs.interfaces.bugtracker import (
     IBugTrackerSet,
     IRemoteBug,
     )
+from lp.services.propertycache import cachedproperty
 
 # A set of bug tracker types for which there can only ever be one bug
 # tracker.

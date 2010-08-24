@@ -24,7 +24,6 @@ from zope.interface import (
     )
 from zope.schema import Text
 
-from lp.services.propertycache import cachedproperty
 from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import ILibraryFileAlias
@@ -41,6 +40,7 @@ from canonical.launchpad.webapp.interfaces import IPrimaryContext
 from lp.code.interfaces.codereviewcomment import ICodeReviewComment
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
 from lp.services.comments.interfaces.conversation import IComment
+from lp.services.propertycache import cachedproperty
 
 
 class CodeReviewDisplayComment:

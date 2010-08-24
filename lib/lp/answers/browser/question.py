@@ -55,7 +55,6 @@ from zope.schema.vocabulary import (
     )
 import zope.security
 
-from lp.services.propertycache import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.helpers import (
     is_english_variant,
@@ -116,6 +115,7 @@ from lp.app.errors import (
     UnexpectedFormData,
     )
 from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.services.propertycache import cachedproperty
 
 
 class QuestionLinksMixin:

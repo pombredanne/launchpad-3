@@ -12,11 +12,11 @@ from storm.expr import Desc
 from storm.store import Store
 from zope.interface import implements
 
+from canonical.database.sqlbase import sqlvalues
 from lp.services.propertycache import (
     cachedproperty,
     IPropertyCache,
     )
-from canonical.database.sqlbase import sqlvalues
 from lp.soyuz.interfaces.distroseriesbinarypackage import (
     IDistroSeriesBinaryPackage,
     )

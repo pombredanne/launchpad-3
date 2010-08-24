@@ -44,7 +44,6 @@ from zope.interface import implements
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.security.interfaces import Unauthorized
 
-from lp.services.propertycache import cachedproperty
 from canonical.launchpad.browser.feeds import FeedsMixin
 from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet,
@@ -108,6 +107,7 @@ from lp.registry.interfaces.distributionmirror import (
     )
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.propertycache import cachedproperty
 from lp.soyuz.browser.packagesearch import PackageSearchViewBase
 from lp.soyuz.interfaces.archive import (
     ArchivePurpose,

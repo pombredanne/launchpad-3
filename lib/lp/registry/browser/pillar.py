@@ -19,7 +19,6 @@ from zope.interface import (
     Interface,
     )
 
-from lp.services.propertycache import cachedproperty
 from canonical.launchpad.webapp.menu import (
     ApplicationMenu,
     enabled_with_permission,
@@ -40,6 +39,7 @@ from lp.registry.interfaces.distributionsourcepackage import (
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.pillar import IPillar
 from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.services.propertycache import cachedproperty
 
 
 class IInvolved(Interface):

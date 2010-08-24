@@ -21,7 +21,10 @@ __all__ = [
 
 
 import datetime
-from operator import attrgetter, itemgetter
+from operator import (
+    attrgetter,
+    itemgetter,
+    )
 
 from lazr.enum import DBItem
 import pytz
@@ -73,7 +76,9 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from canonical.launchpad.components.decoratedresultset import DecoratedResultSet
+from canonical.launchpad.components.decoratedresultset import (
+    DecoratedResultSet,
+    )
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import IStore
@@ -152,12 +157,10 @@ from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.model.pillar import pillar_sort_key
 from lp.registry.model.sourcepackagename import SourcePackageName
+from lp.services.propertycache import IPropertyCache
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
-from lp.services.propertycache import (
-    IPropertyCache,
-    )
 
 
 debbugsseveritymap = {None:        BugTaskImportance.UNDECIDED,

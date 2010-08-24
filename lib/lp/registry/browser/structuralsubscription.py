@@ -22,7 +22,6 @@ from zope.schema.vocabulary import (
     SimpleVocabulary,
     )
 
-from lp.services.propertycache import cachedproperty
 from canonical.launchpad.webapp import (
     action,
     canonical_url,
@@ -43,6 +42,7 @@ from lp.registry.interfaces.structuralsubscription import (
     IStructuralSubscriptionForm,
     IStructuralSubscriptionTarget,
     )
+from lp.services.propertycache import cachedproperty
 
 
 class StructuralSubscriptionView(LaunchpadFormView):

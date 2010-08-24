@@ -17,10 +17,10 @@ from storm.locals import (
     )
 from zope.interface import implements
 
-from lp.services.propertycache import cachedproperty
 from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.interfaces import IStore
 from lp.app.errors import NotFoundError
+from lp.services.propertycache import cachedproperty
 from lp.soyuz.interfaces.distroarchseriesbinarypackage import (
     IDistroArchSeriesBinaryPackage,
     )

@@ -12,12 +12,12 @@ __all__ = [
     'ProductSeriesLanguageView',
     ]
 
-from lp.services.propertycache import cachedproperty
 from canonical.launchpad.readonly import is_read_only
 from canonical.launchpad.webapp import LaunchpadView
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.publisher import Navigation
 from canonical.launchpad.webapp.tales import PersonFormatterAPI
+from lp.services.propertycache import cachedproperty
 from lp.translations.interfaces.distroserieslanguage import (
     IDistroSeriesLanguage,
     )

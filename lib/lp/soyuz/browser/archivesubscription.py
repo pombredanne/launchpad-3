@@ -30,7 +30,6 @@ from zope.schema import (
     Text,
     )
 
-from lp.services.propertycache import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.webapp.launchpadform import (
     action,
@@ -45,6 +44,7 @@ from canonical.launchpad.webapp.publisher import (
 from canonical.widgets import DateWidget
 from canonical.widgets.popup import PersonPickerWidget
 from lp.services.fields import PersonChoice
+from lp.services.propertycache import cachedproperty
 from lp.soyuz.browser.sourceslist import (
     SourcesListEntries,
     SourcesListEntriesView,

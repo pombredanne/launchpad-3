@@ -20,7 +20,6 @@ from zope.component import getUtility
 from zope.interface import Interface
 from zope.security.proxy import removeSecurityProxy
 
-from lp.services.propertycache import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.webapp import (
     action,
@@ -37,6 +36,7 @@ from lp.registry.interfaces.mailinglist import (
     MailingListStatus,
     )
 from lp.registry.interfaces.person import ITeam
+from lp.services.propertycache import cachedproperty
 
 
 class ReviewForm(Interface):

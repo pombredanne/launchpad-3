@@ -29,7 +29,6 @@ from zope.interface import (
     )
 from zope.schema import Choice
 
-from lp.services.propertycache import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.webapp import (
     action,
@@ -75,6 +74,7 @@ from lp.registry.interfaces.milestone import (
     IProjectGroupMilestone,
     )
 from lp.registry.interfaces.product import IProduct
+from lp.services.propertycache import cachedproperty
 
 
 class MilestoneSetNavigation(GetitemNavigation):

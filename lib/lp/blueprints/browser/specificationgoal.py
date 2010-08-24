@@ -12,7 +12,6 @@ __all__ = [
 
 from zope.component import getUtility
 
-from lp.services.propertycache import cachedproperty
 from canonical.launchpad.webapp import (
     canonical_url,
     LaunchpadView,
@@ -20,6 +19,7 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.blueprints.browser.specificationtarget import HasSpecificationsView
 from lp.blueprints.interfaces.specification import SpecificationFilter
+from lp.services.propertycache import cachedproperty
 
 
 class GoalDecideView(HasSpecificationsView, LaunchpadView):

@@ -30,7 +30,6 @@ from storm.store import Store
 from zope.component import getUtility
 from zope.interface import implements
 
-from lp.services.propertycache import cachedproperty
 from canonical.database.constants import (
     DEFAULT,
     UTC_NOW,
@@ -59,6 +58,7 @@ from lp.registry.interfaces.sourcepackage import (
     SourcePackageType,
     SourcePackageUrgency,
     )
+from lp.services.propertycache import cachedproperty
 from lp.soyuz.interfaces.archive import (
     IArchiveSet,
     MAIN_ARCHIVE_PURPOSES,

@@ -41,7 +41,6 @@ from zope.schema.vocabulary import (
     SimpleVocabulary,
     )
 
-from lp.services.propertycache import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
 from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
@@ -91,6 +90,7 @@ from lp.registry.interfaces.person import (
     )
 from lp.registry.interfaces.teammembership import TeamMembershipStatus
 from lp.services.fields import PublicPersonChoice
+from lp.services.propertycache import cachedproperty
 
 
 class TeamPrivacyAdapter:

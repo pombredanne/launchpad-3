@@ -29,7 +29,6 @@ from zope.schema.vocabulary import (
     SimpleVocabulary,
     )
 
-from lp.services.propertycache import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.browser.multistep import (
     MultiStepView,
@@ -85,6 +84,7 @@ from lp.registry.interfaces.product import (
     License,
     )
 from lp.services.fields import StrippedTextLine
+from lp.services.propertycache import cachedproperty
 
 
 class BugAlsoAffectsProductMetaView(MultiStepView):

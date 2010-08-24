@@ -24,7 +24,6 @@ from zope.app.form.browser import DropdownWidget
 from zope.component import getUtility
 from zope.publisher.browser import FileUpload
 
-from lp.services.propertycache import cachedproperty
 from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.webapp import (
@@ -43,6 +42,7 @@ from lp.app.errors import (
     UnexpectedFormData,
     )
 from lp.registry.interfaces.person import IPersonSet
+from lp.services.propertycache import cachedproperty
 from lp.translations.browser.poexportrequest import BaseExportView
 from lp.translations.browser.potemplate import POTemplateFacets
 from lp.translations.browser.translationmessage import (

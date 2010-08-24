@@ -70,10 +70,6 @@ from zope.interface import (
     providedBy,
     )
 
-from lp.services.propertycache import (
-    cachedproperty,
-    IPropertyCache,
-    )
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -186,6 +182,10 @@ from lp.registry.model.person import (
     )
 from lp.registry.model.pillar import pillar_sort_key
 from lp.services.fields import DuplicateBug
+from lp.services.propertycache import (
+    cachedproperty,
+    IPropertyCache,
+    )
 
 
 _bug_tag_query_template = """

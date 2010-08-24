@@ -16,7 +16,6 @@ __all__ = [
 
 from zope.component import getUtility
 
-from lp.services.propertycache import cachedproperty
 from canonical.launchpad import helpers
 from canonical.launchpad.webapp import action
 from canonical.launchpad.webapp.authorization import check_permission
@@ -33,6 +32,7 @@ from canonical.launchpad.webapp.publisher import (
 from lp.app.errors import TranslationUnavailable
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.propertycache import cachedproperty
 from lp.translations.browser.potemplate import BaseSeriesTemplatesView
 from lp.translations.browser.translations import TranslationsMixin
 from lp.translations.interfaces.distroserieslanguage import (

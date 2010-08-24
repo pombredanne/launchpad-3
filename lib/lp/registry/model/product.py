@@ -38,10 +38,6 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
-from lp.services.propertycache import (
-    cachedproperty,
-    IPropertyCache,
-    )
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
@@ -153,6 +149,10 @@ from lp.registry.model.structuralsubscription import (
     StructuralSubscriptionTargetMixin,
     )
 from lp.services.database.prejoin import prejoin
+from lp.services.propertycache import (
+    cachedproperty,
+    IPropertyCache,
+    )
 from lp.translations.interfaces.customlanguagecode import (
     IHasCustomLanguageCodes,
     )

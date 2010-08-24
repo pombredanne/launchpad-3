@@ -38,7 +38,6 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.buildd.slave import BuilderStatus
-from lp.services.propertycache import cachedproperty
 from canonical.config import config
 from canonical.database.sqlbase import (
     SQLBase,
@@ -80,6 +79,7 @@ from lp.registry.interfaces.person import validate_public_person
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from lp.services.osutils import until_no_eintr
+from lp.services.propertycache import cachedproperty
 # XXX Michael Nelson 2010-01-13 bug=491330
 # These dependencies on soyuz will be removed when getBuildRecords()
 # is moved.

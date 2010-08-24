@@ -50,6 +50,8 @@ from datetime import (
     )
 from operator import attrgetter
 
+from lazr.delegates import delegates
+from lazr.restful.interface import copy_field
 import pytz
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form.browser import (
@@ -75,10 +77,7 @@ from zope.schema.vocabulary import (
     )
 from zope.security.proxy import removeSecurityProxy
 
-from lp.services.propertycache import cachedproperty
 from canonical.config import config
-from lazr.delegates import delegates
-from lazr.restful.interface import copy_field
 from canonical.launchpad import (
     _,
     helpers,
@@ -190,6 +189,7 @@ from lp.services.fields import (
     PillarAliases,
     PublicPersonChoice,
     )
+from lp.services.propertycache import cachedproperty
 from lp.services.worlddata.interfaces.country import ICountry
 from lp.translations.browser.customlanguagecode import (
     HasCustomLanguageCodesTraversalMixin,

@@ -26,7 +26,6 @@ from zope.schema import (
     TextLine,
     )
 
-from lp.services.propertycache import cachedproperty
 from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.browser.feeds import (
@@ -58,6 +57,7 @@ from lp.services.fields import (
     Summary,
     Title,
     )
+from lp.services.propertycache import cachedproperty
 
 
 class AnnouncementMenuMixin:

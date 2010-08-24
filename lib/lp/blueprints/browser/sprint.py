@@ -30,7 +30,6 @@ from zope.app.form.browser import TextAreaWidget
 from zope.component import getUtility
 from zope.interface import implements
 
-from lp.services.propertycache import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.webapp import (
@@ -71,6 +70,7 @@ from lp.registry.browser.menu import (
     IRegistryCollectionNavigationMenu,
     RegistryCollectionActionMenuBase,
     )
+from lp.services.propertycache import cachedproperty
 
 
 class SprintFacets(StandardLaunchpadFacets):

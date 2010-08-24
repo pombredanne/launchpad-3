@@ -45,7 +45,6 @@ from cscvs.cmds import totla
 import CVS
 import SCM
 
-from lp.services.propertycache import cachedproperty
 from canonical.config import config
 from lp.code.enums import RevisionControlSystems
 from lp.codehosting.codeimport.foreigntree import (
@@ -57,6 +56,7 @@ from lp.codehosting.codeimport.tarball import (
     extract_tarball,
     )
 from lp.codehosting.codeimport.uifactory import LoggingUIFactory
+from lp.services.propertycache import cachedproperty
 
 
 class CodeImportWorkerExitCode:

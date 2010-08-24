@@ -25,7 +25,6 @@ from zope.schema.vocabulary import (
     SimpleVocabulary,
     )
 
-from lp.services.propertycache import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.webapp import (
     action,
@@ -40,6 +39,7 @@ from canonical.widgets.lazrjs import vocabulary_to_choice_edit_items
 from lp.app.errors import UnexpectedFormData
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.pillar import IPillarNameSet
+from lp.services.propertycache import cachedproperty
 from lp.translations.interfaces.translationimportqueue import (
     IHasTranslationImports,
     ITranslationImportQueue,

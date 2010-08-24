@@ -141,10 +141,6 @@ from zope.schema.vocabulary import (
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from lp.services.propertycache import (
-    cachedproperty,
-    IPropertyCache,
-    )
 from canonical.config import config
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad import (
@@ -307,6 +303,10 @@ from lp.services.openid.browser.openiddiscovery import (
     )
 from lp.services.openid.interfaces.openid import IOpenIDPersistentIdentity
 from lp.services.openid.interfaces.openidrpsummary import IOpenIDRPSummarySet
+from lp.services.propertycache import (
+    cachedproperty,
+    IPropertyCache,
+    )
 from lp.services.salesforce.interfaces import (
     ISalesforceVoucherProxy,
     SalesforceVoucherProxyException,
