@@ -32,7 +32,10 @@ from zope.interface import implements
 from zope.security.proxy import isinstance as zisinstance
 from zope.session.interfaces import ISession
 
-from canonical.cachedproperty import cachedproperty
+from lp.services.propertycache import (
+    cachedproperty,
+    IPropertyCache,
+    )
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.account import (
     AccountStatus,
@@ -142,7 +145,7 @@ class OpenIDMixin:
         return (self.openid_request.idSelect() or
                 self.openid_request.identity == self.user_identity_url)
 
-    @cachedproperty('_openid_parameters')
+    @cachedproperty
     def openid_parameters(self):
         """A dictionary of OpenID query parameters from request."""
         query = {}
@@ -165,8 +168,9 @@ class OpenIDMixin:
     def restoreRequestFromSession(self):
         """Get the OpenIDRequest from our session."""
         session = self.getSession()
+        cache = IPropertyCache(self)
         try:
-            self._openid_parameters = session[OPENID_REQUEST_SESSION_KEY]
+            cache.openid_parameters = session[OPENID_REQUEST_SESSION_KEY]
         except KeyError:
             raise UnexpectedFormData("No OpenID request in session")
 
