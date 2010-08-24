@@ -104,7 +104,6 @@ from canonical.launchpad.validators.name import (
     name_validator,
     valid_name,
     )
-from lp.app.enums import ServiceUsage
 from lp.registry.interfaces.pillar import IPillarNameSet
 
 # Marker object to tell BaseImageUpload to keep the existing image.
@@ -554,7 +553,7 @@ class ProductBugTracker(Choice):
     It accepts all the values in the vocabulary, as well as a special
     marker object, which represents the Malone bug tracker.
     This field uses two attributes on the Product to model its state:
-    'bug_tracking_usage' and 'bugtracker'
+    'official_malone' and 'bugtracker'
     """
     implements(IReferenceChoice)
     malone_marker = object()
@@ -566,7 +565,7 @@ class ProductBugTracker(Choice):
         return IBugTracker
 
     def get(self, ob):
-        if ob.bug_tracking_usage == ServiceUsage.LAUNCHPAD:
+        if ob.official_malone:
             return self.malone_marker
         else:
             return getattr(ob, self.__name__)
@@ -575,11 +574,10 @@ class ProductBugTracker(Choice):
         if self.readonly:
             raise TypeError("Can't set values on read-only fields.")
         if value is self.malone_marker:
-            ob.bug_tracking_usage = ServiceUsage.LAUNCHPAD
+            ob.official_malone = True
             setattr(ob, self.__name__, None)
         else:
-            # TODO: this needs to be smarter 
-            ob.bug_tracking_usage = ServiceUsage.UNKNOWN
+            ob.official_malone = False
             setattr(ob, self.__name__, value)
 
 
