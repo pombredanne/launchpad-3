@@ -9,7 +9,10 @@ __all__ = [
     'DistroSeriesDifferenceStatus',
     ]
 
-from lazr.enum import DBEnumeratedType, DBItem
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    )
 
 
 class BugNotificationLevel(DBEnumeratedType):

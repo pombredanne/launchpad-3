@@ -12,25 +12,30 @@ __all__ = [
     'with_interaction',
     ]
 
-import sys
-
 from contextlib import contextmanager
 from functools import wraps
+import sys
 
 from zope.component import getUtility
-from zope.security.management import endInteraction, queryInteraction
+from zope.security.management import (
+    endInteraction,
+    queryInteraction,
+    )
 
 from canonical.launchpad.webapp.adapter import (
-    clear_request_started, get_request_start_time, set_request_started)
+    clear_request_started,
+    get_request_start_time,
+    set_request_started,
+    )
 from canonical.launchpad.webapp.errorlog import (
-    ErrorReportingUtility, ScriptRequest)
-from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
+    ErrorReportingUtility,
+    ScriptRequest,
+    )
 from canonical.launchpad.webapp.interaction import setupInteraction
-
+from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 from lp.bugs.externalbugtracker import BugWatchUpdateWarning
 from lp.bugs.externalbugtracker.isolation import check_no_transaction
 from lp.services.limitedlist import LimitedList
-
 
 # For OOPS reporting keep up to this number of SQL statements.
 MAX_SQL_STATEMENTS_LOGGED = 10000

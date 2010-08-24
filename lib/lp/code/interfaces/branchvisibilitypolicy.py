@@ -17,8 +17,8 @@ from zope.interface import Interface
 from zope.schema import Choice
 
 from canonical.launchpad import _
-from lp.services.fields import PersonChoice
 from lp.code.enums import TeamBranchVisibilityRule
+from lp.services.fields import PersonChoice
 
 
 class InvalidVisibilityPolicy(Exception):

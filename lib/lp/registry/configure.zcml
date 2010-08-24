@@ -320,9 +320,16 @@
             attributes="
                 aliases"/>
         <require
-            permission="launchpad.Admin"
+            permission="launchpad.Moderate"
             attributes="
                 setAliases"/>
+
+        <!-- IProjectGroupModerate -->
+	<allow
+	    interface="lp.registry.interfaces.projectgroup.IProjectGroupModerate"/>
+        <require
+            permission="launchpad.Moderate"
+            set_schema="lp.registry.interfaces.projectgroup.IProjectGroupModerate"/>
     </class>
     <adapter
         for="lp.registry.interfaces.projectgroup.IProjectGroup"
@@ -832,8 +839,12 @@
                 interface="lp.registry.interfaces.person.IPersonEditRestricted"/>
             <require
                 permission="launchpad.Edit"
-                set_schema="lp.registry.interfaces.person.IPersonPublic                                                                         lp.registry.interfaces.person.ITeamPublic"
-                set_attributes="name displayname"/>
+                set_schema="lp.registry.interfaces.person.IPersonPublic
+                            lp.registry.interfaces.person.ITeamPublic"
+                set_attributes="displayname"/>
+            <require
+                permission="launchpad.Moderate"
+                set_attributes="name"/>
             <require
                 permission="launchpad.Moderate"
                 interface="lp.registry.interfaces.person.IPersonModerate" />
@@ -844,7 +855,7 @@
                 permission="launchpad.Special"
                 interface="lp.registry.interfaces.person.IPersonSpecialRestricted"/>
             <require
-                permission="launchpad.Edit"
+                permission="launchpad.Moderate"
                 set_schema="lp.registry.interfaces.person.IHasStanding"/>
         </class>
 
@@ -1097,6 +1108,9 @@
             interface="lp.registry.interfaces.product.IProductEditRestricted"/>
         <require
             permission="launchpad.Edit"
+            set_schema="lp.app.interfaces.launchpad.IServiceUsage"/>
+        <require
+            permission="launchpad.Edit"
             set_attributes="bug_reporting_guidelines
                             bug_reported_acknowledgement bugtracker
                             commercial_subscription description
@@ -1124,8 +1138,9 @@
         <!-- https://lists.ubuntu.com/mailman/private/launchpad/2007-April/015189.html
                         for further discussion - stub 20070411 -->
 
+	<!-- Per bug 588773, changing to launchpad.Moderate to allow Registry Experts (~registry) -->
         <require
-            permission="launchpad.Admin"
+            permission="launchpad.Moderate"
             set_attributes="name autoupdate registrant"/>
         <require
             permission="launchpad.TranslationsAdmin"
@@ -1160,7 +1175,7 @@
             attributes="
                 aliases"/>
         <require
-            permission="launchpad.Admin"
+            permission="launchpad.Moderate"
             attributes="
                 setAliases"/>
 
@@ -1408,6 +1423,9 @@
         <require
             permission="launchpad.Edit"
             interface="lp.registry.interfaces.distribution.IDistributionEditRestricted"/>
+        <require
+            permission="launchpad.Edit"
+            set_schema="lp.app.interfaces.launchpad.IServiceUsage"/>
         <require
             permission="launchpad.Moderate"
             interface="lp.registry.interfaces.distribution.IDistributionDriverRestricted"/>

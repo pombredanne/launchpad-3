@@ -14,21 +14,34 @@ import logging
 from unittest import TestLoader
 
 from bzrlib import trace
-
 import transaction
-
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.testing import verifyObject
-from canonical.testing import LaunchpadFunctionalLayer, LaunchpadZopelessLayer
+from canonical.testing import (
+    LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
 from lp.app.errors import NotFoundError
-from lp.code.model.diff import Diff, PreviewDiff, StaticDiff
-from lp.code.model.directbranchcommit import DirectBranchCommit
 from lp.code.interfaces.diff import (
-    IDiff, IPreviewDiff, IStaticDiff, IStaticDiffSource)
-from lp.testing import login, login_person, TestCaseWithFactory
+    IDiff,
+    IPreviewDiff,
+    IStaticDiff,
+    IStaticDiffSource,
+    )
+from lp.code.model.diff import (
+    Diff,
+    PreviewDiff,
+    StaticDiff,
+    )
+from lp.code.model.directbranchcommit import DirectBranchCommit
 from lp.services.osutils import override_environ
+from lp.testing import (
+    login,
+    login_person,
+    TestCaseWithFactory,
+    )
 
 
 class RecordLister(logging.Handler):

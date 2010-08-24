@@ -8,13 +8,8 @@ __all__ = []
 __metaclass__ = type
 
 import canonical.config
-
-from lp.services.features import (
-    per_thread,
-    )
-from lp.services.features.flags import (
-    FeatureController,
-    )
+from lp.services.features import per_thread
+from lp.services.features.flags import FeatureController
 
 
 class ScopesFromRequest(object):

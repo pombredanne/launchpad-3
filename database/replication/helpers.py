@@ -52,6 +52,7 @@ LPMAIN_SEED = frozenset([
     ('public', 'parsedapachelog'),
     ('public', 'shipitsurvey'),
     ('public', 'databasereplicationlag'),
+    ('public', 'featureflag'),
     ])
 
 # Explicitly list tables that should not be replicated. This includes the

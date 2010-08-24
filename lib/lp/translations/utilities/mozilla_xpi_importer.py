@@ -14,21 +14,23 @@ import textwrap
 from zope.component import getUtility
 from zope.interface import implements
 
+from canonical.librarian.interfaces import ILibrarianClient
 from lp.translations.interfaces.translationfileformat import (
-    TranslationFileFormat)
+    TranslationFileFormat,
+    )
 from lp.translations.interfaces.translationimporter import (
     ITranslationFormatImporter,
     TranslationFormatInvalidInputError,
-    TranslationFormatSyntaxError)
+    TranslationFormatSyntaxError,
+    )
 from lp.translations.interfaces.translations import TranslationConstants
+from lp.translations.utilities.mozilla_dtd_parser import DtdFile
+from lp.translations.utilities.mozilla_zip import MozillaZipTraversal
 from lp.translations.utilities.translation_common_format import (
     TranslationFileData,
-    TranslationMessageData)
-from lp.translations.utilities.mozilla_dtd_parser import DtdFile
-from lp.translations.utilities.mozilla_zip import (
-    MozillaZipTraversal)
+    TranslationMessageData,
+    )
 from lp.translations.utilities.xpi_header import XpiHeader
-from canonical.librarian.interfaces import ILibrarianClient
 
 
 def add_source_comment(message, comment):

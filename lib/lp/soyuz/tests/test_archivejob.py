@@ -1,9 +1,11 @@
 import unittest
 
 from canonical.testing import DatabaseFunctionalLayer
-
 from lp.soyuz.interfaces.archivejob import ArchiveJobType
-from lp.soyuz.model.archivejob import ArchiveJob, ArchiveJobDerived
+from lp.soyuz.model.archivejob import (
+    ArchiveJob,
+    ArchiveJobDerived,
+    )
 from lp.testing import TestCaseWithFactory
 
 

@@ -73,7 +73,7 @@ about the current release is displayed.
     >>> published_distro_series = factory.makeDistroRelease(
     ...     published_distro, name='published-distro-series')
     >>> publisher.setUpDefaultDistroSeries(published_distro_series)
-    <DistroSeries at ...>
+    <DistroSeries u'published-distro-series'>
     >>> print publisher.person.unique_displayname
     Foo Bar (name16)
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')

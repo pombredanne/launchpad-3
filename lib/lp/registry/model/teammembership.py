@@ -10,39 +10,56 @@ __all__ = [
     'TeamParticipation',
     ]
 
-from datetime import datetime, timedelta
+from datetime import (
+    datetime,
+    timedelta,
+    )
+
 import pytz
-
+from sqlobject import (
+    ForeignKey,
+    StringCol,
+    )
 from storm.locals import Store
-
 from zope.component import getUtility
 from zope.interface import implements
 
-from sqlobject import ForeignKey, StringCol
-
-from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.database.sqlbase import (
-    flush_database_updates, SQLBase, sqlvalues)
+from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-
-from canonical.config import config
-
-from canonical.launchpad.mail import format_address, simple_sendmail
-from canonical.launchpad.mailnotification import MailWrapper
+from canonical.database.sqlbase import (
+    flush_database_updates,
+    SQLBase,
+    sqlvalues,
+    )
 from canonical.launchpad.helpers import (
-    get_contact_email_addresses, get_email_template)
-from lp.registry.interfaces.person import validate_public_person
+    get_contact_email_addresses,
+    get_email_template,
+    )
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from lp.registry.interfaces.person import (
-    IPersonSet, TeamMembershipRenewalPolicy)
-from lp.registry.interfaces.teammembership import (
-    CyclicalTeamMembershipError, DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT,
-    ITeamMembership, ITeamMembershipSet, ITeamParticipation,
-    TeamMembershipStatus, UserCannotChangeMembershipSilently)
+from canonical.launchpad.interfaces.lpstorm import IStore
+from canonical.launchpad.mail import (
+    format_address,
+    simple_sendmail,
+    )
+from canonical.launchpad.mailnotification import MailWrapper
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.tales import DurationFormatterAPI
+from lp.registry.interfaces.person import (
+    IPersonSet,
+    TeamMembershipRenewalPolicy,
+    validate_public_person,
+    )
+from lp.registry.interfaces.teammembership import (
+    CyclicalTeamMembershipError,
+    DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT,
+    ITeamMembership,
+    ITeamMembershipSet,
+    ITeamParticipation,
+    TeamMembershipStatus,
+    UserCannotChangeMembershipSilently,
+    )
 
 
 ACTIVE_STATES = [TeamMembershipStatus.ADMIN, TeamMembershipStatus.APPROVED]

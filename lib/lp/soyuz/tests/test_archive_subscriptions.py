@@ -6,9 +6,11 @@
 from zope.security.interfaces import Unauthorized
 
 from canonical.testing import DatabaseFunctionalLayer
-
 from lp.registry.interfaces.person import PersonVisibility
-from lp.testing import login_person, TestCaseWithFactory
+from lp.testing import (
+    login_person,
+    TestCaseWithFactory,
+    )
 
 
 class TestArchiveSubscriptions(TestCaseWithFactory):

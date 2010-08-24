@@ -14,16 +14,25 @@ from urllib import urlencode
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
-from lp.answers.interfaces.faqcollection import (
-    IFAQCollection, ISearchFAQsForm, FAQSort)
-from lp.answers.interfaces.questionenums import QuestionSort
-from lp.answers.interfaces.questioncollection import (
-    QUESTION_STATUS_DEFAULT_SEARCH)
 from canonical.launchpad.webapp import (
-    action, NavigationMenu, canonical_url, LaunchpadFormView, Link,
-    safe_action)
+    action,
+    canonical_url,
+    LaunchpadFormView,
+    Link,
+    NavigationMenu,
+    safe_action,
+    )
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.menu import enabled_with_permission
+from lp.answers.interfaces.faqcollection import (
+    FAQSort,
+    IFAQCollection,
+    ISearchFAQsForm,
+    )
+from lp.answers.interfaces.questioncollection import (
+    QUESTION_STATUS_DEFAULT_SEARCH,
+    )
+from lp.answers.interfaces.questionenums import QuestionSort
 from lp.registry.interfaces.projectgroup import IProjectGroup
 
 

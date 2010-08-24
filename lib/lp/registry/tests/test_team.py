@@ -6,16 +6,18 @@
 __metaclass__ = type
 
 import transaction
-
 from zope.component import getUtility
 
 from canonical.launchpad.database.emailaddress import EmailAddress
 from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.testing import DatabaseFunctionalLayer
-
 from lp.registry.interfaces.mailinglist import MailingListStatus
-from lp.testing import login_celebrity, login_person, TestCaseWithFactory
+from lp.testing import (
+    login_celebrity,
+    login_person,
+    TestCaseWithFactory,
+    )
 
 
 class TestTeamContactAddress(TestCaseWithFactory):
