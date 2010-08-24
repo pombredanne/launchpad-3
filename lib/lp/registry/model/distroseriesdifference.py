@@ -20,6 +20,7 @@ from zope.interface import implements
 from canonical.database.enumcol import DBEnum
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from lp.registry.enum import DistroSeriesDifferenceStatus
+from lp.registry.exceptions import NotADerivedSeriesError
 from lp.registry.interfaces.distroseriesdifference import (
     IDistroSeriesDifference,
     )
@@ -56,6 +57,9 @@ class DistroSeriesDifference(Storm):
     def new(derived_series, source_package=None, parent_source_package=None,
             status=DistroSeriesDifferenceStatus.NEEDS_ATTENTION):
         """See `IDistroSeriesDifference`."""
+        if derived_series.parent_series is None:
+            raise NotADerivedSeriesError()
+
         store = IMasterStore(DistroSeriesDifference)
         diff = DistroSeriesDifference()
         diff.derived_series = derived_series
