@@ -506,8 +506,7 @@ COMMENT ON COLUMN DistributionSourcePackageCache.archive IS 'The archive where t
 -- DistroSeriesDifference
 COMMENT ON TABLE DistroSeriesDifference IS 'A difference of versions for a package in a derived distroseries and its parent distroseries.';
 COMMENT ON COLUMN DistroSeriesDifference.derived_series IS 'The derived distroseries with the difference from its parent.';
-COMMENT ON COLUMN DistroSeriesDifference.source_package_publishing_history IS 'The latest published version of the package in the derived distro series.';
-COMMENT ON COLUMN DistroSeriesDifference.parent_source_package_publishing_history IS 'The latest published version of the package in the parent distro series.';
+COMMENT ON COLUMN DistroSeriesDifference.source_package_name IS 'The name of the source package which is different in the two series.';
 COMMENT ON COLUMN DistroSeriesDifference.activity_log IS 'A log of actions and/or comments by users regarding action to be taken.';
 COMMENT ON COLUMN DistroSeriesDifference.status IS 'A distroseries difference can be ignored or resolved.';
 
