@@ -61,7 +61,7 @@ class InvolvedMenu(NavigationMenu):
     def report_bug(self):
         return Link(
             '+filebug', 'Report a bug', site='bugs', icon='bugs',
-            enabled=self.pillar.bug_tracking_usage == ServiceUsage.LAUNCHPAD)
+            enabled=self.pillar.official_malone)
 
     def ask_question(self):
         return Link(
@@ -136,7 +136,7 @@ class PillarView(LaunchpadView):
     def has_involvement(self):
         """This `IPillar` uses Launchpad."""
         return (
-            (self.bug_tracking_usage == ServiceUsage.LAUNCHPAD)
+            self.official_malone
             or self.official_answers
             or self.official_blueprints or self.official_rosetta
             or self.official_codehosting)
