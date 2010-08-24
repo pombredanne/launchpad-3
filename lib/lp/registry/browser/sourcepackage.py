@@ -73,6 +73,7 @@ from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.lazr.utils import smartquote
 from canonical.widgets import LaunchpadRadioWidget
+from lp.app.enums import ServiceUsage
 from lp.answers.browser.questiontarget import (
     QuestionTargetAnswersMenu,
     QuestionTargetFacetMixin,
@@ -575,7 +576,7 @@ class SourcePackageUpstreamConnectionsView(LaunchpadView):
         if self.context.productseries is None:
             return False
         product = self.context.productseries.product
-        if product.official_malone:
+        if product.bug_tracking_usage == ServiceUsage.LAUNCHPAD:
             return True
         bugtracker = product.bugtracker
         if bugtracker is None:

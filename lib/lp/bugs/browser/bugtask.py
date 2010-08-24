@@ -1668,7 +1668,7 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
 
         new_product = data.get('product')
         if (old_product is None or old_product == new_product or
-            not bugtask.pillar.official_malone):
+            bugtask.pillar.bug_tracking_usage != ServiceUsage.LAUNCHPAD):
             # Either the product wasn't changed, we're dealing with a #
             # distro task, or the bugtask's product doesn't use Launchpad,
             # which means the product can't be changed.
@@ -1994,7 +1994,7 @@ class BugsInfoMixin:
         """
         if not IProduct.providedBy(self.context):
             return None
-        if self.context.official_malone:
+        if self.context.bug_tracking_usage == ServiceUsage.LAUNCHPAD:
             return None
         return "%s?field.status_upstream=pending_bugwatch" % (
             canonical_url(self.context, view_name='+bugs'))
@@ -2081,7 +2081,7 @@ class BugsStatsMixin(BugsInfoMixin):
         """
         if not IProduct.providedBy(self.context):
             return None
-        if self.context.official_malone:
+        if self.context.bug_tracking_usage == ServiceUsage.LAUNCHPAD:
             return None
         params = get_default_search_params(self.user)
         params.pending_bugwatch_elsewhere = True
@@ -2997,7 +2997,7 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
         """Is the context a Product that does not use Malone?"""
         return (
             IProduct.providedBy(self.context)
-            and not self.context.official_malone)
+            and self.context.bug_tracking_usage != ServiceUsage.LAUNCHPAD)
 
     def _upstreamContext(self):
         """Is this page being viewed in an upstream context?

@@ -92,6 +92,7 @@ from canonical.launchpad.webapp.interfaces import (
     MAIN_STORE,
     SLAVE_FLAVOR,
     )
+from lp.app.enums import ServiceUsage
 from lp.app.errors import NotFoundError
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugattachment import BugAttachmentType
@@ -840,7 +841,7 @@ class BugTask(SQLBase, BugTaskMixin):
         """See `IBugTask`"""
         # XXX sinzui 2007-10-04 bug=149009:
         # This property is not needed. Code should inline this implementation.
-        return self.pillar.official_malone
+        return (self.pillar.bug_tracking_usage == ServiceUsage.LAUNCHPAD)
 
     def transitionToMilestone(self, new_milestone, user):
         """See `IBugTask`."""
@@ -1939,6 +1940,7 @@ class BugTaskSet:
         This method will handles BugTasks that do not have upstream BugTasks
         as well as thoses that do.
         """
+        # TODO: Update this sql to use the usage enum values
         upstream_clauses = []
         if params.pending_bugwatch_elsewhere:
             if params.product:

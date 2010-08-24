@@ -96,6 +96,7 @@ from lp.app.errors import (
     NotFoundError,
     UnexpectedFormData,
     )
+from lp.app.enums import ServiceUsage
 from lp.app.interfaces.launchpad import ILaunchpadUsage
 from lp.bugs.browser.bugrole import BugRoleMixin
 from lp.bugs.browser.bugtask import BugTaskSearchListingView
@@ -384,7 +385,7 @@ class FileBugViewBase(LaunchpadFormView):
         # actually uses Malone for its bug tracking.
         product_or_distro = self.getProductOrDistroFromContext()
         if (product_or_distro is not None and
-            not product_or_distro.official_malone):
+            product_or_distro.bug_tracking_usage != ServiceUsage.LAUNCHPAD):
             self.setFieldError(
                 'bugtarget',
                 "%s does not use Launchpad as its bug tracker " %
@@ -421,15 +422,18 @@ class FileBugViewBase(LaunchpadFormView):
         self.form_fields = self.form_fields.omit('security_related')
         self.form_fields += formlib.form.Fields(security_related_field)
 
+    # XXX jcsackett 2010-08-23: Calls to contextUsesMalone should be updated
+    # to take advantage of the extra data provided by the service usage
+    # enums.
     def contextUsesMalone(self):
         """Does the context use Malone as its official bugtracker?"""
         if IProjectGroup.providedBy(self.context):
             products_using_malone = [
                 product for product in self.context.products
-                if product.official_malone]
+                if product.bug_tracking_usage == ServiceUsage.LAUNCHPAD]
             return len(products_using_malone) > 0
         else:
-            return self.getMainContext().official_malone
+            return self.getMainContext().bug_tracking_usage == ServiceUsage.LAUNCHPAD
 
     def getMainContext(self):
         if IDistributionSourcePackage.providedBy(self.context):
@@ -1084,7 +1088,7 @@ class ProjectFileBugGuidedView(FileBugGuidedView):
     def products_using_malone(self):
         return [
             product for product in self.context.products
-            if product.official_malone]
+            if product.bug_tracking_usage == ServiceUsage.LAUNCHPAD]
 
     @property
     def default_product(self):
@@ -1246,6 +1250,7 @@ class BugTargetBugsView(BugTaskSearchListingView, FeedsMixin):
         if IDistroSeries.providedBy(self.context):
             bug_statuses_to_show.append(BugTaskStatus.FIXRELEASED)
 
+    # TODO: Figure out how to update this.
     @property
     def uses_launchpad_bugtracker(self):
         """Whether this distro or product tracks bugs in launchpad.

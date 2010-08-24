@@ -56,6 +56,7 @@ from canonical.widgets.bugtask import (
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 from canonical.widgets.popup import SearchForUpstreamPopupWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
+from lp.app.enums import ServiceUsage
 from lp.bugs.interfaces.bug import IBug
 from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
@@ -319,10 +320,11 @@ class BugTaskCreationStep(AlsoAffectsStep):
             if bug_watch is None:
                 bug_watch = task_added.bug.addWatch(
                     extracted_bugtracker, extracted_bug, self.user)
-            if not target.official_malone:
+            if target.bug_tracking_usage != ServiceUsage.LAUNCHPAD:
                 task_added.bugwatch = bug_watch
 
-        if (not target.official_malone and task_added.bugwatch is not None
+        if (target.bug_tracking_usage != ServiceUsage.LAUNCHPAD 
+            and task_added.bugwatch is not None
             and (task_added.bugwatch.bugtracker.bugtrackertype !=
                  BugTrackerType.EMAILADDRESS)):
             # A remote bug task gets its status from a bug watch, so
@@ -371,7 +373,7 @@ class DistroBugTaskCreationStep(BugTaskCreationStep):
 
         if (not bug_url and
             not self.request.get('ignore_missing_remote_bug') and
-            not target.official_malone):
+            target.bug_tracking_usage != Service.LAUNCHPAD):
             # We have no URL for the remote bug and the target does not use
             # Launchpad for bug tracking, so we warn the user this is not
             # optimal and ask for his confirmation.
@@ -404,7 +406,7 @@ class DistroBugTaskCreationStep(BugTaskCreationStep):
         """
         target = self.getTarget(data)
         bug_url = data.get('bug_url')
-        if bug_url and target.official_malone:
+        if bug_url and target.bug_tracking_usage == ServiceUsage.LAUNCHPAD:
             self.addError(
                 "Bug watches can not be added for %s, as it uses Launchpad"
                 " as its official bug tracker. Alternatives are to add a"

@@ -17,6 +17,7 @@ from canonical.launchpad.ftests import (
     )
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.testing import DatabaseFunctionalLayer
+from lp.app.enums import ServiceUsage
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
@@ -73,7 +74,7 @@ class BugTaskSearchBugsElsewhereTest(unittest.TestCase):
         # Mark an upstream task on bug #1 "Fix Released"
         bug_one = bugset.get(1)
         firefox_upstream = self._getBugTaskByTarget(bug_one, firefox)
-        self.assert_(firefox_upstream.product.official_malone)
+        self.assert_(firefox_upstream.product.bug_tracking_usage == ServiceUsage.LAUNCHPAD)
         self.old_firefox_status = firefox_upstream.status
         firefox_upstream.transitionToStatus(
             BugTaskStatus.FIXRELEASED, getUtility(ILaunchBag).user)

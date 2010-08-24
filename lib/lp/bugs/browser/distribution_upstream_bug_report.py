@@ -17,6 +17,7 @@ from canonical.launchpad.webapp.publisher import (
     LaunchpadView,
     )
 from canonical.launchpad.webapp.url import urlappend
+from lp.app.enums import ServiceUsage
 from lp.bugs.browser.bugtask import get_buglisting_search_filter_url
 
 # TODO: fix column sorting to work for the different colspans, or
@@ -162,11 +163,11 @@ class PackageBugReportData(BugReportData):
         self.open_bugs_url = urlappend(
             dsp_bugs_url, get_buglisting_search_filter_url())
 
-        self.official_malone = bool(product and product.official_malone)
-        self.branch = (
-            product and product.development_focus.branch)
-
-        # If a product is specified, build some convenient links to
+        # TODO: Circle back to get this, as you may have killed 
+        # references to it.
+        self.official_malone = bool(
+            product 
+            and product.bug_tracking_usage = ServiceUsage.LAUNCHPAD)
         # pages which allow filling out required information. The
         # template ensures they are only visible to people who can
         # actually change the product.
@@ -180,7 +181,7 @@ class PackageBugReportData(BugReportData):
             # Create a 'bugtracker_name' attribute for searching.
             if self.bugtracker is not None:
                 self.bugtracker_name = self.bugtracker.title
-            elif self.product.official_malone:
+            elif self.product.bug_tracking_usage == ServiceUsage.LAUNCHPAD:
                 self.bugtracker_name = 'Launchpad'
             else:
                 self.bugtracker_name = None

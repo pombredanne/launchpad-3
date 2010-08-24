@@ -20,6 +20,7 @@ from canonical.launchpad.ftests import login
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.testing import LaunchpadFunctionalLayer
+from lp.app.enums import ServiceUsage
 from lp.bugs.interfaces.bug import IBug
 from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
@@ -40,7 +41,7 @@ class TestBugChanges(unittest.TestCase):
         self.factory = LaunchpadObjectFactory()
         self.user = self.factory.makePerson(displayname='Arthur Dent')
         self.product = self.factory.makeProduct(
-            owner=self.user, official_malone=True)
+            owner=self.user, bug_tracking_usage=ServiceUsage.LAUNCHPAD)
         self.bug = self.factory.makeBug(product=self.product, owner=self.user)
         self.bug_task = self.bug.bugtasks[0]
 

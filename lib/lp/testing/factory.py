@@ -93,6 +93,7 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector,
     MAIN_STORE,
     )
+from lp.app.enums import ServiceUsage
 from lp.archiveuploader.dscfile import DSCFile
 from lp.archiveuploader.uploadpolicy import BuildDaemonUploadPolicy
 from lp.blueprints.interfaces.specification import (
@@ -806,7 +807,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
     def makeProduct(
         self, name=None, project=None, displayname=None,
         licenses=None, owner=None, registrant=None,
-        title=None, summary=None, official_malone=None,
+        title=None, summary=None, bug_tracking_usage=None,
         official_rosetta=None, bug_supervisor=None):
         """Create and return a new, arbitrary Product."""
         if owner is None:
@@ -834,8 +835,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             licenses=licenses,
             project=project,
             registrant=registrant)
-        if official_malone is not None:
-            product.official_malone = official_malone
+        if bug_tracking_usage is not None:
+            product.bug_tracking_usage = bug_tracking_usage 
         if official_rosetta is not None:
             removeSecurityProxy(product).official_rosetta = official_rosetta
         if bug_supervisor is not None:

@@ -31,6 +31,7 @@ from canonical.launchpad.webapp.publisher import (
     nearest,
     )
 from canonical.launchpad.webapp.tales import MenuAPI
+from lp.app.enums import ServiceUsage
 from lp.registry.browser.structuralsubscription import (
     StructuralSubscriptionMenuMixin,
     )
@@ -60,7 +61,7 @@ class InvolvedMenu(NavigationMenu):
     def report_bug(self):
         return Link(
             '+filebug', 'Report a bug', site='bugs', icon='bugs',
-            enabled=self.pillar.official_malone)
+            enabled=self.pillar.bug_tracking_usage == ServiceUsage.LAUNCHPAD)
 
     def ask_question(self):
         return Link(
@@ -92,7 +93,7 @@ class PillarView(LaunchpadView):
 
     def __init__(self, context, request):
         super(PillarView, self).__init__(context, request)
-        self.official_malone = False
+        self.bug_tracking_usage = ServiceUsage.UNKNOWN
         self.official_answers = False
         self.official_blueprints = False
         self.official_rosetta = False
@@ -120,8 +121,7 @@ class PillarView(LaunchpadView):
         """Does the pillar officially use launchpad."""
         # This if structure is required because it may be called many
         # times to build the complete set of official applications.
-        if pillar.official_malone:
-            self.official_malone = True
+        self.bug_tracking_usage = pillar.get_bug_tracking_usage
         if pillar.official_answers:
             self.official_answers = True
         if pillar.official_blueprints:
@@ -135,7 +135,8 @@ class PillarView(LaunchpadView):
     def has_involvement(self):
         """This `IPillar` uses Launchpad."""
         return (
-            self.official_malone or self.official_answers
+            (self.bug_tracking_usage == ServiceUsage.LAUNCHPAD)
+            or self.official_answers
             or self.official_blueprints or self.official_rosetta
             or self.official_codehosting)
 

@@ -87,6 +87,7 @@ from canonical.launchpad.webapp.vocabulary import (
     SQLObjectVocabularyBase,
     )
 from lp.app.browser.stringformatter import FormattersAPI
+from lp.app.enums import ServiceUsage
 from lp.blueprints.interfaces.specification import SpecificationFilter
 from lp.blueprints.model.specification import Specification
 from lp.blueprints.model.sprint import Sprint
@@ -382,7 +383,7 @@ def project_products_using_malone_vocabulary_factory(context):
     return SimpleVocabulary([
         SimpleTerm(product, product.name, title=product.displayname)
         for product in project.products
-        if product.official_malone])
+        if product.bug_tracking_usage == ServiceUsage.LAUNCHPAD])
 
 
 class TranslationGroupVocabulary(NamedSQLObjectVocabulary):
@@ -741,7 +742,8 @@ class DistributionUsingMaloneVocabulary:
         return Distribution.selectBy(official_malone=True).count()
 
     def __contains__(self, obj):
-        return IDistribution.providedBy(obj) and obj.official_malone
+        return (IDistribution.providedBy(obj)
+                and obj.bug_tracking_usage == ServiceUsage.LAUNCHPAD)
 
     def getQuery(self):
         return None
