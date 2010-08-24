@@ -9,10 +9,13 @@ import unittest
 from canonical.launchpad.ftests import login
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import LaunchpadFunctionalLayer
-
 from lp.bugs.browser.bugtarget import FileBugInlineFormView
-from lp.testing import login_person, TestCaseWithFactory
+from lp.testing import (
+    login_person,
+    TestCaseWithFactory,
+    )
 from lp.testing.views import create_initialized_view
+
 
 class TestBugTargetFileBugConfirmationMessage(TestCaseWithFactory):
 
@@ -209,7 +212,7 @@ class TestBugTargetFileBugConfirmationMessage(TestCaseWithFactory):
 
     def test_getAcknowledgementMessage_dsp_custom_distro_message(self):
         # If a distribution has a customized conformatom message, it
-        # is used for bugs filed on DsitributionSourcePackages.
+        # is used for bugs filed on DistributionSourcePackages.
         dsp = self.factory.makeDistributionSourcePackage()
         dsp.distribution.bug_reported_acknowledgement = (
             u"Thank you for filing a bug in our distribution")

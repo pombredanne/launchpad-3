@@ -18,37 +18,54 @@ from cStringIO import StringIO
 from lazr.delegates import delegates
 import pytz
 from storm.expr import Desc
-from storm.locals import Int, Reference, Storm, Unicode
-from storm.store import Store
+from storm.locals import (
+    Int,
+    Reference,
+    Store,
+    Storm,
+    Unicode,
+    )
 from zope.component import getUtility
-from zope.interface import classProvides, implements
+from zope.interface import (
+    classProvides,
+    implements,
+    )
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database.enumcol import DBEnum
 from canonical.database.sqlbase import (
     clear_current_connection_cache, cursor, flush_database_updates)
-from canonical.launchpad.browser.librarian import (
-    ProxiedLibraryFileAlias)
+from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
 from canonical.launchpad.helpers import filenameToContentType
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.launchpad.webapp.interfaces import (
-        IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 from canonical.librarian.utils import copy_and_close
-
-from lp.buildmaster.interfaces.buildbase import (BUILDD_MANAGER_LOG_NAME,
-    BuildStatus)
+from lp.buildmaster.interfaces.buildbase import (
+    BUILDD_MANAGER_LOG_NAME,
+    BuildStatus,
+    )
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSource
 from lp.buildmaster.interfaces.packagebuild import (
-    IPackageBuild, IPackageBuildSet, IPackageBuildSource)
+    IPackageBuild,
+    IPackageBuildSet,
+    IPackageBuildSource,
+    )
 from lp.buildmaster.model.buildfarmjob import (
-    BuildFarmJob, BuildFarmJobDerived)
+    BuildFarmJob,
+    BuildFarmJobDerived,
+    )
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.registry.interfaces.pocket import (
     PackagePublishingPocket, pocketsuffix)
 from lp.soyuz.adapters.archivedependencies import (
-    default_component_dependency_name)
+    default_component_dependency_name,
+    )
 from lp.soyuz.interfaces.component import IComponentSet
 
 

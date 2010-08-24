@@ -9,29 +9,46 @@ from __future__ import with_statement
 __metaclass__ = type
 
 
-from datetime import datetime, timedelta
+from datetime import (
+    datetime,
+    timedelta,
+    )
 from textwrap import dedent
 
-import transaction
+from mechanize import LinkNotFoundError
 from pytz import utc
+import transaction
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.testing.pages import (
-    extract_text, find_main_content, find_tags_by_class)
+    extract_text,
+    find_main_content,
+    find_tags_by_class,
+    )
+from canonical.launchpad.webapp import canonical_url
 from canonical.testing import (
-    DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.code.browser.sourcepackagerecipe import (
-    SourcePackageRecipeView, SourcePackageRecipeRequestBuildsView)
+    SourcePackageRecipeRequestBuildsView,
+    SourcePackageRecipeView,
+    )
 from lp.code.browser.sourcepackagerecipebuild import (
-    SourcePackageRecipeBuildView)
+    SourcePackageRecipeBuildView,
+    )
 from lp.code.interfaces.sourcepackagerecipe import MINIMAL_RECIPE_TEXT
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.model.processor import ProcessorFamily
 from lp.testing import (
-    ANONYMOUS, BrowserTestCase, login, logout, person_logged_in)
+    ANONYMOUS,
+    BrowserTestCase,
+    login,
+    logout,
+    person_logged_in,
+    )
 from lp.testing.factory import remove_security_proxy_and_shout_at_engineer
 
 
@@ -134,6 +151,18 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
         main_text = extract_text(find_main_content(browser.contents))
         self.assertTextMatchesExpressionIgnoreWhitespace(
             pattern, main_text)
+
+    def test_create_new_recipe_private_branch(self):
+        # Recipes can't be created on private branches.
+        with person_logged_in(self.chef):
+            branch = self.factory.makeBranch(private=True, owner=self.chef)
+            branch_url = canonical_url(branch)
+
+        browser = self.getUserBrowser(branch_url, user=self.chef)
+        self.assertRaises(
+            LinkNotFoundError,
+            browser.getLink,
+            'Create packaging recipe')
 
     def test_create_new_recipe_users_teams_as_owner_options(self):
         # Teams that the user is in are options for the recipe owner.
@@ -789,6 +818,7 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
         self.assertTextMatchesExpressionIgnoreWhitespace("""\
             Code
             my-recipe
+            created .*
             Build status
             Needs building
             Start in .* \\(9876\\) What's this?.*
@@ -819,6 +849,7 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
         self.assertTextMatchesExpressionIgnoreWhitespace("""\
             Code
             my-recipe
+            created .*
             Build status
             Successfully built
             Started on .*
@@ -920,3 +951,19 @@ class TestSourcePackageRecipeDeleteView(TestCaseForRecipe):
         self.assertEqual(
             'http://code.launchpad.dev/~chef',
             browser.url)
+
+    def test_delete_recipe_no_permissions(self):
+        recipe = self.factory.makeSourcePackageRecipe(owner=self.chef)
+        nopriv_person = self.factory.makePerson()
+        recipe_url = canonical_url(recipe)
+
+        browser = self.getUserBrowser(
+            recipe_url, user=nopriv_person)
+
+        self.assertRaises(
+            LinkNotFoundError,
+            browser.getLink, 'Delete recipe')
+
+        self.assertRaises(
+            Unauthorized,
+            self.getUserBrowser, recipe_url + '/+delete', user=nopriv_person)

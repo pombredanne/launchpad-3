@@ -11,40 +11,55 @@ from StringIO import StringIO
 import tempfile
 
 import pytz
+import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from canonical.launchpad.scripts import FakeLogger
 from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
 from canonical.testing import (
-    DatabaseFunctionalLayer, LaunchpadZopelessLayer)
+    DatabaseFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
+from canonical.testing.layers import reconnect_stores
 from lp.app.errors import NotFoundError
 from lp.archivepublisher.config import Config
 from lp.archivepublisher.diskpool import DiskPool
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
-from lp.soyuz.model.processor import ProcessorFamily
-from lp.soyuz.model.publishing import (
-    SourcePackagePublishingHistory, BinaryPackagePublishingHistory)
-from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
+from lp.soyuz.interfaces.archive import (
+    ArchivePurpose,
+    IArchiveSet,
+    )
 from lp.soyuz.interfaces.archivearch import IArchiveArchSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFormat
 from lp.soyuz.interfaces.component import IComponentSet
-from lp.soyuz.interfaces.section import ISectionSet
 from lp.soyuz.interfaces.publishing import (
-    IPublishingSet, PackagePublishingPriority, PackagePublishingStatus)
+    IPublishingSet,
+    PackagePublishingPriority,
+    PackagePublishingStatus,
+    )
 from lp.soyuz.interfaces.queue import PackageUploadStatus
-from canonical.launchpad.scripts import FakeLogger
+from lp.soyuz.interfaces.section import ISectionSet
+from lp.soyuz.model.processor import ProcessorFamily
+from lp.soyuz.model.publishing import (
+    BinaryPackagePublishingHistory,
+    SourcePackagePublishingHistory,
+    )
 from lp.testing import TestCaseWithFactory
 from lp.testing.factory import (
-    LaunchpadObjectFactory, remove_security_proxy_and_shout_at_engineer)
+    LaunchpadObjectFactory,
+    remove_security_proxy_and_shout_at_engineer,
+    )
 from lp.testing.fakemethod import FakeMethod
 
 
@@ -475,6 +490,67 @@ class SoyuzTestPublisher:
                 distroseries=distroseries)
 
         return source
+
+    def makeSourcePackageWithBinaryPackageRelease(self):
+        """Make test data for SourcePackage.summary.
+
+        The distroseries that is returned from this method needs to be
+        passed into updateDistroseriesPackageCache() so that
+        SourcePackage.summary can be populated.
+        """
+        distribution = self.factory.makeDistribution(
+            name='youbuntu', displayname='Youbuntu')
+        distroseries = self.factory.makeDistroRelease(name='busy',
+            distribution=distribution)
+        source_package_name = self.factory.makeSourcePackageName(
+            name='bonkers')
+        source_package = self.factory.makeSourcePackage(
+            sourcepackagename=source_package_name,
+            distroseries=distroseries)
+        component = self.factory.makeComponent('multiverse')
+        das = self.factory.makeDistroArchSeries(
+            distroseries=distroseries)
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagename=source_package_name,
+            distroseries=distroseries,
+            component=component)
+
+        for name in ('flubber-bin', 'flubber-lib'):
+            binary_package_name = self.factory.makeBinaryPackageName(name)
+            build = self.factory.makeBinaryPackageBuild(
+                source_package_release=spph.sourcepackagerelease,
+                archive=self.factory.makeArchive(),
+                distroarchseries=das)
+            bpr = self.factory.makeBinaryPackageRelease(
+                binarypackagename=binary_package_name,
+                summary='summary for %s' % name,
+                build=build, component=component)
+            bpph = self.factory.makeBinaryPackagePublishingHistory(
+                binarypackagerelease=bpr, distroarchseries=das)
+        return dict(
+            distroseries=distroseries,
+            source_package=source_package)
+
+    def updateDistroSeriesPackageCache(
+        self, distroseries, restore_db_connection='launchpad'):
+        # XXX: EdwinGrubbs 2010-08-04 bug=396419. Currently there is no
+        # test api call to switchDbUser that works for non-zopeless layers.
+        # When bug 396419 is fixed, we can instead use
+        # DatabaseLayer.switchDbUser() instead of reconnect_stores()
+        transaction.commit()
+        reconnect_stores(config.statistician.dbuser)
+        distroseries = getUtility(IDistroSeriesSet).get(distroseries.id)
+
+        class TestLogger:
+            # Silent logger.
+            def debug(self, msg):
+                pass
+        distroseries.updateCompletePackageCache(
+            archive=distroseries.distribution.main_archive,
+            ztm=transaction,
+            log=TestLogger())
+        transaction.commit()
+        reconnect_stores(restore_db_connection)
 
 
 class TestNativePublishingBase(TestCaseWithFactory, SoyuzTestPublisher):

@@ -15,26 +15,38 @@ __all__ = [
     'safe_action',
     ]
 
-import transaction
-
-from zope.interface import classImplements, providedBy
-from zope.interface.advice import addClassAdvisor
-from zope.event import notify
-from zope.formlib import form
-from zope.formlib.form import action # imported so it may be exported
-from zope.app.form import CustomWidgetFactory
-from zope.app.form.interfaces import IInputWidget
-from zope.app.form.browser import (
-    CheckBoxWidget, DropdownWidget, RadioWidget, TextAreaWidget)
-
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
+import transaction
+from zope.app.form import CustomWidgetFactory
+from zope.app.form.browser import (
+    CheckBoxWidget,
+    DropdownWidget,
+    RadioWidget,
+    TextAreaWidget,
+    )
+from zope.app.form.interfaces import IInputWidget
+from zope.event import notify
+from zope.formlib import form
+# imported so it may be exported
+from zope.formlib.form import action
+from zope.interface import (
+    classImplements,
+    providedBy,
+    )
+from zope.interface.advice import addClassAdvisor
 
 from canonical.launchpad.webapp.interfaces import (
-    IMultiLineWidgetLayout, ICheckBoxWidgetLayout,
-    IAlwaysSubmittedWidget, UnsafeFormGetSubmissionError)
+    IAlwaysSubmittedWidget,
+    ICheckBoxWidgetLayout,
+    IMultiLineWidgetLayout,
+    UnsafeFormGetSubmissionError,
+    )
 from canonical.launchpad.webapp.menu import escape
-from canonical.launchpad.webapp.publisher import canonical_url, LaunchpadView
+from canonical.launchpad.webapp.publisher import (
+    canonical_url,
+    LaunchpadView,
+    )
 
 
 classImplements(CheckBoxWidget, ICheckBoxWidgetLayout)
@@ -74,6 +86,8 @@ class LaunchpadFormView(LaunchpadView):
 
     actions = ()
 
+    action_taken = None
+
     render_context = False
 
     form_result = None
@@ -112,6 +126,7 @@ class LaunchpadFormView(LaunchpadView):
             self.form_result = action.success(data)
             if self.next_url:
                 self.request.response.redirect(self.next_url)
+        self.action_taken = action
 
     def render(self):
         """Return the body of the response.

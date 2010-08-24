@@ -8,24 +8,36 @@ import socket
 import sys
 import urllib2
 
-from bzrlib.branch import Branch, BzrBranchFormat4
-from bzrlib.bzrdir import BzrDir
 from bzrlib import errors
+from bzrlib.branch import (
+    Branch,
+    BzrBranchFormat4,
+    )
+from bzrlib.bzrdir import BzrDir
 from bzrlib.repofmt.weaverepo import (
-    RepositoryFormat4, RepositoryFormat5, RepositoryFormat6)
-from bzrlib.ui import SilentUIFactory
+    RepositoryFormat4,
+    RepositoryFormat5,
+    RepositoryFormat6,
+    )
 import bzrlib.ui
+from bzrlib.ui import SilentUIFactory
+from lazr.uri import InvalidURIError
 
 from canonical.config import config
 from canonical.launchpad.webapp import errorlog
-
+from lp.code.bzr import (
+    BranchFormat,
+    RepositoryFormat,
+    )
+from lp.code.enums import BranchType
 from lp.codehosting.bzrutils import identical_formats
 from lp.codehosting.puller import get_lock_id_for_branch_id
 from lp.codehosting.vfs.branchfs import (
-    BadUrlLaunchpad, BadUrlScheme, BadUrlSsh, make_branch_mirrorer)
-from lp.code.bzr import BranchFormat, RepositoryFormat
-from lp.code.enums import BranchType
-from lazr.uri import InvalidURIError
+    BadUrlLaunchpad,
+    BadUrlScheme,
+    BadUrlSsh,
+    make_branch_mirrorer,
+    )
 
 
 __all__ = [
@@ -503,7 +515,7 @@ class PullerWorkerUIFactory(SilentUIFactory):
     def get_boolean(self, prompt):
         """If we're asked to break a lock like a stale lock of ours, say yes.
         """
-        assert prompt.startswith('Break lock'), (
+        assert prompt.startswith('Break '), (
             "Didn't expect prompt %r" % (prompt,))
         branch_id = self.puller_worker_protocol.branch_id
         if get_lock_id_for_branch_id(branch_id) in prompt:

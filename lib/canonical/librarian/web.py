@@ -9,7 +9,7 @@ import time
 from twisted.web import resource, static, util, server, proxy
 from twisted.internet.threads import deferToThread
 
-from canonical.librarian.client import quote
+from canonical.librarian.client import url_path_quote
 from canonical.librarian.db import read_transaction, write_transaction
 from canonical.librarian.utils import guess_librarian_encoding
 
@@ -163,7 +163,7 @@ class DigestSearchResource(resource.Resource):
     @read_transaction
     def _matchingAliases(self, digest):
         library = self.storage.library
-        matches = ['%s/%s' % (aID, quote(aName))
+        matches = ['%s/%s' % (aID, url_path_quote(aName))
                    for fID in library.lookupBySHA1(digest)
                    for aID, aName, aType in library.getAliases(fID)]
         return matches

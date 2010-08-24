@@ -13,48 +13,80 @@ __all__ = [
     ]
 
 from email.Utils import make_msgid
-from storm.expr import And, Desc, Join, LeftJoin, Or, Select
+
+from sqlobject import (
+    ForeignKey,
+    IntCol,
+    SQLMultipleJoin,
+    StringCol,
+    )
+from storm.expr import (
+    And,
+    Desc,
+    Join,
+    LeftJoin,
+    Or,
+    Select,
+    )
 from storm.info import ClassAlias
+from storm.locals import (
+    Int,
+    Reference,
+    )
 from storm.store import Store
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
 
-from storm.locals import Int, Reference
-from sqlobject import ForeignKey, IntCol, StringCol, SQLMultipleJoin
-
 from canonical.config import config
-from canonical.database.constants import DEFAULT, UTC_NOW
+from canonical.database.constants import (
+    DEFAULT,
+    UTC_NOW,
+    )
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import quote, SQLBase, sqlvalues
-
-from lp.code.enums import BranchMergeProposalStatus, CodeReviewVote
+from canonical.database.sqlbase import (
+    quote,
+    SQLBase,
+    sqlvalues,
+    )
+from lp.code.enums import (
+    BranchMergeProposalStatus,
+    CodeReviewVote,
+    )
 from lp.code.errors import (
-    BadBranchMergeProposalSearchContext, BadStateTransition,
-    UserNotBranchReviewer, WrongBranchMergeProposal)
-from lp.code.model.branchrevision import BranchRevision
-from lp.code.model.codereviewcomment import CodeReviewComment
-from lp.code.model.codereviewvote import (
-    CodeReviewVoteReference)
-from lp.code.model.diff import PreviewDiff
+    BadBranchMergeProposalSearchContext,
+    BadStateTransition,
+    UserNotBranchReviewer,
+    WrongBranchMergeProposal,
+    )
 from lp.code.event.branchmergeproposal import (
-    BranchMergeProposalStatusChangeEvent, NewCodeReviewCommentEvent,
-    ReviewerNominatedEvent)
+    BranchMergeProposalStatusChangeEvent,
+    NewCodeReviewCommentEvent,
+    ReviewerNominatedEvent,
+    )
 from lp.code.interfaces.branch import IBranchNavigationMenu
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchmergeproposal import (
     BRANCH_MERGE_PROPOSAL_FINAL_STATES as FINAL_STATES,
-    IBranchMergeProposal, IBranchMergeProposalGetter)
+    IBranchMergeProposal,
+    IBranchMergeProposalGetter,
+    )
 from lp.code.interfaces.branchtarget import IHasBranchTarget
 from lp.code.mail.branch import RecipientReason
-from lp.registry.model.person import Person
-from lp.registry.interfaces.person import IPerson
+from lp.code.model.branchrevision import BranchRevision
+from lp.code.model.codereviewcomment import CodeReviewComment
+from lp.code.model.codereviewvote import CodeReviewVoteReference
+from lp.code.model.diff import PreviewDiff
+from lp.registry.interfaces.person import (
+    IPerson,
+    validate_public_person,
+    )
 from lp.registry.interfaces.product import IProduct
-from lp.registry.interfaces.person import validate_public_person
-from lp.services.mail.sendmail import validate_message
+from lp.registry.model.person import Person
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
+from lp.services.mail.sendmail import validate_message
 
 
 def is_valid_transition(proposal, from_state, next_state, user=None):

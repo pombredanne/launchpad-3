@@ -12,7 +12,10 @@ __all__ = [
     'BuildStatus',
     ]
 
-from lazr.enum import DBEnumeratedType, DBItem
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    )
 
 
 BUILDD_MANAGER_LOG_NAME = "slave-scanner"

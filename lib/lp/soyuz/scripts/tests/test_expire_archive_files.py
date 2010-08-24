@@ -3,9 +3,12 @@
 
 """Test the expire-archive-files.py script. """
 
-from datetime import datetime, timedelta
-import pytz
+from datetime import (
+    datetime,
+    timedelta,
+    )
 
+import pytz
 from zope.component import getUtility
 
 from canonical.config import config

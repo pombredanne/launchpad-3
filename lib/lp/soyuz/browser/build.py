@@ -22,11 +22,20 @@ from zope.interface import implements
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.browser.librarian import (
-    FileNavigationMixin, ProxiedLibraryFileAlias)
+    FileNavigationMixin,
+    ProxiedLibraryFileAlias,
+    )
 from canonical.launchpad.webapp import (
-    action, canonical_url, enabled_with_permission, ContextMenu,
-    GetitemNavigation, Link, LaunchpadFormView, LaunchpadView,
-    StandardLaunchpadFacets)
+    action,
+    canonical_url,
+    ContextMenu,
+    enabled_with_permission,
+    GetitemNavigation,
+    LaunchpadFormView,
+    LaunchpadView,
+    Link,
+    StandardLaunchpadFacets,
+    )
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
@@ -36,7 +45,10 @@ from lp.app.errors import UnexpectedFormData
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.services.job.interfaces.job import JobStatus
 from lp.soyuz.interfaces.binarypackagebuild import (
-    IBinaryPackageBuild, IBuildRescoreForm, IBinaryPackageBuildSet)
+    IBinaryPackageBuild,
+    IBinaryPackageBuildSet,
+    IBuildRescoreForm,
+    )
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.soyuz.interfaces.queue import PackageUploadStatus
 
@@ -331,9 +343,11 @@ def setupCompleteBuilds(batch):
 
     complete_builds = []
     for build in builds:
-        buildqueue = prefetched_data.get(build.id)
-        complete_builds.append(CompleteBuild(build, buildqueue))
-
+        if IBinaryPackageBuild.providedBy(build):
+            buildqueue = prefetched_data.get(build.id)
+            complete_builds.append(CompleteBuild(build, buildqueue))
+        else:
+            complete_builds.append(build)
     return complete_builds
 
 

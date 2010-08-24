@@ -4,29 +4,30 @@
 """Acceptance test for the translations-export-to-branch script."""
 
 import re
-import unittest
-import transaction
-
 from textwrap import dedent
+import unittest
 
+from bzrlib.errors import NotBranchError
+import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from bzrlib.errors import NotBranchError
-
 from canonical.config import config
-
 from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.launchpad.scripts.tests import run_script
 from canonical.testing import ZopelessAppServerLayer
-
 from lp.registry.interfaces.teammembership import (
-    ITeamMembershipSet, TeamMembershipStatus)
-from lp.testing import map_branch_contents, TestCaseWithFactory
+    ITeamMembershipSet,
+    TeamMembershipStatus,
+    )
+from lp.testing import (
+    map_branch_contents,
+    TestCaseWithFactory,
+    )
 from lp.testing.fakemethod import FakeMethod
-
 from lp.translations.scripts.translations_to_branch import (
-    ExportTranslationsToBranch)
+    ExportTranslationsToBranch,
+    )
 
 
 class GruesomeException(Exception):

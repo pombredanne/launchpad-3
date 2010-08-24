@@ -18,13 +18,16 @@ __all__ = [
     'IHasBranchTarget',
     ]
 
-from zope.interface import Attribute, Interface
+from lazr.restful.fields import Reference
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
 from zope.security.interfaces import Unauthorized
 
-from lp.code.enums import BranchType
 from canonical.launchpad import _
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
-from lazr.restful.fields import Reference
+from lp.code.enums import BranchType
 
 
 def check_default_stacked_on(branch):
@@ -60,12 +63,14 @@ class IHasBranchTarget(Interface):
     target = Attribute("The branch target, as an `IBranchTarget`.")
 
 
-class IBranchTarget(IPrimaryContext):
+class IBranchTarget(Interface):
     """A target of branches.
 
     A product contains branches, a source package on a distroseries contains
     branches, and a person contains 'junk' branches.
     """
+
+    context = Attribute('The primary context.')
 
     name = Attribute("The name of the target.")
 

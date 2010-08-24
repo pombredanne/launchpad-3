@@ -11,7 +11,9 @@ from zope.component import getUtility
 
 from canonical.testing import ZopelessDatabaseLayer
 from lp.registry.interfaces.teammembership import (
-    ITeamMembershipSet, TeamMembershipStatus)
+    ITeamMembershipSet,
+    TeamMembershipStatus,
+    )
 from lp.testing import TestCaseWithFactory
 from lp.translations.interfaces.translationgroup import ITranslationGroupSet
 

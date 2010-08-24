@@ -4,7 +4,7 @@ StrippedTextLine field
 The StrippedTextLine field strips the leading and trailing text from the
 set value.
 
-    >>> from canonical.launchpad.fields import StrippedTextLine
+    >>> from lp.services.fields import StrippedTextLine
 
     >>> non_required_field = StrippedTextLine(
     ...     __name__='field', title=u'Title',  required=False)

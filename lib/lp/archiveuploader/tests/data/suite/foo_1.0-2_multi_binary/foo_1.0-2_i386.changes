@@ -2,7 +2,7 @@ Format: 1.7
 Date: Thu, 16 Feb 2006 15:47:28 +0000
 Source: foo
 Binary: foo foo-dev
-Architecture: source i386
+Architecture: i386
 Version: 1.0-2
 Distribution: breezy
 Urgency: low
@@ -16,8 +16,5 @@ Changes:
  .
    * A version rev for joy's sake
 Files: 
- 74c1de307d849dc54bd390ab6ae7188f 284 devel optional foo_1.0-2.dsc
- 0982759bd29072e993c4e375769f6ff7 601 devel optional foo_1.0-2.diff.gz
  15aaae6676d3d546d6ba69cf7d272875 642 devel optional foo_1.0-2_i386.deb
  0afcb7d8a6ec16b954ee340fcdaf7644 652 devel optional foo-dev_1.0-2_i386.deb
- 4a7a1ab59ed8f9f1021825ba4b7ea826 160 devel optional foo_1.0.orig.tar.gz

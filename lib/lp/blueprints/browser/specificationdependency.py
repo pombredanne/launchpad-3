@@ -11,14 +11,20 @@ __all__ = [
     'SpecificationDependencyTreeView',
     ]
 
-from canonical.launchpad import _
-from canonical.launchpad.webapp import (
-    action, canonical_url, LaunchpadFormView, LaunchpadView)
-from lp.blueprints.interfaces.specificationdependency import (
-    ISpecificationDependency, ISpecificationDependencyRemoval)
-
 from zope.formlib import form
 from zope.schema import Choice
+
+from canonical.launchpad import _
+from canonical.launchpad.webapp import (
+    action,
+    canonical_url,
+    LaunchpadFormView,
+    LaunchpadView,
+    )
+from lp.blueprints.interfaces.specificationdependency import (
+    ISpecificationDependency,
+    ISpecificationDependencyRemoval,
+    )
 
 
 class SpecificationDependencyAddView(LaunchpadFormView):

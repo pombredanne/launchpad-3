@@ -8,7 +8,6 @@ __metaclass__ = type
 __all__ = [
     'distroseries_to_launchpadusage',
     'PollSubset',
-    'PollOptionSubset',
     'productseries_to_product',
     ]
 
@@ -18,9 +17,12 @@ from zope.component.interfaces import ComponentLookupError
 from zope.interface import implements
 
 from canonical.launchpad.webapp.interfaces import ILaunchpadPrincipal
-
 from lp.registry.interfaces.poll import (
-    IPollSet, IPollSubset, PollAlgorithm, PollStatus)
+    IPollSet,
+    IPollSubset,
+    PollAlgorithm,
+    PollStatus,
+    )
 
 
 def distroseries_to_launchpadusage(distroseries):

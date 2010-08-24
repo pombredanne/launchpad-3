@@ -16,17 +16,28 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
-from canonical.testing.layers import (LaunchpadFunctionalLayer,
-    LaunchpadZopelessLayer)
+from canonical.testing.layers import (
+    LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
 from lp.buildmaster.interfaces.packagebuild import (
-    IPackageBuild, IPackageBuildSet, IPackageBuildSource)
+    IPackageBuild,
+    IPackageBuildSet,
+    IPackageBuildSource,
+    )
 from lp.buildmaster.model.packagebuild import PackageBuild
-from lp.registry.interfaces.pocket import (PackagePublishingPocket,
-    pocketsuffix)
+from lp.registry.interfaces.pocket import (
+    PackagePublishingPocket,
+    pocketsuffix,
+    )
 from lp.soyuz.tests.soyuzbuilddhelpers import WaitingSlave
-from lp.testing import login, login_person, TestCaseWithFactory
+from lp.testing import (
+    login,
+    login_person,
+    TestCaseWithFactory,
+    )
 from lp.testing.fakemethod import FakeMethod
 
 

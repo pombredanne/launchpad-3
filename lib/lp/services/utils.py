@@ -22,7 +22,6 @@ __all__ = [
 import itertools
 
 from lazr.enum import BaseItem
-
 from twisted.python.util import mergeFunctionMetadata
 from zope.security.proxy import isinstance as zope_isinstance
 

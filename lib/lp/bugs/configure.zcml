@@ -9,12 +9,16 @@
     xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
     xmlns:lp="http://namespaces.canonical.com/lp"
     i18n_domain="launchpad">
-    <include
-        package=".browser"/>
 
-    <publisher
-       name="bugs"
-       factory="lp.bugs.publisher.bugs_request_publication_factory"/>
+  <include package=".browser"/>
+
+  <publisher
+      name="bugs"
+      factory="lp.bugs.publisher.bugs_request_publication_factory"/>
+  <utility
+      component="lp.bugs.publisher.BugsLayer"
+      provides="zope.publisher.interfaces.browser.IDefaultBrowserLayer"
+      name="bugs" />
 
     <lp:help-folder
         folder="help" type="lp.bugs.publisher.BugsLayer" />
@@ -652,7 +656,6 @@
                     getBugTasksByPackageName
                     users_affected_count
                     users_unaffected_count
-                    readonly_duplicateof
                     users_affected
                     users_unaffected
                     users_affected_count_with_dupes
@@ -703,7 +706,6 @@
                     date_last_updated
                     date_made_private
                     datecreated
-                    duplicateof
                     hits
                     hitstimestamp
                     name

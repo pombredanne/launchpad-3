@@ -13,50 +13,89 @@ __all__ = [
 import datetime
 import sys
 
+from psycopg2 import ProgrammingError
 from pytz import utc
+from storm.locals import (
+    Int,
+    Reference,
+    Storm,
+    )
+from storm.store import Store
+from zope.component import (
+    getGlobalSiteManager,
+    getUtility,
+    )
+from zope.interface import (
+    classProvides,
+    implements,
+    )
+from zope.security.proxy import ProxyFactory
 
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad.browser.librarian import (
-    ProxiedLibraryFileAlias)
-from canonical.launchpad.interfaces.lpstorm import IMasterStore, IStore
-
-from psycopg2 import ProgrammingError
-from storm.locals import Int, Reference, Storm
-from storm.store import Store
-
-from zope.component import getUtility
-from zope.interface import classProvides, implements
-
+from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
+from canonical.launchpad.interfaces.lpstorm import (
+    IMasterStore,
+    IStore,
+    )
 from canonical.launchpad.webapp import errorlog
 from lp.app.errors import NotFoundError
-from lp.buildmaster.model.packagebuild import (
-    PackageBuild, PackageBuildDerived)
+from lp.archiveuploader.uploadpolicy import (
+    BuildDaemonUploadPolicy,
+    IArchiveUploadPolicy,
+    SOURCE_PACKAGE_RECIPE_UPLOAD_POLICY_NAME,
+    )
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
-from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.buildmaster.model.buildfarmjob import BuildFarmJobOldDerived
+from lp.buildmaster.model.buildqueue import BuildQueue
+from lp.buildmaster.model.packagebuild import (
+    PackageBuild,
+    PackageBuildDerived,
+    )
 from lp.code.errors import BuildAlreadyPending
 from lp.code.interfaces.sourcepackagerecipebuild import (
-    ISourcePackageRecipeBuildJob, ISourcePackageRecipeBuildJobSource,
-    ISourcePackageRecipeBuild, ISourcePackageRecipeBuildSource)
+    ISourcePackageRecipeBuild,
+    ISourcePackageRecipeBuildJob,
+    ISourcePackageRecipeBuildJobSource,
+    ISourcePackageRecipeBuildSource,
+    )
 from lp.code.mail.sourcepackagerecipebuild import (
-    SourcePackageRecipeBuildMailer)
+    SourcePackageRecipeBuildMailer,
+    )
 from lp.code.model.sourcepackagerecipedata import SourcePackageRecipeData
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.job.model.job import Job
 from lp.soyuz.adapters.archivedependencies import (
-    default_component_dependency_name)
+    default_component_dependency_name,
+    )
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.buildfarmbuildjob import BuildFarmBuildJob
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
 
+class SourcePackageRecipeUploadPolicy(BuildDaemonUploadPolicy):
+    """Policy for uploading the results of a source package recipe build."""
+
+    name = SOURCE_PACKAGE_RECIPE_UPLOAD_POLICY_NAME
+
+    def __init__(self):
+        super(SourcePackageRecipeUploadPolicy, self).__init__()
+        self.can_upload_source = True
+        self.can_upload_binaries = False
+
+    def getUploader(self, changes):
+        """Return the person doing the upload."""
+        build_id = int(getattr(self.options, 'buildid'))
+        sprb = getUtility(ISourcePackageRecipeBuildSource).getById(build_id)
+        return sprb.requester
+
+
 class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
 
     __storm_table__ = 'SourcePackageRecipeBuild'
 
-    policy_name = 'recipe'
+    policy_name = SourcePackageRecipeUploadPolicy.name
 
     implements(ISourcePackageRecipeBuild)
     classProvides(ISourcePackageRecipeBuildSource)
@@ -344,3 +383,19 @@ class SourcePackageRecipeBuildJob(BuildFarmJobOldDerived, Storm):
 
     def score(self):
         return 2405 + self.build.archive.relative_build_score
+
+
+def register_archive_upload_policy_adapter():
+    getGlobalSiteManager().registerUtility(
+        component=SourcePackageRecipeUploadPolicy,
+        provided=IArchiveUploadPolicy,
+        name=SourcePackageRecipeUploadPolicy.name)
+
+
+def get_recipe_build_for_build_farm_job(build_farm_job):
+    """Return the SourcePackageRecipeBuild associated with a BuildFarmJob."""
+    store = Store.of(build_farm_job)
+    result = store.find(SourcePackageRecipeBuild,
+        SourcePackageRecipeBuild.package_build_id == PackageBuild.id,
+        PackageBuild.build_farm_job_id == build_farm_job.id)
+    return ProxyFactory(result.one())

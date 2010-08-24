@@ -5,10 +5,16 @@
 
 __metaclass__ = type
 
+from zope.security.management import (
+    endInteraction,
+    newInteraction,
+    queryInteraction,
+    restoreInteraction,
+    )
+
 from canonical.launchpad.webapp.interaction import get_current_principal
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from zope.security.management import (
-    endInteraction, newInteraction, queryInteraction, restoreInteraction)
+
 
 class LaunchpadFormHarness:
 

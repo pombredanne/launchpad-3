@@ -3,11 +3,10 @@
 
 """Test top-level publication API in Soyuz."""
 
-from lp.soyuz.tests.test_publishing import TestNativePublishingBase
-
-from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.interfaces.series import SeriesStatus
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+from lp.soyuz.tests.test_publishing import TestNativePublishingBase
 
 
 class TestICanPublishPackagesAPI(TestNativePublishingBase):
