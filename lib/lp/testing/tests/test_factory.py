@@ -32,6 +32,8 @@ from lp.soyuz.interfaces.binarypackagename import IBinaryPackageName
 from lp.soyuz.enums import (
     BinaryPackageFileType,
     BinaryPackageFormat,
+    PackagePublishingPriority,
+    PackagePublishingStatus,
     PackageUploadStatus,
     )
 from lp.soyuz.interfaces.binarypackagerelease import (
@@ -45,8 +47,6 @@ from lp.soyuz.interfaces.publishing import (
     IBinaryPackagePublishingHistory,
     ISourcePackagePublishingHistory,
     PackagePublishingPocket,
-    PackagePublishingPriority,
-    PackagePublishingStatus,
     )
 from lp.soyuz.interfaces.queue import (
     IPackageUpload,

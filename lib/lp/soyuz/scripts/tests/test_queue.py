@@ -50,12 +50,12 @@ from lp.registry.interfaces.series import SeriesStatus
 from lp.services.mail import stub
 from lp.soyuz.enums import (
     ArchivePurpose,
+    PackagePublishingStatus,
     PackageUploadStatus,
     )
 from lp.soyuz.interfaces.archive import (
     IArchiveSet,
     )
-from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.interfaces.queue import (
     IPackageUploadSet,
     )

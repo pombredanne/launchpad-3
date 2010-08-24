@@ -205,6 +205,8 @@ from lp.soyuz.enums import (
     ArchivePurpose,
     BinaryPackageFileType,
     BinaryPackageFormat,
+    PackagePublishingPriority,
+    PackagePublishingStatus,
     PackageUploadStatus,
     )
 from lp.soyuz.interfaces.archive import (
@@ -218,8 +220,6 @@ from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.interfaces.publishing import (
     IPublishingSet,
-    PackagePublishingPriority,
-    PackagePublishingStatus,
     )
 from lp.soyuz.interfaces.section import ISectionSet
 from lp.soyuz.model.files import (

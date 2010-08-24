@@ -7,7 +7,7 @@ __metaclass__ = type
 
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.ftests import import_public_test_keys
-from canonical.launchpad.interfaces import PackagePublishingStatus
+from lp.soyuz.enums import PackagePublishingStatus
 from lp.archiveuploader.tests.test_securityuploads import (
     TestStagedBinaryUploadBase,
     )

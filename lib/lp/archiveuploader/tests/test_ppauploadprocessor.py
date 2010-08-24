@@ -34,13 +34,13 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.mail import stub
 from lp.soyuz.enums import (
     ArchivePurpose,
+    PackagePublishingStatus,
     PackageUploadStatus,
     SourcePackageFormat,
     )
 from lp.soyuz.interfaces.archive import (
     IArchiveSet,
     )
-from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.interfaces.queue import (
     NonBuildableSourceUploadError,
     )

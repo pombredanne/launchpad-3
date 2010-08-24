@@ -308,7 +308,7 @@ given build record entry.
     >>> binpackageformat = BinaryPackageFormat.DEB
     >>> component = firefox_build.source_package_release.component.id
     >>> section = firefox_build.source_package_release.section.id
-    >>> from canonical.launchpad.interfaces import PackagePublishingPriority
+    >>> from lp.soyuz.enums import PackagePublishingPriority
     >>> priority = PackagePublishingPriority.STANDARD
     >>> shlibdeps = None
     >>> depends = None

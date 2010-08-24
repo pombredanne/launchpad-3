@@ -191,7 +191,7 @@ given upload into the published state, so here's a very simplistic publisher
   >>> from canonical.launchpad.database import (
   ...     SourcePackagePublishingHistory as SPPH,
   ...     BinaryPackagePublishingHistory as BPPH)
-  >>> from canonical.launchpad.interfaces import PackagePublishingStatus as PPS
+  >>> from lp.soyuz.enums import PackagePublishingStatus as PPS
   >>> from canonical.database.constants import UTC_NOW
   >>> def simple_publish(distro):
   ...     srcs_to_publish = SPPH.select("""

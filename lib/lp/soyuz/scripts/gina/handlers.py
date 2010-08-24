@@ -45,10 +45,12 @@ from lp.registry.interfaces.person import (
     )
 from lp.registry.interfaces.sourcepackage import SourcePackageType
 from lp.registry.model.sourcepackagename import SourcePackageName
-from lp.soyuz.enums import BinaryPackageFormat
+from lp.soyuz.enums import (
+    BinaryPackageFormat,
+    PackagePublishingStatus,
+    )
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
-from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.model.component import Component
 from lp.soyuz.model.files import (
     BinaryPackageFile,

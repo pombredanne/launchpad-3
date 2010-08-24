@@ -71,6 +71,8 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.worlddata.model.country import Country
 from lp.soyuz.enums import (
     BinaryPackageFormat,
+    PackagePublishingPriority,
+    PackagePublishingStatus,
     PackageUploadStatus,
     )
 from lp.soyuz.interfaces.binarypackagebuild import (
@@ -85,8 +87,6 @@ from lp.soyuz.interfaces.publishing import (
     IPublishingSet,
     ISourcePackageFilePublishing,
     ISourcePackagePublishingHistory,
-    PackagePublishingPriority,
-    PackagePublishingStatus,
     PoolFileOverwriteError,
     )
 from lp.soyuz.model.binarypackagename import BinaryPackageName

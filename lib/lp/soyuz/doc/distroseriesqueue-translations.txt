@@ -13,7 +13,7 @@ uploaded into the system.
   >>> from lp.registry.interfaces.distroseries import IDistroSeriesSet
   >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
   >>> from lp.soyuz.interfaces.component import IComponentSet
-  >>> from lp.soyuz.interfaces.publishing import (
+  >>> from lp.soyuz.enums import (
   ...     PackagePublishingStatus)
   >>> from lp.registry.interfaces.sourcepackagename import (
   ...     ISourcePackageNameSet)

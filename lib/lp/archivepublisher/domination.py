@@ -66,9 +66,11 @@ from canonical.database.sqlbase import (
     flush_database_updates,
     sqlvalues,
     )
-from canonical.launchpad.interfaces import PackagePublishingStatus
 from lp.archivepublisher import ELIGIBLE_DOMINATION_STATES
-from lp.soyuz.enums import BinaryPackageFormat
+from lp.soyuz.enums import (
+    BinaryPackageFormat,
+    PackagePublishingStatus,
+    )
 
 
 def clear_cache():

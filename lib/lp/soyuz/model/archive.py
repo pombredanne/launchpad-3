@@ -96,6 +96,7 @@ from lp.soyuz.enums import (
     ArchivePurpose,
     ArchiveStatus,
     ArchiveSubscriberStatus,
+    PackagePublishingStatus,
     PackageUploadStatus,
     )
 from lp.soyuz.interfaces.archive import (
@@ -149,7 +150,6 @@ from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.interfaces.publishing import (
     active_publishing_status,
     IPublishingSet,
-    PackagePublishingStatus,
     )
 from lp.soyuz.model.archiveauthtoken import ArchiveAuthToken
 from lp.soyuz.model.archivedependency import ArchiveDependency

@@ -185,7 +185,7 @@ FULLY_BUILT.
 
 If one of the builds becomes published, it will not appear in the summary:
 
-    >>> from lp.soyuz.interfaces.publishing import (
+    >>> from lp.soyuz.enums import (
     ...     PackagePublishingStatus)
     >>> bpr = test_publisher.uploadBinaryForBuild(builds[0], 'abc-bin')
     >>> bpph = test_publisher.publishBinaryInArchive(bpr, spph.archive,

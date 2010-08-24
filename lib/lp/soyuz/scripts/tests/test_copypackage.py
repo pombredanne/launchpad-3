@@ -36,6 +36,7 @@ from lp.registry.interfaces.series import SeriesStatus
 from lp.soyuz.adapters.packagelocation import PackageLocationError
 from lp.soyuz.enums import (
     ArchivePurpose,
+    PackagePublishingStatus,
     PackageUploadCustomFormat,
     PackageUploadStatus,
     SourcePackageFormat,
@@ -49,7 +50,6 @@ from lp.soyuz.interfaces.publishing import (
     active_publishing_status,
     IBinaryPackagePublishingHistory,
     ISourcePackagePublishingHistory,
-    PackagePublishingStatus,
     )
 from lp.soyuz.interfaces.queue import (
     QueueInconsistentStateError,

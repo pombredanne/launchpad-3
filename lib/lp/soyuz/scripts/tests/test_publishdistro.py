@@ -24,11 +24,11 @@ from lp.services.scripts.base import LaunchpadScriptFailure
 from lp.soyuz.enums import (
     ArchivePurpose,
     BinaryPackageFormat,
+    PackagePublishingStatus,
     )
 from lp.soyuz.interfaces.archive import (
     IArchiveSet,
     )
-from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.scripts import publishdistro
 from lp.soyuz.tests.test_publishing import TestNativePublishingBase
 

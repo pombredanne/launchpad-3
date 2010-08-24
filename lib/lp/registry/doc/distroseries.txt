@@ -619,9 +619,6 @@ the future.
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> hoary = ubuntu['hoary']
 
-    >>> from canonical.launchpad.interfaces import (
-    ...    PackagePublishingStatus)
-
     >>> hoary_pub_sources = hoary.getSourcePackagePublishing(
     ...     PackagePublishingStatus.PUBLISHED,
     ...     PackagePublishingPocket.RELEASE)

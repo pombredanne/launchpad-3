@@ -39,11 +39,11 @@ from lp.soyuz.enums import (
     ArchivePurpose,
     ArchiveStatus,
     BinaryPackageFormat,
+    PackagePublishingStatus,
     )
 from lp.soyuz.interfaces.archive import (
     IArchiveSet,
     )
-from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.tests.test_publishing import TestNativePublishingBase
 
 

@@ -117,7 +117,7 @@ XXX cprov 20051209: need to build a broken upload to test it properly
 Confirm we can now find ed published in hoary.
 
   >>> from canonical.launchpad.database import SourcePackagePublishingHistory
-  >>> from canonical.launchpad.interfaces import PackagePublishingStatus
+  >>> from lp.soyuz.enums import PackagePublishingStatus
   >>> for release in SourcePackagePublishingHistory.selectBy(
   ...     distroseries=hoary, status=PackagePublishingStatus.PENDING):
   ...     if release.sourcepackagerelease.sourcepackagename.name == "ed":
@@ -861,7 +861,7 @@ Similarly for binaries:
     ...     binary_package.priority.title)
     main/base/Important
 
-    >>> from canonical.launchpad.interfaces import PackagePublishingPriority
+    >>> from lp.soyuz.enums import PackagePublishingPriority
     >>> print item.overrideBinaries(
     ...     new_component=restricted,
     ...     new_section=web,

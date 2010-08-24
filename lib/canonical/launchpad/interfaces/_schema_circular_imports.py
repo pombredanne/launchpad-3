@@ -90,6 +90,7 @@ from lp.registry.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget,
     )
 from lp.soyuz.enums import (
+    PackagePublishingStatus,
     PackageUploadCustomFormat,
     PackageUploadStatus,
     )
@@ -105,7 +106,6 @@ from lp.soyuz.interfaces.publishing import (
     IBinaryPackagePublishingHistory,
     ISourcePackagePublishingHistory,
     ISourcePackagePublishingHistoryPublic,
-    PackagePublishingStatus,
     )
 from lp.soyuz.interfaces.queue import (
     IPackageUpload,

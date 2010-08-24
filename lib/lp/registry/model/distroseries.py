@@ -115,6 +115,7 @@ from lp.registry.model.structuralsubscription import (
 from lp.services.worlddata.model.language import Language
 from lp.soyuz.enums import (
     ArchivePurpose,
+    PackagePublishingStatus,
     PackageUploadStatus,
     )
 from lp.soyuz.interfaces.archive import (
@@ -126,7 +127,6 @@ from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.soyuz.interfaces.publishing import (
     active_publishing_status,
     ICanPublishPackages,
-    PackagePublishingStatus,
     )
 from lp.soyuz.interfaces.queue import (
     IHasQueueItems,

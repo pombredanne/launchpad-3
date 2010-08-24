@@ -124,6 +124,7 @@ from lp.soyuz.enums import (
     ArchivePermissionType,
     ArchivePurpose,
     ArchiveStatus,
+    PackagePublishingStatus,
     )
 from lp.soyuz.interfaces.archive import (
     CannotCopy,
@@ -150,7 +151,6 @@ from lp.soyuz.interfaces.publishing import (
     active_publishing_status,
     inactive_publishing_status,
     IPublishingSet,
-    PackagePublishingStatus,
     )
 from lp.soyuz.scripts.packagecopier import do_copy
 

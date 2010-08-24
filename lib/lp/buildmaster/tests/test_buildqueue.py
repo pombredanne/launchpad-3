@@ -41,8 +41,10 @@ from lp.buildmaster.model.buildqueue import (
     get_builder_data,
     )
 from lp.services.job.model.job import Job
-from lp.soyuz.enums import ArchivePurpose
-from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+from lp.soyuz.enums import (
+    ArchivePurpose,
+    PackagePublishingStatus,
+    )
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.processor import ProcessorFamilySet
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher

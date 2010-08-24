@@ -27,8 +27,8 @@ from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.archive import (
     IArchiveSet,
     )
+from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
-from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.scripts.ftpmaster import (
     PackageLocationError,
     SoyuzScriptError,

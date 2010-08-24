@@ -680,7 +680,7 @@ disk very quickly.  For that reason, diffs of udev are created FAILED by
 default, which will stop the diff script from attempting to create the diff.
 
     >>> from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
-    >>> from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+    >>> from lp.soyuz.enums import PackagePublishingStatus
     >>> stp = SoyuzTestPublisher()
     >>> discard = stp.setUpDefaultDistroSeries(hoary)
     >>> udev_orig = stp.getPubSource(

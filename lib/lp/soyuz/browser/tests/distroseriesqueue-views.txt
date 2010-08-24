@@ -230,7 +230,7 @@ for a package "foo" and uploading a new build that has "foo" and
 
     >>> from lp.soyuz.tests.test_publishing import (
     ...     SoyuzTestPublisher)
-    >>> from lp.soyuz.interfaces.publishing import (
+    >>> from lp.soyuz.enums import (
     ...     PackagePublishingStatus)
     >>> from canonical.launchpad.interfaces import ILibraryFileAliasSet
     >>> stp = SoyuzTestPublisher()

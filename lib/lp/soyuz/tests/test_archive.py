@@ -31,6 +31,7 @@ from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.soyuz.enums import (
     ArchivePurpose,
     ArchiveStatus,
+    PackagePublishingStatus,
     )
 from lp.soyuz.interfaces.archive import (
     ArchiveDisabled,
@@ -49,7 +50,6 @@ from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
-from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.model.binarypackagerelease import (
     BinaryPackageReleaseDownloadCount,
     )
