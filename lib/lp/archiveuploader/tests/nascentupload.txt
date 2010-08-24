@@ -495,7 +495,7 @@ queue entry in the database.
   >>> print ed_src_dup.queue_root.status.name
   REJECTED
 
-  >>> from canonical.launchpad.interfaces import PackageUploadStatus
+  >>> from lp.soyuz.enums import PackageUploadStatus
   >>> hoary.getQueueItems(
   ...     status=PackageUploadStatus.REJECTED, name="ed").count()
   1

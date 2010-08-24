@@ -84,7 +84,7 @@ convert it to an ACCEPTED item.
 
   >>> from canonical.launchpad.interfaces import (
   ...      QueueInconsistentStateError)
-  >>> from canonical.launchpad.interfaces import PackageUploadStatus
+  >>> from lp.soyuz.enums import PackageUploadStatus
 
   >>> new_queue = hoary.getQueueItems(PackageUploadStatus.NEW)
 
@@ -166,7 +166,6 @@ Counter, optionally by status (informally named "queue") and or distroseries:
 Retrieve some data from DB to play more with counter.
 
   >>> from canonical.launchpad.interfaces import IDistributionSet
-  >>> from canonical.launchpad.interfaces import PackageUploadStatus
   >>> distro = getUtility(IDistributionSet).getByName('ubuntu')
   >>> breezy_autotest = distro['breezy-autotest']
 
@@ -905,7 +904,6 @@ PackageUpload records for the supplied distroseries.
 
 Filtering by status:
 
-    >>> from lp.soyuz.interfaces.queue import PackageUploadStatus
     >>> warty.getPackageUploads(
     ...     status=PackageUploadStatus.DONE).count()
     1

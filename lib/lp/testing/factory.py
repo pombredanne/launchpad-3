@@ -205,6 +205,7 @@ from lp.soyuz.enums import (
     ArchivePurpose,
     BinaryPackageFileType,
     BinaryPackageFormat,
+    PackageUploadStatus,
     )
 from lp.soyuz.interfaces.archive import (
     default_name_by_purpose,
@@ -220,7 +221,6 @@ from lp.soyuz.interfaces.publishing import (
     PackagePublishingPriority,
     PackagePublishingStatus,
     )
-from lp.soyuz.interfaces.queue import PackageUploadStatus
 from lp.soyuz.interfaces.section import ISectionSet
 from lp.soyuz.model.files import (
     BinaryPackageFile,

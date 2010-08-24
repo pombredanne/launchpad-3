@@ -32,6 +32,7 @@ from lp.soyuz.interfaces.binarypackagename import IBinaryPackageName
 from lp.soyuz.enums import (
     BinaryPackageFileType,
     BinaryPackageFormat,
+    PackageUploadStatus,
     )
 from lp.soyuz.interfaces.binarypackagerelease import (
     IBinaryPackageRelease,
@@ -49,7 +50,6 @@ from lp.soyuz.interfaces.publishing import (
     )
 from lp.soyuz.interfaces.queue import (
     IPackageUpload,
-    PackageUploadStatus,
     )
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
 from lp.testing import TestCaseWithFactory

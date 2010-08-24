@@ -162,6 +162,7 @@ from lp.registry.model.structuralsubscription import (
 from lp.soyuz.enums import (
     ArchivePurpose,
     ArchiveStatus,
+    PackageUploadStatus,
     )
 from lp.soyuz.interfaces.archive import (
     IArchiveSet,
@@ -174,7 +175,6 @@ from lp.soyuz.interfaces.publishing import (
     active_publishing_status,
     PackagePublishingStatus,
     )
-from lp.soyuz.interfaces.queue import PackageUploadStatus
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.distributionsourcepackagecache import (
     DistributionSourcePackageCache,

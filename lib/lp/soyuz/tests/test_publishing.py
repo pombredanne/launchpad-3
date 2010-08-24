@@ -38,6 +38,7 @@ from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.soyuz.enums import (
     ArchivePurpose,
     BinaryPackageFormat,
+    PackageUploadStatus,
     )
 from lp.soyuz.interfaces.archive import (
     IArchiveSet,
@@ -50,7 +51,6 @@ from lp.soyuz.interfaces.publishing import (
     PackagePublishingPriority,
     PackagePublishingStatus,
     )
-from lp.soyuz.interfaces.queue import PackageUploadStatus
 from lp.soyuz.interfaces.section import ISectionSet
 from lp.soyuz.model.processor import ProcessorFamily
 from lp.soyuz.model.publishing import (

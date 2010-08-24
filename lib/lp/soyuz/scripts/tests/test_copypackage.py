@@ -34,7 +34,11 @@ from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.soyuz.adapters.packagelocation import PackageLocationError
-from lp.soyuz.enums import ArchivePurpose
+from lp.soyuz.enums import (
+    ArchivePurpose,
+    PackageUploadCustomFormat,
+    PackageUploadStatus,
+    )
 from lp.soyuz.interfaces.archive import (
     CannotCopy,
     )
@@ -47,8 +51,6 @@ from lp.soyuz.interfaces.publishing import (
     PackagePublishingStatus,
     )
 from lp.soyuz.interfaces.queue import (
-    PackageUploadCustomFormat,
-    PackageUploadStatus,
     QueueInconsistentStateError,
     )
 from lp.soyuz.interfaces.sourcepackageformat import (

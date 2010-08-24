@@ -69,7 +69,10 @@ from lp.buildmaster.model.packagebuild import PackageBuild
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.worlddata.model.country import Country
-from lp.soyuz.enums import BinaryPackageFormat
+from lp.soyuz.enums import (
+    BinaryPackageFormat,
+    PackageUploadStatus,
+    )
 from lp.soyuz.interfaces.binarypackagebuild import (
     BuildSetStatus,
     IBinaryPackageBuildSet,
@@ -86,7 +89,6 @@ from lp.soyuz.interfaces.publishing import (
     PackagePublishingStatus,
     PoolFileOverwriteError,
     )
-from lp.soyuz.interfaces.queue import PackageUploadStatus
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import (
     BinaryPackageRelease,

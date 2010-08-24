@@ -22,6 +22,9 @@ from lp.app.errors import (
     NotFoundError,
     UnexpectedFormData,
     )
+from lp.soyuz.enums import (
+    PackageUploadStatus,
+    )
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.component import IComponentSet
@@ -35,10 +38,8 @@ from lp.soyuz.interfaces.publishing import (
     PackagePublishingPriority,
     )
 from lp.soyuz.interfaces.queue import (
-    IHasQueueItems,
     IPackageUpload,
     IPackageUploadSet,
-    PackageUploadStatus,
     QueueInconsistentStateError,
     )
 from lp.soyuz.interfaces.section import ISectionSet

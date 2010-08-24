@@ -113,7 +113,10 @@ from lp.registry.model.structuralsubscription import (
     StructuralSubscriptionTargetMixin,
     )
 from lp.services.worlddata.model.language import Language
-from lp.soyuz.enums import ArchivePurpose
+from lp.soyuz.enums import (
+    ArchivePurpose,
+    PackageUploadStatus,
+    )
 from lp.soyuz.interfaces.archive import (
     ALLOW_RELEASE_BUILDS,
     )
@@ -128,7 +131,6 @@ from lp.soyuz.interfaces.publishing import (
 from lp.soyuz.interfaces.queue import (
     IHasQueueItems,
     IPackageUploadSet,
-    PackageUploadStatus,
     )
 from lp.soyuz.interfaces.sourcepackageformat import (
     ISourcePackageFormatSelectionSet,

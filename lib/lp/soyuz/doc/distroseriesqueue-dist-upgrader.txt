@@ -162,7 +162,7 @@ Cleanup the mess:
 Inspect the QUEUE looking for an ACCEPTED entry corresponding to the
 previous upload:
 
-  >>> from lp.soyuz.interfaces.queue import PackageUploadStatus
+  >>> from lp.soyuz.enums import PackageUploadStatus
   >>> queue_item = breezy_autotest.getQueueItems(
   ...      status=PackageUploadStatus.ACCEPTED)[0]
   >>> queue_item.customfiles[0].libraryfilealias.filename

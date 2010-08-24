@@ -21,11 +21,13 @@ from canonical.launchpad.webapp.interfaces import (
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.adapters.packagelocation import PackageLocation
-from lp.soyuz.enums import ArchivePurpose
+from lp.soyuz.enums import (
+    ArchivePurpose,
+    PackageUploadStatus,
+    )
 from lp.soyuz.interfaces.archive import (
     IArchiveSet,
     )
-from lp.soyuz.interfaces.queue import PackageUploadStatus
 from lp.soyuz.model.packagecloner import clone_packages
 
 

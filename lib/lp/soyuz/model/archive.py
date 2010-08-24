@@ -96,7 +96,8 @@ from lp.soyuz.enums import (
     ArchivePurpose,
     ArchiveStatus,
     ArchiveSubscriberStatus,
-)
+    PackageUploadStatus,
+    )
 from lp.soyuz.interfaces.archive import (
     AlreadySubscribed,
     ArchiveDependencyError,
@@ -150,7 +151,6 @@ from lp.soyuz.interfaces.publishing import (
     IPublishingSet,
     PackagePublishingStatus,
     )
-from lp.soyuz.interfaces.queue import PackageUploadStatus
 from lp.soyuz.model.archiveauthtoken import ArchiveAuthToken
 from lp.soyuz.model.archivedependency import ArchiveDependency
 from lp.soyuz.model.archivesubscriber import ArchiveSubscriber
