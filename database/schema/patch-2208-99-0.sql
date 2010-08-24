@@ -5,7 +5,7 @@ CREATE TABLE DistroSeriesDifference (
     derived_series integer NOT NULL CONSTRAINT distroseriesdifference__derived_series__fk REFERENCES distroseries,
     source_package_publishing_history integer CONSTRAINT distroseriesdifference__spph__fk REFERENCES sourcepackagepublishinghistory,
     parent_source_package_publishing_history integer CONSTRAINT distroseriesdifference__parent_spph__fk REFERENCES sourcepackagepublishinghistory,
-    comment text,
+    activity_log text,
     status integer NOT NULL
 );
 CREATE INDEX distroseriesdifference__derived_series__idx ON distroseriesdifference(derived_series);
