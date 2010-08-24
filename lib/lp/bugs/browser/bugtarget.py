@@ -1250,7 +1250,6 @@ class BugTargetBugsView(BugTaskSearchListingView, FeedsMixin):
         if IDistroSeries.providedBy(self.context):
             bug_statuses_to_show.append(BugTaskStatus.FIXRELEASED)
 
-    # TODO: Figure out how to update this.
     @property
     def uses_launchpad_bugtracker(self):
         """Whether this distro or product tracks bugs in launchpad.
