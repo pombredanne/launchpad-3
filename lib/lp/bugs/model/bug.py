@@ -70,9 +70,9 @@ from zope.interface import (
     providedBy,
     )
 
-from canonical.cachedproperty import (
+from lp.services.propertycache import (
     cachedproperty,
-    clear_property,
+    IPropertyCache,
     )
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
@@ -633,7 +633,7 @@ class Bug(SQLBase):
                 # disabled see the change.
                 store.flush()
                 self.updateHeat()
-                clear_property(self, '_cached_viewers')
+                del IPropertyCache(self)._known_viewers
                 return
 
     def unsubscribeFromDupes(self, person, unsubscribed_by):
@@ -1626,7 +1626,7 @@ class Bug(SQLBase):
             self, self.messages[comment_number])
         bug_message.visible = visible
 
-    @cachedproperty('_cached_viewers')
+    @cachedproperty
     def _known_viewers(self):
         """A dict of of known persons able to view this bug."""
         return set()
