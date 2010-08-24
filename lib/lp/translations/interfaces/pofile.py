@@ -282,7 +282,12 @@ class IPOFile(IRosettaStats):
         """
 
     def markChanged(translator=None, timestamp=None):
-        """Note a change to this `POFile` or its contents."""
+        """Note a change to this `POFile` or its contents.
+
+        :param translator: The person making this change.  If given,
+            `lasttranslator` will be updated to refer to this person.
+        :param timestamp: Time of the change.  Defaults to "now."
+        """
 
 
 class AlternativeLanguageVocabularyFactory:
