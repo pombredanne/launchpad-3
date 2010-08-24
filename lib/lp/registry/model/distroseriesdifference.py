@@ -33,7 +33,7 @@ class DistroSeriesDifference(Storm):
 
     derived_series_id = Int(name='derived_series', allow_none=False)
     derived_series = Reference(
-        derived_series_id, 'DistroSeriesDifference.id')
+        derived_series_id, 'DistroSeries.id')
 
     source_package_id = Int(
         name='source_package_publishing_history', allow_none=True)

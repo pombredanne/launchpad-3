@@ -110,6 +110,7 @@ from lp.code.interfaces.sourcepackagerecipebuild import (
 from lp.code.model.diff import Diff, PreviewDiff, StaticDiff
 from lp.codehosting.codeimport.worker import CodeImportSourceDetails
 
+from lp.registry.enum import DistroSeriesDifferenceStatus
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.gpg import GPGKeyAlgorithm, IGPGKeySet
@@ -1731,15 +1732,29 @@ class BareLaunchpadObjectFactory(ObjectFactory):
     # Most people think of distro releases as distro series.
     makeDistroSeries = makeDistroRelease
 
-    def makeDistroSeriesDifference(self, derived_series=None, source_pub=None,
-                                    parent_source_pub=None):
+    def makeDistroSeriesDifference(self, derived_series=None, source_package=None,
+                                    parent_source_package=None):
         """Create a new distro series source package difference."""
         if derived_series is None:
-            parent_series = self.factory.makeDistroSeries()
-            derived_series = self.factory.makeDistroSeries(
+            parent_series = self.makeDistroSeries()
+            derived_series = self.makeDistroSeries(
                 parent_series=parent_series)
-
-
+        if source_package is None:
+            source_package = self.makeSourcePackagePublishingHistory(
+                distroseries=derived_series)
+        if parent_source_package is None:
+            sp_name = source_package.sourcepackagerelease.sourcepackagename
+            parent_source_package = self.makeSourcePackagePublishingHistory(
+                distroseries=parent_series, sourcepackagename=sp_name)
+        from lp.registry.model.distroseriesdifference import DistroSeriesDifference
+        from storm.store import Store
+        diff = DistroSeriesDifference()
+        diff.derived_series = derived_series
+        diff.source_package = source_package
+        diff.parent_source_package = parent_source_package
+        diff.status = DistroSeriesDifferenceStatus.NEEDS_ATTENTION
+        store = Store.of(derived_series)
+        return store.add(diff)
 
     def makeDistroArchSeries(self, distroseries=None,
                              architecturetag=None, processorfamily=None,
