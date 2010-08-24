@@ -218,7 +218,7 @@
             tal:condition="context/official_answers" />
 
           <div tal:content="structure context/@@+portlet-latestbugs"
-            tal:condition="context/official_malone" />
+            tal:condition="context/bug_tracking_usage/enumvalue:LAUNCHPAD" />
 
           <div tal:content="structure context/@@+portlet-top-contributors" />
 

@@ -80,7 +80,7 @@
         </tal:has-many-project>
 
         <tal:bugs content="structure context/@@+portlet-latestbugs"
-          condition="context/@@+get-involved/official_malone" />
+          condition="context/@@+get-involved/bug_tracking_usage/enumvalue:LAUNCHPAD" />
 
         <tal:has-many-project condition="view/has_many_projects">
           <tal:specs content="structure context/@@+portlet-latestspecs"
