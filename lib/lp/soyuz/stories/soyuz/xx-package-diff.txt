@@ -99,8 +99,7 @@ later.
     >>> from zope.security.proxy import removeSecurityProxy
     >>> from canonical.database.constants import UTC_NOW
     >>> from canonical.launchpad.ftests import syncUpdate
-    >>> from lp.soyuz.interfaces.packagediff import (
-    ...     PackageDiffStatus)
+    >>> from lp.soyuz.enums import PackageDiffStatus
     >>> from canonical.librarian.interfaces import ILibrarianClient
 
     >>> def perform_fake_diff(diff, filename):

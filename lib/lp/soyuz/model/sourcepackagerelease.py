@@ -59,6 +59,7 @@ from lp.registry.interfaces.sourcepackage import (
     SourcePackageType,
     SourcePackageUrgency,
     )
+from lp.soyuz.enums import PackageDiffStatus
 from lp.soyuz.interfaces.archive import (
     IArchiveSet,
     MAIN_ARCHIVE_PURPOSES,
@@ -66,7 +67,6 @@ from lp.soyuz.interfaces.archive import (
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.packagediff import (
     PackageDiffAlreadyRequested,
-    PackageDiffStatus,
     )
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
