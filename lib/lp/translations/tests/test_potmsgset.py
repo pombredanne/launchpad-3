@@ -26,7 +26,6 @@ from lp.translations.interfaces.translationfileformat import (
     TranslationFileFormat)
 from lp.translations.interfaces.translationmessage import (
     RosettaTranslationOrigin, TranslationConflict)
-from lp.translations.interfaces.side import ITranslationSideTraitsSet
 from lp.translations.model.translationmessage import (
     DummyTranslationMessage)
 
