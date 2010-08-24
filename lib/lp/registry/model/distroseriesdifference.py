@@ -27,7 +27,7 @@ from lp.registry.interfaces.distroseriesdifference import (
 class DistroSeriesDifference(Storm):
     """See `DistroSeriesDifference`."""
     implements(IDistroSeriesDifference)
-    __storm_table__ = 'ArchiveSubscriber'
+    __storm_table__ = 'DistroSeriesDifference'
 
     id = Int(primary=True)
 

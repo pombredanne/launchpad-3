@@ -1731,6 +1731,16 @@ class BareLaunchpadObjectFactory(ObjectFactory):
     # Most people think of distro releases as distro series.
     makeDistroSeries = makeDistroRelease
 
+    def makeDistroSeriesDifference(self, derived_series=None, source_pub=None,
+                                    parent_source_pub=None):
+        """Create a new distro series source package difference."""
+        if derived_series is None:
+            parent_series = self.factory.makeDistroSeries()
+            derived_series = self.factory.makeDistroSeries(
+                parent_series=parent_series)
+
+
+
     def makeDistroArchSeries(self, distroseries=None,
                              architecturetag=None, processorfamily=None,
                              official=True, owner=None,

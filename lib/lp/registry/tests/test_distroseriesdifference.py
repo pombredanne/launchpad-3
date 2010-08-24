@@ -9,7 +9,8 @@ import unittest
 
 from storm.store import Store
 
-from canonical.testing import DatabaseFunctionalLayer, LaunchpadFunctionalLayer
+from canonical.launchpad.webapp.testing import verifyObject
+from canonical.testing import DatabaseFunctionalLayer
 from lp.testing import TestCaseWithFactory
 from lp.registry.interfaces.distroseriesdifference import (
     IDistroSeriesDifference,
@@ -21,7 +22,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def test_provides_interface(self):
+    def test_implements_interface(self):
         parent_series = self.factory.makeDistroSeries()
         distro_series = self.factory.makeDistroSeries(
             parent_series=parent_series)
@@ -37,7 +38,10 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         store = Store.of(distro_series)
         store.add(diff)
 
-        self.assertProvides(diff, IDistroSeriesDifference)
+        diff_reloaded = store.find(
+            DistroSeriesDifference, DistroSeriesDifference.id == diff.id)
+
+        verifyObject(IDistroSeriesDifference, diff_reloaded)
 
 
 def test_suite():
