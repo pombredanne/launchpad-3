@@ -1178,7 +1178,7 @@ class POTMsgSet(SQLBase):
                         traits.other_side_traits.getCurrentMessage(
                             self, pofile.potemplate, pofile.language))
                     if other_incumbent is None:
-                        traits.other_side_side.setFlag(message, True)
+                        traits.other_side_traits.setFlag(message, True)
             elif character == '+':
                 if share_with_other_side:
                     traits.other_side_traits.setFlag(message, True)
