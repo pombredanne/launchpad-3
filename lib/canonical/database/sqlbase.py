@@ -65,7 +65,6 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.cachedproperty import clear_cachedproperties
 from canonical.config import (
     config,
     dbconfig,
@@ -271,10 +270,6 @@ class SQLBase(storm.sqlobject.SQLObjectBase):
         # XXX: RobertCollins 2010-08-16 bug=622648: Note this is not directly
         # tested, but the entire test suite blows up awesomely if it's broken.
         # It's entirely unclear where tests for this should be.
-
-        # While canonical.cachedproperty and lp.services.propertycache are
-        # both in use, we must clear the caches for both.
-        clear_cachedproperties(self)
         IPropertyCacheManager(self).clear()
 
 
