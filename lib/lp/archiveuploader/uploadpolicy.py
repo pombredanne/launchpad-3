@@ -83,6 +83,37 @@ class AbstractUploadPolicy:
         # The earliest year we accept in a deb's file's mtime
         self.earliest_year = 1984
 
+    def validateUploadType(self, upload):
+        if upload.sourceful and not self.can_upload_source:
+            upload.reject("Upload is sourceful, but policy refuses "
+                          "sourceful uploads.")
+
+        elif upload.binaryful and not self.can_upload_binaries:
+            messages = [
+                "Upload rejected because it contains binary packages.",
+                "Ensure you are using `debuild -S`, or an equivalent",
+                "command, to generate only the source package before",
+                "re-uploading.",
+                ]
+            if upload.is_ppa:
+                messages.append(
+                "See https://help.launchpad.net/Packaging/PPA for more "
+                "information.")
+            upload.reject(" ".join(messages))
+
+        elif (upload.sourceful and upload.binaryful and
+              not self.can_upload_mixed):
+            upload.reject("Upload is source/binary but policy refuses "
+                          "mixed uploads.")
+
+        elif upload.sourceful and not upload.changes.dsc:
+            upload.reject(
+                "Unable to find the DSC file in the source upload.")
+
+        else:
+            # Upload content is consistent with the policy.
+            pass
+
     def getUploader(self, changes):
         """Get the person who is doing the uploading."""
         return changes.signer

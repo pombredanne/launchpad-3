@@ -185,35 +185,7 @@ class NascentUpload:
             isinstance(self.changes.files[0], CustomUploadFile)):
             self.logger.debug("Single Custom Upload detected.")
         else:
-            if self.sourceful and not self.policy.can_upload_source:
-                self.reject("Upload is sourceful, but policy refuses "
-                            "sourceful uploads.")
-
-            elif self.binaryful and not self.policy.can_upload_binaries:
-                messages = [
-                    "Upload rejected because it contains binary packages.",
-                    "Ensure you are using `debuild -S`, or an equivalent",
-                    "command, to generate only the source package before",
-                    "re-uploading.",
-                    ]
-                if self.is_ppa:
-                    messages.append(
-                    "See https://help.launchpad.net/Packaging/PPA for more "
-                    "information.")
-                self.reject(" ".join(messages))
-
-            elif (self.sourceful and self.binaryful and
-                  not self.policy.can_upload_mixed):
-                self.reject("Upload is source/binary but policy refuses "
-                            "mixed uploads.")
-
-            elif self.sourceful and not self.changes.dsc:
-                self.reject(
-                    "Unable to find the DSC file in the source upload.")
-
-            else:
-                # Upload content are consistent with the current policy.
-                pass
+            self.policy.validateUploadType(self)
 
             # Apply the overrides from the database. This needs to be done
             # before doing component verifications because the component
