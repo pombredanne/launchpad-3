@@ -3,8 +3,8 @@
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-
-from lp.archiveuploader.uploadpolicy import AbstractUploadPolicy
+from lp.archiveuploader.uploadpolicy import (
+    AbstractUploadPolicy, ArchiveUploadType)
 from lp.testing import TestCase
 
 
@@ -12,7 +12,7 @@ class TestUploadPolicy_validateUploadType(TestCase):
     """Test what kind (sourceful/binaryful/mixed) of uploads are accepted."""
 
     def test_sourceful_accepted(self):
-        policy = make_policy(can_upload_source=True)
+        policy = make_policy(accepted_type=ArchiveUploadType.SOURCE_ONLY)
         upload = make_fake_upload(sourceful=True)
 
         policy.validateUploadType(upload)
@@ -20,7 +20,7 @@ class TestUploadPolicy_validateUploadType(TestCase):
         self.assertEquals([], upload.rejections)
 
     def test_binaryful_accepted(self):
-        policy = make_policy(can_upload_binaries=True)
+        policy = make_policy(accepted_type=ArchiveUploadType.BINARY_ONLY)
         upload = make_fake_upload(binaryful=True)
 
         policy.validateUploadType(upload)
@@ -28,7 +28,7 @@ class TestUploadPolicy_validateUploadType(TestCase):
         self.assertEquals([], upload.rejections)
 
     def test_mixed_accepted(self):
-        policy = make_policy(can_upload_mixed=True)
+        policy = make_policy(accepted_type=ArchiveUploadType.MIXED_ONLY)
         upload = make_fake_upload(sourceful=True, binaryful=True)
 
         policy.validateUploadType(upload)
@@ -36,7 +36,7 @@ class TestUploadPolicy_validateUploadType(TestCase):
         self.assertEquals([], upload.rejections)
 
     def test_sourceful_not_accepted(self):
-        policy = make_policy(can_upload_source=False)
+        policy = make_policy(accepted_type=ArchiveUploadType.BINARY_ONLY)
         upload = make_fake_upload(sourceful=True)
 
         policy.validateUploadType(upload)
@@ -46,7 +46,7 @@ class TestUploadPolicy_validateUploadType(TestCase):
             upload.rejections)
 
     def test_binaryful_not_accepted(self):
-        policy = make_policy(can_upload_binaries=False)
+        policy = make_policy(accepted_type=ArchiveUploadType.SOURCE_ONLY)
         upload = make_fake_upload(binaryful=True)
 
         policy.validateUploadType(upload)
@@ -57,7 +57,7 @@ class TestUploadPolicy_validateUploadType(TestCase):
             upload.rejections[0])
 
     def test_mixed_not_accepted(self):
-        policy = make_policy(can_upload_mixed=False)
+        policy = make_policy(accepted_type=ArchiveUploadType.SOURCE_ONLY)
         upload = make_fake_upload(sourceful=True, binaryful=True)
 
         policy.validateUploadType(upload)
@@ -67,7 +67,7 @@ class TestUploadPolicy_validateUploadType(TestCase):
             upload.rejections)
 
     def test_sourceful_when_only_mixed_accepted(self):
-        policy = make_policy(can_upload_mixed=True)
+        policy = make_policy(accepted_type=ArchiveUploadType.MIXED_ONLY)
         upload = make_fake_upload(sourceful=True, binaryful=False)
 
         policy.validateUploadType(upload)
@@ -77,7 +77,7 @@ class TestUploadPolicy_validateUploadType(TestCase):
             upload.rejections)
 
     def test_binaryful_when_only_mixed_accepted(self):
-        policy = make_policy(can_upload_mixed=True)
+        policy = make_policy(accepted_type=ArchiveUploadType.MIXED_ONLY)
         upload = make_fake_upload(sourceful=False, binaryful=True)
 
         policy.validateUploadType(upload)
@@ -104,11 +104,7 @@ def make_fake_upload(sourceful=False, binaryful=False):
     return FakeNascentUpload(sourceful, binaryful)
 
 
-def make_policy(can_upload_source=False, can_upload_binaries=False,
-                can_upload_mixed=False):
+def make_policy(accepted_type):
     policy = AbstractUploadPolicy()
-    policy.can_upload_mixed = can_upload_mixed
-    policy.can_upload_binaries = can_upload_binaries
-    policy.can_upload_source = can_upload_source
+    policy.accepted_type = accepted_type
     return policy
-

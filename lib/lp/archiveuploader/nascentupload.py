@@ -973,9 +973,6 @@ class NascentUpload:
                     # so late in the game is that in the
                     # mixed-upload case we only have a
                     # sourcepackagerelease to verify here!
-                    # XXX: This check may be redundant and possible to remove.
-                    assert self.policy.can_upload_mixed, (
-                        "Current policy does not allow mixed uploads.")
                     assert sourcepackagerelease, (
                         "No sourcepackagerelease was found.")
                     binary_package_file.verifySourcePackageRelease(

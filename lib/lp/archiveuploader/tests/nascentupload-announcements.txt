@@ -297,9 +297,10 @@ archiveuploader/ftests/test_ppauploadprocessor.
 NEW binary upload to RELEASE pocket via 'sync' policy (we need to
 override sync policy to allow binary uploads):
 
+  >>> from lp.archiveuploader.uploadpolicy import ArchiveUploadType
   >>> modified_sync_policy = getPolicy(
   ...     name='sync', distro='ubuntu', distroseries='hoary')
-  >>> modified_sync_policy.can_upload_binaries = True
+  >>> modified_sync_policy.accepted_type = ArchiveUploadType.BINARY_ONLY
 
   >>> bar_src = NascentUpload.from_changesfile_path(
   ...     datadir('suite/bar_1.0-1_binary/bar_1.0-1_i386.changes'),

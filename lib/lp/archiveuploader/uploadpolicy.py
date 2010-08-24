@@ -7,6 +7,7 @@ __metaclass__ = type
 
 __all__ = [
     "AbstractUploadPolicy",
+    "ArchiveUploadType",
     "BuildDaemonUploadPolicy",
     "findPolicyByName",
     "IArchiveUploadPolicy",
@@ -27,6 +28,9 @@ from canonical.launchpad.interfaces import ILaunchpadCelebrities
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
+
+from lazr.enum import EnumeratedType, Item
+
 
 # Defined here so that uploadpolicy.py doesn't depend on lp.code.
 SOURCE_PACKAGE_RECIPE_UPLOAD_POLICY_NAME = 'recipe'
@@ -52,6 +56,13 @@ class IArchiveUploadPolicy(Interface):
     """
 
 
+class ArchiveUploadType(EnumeratedType):
+
+    SOURCE_ONLY = Item("Source only")
+    BINARY_ONLY = Item("Binary only")
+    MIXED_ONLY = Item("Mixed only")
+
+
 class AbstractUploadPolicy:
     """Encapsulate the policy of an upload to a launchpad archive.
 
@@ -63,8 +74,9 @@ class AbstractUploadPolicy:
     """
     implements(IArchiveUploadPolicy)
 
-    options = None
     name = 'abstract'
+    options = None
+    accepted_type = None # Must be defined in subclasses.
 
     def __init__(self):
         """Prepare a policy..."""
@@ -75,12 +87,6 @@ class AbstractUploadPolicy:
         self.unsigned_changes_ok = False
         self.unsigned_dsc_ok = False
         self.create_people = True
-        # Accept uploads containing source packages.
-        self.can_upload_source = True
-        # Accept uploads containing binary packages.
-        self.can_upload_binaries = True
-        # Accept uploads containing source and binary packages.
-        self.can_upload_mixed = False
         # future_time_grace is in seconds. 28800 is 8 hours
         self.future_time_grace = 8 * HOURS
         # The earliest year we accept in a deb's file's mtime
@@ -93,19 +99,19 @@ class AbstractUploadPolicy:
         the upload is rejected.
         """
         if upload.sourceful and upload.binaryful:
-            if not self.can_upload_mixed:
+            if self.accepted_type != ArchiveUploadType.MIXED_ONLY:
                 upload.reject(
                     "Source/binary (i.e. mixed) uploads are not allowed.")
 
         elif upload.sourceful:
-            if not self.can_upload_source:
+            if self.accepted_type != ArchiveUploadType.SOURCE_ONLY:
                 upload.reject(
                     "Sourceful uploads are not accepted by this policy.")
 
         else:
             assert upload.binaryful, (
                 "Upload is not sourceful, binaryful or mixed.")
-            if not self.can_upload_binaries:
+            if self.accepted_type != ArchiveUploadType.BINARY_ONLY:
                 messages = [
                     "Upload rejected because it contains binary packages.",
                     "Ensure you are using `debuild -S`, or an equivalent",
@@ -206,10 +212,7 @@ class InsecureUploadPolicy(AbstractUploadPolicy):
     """The insecure upload policy is used by the poppy interface."""
 
     name = 'insecure'
-
-    def __init__(self):
-        AbstractUploadPolicy.__init__(self)
-        self.can_upload_binaries = False
+    accepted_type = ArchiveUploadType.SOURCE_ONLY
 
     def rejectPPAUploads(self, upload):
         """Insecure policy allows PPA upload."""
@@ -317,13 +320,13 @@ class BuildDaemonUploadPolicy(AbstractUploadPolicy):
     """The build daemon upload policy is invoked by the slave scanner."""
 
     name = 'buildd'
+    accepted_type = ArchiveUploadType.BINARY_ONLY
 
     def __init__(self):
         super(BuildDaemonUploadPolicy, self).__init__()
         # We permit unsigned uploads because we trust our build daemons
         self.unsigned_changes_ok = True
         self.unsigned_dsc_ok = True
-        self.can_upload_source = False
 
     def setOptions(self, options):
         AbstractUploadPolicy.setOptions(self, options)
@@ -347,14 +350,13 @@ class SyncUploadPolicy(AbstractUploadPolicy):
     """This policy is invoked when processing sync uploads."""
 
     name = 'sync'
+    accepted_type = ArchiveUploadType.SOURCE_ONLY
 
     def __init__(self):
         AbstractUploadPolicy.__init__(self)
         # We don't require changes or dsc to be signed for syncs
         self.unsigned_changes_ok = True
         self.unsigned_dsc_ok = True
-        # We don't want binaries in a sync
-        self.can_upload_binaries = False
 
     def policySpecificChecks(self, upload):
         """Perform sync specific checks."""
