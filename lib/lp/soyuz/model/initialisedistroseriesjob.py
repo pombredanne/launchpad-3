@@ -25,9 +25,8 @@ from lazr.delegates import delegates
  
 from lp.registry.model.distroseries import DistroSeries
 from lp.soyuz.interfaces.initialisedistroseriesjob import (
-    IInitialiseDistroSeriesJob,
-    IInitialiseDistroSeriesJobSource)
-    
+    IInitialiseDistroSeriesJob, IInitialiseDistroSeriesJobSource,
+    InitialiseDistroSeriesJobType)
 from lp.services.job.model.job import Job
 from lp.services.job.runner import BaseRunnableJob
 
@@ -47,13 +46,16 @@ class InitialiseDistroSeriesJob(Storm):
     distroseries_id = Int(name='distroseries')
     distroseries = Reference(distroseries_id, DistroSeries.id)
 
+    job_type = EnumCol(enum=InitialiseDistroSeriesJobType, notNull=True)
+
     _json_data = Unicode('json_data')
 
-    def __init__(self, distroseries, metadata):
+    def __init__(self, distroseries, job_type, metadata):
         super(InitialiseDistroSeriesJob, self).__init__()
         json_data = simplejson.dumps(metadata)
         self.job = Job()
         self.distroseries = distroseries
+        self.job_type = job_type
         self._json_data = json_data.decode('utf-8')
 
     @property
@@ -84,7 +86,7 @@ class InitialiseDistroSeriesJobDerived(BaseRunnableJob):
         """See `IInitialiseDistroSeriesJob`."""
         # If there's already a job, don't create a new one.
         job = InitialiseDistroSeriesJob(
-            distroseries, {})
+            distroseries, cls.class_job_type, {})
         return cls(job)
 
     @classmethod
@@ -93,9 +95,14 @@ class InitialiseDistroSeriesJobDerived(BaseRunnableJob):
 
         :return: the InitialiseDistroSeriesJob with the specified id, as
                  the current InitialiseDistroSeriesJobDerived subclass.
-        :raises: SQLObjectNotFound if there is no job with the specified id.
+        :raises: SQLObjectNotFound if there is no job with the specified id,
+                 or its job_type does not match the desired subclass.
         """
         job = InitialiseDistroSeriesJob.get(job_id)
+        if job.job_type != cls.class_job_type:
+            raise SQLObjectNotFound(
+                'No object found with id %d and type %s' % (job_id,
+                cls.class_job_type.title))
         return cls(job)
 
     @classmethod
@@ -104,7 +111,8 @@ class InitialiseDistroSeriesJobDerived(BaseRunnableJob):
         store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
         jobs = store.find(
             InitialiseDistroSeriesJob,
-            And(InitialiseDistroSeriesJob.job == Job.id,
+            And(InitialiseDistroSeriesJob.job_type == cls.class_job_type,
+                InitialiseDistroSeriesJob.job == Job.id,
                 Job.id.is_in(Job.ready_jobs),
                 InitialiseDistroSeriesJob.distroseries == DistroSeries.id))
         return (cls(job) for job in jobs)
@@ -115,6 +123,7 @@ class InitialiseDistroSeriesJobDerived(BaseRunnableJob):
         vars.extend([
             ('distroseries_id', self.context.distroseries.id),
             ('distroseries_job_id', self.context.id),
+            ('distroseries_job_type', self.context.job_type.title),
             ])
         return vars
 

@@ -12,6 +12,8 @@ CREATE TABLE InitialiseDistroSeriesJob (
     job integer NOT NULL CONSTRAINT initialisedistroseriesjob__job__fk REFERENCES job,
     -- FK to the associated `InitialiseDistroSeries` record.
     distroseries integer NOT NULL CONSTRAINT initialisedistroseriesjob__distroseries__fk REFERENCES DistroSeries,
+    -- The particular type of foo job
+    job_type integer NOT NULL,
     -- JSON data for use by the job
     json_data text
 );

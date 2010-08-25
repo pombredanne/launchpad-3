@@ -8,6 +8,7 @@ __all__ = [
     "IDoInitialiseDistroSeriesJobSource",
     "IInitialiseDistroSeriesJob",
     "IInitialiseDistroSeriesJobSource",
+    "InitialiseDistroSeriesJobType",
 ]
 
 from lazr.enum import DBEnumeratedType, DBItem
@@ -45,6 +46,16 @@ class IInitialiseDistroSeriesJobSource(IJobSource):
 
     def create(distroseries):
         """Create a new IInitialiseDistroSeriesJobs for a distroseries."""
+
+
+class InitialiseDistroSeriesJobType(DBEnumeratedType):
+
+    DO_INITIALISE = DBItem(0, """
+        Initialise a Distro Series.
+
+        This job initialises a given distro series, creating builds, and
+        populating the archive from the parent distroseries.
+        """)
 
 
 class IDoInitialiseDistroSeriesJob(IRunnableJob):
