@@ -419,14 +419,12 @@ class TranslationTemplateVocabulary(SQLObjectVocabularyBase):
         if context.productseries != None:
             self._filter = AND(
                 POTemplate.iscurrent == True,
-                POTemplate.productseries == context.productseries
-            )
+                POTemplate.productseries == context.productseries)
         else:
             self._filter = AND(
                 POTemplate.iscurrent == True,
                 POTemplate.distroseries == context.distroseries,
-                POTemplate.sourcepackagename == context.sourcepackagename
-            )
+                POTemplate.sourcepackagename == context.sourcepackagename)
         super(TranslationTemplateVocabulary, self).__init__(context)
 
     def toTerm(self, obj):

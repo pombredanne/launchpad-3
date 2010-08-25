@@ -119,15 +119,11 @@ from zope.schema.vocabulary import (
     SimpleVocabulary,
     )
 from zope.security.interfaces import Unauthorized
-from zope.security.proxy import (
-    isinstance as zope_isinstance,
-    removeSecurityProxy,
-    )
+from zope.security.proxy import isinstance as zope_isinstance
 from zope.traversing.interfaces import IPathAdapter
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
-from canonical.database.sqlbase import cursor
 from canonical.launchpad import (
     _,
     helpers,
