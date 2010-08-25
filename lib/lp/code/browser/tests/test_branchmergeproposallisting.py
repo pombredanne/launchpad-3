@@ -335,7 +335,8 @@ class ActiveReviewSortingTest(TestCaseWithFactory):
         login_person(bmp3.source_branch.owner)
         bmp3.requestReview(datetime(2009,1,1,tzinfo=pytz.UTC))
         login(ANONYMOUS)
-        view = create_initialized_view(product, name='+activereviews')
+        view = create_initialized_view(
+            product, name='+activereviews', rootsite='code')
         self.assertEqual(
             [bmp3, bmp2, bmp1],
             [item.context for item in view.review_groups[view.OTHER]])

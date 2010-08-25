@@ -94,7 +94,8 @@ class RecipesForPersonBreadcrumb(Breadcrumb):
 
     @property
     def url(self):
-        return canonical_url(self.context, view_name="+recipes")
+        return canonical_url(
+            self.context, view_name="+recipes", rootsite='code')
 
 
 class SourcePackageRecipeHierarchy(Hierarchy):
