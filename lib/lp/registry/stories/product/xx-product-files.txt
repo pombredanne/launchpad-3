@@ -9,7 +9,7 @@ Any user can see that a project with no releases has no downloads.
     >>> content = find_tag_by_id(anon_browser.contents, 'downloads')
     >>> print extract_text(content)
     Downloads
-    APTonCD does not have any download files.
+    APTonCD does not have any download files registered with Launchpad.
 
 Any user can see a project with a release without files has no downlaod files.
 
@@ -17,7 +17,7 @@ Any user can see a project with a release without files has no downlaod files.
     >>> content = find_tag_by_id(anon_browser.contents, 'downloads')
     >>> print extract_text(content)
     Downloads
-    Mozilla Thunderbird does not have any download files.
+    Mozilla Thunderbird does not have any download files registered with Launchpad.
 
 Any user can see a projects download files organised by series. For each
 series, the owner sees a heading, summary, table of files, and links to each
