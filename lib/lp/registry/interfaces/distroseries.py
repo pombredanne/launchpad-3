@@ -641,6 +641,8 @@ class IDistroSeriesPublic(
          :param source_package_recipe_build: optional SourcePackageRecipeBuild
          :param user_defined_fields: optional sequence of key-value pairs with
                                      user defined fields.
+         :param homepage: optional string with (unchecked) upstream homepage
+                          URL
          :return: the just creates `SourcePackageRelease`
         """
 
