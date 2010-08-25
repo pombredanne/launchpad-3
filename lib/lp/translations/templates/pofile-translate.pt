@@ -47,33 +47,36 @@
               </div>
               <img src="/@@/info" alt="Information" />
               <span class="important-notice"
-                  tal:condition="view/translation_group/translation_guide_url">
+                    tal:condition="view/user_is_new_translator">
+                New to translating in Launchpad?
+                <a href="/+help/new-to-translating.html"
+                   target="help">Read our guide</a>.
+              </span>
+              <span class="important-notice"
+                    tal:condition="view/translation_group_guide">
                 Before translating, be sure to go through
                 <a tal:content="string:${view/translation_group/title}
                                 instructions"
-                   tal:attributes="href
-                        view/translation_group/translation_guide_url">
-                  translation instructions</a><!--
-             --><tal:has_team
-                   condition="view/translation_team"><!--
-                  --><tal:has_guidelines
-                      tal:condition="view/translation_team/style_guide_url">
-                  and <a class="style-guide-url"
-                         tal:attributes="
-                           href view/translation_team/style_guide_url"
-                         tal:content="string:${context/language/englishname}
-                                      guidelines">Serbian guidelines</a><!--
-               --></tal:has_guidelines><!--
-             --></tal:has_team>.
+                   tal:attributes="href view/translation_group_guide">
+                  translation instructions</a>
+                <tal:team_guidelines condition="view/translation_team_guide">
+                  and
+                  <a class="style-guide-url"
+                     tal:attributes="href view/translation_team_guide"
+                     tal:content="string:${context/language/englishname}
+                                  guidelines">Serbian guidelines
+                  </a></tal:team_guidelines>.
               </span>
               <span class="important-notice"
-                  tal:condition="not:view/translation_group/translation_guide_url">
-                Before translating, be sure to go through
-                <a class="style-guide-url"
-                   tal:content="string:${view/translation_team/translator/displayname}
-                                guidelines"
-                   tal:attributes="href view/translation_team/style_guide_url">
-                  Serbian guidelines</a>.
+                  tal:condition="not:view/translation_group_guide">
+                <tal:team_guidelines condition="view/translation_team_guide">
+                  Before translating, be sure to go through
+                  <a class="style-guide-url"
+                     tal:content="string:${view/translation_team/translator/displayname}
+                                  guidelines"
+                     tal:attributes="href view/translation_team_guide">
+                    Serbian guidelines</a>.
+                  </tal:team_guidelines>
               </span>
             </div>
           </div>

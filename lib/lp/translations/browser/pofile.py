@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser code for Translation files."""
@@ -41,6 +41,7 @@ from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue)
 from lp.translations.interfaces.translationsperson import (
     ITranslationsPerson)
+from canonical.launchpad.interfaces import ILaunchBag
 from canonical.launchpad.webapp import (
     canonical_url, enabled_with_permission, LaunchpadView,
     Link, Navigation, NavigationMenu)
@@ -270,16 +271,41 @@ class POFileBaseView(LaunchpadView):
         return None
 
     @cachedproperty
+    def user_is_new_translator(self):
+        """Is this user someone who has done no translation work yet?"""
+        user = getUtility(ILaunchBag).user
+        if user is not None:
+            translationsperson = ITranslationsPerson(user)
+            if not translationsperson.hasTranslated():
+                return True
+
+        return False
+
+    @cachedproperty
+    def translation_group_guide(self):
+        """URL to translation group's translation guide, if any."""
+        group = self.translation_group
+        if group is None:
+            return None
+        else:
+            return group.translation_guide_url
+
+    @cachedproperty
+    def translation_team_guide(self):
+        """URL to translation team's translation guide, if any."""
+        translator = self._get_translator_entry()
+        if translator is None:
+            return None
+        else:
+            return translator.style_guide_url
+
+    @cachedproperty
     def has_any_documentation(self):
         """Return whether there is any documentation for this POFile."""
-        if (self.translation_group is not None and
-            self.translation_group.translation_guide_url is not None):
-            return True
-        translator_entry = self._get_translator_entry()
-        if (translator_entry is not None and
-            translator_entry.style_guide_url is not None):
-            return True
-        return False
+        return (
+            self.translation_group_guide is not None or
+            self.translation_team_guide is not None or
+            self.user_is_new_translator)
 
     def _initializeShowOption(self):
         # Get any value given by the user
@@ -514,7 +540,7 @@ class POFileFilteredView(LaunchpadView):
         """See `LaunchpadView`."""
         return smartquote('Translations by %s in "%s"') % (
             self._person_name, self.context.title)
-    
+
     def label(self):
         """See `LaunchpadView`."""
         return "Translations by %s" % self._person_name
@@ -725,15 +751,41 @@ class POFileTranslateView(BaseTranslationView):
         return team
 
     @cachedproperty
+    def user_is_new_translator(self):
+        """Is this user someone who has done no translation work yet?"""
+        user = getUtility(ILaunchBag).user
+        if user is not None:
+            translationsperson = ITranslationsPerson(user)
+            if not translationsperson.hasTranslated():
+                return True
+
+        return False
+
+    @cachedproperty
+    def translation_group_guide(self):
+        """URL to translation group's translation guide, if any."""
+        group = self.translation_group
+        if group is None:
+            return None
+        else:
+            return group.translation_guide_url
+
+    @cachedproperty
+    def translation_team_guide(self):
+        """URL to translation team's translation guide, if any."""
+        translator = self.translation_team
+        if translator is None:
+            return None
+        else:
+            return translator.style_guide_url
+
+    @cachedproperty
     def has_any_documentation(self):
         """Return whether there is any documentation for this POFile."""
-        if (self.translation_group is not None and
-            self.translation_group.translation_guide_url is not None):
-            return True
-        if (self.translation_team is not None and
-            self.translation_team.style_guide_url is not None):
-            return True
-        return False
+        return (
+            self.translation_group_guide is not None or
+            self.translation_team_guide is not None or
+            self.user_is_new_translator)
 
     def _buildBatchNavigator(self):
         """See BaseTranslationView._buildBatchNavigator."""
