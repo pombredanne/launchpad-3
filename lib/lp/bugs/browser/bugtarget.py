@@ -425,9 +425,6 @@ class FileBugViewBase(LaunchpadFormView):
         self.form_fields = self.form_fields.omit('security_related')
         self.form_fields += formlib.form.Fields(security_related_field)
 
-    # XXX jcsackett 2010-08-23: Calls to contextUsesMalone should be updated
-    # to take advantage of the extra data provided by the service usage
-    # enums.
     def contextUsesMalone(self):
         """Does the context use Malone as its official bugtracker?"""
         if IProjectGroup.providedBy(self.context):
@@ -436,7 +433,8 @@ class FileBugViewBase(LaunchpadFormView):
                 if product.bug_tracking_usage == ServiceUsage.LAUNCHPAD]
             return len(products_using_malone) > 0
         else:
-            return self.getMainContext().bug_tracking_usage == ServiceUsage.LAUNCHPAD
+            bug_tracking_usage = self.getMainContext().bug_tracking_usage
+            return bug_tracking_usage == ServiceUsage.LAUNCHPAD
 
     def getMainContext(self):
         if IDistributionSourcePackage.providedBy(self.context):
