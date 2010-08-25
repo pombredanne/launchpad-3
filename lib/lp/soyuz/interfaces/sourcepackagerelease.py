@@ -108,7 +108,8 @@ class ISourcePackageRelease(Interface):
     homepage = TextLine(
         title=_("Homepage"),
         description=_(
-        "Upstream project homepage."),
+        "Upstream project homepage as set in the package. This URL is not "
+        "sanitized."),
         required=False)
 
     # read-only properties

@@ -83,7 +83,8 @@ class IBinaryPackageRelease(Interface):
     homepage = TextLine(
         title=_("Homepage"),
         description=_(
-        "Upstream project homepage."),
+        "Upstream project homepage as set in the package. This URL is not "
+        "sanitized."),
         required=False)
 
     files = Attribute("Related list of IBinaryPackageFile entries")
