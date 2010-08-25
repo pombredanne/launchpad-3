@@ -1,4 +1,5 @@
-= DistroSeries source publishing lookups =
+DistroSeries source publishing lookups
+======================================
 
 IDistroSeries allows source publishing lookup via
 getReleasedPackages method which returns a shortlist of

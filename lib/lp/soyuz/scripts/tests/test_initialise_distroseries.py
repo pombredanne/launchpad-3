@@ -146,7 +146,7 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
         foobuntu = self._create_distroseries(self.hoary)
         self._set_pending_to_failed(self.hoary)
         transaction.commit()
-        ids = InitialiseDistroSeries(foobuntu, ('i386',))
+        ids = InitialiseDistroSeries(foobuntu, ('i386', ))
         ids.check()
         ids.initialise()
         self.assertDistroSeriesInitialisedCorrectly(foobuntu)
