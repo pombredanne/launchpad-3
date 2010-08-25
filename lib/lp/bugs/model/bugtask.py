@@ -1940,7 +1940,6 @@ class BugTaskSet:
         This method will handles BugTasks that do not have upstream BugTasks
         as well as thoses that do.
         """
-        # TODO: Update this sql to use the usage enum values
         upstream_clauses = []
         if params.pending_bugwatch_elsewhere:
             if params.product:
