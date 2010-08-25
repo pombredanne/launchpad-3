@@ -7,7 +7,19 @@ First, we set up a product with three blueprints.
 
     >>> from canonical.launchpad.interfaces import (
     ...     ISpecificationSet, SpecificationDefinitionStatus)
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.product import IProductSet
+    >>> person_set = getUtility(IPersonSet)
+    >>> product_set = getUtility(IProductSet)
     >>> evolution = product_set.getByName('evolution')
+    >>> login('foo.bar@canonical.com')
+    >>> from zope.schema.vocabulary import getVocabularyRegistry
+    >>> vocabulary_registry = getVocabularyRegistry()
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> vocabulary_registry = getVocabularyRegistry()
+    >>> def get_naked_vocab(context, name):
+    ...     return removeSecurityProxy(
+    ...         vocabulary_registry.get(context, name))
     >>> foobar_person = person_set.getByName('name16')
     >>> foobar_person.displayname
     u'Foo Bar'
@@ -41,7 +53,7 @@ they depend on.
     >>> unrelated_spec = specset.new('unrelated-spec', 'Unrelated Spec',
     ...     'http://example.com/SpecU', 'A spec unrelated to Evolution',
     ...     SpecificationDefinitionStatus.APPROVED, foobar_person,
-    ...     product=firefox)
+    ...     product=product_set.getByName('firefox'))
     >>> vocab = vocabulary_registry.get(
     ...     spec_a, "SpecificationDepCandidates")
     >>> unrelated_spec in vocab
