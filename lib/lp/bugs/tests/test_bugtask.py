@@ -542,14 +542,7 @@ class TestBugTaskPermissionsToSetAssigneeMixin:
 
         login_person(self.target_owner_member)
         self.makeTarget()
-
-        self.supervisor_team = self.factory.makeTeam(
-            owner=self.target_owner_member)
-        self.supervisor_member = self.factory.makePerson()
-        self.supervisor_team.addMember(
-            self.supervisor_member, self.target_owner_member)
-        self.target.setBugSupervisor(
-            self.supervisor_team, self.target_owner_member)
+        self.setBugSupervisor()
 
         self.driver_team = self.factory.makeTeam(
             owner=self.target_owner_member)
@@ -582,6 +575,23 @@ class TestBugTaskPermissionsToSetAssigneeMixin:
         """
         raise NotImplementedError(self.makeTarget)
 
+    def setBugSupervisor(self):
+        """Set the bug supervisor data or None."""
+        raise NotImplementedError(self.setBugSupervisor)
+
+    def _setBugSupervisorData(self):
+        """Helper function used by sub-classes."""
+        self.supervisor_team = self.factory.makeTeam(
+            owner=self.target_owner_member)
+        self.supervisor_member = self.factory.makePerson()
+        self.supervisor_team.addMember(
+            self.supervisor_member, self.target_owner_member)
+        self.target.setBugSupervisor(
+            self.supervisor_team, self.target_owner_member)
+
+    def _setBugSupervisorDataNone(self):
+        self.supervisor_member = None
+
     def test_userCanSetAnyAssignee_anonymous_user(self):
         # Anonymous users cannot set anybody as an assignee.
         login(ANONYMOUS)
@@ -595,12 +605,19 @@ class TestBugTaskPermissionsToSetAssigneeMixin:
         self.assertFalse(self.series_bugtask.userCanUnassign(None))
 
     def test_userCanSetAnyAssignee_regular_user(self):
-        # Ordinary users cannot set others as an assignee.
+        # Ordinary users cannot set others as an assignee,
+        # unless a bug supervisor is not defined.
         login_person(self.regular_user)
-        self.assertFalse(
-            self.target_bugtask.userCanSetAnyAssignee(self.regular_user))
-        self.assertFalse(
-            self.series_bugtask.userCanSetAnyAssignee(self.regular_user))
+        if self.supervisor_member is not None:
+            self.assertFalse(
+                self.target_bugtask.userCanSetAnyAssignee(self.regular_user))
+            self.assertFalse(
+                self.series_bugtask.userCanSetAnyAssignee(self.regular_user))
+        else:
+            self.assertTrue(
+                self.target_bugtask.userCanSetAnyAssignee(self.regular_user))
+            self.assertTrue(
+                self.series_bugtask.userCanSetAnyAssignee(self.regular_user))
 
     def test_userCanUnassign_regular_user(self):
         # Ordinary users can unassign themselves...
@@ -640,19 +657,23 @@ class TestBugTaskPermissionsToSetAssigneeMixin:
 
     def test_userCanSetAnyAssignee_bug_supervisor(self):
         # A bug supervisor can assign anybody.
-        login_person(self.supervisor_member)
-        self.assertTrue(
-            self.target_bugtask.userCanSetAnyAssignee(self.supervisor_member))
-        self.assertTrue(
-            self.series_bugtask.userCanSetAnyAssignee(self.supervisor_member))
+        if self.supervisor_member is not None:
+            login_person(self.supervisor_member)
+            self.assertTrue(
+                self.target_bugtask.userCanSetAnyAssignee(
+                    self.supervisor_member))
+            self.assertTrue(
+                self.series_bugtask.userCanSetAnyAssignee(
+                    self.supervisor_member))
 
     def test_userCanUnassign_bug_supervisor(self):
         # A bug supervisor can unassign anybody.
-        login_person(self.supervisor_member)
-        self.assertTrue(
-            self.target_bugtask.userCanUnassign(self.supervisor_member))
-        self.assertTrue(
-            self.series_bugtask.userCanUnassign(self.supervisor_member))
+        if self.supervisor_member is not None:
+            login_person(self.supervisor_member)
+            self.assertTrue(
+                self.target_bugtask.userCanUnassign(self.supervisor_member))
+            self.assertTrue(
+                self.series_bugtask.userCanUnassign(self.supervisor_member))
 
     def test_userCanSetAnyAssignee_driver(self):
         # A project driver can assign anybody.
@@ -733,6 +754,23 @@ class TestProductBugTaskPermissionsToSetAssignee(
         self.target = self.factory.makeProduct(owner=self.target_owner_team)
         self.series = self.factory.makeProductSeries(self.target)
 
+    def setBugSupervisor(self):
+        """Establish a bug supervisor for this target."""
+        self._setBugSupervisorData()
+
+
+class TestProductNoBugSupervisorBugTaskPermissionsToSetAssignee(
+    TestBugTaskPermissionsToSetAssigneeMixin, TestCaseWithFactory):
+
+    def makeTarget(self):
+        """Create a product and a product series without a bug supervisor."""
+        self.target = self.factory.makeProduct(owner=self.target_owner_team)
+        self.series = self.factory.makeProductSeries(self.target)
+
+    def setBugSupervisor(self):
+        """Do nothing to avoid setting a bug supervisor."""
+        self._setBugSupervisorDataNone()
+
 
 class TestDistributionBugTaskPermissionsToSetAssignee(
     TestBugTaskPermissionsToSetAssigneeMixin, TestCaseWithFactory):
@@ -742,6 +780,24 @@ class TestDistributionBugTaskPermissionsToSetAssignee(
         self.target = self.factory.makeDistribution(
             owner=self.target_owner_team)
         self.series = self.factory.makeDistroSeries(self.target)
+
+    def setBugSupervisor(self):
+        """Establish a bug supervisor for this target."""
+        self._setBugSupervisorData()
+
+
+class TestDistributionNoBugSupervisorBugTaskPermissionsToSetAssignee(
+    TestBugTaskPermissionsToSetAssigneeMixin, TestCaseWithFactory):
+
+    def makeTarget(self):
+        """Create a distribution and a distroseries."""
+        self.target = self.factory.makeDistribution(
+            owner=self.target_owner_team)
+        self.series = self.factory.makeDistroSeries(self.target)
+
+    def setBugSupervisor(self):
+        """Establish a bug supervisor for this target."""
+        self._setBugSupervisorDataNone()
 
 
 class TestBugTaskSearch(TestCaseWithFactory):
