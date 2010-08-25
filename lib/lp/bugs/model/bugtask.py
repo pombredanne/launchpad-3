@@ -1012,16 +1012,19 @@ class BugTask(SQLBase, BugTaskMixin):
     def userCanSetAnyAssignee(self, user):
         """See `IBugTask`."""
         celebrities = getUtility(ILaunchpadCelebrities)
-        return user is not None and (
-            user.inTeam(self.pillar.bug_supervisor) or
-            user.inTeam(self.pillar.owner) or
-            user.inTeam(self.pillar.driver) or
-            (self.distroseries is not None and
-             user.inTeam(self.distroseries.driver)) or
-            (self.productseries is not None and
-             user.inTeam(self.productseries.driver)) or
-            user.inTeam(celebrities.admin)
-            or user == celebrities.bug_importer)
+        if user is not None and self.pillar.bug_supervisor is None:
+            return True
+        else:
+            return user is not None and (
+                user.inTeam(self.pillar.bug_supervisor) or
+                user.inTeam(self.pillar.owner) or
+                user.inTeam(self.pillar.driver) or
+                (self.distroseries is not None and
+                 user.inTeam(self.distroseries.driver)) or
+                (self.productseries is not None and
+                 user.inTeam(self.productseries.driver)) or
+                user.inTeam(celebrities.admin)
+                or user == celebrities.bug_importer)
 
     def userCanUnassign(self, user):
         """True if user can set the assignee to None.
