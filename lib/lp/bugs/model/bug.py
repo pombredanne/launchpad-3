@@ -1633,7 +1633,7 @@ class Bug(SQLBase):
 
     def userCanView(self, user):
         """See `IBug`.
-        
+
         Note that Editing is also controlled by this check,
         because we permit editing of any bug one can see.
         """
@@ -1724,6 +1724,8 @@ class Bug(SQLBase):
 
         self.heat = SQL("calculate_bug_heat(%s)" % sqlvalues(self))
         self.heat_last_updated = UTC_NOW
+        for task in self.bugtasks:
+            task.target.recalculateBugHeatCache()
         store.flush()
 
     @property
