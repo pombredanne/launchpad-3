@@ -3933,19 +3933,12 @@ class PersonSet:
         # flush its caches.
         store.invalidate()
 
-        # Change the merged Account's OpenId identifier so that it cannot be
-        # used to lookup the merged Person; Launchpad will instead select the
-        # remaining Person based on the email address. The rename uses a
-        # dash, which does not occur in SSO identifiers. The epoch from
-        # the account date_created is used to ensure it is unique if the
-        # original identifier is reused and merged.
-        if from_person.account is not None:
-            account = IMasterObject(from_person.account)
-            naked_account = removeSecurityProxy(account)
-            unique_part = time.mktime(naked_account.date_created.timetuple())
-            merge_identifier = 'merged-%s-%s' % (
-                naked_account.openid_identifier, unique_part)
-            naked_account.openid_identifier = merge_identifier
+        # Move OpenId Identifiers from the merged account to the new
+        # account.
+        if from_person.account is not None and to_person.account is not None:
+            store.execute("""
+                UPDATE OpenIdIdentifier SET account=%s WHERE account=%s
+                """ % sqlvalues(to_person.accountID, from_person.accountID))
 
         # Inform the user of the merge changes.
         if not to_person.isTeam():
