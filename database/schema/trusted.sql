@@ -1446,12 +1446,27 @@ BEGIN
 END;
 $$;
 
+-- Obsolete. Remove next cycle.
 CREATE OR REPLACE FUNCTION lp_mirror_account_ins() RETURNS trigger
 SECURITY DEFINER LANGUAGE plpgsql AS
 $$
 BEGIN
     INSERT INTO lp_Account (id, openid_identifier)
     VALUES (NEW.id, NEW.openid_identifier);
+    RETURN NULL; -- Ignored for AFTER triggers.
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION lp_mirror_openididentifier_ins() RETURNS trigger
+SECURITY DEFINER LANGUAGE plpgsql AS
+$$
+BEGIN
+    UPDATE lp_account SET openid_identifier = NEW.identifier
+    WHERE id = NEW.account;
+    IF NOT found THEN
+        INSERT INTO lp_account (id, openid_identifier)
+        VALUES (NEW.account, NEW.identifier);
+    END IF;
     RETURN NULL; -- Ignored for AFTER triggers.
 END;
 $$;
@@ -1543,6 +1558,18 @@ BEGIN
 END;
 $$;
 
+CREATE OR REPLACE FUNCTION lp_mirror_openididentifier_upd() RETURNS trigger
+SECURITY DEFINER LANGUAGE plpgsql AS
+$$
+BEGIN
+    IF OLD.identifier <> NEW.identifier THEN
+        UPDATE lp_Account SET openid_identifier = NEW.identifier
+        WHERE openid_identifier = OLD.identifier;
+    END IF;
+    RETURN NULL; -- Ignored for AFTER triggers.
+END;
+$$;
+
 -- Delete triggers
 CREATE OR REPLACE FUNCTION lp_mirror_del() RETURNS trigger
 SECURITY DEFINER LANGUAGE plpgsql AS
@@ -1553,6 +1580,26 @@ BEGIN
 END;
 $$;
 
+CREATE OR REPLACE FUNCTION lp_mirror_openididentifier_del() RETURNS trigger
+SECURITY DEFINER LANGUAGE plpgsql AS
+$$
+DECLARE
+    next_identifier text;
+BEGIN
+    SELECT INTO next_identifier identifier FROM OpenIdIdentifier
+    WHERE account = OLD.account AND identifier <> OLD.identifier
+    ORDER BY date_created DESC LIMIT 1;
+
+    IF next_identifier IS NOT NULL THEN
+        UPDATE lp_account SET openid_identifier = next_identifier
+        WHERE openid_identifier = OLD.identifier;
+    ELSE
+        DELETE FROM lp_account WHERE openid_identifier = OLD.identifier;
+    END IF;
+
+    RETURN NULL; -- Ignored for AFTER triggers.
+END;
+$$;
 
 -- Update the (redundant) column bug.latest_patch_uploaded when a
 -- a bug attachment is added or removed or if its type is changed.
