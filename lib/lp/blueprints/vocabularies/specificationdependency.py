@@ -39,7 +39,7 @@ class SpecificationDepCandidatesVocabulary(SQLObjectVocabularyBase):
     def _filter_specs(self, specs):
         """Filter `specs` to remove invalid candidates.
 
-        Invalid canidates are:
+        Invalid candidates are:
 
          * The spec that we're adding a depdency to,
          * Specs for a different target, and
