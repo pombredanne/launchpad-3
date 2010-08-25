@@ -1941,10 +1941,12 @@ class ParseBuildUploadLeafNameTests(TestCase):
     """Tests for parse_build_upload_leaf_name."""
 
     def test_valid(self):
-        self.assertEquals((42, 60), parse_build_upload_leaf_name("42-60"))
+        self.assertEquals(
+            (42, 60), parse_build_upload_leaf_name("20100812-300-42-60"))
 
     def test_invalid_chars(self):
-        self.assertRaises(ValueError, parse_build_upload_leaf_name, "a42-460")
+        self.assertRaises(
+            ValueError, parse_build_upload_leaf_name, "aaba-a42-460")
 
     def test_no_dash(self):
         self.assertRaises(ValueError, parse_build_upload_leaf_name, "32")

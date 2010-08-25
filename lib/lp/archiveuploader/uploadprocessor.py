@@ -106,7 +106,7 @@ def parse_build_upload_leaf_name(name):
     :param name: Directory name.
     :return: Tuple with build id and build queue record id.
     """
-    (build_id_str, queue_record_str) = name.split("-", 1)
+    (build_id_str, queue_record_str) = name.split("-")[-2:]
     try:
         return int(build_id_str), int(queue_record_str)
     except TypeError:
