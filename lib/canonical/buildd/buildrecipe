@@ -56,7 +56,7 @@ class RecipeBuilder:
         # XXX: AaronBentley 2010-07-07 bug=602463: pbuilder uses aptitude but
         # does not depend on it.
         return self.chroot([
-            'apt-get', 'install', '-y', 'pbuilder', 'sudo', 'aptitude'])
+            'apt-get', 'install', '-y', 'pbuilder', 'aptitude'])
 
     def buildTree(self):
         """Build the recipe into a source tree.
