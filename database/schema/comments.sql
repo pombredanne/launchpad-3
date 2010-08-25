@@ -1173,8 +1173,6 @@ COMMENT ON COLUMN Account.status_comment IS 'The comment on the status of the ac
 COMMENT ON COLUMN Person.creation_rationale IS 'The rationale for the creation of this Account -- a PersonCreationRationale value.';
 COMMENT ON COLUMN Account.date_status_set IS 'When the status was last changed.';
 COMMENT ON COLUMN Account.displayname IS 'Name to display when rendering information about this account.';
-COMMENT ON COLUMN Account.openid_identifier IS 'The key used to construct an OpenID identity URL for this account.';
-COMMENT ON COLUMN Account.old_openid_identifier IS 'The previous openid_identifier, used for transitions to the current openid_identifier.';
 
 
 -- AccountPassword

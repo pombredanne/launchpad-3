@@ -16,9 +16,9 @@ CREATE INDEX openididentity__account__idx ON OpenIDIdentifier(account);
 INSERT INTO OpenIdIdentifier (identifier, account, date_created)
 SELECT openid_identifier, id, date_created FROM Account;
 
--- ALTER TABLE Account
---     DROP COLUMN openid_identifier,
---     DROP COLUMN old_openid_identifier;
+ALTER TABLE Account
+    DROP COLUMN openid_identifier,
+    DROP COLUMN old_openid_identifier;
 
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 01, 0);
