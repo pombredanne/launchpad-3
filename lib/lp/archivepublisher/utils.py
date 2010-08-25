@@ -21,16 +21,21 @@ import os
 import stat
 import tempfile
 
-from zope.interface import implements
 from zope.component import getUtility
+from zope.interface import implements
 
-from lp.soyuz.interfaces.archive import (
-    ArchivePurpose, default_name_by_purpose)
 from canonical.launchpad.interfaces.looptuner import ITunableLoop
 from canonical.launchpad.utilities.looptuner import LoopTuner
 from canonical.launchpad.webapp.interfaces import (
-        IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 from canonical.mem import resident
+from lp.soyuz.interfaces.archive import (
+    ArchivePurpose,
+    default_name_by_purpose,
+    )
 
 
 def get_ppa_reference(ppa):

@@ -12,6 +12,8 @@ __all__ = [
     'ADMIN_EMAIL',
     'BUILDD_ADMIN_USERNAME',
     'CHROOT_LIBRARYFILEALIAS',
+    'ADMIN_EMAIL',
+    'COMMERCIAL_ADMIN_EMAIL',
     'HOARY_DISTROSERIES_NAME',
     'I386_ARCHITECTURE_NAME',
     'LAUNCHPAD_DBUSER_NAME',
@@ -46,10 +48,10 @@ LAUNCHPAD_DBUSER_NAME = 'launchpad'
 MAIN_COMPONENT_NAME = 'main'
 
 NO_PRIVILEGE_EMAIL = 'no-priv@canonical.com'
-
-# A regular user.
 USER_EMAIL = 'test@canonical.com'
 VCS_IMPORTS_MEMBER_EMAIL = 'david.allouche@canonical.com'
+COMMERCIAL_ADMIN_EMAIL = 'commercial-member@canonical.com'
+ADMIN_EMAIL = 'foo.bar@canonical.com'
 
 # A user that is an admin of ubuntu-team, which has upload rights
 # to Ubuntu.

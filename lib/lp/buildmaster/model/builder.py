@@ -12,8 +12,8 @@ __all__ = [
     'updateBuilderStatus',
     ]
 
-import httplib
 import gzip
+import httplib
 import logging
 import os
 import socket
@@ -23,41 +23,71 @@ import urllib2
 import xmlrpclib
 
 from sqlobject import (
-    BoolCol, ForeignKey, IntCol, SQLObjectNotFound, StringCol)
-from storm.expr import Coalesce, Count, Sum
+    BoolCol,
+    ForeignKey,
+    IntCol,
+    SQLObjectNotFound,
+    StringCol,
+    )
+from storm.expr import (
+    Coalesce,
+    Count,
+    Sum,
+    )
 from zope.component import getUtility
 from zope.interface import implements
 
+from canonical.buildd.slave import BuilderStatus
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
-from canonical.buildd.slave import BuilderStatus
+from canonical.database.sqlbase import (
+    SQLBase,
+    sqlvalues,
+    )
 from canonical.launchpad.helpers import filenameToContentType
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.webapp import urlappend
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR, SLAVE_FLAVOR)
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    SLAVE_FLAVOR,
+    )
 from canonical.lazr.utils import safe_hasattr
 from canonical.librarian.utils import copy_and_close
 from lp.app.errors import NotFoundError
 from lp.buildmaster.interfaces.builder import (
-    BuildDaemonError, BuildSlaveFailure, CannotBuild, CannotFetchFile,
-    CannotResumeHost, CorruptBuildCookie, IBuilder, IBuilderSet)
+    BuildDaemonError,
+    BuildSlaveFailure,
+    CannotBuild,
+    CannotFetchFile,
+    CannotResumeHost,
+    CorruptBuildCookie,
+    IBuilder,
+    IBuilderSet,
+    )
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSet
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
-    BuildBehaviorMismatch)
+    BuildBehaviorMismatch,
+    )
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.buildmaster.model.buildfarmjobbehavior import IdleBuildBehavior
-from lp.buildmaster.model.buildqueue import BuildQueue, specific_job_classes
-from canonical.database.sqlbase import SQLBase, sqlvalues
+from lp.buildmaster.model.buildqueue import (
+    BuildQueue,
+    specific_job_classes,
+    )
 from lp.registry.interfaces.person import validate_public_person
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
+from lp.services.osutils import until_no_eintr
 # XXX Michael Nelson 2010-01-13 bug=491330
 # These dependencies on soyuz will be removed when getBuildRecords()
 # is moved.
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.buildrecords import (
-    IHasBuildRecords, IncompatibleArguments)
+    IHasBuildRecords,
+    IncompatibleArguments,
+    )
 from lp.soyuz.model.processor import Processor
 
 
@@ -195,11 +225,8 @@ def rescueBuilderIfLost(builder, logger=None):
                 (builder.name, slave_build_id, reason))
 
 
-def updateBuilderStatus(builder, logger=None):
-    """See `IBuilder`."""
-    if logger:
-        logger.debug('Checking %s' % builder.name)
-
+def _update_builder_status(builder, logger=None):
+    """Really update the builder status."""
     try:
         builder.checkSlaveAlive()
         builder.rescueIfLost(logger)
@@ -215,7 +242,21 @@ def updateBuilderStatus(builder, logger=None):
             logger.warn(
                 "%s (%s) marked as failed due to: %s",
                 builder.name, builder.url, builder.failnotes, exc_info=True)
+
+
+def updateBuilderStatus(builder, logger=None):
+    """See `IBuilder`."""
+    if logger:
+        logger.debug('Checking %s' % builder.name)
+
+    MAX_EINTR_RETRIES = 42 # pulling a number out of my a$$ here
+    try:
+        return until_no_eintr(
+            MAX_EINTR_RETRIES, _update_builder_status, builder, logger=logger)
     except socket.error, reason:
+        # In Python 2.6 we can use IOError instead.  It also has
+        # reason.errno but we might be using 2.5 here so use the
+        # index hack.
         error_message = str(reason)
         builder.handleTimeout(logger, error_message)
 
@@ -616,6 +657,18 @@ class Builder(SQLBase):
 
         self._dispatchBuildCandidate(candidate)
         return candidate
+
+    def getBuildQueue(self):
+        """See `IBuilder`."""
+        # Return a single BuildQueue for the builder provided it's
+        # currently running a job.
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        return store.find(
+            BuildQueue,
+            BuildQueue.job == Job.id,
+            BuildQueue.builder == self.id,
+            Job._status == JobStatus.RUNNING,
+            Job.date_started != None).one()
 
 
 class BuilderSet(object):

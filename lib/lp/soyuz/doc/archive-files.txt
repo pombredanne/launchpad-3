@@ -209,3 +209,11 @@ Retrieve a built file:
 
     >>> deb == build.getFileByName('test_1.0_all.deb')
     True
+
+We can also retrieve the corresponding BinaryPackageFile:
+
+    >>> bpf = build.getBinaryPackageFileByName('test_1.0_all.deb')
+    >>> bpf
+    <BinaryPackageFile ...>
+    >>> bpf.libraryfile == deb
+    True

@@ -26,29 +26,53 @@ __all__ = [
 from cgi import escape
 import re
 
-from zope.component import getUtility
-from zope.interface import Interface, Attribute
-from zope.schema import (
-    Bool, Int, Choice, List, Text, TextLine, Datetime)
-
-from lazr.restful.fields import CollectionField, Reference, ReferenceChoice
 from lazr.restful.declarations import (
-    REQUEST_USER, call_with, collection_default_content,
-    export_as_webservice_collection, export_as_webservice_entry,
-    export_destructor_operation, export_factory_operation,
-    export_operation_as, export_read_operation, export_write_operation,
-    exported, mutator_for, operation_parameters, operation_returns_entry)
+    call_with,
+    collection_default_content,
+    export_as_webservice_collection,
+    export_as_webservice_entry,
+    export_destructor_operation,
+    export_factory_operation,
+    export_operation_as,
+    export_read_operation,
+    export_write_operation,
+    exported,
+    mutator_for,
+    operation_parameters,
+    operation_returns_entry,
+    REQUEST_USER,
+    )
+from lazr.restful.fields import (
+    CollectionField,
+    Reference,
+    ReferenceChoice,
+    )
+from zope.component import getUtility
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Bool,
+    Choice,
+    Datetime,
+    Int,
+    List,
+    Text,
+    TextLine,
+    )
 
 from canonical.config import config
-
 from canonical.launchpad import _
-from canonical.launchpad.fields import (
-    ParticipatingPersonChoice, PublicPersonChoice, URIField, Whiteboard)
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
 from canonical.launchpad.webapp.menu import structured
-from lp.code.bzr import BranchFormat, ControlFormat, RepositoryFormat
+from lp.code.bzr import (
+    BranchFormat,
+    ControlFormat,
+    RepositoryFormat,
+    )
 from lp.code.enums import (
     BranchLifecycleStatus,
     BranchMergeControlStatus,
@@ -59,12 +83,18 @@ from lp.code.enums import (
     )
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchtarget import IHasBranchTarget
-from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from lp.code.interfaces.hasbranches import IHasMergeProposals
 from lp.code.interfaces.hasrecipes import IHasRecipes
-from lp.registry.interfaces.role import IHasOwner
+from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.interfaces.role import IHasOwner
+from lp.services.fields import (
+    PersonChoice,
+    PublicPersonChoice,
+    URIField,
+    Whiteboard,
+    )
 
 
 DEFAULT_BRANCH_STATUS_IN_LISTING = (
@@ -245,13 +275,12 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
             vocabulary='ValidPersonOrTeam'))
 
     owner = exported(
-        ParticipatingPersonChoice(
+        PersonChoice(
             title=_('Owner'),
             required=True, readonly=True,
             vocabulary='UserTeamsParticipationPlusSelf',
             description=_("Either yourself or a team you are a member of. "
                           "This controls who can modify the branch.")))
-
 
     # Distroseries and sourcepackagename are exported together as
     # the sourcepackage.
@@ -437,12 +466,14 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
 
     # Joins
     revision_history = Attribute(
-        """The sequence of BranchRevision for the mainline of that branch.
+        """The sequence of revisions for the mainline of this branch.
 
         They are ordered with the most recent revision first, and the list
         only contains those in the "leftmost tree", or in other words
         the revisions that match the revision history from bzrlib for this
         branch.
+
+        The revisions are listed as tuples of (`BranchRevision`, `Revision`).
         """)
     subscriptions = exported(
         CollectionField(
@@ -513,8 +544,7 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
             title=_('Commit message'),
             description=_('Message to use when committing this merge.')),
         reviewers=List(value_type=Reference(schema=IPerson)),
-        review_types=List(value_type=TextLine())
-        )
+        review_types=List(value_type=TextLine()))
     # target_branch and prerequisite_branch are actually IBranch, patched in
     # _schema_circular_imports.
     @call_with(registrant=REQUEST_USER)
@@ -529,7 +559,8 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
         Both the target_branch and the prerequisite_branch, if it is there,
         must be branches with the same target as the source branch.
 
-        Personal branches (a.k.a. junk branches) cannot specify landing targets.
+        Personal branches (a.k.a. junk branches) cannot specify landing
+        targets.
         """
 
     def addLandingTarget(registrant, target_branch, prerequisite_branch=None,
@@ -541,7 +572,8 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
         Both the target_branch and the prerequisite_branch, if it is there,
         must be branches with the same target as the source branch.
 
-        Personal branches (a.k.a. junk branches) cannot specify landing targets.
+        Personal branches (a.k.a. junk branches) cannot specify landing
+        targets.
 
         :param registrant: The person who is adding the landing target.
         :param target_branch: Must be another branch, and different to self.
@@ -688,8 +720,8 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
         project is accessible using:
           lp:fooix - the linked object is the product fooix
           lp:fooix/trunk - the linked object is the trunk series of fooix
-          lp:~owner/fooix/name - the unique name of the branch where the linked
-            object is the branch itself.
+          lp:~owner/fooix/name - the unique name of the branch where the
+              linked object is the branch itself.
         """
 
     # subscription-related methods

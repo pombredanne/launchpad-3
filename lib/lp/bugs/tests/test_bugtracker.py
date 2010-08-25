@@ -5,25 +5,39 @@ __metaclass__ = type
 
 import unittest
 import transaction
-from doctest import NORMALIZE_WHITESPACE, ELLIPSIS
-from doctest import DocTestSuite
-from urllib2 import HTTPError, Request
-from datetime import datetime, timedelta
+from datetime import (
+    datetime,
+    timedelta,
+    )
+from doctest import (
+    DocTestSuite,
+    ELLIPSIS,
+    NORMALIZE_WHITESPACE,
+    )
+from urllib2 import (
+    HTTPError,
+    Request,
+    )
+
+from lazr.lifecycle.snapshot import Snapshot
 from pytz import utc
 
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from lazr.lifecycle.snapshot import Snapshot
-
 from canonical.launchpad.ftests import login_person
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.testing import LaunchpadFunctionalLayer
-
 from lp.bugs.externalbugtracker import (
-    BugTrackerConnectError, Mantis, MantisLoginHandler)
-from lp.bugs.interfaces.bugtracker import BugTrackerType, IBugTracker
+    BugTrackerConnectError,
+    Mantis,
+    MantisLoginHandler,
+    )
+from lp.bugs.interfaces.bugtracker import (
+    BugTrackerType,
+    IBugTracker,
+    )
 from lp.bugs.tests.externalbugtracker import Urlib2TransportTestHandler
 from lp.registry.interfaces.person import IPersonSet
 from lp.testing import login, login_person, TestCaseWithFactory

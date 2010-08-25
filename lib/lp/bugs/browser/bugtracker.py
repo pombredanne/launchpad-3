@@ -21,10 +21,10 @@ __all__ = [
 
 from itertools import chain
 
-from zope.interface import implements
-from zope.component import getUtility
 from zope.app.form.browser import TextAreaWidget
+from zope.component import getUtility
 from zope.formlib import form
+from zope.interface import implements
 from zope.schema import Choice
 from zope.schema.vocabulary import SimpleVocabulary
 from zope.security.interfaces import Unauthorized
@@ -32,22 +32,43 @@ from zope.security.interfaces import Unauthorized
 from canonical.cachedproperty import cachedproperty
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad import _
-from canonical.launchpad.helpers import english_list, shortlist
-from lp.bugs.interfaces.bugtracker import (
-    BugTrackerType, IBugTracker, IBugTrackerSet, IRemoteBug)
+from canonical.launchpad.helpers import (
+    english_list,
+    shortlist,
+    )
 from canonical.launchpad.interfaces.launchpad import (
-    ILaunchBag, ILaunchpadCelebrities)
+    ILaunchBag,
+    ILaunchpadCelebrities,
+    )
 from canonical.launchpad.webapp import (
-    ContextMenu, GetitemNavigation, LaunchpadEditFormView, LaunchpadFormView,
-    LaunchpadView, Link, Navigation, action, canonical_url, custom_widget,
-    redirection, structured)
+    action,
+    canonical_url,
+    ContextMenu,
+    custom_widget,
+    GetitemNavigation,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    LaunchpadView,
+    Link,
+    Navigation,
+    redirection,
+    structured,
+    )
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.menu import NavigationMenu
 from canonical.lazr.utils import smartquote
-from canonical.widgets import DelimitedListWidget, LaunchpadRadioWidget
-
+from canonical.widgets import (
+    DelimitedListWidget,
+    LaunchpadRadioWidget,
+    )
+from lp.bugs.interfaces.bugtracker import (
+    BugTrackerType,
+    IBugTracker,
+    IBugTrackerSet,
+    IRemoteBug,
+    )
 
 # A set of bug tracker types for which there can only ever be one bug
 # tracker.

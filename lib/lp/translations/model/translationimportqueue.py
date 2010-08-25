@@ -11,61 +11,93 @@ __all__ = [
     'TranslationImportQueue',
     ]
 
-import logging
-import tarfile
-import os.path
-import posixpath
-import datetime
-import re
-import pytz
 from cStringIO import StringIO
+import datetime
+import logging
+import os.path
+import re
+import tarfile
 from textwrap import dedent
-from zope.interface import implements
-from zope.component import getUtility
-from sqlobject import SQLObjectNotFound, StringCol, ForeignKey, BoolCol
-from storm.expr import And, Like, Or
-from storm.locals import Int, Reference
 
-from canonical.database.sqlbase import (
-    cursor, quote, quote_like, SQLBase, sqlvalues)
+import posixpath
+import pytz
+from sqlobject import (
+    BoolCol,
+    ForeignKey,
+    SQLObjectNotFound,
+    StringCol,
+    )
+from storm.expr import (
+    And,
+    Like,
+    Or,
+    )
+from storm.locals import (
+    Int,
+    Reference,
+    )
+from zope.component import getUtility
+from zope.interface import implements
+
+from canonical.database.constants import (
+    DEFAULT,
+    UTC_NOW,
+    )
 from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.constants import UTC_NOW, DEFAULT
 from canonical.database.enumcol import EnumCol
+from canonical.database.sqlbase import (
+    cursor,
+    quote,
+    quote_like,
+    SQLBase,
+    sqlvalues,
+    )
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces.launchpad import (
-    ILaunchpadCelebrities, IPersonRoles)
-from canonical.launchpad.interfaces.lpstorm import IMasterStore, ISlaveStore
+    ILaunchpadCelebrities,
+    IPersonRoles,
+    )
+from canonical.launchpad.interfaces.lpstorm import (
+    IMasterStore,
+    ISlaveStore,
+    )
+from canonical.librarian.interfaces import ILibrarianClient
 from lp.app.errors import NotFoundError
 from lp.registry.interfaces.distribution import IDistribution
-from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import (
-    IPerson, validate_person_not_private_membership)
+    IPerson,
+    validate_person,
+    )
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
+from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.translations.interfaces.pofile import IPOFileSet
-from lp.translations.interfaces.potemplate import IPOTemplateSet
+from lp.translations.interfaces.potemplate import (
+    IPOTemplate,
+    IPOTemplateSet,
+    )
 from lp.translations.interfaces.translationfileformat import (
-    TranslationFileFormat)
+    TranslationFileFormat,
+    )
 from lp.translations.interfaces.translationimporter import (
-    ITranslationImporter)
+    ITranslationImporter,
+    )
 from lp.translations.interfaces.translationimportqueue import (
     IHasTranslationImports,
     ITranslationImportQueue,
     ITranslationImportQueueEntry,
     RosettaImportStatus,
     SpecialTranslationImportTargetFilter,
-    TranslationImportQueueConflictError,
     translation_import_queue_entry_age,
-    UserCannotSetTranslationImportStatus)
-from lp.translations.interfaces.potemplate import IPOTemplate
+    TranslationImportQueueConflictError,
+    UserCannotSetTranslationImportStatus,
+    )
 from lp.translations.interfaces.translations import TranslationConstants
 from lp.translations.model.approver import TranslationNullApprover
-from lp.translations.utilities.gettext_po_importer import (
-    GettextPOImporter)
-from canonical.librarian.interfaces import ILibrarianClient
+from lp.translations.utilities.gettext_po_importer import GettextPOImporter
 
 
 def is_gettext_name(path):
@@ -115,7 +147,7 @@ class TranslationImportQueueEntry(SQLBase):
         notNull=False)
     importer = ForeignKey(
         dbName='importer', foreignKey='Person',
-        storm_validator=validate_person_not_private_membership,
+        storm_validator=validate_person,
         notNull=True)
     dateimported = UtcDateTimeCol(dbName='dateimported', notNull=True,
         default=DEFAULT)
@@ -405,8 +437,7 @@ class TranslationImportQueueEntry(SQLBase):
             "lang_code and translation_domain cannot be None")
 
         language_set = getUtility(ILanguageSet)
-        (language, variant) = language_set.getLanguageAndVariantFromString(
-            lang_code)
+        language = language_set.getLanguageByCode(lang_code)
 
         if language is None or not language.visible:
             # Either we don't know the language or the language is hidden by
@@ -450,9 +481,9 @@ class TranslationImportQueueEntry(SQLBase):
             return None
 
         # Get or create an IPOFile based on the info we guess.
-        pofile = potemplate.getPOFileByLang(language.code, variant=variant)
+        pofile = potemplate.getPOFileByLang(language.code)
         if pofile is None:
-            pofile = potemplate.newPOFile(language.code, variant=variant)
+            pofile = potemplate.newPOFile(language.code)
             if pofile.canEditTranslations(self.importer):
                 pofile.owner = self.importer
 
@@ -617,6 +648,7 @@ class TranslationImportQueueEntry(SQLBase):
                 'engb': 'en_GB',
                 'ptbr': 'pt_BR',
                 'srlatn': 'sr@Latn',
+                'sr-latin': 'sr@latin',
                 'zhcn': 'zh_CN',
                 'zhtw': 'zh_TW',
                 }
@@ -658,8 +690,7 @@ class TranslationImportQueueEntry(SQLBase):
 
         # Let's check if whether the filename is a valid language.
         language_set = getUtility(ILanguageSet)
-        (language, variant) = language_set.getLanguageAndVariantFromString(
-            filename)
+        language = language_set.getLanguageByCode(filename)
 
         if language is None:
             # The filename is not a valid language, so let's try it as a

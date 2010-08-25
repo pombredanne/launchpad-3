@@ -8,11 +8,11 @@ __metaclass__ = type
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.testing import ZopelessDatabaseLayer
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing import TestCaseWithFactory
-from lp.translations.model.potranslation import POTranslation
 from lp.translations.interfaces.translations import TranslationConstants
-from canonical.testing import ZopelessDatabaseLayer
+from lp.translations.model.potranslation import POTranslation
 
 
 class TestTranslationMessageFindIdenticalMessage(TestCaseWithFactory):
@@ -127,12 +127,6 @@ class TestTranslationMessageFindIdenticalMessage(TestCaseWithFactory):
         # If another message has a different POTemplate than the one
         # we're looking for, it is not considered identical.
         self.other_message.language = self._getLanguage('el')
-        nonclone = self._find(self.other_potmsgset, self.other_template)
-        self.assertEqual(nonclone, None)
-
-    def test_findIdenticalMessageChecksLanguageVariant(self):
-        # A difference in variants also makes messages different.
-        self.other_message.variant = 'Lithp'
         nonclone = self._find(self.other_potmsgset, self.other_template)
         self.assertEqual(nonclone, None)
 

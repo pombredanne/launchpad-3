@@ -10,10 +10,17 @@ __all__ = [
     ]
 
 
-from zope.interface import Interface, Attribute
-from zope.schema import Choice, Object, TextLine
 from lazr.restful.declarations import exported
 from lazr.restful.fields import Reference
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Choice,
+    Object,
+    TextLine,
+    )
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
@@ -193,4 +200,3 @@ class IPackageBuildSet(Interface):
             will be returned.
         :return: a `ResultSet` representing the requested package builds.
         """
-

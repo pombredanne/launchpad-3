@@ -24,15 +24,28 @@ __all__ = [
     'QueueStateWriteProtectedError',
     ]
 
-from zope.schema import Choice, Datetime, Int, List, TextLine
-from zope.interface import Interface, Attribute
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    )
+from lazr.restful.declarations import (
+    export_as_webservice_entry,
+    exported,
+    )
+from lazr.restful.fields import Reference
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Choice,
+    Datetime,
+    Int,
+    List,
+    TextLine,
+    )
 
 from canonical.launchpad import _
-
-from lazr.enum import DBEnumeratedType, DBItem
-from lazr.restful.declarations import (
-    export_as_webservice_entry, exported)
-from lazr.restful.fields import Reference
 
 
 class QueueStateWriteProtectedError(Exception):

@@ -5,17 +5,20 @@ __metaclass__ = type
 
 __all__ = ['GettextCheckMessages']
 
-from datetime import timedelta, datetime
+from datetime import (
+    datetime,
+    timedelta,
+    )
 
 import gettextpo
-
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from lp.translations.interfaces.translationmessage import (
-    ITranslationMessageSet)
 from canonical.launchpad.helpers import validate_translation
 from lp.services.scripts.base import LaunchpadScript
+from lp.translations.interfaces.translationmessage import (
+    ITranslationMessageSet,
+    )
 
 
 class GettextCheckMessages(LaunchpadScript):
@@ -113,7 +116,7 @@ class GettextCheckMessages(LaunchpadScript):
         potmsgset = translationmessage.potmsgset
         pofile = translationmessage.pofile
         return potmsgset.getImportedTranslationMessage(
-            pofile.potemplate, pofile.language, pofile.variant)
+            pofile.potemplate, pofile.language)
 
     def _check_and_fix(self, translationmessage):
         """Check message against gettext, and fix it if necessary."""

@@ -3,10 +3,11 @@
 
 """Test native archive index generation for Soyuz."""
 
-import apt_pkg
 import os
 import tempfile
 import unittest
+
+import apt_pkg
 
 from lp.soyuz.tests.test_publishing import TestNativePublishingBase
 

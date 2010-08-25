@@ -12,7 +12,7 @@ and an external bug, see bugwatch.txt.
     >>> from canonical.launchpad.interfaces import IBugTrackerSet
     >>> bugtracker_set = getUtility(IBugTrackerSet)
     >>> mozilla_bugzilla = bugtracker_set.getByName('mozilla.org')
-    >>> now = datetime.now(pytz.timezone('UTC'))
+    >>> now = datetime.now(pytz.UTC)
 
     >>> def print_watches(bugtracker):
     ...     watches = sorted(
@@ -356,14 +356,14 @@ We will forge some BugMessage records before trying again:
 Filing a bug on the remote tracker
 ----------------------------------
 
-The IBugTracker interface defines a method,
-getBugFilingAndSearchLinks(), which returns the URLs of the bug filing
-form and the bug search on the remote bug tracker as a dict. It accepts
-three parameters: remote_product, which is the name of the product on
-the remote tracker; summary, which is the bug summary to be passed to
-the remote bug tracker for searching or filing and description, which is
-the full description of the bug. This is only passed to the bug filing
-form as it is too specific for the search form.
+The IBugTracker interface defines a method, getBugFilingAndSearchLinks(),
+which returns the URLs of the bug filing form and the bug search on
+the remote bug tracker as a dict. It accepts three parameters:
+remote_product, which is the name of the product on the remote
+tracker; summary, which is the bug summary to be passed to the remote
+bug tracker for searching or filing and description, which is the full
+description of the bug. This is only passed to the bug filing form as
+it is too specific for the search form.
 
     >>> def print_links(links_dict):
     ...     for key in sorted(links_dict):
