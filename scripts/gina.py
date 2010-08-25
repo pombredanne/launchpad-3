@@ -23,6 +23,7 @@ __metaclass__ = type
 # Set to non-zero if you'd like to be warned every so often
 COUNTDOWN = 0
 
+import _pythonpath
 
 import os
 import psycopg2
