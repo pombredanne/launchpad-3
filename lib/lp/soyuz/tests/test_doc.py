@@ -11,13 +11,21 @@ import unittest
 
 from canonical.config import config
 from canonical.database.sqlbase import (
-    commit, ISOLATION_LEVEL_READ_COMMITTED)
+    commit,
+    ISOLATION_LEVEL_READ_COMMITTED,
+    )
 from canonical.launchpad.ftests import logout
 from canonical.launchpad.testing.pages import PageTestSuite
 from canonical.launchpad.testing.systemdocs import (
-    LayeredDocFileSuite, setUp, setGlobs, tearDown)
+    LayeredDocFileSuite,
+    setGlobs,
+    setUp,
+    tearDown,
+    )
 from canonical.testing import (
-    LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
+    LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
 
 
 here = os.path.dirname(os.path.realpath(__file__))
@@ -123,11 +131,6 @@ def manageChrootSetup(test):
 
 
 special = {
-    'nascentupload.txt': LayeredDocFileSuite(
-        '../doc/nascentupload.txt',
-        setUp=uploaderSetUp, tearDown=uploaderTearDown,
-        layer=LaunchpadZopelessLayer,
-        ),
     'build-notification.txt': LayeredDocFileSuite(
         '../doc/build-notification.txt',
         setUp=builddmasterSetUp,

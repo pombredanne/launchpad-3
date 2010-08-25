@@ -19,14 +19,26 @@ __all__ = [
     'ProtocolVersionMismatch',
     ]
 
-from zope.interface import Interface, Attribute
-from zope.schema import Bool, Choice, Field, Text, TextLine
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Bool,
+    Choice,
+    Field,
+    Text,
+    TextLine,
+    )
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import Title, Description
-from lp.registry.interfaces.role import IHasOwner
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.validators.url import builder_url_validator
+from lp.registry.interfaces.role import IHasOwner
+from lp.services.fields import (
+    Description,
+    Title,
+    )
 
 
 class BuildDaemonError(Exception):
@@ -150,20 +162,6 @@ class IBuilder(IHasOwner):
         title=u"The current behavior of the builder for the current job.",
         required=False)
 
-    def checkSlaveArchitecture():
-        """Check that the slave can compile for its nominated processor.
-
-        This will query the builder to determine its actual architecture (as
-        opposed to what we expect it to be). It will then look for a
-        DistroArchSeries with the returned architecture tag, and confirm that
-        the processor type matches.
-
-        :raises BuildDaemonError: When the builder is down or of the wrong
-            architecture.
-        :raises ProtocolVersionMismatch: When the builder returns an
-            unsupported protocol version.
-        """
-
     def checkSlaveAlive():
         """Check that the buildd slave is alive.
 
@@ -283,6 +281,12 @@ class IBuilder(IHasOwner):
         :param buildd_slave: An optional buildd slave that this builder should
             talk to.
         :return: the `IBuildQueue` instance found or None if no job was found.
+        """
+
+    def getBuildQueue():
+        """Return a `BuildQueue` if there's an active job on this builder.
+
+        :return: A BuildQueue, or None.
         """
 
 

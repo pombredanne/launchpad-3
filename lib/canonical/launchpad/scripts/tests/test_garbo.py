@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test the database garbage collector."""
@@ -6,42 +6,73 @@
 __metaclass__ = type
 __all__ = []
 
-from datetime import datetime, timedelta
+from datetime import (
+    datetime,
+    timedelta,
+    )
 import time
-import unittest
 
 from pytz import UTC
-from storm.expr import Min, SQL
+from storm.expr import (
+    Min,
+    SQL,
+    )
 from storm.store import Store
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.database.constants import THIRTY_DAYS_AGO, UTC_NOW
+from canonical.database.constants import (
+    THIRTY_DAYS_AGO,
+    UTC_NOW,
+    )
+from canonical.database.sqlbase import quote
 from canonical.launchpad.database.message import Message
 from canonical.launchpad.database.oauth import OAuthNonce
 from canonical.launchpad.database.openidconsumer import OpenIDConsumerNonce
 from canonical.launchpad.interfaces import IMasterStore
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
-from lp.code.enums import CodeImportResultStatus
-from lp.testing import TestCase, TestCaseWithFactory
 from canonical.launchpad.scripts.garbo import (
-    DailyDatabaseGarbageCollector, HourlyDatabaseGarbageCollector,
-    OpenIDConsumerAssociationPruner)
-from canonical.launchpad.scripts.tests import run_script
+    DailyDatabaseGarbageCollector,
+    HourlyDatabaseGarbageCollector,
+    OpenIDConsumerAssociationPruner,
+    )
 from canonical.launchpad.scripts.logger import QuietFakeLogger
+from canonical.launchpad.scripts.tests import run_script
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
+    IStoreSelector,
+    MAIN_STORE,
+    MASTER_FLAVOR,
+    )
 from canonical.testing.layers import (
-    DatabaseLayer, LaunchpadScriptLayer, LaunchpadZopelessLayer)
+    DatabaseLayer,
+    LaunchpadScriptLayer,
+    LaunchpadZopelessLayer,
+    )
 from lp.bugs.model.bugnotification import (
-    BugNotification, BugNotificationRecipient)
-from lp.code.bzr import BranchFormat, RepositoryFormat
-from lp.code.model.branchjob import BranchJob, BranchUpgradeJob
+    BugNotification,
+    BugNotificationRecipient,
+    )
+from lp.code.bzr import (
+    BranchFormat,
+    RepositoryFormat,
+    )
+from lp.code.enums import CodeImportResultStatus
+from lp.code.model.branchjob import (
+    BranchJob,
+    BranchUpgradeJob,
+    )
 from lp.code.model.codeimportresult import CodeImportResult
-from lp.registry.interfaces.person import IPersonSet, PersonCreationRationale
+from lp.registry.interfaces.person import (
+    IPersonSet,
+    PersonCreationRationale,
+    )
 from lp.services.job.model.job import Job
+from lp.testing import (
+    TestCase,
+    TestCaseWithFactory,
+    )
 
 
 class TestGarboScript(TestCase):
@@ -530,7 +561,16 @@ class TestGarbo(TestCaseWithFactory):
         LaunchpadZopelessLayer.switchDbUser('testadmin')
         self.assertEqual(bug.attachments.count(), 0)
 
+    def test_CacheSuggestivePOTemplates(self):
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        template = self.factory.makePOTemplate()
+        self.runDaily()
 
+        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        count, = store.execute("""
+            SELECT count(*)
+            FROM SuggestivePOTemplate
+            WHERE potemplate = %s
+            """ % quote(template.id)).get_one()
 
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
+        self.assertEqual(1, count)

@@ -15,40 +15,70 @@ __all__ = [
     'NoSuchDistroSeries',
     ]
 
-from zope.component import getUtility
-from zope.interface import Interface, Attribute
-from zope.schema import Bool, Datetime, Choice, Object, TextLine
-
 from lazr.enum import DBEnumeratedType
 from lazr.restful.declarations import (
-    LAZR_WEBSERVICE_EXPORTED, export_as_webservice_entry,
-    export_factory_operation, export_read_operation, exported,
-    operation_parameters, operation_returns_collection_of,
-    operation_returns_entry, rename_parameters_as, webservice_error)
-from lazr.restful.fields import Reference, ReferenceChoice
+    export_as_webservice_entry,
+    export_factory_operation,
+    export_read_operation,
+    exported,
+    LAZR_WEBSERVICE_EXPORTED,
+    operation_parameters,
+    operation_returns_collection_of,
+    operation_returns_entry,
+    rename_parameters_as,
+    webservice_error,
+    )
+from lazr.restful.fields import (
+    Reference,
+    ReferenceChoice,
+    )
+from zope.component import getUtility
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Bool,
+    Choice,
+    Datetime,
+    Object,
+    TextLine,
+    )
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import (
-    ContentNameField, Description, PublicPersonChoice, Title,
-    UniqueField)
 from canonical.launchpad.interfaces.launchpad import IHasAppointedDriver
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.email import email_validator
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.validators.version import sane_version
-from canonical.launchpad.webapp.interfaces import NameLookupFailed
-
-from lp.blueprints.interfaces.specificationtarget import (
-    ISpecificationGoal)
+from lp.app.errors import NameLookupFailed
+from lp.blueprints.interfaces.specificationtarget import ISpecificationGoal
 from lp.bugs.interfaces.bugtarget import (
-    IBugTarget, IHasBugs, IHasOfficialBugTags)
-from lp.registry.interfaces.milestone import IHasMilestones, IMilestone
+    IBugTarget,
+    IHasBugs,
+    IHasOfficialBugTags,
+    )
+from lp.registry.interfaces.milestone import (
+    IHasMilestones,
+    IMilestone,
+    )
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.role import IHasOwner
-from lp.registry.interfaces.series import ISeriesMixin, SeriesStatus
+from lp.registry.interfaces.series import (
+    ISeriesMixin,
+    SeriesStatus,
+    )
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.interfaces.structuralsubscription import (
-    IStructuralSubscriptionTarget)
+    IStructuralSubscriptionTarget,
+    )
+from lp.services.fields import (
+    ContentNameField,
+    Description,
+    PublicPersonChoice,
+    Title,
+    UniqueField,
+    )
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.translations.interfaces.languagepack import ILanguagePack
 from lp.translations.interfaces.potemplate import IHasTranslationTemplates
@@ -127,7 +157,7 @@ class DistroSeriesVersionField(UniqueField):
             Version(version)
         except VersionError, error:
             raise LaunchpadValidationError(
-                "'%s': %s" % (version, error[0]))
+                "'%s': %s" % (version, error))
 
 
 class IDistroSeriesEditRestricted(Interface):
@@ -414,7 +444,7 @@ class IDistroSeriesPublic(
         and total_messages (translatable messages).
         """
 
-    def getPrioritizedlPackagings():
+    def getPrioritizedPackagings():
         """Return a list of packagings that need more upstream information."""
 
     def getMostRecentlyLinkedPackagings():
@@ -514,15 +544,16 @@ class IDistroSeriesPublic(
 
         If version is not specified, return packages with any version.
 
-        if exclude_pocket is specified we exclude results matching that pocket.
+        If exclude_pocket is specified we exclude results matching that
+        pocket.
 
         If 'include_pending' is True, we return also the pending publication
         records, those packages that will get published in the next publisher
         run (it's only useful when we need to know if a given package is
         known during a publisher run, mostly in pre-upload checks)
 
-        If 'archive' is not specified consider publication in the main_archive,
-        otherwise respect the given value.
+        If 'archive' is not specified consider publication in the
+        main_archive, otherwise respect the given value.
         """
 
     def getAllPublishedSources():
@@ -551,12 +582,6 @@ class IDistroSeriesPublic(
         time with records that can't be accepted).
 
         Return a SelectResult of SourcePackagePublishingHistory.
-        """
-
-    def publishedBinaryPackages(component=None):
-        """Given an optional component name, return a list of the binary
-        packages that are currently published in this distroseries in the
-        given component, or in any component if no component name was given.
         """
 
     def getDistroSeriesLanguage(language):
@@ -725,35 +750,6 @@ class IDistroSeriesPublic(
     def newArch(architecturetag, processorfamily, official, owner,
                 supports_virtualized=False):
         """Create a new port or DistroArchSeries for this DistroSeries."""
-
-    def initialiseFromParent():
-        """Copy in all of the parent distroseries's configuration. This
-        includes all configuration for distroseries and distroarchseries
-        publishing and all publishing records for sources and binaries.
-
-        Preconditions:
-          The distroseries must have been set up with its distroarchseriess
-          as needed. It should have its nominated arch-indep set up along
-          with all other basic requirements for the structure of the
-          distroseries. This distroseries and all its distroarchseriess
-          must have empty publishing sets. Section and component selections
-          must be empty.
-
-        Outcome:
-          The publishing structure will be copied from the parent. All
-          PUBLISHED and PENDING packages in the parent will be created in
-          this distroseries and its distroarchseriess. The lucille config
-          will be copied in, all component and section selections will be
-          duplicated as will any permission-related structures.
-
-        Note:
-          This method will assert all of its preconditions where possible.
-          After this is run, you still need to construct chroots for building,
-          you need to add anything missing wrt. ports etc. This method is
-          only meant to give you a basic copy of a parent series in order
-          to assist you in preparing a new series of a distribution or
-          in the initialisation of a derivative.
-        """
 
     def copyTranslationsFromParent(ztm):
         """Copy any translation done in parent that we lack.

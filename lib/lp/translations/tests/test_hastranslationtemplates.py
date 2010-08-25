@@ -1,20 +1,19 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
-import unittest
-
 from zope.interface.verify import verifyObject
 
 from canonical.testing import ZopelessDatabaseLayer
+from lp.testing import TestCaseWithFactory
 from lp.translations.interfaces.potemplate import IHasTranslationTemplates
 from lp.translations.interfaces.translationfileformat import (
-    TranslationFileFormat)
-from lp.testing import TestCaseWithFactory
+    TranslationFileFormat,
+    )
 
 
-class HasTranslationTemplatesTestMixin(TestCaseWithFactory):
+class HasTranslationTemplatesTestMixin:
     """Test behaviour of objects with translation templates."""
 
     layer = ZopelessDatabaseLayer
@@ -193,7 +192,7 @@ class HasTranslationTemplatesTestMixin(TestCaseWithFactory):
 
 
 class TestProductSeriesHasTranslationTemplates(
-    HasTranslationTemplatesTestMixin):
+    HasTranslationTemplatesTestMixin, TestCaseWithFactory):
     """Test implementation of IHasTranslationTemplates on ProductSeries."""
 
     def createTranslationTemplate(self, name, priority=0):
@@ -210,7 +209,7 @@ class TestProductSeriesHasTranslationTemplates(
 
 
 class TestSourcePackageHasTranslationTemplates(
-    HasTranslationTemplatesTestMixin):
+    HasTranslationTemplatesTestMixin, TestCaseWithFactory):
     """Test implementation of IHasTranslationTemplates on ProductSeries."""
 
     def createTranslationTemplate(self, name, priority=0):
@@ -228,7 +227,7 @@ class TestSourcePackageHasTranslationTemplates(
 
 
 class TestDistroSeriesHasTranslationTemplates(
-    HasTranslationTemplatesTestMixin):
+    HasTranslationTemplatesTestMixin, TestCaseWithFactory):
     """Test implementation of IHasTranslationTemplates on ProductSeries."""
 
     def createTranslationTemplate(self, name, priority=0):
@@ -245,15 +244,3 @@ class TestDistroSeriesHasTranslationTemplates(
         self.container = self.factory.makeDistroRelease()
         self.product_or_distro = self.container.distribution
         self.product_or_distro.official_rosetta = True
-
-
-def test_suite():
-    suite = unittest.TestSuite()
-    loader = unittest.TestLoader()
-    suite.addTest(loader.loadTestsFromTestCase(
-        TestProductSeriesHasTranslationTemplates))
-    suite.addTest(loader.loadTestsFromTestCase(
-        TestSourcePackageHasTranslationTemplates))
-    suite.addTest(loader.loadTestsFromTestCase(
-        TestDistroSeriesHasTranslationTemplates))
-    return suite

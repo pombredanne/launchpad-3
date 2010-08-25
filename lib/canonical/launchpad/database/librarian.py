@@ -6,30 +6,63 @@
 __metaclass__ = type
 __all__ = [
     'LibraryFileAlias',
+    'LibraryFileAliasWithParent',
     'LibraryFileAliasSet',
     'LibraryFileContent',
     'LibraryFileDownloadCount',
     ]
 
-from datetime import datetime, timedelta
+from datetime import (
+    datetime,
+    timedelta,
+    )
+
+from lazr.delegates import delegates
 import pytz
-
-from zope.component import getUtility
-from zope.interface import implements
-
-from sqlobject import StringCol, ForeignKey, IntCol, SQLRelatedJoin, BoolCol
-from storm.locals import Date, Desc, Int, Reference, Store
+from sqlobject import (
+    BoolCol,
+    ForeignKey,
+    IntCol,
+    SQLRelatedJoin,
+    StringCol,
+    )
+from storm.locals import (
+    Date,
+    Desc,
+    Int,
+    Reference,
+    Store,
+    )
+from zope.component import (
+    adapts,
+    getUtility,
+    )
+from zope.interface import (
+    implements,
+    Interface,
+    )
 
 from canonical.config import config
-from canonical.launchpad.interfaces import (
-    ILibraryFileAlias, ILibraryFileAliasSet, ILibraryFileContent,
-    ILibraryFileDownloadCount, IMasterStore)
-from canonical.librarian.interfaces import (
-    DownloadFailed, ILibrarianClient, IRestrictedLibrarianClient,
-    LIBRARIAN_SERVER_DEFAULT_TIMEOUT)
-from canonical.database.sqlbase import SQLBase
-from canonical.database.constants import UTC_NOW, DEFAULT
+from canonical.database.constants import (
+    DEFAULT,
+    UTC_NOW,
+    )
 from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.database.sqlbase import SQLBase
+from canonical.launchpad.interfaces import (
+    ILibraryFileAlias,
+    ILibraryFileAliasSet,
+    ILibraryFileAliasWithParent,
+    ILibraryFileContent,
+    ILibraryFileDownloadCount,
+    IMasterStore,
+    )
+from canonical.librarian.interfaces import (
+    DownloadFailed,
+    ILibrarianClient,
+    IRestrictedLibrarianClient,
+    LIBRARIAN_SERVER_DEFAULT_TIMEOUT,
+    )
 
 
 class LibraryFileContent(SQLBase):
@@ -192,7 +225,20 @@ class LibraryFileAlias(SQLBase):
 
     def __storm_invalidated__(self):
         """Make sure that the file is closed across transaction boundary."""
+        super(LibraryFileAlias, self).__storm_invalidated__()
         self.close()
+
+
+class LibraryFileAliasWithParent:
+    """A LibraryFileAlias variant that has a parent."""
+
+    adapts(ILibraryFileAlias, Interface)
+    implements(ILibraryFileAliasWithParent)
+    delegates(ILibraryFileAlias)
+
+    def __init__(self, libraryfile, parent):
+        self.context = libraryfile
+        self.__parent__ = parent
 
 
 class LibraryFileAliasSet(object):

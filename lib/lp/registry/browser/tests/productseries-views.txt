@@ -12,7 +12,7 @@ views.
     >>> from lp.testing.menu import check_menu_links
 
     >>> product = factory.makeProduct(name='app')
-    >>> series = factory.makeSeries(name='simple', product=product)
+    >>> series = factory.makeProductSeries(name='simple', product=product)
     >>> check_menu_links(ProductSeriesOverviewMenu(series))
     True
 
@@ -80,7 +80,8 @@ update the milestones and releases table.
     >>> script = find_tag_by_id(view.render(), 'milestone-script')
     >>> print script
     <script id="milestone-script" type="text/javascript">
-        YUI().use(... 'lp.registry.milestoneoverlay', 'lp.registry.milestonetable'...
+        YUI().use(... 'lp.registry.milestoneoverlay',
+                      'lp.registry.milestonetable'...
             var series_uri = '/app/simple';
             var milestone_form_uri = '.../app/simple/+addmilestone/++form++';
             var milestone_row_uri =
@@ -130,7 +131,7 @@ to display.
 
     >>> from lp.registry.interfaces.series import SeriesStatus
 
-    >>> print series.status
+    >>> print series.status.title
     Active Development
     >>> view.is_obsolete
     False
@@ -157,7 +158,7 @@ The view provides access to the latest release if it has one.
 The view also provides a link to register a new code import.
 
     >>> print view.request_import_link
-    http://launchpad.dev/firefox/+new-import
+    http://code.launchpad.dev/firefox/+new-import
 
 
 Edit ProductSeries
@@ -256,14 +257,11 @@ mistake.
     >>> from datetime import datetime
     >>> from pytz import UTC
 
+    >>> test_date = datetime(2009, 05, 01, 19, 34, 24, tzinfo=UTC)
     >>> product = factory.makeProduct(name="field", displayname='Field')
     >>> productseries = factory.makeProductSeries(
-    ...     product=product, name='rabbit')
+    ...     product=product, name='rabbit', date_created=test_date)
     >>> productseries.releasefileglob = 'http://eg.dom/rabbit/*'
-
-    # Hack the creation date for testing purposes.
-    >>> test_date = datetime(2009, 05, 01, 19, 34, 24, tzinfo=UTC)
-    >>> productseries.datecreated = test_date
 
 Users without edit permission cannot access the view.
 
@@ -470,7 +468,7 @@ avoid conflicts. The linked branch is removed.
 
 The series status is set to obsolete and the releasefileglob was set to None.
 
-    >>> print productseries.status
+    >>> print productseries.status.title
     Obsolete
     >>> print productseries.releasefileglob
     None

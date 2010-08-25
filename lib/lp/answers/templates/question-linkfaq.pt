@@ -18,7 +18,7 @@
           relevant knowledge base article for
           <span tal:replace="view/faq_target/displayname"
                 /><tal:can-create-faq
-                      condition="view/faq_target/required:launchpad.Moderate">
+                      condition="view/faq_target/required:launchpad.Append">
           or <a href="+createfaq">create a new FAQ</a> yourself if it doesn't
           exist already
           </tal:can-create-faq>.

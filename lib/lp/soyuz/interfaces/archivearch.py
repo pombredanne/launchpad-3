@@ -12,13 +12,13 @@ __all__ = [
     'IArchiveArchSet',
     ]
 
+from lazr.restful.fields import Reference
 from zope.interface import Interface
 from zope.schema import Int
 
 from canonical.launchpad import _
 from lp.soyuz.interfaces.archive import IArchive
 from lp.soyuz.interfaces.processor import IProcessorFamily
-from lazr.restful.fields import Reference
 
 
 class IArchiveArch(Interface):

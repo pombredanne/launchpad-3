@@ -20,6 +20,7 @@
           border-bottom: 1px solid;
           margin-top: 2em;
           font-size: 167%;
+          padding-bottom: 2px;
           }
       .homepage-whatslaunchpad h2 {
           font-size: 189%;
@@ -46,10 +47,8 @@
       #homepage-blogposts {
           padding-right: 4em;
       }
-      .homepage-getstarted h2 {
-          border-bottom: 1px solid;
-          margin-top: 1em;
-          font-size: 161%;
+      #homepage-getstarted ul {
+          padding-top: 0.5em;
           }
       .featured-project-top h3 {
           font-size: 131%;
@@ -128,34 +127,20 @@
                </div>
             </div>
 
-            <div id="homepage-blogposts" class="homepage-portlet">
+            <div id="homepage-blogposts" class="homepage-portlet"
+              tal:content="cache:public, 1 hour">
               <h2>Recent Launchpad blog posts</h2>
-              <ul>
-                <li class="news">
-                  <a href="http://www.surveymonkey.com/s/launchpadsummer2010">
-                  Take the Launchpad survey</a><span class="registered"> &ndash; 01 July 2010</span><br />
-                  Tell us a little about how you use Launchpad by answering our short survey.
-                </li>
-                <li class="news">
-                  <a href="http://blog.launchpad.net?p=1607">
-                  SFTP uploads</a><span class="registered"> &ndash; 01 July 2010</span><br />
-                  Upload source packages to your Personal Package Archive using SFTP.
-                </li>
-                <li class="news">
-                  <a href="http://blog.launchpad.net?p=1513">
-                  2GiB PPAs for everyone!</a><span class="registered"> &ndash; 04 May 2010</span><br />
-                  We've doubled the standard Personal Package Archive size to 2 GiB.
-                </li>
-                <li class="news">
-                  <a href="http://blog.launchpad.net?p=1491">
-                  Automatic translation template generation</a><span class="registered"> &ndash; 04 May 2010</span><br />
-                  Opening a project for translation is now easier with automatic template generation direct from the
-                  project's Bazaar branch.
-                </li>
-                <li class="news">
-                  <a href="http://blog.launchpad.net?p=1503">
-                  Link projects to Ubuntu packages</a><span class="registered"> &ndash; 04 May 2010</span><br />
-                  Launchpad now helps you specify which Ubuntu package is associated with any project in Launchpad.
+              <ul tal:define="posts view/getRecentBlogPosts">
+                <li class="news"
+                    tal:repeat="post posts">
+                    <a href="" tal:attributes="href post/link"
+                      tal:content="post/title">
+                      Take the Launchpad survey</a><span class="registered">
+                      &ndash; <tal:date content="post/date">01 July 2010</tal:date></span><br />
+                <tal:description content="structure post/description">
+                  Tell us a little about how you use Launchpad by answering
+                  our short survey.
+                </tal:description>
                 </li>
                 <li class="news">
                   <a href="http://blog.launchpad.net/general/launchpad-is-now-open-source">

@@ -8,19 +8,21 @@ __all__ = [
 
 
 from datetime import datetime
+
 import pytz
-
-from storm.locals import Int, Reference, Storm
-
+from storm.locals import (
+    Int,
+    Reference,
+    Storm,
+    )
 from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.database.sqlbase import sqlvalues
-
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.model.buildfarmjob import BuildFarmJobOldDerived
-from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.buildpackagejob import IBuildPackageJob
@@ -115,9 +117,8 @@ class BuildPackageJob(BuildFarmJobOldDerived, Storm):
             score += score_pocket
 
             # Calculates the component-related part of the score.
-            score_component = score_componentname[
-                self.build.current_component.name]
-            score += score_component
+            score += score_componentname.get(
+                self.build.current_component.name, 0)
 
             # Calculates the build queue time component of the score.
             right_now = datetime.now(pytz.timezone('UTC'))

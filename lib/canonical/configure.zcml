@@ -1,4 +1,4 @@
-<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009, 2010 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -20,22 +20,13 @@
     <include package="lp.services.openid" />
     <include package="lp.services.job" />
     <include package="lp.services.memcache" />
+    <include package="lp.services.profile" />
+    <include package="lp.services.features" />
     <include package="lp.services.scripts" />
     <include package="lp.services.worlddata" />
     <include package="lp.services.salesforce" />
     <include package="lazr.uri" />
     <include package="canonical.librarian" />
-
-    <interface
-        name="launchpad"
-        interface="canonical.launchpad.layers.LaunchpadLayer"
-        type="zope.publisher.interfaces.browser.IBrowserSkinType"
-        />
-
-    <!-- Set via overrides -->
-
-    <browser:defaultSkin
-        name="launchpad" />
 
     <!-- The default Zope 3 configuration of the SimpleComponentTraverser is
         that it applies to any object that provides Interface.
@@ -84,70 +75,70 @@
     <browser:defaultView
         for="canonical.launchpad.interfaces.ILaunchpadRoot"
         name="specs"
-        layer="canonical.launchpad.layers.BlueprintsLayer"
+        layer="lp.blueprints.publisher.BlueprintsLayer"
         />
     <browser:page
         name=""
         for="canonical.launchpad.interfaces.ILaunchpadRoot"
         class="canonical.launchpad.browser.launchpad.LaunchpadImageFolder"
         permission="zope.Public"
-        layer="canonical.launchpad.layers.BlueprintsLayer"
+        layer="lp.blueprints.publisher.BlueprintsLayer"
         />
 
     <!-- virtual host: code -->
     <browser:defaultView
         for="canonical.launchpad.interfaces.ILaunchpadRoot"
         name="+code"
-        layer="canonical.launchpad.layers.CodeLayer"
+        layer="lp.code.publisher.CodeLayer"
         />
     <browser:page
         name=""
         for="canonical.launchpad.interfaces.ILaunchpadRoot"
         class="canonical.launchpad.browser.launchpad.LaunchpadImageFolder"
         permission="zope.Public"
-        layer="canonical.launchpad.layers.CodeLayer"
+        layer="lp.code.publisher.CodeLayer"
         />
 
     <!-- virtual host: translations -->
     <browser:defaultView
         for="canonical.launchpad.interfaces.ILaunchpadRoot"
         name="translations"
-        layer="canonical.launchpad.layers.TranslationsLayer"
+        layer="lp.translations.publisher.TranslationsLayer"
         />
     <browser:page
         name=""
         for="canonical.launchpad.interfaces.ILaunchpadRoot"
         class="canonical.launchpad.browser.launchpad.LaunchpadImageFolder"
         permission="zope.Public"
-        layer="canonical.launchpad.layers.TranslationsLayer"
+        layer="lp.translations.publisher.TranslationsLayer"
         />
 
     <!-- virtual host: bugs -->
     <browser:defaultView
         for="canonical.launchpad.interfaces.ILaunchpadRoot"
         name="bugs"
-        layer="canonical.launchpad.layers.BugsLayer"
+        layer="lp.bugs.publisher.BugsLayer"
         />
     <browser:page
         name=""
         for="canonical.launchpad.interfaces.ILaunchpadRoot"
         class="canonical.launchpad.browser.launchpad.LaunchpadImageFolder"
         permission="zope.Public"
-        layer="canonical.launchpad.layers.BugsLayer"
+        layer="lp.bugs.publisher.BugsLayer"
         />
 
     <!-- virtual host: answers -->
     <browser:defaultView
         for="canonical.launchpad.interfaces.ILaunchpadRoot"
         name="questions"
-        layer="canonical.launchpad.layers.AnswersLayer"
+        layer="lp.answers.publisher.AnswersLayer"
         />
     <browser:page
         name=""
         for="canonical.launchpad.interfaces.ILaunchpadRoot"
         class="canonical.launchpad.browser.launchpad.LaunchpadImageFolder"
         permission="zope.Public"
-        layer="canonical.launchpad.layers.AnswersLayer"
+        layer="lp.answers.publisher.AnswersLayer"
         />
 
     <include package="canonical.widgets" />

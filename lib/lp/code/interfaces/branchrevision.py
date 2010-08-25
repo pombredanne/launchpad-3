@@ -8,7 +8,10 @@
 __metaclass__ = type
 __all__ = ['IBranchRevision', 'IBranchRevisionSet']
 
-from zope.interface import Interface, Attribute
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
 from zope.schema import Int
 
 from canonical.launchpad import _
@@ -21,7 +24,6 @@ class IBranchRevision(Interface):
     ancestry of a branch. History revisions have an integer sequence, merged
     revisions have sequence set to None.
     """
-
     id = Int(title=_('The database revision ID'))
 
     sequence = Int(

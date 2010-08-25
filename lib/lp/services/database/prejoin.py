@@ -6,9 +6,9 @@
 __metaclass__ = type
 __all__ = ['prejoin']
 
+from lazr.delegates import delegates
 from storm.zope.interfaces import IResultSet
 
-from lazr.delegates import delegates
 
 class PrejoinResultSet:
     """Prejoin support.
@@ -21,12 +21,12 @@ class PrejoinResultSet:
     The preferred solution is support in Storm core, so we can just do
     something like:
 
-    >>> results = store.find(Product).prejoin(
-    ...     (Person, EmailAddress),
-    ...     Product._ownerID == Person.id,
-    ...     EmailAddress.personID == Person.id)
+    # Select Product, but prejoin the owner as well.
+    >>> join = store.find((Product, Person), Product.name == name)
+    >>> results = prejoin(join, slice(0, 1))
     """
     delegates(IResultSet, context='result_set')
+
     def __init__(self, result_set, return_slice=slice(0, 1)):
         self.result_set = result_set
         self.return_slice = return_slice

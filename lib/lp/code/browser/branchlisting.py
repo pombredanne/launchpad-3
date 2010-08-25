@@ -33,62 +33,101 @@ __all__ = [
 from datetime import datetime
 from operator import attrgetter
 
-import simplejson
-from storm.expr import Asc, Desc
-import pytz
-from zope.component import getUtility
-from zope.interface import implements, Interface
-from zope.formlib import form
-from zope.schema import Choice
 from lazr.delegates import delegates
-from lazr.enum import EnumeratedType, Item
-
-from canonical.config import config
+from lazr.enum import (
+    EnumeratedType,
+    Item,
+    )
+import pytz
+import simplejson
+from storm.expr import (
+    Asc,
+    Desc,
+    )
+from zope.component import getUtility
+from zope.formlib import form
+from zope.interface import (
+    implements,
+    Interface,
+    )
+from zope.schema import Choice
 
 from canonical.cachedproperty import cachedproperty
+from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.browser.feeds import (
-
-    FeedsMixin, PersonBranchesFeedLink, PersonRevisionsFeedLink,
-    ProductBranchesFeedLink, ProductRevisionsFeedLink,
-    ProjectBranchesFeedLink, ProjectRevisionsFeedLink)
-from lp.bugs.interfaces.bugbranch import IBugBranchSet
-from lp.blueprints.interfaces.specificationbranch import (
-    ISpecificationBranchSet)
-from lp.registry.interfaces.personproduct import (
-    IPersonProduct, IPersonProductFactory)
+    FeedsMixin,
+    PersonBranchesFeedLink,
+    PersonRevisionsFeedLink,
+    ProductBranchesFeedLink,
+    ProductRevisionsFeedLink,
+    ProjectBranchesFeedLink,
+    ProjectRevisionsFeedLink,
+    )
 from canonical.launchpad.webapp import (
-    ApplicationMenu, canonical_url, custom_widget, enabled_with_permission,
-    LaunchpadFormView, Link)
+    ApplicationMenu,
+    canonical_url,
+    custom_widget,
+    enabled_with_permission,
+    LaunchpadFormView,
+    Link,
+    )
 from canonical.launchpad.webapp.authorization import (
-    check_permission, precache_permission_for_objects)
-from canonical.launchpad.webapp.badge import Badge, HasBadgeBase
+    check_permission,
+    precache_permission_for_objects,
+    )
+from canonical.launchpad.webapp.badge import (
+    Badge,
+    HasBadgeBase,
+    )
 from canonical.launchpad.webapp.batching import TableBatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.widgets import LaunchpadDropdownWidget
-
+from lp.blueprints.interfaces.specificationbranch import (
+    ISpecificationBranchSet,
+    )
+from lp.bugs.interfaces.bugbranch import IBugBranchSet
 from lp.code.browser.branchmergeproposallisting import (
-    ActiveReviewsView, PersonActiveReviewsView,
-    PersonProductActiveReviewsView)
+    ActiveReviewsView,
+    PersonActiveReviewsView,
+    PersonProductActiveReviewsView,
+    )
 from lp.code.enums import (
-    BranchLifecycleStatus, BranchLifecycleStatusFilter, BranchType)
+    BranchLifecycleStatus,
+    BranchLifecycleStatusFilter,
+    BranchType,
+    )
 from lp.code.interfaces.branch import (
-    BzrIdentityMixin, DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch,
-    IBranchBatchNavigator, IBranchListingQueryOptimiser)
+    BzrIdentityMixin,
+    DEFAULT_BRANCH_STATUS_IN_LISTING,
+    IBranch,
+    IBranchBatchNavigator,
+    IBranchListingQueryOptimiser,
+    )
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchnamespace import IBranchNamespacePolicy
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.revision import IRevisionSet
 from lp.code.interfaces.revisioncache import IRevisionCache
 from lp.code.interfaces.seriessourcepackagebranch import (
-    IFindOfficialBranchLinks)
+    IFindOfficialBranchLinks,
+    )
 from lp.registry.browser.product import (
-    ProductDownloadFileMixin, SortSeriesMixin)
-from lp.registry.interfaces.series import SeriesStatus
-from lp.registry.interfaces.person import IPerson, IPersonSet
+    ProductDownloadFileMixin,
+    SortSeriesMixin,
+    )
+from lp.registry.interfaces.person import (
+    IPerson,
+    IPersonSet,
+    )
+from lp.registry.interfaces.personproduct import (
+    IPersonProduct,
+    IPersonProductFactory,
+    )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.product import IProduct
+from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackage import ISourcePackageFactory
 from lp.registry.model.sourcepackage import SourcePackage
 from lp.services.browser_helpers import get_plural_text
@@ -904,7 +943,9 @@ class PersonBranchesMenu(ApplicationMenu):
             enabled = self.user.inTeam(self.context)
         text = 'Register a branch'
         summary = 'Register a new Bazaar branch'
-        return Link('+addbranch', text, summary, icon='add', enabled=enabled)
+        return Link(
+            '+addbranch', text, summary, icon='add', enabled=enabled,
+            site='code')
 
 
 class PersonProductBranchesMenu(PersonBranchesMenu):
@@ -1037,13 +1078,9 @@ class PersonProductTeamBranchesView(PersonTeamBranchesView):
 class PersonCodeSummaryView(LaunchpadView):
     """A view to render the code page summary for a person."""
 
-    __used_for__ = IPerson
-
 
 class PersonProductCodeSummaryView(PersonCodeSummaryView):
     """A view to render the code page summary for a `PersonProduct`."""
-
-    __used_for__ = IPersonProduct
 
     @property
     def person(self):
@@ -1069,12 +1106,12 @@ class ProductBranchesMenu(ApplicationMenu):
     def branch_add(self):
         text = 'Register a branch'
         summary = 'Register a new Bazaar branch for this project'
-        return Link('+addbranch', text, summary, icon='add')
+        return Link('+addbranch', text, summary, icon='add', site='code')
 
     def list_branches(self):
         text = 'List branches'
         summary = 'List the branches for this project'
-        return Link('+branches', text, summary, icon='add')
+        return Link('+branches', text, summary, icon='add', site='code')
 
     @cachedproperty
     def active_review_count(self):
@@ -1087,7 +1124,7 @@ class ProductBranchesMenu(ApplicationMenu):
             self.active_review_count,
             'active review or unmerged proposal',
             'active reviews or unmerged proposals')
-        return Link('+activereviews', text)
+        return Link('+activereviews', text, site='code')
 
     @enabled_with_permission('launchpad.Commercial')
     def branch_visibility(self):
@@ -1095,9 +1132,8 @@ class ProductBranchesMenu(ApplicationMenu):
         return Link('+branchvisibility', text, icon='edit', site='mainsite')
 
     def code_import(self):
-        text = 'Import your project'
-        enabled = not self.context.official_codehosting
-        return Link('+new-import', text, icon='add', enabled=enabled)
+        text = 'Import a branch'
+        return Link('+new-import', text, icon='add', site='code')
 
 
 class ProductBranchListingView(BranchListingView):

@@ -12,13 +12,15 @@ __all__ = [
     'test_suite',
     ]
 
-import unittest
-
 from zope.security.interfaces import Unauthorized
 
 from canonical.testing import LaunchpadFunctionalLayer
 from lp.soyuz.browser.archive import ArchiveNavigationMenu
-from lp.testing import login, login_person, TestCaseWithFactory
+from lp.testing import (
+    login,
+    login_person,
+    TestCaseWithFactory,
+    )
 from lp.testing.views import create_initialized_view
 
 
@@ -96,6 +98,3 @@ class TestPPAPackages(TestCaseWithFactory):
         view = create_initialized_view(self.ppa, "+index")
         menu = ArchiveNavigationMenu(view)
         self.assertTrue(menu.packages().enabled)
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

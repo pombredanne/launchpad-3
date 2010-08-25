@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -23,49 +23,74 @@ __all__ = [
     ]
 
 
-from urllib import quote
 from datetime import datetime
 import math
-import pytz
+from urllib import quote
 
+import pytz
 from zope.app.form.browser import TextAreaWidget
 from zope.component import getUtility
 from zope.formlib import form
-from zope.interface import Interface, implements
+from zope.interface import (
+    implements,
+    Interface,
+    )
 from zope.schema import Choice
-from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
+from zope.schema.vocabulary import (
+    SimpleTerm,
+    SimpleVocabulary,
+    )
 
-from canonical.widgets import HiddenUserWidget, LaunchpadRadioWidget
-
-from canonical.launchpad import _
-from lp.registry.browser.branding import BrandingChangeView
-from canonical.launchpad.fields import PublicPersonChoice
-from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.cachedproperty import cachedproperty
-from canonical.launchpad.webapp import (
-    action, canonical_url, custom_widget, LaunchpadEditFormView,
-    LaunchpadFormView, LaunchpadView)
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.badge import HasBadgeBase
-from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.interfaces import (
-    ILaunchBag, UnexpectedFormData)
-from canonical.launchpad.webapp.menu import structured
-from canonical.launchpad.webapp.tales import PersonFormatterAPI
+from canonical.launchpad import _
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
 from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
-from lp.registry.interfaces.mailinglist import (
-    IMailingList, IMailingListSet, MailingListStatus, PURGE_STATES,
-    PostedMessageStatus)
-from lp.registry.interfaces.person import (
-    IPerson, IPersonSet, ITeam, ITeamContactAddressForm, ITeamCreation,
-    ImmutableVisibilityError, PRIVATE_TEAM_PREFIX, PersonVisibility,
-    TeamContactMethod, TeamSubscriptionPolicy)
-from lp.registry.interfaces.teammembership import TeamMembershipStatus
 from canonical.launchpad.interfaces.validation import validate_new_team_email
+from canonical.launchpad.validators import LaunchpadValidationError
+from canonical.launchpad.webapp import (
+    action,
+    canonical_url,
+    custom_widget,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    LaunchpadView,
+    )
+from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.badge import HasBadgeBase
+from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.interfaces import ILaunchBag
+from canonical.launchpad.webapp.menu import structured
+from canonical.launchpad.webapp.tales import PersonFormatterAPI
 from canonical.lazr.interfaces import IObjectPrivacy
+from canonical.widgets import (
+    HiddenUserWidget,
+    LaunchpadRadioWidget,
+    )
+from lp.app.errors import UnexpectedFormData
+from lp.registry.browser.branding import BrandingChangeView
+from lp.registry.interfaces.mailinglist import (
+    IMailingList,
+    IMailingListSet,
+    MailingListStatus,
+    PostedMessageStatus,
+    PURGE_STATES,
+    )
+from lp.registry.interfaces.person import (
+    ImmutableVisibilityError,
+    IPerson,
+    IPersonSet,
+    ITeam,
+    ITeamContactAddressForm,
+    ITeamCreation,
+    PersonVisibility,
+    PRIVATE_TEAM_PREFIX,
+    TeamContactMethod,
+    TeamSubscriptionPolicy,
+    )
+from lp.registry.interfaces.teammembership import TeamMembershipStatus
+from lp.services.fields import PublicPersonChoice
 
 
 class TeamPrivacyAdapter:
@@ -125,7 +150,7 @@ class TeamFormMixin:
         "name", "visibility", "displayname", "contactemail",
         "teamdescription", "subscriptionpolicy",
         "defaultmembershipperiod", "renewal_policy",
-        "defaultrenewalperiod",  "teamowner",
+        "defaultrenewalperiod", "teamowner",
         ]
     private_prefix = PRIVATE_TEAM_PREFIX
 
@@ -742,7 +767,7 @@ class TeamMailingListSubscribersView(LaunchpadView):
 
     def renderTable(self):
         html = ['<table style="max-width: 80em">']
-        items = self.subscribers.currentBatch()
+        items = list(self.subscribers.currentBatch())
         assert len(items) > 0, (
             "Don't call this method if there are no subscribers to show.")
         # When there are more than 10 items, we use multiple columns, but
@@ -1070,9 +1095,9 @@ class TeamMapView(LaunchpadView):
         """HTML which shows the map with location of the team's members."""
         return """
             <script type="text/javascript">
-                YUI().use('node', 'lp.mapping', function(Y) {
+                YUI().use('node', 'lp.app.mapping', function(Y) {
                     function renderMap() {
-                        Y.lp.mapping.renderTeamMap(
+                        Y.lp.app.mapping.renderTeamMap(
                             %(min_lat)s, %(max_lat)s, %(min_lng)s,
                             %(max_lng)s, %(center_lat)s, %(center_lng)s);
                      }
@@ -1085,9 +1110,9 @@ class TeamMapView(LaunchpadView):
         """The HTML which shows a small version of the team's map."""
         return """
             <script type="text/javascript">
-                YUI().use('node', 'lp.mapping', function(Y) {
+                YUI().use('node', 'lp.app.mapping', function(Y) {
                     function renderMap() {
-                        Y.lp.mapping.renderTeamMapSmall(
+                        Y.lp.app.mapping.renderTeamMapSmall(
                             %(center_lat)s, %(center_lng)s);
                      }
                      Y.on("domready", renderMap);

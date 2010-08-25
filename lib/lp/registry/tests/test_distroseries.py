@@ -3,32 +3,49 @@
 
 """Tests for distroseries."""
 
+from __future__ import with_statement
+
 __metaclass__ = type
 
-import unittest
-
 import transaction
-
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.ftests import ANONYMOUS, login
-from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
+from canonical.launchpad.ftests import (
+    ANONYMOUS,
+    login,
+    )
+from canonical.testing import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
 from lp.registry.interfaces.distroseries import (
-    IDistroSeriesSet, NoSuchDistroSeries)
+    IDistroSeriesSet,
+    NoSuchDistroSeries,
+    )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.soyuz.interfaces.archive import (
+    ArchivePurpose,
+    IArchiveSet,
+    )
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.distroseriessourcepackagerelease import (
-    IDistroSeriesSourcePackageRelease)
+    IDistroSeriesSourcePackageRelease,
+    )
 from lp.soyuz.interfaces.publishing import (
-    active_publishing_status, PackagePublishingStatus)
+    active_publishing_status,
+    PackagePublishingStatus,
+    )
 from lp.soyuz.model.processor import ProcessorFamilySet
-from lp.testing import TestCase, TestCaseWithFactory
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
+from lp.testing import (
+    person_logged_in,
+    TestCase,
+    TestCaseWithFactory,
+    )
 from lp.translations.interfaces.translations import (
-    TranslationsBranchImportMode)
-from canonical.testing import (
-    DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
+    TranslationsBranchImportMode,
+    )
 
 
 class TestDistroSeriesCurrentSourceReleases(TestCase):
@@ -210,7 +227,13 @@ class TestDistroSeriesPackaging(TestCaseWithFactory):
         self.universe_component = component_set['universe']
         self.makeSeriesPackage('normal')
         self.makeSeriesPackage('translatable', messages=800)
-        self.makeSeriesPackage('hot', heat=500)
+        hot_package = self.makeSeriesPackage('hot', heat=500)
+        # Create a second SPPH for 'hot', to verify that duplicates are
+        # eliminated in the queries.
+        self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagename=hot_package.sourcepackagename,
+            distroseries=self.series,
+            component=self.universe_component, section_name='web')
         self.makeSeriesPackage('hot-translatable', heat=250, messages=1000)
         self.makeSeriesPackage('main', is_main=True)
         self.makeSeriesPackage('linked')
@@ -246,6 +269,7 @@ class TestDistroSeriesPackaging(TestCaseWithFactory):
                 owner=self.user)
             removeSecurityProxy(template).messagecount = messages
         self.packages[name] = source_package
+        return source_package
 
     def linkPackage(self, name):
         product_series = self.factory.makeProductSeries()
@@ -270,48 +294,51 @@ class TestDistroSeriesPackaging(TestCaseWithFactory):
             u'main', u'hot-translatable', u'hot', u'translatable', u'normal']
         self.assertEqual(expected, names)
 
-    def test_getPrioritizedlPackagings(self):
+    def test_getPrioritizedPackagings(self):
         # Verify the ordering of packagings that need more upstream info.
         for name in ['main', 'hot-translatable', 'hot', 'translatable']:
             self.linkPackage(name)
-        packagings = self.series.getPrioritizedlPackagings()
+        packagings = self.series.getPrioritizedPackagings()
         names = [packaging.sourcepackagename.name for packaging in packagings]
         expected = [
             u'main', u'hot-translatable', u'hot', u'translatable', u'linked']
         self.assertEqual(expected, names)
 
-    def test_getPrioritizedlPackagings_bug_tracker(self):
+    def test_getPrioritizedPackagings_bug_tracker(self):
         # Verify the ordering of packagings with and without a bug tracker.
         self.linkPackage('hot')
         self.makeSeriesPackage('cold')
         product_series = self.linkPackage('cold')
-        product_series.product.bugtraker = self.factory.makeBugTracker()
-        packagings = self.series.getPrioritizedlPackagings()
+        with person_logged_in(product_series.product.owner):
+            product_series.product.bugtracker = self.factory.makeBugTracker()
+        packagings = self.series.getPrioritizedPackagings()
         names = [packaging.sourcepackagename.name for packaging in packagings]
-        expected = [u'hot', u'cold', u'linked']
+        expected = [u'hot', u'linked', u'cold']
         self.assertEqual(expected, names)
 
-    def test_getPrioritizedlPackagings_branch(self):
+    def test_getPrioritizedPackagings_branch(self):
         # Verify the ordering of packagings with and without a branch.
         self.linkPackage('translatable')
         self.makeSeriesPackage('withbranch')
         product_series = self.linkPackage('withbranch')
-        product_series.branch = self.factory.makeBranch()
-        packagings = self.series.getPrioritizedlPackagings()
+        with person_logged_in(product_series.product.owner):
+            product_series.branch = self.factory.makeBranch()
+        packagings = self.series.getPrioritizedPackagings()
         names = [packaging.sourcepackagename.name for packaging in packagings]
         expected = [u'translatable', u'linked', u'withbranch']
         self.assertEqual(expected, names)
 
-    def test_getPrioritizedlPackagings_translation(self):
+    def test_getPrioritizedPackagings_translation(self):
         # Verify the ordering of translatable packagings that are and are not
         # configured to import.
         self.linkPackage('translatable')
         self.makeSeriesPackage('importabletranslatable')
         product_series = self.linkPackage('importabletranslatable')
-        product_series.branch = self.factory.makeBranch()
-        product_series.translations_autoimport_mode = (
-            TranslationsBranchImportMode.IMPORT_TEMPLATES)
-        packagings = self.series.getPrioritizedlPackagings()
+        with person_logged_in(product_series.product.owner):
+            product_series.branch = self.factory.makeBranch()
+            product_series.translations_autoimport_mode = (
+                TranslationsBranchImportMode.IMPORT_TEMPLATES)
+        packagings = self.series.getPrioritizedPackagings()
         names = [packaging.sourcepackagename.name for packaging in packagings]
         expected = [u'translatable', u'linked', u'importabletranslatable']
         self.assertEqual(expected, names)
@@ -343,7 +370,8 @@ class TestDistroSeriesSet(TestCaseWithFactory):
 
         new_distroseries = (
             self.factory.makeDistroRelease(name=u"sampleseries"))
-        new_distroseries.hide_all_translations = False
+        with person_logged_in(new_distroseries.distribution.owner):
+            new_distroseries.hide_all_translations = False
         transaction.commit()
         translatables = self._get_translatables()
         self.failUnlessEqual(
@@ -365,7 +393,8 @@ class TestDistroSeriesSet(TestCaseWithFactory):
                 translatables,
                 self._ref_translatables(u"sampleseries")))
 
-        new_distroseries.hide_all_translations = True
+        with person_logged_in(new_distroseries.distribution.owner):
+            new_distroseries.hide_all_translations = True
         transaction.commit()
         translatables = self._get_translatables()
         self.failUnlessEqual(
@@ -393,7 +422,3 @@ class TestDistroSeriesSet(TestCaseWithFactory):
             NoSuchDistroSeries,
             getUtility(IDistroSeriesSet).fromSuite,
             distribution, 'doesntexist')
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

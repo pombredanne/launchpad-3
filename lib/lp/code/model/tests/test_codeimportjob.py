@@ -10,43 +10,53 @@ __all__ = [
     ]
 
 from datetime import datetime
-from pytz import UTC
 import StringIO
 import unittest
 
+from pytz import UTC
 from sqlobject.sqlbuilder import SQLConstant
-
 import transaction
-
-from twisted.python.util import mergeFunctionMetadata
-
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
-from lp.code.model.codeimportjob import CodeImportJob
-from lp.code.model.codeimportresult import CodeImportResult
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from lp.code.enums import (
-    CodeImportEventType, CodeImportJobState, CodeImportResultStatus,
-    CodeImportReviewStatus)
-from lp.code.interfaces.codeimport import ICodeImportSet
-from lp.code.interfaces.codeimportevent import ICodeImportEventSet
-from lp.code.interfaces.codeimportjob import (
-    ICodeImportJobSet, ICodeImportJobWorkflow)
-from lp.code.interfaces.codeimportresult import ICodeImportResult
-from lp.registry.interfaces.person import IPersonSet
-from lp.testing import (
-    ANONYMOUS, login, login_celebrity, logout, TestCaseWithFactory)
-from lp.testing.sampledata import NO_PRIVILEGE_EMAIL, VCS_IMPORTS_MEMBER_EMAIL
 from canonical.launchpad.testing.codeimporthelpers import (
-    make_finished_import, make_running_import)
+    make_finished_import,
+    make_running_import,
+    )
 from canonical.launchpad.testing.pages import get_feedback_messages
 from canonical.launchpad.webapp import canonical_url
 from canonical.librarian.interfaces import ILibrarianClient
 from canonical.testing import (
-    DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
+from lp.code.enums import (
+    CodeImportEventType,
+    CodeImportJobState,
+    CodeImportResultStatus,
+    CodeImportReviewStatus,
+    )
+from lp.code.interfaces.codeimport import ICodeImportSet
+from lp.code.interfaces.codeimportevent import ICodeImportEventSet
+from lp.code.interfaces.codeimportjob import (
+    ICodeImportJobSet,
+    ICodeImportJobWorkflow,
+    )
+from lp.code.interfaces.codeimportresult import ICodeImportResult
+from lp.code.model.codeimportjob import CodeImportJob
+from lp.code.model.codeimportresult import CodeImportResult
+from lp.testing import (
+    ANONYMOUS,
+    login,
+    login_celebrity,
+    logout,
+    TestCaseWithFactory,
+    with_anonymous_login,
+    with_celebrity_logged_in,
+    )
 
 
 def login_for_code_imports():
@@ -960,23 +970,7 @@ class TestCodeImportJobWorkflowFinishJob(TestCaseWithFactory,
             CodeImportReviewStatus.FAILING, code_import.review_status)
 
 
-def logged_in_as(email):
-    """Return a decorator that wraps functions to runs logged in as `email`.
-    """
-    def decorator(function):
-        def decorated(*args, **kw):
-            login(email)
-            try:
-                return function(*args, **kw)
-            finally:
-                logout()
-        return mergeFunctionMetadata(function, decorated)
-    return decorator
-
-
-# This is a dependence on the sample data: David Allouche is a member of the
-# ~vcs-imports celebrity team.
-logged_in_for_code_imports = logged_in_as(VCS_IMPORTS_MEMBER_EMAIL)
+logged_in_for_code_imports = with_celebrity_logged_in('vcs_imports')
 
 
 class TestRequestJobUIRaces(TestCaseWithFactory):
@@ -998,12 +992,15 @@ class TestRequestJobUIRaces(TestCaseWithFactory):
         code_import_id = code_import.id
         return code_import_id, branch_url
 
-    @logged_in_as(NO_PRIVILEGE_EMAIL)
     def requestJobByUserWithDisplayName(self, code_import_id, displayname):
         """Record a request for the job by a user with the given name."""
-        getUtility(ICodeImportJobWorkflow).requestJob(
-            getUtility(ICodeImportSet).get(code_import_id).import_job,
-            self.factory.makePerson(displayname=displayname))
+        self.factory.loginAsAnyone()
+        try:
+            getUtility(ICodeImportJobWorkflow).requestJob(
+                getUtility(ICodeImportSet).get(code_import_id).import_job,
+                self.factory.makePerson(displayname=displayname))
+        finally:
+            logout()
 
     @logged_in_for_code_imports
     def deleteJob(self, code_import_id):
@@ -1013,7 +1010,7 @@ class TestRequestJobUIRaces(TestCaseWithFactory):
         getUtility(ICodeImportSet).get(code_import_id).updateFromData(
             {'review_status': CodeImportReviewStatus.SUSPENDED}, user)
 
-    @logged_in_as(ANONYMOUS)
+    @with_anonymous_login
     def startJob(self, code_import_id):
         """Mark the job as started on an arbitrary machine."""
         getUtility(ICodeImportJobWorkflow).startJob(

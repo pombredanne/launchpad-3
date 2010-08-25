@@ -23,9 +23,11 @@ from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad.helpers import emailPeople
 from canonical.launchpad.webapp import canonical_url
-from lp.services.scripts.base import (
-    LaunchpadScript, LaunchpadScriptFailure)
 from lp.registry.interfaces.distribution import IDistributionSet
+from lp.services.scripts.base import (
+    LaunchpadScript,
+    LaunchpadScriptFailure,
+    )
 
 
 class PPAReportScript(LaunchpadScript):

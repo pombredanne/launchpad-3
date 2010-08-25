@@ -1,16 +1,16 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test Archive features."""
 
-import unittest
-
 from zope.security.interfaces import Unauthorized
 
 from canonical.testing import DatabaseFunctionalLayer
-
 from lp.registry.interfaces.person import PersonVisibility
-from lp.testing import login_person, TestCaseWithFactory
+from lp.testing import (
+    login_person,
+    TestCaseWithFactory,
+    )
 
 
 class TestArchiveSubscriptions(TestCaseWithFactory):
@@ -36,7 +36,6 @@ class TestArchiveSubscriptions(TestCaseWithFactory):
         # a private team's PPA after they have been given a subscription.
         # This is essentially allowing access for the subscriber to see
         # the private team.
-
         def get_name():
             return self.archive.owner.name
 
@@ -51,7 +50,3 @@ class TestArchiveSubscriptions(TestCaseWithFactory):
         # When a subscription exists, it's fine.
         login_person(self.subscriber)
         self.assertEqual(self.archive.owner.name, "subscribertest")
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

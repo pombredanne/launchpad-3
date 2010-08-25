@@ -16,27 +16,42 @@ __all__ = [
 
 from operator import attrgetter
 
-from zope.component import getUtility
-from zope.interface import implements, Interface
-from zope.schema import Choice
-
 from lazr.delegates import delegates
-from lazr.enum import EnumeratedType, Item, use_template
+from lazr.enum import (
+    EnumeratedType,
+    Item,
+    use_template,
+    )
+from zope.component import getUtility
+from zope.interface import (
+    implements,
+    Interface,
+    )
+from zope.schema import Choice
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad import _
-from canonical.launchpad.webapp import custom_widget, LaunchpadFormView
+from canonical.launchpad.webapp import (
+    custom_widget,
+    LaunchpadFormView,
+    )
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import TableBatchNavigator
 from canonical.widgets import LaunchpadDropdownWidget
-
-from lp.code.enums import BranchMergeProposalStatus, CodeReviewVote
+from lp.code.enums import (
+    BranchMergeProposalStatus,
+    CodeReviewVote,
+    )
 from lp.code.interfaces.branchcollection import (
-    IAllBranches, IBranchCollection)
+    IAllBranches,
+    IBranchCollection,
+    )
 from lp.code.interfaces.branchmergeproposal import (
-    IBranchMergeProposal, IBranchMergeProposalGetter,
-    IBranchMergeProposalListingBatchNavigator)
+    IBranchMergeProposal,
+    IBranchMergeProposalGetter,
+    IBranchMergeProposalListingBatchNavigator,
+    )
 from lp.code.interfaces.hasbranches import IHasMergeProposals
 
 

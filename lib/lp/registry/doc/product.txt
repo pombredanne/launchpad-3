@@ -6,8 +6,8 @@ software. It can be part of a ProjectGroup or it can be standalone.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import (
-    ...     IProductSet, IProduct, IPersonSet,
-    ...     NotFoundError)
+    ...     IProductSet, IProduct, IPersonSet)
+    >>> from lp.app.errors import NotFoundError
     >>> from lp.translations.interfaces.translationimportqueue import (
     ...     IHasTranslationImports)
     >>> from canonical.launchpad.ftests import login
@@ -260,7 +260,8 @@ one.
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> firefox.official_malone
     True
-
+    >>> print firefox.bug_tracking_usage.name
+    LAUNCHPAD
     >>> firefox.getExternalBugTracker() is None
     True
 
@@ -280,6 +281,8 @@ tracker will be returned.
     >>> firefox.official_malone = False
     >>> firefox.bugtracker is None
     True
+    >>> print firefox.bug_tracking_usage.name
+    UNKNOWN
     >>> firefox.getExternalBugTracker().name
     u'gnome-bugzilla'
 
@@ -291,6 +294,8 @@ specify its own.
     >>> firefox.bugtracker = debbugs
     >>> firefox.getExternalBugTracker().name
     u'debbugs'
+    >>> print firefox.bug_tracking_usage.name
+    EXTERNAL
 
 
 If neither the project nor the product have specified a bug tracker,
@@ -494,9 +499,13 @@ series.
     None
     >>> print firefox.official_codehosting
     False
+    >>> print firefox.codehosting_usage.name
+    UNKNOWN
     >>> firefox.development_focus.branch = factory.makeBranch(product=firefox)
     >>> print firefox.official_codehosting
     True
+    >>> print firefox.codehosting_usage.name
+    LAUNCHPAD
 
 We can also find all the products that have branches.
 

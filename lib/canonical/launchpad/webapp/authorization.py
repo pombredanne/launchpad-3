@@ -6,29 +6,39 @@ __metaclass__ = type
 import warnings
 import weakref
 
-from zope.interface import classProvides
-from zope.component import getUtility, queryAdapter
+from zope.app.security.principalregistry import UnauthenticatedPrincipal
 from zope.browser.interfaces import IView
-
+from zope.component import (
+    getUtility,
+    queryAdapter,
+    )
+from zope.interface import classProvides
+from zope.proxy import removeAllProxies
 from zope.publisher.interfaces import IApplicationRequest
-from zope.security.interfaces import ISecurityPolicy
 from zope.security.checker import CheckerPublic
+from zope.security.interfaces import ISecurityPolicy
+from zope.security.management import (
+    checkPermission as zcheckPermission,
+    getInteraction,
+    system_user,
+    )
+from zope.security.permission import (
+    checkPermission as check_permission_is_registered,
+    )
 from zope.security.proxy import removeSecurityProxy
 from zope.security.simplepolicies import ParanoidSecurityPolicy
-from zope.security.management import (
-    system_user, checkPermission as zcheckPermission, getInteraction)
-from zope.security.permission import (
-    checkPermission as check_permission_is_registered)
-from zope.app.security.principalregistry import UnauthenticatedPrincipal
-
-from canonical.lazr.canonicalurl import nearest_adapter
-from canonical.lazr.interfaces import IObjectPrivacy
 
 from canonical.database.sqlbase import block_implicit_flushes
 from canonical.launchpad.readonly import is_read_only
 from canonical.launchpad.webapp.interfaces import (
-    AccessLevel, IAuthorization, ILaunchpadContainer, ILaunchpadPrincipal)
+    AccessLevel,
+    IAuthorization,
+    ILaunchpadContainer,
+    ILaunchpadPrincipal,
+    )
 from canonical.launchpad.webapp.metazcml import ILaunchpadPermission
+from canonical.lazr.canonicalurl import nearest_adapter
+from canonical.lazr.interfaces import IObjectPrivacy
 
 
 steveIsFixingThis = False
@@ -138,8 +148,11 @@ class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):
             # We will not be able to lookup an adapter for this, so we can
             # return False already.
             return False
-        # Remove security proxies from object to authorize.
-        objecttoauthorize = removeSecurityProxy(objecttoauthorize)
+        # Remove all proxies from object to authorize. The security proxy is
+        # removed for obvious reasons but we also need to remove the location
+        # proxy (which is used on apidoc.lp.dev) because otherwise we can't
+        # create a weak reference to our object in our security policy cache.
+        objecttoauthorize = removeAllProxies(objecttoauthorize)
 
         participations = [participation
                           for participation in self.participations

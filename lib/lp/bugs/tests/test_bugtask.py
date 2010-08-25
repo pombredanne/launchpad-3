@@ -4,29 +4,45 @@
 __metaclass__ = type
 
 from datetime import timedelta
+from doctest import DocTestSuite
 import unittest
 
+from lazr.lifecycle.snapshot import Snapshot
 from zope.component import getUtility
 from zope.interface import providedBy
-from zope.testing.doctestunit import DocTestSuite
 
-from lazr.lifecycle.snapshot import Snapshot
-
-from lp.hardwaredb.interfaces.hwdb import HWBus, IHWDeviceSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.searchbuilder import all, any
+from canonical.launchpad.searchbuilder import (
+    all,
+    any,
+    )
 from canonical.testing import (
-    DatabaseFunctionalLayer, LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
-
+    DatabaseFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
 from lp.bugs.interfaces.bugtarget import IBugTarget
 from lp.bugs.interfaces.bugtask import (
-    BugTaskImportance, BugTaskSearchParams, BugTaskStatus)
+    BugTaskImportance,
+    BugTaskSearchParams,
+    BugTaskStatus,
+    IBugTaskSet,
+    )
 from lp.bugs.model.bugtask import build_tag_search_clause
+from lp.hardwaredb.interfaces.hwdb import (
+    HWBus,
+    IHWDeviceSet,
+    )
 from lp.registry.interfaces.distribution import IDistributionSet
-from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.person import IPerson, IPersonSet
 from lp.testing import (
-    ANONYMOUS, TestCase, TestCaseWithFactory, login, login_person, logout,
-    normalize_whitespace)
+    ANONYMOUS,
+    login,
+    login_person,
+    logout,
+    normalize_whitespace,
+    TestCase,
+    TestCaseWithFactory,
+    )
 
 
 class TestBugTaskDelta(TestCaseWithFactory):
@@ -791,6 +807,28 @@ class TestBugTaskSearch(TestCaseWithFactory):
         task2.bug.date_last_updated += timedelta(days=1)
         result = target.searchTasks(None, modified_since=date)
         self.assertEqual([task2], list(result))
+
+    def test_private_bug_view_permissions_cached(self):
+        """Private bugs from a search know the user can see the bugs."""
+        target = self.makeBugTarget()
+        person = self.login()
+        self.factory.makeBug(product=target, private=True, owner=person)
+        self.factory.makeBug(product=target, private=True, owner=person)
+        # Search style and parameters taken from the milestone index view where
+        # the issue was discovered.
+        login_person(person)
+        tasks = target.searchTasks(BugTaskSearchParams(person, omit_dupes=True,
+            orderby=['status', '-importance', 'id']))
+        # We must be finding the bugs.
+        self.assertEqual(2, tasks.count())
+        # Cache in the storm cache the account->person lookup so its not
+        # distorting what we're testing.
+        _ = IPerson(person.account, None)
+        # One query and only one should be issued to get the tasks, bugs and
+        # allow access to getConjoinedMaster attribute - an attribute that
+        # triggers a permission check (nb: id does not trigger such a check)
+        self.assertStatementCount(1,
+            lambda:[task.getConjoinedMaster for task in tasks])
 
 
 def test_suite():

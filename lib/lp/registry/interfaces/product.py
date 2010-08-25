@@ -10,7 +10,7 @@ __metaclass__ = type
 __all__ = [
     'InvalidProductName',
     'IProduct',
-    'IProductProjectReviewRestricted',
+    'IProductModerateRestricted',
     'IProductDriverRestricted',
     'IProductEditRestricted',
     'IProductPublic',
@@ -24,63 +24,117 @@ __all__ = [
 
 
 import re
-
 from textwrap import dedent
 
-from zope.interface import Interface, Attribute
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    )
+from lazr.lifecycle.snapshot import doNotSnapshot
+from lazr.restful.declarations import (
+    call_with,
+    collection_default_content,
+    export_as_webservice_collection,
+    export_as_webservice_entry,
+    export_factory_operation,
+    export_operation_as,
+    export_read_operation,
+    exported,
+    operation_parameters,
+    operation_returns_collection_of,
+    operation_returns_entry,
+    rename_parameters_as,
+    REQUEST_USER,
+    )
+from lazr.restful.fields import (
+    CollectionField,
+    Reference,
+    ReferenceChoice,
+    )
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
 from zope.schema import (
-    Bool, Choice, Date, Datetime, Int, Object, Set, Text, TextLine)
+    Bool,
+    Choice,
+    Date,
+    Datetime,
+    Int,
+    Object,
+    Set,
+    Text,
+    TextLine,
+    )
 from zope.schema.vocabulary import SimpleVocabulary
-from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import (
-    Description, IconImageUpload, LogoImageUpload, MugshotImageUpload,
-    ParticipatingPersonChoice, ProductBugTracker, ProductNameField,
-    PublicPersonChoice, Summary, Title, URIField)
-from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
-from lp.bugs.interfaces.securitycontact import IHasSecurityContact
-from lp.registry.interfaces.structuralsubscription import (
-    IStructuralSubscriptionTarget)
-from lp.app.interfaces.headings import IRootContext
-from lp.code.interfaces.branchvisibilitypolicy import (
-    IHasBranchVisibilityPolicy)
-from lp.code.interfaces.hasbranches import (
-    IHasBranches, IHasCodeImports, IHasMergeProposals)
-from lp.code.interfaces.hasrecipes import IHasRecipes
-from lp.bugs.interfaces.bugtarget import (
-    IBugTarget, IOfficialBugTagTargetPublic, IOfficialBugTagTargetRestricted)
-from lp.registry.interfaces.karma import IKarmaContext
 from canonical.launchpad.interfaces.launchpad import (
-    IHasAppointedDriver, IHasDrivers, IHasExternalBugTracker, IHasIcon,
-    IHasLogo, IHasMugshot, ILaunchpadUsage)
-from lp.registry.interfaces.role import IHasOwner
-from lp.registry.interfaces.milestone import (
-    ICanGetMilestonesDirectly, IHasMilestones)
+    IHasAppointedDriver,
+    IHasDrivers,
+    IHasExternalBugTracker,
+    IHasIcon,
+    IHasLogo,
+    IHasMugshot,
+    )
+from canonical.launchpad.validators import LaunchpadValidationError
+from canonical.launchpad.validators.name import name_validator
+from lp.app.errors import NameLookupFailed
+from lp.app.interfaces.headings import IRootContext
+from lp.app.interfaces.launchpad import (
+    ILaunchpadUsage,
+    IServiceUsage,
+    )
+from lp.blueprints.interfaces.specificationtarget import ISpecificationTarget
+from lp.blueprints.interfaces.sprint import IHasSprints
+from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
+from lp.bugs.interfaces.bugtarget import (
+    IBugTarget,
+    IOfficialBugTagTargetPublic,
+    IOfficialBugTagTargetRestricted,
+    )
+from lp.bugs.interfaces.securitycontact import IHasSecurityContact
+from lp.code.interfaces.branchvisibilitypolicy import (
+    IHasBranchVisibilityPolicy,
+    )
+from lp.code.interfaces.hasbranches import (
+    IHasBranches,
+    IHasCodeImports,
+    IHasMergeProposals,
+    )
+from lp.code.interfaces.hasrecipes import IHasRecipes
 from lp.registry.interfaces.announcement import IMakesAnnouncements
 from lp.registry.interfaces.commercialsubscription import (
-    ICommercialSubscription)
+    ICommercialSubscription,
+    )
+from lp.registry.interfaces.karma import IKarmaContext
 from lp.registry.interfaces.mentoringoffer import IHasMentoringOffers
+from lp.registry.interfaces.milestone import (
+    ICanGetMilestonesDirectly,
+    IHasMilestones,
+    )
 from lp.registry.interfaces.pillar import IPillar
 from lp.registry.interfaces.productrelease import IProductRelease
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import IProjectGroup
-from lp.blueprints.interfaces.specificationtarget import (
-    ISpecificationTarget)
-from lp.blueprints.interfaces.sprint import IHasSprints
-from lp.translations.interfaces.translationgroup import (
-    ITranslationPolicy)
-from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.launchpad.validators.name import name_validator
-from canonical.launchpad.webapp.interfaces import NameLookupFailed
-from lazr.restful.fields import CollectionField, Reference, ReferenceChoice
-from lazr.restful.declarations import (
-    REQUEST_USER, call_with, collection_default_content,
-    export_as_webservice_collection, export_as_webservice_entry,
-    export_factory_operation, export_operation_as, export_read_operation,
-    exported, operation_parameters, operation_returns_entry,
-    operation_returns_collection_of, rename_parameters_as)
-
+from lp.registry.interfaces.role import IHasOwner
+from lp.registry.interfaces.structuralsubscription import (
+    IStructuralSubscriptionTarget,
+    )
+from lp.services.fields import (
+    Description,
+    IconImageUpload,
+    LogoImageUpload,
+    MugshotImageUpload,
+    PersonChoice,
+    ProductBugTracker,
+    ProductNameField,
+    PublicPersonChoice,
+    Summary,
+    Title,
+    URIField,
+    )
+from lp.translations.interfaces.translationgroup import ITranslationPolicy
 
 # This is based on the definition of <label> in RFC 1035, section
 # 2.3.1, which is what SourceForge project names are based on.
@@ -298,8 +352,8 @@ class IProductEditRestricted(IOfficialBugTagTargetRestricted):
     """`IProduct` properties which require launchpad.Edit permission."""
 
 
-class IProductProjectReviewRestricted(Interface):
-    """`IProduct` properties which require launchpad.ProjectReview."""
+class IProductModerateRestricted(Interface):
+    """`IProduct` properties which require launchpad.Moderate."""
 
     qualifies_for_free_hosting = exported(
         Bool(
@@ -348,12 +402,9 @@ class IProductPublic(
     IHasMugshot, IHasOwner, IHasSecurityContact, IHasSprints,
     ITranslationPolicy, IKarmaContext, ILaunchpadUsage, IMakesAnnouncements,
     IOfficialBugTagTargetPublic, IPillar, ISpecificationTarget, IHasRecipes,
-    IHasCodeImports):
+    IHasCodeImports, IServiceUsage):
     """Public IProduct properties."""
 
-    # XXX Mark Shuttleworth 2004-10-12: Let's get rid of ID's in interfaces
-    # unless we really need them. BradB says he can remove the need for them
-    # in SQLObject soon.
     id = Int(title=_('The Project ID'))
 
     project = exported(
@@ -373,7 +424,7 @@ class IProductPublic(
         exported_as='project_group')
 
     owner = exported(
-        ParticipatingPersonChoice(
+        PersonChoice(
             title=_('Maintainer'),
             required=True,
             vocabulary='ValidOwner',
@@ -390,7 +441,7 @@ class IProductPublic(
                           "Launchpad.")))
 
     driver = exported(
-        ParticipatingPersonChoice(
+        PersonChoice(
             title=_("Driver"),
             description=_(
                 "This person or team will be able to set feature goals for "
@@ -587,7 +638,8 @@ class IProductPublic(
         "this product"))
 
     series = exported(
-        CollectionField(value_type=Object(schema=IProductSeries)))
+        doNotSnapshot(
+            CollectionField(value_type=Object(schema=IProductSeries))))
 
     development_focus = exported(
         ReferenceChoice(
@@ -604,10 +656,12 @@ class IProductPublic(
         "product; otherwise, simply returns the product name."))
 
     releases = exported(
-        CollectionField(
-            title=_("An iterator over the ProductReleases for this product."),
-            readonly=True,
-            value_type=Reference(schema=IProductRelease)))
+        doNotSnapshot(
+            CollectionField(
+                title=_("An iterator over the ProductReleases for "
+                        "this product."),
+                readonly=True,
+                value_type=Reference(schema=IProductRelease))))
 
     translation_focus = exported(
         ReferenceChoice(
@@ -730,7 +784,7 @@ class IProductPublic(
 
 class IProduct(
     IHasBugSupervisor, IProductEditRestricted,
-    IProductProjectReviewRestricted, IProductDriverRestricted,
+    IProductModerateRestricted, IProductDriverRestricted,
     IProductPublic, IRootContext, IStructuralSubscriptionTarget):
     """A Product.
 

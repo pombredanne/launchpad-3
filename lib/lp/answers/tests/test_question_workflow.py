@@ -13,26 +13,47 @@ __metaclass__ = type
 
 __all__ = []
 
-from datetime import datetime, timedelta
-from pytz import UTC
-import unittest
+from datetime import (
+    datetime,
+    timedelta,
+    )
 import traceback
+import unittest
 
+from lazr.lifecycle.interfaces import (
+    IObjectCreatedEvent,
+    IObjectModifiedEvent,
+    )
+from pytz import UTC
 from zope.component import getUtility
 from zope.interface.verify import verifyObject
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from lazr.lifecycle.interfaces import (
-    IObjectCreatedEvent, IObjectModifiedEvent)
-from canonical.launchpad.interfaces import (
-    IDistributionSet, ILanguageSet, ILaunchBag, InvalidQuestionStateError,
-    IQuestion, IQuestionMessage, QuestionAction, QuestionStatus)
-from lp.registry.interfaces.person import IPerson, IPersonSet
-from canonical.launchpad.ftests import login, login_person, ANONYMOUS
+from canonical.launchpad.ftests import (
+    ANONYMOUS,
+    login,
+    login_person,
+    )
 from canonical.launchpad.ftests.event import TestEventListener
-from canonical.testing.layers import DatabaseFunctionalLayer
 from canonical.launchpad.webapp.authorization import clear_cache
+from canonical.launchpad.webapp.interfaces import ILaunchBag
+from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.answers.interfaces.question import (
+    InvalidQuestionStateError,
+    IQuestion,
+    )
+from lp.answers.interfaces.questionenums import (
+    QuestionAction,
+    QuestionStatus,
+    )
+from lp.answers.interfaces.questionmessage import IQuestionMessage
+from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.person import (
+    IPerson,
+    IPersonSet,
+    )
+from lp.services.worlddata.interfaces.language import ILanguageSet
 
 
 class BaseAnswerTrackerWorkflowTestCase(unittest.TestCase):
@@ -106,8 +127,8 @@ class BaseAnswerTrackerWorkflowTestCase(unittest.TestCase):
         """Helper for transition guard tests.
 
         Helper that verifies that the Question guard_name attribute
-        is True when the question status is one listed in statuses_expected_true
-        and False otherwise.
+        is True when the question status is one listed in
+        statuses_expected_true and False otherwise.
         """
         for status in QuestionStatus.items:
             if status != self.question.status:
@@ -240,8 +261,10 @@ class BaseAnswerTrackerWorkflowTestCase(unittest.TestCase):
         was created and that an IObjectModifiedEvent was also sent.
         The event object and edited_fields attribute are checked.
         """
+
         def failure_msg(msg):
             return "From status %s: %s" % (status_name, msg)
+
         self.failUnless(
             len(self.collected_events) >= 1,
             failure_msg('failed to trigger an IObjectCreatedEvent'))
@@ -385,7 +408,7 @@ class GiveInfoTestCase(BaseAnswerTrackerWorkflowTestCase):
             expected_action=QuestionAction.GIVEINFO,
             expected_status=QuestionStatus.OPEN,
             transition_method=self.question.giveInfo,
-            transition_method_args=("That's that.",),
+            transition_method_args=("That's that.", ),
             edited_fields=None)
 
     def test_giveInfoPermission(self):
@@ -432,7 +455,7 @@ class GiveAnswerTestCase(BaseAnswerTrackerWorkflowTestCase):
             expected_status=QuestionStatus.ANSWERED,
             transition_method=self.question.giveAnswer,
             transition_method_args=(
-                self.answerer, "It looks like a real problem.",),
+                self.answerer, "It looks like a real problem.", ),
             edited_fields=None)
 
     def test_giveAnswerByOwner(self):
@@ -452,7 +475,7 @@ class GiveAnswerTestCase(BaseAnswerTrackerWorkflowTestCase):
             expected_status=QuestionStatus.ANSWERED,
             transition_method=self.question.giveAnswer,
             transition_method_args=(
-                self.answerer, "It looks like a real problem.",),
+                self.answerer, "It looks like a real problem.", ),
             edited_fields=None)
 
         # When the owner gives the answer, the question moves straight to
@@ -474,7 +497,7 @@ class GiveAnswerTestCase(BaseAnswerTrackerWorkflowTestCase):
             extra_message_check=checkAnswerMessage,
             transition_method=self.question.giveAnswer,
             transition_method_args=(
-                self.owner, "I found the solution.",),
+                self.owner, "I found the solution.", ),
             transition_method_kwargs={'datecreated': self.nowPlus(3)},
             edited_fields=['status', 'messages', 'date_solved', 'answerer',
                            'datelastquery'])
@@ -523,7 +546,7 @@ class LinkFAQTestCase(BaseAnswerTrackerWorkflowTestCase):
             extra_message_check=checkFAQ,
             transition_method=self.question.linkFAQ,
             transition_method_args=(
-                self.answerer, self.faq, "Check the FAQ!",),
+                self.answerer, self.faq, "Check the FAQ!", ),
             edited_fields=None)
 
         # When the owner links the FAQ, the question moves straight to
@@ -545,7 +568,7 @@ class LinkFAQTestCase(BaseAnswerTrackerWorkflowTestCase):
             extra_message_check=checkAnswerMessage,
             transition_method=self.question.linkFAQ,
             transition_method_args=(
-                self.owner, self.faq, "I found the solution in that FAQ.",),
+                self.owner, self.faq, "I found the solution in that FAQ.", ),
             transition_method_kwargs={'datecreated': self.nowPlus(3)},
             edited_fields=['status', 'messages', 'date_solved', 'answerer',
                            'datelastquery'])
@@ -628,9 +651,9 @@ class ConfirmAnswerTestCase(BaseAnswerTrackerWorkflowTestCase):
             expected_status=QuestionStatus.SOLVED,
             extra_message_check=checkAnswerMessage,
             transition_method=self.question.confirmAnswer,
-            transition_method_args=("That was very useful.",),
+            transition_method_args=("That was very useful.", ),
             transition_method_kwargs={'answer': answer_message,
-                                      'datecreated' : self.nowPlus(2)},
+                                      'datecreated': self.nowPlus(2)},
             edited_fields=['status', 'messages', 'date_solved', 'answerer',
                            'answer', 'datelastquery'])
 
@@ -661,9 +684,9 @@ class ConfirmAnswerTestCase(BaseAnswerTrackerWorkflowTestCase):
             expected_status=QuestionStatus.SOLVED,
             extra_message_check=checkAnswerMessage,
             transition_method=self.question.confirmAnswer,
-            transition_method_args=("The space bar also works.",),
+            transition_method_args=("The space bar also works.", ),
             transition_method_kwargs={'answer': answer_message,
-                                      'datecreated' : self.nowPlus(2)},
+                                      'datecreated': self.nowPlus(2)},
             edited_fields=['messages', 'date_solved', 'answerer',
                            'answer', 'datelastquery'])
 
@@ -725,7 +748,7 @@ class ReopenTestCase(BaseAnswerTrackerWorkflowTestCase):
             expected_action=QuestionAction.REOPEN,
             expected_status=QuestionStatus.OPEN,
             transition_method=self.question.reopen,
-            transition_method_args=('I still have this problem.',),
+            transition_method_args=('I still have this problem.', ),
             edited_fields=['status', 'messages', 'datelastquery'])
 
     def test_reopenFromSOLVEDByOwner(self):

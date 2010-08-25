@@ -9,16 +9,14 @@ __all__ = [
     'test_suite',
     ]
 
-import unittest
 import transaction
 
-from lp.soyuz.model.distroseriesbinarypackage import (
-    DistroSeriesBinaryPackage)
-from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
-from lp.testing import TestCaseWithFactory
 from canonical.config import config
 from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.testing import LaunchpadZopelessLayer
+from lp.soyuz.model.distroseriesbinarypackage import DistroSeriesBinaryPackage
+from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
+from lp.testing import TestCaseWithFactory
 
 
 class TestDistroSeriesBinaryPackage(TestCaseWithFactory):
@@ -63,7 +61,3 @@ class TestDistroSeriesBinaryPackage(TestCaseWithFactory):
 
         self.failUnlessEqual(
             'Foo is the best', self.distroseries_binary_package.summary)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

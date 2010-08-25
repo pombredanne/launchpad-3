@@ -47,60 +47,85 @@ __all__ = [
 import cgi
 from operator import attrgetter
 
-from sqlobject import AND, CONTAINSSTRING, SQLObjectNotFound
-from storm.expr import SQL
+from sqlobject import (
+    AND,
+    CONTAINSSTRING,
+    SQLObjectNotFound,
+    )
+from storm.expr import (
+    And,
+    Or,
+    SQL,
+    )
 from zope.component import getUtility
 from zope.interface import implements
-from zope.schema.interfaces import IVocabulary, IVocabularyTokenized
-from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
+from zope.schema.interfaces import (
+    IVocabulary,
+    IVocabularyTokenized,
+    )
+from zope.schema.vocabulary import (
+    SimpleTerm,
+    SimpleVocabulary,
+    )
 
-from storm.expr import And, Or
-
-from canonical.launchpad.interfaces.lpstorm import IStore
-from lp.code.model.branch import Branch
-from lp.bugs.model.bug import Bug
-from lp.bugs.model.bugtracker import BugTracker
-from canonical.launchpad.database import Archive, BugWatch
-from lp.soyuz.model.component import Component
-from lp.soyuz.model.distroarchseries import DistroArchSeries
-from lp.soyuz.model.processor import Processor, ProcessorFamily
-from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
-from lp.services.worlddata.model.country import Country
-from lp.services.worlddata.model.language import Language
-from lp.registry.model.distribution import Distribution
-from lp.registry.model.distroseries import DistroSeries
-from lp.registry.model.person import Person
-from lp.registry.model.productseries import ProductSeries
-from lp.blueprints.model.specification import Specification
-from lp.blueprints.model.sprint import Sprint
-from lp.translations.model.languagepack import LanguagePack
-from lp.translations.model.potemplate import POTemplate
-from lp.translations.model.translationgroup import TranslationGroup
-from lp.translations.model.translationmessage import TranslationMessage
-from canonical.database.sqlbase import quote_like, quote, sqlvalues
+from canonical.database.sqlbase import (
+    quote,
+    quote_like,
+    sqlvalues,
+    )
+from canonical.launchpad.database import (
+    Archive,
+    BugWatch,
+    )
 from canonical.launchpad.helpers import shortlist
-from lp.soyuz.interfaces.archive import ArchivePurpose
-from lp.bugs.interfaces.bugtask import IBugTask
-from lp.bugs.interfaces.bugtracker import BugTrackerType
-from lp.services.worlddata.interfaces.language import ILanguage
-from lp.translations.interfaces.languagepack import LanguagePackType
-from lp.blueprints.interfaces.specification import SpecificationFilter
+from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.vocabulary import (
-    CountableIterator, IHugeVocabulary,
-    NamedSQLObjectVocabulary, SQLObjectVocabularyBase)
-
+    CountableIterator,
+    IHugeVocabulary,
+    NamedSQLObjectVocabulary,
+    SQLObjectVocabularyBase,
+    )
 from lp.app.browser.stringformatter import FormattersAPI
+from lp.blueprints.interfaces.specification import SpecificationFilter
+from lp.blueprints.model.specification import Specification
+from lp.blueprints.model.sprint import Sprint
+from lp.bugs.interfaces.bugtask import IBugTask
+from lp.bugs.interfaces.bugtracker import BugTrackerType
+from lp.bugs.model.bug import Bug
+from lp.bugs.model.bugtracker import BugTracker
 from lp.code.enums import BranchType
 from lp.code.interfaces.branch import IBranch
 from lp.code.interfaces.branchcollection import IAllBranches
+from lp.code.model.branch import Branch
 from lp.registry.interfaces.distribution import IDistribution
-from lp.registry.interfaces.series import SeriesStatus
-from lp.registry.interfaces.distroseries import IDistroSeries    
+from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.registry.interfaces.series import SeriesStatus
+from lp.registry.model.distribution import Distribution
+from lp.registry.model.distroseries import DistroSeries
+from lp.registry.model.person import Person
+from lp.registry.model.productseries import ProductSeries
+from lp.services.worlddata.interfaces.language import ILanguage
+from lp.services.worlddata.model.country import Country
+from lp.services.worlddata.model.language import Language
+from lp.soyuz.interfaces.archive import ArchivePurpose
+from lp.soyuz.model.component import Component
+from lp.soyuz.model.distroarchseries import DistroArchSeries
+from lp.soyuz.model.processor import (
+    Processor,
+    ProcessorFamily,
+    )
+from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
+from lp.translations.interfaces.languagepack import LanguagePackType
+from lp.translations.model.languagepack import LanguagePack
+from lp.translations.model.potemplate import POTemplate
+from lp.translations.model.translationgroup import TranslationGroup
+from lp.translations.model.translationmessage import TranslationMessage
+
 
 class ComponentVocabulary(SQLObjectVocabularyBase):
 

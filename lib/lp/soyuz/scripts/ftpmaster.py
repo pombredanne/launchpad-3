@@ -19,7 +19,6 @@ __all__ = [
     'SyncSourceError',
     ]
 
-import apt_pkg
 import commands
 import hashlib
 import os
@@ -27,33 +26,45 @@ import stat
 import sys
 import tempfile
 
+import apt_pkg
 from zope.component import getUtility
 
-from lp.archiveuploader.utils import re_extract_src_version
-from lp.soyuz.adapters.packagelocation import (
-    PackageLocationError, build_package_location)
 from canonical.launchpad.helpers import filenameToContentType
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.launchpad.webapp.interfaces import NotFoundError
+from canonical.librarian.interfaces import (
+    ILibrarianClient,
+    UploadFailed,
+    )
+from canonical.librarian.utils import copy_and_close
+from lp.app.errors import NotFoundError
 from lp.archiveuploader.utils import (
-    determine_source_file_type)
+    determine_source_file_type,
+    re_extract_src_version,
+    )
 from lp.registry.interfaces.distribution import IDistributionSet
-from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import (
-    PackagePublishingPocket, pocketsuffix)
+    PackagePublishingPocket,
+    pocketsuffix,
+    )
+from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
+from lp.services.scripts.base import (
+    LaunchpadScript,
+    LaunchpadScriptFailure,
+    )
+from lp.soyuz.adapters.packagelocation import (
+    build_package_location,
+    PackageLocationError,
+    )
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.binarypackagerelease import IBinaryPackageReleaseSet
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
-from lp.services.scripts.base import (
-    LaunchpadScript, LaunchpadScriptFailure)
 from lp.soyuz.scripts.ftpmasterbase import (
-    SoyuzScript, SoyuzScriptError)
-from canonical.librarian.interfaces import (
-    ILibrarianClient, UploadFailed)
-from canonical.librarian.utils import copy_and_close
+    SoyuzScript,
+    SoyuzScriptError,
+    )
 
 
 class ArchiveCruftCheckerError(Exception):
@@ -451,13 +462,14 @@ class ArchiveCruftChecker:
                 dasbp = distroarchseries.getBinaryPackage(binarypackagename)
                 dasbpr = dasbp.currentrelease
                 try:
-                    sbpph = dasbpr.current_publishing_record.supersede()
+                    bpph = dasbpr.current_publishing_record
+                    bpph.supersede()
                     # We're blindly removing for all arches, if it's not there
                     # for some, that's fine ...
                 except NotFoundError:
                     pass
                 else:
-                    version = sbpph.binarypackagerelease.version
+                    version = bpph.binarypackagerelease.version
                     self.logger.info ("Removed %s_%s from %s/%s ... "
                                       % (package, version,
                                          self.distroseries.name,

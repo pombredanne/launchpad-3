@@ -10,53 +10,69 @@ __all__ = [
     'SpecificationSet',
     ]
 
-from storm.store import Store
-
-from zope.interface import implements
-from zope.event import notify
-
-from sqlobject import (
-    ForeignKey, IntCol, StringCol, SQLMultipleJoin, SQLRelatedJoin, BoolCol)
-
 from lazr.lifecycle.event import (
-    ObjectCreatedEvent, ObjectDeletedEvent, ObjectModifiedEvent)
+    ObjectCreatedEvent,
+    ObjectDeletedEvent,
+    ObjectModifiedEvent,
+    )
+from lazr.lifecycle.objectdelta import ObjectDelta
+from sqlobject import (
+    BoolCol,
+    ForeignKey,
+    IntCol,
+    SQLMultipleJoin,
+    SQLRelatedJoin,
+    StringCol,
+    )
+from storm.store import Store
+from zope.event import notify
+from zope.interface import implements
 
-from lp.bugs.interfaces.buglink import IBugLinkTarget
-from lp.blueprints.interfaces.specification import (
-    ISpecification, ISpecificationSet, SpecificationDefinitionStatus,
-    SpecificationFilter, SpecificationGoalStatus,
-    SpecificationImplementationStatus, SpecificationLifecycleStatus,
-    SpecificationPriority, SpecificationSort)
-from lp.registry.interfaces.distroseries import IDistroSeries
-from lp.registry.interfaces.productseries import IProductSeries
-from canonical.database.sqlbase import cursor, quote, SQLBase, sqlvalues
-from canonical.database.constants import DEFAULT, UTC_NOW
+from canonical.database.constants import (
+    DEFAULT,
+    UTC_NOW,
+    )
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-
+from canonical.database.sqlbase import (
+    cursor,
+    quote,
+    SQLBase,
+    sqlvalues,
+    )
 from canonical.launchpad.helpers import (
-    get_contact_email_addresses, shortlist)
-
-
-from lp.bugs.model.buglinktarget import BugLinkTargetMixin
-from lp.registry.model.mentoringoffer import MentoringOffer
-from lp.registry.interfaces.person import validate_public_person
-from lp.blueprints.model.specificationdependency import (
-    SpecificationDependency)
-from lp.blueprints.model.specificationbranch import (
-    SpecificationBranch)
-from lp.blueprints.model.specificationbug import (
-    SpecificationBug)
-from lp.blueprints.model.specificationfeedback import (
-    SpecificationFeedback)
-from lp.blueprints.model.specificationsubscription import (
-    SpecificationSubscription)
-from lp.blueprints.model.sprintspecification import (
-    SprintSpecification)
-from lp.blueprints.model.sprint import Sprint
-
-from lazr.lifecycle.objectdelta import ObjectDelta
+    get_contact_email_addresses,
+    shortlist,
+    )
 from lp.blueprints.adapters import SpecificationDelta
+from lp.blueprints.interfaces.specification import (
+    ISpecification,
+    ISpecificationSet,
+    SpecificationDefinitionStatus,
+    SpecificationFilter,
+    SpecificationGoalStatus,
+    SpecificationImplementationStatus,
+    SpecificationLifecycleStatus,
+    SpecificationPriority,
+    SpecificationSort,
+    )
+from lp.blueprints.model.specificationbranch import SpecificationBranch
+from lp.blueprints.model.specificationbug import SpecificationBug
+from lp.blueprints.model.specificationdependency import (
+    SpecificationDependency,
+    )
+from lp.blueprints.model.specificationfeedback import SpecificationFeedback
+from lp.blueprints.model.specificationsubscription import (
+    SpecificationSubscription,
+    )
+from lp.blueprints.model.sprint import Sprint
+from lp.blueprints.model.sprintspecification import SprintSpecification
+from lp.bugs.interfaces.buglink import IBugLinkTarget
+from lp.bugs.model.buglinktarget import BugLinkTargetMixin
+from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.person import validate_public_person
+from lp.registry.interfaces.productseries import IProductSeries
+from lp.registry.model.mentoringoffer import MentoringOffer
 
 
 class Specification(SQLBase, BugLinkTargetMixin):
@@ -229,7 +245,7 @@ class Specification(SQLBase, BugLinkTargetMixin):
             # and make sure there is no leftover distroseries goal
             self.productseries = None
         else:
-            raise AssertionError, 'Inappropriate goal.'
+            raise AssertionError('Inappropriate goal.')
         # record who made the proposal, and when
         self.goal_proposer = proposer
         self.date_goal_proposed = UTC_NOW
@@ -333,7 +349,7 @@ class Specification(SQLBase, BugLinkTargetMixin):
 
     # NB NB NB if you change this definition PLEASE update the db constraint
     # Specification.specification_completion_recorded_chk !!!
-    completeness_clause =  ("""
+    completeness_clause = ("""
         Specification.implementation_status = %s OR
         Specification.definition_status IN ( %s, %s ) OR
         (Specification.implementation_status = %s AND
@@ -372,7 +388,7 @@ class Specification(SQLBase, BugLinkTargetMixin):
     # than a threshold" and to comment the dbschema that "anything not
     # started should be less than the threshold". We'll see how maintainable
     # this is.
-    started_clause =  """
+    started_clause = """
         Specification.implementation_status NOT IN (%s, %s, %s, %s) OR
         (Specification.implementation_status = %s AND
          Specification.definition_status = %s)
@@ -520,7 +536,7 @@ class Specification(SQLBase, BugLinkTargetMixin):
                 return
 
     def isSubscribed(self, person):
-        """See canonical.launchpad.interfaces.ISpecification."""
+        """See lp.blueprints.interfaces.specification.ISpecification."""
         if person is None:
             return False
 
@@ -678,7 +694,7 @@ class HasSpecificationsMixin:
     def latest_completed_specifications(self):
         """See IHasSpecifications."""
         return self.specifications(sort=SpecificationSort.DATE, quantity=5,
-            filter=[SpecificationFilter.COMPLETE,])
+            filter=[SpecificationFilter.COMPLETE, ])
 
     @property
     def specification_count(self):
@@ -790,7 +806,7 @@ class SpecificationSet(HasSpecificationsMixin):
 
         # filter based on completion. see the implementation of
         # Specification.is_complete() for more details
-        completeness =  Specification.completeness_clause
+        completeness = Specification.completeness_clause
 
         if SpecificationFilter.COMPLETE in filter:
             query += ' AND ( %s ) ' % completeness
@@ -859,7 +875,8 @@ class SpecificationSet(HasSpecificationsMixin):
             FROM SpecificationDependency, Specification
             WHERE SpecificationDependency.specification IN %s
             AND SpecificationDependency.dependency = Specification.id
-            ORDER BY Specification.priority DESC, Specification.name, Specification.id
+            ORDER BY Specification.priority DESC, Specification.name,
+                     Specification.id
         """ % sqlvalues(specification_ids)).get_all()
 
         dependencies = {}
@@ -872,5 +889,5 @@ class SpecificationSet(HasSpecificationsMixin):
         return dependencies
 
     def get(self, spec_id):
-        """See canonical.launchpad.interfaces.ISpecificationSet."""
+        """See lp.blueprints.interfaces.specification.ISpecificationSet."""
         return Specification.get(spec_id)

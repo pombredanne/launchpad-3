@@ -11,32 +11,44 @@ import os
 import textwrap
 import unittest
 
-import pytz
-
 from bzrlib.branch import Branch
-from bzrlib.bzrdir import BzrDir, format_registry
+from bzrlib.bzrdir import (
+    BzrDir,
+    format_registry,
+    )
 from bzrlib.urlutils import join as urljoin
-
-from twisted.internet import defer, error, reactor
+import pytz
+from twisted.internet import (
+    defer,
+    error,
+    reactor,
+    )
 from twisted.protocols.basic import NetstringParseError
 from twisted.python import failure
 from twisted.trial.unittest import TestCase as TrialTestCase
-
 from zope.component import getUtility
 
 from canonical.config import config
 from canonical.launchpad.webapp import errorlog
 from canonical.testing import (
-    reset_logging, TwistedLayer, TwistedAppServerLayer)
-from lp.code.interfaces.codehosting import LAUNCHPAD_SERVICES
-from lp.codehosting.puller import get_lock_id_for_branch_id, scheduler
-from lp.codehosting.puller.tests import PullerBranchTestCase
-from lp.codehosting.puller.worker import (
-    get_canonical_url_for_branch_name)
+    reset_logging,
+    TwistedAppServerLayer,
+    TwistedLayer,
+    )
 from lp.code.enums import BranchType
 from lp.code.interfaces.branchlookup import IBranchLookup
+from lp.code.interfaces.codehosting import LAUNCHPAD_SERVICES
+from lp.codehosting.puller import (
+    get_lock_id_for_branch_id,
+    scheduler,
+    )
+from lp.codehosting.puller.tests import PullerBranchTestCase
+from lp.codehosting.puller.worker import get_canonical_url_for_branch_name
 from lp.services.twistedsupport.tests.test_processmonitor import (
-    makeFailure, suppress_stderr, ProcessTestsMixin)
+    makeFailure,
+    ProcessTestsMixin,
+    suppress_stderr,
+    )
 from lp.testing.factory import ObjectFactory
 
 

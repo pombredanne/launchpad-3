@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -6,15 +6,12 @@ __metaclass__ = type
 import os
 import subprocess
 import sys
-import unittest
-
-from zope.component import getUtility
 
 from canonical.config import config
 from canonical.launchpad.scripts import QuietFakeLogger
+from canonical.testing import LaunchpadZopelessLayer
 from lp.soyuz.scripts.packagediff import ProcessPendingPackageDiffs
 from lp.soyuz.tests.soyuz import TestPackageDiffsBase
-from canonical.testing import LaunchpadZopelessLayer
 
 
 class TestProcessPendingPackageDiffsScript(TestPackageDiffsBase):
@@ -107,6 +104,3 @@ class TestProcessPendingPackageDiffsScript(TestPackageDiffsBase):
         # The next run process the remaining one.
         diff_processor.main()
         self.assertEqual(self.getPendingDiffs().count(), 0)
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

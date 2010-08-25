@@ -1,16 +1,21 @@
 #!/usr/bin/python
 #
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # arch-tag: 52e0c871-49a3-4186-beb8-9817d02d5465
 
-import apt_pkg
 import unittest
-from lp.archiveuploader.tests import datadir
+
+import apt_pkg
 
 from lp.archiveuploader.tagfiles import (
-    parse_tagfile, TagFile, TagFileParseError)
+    parse_tagfile,
+    TagFile,
+    TagFileParseError,
+    )
+from lp.archiveuploader.tests import datadir
+
 
 class Testtagfiles(unittest.TestCase):
 
@@ -182,7 +187,3 @@ class TestTagFileDebianPolicyCompat(unittest.TestCase):
         self.assertEqual(
             expected_text,
             self.parse_tagfile_version['description'])
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
-

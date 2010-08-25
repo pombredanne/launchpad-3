@@ -79,25 +79,6 @@ def test_schema():
         """
     check(query, "Found TranslationMessages with incorrect language.")
 
-    # Are all language variants set up?
-    query = """
-        SELECT count(*)
-        FROM TranslationMessage
-        JOIN POFile ON POFile.id = TranslationMessage.pofile
-        WHERE (POFile.variant IS NULL) <> (TranslationMessage.variant IS NULL)
-        """
-    check(query, "Found TranslationMessages with wrong variant nullness.")
-
-    # Are all variants correct?  (Easier to compare now that we know
-    # that all the nulls are in the right places).
-    query = """
-        SELECT count(*)
-        FROM TranslationMessage
-        JOIN POFile ON POFile.id = TranslationMessage.pofile
-        WHERE POFile.variant <> TranslationMessage.variant
-        """
-    check(query, "Found TranslationMessages with incorrect variants.")
-
     # Do all POTMsgSets with nonzero sequence numbers have linking-table
     # entries linking them to their POTemplates?  (Zero sequence number
     # means "does not participate in this POTemplate," a wart that will

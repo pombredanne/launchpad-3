@@ -10,9 +10,11 @@ from __future__ import with_statement
 __metaclass__ = type
 __all__ = [
     'ANONYMOUS',
+    'anonymous_logged_in',
     'build_yui_unittest_suite',
     'BrowserTestCase',
     'capture_events',
+    'celebrity_logged_in',
     'FakeTime',
     'get_lsb_information',
     'is_logged_in',
@@ -27,6 +29,7 @@ __all__ = [
     'map_branch_contents',
     'normalize_whitespace',
     'oauth_access_token_for',
+    'person_logged_in',
     'record_statements',
     'run_with_login',
     'run_with_storm_debug',
@@ -39,72 +42,113 @@ __all__ = [
     'validate_mock_class',
     'WindmillTestCase',
     'with_anonymous_login',
+    'with_celebrity_logged_in',
+    'with_person_logged_in',
     'ws_object',
     'YUIUnitTestCase',
     'ZopeTestInSubProcess',
     ]
 
 from contextlib import contextmanager
-from datetime import datetime, timedelta
-from inspect import getargspec, getmembers, getmro, isclass, ismethod
+from cStringIO import StringIO
+from datetime import (
+    datetime,
+    timedelta,
+    )
+from inspect import (
+    getargspec,
+    getmembers,
+    getmro,
+    isclass,
+    ismethod,
+    )
 import os
 from pprint import pformat
 import re
 import shutil
 import subprocess
-import subunit
 import sys
 import tempfile
 import time
 import unittest
 
-from bzrlib.bzrdir import BzrDir, format_registry
+from bzrlib.bzrdir import (
+    BzrDir,
+    format_registry,
+    )
 from bzrlib.transport import get_transport
-
 import pytz
 from storm.expr import Variable
 from storm.store import Store
-from storm.tracer import install_tracer, remove_tracer_type
-
+from storm.tracer import (
+    install_tracer,
+    remove_tracer_type,
+    )
+import subunit
 import testtools
 import transaction
-
-from twisted.python.util import mergeFunctionMetadata
-
-from windmill.authoring import WindmillTestClient
-
-from zope.component import adapter, getUtility
-import zope.event
-from zope.interface.verify import verifyClass, verifyObject
-from zope.security.proxy import (
-    isinstance as zope_isinstance, removeSecurityProxy)
-from zope.testing.testrunner.runner import TestResult as ZopeTestResult
-
-from canonical.launchpad.webapp import canonical_url, errorlog
-from canonical.launchpad.webapp.servers import WebServiceTestRequest
-from canonical.config import config
-from canonical.launchpad.webapp.errorlog import ErrorReportEvent
-from canonical.launchpad.webapp.interaction import ANONYMOUS
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.launchpad.windmill.testing import constants
-from lp.codehosting.vfs import branch_id_to_path, get_rw_server
-from lp.registry.interfaces.packaging import IPackagingUtil
-# Import the login and logout functions here as it is a much better
-# place to import them from in tests.
-from lp.testing._login import (
-    is_logged_in, login, login_as, login_celebrity, login_person, login_team,
-    logout)
-# canonical.launchpad.ftests expects test_tales to be imported from here.
-# XXX: JonathanLange 2010-01-01: Why?!
-from lp.testing._tales import test_tales
-from lp.testing._webservice import (
-    launchpadlib_credentials_for, launchpadlib_for, oauth_access_token_for)
-from lp.testing.fixture import ZopeEventHandlerFixture
-
 # zope.exception demands more of frame objects than twisted.python.failure
 # provides in its fake frames.  This is enough to make it work with them
 # as of 2009-09-16.  See https://bugs.edge.launchpad.net/bugs/425113.
 from twisted.python.failure import _Frame
+from windmill.authoring import WindmillTestClient
+from zope.component import (
+    adapter,
+    getUtility,
+    )
+import zope.event
+from zope.interface.verify import verifyClass
+from zope.security.proxy import (
+    isinstance as zope_isinstance,
+    removeSecurityProxy,
+    )
+from zope.testing.testrunner.runner import TestResult as ZopeTestResult
+
+from canonical.config import config
+from canonical.launchpad.webapp import (
+    canonical_url,
+    errorlog,
+    )
+from canonical.launchpad.webapp.errorlog import ErrorReportEvent
+from canonical.launchpad.webapp.interaction import ANONYMOUS
+from canonical.launchpad.webapp.servers import WebServiceTestRequest
+from canonical.launchpad.windmill.testing import constants
+from lp.codehosting.vfs import (
+    branch_id_to_path,
+    get_rw_server,
+    )
+from lp.registry.interfaces.packaging import IPackagingUtil
+from lp.services.osutils import override_environ
+# Import the login helper functions here as it is a much better
+# place to import them from in tests.
+from lp.testing._login import (
+    anonymous_logged_in,
+    celebrity_logged_in,
+    is_logged_in,
+    login,
+    login_as,
+    login_celebrity,
+    login_person,
+    login_team,
+    logout,
+    person_logged_in,
+    run_with_login,
+    with_anonymous_login,
+    with_celebrity_logged_in,
+    with_person_logged_in,
+    )
+# canonical.launchpad.ftests expects test_tales to be imported from here.
+# XXX: JonathanLange 2010-01-01: Why?!
+from lp.testing._tales import test_tales
+from lp.testing._webservice import (
+    launchpadlib_credentials_for,
+    launchpadlib_for,
+    oauth_access_token_for,
+    )
+from lp.testing.fixture import ZopeEventHandlerFixture
+from lp.testing.matchers import Provides
+
+
 _Frame.f_locals = property(lambda self: {})
 
 
@@ -221,11 +265,12 @@ def run_with_storm_debug(function, *args, **kwargs):
 
 class TestCase(testtools.TestCase):
     """Provide Launchpad-specific test facilities."""
+
     def becomeDbUser(self, dbuser):
         """Commit, then log into the database as `dbuser`.
-        
+
         For this to work, the test must run in a layer.
-        
+
         Try to test every code path at least once under a realistic db
         user, or you'll hit privilege violations later on.
         """
@@ -269,13 +314,7 @@ class TestCase(testtools.TestCase):
 
     def assertProvides(self, obj, interface):
         """Assert 'obj' correctly provides 'interface'."""
-        self.assertTrue(
-            interface.providedBy(obj),
-            "%r does not provide %r." % (obj, interface))
-        self.assertTrue(
-            verifyObject(interface, obj),
-            "%r claims to provide %r but does not do so correctly."
-            % (obj, interface))
+        self.assertThat(obj, Provides(interface))
 
     def assertClassImplements(self, cls, interface):
         """Assert 'cls' may correctly implement 'interface'."""
@@ -410,6 +449,15 @@ class TestCase(testtools.TestCase):
         config.push(name, "\n[%s]\n%s\n" % (section, body))
         self.addCleanup(config.pop, name)
 
+    def attachOopses(self):
+        if len(self.oopses) > 0:
+            content_type = testtools.content_type.ContentType(
+                "text", "plain", {"charset": "utf8"})
+            for (i, oops) in enumerate(self.oopses):
+                content = testtools.content.Content(
+                    content_type, oops.get_chunks)
+                self.addDetail("oops-%d" % i, content)
+
     def setUp(self):
         testtools.TestCase.setUp(self)
         from lp.testing.factory import ObjectFactory
@@ -417,6 +465,7 @@ class TestCase(testtools.TestCase):
         # Record the oopses generated during the test run.
         self.oopses = []
         self.installFixture(ZopeEventHandlerFixture(self._recordOops))
+        self.addCleanup(self.attachOopses)
 
     @adapter(ErrorReportEvent)
     def _recordOops(self, event):
@@ -555,18 +604,11 @@ class TestCaseWithFactory(TestCase):
         return os.path.join(base, branch_id_to_path(branch.id))
 
     def useTempBzrHome(self):
-        # XXX: Extract the temporary environment blatting into a generic
-        # helper function.
         self.useTempDir()
         # Avoid leaking local user configuration into tests.
-        old_bzr_home = os.environ.get('BZR_HOME')
-        def restore_bzr_home():
-            if old_bzr_home is None:
-                del os.environ['BZR_HOME']
-            else:
-                os.environ['BZR_HOME'] = old_bzr_home
-        os.environ['BZR_HOME'] = os.getcwd()
-        self.addCleanup(restore_bzr_home)
+        self.useContext(override_environ(
+            BZR_HOME=os.getcwd(), BZR_EMAIL=None, EMAIL=None,
+            ))
 
     def useBzrBranches(self, direct_database=False):
         """Prepare for using bzr branches.
@@ -819,35 +861,6 @@ def get_lsb_information():
                 distinfo[var] = arg
 
     return distinfo
-
-
-def with_anonymous_login(function):
-    """Decorate 'function' so that it runs in an anonymous login."""
-    def wrapped(*args, **kwargs):
-        login(ANONYMOUS)
-        try:
-            return function(*args, **kwargs)
-        finally:
-            logout()
-    return mergeFunctionMetadata(function, wrapped)
-
-
-@contextmanager
-def person_logged_in(person):
-    current_person = getUtility(ILaunchBag).user
-    logout()
-    login_person(person)
-    try:
-        yield
-    finally:
-        logout()
-        login_person(current_person)
-
-
-def run_with_login(person, function, *args, **kwargs):
-    """Run 'function' with 'person' logged in."""
-    with person_logged_in(person):
-        return function(*args, **kwargs)
 
 
 def time_counter(origin=None, delta=timedelta(seconds=5)):
