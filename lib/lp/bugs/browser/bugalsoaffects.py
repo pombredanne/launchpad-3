@@ -373,7 +373,7 @@ class DistroBugTaskCreationStep(BugTaskCreationStep):
 
         if (not bug_url and
             not self.request.get('ignore_missing_remote_bug') and
-            target.bug_tracking_usage != Service.LAUNCHPAD):
+            target.bug_tracking_usage != ServiceUsage.LAUNCHPAD):
             # We have no URL for the remote bug and the target does not use
             # Launchpad for bug tracking, so we warn the user this is not
             # optimal and ask for his confirmation.
