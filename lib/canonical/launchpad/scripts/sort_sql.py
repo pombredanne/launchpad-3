@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Sort SQL dumps.
@@ -11,6 +11,9 @@ __metaclass__ = type
 
 import re
 import sys
+
+class IncompleteLine(Exception):
+    pass
 
 
 class Parser:
@@ -112,24 +115,19 @@ class Parser:
         if not line.startswith('INSERT '):
             return (None, line)
 
+        if not self.is_complete_insert_statement(line):
+            raise ValueError("Incomplete line")
+
         insert_pattern = re.compile('''
-            ^INSERT \s+ INTO \s+ \S+ \s+ \([^)]+\) \s+ VALUES \s+ \(
-            ('\w+'|\d+)
+            ^INSERT \s+ INTO \s+ \S+ \s+ \([^)]+\) \s+ VALUES \s+ \((\d+)
             ''', re.X)
         match = insert_pattern.match(line)
 
-        if not match:
-            raise RuntimeError("Failed to parse INSERT statement: " + `line`)
-
-        value = int(match.group(1))
-        end = line[len(match.group(0)):]
-
-        # Make sure that the line is complete.
-
-        if self.is_complete_insert_statement(line):
-            return value, line
+        if match:
+            return int(match.group(1)), line
         else:
-            raise ValueError("Incomplete line")
+            return line, line
+
 
     def feed(self, s):
         """Give the parser some text to parse."""
