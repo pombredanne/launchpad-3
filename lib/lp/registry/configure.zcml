@@ -1384,6 +1384,11 @@
         factory="lp.registry.adapters.productseries_to_product"
         permission="zope.Public"/>
     <adapter
+        provides="lp.app.interfaces.launchpad.IServiceUsage"
+        for="lp.registry.interfaces.productseries.IProductSeries"
+        factory="lp.registry.adapters.productseries_to_product"
+        permission="zope.Public"/>
+    <adapter
         provides="lp.app.interfaces.launchpad.ILaunchpadUsage"
         for="lp.registry.interfaces.productseries.IProductSeries"
         factory="lp.registry.adapters.productseries_to_product"
