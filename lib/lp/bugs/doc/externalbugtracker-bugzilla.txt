@@ -290,8 +290,6 @@ if the bug is closed:
     'Fix Committed'
     >>> external_bugzilla.convertRemoteStatus('RESOLVED FIXED').title
     'Fix Released'
-    >>> external_bugzilla.convertRemoteStatus('RESOLVED UPSTREAM').title
-    "Won't Fix"
     >>> external_bugzilla.convertRemoteStatus(
     ...     'CLOSED PATCH_ALREADY_AVAILABLE').title
     'Fix Released'
@@ -302,7 +300,7 @@ if the bug is closed:
     >>> external_bugzilla.convertRemoteStatus('CLOSED INVALID').title
     'Invalid'
     >>> external_bugzilla.convertRemoteStatus('CLOSED UPSTREAM').title
-    "Won't Fix"
+    'Fix Released'
 
 If the status can't be converted an UnknownRemoteStatusError will be
 returned.

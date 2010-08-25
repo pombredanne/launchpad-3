@@ -235,49 +235,31 @@ class TestRequest(TestCaseWithTransport, RequestHelpers):
         req = self.make_request(emails=['foo@example.com'])
         self.assertEqual(True, req.wants_email)
 
-    def test_get_target_details(self):
+    def test_get_trunk_details(self):
         parent = 'http://example.com/bzr/branch'
         tree = self.make_trunk(parent)
         req = self.make_request(trunk=tree)
         self.assertEqual(
-            (parent, tree.branch.revno()), req.get_target_details())
+            (parent, tree.branch.revno()), req.get_trunk_details())
 
-    def test_get_revno_target_only(self):
-        # If there's only a target branch, then the revno is the revno of that
-        # branch.
-        parent = 'http://example.com/bzr/branch'
-        tree = self.make_trunk(parent)
-        req = self.make_request(trunk=tree)
-        self.assertEqual(tree.branch.revno(), req.get_revno())
-
-    def test_get_revno_source_and_target(self):
-        # If we're merging in a branch, then the revno is the revno of the
-        # branch we're merging in.
-        tree = self.make_trunk()
-        # Fake a merge, giving silly revision ids.
-        tree.add_pending_merge('foo', 'bar')
-        req = self.make_request(
-            branch_url='https://example.com/bzr/thing', revno=42, trunk=tree)
-        self.assertEqual(42, req.get_revno())
-
-    def test_get_source_details_no_commits(self):
+    def test_get_branch_details_no_commits(self):
         req = self.make_request(trunk=self.make_trunk())
-        self.assertEqual(None, req.get_source_details())
+        self.assertEqual(None, req.get_branch_details())
 
-    def test_get_source_details_no_merge(self):
+    def test_get_branch_details_no_merge(self):
         tree = self.make_trunk()
         tree.commit(message='foo')
         req = self.make_request(trunk=tree)
-        self.assertEqual(None, req.get_source_details())
+        self.assertEqual(None, req.get_branch_details())
 
-    def test_get_source_details_merge(self):
+    def test_get_branch_details_merge(self):
         tree = self.make_trunk()
         # Fake a merge, giving silly revision ids.
         tree.add_pending_merge('foo', 'bar')
         req = self.make_request(
             branch_url='https://example.com/bzr/thing', revno=42, trunk=tree)
         self.assertEqual(
-            ('https://example.com/bzr/thing', 42), req.get_source_details())
+            ('https://example.com/bzr/thing', 42), req.get_branch_details())
 
     def test_get_nick_trunk_only(self):
         tree = self.make_trunk(parent_url='http://example.com/bzr/db-devel')
@@ -295,8 +277,7 @@ class TestRequest(TestCaseWithTransport, RequestHelpers):
     def test_get_merge_description_trunk_only(self):
         tree = self.make_trunk(parent_url='http://example.com/bzr/db-devel')
         req = self.make_request(trunk=tree)
-        self.assertEqual(
-            'db-devel r%s' % req.get_revno(), req.get_merge_description())
+        self.assertEqual('db-devel', req.get_merge_description())
 
     def test_get_merge_description_merge(self):
         tree = self.make_trunk(parent_url='http://example.com/bzr/db-devel/')
@@ -374,16 +355,12 @@ class TestRequest(TestCaseWithTransport, RequestHelpers):
     def test_report_email_subject_success(self):
         req = self.make_request(emails=['foo@example.com'])
         email = req._build_report_email(True, 'foo', 'gobbledygook')
-        self.assertEqual(
-            'Test results: %s: SUCCESS' % req.get_merge_description(),
-            email['Subject'])
+        self.assertEqual('Test results: SUCCESS', email['Subject'])
 
     def test_report_email_subject_failure(self):
         req = self.make_request(emails=['foo@example.com'])
         email = req._build_report_email(False, 'foo', 'gobbledygook')
-        self.assertEqual(
-            'Test results: %s: FAILURE' % req.get_merge_description(),
-            email['Subject'])
+        self.assertEqual('Test results: FAILURE', email['Subject'])
 
     def test_report_email_recipients(self):
         req = self.make_request(emails=['foo@example.com', 'bar@example.com'])
@@ -411,8 +388,7 @@ class TestRequest(TestCaseWithTransport, RequestHelpers):
         self.assertIsInstance(attachment, MIMEApplication)
         self.assertEqual('application/x-gzip', attachment['Content-Type'])
         self.assertEqual(
-            'attachment; filename="%s-r%s.subunit.gz"' % (
-                req.get_nick(), req.get_revno()),
+            'attachment; filename="%s.log.gz"' % req.get_nick(),
             attachment['Content-Disposition'])
         self.assertEqual(
             "gobbledygook", attachment.get_payload().decode('base64'))
@@ -647,8 +623,8 @@ class TestResultHandling(TestCaseWithTransport, RequestHelpers):
         [body, attachment] = user_message.get_payload()
         self.assertEqual('application/x-gzip', attachment['Content-Type'])
         self.assertEqual(
-            'attachment;',
-            attachment['Content-Disposition'][:len('attachment;')])
+            'attachment; filename="%s.log.gz"' % request.get_nick(),
+            attachment['Content-Disposition'])
         attachment_contents = attachment.get_payload().decode('base64')
         uncompressed = gunzip_data(attachment_contents)
         self.assertEqual(

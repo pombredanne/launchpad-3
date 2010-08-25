@@ -10,12 +10,10 @@ import os
 from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.archiveuploader.dscfile import (
-    cleanup_unpacked_dir,
     DSCFile,
-    find_changelog,
-    find_copyright,
+    findChangelog,
+    findCopyright,
     format_to_file_checker_map,
-    unpack_source,
     )
 from lp.archiveuploader.nascentuploadfile import UploadError
 from lp.archiveuploader.tests import (
@@ -39,6 +37,9 @@ DIFF = SourcePackageFileType.DIFF
 
 class TestDscFile(TestCase):
 
+    class MockDSCFile:
+        copyright = None
+
     def setUp(self):
         super(TestDscFile, self).setUp()
         self.tmpdir = self.makeTemporaryDirectory()
@@ -46,6 +47,7 @@ class TestDscFile(TestCase):
         os.makedirs(self.dir_path)
         self.copyright_path = os.path.join(self.dir_path, "copyright")
         self.changelog_path = os.path.join(self.dir_path, "changelog")
+        self.dsc_file = self.MockDSCFile()
 
     def testBadDebianCopyright(self):
         """Test that a symlink as debian/copyright will fail.
@@ -54,10 +56,14 @@ class TestDscFile(TestCase):
         dangling symlink in an attempt to try and access files on the system
         processing the source packages."""
         os.symlink("/etc/passwd", self.copyright_path)
-        error = self.assertRaises(
-            UploadError, find_copyright, self.tmpdir, mock_logger_quiet)
+        errors = list(findCopyright(
+            self.dsc_file, self.tmpdir, mock_logger_quiet))
+
+        self.assertEqual(len(errors), 1)
+        self.assertIsInstance(errors[0], UploadError)
         self.assertEqual(
-            error.args[0], "Symbolic link for debian/copyright not allowed")
+            errors[0].args[0],
+            "Symbolic link for debian/copyright not allowed")
 
     def testGoodDebianCopyright(self):
         """Test that a proper copyright file will be accepted"""
@@ -66,8 +72,11 @@ class TestDscFile(TestCase):
         file.write(copyright)
         file.close()
 
-        self.assertEquals(
-            copyright, find_copyright(self.tmpdir, mock_logger_quiet))
+        errors = list(findCopyright(
+            self.dsc_file, self.tmpdir, mock_logger_quiet))
+
+        self.assertEqual(len(errors), 0)
+        self.assertEqual(self.dsc_file.copyright, copyright)
 
     def testBadDebianChangelog(self):
         """Test that a symlink as debian/changelog will fail.
@@ -76,10 +85,14 @@ class TestDscFile(TestCase):
         dangling symlink in an attempt to try and access files on the system
         processing the source packages."""
         os.symlink("/etc/passwd", self.changelog_path)
-        error = self.assertRaises(
-            UploadError, find_changelog, self.tmpdir, mock_logger_quiet)
+        errors = list(findChangelog(
+            self.dsc_file, self.tmpdir, mock_logger_quiet))
+
+        self.assertEqual(len(errors), 1)
+        self.assertIsInstance(errors[0], UploadError)
         self.assertEqual(
-            error.args[0], "Symbolic link for debian/changelog not allowed")
+            errors[0].args[0],
+            "Symbolic link for debian/changelog not allowed")
 
     def testGoodDebianChangelog(self):
         """Test that a proper changelog file will be accepted"""
@@ -88,8 +101,12 @@ class TestDscFile(TestCase):
         file.write(changelog)
         file.close()
 
-        self.assertEquals(
-            changelog, find_changelog(self.tmpdir, mock_logger_quiet))
+        errors = list(findChangelog(
+            self.dsc_file, self.tmpdir, mock_logger_quiet))
+
+        self.assertEqual(len(errors), 0)
+        self.assertEqual(self.dsc_file.changelog_path,
+                         self.changelog_path)
 
     def testOversizedFile(self):
         """Test that a file larger than 10MiB will fail.
@@ -108,10 +125,13 @@ class TestDscFile(TestCase):
         file.write(empty_file)
         file.close()
 
-        error = self.assertRaises(
-            UploadError, find_changelog, self.tmpdir, mock_logger_quiet)
+        errors = list(findChangelog(
+            self.dsc_file, self.tmpdir, mock_logger_quiet))
+
+        self.assertIsInstance(errors[0], UploadError)
         self.assertEqual(
-            error.args[0], "debian/changelog file too large, 10MiB max")
+            errors[0].args[0],
+            "debian/changelog file too large, 10MiB max")
 
 
 class TestDscFileLibrarian(TestCaseWithFactory):
@@ -121,7 +141,6 @@ class TestDscFileLibrarian(TestCaseWithFactory):
 
     def getDscFile(self, name):
         dsc_path = datadir(os.path.join('suite', name, name + '.dsc'))
-
         class Changes:
             architectures = ['source']
         logger = QuietFakeLogger()
@@ -138,7 +157,10 @@ class TestDscFileLibrarian(TestCaseWithFactory):
         os.chmod(tempdir, 0555)
         try:
             dsc_file = self.getDscFile('bar_1.0-1')
-            list(dsc_file.verify())
+            try:
+                list(dsc_file.verify())
+            finally:
+                dsc_file.cleanUp()
         finally:
             os.chmod(tempdir, 0755)
 
@@ -270,42 +292,3 @@ class Test30QuiltSourceFormatVerification(BaseTestSourceFileVerification):
         # A 3.0 (native) source with component tarballs is invalid.
         self.assertErrorsForFiles(
             [self.wrong_files_error], {NATIVE_TARBALL: 1}, {'foo': 1})
-
-
-class UnpackedDirTests(TestCase):
-    """Tests for unpack_source and cleanup_unpacked_dir."""
-
-    def test_unpack_source(self):
-        # unpack_source unpacks in a temporary directory and returns the
-        # path.
-        unpacked_dir = unpack_source(
-            datadir(os.path.join('suite', 'bar_1.0-1', 'bar_1.0-1.dsc')))
-        try:
-            self.assertEquals(["bar-1.0"], os.listdir(unpacked_dir))
-            self.assertContentEqual(
-                ["THIS_IS_BAR", "debian"],
-                os.listdir(os.path.join(unpacked_dir, "bar-1.0")))
-        finally:
-            cleanup_unpacked_dir(unpacked_dir)
-
-    def test_cleanup(self):
-        # cleanup_dir removes the temporary directory and all files under it.
-        temp_dir = self.makeTemporaryDirectory()
-        unpacked_dir = os.path.join(temp_dir, "unpacked")
-        os.mkdir(unpacked_dir)
-        os.mkdir(os.path.join(unpacked_dir, "bar_1.0"))
-        cleanup_unpacked_dir(unpacked_dir)
-        self.assertFalse(os.path.exists(unpacked_dir))
-
-    def test_cleanup_invalid_mode(self):
-        # cleanup_dir can remove a directory even if the mode does
-        # not allow it.
-        temp_dir = self.makeTemporaryDirectory()
-        unpacked_dir = os.path.join(temp_dir, "unpacked")
-        os.mkdir(unpacked_dir)
-        bar_path = os.path.join(unpacked_dir, "bar_1.0")
-        os.mkdir(bar_path)
-        os.chmod(bar_path, 0600)
-        os.chmod(unpacked_dir, 0600)
-        cleanup_unpacked_dir(unpacked_dir)
-        self.assertFalse(os.path.exists(unpacked_dir))

@@ -226,20 +226,18 @@ to the mailing list.
 Non-ascii messages
 ==================
 
-Messages with non-ascii in their headers are not exactly legal
-(they should be encoded) but do occur especially in spam.  These
-messages can be held for moderator approval too. To avoid blowing up
-later if the string is converted to a unicode object, the non-ascii
-characters are replaced.
+Messages with non-ascii in their headers or bodies are not exactly legal (they
+should be encoded) but do occur especially in spam.  These messages can be
+held for moderator approval too.
 
     >>> spam_message = message_from_string("""\
     ... From: Anne \xa9 Person <anne.person@example.com>
     ... To: team-one@lists.launchpad.dev
     ... Subject: \xa9 Badgers!
-    ... Message-ID: <fifth-post\xa9>
+    ... Message-ID: <fifth-post>
     ... Date: Fri, 01 Aug 2000 01:08:59 -0000
     ...
-    ... Don't escape non-ascii characters in the body! \xa9
+    ... Watch out for badgers! \xa9
     ... """)
 
     >>> import xmlrpclib
@@ -249,10 +247,9 @@ characters are replaced.
     True
     >>> commit()
 
-    >>> held_message_spam = message_set.getMessageByMessageID(
-    ...     '<fifth-post\\xa9>')
+    >>> held_message_spam = message_set.getMessageByMessageID('<fifth-post>')
     >>> print held_message_spam.message_id
-    <fifth-post\xa9>
+    <fifth-post>
     >>> print held_message_spam.posted_by.displayname
     Anne Person
 
@@ -261,14 +258,14 @@ characters are replaced.
     ...     message_content = held_message_spam.posted_message.read()
     ... finally:
     ...     held_message_spam.posted_message.close()
-    >>> print pretty(message_content.splitlines())
-    ['From: Anne \\xa9 Person <anne.person@example.com>',
+    >>> message_content.splitlines()
+    ['From: Anne \xa9 Person <anne.person@example.com>',
      'To: team-one@lists.launchpad.dev',
-     'Subject: \\xa9 Badgers!',
-     'Message-ID: <fifth-post\\xa9>',
+     'Subject: \xa9 Badgers!',
+     'Message-ID: <fifth-post>',
      'Date: Fri, 01 Aug 2000 01:08:59 -0000',
      '',
-     "Don't escape non-ascii characters in the body! \xa9"]
+     'Watch out for badgers! \xa9']
 
     >>> held_message_spam.status
      <DBItem PostedMessageStatus.NEW, (0) New status>

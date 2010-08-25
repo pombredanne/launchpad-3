@@ -50,6 +50,7 @@ __all__ = [
     ]
 
 from contextlib import contextmanager
+from cStringIO import StringIO
 from datetime import (
     datetime,
     timedelta,
@@ -85,8 +86,6 @@ from storm.tracer import (
     )
 import subunit
 import testtools
-from testtools.content import Content
-from testtools.content_type import UTF8_TEXT
 import transaction
 # zope.exception demands more of frame objects than twisted.python.failure
 # provides in its fake frames.  This is enough to make it work with them
@@ -393,6 +392,15 @@ class TestCase(testtools.TestCase):
                 "Expected %s to be %s, but it was %s."
                 % (attribute_name, date, getattr(sql_object, attribute_name)))
 
+    def assertEqual(self, a, b, message=''):
+        """Assert that 'a' equals 'b'."""
+        if a == b:
+            return
+        if message:
+            message += '\n'
+        self.fail("%snot equal:\na = %s\nb = %s\n"
+                  % (message, pformat(a), pformat(b)))
+
     def assertIsInstance(self, instance, assert_class):
         """Assert that an instance is an instance of assert_class.
 
@@ -443,8 +451,11 @@ class TestCase(testtools.TestCase):
 
     def attachOopses(self):
         if len(self.oopses) > 0:
+            content_type = testtools.content_type.ContentType(
+                "text", "plain", {"charset": "utf8"})
             for (i, oops) in enumerate(self.oopses):
-                content = Content(UTF8_TEXT, oops.get_chunks)
+                content = testtools.content.Content(
+                    content_type, oops.get_chunks)
                 self.addDetail("oops-%d" % i, content)
 
     def setUp(self):

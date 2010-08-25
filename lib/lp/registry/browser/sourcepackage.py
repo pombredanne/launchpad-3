@@ -543,7 +543,7 @@ class SourcePackageAssociationPortletView(LaunchpadFormView):
         self.form_fields = Fields(
             Choice(__name__='upstream',
                    title=_('Registered upstream project'),
-                   default=self.other_upstream,
+                   default=None,
                    vocabulary=upstream_vocabulary,
                    required=True))
 

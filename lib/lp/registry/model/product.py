@@ -1122,11 +1122,6 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             And(Milestone.product == self,
                 Milestone.name == version)).one()
 
-    # XXX: jcsackett 2010-08-23 bug=620494
-    # The second clause in the order_by in this method is a bandaid
-    # on a sorting issue caused by date vs datetime conflicts in the
-    # database. A fix is coming out, but this deals with the edge
-    # case responsible for the referenced bug.
     def getMilestonesAndReleases(self):
         """See `IProduct`."""
         store = Store.of(self)
@@ -1135,9 +1130,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             And(ProductRelease.milestone == Milestone.id,
                 Milestone.productseries == ProductSeries.id,
                 ProductSeries.product == self))
-        return result.order_by(
-            Desc(ProductRelease.datereleased),
-            Desc(Milestone.name))
+        return result.order_by(Desc(ProductRelease.datereleased))
 
     def packagedInDistros(self):
         return IStore(Distribution).find(

@@ -19,7 +19,7 @@ from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
 from lp.buildmaster.interfaces.packagebuild import IPackageBuild
 from lp.buildmaster.model.buildqueue import BuildQueue
-from lp.buildmaster.tests.test_packagebuild import (
+from lp.buildmaster.tests.test_buildbase import (
     TestGetUploadMethodsMixin,
     TestHandleStatusMixin,
     )
@@ -453,9 +453,9 @@ class MakeBinaryPackageBuildMixin:
 class TestGetUploadMethodsForBinaryPackageBuild(
     MakeBinaryPackageBuildMixin, TestGetUploadMethodsMixin,
     TestCaseWithFactory):
-    """IPackageBuild.getUpload-related methods work with binary builds."""
+    """IBuildBase.getUpload-related methods work with binary builds."""
 
 
 class TestHandleStatusForBinaryPackageBuild(
     MakeBinaryPackageBuildMixin, TestHandleStatusMixin, TestCaseWithFactory):
-    """IPackageBuild.handleStatus works with binary builds."""
+    """IBuildBase.handleStatus works with binary builds."""

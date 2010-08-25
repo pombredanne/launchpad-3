@@ -46,6 +46,7 @@ from lp.archiveuploader.uploadpolicy import (
     )
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
+from lp.buildmaster.model.buildbase import BuildBase
 from lp.buildmaster.model.buildfarmjob import BuildFarmJobOldDerived
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.buildmaster.model.packagebuild import (
@@ -127,7 +128,7 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
 
     @property
     def distribution(self):
-        """See `IPackageBuild`."""
+        """See `IBuildBase`."""
         return self.distroseries.distribution
 
     is_virtualized = True
@@ -159,7 +160,7 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
 
     @property
     def buildqueue_record(self):
-        """See `IBuildFarmJob`."""
+        """See `IBuildBase`."""
         store = Store.of(self)
         results = store.find(
             BuildQueue,
@@ -277,7 +278,7 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
         return specific_job
 
     def estimateDuration(self):
-        """See `IPackageBuild`."""
+        """See `IBuildBase`."""
         median = self.recipe.getMedianBuildDuration()
         if median is not None:
             return median
@@ -287,7 +288,7 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
         return self.source_package_release is not None
 
     def notify(self, extra_info=None):
-        """See `IPackageBuild`."""
+        """See `IBuildBase`."""
         mailer = SourcePackageRecipeBuildMailer.forStatus(self)
         mailer.sendAll()
 
@@ -326,13 +327,13 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
         except KeyError:
             raise NotFoundError(filename)
 
-    def _handleStatus_OK(self, librarian, slave_status, logger):
-        """See `IPackageBuild`."""
-        super(SourcePackageRecipeBuild, self)._handleStatus_OK(
-            librarian, slave_status, logger)
+    @staticmethod
+    def _handleStatus_OK(build, librarian, slave_status, logger):
+        """See `IBuildBase`."""
+        BuildBase._handleStatus_OK(build, librarian, slave_status, logger)
         # base implementation doesn't notify on success.
-        if self.status == BuildStatus.FULLYBUILT:
-            self.notify()
+        if build.status == BuildStatus.FULLYBUILT:
+            build.notify()
 
 
 class SourcePackageRecipeBuildJob(BuildFarmJobOldDerived, Storm):

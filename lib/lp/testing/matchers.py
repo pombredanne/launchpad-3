@@ -15,7 +15,7 @@ __all__ = [
     ]
 
 from testtools.content import Content
-from testtools.content_type import UTF8_TEXT
+from testtools.content_type import ContentType
 from testtools.matchers import (
     Matcher,
     Mismatch,
@@ -137,7 +137,8 @@ class _MismatchedQueryCount(Mismatch):
         result = []
         for query in self.query_collector.queries:
             result.append(unicode(query).encode('utf8'))
-        return {'queries': Content(UTF8_TEXT, lambda:['\n'.join(result)])}
+        return {'queries': Content(ContentType('text', 'plain',
+            {'charset': 'utf8'}), lambda:['\n'.join(result)])}
  
 
 class IsNotProxied(Mismatch):
