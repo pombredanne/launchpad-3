@@ -38,6 +38,16 @@ from devscripts.ec2test.remote import (
     )
 
 
+class LoggingSMTPConnection(object):
+    """An SMTPConnection double that logs sent email."""
+
+    def __init__(self, log):
+        self._log = log
+
+    def send_email(self, message):
+        self._log.append(message)
+
+
 class RequestHelpers:
 
     def patch(self, obj, name, value):
@@ -73,11 +83,12 @@ class RequestHelpers:
                 [('a', 'http://example.com/bzr/a', 2),
                  ('b', 'http://example.com/bzr/b', 3),
                  ('c', 'http://example.com/bzr/c', 5)])
+        emails_sent = []
+        smtp_connection = LoggingSMTPConnection(emails_sent)
         request = Request(
             branch_url, revno, trunk.basedir, sourcecode_path, emails,
-            pqm_message)
-        request.emails_sent = []
-        request._send_email = request.emails_sent.append
+            pqm_message, smtp_connection)
+        request.emails_sent = emails_sent
         return request
 
     def make_sourcecode(self, branches):

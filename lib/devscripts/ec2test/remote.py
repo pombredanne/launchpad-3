@@ -290,7 +290,7 @@ class Request:
     """A request to have a branch tested and maybe landed."""
 
     def __init__(self, branch_url, revno, local_branch_path, sourcecode_path,
-                 emails=None, pqm_message=None):
+                 emails=None, pqm_message=None, smtp_connection=None):
         """Construct a `Request`.
 
         :param branch_url: The public URL to the Launchpad branch we are
@@ -306,6 +306,7 @@ class Request:
             provided, no emails are sent.
         :param pqm_message: The message to submit to PQM. If not provided, we
             don't submit to PQM.
+        :param smtp_connection: The `SMTPConnection` to use to send email.
         """
         self._branch_url = branch_url
         self._revno = revno
@@ -315,11 +316,13 @@ class Request:
         self._pqm_message = pqm_message
         # Used for figuring out how to send emails.
         self._bzr_config = bzrlib.config.GlobalConfig()
+        if smtp_connection is None:
+            smtp_connection = SMTPConnection(self._bzr_config)
+        self._smtp_connection = smtp_connection
 
     def _send_email(self, message):
         """Actually send 'message'."""
-        conn = SMTPConnection(self._bzr_config)
-        conn.send_email(message)
+        self._smtp_connection.send_email(message)
 
     def get_target_details(self):
         """Return (branch_url, revno) for trunk."""
