@@ -660,9 +660,10 @@ class HgImportWorker(PullingImportWorker):
     def getBazaarBranch(self):
         """See `ImportWorker.getBazaarBranch`.
 
-        In addition to the superclass' behaviour, we retrieve the 'hg-v2.db'
-        map from the import data store and put it where bzr-hg will find
-        it in the Bazaar tree, that is at '.bzr/repository/hg-v2.db'.
+        In addition to the superclass' behaviour, we retrieve the bzr-hg's
+        caches, both legacy and current and put them where bzr-hg will find
+        them in the Bazaar tree, that is at '.bzr/repository/hg-v2.db' and
+        '.bzr/repository/hg'.
         """
         branch = PullingImportWorker.getBazaarBranch(self)
         # Fetch the legacy cache from the store, if present.
@@ -681,8 +682,8 @@ class HgImportWorker(PullingImportWorker):
     def pushBazaarBranch(self, bazaar_branch):
         """See `ImportWorker.pushBazaarBranch`.
 
-        In addition to the superclass' behaviour, we store the 'hg-v2.db'
-        shamap that bzr-hg will have created at .bzr/repository/hg-v2.db into
+        In addition to the superclass' behaviour, we store the hg cache
+        that bzr-hg will have created at .bzr/repository/hg into
         the import data store.
         """
         non_trivial = PullingImportWorker.pushBazaarBranch(
