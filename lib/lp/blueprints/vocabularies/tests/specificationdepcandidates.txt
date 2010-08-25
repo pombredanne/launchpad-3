@@ -3,36 +3,27 @@
 All blueprints that can be added as a dependency of the context
 blueprint.
 
-First, we set up a product with three blueprints.
-
-    >>> from canonical.launchpad.interfaces import (
-    ...     ISpecificationSet, SpecificationDefinitionStatus)
-    >>> from lp.registry.interfaces.product import IProductSet
-    >>> product_set = getUtility(IProductSet)
-    >>> evolution = product_set.getByName('evolution')
     >>> from zope.schema.vocabulary import getVocabularyRegistry
     >>> vocabulary_registry = getVocabularyRegistry()
-    >>> from zope.security.proxy import removeSecurityProxy
-    >>> vocabulary_registry = getVocabularyRegistry()
-    >>> def get_naked_vocab(context, name):
-    ...     return removeSecurityProxy(
-    ...         vocabulary_registry.get(context, name))
+
+First, we set up a product with three blueprints.
+
+    >>> specced_product = factory.makeProduct()
     >>> foobar_person = factory.makePerson()
-    >>> specset = getUtility(ISpecificationSet)
     >>> spec_a = factory.makeSpecification(
     ...     name='spec-a', summary='The first spec',
-    ...     status=SpecificationDefinitionStatus.APPROVED, product=evolution)
+    ...     product=specced_product)
     >>> spec_b = factory.makeSpecification(
     ...     name='spec-b', summary='The second spec',
-    ...     status=SpecificationDefinitionStatus.APPROVED, product=evolution)
+    ...     product=specced_product)
     >>> spec_c = factory.makeSpecification(
     ...     name='spec-c', summary='The third spec',
-    ...     status=SpecificationDefinitionStatus.APPROVED, product=evolution)
-    >>> sorted([spec.name for spec in evolution.specifications()])
+    ...     product=specced_product)
+    >>> sorted([spec.name for spec in specced_product.specifications()])
     [u'spec-a', u'spec-b', u'spec-c']
 
-The dependency candidates for spec_a are all blueprints for evolution
-except for spec_a itself.
+The dependency candidates for spec_a are all blueprints for
+specced_product except for spec_a itself.
 
     >>> vocab = vocabulary_registry.get(
     ...     spec_a, "SpecificationDepCandidates")
@@ -43,14 +34,13 @@ Dependency candidate come only from the same product of the blueprint
 they depend on.
 
     >>> unrelated_spec = factory.makeSpecification(
-    ...     name='spec-c', summary='The third spec',
-    ...     status=SpecificationDefinitionStatus.APPROVED, product=product_set.getByName('firefox'))
+    ...     product=factory.makeProduct())
     >>> vocab = vocabulary_registry.get(
     ...     spec_a, "SpecificationDepCandidates")
     >>> unrelated_spec in vocab
     False
     >>> [term.value.product for term in vocab
-    ...  if term.value.product != evolution]
+    ...  if term.value.product != specced_product]
     []
 
 We mark spec_b as a dependency of spec_a and spec_c as a dependency of
@@ -89,10 +79,13 @@ The search() method returns specifications within the vocabulary that
 matches the search string. The string is matched against the name, or
 fallbacks to a full text search.
 
-    >>> vocab = get_naked_vocab(spec_a, "SpecificationDepCandidates")
-    >>> list(vocab.search('spec-b')) == [spec_b]
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> naked_vocab = removeSecurityProxy(
+    ...     vocabulary_registry.get(
+    ...         spec_a, "SpecificationDepCandidates"))
+    >>> list(naked_vocab.search('spec-b')) == [spec_b]
     True
-    >>> list(vocab.search('third')) == [spec_c]
+    >>> list(naked_vocab.search('third')) == [spec_c]
     True
 
 The search method uses the SQL `LIKE` operator, with the values quoted
@@ -102,5 +95,5 @@ vocabulary's item (this used to be the cause of an OOPS, see
 https://bugs.edge.launchpad.net/blueprint/+bug/139385 for more
 details).
 
-    >>> list(vocab.search('*'))
+    >>> list(naked_vocab.search('*'))
     []
