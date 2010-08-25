@@ -3,11 +3,14 @@
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+from canonical.testing.layers import DatabaseFunctionalLayer
+
+from lp.app.errors import NotFoundError
 from lp.archiveuploader.uploadpolicy import (
     AbstractUploadPolicy,
     ArchiveUploadType,
     )
-from lp.testing import TestCase
+from lp.testing import TestCase, TestCaseWithFactory
 
 
 class TestUploadPolicy_validateUploadType(TestCase):
@@ -88,6 +91,18 @@ class TestUploadPolicy_validateUploadType(TestCase):
         self.assertIn(
             'Upload rejected because it contains binary packages.',
             upload.rejections[0])
+
+
+class TestUploadPolicy(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_setDistroSeriesAndPocket_distro_not_found(self):
+        policy = AbstractUploadPolicy()
+        policy.distro = self.factory.makeDistribution()
+        self.assertRaises(
+            NotFoundError, policy.setDistroSeriesAndPocket,
+            'nonexistent_security')
 
 
 class FakeNascentUpload:
