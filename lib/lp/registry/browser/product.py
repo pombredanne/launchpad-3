@@ -52,6 +52,7 @@ from operator import attrgetter
 
 import pytz
 from z3c.ptcompat import ViewPageTemplateFile
+from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser import (
     CheckBoxWidget,
     TextAreaWidget,
@@ -1401,6 +1402,24 @@ class ProductConfigureBase(ReturnToReferrerMixin, LaunchpadEditFormView):
     schema = IProduct
     usage_fieldname = None
 
+    def setUpFields(self):
+        if self.usage_fieldname is not None:
+            self.field_names = [
+                self.usage_fieldname,
+                ]
+        super(ProductConfigureBase, self).setUpFields()
+        if self.usage_fieldname is not None:
+            # The usage fields are shared among pillars.  But when referring to
+            # an individual object in Launchpad it is better to call it by its
+            # real name, i.e. 'project' instead of 'pillar'.
+            field = self.form_fields.get(self.usage_fieldname)
+            if field:
+                field.custom_widget = CustomWidgetFactory(
+                    LaunchpadRadioWidget, orientation='vertical')
+                field.field.description = (
+                    field.field.description.replace('pillar', 'project'))
+                print field.field.description
+
     @property
     def page_title(self):
         return self.label
@@ -1409,27 +1428,12 @@ class ProductConfigureBase(ReturnToReferrerMixin, LaunchpadEditFormView):
     def change_action(self, action, data):
         self.updateContextFromData(data)
 
-    def setUpFields(self):
-        super(ProductConfigureBase, self).setUpFields()
-        # The usage fields are shared among pillars.  But when referring to an
-        # individual object in Launchpad it is better to call it by its real
-        # name, i.e. 'project' instead of 'pillar'.
-        field = self.form_fields.get(self.usage_fieldname)
-        if field:
-            field.field.description = (
-                field.field.description.replace('pillar', 'project'))
-
 
 class ProductConfigureBlueprintsView(ProductConfigureBase):
     """View class to configure the Launchpad Blueprints for a project."""
 
     label = "Configure Blueprints"
     usage_fieldname = 'blueprints_usage'
-    field_names = [
-        usage_fieldname,
-        ]
-    custom_widget(usage_fieldname, LaunchpadRadioWidget,
-                  orientation='vertical')
 
 
 class ProductConfigureTranslationsView(ProductConfigureBase):
@@ -1437,11 +1441,6 @@ class ProductConfigureTranslationsView(ProductConfigureBase):
 
     label = "Configure Translations"
     usage_fieldname = 'translations_usage'
-    field_names = [
-        usage_fieldname,
-        ]
-    custom_widget(usage_fieldname, LaunchpadRadioWidget,
-                  orientation='vertical')
 
 
 class ProductConfigureAnswersView(ProductConfigureBase):
@@ -1449,11 +1448,6 @@ class ProductConfigureAnswersView(ProductConfigureBase):
 
     label = "Configure Answers"
     usage_fieldname = 'answers_usage'
-    field_names = [
-        usage_fieldname,
-        ]
-    custom_widget(usage_fieldname, LaunchpadRadioWidget,
-                  orientation='vertical')
 
 
 class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
