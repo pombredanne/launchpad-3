@@ -69,9 +69,10 @@ class TranslationTemplatesBuildJob(BuildFarmJobOldDerived, BranchJobDerived):
 
     def score(self):
         """See `IBuildFarmJob`."""
-        # Hard-code score for now; anything other than 1000 is probably
-        # inappropriate.
-        return 1000
+        # Hard-code score for now.  Most PPA jobs start out at 2505;
+        # TranslationTemplateBuildJobs are fast so we want them at a
+        # higher priority.
+        return 2510
 
     def getLogFileName(self):
         """See `IBuildFarmJob`."""

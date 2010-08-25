@@ -117,9 +117,9 @@ class TestTranslationTemplatesBuildJob(TestCaseWithFactory):
             self.specific_job.getLogFileName(), other_job.getLogFileName())
 
     def test_score(self):
-        # For now, these jobs always score themselves at 1,000.  In the
+        # For now, these jobs always score themselves at 2510.  In the
         # future however the scoring system is to be revisited.
-        self.assertEqual(1000, self.specific_job.score())
+        self.assertEqual(2510, self.specific_job.score())
 
     def test_cleanUp(self):
         # TranslationTemplatesBuildJob has its own customized cleanup
