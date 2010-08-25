@@ -60,7 +60,8 @@ Translations can be enabled.
     >>> registrant_browser.getLink('Configure translations').click()
     >>> registrant_browser.url
     'http://launchpad.dev/firefox/+configure-translations'
-    >>> print_radio_button_field(registrant_browser.contents, "translations_usage")
+    >>> print_radio_button_field(registrant_browser.contents,
+    ...                          "translations_usage")
     (*) Unknown
     ( ) Launchpad
     ( ) External
@@ -98,7 +99,8 @@ Blueprints can be enabled too, though it isn't easy.
     >>> registrant_browser.getLink('Configure blueprints').click()
     >>> registrant_browser.url
     'http://blueprints.launchpad.dev/firefox/+configure-blueprints'
-    >>> print_radio_button_field(registrant_browser.contents, "blueprints_usage")
+    >>> print_radio_button_field(registrant_browser.contents,
+    ...                          "blueprints_usage")
     (*) Unknown
     ( ) Launchpad
     ( ) External

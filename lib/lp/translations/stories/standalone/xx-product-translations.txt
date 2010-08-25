@@ -1,4 +1,6 @@
-= Product Translations =
+====================
+Product Translations
+====================
 
 Each product in Launchpad has a Translations page.
 
@@ -166,7 +168,8 @@ Also, we will get some translation status for network applet.
     Language                   Untranslated    Unreviewed       Changed
 
 
-== Translation recommendation ==
+Translation recommendation
+==========================
 
 The page mentions which product series should be translated.
 
