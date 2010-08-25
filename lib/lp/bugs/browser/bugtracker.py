@@ -397,10 +397,8 @@ class BugTrackerEditView(LaunchpadEditFormView):
 
     def reschedule_action_condition(self, action):
         """Return True if the user can see the reschedule action."""
-        lp_developers = getUtility(ILaunchpadCelebrities).launchpad_developers
-        user_can_reset_watches = (
-            check_permission("launchpad.Admin", self.user) or
-            self.user.inTeam(lp_developers))
+        user_can_reset_watches = check_permission(
+            "launchpad.Admin", self.context)
         return (
             self.context.watches.count() > 0 and
             user_can_reset_watches)

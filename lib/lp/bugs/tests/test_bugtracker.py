@@ -187,14 +187,15 @@ class BugTrackerTestCase(TestCaseWithFactory):
         unprivileged_user = self.factory.makePerson()
         login_person(unprivileged_user)
         self.assertRaises(
-            Unauthorized, self.bug_tracker.resetWatches,
-            user=unprivileged_user)
+            Unauthorized, getattr, self.bug_tracker, 'resetWatches',
+            "Unprivileged users should not be allowed to reset a "
+            "tracker's watches.")
 
     def test_admin_can_reset_watches(self):
         # Launchpad admins can reset the watches on a bugtracker.
         admin_user = getUtility(IPersonSet).getByEmail(ADMIN_EMAIL)
         login_person(admin_user)
-        self.bug_tracker.resetWatches(user=admin_user)
+        self.bug_tracker.resetWatches()
         self._assertBugWatchesAreCheckedInTheFuture()
 
     def test_lp_dev_can_reset_watches(self):
@@ -206,14 +207,15 @@ class BugTrackerTestCase(TestCaseWithFactory):
         lp_dev = self.factory.makePerson()
         launchpad_developers.addMember(lp_dev, admin)
         login_person(lp_dev)
-        self.bug_tracker.resetWatches(user=lp_dev)
+        self.bug_tracker.resetWatches()
         self._assertBugWatchesAreCheckedInTheFuture()
 
     def test_janitor_can_reset_watches(self):
         # The Janitor can reset the watches on a bug tracker.
         janitor = getUtility(ILaunchpadCelebrities).janitor
         login_person(janitor)
-        self.bug_tracker.resetWatches(user=janitor)
+        self.bug_tracker.resetWatches()
+        self._assertBugWatchesAreCheckedInTheFuture()
 
 
 class TestMantis(TestCaseWithFactory):
