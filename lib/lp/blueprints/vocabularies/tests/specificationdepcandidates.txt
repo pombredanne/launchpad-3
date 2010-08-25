@@ -1,18 +1,15 @@
 == SpecificationDepCandidatesVocabulary ==
 
-All blueprints that can be added as a dependency of the
-context blueprint.
+All blueprints that can be added as a dependency of the context
+blueprint.
 
 First, we set up a product with three blueprints.
 
     >>> from canonical.launchpad.interfaces import (
     ...     ISpecificationSet, SpecificationDefinitionStatus)
-    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.registry.interfaces.product import IProductSet
-    >>> person_set = getUtility(IPersonSet)
     >>> product_set = getUtility(IProductSet)
     >>> evolution = product_set.getByName('evolution')
-    >>> login('foo.bar@canonical.com')
     >>> from zope.schema.vocabulary import getVocabularyRegistry
     >>> vocabulary_registry = getVocabularyRegistry()
     >>> from zope.security.proxy import removeSecurityProxy
@@ -20,22 +17,17 @@ First, we set up a product with three blueprints.
     >>> def get_naked_vocab(context, name):
     ...     return removeSecurityProxy(
     ...         vocabulary_registry.get(context, name))
-    >>> foobar_person = person_set.getByName('name16')
-    >>> foobar_person.displayname
-    u'Foo Bar'
+    >>> foobar_person = factory.makePerson()
     >>> specset = getUtility(ISpecificationSet)
-    >>> spec_a = specset.new('spec-a', 'Spec A',
-    ...     'http://www.example.org/SpecA', 'The first spec',
-    ...     SpecificationDefinitionStatus.APPROVED, foobar_person,
-    ...     product=evolution)
-    >>> spec_b = specset.new('spec-b', 'Spec B',
-    ...     'http://www.example.org/SpecB', 'The second spec',
-    ...     SpecificationDefinitionStatus.APPROVED, foobar_person,
-    ...     product=evolution)
-    >>> spec_c = specset.new('spec-c', 'Spec C',
-    ...     'http://www.example.org/SpecC', 'The third spec',
-    ...     SpecificationDefinitionStatus.APPROVED, foobar_person,
-    ...     product=evolution)
+    >>> spec_a = factory.makeSpecification(
+    ...     name='spec-a', summary='The first spec',
+    ...     status=SpecificationDefinitionStatus.APPROVED, product=evolution)
+    >>> spec_b = factory.makeSpecification(
+    ...     name='spec-b', summary='The second spec',
+    ...     status=SpecificationDefinitionStatus.APPROVED, product=evolution)
+    >>> spec_c = factory.makeSpecification(
+    ...     name='spec-c', summary='The third spec',
+    ...     status=SpecificationDefinitionStatus.APPROVED, product=evolution)
     >>> sorted([spec.name for spec in evolution.specifications()])
     [u'spec-a', u'spec-b', u'spec-c']
 
@@ -50,10 +42,9 @@ except for spec_a itself.
 Dependency candidate come only from the same product of the blueprint
 they depend on.
 
-    >>> unrelated_spec = specset.new('unrelated-spec', 'Unrelated Spec',
-    ...     'http://example.com/SpecU', 'A spec unrelated to Evolution',
-    ...     SpecificationDefinitionStatus.APPROVED, foobar_person,
-    ...     product=product_set.getByName('firefox'))
+    >>> unrelated_spec = factory.makeSpecification(
+    ...     name='spec-c', summary='The third spec',
+    ...     status=SpecificationDefinitionStatus.APPROVED, product=product_set.getByName('firefox'))
     >>> vocab = vocabulary_registry.get(
     ...     spec_a, "SpecificationDepCandidates")
     >>> unrelated_spec in vocab
@@ -62,8 +53,8 @@ they depend on.
     ...  if term.value.product != evolution]
     []
 
-We mark spec_b as a dependency of spec_a and spec_c as a dependency
-of spec_b.
+We mark spec_b as a dependency of spec_a and spec_c as a dependency of
+spec_b.
 
     >>> spec_a.createDependency(spec_b)
     <SpecificationDependency at ...>
@@ -94,9 +85,9 @@ This vocabulary provides the IHugeVocabulary interface.
     >>> verifyObject(IHugeVocabulary, vocab)
     True
 
-The search() method returns specifications within the vocabulary
-that matches the search string. The string is matched against the name,
-or fallbacks to a full text search.
+The search() method returns specifications within the vocabulary that
+matches the search string. The string is matched against the name, or
+fallbacks to a full text search.
 
     >>> vocab = get_naked_vocab(spec_a, "SpecificationDepCandidates")
     >>> list(vocab.search('spec-b')) == [spec_b]
@@ -108,7 +99,8 @@ The search method uses the SQL `LIKE` operator, with the values quoted
 appropriately. Queries conataining regual expression operators, for
 example, will simply look for the respective characters within the
 vocabulary's item (this used to be the cause of an OOPS, see
-https://bugs.edge.launchpad.net/blueprint/+bug/139385 for more details).
+https://bugs.edge.launchpad.net/blueprint/+bug/139385 for more
+details).
 
     >>> list(vocab.search('*'))
     []
