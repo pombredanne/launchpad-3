@@ -146,7 +146,8 @@ class PackageBugReportData(BugReportData):
         - dssp: an IDistributionSeriesSourcepackage
         - product: an IProduct
         - bugtracker: convenience holder for the product's bugtracker
-        - official_malone: convenience boolean for IProduct.official_malone
+        - bug_tracking_usage: convenience enum for 
+            IProduct.bug_tracking_usage
         - *_url: convenience URLs
     """
     def __init__(self, dsp, dssp, product, open_bugs, triaged_bugs,
@@ -163,11 +164,8 @@ class PackageBugReportData(BugReportData):
         self.open_bugs_url = urlappend(
             dsp_bugs_url, get_buglisting_search_filter_url())
 
-        # TODO: Circle back to get this, as you may have killed 
-        # references to it.
-        self.official_malone = bool(
-            product 
-            and product.bug_tracking_usage == ServiceUsage.LAUNCHPAD)
+        self.bug_tracking_usage = product.bug_tracking_usage
+
         # pages which allow filling out required information. The
         # template ensures they are only visible to people who can
         # actually change the product.
