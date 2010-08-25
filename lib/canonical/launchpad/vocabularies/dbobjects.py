@@ -235,6 +235,7 @@ class HostedBranchRestrictedOnOwnerVocabulary(BranchVocabularyBase):
     These are branches that the user is guaranteed to be able to push
     to.
     """
+
     def __init__(self, context=None):
         """Pass a Person as context, or anything else for the current user."""
         super(HostedBranchRestrictedOnOwnerVocabulary, self).__init__(context)
@@ -342,6 +343,7 @@ class TranslatableLanguageVocabulary(LanguageVocabulary):
     This vocabulary contains all the languages known to Launchpad,
     excluding English and non-visible languages.
     """
+
     def __contains__(self, language):
         """See `IVocabulary`.
 
