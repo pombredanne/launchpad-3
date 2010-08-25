@@ -26,6 +26,7 @@ from testtools.content import Content
 from testtools.content_type import ContentType
 
 from devscripts.ec2test.remote import (
+    EC2Runner,
     FlagFallStream,
     gunzip_data,
     gzip_data,
@@ -621,6 +622,45 @@ class TestWebTestLogger(TestCaseWithTransport, RequestHelpers):
         self.assertEqual(
             "\n\nERROR IN TESTRUNNER\n\n%s" % (stack,),
             logger.get_summary_contents())
+
+
+class TestEC2Runner(TestCase):
+
+    def make_ec2runner(self, emails=None, email_log=None):
+        if email_log is None:
+            email_log = []
+        smtp_connection = LoggingSMTPConnection(email_log)
+        return EC2Runner(
+            False, "who-cares.pid", False, smtp_connection, emails=emails)
+
+    def test_run(self):
+        calls = []
+        runner = self.make_ec2runner()
+        runner.run(
+            "boring test method",
+            lambda *a, **kw: calls.append((a, kw)), "foo", "bar", baz="qux")
+        self.assertEqual([(("foo", "bar"), {'baz': 'qux'})], calls)
+
+    def test_email_on_failure_no_emails(self):
+        # If no emails are specified, then no email is sent on failure.
+        log = []
+        runner = self.make_ec2runner(email_log=log)
+        self.assertRaises(
+            ZeroDivisionError, runner.run, "failing method", lambda: 1/0)
+        self.assertEqual([], log)
+
+    def test_email_on_failure_some_emails(self):
+        # If no emails are specified, then no email is sent on failure.
+        log = []
+        runner = self.make_ec2runner(
+            email_log=log, emails=["foo@example.com"])
+        self.assertRaises(
+            ZeroDivisionError, runner.run, "failing method", lambda: 1/0)
+        # XXX: Expect this to fail. Fix the test to be more correct.
+        self.assertEqual([], log)
+
+# XXX: Add tests that show that _some_ kind of email is sent if
+# LaunchpadTester fails unexpectedly.
 
 
 class TestDaemonizationInteraction(TestCaseWithTransport, RequestHelpers):
