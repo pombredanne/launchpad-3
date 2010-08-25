@@ -60,7 +60,7 @@ pockets:
     ...    all_published_main_pubs, key=operator.attrgetter('id'),
     ...    reverse=True)
 
-    >>> result = breezy_autotest.getPublishedReleases('cnews')
+    >>> result = breezy_autotest.getPublishedSources('cnews')
     >>> soyuz_helper.checkPubList(all_published_main_pubs, result)
     True
 
@@ -77,7 +77,7 @@ pockets.
     >>> all_main_pubs = sorted(
     ...    all_main_pubs, key=operator.attrgetter('id'), reverse=True)
 
-    >>> result = breezy_autotest.getPublishedReleases(
+    >>> result = breezy_autotest.getPublishedSources(
     ...     'cnews', include_pending=True)
     >>> soyuz_helper.checkPubList(all_main_pubs, result)
     True
@@ -88,7 +88,7 @@ Using 'pocket' filter:
     ...     pub_main_updates_pending,
     ...     ]
 
-    >>> result = breezy_autotest.getPublishedReleases(
+    >>> result = breezy_autotest.getPublishedSources(
     ...     'cnews', include_pending=True,
     ...     pocket=PackagePublishingPocket.UPDATES)
 
@@ -107,7 +107,7 @@ Using 'exclude_pocket' filter, to exclude publications to RELEASE pocket:
     ...    non_release_main_pubs, key=operator.attrgetter('id'),
     ...    reverse=True)
 
-    >>> result = breezy_autotest.getPublishedReleases(
+    >>> result = breezy_autotest.getPublishedSources(
     ...     'cnews', include_pending=True,
     ...     exclude_pocket=PackagePublishingPocket.RELEASE)
 
@@ -127,7 +127,7 @@ pockets.
     >>> all_ppa_pubs = sorted(
     ...    all_ppa_pubs, key=operator.attrgetter('id'), reverse=True)
 
-    >>> result = breezy_autotest.getPublishedReleases(
+    >>> result = breezy_autotest.getPublishedSources(
     ...    'cnews', include_pending=True, archive=cprov_archive)
     >>> soyuz_helper.checkPubList(all_ppa_pubs, result)
     True

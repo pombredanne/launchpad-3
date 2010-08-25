@@ -743,7 +743,7 @@ class BaseBinaryUploadFile(PackageUploadFile):
         in DB yet (see verifySourcepackagerelease).
         """
         distroseries = self.policy.distroseries
-        spphs = distroseries.getPublishedReleases(
+        spphs = distroseries.getPublishedSources(
             self.source_name, version=self.source_version,
             include_pending=True, archive=self.policy.archive)
 

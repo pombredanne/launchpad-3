@@ -401,7 +401,7 @@ class DistributionSourcePackageView(DistributionSourcePackageBaseView,
 
         :param sourcepackage: ISourcePackage
         """
-        publications = sourcepackage.distroseries.getPublishedReleases(
+        publications = sourcepackage.distroseries.getPublishedSources(
             sourcepackage.sourcepackagename)
         pocket_dict = {}
         for pub in shortlist(publications):
