@@ -135,19 +135,24 @@ class EC2Runner:
     SHUTDOWN_DELAY = 60
 
     def __init__(self, daemonize, pid_filename, shutdown_when_done,
-                 emails=None):
+                 smtp_connection=None, emails=None):
         """Make an EC2Runner.
 
         :param daemonize: Whether or not we will daemonize.
         :param pid_filename: The filename to store the pid in.
         :param shutdown_when_done: Whether or not to shut down when the tests
             are done.
+        :param smtp_connection: The `SMTPConnection` to use to send email.
         :param emails: The email address(es) to send catastrophic failure
             messages to. If not provided, the error disappears into the ether.
         """
         self._should_daemonize = daemonize
         self._pid_filename = pid_filename
         self._shutdown_when_done = shutdown_when_done
+        if smtp_connection is None:
+            config = bzrlib.config.GlobalConfig()
+            smtp_connection = SMTPConnection(config)
+        self._smtp_connection = smtp_connection
         self._emails = emails
         self._daemonized = False
 
@@ -194,7 +199,7 @@ class EC2Runner:
                     to_address=self._emails,
                     subject='%s FAILED' % (name,),
                     body=traceback.format_exc())
-                SMTPConnection(config).send_email(msg)
+                self._smtp_connection.send_email(msg)
             raise
         finally:
             # When everything is over, if we've been ask to shut down, then
@@ -811,16 +816,19 @@ def main(argv):
 
     pid_filename = os.path.join(LAUNCHPAD_DIR, 'ec2test-remote.pid')
 
+    smtp_connection = SMTPConnection(bzrlib.config.GlobalConfig())
+
     request = Request(
         options.public_branch, options.public_branch_revno, TEST_DIR,
-        SOURCECODE_DIR, options.email, pqm_message)
+        SOURCECODE_DIR, options.email, pqm_message, smtp_connection)
     # Only write to stdout if we are running as the foreground process.
     echo_to_stdout = not options.daemon
     logger = WebTestLogger.make_in_directory(
         '/var/www', request, echo_to_stdout)
 
     runner = EC2Runner(
-        options.daemon, pid_filename, options.shutdown, options.email)
+        options.daemon, pid_filename, options.shutdown,
+        smtp_connection, options.email)
 
     tester = LaunchpadTester(logger, TEST_DIR, test_options=args[1:])
     runner.run("Test runner", tester.test)
