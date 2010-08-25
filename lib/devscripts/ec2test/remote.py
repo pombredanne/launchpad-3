@@ -40,10 +40,11 @@ from xml.sax.saxutils import escape
 
 import bzrlib.branch
 import bzrlib.config
-import bzrlib.email_message
 import bzrlib.errors
-import bzrlib.smtp_connection
 import bzrlib.workingtree
+
+from bzrlib.email_message import EmailMessage
+from bzrlib.smtp_connection import SMTPConnection
 
 import subunit
 
@@ -188,10 +189,12 @@ class EC2Runner:
             config = bzrlib.config.GlobalConfig()
             # Handle exceptions thrown by the test() or daemonize() methods.
             if self._emails:
-                bzrlib.email_message.EmailMessage.send(
-                    config, config.username(),
-                    self._emails, '%s FAILED' % (name,),
-                    traceback.format_exc())
+                msg = EmailMessage(
+                    from_address=config.username(),
+                    to_address=self._emails,
+                    subject='%s FAILED' % (name,),
+                    body=traceback.format_exc())
+                SMTPConnection(config).send_email(msg)
             raise
         finally:
             # When everything is over, if we've been ask to shut down, then
@@ -315,7 +318,7 @@ class Request:
 
     def _send_email(self, message):
         """Actually send 'message'."""
-        conn = bzrlib.smtp_connection.SMTPConnection(self._bzr_config)
+        conn = SMTPConnection(self._bzr_config)
         conn.send_email(message)
 
     def get_target_details(self):
