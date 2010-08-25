@@ -28,7 +28,7 @@ CODEHOSTING_ROOT=/var/tmp/bazaar.launchpad.dev
 BZR_VERSION_INFO = bzr-version-info.py
 
 APIDOC_DIR = lib/canonical/launchpad/apidoc
-WADL_TEMPLATE = $(APIDOC_DIR).tmp/wadl-$(LPCONFIG)-%(version)s.xml
+WADL_TEMPLATE = $(APIDOC_DIR)/wadl-$(LPCONFIG)-%(version)s.xml
 API_INDEX = $(APIDOC_DIR)/index.html
 
 # Do not add bin/buildout to this list.
@@ -59,9 +59,7 @@ hosted_branches: $(PY)
 	$(PY) ./utilities/make-dummy-hosted-branches
 
 $(API_INDEX): $(BZR_VERSION_INFO)
-	mkdir -p $(APIDOC_DIR).tmp
 	LPCONFIG=$(LPCONFIG) $(PY) ./utilities/create-lp-wadl-and-apidoc.py "$(WADL_TEMPLATE)"
-	mv $(APIDOC_DIR).tmp $(APIDOC_DIR)
 
 apidoc: compile $(API_INDEX)
 
@@ -340,8 +338,6 @@ clean: clean_js clean_buildout
 	$(RM) -r lib/mailman
 	$(RM) -rf lib/canonical/launchpad/icing/build/*
 	$(RM) -r $(CODEHOSTING_ROOT)
-	$(RM) -rf $(APIDOC_DIR)
-	$(RM) -rf $(APIDOC_DIR).tmp
 	$(RM) $(BZR_VERSION_INFO)
 	$(RM) +config-overrides.zcml
 	$(RM) -rf \
