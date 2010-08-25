@@ -15,7 +15,10 @@ from storm.locals import (
     Storm,
     Unicode,
     )
-from zope.interface import implements
+from zope.interface import (
+    classProvides,
+    implements,
+    )
 
 from canonical.database.enumcol import DBEnum
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
@@ -26,12 +29,14 @@ from lp.registry.enum import (
 from lp.registry.exceptions import NotADerivedSeriesError
 from lp.registry.interfaces.distroseriesdifference import (
     IDistroSeriesDifference,
+    IDistroSeriesDifferenceSource,
     )
 
 
 class DistroSeriesDifference(Storm):
     """See `DistroSeriesDifference`."""
     implements(IDistroSeriesDifference)
+    classProvides(IDistroSeriesDifferenceSource)
     __storm_table__ = 'DistroSeriesDifference'
 
     id = Int(primary=True)
@@ -59,7 +64,7 @@ class DistroSeriesDifference(Storm):
     @staticmethod
     def new(derived_series, source_package_name, difference_type,
             status=DistroSeriesDifferenceStatus.NEEDS_ATTENTION):
-        """See `IDistroSeriesDifference`."""
+        """See `IDistroSeriesDifferenceSource`."""
         if derived_series.parent_series is None:
             raise NotADerivedSeriesError()
 
@@ -70,3 +75,32 @@ class DistroSeriesDifference(Storm):
         diff.status = status
         diff.difference_type = difference_type
         return store.add(diff)
+
+    @property
+    def source_pub(self):
+        """See `IDistroSeriesDifference`."""
+        return self._getLatestPubForDistroSeries(
+            self.derived_series, self.source_package_name)
+
+    @property
+    def parent_source_pub(self):
+        """See `IDistroSeriesDifference`."""
+        return self._getLatestPubForDistroSeries(
+            self.derived_series.parent_series, self.source_package_name)
+
+    def _getLatestPubForDistroSeries(self, distro_series, source_package_name):
+        # XXX 2010-08-25 This will move to
+        # DistroSeries.getCurrentSourcePub() and tested in a following branch.
+        from storm.store import Store
+        store = Store.of(self)
+
+        from lp.soyuz.model.publishing import SourcePackagePublishingHistory
+        SPPH = SourcePackagePublishingHistory
+        from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
+        result = store.find(
+            SPPH,
+            SPPH.sourcepackagerelease == SourcePackageRelease.id,
+            SourcePackageRelease.sourcepackagename == source_package_name,
+            SPPH.distroseries == distro_series).order_by(SPPH.id)
+
+        return result.first()

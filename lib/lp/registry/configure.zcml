@@ -110,6 +110,10 @@
         <allow interface="lp.registry.interfaces.distroseriesdifference.IDistroSeriesDifferenceSource"/>
     </securedutility>
     <class
+        class="lp.registry.model.distroseriesdifference.DistroSeriesDifference">
+        <allow interface="lp.registry.interfaces.distroseriesdifference.IDistroSeriesDifference"/>
+    </class>
+    <class
         class="lp.registry.model.distroseries.DistroSeries">
         <allow
             interface="lp.registry.interfaces.distroseries.IDistroSeriesPublic"/>

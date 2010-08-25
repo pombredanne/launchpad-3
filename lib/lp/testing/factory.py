@@ -1822,7 +1822,19 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         source_package_name = self.getOrMakeSourcePackageName(
             source_package_name_str)
 
-        # TODO: create the pubs based on the type.
+        if difference_type is not (
+            DistroSeriesDifferenceType.MISSING_FROM_DERIVED_SERIES):
+
+            source_pub = self.makeSourcePackagePublishingHistory(
+                distroseries=derived_series,
+                sourcepackagename=source_package_name)
+
+        if difference_type is not (
+            DistroSeriesDifferenceType.UNIQUE_TO_DERIVED_SERIES):
+
+            source_pub = self.makeSourcePackagePublishingHistory(
+                distroseries=derived_series.parent_series,
+                sourcepackagename=source_package_name)
 
         return getUtility(IDistroSeriesDifferenceSource).new(
             derived_series, source_package_name, difference_type)

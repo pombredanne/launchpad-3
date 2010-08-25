@@ -8,6 +8,7 @@ __metaclass__ = type
 
 __all__ = [
     'IDistroSeriesDifference',
+    'IDistroSeriesDifferenceSource',
     ]
 
 from lazr.restful.fields import Reference
@@ -26,6 +27,7 @@ from lp.registry.enum import (
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.sourcepackagename import ISourcePackageName
 from lp.soyuz.interfaces.packagediff import IPackageDiff
+from lp.soyuz.interfaces.publishing import ISourcePackagePublishingHistory
 
 
 class IDistroSeriesDifference(Interface):
@@ -67,11 +69,23 @@ class IDistroSeriesDifference(Interface):
         vocabulary=DistroSeriesDifferenceType,
         required=True, readonly=False)
 
+    source_pub = Reference(
+        ISourcePackagePublishingHistory,
+        title=_("Derived source pub"), readonly=True,
+        description=_(
+            "The most recent published version in the derived series."))
+
+    parent_source_pub = Reference(
+        ISourcePackagePublishingHistory,
+        title=_("Parent source pub"), readonly=True,
+        description=_(
+            "The most recent published version in the parent series."))
+
 
 class IDistroSeriesDifferenceSource(Interface):
     """A utility of this interface can be used to create differences."""
 
-    def new(derived_series, source_package=None, parent_source_package=None,
+    def new(derived_series, source_package_name, difference_type,
             status=DistroSeriesDifferenceStatus.NEEDS_ATTENTION):
         """Create an `IDistroSeriesDifference`.
 
@@ -79,11 +93,16 @@ class IDistroSeriesDifferenceSource(Interface):
             from a parent. If a series without a parent is passed an
             exception is raised.
         :type derived_series: `IDistroSeries`.
-        :param source_package: A source package in the derived series.
-        :type source_package: `ISourcePackagePublishingHistory`.
-        :param parent_source_package: A source package in the parent series.
-        :type source_package: `ISourcePackagePublishingHistory`.
+        :param source_package_name: A source package name identifying the
+            package with a difference.
+        :type source_package_name: `ISourcePackageName`.
+        :param difference_type: Indicates the type of difference represented
+            by this record.
+        :type difference_type: `DistroSeriesDifferenceType`.
         :param status: The current status of this difference.
         :type status: `DistorSeriesDifferenceStatus`.
+        :raises NotADerivedSeriesError: When the passed distro series
+            is not a derived series.
+        :return: A new `DistroSeriesDifference` object.
         """
 

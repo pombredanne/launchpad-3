@@ -8,6 +8,7 @@ __metaclass__ = type
 import unittest
 
 from storm.store import Store
+from zope.component import getUtility
 
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing import DatabaseFunctionalLayer
@@ -15,6 +16,7 @@ from lp.testing import TestCaseWithFactory
 from lp.registry.exceptions import NotADerivedSeriesError
 from lp.registry.interfaces.distroseriesdifference import (
     IDistroSeriesDifference,
+    IDistroSeriesDifferenceSource,
     )
 
 
@@ -30,6 +32,12 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
 
         verifyObject(IDistroSeriesDifference, ds_diff)
 
+    def test_source_implements_interface(self):
+        # The utility for creating differences implements its interface.
+        utility = getUtility(IDistroSeriesDifferenceSource)
+
+        verifyObject(IDistroSeriesDifferenceSource, utility)
+
     def test_new_non_derived_series(self):
         # A DistroSeriesDifference cannot be created with a non-derived
         # series.
@@ -40,10 +48,23 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             derived_series=distro_series)
 
     def test_source_pub(self):
-        self.fail("Unimplemented")
+        ds_diff = self.factory.makeDistroSeriesDifference(
+            source_package_name_str="foonew")
+
+        self.assertEqual(
+            'foonew', ds_diff.source_pub.source_package_name)
+        self.assertEqual(
+            ds_diff.derived_series, ds_diff.source_pub.distroseries)
 
     def test_parent_source_pub(self):
-        self.fail("Unimplemented")
+        ds_diff = self.factory.makeDistroSeriesDifference(
+            source_package_name_str="foonew")
+
+        self.assertEqual(
+            'foonew', ds_diff.parent_source_pub.source_package_name)
+        self.assertEqual(
+            ds_diff.derived_series.parent_series,
+            ds_diff.parent_source_pub.distroseries)
 
     def test_appendActivityLog(self):
         self.fail("Unimplemented")
