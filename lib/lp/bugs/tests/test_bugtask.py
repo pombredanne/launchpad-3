@@ -541,6 +541,7 @@ class TestBugTaskPermissionsToSetAssigneeMixin:
         self.regular_user = self.factory.makePerson()
 
         login_person(self.target_owner_member)
+        # Target and bug supervisor creation are deferred to sub-classes.
         self.makeTarget()
         self.setBugSupervisor()
 
@@ -576,11 +577,16 @@ class TestBugTaskPermissionsToSetAssigneeMixin:
         raise NotImplementedError(self.makeTarget)
 
     def setBugSupervisor(self):
-        """Set the bug supervisor data or None."""
+        """Set bug supervisor variables.
+
+        This is the standard interface for sub-classes, but this
+        method should return _setBugSupervisorData or
+        _setBugSupervisorDataNone depending on what is required.
+        """
         raise NotImplementedError(self.setBugSupervisor)
 
     def _setBugSupervisorData(self):
-        """Helper function used by sub-classes."""
+        """Helper function used by sub-classes to setup bug supervisors."""
         self.supervisor_team = self.factory.makeTeam(
             owner=self.target_owner_member)
         self.supervisor_member = self.factory.makePerson()
@@ -590,6 +596,7 @@ class TestBugTaskPermissionsToSetAssigneeMixin:
             self.supervisor_team, self.target_owner_member)
 
     def _setBugSupervisorDataNone(self):
+        """Helper for sub-classes to work around setting a bug supervisor."""
         self.supervisor_member = None
 
     def test_userCanSetAnyAssignee_anonymous_user(self):
@@ -605,8 +612,9 @@ class TestBugTaskPermissionsToSetAssigneeMixin:
         self.assertFalse(self.series_bugtask.userCanUnassign(None))
 
     def test_userCanSetAnyAssignee_regular_user(self):
-        # Ordinary users cannot set others as an assignee,
-        # unless a bug supervisor is not defined.
+        # If we have a bug supervisor, check that regular user cannot
+        # assign to someone else.  Otherwise, the regular user should
+        # be able to assign to anyone.
         login_person(self.regular_user)
         if self.supervisor_member is not None:
             self.assertFalse(
@@ -768,7 +776,7 @@ class TestProductNoBugSupervisorBugTaskPermissionsToSetAssignee(
         self.series = self.factory.makeProductSeries(self.target)
 
     def setBugSupervisor(self):
-        """Do nothing to avoid setting a bug supervisor."""
+        """Set bug supervisor to None."""
         self._setBugSupervisorDataNone()
 
 
@@ -782,7 +790,7 @@ class TestDistributionBugTaskPermissionsToSetAssignee(
         self.series = self.factory.makeDistroSeries(self.target)
 
     def setBugSupervisor(self):
-        """Establish a bug supervisor for this target."""
+        """Set bug supervisor to None."""
         self._setBugSupervisorData()
 
 
