@@ -13,11 +13,13 @@ from zope.component import getUtility
 
 from canonical.launchpad.database.librarian import LibraryFileAliasSet
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from canonical.launchpad.webapp.testing import verifyObject
 from canonical.librarian.client import LibrarianClient
 from canonical.librarian.interfaces import ILibrarianClient
-from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing import (
-    DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
 from lp.testing import TestCaseWithFactory
 from lp.testing.fakelibrarian import FakeLibrarian
 
@@ -106,6 +108,15 @@ class TestFakeLibrarian(LibraryAccessScenarioMixin, TestCaseWithFactory):
     def test_fake(self):
         self.assertTrue(verifyObject(ISynchronizer, self.fake_librarian))
         self.assertIsInstance(self.fake_librarian, FakeLibrarian)
+
+    def test_pretend_commit(self):
+        name, text, alias_id = self._storeFile()
+
+        self.fake_librarian.pretendCommit()
+
+        retrieved_alias = getUtility(ILibraryFileAliasSet)[alias_id]
+        retrieved_alias.open()
+        self.assertEqual(text, retrieved_alias.read())
 
 
 class TestRealLibrarian(LibraryAccessScenarioMixin, TestCaseWithFactory):

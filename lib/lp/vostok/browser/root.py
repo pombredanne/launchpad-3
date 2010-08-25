@@ -11,14 +11,15 @@ __all__ = [
 
 import os
 
-from zope.component import adapts, getUtility
+from zope.component import (
+    adapts,
+    getUtility,
+    )
 from zope.interface import implements
 
 from canonical.launchpad.webapp import LaunchpadView
 from canonical.launchpad.webapp.tales import IMainTemplateFile
-
 from lp.registry.interfaces.distribution import IDistributionSet
-
 from lp.vostok.publisher import VostokLayer
 
 

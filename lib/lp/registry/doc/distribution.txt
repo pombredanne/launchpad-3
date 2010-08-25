@@ -397,13 +397,26 @@ The bug_tracking_usage property currently only tracks official_malone.
     >>> print ubuntu.bug_tracking_usage.name
     LAUNCHPAD
 
-While the other attributes are not yet used.
+While the other attributes track the other official_ attributes. 
 
+    >>> print ubuntu.official_rosetta
+    True
     >>> print ubuntu.translations_usage.name
-    UNKNOWN
+    LAUNCHPAD 
+    >>> print ubuntu.official_answers
+    True
     >>> print ubuntu.answers_usage.name
-    UNKNOWN
+    LAUNCHPAD
+    >>> print ubuntu.official_blueprints
+    True
     >>> print ubuntu.blueprints_usage.name
+    LAUNCHPAD
+
+If the official_ attributes are False, the usage enums don't know anything.
+
+    >>> login_person(ubuntu.owner.teamowner)
+    >>> ubuntu.official_rosetta = False
+    >>> print ubuntu.translations_usage.name
     UNKNOWN
 
 A distribution *cannot* specify that it uses codehosting. Currently there's
@@ -585,7 +598,7 @@ Milestones for distros can only be created by distro owners or admins.
     ...     name='impossible', dateexpected=datetime(2028, 10, 1))
     Traceback (most recent call last):
     ...
-    Unauthorized: (<DistroSeries at ...>, 'newMilestone', 'launchpad.Edit')
+    Unauthorized: (<DistroSeries u'woody'>, 'newMilestone', 'launchpad.Edit')
     >>> login('mark@example.com')
     >>> debian_milestone = woody.newMilestone(
     ...     name='woody-rc1', dateexpected=datetime(2028, 10, 1))

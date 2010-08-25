@@ -20,14 +20,18 @@ except ImportError:
 import urllib
 from urlparse import urlunparse
 
+from lazr.uri import URI
 from zope.interface import implements
 
 from canonical.config import config
 from canonical.launchpad.interfaces.searchservice import (
-    ISearchResult, ISearchResults, ISearchService, GoogleResponseError,
-    GoogleWrongGSPVersion)
+    GoogleResponseError,
+    GoogleWrongGSPVersion,
+    ISearchResult,
+    ISearchResults,
+    ISearchService,
+    )
 from canonical.launchpad.webapp import urlparse
-from lazr.uri import URI
 
 
 class PageMatch:

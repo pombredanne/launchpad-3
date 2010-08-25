@@ -11,14 +11,12 @@ __all__ = [
     'IDistroSeriesSourcePackageRelease',
     ]
 
-from zope.schema import Object
 from zope.interface import Attribute
+from zope.schema import Object
 
 from canonical.launchpad import _
-from lp.soyuz.interfaces.sourcepackagerelease import (
-    ISourcePackageRelease)
-from canonical.launchpad.interfaces.librarian import (
-    ILibraryFileAlias)
+from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
+from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
 
 
 class IDistroSeriesSourcePackageRelease(ISourcePackageRelease):

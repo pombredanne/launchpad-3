@@ -9,39 +9,70 @@ import logging
 import sys
 import unittest
 
-from contrib.oauth import OAuthRequest, OAuthSignatureMethod_PLAINTEXT
-from zope.interface import directlyProvides, noLongerProvides
-
-from storm.database import STATE_DISCONNECTED, STATE_RECONNECT
+from contrib.oauth import (
+    OAuthRequest,
+    OAuthSignatureMethod_PLAINTEXT,
+    )
+from storm.database import (
+    STATE_DISCONNECTED,
+    STATE_RECONNECT,
+    )
 from storm.exceptions import DisconnectionError
 from storm.zope.interfaces import IZStorm
-
 from zope.component import getUtility
 from zope.error.interfaces import IErrorReportingUtility
+from zope.interface import (
+    directlyProvides,
+    noLongerProvides,
+    )
 from zope.publisher.interfaces import Retry
 from zope.publisher.interfaces.browser import IBrowserRequest
 
 from canonical.config import dbconfig
 from canonical.launchpad.database.emailaddress import EmailAddress
+from canonical.launchpad.ftests import (
+    ANONYMOUS,
+    login,
+    )
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.launchpad.interfaces.oauth import (
-    IOAuthConsumerSet, IOAuthSignedRequest)
-from canonical.launchpad.ftests import ANONYMOUS, login
+    IOAuthConsumerSet,
+    IOAuthSignedRequest,
+    )
 from canonical.launchpad.readonly import is_read_only
 from canonical.launchpad.tests.readonly import (
-    remove_read_only_file, touch_read_only_file)
+    remove_read_only_file,
+    touch_read_only_file,
+    )
 import canonical.launchpad.webapp.adapter as dbadapter
-from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, MASTER_FLAVOR, OAuthPermission, SLAVE_FLAVOR,
-    OffsiteFormPostError, NoReferrerError)
+    IStoreSelector,
+    MAIN_STORE,
+    MASTER_FLAVOR,
+    NoReferrerError,
+    OAuthPermission,
+    OffsiteFormPostError,
+    SLAVE_FLAVOR,
+    )
 from canonical.launchpad.webapp.publication import (
-    is_browser, LaunchpadBrowserPublication, maybe_block_offsite_form_post,
-    OFFSITE_POST_WHITELIST)
+    is_browser,
+    LaunchpadBrowserPublication,
+    maybe_block_offsite_form_post,
+    OFFSITE_POST_WHITELIST,
+    )
 from canonical.launchpad.webapp.servers import (
-    LaunchpadTestRequest, WebServicePublication)
-from canonical.testing import DatabaseFunctionalLayer, FunctionalLayer
-from lp.testing import TestCase, TestCaseWithFactory
+    LaunchpadTestRequest,
+    WebServicePublication,
+    )
+from canonical.launchpad.webapp.vhosts import allvhosts
+from canonical.testing import (
+    DatabaseFunctionalLayer,
+    FunctionalLayer,
+    )
+from lp.testing import (
+    TestCase,
+    TestCaseWithFactory,
+    )
 
 
 class TestLaunchpadBrowserPublication(TestCase):

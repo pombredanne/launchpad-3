@@ -6,7 +6,6 @@
 __metaclass__ = type
 
 from canonical.testing import LaunchpadFunctionalLayer
-
 from lp.testing import TestCaseWithFactory
 
 

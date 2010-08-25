@@ -5,20 +5,20 @@
 
 __metaclass__ = type
 
-import transaction
 import unittest
 
+import transaction
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from lp.translations.interfaces.translationimportqueue import (
-    ITranslationImportQueue, RosettaImportStatus)
-from lp.services.worlddata.interfaces.language import (
-    ILanguageSet)
-
+from canonical.testing import LaunchpadZopelessLayer
+from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing import TestCaseWithFactory
 from lp.testing.factory import LaunchpadObjectFactory
-from canonical.testing import LaunchpadZopelessLayer
+from lp.translations.interfaces.translationimportqueue import (
+    ITranslationImportQueue,
+    RosettaImportStatus,
+    )
 
 
 class TestCanSetStatusBase(TestCaseWithFactory):

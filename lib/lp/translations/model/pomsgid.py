@@ -6,13 +6,19 @@
 __metaclass__ = type
 __all__ = ['POMsgID']
 
+from sqlobject import (
+    SQLObjectNotFound,
+    StringCol,
+    )
 from zope.interface import implements
 
-from sqlobject import StringCol, SQLObjectNotFound
-
-from canonical.database.sqlbase import SQLBase, quote
-
+from canonical.database.sqlbase import (
+    quote,
+    SQLBase,
+    )
 from lp.translations.interfaces.pomsgid import IPOMsgID
+
+
 class POMsgID(SQLBase):
     implements(IPOMsgID)
 

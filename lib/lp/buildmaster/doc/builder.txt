@@ -301,7 +301,7 @@ or cleaned.
 
     >>> rescue_slave_if_lost(BuildingSlave(build_id='bad'))
     Aborting slave
-    WARNING:root:Builder 'mock' rescued from 'bad': 'Bad value'
+    INFO:root:Builder 'mock' rescued from 'bad': 'Bad value'
 
 Slaves having completed an incorrect build are also declared lost,
 but there's no need to abort a completed build. Such builders are
@@ -309,5 +309,5 @@ instead simply cleaned, ready for the next build.
 
     >>> rescue_slave_if_lost(WaitingSlave(build_id='bad'))
     Cleaning slave
-    WARNING:root:Builder 'mock' rescued from 'bad': 'Bad value'
+    INFO:root:Builder 'mock' rescued from 'bad': 'Bad value'
 
