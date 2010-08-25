@@ -10,7 +10,6 @@ blueprint.
 First, we set up a product with three blueprints.
 
     >>> specced_product = factory.makeProduct()
-    >>> foobar_person = factory.makePerson()
     >>> spec_a = factory.makeSpecification(
     ...     name='spec-a', summary='The first spec',
     ...     product=specced_product)
