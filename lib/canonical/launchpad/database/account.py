@@ -10,6 +10,7 @@ from sqlobject import (
     ForeignKey,
     StringCol,
     )
+from storm.locals import ReferenceSet
 from storm.store import Store
 from zope.component import getUtility
 from zope.interface import implements
@@ -59,6 +60,9 @@ class Account(SQLBase):
         enum=AccountStatus, default=AccountStatus.NOACCOUNT, notNull=True)
     date_status_set = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     status_comment = StringCol(dbName='status_comment', default=None)
+
+    openid_identifiers = ReferenceSet(
+        "Account.id", OpenIdIdentifier.account_id)
 
     def __repr__(self):
         displayname = self.displayname.encode('ASCII', 'backslashreplace')

@@ -198,6 +198,7 @@ from lp.registry.interfaces.ssh import ISSHKeySet
 from lp.registry.model.milestone import Milestone
 from lp.registry.model.suitesourcepackage import SuiteSourcePackage
 from lp.services.mail.signedmessage import SignedMessage
+from lp.services.openid.model.openididentifier import OpenIdIdentifier
 from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.soyuz.adapters.packagelocation import PackageLocation
@@ -468,6 +469,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             email_status = EmailAddressStatus.NEW
         email = self.makeEmail(
             email, person=None, account=account, email_status=email_status)
+        identifier = OpenIdIdentifier()
+        identifier.account = account
+        identifier.identifier = self.getUniqueString('openid').decode('ASCII')
+        IMasterStore(OpenIdIdentifier).add(identifier)
         return account
 
     def makeGPGKey(self, owner):
