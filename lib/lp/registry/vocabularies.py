@@ -95,9 +95,6 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet,
-    )
 from canonical.launchpad.database.account import Account
 from canonical.launchpad.database.emailaddress import EmailAddress
 from canonical.launchpad.database.stormsugar import StartsWith
@@ -267,8 +264,7 @@ class ProductVocabulary(SQLObjectVocabularyBase):
             like_query = "'%%' || %s || '%%'" % quote_like(query)
             fti_query = quote(query)
             sql = "active = 't' AND (name LIKE %s OR fti @@ ftq(%s))" % (
-                    like_query, fti_query
-                    )
+                    like_query, fti_query)
             return self._table.select(sql, orderBy=self._orderBy)
         return self.emptySelectResults()
 
@@ -315,8 +311,7 @@ class ProjectGroupVocabulary(SQLObjectVocabularyBase):
             like_query = "'%%' || %s || '%%'" % quote_like(query)
             fti_query = quote(query)
             sql = "active = 't' AND (name LIKE %s OR fti @@ ftq(%s))" % (
-                    like_query, fti_query
-                    )
+                    like_query, fti_query)
             return self._table.select(sql)
         return self.emptySelectResults()
 
@@ -592,11 +587,8 @@ class ValidPersonOrTeamVocabulary(
                        # Or a person who has an active account and a working
                        # email address.
                        And(Account.status == AccountStatus.ACTIVE,
-                           EmailAddress.status.is_in(valid_email_statuses))
-                       ),
-                    self.extra_clause
-                    )
-                )
+                           EmailAddress.status.is_in(valid_email_statuses))),
+                    self.extra_clause))
             # The public query doesn't need to be ordered as it will be done
             # at the end.
             public_result.order_by()
@@ -653,10 +645,7 @@ class ValidPersonOrTeamVocabulary(
         else:
             result.order_by(Person.displayname, Person.name)
         result.config(limit=self.LIMIT)
-        # XXX: BradCrittenden 2009-04-24 bug=217644: Wrap the results to
-        # ensure the .count() method works until the Storm bug is fixed and
-        # integrated.
-        return DecoratedResultSet(result)
+        return result
 
     def search(self, text):
         """Return people/teams whose fti or email address match :text:."""
@@ -732,10 +721,7 @@ class ValidTeamVocabulary(ValidPersonOrTeamVocabulary):
         result.config(distinct=True)
         result.order_by(Person.displayname, Person.name)
         result.config(limit=self.LIMIT)
-        # XXX: BradCrittenden 2009-04-24 bug=217644: Wrap the results to
-        # ensure the .count() method works until the Storm bug is fixed and
-        # integrated.
-        return DecoratedResultSet(result)
+        return result
 
 
 class ValidPersonVocabulary(ValidPersonOrTeamVocabulary):
@@ -836,7 +822,7 @@ class PersonActiveMembershipVocabulary:
     def _get_teams(self):
         """The teams that the vocabulary is built from."""
         return [membership.team for membership
-                in self.context.myactivememberships
+                in self.context.team_memberships
                 if membership.team.visibility == PersonVisibility.PUBLIC]
 
     def __len__(self):
@@ -1027,9 +1013,7 @@ class ProductReleaseVocabulary(SQLObjectVocabularyBase):
                 Milestone.q.productseriesID == ProductSeries.q.id,
                 ProductSeries.q.productID == Product.q.id,
                 Product.q.name == productname,
-                ProductSeries.q.name == productseriesname
-                )
-            )
+                ProductSeries.q.name == productseriesname))
         try:
             return self.toTerm(obj)
         except IndexError:
@@ -1315,8 +1299,7 @@ class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
         return [
             project for project in sorted(projects,
                                           key=attrgetter('displayname'))
-            if not project.qualifies_for_free_hosting
-            ]
+            if not project.qualifies_for_free_hosting]
 
     def _doSearch(self, query=None):
         """Return terms where query is in the text of name
@@ -1454,11 +1437,8 @@ class DistroSeriesVocabulary(NamedSQLObjectVocabulary):
                     Distribution.q.id == DistroSeries.q.distributionID,
                     OR(
                         CONTAINSSTRING(Distribution.q.name, query),
-                        CONTAINSSTRING(DistroSeries.q.name, query)
-                        )
-                    ),
-                orderBy=self._orderBy
-                )
+                        CONTAINSSTRING(DistroSeries.q.name, query))),
+                    orderBy=self._orderBy)
         return objs
 
 
@@ -1472,8 +1452,7 @@ class PillarVocabularyBase(NamedSQLObjectHugeVocabulary):
         """See `IVocabulary`."""
         if IPillarName.providedBy(obj):
             assert obj.active, 'Inactive object %s %d' % (
-                    obj.__class__.__name__, obj.id
-                    )
+                    obj.__class__.__name__, obj.id)
             obj = obj.pillar
 
         # It is a hack using the class name here, but it works

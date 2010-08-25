@@ -268,7 +268,7 @@ class TestPersonParticipationView(TestCaseWithFactory):
         team = self.factory.makeTeam()
         login_person(team.teamowner)
         team.addMember(self.user, team.teamowner)
-        for membership in self.user.myactivememberships:
+        for membership in self.user.team_memberships:
             membership.setStatus(
                 TeamMembershipStatus.ADMIN, team.teamowner)
         [participation] = self.view.active_participations
@@ -360,7 +360,7 @@ class TestPersonParticipationView(TestCaseWithFactory):
         self.assertEqual(['A', 'B', 'C'], display_names)
         self.assertEqual(None, participations[0]['via'])
         self.assertEqual('A', participations[1]['via'])
-        self.assertEqual('A, B', participations[2]['via'])
+        self.assertEqual('B, A', participations[2]['via'])
 
     def test_has_participations_false(self):
         participations = self.view.active_participations

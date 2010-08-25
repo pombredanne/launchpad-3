@@ -213,7 +213,8 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         return cls(sourcepackagename, distroseries)
 
     def __repr__(self):
-        return '<%s %s>' % (self.__class__.__name__, self.path)
+        return '<%s %r %r %r>' % (self.__class__.__name__,
+            self.distribution, self.distroseries, self.sourcepackagename)
 
     def _get_ubuntu(self):
         # XXX: kiko 2006-03-20: Ideally, it would be possible to just do

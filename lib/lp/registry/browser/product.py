@@ -50,8 +50,6 @@ from datetime import (
     )
 from operator import attrgetter
 
-from lazr.delegates import delegates
-from lazr.restful.interface import copy_field
 import pytz
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form.browser import (
@@ -79,6 +77,8 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
+from lazr.delegates import delegates
+from lazr.restful.interface import copy_field
 from canonical.launchpad import (
     _,
     helpers,
@@ -142,6 +142,7 @@ from lp.answers.browser.questiontarget import (
     QuestionTargetFacetMixin,
     QuestionTargetTraversalMixin,
     )
+from lp.app.enums import ServiceUsage
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.headings import IEditableContextTitle
 from lp.blueprints.browser.specificationtarget import (
@@ -432,11 +433,13 @@ class ProductInvolvementView(PillarView):
         """
         states = {}
         states['configure_bugtracker'] = (
-            self.official_malone or self.context.bugtracker is not None)
-        states['configure_answers'] = self.official_answers
-        states['configure_translations'] = self.official_rosetta
+            self.context.bug_tracking_usage != ServiceUsage.UNKNOWN)
+        states['configure_answers'] = (
+            self.context.answers_usage != ServiceUsage.UNKNOWN)
+        states['configure_translations'] = (
+            self.context.translations_usage != ServiceUsage.UNKNOWN)
         states['configure_codehosting'] = (
-            self.context.development_focus.branch is not None)
+            self.context.codehosting_usage != ServiceUsage.UNKNOWN)
         return states
 
     @property
@@ -668,7 +671,7 @@ class ProductOverviewMenu(ApplicationMenu, ProductEditLinksMixin,
     def branch_add(self):
         text = 'Register a branch'
         summary = "Register a new Bazaar branch for this project"
-        return Link('+addbranch', text, summary, icon='add')
+        return Link('+addbranch', text, summary, icon='add', site='code')
 
 
 class ProductBugsMenu(PillarBugsMenu,
@@ -1535,7 +1538,13 @@ class ProductValidationMixin:
 class ProductAdminView(ProductEditView, ProductValidationMixin):
     """View for $project/+admin"""
     label = "Administer project details"
-    field_names = ["name", "owner", "active", "autoupdate", "private_bugs"]
+    default_field_names = [
+        "name",
+        "owner",
+        "active",
+        "autoupdate",
+        "private_bugs",
+        ]
 
     @property
     def page_title(self):
@@ -1549,9 +1558,16 @@ class ProductAdminView(ProductEditView, ProductValidationMixin):
         proper widget created by default.  Even though it is read-only, admins
         need the ability to change it.
         """
+        self.field_names = self.default_field_names[:]
+        admin = check_permission('launchpad.Admin', self.context)
+        if not admin:
+            self.field_names.remove('owner')
+            self.field_names.remove('autoupdate')
         super(ProductAdminView, self).setUpFields()
-        self.form_fields = (self._createAliasesField() + self.form_fields
-                            + self._createRegistrantField())
+        self.form_fields = self._createAliasesField() + self.form_fields
+        if admin:
+            self.form_fields = (
+                self.form_fields + self._createRegistrantField())
 
     def _createAliasesField(self):
         """Return a PillarAliases field for IProduct.aliases."""

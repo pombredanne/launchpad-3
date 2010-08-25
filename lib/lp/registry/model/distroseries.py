@@ -270,6 +270,9 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See `IDistroSeries`."""
         return self.getDistroArchSeries(archtag)
 
+    def __repr__(self):
+        return '<%s %r>' % (self.__class__.__name__, self.name)
+
     def __str__(self):
         return '%s %s' % (self.distribution.name, self.name)
 
@@ -340,7 +343,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     @cachedproperty
     def _all_packagings(self):
         """Get an unordered list of all packagings.
-        
+
         :return: A ResultSet which can be decorated or tuned further. Use
             DistroSeries._packaging_row_to_packaging to extract the
             packaging objects out.
@@ -350,7 +353,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         # Packaging object.
         # NB: precaching objects like this method tries to do has a very poor
         # hit rate with storm - many queries will still be executed; consider
-        # ripping this out and instead allowing explicit inclusion of things 
+        # ripping this out and instead allowing explicit inclusion of things
         # like Person._all_members does - returning a cached object graph.
         # -- RBC 20100810
         # Avoid circular import failures.
@@ -1806,11 +1809,7 @@ class DistroSeriesSet:
             DistroSeries.hide_all_translations == False,
             DistroSeries.id == POTemplate.distroseriesID)
         result_set = result_set.config(distinct=True)
-        # XXX: henninge 2009-02-11 bug=217644: Convert to sequence right here
-        # because ResultSet reports a wrong count() when using DISTINCT. Also
-        # ResultSet does not implement __len__(), which would make it more
-        # like a sequence.
-        return list(result_set)
+        return result_set
 
     def findByName(self, name):
         """See `IDistroSeriesSet`."""

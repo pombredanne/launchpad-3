@@ -70,6 +70,10 @@ from zope.interface import (
     providedBy,
     )
 
+from canonical.cachedproperty import (
+    cachedproperty,
+    clear_property,
+    )
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -85,7 +89,10 @@ from canonical.launchpad.database.message import (
     MessageSet,
     )
 from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.launchpad import (
+    ILaunchpadCelebrities,
+    IPersonRoles,
+    )
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.interfaces.message import (
@@ -626,6 +633,7 @@ class Bug(SQLBase):
                 # disabled see the change.
                 store.flush()
                 self.updateHeat()
+                clear_property(self, '_cached_viewers')
                 return
 
     def unsubscribeFromDupes(self, person, unsubscribed_by):
@@ -1618,21 +1626,31 @@ class Bug(SQLBase):
             self, self.messages[comment_number])
         bug_message.visible = visible
 
+    @cachedproperty('_cached_viewers')
+    def _known_viewers(self):
+        """A dict of of known persons able to view this bug."""
+        return set()
+
     def userCanView(self, user):
-        """See `IBug`."""
-        admins = getUtility(ILaunchpadCelebrities).admin
+        """See `IBug`.
+
+        Note that Editing is also controlled by this check,
+        because we permit editing of any bug one can see.
+        """
+        if user.id in self._known_viewers:
+            return True
         if not self.private:
             # This is a public bug.
             return True
-        elif user.inTeam(admins):
+        elif IPersonRoles(user).in_admin:
             # Admins can view all bugs.
             return True
         else:
             # This is a private bug. Only explicit subscribers may view it.
             for subscription in self.subscriptions:
                 if user.inTeam(subscription.person):
+                    self._known_viewers.add(user.id)
                     return True
-
         return False
 
     def linkHWSubmission(self, submission):
@@ -1708,6 +1726,7 @@ class Bug(SQLBase):
         self.heat_last_updated = UTC_NOW
         for task in self.bugtasks:
             task.target.recalculateBugHeatCache()
+        store.flush()
 
     @property
     def attachments(self):
@@ -1944,6 +1963,10 @@ class BugSet:
         #      Transaction.iterSelect() will try to listify the results.
         #      This can be fixed by selecting from Bugs directly, but
         #      that's non-trivial.
+        # ---: Robert Collins 20100818: if bug_tasks implements IResultSset
+        #      then it should be very possible to improve on it, though
+        #      DecoratedResultSets would need careful handling (e.g. type
+        #      driven callbacks on columns)
         # We select more than :limit: since if a bug affects more than
         # one source package, it will be returned more than one time. 4
         # is an arbitrary number that should be large enough.
