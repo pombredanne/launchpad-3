@@ -4,9 +4,6 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Create a static WADL file describing the current webservice.
-Usage: create-lp-wadl-and-apidoc [WADL path template] [--force]
-
-    --force     ignore any already-existing files
 
 Example:
 
@@ -14,23 +11,24 @@ Example:
       "lib/canonical/launchpad/apidoc/wadl-development-%(version)s.xml"
 """
 
+import optparse
 import os
-import pkg_resources
-import subprocess
 import sys
-import urlparse
 
 from zope.component import getUtility
 from zope.pagetemplate.pagetemplatefile import PageTemplateFile
 
+from canonical.launchpad.rest.wadl import generate_wadl, generate_html
 from canonical.launchpad.scripts import execute_zcml_for_scripts
-from canonical.launchpad.webapp.interaction import (
-    ANONYMOUS, setupInteractionByEmail)
-from canonical.launchpad.webapp.servers import (
-    WebServicePublication, WebServiceTestRequest)
-from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.launchpad.systemhomes import WebServiceApplication
 from lazr.restful.interfaces import IWebServiceConfiguration
+
+
+def write(filename, content):
+    """Replace the named file with the given string."""
+    f = open(filename, 'w')
+    f.write(content)
+    f.close()
 
 
 def main(path_template, force=False):
@@ -38,9 +36,6 @@ def main(path_template, force=False):
     execute_zcml_for_scripts()
     config = getUtility(IWebServiceConfiguration)
     directory = os.path.dirname(path_template)
-
-    stylesheet = pkg_resources.resource_filename(
-        'launchpadlib', 'wadl-to-refhtml.xsl')
 
     # First, create an index.html with links to all the HTML
     # documentation files we're about to generate.
@@ -51,33 +46,16 @@ def main(path_template, force=False):
     f = open(index_filename, 'w')
     f.write(template(config=config))
 
-    # Request the WADL from the root resource.
-    # We do this by creating a request object asking for a WADL
-    # representation.
     for version in config.active_versions:
-        filename = path_template % {'version': version}
+        wadl_filename = path_template % {'version': version}
         # If the WADL file doesn't exist or we're being forced to regenerate
         # it...
-        if (not os.path.exists(filename) or force):
-            url = urlparse.urljoin(allvhosts.configs['api'].rooturl, version)
-            request = WebServiceTestRequest(version=version, environ={
-                'SERVER_URL': url,
-                'HTTP_HOST': allvhosts.configs['api'].hostname,
-                'HTTP_ACCEPT': 'application/vd.sun.wadl+xml',
-                })
-            # We then bypass the usual publisher processing by associating
-            # the request with the WebServicePublication (usually done by the
-            # publisher) and then calling the root resource - retrieved
-            # through getApplication().
-            request.setPublication(WebServicePublication(None))
-            setupInteractionByEmail(ANONYMOUS, request)
-            print "Writing WADL for version %s to %s." % (version, filename)
-            f = open(filename, 'w')
-            content = request.publication.getApplication(request)(request)
-            f.write(content)
-            f.close()
+        if (not os.path.exists(wadl_filename) or force):
+            print "Writing WADL for version %s to %s." % (
+                version, wadl_filename)
+            write(wadl_filename, generate_wadl(version))
         else:
-            print "Skipping already present WADL file:", filename
+            print "Skipping already present WADL file:", wadl_filename
 
         # Now, convert the WADL into an human-readable description and
         # put the HTML in the same directory as the WADL.
@@ -87,17 +65,25 @@ def main(path_template, force=False):
         if (not os.path.exists(html_filename) or force):
             print "Writing apidoc for version %s to %s" % (
                 version, html_filename)
-            html_out = open(html_filename, "w")
-            subprocess.Popen(
-                ['xsltproc', stylesheet, filename], stdout=html_out)
-            html_out.close()
+            write(html_filename, generate_html(wadl_filename))
         else:
             print "Skipping already present HTML file:", html_filename
 
     return 0
 
+def parse_args(args):
+    usage = "usage: %prog [options] PATH_TEMPLATE"
+    parser = optparse.OptionParser(usage=usage)
+    parser.add_option(
+        "--force", action="store_true",
+        help="Replace any already-existing files.")
+    parser.set_defaults(force=False)
+    options, args = parser.parse_args(args)
+    if len(args) != 2:
+        parser.error("A path template is required.")
+
+    return options, args
+
 if __name__ == '__main__':
-    if len(sys.argv) < 2:
-        print __doc__
-        sys.exit(-1)
-    sys.exit(main(sys.argv[1], '--force' in sys.argv))
+    options, args = parse_args(sys.argv)
+    sys.exit(main(args[1], options.force))
