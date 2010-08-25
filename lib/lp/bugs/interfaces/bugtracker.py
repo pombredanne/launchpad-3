@@ -348,10 +348,9 @@ class IBugTracker(Interface):
         """Reset the next_check times of this BugTracker's `BugWatch`es.
 
         :param new_next_check: If specified, contains the datetime to
-                               which to set the BugWatches' next_check times.
-                               If not specified, the watches' next_check
-                               times will be set to a point between now
-                               and 24 hours hence.
+            which to set the BugWatches' next_check times.  If not
+            specified, the watches' next_check times will be set to a
+            point between now and 24 hours hence.
         """
 
 
