@@ -177,7 +177,7 @@ class DSCFileTests(PackageUploadFileTestCase):
         self.assertEquals("dpkg, bzr", release.builddepends)
 
     def test_user_defined_fields(self):
-        # Test that storeInDatabase updates user_defined_fields.
+        # storeInDatabase updates user_defined_fields.
         dsc = self.getBaseDsc()
         dsc["Python-Version"] = "2.5"
         changes = self.getBaseChanges()
@@ -193,7 +193,7 @@ class DSCFileTests(PackageUploadFileTestCase):
             [["python-version", u"2.5"]], release.user_defined_fields)
 
     def test_homepage(self):
-        # Test that storeInDatabase updates homepage.
+        # storeInDatabase updates homepage.
         dsc = self.getBaseDsc()
         dsc["Homepage"] = "http://samba.org/~jelmer/bzr"
         changes = self.getBaseChanges()
@@ -227,7 +227,7 @@ class DebBinaryUploadFileTests(PackageUploadFileTestCase):
             "Homepage": "http://samba.org/~jelmer/dulwich",
             "Description": "Pure-python Git library\n"
                 "Dulwich is a Python implementation of the file formats and "
-                "protocols"
+                "protocols",
             }
 
     def createDebBinaryUploadFile(self, filename, component_and_section,
@@ -313,5 +313,5 @@ class DebBinaryUploadFileTests(PackageUploadFileTestCase):
         uploadfile.parseControl(control)
         build = self.factory.makeBinaryPackageBuild()
         bpr = uploadfile.storeInDatabase(build)
-        self.assertEquals(u"http://samba.org/~jelmer/dulwich",
-            bpr.homepage)
+        self.assertEquals(
+            u"http://samba.org/~jelmer/dulwich", bpr.homepage)
