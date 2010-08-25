@@ -1,4 +1,5 @@
-== SpecificationDepCandidatesVocabulary ==
+SpecificationDepCandidatesVocabulary
+====================================
 
 All blueprints that can be added as a dependency of the context
 blueprint.
