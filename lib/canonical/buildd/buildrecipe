@@ -8,7 +8,6 @@ __metaclass__ = type
 
 
 import os
-import os.path
 import pwd
 import socket
 from subprocess import call
@@ -73,13 +72,18 @@ class RecipeBuilder:
             recipe = recipe_file.read()
         finally:
             recipe_file.close()
+        # As of bzr 2.2, a defined identity is needed.  In this case, we're using
+        # buildd@<hostname>.
+        hostname = socket.gethostname()
+        bzr_email = 'buildd@%s' % hostname
+
         print 'Building recipe:'
         print recipe
         sys.stdout.flush()
         env = {
             'DEBEMAIL': self.author_email,
             'DEBFULLNAME': self.author_name.encode('utf-8'),
-            'BZR_EMAIL': os.environ['BZR_EMAIL']}
+            'BZR_EMAIL': bzr_email}
         retcode = call([
             'bzr', 'dailydeb', '--no-build', recipe_path,
             self.tree_path, '--manifest', manifest_path,
@@ -126,6 +130,7 @@ class RecipeBuilder:
         if echo:
             print "Running in chroot: %s" % ' '.join(
                 "'%s'" % arg for arg in args)
+            sys.stdout.flush()
         return call([
             '/usr/bin/sudo', '/usr/sbin/chroot', self.chroot_path] + args)
 
@@ -155,11 +160,6 @@ def get_build_path(build_id, *extra):
         os.environ["HOME"], "build-" + build_id, *extra)
 
 if __name__ == '__main__':
-    # As of bzr 2.2, a defined identity is needed.  In this case, we're using
-    # buildd@<hostname>.
-    hostname = socket.gethostname()
-    os.environ['BZR_EMAIL'] = 'buildd@%s' % hostname
-
     builder = RecipeBuilder(*sys.argv[1:])
     if builder.buildTree() != 0:
         sys.exit(RETCODE_FAILURE_BUILD_TREE)

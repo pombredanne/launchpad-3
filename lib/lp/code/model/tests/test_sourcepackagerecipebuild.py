@@ -26,7 +26,7 @@ from canonical.testing.layers import (
 from lp.app.errors import NotFoundError
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
-from lp.buildmaster.tests.test_buildbase import (
+from lp.buildmaster.tests.test_packagebuild import (
     TestGetUploadMethodsMixin,
     TestHandleStatusMixin,
     )
@@ -77,7 +77,7 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
             requester=person)
 
     def test_providesInterfaces(self):
-        # SourcePackageRecipeBuild provides IBuildBase and
+        # SourcePackageRecipeBuild provides IPackageBuild and
         # ISourcePackageRecipeBuild.
         spb = self.makeSourcePackageRecipeBuild()
         self.assertProvides(spb, ISourcePackageRecipeBuild)
@@ -386,12 +386,12 @@ class MakeSPRecipeBuildMixin:
 
 class TestGetUploadMethodsForSPRecipeBuild(
     MakeSPRecipeBuildMixin, TestGetUploadMethodsMixin, TestCaseWithFactory):
-    """IBuildBase.getUpload-related methods work with SPRecipe builds."""
+    """IPackageBuild.getUpload-related methods work with SPRecipe builds."""
 
 
 class TestHandleStatusForSPRBuild(
     MakeSPRecipeBuildMixin, TestHandleStatusMixin, TestCaseWithFactory):
-    """IBuildBase.handleStatus works with SPRecipe builds."""
+    """IPackageBuild.handleStatus works with SPRecipe builds."""
 
 
 def test_suite():

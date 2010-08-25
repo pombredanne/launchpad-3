@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 # pylint: disable-msg=F0401
 
@@ -109,8 +109,10 @@ class POTemplateNavigation(Navigation):
             # It's just a query, get a fake one so we don't create new
             # POFiles just because someone is browsing the web.
             language = getUtility(ILanguageSet).getLanguageByCode(name)
-            return self.context.getDummyPOFile(language, requester=user,
-                                               check_for_existing=False)
+            if language is None:
+                raise NotFoundError(name)
+            return self.context.getDummyPOFile(
+                language, requester=user, check_for_existing=False)
         else:
             # It's a POST.
             # XXX CarlosPerelloMarin 2006-04-20 bug=40275: We should
