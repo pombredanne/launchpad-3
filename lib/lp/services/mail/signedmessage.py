@@ -17,6 +17,7 @@ from zope.interface import implements
 
 from canonical.launchpad.interfaces import ISignedMessage
 
+
 clearsigned_re = re.compile(
     r'-----BEGIN PGP SIGNED MESSAGE-----'
     '.*?(?:\r\n|\n)(?:\r\n|\n)(.*)(?:\r\n|\n)'

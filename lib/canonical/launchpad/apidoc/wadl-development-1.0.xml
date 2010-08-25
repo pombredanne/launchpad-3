@@ -1891,7 +1891,12 @@ Archive dependency title.
         <wadl:link/>
       </wadl:param>
 
-      <wadl:param style="plain" name="total_size" path="$['total_size']" required="true"/>
+      
+
+      <wadl:param style="plain" name="total_size"
+                  path="$['total_size']" required="true"/>
+
+      
 
       <wadl:param style="plain" name="start" path="$['start']" required="true"/>
 
@@ -3751,7 +3756,12 @@ The distribution that uses or is used by this archive.
         <wadl:link/>
       </wadl:param>
 
-      <wadl:param style="plain" name="total_size" path="$['total_size']" required="true"/>
+      
+
+      <wadl:param style="plain" name="total_size"
+                  path="$['total_size']" required="true"/>
+
+      
 
       <wadl:param style="plain" name="start" path="$['start']" required="true"/>
 
@@ -4004,7 +4014,12 @@ Source Package Name
         <wadl:link/>
       </wadl:param>
 
-      <wadl:param style="plain" name="total_size" path="$['total_size']" required="true"/>
+      
+
+      <wadl:param style="plain" name="total_size"
+                  path="$['total_size']" required="true"/>
+
+      
 
       <wadl:param style="plain" name="start" path="$['start']" required="true"/>
 
@@ -4205,7 +4220,12 @@ An interface for archive subscribers.
         <wadl:link/>
       </wadl:param>
 
-      <wadl:param style="plain" name="total_size" path="$['total_size']" required="true"/>
+      
+
+      <wadl:param style="plain" name="total_size"
+                  path="$['total_size']" required="true"/>
+
+      
 
       <wadl:param style="plain" name="start" path="$['start']" required="true"/>
 
@@ -4576,7 +4596,12 @@ Title
         <wadl:link/>
       </wadl:param>
 
-      <wadl:param style="plain" name="total_size" path="$['total_size']" required="true"/>
+      
+
+      <wadl:param style="plain" name="total_size"
+                  path="$['total_size']" required="true"/>
+
+      
 
       <wadl:param style="plain" name="start" path="$['start']" required="true"/>
 
@@ -5108,7 +5133,12 @@ Section Name
         <wadl:link/>
       </wadl:param>
 
-      <wadl:param style="plain" name="total_size" path="$['total_size']" required="true"/>
+      
+
+      <wadl:param style="plain" name="total_size"
+                  path="$['total_size']" required="true"/>
+
+      
 
       <wadl:param style="plain" name="start" path="$['start']" required="true"/>
 
@@ -5255,7 +5285,12 @@ Day of the downloads
         <wadl:link/>
       </wadl:param>
 
-      <wadl:param style="plain" name="total_size" path="$['total_size']" required="true"/>
+      
+
+      <wadl:param style="plain" name="total_size"
+                  path="$['total_size']" required="true"/>
+
+      
 
       <wadl:param style="plain" name="start" path="$['start']" required="true"/>
 
@@ -6331,7 +6366,12 @@ Status
         <wadl:link/>
       </wadl:param>
 
-      <wadl:param style="plain" name="total_size" path="$['total_size']" required="true"/>
+      
+
+      <wadl:param style="plain" name="total_size"
+                  path="$['total_size']" required="true"/>
+
+      
 
       <wadl:param style="plain" name="start" path="$['start']" required="true"/>
 
@@ -6953,7 +6993,12 @@ The revision id that has been approved by the reviewer.
         <wadl:link/>
       </wadl:param>
 
-      <wadl:param style="plain" name="total_size" path="$['total_size']" required="true"/>
+      
+
+      <wadl:param style="plain" name="total_size"
+                  path="$['total_size']" required="true"/>
+
+      
 
       <wadl:param style="plain" name="start" path="$['start']" required="true"/>
 
@@ -7176,7 +7221,12 @@ Branch ID
         <wadl:link/>
       </wadl:param>
 
-      <wadl:param style="plain" name="total_size" path="$['total_size']" required="true"/>
+      
+
+      <wadl:param style="plain" name="total_size"
+                  path="$['total_size']" required="true"/>
+
+      
 
       <wadl:param style="plain" name="start" path="$['start']" required="true"/>
 
@@ -7366,7 +7416,12 @@ The message that was created when we added this attachment.
         <wadl:link/>
       </wadl:param>
 
-      <wadl:param style="plain" name="total_size" path="$['total_size']" required="true"/>
+      
+
+      <wadl:param style="plain" name="total_size"
+                  path="$['total_size']" required="true"/>
+
+      
 
       <wadl:param style="plain" name="start" path="$['start']" required="true"/>
 
@@ -7483,7 +7538,12 @@ Branch
         <wadl:link/>
       </wadl:param>
 
-      <wadl:param style="plain" name="total_size" path="$['total_size']" required="true"/>
+      
+
+      <wadl:param style="plain" name="total_size"
+                  path="$['total_size']" required="true"/>
+
+      
 
       <wadl:param style="plain" name="start" path="$['start']" required="true"/>
 
@@ -8580,7 +8640,12 @@ This bug is a security vulnerability.
         <wadl:link/>
       </wadl:param>
 
-      <wadl:param style="plain" name="total_size" path="$['total_size']" required="true"/>
+      
+
+      <wadl:param style="plain" name="total_size"
+                  path="$['total_size']" required="true"/>
+
+      
 
       <wadl:param style="plain" name="start" path="$['start']" required="true"/>
 
@@ -8824,7 +8889,12 @@ The IProductSeries or IDistroSeries of this nomination.
         <wadl:link/>
       </wadl:param>
 
-      <wadl:param style="plain" name="total_size" path="$['total_size']" required="true"/>
+      
+
+      <wadl:param style="plain" name="total_size"
+                  path="$['total_size']" required="true"/>
+
+      
 
       <wadl:param style="plain" name="start" path="$['start']" required="true"/>
 
@@ -8969,7 +9039,12 @@ Date subscribed
         <wadl:link/>
       </wadl:param>
 
-      <wadl:param style="plain" name="total_size" path="$['total_size']" required="true"/>
+      
+
+      <wadl:param style="plain" name="total_size"
+                  path="$['total_size']" required="true"/>
+
+      
 
       <wadl:param style="plain" name="start" path="$['start']" required="true"/>
 
@@ -9415,7 +9490,12 @@ The bus of a hardware device related to a bug
         <wadl:link/>
       </wadl:param>
 
-      <wadl:param style="plain" name="total_size" path="$['total_size']" required="true"/>
+      
+
+      <wadl:param style="plain" name="total_size"
+                  path="$['total_size']" required="true"/>
+
+      
 
       <wadl:param style="plain" name="start" path="$['start']" required="true"/>
 
@@ -9830,7 +9910,12 @@ Status
         <wadl:link/>
       </wadl:param>
 
-      <wadl:param style="plain" name="total_size" path="$['total_size']" required="true"/>
+      
+
+      <wadl:param style="plain" name="total_size"
+                  path="$['total_size']" required="true"/>
+
+      
 
       <wadl:param style="plain" name="start" path="$['start']" required="true"/>
 
@@ -10130,7 +10215,12 @@ Owner
         <wadl:link/>
       </wadl:param>
 
-      <wadl:param style="plain" name="total_size" path="$['total_size']" required="true"/>
+      
+
+      <wadl:param style="plain" name="total_size"
+                  path="$['total_size']" required="true"/>
+
+      
 
       <wadl:param style="plain" name="start" path="$['start']" required="true"/>
 
@@ -10436,7 +10526,12 @@ Remote Status
         <wadl:link/>
       </wadl:param>
 
-      <wadl:param style="plain" name="total_size" path="$['total_size']" required="true"/>
+      
+
+      <wadl:param style="plain" name="total_size"
+                  path="$['total_size']" required="true"/>
+
+      
 
       <wadl:param style="plain" name="start" path="$['start']" required="true"/>
 
@@ -10644,7 +10739,12 @@ Last successful
         <wadl:link/>
       </wadl:param>
 
-      <wadl:param style="plain" name="total_size" path="$['total_size']" required="true"/>
+      
+
+      <wadl:param style="plain" name="total_size"
+                  path="$['total_size']" required="true"/>
+
+      
 
       <wadl:param style="plain" name="start" path="$['start']" required="true"/>
 
@@ -10845,7 +10945,12 @@ Vote tag
         <wadl:link/>
       </wadl:param>
 
-      <wadl:param style="plain" name="total_size" path="$['total_size']" required="true"/>
+      
+
+      <wadl:param style="plain" name="total_size"
+                  path="$['total_size']" required="true"/>
+
+      
 
       <wadl:param style="plain" name="start" path="$['start']" required="true"/>
 
@@ -11122,7 +11227,12 @@ The person who originally registered this vote
         <wadl:link/>
       </wadl:param>
 
-      <wadl:param style="plain" name="total_size" path="$['total_size']" required="true"/>
+      
+
+      <wadl:param style="plain" name="total_size"
+                  path="$['total_size']" required="true"/>
+
+      
 
       <wadl:param style="plain" name="start" path="$['start']" required="true"/>
 
@@ -11337,7 +11447,12 @@ hosting, a subscription needs to be purchased.</p>
         <wadl:link/>
       </wadl:param>
 
-      <wadl:param style="plain" name="total_size" path="$['total_size']" required="true"/>
+      
+
+      <wadl:param style="plain" name="total_size"
+                  path="$['total_size']" required="true"/>
+
+      
 
       <wadl:param style="plain" name="start" path="$['start']" required="true"/>
 
@@ -11490,7 +11605,12 @@ Country title
         <wadl:link/>
       </wadl:param>
 
-      <wadl:param style="plain" name="total_size" path="$['total_size']" required="true"/>
+      
+
+      <wadl:param style="plain" name="total_size"
+                  path="$['total_size']" required="true"/>
+
+      
 
       <wadl:param style="plain" name="start" path="$['start']" required="true"/>
 
@@ -11732,7 +11852,12 @@ Date Modified
         <wadl:link/>
       </wadl:param>
 
-      <wadl:param style="plain" name="total_size" path="$['total_size']" required="true"/>
+      
+
+      <wadl:param style="plain" name="total_size"
+                  path="$['total_size']" required="true"/>
+
+      
 
       <wadl:param style="plain" name="start" path="$['start']" required="true"/>
 
@@ -12774,7 +12899,7 @@ All enabled and official RELEASE mirrors of this Distribution.
                   path="$['driver_link']" name="driver_link">
         <wadl:doc xmlns="http://www.w3.org/1999/xhtml">
 <p>Driver</p>
-<p>The person or team responsible for decisions about features and bugs that will be targeted for any series in this distribution. Note that you can also specify a driver on each series who's permissions will be limited to that specific series.</p>
+<p>The person or team responsible for decisions about features and bugs that will be targeted for any series in this distribution. Note that you can also specify a driver on each series whose permissions will be limited to that specific series.</p>
 
 </wadl:doc>
         <wadl:link resource_type="https://api.launchpad.dev/1.0/#person"/>
@@ -12996,7 +13121,7 @@ DistroSeries inside this Distribution
                   path="$['driver_link']" name="driver_link">
         <wadl:doc xmlns="http://www.w3.org/1999/xhtml">
 <p>Driver</p>
-<p>The person or team responsible for decisions about features and bugs that will be targeted for any series in this distribution. Note that you can also specify a driver on each series who's permissions will be limited to that specific series.</p>
+<p>The person or team responsible for decisions about features and bugs that will be targeted for any series in this distribution. Note that you can also specify a driver on each series whose permissions will be limited to that specific series.</p>
 
 </wadl:doc>
         <wadl:link resource_type="https://api.launchpad.dev/1.0/#person"/>
@@ -13126,7 +13251,12 @@ DistroSeries inside this Distribution
         <wadl:link/>
       </wadl:param>
 
-      <wadl:param style="plain" name="total_size" path="$['total_size']" required="true"/>
+      
+
+      <wadl:param style="plain" name="total_size"
+                  path="$['total_size']" required="true"/>
+
+      
 
       <wadl:param style="plain" name="start" path="$['start']" required="true"/>
 
@@ -13609,7 +13739,12 @@ Link Speed
         <wadl:link/>
       </wadl:param>
 
-      <wadl:param style="plain" name="total_size" path="$['total_size']" required="true"/>
+      
+
+      <wadl:param style="plain" name="total_size"
+                  path="$['total_size']" required="true"/>
+
+      
 
       <wadl:param style="plain" name="start" path="$['start']" required="true"/>
 
@@ -14374,7 +14509,12 @@ The distribution.
         <wadl:link/>
       </wadl:param>
 
-      <wadl:param style="plain" name="total_size" path="$['total_size']" required="true"/>
+      
+
+      <wadl:param style="plain" name="total_size"
+                  path="$['total_size']" required="true"/>
+
+      
 
       <wadl:param style="plain" name="start" path="$['start']" required="true"/>
 
@@ -14668,7 +14808,12 @@ The person who registered this port.
         <wadl:link/>
       </wadl:param>
 
-      <wadl:param style="plain" name="total_size" path="$['total_size']" required="true"/>
+      
+
+      <wadl:param style="plain" name="total_size"
+                  path="$['total_size']" required="true"/>
+
+      
 
       <wadl:param style="plain" name="start" path="$['start']" required="true"/>
 
@@ -15945,7 +16090,12 @@ Status
         <wadl:link/>
       </wadl:param>
 
-      <wadl:param style="plain" name="total_size" path="$['total_size']" required="true"/>
+      
+
+      <wadl:param style="plain" name="total_size"
+                  path="$['total_size']" required="true"/>
+
+      
 
       <wadl:param style="plain" name="start" path="$['start']" required="true"/>
 
@@ -16063,7 +16213,12 @@ Person
         <wadl:link/>
       </wadl:param>
 
-      <wadl:param style="plain" name="total_size" path="$['total_size']" required="true"/>
+      
+
+      <wadl:param style="plain" name="total_size"
+                  path="$['total_size']" required="true"/>
+
+      
 
       <wadl:param style="plain" name="start" path="$['start']" required="true"/>
 
@@ -16172,7 +16327,12 @@ OpenPGP key ID
         <wadl:link/>
       </wadl:param>
 
-      <wadl:param style="plain" name="total_size" path="$['total_size']" required="true"/>
+      
+
+      <wadl:param style="plain" name="total_size"
+                  path="$['total_size']" required="true"/>
+
+      
 
       <wadl:param style="plain" name="start" path="$['start']" required="true"/>
 
@@ -17176,7 +17336,12 @@ right-padded with space (0x20) characters.</p>
         <wadl:link/>
       </wadl:param>
 
-      <wadl:param style="plain" name="total_size" path="$['total_size']" required="true"/>
+      
+
+      <wadl:param style="plain" name="total_size"
+                  path="$['total_size']" required="true"/>
+
+      
 
       <wadl:param style="plain" name="start" path="$['start']" required="true"/>
 
@@ -17288,7 +17453,12 @@ The sub class of this device
         <wadl:link/>
       </wadl:param>
 
-      <wadl:param style="plain" name="total_size" path="$['total_size']" required="true"/>
+      
+
+      <wadl:param style="plain" name="total_size"
+                  path="$['total_size']" required="true"/>
+
+      
 
       <wadl:param style="plain" name="start" path="$['start']" required="true"/>
 
@@ -17699,7 +17869,12 @@ A string that distiguishes different devices with identical vendor/product IDs
         <wadl:link/>
       </wadl:param>
 
-      <wadl:param style="plain" name="total_size" path="$['total_size']" required="true"/>
+      
+
+      <wadl:param style="plain" name="total_size"
+                  path="$['total_size']" required="true"/>
+
+      
 
       <wadl:param style="plain" name="start" path="$['start']" required="true"/>
 
@@ -17982,7 +18157,12 @@ License of the Driver
         <wadl:link/>
       </wadl:param>
 
-      <wadl:param style="plain" name="total_size" path="$['total_size']" required="true"/>
+      
+
+      <wadl:param style="plain" name="total_size"
+                  path="$['total_size']" required="true"/>
+
+      
 
       <wadl:param style="plain" name="start" path="$['start']" required="true"/>
 
@@ -18088,7 +18268,12 @@ A driver name as appearing in IHWDriver.
         <wadl:link/>
       </wadl:param>
 
-      <wadl:param style="plain" name="total_size" path="$['total_size']" required="true"/>
+      
+
+      <wadl:param style="plain" name="total_size"
+                  path="$['total_size']" required="true"/>
+
+      
 
       <wadl:param style="plain" name="start" path="$['start']" required="true"/>
 
@@ -18199,7 +18384,12 @@ A driver name as appearing in IHWDriver.
         <wadl:link/>
       </wadl:param>
 
-      <wadl:param style="plain" name="total_size" path="$['total_size']" required="true"/>
+      
+
+      <wadl:param style="plain" name="total_size"
+                  path="$['total_size']" required="true"/>
+
+      
 
       <wadl:param style="plain" name="start" path="$['start']" required="true"/>
 
@@ -18359,7 +18549,12 @@ The ID of the HAL node of this device in the submitted data
         <wadl:link/>
       </wadl:param>
 
-      <wadl:param style="plain" name="total_size" path="$['total_size']" required="true"/>
+      
+
+      <wadl:param style="plain" name="total_size"
+                  path="$['total_size']" required="true"/>
+
+      
 
       <wadl:param style="plain" name="start" path="$['start']" required="true"/>
 
@@ -18544,7 +18739,12 @@ Private Submission
         <wadl:link/>
       </wadl:param>
 
-      <wadl:param style="plain" name="total_size" path="$['total_size']" required="true"/>
+      
+
+      <wadl:param style="plain" name="total_size"
+                  path="$['total_size']" required="true"/>
+
+      
 
       <wadl:param style="plain" name="start" path="$['start']" required="true"/>
 
@@ -18706,7 +18906,12 @@ Vendor ID
         <wadl:link/>
       </wadl:param>
 
-      <wadl:param style="plain" name="total_size" path="$['total_size']" required="true"/>
+      
+
+      <wadl:param style="plain" name="total_size"
+                  path="$['total_size']" required="true"/>
+
+      
 
       <wadl:param style="plain" name="start" path="$['start']" required="true"/>
 
@@ -19109,7 +19314,12 @@ The bus of a hardware device related to a bug
         <wadl:link/>
       </wadl:param>
 
-      <wadl:param style="plain" name="total_size" path="$['total_size']" required="true"/>
+      
+
+      <wadl:param style="plain" name="total_size"
+                  path="$['total_size']" required="true"/>
+
+      
 
       <wadl:param style="plain" name="start" path="$['start']" required="true"/>
 
@@ -19222,7 +19432,12 @@ All milestones associated with this object, ordered by date expected.
         <wadl:link/>
       </wadl:param>
 
-      <wadl:param style="plain" name="total_size" path="$['total_size']" required="true"/>
+      
+
+      <wadl:param style="plain" name="total_size"
+                  path="$['total_size']" required="true"/>
+
+      
 
       <wadl:param style="plain" name="start" path="$['start']" required="true"/>
 
@@ -19326,7 +19541,12 @@ IPerson.</p>
         <wadl:link/>
       </wadl:param>
 
-      <wadl:param style="plain" name="total_size" path="$['total_size']" required="true"/>
+      
+
+      <wadl:param style="plain" name="total_size"
+                  path="$['total_size']" required="true"/>
+
+      
 
       <wadl:param style="plain" name="start" path="$['start']" required="true"/>
 
@@ -19456,7 +19676,12 @@ Nickname
         <wadl:link/>
       </wadl:param>
 
-      <wadl:param style="plain" name="total_size" path="$['total_size']" required="true"/>
+      
+
+      <wadl:param style="plain" name="total_size"
+                  path="$['total_size']" required="true"/>
+
+      
 
       <wadl:param style="plain" name="start" path="$['start']" required="true"/>
 
@@ -19573,7 +19798,12 @@ New Jabber user ID
         <wadl:link/>
       </wadl:param>
 
-      <wadl:param style="plain" name="total_size" path="$['total_size']" required="true"/>
+      
+
+      <wadl:param style="plain" name="total_size"
+                  path="$['total_size']" required="true"/>
+
+      
 
       <wadl:param style="plain" name="start" path="$['start']" required="true"/>
 
@@ -19789,7 +20019,12 @@ The English name
         <wadl:link/>
       </wadl:param>
 
-      <wadl:param style="plain" name="total_size" path="$['total_size']" required="true"/>
+      
+
+      <wadl:param style="plain" name="total_size"
+                  path="$['total_size']" required="true"/>
+
+      
 
       <wadl:param style="plain" name="start" path="$['start']" required="true"/>
 
@@ -19938,7 +20173,12 @@ All the text/plain chunks joined together as a unicode string.
         <wadl:link/>
       </wadl:param>
 
-      <wadl:param style="plain" name="total_size" path="$['total_size']" required="true"/>
+      
+
+      <wadl:param style="plain" name="total_size"
+                  path="$['total_size']" required="true"/>
+
+      
 
       <wadl:param style="plain" name="start" path="$['start']" required="true"/>
 
@@ -20697,7 +20937,12 @@ The product or distribution of this milestone.
         <wadl:link/>
       </wadl:param>
 
-      <wadl:param style="plain" name="total_size" path="$['total_size']" required="true"/>
+      
+
+      <wadl:param style="plain" name="total_size"
+                  path="$['total_size']" required="true"/>
+
+      
 
       <wadl:param style="plain" name="start" path="$['start']" required="true"/>
 
@@ -20801,7 +21046,12 @@ The translation file id.
         <wadl:link/>
       </wadl:param>
 
-      <wadl:param style="plain" name="total_size" path="$['total_size']" required="true"/>
+      
+
+      <wadl:param style="plain" name="total_size"
+                  path="$['total_size']" required="true"/>
+
+      
 
       <wadl:param style="plain" name="start" path="$['start']" required="true"/>
 
@@ -21119,7 +21369,12 @@ Path of the template in the source tree, including filename.
         <wadl:link/>
       </wadl:param>
 
-      <wadl:param style="plain" name="total_size" path="$['total_size']" required="true"/>
+      
+
+      <wadl:param style="plain" name="total_size"
+                  path="$['total_size']" required="true"/>
+
+      
 
       <wadl:param style="plain" name="start" path="$['start']" required="true"/>
 
@@ -21342,7 +21597,12 @@ The source package version for this item
         <wadl:link/>
       </wadl:param>
 
-      <wadl:param style="plain" name="total_size" path="$['total_size']" required="true"/>
+      
+
+      <wadl:param style="plain" name="total_size"
+                  path="$['total_size']" required="true"/>
+
+      
 
       <wadl:param style="plain" name="start" path="$['start']" required="true"/>
 
@@ -21871,7 +22131,12 @@ Valid package set name
         <wadl:link/>
       </wadl:param>
 
-      <wadl:param style="plain" name="total_size" path="$['total_size']" required="true"/>
+      
+
+      <wadl:param style="plain" name="total_size"
+                  path="$['total_size']" required="true"/>
+
+      
 
       <wadl:param style="plain" name="start" path="$['start']" required="true"/>
 
@@ -23107,7 +23372,7 @@ List of members with ADMIN or APPROVED status
                   path="$['memberships_details_collection_link']"
                   name="memberships_details_collection_link">
         <wadl:doc xmlns="http://www.w3.org/1999/xhtml">
-All TeamMemberships for Teams this Person is an active member of.
+All TeamMemberships for Teams this Team or Person is an active member of.
 </wadl:doc>
         <wadl:link resource_type="https://api.launchpad.dev/1.0/#team_membership-page-resource"/>
       </wadl:param>
@@ -23386,7 +23651,12 @@ Team Owner
         <wadl:link/>
       </wadl:param>
 
-      <wadl:param style="plain" name="total_size" path="$['total_size']" required="true"/>
+      
+
+      <wadl:param style="plain" name="total_size"
+                  path="$['total_size']" required="true"/>
+
+      
 
       <wadl:param style="plain" name="start" path="$['start']" required="true"/>
 
@@ -23502,7 +23772,12 @@ individual object to see what type it is.</p>
         <wadl:link/>
       </wadl:param>
 
-      <wadl:param style="plain" name="total_size" path="$['total_size']" required="true"/>
+      
+
+      <wadl:param style="plain" name="total_size"
+                  path="$['total_size']" required="true"/>
+
+      
 
       <wadl:param style="plain" name="start" path="$['start']" required="true"/>
 
@@ -23643,7 +23918,12 @@ Projects, project groups, and distributions that are featured on the site.
         <wadl:link/>
       </wadl:param>
 
-      <wadl:param style="plain" name="total_size" path="$['total_size']" required="true"/>
+      
+
+      <wadl:param style="plain" name="total_size"
+                  path="$['total_size']" required="true"/>
+
+      
 
       <wadl:param style="plain" name="start" path="$['start']" required="true"/>
 
@@ -23829,7 +24109,12 @@ The tip revision id of the target branch used to generate the diff.
         <wadl:link/>
       </wadl:param>
 
-      <wadl:param style="plain" name="total_size" path="$['total_size']" required="true"/>
+      
+
+      <wadl:param style="plain" name="total_size"
+                  path="$['total_size']" required="true"/>
+
+      
 
       <wadl:param style="plain" name="start" path="$['start']" required="true"/>
 
@@ -25566,7 +25851,12 @@ Licenses
         <wadl:link/>
       </wadl:param>
 
-      <wadl:param style="plain" name="total_size" path="$['total_size']" required="true"/>
+      
+
+      <wadl:param style="plain" name="total_size"
+                  path="$['total_size']" required="true"/>
+
+      
 
       <wadl:param style="plain" name="start" path="$['start']" required="true"/>
 
@@ -25935,7 +26225,12 @@ Constructed title for a project release.
         <wadl:link/>
       </wadl:param>
 
-      <wadl:param style="plain" name="total_size" path="$['total_size']" required="true"/>
+      
+
+      <wadl:param style="plain" name="total_size"
+                  path="$['total_size']" required="true"/>
+
+      
 
       <wadl:param style="plain" name="start" path="$['start']" required="true"/>
 
@@ -26140,7 +26435,12 @@ Upstream file type
         <wadl:link/>
       </wadl:param>
 
-      <wadl:param style="plain" name="total_size" path="$['total_size']" required="true"/>
+      
+
+      <wadl:param style="plain" name="total_size"
+                  path="$['total_size']" required="true"/>
+
+      
 
       <wadl:param style="plain" name="start" path="$['start']" required="true"/>
 
@@ -27081,7 +27381,12 @@ Status
         <wadl:link/>
       </wadl:param>
 
-      <wadl:param style="plain" name="total_size" path="$['total_size']" required="true"/>
+      
+
+      <wadl:param style="plain" name="total_size"
+                  path="$['total_size']" required="true"/>
+
+      
 
       <wadl:param style="plain" name="start" path="$['start']" required="true"/>
 
@@ -28174,7 +28479,12 @@ List of active projects for this project group.
         <wadl:link/>
       </wadl:param>
 
-      <wadl:param style="plain" name="total_size" path="$['total_size']" required="true"/>
+      
+
+      <wadl:param style="plain" name="total_size"
+                  path="$['total_size']" required="true"/>
+
+      
 
       <wadl:param style="plain" name="start" path="$['start']" required="true"/>
 
@@ -28292,7 +28602,12 @@ Key type
         <wadl:link/>
       </wadl:param>
 
-      <wadl:param style="plain" name="total_size" path="$['total_size']" required="true"/>
+      
+
+      <wadl:param style="plain" name="total_size"
+                  path="$['total_size']" required="true"/>
+
+      
 
       <wadl:param style="plain" name="start" path="$['start']" required="true"/>
 
@@ -29168,7 +29483,12 @@ The name of the component in which the package was last published.
         <wadl:link/>
       </wadl:param>
 
-      <wadl:param style="plain" name="total_size" path="$['total_size']" required="true"/>
+      
+
+      <wadl:param style="plain" name="total_size"
+                  path="$['total_size']" required="true"/>
+
+      
 
       <wadl:param style="plain" name="start" path="$['start']" required="true"/>
 
@@ -29711,7 +30031,12 @@ The date on which this record is scheduled for deletion
         <wadl:link/>
       </wadl:param>
 
-      <wadl:param style="plain" name="total_size" path="$['total_size']" required="true"/>
+      
+
+      <wadl:param style="plain" name="total_size"
+                  path="$['total_size']" required="true"/>
+
+      
 
       <wadl:param style="plain" name="start" path="$['start']" required="true"/>
 
@@ -30029,7 +30354,12 @@ Title
         <wadl:link/>
       </wadl:param>
 
-      <wadl:param style="plain" name="total_size" path="$['total_size']" required="true"/>
+      
+
+      <wadl:param style="plain" name="total_size"
+                  path="$['total_size']" required="true"/>
+
+      
 
       <wadl:param style="plain" name="start" path="$['start']" required="true"/>
 
@@ -30286,7 +30616,12 @@ The archive to use for daily builds.
         <wadl:link/>
       </wadl:param>
 
-      <wadl:param style="plain" name="total_size" path="$['total_size']" required="true"/>
+      
+
+      <wadl:param style="plain" name="total_size"
+                  path="$['total_size']" required="true"/>
+
+      
 
       <wadl:param style="plain" name="start" path="$['start']" required="true"/>
 
@@ -30429,7 +30764,12 @@ Branch
         <wadl:link/>
       </wadl:param>
 
-      <wadl:param style="plain" name="total_size" path="$['total_size']" required="true"/>
+      
+
+      <wadl:param style="plain" name="total_size"
+                  path="$['total_size']" required="true"/>
+
+      
 
       <wadl:param style="plain" name="start" path="$['start']" required="true"/>
 
@@ -30586,7 +30926,12 @@ A Specification.
         <wadl:link/>
       </wadl:param>
 
-      <wadl:param style="plain" name="total_size" path="$['total_size']" required="true"/>
+      
+
+      <wadl:param style="plain" name="total_size"
+                  path="$['total_size']" required="true"/>
+
+      
 
       <wadl:param style="plain" name="start" path="$['start']" required="true"/>
 
@@ -30731,7 +31076,12 @@ The structure to which this subscription belongs.
         <wadl:link/>
       </wadl:param>
 
-      <wadl:param style="plain" name="total_size" path="$['total_size']" required="true"/>
+      
+
+      <wadl:param style="plain" name="total_size"
+                  path="$['total_size']" required="true"/>
+
+      
 
       <wadl:param style="plain" name="start" path="$['start']" required="true"/>
 
@@ -30973,7 +31323,12 @@ Person to subscribe. If omitted, the requesting user will be subscribed.
         <wadl:link/>
       </wadl:param>
 
-      <wadl:param style="plain" name="total_size" path="$['total_size']" required="true"/>
+      
+
+      <wadl:param style="plain" name="total_size"
+                  path="$['total_size']" required="true"/>
+
+      
 
       <wadl:param style="plain" name="start" path="$['start']" required="true"/>
 
@@ -32229,7 +32584,7 @@ List of members with ADMIN or APPROVED status
                   path="$['memberships_details_collection_link']"
                   name="memberships_details_collection_link">
         <wadl:doc xmlns="http://www.w3.org/1999/xhtml">
-All TeamMemberships for Teams this Person is an active member of.
+All TeamMemberships for Teams this Team or Person is an active member of.
 </wadl:doc>
         <wadl:link resource_type="https://api.launchpad.dev/1.0/#team_membership-page-resource"/>
       </wadl:param>
@@ -32596,7 +32951,12 @@ Team Owner
         <wadl:link/>
       </wadl:param>
 
-      <wadl:param style="plain" name="total_size" path="$['total_size']" required="true"/>
+      
+
+      <wadl:param style="plain" name="total_size"
+                  path="$['total_size']" required="true"/>
+
+      
 
       <wadl:param style="plain" name="start" path="$['start']" required="true"/>
 
@@ -32833,7 +33193,12 @@ Team
         <wadl:link/>
       </wadl:param>
 
-      <wadl:param style="plain" name="total_size" path="$['total_size']" required="true"/>
+      
+
+      <wadl:param style="plain" name="total_size"
+                  path="$['total_size']" required="true"/>
+
+      
 
       <wadl:param style="plain" name="start" path="$['start']" required="true"/>
 
@@ -32965,7 +33330,12 @@ UUID
         <wadl:link/>
       </wadl:param>
 
-      <wadl:param style="plain" name="total_size" path="$['total_size']" required="true"/>
+      
+
+      <wadl:param style="plain" name="total_size"
+                  path="$['total_size']" required="true"/>
+
+      
 
       <wadl:param style="plain" name="start" path="$['start']" required="true"/>
 
@@ -33214,7 +33584,12 @@ The timestamp when the status was changed.
         <wadl:link/>
       </wadl:param>
 
-      <wadl:param style="plain" name="total_size" path="$['total_size']" required="true"/>
+      
+
+      <wadl:param style="plain" name="total_size"
+                  path="$['total_size']" required="true"/>
+
+      
 
       <wadl:param style="plain" name="start" path="$['start']" required="true"/>
 
@@ -33352,7 +33727,12 @@ Wikiname
         <wadl:link/>
       </wadl:param>
 
-      <wadl:param style="plain" name="total_size" path="$['total_size']" required="true"/>
+      
+
+      <wadl:param style="plain" name="total_size"
+                  path="$['total_size']" required="true"/>
+
+      
 
       <wadl:param style="plain" name="start" path="$['start']" required="true"/>
 
@@ -33375,7 +33755,7 @@ Wikiname
   <!--End representation and resource_type definitions for entry
       resources. -->
 
-  <!--Finally, describe the 'hosted binary file' type.-->
+  <!--Finally, describe the 'hosted binary file' type...-->
   <wadl:resource_type id="HostedFile">
     <wadl:method name="GET" id="HostedFile-get">
       <wadl:response>
@@ -33386,6 +33766,15 @@ Wikiname
     </wadl:method>
     <wadl:method name="PUT" id="HostedFile-put"/>
     <wadl:method name="DELETE" id="HostedFile-delete"/>
+  </wadl:resource_type>
+
+  <!--...and the simple 'scalar value' type.-->
+  <wadl:resource_type id="ScalarValue">
+   <wadl:method name="GET" id="ScalarValue-get">
+    <wadl:response>
+     <wadl:representation mediaType="application/json"/>
+    </wadl:response>
+   </wadl:method>
   </wadl:resource_type>
 
   <!--Define a data type for binary data.-->

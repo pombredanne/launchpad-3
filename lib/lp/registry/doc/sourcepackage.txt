@@ -71,7 +71,7 @@ can be constructed from a SourcePackageName and a distroseries.
     >>> firefox_warty_package = SourcePackage(sourcepackagename=firefox,
     ...     distroseries=ubuntu_warty)
     >>> firefox_warty_package
-    <SourcePackage ubuntu/warty/mozilla-firefox>
+    <SourcePackage ...'Ubuntu'...'warty'...'mozilla-firefox'...>
 
 An instance is commonly retrieved from a distroseries.
 

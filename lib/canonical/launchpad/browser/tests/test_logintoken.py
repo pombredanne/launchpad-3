@@ -6,12 +6,15 @@ import unittest
 from zope.component import getUtility
 
 from canonical.launchpad.browser.logintoken import (
-    ClaimTeamView, ValidateEmailView, ValidateGPGKeyView)
+    ClaimTeamView,
+    ValidateEmailView,
+    ValidateGPGKeyView,
+    )
 from canonical.launchpad.ftests import LaunchpadFormHarness
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
-from lp.testing import TestCaseWithFactory
 from canonical.testing import DatabaseFunctionalLayer
+from lp.testing import TestCaseWithFactory
 
 
 class TestCancelActionOnLoginTokenViews(TestCaseWithFactory):

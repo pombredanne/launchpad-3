@@ -7,6 +7,7 @@ __metaclass__ = type
 
 import unittest
 import xmlrpclib
+
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -16,8 +17,11 @@ from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.registry.interfaces.person import (
-    IPersonSet, ISoftwareCenterAgentAPI, ISoftwareCenterAgentApplication,
-    PersonCreationRationale)
+    IPersonSet,
+    ISoftwareCenterAgentAPI,
+    ISoftwareCenterAgentApplication,
+    PersonCreationRationale,
+    )
 from lp.registry.xmlrpc.softwarecenteragent import SoftwareCenterAgentAPI
 from lp.testing import TestCaseWithFactory
 

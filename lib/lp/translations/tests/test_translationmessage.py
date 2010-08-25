@@ -8,11 +8,11 @@ __metaclass__ = type
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.testing import ZopelessDatabaseLayer
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing import TestCaseWithFactory
-from lp.translations.model.potranslation import POTranslation
 from lp.translations.interfaces.translations import TranslationConstants
-from canonical.testing import ZopelessDatabaseLayer
+from lp.translations.model.potranslation import POTranslation
 
 
 class TestTranslationMessageFindIdenticalMessage(TestCaseWithFactory):

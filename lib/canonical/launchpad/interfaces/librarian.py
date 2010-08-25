@@ -17,12 +17,21 @@ __all__ = [
     ]
 
 from datetime import datetime
-from pytz import utc
-
-from zope.interface import Attribute, Interface
-from zope.schema import Bool, Choice, Date, Datetime, Int, TextLine
 
 from lazr.restful.fields import Reference
+from pytz import utc
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Bool,
+    Choice,
+    Date,
+    Datetime,
+    Int,
+    TextLine,
+    )
 
 from canonical.launchpad import _
 from canonical.librarian.interfaces import LIBRARIAN_SERVER_DEFAULT_TIMEOUT

@@ -11,19 +11,28 @@ __all__ = [
     'IBranchSubscription',
     ]
 
+from lazr.restful.declarations import (
+    call_with,
+    export_as_webservice_entry,
+    export_read_operation,
+    exported,
+    REQUEST_USER,
+    )
+from lazr.restful.fields import Reference
 from zope.interface import Interface
-from zope.schema import Choice, Int
+from zope.schema import (
+    Choice,
+    Int,
+    )
 
 from canonical.launchpad import _
 from lp.code.enums import (
-    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
-    CodeReviewNotificationLevel)
+    BranchSubscriptionDiffSize,
+    BranchSubscriptionNotificationLevel,
+    CodeReviewNotificationLevel,
+    )
 from lp.code.interfaces.branch import IBranch
-from canonical.launchpad.fields import PersonChoice
-from lazr.restful.declarations import (
-    REQUEST_USER, call_with, export_as_webservice_entry,
-    export_read_operation, exported)
-from lazr.restful.fields import Reference
+from lp.services.fields import PersonChoice
 
 
 class IBranchSubscription(Interface):
