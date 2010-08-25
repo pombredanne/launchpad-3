@@ -268,6 +268,11 @@ class AccountSet:
                               password_is_encrypted=False,
                               openid_identifier=None):
         """See `IAccountSet`."""
+        # ShipIt is sending us byte strings. Ideally call sites will
+        # pass through Unicode strings.
+        if isinstance(openid_identifier, str):
+            openid_identifier = openid_identifier.decode('US-ASCII')
+
         # Convert the PersonCreationRationale to an AccountCreationRationale.
         account_rationale = getattr(AccountCreationRationale, rationale.name)
         account = self.new(
@@ -292,7 +297,10 @@ class AccountSet:
     def getByOpenIDIdentifier(self, openid_identifier):
         """See `IAccountSet`."""
         store = IStore(Account)
-        assert isinstance(openid_identifier, unicode)
+        # ShipIt is passing us byte strings. Ideally call sites would
+        # pass us Unicode.
+        if isinstance(openid_identifier, str):
+            openid_identifier = openid_identifier.decode('US-ASCII')
         account = store.find(
             Account,
             Account.id == OpenIdIdentifier.account_id,
