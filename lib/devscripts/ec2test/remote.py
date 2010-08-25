@@ -213,8 +213,6 @@ class EC2Runner:
 class LaunchpadTester:
     """Runs Launchpad tests and gathers their results in a useful way."""
 
-    # XXX: JonathanLange 2010-08-17: LaunchpadTester needs tests.
-
     def __init__(self, logger, test_directory, test_options=()):
         """Construct a TestOnMergeRunner.
 
@@ -236,8 +234,24 @@ class LaunchpadTester:
 
         Subclasses must provide their own implementation of this method.
         """
-        command = ['make', 'check', 'TESTOPTS="%s"' % self._test_options]
+        command = ['make', 'check']
+        if self._test_options:
+            command.append('TESTOPTS="%s"' % self._test_options)
         return command
+
+    def _spawn_test_process(self):
+        """Actually run the tests.
+
+        :return: A `subprocess.Popen` object for the test run.
+        """
+        call = self.build_test_command()
+        self._logger.write_line("Running %s" % (call,))
+        # bufsize=0 means do not buffer any of the output. We want to
+        # display the test output as soon as it is generated.
+        return subprocess.Popen(
+            call, bufsize=0,
+            stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+            cwd=self._test_directory)
 
     def test(self):
         """Run the tests, log the results.
@@ -247,20 +261,9 @@ class LaunchpadTester:
         the user the test results.
         """
         self._logger.prepare()
-
-        call = self.build_test_command()
-
         try:
-            self._logger.write_line("Running %s" % (call,))
-            # XXX: JonathanLange 2010-08-18: bufsize=-1 implies "use the
-            # system buffering", when we actually want no buffering at all.
-            popen = subprocess.Popen(
-                call, bufsize=-1,
-                stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                cwd=self._test_directory)
-
+            popen = self._spawn_test_process()
             self._gather_test_output(popen.stdout, self._logger)
-
             exit_status = popen.wait()
         except:
             self._logger.error_in_testrunner(sys.exc_info())
@@ -277,6 +280,7 @@ class LaunchpadTester:
         for line in input_stream:
             subunit_server.lineReceived(line)
             logger.got_line(line)
+            summary_stream.flush()
 
 
 class Request:
