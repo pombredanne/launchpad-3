@@ -15,6 +15,8 @@ __all__ = [
     "UploadPolicyError",
     ]
 
+from textwrap import dedent
+
 from zope.component import (
     getGlobalSiteManager,
     getUtility,
@@ -108,21 +110,23 @@ class AbstractUploadPolicy:
                 upload.reject(
                     "Sourceful uploads are not accepted by this policy.")
 
-        else:
-            assert upload.binaryful, (
-                "Upload is not sourceful, binaryful or mixed.")
+        elif upload.binaryful:
             if self.accepted_type != ArchiveUploadType.BINARY_ONLY:
-                messages = [
-                    "Upload rejected because it contains binary packages.",
-                    "Ensure you are using `debuild -S`, or an equivalent",
-                    "command, to generate only the source package before",
-                    "re-uploading.",
-                    ]
+                message = dedent("""
+                    Upload rejected because it contains binary packages.
+                    Ensure you are using `debuild -S`, or an equivalent
+                    command, to generate only the source package before
+                    re-uploading.""")
+
                 if upload.is_ppa:
-                    messages.append(
-                    "See https://help.launchpad.net/Packaging/PPA for more "
-                    "information.")
-                upload.reject(" ".join(messages))
+                    message += dedent("""
+                        See https://help.launchpad.net/Packaging/PPA for
+                        more information.""")
+                upload.reject(message)
+
+        else:
+            raise AssertionError(
+                "Upload is not sourceful, binaryful or mixed.")
 
     def getUploader(self, changes):
         """Get the person who is doing the uploading."""

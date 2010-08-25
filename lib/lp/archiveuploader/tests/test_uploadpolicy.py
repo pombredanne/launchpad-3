@@ -4,7 +4,9 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 from lp.archiveuploader.uploadpolicy import (
-    AbstractUploadPolicy, ArchiveUploadType)
+    AbstractUploadPolicy,
+    ArchiveUploadType,
+    )
 from lp.testing import TestCase
 
 
