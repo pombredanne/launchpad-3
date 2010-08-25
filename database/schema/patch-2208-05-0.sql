@@ -8,4 +8,4 @@ ALTER TABLE BinaryPackageRelease
 ALTER TABLE SourcePackageRelease
     ADD COLUMN homepage TEXT;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 00, 2);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 05, 0);
