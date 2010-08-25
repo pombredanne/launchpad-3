@@ -298,16 +298,22 @@ class IPOTMsgSet(Interface):
             that this change is based on.
         """
 
-    def resetCurrentTranslation(pofile, lock_timestamp):
-        """Reset the currently used translation.
+    def resetCurrentTranslation(pofile, lock_timestamp=None,
+                                share_with_other_side=False):
+        """Turn the current translation back into a suggestion.
 
-        This will set the "is_current_ubuntu" attribute to False and if the
-        message is diverged, will try to converge it.
-        :param pofile: a `POFile` to dismiss suggestions from.
-        :param lock_timestamp: the timestamp when we checked the values we
-            want to update.
+        This deactivates the message's current translation.  The message
+        becomes untranslated or, if it was diverged, reverts to its
+        shared translation.
 
-        If a translation conflict is detected, TranslationConflict is raised.
+        The previously current translation becomes visible as a new
+        suggestion again, as do all suggestions that came after it.
+
+        :param pofile: The `POFile` to make the change in.
+        :param lock_timestamp: Timestamp of the original translation state
+            that this change is based on.
+        :param share_with_other_side: Make the same change on the other
+            translation side.
         """
 
     def clearCurrentTranslation(pofile, submitter, origin,

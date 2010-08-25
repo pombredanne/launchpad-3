@@ -1295,25 +1295,47 @@ class POTMsgSet(SQLBase):
 
         return message
 
-    def resetCurrentTranslation(self, pofile, lock_timestamp):
-        """See `IPOTMsgSet`."""
+    def old_resetCurrentTranslation(self, pofile, lock_timestamp):
+        """See `POTMsgSet`.
 
-        assert(lock_timestamp is not None)
-
+        This message is OBSOLETE in the Recife feature branch.  It's
+        still here only until we replace its one call with the new
+        method.
+        """
+        assert lock_timestamp is not None, "No lock timestamp given."
         current = self.getCurrentTranslationMessage(
             pofile.potemplate, pofile.language)
+        if current is None:
+            return
 
-        if (current is not None):
-            # Check for translation conflicts and update the required
-            # attributes.
-            self._maybeRaiseTranslationConflict(current, lock_timestamp)
-            current.is_current_ubuntu = False
-            # Converge the current translation only if it is diverged and not
-            # current upstream.
-            is_diverged = current.potemplate is not None
-            if is_diverged and not current.is_current_upstream:
-                current.potemplate = None
-            pofile.date_changed = UTC_NOW
+        # Check for translation conflicts and update the required
+        # attributes.
+        self._maybeRaiseTranslationConflict(current, lock_timestamp)
+        current.is_current_ubuntu = False
+        # Converge the current translation only if it is diverged and
+        # not current upstream.
+        if current.potemplate.is_diverged and not current.is_current_upstream:
+            current.potemplate = None
+        pofile.markChanged()
+
+    def resetCurrentTranslation(self, pofile, lock_timestamp=None,
+                                share_with_other_side=False):
+        """See `IPOTMsgSet`."""
+        traits = getUtility(ITranslationSideTraitsSet).getTraits(
+            pofile.potemplate.translation_side)
+        current_message = traits.getCurrentMessage(
+            self, pofile.potemplate, pofile.language)
+
+        if current_message is None:
+            # Nothing to do here.
+            return
+
+        self._checkForConflict(current_message, lock_timestamp)
+        traits.setFlag(current_message, False)
+        if share_with_other_side:
+            traits.other_side_traits.setFlag(current_message, False)
+        current_message.shareIfPossible()
+        pofile.markChanged()
 
     def clearCurrentTranslation(self, pofile, submitter, origin,
                                 share_with_other_side=False,
