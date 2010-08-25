@@ -47,13 +47,13 @@ from lp.archiveuploader.utils import (
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.soyuz.enums import (
     BinaryPackageFormat,
+    PackagePublishingPriority,
     PackageUploadCustomFormat,
     PackageUploadStatus,
     )
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.component import IComponentSet
-from lp.soyuz.interfaces.publishing import PackagePublishingPriority
 from lp.soyuz.interfaces.section import ISectionSet
 from lp.soyuz.model.files import SourceFileMixin
 

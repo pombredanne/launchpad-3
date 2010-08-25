@@ -23,6 +23,7 @@ from lp.app.errors import (
     UnexpectedFormData,
     )
 from lp.soyuz.enums import (
+    PackagePublishingPriority,
     PackageUploadStatus,
     )
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
@@ -35,7 +36,6 @@ from lp.soyuz.interfaces.files import (
 from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.soyuz.interfaces.publishing import (
     name_priority_map,
-    PackagePublishingPriority,
     )
 from lp.soyuz.interfaces.queue import (
     IPackageUpload,
