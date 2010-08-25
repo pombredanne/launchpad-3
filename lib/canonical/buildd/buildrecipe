@@ -66,9 +66,8 @@ class RecipeBuilder:
         :return: a retcode from `bzr dailydeb`.
         """
         assert not os.path.exists(self.tree_path)
-        recipe_path_relative = os.path.join(self.work_dir_relative, 'recipe')
+        recipe_path = os.path.join(self.work_dir, 'recipe')
         manifest_path = os.path.join(self.tree_path, 'manifest')
-        recipe_path = os.path.join(self.chroot_path, recipe_path_relative[1:])
         recipe_file = open(recipe_path, 'rb')
         try:
             recipe = recipe_file.read()
@@ -76,9 +75,11 @@ class RecipeBuilder:
             recipe_file.close()
         print 'Building recipe:'
         print recipe
+        sys.stdout.flush()
         env = {
             'DEBEMAIL': self.author_email,
-            'DEBFULLNAME': self.author_name.encode('utf-8')}
+            'DEBFULLNAME': self.author_name.encode('utf-8'),
+            'BZR_EMAIL': os.environ['BZR_EMAIL']}
         retcode = call([
             'bzr', 'dailydeb', '--no-build', recipe_path,
             self.tree_path, '--manifest', manifest_path,
@@ -87,8 +88,8 @@ class RecipeBuilder:
             return retcode
         (source,) = [name for name in os.listdir(self.tree_path)
                      if name != 'manifest']
-        tree_path_relative = os.path.join(self.work_dir_relative, 'tree')
-        self.source_dir_relative = os.path.join(tree_path_relative, source)
+        self.source_dir_relative = os.path.join(
+            self.work_dir_relative, 'tree', source)
         return retcode
 
     def getPackageName(self):
@@ -160,10 +161,10 @@ if __name__ == '__main__':
     os.environ['BZR_EMAIL'] = 'buildd@%s' % hostname
 
     builder = RecipeBuilder(*sys.argv[1:])
-    if builder.install() != 0:
-        sys.exit(RETCODE_FAILURE_INSTALL)
     if builder.buildTree() != 0:
         sys.exit(RETCODE_FAILURE_BUILD_TREE)
+    if builder.install() != 0:
+        sys.exit(RETCODE_FAILURE_INSTALL)
     if builder.installBuildDeps() != 0:
         sys.exit(RETCODE_FAILURE_INSTALL_BUILD_DEPS)
     if builder.buildSourcePackage() != 0:
