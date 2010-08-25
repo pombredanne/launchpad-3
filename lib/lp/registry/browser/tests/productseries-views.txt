@@ -35,12 +35,8 @@ rendering links:
     False
     >>> print view.official_blueprints
     True
-    >>> print view.bug_tracking_usage
-    <DBItem ServiceUsage.LAUNCHPAD, (20) Launchpad>
-    >>> print view.official_rosetta
+    >>> print view.official_malone
     True
-    >>> print view.official_codehosting
-    False
     >>> for link in view.enabled_links:
     ...     print link.url
     http://bugs.launchpad.dev/app/simple/+filebug

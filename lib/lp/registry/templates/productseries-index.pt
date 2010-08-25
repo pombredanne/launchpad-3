@@ -137,7 +137,7 @@
         <div class="yui-u first">
           <div
             tal:content="structure context/@@+portlet-latestbugs"
-            tal:condition="context/@@+get-involved/bug_tracking_usage/enumvalue:LAUNCHPAD" />
+            tal:condition="context/@@+get-involved/official_malone" />
 
           <div tal:content="structure context/@@+portlet-packages" />
         </div>
