@@ -8,23 +8,26 @@ __metaclass__ = type
 
 import datetime
 import logging
-import pytz
 import os
 
-from lp.archivepublisher import ELIGIBLE_DOMINATION_STATES
-from lp.archivepublisher.config import getPubConfig, LucilleConfigError
-from lp.archivepublisher.diskpool import DiskPool
-from lp.archivepublisher.utils import process_in_batches
+import pytz
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import sqlvalues
-
+from lp.archivepublisher import ELIGIBLE_DOMINATION_STATES
+from lp.archivepublisher.config import (
+    getPubConfig,
+    LucilleConfigError,
+    )
+from lp.archivepublisher.diskpool import DiskPool
+from lp.archivepublisher.utils import process_in_batches
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.publishing import (
     IBinaryPackagePublishingHistory,
-    ISourcePackagePublishingHistory)
-from lp.soyuz.interfaces.publishing import (
-    MissingSymlinkInPool, NotInPool)
+    ISourcePackagePublishingHistory,
+    MissingSymlinkInPool,
+    NotInPool,
+    )
 
 
 def getDeathRow(archive, log, pool_root_override):

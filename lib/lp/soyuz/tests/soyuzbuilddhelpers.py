@@ -22,10 +22,13 @@ import xmlrpclib
 
 from canonical.config import config
 from lp.buildmaster.interfaces.builder import CannotFetchFile
-from lp.buildmaster.model.builder import (rescueBuilderIfLost,
-    updateBuilderStatus)
+from lp.buildmaster.model.builder import (
+    rescueBuilderIfLost,
+    updateBuilderStatus,
+    )
 from lp.soyuz.model.binarypackagebuildbehavior import (
-    BinaryPackageBuildBehavior)
+    BinaryPackageBuildBehavior,
+    )
 from lp.testing.sampledata import I386_ARCHITECTURE_NAME
 
 

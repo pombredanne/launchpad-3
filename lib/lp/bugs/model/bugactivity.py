@@ -6,14 +6,19 @@
 __metaclass__ = type
 __all__ = ['BugActivity', 'BugActivitySet']
 
+from sqlobject import (
+    ForeignKey,
+    StringCol,
+    )
+from storm.store import Store
 from zope.interface import implements
 
-from sqlobject import ForeignKey, StringCol
-from storm.store import Store
-
-from lp.bugs.interfaces.bugactivity import IBugActivity, IBugActivitySet
-from canonical.database.sqlbase import SQLBase
 from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.database.sqlbase import SQLBase
+from lp.bugs.interfaces.bugactivity import (
+    IBugActivity,
+    IBugActivitySet,
+    )
 from lp.registry.interfaces.person import validate_person
 
 

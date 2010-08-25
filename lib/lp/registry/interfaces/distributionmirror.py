@@ -27,27 +27,50 @@ __all__ = [
 
 from cgi import escape
 
-from zope.schema import Bool, Choice, Datetime, Int, TextLine
-from zope.interface import Interface, Attribute
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    )
+from lazr.restful.declarations import (
+    export_as_webservice_entry,
+    export_read_operation,
+    export_write_operation,
+    exported,
+    mutator_for,
+    operation_parameters,
+    webservice_error,
+    )
+from lazr.restful.fields import (
+    Reference,
+    ReferenceChoice,
+    )
+from lazr.restful.interface import copy_field
+from zope.component import getUtility
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
 from zope.interface.exceptions import Invalid
 from zope.interface.interface import invariant
-from zope.component import getUtility
-from lazr.enum import DBEnumeratedType, DBItem
-from lazr.restful.declarations import (
-    export_as_webservice_entry, export_read_operation,
-    export_write_operation, exported, mutator_for, operation_parameters,
-    webservice_error)
-from lazr.restful.fields import Reference, ReferenceChoice
-from lazr.restful.interface import copy_field
+from zope.schema import (
+    Bool,
+    Choice,
+    Datetime,
+    Int,
+    TextLine,
+    )
 
 from canonical.launchpad import _
-from lp.services.fields import (
-    ContentNameField, PublicPersonChoice, URIField, Whiteboard)
-from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.validators import LaunchpadValidationError
+from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.webapp.menu import structured
+from lp.services.fields import (
+    ContentNameField,
+    PublicPersonChoice,
+    URIField,
+    Whiteboard,
+    )
 from lp.services.worlddata.interfaces.country import ICountry
-
 
 # The number of hours before we bother probing a mirror again
 PROBE_INTERVAL = 23

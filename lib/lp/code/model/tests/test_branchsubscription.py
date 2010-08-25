@@ -12,8 +12,13 @@ import unittest
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.errors import UserCannotUnsubscribePerson
 from lp.code.enums import (
-    BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel)
-from lp.testing import TestCaseWithFactory, person_logged_in
+    BranchSubscriptionNotificationLevel,
+    CodeReviewNotificationLevel,
+    )
+from lp.testing import (
+    person_logged_in,
+    TestCaseWithFactory,
+    )
 
 
 class TestBranchSubscriptions(TestCaseWithFactory):

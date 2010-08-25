@@ -20,50 +20,84 @@ __all__ = [
     'NoSuchDistribution',
     ]
 
-from zope.schema import Bool, Choice, Datetime, List, Object, Text, TextLine
-from zope.interface import Attribute, Interface
-
 from lazr.lifecycle.snapshot import doNotSnapshot
-from lazr.restful.fields import CollectionField, Reference
 from lazr.restful.declarations import (
-   collection_default_content, export_as_webservice_collection,
-   export_as_webservice_entry, export_operation_as,
-   export_read_operation, exported, operation_parameters,
-   operation_returns_collection_of, operation_returns_entry,
-   rename_parameters_as)
+    collection_default_content,
+    export_as_webservice_collection,
+    export_as_webservice_entry,
+    export_operation_as,
+    export_read_operation,
+    exported,
+    operation_parameters,
+    operation_returns_collection_of,
+    operation_returns_entry,
+    rename_parameters_as,
+    )
+from lazr.restful.fields import (
+    CollectionField,
+    Reference,
+    )
 from lazr.restful.interface import copy_field
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Bool,
+    Choice,
+    Datetime,
+    List,
+    Object,
+    Text,
+    TextLine,
+    )
 
 from canonical.launchpad import _
-from lp.services.fields import (
-    Description, PublicPersonChoice, Summary, Title)
-from lp.registry.interfaces.structuralsubscription import (
-    IStructuralSubscriptionTarget)
+from canonical.launchpad.interfaces.launchpad import (
+    IHasAppointedDriver,
+    IHasDrivers,
+    )
+from canonical.launchpad.validators.name import name_validator
 from lp.app.errors import NameLookupFailed
 from lp.app.interfaces.headings import IRootContext
+from lp.app.interfaces.launchpad import (
+    ILaunchpadUsage,
+    IServiceUsage,
+    )
+from lp.blueprints.interfaces.specificationtarget import ISpecificationTarget
+from lp.blueprints.interfaces.sprint import IHasSprints
+from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
+from lp.bugs.interfaces.bugtarget import (
+    IBugTarget,
+    IOfficialBugTagTargetPublic,
+    IOfficialBugTagTargetRestricted,
+    )
+from lp.bugs.interfaces.securitycontact import IHasSecurityContact
 from lp.registry.interfaces.announcement import IMakesAnnouncements
 from lp.registry.interfaces.distributionmirror import IDistributionMirror
-from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
-from lp.bugs.interfaces.securitycontact import IHasSecurityContact
-from lp.bugs.interfaces.bugtarget import (
-    IBugTarget, IOfficialBugTagTargetPublic, IOfficialBugTagTargetRestricted)
-from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.registry.interfaces.karma import IKarmaContext
-from canonical.launchpad.interfaces.launchpad import (
-    IHasAppointedDriver, IHasDrivers)
-from lp.app.interfaces.launchpad import ILaunchpadUsage, IServiceUsage
-from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.mentoringoffer import IHasMentoringOffers
 from lp.registry.interfaces.milestone import (
-    ICanGetMilestonesDirectly, IHasMilestones)
+    ICanGetMilestonesDirectly,
+    IHasMilestones,
+    )
 from lp.registry.interfaces.pillar import IPillar
-from lp.blueprints.interfaces.specificationtarget import (
-    ISpecificationTarget)
-from lp.blueprints.interfaces.sprint import IHasSprints
-from lp.translations.interfaces.translationgroup import (
-    ITranslationPolicy)
-from canonical.launchpad.validators.name import name_validator
+from lp.registry.interfaces.role import IHasOwner
+from lp.registry.interfaces.structuralsubscription import (
+    IStructuralSubscriptionTarget,
+    )
 from lp.services.fields import (
-    IconImageUpload, LogoImageUpload, MugshotImageUpload, PillarNameField)
+    Description,
+    IconImageUpload,
+    LogoImageUpload,
+    MugshotImageUpload,
+    PillarNameField,
+    PublicPersonChoice,
+    Summary,
+    Title,
+    )
+from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
+from lp.translations.interfaces.translationgroup import ITranslationPolicy
 
 
 class IDistributionMirrorMenuMarker(Interface):

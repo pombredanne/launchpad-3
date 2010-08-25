@@ -80,7 +80,7 @@ will cause this spec to be reassigned.
     >>> spec = Specification.selectFirst("assignee IS NULL", orderBy='id')
     >>> spec.assignee = foobar
 
-    >>> [membership.team.name for membership in foobar.myactivememberships]
+    >>> [membership.team.name for membership in foobar.team_memberships]
     [u'canonical-partner-dev', u'guadamen', u'hwdb-team', u'admins',
      u'launchpad-buildd-admins', u'launchpad', u'testing-spanish-team',
      u'name18', u'ubuntu-team', u'vcs-imports']
@@ -152,7 +152,7 @@ adds a '-deactivatedaccount' suffix to the person's name...
 
 ...to have no team memberships...
 
-    >>> [membership.team.name for membership in foobar.myactivememberships]
+    >>> [membership.team.name for membership in foobar.team_memberships]
     []
 
 ...and no validated/preferred email addresses...

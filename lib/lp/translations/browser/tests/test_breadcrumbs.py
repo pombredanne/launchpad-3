@@ -6,14 +6,15 @@ __metaclass__ = type
 from zope.component import getUtility
 
 from canonical.lazr.utils import smartquote
-
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing.breadcrumbs import BaseBreadcrumbTestCase
 from lp.testing.factory import remove_security_proxy_and_shout_at_engineer
 from lp.translations.interfaces.distroserieslanguage import (
-    IDistroSeriesLanguageSet)
+    IDistroSeriesLanguageSet,
+    )
 from lp.translations.interfaces.productserieslanguage import (
-    IProductSeriesLanguageSet)
+    IProductSeriesLanguageSet,
+    )
 from lp.translations.interfaces.translationgroup import ITranslationGroupSet
 
 

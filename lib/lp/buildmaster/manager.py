@@ -16,15 +16,17 @@ __all__ = [
 
 import logging
 import os
-import transaction
 
+import transaction
 from twisted.application import service
-from twisted.internet import defer, reactor
+from twisted.internet import (
+    defer,
+    reactor,
+    )
 from twisted.protocols.policies import TimeoutMixin
 from twisted.python import log
 from twisted.python.failure import Failure
 from twisted.web import xmlrpc
-
 from zope.component import getUtility
 
 from canonical.config import config

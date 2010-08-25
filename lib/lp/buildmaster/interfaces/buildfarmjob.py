@@ -17,15 +17,27 @@ __all__ = [
     'BuildFarmJobType',
     ]
 
-from zope.interface import Interface, Attribute
-from zope.schema import Bool, Choice, Datetime, Int, TextLine, Timedelta
-from lazr.enum import DBEnumeratedType, DBItem
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    )
 from lazr.restful.declarations import exported
 from lazr.restful.fields import Reference
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Bool,
+    Choice,
+    Datetime,
+    Int,
+    TextLine,
+    Timedelta,
+    )
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
-
 from lp.buildmaster.interfaces.builder import IBuilder
 from lp.soyuz.interfaces.processor import IProcessor
 

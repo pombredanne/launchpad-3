@@ -17,19 +17,25 @@ from difflib import unified_diff
 from itertools import count
 
 from zope.component import getUtility
-from zope.security.proxy import removeSecurityProxy
-from zope.security.proxy import isinstance as zisinstance
+from zope.security.proxy import (
+    isinstance as zisinstance,
+    removeSecurityProxy,
+    )
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-
 from lp.code.interfaces.branchmergeproposal import (
-    IBranchMergeProposalJobSource)
+    IBranchMergeProposalJobSource,
+    )
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from lp.code.interfaces.seriessourcepackagebranch import (
-    IMakeOfficialBranchLinks)
-from lp.registry.interfaces.series import SeriesStatus
+    IMakeOfficialBranchLinks,
+    )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.testing import run_with_login, time_counter
+from lp.registry.interfaces.series import SeriesStatus
+from lp.testing import (
+    run_with_login,
+    time_counter,
+    )
 
 
 def mark_all_merge_proposal_jobs_done():

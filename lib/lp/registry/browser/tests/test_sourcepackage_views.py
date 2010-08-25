@@ -12,12 +12,12 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.testing import DatabaseFunctionalLayer
-
-
 from lp.registry.browser.sourcepackage import get_register_upstream_url
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import (
-    IDistroSeries, IDistroSeriesSet)
+    IDistroSeries,
+    IDistroSeriesSet,
+    )
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory

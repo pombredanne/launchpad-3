@@ -12,8 +12,8 @@ __all__ = [
     'updateBuilderStatus',
     ]
 
-import httplib
 import gzip
+import httplib
 import logging
 import os
 import socket
@@ -23,32 +23,59 @@ import urllib2
 import xmlrpclib
 
 from sqlobject import (
-    BoolCol, ForeignKey, IntCol, SQLObjectNotFound, StringCol)
-from storm.expr import Coalesce, Count, Sum
+    BoolCol,
+    ForeignKey,
+    IntCol,
+    SQLObjectNotFound,
+    StringCol,
+    )
+from storm.expr import (
+    Coalesce,
+    Count,
+    Sum,
+    )
 from zope.component import getUtility
 from zope.interface import implements
 
+from canonical.buildd.slave import BuilderStatus
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
-from canonical.buildd.slave import BuilderStatus
+from canonical.database.sqlbase import (
+    SQLBase,
+    sqlvalues,
+    )
 from canonical.launchpad.helpers import filenameToContentType
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.webapp import urlappend
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR, SLAVE_FLAVOR)
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    SLAVE_FLAVOR,
+    )
 from canonical.lazr.utils import safe_hasattr
 from canonical.librarian.utils import copy_and_close
 from lp.app.errors import NotFoundError
 from lp.buildmaster.interfaces.builder import (
-    BuildDaemonError, BuildSlaveFailure, CannotBuild, CannotFetchFile,
-    CannotResumeHost, CorruptBuildCookie, IBuilder, IBuilderSet)
+    BuildDaemonError,
+    BuildSlaveFailure,
+    CannotBuild,
+    CannotFetchFile,
+    CannotResumeHost,
+    CorruptBuildCookie,
+    IBuilder,
+    IBuilderSet,
+    )
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSet
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
-    BuildBehaviorMismatch)
+    BuildBehaviorMismatch,
+    )
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.buildmaster.model.buildfarmjobbehavior import IdleBuildBehavior
-from lp.buildmaster.model.buildqueue import BuildQueue, specific_job_classes
-from canonical.database.sqlbase import SQLBase, sqlvalues
+from lp.buildmaster.model.buildqueue import (
+    BuildQueue,
+    specific_job_classes,
+    )
 from lp.registry.interfaces.person import validate_public_person
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
@@ -58,7 +85,9 @@ from lp.services.osutils import until_no_eintr
 # is moved.
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.buildrecords import (
-    IHasBuildRecords, IncompatibleArguments)
+    IHasBuildRecords,
+    IncompatibleArguments,
+    )
 from lp.soyuz.model.processor import Processor
 
 
@@ -177,6 +206,20 @@ def rescueBuilderIfLost(builder, logger=None):
     # IBuilder.slaveStatusSentence().
     status = status_sentence[0]
 
+    # If the cookie test below fails, it will request an abort of the
+    # builder.  This will leave the builder in the aborted state and
+    # with no assigned job, and we should now "clean" the slave which
+    # will reset its state back to IDLE, ready to accept new builds.
+    # This situation is usually caused by a temporary loss of
+    # communications with the slave and the build manager had to reset
+    # the job.
+    if status == 'BuilderStatus.ABORTED' and builder.currentjob is None:
+        builder.cleanSlave()
+        if logger is not None:
+            logger.info(
+                "Builder '%s' cleaned up from ABORTED" % builder.name)
+        return
+
     # If slave is not building nor waiting, it's not in need of rescuing.
     if status not in ident_position.keys():
         return
@@ -191,7 +234,7 @@ def rescueBuilderIfLost(builder, logger=None):
         else:
             builder.requestAbort()
         if logger:
-            logger.warn(
+            logger.info(
                 "Builder '%s' rescued from '%s': '%s'" %
                 (builder.name, slave_build_id, reason))
 

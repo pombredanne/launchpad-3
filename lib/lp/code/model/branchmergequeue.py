@@ -12,17 +12,25 @@ __all__ = [
 
 
 from sqlobject import (
-    ForeignKey, StringCol, SQLMultipleJoin)
+    ForeignKey,
+    SQLMultipleJoin,
+    StringCol,
+    )
 from zope.interface import implements
 
 from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.sqlbase import SQLBase, sqlvalues
-
+from canonical.database.sqlbase import (
+    SQLBase,
+    sqlvalues,
+    )
 from lp.code.enums import BranchMergeProposalStatus
-from lp.code.model.branchmergeproposal import BranchMergeProposal
 from lp.code.interfaces.branchmergequeue import (
-    IBranchMergeQueue, IBranchMergeQueueSet, IMultiBranchMergeQueue)
+    IBranchMergeQueue,
+    IBranchMergeQueueSet,
+    IMultiBranchMergeQueue,
+    )
+from lp.code.model.branchmergeproposal import BranchMergeProposal
 from lp.registry.interfaces.person import validate_public_person
 
 

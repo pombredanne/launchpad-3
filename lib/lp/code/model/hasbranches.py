@@ -16,7 +16,9 @@ from zope.component import getUtility
 from lp.code.enums import BranchMergeProposalStatus
 from lp.code.interfaces.branch import DEFAULT_BRANCH_STATUS_IN_LISTING
 from lp.code.interfaces.branchcollection import (
-    IAllBranches, IBranchCollection)
+    IAllBranches,
+    IBranchCollection,
+    )
 from lp.code.interfaces.branchtarget import IBranchTarget
 
 

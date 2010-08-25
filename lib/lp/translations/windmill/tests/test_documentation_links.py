@@ -6,11 +6,12 @@
 __metaclass__ = type
 __all__ = []
 
-from canonical.launchpad.windmill.testing import lpuser
-from lp.translations.windmill.testing import TranslationsWindmillLayer
-from lp.testing import WindmillTestCase
-
 from zope.security.proxy import removeSecurityProxy
+
+from canonical.launchpad.windmill.testing import lpuser
+from lp.testing import WindmillTestCase
+from lp.translations.windmill.testing import TranslationsWindmillLayer
+
 
 class DocumentationLinksTest(WindmillTestCase):
     """Test that the documentation links on translation pages work."""

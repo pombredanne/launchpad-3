@@ -8,12 +8,10 @@ __all__ = [
     'DecoratedResultSet',
     ]
 
+from lazr.delegates import delegates
+from storm.zope.interfaces import IResultSet
 from zope.security.proxy import removeSecurityProxy
 
-from storm.expr import Column
-from storm.zope.interfaces import IResultSet
-
-from lazr.delegates import delegates
 
 class DecoratedResultSet(object):
     """A decorated Storm ResultSet for 'Magic' (presenter) classes.
@@ -32,9 +30,6 @@ class DecoratedResultSet(object):
 
     This behaviour is required for other classes as well (Distribution,
     DistroArchSeries), hence a generalised solution.
-
-    This class also fixes a bug currently in Storm's ResultSet.count
-    method (see below)
     """
     delegates(IResultSet, context='result_set')
 

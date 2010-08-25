@@ -18,24 +18,37 @@ Documentation on general design
 
 __metaclass__ = type
 
-import apt_pkg
 import os
 
+import apt_pkg
 from zope.component import getUtility
 
+from canonical.launchpad.interfaces import (
+    IBinaryPackageNameSet,
+    IDistributionSet,
+    ILibraryFileAliasSet,
+    ISourcePackageNameSet,
+    QueueInconsistentStateError,
+    )
 from lp.app.errors import NotFoundError
 from lp.archiveuploader.changesfile import ChangesFile
 from lp.archiveuploader.dscfile import DSCFile
 from lp.archiveuploader.nascentuploadfile import (
-    UploadError, UploadWarning, CustomUploadFile, SourceUploadFile,
-    BaseBinaryUploadFile, DdebBinaryUploadFile, DebBinaryUploadFile)
+    BaseBinaryUploadFile,
+    CustomUploadFile,
+    DdebBinaryUploadFile,
+    DebBinaryUploadFile,
+    SourceUploadFile,
+    UploadError,
+    UploadWarning,
+    )
 from lp.archiveuploader.utils import determine_source_file_type
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
-from lp.soyuz.interfaces.archive import ArchivePurpose, MAIN_ARCHIVE_PURPOSES
-from canonical.launchpad.interfaces import (
-    IBinaryPackageNameSet, IDistributionSet, ILibraryFileAliasSet,
-    ISourcePackageNameSet, QueueInconsistentStateError)
+from lp.soyuz.interfaces.archive import (
+    ArchivePurpose,
+    MAIN_ARCHIVE_PURPOSES,
+    )
 
 
 PARTNER_COMPONENT_NAME = 'partner'
@@ -880,12 +893,6 @@ class NascentUpload:
                 'Exception while accepting:\n %s' % e, exc_info=True)
             self.do_reject(notify)
             return False
-        else:
-            self.cleanUp()
-
-    def cleanUp(self):
-        if self.changes.dsc is not None:
-            self.changes.dsc.cleanUp()
 
     def do_reject(self, notify=True):
         """Reject the current upload given the reason provided."""
@@ -916,7 +923,6 @@ class NascentUpload:
         self.queue_root.notify(summary_text=self.rejection_message,
             changes_file_object=changes_file_object, logger=self.logger)
         changes_file_object.close()
-        self.cleanUp()
 
     def _createQueueEntry(self):
         """Return a PackageUpload object."""
