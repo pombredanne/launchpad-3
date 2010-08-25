@@ -892,12 +892,6 @@ class NascentUpload:
                 'Exception while accepting:\n %s' % e, exc_info=True)
             self.do_reject(notify)
             return False
-        else:
-            self.cleanUp()
-
-    def cleanUp(self):
-        if self.changes.dsc is not None:
-            self.changes.dsc.cleanUp()
 
     def do_reject(self, notify=True):
         """Reject the current upload given the reason provided."""
@@ -928,7 +922,6 @@ class NascentUpload:
         self.queue_root.notify(summary_text=self.rejection_message,
             changes_file_object=changes_file_object, logger=self.logger)
         changes_file_object.close()
-        self.cleanUp()
 
     def _createQueueEntry(self):
         """Return a PackageUpload object."""
