@@ -37,6 +37,16 @@ class SpecificationDepCandidatesVocabulary(SQLObjectVocabularyBase):
     displayname = 'Select a blueprint'
 
     def _filter_specs(self, specs):
+        """Filter `specs` to remove invalid candidates.
+
+        Invalid canidates are:
+
+         * The spec that we're adding a depdency to,
+         * Specs for a different target, and
+         * Specs that depend on this one.
+
+        Preventing the last category prevents loops in the dependency graph.
+        """
         # XXX intellectronica 2007-07-05: is 100 a reasonable count before
         # starting to warn?
         speclist = shortlist(specs, 100)
