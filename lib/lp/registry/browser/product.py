@@ -1403,22 +1403,25 @@ class ProductConfigureBase(ReturnToReferrerMixin, LaunchpadEditFormView):
     usage_fieldname = None
 
     def setUpFields(self):
-        if self.usage_fieldname is not None:
-            self.field_names = [
-                self.usage_fieldname,
-                ]
         super(ProductConfigureBase, self).setUpFields()
         if self.usage_fieldname is not None:
             # The usage fields are shared among pillars.  But when referring to
             # an individual object in Launchpad it is better to call it by its
             # real name, i.e. 'project' instead of 'pillar'.
-            field = self.form_fields.get(self.usage_fieldname)
-            if field:
-                field.custom_widget = CustomWidgetFactory(
+            usage_field = self.form_fields.get(self.usage_fieldname)
+            if usage_field:
+                usage_field.custom_widget = CustomWidgetFactory(
                     LaunchpadRadioWidget, orientation='vertical')
-                field.field.description = (
-                    field.field.description.replace('pillar', 'project'))
-                print field.field.description
+                # Copy the field or else the description in the interface will
+                # be modified in-place.
+                field = copy_field(usage_field.field)
+                field.description = (
+                    field.description.replace('pillar', 'project'))
+                usage_field.field = field
+
+    @property
+    def field_names(self):
+        return [self.usage_fieldname]
 
     @property
     def page_title(self):
