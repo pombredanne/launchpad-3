@@ -42,6 +42,9 @@ class ITranslationsPerson(Interface):
         :return: a Storm query result.
         """
 
+    def hasTranslated():
+        """Has this user done any translation work?"""
+
     def getReviewableTranslationFiles(no_older_than=None):
         """List `POFile`s this person should be able to review.
 
