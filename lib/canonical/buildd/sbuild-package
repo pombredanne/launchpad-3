@@ -19,8 +19,8 @@ export LANG=C LC_ALL=C
 
 SBUILD=/usr/bin/sbuild
 BUILDID=$1
-SUITE=$2
-ARCHITECTURETAG=$3
+ARCHITECTURETAG=$2
+SUITE=$3
 
 shift 3
 
