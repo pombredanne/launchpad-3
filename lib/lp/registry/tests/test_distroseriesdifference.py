@@ -18,6 +18,7 @@ from lp.registry.interfaces.distroseriesdifference import (
     IDistroSeriesDifference,
     IDistroSeriesDifferenceSource,
     )
+from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 
 
 class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
@@ -48,6 +49,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             derived_series=distro_series)
 
     def test_source_pub(self):
+        # The related source pub is returned for the derived series.
         ds_diff = self.factory.makeDistroSeriesDifference(
             source_package_name_str="foonew")
 
@@ -56,7 +58,19 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         self.assertEqual(
             ds_diff.derived_series, ds_diff.source_pub.distroseries)
 
+    def test_source_pub_gets_latest_pending(self):
+        # The most recent publication is always returned, even if its pending.
+        ds_diff = self.factory.makeDistroSeriesDifference(
+            source_package_name_str="foonew")
+        src_name = self.factory.getOrMakeSourcePackageName("foonew")
+        pending_pub = self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagename=src_name, distroseries=ds_diff.derived_series,
+            status=PackagePublishingStatus.PENDING)
+
+        self.assertEqual(pending_pub, ds_diff.source_pub)
+
     def test_parent_source_pub(self):
+        # The related source pub for the parent distro series is returned.
         ds_diff = self.factory.makeDistroSeriesDifference(
             source_package_name_str="foonew")
 
@@ -66,8 +80,29 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             ds_diff.derived_series.parent_series,
             ds_diff.parent_source_pub.distroseries)
 
+    def test_paren_source_pub_gets_latest_pending(self):
+        # The most recent publication is always returned, even if its pending.
+        ds_diff = self.factory.makeDistroSeriesDifference(
+            source_package_name_str="foonew")
+        src_name = self.factory.getOrMakeSourcePackageName("foonew")
+        pending_pub = self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagename=src_name,
+            distroseries=ds_diff.derived_series.parent_series,
+            status=PackagePublishingStatus.PENDING)
+
+        self.assertEqual(pending_pub, ds_diff.parent_source_pub)
+
     def test_appendActivityLog(self):
-        self.fail("Unimplemented")
+        # The message is prepended with date/version info and appended
+        # to the activity log with a new line.
+        ds_diff = self.factory.makeDistroSeriesDifference(
+            source_package_name_str="foonew")
+
+        ds_diff.appendActivityLog("Waiting for version 1.9")
+
+        self.assertIn(
+            "Waiting for version 1.9\n",
+            ds_diff.activity_log)
 
     def test_checkDifferenceType(self):
         self.fail("Unimplemented")

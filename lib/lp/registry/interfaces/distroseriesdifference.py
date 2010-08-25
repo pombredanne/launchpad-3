@@ -81,6 +81,12 @@ class IDistroSeriesDifference(Interface):
         description=_(
             "The most recent published version in the parent series."))
 
+    def appendActivityLog(message):
+        """Add a message to the activity log.
+
+        :param message: The message to be appended to the activity log.
+        """
+
 
 class IDistroSeriesDifferenceSource(Interface):
     """A utility of this interface can be used to create differences."""

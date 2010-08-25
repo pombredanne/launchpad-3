@@ -9,6 +9,8 @@ __all__ = [
     'DistroSeriesDifference',
     ]
 
+from datetime import datetime
+
 from storm.locals import (
     Int,
     Reference,
@@ -74,33 +76,29 @@ class DistroSeriesDifference(Storm):
         diff.source_package_name = source_package_name
         diff.status = status
         diff.difference_type = difference_type
+        diff.activity_log = u""
         return store.add(diff)
 
     @property
     def source_pub(self):
         """See `IDistroSeriesDifference`."""
-        return self._getLatestPubForDistroSeries(
-            self.derived_series, self.source_package_name)
+        # The most recent published source is the first one.
+        return self.derived_series.getPublishedReleases(
+            self.source_package_name, include_pending=True)[0]
 
     @property
     def parent_source_pub(self):
         """See `IDistroSeriesDifference`."""
-        return self._getLatestPubForDistroSeries(
-            self.derived_series.parent_series, self.source_package_name)
+        return self.derived_series.parent_series.getPublishedReleases(
+            self.source_package_name, include_pending=True)[0]
 
-    def _getLatestPubForDistroSeries(self, distro_series, source_package_name):
-        # XXX 2010-08-25 This will move to
-        # DistroSeries.getCurrentSourcePub() and tested in a following branch.
-        from storm.store import Store
-        store = Store.of(self)
-
-        from lp.soyuz.model.publishing import SourcePackagePublishingHistory
-        SPPH = SourcePackagePublishingHistory
-        from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
-        result = store.find(
-            SPPH,
-            SPPH.sourcepackagerelease == SourcePackageRelease.id,
-            SourcePackageRelease.sourcepackagename == source_package_name,
-            SPPH.distroseries == distro_series).order_by(SPPH.id)
-
-        return result.first()
+    # XXX Add user as a param too. And remove versions.
+    def appendActivityLog(self, message):
+        """See `IDistroSeriesDifference`."""
+        self.activity_log += (
+            "%(datestamp)s (%(parent_version)s/%(version)s) %(message)s\n" % {
+            'parent_version': self.parent_source_pub.source_package_version,
+            'version': self.source_pub.source_package_version,
+            'datestamp': datetime.strftime(datetime.now(), "%Y-%m-%d"),
+            'message': message,
+            })
