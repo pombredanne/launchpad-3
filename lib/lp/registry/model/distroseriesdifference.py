@@ -86,15 +86,29 @@ class DistroSeriesDifference(Storm):
     @cachedproperty
     def source_pub(self):
         """See `IDistroSeriesDifference`."""
-        # The most recent published source is the first one.
-        return self.derived_series.getPublishedReleases(
-            self.source_package_name, include_pending=True)[0]
+        return self._getLatestSourcePub()
 
     @cachedproperty
     def parent_source_pub(self):
         """See `IDistroSeriesDifference`."""
-        return self.derived_series.parent_series.getPublishedReleases(
-            self.source_package_name, include_pending=True)[0]
+        return self._getLatestSourcePub(for_parent=True)
+
+    def _getLatestSourcePub(self, for_parent=False):
+        """Helper to keep source_pub/parent_source_pub DRY."""
+        distro_series = self.derived_series
+        if for_parent:
+            distro_series = self.derived_series.parent_series
+
+        pubs = distro_series.getPublishedReleases(
+            self.source_package_name, include_pending=True)
+
+        # XXX change to is_empty once getPublishedReleases branch hits
+        # db-devel.
+        if len(pubs) == 0:
+            return None
+
+        # The most recent published source is the first one.
+        return pubs[0]
 
     def _getVersions(self):
         """Helper method returning versions string."""
@@ -117,3 +131,25 @@ class DistroSeriesDifference(Storm):
             'username': username,
             'message': message,
             })
+
+    def updateDifferenceType(self):
+        """See `IDistroSeriesDifference`."""
+        if self.source_pub is None:
+            new_type = DistroSeriesDifferenceType.MISSING_FROM_DERIVED_SERIES
+        elif self.parent_source_pub is None:
+            new_type = DistroSeriesDifferenceType.UNIQUE_TO_DERIVED_SERIES
+        else:
+            new_type = DistroSeriesDifferenceType.DIFFERENT_VERSIONS
+
+        if new_type == self.difference_type:
+            return False
+
+        self.difference_type = new_type
+        self.appendActivityLog(
+            "Difference type changed to '%s'. Parent/derived versions: %s" % (
+                new_type.title,
+                self._getVersions(),
+                ))
+        return True
+
+

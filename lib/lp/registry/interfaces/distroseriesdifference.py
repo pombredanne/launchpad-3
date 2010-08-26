@@ -89,6 +89,18 @@ class IDistroSeriesDifference(Interface):
             username will be included when the message is appended.
         """
 
+    def updateDifferenceType():
+        """Checks that difference type matches the current publishings.
+
+        If the type is updated, a relevant message is appended to the
+        activity log.
+
+        If there is no longer a difference (ie. the versions are
+        the same) then the status is updated to
+
+        :return: True if the type was updated, False otherwise.
+        """
+
 
 class IDistroSeriesDifferenceSource(Interface):
     """A utility of this interface can be used to create differences."""

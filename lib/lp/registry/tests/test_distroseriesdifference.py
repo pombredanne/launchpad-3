@@ -17,6 +17,7 @@ from canonical.cachedproperty import (
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing import DatabaseFunctionalLayer
 from lp.testing import TestCaseWithFactory
+from lp.registry.enum import DistroSeriesDifferenceType
 from lp.registry.exceptions import NotADerivedSeriesError
 from lp.registry.interfaces.distroseriesdifference import (
     IDistroSeriesDifference,
@@ -66,9 +67,9 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         # The most recent publication is always returned, even if its pending.
         ds_diff = self.factory.makeDistroSeriesDifference(
             source_package_name_str="foonew")
-        src_name = self.factory.getOrMakeSourcePackageName("foonew")
         pending_pub = self.factory.makeSourcePackagePublishingHistory(
-            sourcepackagename=src_name, distroseries=ds_diff.derived_series,
+            sourcepackagename=ds_diff.source_package_name,
+            distroseries=ds_diff.derived_series,
             status=PackagePublishingStatus.PENDING)
         clear_cachedproperties(ds_diff)
 
@@ -89,9 +90,8 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         # The most recent publication is always returned, even if its pending.
         ds_diff = self.factory.makeDistroSeriesDifference(
             source_package_name_str="foonew")
-        src_name = self.factory.getOrMakeSourcePackageName("foonew")
         pending_pub = self.factory.makeSourcePackagePublishingHistory(
-            sourcepackagename=src_name,
+            sourcepackagename=ds_diff.source_package_name,
             distroseries=ds_diff.derived_series.parent_series,
             status=PackagePublishingStatus.PENDING)
         clear_cachedproperties(ds_diff)
@@ -127,21 +127,64 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         ds_diff = self.factory.makeDistroSeriesDifference(
             source_package_name_str="foonew",
             versions={
-                'parent_series':'1.0',
-                'derived_series': '0.9',
+                'parent':'1.0',
+                'derived': '0.9',
                 })
 
         self.assertIn(
             'Initial parent/derived versions: 1.0/0.9',
             ds_diff.activity_log)
 
-    def test_checkDifferenceType(self):
+    def test_updateDifferenceType_returns_false(self):
+        # False is returned if the type of difference has not changed.
+        ds_diff = self.factory.makeDistroSeriesDifference()
+
+        self.assertFalse(ds_diff.updateDifferenceType())
+
+    def test_updateDifferenceType_returns_true(self):
+        # True is returned if the type of difference does change.
+        ds_diff = self.factory.makeDistroSeriesDifference(
+            difference_type=(
+                DistroSeriesDifferenceType.UNIQUE_TO_DERIVED_SERIES))
+        parent_pub = self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagename=ds_diff.source_package_name,
+            distroseries=ds_diff.derived_series.parent_series,
+            status=PackagePublishingStatus.PENDING)
+        clear_cachedproperties(ds_diff)
+
+        self.assertTrue(ds_diff.updateDifferenceType())
+        self.assertEqual(
+            DistroSeriesDifferenceType.DIFFERENT_VERSIONS,
+            ds_diff.difference_type)
+
+    def test_updateDifferenceType_appends_to_activity_log(self):
+        # A message is appended to activity log when the type changes.
+        ds_diff = self.factory.makeDistroSeriesDifference(
+            difference_type=(
+                DistroSeriesDifferenceType.UNIQUE_TO_DERIVED_SERIES),
+            versions={'derived': '0.9'})
+        parent_pub = self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagename=ds_diff.source_package_name,
+            distroseries=ds_diff.derived_series.parent_series,
+            status=PackagePublishingStatus.PENDING,
+            version='1.0')
+        clear_cachedproperties(ds_diff)
+
+        ds_diff.updateDifferenceType()
+
+        self.assertIn(
+            "Difference type changed to 'Different versions'",
+            ds_diff.activity_log)
+        self.assertIn(
+            "Parent/derived versions: 1.0/0.9", ds_diff.activity_log)
+
+    def test_updateDifferenceType_resolves_difference(self):
         self.fail("Unimplemented")
 
     def test_appendActivityLog_not_public(self):
         self.fail("Unimplemented")
 
-    def test_pubs_are_cached(self):
+    def test_cached_properties(self):
         # Both the derived and parent pubs are cached.
         ds_diff = self.factory.makeDistroSeriesDifference()
 

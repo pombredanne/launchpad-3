@@ -1831,7 +1831,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
             source_pub = self.makeSourcePackagePublishingHistory(
                 distroseries=derived_series,
-                version=versions.get('derived_series'),
+                version=versions.get('derived'),
                 sourcepackagename=source_package_name)
 
         if difference_type is not (
@@ -1839,7 +1839,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
             source_pub = self.makeSourcePackagePublishingHistory(
                 distroseries=derived_series.parent_series,
-                version=versions.get('parent_series'),
+                version=versions.get('parent'),
                 sourcepackagename=source_package_name)
 
         return getUtility(IDistroSeriesDifferenceSource).new(

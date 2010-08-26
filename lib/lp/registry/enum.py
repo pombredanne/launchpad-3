@@ -76,6 +76,12 @@ class DistroSeriesDifferenceStatus(DBEnumeratedType):
         This difference should always be ignored.
         """)
 
+    RESOLVED = DBItem(4, """
+        Resolved
+
+        This difference has been resolved and versions are now equal.
+        """)
+
 class DistroSeriesDifferenceType(DBEnumeratedType):
     """Distribution series difference type."""
 
