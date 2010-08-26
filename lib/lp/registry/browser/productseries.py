@@ -237,7 +237,10 @@ class ProductSeriesInvolvedMenu(InvolvedMenu):
     def submit_code(self):
         target = canonical_url(
             self.pillar, view_name='+addbranch', rootsite='code')
-        enabled = self.view.official_codehosting
+        if self.view.codehosting_usage == ServiceUsage.LAUNCHPAD:
+            enabled = True
+        else:
+            enabled = False
         return Link(
             target, 'Submit code', icon='code', enabled=enabled)
 
@@ -251,7 +254,7 @@ class ProductSeriesInvolvementView(PillarView):
 
     def __init__(self, context, request):
         super(ProductSeriesInvolvementView, self).__init__(context, request)
-        self.official_codehosting = self.context.branch is not None
+        self.codehosting_usage = self.context.codehosting_usage
         self.official_answers = False
 
     @property
@@ -260,9 +263,13 @@ class ProductSeriesInvolvementView(PillarView):
         series_menu = MenuAPI(self.context).overview
         set_branch = series_menu['set_branch']
         set_branch.text = 'Configure series branch'
-        return [dict(link=set_branch,
-                     configured=self.official_codehosting)]
-
+        link = set_branch
+        if self.codehosting_usage == ServiceUsage.LAUNCHPAD:
+            configured = True
+        else:
+            configured = False
+        reuturn {
+            'link': link,
 
 class ProductSeriesOverviewMenu(
     ApplicationMenu, StructuralSubscriptionMenuMixin):
