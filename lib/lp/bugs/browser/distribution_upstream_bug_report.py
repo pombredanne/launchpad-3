@@ -167,6 +167,7 @@ class PackageBugReportData(BugReportData):
 
         self.bug_tracking_usage = product.bug_tracking_usage
 
+        # If a product is specified, build some convenient links to
         # pages which allow filling out required information. The
         # template ensures they are only visible to people who can
         # actually change the product.

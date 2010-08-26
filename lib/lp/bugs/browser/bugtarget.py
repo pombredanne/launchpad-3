@@ -92,11 +92,11 @@ from canonical.widgets.product import (
     GhostWidget,
     ProductBugTrackerWidget,
     )
+from lp.app.enums import ServiceUsage
 from lp.app.errors import (
     NotFoundError,
     UnexpectedFormData,
     )
-from lp.app.enums import ServiceUsage
 from lp.app.interfaces.launchpad import (
     ILaunchpadUsage,
     IServiceUsage,

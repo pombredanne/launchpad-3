@@ -37,6 +37,10 @@ rendering links:
     True
     >>> print view.official_malone
     True
+    >>> print view.official_rosetta
+    True
+    >>> print view.official_codehosting
+    False
     >>> for link in view.enabled_links:
     ...     print link.url
     http://bugs.launchpad.dev/app/simple/+filebug

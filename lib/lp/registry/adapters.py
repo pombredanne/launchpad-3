@@ -13,11 +13,19 @@ __all__ = [
     ]
 
 
-from zope.component import getUtility
+from zope.component import (
+    adapter,
+    getUtility,
+    )
 from zope.component.interfaces import ComponentLookupError
-from zope.interface import implements
+from zope.interface import (
+    implementer,
+    implements,
+    )
 
 from canonical.launchpad.webapp.interfaces import ILaunchpadPrincipal
+from lp.app.enums import IServiceUsage
+from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.poll import (
     IPollSet,
     IPollSubset,
@@ -26,13 +34,10 @@ from lp.registry.interfaces.poll import (
     )
 
 
+@implementer(IServiceUsage)
+@adapter(IDistroSeries)
 def distroseries_to_launchpadusage(distroseries):
     """Adapts `IDistroSeries` object to `ILaunchpadUsage`."""
-    return distroseries.distribution
-
-
-def distroseries_to_serviceusage(distroseries):
-    """Adapts `IDistroSeries` object to `IServiceUsage`."""
     return distroseries.distribution
 
 

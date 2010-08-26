@@ -166,10 +166,12 @@
                 </td>
               </tal:has-bugtracker>
               <tal:has-no-bugtracker condition="not: item/bugtracker">
-                <td tal:condition="item/bug_tracking_usage/enumvalue:LAUNCHPAD" align="center">
+                <td tal:condition="item/bug_tracking_usage/enumvalue:LAUNCHPAD"
+                  align="center">
                     <img src="/@@/yes" title="Launchpad" />
                 </td>
-                <td tal:condition="not: item/bug_tracking_usage/enumvalue:LAUNCHPAD" align="center">
+                <td tal:condition="not: item/bug_tracking_usage/enumvalue:LAUNCHPAD"
+                  align="center">
                     <img src="/@@/no" title="Unknown" />
                     <a tal:condition="item/product/required:launchpad.Edit"
                        tal:attributes="href item/product_edit_url">
