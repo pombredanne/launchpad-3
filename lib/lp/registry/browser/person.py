@@ -4968,11 +4968,14 @@ class PersonLatestQuestionsView(LaunchpadFormView):
 
 
 class PersonSearchQuestionsView(SearchQuestionsView):
-    """View used to search and display questions in which an IPerson is
-    involved.
-    """
+    """View to search and display questions that involve an `IPerson`."""
 
     display_target_column = True
+
+    @property
+    def template(self):
+        # Persons always show the default template.
+        return self.default_template
 
     @property
     def pageheading(self):
@@ -4988,10 +4991,8 @@ class PersonSearchQuestionsView(SearchQuestionsView):
                  mapping=dict(name=self.context.displayname))
 
 
-class SearchAnsweredQuestionsView(SearchQuestionsView):
+class SearchAnsweredQuestionsView(PersonSearchQuestionsView):
     """View used to search and display questions answered by an IPerson."""
-
-    display_target_column = True
 
     def getDefaultFilter(self):
         """See `SearchQuestionsView`."""
@@ -5011,10 +5012,8 @@ class SearchAnsweredQuestionsView(SearchQuestionsView):
                  mapping=dict(name=self.context.displayname))
 
 
-class SearchAssignedQuestionsView(SearchQuestionsView):
+class SearchAssignedQuestionsView(PersonSearchQuestionsView):
     """View used to search and display questions assigned to an IPerson."""
-
-    display_target_column = True
 
     def getDefaultFilter(self):
         """See `SearchQuestionsView`."""
@@ -5034,10 +5033,8 @@ class SearchAssignedQuestionsView(SearchQuestionsView):
                  mapping=dict(name=self.context.displayname))
 
 
-class SearchCommentedQuestionsView(SearchQuestionsView):
+class SearchCommentedQuestionsView(PersonSearchQuestionsView):
     """View used to search and show questions commented on by an IPerson."""
-
-    display_target_column = True
 
     def getDefaultFilter(self):
         """See `SearchQuestionsView`."""
@@ -5057,10 +5054,8 @@ class SearchCommentedQuestionsView(SearchQuestionsView):
                  mapping=dict(name=self.context.displayname))
 
 
-class SearchCreatedQuestionsView(SearchQuestionsView):
+class SearchCreatedQuestionsView(PersonSearchQuestionsView):
     """View used to search and display questions created by an IPerson."""
-
-    display_target_column = True
 
     def getDefaultFilter(self):
         """See `SearchQuestionsView`."""
@@ -5080,10 +5075,8 @@ class SearchCreatedQuestionsView(SearchQuestionsView):
                  mapping=dict(name=self.context.displayname))
 
 
-class SearchNeedAttentionQuestionsView(SearchQuestionsView):
+class SearchNeedAttentionQuestionsView(PersonSearchQuestionsView):
     """View used to search and show questions needing an IPerson attention."""
-
-    display_target_column = True
 
     def getDefaultFilter(self):
         """See `SearchQuestionsView`."""
@@ -5102,10 +5095,8 @@ class SearchNeedAttentionQuestionsView(SearchQuestionsView):
                  mapping=dict(name=self.context.displayname))
 
 
-class SearchSubscribedQuestionsView(SearchQuestionsView):
+class SearchSubscribedQuestionsView(PersonSearchQuestionsView):
     """View used to search and show questions subscribed to by an IPerson."""
-
-    display_target_column = True
 
     def getDefaultFilter(self):
         """See `SearchQuestionsView`."""
