@@ -81,10 +81,12 @@ class IDistroSeriesDifference(Interface):
         description=_(
             "The most recent published version in the parent series."))
 
-    def appendActivityLog(message):
+    def appendActivityLog(message, user=None):
         """Add a message to the activity log.
 
         :param message: The message to be appended to the activity log.
+        :param user: Optional user creating the message. If present the
+            username will be included when the message is appended.
         """
 
 

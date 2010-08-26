@@ -92,13 +92,15 @@ class DistroSeriesDifference(Storm):
         return self.derived_series.parent_series.getPublishedReleases(
             self.source_package_name, include_pending=True)[0]
 
-    # XXX Add user as a param too. And remove versions.
-    def appendActivityLog(self, message):
+    def appendActivityLog(self, message, user=None):
         """See `IDistroSeriesDifference`."""
+        username = " "
+        if user is not None:
+            username += user.name
+
         self.activity_log += (
-            "%(datestamp)s (%(parent_version)s/%(version)s) %(message)s\n" % {
-            'parent_version': self.parent_source_pub.source_package_version,
-            'version': self.source_pub.source_package_version,
+            "%(datestamp)s%(username)s: %(message)s\n" % {
             'datestamp': datetime.strftime(datetime.now(), "%Y-%m-%d"),
+            'username': username,
             'message': message,
             })

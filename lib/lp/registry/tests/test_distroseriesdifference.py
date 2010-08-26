@@ -104,6 +104,21 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             "Waiting for version 1.9\n",
             ds_diff.activity_log)
 
+    def test_appendActivityLog_includes_username(self):
+        # The username is included if a user is passed.
+        ds_diff = self.factory.makeDistroSeriesDifference(
+            source_package_name_str="foonew")
+
+        ds_diff.appendActivityLog(
+            "Waiting for version 1.9", ds_diff.derived_series.owner)
+
+        self.assertIn(
+            ds_diff.derived_series.owner.name,
+            ds_diff.activity_log)
+
+    def test_appendActivityLog_not_public(self):
+        self.fail("Unimplemented")
+
     def test_checkDifferenceType(self):
         self.fail("Unimplemented")
 
