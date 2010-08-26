@@ -91,26 +91,12 @@ class IPackageBuild(IBuildFarmJob):
             title=_("Distribution series"), required=True,
             description=_("Shortcut for its distribution series.")))
 
-    def getUploaderCommand(package_build, upload_leaf, uploader_logfilename):
-        """Get the command to run as the uploader.
-
-        :return: A list of command line arguments, beginning with the
-            executable.
-        """
-
     def getUploadDirLeaf(build_cookie, now=None):
         """Return the directory-leaf where files to be uploaded are stored.
 
         :param build_cookie: The build cookie as returned by the slave.
         :param now: The `datetime` to use when constructing the leaf
             directory name. If not provided, defaults to now.
-        """
-
-    def getUploadDir(upload_leaf):
-        """Return the full directory where files to be uploaded are stored.
-
-        :param upload_leaf: The leaf directory name where things will be
-            stored.
         """
 
     def getLogFromSlave(build):
