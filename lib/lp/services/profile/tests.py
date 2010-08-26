@@ -220,7 +220,7 @@ class TestRequestEndHandler(BaseTest):
     def setUp(self):
         TestCase.setUp(self)
         self.patch(da, 'get_request_start_time', time.time)
-        self.patch(da, 'get_request_duration', lambda : 0.5)
+        self.patch(da, 'get_request_duration', lambda: 0.5)
         self.profile_dir = self.makeTemporaryDirectory()
         self.memory_profile_log = os.path.join(self.profile_dir, 'memory_log')
         self.pushConfig('profiling', profile_dir=self.profile_dir)
@@ -448,6 +448,7 @@ class TestRequestEndHandler(BaseTest):
         request = self.endRequest('/++profile++log/')
         self.assertIn("-" + request.oopsid + "-", self.getProfilePaths()[0])
         self.assertCleanProfilerState()
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
