@@ -2561,3 +2561,14 @@ class EditLibraryFileAliasWithParent(AuthorizationBase):
         if parent is None:
             return False
         return check_permission(self.permission, parent)
+
+
+class AdminBugTracker(AuthorizationBase):
+    permission = 'launchpad.Admin'
+    usedfor = IBugTracker
+
+    def checkAuthenticated(self, user):
+        return (
+            user.in_janitor or
+            user.in_admin or
+            user.in_launchpad_developers)
