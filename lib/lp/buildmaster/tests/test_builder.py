@@ -23,9 +23,11 @@ from lp.buildmaster.interfaces.buildfarmjobbehavior import (
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.buildmaster.model.buildfarmjobbehavior import IdleBuildBehavior
 from lp.buildmaster.model.buildqueue import BuildQueue
-from lp.soyuz.interfaces.archive import ArchivePurpose
+from lp.soyuz.enums import (
+    ArchivePurpose,
+    PackagePublishingStatus,
+    )
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
-from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.model.binarypackagebuildbehavior import (
     BinaryPackageBuildBehavior,
     )

@@ -11,7 +11,7 @@ import os
 from StringIO import StringIO
 
 from canonical.config import config
-from lp.soyuz.interfaces.archive import ArchivePurpose
+from lp.soyuz.enums import ArchivePurpose
 
 
 def update_pub_config(pubconf):

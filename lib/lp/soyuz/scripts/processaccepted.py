@@ -27,13 +27,15 @@ from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.scripts.base import LaunchpadScript
-from lp.soyuz.interfaces.archive import (
+from lp.soyuz.enums import (
     ArchivePurpose,
+    PackageUploadStatus,
+    )
+from lp.soyuz.interfaces.archive import (
     IArchiveSet,
     )
 from lp.soyuz.interfaces.queue import (
     IPackageUploadSet,
-    PackageUploadStatus,
     )
 
 

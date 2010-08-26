@@ -21,9 +21,9 @@ from canonical.launchpad.scripts import FakeLogger
 from canonical.testing import LaunchpadZopelessLayer
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
+from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.interfaces.publishing import (
     active_publishing_status,
-    PackagePublishingStatus,
     )
 from lp.soyuz.model.publishing import (
     BinaryPackagePublishingHistory,

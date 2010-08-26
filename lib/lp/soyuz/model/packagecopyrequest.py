@@ -26,10 +26,10 @@ from canonical.launchpad.webapp.interfaces import (
     )
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.soyuz.enums import PackageCopyStatus
 from lp.soyuz.interfaces.packagecopyrequest import (
     IPackageCopyRequest,
     IPackageCopyRequestSet,
-    PackageCopyStatus,
     )
 
 

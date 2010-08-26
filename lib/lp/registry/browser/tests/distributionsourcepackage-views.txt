@@ -16,7 +16,7 @@ package within a distribution.
     # Publish the source 'gedit' in the ubuntutest main archive.
     >>> from datetime import datetime
     >>> import pytz
-    >>> from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+    >>> from lp.soyuz.enums import PackagePublishingStatus
     >>> gedit_main_src_hist = publisher.getPubSource(
     ...     sourcename="gedit", archive=ubuntutest.main_archive,
     ...     date_uploaded=datetime(2010, 12, 30, tzinfo=pytz.UTC),

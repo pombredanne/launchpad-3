@@ -29,7 +29,10 @@ from storm.locals import (
     Join,
     SQL,
     )
-from storm.store import Store
+from storm.store import (
+    EmptyResultSet,
+    Store,
+    )
 from zope.component import getUtility
 from zope.interface import implements
 
@@ -52,7 +55,6 @@ from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet,
     )
 from canonical.launchpad.database.librarian import LibraryFileAlias
-from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.mail import signed_message_from_string
@@ -113,9 +115,13 @@ from lp.registry.model.structuralsubscription import (
     StructuralSubscriptionTargetMixin,
     )
 from lp.services.worlddata.model.language import Language
+from lp.soyuz.enums import (
+    ArchivePurpose,
+    PackagePublishingStatus,
+    PackageUploadStatus,
+    )
 from lp.soyuz.interfaces.archive import (
     ALLOW_RELEASE_BUILDS,
-    ArchivePurpose,
     )
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageName
@@ -123,12 +129,10 @@ from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.soyuz.interfaces.publishing import (
     active_publishing_status,
     ICanPublishPackages,
-    PackagePublishingStatus,
     )
 from lp.soyuz.interfaces.queue import (
     IHasQueueItems,
     IPackageUploadSet,
-    PackageUploadStatus,
     )
 from lp.soyuz.interfaces.sourcepackageformat import (
     ISourcePackageFormatSelectionSet,
@@ -963,7 +967,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return [SourcePackage(sourcepackagename=spn, distroseries=self) for
             spn in result]
 
-    def getPublishedReleases(self, sourcepackage_or_name, version=None,
+    def getPublishedSources(self, sourcepackage_or_name, version=None,
                              pocket=None, include_pending=False,
                              exclude_pocket=None, archive=None):
         """See `IDistroSeries`."""
@@ -979,7 +983,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             spns = getUtility(ISourcePackageNameSet)
             spn = spns.queryByName(sourcepackage_or_name)
             if spn is None:
-                return []
+                return EmptyResultSet()
 
         queries = ["""
         sourcepackagerelease=sourcepackagerelease.id AND
@@ -1011,7 +1015,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             " AND ".join(queries), clauseTables = ['SourcePackageRelease'],
             orderBy=['-id'])
 
-        return shortlist(published)
+        return published
 
     def isUnstable(self):
         """See `IDistroSeries`."""
