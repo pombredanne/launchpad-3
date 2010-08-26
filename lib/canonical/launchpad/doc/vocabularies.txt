@@ -1,6 +1,10 @@
-= Vocabularies =
+============ 
+Vocabularies
+============
 
-== Introduction ==
+============
+Introduction
+============
 
 Vocabularies are lists of terms. In Launchpad's Component Architecture
 (CA), a vocabulary is a list of terms that a widget (normally a selection
@@ -17,8 +21,9 @@ style widget) "speaks", i.e., its allowed values.
     >>> launchbag = getUtility(IOpenLaunchBag)
     >>> launchbag.clear()
 
-
-=== Values, Tokens, and Titles ===
+==========================
+Values, Tokens, and Titles
+==========================
 
 In Launchpad, we generally use "tokenized vocabularies." Each term in
 a vocabulary has a value, token and title. A term is rendered in a
@@ -30,8 +35,9 @@ The $token is probably the data you would store in your DB. The Token is
 used to uniquely identify a Term, and the Title is the thing you display
 to the user.
 
-
-== Launchpad Vocabularies ==
+======================
+Launchpad Vocabularies
+======================
 
 There are two kinds of vocabularies in Launchpad: enumerable and
 non-enumerable. Enumerable vocabularies are short enough to render in a
@@ -52,11 +58,13 @@ vocabulary registry.
     >>> product_vocabulary.displayname
     'Select a project'
 
+=======================
+Enumerable Vocabularies
+=======================
 
-== Enumerable Vocabularies ==
-
-
-=== DistributionUsingMaloneVocabulary ===
+=================================
+DistributionUsingMaloneVocabulary
+=================================
 
 All the distributions that use Malone as their main bug tracker.
 
@@ -98,8 +106,9 @@ All the distributions that use Malone as their main bug tracker.
     ...
     LookupError:...
 
-
-=== BugNominatableSeriesVocabulary ===
+==============================
+BugNominatableSeriesVocabulary
+==============================
 
 All the series that can be nominated for fixing.
 
@@ -244,7 +253,9 @@ NoSuchDistroSeries error.
     NoSuchDistroSeries...
 
 
-=== ProjectProductsVocabularyUsingMalone ===
+====================================
+ProjectProductsVocabularyUsingMalone
+====================================
 
 All the products in a project using Malone.
 
@@ -262,14 +273,18 @@ All the products in a project using Malone.
     firefox: Mozilla Firefox
 
 
-== Non-Enumerable Vocabularies ==
+===========================
+Non-Enumerable Vocabularies
+===========================
 
 Iterating over non-enumerable vocabularies, while possible, will
 probably kill the database. Instead, these vocabularies are
 search-driven.
 
 
-=== BinaryAndSourcePackageNameVocabulary ===
+====================================
+BinaryAndSourcePackageNameVocabulary
+====================================
 
 The list of binary and source package names, ordered by name.
 
@@ -314,8 +329,9 @@ The search does a case-insensitive, substring match.
     [('linux-2.6.12', u'this kernel is like the crystal method: a temple...'),
      ('linux-source-2.6.15', u'Source of: linux-2.6.12')]
 
-
-=== BinaryPackageNameVocabulary ===
+===========================
+BinaryPackageNameVocabulary
+===========================
 
 All the binary packages in Launchpad.
 
@@ -331,7 +347,9 @@ All the binary packages in Launchpad.
      ('mozilla-firefox-data', u'Mozilla Firefox Data is .....')]
 
 
-=== SourcePackageNameVocabulary ===
+===========================
+SourcePackageNameVocabulary
+===========================
 
 All the source packages in Launchpad.
 
@@ -352,7 +370,9 @@ All the source packages in Launchpad.
     [('pmount', u'pmount')]
 
 
-=== BranchVocabulary ===
+================
+BranchVocabulary
+================
 
 The list of bzr branches registered in Launchpad.
 
@@ -432,7 +452,9 @@ able to see.
     >>> login('foo.bar@canonical.com')
 
 
-=== BranchRestrictedOnProduct ===
+=========================
+BranchRestrictedOnProduct
+=========================
 
 The BranchRestrictedOnProduct vocabulary restricts the result set to
 those of the product of the context.  Currently only two types of
@@ -461,7 +483,9 @@ The BranchRestrictedOnProduct behaves the same way as the more generic
 BranchVocabulary with respect to the tokens and privacy awareness.
 
 
-=== HostedBranchRestrictedOnOwner ===
+=============================
+HostedBranchRestrictedOnOwner
+=============================
 
 Here's a vocabulary for all hosted branches owned by the current user.
 
@@ -486,7 +510,9 @@ ones that aren't hosted on Launchpad.
     ~a-branching-user/product-two/hosted
 
 
-=== Processor ===
+=========
+Processor
+=========
 
 All processors type available in Launchpad.
 
@@ -498,7 +524,9 @@ All processors type available in Launchpad.
     ['386']
 
 
-=== BugWatchVocabulary ===
+==================
+BugWatchVocabulary
+==================
 
 All bug watches associated with a bugtask's bug.
 
@@ -555,7 +583,9 @@ email address is hidden, and there is no hyperlink.
     Lionel Richtea (mailto:&lt;email address hidden&gt;)
 
 
-== SpecificationDepCandidatesVocabulary ==
+====================================
+SpecificationDepCandidatesVocabulary
+====================================
 
 All blueprints that can be added as a dependency of the
 context blueprint.
@@ -659,7 +689,9 @@ https://bugs.edge.launchpad.net/blueprint/+bug/139385 for more details).
     []
 
 
-=== PPA ===
+===
+PPA
+===
 
 The PPA vocabulary contains all the PPAs available in a particular
 collection. It provides the IHugeVocabulary interface.
