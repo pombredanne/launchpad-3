@@ -323,7 +323,7 @@ class BugTaskCreationStep(AlsoAffectsStep):
             if target.bug_tracking_usage != ServiceUsage.LAUNCHPAD:
                 task_added.bugwatch = bug_watch
 
-        if (target.bug_tracking_usage != ServiceUsage.LAUNCHPAD 
+        if (target.bug_tracking_usage != ServiceUsage.LAUNCHPAD
             and task_added.bugwatch is not None
             and (task_added.bugwatch.bugtracker.bugtrackertype !=
                  BugTrackerType.EMAILADDRESS)):

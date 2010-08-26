@@ -136,8 +136,7 @@ class PillarView(LaunchpadView):
     def has_involvement(self):
         """This `IPillar` uses Launchpad."""
         return (
-            self.official_malone
-            or self.official_answers
+            self.official_malone or self.official_answers
             or self.official_blueprints or self.official_rosetta
             or self.official_codehosting)
 
