@@ -23,12 +23,24 @@ class TestSpecificationDepCandidatesVocabulary(TestCaseWithFactory):
         return getVocabularyRegistry().get(
             spec, name='SpecificationDepCandidates')
 
-    def test_getTermByToken_basic(self):
-        # getTermByToken with the name of an acceptable candidate spec returns
-        # the term for that candidate
+    def test_getTermByToken_product(self):
+        # Calling getTermByToken for a dependency vocab for a spec from a
+        # product with the name of an acceptable candidate spec returns the
+        # term for the candidate
         product = self.factory.makeProduct()
         spec = self.factory.makeSpecification(product=product)
         candidate = self.factory.makeSpecification(product=product)
+        vocab = self.getVocabularyForSpec(spec)
+        self.assertThat(
+            vocab.getTermByToken(candidate.name).value, Equals(candidate))
+
+    def test_getTermByToken_distro(self):
+        # Calling getTermByToken for a dependency vocab for a spec from a
+        # distribution with the name of an acceptable candidate spec returns
+        # the term for the candidate
+        distro = self.factory.makeDistribution()
+        spec = self.factory.makeSpecification(distribution=distro)
+        candidate = self.factory.makeSpecification(distribution=distro)
         vocab = self.getVocabularyForSpec(spec)
         self.assertThat(
             vocab.getTermByToken(candidate.name).value, Equals(candidate))

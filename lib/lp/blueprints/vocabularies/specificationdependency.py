@@ -78,6 +78,10 @@ class SpecificationDepCandidatesVocabulary(SQLObjectVocabularyBase):
         return SimpleTerm(obj, obj.name, obj.title)
 
     def getTermByToken(self, token):
+        """See `zope.schema.interfaces.IVocabularyTokenized`.
+
+        The tokens for specifications are just the name of the spec.
+        """
         spec = self.context.target.getSpecification(token)
         if spec is not None:
             filtered = self._filter_specs([spec])
