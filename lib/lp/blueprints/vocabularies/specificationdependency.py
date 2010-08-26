@@ -55,25 +55,6 @@ class SpecificationDepCandidatesVocabulary(SQLObjectVocabularyBase):
                     spec.target == self.context.target
                     and spec not in self.context.all_blocked)]
 
-    def _doSearch(self, query):
-        """Return terms where query is in the text of name
-        or title, or matches the full text index.
-        """
-
-        if not query:
-            return []
-
-        quoted_query = quote_like(query)
-        sql_query = ("""
-            (Specification.name LIKE %s OR
-             Specification.title LIKE %s OR
-             fti @@ ftq(%s))
-            """
-            % (quoted_query, quoted_query, quoted_query))
-        all_specs = Specification.select(sql_query, orderBy=self._orderBy)
-
-        return self._filter_specs(all_specs)
-
     def toTerm(self, obj):
         return SimpleTerm(obj, obj.name, obj.title)
 
@@ -90,24 +71,34 @@ class SpecificationDepCandidatesVocabulary(SQLObjectVocabularyBase):
         raise LookupError(token)
 
     def search(self, query):
-        candidate_specs = self._doSearch(query)
-        return CountableIterator(len(candidate_specs),
-                                 candidate_specs)
+        """See `SQLObjectVocabularyBase.search`.
 
+        We find specs where query is in the text of name or title, or matches
+        the full text index and then filter out ineligible specs using
+        `_filter_specs`.
+        """
+        if not query:
+            return CountableIterator(0, [])
+        quoted_query = quote_like(query)
+        sql_query = ("""
+            (Specification.name LIKE %s OR
+             Specification.title LIKE %s OR
+             fti @@ ftq(%s))
+            """
+            % (quoted_query, quoted_query, quoted_query))
+        all_specs = Specification.select(sql_query, orderBy=self._orderBy)
+        candidate_specs = self._filter_specs(all_specs)
+        return CountableIterator(len(candidate_specs), candidate_specs)
+
+    @property
     def _all_specs(self):
-        all_specs = self.context.target.specifications(
+        return self.context.target.specifications(
             filter=[SpecificationFilter.ALL],
             prejoin_people=False)
-        return self._filter_specs(all_specs)
 
     def __iter__(self):
-        return (self.toTerm(spec) for spec in self._all_specs())
+        return (self.toTerm(spec)
+                for spec in self._filter_specs(self._all_specs))
 
     def __contains__(self, obj):
-        # We don't use self._all_specs here, since it will call
-        # self._filter_specs(all_specs) which will cause all the specs
-        # to be loaded, whereas obj in all_specs will query a single object.
-        all_specs = self.context.target.specifications(
-            filter=[SpecificationFilter.ALL],
-            prejoin_people=False)
-        return obj in all_specs and len(self._filter_specs([obj])) > 0
+        return obj in self._all_specs and len(self._filter_specs([obj])) > 0
