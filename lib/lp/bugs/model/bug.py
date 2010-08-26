@@ -1634,7 +1634,7 @@ class Bug(SQLBase):
 
     def userCanView(self, user):
         """See `IBug`.
-        
+
         Note that Editing is also controlled by this check,
         because we permit editing of any bug one can see.
         """

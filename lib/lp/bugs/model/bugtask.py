@@ -17,11 +17,12 @@ __all__ = [
     'bugtask_sort_key',
     'get_bug_privacy_filter',
     'get_related_bugtasks_search_params',
-    'search_value_to_where_condition']
+    'search_value_to_where_condition',
+    ]
 
 
 import datetime
-from operator import attrgetter, itemgetter
+from operator import attrgetter
 
 from lazr.enum import DBItem
 import pytz
@@ -42,7 +43,6 @@ from storm.expr import (
     Or,
     SQL,
     )
-from storm.sqlobject import SQLObjectResultSet
 from storm.store import EmptyResultSet
 from storm.zope.interfaces import (
     IResultSet,
@@ -90,7 +90,6 @@ from canonical.launchpad.webapp.interfaces import (
     ILaunchBag,
     IStoreSelector,
     MAIN_STORE,
-    SLAVE_FLAVOR,
     )
 from lp.app.enums import ServiceUsage
 from lp.app.errors import NotFoundError

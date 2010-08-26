@@ -6,8 +6,8 @@
 __metaclass__ = type
 
 __all__ = [
-    'DistributionUpstreamBugReport'
-]
+    'DistributionUpstreamBugReport',
+    ]
 
 from operator import attrgetter
 
@@ -146,10 +146,11 @@ class PackageBugReportData(BugReportData):
         - dssp: an IDistributionSeriesSourcepackage
         - product: an IProduct
         - bugtracker: convenience holder for the product's bugtracker
-        - bug_tracking_usage: convenience enum for 
+        - bug_tracking_usage: convenience enum for
             IProduct.bug_tracking_usage
         - *_url: convenience URLs
     """
+
     def __init__(self, dsp, dssp, product, open_bugs, triaged_bugs,
                  upstream_bugs, watched_bugs, bugs_with_upstream_patches):
         BugReportData.__init__(self, open_bugs, triaged_bugs, upstream_bugs,
@@ -373,4 +374,3 @@ class DistributionUpstreamBugReport(LaunchpadView):
                 dsp, dssp, product, open, triaged, upstream, watched,
                 bugs_with_upstream_patches)
             self._data.append(item)
-
