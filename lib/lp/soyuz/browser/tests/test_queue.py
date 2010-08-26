@@ -18,10 +18,10 @@ from zope.component import (
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import LaunchpadFunctionalLayer
 from lp.archiveuploader.tests import datadir
+from lp.soyuz.enums import PackageUploadStatus
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.queue import (
     IPackageUploadSet,
-    PackageUploadStatus,
     )
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (

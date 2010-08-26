@@ -15,7 +15,7 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.component import IComponentSet
-from lp.soyuz.interfaces.publishing import (
+from lp.soyuz.enums import (
     PackagePublishingPriority,
     PackagePublishingStatus,
     )

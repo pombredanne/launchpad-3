@@ -638,8 +638,8 @@ PPA vocabulary searches consider the owner FTI and the PPA FTI.
 
 We will create an additional PPA for Celso named 'testing'
 
-    >>> from lp.soyuz.interfaces.archive import (
-    ...     ArchivePurpose, IArchiveSet)
+    >>> from lp.soyuz.enums import ArchivePurpose
+    >>> from lp.soyuz.interfaces.archive import IArchiveSet
 
     >>> login_person(current_user)
     >>> cprov = getUtility(IPersonSet).getByName('cprov')

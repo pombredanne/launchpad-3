@@ -23,10 +23,10 @@ from canonical.launchpad.webapp.interfaces import (
     MAIN_STORE,
     MASTER_FLAVOR,
     )
+from lp.soyuz.enums import SourcePackageFormat
 from lp.soyuz.interfaces.sourcepackageformat import (
     ISourcePackageFormatSelection,
     ISourcePackageFormatSelectionSet,
-    SourcePackageFormat,
     )
 
 
