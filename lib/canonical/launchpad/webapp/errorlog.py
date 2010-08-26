@@ -205,7 +205,7 @@ class ErrorReport:
         duration = int(float(msg.getheader('duration', '-1')))
         informational = msg.getheader('informational')
 
-        # Explicitely use an iterator so we can process the file
+        # Explicitly use an iterator so we can process the file
         # sequentially. In most instances the iterator will actually
         # be the file object passed in because file objects should
         # support iteration.
@@ -295,7 +295,7 @@ class ErrorReportingUtility:
         # the current log_namer naming rules and the exact timestamp.
         oops_filename = self.log_namer.getFilename(serial_from_time, time)
         # Note that if there were no logs written, or if there were two
-        # oops that matched the time window of directory on disk, this 
+        # oops that matched the time window of directory on disk, this
         # call can raise an IOError.
         oops_report = open(oops_filename, 'r')
         try:
@@ -338,7 +338,8 @@ class ErrorReportingUtility:
             determined if not supplied.  Useful for testing.  Not part of
             IErrorReportingUtility).
         """
-        self._raising(info, request=request, now=now, informational=False)
+        return self._raising(
+            info, request=request, now=now, informational=False)
 
     def _raising(self, info, request=None, now=None, informational=False):
         """Private method used by raising() and handling()."""
@@ -355,6 +356,7 @@ class ErrorReportingUtility:
             self._do_copy_to_zlog(
                 entry.time, entry.type, entry.url, info, entry.id)
         notify(ErrorReportEvent(entry))
+        return entry
 
     def _makeErrorReport(self, info, request=None, now=None,
                          informational=False):
@@ -472,7 +474,8 @@ class ErrorReportingUtility:
         :param now: The datetime to use as the current time.  Will be
             determined if not supplied.  Useful for testing.
         """
-        self._raising(info, request=request, now=now, informational=True)
+        return self._raising(
+            info, request=request, now=now, informational=True)
 
     def _do_copy_to_zlog(self, now, strtype, url, info, oopsid):
         distant_past = datetime.datetime(1970, 1, 1, 0, 0, 0, tzinfo=UTC)
