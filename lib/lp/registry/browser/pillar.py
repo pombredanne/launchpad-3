@@ -31,7 +31,6 @@ from canonical.launchpad.webapp.publisher import (
     nearest,
     )
 from canonical.launchpad.webapp.tales import MenuAPI
-from lp.app.enums import ServiceUsage
 from lp.registry.browser.structuralsubscription import (
     StructuralSubscriptionMenuMixin,
     )

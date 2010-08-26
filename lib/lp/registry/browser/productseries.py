@@ -83,7 +83,6 @@ from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.tales import MenuAPI
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
-from lp.app.enums import ServiceUsage
 from lp.app.errors import (
     NotFoundError,
     UnexpectedFormData,

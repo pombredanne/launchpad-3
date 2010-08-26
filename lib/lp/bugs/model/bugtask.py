@@ -262,7 +262,7 @@ class BugTaskDelta:
     """See `IBugTaskDelta`."""
 
     implements(IBugTaskDelta)
-    
+
     def __init__(self, bugtask, status=None, importance=None,
                  assignee=None, milestone=None, statusexplanation=None,
                  bugwatch=None, target=None):
@@ -485,7 +485,7 @@ def validate_target_attribute(self, attr, value):
 
 class PassthroughValue:
     """A wrapper to allow setting values on conjoined bug tasks."""
-    
+
     def __init__(self, value):
         self.value = value
 
@@ -2170,7 +2170,7 @@ class BugTaskSet:
 
     def search(self, params, *args, **kwargs):
         """See `IBugTaskSet`.
-        
+
         :param _noprejoins: Private internal parameter to BugTaskSet which
             disables all use of prejoins : consolidated from code paths that
             claim they were inefficient and unwanted.
@@ -2238,8 +2238,8 @@ class BugTaskSet:
             return bugtask
 
         # Build up the joins.
-        # TODO: implement _noprejoins for this code path: as of 20100818 it has
-        # been silently disabled because clients of the API were setting
+        # TODO: implement _noprejoins for this code path: as of 20100818 it
+        # has been silently disabled because clients of the API were setting
         # prejoins=[] which had no effect; this TODO simply notes the reality
         # already existing when it was added.
         joins = Alias(result._get_select(), "BugTask")
@@ -2289,9 +2289,10 @@ class BugTaskSet:
             # Import here because of cyclic references.
             from lp.registry.model.milestone import (
                 Milestone, milestone_sort_key)
-            # We need the store that was used, we have no objects to key off of
-            # other than the search result, and Store.of() doesn't currently
-            # work on result sets. Additionally it may be a DecoratedResultSet.
+            # We need the store that was used, we have no objects to key off
+            # of other than the search result, and Store.of() doesn't
+            # currently work on result sets. Additionally it may be a
+            # DecoratedResultSet.
             if zope_isinstance(search_results, DecoratedResultSet):
                 store = removeSecurityProxy(search_results).result_set._store
             else:

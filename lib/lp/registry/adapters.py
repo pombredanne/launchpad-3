@@ -30,9 +30,11 @@ def distroseries_to_launchpadusage(distroseries):
     """Adapts `IDistroSeries` object to `ILaunchpadUsage`."""
     return distroseries.distribution
 
+
 def distroseries_to_serviceusage(distroseries):
     """Adapts `IDistroSeries` object to `IServiceUsage`."""
     return distroseries.distribution
+
 
 def person_from_principal(principal):
     """Adapt `ILaunchpadPrincipal` to `IPerson`."""
