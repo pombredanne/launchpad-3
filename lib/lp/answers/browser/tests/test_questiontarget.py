@@ -38,7 +38,7 @@ class TestSearchQuestionsView(TestCaseWithFactory):
 
 class TestSearchQuestionsViewCanConfigureAnswers(TestSearchQuestionsView):
 
-    def test_can_configure_answers_product_no_edit_permission(self):
+    def test_cannot_configure_answers_product_no_edit_permission(self):
         product = self.factory.makeProduct()
         view = create_initialized_view(product, '+questions')
         self.assertEqual(False, view.can_configure_answers)
@@ -49,7 +49,7 @@ class TestSearchQuestionsViewCanConfigureAnswers(TestSearchQuestionsView):
         view = create_initialized_view(product, '+questions')
         self.assertEqual(True, view.can_configure_answers)
 
-    def test_can_configure_answers_distribution_no_edit_permission(self):
+    def test_cannot_configure_answers_distribution_no_edit_permission(self):
         distribution = self.factory.makeDistribution()
         view = create_initialized_view(distribution, '+questions')
         self.assertEqual(False, view.can_configure_answers)
@@ -60,13 +60,15 @@ class TestSearchQuestionsViewCanConfigureAnswers(TestSearchQuestionsView):
         view = create_initialized_view(distribution, '+questions')
         self.assertEqual(True, view.can_configure_answers)
 
-    def test_can_configure_answers_projectgroup_with_edit_permission(self):
+    def test_cannot_configure_answers_projectgroup_with_edit_permission(self):
+        # Project groups inherit Launchpad usage from their projects.
         project_group = self.factory.makeProject()
         login_person(project_group.owner)
         view = create_initialized_view(project_group, '+questions')
         self.assertEqual(False, view.can_configure_answers)
 
-    def test_can_configure_answers_dsp_with_edit_permission(self):
+    def test_cannot_configure_answers_dsp_with_edit_permission(self):
+        # DSPs inherit Launchpad usage from their distribution.
         dsp = self.factory.makeDistributionSourcePackage()
         login_person(dsp.distribution.owner)
         view = create_initialized_view(dsp, '+questions')
