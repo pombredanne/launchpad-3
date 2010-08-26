@@ -39,7 +39,7 @@ def get_bugs_from_changes_file(changes_file):
     contents = changes_file.read()
     changes_lines = contents.splitlines(True)
     tags = parse_tagfile_lines(changes_lines, allow_unsigned=True)
-    bugs_fixed_line = tags.get('launchpad-bugs-fixed', '')
+    bugs_fixed_line = tags.get('Launchpad-bugs-fixed', '')
     bugs = []
     for bug_id in bugs_fixed_line.split():
         if not bug_id.isdigit():

@@ -173,6 +173,21 @@ class DSCFileTests(PackageUploadFileTestCase):
         self.assertEquals("0.42", release.version)
         self.assertEquals("dpkg, bzr", release.builddepends)
 
+    def test_storeInDatabase_case_sensitivity(self):
+        # storeInDatabase supports field names with different cases,
+        # confirming to Debian policy.
+        dsc = self.getBaseDsc()
+        dsc["buIld-depends"] = "dpkg, bzr"
+        changes = self.getBaseChanges()
+        uploadfile = self.createDSCFile(
+            "foo.dsc", dsc, "main/net", "extra", "dulwich", "0.42",
+            self.createChangesFile("foo.changes", changes))
+        uploadfile.files = []
+        (uploadfile.changelog_path, changelog_digest, changelog_size) = (
+            self.writeUploadFile("changelog", "DUMMY"))
+        release = uploadfile.storeInDatabase(None)
+        self.assertEquals("dpkg, bzr", release.builddepends)
+
     def test_user_defined_fields(self):
         # Test that storeInDatabase updates user_defined_fields.
         dsc = self.getBaseDsc()
@@ -187,7 +202,7 @@ class DSCFileTests(PackageUploadFileTestCase):
         release = uploadfile.storeInDatabase(None)
         # DSCFile lowercases the field names
         self.assertEquals(
-            [["python-version", u"2.5"]], release.user_defined_fields)
+            [["Python-Version", u"2.5"]], release.user_defined_fields)
 
 
 class DebBinaryUploadFileTests(PackageUploadFileTestCase):

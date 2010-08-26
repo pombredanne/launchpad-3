@@ -169,7 +169,7 @@ def generate_changes(dsc, dsc_files, suite, changelog, urgency, closes,
     if closes:
         changes += "Closes: %s\n" % (" ".join(closes))
     if lp_closes:
-        changes += "Launchpad-Bugs-Fixed: %s\n" % (" ".join(lp_closes))
+        changes += "Launchpad-bugs-fixed: %s\n" % (" ".join(lp_closes))
     changes += "Changes: \n"
     changes += changelog
     changes += "Files: \n"
