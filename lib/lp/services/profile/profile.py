@@ -96,9 +96,10 @@ def end_request(event):
 
     content_type = request.response.getHeader('content-type')
     if content_type is None:
+        content_type_params = {}
         is_html = False
     else:
-        _major, _minor, _params = parse(content_type)
+        _major, _minor, content_type_params = parse(content_type)
         is_html = _major == 'text' and _minor == 'html'
 
     template_context = {
@@ -144,7 +145,8 @@ def end_request(event):
 
     if actions and is_html:
         # Hack the new HTML in at the end of the page.
-        added_html = template.render(**template_context)
+        encoding = content_type_params.get('charset', 'utf-8')
+        added_html = template.render(**template_context).encode(encoding)
         existing_html = request.response.consumeBody()
         e_start, e_close_body, e_end = existing_html.rpartition(
             '</body>')
