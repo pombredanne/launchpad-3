@@ -1809,6 +1809,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
     def makeDistroSeriesDifference(
         self, derived_series=None, source_package_name_str=None,
+        versions=None,
         difference_type=DistroSeriesDifferenceType.DIFFERENT_VERSIONS):
         """Create a new distro series source package difference."""
         if derived_series is None:
@@ -1822,11 +1823,15 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         source_package_name = self.getOrMakeSourcePackageName(
             source_package_name_str)
 
+        if versions is None:
+            versions = {}
+
         if difference_type is not (
             DistroSeriesDifferenceType.MISSING_FROM_DERIVED_SERIES):
 
             source_pub = self.makeSourcePackagePublishingHistory(
                 distroseries=derived_series,
+                version=versions.get('derived_series'),
                 sourcepackagename=source_package_name)
 
         if difference_type is not (
@@ -1834,6 +1839,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
             source_pub = self.makeSourcePackagePublishingHistory(
                 distroseries=derived_series.parent_series,
+                version=versions.get('parent_series'),
                 sourcepackagename=source_package_name)
 
         return getUtility(IDistroSeriesDifferenceSource).new(

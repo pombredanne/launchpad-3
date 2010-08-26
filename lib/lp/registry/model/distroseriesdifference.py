@@ -76,7 +76,17 @@ class DistroSeriesDifference(Storm):
         diff.source_package_name = source_package_name
         diff.status = status
         diff.difference_type = difference_type
+
+        src_pub_ver = parent_src_pub_ver = "-"
+        if diff.source_pub:
+            src_pub_ver = diff.source_pub.source_package_version
+        if diff.parent_source_pub is not None:
+            parent_src_pub_ver = diff.parent_source_pub.source_package_version
+        versions = parent_src_pub_ver + "/" + src_pub_ver
+
         diff.activity_log = u""
+        diff.appendActivityLog(
+            "Initial parent/derived versions: %s" % versions)
         return store.add(diff)
 
     @property

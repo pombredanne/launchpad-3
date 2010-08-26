@@ -116,10 +116,26 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             ds_diff.derived_series.owner.name,
             ds_diff.activity_log)
 
+    def test_appendActivityLog_called_on_creation(self):
+        # The creation of a difference is logged with initial versions.
+        ds_diff = self.factory.makeDistroSeriesDifference(
+            source_package_name_str="foonew",
+            versions={
+                'parent_series':'1.0',
+                'derived_series': '0.9',
+                })
+
+        self.assertIn(
+            'Initial parent/derived versions: 1.0/0.9',
+            ds_diff.activity_log)
+
+    def test_checkDifferenceType(self):
+        self.fail("Unimplemented")
+
     def test_appendActivityLog_not_public(self):
         self.fail("Unimplemented")
 
-    def test_checkDifferenceType(self):
+    def test_pubs_are_cached(self):
         self.fail("Unimplemented")
 
 
