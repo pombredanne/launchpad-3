@@ -11,8 +11,9 @@ __all__ = [
     'SpecificationDependencyTreeView',
     ]
 
-from zope.formlib import form
-from zope.schema import Choice
+from zope.interface import Interface
+
+from lazr.restful.interface import copy_field
 
 from canonical.launchpad import _
 from canonical.launchpad.webapp import (
@@ -27,25 +28,21 @@ from lp.blueprints.interfaces.specificationdependency import (
     )
 
 
-class SpecificationDependencyAddView(LaunchpadFormView):
-    schema = ISpecificationDependency
-    field_names = ['dependency']
-    label = _('Depends On')
+class AddSpecificationDependencySchema(Interface):
 
-    def setUpFields(self):
-        """Override the setup to define own fields."""
-        self.form_fields = form.Fields(
-            Choice(
-                __name__='dependency',
-                title=_(u'Depends On'),
-                vocabulary='SpecificationDepCandidates',
-                required=True,
-                description=_(
-                    "If another blueprint needs to be fully implemented "
-                    "before this feature can be started, then specify that "
-                    "dependency here so Launchpad knows about it and can "
-                    "give you an accurate project plan.")),
-            render_context=self.render_context)
+    dependency = copy_field(
+        ISpecificationDependency['dependency'],
+        readonly=False,
+        description=_(
+            "If another blueprint needs to be fully implemented "
+            "before this feature can be started, then specify that "
+            "dependency here so Launchpad knows about it and can "
+            "give you an accurate project plan."))
+
+
+class SpecificationDependencyAddView(LaunchpadFormView):
+    schema = AddSpecificationDependencySchema
+    label = _('Depends On')
 
     def validate(self, data):
         is_valid = True
