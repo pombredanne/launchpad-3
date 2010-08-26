@@ -5,7 +5,6 @@
 __metaclass__ = type
 
 
-
 from zope.interface import implements
 from lazr.restful.interfaces import ICollectionResource
 
@@ -42,7 +41,8 @@ class FakeCollectionResourceView(FakeView):
 
     def __init__(self):
         super(FakeCollectionResourceView, self).__init__()
-        self.type_url = u'https://launchpad.dev/api/devel/#origin-page-resource'
+        self.type_url = (
+            u'https://launchpad.dev/api/devel/#origin-page-resource')
 
 
 class TestWebServicePageIDs(TestCase):
@@ -99,4 +99,3 @@ class TestCollectionResourcePageIDs(TestCase):
         self.assertEqual(
             self.makePageID(),
             'FakeContext:FakeCollectionResourceView:#origin-page-resource')
-
