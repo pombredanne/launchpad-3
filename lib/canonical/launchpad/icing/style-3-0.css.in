@@ -185,7 +185,8 @@ table.wide {
     width: 60em;
     }
 pre, code, samp, tt, .console {
-    font-size: 116%;
+    font-family: 'UbuntuBeta Mono', 'Ubuntu Mono', monospace;
+    font-size: 93%;
     margin-bottom: 0.8em;
     }
 pre.wrap {
@@ -1092,7 +1093,7 @@ span.see-all {
     margin-top: 1em;
     }
 p.search-results {
-    font-size: 116%;
+    font-size: 93%;
     }
 .top-portlet .summary {
     margin: 0 0 1em 0;
@@ -1748,7 +1749,7 @@ a.unofficial-tag {
     }
 pre.changelog, table.diff,
 .bug-comment, .bug-activity, .codereviewcomment {
-    font-size: 116%;
+    font-size: 93%;
     font-family: 'UbuntuBeta Mono', 'Ubuntu Mono', monospace;
     }
 .cloud-size-smallest {
