@@ -400,15 +400,15 @@ class BugTrackerEditView(LaunchpadEditFormView):
         user_can_reset_watches = check_permission(
             "launchpad.Admin", self.context)
         return (
-            user_can_reset_watches and not
-            self.context.watches.is_empty())
+            user_can_reset_watches and
+            self.context.watches.count() > 0)
 
     @action(
         'Reschedule all watches', name='reschedule',
         condition=reschedule_action_condition)
     def rescheduleAction(self, action, data):
         """Reschedule all the watches for the bugtracker."""
-        self.context.resetWatches(user=self.user)
+        self.context.resetWatches()
         self.request.response.addInfoNotification(
             "All bug watches on %s have been rescheduled." %
             self.context.title)
