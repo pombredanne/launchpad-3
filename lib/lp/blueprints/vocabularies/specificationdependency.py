@@ -78,10 +78,11 @@ class SpecificationDepCandidatesVocabulary(SQLObjectVocabularyBase):
         return SimpleTerm(obj, obj.name, obj.title)
 
     def getTermByToken(self, token):
-        search_results = self._doSearch(token)
-        for search_result in search_results:
-            if search_result.name == token:
-                return self.toTerm(search_result)
+        spec = self.context.target.getSpecification(token)
+        if spec is not None:
+            filtered = self._filter_specs([spec])
+            if len(filtered) > 0:
+                return self.toTerm(filtered[0])
         raise LookupError(token)
 
     def search(self, query):
