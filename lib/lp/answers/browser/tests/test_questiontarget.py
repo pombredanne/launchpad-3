@@ -75,13 +75,13 @@ class TestSearchQuestionsViewCanConfigureAnswers(TestSearchQuestionsView):
         self.assertEqual(False, view.can_configure_answers)
 
 
-class TestSearchQuestionsViewSelectedTemplate(TestSearchQuestionsView):
-    """Test the behaviour of SearchQuestionsView.selected_template"""
+class TestSearchQuestionsViewTemplate(TestSearchQuestionsView):
+    """Test the behaviour of SearchQuestionsView.template"""
 
     def assertViewTemplate(self, context, file_name):
         view = create_initialized_view(context, '+questions')
         self.assertEqual(
-            file_name, os.path.basename(view.selected_template.filename))
+            file_name, os.path.basename(view.template.filename))
 
     def test_template_product_answers_usage_unknown(self):
         product = self.factory.makeProduct()

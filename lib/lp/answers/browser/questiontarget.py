@@ -190,23 +190,24 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
     custom_widget('status', LabeledMultiCheckBoxWidget,
                   orientation='horizontal')
 
-    template = ViewPageTemplateFile('../templates/question-listing.pt')
+    default_template = ViewPageTemplateFile(
+        '../templates/question-listing.pt')
     unknown_template = ViewPageTemplateFile('../templates/unknown-support.pt')
 
     @property
-    def selected_template(self):
+    def template(self):
         """The template to render the presentation.
 
         Subclasses can redefine this property to choose their own template.
         """
         if IQuestionSet.providedBy(self.context):
-            return self.template
+            return self.default_template
         involvement = getMultiAdapter(
             (self.context, self.request), name='+get-involved')
         if involvement.official_answers:
             # Primary contexts that officially use answers have a
             # search and listing presentation.
-            return self.template
+            return self.default_template
         else:
             # Primary context that do not officially use answers have an
             # an explanation about about the current state.
@@ -214,7 +215,7 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
 
     def render(self):
         """See `LaunchpadView`."""
-        return self.selected_template()
+        return self.template()
 
     @property
     def page_title(self):
