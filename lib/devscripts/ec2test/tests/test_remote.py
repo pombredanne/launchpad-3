@@ -280,7 +280,7 @@ class TestLaunchpadTester(TestCaseWithTransport, RequestHelpers):
         # Break the test runner deliberately. In production, this is more
         # likely to be a system error than a programming error.
         tester._spawn_test_process = lambda: 1/0
-        self.assertRaises(ZeroDivisionError, tester.test)
+        tester.test()
         # Message not being sent implies got_result thought it got a failure.
         self.assertEqual([], log)
         self.assertIn("ERROR IN TESTRUNNER", logger.get_summary_contents())
@@ -616,7 +616,7 @@ class TestWebTestLogger(TestCaseWithTransport, RequestHelpers):
         self.assertEqual('foo\n', logger.get_full_log_contents())
         self.assertEqual('foo\n', logger.get_summary_contents())
 
-    def test_error_in_testrunner(self):
+    def test_error_in_testrunner_logs_to_summary(self):
         # error_in_testrunner logs the traceback to the summary log in a very
         # prominent way.
         try:
@@ -629,6 +629,37 @@ class TestWebTestLogger(TestCaseWithTransport, RequestHelpers):
         self.assertEqual(
             "\n\nERROR IN TESTRUNNER\n\n%s" % (stack,),
             logger.get_summary_contents())
+
+    def test_error_in_testrunner_sends_email(self):
+        # If email addresses are configurd, error_in_testrunner emails them
+        # with the failure and the full log.
+        try:
+            1/0
+        except ZeroDivisionError:
+            exc_info = sys.exc_info()
+        log = []
+        request = self.make_request(
+            emails=['foo@example.com'], emails_sent=log)
+        logger = self.make_logger(request=request)
+        logger.error_in_testrunner(exc_info)
+        [email] = log
+        self.assertEqual(
+            'Test results: %s: FAILURE' % request.get_merge_description(),
+            email['Subject'])
+        [body, attachment] = email.get_payload()
+        self.assertIsInstance(body, MIMEText)
+        self.assertEqual('inline', body['Content-Disposition'])
+        self.assertEqual('text/plain; charset="utf-8"', body['Content-Type'])
+        self.assertEqual(
+            logger.get_summary_contents(), body.get_payload(decode=True))
+        self.assertIsInstance(attachment, MIMEApplication)
+        self.assertEqual('application/x-gzip', attachment['Content-Type'])
+        self.assertEqual(
+            'attachment;',
+            attachment['Content-Disposition'][:len('attachment;')])
+        self.assertEqual(
+            logger.get_full_log_contents(),
+            gunzip_data(attachment.get_payload().decode('base64')))
 
 
 class TestEC2Runner(TestCaseWithTransport, RequestHelpers):
@@ -679,18 +710,12 @@ class TestEC2Runner(TestCaseWithTransport, RequestHelpers):
         # being able to spawn the child process.
         tester._spawn_test_process = lambda: 1/0
         runner = self.make_ec2runner(emails=to_emails, email_log=email_log)
-        # XXX: I'm not actually sure if we actually care whether or not
-        # runner.run raises the exception from the innards of tester.test. We
-        # certainly care that it re-raises exceptions generally.
-        self.assertRaises(
-            ZeroDivisionError, runner.run, "launchpad tester", tester.test)
+        runner.run("launchpad tester", tester.test)
         # The primary thing we care about is that email *was* sent.
         self.assertNotEqual([], email_log)
-        [tester_msg, runner_msg] = email_log
+        [tester_msg] = email_log
         self.assertEqual('foo@example.com', tester_msg['To'])
-        self.assertEqual('foo@example.com', runner_msg['To'])
         self.assertIn('ZeroDivisionError', str(tester_msg))
-        self.assertIn('ZeroDivisionError', str(runner_msg))
 
 
 # XXX: Add tests that show that _some_ kind of email is sent if

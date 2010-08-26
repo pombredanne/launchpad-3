@@ -275,9 +275,7 @@ class LaunchpadTester:
             exit_status = popen.wait()
         except:
             self._logger.error_in_testrunner(sys.exc_info())
-            exit_status = 1
-            raise
-        finally:
+        else:
             self._logger.got_result(not exit_status)
 
     def _gather_test_output(self, input_stream, logger):
@@ -521,6 +519,13 @@ class WebTestLogger:
         summary.write('\n\nERROR IN TESTRUNNER\n\n')
         traceback.print_exception(exc_type, exc_value, exc_tb, file=summary)
         summary.flush()
+        if self._request.wants_email:
+            self._write_to_filename(
+                self._summary_filename,
+                '\n(See the attached file for the complete log)\n')
+            summary = self.get_summary_contents()
+            full_log_gz = gzip_data(self.get_full_log_contents())
+            self._request.send_report_email(False, summary, full_log_gz)
 
     def get_index_contents(self):
         """Return the contents of the index.html page."""
