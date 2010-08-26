@@ -390,7 +390,8 @@
                 attributes="
                     destroySelf
                     ensurePersonForSelf
-                    linkPersonToSelf"
+                    linkPersonToSelf
+                    "
                 set_attributes="
                     aliases
                     baseurl
