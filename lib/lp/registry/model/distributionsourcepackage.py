@@ -226,6 +226,7 @@ class DistributionSourcePackage(BugTargetBase,
             BugTask.bug == Bug.id,
             BugTask.distributionID == self.distribution.id,
             BugTask.sourcepackagenameID == self.sourcepackagename.id,
+            Bug.duplicateof == None,
             BugTask.status.is_in(UNRESOLVED_BUGTASK_STATUSES)).one()
 
         # Aggregate functions return NULL if zero rows match.
@@ -567,6 +568,7 @@ class DistributionSourcePackage(BugTargetBase,
         dsp.sourcepackagename = sourcepackagename
         dsp.is_upstream_link_allowed = is_upstream_link_allowed
         Store.of(distribution).add(dsp)
+        Store.of(distribution).flush()
         return dsp
 
     @classmethod

@@ -31,27 +31,27 @@ class IServiceUsage(Interface):
     # implies an actual location not an answer of "Launchpad, externally, or
     # neither."
     answers_usage = Choice(
-        title=_('Type of service for answers application.'),
+        title=_('Type of service for answers application'),
         description=_("Where does this pillar have an Answers forum?"),
         default=ServiceUsage.UNKNOWN,
         vocabulary=ServiceUsage)
     blueprints_usage = Choice(
-        title=_('Type of service for blueprints application.'),
+        title=_('Type of service for blueprints application'),
         description=_("Where does this pillar host blueprints?"),
         default=ServiceUsage.UNKNOWN,
         vocabulary=ServiceUsage)
     codehosting_usage = Choice(
-        title=_('Type of service for hosting code.'),
+        title=_('Type of service for hosting code'),
         description=_("Where does this pillar host code?"),
         default=ServiceUsage.UNKNOWN,
         vocabulary=ServiceUsage)
     translations_usage = Choice(
-        title=_('Type of service for translations application.'),
+        title=_('Type of service for translations application'),
         description=_("Where does this pillar do translations?"),
         default=ServiceUsage.UNKNOWN,
         vocabulary=ServiceUsage)
     bug_tracking_usage = Choice(
-        title=_('Type of service for tracking bugs.'),
+        title=_('Type of service for tracking bugs'),
         description=_("Where does this pillar track bugs?"),
         default=ServiceUsage.UNKNOWN,
         vocabulary=ServiceUsage)
@@ -77,7 +77,7 @@ class ILaunchpadUsage(Interface):
         title=_('Translations for this project are done in Launchpad'),
         required=True)
     official_anything = Bool(
-        title=_('Uses Launchpad for something'),)
+        title=_('Uses Launchpad for something'))
     enable_bug_expiration = Bool(
         title=_('Expire "Incomplete" bug reports when they become inactive'),
         required=True)

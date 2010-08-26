@@ -258,8 +258,8 @@
             tal:attributes="href link/fmt:url;
                             title link/summary">All downloads</a>
            <tal:no-files condition="not: release">
-             <tal:name replace="context/displayname" /> does not have any
-              download files.
+             <tal:name replace="context/displayname" />
+             does not have any download files registered with Launchpad.
            </tal:no-files>
         </p>
       </div>
