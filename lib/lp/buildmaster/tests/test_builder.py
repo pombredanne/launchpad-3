@@ -9,14 +9,18 @@ import socket
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
     MAIN_STORE,
     )
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadZopelessLayer
+    )
 from lp.buildmaster.interfaces.buildbase import BuildStatus
-from lp.buildmaster.interfaces.builder import IBuilderSet
+from lp.buildmaster.interfaces.builder import IBuilder, IBuilderSet
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior,
     )
@@ -41,7 +45,26 @@ from lp.testing.fakemethod import FakeMethod
 class TestBuilder(TestCaseWithFactory):
     """Basic unit tests for `Builder`."""
 
-    layer = LaunchpadZopelessLayer
+    layer = DatabaseFunctionalLayer
+
+    def test_providesInterface(self):
+        # Builder provides IBuilder
+        builder = self.factory.makeBuilder()
+        self.assertProvides(builder, IBuilder)
+
+    def test_default_values(self):
+        builder = self.factory.makeBuilder()
+        # Make sure the Storm cache gets the values that the database
+        # initialises.
+        flush_database_updates()
+        self.assertEqual(0, builder.failure_count)
+
+    def test_getCurrentBuildFarmJob(self):
+        bq = self.factory.makeSourcePackageRecipeBuildJob(3333)
+        builder = self.factory.makeBuilder()
+        bq.markAsBuilding(builder)
+        self.assertEqual(
+            bq, builder.getCurrentBuildFarmJob().buildqueue_record)
 
     def test_getBuildQueue(self):
         buildqueueset = getUtility(IBuildQueueSet)
