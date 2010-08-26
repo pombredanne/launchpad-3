@@ -77,16 +77,9 @@ class DistroSeriesDifference(Storm):
         diff.status = status
         diff.difference_type = difference_type
 
-        src_pub_ver = parent_src_pub_ver = "-"
-        if diff.source_pub:
-            src_pub_ver = diff.source_pub.source_package_version
-        if diff.parent_source_pub is not None:
-            parent_src_pub_ver = diff.parent_source_pub.source_package_version
-        versions = parent_src_pub_ver + "/" + src_pub_ver
-
         diff.activity_log = u""
         diff.appendActivityLog(
-            "Initial parent/derived versions: %s" % versions)
+            "Initial parent/derived versions: %s" % diff._getVersions())
         return store.add(diff)
 
     @property
@@ -101,6 +94,15 @@ class DistroSeriesDifference(Storm):
         """See `IDistroSeriesDifference`."""
         return self.derived_series.parent_series.getPublishedReleases(
             self.source_package_name, include_pending=True)[0]
+
+    def _getVersions(self):
+        """Helper method returning versions string."""
+        src_pub_ver = parent_src_pub_ver = "-"
+        if self.source_pub:
+            src_pub_ver = self.source_pub.source_package_version
+        if self.parent_source_pub is not None:
+            parent_src_pub_ver = self.parent_source_pub.source_package_version
+        return parent_src_pub_ver + "/" + src_pub_ver
 
     def appendActivityLog(self, message, user=None):
         """See `IDistroSeriesDifference`."""
