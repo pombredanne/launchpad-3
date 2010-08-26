@@ -718,10 +718,6 @@ class TestEC2Runner(TestCaseWithTransport, RequestHelpers):
         self.assertIn('ZeroDivisionError', str(tester_msg))
 
 
-# XXX: Add tests that show that _some_ kind of email is sent if
-# LaunchpadTester fails unexpectedly.
-
-
 class TestDaemonizationInteraction(TestCaseWithTransport, RequestHelpers):
 
     script_file = 'remote_daemonization_test.py'
