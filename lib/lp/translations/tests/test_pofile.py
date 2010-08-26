@@ -18,6 +18,7 @@ from zope.interface.verify import verifyObject
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.constants import UTC_NOW
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.testing import (
     LaunchpadZopelessLayer,
@@ -949,6 +950,72 @@ class TestSharedPOFileCreation(TestCaseWithFactory):
         self.assertNotEqual(None, pofile_stable)
         self.assertEqual(pofile_devel.language.code,
                          pofile_stable.language.code)
+
+    def test_pofile_creation_shared_upstream(self):
+        # When a pofile is created in a POTemplate of an Ubuntu package
+        # it is also created in all shared templates in the upstream project.
+        # POTemplate is 'shared' if it has the same name ('messages').
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        hoary = ubuntu ['hoary']
+        packagename = self.factory.makeSourcePackageName()
+        sourcepackage = self.factory.makeSourcePackage(packagename, hoary)
+        sourcepackage.setPackaging(self.foo_devel, self.factory.makePerson())
+        sourcepackage.setPackaging(self.foo_stable, self.factory.makePerson())
+        package_potemplate = self.factory.makePOTemplate(
+            distroseries=hoary, sourcepackagename=packagename,
+            name="messages")
+        devel_potemplate = self.factory.makePOTemplate(
+            productseries=self.foo_devel, name="messages")
+        stable_potemplate = self.factory.makePOTemplate(
+            productseries=self.foo_stable, name="messages")
+
+        self.assertEqual(None, devel_potemplate.getPOFileByLang('eo'))
+        self.assertEqual(None, stable_potemplate.getPOFileByLang('eo'))
+
+        package_pofile = package_potemplate.newPOFile('eo')
+
+        devel_pofile = devel_potemplate.getPOFileByLang('eo')
+        self.assertNotEqual(None, devel_pofile)
+        stable_pofile = stable_potemplate.getPOFileByLang('eo')
+        self.assertNotEqual(None, stable_pofile)
+
+    def test_pofile_creation_shared_in_ubuntu(self):
+        # When a pofile is created in a POTemplate of project it is also
+        # created in all shared templates in the linked Ubuntu package.
+        # POTemplate is 'shared' if it has the same name ('messages').
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        hoary = ubuntu ['hoary']
+        warty = ubuntu['warty']
+        packagename = self.factory.makeSourcePackageName()
+        hoary_package = self.factory.makeSourcePackage(packagename, hoary)
+        warty_package = self.factory.makeSourcePackage(packagename, warty)
+        self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagename=packagename, distroseries=hoary)
+        self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagename=packagename, distroseries=warty)
+        owner = self.factory.makePerson()
+        self.foo_stable.setPackaging(hoary, packagename, owner)
+        self.foo_stable.setPackaging(warty, packagename, owner)
+
+        
+        stable_potemplate = self.factory.makePOTemplate(
+            productseries=self.foo_stable, name="messages")
+        hoary_potemplate = self.factory.makePOTemplate(
+            distroseries=hoary, sourcepackagename=packagename,
+            name="messages")
+        warty_potemplate = self.factory.makePOTemplate(
+            distroseries=warty, sourcepackagename=packagename,
+            name="messages")
+
+        self.assertEqual(None, hoary_potemplate.getPOFileByLang('eo'))
+        self.assertEqual(None, warty_potemplate.getPOFileByLang('eo'))
+
+        stable_pofile = stable_potemplate.newPOFile('eo')
+
+        hoary_pofile = hoary_potemplate.getPOFileByLang('eo')
+        self.assertNotEqual(None, hoary_pofile)
+        warty_pofile = warty_potemplate.getPOFileByLang('eo')
+        self.assertNotEqual(None, warty_pofile)
 
     def test_pofile_creation_not_shared(self):
         # When a pofile is created in a POTemplate it is not created in
