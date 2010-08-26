@@ -144,11 +144,11 @@ def IAccountSet_getByOpenIDIdentifier_monkey_patched():
                 "Not using the master store: %s" % current_policy)
         return orig_getByOpenIDIdentifier(identifier)
 
-    account_set.getByOpenIDIdentifier = fake_getByOpenIDIdentifier
-
-    yield
-
-    account_set.getByOpenIDIdentifier = orig_getByOpenIDIdentifier
+    try:
+        account_set.getByOpenIDIdentifier = fake_getByOpenIDIdentifier
+        yield
+    finally:
+        account_set.getByOpenIDIdentifier = orig_getByOpenIDIdentifier
 
 
 class TestOpenIDCallbackView(TestCaseWithFactory):
@@ -343,10 +343,12 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
             view, html = self._createAndRenderView(openid_response)
         self.assertTrue(view.login_called)
 
-        # The existing account's openid_identifier was updated, the account
-        # was reactivated and its preferred email was set, but its display
-        # name was not changed.
-        self.assertEquals(identifier, account.openid_identifier)
+        # The existing account's had a new openid_identifier added, the
+        # account was reactivated and its preferred email was set, but
+        # its display name was not changed.
+        identifiers = [i.identifier for i in account.openid_identifiers]
+        self.assert_(identifier in identifiers)
+
         self.assertEquals(AccountStatus.ACTIVE, account.status)
         self.assertEquals(
             email, removeSecurityProxy(account.preferredemail).email)
