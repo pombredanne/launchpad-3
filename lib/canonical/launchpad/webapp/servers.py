@@ -42,7 +42,7 @@ from canonical.config import config
 
 from canonical.lazr.interfaces.feed import IFeed
 from lazr.restful.interfaces import (
-    IWebServiceConfiguration, IWebServiceVersion)
+    ICollectionResource, IWebServiceConfiguration, IWebServiceVersion)
 from lazr.restful.publisher import (
     WebServicePublicationMixin, WebServiceRequestTraversal)
 
@@ -1112,6 +1112,10 @@ class WebServicePublication(WebServicePublicationMixin,
         """Add the web service named operation (if any) to the page ID."""
         pageid = super(WebServicePublication, self).constructPageID(
             view, context)
+        if ICollectionResource.providedBy(view):
+            collection_identifier = view.type_url.split('/')[-1]
+            if collection_identifier:
+                pageid += ':' + collection_identifier
         op = (view.request.get('ws.op')
             or view.request.query_string_params.get('ws.op'))
         if op:
