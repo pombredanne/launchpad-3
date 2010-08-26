@@ -533,9 +533,9 @@ class IDistroSeriesPublic(
             and the value is a `IDistroSeriesSourcePackageRelease`.
         """
 
-    def getPublishedReleases(sourcepackage_or_name, pocket=None, version=None,
-                             include_pending=False, exclude_pocket=None,
-                             archive=None):
+    def getPublishedSources(sourcepackage_or_name, pocket=None, version=None,
+                            include_pending=False, exclude_pocket=None,
+                            archive=None):
         """Return the SourcePackagePublishingHistory(s)
 
         Given a ISourcePackageName or name.

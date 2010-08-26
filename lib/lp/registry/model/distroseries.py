@@ -29,7 +29,10 @@ from storm.locals import (
     Join,
     SQL,
     )
-from storm.store import Store
+from storm.store import (
+    EmptyResultSet,
+    Store,
+    )
 from zope.component import getUtility
 from zope.interface import implements
 
@@ -52,7 +55,6 @@ from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet,
     )
 from canonical.launchpad.database.librarian import LibraryFileAlias
-from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.mail import signed_message_from_string
@@ -963,7 +965,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return [SourcePackage(sourcepackagename=spn, distroseries=self) for
             spn in result]
 
-    def getPublishedReleases(self, sourcepackage_or_name, version=None,
+    def getPublishedSources(self, sourcepackage_or_name, version=None,
                              pocket=None, include_pending=False,
                              exclude_pocket=None, archive=None):
         """See `IDistroSeries`."""
@@ -979,7 +981,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             spns = getUtility(ISourcePackageNameSet)
             spn = spns.queryByName(sourcepackage_or_name)
             if spn is None:
-                return []
+                return EmptyResultSet()
 
         queries = ["""
         sourcepackagerelease=sourcepackagerelease.id AND
@@ -1011,7 +1013,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             " AND ".join(queries), clauseTables = ['SourcePackageRelease'],
             orderBy=['-id'])
 
-        return shortlist(published)
+        return published
 
     def isUnstable(self):
         """See `IDistroSeries`."""
