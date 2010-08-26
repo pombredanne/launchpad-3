@@ -5,6 +5,8 @@
 
 __metaclass__ = type
 __all__ = [
+    'BugTrackerComponent',
+    'BugTrackerComponentGroup',
     'BugTracker',
     'BugTrackerAlias',
     'BugTrackerAliasSet',
@@ -159,6 +161,43 @@ def make_bugtracker_title(uri):
     else:
         return base_uri.host + base_uri.path
 
+class BugTrackerComponent(SQLBase):
+    """The software component in the remote bug tracker.
+
+    Most bug trackers organize bug reports by the software 'component'
+    they affect.  This class provides a mapping of this upstream component
+    to the corresponding source package in the distro.
+    """
+    implements(IBugTrackerComponent)
+
+    _table = 'BugTrackerComponent'
+
+    name = StringCol(notNull=True)
+
+    source_package = ForeignKey(
+        dbName='distrosourcepackage', foreignKey='id',
+        storm_validator=TODO, notNull=False)
+
+
+class BugTrackerComponentGroup(SQLBase):
+    """A collection of components in a remote bug tracker.
+
+    Some bug trackers organize sets of components into higher level groups,
+    such as Bugzilla's 'product'.
+    """
+    implements(IBugTrackerComponentGroup)
+
+    _table = 'BugTrackerComponentGroup'
+
+    name = StringCol(notNull=True)
+
+    bugtracker = ForeignKey(
+        dbName='bugtracker', foreignKey='id',
+        storm_validator=TODO, notNull=True)
+
+    components = SQLMultipleJoin(
+        'BugTrackerComponent', joinColumn='componentgroup', orderBy='name')
+        
 
 class BugTracker(SQLBase):
     """A class to access the BugTracker table in the database.
