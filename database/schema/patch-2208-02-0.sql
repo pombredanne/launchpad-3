@@ -37,4 +37,4 @@ AFTER DELETE ON OpenIdIdentifier FOR EACH ROW
 EXECUTE PROCEDURE lp_mirror_openididentifier_del();
 
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 01, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 02, 0);
