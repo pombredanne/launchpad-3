@@ -29,6 +29,7 @@ from lazr.restful.declarations import (
     exported,
     LAZR_WEBSERVICE_EXPORTED,
     operation_parameters,
+    operation_removed_in_version,
     operation_returns_collection_of,
     REQUEST_USER,
     )
