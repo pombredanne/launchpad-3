@@ -1314,7 +1314,7 @@ class POTMsgSet(SQLBase):
         current.is_current_ubuntu = False
         # Converge the current translation only if it is diverged and
         # not current upstream.
-        if current.potemplate.is_diverged and not current.is_current_upstream:
+        if current.is_diverged and not current.is_current_upstream:
             current.potemplate = None
         pofile.markChanged()
 
