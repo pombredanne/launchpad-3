@@ -5,20 +5,21 @@ SET client_min_messages=ERROR;
 
 -- The `InitialiseDistroSeriesJob` table captures the data required for an ifp job.
 
-CREATE TABLE InitialiseDistroSeriesJob (
+CREATE TABLE DistributionJob (
     id serial PRIMARY KEY,
     -- FK to the `Job` record with the "generic" data about this archive
     -- job.
-    job integer NOT NULL CONSTRAINT initialisedistroseriesjob__job__fk REFERENCES job,
-    -- FK to the associated `InitialiseDistroSeries` record.
-    distroseries integer NOT NULL CONSTRAINT initialisedistroseriesjob__distroseries__fk REFERENCES DistroSeries,
+    job integer NOT NULL CONSTRAINT distributionjob__job__fk REFERENCES job,
+    -- FK to the associated `Distribution` record.
+    distribution integer NOT NULL CONSTRAINT distributionjob__distribution__fk REFERENCES Distribution,
+    distroseries integer,
     -- The particular type of foo job
     job_type integer NOT NULL,
     -- JSON data for use by the job
     json_data text
 );
 
-ALTER TABLE InitialiseDistroSeriesJob ADD CONSTRAINT initialisedistroseriesjob__job__key UNIQUE (job);
+ALTER TABLE DistributionJob ADD CONSTRAINT distributionjob__job__key UNIQUE (job);
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2207, 99, 0);
 

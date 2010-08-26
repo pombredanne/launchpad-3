@@ -4,8 +4,8 @@
 __metaclass__ = type
 
 __all__ = [
-    "InitialiseDistroSeriesJob",
-    "InitialiseDistroSeriesJobDerived",
+    "DistributionJob",
+    "DistributionJobDerived",
 ]
 
 import simplejson
@@ -18,42 +18,47 @@ from zope.component import getUtility
 from zope.interface import classProvides, implements
 
 from canonical.database.enumcol import EnumCol
-from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
+from canonical.launchpad.interfaces.lpstorm import IStore
 
 from lazr.delegates import delegates
  
+from lp.registry.model.distribution import Distribution
 from lp.registry.model.distroseries import DistroSeries
-from lp.soyuz.interfaces.initialisedistroseriesjob import (
-    IInitialiseDistroSeriesJob, IInitialiseDistroSeriesJobSource,
-    InitialiseDistroSeriesJobType)
+from lp.soyuz.interfaces.distributionjob import (
+    IDistributionJob,
+    IDistributionJobSource,
+    DistributionJobType)
 from lp.services.job.model.job import Job
 from lp.services.job.runner import BaseRunnableJob
 
 
-class InitialiseDistroSeriesJob(Storm):
-    """Base class for jobs related to InitialiseDistroSeriess."""
+class DistributionJob(Storm):
+    """Base class for jobs related to Distributions."""
 
-    implements(IInitialiseDistroSeriesJob)
+    implements(IDistributionJob)
 
-    __storm_table__ = 'InitialiseDistroSeriesJob'
+    __storm_table__ = 'DistributionJob'
 
     id = Int(primary=True)
 
     job_id = Int(name='job')
     job = Reference(job_id, Job.id)
 
+    distribution_id = Int(name='distribution')
+    distribution = Reference(distribution_id, Distribution.id)
+
     distroseries_id = Int(name='distroseries')
     distroseries = Reference(distroseries_id, DistroSeries.id)
 
-    job_type = EnumCol(enum=InitialiseDistroSeriesJobType, notNull=True)
+    job_type = EnumCol(enum=DistributionJobType, notNull=True)
 
     _json_data = Unicode('json_data')
 
-    def __init__(self, distroseries, job_type, metadata):
-        super(InitialiseDistroSeriesJob, self).__init__()
+    def __init__(self, distribution, distroseries, job_type, metadata):
+        super(DistributionJob, self).__init__()
         json_data = simplejson.dumps(metadata)
         self.job = Job()
+        self.distribution = distribution
         self.distroseries = distroseries
         self.job_type = job_type
         self._json_data = json_data.decode('utf-8')
@@ -65,40 +70,39 @@ class InitialiseDistroSeriesJob(Storm):
     @classmethod
     def get(cls, key):
         """Return the instance of this class whose key is supplied."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        instance = store.get(cls, key)
+        instance = IStore(DistributionJob).get(cls, key)
         if instance is None:
             raise SQLObjectNotFound(
                 'No occurence of %s has key %s' % (cls.__name__, key))
         return instance
 
 
-class InitialiseDistroSeriesJobDerived(BaseRunnableJob):
-    """Intermediate class for deriving from InitialiseDistroSeriesJob."""
-    delegates(IInitialiseDistroSeriesJob)
-    classProvides(IInitialiseDistroSeriesJobSource)
+class DistributionJobDerived(BaseRunnableJob):
+    """Intermediate class for deriving from DistributionJob."""
+    delegates(IDistributionJob)
+    classProvides(IDistributionJobSource)
 
     def __init__(self, job):
         self.context = job
 
     @classmethod
-    def create(cls, distroseries):
-        """See `IInitialiseDistroSeriesJob`."""
+    def create(cls, distribution, distroseries):
+        """See `IDistributionJob`."""
         # If there's already a job, don't create a new one.
-        job = InitialiseDistroSeriesJob(
-            distroseries, cls.class_job_type, {})
+        job = DistributionJob(
+            distribution, distroseries, cls.class_job_type, {})
         return cls(job)
 
     @classmethod
     def get(cls, job_id):
         """Get a job by id.
 
-        :return: the InitialiseDistroSeriesJob with the specified id, as
-                 the current InitialiseDistroSeriesJobDerived subclass.
+        :return: the DistributionJob with the specified id, as
+                 the current DistributionJobDerived subclass.
         :raises: SQLObjectNotFound if there is no job with the specified id,
                  or its job_type does not match the desired subclass.
         """
-        job = InitialiseDistroSeriesJob.get(job_id)
+        job = DistributionJob.get(job_id)
         if job.job_type != cls.class_job_type:
             raise SQLObjectNotFound(
                 'No object found with id %d and type %s' % (job_id,
@@ -107,23 +111,24 @@ class InitialiseDistroSeriesJobDerived(BaseRunnableJob):
 
     @classmethod
     def iterReady(cls):
-        """Iterate through all ready InitialiseDistroSeriesJobs."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
-        jobs = store.find(
-            InitialiseDistroSeriesJob,
-            And(InitialiseDistroSeriesJob.job_type == cls.class_job_type,
-                InitialiseDistroSeriesJob.job == Job.id,
+        """Iterate through all ready DistributionJobs."""
+        jobs = IStore(DistributionJob).find(
+            DistributionJob,
+            And(DistributionJob.job_type == cls.class_job_type,
+                DistributionJob.job == Job.id,
                 Job.id.is_in(Job.ready_jobs),
-                InitialiseDistroSeriesJob.distroseries == DistroSeries.id))
+                DistributionJob.distribution == Distribution.id,
+                DistributionJob.distroseries == DistroSeries.id))
         return (cls(job) for job in jobs)
 
     def getOopsVars(self):
         """See `IRunnableJob`."""
         vars = BaseRunnableJob.getOopsVars(self)
         vars.extend([
+            ('distribution_id', self.context.distribution.id),
             ('distroseries_id', self.context.distroseries.id),
-            ('distroseries_job_id', self.context.id),
-            ('distroseries_job_type', self.context.job_type.title),
+            ('distribution_job_id', self.context.id),
+            ('distribution_job_type', self.context.job_type.title),
             ])
         return vars
 

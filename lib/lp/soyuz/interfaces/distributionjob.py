@@ -4,11 +4,11 @@
 __metaclass__ = type
 
 __all__ = [
-    "IDoInitialiseDistroSeriesJob",
-    "IDoInitialiseDistroSeriesJobSource",
-    "IInitialiseDistroSeriesJob",
-    "IInitialiseDistroSeriesJobSource",
-    "InitialiseDistroSeriesJobType",
+    "IDoDistributionJob",
+    "IDoDistributionJobSource",
+    "IDistributionJob",
+    "IDistributionJobSource",
+    "DistributionJobType",
 ]
 
 from lazr.enum import DBEnumeratedType, DBItem
@@ -18,19 +18,24 @@ from zope.schema import Int, Object
 from canonical.launchpad import _
 
 from lp.services.job.interfaces.job import IJob, IJobSource, IRunnableJob
+from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
 
 
-class IInitialiseDistroSeriesJob(Interface):
+class IDistributionJob(Interface):
     """A Job that initialises a distro series, based on a parent."""
     
     id = Int(
         title=_('DB ID'), required=True, readonly=True,                       
         description=_("The tracking number for this job."))                   
 
+    distribution = Object(
+        title=_('The Distribution this job is about.'),
+        schema=IDistribution, required=True)
+
     distroseries = Object(
-        title=_('The DistroSeries this job is about.'), schema=IDistroSeries,
-        required=True)
+        title=_('The DistroSeries this job is about.'),
+        schema=IDistroSeries, required=False)
 
     job = Object(
         title=_('The common Job attributes'), schema=IJob, required=True)     
@@ -41,14 +46,14 @@ class IInitialiseDistroSeriesJob(Interface):
         """Destroy this object."""
 
 
-class IInitialiseDistroSeriesJobSource(IJobSource):
-    """An interface for acquiring IInitialiseDistroSeriesJobs."""
+class IDistributionJobSource(IJobSource):
+    """An interface for acquiring IDistributionJobs."""
 
-    def create(distroseries):
-        """Create a new IInitialiseDistroSeriesJobs for a distroseries."""
+    def create(distribution, distroseries):
+        """Create a new IDistributionJob for a distribution."""
 
 
-class InitialiseDistroSeriesJobType(DBEnumeratedType):
+class DistributionJobType(DBEnumeratedType):
 
     DO_INITIALISE = DBItem(0, """
         Initialise a Distro Series.
@@ -58,10 +63,10 @@ class InitialiseDistroSeriesJobType(DBEnumeratedType):
         """)
 
 
-class IDoInitialiseDistroSeriesJob(IRunnableJob):
-    """A Job that initialises a distro series, based on a parent."""
+class IDoDistributionJob(IRunnableJob):
+    """A Job that performs actions on a distribution."""
    
 
-class IDoInitialiseDistroSeriesJobSource(IInitialiseDistroSeriesJobSource):
-    """An interface for acquiring IInitialiseDistroSeriesJobs."""
+class IDoDistributionJobSource(IDistributionJobSource):
+    """An interface for acquiring IDistributionJobs."""
     

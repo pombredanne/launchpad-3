@@ -1892,6 +1892,14 @@ COMMENT ON TABLE Continent IS 'A continent in this huge world.';
 COMMENT ON COLUMN Continent.code IS 'A two-letter code for a continent.';
 COMMENT ON COLUMN Continent.name IS 'The name of the continent.';
 
+-- DistributionJob
+
+COMMENT ON TABLE DistributionJob IS 'Contains references to jobs to be run on distributions.';
+COMMENT ON COLUMN DistributionJob.distribution IS 'The distribution to be acted on.';
+COMMENT ON COLUMN DistributionJob.distroseries IS 'The distroseries to be acted on.';
+COMMENT ON COLUMN DistributionJob.job_type IS 'The type of job';
+COMMENT ON COLUMN DistributionJob.json_data IS 'A JSON struct containing data for the job.';
+
 -- DistributionMirror
 COMMENT ON TABLE DistributionMirror IS 'A mirror of a given distribution.';
 COMMENT ON COLUMN DistributionMirror.distribution IS 'The distribution to which the mirror refers to.';
@@ -2262,13 +2270,6 @@ COMMENT ON TABLE HWDMIValue IS 'Key/value pairs of DMI data of a handle.';
 COMMENT ON COLUMN HWDMIValue.key IS 'The key.';
 COMMENT ON COLUMN HWDMIValue.value IS 'The value';
 COMMENT ON COLUMN HWDMIValue.handle IS 'The handle to which this key/value pair belongs.';
-
--- InitialiseDistroSeriesJob
-
-COMMENT ON TABLE InitialiseDistroSeriesJob IS 'Contains references to job to be run to initialise distro series.';
-COMMENT ON COLUMN InitialiseDistroSeriesJob.distroseries IS 'The distroseries to be initialised.';
-COMMENT ON COLUMN InitialiseDistroSeriesJob.job_type IS 'The type of job';
-COMMENT ON COLUMN InitialiseDistroSeriesJob.json_data IS 'A JSON struct containing data for the job.';
 
 -- Job
 
