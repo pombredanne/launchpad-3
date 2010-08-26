@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the checked-in WADL."""
@@ -10,9 +10,13 @@ import subprocess
 import urlparse
 
 from canonical.launchpad.webapp.interaction import (
-    ANONYMOUS, setupInteractionByEmail)
+    ANONYMOUS,
+    setupInteractionByEmail,
+    )
 from canonical.launchpad.webapp.servers import (
-    WebServicePublication, WebServiceTestRequest)
+    WebServicePublication,
+    WebServiceTestRequest,
+    )
 from canonical.launchpad.webapp.vhosts import allvhosts
 
 
