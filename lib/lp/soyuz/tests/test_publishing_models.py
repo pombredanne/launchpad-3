@@ -8,10 +8,11 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.constants import UTC_NOW
 from canonical.testing import LaunchpadZopelessLayer
-
 from lp.buildmaster.interfaces.buildbase import BuildStatus
-from lp.soyuz.interfaces.publishing import (IPublishingSet,
-    PackagePublishingStatus)
+from lp.soyuz.interfaces.publishing import (
+    IPublishingSet,
+    PackagePublishingStatus,
+    )
 from lp.soyuz.tests.test_binarypackagebuild import BaseTestCaseWithThreeBuilds
 
 

@@ -6,20 +6,27 @@
 __metaclass__ = type
 __all__ = ['BugAttachment', 'BugAttachmentSet']
 
+from lazr.lifecycle.event import (
+    ObjectCreatedEvent,
+    ObjectDeletedEvent,
+    )
+from sqlobject import (
+    ForeignKey,
+    SQLObjectNotFound,
+    StringCol,
+    )
+from storm.store import Store
 from zope.event import notify
 from zope.interface import implements
 
-from lazr.lifecycle.event import ObjectCreatedEvent, ObjectDeletedEvent
-
-from sqlobject import ForeignKey, StringCol, SQLObjectNotFound
-from storm.store import Store
-
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
-
 from lp.app.errors import NotFoundError
 from lp.bugs.interfaces.bugattachment import (
-    BugAttachmentType, IBugAttachment, IBugAttachmentSet)
+    BugAttachmentType,
+    IBugAttachment,
+    IBugAttachmentSet,
+    )
 
 
 class BugAttachment(SQLBase):

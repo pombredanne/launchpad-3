@@ -11,10 +11,14 @@ __all__ = [
     ]
 
 from canonical.launchpad.webapp import (
-    canonical_url, enabled_with_permission, Link, NavigationMenu)
+    canonical_url,
+    enabled_with_permission,
+    Link,
+    NavigationMenu,
+    )
+from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.translations.browser.poexportrequest import BaseExportView
 from lp.translations.browser.translations import TranslationsMixin
-from lp.registry.interfaces.sourcepackage import ISourcePackage
 
 
 class SourcePackageTranslationsView(TranslationsMixin):
@@ -34,16 +38,17 @@ class SourcePackageTranslationsMenu(NavigationMenu):
 
     def imports(self):
         text = 'Import queue'
-        return Link('+imports', text)
+        return Link('+imports', text, site='translations')
 
     @enabled_with_permission('launchpad.ExpensiveRequest')
     def download(self):
         text = 'Download'
         enabled = bool(self.context.getCurrentTranslationTemplates().any())
-        return Link('+export', text, icon='download', enabled=enabled)
+        return Link('+export', text, icon='download', enabled=enabled,
+                    site='translations')
 
     def overview(self):
-        return Link('', 'Overview', icon='info')
+        return Link('', 'Overview', icon='info', site='translations')
 
 
 class SourcePackageTranslationsExportView(BaseExportView):

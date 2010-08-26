@@ -309,20 +309,6 @@
     <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
   </class>
 
-
-  <securedutility
-    name="SpecificationDepCandidates"
-    component="canonical.launchpad.vocabularies.SpecificationDepCandidatesVocabulary"
-    provides="zope.schema.interfaces.IVocabularyFactory"
-    >
-    <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
-  </securedutility>
-
-  <class class="canonical.launchpad.vocabularies.SpecificationDepCandidatesVocabulary">
-    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
-  </class>
-
-
   <securedutility
     name="Sprint"
     component="canonical.launchpad.vocabularies.SprintVocabulary"

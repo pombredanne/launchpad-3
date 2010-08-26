@@ -1,16 +1,18 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
-# GNU Affero General Public License version 3 (see the file LICENSE).
+# copyright 2009-2010 canonical ltd.  this software is licensed under the
+# gnu affero general public license version 3 (see the file license).
 
 # pylint: disable-msg=E0211,E0213,W0401
 
 __metaclass__ = type
 __all__ = [
     'AnnouncementDate',
+    'FormattableDate',
     'BaseImageUpload',
     'BlacklistableContentNameField',
     'BugField',
     'ContentNameField',
     'Description',
+    'Datetime',
     'DuplicateBug',
     'FieldNotBoundError',
     'IAnnouncementDate',
@@ -60,26 +62,49 @@ import re
 from StringIO import StringIO
 from textwrap import dedent
 
+from lazr.restful.fields import Reference
+from lazr.restful.interfaces import IReferenceChoice
+from lazr.uri import (
+    InvalidURIError,
+    URI,
+    )
 from zope.component import getUtility
-from zope.schema import (
-    Bool, Bytes, Choice, Datetime, Field, Float, Int, Password, Text,
-    TextLine, Tuple)
-from zope.schema.interfaces import (
-    ConstraintNotSatisfied, IBytes, IDatetime, IField, IObject,
-    IPassword, IText, ITextLine, Interface)
 from zope.interface import implements
+from zope.schema import (
+    Bool,
+    Bytes,
+    Choice,
+    Date,
+    Datetime,
+    Field,
+    Float,
+    Int,
+    Password,
+    Text,
+    TextLine,
+    Tuple,
+    )
+from zope.schema.interfaces import (
+    ConstraintNotSatisfied,
+    IBytes,
+    IDate,
+    IDatetime,
+    IField,
+    Interface,
+    IObject,
+    IPassword,
+    IText,
+    ITextLine,
+    )
 from zope.security.interfaces import ForbiddenAttribute
 
 from canonical.launchpad import _
-from lp.registry.interfaces.pillar import IPillarNameSet
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from lazr.uri import URI, InvalidURIError
 from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.launchpad.validators.name import valid_name, name_validator
-
-from lazr.restful.fields import Reference
-from lazr.restful.interfaces import IReferenceChoice
-
+from canonical.launchpad.validators.name import (
+    name_validator,
+    valid_name,
+    )
+from lp.registry.interfaces.pillar import IPillarNameSet
 
 # Marker object to tell BaseImageUpload to keep the existing image.
 KEEP_SAME_IMAGE = object()
@@ -256,6 +281,28 @@ class Whiteboard(StrippableText):
     implements(IWhiteboard)
 
 
+class FormattableDate(Date):
+    """A datetime field that checks for compatibility with Python's strformat.
+
+    From the user's perspective this is a date entry field; it converts to and
+    from datetime because that's what the db is expecting.
+    """
+    implements(IDate)
+
+    def _validate(self, value):
+        error_msg = ("Date could not be formatted. Provide a date formatted "
+            "like YYYY-MM-DD format. The year must be after 1900.")
+
+        super(FormattableDate, self)._validate(value)
+        # The only thing of interest here is whether or the input can be
+        # formatted properly, not whether it makes sense otherwise.
+        # As a minimal sanity check, just raise an error if it fails.
+        try:
+            value.strftime('%Y')
+        except ValueError:
+            raise LaunchpadValidationError(error_msg)
+
+
 class AnnouncementDate(Datetime):
     implements(IDatetime)
 
@@ -328,6 +375,7 @@ class Tag(TextLine):
 
 
 class SearchTag(Tag):
+
     def constraint(self, value):
         """Make sure the value is a valid search tag.
 
@@ -531,6 +579,7 @@ class ProductBugTracker(Choice):
         else:
             ob.official_malone = False
             setattr(ob, self.__name__, value)
+
 
 class URIField(TextLine):
     implements(IURIField)

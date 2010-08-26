@@ -14,7 +14,7 @@ the following features:
 To demonstrate, we'll create a sample interface:
 
   >>> from zope.interface import Interface, implements
-  >>> from canonical.launchpad.fields import URIField
+  >>> from lp.services.fields import URIField
   >>> class IURIFieldTest(Interface):
   ...     field = URIField()
   ...     sftp_only = URIField(allowed_schemes=['sftp'])

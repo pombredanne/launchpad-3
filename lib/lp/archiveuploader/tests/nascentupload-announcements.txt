@@ -17,13 +17,6 @@ AUTO-APPROVED, UNAPPROVED) and its destination pocket:
  * AUTO-APPROVED to BACKPORTS (via sync): submitter set receives an
    'acceptance' warning ('announcement' is skipped).
 
- * AUTO-APPROVED sources to SECURITY (via security): submitter set
-   receives an 'acceptance' warning and the target distroseries
-   changeslist address receives an 'announcement' message.
-
- * AUTO-APPROVED binaries to SECURITY (via security): submitter set
-   receives only an 'acceptance' warning ('announcement' is skipped).
-
  * NEW, AUTO-APPROVED or UNAPPROVED source uploads targeted to section
    'translations' (all policies, all pockets) do not generate any
    messages. Remembering that NEW and UNAPPROVED messages are also
@@ -304,9 +297,10 @@ archiveuploader/ftests/test_ppauploadprocessor.
 NEW binary upload to RELEASE pocket via 'sync' policy (we need to
 override sync policy to allow binary uploads):
 
+  >>> from lp.archiveuploader.uploadpolicy import ArchiveUploadType
   >>> modified_sync_policy = getPolicy(
   ...     name='sync', distro='ubuntu', distroseries='hoary')
-  >>> modified_sync_policy.can_upload_binaries = True
+  >>> modified_sync_policy.accepted_type = ArchiveUploadType.BINARY_ONLY
 
   >>> bar_src = NascentUpload.from_changesfile_path(
   ...     datadir('suite/bar_1.0-1_binary/bar_1.0-1_i386.changes'),
@@ -530,196 +524,6 @@ checks:
  >>> import os
  >>> os.remove(os.path.join(datadir('suite/bar_1.0-4'), 'bar_1.0.orig.tar.gz'))
 
-AUTO-APPROVED source upload to SECURITY pocket via 'security' policy:
-
-  >>> security_policy = getPolicy(
-  ...     name='security', distro='ubuntu', distroseries=None)
-  >>> security_policy.setDistroSeriesAndPocket('hoary-security')
-
-  >>> bar_src = NascentUpload.from_changesfile_path(
-  ...     datadir('suite/bar_1.0-2/bar_1.0-2_source.changes'),
-  ...     security_policy, mock_logger_quiet)
-  >>> bar_src.process()
-
-  >>> bar_src.logger = mock_logger
-  >>> result = bar_src.do_accept()
-  DEBUG: Creating queue entry
-  ...
-  DEBUG: Sent a mail:
-  DEBUG:     Subject: [ubuntu/hoary-security] bar 1.0-2 (Accepted)
-  DEBUG:     Recipients: Daniel Silverstone <daniel.silverstone@canonical.com>
-  DEBUG:     Body:
-  DEBUG: bar (1.0-2) breezy; urgency=low
-  DEBUG:
-  DEBUG:   * A second upload to ensure that binary overrides of _all work
-  DEBUG:
-  DEBUG:   * Also closes Launchpad bug #6
-  DEBUG:
-  DEBUG:
-  DEBUG: Date: Thu, 30 Mar 2006 01:36:14 +0100
-  DEBUG: Changed-By: Daniel Silverstone <daniel.silverstone@canonical.com>
-  DEBUG: Maintainer: Launchpad team <launchpad@lists.canonical.com>
-  DEBUG: http://launchpad.dev/ubuntu/hoary/+source/bar/1.0-2
-  DEBUG:
-  DEBUG: ==
-  DEBUG:
-  DEBUG: Announcing to hoary-announce@lists.ubuntu.com
-  DEBUG:
-  DEBUG: Thank you for your contribution to Ubuntu Linux.
-  DEBUG:
-  DEBUG: --
-  DEBUG: You are receiving this email because you are the uploader, maintainer or
-  DEBUG: signer of the above package.
-  DEBUG: Sent a mail:
-  DEBUG:     Subject: [ubuntu/hoary-security] bar 1.0-2 (Accepted)
-  DEBUG:     Recipients: hoary-announce@lists.ubuntu.com
-  DEBUG:     Body:
-  DEBUG: bar (1.0-2) breezy; urgency=low
-  DEBUG:
-  DEBUG:   * A second upload to ensure that binary overrides of _all work
-  DEBUG:
-  DEBUG:   * Also closes Launchpad bug #6
-  DEBUG:
-  DEBUG:
-  DEBUG: Date: Thu, 30 Mar 2006 01:36:14 +0100
-  DEBUG: Changed-By: Daniel Silverstone <daniel.silverstone@canonical.com>
-  DEBUG: Maintainer: Launchpad team <launchpad@lists.canonical.com>
-  DEBUG: http://launchpad.dev/ubuntu/hoary/+source/bar/1.0-2
-
-  >>> import operator
-  >>> msgs = pop_notifications(sort_key=operator.itemgetter('To'))
-  >>> len(msgs)
-  2
-
-  >>> [message['To'] for message in msgs]
-  ['Daniel Silverstone <daniel.silverstone@canonical.com>',
-   'hoary-announce@lists.ubuntu.com']
-
-  >>> [message['Subject'] for message in msgs]
-  ['[ubuntu/hoary-security] bar 1.0-2 (Accepted)',
-   '[ubuntu/hoary-security] bar 1.0-2 (Accepted)']
-
-  >>> [message['X-Katie'] for message in msgs]
-  ['Launchpad actually', 'Launchpad actually']
-
-The upload notification message has an attachment with the original changes
-file.
-
-  >>> announcement = msgs[0]
-  >>> attachment = announcement.get_payload()[1]
-  >>> attachment['Content-Disposition']
-  'attachment; filename="changesfile"'
-
-Here it is:
-
-  >>> print attachment.as_string() # doctest: -NORMALIZE_WHITESPACE
-  Content-Type: text/plain; charset="utf-8"
-  MIME-Version: 1.0
-  Content-Transfer-Encoding: quoted-printable
-  Content-Disposition: attachment; filename="changesfile"
-  <BLANKLINE>
-  -----BEGIN PGP SIGNED MESSAGE-----
-  Hash: SHA1
-  <BLANKLINE>
-  Format: 1.7
-  Date: Thu, 30 Mar 2006 01:36:14 +0100
-  Source: bar
-  Binary: bar
-  Architecture: source
-  Version: 1.0-2
-  Distribution: breezy
-  Urgency: low
-  Maintainer: Launchpad team <launchpad@lists.canonical.com>
-  Changed-By: Daniel Silverstone <daniel.silverstone@canonical.com>
-  Launchpad-bugs-fixed: 6
-  Description: =
-  <BLANKLINE>
-   bar        - Stuff for testing
-  Changes: =
-  <BLANKLINE>
-   bar (1.0-2) breezy; urgency=3Dlow
-   .
-     * A second upload to ensure that binary overrides of _all work
-   . =
-  <BLANKLINE>
-     * Also closes Launchpad bug #6
-   .
-  Files: =
-  <BLANKLINE>
-   bbaf6fbf41cdbbdd422b0382076f615a 512 devel optional bar_1.0-2.dsc
-   ac6b4efe44e31f47ec9f0d0fac6935f4 622 devel optional bar_1.0-2.diff.gz
-  <BLANKLINE>
-  -----BEGIN PGP SIGNATURE-----
-  Version: GnuPG v1.4.6 (GNU/Linux)
-  <BLANKLINE>
-  iD8DBQFGe+Yjjn63CGxkqMURAuPGAJ9ub5UHjrzKnEGmUK1oCoRuOrdligCePKxt
-  QRCBMda2V9lNtxldkGRtc88=3D
-  =3DgtPz
-  -----END PGP SIGNATURE-----
-  <BLANKLINE>
-
-The upload announcement email also has the attachment with the original
-changes file.
-
-  >>> announcement = msgs[1]
-  >>> attachment = announcement.get_payload()[1]
-  >>> attachment['Content-Disposition']
-  'attachment; filename="changesfile"'
-
-It has the same contents as the attachment of the upload notification
-email.
-
-  >>> print attachment.as_string() # doctest: -NORMALIZE_WHITESPACE
-  Content-Type: text/plain; charset="utf-8"
-  MIME-Version: 1.0
-  Content-Transfer-Encoding: quoted-printable
-  Content-Disposition: attachment; filename="changesfile"
-  <BLANKLINE>
-  -----BEGIN PGP SIGNED MESSAGE-----
-  Hash: SHA1
-  <BLANKLINE>
-  Format: 1.7
-  Date: Thu, 30 Mar 2006 01:36:14 +0100
-  Source: bar
-  Binary: bar
-  Architecture: source
-  Version: 1.0-2
-  Distribution: breezy
-  Urgency: low
-  Maintainer: Launchpad team <launchpad@lists.canonical.com>
-  Changed-By: Daniel Silverstone <daniel.silverstone@canonical.com>
-  Launchpad-bugs-fixed: 6
-  Description: =
-  <BLANKLINE>
-   bar        - Stuff for testing
-  Changes: =
-  <BLANKLINE>
-   bar (1.0-2) breezy; urgency=3Dlow
-   .
-     * A second upload to ensure that binary overrides of _all work
-   . =
-  <BLANKLINE>
-     * Also closes Launchpad bug #6
-   .
-  Files: =
-  <BLANKLINE>
-   bbaf6fbf41cdbbdd422b0382076f615a 512 devel optional bar_1.0-2.dsc
-   ac6b4efe44e31f47ec9f0d0fac6935f4 622 devel optional bar_1.0-2.diff.gz
-  <BLANKLINE>
-  -----BEGIN PGP SIGNATURE-----
-  Version: GnuPG v1.4.6 (GNU/Linux)
-  <BLANKLINE>
-  iD8DBQFGe+Yjjn63CGxkqMURAuPGAJ9ub5UHjrzKnEGmUK1oCoRuOrdligCePKxt
-  QRCBMda2V9lNtxldkGRtc88=3D
-  =3DgtPz
-  -----END PGP SIGNATURE-----
-  <BLANKLINE>
-
-Remove orig.tar.gz pumped from librarian to disk during the upload
-checks:
-
- >>> os.remove(os.path.join(datadir('suite/bar_1.0-2'), 'bar_1.0.orig.tar.gz'))
-
 DEBIAN SYNC upload of a source via the 'sync' policy.
 These uploads do not generate any announcement emails for auto-accepted
 packages, just the upload notification.
@@ -762,6 +566,7 @@ In contrast, manual sync uploads do generate the announcement:
 
 Two emails generated:
 
+  >>> import operator
   >>> msgs = pop_notifications(sort_key=operator.itemgetter('To'))
   >>> len(msgs)
   2
@@ -781,123 +586,6 @@ Reset hoary back to released and remove disk files created during processing:
   ...     'bar_1.0.orig.tar.gz'))
   >>> os.remove(os.path.join(datadir('suite/bar_1.0-6'),
   ...     'bar_1.0.orig.tar.gz'))
-
-
-AUTO-APPROVED binary upload to SECURITY pocket via 'security' policy:
-
-  >>> security_policy = getPolicy(
-  ...     name='security', distro='ubuntu', distroseries=None)
-  >>> security_policy.setDistroSeriesAndPocket('hoary-security')
-
-  >>> bar_bin = NascentUpload.from_changesfile_path(
-  ...     datadir('suite/bar_1.0-2_binary/bar_1.0-2_i386.changes'),
-  ...     security_policy, mock_logger_quiet)
-  >>> bar_bin.process()
-
-  >>> bar_bin.logger = mock_logger
-  >>> result = bar_bin.do_accept()
-  DEBUG: Creating queue entry
-  ...
-  DEBUG: Sent a mail:
-  DEBUG:     Subject: [ubuntu/hoary-security] bar 1.0-2 (Accepted)
-  DEBUG:     Recipients: Daniel Silverstone <daniel.silverstone@canonical.com>
-  DEBUG:     Body:
-  DEBUG: bar (1.0-2) breezy; urgency=low
-  DEBUG:
-  DEBUG:   * A second upload to ensure that binary overrides of _all work
-  DEBUG:
-  DEBUG: Date: Thu, 30 Mar 2006 01:36:14 +0100
-  DEBUG: Changed-By: Daniel Silverstone <daniel.silverstone@canonical.com>
-  DEBUG: Maintainer: Launchpad team <launchpad@lists.canonical.com>
-  DEBUG: http://launchpad.dev/ubuntu/hoary/+source/bar/1.0-2
-  DEBUG:
-  DEBUG: ==
-  DEBUG:
-  DEBUG: Announcing to hoary-announce@lists.ubuntu.com
-  DEBUG:
-  DEBUG: Thank you for your contribution to Ubuntu Linux.
-  DEBUG:
-  DEBUG: --
-  DEBUG: You are receiving this email because you are the uploader, maintainer or
-  DEBUG: signer of the above package.
-
-One email generated:
-
-  >>> [notification] = pop_notifications()
-
-  >>> notification['X-Katie']
-  'Launchpad actually'
-
-  >>> notification['To']
-  'Daniel Silverstone <daniel.silverstone@canonical.com>'
-
-  >>> notification['Subject']
-  '[ubuntu/hoary-security] bar 1.0-2 (Accepted)'
-
-
-A mixed mode upload to the SECURITY pocket via the 'security' policy
-will generate a notification to the uploader and an announcement to
-the distroseries changes list.
-
-First, upload and accept foo_1.0-1_mixed to make 'foo' source
-and binary known in hoary, then our operations in post-release
-pockets can work:
-
-  >>> hoary.status = SeriesStatus.DEVELOPMENT
-  >>> modified_sync_policy = getPolicy(
-  ...     name='sync', distro='ubuntu', distroseries='hoary')
-  >>> modified_sync_policy.can_upload_mixed = True
-  >>> modified_sync_policy.can_upload_binaries = True
-  >>> modified_sync_policy.can_upload_source = True
-  >>> foo_v1 = NascentUpload.from_changesfile_path(
-  ...     datadir('suite/foo_1.0-1_mixed/foo_1.0-1_i386.changes'),
-  ...     modified_sync_policy, mock_logger_quiet)
-  >>> foo_v1.process()
-  >>> result = foo_v1.do_accept()
-  >>> foo_v1.queue_root.setAccepted()
-  >>> pub_records = foo_v1.queue_root.realiseUpload()
-  >>> hoary.status = SeriesStatus.CURRENT
-
-Get rid of any emails generated:
-
-  >>> msgs = pop_notifications()
-
-Now we can upload a security fix:
-
-  >>> security_policy = getPolicy(
-  ...     name='security', distro='ubuntu', distroseries=None)
-  >>> security_policy.setDistroSeriesAndPocket('hoary-security')
-  >>> foo_mixed = NascentUpload.from_changesfile_path(
-  ...     datadir('suite/foo_1.0-2.1/foo_1.0-2.1_source.changes'),
-  ...     security_policy, mock_logger_quiet)
-  >>> foo_mixed.process()
-  >>> foo_mixed.logger = mock_logger
-  >>> result = foo_mixed.do_accept()
-  DEBUG: Creating queue entry
-  ...
-
-Two emails generated:
-
-  >>> msgs = pop_notifications(sort_key=operator.itemgetter('To'))
-  >>> len(msgs)
-  2
-
-  >>> [message['To'] for message in msgs]
-  ['Daniel Silverstone <daniel.silverstone@canonical.com>',
-    'hoary-announce@lists.ubuntu.com']
-
-  >>> [message['Subject'] for message in msgs]
-  ['[ubuntu/hoary-security] foo 1.0-2.1 (Accepted)',
-   '[ubuntu/hoary-security] foo 1.0-2.1 (Accepted)']
-
-  >>> [message['X-Katie'] for message in msgs]
-  ['Launchpad actually', 'Launchpad actually']
-
-Remove orig.tar.gz pumped from librarian to disk during the upload
-checks:
-
- >>> os.remove(os.path.join(datadir('suite/foo_1.0-2.1'),
- ...           'foo_1.0.orig.tar.gz'))
 
 Dry run uploads should not generate any emails.  Call do_accept with
 notify=False:
@@ -933,32 +621,19 @@ PackageUpload.notify() directly.  One of the arguments it can specify is
 dry_run, which when True will not send any emails.  It will also log at
 the INFO level what it /would/ have sent.
 
-  >>> random_package_upload = hoary.getQueueItems()[2]
+  >>> random_package_upload = hoary.getQueueItems()[0]
   >>> random_package_upload.notify(dry_run=True, logger=mock_logger)
   DEBUG: Building recipients list.
   ...
   INFO: Would have sent a mail:
-  INFO:   Subject: [ubuntu/hoary-security] bar 1.0-2 (Accepted)
-  INFO:   Sender: Root <root@localhost>
-  INFO:   Recipients: Daniel Silverstone <daniel.silverstone@canonical.com>
-  INFO:   Bcc: Root <root@localhost>
-  INFO:   Body:
-  INFO: bar (1.0-2) breezy; urgency=low
-  INFO:
-  INFO:   * A second upload to ensure that binary overrides of _all work
-  INFO:
-  INFO: Date: Thu, 30 Mar 2006 01:36:14 +0100
-  INFO: Changed-By: Daniel Silverstone <daniel.silverstone@canonical.com>
-  INFO: Maintainer: Launchpad team <launchpad@lists.canonical.com>
-  INFO: http://launchpad.dev/ubuntu/hoary/+source/bar/1.0-2
-  INFO:
-  INFO: ==
-  INFO:
+  INFO:   Subject: [ubuntu/hoary] bar 1.0-6 (Accepted)
+  ...
+  INFO:   Recipients: Celso Providelo <celso.providelo@canonical.com>
+  ...
+  INFO: bar (1.0-6) breezy; urgency=low
+  ...
   INFO: No announcement sent
-  INFO:
-  INFO: Thank you for your contribution to Ubuntu Linux.
-  INFO:
-  INFO: --
+  ...
   INFO: You are receiving this email because you are the uploader, maintainer or
   INFO: signer of the above package.
 

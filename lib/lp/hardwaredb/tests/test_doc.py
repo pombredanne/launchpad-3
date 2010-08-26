@@ -8,10 +8,14 @@ Run the doctests and pagetests.
 import os
 
 from canonical.launchpad.testing.systemdocs import (
-    LayeredDocFileSuite, setUp, tearDown)
+    LayeredDocFileSuite,
+    setUp,
+    tearDown,
+    )
 from canonical.testing import (
-    LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
-
+    LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
 from lp.services.testing import build_test_suite
 
 

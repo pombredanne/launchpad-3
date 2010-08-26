@@ -35,47 +35,94 @@ __all__ = [
 
 import re
 
+from sqlobject import (
+    BoolCol,
+    ForeignKey,
+    IntCol,
+    StringCol,
+    )
+from storm.expr import (
+    Alias,
+    And,
+    Count,
+    In,
+    Not,
+    Or,
+    Select,
+    )
+from storm.store import Store
 from zope.component import getUtility
 from zope.interface import implements
 
-from sqlobject import BoolCol, ForeignKey, IntCol, StringCol
-from storm.expr import Alias, And, Count, In, Not, Or, Select
-from storm.store import Store
-
-from canonical.database.constants import DEFAULT, UTC_NOW
+from canonical.database.constants import (
+    DEFAULT,
+    UTC_NOW,
+    )
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import SQLBase, sqlvalues
-from lp.bugs.model.bug import Bug, BugAffectsPerson, BugTag
-from lp.bugs.model.bugsubscription import BugSubscription
+from canonical.database.sqlbase import (
+    SQLBase,
+    sqlvalues,
+    )
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.validators.name import valid_name
+from canonical.launchpad.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
+from lp.bugs.model.bug import (
+    Bug,
+    BugAffectsPerson,
+    BugTag,
+    )
+from lp.bugs.model.bugsubscription import BugSubscription
+from lp.hardwaredb.interfaces.hwdb import (
+    HWBus,
+    HWSubmissionFormat,
+    HWSubmissionKeyNotUnique,
+    HWSubmissionProcessingStatus,
+    IHWDevice,
+    IHWDeviceClass,
+    IHWDeviceClassSet,
+    IHWDeviceDriverLink,
+    IHWDeviceDriverLinkSet,
+    IHWDeviceNameVariant,
+    IHWDeviceNameVariantSet,
+    IHWDeviceSet,
+    IHWDriver,
+    IHWDriverName,
+    IHWDriverPackageName,
+    IHWDriverSet,
+    IHWSubmission,
+    IHWSubmissionBug,
+    IHWSubmissionBugSet,
+    IHWSubmissionDevice,
+    IHWSubmissionDeviceSet,
+    IHWSubmissionSet,
+    IHWSystemFingerprint,
+    IHWSystemFingerprintSet,
+    IHWVendorID,
+    IHWVendorIDSet,
+    IHWVendorName,
+    IHWVendorNameSet,
+    IllegalQuery,
+    ParameterError,
+    )
+from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.person import (
+    IPersonSet,
+    validate_public_person,
+    )
+from lp.registry.interfaces.product import License
 from lp.registry.model.distribution import Distribution
-from lp.soyuz.model.distroarchseries import DistroArchSeries
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.person import Person
 from lp.registry.model.teammembership import TeamParticipation
 from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
-from lp.hardwaredb.interfaces.hwdb import (
-    HWBus, HWSubmissionFormat, HWSubmissionKeyNotUnique,
-    HWSubmissionProcessingStatus, IHWDevice, IHWDeviceClass,
-    IHWDeviceClassSet, IHWDeviceDriverLink, IHWDeviceDriverLinkSet,
-    IHWDeviceNameVariant, IHWDeviceNameVariantSet, IHWDeviceSet, IHWDriver,
-    IHWDriverName, IHWDriverPackageName, IHWDriverSet, IHWSubmission,
-    IHWSubmissionBug, IHWSubmissionBugSet, IHWSubmissionDevice,
-    IHWSubmissionDeviceSet, IHWSubmissionSet, IHWSystemFingerprint,
-    IHWSystemFingerprintSet, IHWVendorID, IHWVendorIDSet, IHWVendorName,
-    IHWVendorNameSet, IllegalQuery, ParameterError)
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from lp.registry.interfaces.distribution import IDistribution
-from lp.registry.interfaces.distroseries import IDistroSeries
-from lp.registry.interfaces.person import IPersonSet
-from lp.registry.interfaces.product import License
-from lp.registry.interfaces.person import validate_public_person
-from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE)
-from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet)
+from lp.soyuz.model.distroarchseries import DistroArchSeries
 
 # The vendor name assigned to new, unknown vendor IDs. See
 # HWDeviceSet.create().
@@ -297,13 +344,7 @@ class HWSubmissionSet:
         # DISTINCT clause.
         result_set.config(distinct=True)
         result_set.order_by(HWSubmission.id)
-        # The Storm implementation of ResultSet.count() is incorrect if
-        # the select query uses the distinct directive (see bug #217644).
-        # DecoratedResultSet solves this problem by modifying the query
-        # to count only the records appearing in a subquery.
-        # We don't actually need to transform the results, which is why
-        # the second argument is a no-op.
-        return DecoratedResultSet(result_set, lambda result: result)
+        return result_set
 
     def _submissionsSubmitterSelects(
         self, target_column, bus, vendor_id, product_id, driver_name,

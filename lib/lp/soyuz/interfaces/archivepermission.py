@@ -15,20 +15,32 @@ __all__ = [
     'IArchiveQueueAdmin',
     ]
 
-from zope.interface import Interface, Attribute
-from zope.schema import Bool, Choice, Datetime, TextLine
-from lazr.enum import DBEnumeratedType, DBItem
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    )
+from lazr.restful.declarations import (
+    export_as_webservice_entry,
+    exported,
+    )
+from lazr.restful.fields import Reference
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Bool,
+    Choice,
+    Datetime,
+    TextLine,
+    )
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import PublicPersonChoice
+from lp.registry.interfaces.sourcepackagename import ISourcePackageName
+from lp.services.fields import PublicPersonChoice
 from lp.soyuz.interfaces.archive import IArchive
 from lp.soyuz.interfaces.component import IComponent
 from lp.soyuz.interfaces.packageset import IPackageset
-from lp.registry.interfaces.sourcepackagename import (
-    ISourcePackageName)
-from lazr.restful.fields import Reference
-from lazr.restful.declarations import (
-    export_as_webservice_entry, exported)
 
 
 class ArchivePermissionType(DBEnumeratedType):

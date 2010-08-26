@@ -7,51 +7,70 @@ __metaclass__ = type
 __all__ = ['POTMsgSet']
 
 import datetime
-import gettextpo
 import logging
+
+import gettextpo
 import pytz
-
-from zope.interface import implements
-from zope.component import getUtility
-
-from sqlobject import ForeignKey, IntCol, StringCol, SQLObjectNotFound
+from sqlobject import (
+    ForeignKey,
+    IntCol,
+    SQLObjectNotFound,
+    StringCol,
+    )
 from storm.expr import SQL
-from storm.store import EmptyResultSet, Store
+from storm.store import (
+    EmptyResultSet,
+    Store,
+    )
+from zope.component import getUtility
+from zope.interface import implements
 
 from canonical.config import config
-from canonical.database.constants import DEFAULT, UTC_NOW
-from canonical.database.sqlbase import cursor, quote, SQLBase, sqlvalues
+from canonical.database.constants import (
+    DEFAULT,
+    UTC_NOW,
+    )
+from canonical.database.sqlbase import (
+    cursor,
+    quote,
+    SQLBase,
+    sqlvalues,
+    )
 from canonical.launchpad import helpers
 from canonical.launchpad.helpers import shortlist
-from lp.translations.model.translationmessage import (
-    make_plurals_sql_fragment)
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.readonly import is_read_only
 from canonical.launchpad.interfaces.lpstorm import ISlaveStore
+from canonical.launchpad.readonly import is_read_only
 from lp.app.errors import UnexpectedFormData
 from lp.translations.interfaces.pofile import IPOFileSet
 from lp.translations.interfaces.potmsgset import (
     BrokenTextError,
     IPOTMsgSet,
     POTMsgSetInIncompatibleTemplatesError,
-    TranslationCreditsType)
+    TranslationCreditsType,
+    )
 from lp.translations.interfaces.translationfileformat import (
-    TranslationFileFormat)
+    TranslationFileFormat,
+    )
 from lp.translations.interfaces.translationimporter import (
-    ITranslationImporter)
+    ITranslationImporter,
+    )
 from lp.translations.interfaces.translationmessage import (
     RosettaTranslationOrigin,
     TranslationConflict,
-    TranslationValidationStatus)
+    TranslationValidationStatus,
+    )
 from lp.translations.interfaces.translations import TranslationConstants
 from lp.translations.model.pomsgid import POMsgID
 from lp.translations.model.potranslation import POTranslation
 from lp.translations.model.translationmessage import (
     DummyTranslationMessage,
-    TranslationMessage)
+    make_plurals_sql_fragment,
+    TranslationMessage,
+    )
 from lp.translations.model.translationtemplateitem import (
-    TranslationTemplateItem)
-
+    TranslationTemplateItem,
+    )
 
 # Msgids that indicate translation credit messages, and their
 # contexts and type.
@@ -103,6 +122,7 @@ class POTMsgSet(SQLBase):
     credits_message_ids = credits_message_info.keys()
 
     def __storm_invalidated__(self):
+        super(POTMsgSet, self).__storm_invalidated__()
         self._cached_singular_text = None
         self._cached_uses_english_msgids = None
 
@@ -157,6 +177,7 @@ class POTMsgSet(SQLBase):
     @property
     def uses_english_msgids(self):
         """See `IPOTMsgSet`."""
+        # TODO: convert to cachedproperty, it will be simpler.
         if self._cached_uses_english_msgids is not None:
             return self._cached_uses_english_msgids
 
@@ -181,6 +202,7 @@ class POTMsgSet(SQLBase):
     @property
     def singular_text(self):
         """See `IPOTMsgSet`."""
+        # TODO: convert to cachedproperty, it will be simpler.
         if self._cached_singular_text is not None:
             return self._cached_singular_text
 

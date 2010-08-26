@@ -50,48 +50,76 @@ __all__ = [
     ]
 
 from contextlib import contextmanager
-from cStringIO import StringIO
-from datetime import datetime, timedelta
-from inspect import getargspec, getmembers, getmro, isclass, ismethod
+from datetime import (
+    datetime,
+    timedelta,
+    )
+from inspect import (
+    getargspec,
+    getmembers,
+    getmro,
+    isclass,
+    ismethod,
+    )
 import os
 from pprint import pformat
 import re
 import shutil
 import subprocess
-import subunit
 import sys
 import tempfile
 import time
 import unittest
 
-from bzrlib.bzrdir import BzrDir, format_registry
+from bzrlib.bzrdir import (
+    BzrDir,
+    format_registry,
+    )
 from bzrlib.transport import get_transport
-
 import pytz
 from storm.expr import Variable
 from storm.store import Store
-from storm.tracer import install_tracer, remove_tracer_type
-
+from storm.tracer import (
+    install_tracer,
+    remove_tracer_type,
+    )
+import subunit
 import testtools
+from testtools.content import Content
+from testtools.content_type import UTF8_TEXT
 import transaction
-
+# zope.exception demands more of frame objects than twisted.python.failure
+# provides in its fake frames.  This is enough to make it work with them
+# as of 2009-09-16.  See https://bugs.edge.launchpad.net/bugs/425113.
+from twisted.python.failure import _Frame
 from windmill.authoring import WindmillTestClient
-
-from zope.component import adapter, getUtility
+from zope.component import (
+    adapter,
+    getUtility,
+    )
 import zope.event
 from zope.interface.verify import verifyClass
 from zope.security.proxy import (
-    isinstance as zope_isinstance, removeSecurityProxy)
+    isinstance as zope_isinstance,
+    removeSecurityProxy,
+    )
 from zope.testing.testrunner.runner import TestResult as ZopeTestResult
 
-from canonical.launchpad.webapp import canonical_url, errorlog
-from canonical.launchpad.webapp.servers import WebServiceTestRequest
 from canonical.config import config
+from canonical.launchpad.webapp import (
+    canonical_url,
+    errorlog,
+    )
 from canonical.launchpad.webapp.errorlog import ErrorReportEvent
 from canonical.launchpad.webapp.interaction import ANONYMOUS
+from canonical.launchpad.webapp.servers import WebServiceTestRequest
 from canonical.launchpad.windmill.testing import constants
-from lp.codehosting.vfs import branch_id_to_path, get_rw_server
+from lp.codehosting.vfs import (
+    branch_id_to_path,
+    get_rw_server,
+    )
 from lp.registry.interfaces.packaging import IPackagingUtil
+from lp.services.osutils import override_environ
 # Import the login helper functions here as it is a much better
 # place to import them from in tests.
 from lp.testing._login import (
@@ -114,14 +142,14 @@ from lp.testing._login import (
 # XXX: JonathanLange 2010-01-01: Why?!
 from lp.testing._tales import test_tales
 from lp.testing._webservice import (
-    launchpadlib_credentials_for, launchpadlib_for, oauth_access_token_for)
-from lp.testing.matchers import Provides
+    launchpadlib_credentials_for,
+    launchpadlib_for,
+    oauth_access_token_for,
+    )
 from lp.testing.fixture import ZopeEventHandlerFixture
+from lp.testing.matchers import Provides
 
-# zope.exception demands more of frame objects than twisted.python.failure
-# provides in its fake frames.  This is enough to make it work with them
-# as of 2009-09-16.  See https://bugs.edge.launchpad.net/bugs/425113.
-from twisted.python.failure import _Frame
+
 _Frame.f_locals = property(lambda self: {})
 
 
@@ -365,15 +393,6 @@ class TestCase(testtools.TestCase):
                 "Expected %s to be %s, but it was %s."
                 % (attribute_name, date, getattr(sql_object, attribute_name)))
 
-    def assertEqual(self, a, b, message=''):
-        """Assert that 'a' equals 'b'."""
-        if a == b:
-            return
-        if message:
-            message += '\n'
-        self.fail("%snot equal:\na = %s\nb = %s\n"
-                  % (message, pformat(a), pformat(b)))
-
     def assertIsInstance(self, instance, assert_class):
         """Assert that an instance is an instance of assert_class.
 
@@ -424,11 +443,8 @@ class TestCase(testtools.TestCase):
 
     def attachOopses(self):
         if len(self.oopses) > 0:
-            content_type = testtools.content_type.ContentType(
-                "text", "plain", {"charset": "utf8"})
             for (i, oops) in enumerate(self.oopses):
-                content = testtools.content.Content(
-                    content_type, oops.get_chunks)
+                content = Content(UTF8_TEXT, oops.get_chunks)
                 self.addDetail("oops-%d" % i, content)
 
     def setUp(self):
@@ -577,18 +593,11 @@ class TestCaseWithFactory(TestCase):
         return os.path.join(base, branch_id_to_path(branch.id))
 
     def useTempBzrHome(self):
-        # XXX: Extract the temporary environment blatting into a generic
-        # helper function.
         self.useTempDir()
         # Avoid leaking local user configuration into tests.
-        old_bzr_home = os.environ.get('BZR_HOME')
-        def restore_bzr_home():
-            if old_bzr_home is None:
-                del os.environ['BZR_HOME']
-            else:
-                os.environ['BZR_HOME'] = old_bzr_home
-        os.environ['BZR_HOME'] = os.getcwd()
-        self.addCleanup(restore_bzr_home)
+        self.useContext(override_environ(
+            BZR_HOME=os.getcwd(), BZR_EMAIL=None, EMAIL=None,
+            ))
 
     def useBzrBranches(self, direct_database=False):
         """Prepare for using bzr branches.
