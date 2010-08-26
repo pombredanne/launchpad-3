@@ -7,7 +7,7 @@ CREATE TABLE OpenIdIdentifier (
         DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC')
 );
 
-CREATE INDEX openididentity__account__idx ON OpenIDIdentifier(account);
+CREATE INDEX openididentifier__account__idx ON OpenIDIdentifier(account);
 
 
 -- XXX: Should data be migrated? Existing data is just tokens, not the
