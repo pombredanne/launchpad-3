@@ -37,7 +37,7 @@ from lazr.restful.declarations import (
     operation_returns_collection_of, REQUEST_USER)
 
 
-modifiable_params = {
+search_tasks_params_for_api_1_0 = {
     "order_by": List(
         title=_('List of fields by which the results are ordered.'),
         value_type=Text(),
@@ -144,9 +144,9 @@ modifiable_params = {
             "date."),
         required=False),
     }
-modified_params = modifiable_params.copy()
-modified_params["omit_targeted"] = copy_field(IBugTaskSearch['omit_targeted'],
-                                              default=False)
+search_tasks_params_for_api_devel = search_tasks_params_for_api_1_0.copy()
+search_tasks_params_for_api_devel["omit_targeted"] = copy_field(
+    IBugTaskSearch['omit_targeted'], default=False)
 
 
 class IHasBugs(Interface):
@@ -176,13 +176,13 @@ class IHasBugs(Interface):
         "True if a BugTask has ever been reported for this target.")
 
     @call_with(search_params=None, user=REQUEST_USER)
-    @operation_parameters(**modified_params)
+    @operation_parameters(**search_tasks_params_for_api_devel)
     @operation_returns_collection_of(IBugTask)
     @export_read_operation()
     @operation_removed_in_version('devel')
 
     @call_with(search_params=None, user=REQUEST_USER)
-    @operation_parameters(**modifiable_params)
+    @operation_parameters(**search_tasks_params_for_api_1_0)
     @operation_returns_collection_of(IBugTask)
     @export_read_operation()
     def searchTasks(search_params, user=None,
