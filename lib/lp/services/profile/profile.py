@@ -77,7 +77,13 @@ def end_request(event):
     if not config.profiling.profiling_allowed:
         return
 
-    actions = _profilers.actions
+    try:
+        actions = _profilers.actions
+    except AttributeError:
+        # Some tests don't go through all the proper motions, like firing off
+        # a start request event.  Just be quiet about it.
+        return
+
     del _profilers.actions
 
     request = event.request
@@ -88,9 +94,12 @@ def end_request(event):
     pageid = request._orig_env.get('launchpad.pageid', 'Unknown')
     oopsid = getattr(request, 'oopsid', None)
 
-    major_content_type, minor_content_type, content_type_params = parse(
-        request.response.getHeader('content-type', ''))
-    is_html = major_content_type == 'text' and minor_content_type == 'html'
+    content_type = request.response.getHeader('content-type')
+    if content_type is None:
+        is_html = False
+    else:
+        _major, _minor, _params = parse(content_type)
+        is_html = _major == 'text' and _minor == 'html'
 
     template_context = {
         'actions': actions,
@@ -164,25 +173,29 @@ def get_desired_profile_actions(request):
     URL.  Note that ++profile++ alone without actions is interpreted as
     the "help" action.
     """
-    path_info = request.get('PATH_INFO')
-    # We don't need no steenkin' regex.
-    start, match, end = path_info.partition('/++profile++')
     result = set()
-    if match:
-        # Now we figure out what actions are desired.  Normally, parsing the
-        # url segment after the namespace ('++profile++' in this case) is done
-        # in the traverse method of the namespace view (see ProfileNamespace
-        # in this file).  We are doing it separately because we want to know
-        # what to do before the traversal machinery gets started, so we can
-        # include traversal in the profile.
-        actions, slash, tail = end.partition('/')
-        result.update(
-            action for action in (
-                item.strip().lower() for item in actions.split(','))
-            if action)
-        result.intersection_update(('log', 'show'))
-        if not result:
-            result.add('help')
+    path_info = request.get('PATH_INFO')
+    if path_info:
+        # if not, this is almost certainly a test not bothering to set up
+        # certain bits.  We'll handle it silently.
+        start, match, end = path_info.partition('/++profile++')
+        # We don't need no steenkin' regex.
+        if match:
+            # Now we figure out what actions are desired.  Normally,
+            # parsing the url segment after the namespace ('++profile++'
+            # in this case) is done in the traverse method of the
+            # namespace view (see ProfileNamespace in this file).  We
+            # are doing it separately because we want to know what to do
+            # before the traversal machinery gets started, so we can
+            # include traversal in the profile.
+            actions, slash, tail = end.partition('/')
+            result.update(
+                action for action in (
+                    item.strip().lower() for item in actions.split(','))
+                if action)
+            result.intersection_update(('log', 'show'))
+            if not result:
+                result.add('help')
     return result
 
 

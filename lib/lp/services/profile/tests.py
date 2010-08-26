@@ -1,14 +1,19 @@
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Tests for lp.services.profile."""
+"""Tests for lp.services.profile.
+
+See lib/canonical/doc/profiling.txt for an end-user description of
+the functionality.
+"""
 
 __metaclass__ = type
 
-import time
 import glob
 import os
+import time
 import unittest
+
 from lp.testing import TestCase
 from bzrlib.lsprof import BzrProfiler
 from zope.app.publication.interfaces import EndRequestEvent
@@ -67,7 +72,8 @@ class BaseTest(TestCase):
 class TestRequestStartHandler(BaseTest):
     """Tests for the start handler of the profiler integration.
 
-    See the README.txt for an end-user description of the functionality.
+    See lib/canonical/doc/profiling.txt for an end-user description of
+    the functionality.
     """
 
     def tearDown(self):
@@ -202,29 +208,43 @@ class TestRequestStartHandler(BaseTest):
 
 
 class TestRequestEndHandler(BaseTest):
+    """Tests for the end-request handler.
+
+    If the start-request handler is broken, these tests will fail too, so fix
+    the tests in the above test case first.
+
+    See lib/canonical/doc/profiling.txt for an end-user description
+    of the functionality.
+    """
 
     def setUp(self):
         TestCase.setUp(self)
         self.patch(da, 'get_request_start_time', time.time)
+        self.patch(da, 'get_request_duration', lambda : 0.5)
         self.profile_dir = self.makeTemporaryDirectory()
         self.memory_profile_log = os.path.join(self.profile_dir, 'memory_log')
         self.pushConfig('profiling', profile_dir=self.profile_dir)
-        eru = ErrorReportingUtility()
+        self.eru = ErrorReportingUtility()
         sm = getSiteManager()
-        sm.registerUtility(eru)
-        self.addCleanup(sm.unregisterUtility, eru)
+        sm.registerUtility(self.eru)
+        self.addCleanup(sm.unregisterUtility, self.eru)
 
-    def _get_end_event(self, path='/', result=EXAMPLE_HTML):
+    def _get_end_event(self, path='/', result=EXAMPLE_HTML, pageid=None):
         """Return a stop event for the given path and output HTML."""
         start_event = self._get_start_event(path)
         profile.start_request(start_event)
         request = start_event.request
+        if pageid is not None:
+            request.setInWSGIEnvironment('launchpad.pageid', pageid)
         request.response.setResult(result)
         context = object()
         return EndRequestEvent(context, request)
 
-    def endRequest(self, path='/'):
-        event = self._get_end_event(path)
+    def endRequest(self, path='/', exception=None, pageid=None):
+        event = self._get_end_event(path, pageid=pageid)
+        if exception is not None:
+            self.eru.raising(
+                (type(exception), exception, None), event.request)
         profile.end_request(event)
         return event.request
 
@@ -360,18 +380,39 @@ class TestRequestEndHandler(BaseTest):
         self.assertIn(paths[0], response)
         self.assertCleanProfilerState()
 
-    def test_memory_profile_start(self):
+    def test_memory_profile(self):
+        "Does the memory profile work?"
         self.pushProfilingConfig(
             profiling_allowed='True',
             memory_profile_log=self.memory_profile_log)
         request = self.endRequest('/')
         self.assertIs(getattr(request, 'oops', None), None)
         self.assertEqual(self.getAddedResponse(request), '')
-        self.assertEqual(len(self.getMemoryLog()), 1)
+        log = self.getMemoryLog()
+        self.assertEqual(len(log), 1)
+        (timestamp, page_id, oops_id, duration, start_vss, start_rss,
+         end_vss, end_rss) = log[0].split()
+        self.assertEqual(page_id, 'Unknown')
+        self.assertEqual(oops_id, '-')
+        self.assertEqual(float(duration), 0.5)
         self.assertEqual(self.getProfilePaths(), [])
         self.assertCleanProfilerState()
 
-    def test_combo_memory_and_profile_start(self):
+    def test_memory_profile_with_non_defaults(self):
+        "Does the memory profile work with an oops and pageid?"
+        self.pushProfilingConfig(
+            profiling_allowed='True',
+            memory_profile_log=self.memory_profile_log)
+        request = self.endRequest('/++profile++show/no-such-file',
+                                  KeyError(), pageid='Foo')
+        log = self.getMemoryLog()
+        (timestamp, page_id, oops_id, duration, start_vss, start_rss,
+         end_vss, end_rss) = log[0].split()
+        self.assertEqual(page_id, 'Foo')
+        self.assertEqual(oops_id, request.oopsid)
+        self.assertCleanProfilerState()
+
+    def test_combo_memory_and_profile(self):
         self.pushProfilingConfig(
             profiling_allowed='True',
             memory_profile_log=self.memory_profile_log)
@@ -382,6 +423,31 @@ class TestRequestEndHandler(BaseTest):
         self.assertEqual(self.getProfilePaths(), [])
         self.assertCleanProfilerState()
 
+    def test_profiling_oops_is_informational(self):
+        self.pushProfilingConfig(profiling_allowed='True')
+        request = self.endRequest('/++profile++show/')
+        response = self.getAddedResponse(request)
+        self.assertIsInstance(request.oops, ErrorReport)
+        self.assertTrue(request.oops.informational)
+        self.assertEquals(request.oops.type, 'ProfilingOops')
+        self.assertCleanProfilerState()
+
+    def test_real_oops_trumps_profiling_oops(self):
+        self.pushProfilingConfig(profiling_allowed='True')
+        request = self.endRequest('/++profile++show/no-such-file',
+                                  KeyError('foo'))
+        self.assertIsInstance(request.oops, ErrorReport)
+        self.assertFalse(request.oops.informational)
+        self.assertEquals(request.oops.type, 'KeyError')
+        response = self.getAddedResponse(request)
+        self.assertIn('Exception-Type: KeyError', response)
+        self.assertCleanProfilerState()
+
+    def test_oopsid_is_in_profile_filename(self):
+        self.pushProfilingConfig(profiling_allowed='True')
+        request = self.endRequest('/++profile++log/')
+        self.assertIn("-" + request.oopsid + "-", self.getProfilePaths()[0])
+        self.assertCleanProfilerState()
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
