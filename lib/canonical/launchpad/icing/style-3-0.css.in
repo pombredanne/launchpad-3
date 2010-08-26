@@ -245,7 +245,7 @@ div.profiling_info p {
     }
 div.hide_reveal_profiling {
     text-decoration: underline;
-    color: red;
+    color: #093;
     font-size: 85%;
     }
 
