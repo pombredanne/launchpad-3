@@ -36,6 +36,11 @@ from lp.registry.interfaces.poll import (
 
 @implementer(IServiceUsage)
 @adapter(IDistroSeries)
+def distroseries_to_serviceusage(distroseries):
+    """Adapts `IDistroSeries` object to `IServiceUsage`."""
+    return distroseries.distribution
+
+
 def distroseries_to_launchpadusage(distroseries):
     """Adapts `IDistroSeries` object to `ILaunchpadUsage`."""
     return distroseries.distribution
