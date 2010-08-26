@@ -13,6 +13,7 @@ __all__ = [
     'CHROOT_LIBRARYFILEALIAS',
     'ADMIN_EMAIL',
     'COMMERCIAL_ADMIN_EMAIL',
+    'SAMPLE_PERSON_EMAIL',
     'HOARY_DISTROSERIES_NAME',
     'I386_ARCHITECTURE_NAME',
     'LAUNCHPAD_ADMIN',
@@ -45,7 +46,7 @@ MAIN_COMPONENT_NAME = 'main'
 NO_PRIVILEGE_EMAIL = 'no-priv@canonical.com'
 COMMERCIAL_ADMIN_EMAIL = 'commercial-member@canonical.com'
 ADMIN_EMAIL = 'foo.bar@canonical.com'
-
+SAMPLE_PERSON_EMAIL = 'test@canonical.com'
 # A user that is an admin of ubuntu-team, which has upload rights
 # to Ubuntu.
 UBUNTU_DEVELOPER_ADMIN_NAME = 'name16'
