@@ -686,10 +686,10 @@ class TestBugWatchActivityPruner(TestCaseWithFactory):
 
 class TestBugWatchResetting(TestCaseWithFactory):
 
-    layer = LaunchpadZopelessLayer
+    layer = LaunchpadFunctionalLayer
 
     def setUp(self):
-        super(TestBugWatchResetting, self).setUp()
+        super(TestBugWatchResetting, self).setUp(user=ADMIN_EMAIL)
         self.bug_watch = self.factory.makeBugWatch()
         self.bug_watch.last_error_type = BugWatchActivityStatus.BUG_NOT_FOUND
         self.bug_watch.lastchanged = datetime.now(utc) - timedelta(days=1)
