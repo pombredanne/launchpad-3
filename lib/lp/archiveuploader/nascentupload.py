@@ -589,7 +589,7 @@ class NascentUpload:
                 archive = self.policy.archive
             else:
                 archive = None
-            candidates = self.policy.distroseries.getPublishedReleases(
+            candidates = self.policy.distroseries.getPublishedSources(
                 source_name, include_pending=True, pocket=pocket,
                 archive=archive)
             if candidates:
