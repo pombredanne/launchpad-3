@@ -8,8 +8,6 @@ There is also a doctest in specificationdepcandidates.txt.
 
 __metaclass__ = type
 
-from testtools.matchers import Equals
-
 from zope.schema.vocabulary import getVocabularyRegistry
 
 from canonical.testing import DatabaseFunctionalLayer
@@ -34,8 +32,8 @@ class TestSpecificationDepCandidatesVocabulary(TestCaseWithFactory):
         spec = self.factory.makeSpecification(product=product)
         candidate = self.factory.makeSpecification(product=product)
         vocab = self.getVocabularyForSpec(spec)
-        self.assertThat(
-            vocab.getTermByToken(candidate.name).value, Equals(candidate))
+        self.assertEqual(
+            candidate, vocab.getTermByToken(candidate.name).value)
 
     def test_getTermByToken_distro(self):
         # Calling getTermByToken for a dependency vocab for a spec from a
@@ -46,7 +44,7 @@ class TestSpecificationDepCandidatesVocabulary(TestCaseWithFactory):
         candidate = self.factory.makeSpecification(distribution=distro)
         vocab = self.getVocabularyForSpec(spec)
         self.assertThat(
-            vocab.getTermByToken(candidate.name).value, Equals(candidate))
+            candidate, vocab.getTermByToken(candidate.name).value)
 
     def test_getTermByToken_disallows_blocked(self):
         # getTermByToken with the name of an candidate spec that is blocked by
