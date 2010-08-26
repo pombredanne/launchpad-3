@@ -45,13 +45,14 @@ class SpecificationDependencyAddView(LaunchpadFormView):
     label = _('Depends On')
 
     def validate(self, data):
-        is_valid = True
-        token = self.request.form.get(self.widgets['dependency'].name)
-        try:
-            self.widgets['dependency'].vocabulary.getTermByToken(token)
-        except LookupError:
-            is_valid = False
-        if not is_valid:
+        """See `LaunchpadFormView.validate`.
+
+        Because it's too hard to set a good error message from inside the
+        widget -- it will be the infamously inscrutable 'Invalid Value' -- we
+        replace it here.
+        """
+        if self.getFieldError('dependency'):
+            token = self.request.form.get(self.widgets['dependency'].name)
             self.setFieldError(
                 'dependency',
                 'There is no blueprint named "%s" in %s, or '
