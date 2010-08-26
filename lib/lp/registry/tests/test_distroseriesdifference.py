@@ -10,6 +10,10 @@ import unittest
 from storm.store import Store
 from zope.component import getUtility
 
+from canonical.cachedproperty import (
+    clear_cachedproperties,
+    is_cached,
+    )
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing import DatabaseFunctionalLayer
 from lp.testing import TestCaseWithFactory
@@ -66,6 +70,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         pending_pub = self.factory.makeSourcePackagePublishingHistory(
             sourcepackagename=src_name, distroseries=ds_diff.derived_series,
             status=PackagePublishingStatus.PENDING)
+        clear_cachedproperties(ds_diff)
 
         self.assertEqual(pending_pub, ds_diff.source_pub)
 
@@ -89,6 +94,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             sourcepackagename=src_name,
             distroseries=ds_diff.derived_series.parent_series,
             status=PackagePublishingStatus.PENDING)
+        clear_cachedproperties(ds_diff)
 
         self.assertEqual(pending_pub, ds_diff.parent_source_pub)
 
@@ -136,7 +142,11 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         self.fail("Unimplemented")
 
     def test_pubs_are_cached(self):
-        self.fail("Unimplemented")
+        # Both the derived and parent pubs are cached.
+        ds_diff = self.factory.makeDistroSeriesDifference()
+
+        self.assertTrue(is_cached(ds_diff, '_source_pub_cached_value'))
+        self.assertTrue(is_cached(ds_diff, '_parent_source_pub_cached_value'))
 
 
 def test_suite():

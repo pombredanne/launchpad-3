@@ -22,6 +22,7 @@ from zope.interface import (
     implements,
     )
 
+from canonical.cachedproperty import cachedproperty
 from canonical.database.enumcol import DBEnum
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from lp.registry.enum import (
@@ -82,14 +83,14 @@ class DistroSeriesDifference(Storm):
             "Initial parent/derived versions: %s" % diff._getVersions())
         return store.add(diff)
 
-    @property
+    @cachedproperty
     def source_pub(self):
         """See `IDistroSeriesDifference`."""
         # The most recent published source is the first one.
         return self.derived_series.getPublishedReleases(
             self.source_package_name, include_pending=True)[0]
 
-    @property
+    @cachedproperty
     def parent_source_pub(self):
         """See `IDistroSeriesDifference`."""
         return self.derived_series.parent_series.getPublishedReleases(
