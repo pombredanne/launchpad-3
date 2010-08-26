@@ -35,6 +35,7 @@ EXAMPLE_HTML_END = '''\
 '''
 EXAMPLE_HTML = EXAMPLE_HTML_START + EXAMPLE_HTML_END
 
+
 class BaseTest(TestCase):
 
     def _get_request(self, path='/'):
@@ -62,6 +63,7 @@ class BaseTest(TestCase):
             profile_all_requests=profile_all_requests,
             memory_profile_log=memory_profile_log)
 
+
 class TestRequestStartHandler(BaseTest):
     """Tests for the start handler of the profiler integration.
 
@@ -77,9 +79,6 @@ class TestRequestStartHandler(BaseTest):
             if getattr(profile._profilers, name, None) is not None:
                 delattr(profile._profilers, name)
         TestCase.tearDown(self)
-
-    #########################################################################
-    # Tests
 
     def test_config_stops_profiling(self):
         """The ``profiling_allowed`` configuration should disable all
@@ -109,7 +108,7 @@ class TestRequestStartHandler(BaseTest):
         self.assertIs(
             getattr(profile._profilers, 'memory_profile_start', None),
             None)
-        self.assertEquals(profile._profilers.actions, set(('show',)))
+        self.assertEquals(profile._profilers.actions, set(('show', )))
 
     def test_optional_profiling_with_log_request_starts_profiling(self):
         """If profiling is allowed and a request with the "log" marker
@@ -120,7 +119,7 @@ class TestRequestStartHandler(BaseTest):
         self.assertIs(
             getattr(profile._profilers, 'memory_profile_start', None),
             None)
-        self.assertEquals(profile._profilers.actions, set(('log',)))
+        self.assertEquals(profile._profilers.actions, set(('log', )))
 
     def test_optional_profiling_with_combined_request_starts_profiling(self):
         """If profiling is allowed and a request with the "log" and
@@ -133,12 +132,13 @@ class TestRequestStartHandler(BaseTest):
             None)
         self.assertEquals(profile._profilers.actions, set(('log', 'show')))
 
-    def test_optional_profiling_with_combined_request_starts_profiling(self):
+    def test_optional_profiling_with_reversed_request_starts_profiling(self):
         """If profiling is allowed and a request with the "show" and
         "log" marker URL segment is made, profiling starts."""
         self.pushProfilingConfig(profiling_allowed='True')
         # The fact that this is reversed from the previous request is the only
-        # difference from the previous test.
+        # difference from the previous test.  Also, it doesn't have a
+        # trailing slash. :-P
         profile.start_request(self._get_start_event('/++profile++show,log'))
         self.assertIsInstance(profile._profilers.profiler, BzrProfiler)
         self.assertIs(
@@ -155,7 +155,7 @@ class TestRequestStartHandler(BaseTest):
         self.assertIs(
             getattr(profile._profilers, 'memory_profile_start', None),
             None)
-        self.assertEquals(profile._profilers.actions, set(('log',)))
+        self.assertEquals(profile._profilers.actions, set(('log', )))
 
     def test_optional_profiling_with_wrong_request_helps(self):
         """If profiling is allowed and a request with the marker URL segment
@@ -167,7 +167,7 @@ class TestRequestStartHandler(BaseTest):
         self.assertIs(
             getattr(profile._profilers, 'memory_profile_start', None),
             None)
-        self.assertEquals(profile._profilers.actions, set(('help',)))
+        self.assertEquals(profile._profilers.actions, set(('help', )))
 
     def test_forced_profiling_with_wrong_request_helps(self):
         """If profiling is forced and a request with the marker URL segment
@@ -198,7 +198,7 @@ class TestRequestStartHandler(BaseTest):
         self.assertIsInstance(profile._profilers.profiler, BzrProfiler)
         self.assertIsInstance(profile._profilers.memory_profile_start, tuple)
         self.assertEqual(len(profile._profilers.memory_profile_start), 2)
-        self.assertEquals(profile._profilers.actions, set(('show',)))
+        self.assertEquals(profile._profilers.actions, set(('show', )))
 
 
 class TestRequestEndHandler(BaseTest):
@@ -246,7 +246,6 @@ class TestRequestEndHandler(BaseTest):
 
     #########################################################################
     # Tests
-
     def test_config_stops_profiling(self):
         """The ``profiling_allowed`` configuration should disable all
         profiling, even if it is requested"""
@@ -382,6 +381,7 @@ class TestRequestEndHandler(BaseTest):
         self.assertEqual(len(self.getMemoryLog()), 1)
         self.assertEqual(self.getProfilePaths(), [])
         self.assertCleanProfilerState()
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

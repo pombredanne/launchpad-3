@@ -9,13 +9,10 @@ __metaclass__ = type
 
 import contextlib
 import datetime
-import errno
 from itertools import repeat
 import logging
-import os
 import re
 import rfc822
-import threading
 import types
 import urllib
 
@@ -64,11 +61,13 @@ _rate_restrict_period = datetime.timedelta(seconds=60)
 # minute.
 _rate_restrict_burst = 5
 
+
 def _normalise_whitespace(s):
     """Normalise the whitespace in a string to spaces"""
     if s is None:
         return None
     return ' '.join(s.split())
+
 
 def _safestr(obj):
     if isinstance(obj, unicode):
@@ -85,13 +84,13 @@ def _safestr(obj):
             'Error in ErrorReportingService while getting a str '
             'representation of an object')
         value = '<unprintable %s object>' % (
-            str(type(obj).__name__)
-            )
+            str(type(obj).__name__))
     # encode non-ASCII characters
     value = value.replace('\\', '\\\\')
     value = re.sub(r'[\x80-\xff]',
                    lambda match: '\\x%02x' % ord(match.group(0)), value)
     return value
+
 
 def _is_sensitive(request, name):
     """Return True if the given request variable name is sensitive.
@@ -157,7 +156,7 @@ class ErrorReport:
         self.req_vars = req_vars
         self.db_statements = db_statements
         self.branch_nick = versioninfo.branch_nick
-        self.revno  = versioninfo.revno
+        self.revno = versioninfo.revno
         self.informational = informational
 
     def __repr__(self):
@@ -166,8 +165,10 @@ class ErrorReport:
     def get_chunks(self):
         chunks = []
         chunks.append('Oops-Id: %s\n' % _normalise_whitespace(self.id))
-        chunks.append('Exception-Type: %s\n' % _normalise_whitespace(self.type))
-        chunks.append('Exception-Value: %s\n' % _normalise_whitespace(self.value))
+        chunks.append(
+            'Exception-Type: %s\n' % _normalise_whitespace(self.type))
+        chunks.append(
+            'Exception-Value: %s\n' % _normalise_whitespace(self.value))
         chunks.append('Date: %s\n' % self.time.isoformat())
         chunks.append('Page-Id: %s\n' % _normalise_whitespace(self.pageid))
         chunks.append('Branch: %s\n' % self.branch_nick)

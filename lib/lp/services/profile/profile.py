@@ -38,6 +38,7 @@ class ProfilingOops(Exception):
 
 _profilers = threading.local()
 
+
 @adapter(IStartRequestEvent)
 def start_request(event):
     """Handle profiling.
@@ -55,7 +56,7 @@ def start_request(event):
     _profilers.profiler = None
 
     if actions:
-        if actions.difference(('help',)):
+        if actions.difference(('help', )):
             # If this assertion has reason to fail, we'll need to add code
             # to try and stop the profiler before we delete it, in case it is
             # still running.
@@ -68,6 +69,7 @@ def start_request(event):
 
 template = PageTemplateFile(
     os.path.join(os.path.dirname(__file__), 'profile.pt'))
+
 
 @adapter(IEndRequestEvent)
 def end_request(event):
@@ -154,6 +156,7 @@ def end_request(event):
             vss_start, rss_start, vss_end, rss_end))
         log.close()
 
+
 def get_desired_profile_actions(request):
     """What does the URL show that the user wants to do about profiling?
 
@@ -192,4 +195,3 @@ class ProfileNamespace(view):
         # Note that handling the name is done in get_desired_profile_actions,
         # above.  See the comment in that function.
         return self.context
-
