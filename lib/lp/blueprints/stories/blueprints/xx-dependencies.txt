@@ -84,7 +84,7 @@ Now, we make sure we can load the page. It should show two potential
 dependencies we could remove. The extension manager one, and "e4x".
 
   >>> owner_browser.getControl('Dependency').displayOptions
-  ['Extension Manager System Upgrades', 'Support E4X in EcmaScript']
+  ['Extension Manager Upgrades', 'Support E4X in EcmaScript']
 
 Again, the page contains a link back to the blueprint in case we change
 our mind.
