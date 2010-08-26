@@ -751,7 +751,7 @@ class BaseBinaryUploadFile(PackageUploadFile):
         if spphs:
             # We know there's only going to be one release because
             # version is unique.
-            assert len(spphs) == 1, "Duplicated ancestry"
+            assert spphs.count() == 1, "Duplicated ancestry"
             sourcepackagerelease = spphs[0].sourcepackagerelease
         else:
             # XXX cprov 2006-08-09 bug=55774: Building from ACCEPTED is
