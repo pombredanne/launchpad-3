@@ -17,7 +17,10 @@ from canonical.cachedproperty import (
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing import DatabaseFunctionalLayer
 from lp.testing import TestCaseWithFactory
-from lp.registry.enum import DistroSeriesDifferenceType
+from lp.registry.enum import (
+    DistroSeriesDifferenceStatus,
+    DistroSeriesDifferenceType,
+    )
 from lp.registry.exceptions import NotADerivedSeriesError
 from lp.registry.interfaces.distroseriesdifference import (
     IDistroSeriesDifference,
@@ -179,7 +182,54 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             "Parent/derived versions: 1.0/0.9", ds_diff.activity_log)
 
     def test_updateDifferenceType_resolves_difference(self):
-        self.fail("Unimplemented")
+        # Status is set to resolved when versions match.
+        ds_diff = self.factory.makeDistroSeriesDifference(
+            source_package_name_str="foonew",
+            versions={
+                'parent':'1.0',
+                'derived': '0.9',
+                })
+        new_derived_pub = self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagename=ds_diff.source_package_name,
+            distroseries=ds_diff.derived_series,
+            status=PackagePublishingStatus.PENDING,
+            version='1.0')
+        clear_cachedproperties(ds_diff)
+
+        ds_diff.updateDifferenceType()
+
+        self.assertEqual(
+            DistroSeriesDifferenceStatus.RESOLVED,
+            ds_diff.status)
+        self.assertIn(
+            "Difference resolved. Both versions now 1.0",
+            self.activity_log)
+
+    def test_updateDifferenceType_re_opens_difference(self):
+        # The status of a resolved difference will updated with new
+        # uploads.
+        ds_diff = self.factory.makeDistroSeriesDifference(
+            source_package_name_str="foonew",
+            versions={
+                'parent':'1.0',
+                'derived': '1.0',
+                },
+            status=DistroSeriesDifferenceStatus.RESOLVED)
+        new_derived_pub = self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagename=ds_diff.source_package_name,
+            distroseries=ds_diff.derived_series,
+            status=PackagePublishingStatus.PENDING,
+            version='1.1')
+        clear_cachedproperties(ds_diff)
+
+        ds_diff.updateDifferenceType()
+
+        self.assertEqual(
+            DistroSeriesDifferenceStatus.NEEDS_ATTENTION,
+            ds_diff.status)
+        self.assertIn(
+            "Difference re-opened. Parent/derived versions: 1.0/1.1",
+            self.activity_log)
 
     def test_appendActivityLog_not_public(self):
         self.fail("Unimplemented")
