@@ -43,7 +43,7 @@ class TestSpecificationDepCandidatesVocabulary(TestCaseWithFactory):
         spec = self.factory.makeSpecification(distribution=distro)
         candidate = self.factory.makeSpecification(distribution=distro)
         vocab = self.getVocabularyForSpec(spec)
-        self.assertThat(
+        self.assertEqual(
             candidate, vocab.getTermByToken(candidate.name).value)
 
     def test_getTermByToken_disallows_blocked(self):
