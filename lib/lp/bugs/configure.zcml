@@ -881,7 +881,9 @@
                 attributes="
                     addComment
                     updateImportance
-                    updateStatus"
+                    updateStatus
+                    reset
+                    "
                 set_attributes="
                     last_error_type
                     lastchanged
@@ -889,7 +891,8 @@
                     needscheck
                     next_check
                     remote_importance
-                    remotestatus"/>
+                    remotestatus
+                    "/>
         </class>
 
         <!-- https://launchpad.net/bugs/98639 -->
