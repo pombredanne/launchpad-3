@@ -124,17 +124,6 @@ class TestUtilities(TestCase):
         self.assertEquals(sect, "libs")
         self.assertEquals(comp, "restricted")
 
-    def testBuildFileListFromChanges(self):
-        """lp.archiveuploader.utils.build_file_list should be capable of
-           reading changes files
-        """
-        from lp.archiveuploader.utils import build_file_list
-        from lp.archiveuploader.tagfiles import parse_tagfile
-
-        ch = parse_tagfile(datadir("good-signed-changes"))
-        fl = build_file_list(ch)
-        self.assertEquals("abiword_2.0.10-1.2_mips.deb" in fl, True)
-
     def testFixMaintainerOkay(self):
         """lp.archiveuploader.utils.fix_maintainer should parse correct values
         """
