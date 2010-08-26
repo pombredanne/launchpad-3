@@ -631,7 +631,7 @@ class TestWebTestLogger(TestCaseWithTransport, RequestHelpers):
             logger.get_summary_contents())
 
 
-class TestEC2Runner(TestCase):
+class TestEC2Runner(TestCaseWithTransport, RequestHelpers):
 
     def make_ec2runner(self, emails=None, email_log=None):
         if email_log is None:
@@ -667,6 +667,31 @@ class TestEC2Runner(TestCase):
         [message] = log
         self.assertEqual('failing method FAILED', message['Subject'])
         self.assertEqual('foo@example.com', message['To'])
+        self.assertIn('ZeroDivisionError', str(message))
+
+    def test_email_with_launchpad_tester_failure(self):
+        email_log = []
+        to_emails = ['foo@example.com']
+        request = self.make_request(emails=to_emails, emails_sent=email_log)
+        logger = self.make_logger(request=request)
+        tester = self.make_tester(logger=logger)
+        # Deliberately break 'tester'.  A likely failure in production is not
+        # being able to spawn the child process.
+        tester._spawn_test_process = lambda: 1/0
+        runner = self.make_ec2runner(emails=to_emails, email_log=email_log)
+        # XXX: I'm not actually sure if we actually care whether or not
+        # runner.run raises the exception from the innards of tester.test. We
+        # certainly care that it re-raises exceptions generally.
+        self.assertRaises(
+            ZeroDivisionError, runner.run, "launchpad tester", tester.test)
+        # The primary thing we care about is that email *was* sent.
+        self.assertNotEqual([], email_log)
+        [tester_msg, runner_msg] = email_log
+        self.assertEqual('foo@example.com', tester_msg['To'])
+        self.assertEqual('foo@example.com', runner_msg['To'])
+        self.assertIn('ZeroDivisionError', str(tester_msg))
+        self.assertIn('ZeroDivisionError', str(runner_msg))
+
 
 # XXX: Add tests that show that _some_ kind of email is sent if
 # LaunchpadTester fails unexpectedly.
