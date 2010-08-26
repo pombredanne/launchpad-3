@@ -6,37 +6,56 @@ __metaclass__ = type
 import re
 from urlparse import urlunparse
 
+from lazr.lifecycle.event import ObjectCreatedEvent
+from lazr.lifecycle.interfaces import IObjectCreatedEvent
 from zope.component import getUtility
-from zope.interface import implements
 from zope.event import notify
+from zope.interface import implements
 
 from canonical.config import config
 from canonical.database.sqlbase import rollback
 from canonical.launchpad.helpers import get_email_template
 from canonical.launchpad.interfaces import (
     BugAttachmentType,
-    CreatedBugWithNoBugTasksError, EmailProcessingError,
+    CreatedBugWithNoBugTasksError,
+    EmailProcessingError,
     IBugAttachmentSet,
-    IBugEditEmailCommand, IBugEmailCommand, IBugMessageSet,
-    IBugTaskEditEmailCommand, IBugTaskEmailCommand,
-    ILaunchBag, IMailHandler,
-    IMessageSet, IQuestionSet, ISpecificationSet,
-    QuestionStatus)
-from lp.code.mail.codehandler import CodeHandler
+    IBugEditEmailCommand,
+    IBugEmailCommand,
+    IBugMessageSet,
+    IBugTaskEditEmailCommand,
+    IBugTaskEmailCommand,
+    ILaunchBag,
+    IMailHandler,
+    IMessageSet,
+    IQuestionSet,
+    ISpecificationSet,
+    QuestionStatus,
+    )
 from canonical.launchpad.mail.commands import (
-    BugEmailCommands, get_error_message)
+    BugEmailCommands,
+    get_error_message,
+    )
 from canonical.launchpad.mail.helpers import (
-    ensure_not_weakly_authenticated, get_main_body, guess_bugtask,
-    IncomingEmailError, parse_commands, reformat_wiki_text,
-    ensure_sane_signature_timestamp)
-from lp.services.mail.sendmail import sendmail, simple_sendmail
+    ensure_not_weakly_authenticated,
+    ensure_sane_signature_timestamp,
+    get_main_body,
+    guess_bugtask,
+    IncomingEmailError,
+    parse_commands,
+    reformat_wiki_text,
+    )
 from canonical.launchpad.mail.specexploder import get_spec_url_from_moin_mail
 from canonical.launchpad.mailnotification import (
-    MailWrapper, send_process_error_notification)
+    MailWrapper,
+    send_process_error_notification,
+    )
 from canonical.launchpad.webapp import urlparse
-
-from lazr.lifecycle.event import ObjectCreatedEvent
-from lazr.lifecycle.interfaces import IObjectCreatedEvent
+from lp.code.mail.codehandler import CodeHandler
+from lp.services.mail.sendmail import (
+    sendmail,
+    simple_sendmail,
+    )
 
 
 class MaloneHandler:
@@ -70,6 +89,9 @@ class MaloneHandler:
                 CONTEXT = 'bug report'
                 ensure_not_weakly_authenticated(signed_msg, CONTEXT)
                 if signature is not None:
+                    sig = gpghandler.getVerifiedSignature(
+                        canonicalise_line_endings(signed_msg.signedContent),
+                        signature)
                     ensure_sane_signature_timestamp(signature, CONTEXT)
 
             if user.lower() == 'new':

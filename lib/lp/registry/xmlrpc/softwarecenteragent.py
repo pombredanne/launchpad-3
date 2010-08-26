@@ -16,8 +16,11 @@ from canonical.launchpad.interfaces.account import AccountSuspendedError
 from canonical.launchpad.webapp import LaunchpadXMLRPCView
 from canonical.launchpad.xmlrpc import faults
 from lp.registry.interfaces.person import (
-    IPersonSet, ISoftwareCenterAgentAPI, ISoftwareCenterAgentApplication,
-    PersonCreationRationale)
+    IPersonSet,
+    ISoftwareCenterAgentAPI,
+    ISoftwareCenterAgentApplication,
+    PersonCreationRationale,
+    )
 
 
 class SoftwareCenterAgentAPI(LaunchpadXMLRPCView):

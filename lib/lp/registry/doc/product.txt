@@ -501,15 +501,11 @@ series.
     False
     >>> print firefox.codehosting_usage.name
     UNKNOWN
-    >>> print firefox.uses_launchpad
-    False
     >>> firefox.development_focus.branch = factory.makeBranch(product=firefox)
     >>> print firefox.official_codehosting
     True
     >>> print firefox.codehosting_usage.name
     LAUNCHPAD
-    >>> print firefox.uses_launchpad
-    True
 
 We can also find all the products that have branches.
 

@@ -13,14 +13,14 @@ __all__ = [
 from StringIO import StringIO
 import urllib2
 
-from zope.testbrowser.testing import PublisherHTTPHandler
-
 from openid import fetchers
 from openid.consumer.discover import (
-    OpenIDServiceEndpoint, OPENID_IDP_2_0_TYPE)
+    OPENID_IDP_2_0_TYPE,
+    OpenIDServiceEndpoint,
+    )
+from zope.testbrowser.testing import PublisherHTTPHandler
 
 from canonical.launchpad.webapp import LaunchpadView
-
 from lp.testopenid.interfaces.server import get_server_url
 
 

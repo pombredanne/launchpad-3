@@ -20,9 +20,8 @@ import logging
 import os
 import threading
 
-from zope.security.management import queryInteraction
-
 from lazr.restful.utils import get_current_browser_request
+from zope.security.management import queryInteraction
 
 
 root = os.path.abspath(os.path.join(

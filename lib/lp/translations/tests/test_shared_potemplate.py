@@ -9,8 +9,8 @@ import unittest
 
 from zope.security.proxy import removeSecurityProxy
 
-from lp.testing.factory import LaunchpadObjectFactory
 from canonical.testing import ZopelessDatabaseLayer
+from lp.testing.factory import LaunchpadObjectFactory
 
 
 class TestTranslationSharingPOTemplate(unittest.TestCase):

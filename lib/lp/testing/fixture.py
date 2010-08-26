@@ -19,9 +19,15 @@ __all__ = [
     'with_fixture',
     ]
 
-from zope.component import getGlobalSiteManager, provideHandler
 from twisted.python.util import mergeFunctionMetadata
-from zope.interface import implements, Interface
+from zope.component import (
+    getGlobalSiteManager,
+    provideHandler,
+    )
+from zope.interface import (
+    implements,
+    Interface,
+    )
 
 
 class IFixture(Interface):

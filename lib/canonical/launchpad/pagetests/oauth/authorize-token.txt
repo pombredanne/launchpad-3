@@ -44,7 +44,8 @@ it involves OpenID, which would complicate this test quite a bit.)
     ...
     See all applications authorized to access Launchpad on your behalf.
 
-This page contains one submit button for each item of OAuthPermission.
+This page contains one submit button for each item of OAuthPermission,
+except for 'Grant Permissions', which must be specifically requested.
 
     >>> browser.getControl('No Access')
     <SubmitControl...
@@ -57,9 +58,14 @@ This page contains one submit button for each item of OAuthPermission.
     >>> browser.getControl('Change Anything')
     <SubmitControl...
 
+    >>> browser.getControl('Grant Permissions')
+    Traceback (most recent call last):
+    ...
+    LookupError: label 'Grant Permissions'
+
     >>> actions = main_content.findAll('input', attrs={'type': 'submit'})
     >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
-    >>> len(actions) == len(OAuthPermission.items)
+    >>> len(actions) == len(OAuthPermission.items) - 1
     True
 
 An application, when asking to access Launchpad on a user's behalf,
@@ -83,9 +89,28 @@ to deny permission altogether.
     Change Non-Private Data
     Change Anything
 
+The only time the 'Grant Permissions' permission shows up in this list
+is if the client specifically requests it, and no other
+permission. (Also requesting UNAUTHORIZED is okay--it will show up
+anyway.)
+
+    >>> print_access_levels('allow_permission=GRANT_PERMISSIONS')
+    No Access
+    Grant Permissions
+
+    >>> print_access_levels(
+    ...     'allow_permission=GRANT_PERMISSIONS&allow_permission=UNAUTHORIZED')
+    No Access
+    Grant Permissions
+
+    >>> print_access_levels(
+    ...     'allow_permission=WRITE_PUBLIC&allow_permission=GRANT_PERMISSIONS')
+    No Access
+    Change Non-Private Data
+
 If an application doesn't specify any valid access levels, or only
 specifies the UNAUTHORIZED access level, Launchpad will show all the
-access levels.
+access levels, except for GRANT_PERMISSIONS.
 
     >>> print_access_levels('')
     No Access

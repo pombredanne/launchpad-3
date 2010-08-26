@@ -11,8 +11,11 @@ __all__ = [
 import logging
 
 from twisted.python import log as tplog
-
-from zope.component import adapter, getGlobalSiteManager, provideHandler
+from zope.component import (
+    adapter,
+    getGlobalSiteManager,
+    provideHandler,
+    )
 # This non-standard import is necessary to hook up the event system.
 import zope.component.event
 

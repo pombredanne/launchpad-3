@@ -3,16 +3,16 @@
 
 """Storm/memcached implementation of lazr.restful's representation cache."""
 
+from lazr.restful.simple import BaseRepresentationCache
+from lazr.restful.utils import get_current_web_service_request
 import storm
-
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 from zope.traversing.browser import absoluteURL
 
 from canonical.config import config
 from lp.services.memcache.interfaces import IMemcacheClient
-from lazr.restful.simple import BaseRepresentationCache
-from lazr.restful.utils import get_current_web_service_request
+
 
 __metaclass__ = type
 __all__ = [

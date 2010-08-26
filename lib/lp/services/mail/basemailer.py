@@ -11,12 +11,12 @@ import logging
 from smtplib import SMTPException
 
 from canonical.launchpad.helpers import get_email_template
-
-from lp.services.mail.notificationrecipientset import (
-    NotificationRecipientSet)
+from lp.services.mail.notificationrecipientset import NotificationRecipientSet
 from lp.services.mail.sendmail import (
-    append_footer, format_address, MailController
-)
+    append_footer,
+    format_address,
+    MailController,
+    )
 from lp.services.utils import text_delta
 
 
