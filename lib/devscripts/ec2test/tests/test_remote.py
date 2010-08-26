@@ -29,12 +29,76 @@ from devscripts.ec2test.remote import (
     FlagFallStream,
     gunzip_data,
     gzip_data,
+    LaunchpadTester,
     remove_pidfile,
     Request,
     SummaryResult,
     WebTestLogger,
     write_pidfile,
     )
+
+
+class RequestHelpers:
+
+    def patch(self, obj, name, value):
+        orig = getattr(obj, name)
+        setattr(obj, name, value)
+        self.addCleanup(setattr, obj, name, orig)
+        return orig
+
+    def make_trunk(self, parent_url='http://example.com/bzr/trunk'):
+        """Make a trunk branch suitable for use with `Request`.
+
+        `Request` expects to be given a path to a working tree that has a
+        branch with a configured parent URL, so this helper returns such a
+        working tree.
+        """
+        nick = parent_url.strip('/').split('/')[-1]
+        tree = self.make_branch_and_tree(nick)
+        tree.branch.set_parent(parent_url)
+        return tree
+
+    def make_request(self, branch_url=None, revno=None,
+                     trunk=None, sourcecode_path=None,
+                     emails=None, pqm_message=None):
+        """Make a request to test, specifying only things we care about.
+
+        Note that the returned request object will not ever send email, but
+        will instead log "sent" emails to `request.emails_sent`.
+        """
+        if trunk is None:
+            trunk = self.make_trunk()
+        if sourcecode_path is None:
+            sourcecode_path = self.make_sourcecode(
+                [('a', 'http://example.com/bzr/a', 2),
+                 ('b', 'http://example.com/bzr/b', 3),
+                 ('c', 'http://example.com/bzr/c', 5)])
+        request = Request(
+            branch_url, revno, trunk.basedir, sourcecode_path, emails,
+            pqm_message)
+        request.emails_sent = []
+        request._send_email = request.emails_sent.append
+        return request
+
+    def make_sourcecode(self, branches):
+        """Make a sourcecode directory with sample branches.
+
+        :param branches: A list of (name, parent_url, revno) tuples.
+        :return: The path to the sourcecode directory.
+        """
+        self.build_tree(['sourcecode/'])
+        for name, parent_url, revno in branches:
+            tree = self.make_branch_and_tree('sourcecode/%s' % (name,))
+            tree.branch.set_parent(parent_url)
+            for i in range(revno):
+                tree.commit(message=str(i))
+        return 'sourcecode/'
+
+    def make_logger(self, request=None, echo_to_stdout=False):
+        if request is None:
+            request = self.make_request()
+        return WebTestLogger(
+            'full.log', 'summary.log', 'index.html', request, echo_to_stdout)
 
 
 class TestFlagFallStream(TestCase):
@@ -122,6 +186,104 @@ class TestSummaryResult(TestCase):
         self.assertEqual(1, len(flush_calls))
 
 
+class FakePopen:
+    """Fake Popen object so we don't have to spawn processes in tests."""
+
+    def __init__(self, output, exit_status):
+        self.stdout = StringIO(output)
+        self._exit_status = exit_status
+
+    def wait(self):
+        return self._exit_status
+
+
+class TestLaunchpadTester(TestCaseWithTransport, RequestHelpers):
+
+    def make_tester(self, logger=None, test_directory=None, test_options=()):
+        if not logger:
+            logger = self.make_logger()
+        if not test_directory:
+            test_directory = 'unspecified-test-directory'
+        return LaunchpadTester(logger, test_directory, test_options)
+
+    def test_build_test_command_no_options(self):
+        # The LaunchpadTester runs "make check" if given no options.
+        tester = self.make_tester()
+        command = tester.build_test_command()
+        self.assertEqual(['make', 'check'], command)
+
+    def test_build_test_command_options(self):
+        # The LaunchpadTester runs 'make check TESTOPTIONS="<options>"' if
+        # given options.
+        tester = self.make_tester(test_options=('-vvv', '--subunit'))
+        command = tester.build_test_command()
+        self.assertEqual(
+            ['make', 'check', 'TESTOPTS="-vvv --subunit"'], command)
+
+    def test_spawn_test_process(self):
+        # _spawn_test_process uses subprocess.Popen to run the command
+        # returned by build_test_command. stdout & stderr are piped together,
+        # the cwd is the test directory specified in the constructor, and the
+        # bufsize is zore, meaning "don't buffer".
+        popen_calls = []
+        self.patch(
+            subprocess, 'Popen',
+            lambda *args, **kwargs: popen_calls.append((args, kwargs)))
+        tester = self.make_tester(test_directory='test-directory')
+        tester._spawn_test_process()
+        self.assertEqual(
+            [((tester.build_test_command(),),
+              {'bufsize': 0,
+               'stdout': subprocess.PIPE,
+               'stderr': subprocess.STDOUT,
+               'cwd': 'test-directory'})], popen_calls)
+
+    def test_running_test(self):
+        # LaunchpadTester.test() runs the test command, and then calls
+        # got_result with the result.  This test is more of a smoke test to
+        # make sure that everything integrates well.
+        message = {'Subject': "One Crowded Hour"}
+        request = self.make_request(pqm_message=message)
+        logger = self.make_logger(request=request)
+        tester = self.make_tester(logger=logger)
+        output = "test output\n"
+        tester._spawn_test_process = lambda: FakePopen(output, 0)
+        tester.test()
+        # Message being sent implies got_result thought it got a success.
+        self.assertEqual([message], request.emails_sent)
+
+    def test_error_in_testrunner(self):
+        # Any exception is raised within LaunchpadTester.test() is an error in
+        # the testrunner. When we detect these, we do three things:
+        #   1. Log the error to the logger using error_in_testrunner
+        #   2. Call got_result with a False value, indicating test suite
+        #      failure.
+        #   3. Re-raise the error. In the script, this triggers an email.
+        message = {'Subject': "One Crowded Hour"}
+        request = self.make_request(pqm_message=message)
+        logger = self.make_logger(request=request)
+        tester = self.make_tester(logger=logger)
+        # Break the test runner deliberately. In production, this is more
+        # likely to be a system error than a programming error.
+        tester._spawn_test_process = lambda: 1/0
+        self.assertRaises(ZeroDivisionError, tester.test)
+        # Message not being sent implies got_result thought it got a failure.
+        self.assertEqual([], request.emails_sent)
+        self.assertIn("ERROR IN TESTRUNNER", logger.get_summary_contents())
+        self.assertIn("ZeroDivisionError", logger.get_summary_contents())
+
+    def test_nonzero_exit_code(self):
+        message = {'Subject': "One Crowded Hour"}
+        request = self.make_request(pqm_message=message)
+        logger = self.make_logger(request=request)
+        tester = self.make_tester(logger=logger)
+        output = "test output\n"
+        tester._spawn_test_process = lambda: FakePopen(output, 10)
+        tester.test()
+        # Message not being sent implies got_result thought it got a failure.
+        self.assertEqual([], request.emails_sent)
+
+
 class TestPidfileHelpers(TestCase):
     """Tests for `write_pidfile` and `remove_pidfile`."""
 
@@ -163,63 +325,6 @@ class TestGzip(TestCase):
         self.assertEqual(data, gunzip_data(compressed))
 
 
-class RequestHelpers:
-
-    def make_trunk(self, parent_url='http://example.com/bzr/trunk'):
-        """Make a trunk branch suitable for use with `Request`.
-
-        `Request` expects to be given a path to a working tree that has a
-        branch with a configured parent URL, so this helper returns such a
-        working tree.
-        """
-        nick = parent_url.strip('/').split('/')[-1]
-        tree = self.make_branch_and_tree(nick)
-        tree.branch.set_parent(parent_url)
-        return tree
-
-    def make_request(self, branch_url=None, revno=None,
-                     trunk=None, sourcecode_path=None,
-                     emails=None, pqm_message=None):
-        """Make a request to test, specifying only things we care about.
-
-        Note that the returned request object will not ever send email, but
-        will instead log "sent" emails to `request.emails_sent`.
-        """
-        if trunk is None:
-            trunk = self.make_trunk()
-        if sourcecode_path is None:
-            sourcecode_path = self.make_sourcecode(
-                [('a', 'http://example.com/bzr/a', 2),
-                 ('b', 'http://example.com/bzr/b', 3),
-                 ('c', 'http://example.com/bzr/c', 5)])
-        request = Request(
-            branch_url, revno, trunk.basedir, sourcecode_path, emails,
-            pqm_message)
-        request.emails_sent = []
-        request._send_email = request.emails_sent.append
-        return request
-
-    def make_sourcecode(self, branches):
-        """Make a sourcecode directory with sample branches.
-
-        :param branches: A list of (name, parent_url, revno) tuples.
-        :return: The path to the sourcecode directory.
-        """
-        self.build_tree(['sourcecode/'])
-        for name, parent_url, revno in branches:
-            tree = self.make_branch_and_tree('sourcecode/%s' % (name,))
-            tree.branch.set_parent(parent_url)
-            for i in range(revno):
-                tree.commit(message=str(i))
-        return 'sourcecode/'
-
-    def make_logger(self, request=None, echo_to_stdout=False):
-        if request is None:
-            request = self.make_request()
-        return WebTestLogger(
-            'full.log', 'summary.log', 'index.html', request, echo_to_stdout)
-
-
 class TestRequest(TestCaseWithTransport, RequestHelpers):
     """Tests for `Request`."""
 
@@ -235,31 +340,49 @@ class TestRequest(TestCaseWithTransport, RequestHelpers):
         req = self.make_request(emails=['foo@example.com'])
         self.assertEqual(True, req.wants_email)
 
-    def test_get_trunk_details(self):
+    def test_get_target_details(self):
         parent = 'http://example.com/bzr/branch'
         tree = self.make_trunk(parent)
         req = self.make_request(trunk=tree)
         self.assertEqual(
-            (parent, tree.branch.revno()), req.get_trunk_details())
+            (parent, tree.branch.revno()), req.get_target_details())
 
-    def test_get_branch_details_no_commits(self):
+    def test_get_revno_target_only(self):
+        # If there's only a target branch, then the revno is the revno of that
+        # branch.
+        parent = 'http://example.com/bzr/branch'
+        tree = self.make_trunk(parent)
+        req = self.make_request(trunk=tree)
+        self.assertEqual(tree.branch.revno(), req.get_revno())
+
+    def test_get_revno_source_and_target(self):
+        # If we're merging in a branch, then the revno is the revno of the
+        # branch we're merging in.
+        tree = self.make_trunk()
+        # Fake a merge, giving silly revision ids.
+        tree.add_pending_merge('foo', 'bar')
+        req = self.make_request(
+            branch_url='https://example.com/bzr/thing', revno=42, trunk=tree)
+        self.assertEqual(42, req.get_revno())
+
+    def test_get_source_details_no_commits(self):
         req = self.make_request(trunk=self.make_trunk())
-        self.assertEqual(None, req.get_branch_details())
+        self.assertEqual(None, req.get_source_details())
 
-    def test_get_branch_details_no_merge(self):
+    def test_get_source_details_no_merge(self):
         tree = self.make_trunk()
         tree.commit(message='foo')
         req = self.make_request(trunk=tree)
-        self.assertEqual(None, req.get_branch_details())
+        self.assertEqual(None, req.get_source_details())
 
-    def test_get_branch_details_merge(self):
+    def test_get_source_details_merge(self):
         tree = self.make_trunk()
         # Fake a merge, giving silly revision ids.
         tree.add_pending_merge('foo', 'bar')
         req = self.make_request(
             branch_url='https://example.com/bzr/thing', revno=42, trunk=tree)
         self.assertEqual(
-            ('https://example.com/bzr/thing', 42), req.get_branch_details())
+            ('https://example.com/bzr/thing', 42), req.get_source_details())
 
     def test_get_nick_trunk_only(self):
         tree = self.make_trunk(parent_url='http://example.com/bzr/db-devel')
@@ -277,7 +400,8 @@ class TestRequest(TestCaseWithTransport, RequestHelpers):
     def test_get_merge_description_trunk_only(self):
         tree = self.make_trunk(parent_url='http://example.com/bzr/db-devel')
         req = self.make_request(trunk=tree)
-        self.assertEqual('db-devel', req.get_merge_description())
+        self.assertEqual(
+            'db-devel r%s' % req.get_revno(), req.get_merge_description())
 
     def test_get_merge_description_merge(self):
         tree = self.make_trunk(parent_url='http://example.com/bzr/db-devel/')
@@ -355,12 +479,16 @@ class TestRequest(TestCaseWithTransport, RequestHelpers):
     def test_report_email_subject_success(self):
         req = self.make_request(emails=['foo@example.com'])
         email = req._build_report_email(True, 'foo', 'gobbledygook')
-        self.assertEqual('Test results: SUCCESS', email['Subject'])
+        self.assertEqual(
+            'Test results: %s: SUCCESS' % req.get_merge_description(),
+            email['Subject'])
 
     def test_report_email_subject_failure(self):
         req = self.make_request(emails=['foo@example.com'])
         email = req._build_report_email(False, 'foo', 'gobbledygook')
-        self.assertEqual('Test results: FAILURE', email['Subject'])
+        self.assertEqual(
+            'Test results: %s: FAILURE' % req.get_merge_description(),
+            email['Subject'])
 
     def test_report_email_recipients(self):
         req = self.make_request(emails=['foo@example.com', 'bar@example.com'])
@@ -388,7 +516,8 @@ class TestRequest(TestCaseWithTransport, RequestHelpers):
         self.assertIsInstance(attachment, MIMEApplication)
         self.assertEqual('application/x-gzip', attachment['Content-Type'])
         self.assertEqual(
-            'attachment; filename="%s.log.gz"' % req.get_nick(),
+            'attachment; filename="%s-r%s.subunit.gz"' % (
+                req.get_nick(), req.get_revno()),
             attachment['Content-Disposition'])
         self.assertEqual(
             "gobbledygook", attachment.get_payload().decode('base64'))
@@ -412,12 +541,6 @@ class TestRequest(TestCaseWithTransport, RequestHelpers):
 
 
 class TestWebTestLogger(TestCaseWithTransport, RequestHelpers):
-
-    def patch(self, obj, name, value):
-        orig = getattr(obj, name)
-        setattr(obj, name, value)
-        self.addCleanup(setattr, obj, name, orig)
-        return orig
 
     def test_make_in_directory(self):
         # WebTestLogger.make_in_directory constructs a logger that writes to a
@@ -623,8 +746,8 @@ class TestResultHandling(TestCaseWithTransport, RequestHelpers):
         [body, attachment] = user_message.get_payload()
         self.assertEqual('application/x-gzip', attachment['Content-Type'])
         self.assertEqual(
-            'attachment; filename="%s.log.gz"' % request.get_nick(),
-            attachment['Content-Disposition'])
+            'attachment;',
+            attachment['Content-Disposition'][:len('attachment;')])
         attachment_contents = attachment.get_payload().decode('base64')
         uncompressed = gunzip_data(attachment_contents)
         self.assertEqual(

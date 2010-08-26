@@ -101,10 +101,8 @@ getAlsoNotifiedSubscribers() and getSubscribersFromDuplicates().
 It is also possible to get the list of indirect subscribers for an
 individual bug task.
 
-    >>> from canonical.launchpad.mailnotification import (
-    ...     get_bugtask_indirect_subscribers)
-    >>> get_bugtask_indirect_subscribers(
-    ...     linux_source_bug.bugtasks[0])
+    >>> from lp.bugs.subscribers.bug import get_bugtask_indirect_subscribers
+    >>> get_bugtask_indirect_subscribers(linux_source_bug.bugtasks[0])
     [<Person at ...>]
 
 The list of all bug subscribers can also be accessed via
