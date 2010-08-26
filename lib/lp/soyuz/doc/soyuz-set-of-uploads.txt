@@ -318,22 +318,6 @@ to a different 'bar_1.0.orig.tar.gz'.
   Subject: bar_1.0-3_source.changes rejected
   ...
 
-Check the rejection (instead of failure) of an upload to a series or
-pocket which does not exist. We use the security upload policy for easier
-testing, as unsigned uploads are allowed.
-
-  >>> simulate_upload(
-  ...     'unstable_1.0-1', upload_policy="security", loglevel=logging.ERROR)
-  Rejected uploads: ['unstable_1.0-1']
-
-  >>> read_email()
-  To: Celso Providelo <celso.providelo@canonical.com>
-  Subject: unstable_1.0-1_source.changes rejected
-  ...
-  Rejected:
-  Unable to find distroseries: unstable
-  ...
-
 Force weird behavior with rfc2047 sentences containing '.' on
 bar_1.0-4, which caused bug # 41102.
 
@@ -604,6 +588,9 @@ rest of the test:
 
 == Staged Security Uploads ==
 
+XXX: Salgado, 2010-08-25, bug=624078: This entire section should be removed
+but if you do so publish-distro.py (called further down) will hang.
+
 Perform a staged (source-first) security upload, simulating a run of
 the buildd-queuebuilder inbetween, to verify fix for bug 53437. To be
 allowed a security upload, we need to use a released distroseries,
@@ -616,7 +603,7 @@ eg ubuntu/warty.
   >>> ss = SectionSelection(distroseries=warty, section=devel)
 
   >>> simulate_upload(
-  ...     'baz_1.0-1', is_new=True, upload_policy="security",
+  ...     'baz_1.0-1', is_new=True, upload_policy="anything",
   ...     series="warty-security", distro="ubuntu")
 
 Check there's a SourcePackageRelease with no build.
@@ -649,7 +636,7 @@ Check build created
 Upload the i386 binary:
 
   >>> simulate_upload(
-  ...     'baz_1.0-1_single_binary', is_new=True, upload_policy="security",
+  ...     'baz_1.0-1_single_binary', is_new=True, upload_policy="anything",
   ...     distro="ubuntu", series="warty-security")
 
 Should still just have one build, and it should now be FULLYBUILT.

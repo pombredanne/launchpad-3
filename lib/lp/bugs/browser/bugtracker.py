@@ -27,6 +27,7 @@ from zope.formlib import form
 from zope.interface import implements
 from zope.schema import Choice
 from zope.schema.vocabulary import SimpleVocabulary
+from zope.security.interfaces import Unauthorized
 
 from canonical.cachedproperty import cachedproperty
 from canonical.database.sqlbase import flush_database_updates
@@ -79,7 +80,9 @@ SINGLE_INSTANCE_TRACKERS = (
 # of.
 NO_DIRECT_CREATION_TRACKERS = (
     SINGLE_INSTANCE_TRACKERS + (
-        BugTrackerType.EMAILADDRESS,))
+        BugTrackerType.EMAILADDRESS,
+        )
+    )
 
 
 class BugTrackerSetNavigation(GetitemNavigation):
@@ -185,7 +188,7 @@ class BugTrackerSetView(LaunchpadView):
             has_more_pillars = False
         return {
             'pillars': pillars[:self.pillar_limit],
-            'has_more_pillars': has_more_pillars
+            'has_more_pillars': has_more_pillars,
         }
 
 
@@ -391,6 +394,25 @@ class BugTrackerEditView(LaunchpadEditFormView):
     @property
     def cancel_url(self):
         return canonical_url(self.context)
+
+    def reschedule_action_condition(self, action):
+        """Return True if the user can see the reschedule action."""
+        user_can_reset_watches = check_permission(
+            "launchpad.Admin", self.context)
+        return (
+            user_can_reset_watches and
+            self.context.watches.count() > 0)
+
+    @action(
+        'Reschedule all watches', name='reschedule',
+        condition=reschedule_action_condition)
+    def rescheduleAction(self, action, data):
+        """Reschedule all the watches for the bugtracker."""
+        self.context.resetWatches()
+        self.request.response.addInfoNotification(
+            "All bug watches on %s have been rescheduled." %
+            self.context.title)
+        self.next_url = canonical_url(self.context)
 
 
 class BugTrackerNavigation(Navigation):

@@ -683,12 +683,9 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
             "bar_1.0-1-mixed", "~name16/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
 
-        self.assertEqual(
-            self.uploadprocessor.last_processed_upload.rejection_message,
-            'Upload rejected because it contains binary packages. Ensure '
-            'you are using `debuild -S`, or an equivalent command, to '
-            'generate only the source package before re-uploading. See '
-            'https://help.launchpad.net/Packaging/PPA for more information.')
+        self.assertIn(
+            'Source/binary (i.e. mixed) uploads are not allowed.',
+            self.uploadprocessor.last_processed_upload.rejection_message)
 
     def testPGPSignatureNotPreserved(self):
         """PGP signatures should be removed from PPA .changes files.
