@@ -14,11 +14,14 @@ from zope.component import getUtility
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.interfaces.translationimportqueue import (
-    RosettaImportStatus)
+    RosettaImportStatus,
+    )
 from lp.translations.utilities.template import (
-    make_domain, make_name, make_name_from_path)
-from lp.translations.utilities.translation_import import (
-    TranslationImporter)
+    make_domain,
+    make_name,
+    make_name_from_path,
+    )
+from lp.translations.utilities.translation_import import TranslationImporter
 
 
 class TranslationNullApprover(object):

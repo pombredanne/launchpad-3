@@ -10,18 +10,28 @@ import unittest
 from zope.component import getUtility
 
 from canonical.database.sqlbase import flush_database_updates
-from canonical.launchpad.ftests import ANONYMOUS, login, logout
-from lp.bugs.tests.bug import create_old_bug, sync_bugtasks
+from canonical.launchpad.ftests import (
+    ANONYMOUS,
+    login,
+    logout,
+    )
 from canonical.launchpad.webapp.interfaces import ILaunchBag
+from canonical.testing import DatabaseFunctionalLayer
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugtask import (
-    BugTaskStatus, IBugTaskSet, IUpstreamBugTask)
+    BugTaskStatus,
+    IBugTaskSet,
+    IUpstreamBugTask,
+    )
 from lp.bugs.interfaces.bugwatch import IBugWatchSet
+from lp.bugs.tests.bug import (
+    create_old_bug,
+    sync_bugtasks,
+    )
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.projectgroup import IProjectGroupSet
 from lp.testing.factory import LaunchpadObjectFactory
-from canonical.testing import DatabaseFunctionalLayer
 
 
 class BugTaskSearchBugsElsewhereTest(unittest.TestCase):

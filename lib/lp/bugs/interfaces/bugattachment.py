@@ -15,20 +15,31 @@ __all__ = [
     'IBugAttachmentIsPatchConfirmationForm',
     ]
 
-from zope.interface import Interface
-from zope.schema import Bool, Bytes, Choice, Int, TextLine
-from lazr.enum import DBEnumeratedType, DBItem
-
-from canonical.launchpad.interfaces.message import IMessage
-from canonical.launchpad.interfaces.launchpad import IHasBug
-
-from canonical.launchpad.fields import Title
-from canonical.launchpad import _
-
-from lazr.restful.fields import Reference
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    )
 from lazr.restful.declarations import (
-    call_with, export_as_webservice_entry, export_write_operation, exported,
-    REQUEST_USER)
+    call_with,
+    export_as_webservice_entry,
+    export_write_operation,
+    exported,
+    REQUEST_USER,
+    )
+from lazr.restful.fields import Reference
+from zope.interface import Interface
+from zope.schema import (
+    Bool,
+    Bytes,
+    Choice,
+    Int,
+    TextLine,
+    )
+
+from canonical.launchpad import _
+from canonical.launchpad.interfaces.launchpad import IHasBug
+from canonical.launchpad.interfaces.message import IMessage
+from lp.services.fields import Title
 
 
 class BugAttachmentType(DBEnumeratedType):

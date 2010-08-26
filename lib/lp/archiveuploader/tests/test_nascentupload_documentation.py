@@ -10,17 +10,29 @@ import unittest
 
 from zope.component import getUtility
 
+from canonical.launchpad.database import (
+    ComponentSelection,
+    LibraryFileAlias,
+    )
+from canonical.launchpad.ftests import (
+    import_public_test_keys,
+    login,
+    logout,
+    )
+from canonical.launchpad.testing.systemdocs import (
+    LayeredDocFileSuite,
+    setGlobs,
+    )
+from canonical.testing import LaunchpadZopelessLayer
 from lp.archiveuploader.nascentupload import NascentUpload
 from lp.archiveuploader.tests import (
-    datadir, getPolicy, mock_logger_quiet)
-from canonical.launchpad.database import (
-    ComponentSelection, LibraryFileAlias)
-from canonical.launchpad.ftests import import_public_test_keys, login, logout
-from lp.soyuz.interfaces.component import IComponentSet
+    datadir,
+    getPolicy,
+    mock_logger_quiet,
+    )
+from lp.archiveuploader.uploadpolicy import ArchiveUploadType
 from lp.registry.interfaces.distribution import IDistributionSet
-from canonical.launchpad.testing.systemdocs import (
-    LayeredDocFileSuite, setGlobs)
-from canonical.testing import LaunchpadZopelessLayer
+from lp.soyuz.interfaces.component import IComponentSet
 
 
 def getUploadForSource(upload_path):
@@ -41,8 +53,7 @@ def getPPAUploadForSource(upload_path, ppa):
 def getUploadForBinary(upload_path):
     """Return a NascentUpload object for binaries."""
     policy = getPolicy(name='sync', distro='ubuntu', distroseries='hoary')
-    policy.can_upload_binaries = True
-    policy.can_upload_mixed = True
+    policy.accepted_type = ArchiveUploadType.BINARY_ONLY
     return NascentUpload.from_changesfile_path(
         datadir(upload_path), policy, mock_logger_quiet)
 

@@ -3,23 +3,33 @@
 
 __metaclass__ = type
 __all__ = [
-    'DoesNotProvide',
     'DoesNotCorrectlyProvide',
+    'DoesNotProvide',
+    'DoesNotStartWith',
     'HasQueryCount',
     'IsNotProxied',
     'IsProxied',
     'Provides',
     'ProvidesAndIsProxied',
+    'StartsWith',
     ]
 
-from zope.interface.verify import verifyObject
-from zope.interface.exceptions import (
-    BrokenImplementation, BrokenMethodImplementation, DoesNotImplement)
-from zope.security.proxy import builtin_isinstance, Proxy
-
 from testtools.content import Content
-from testtools.content_type import ContentType
-from testtools.matchers import Matcher, Mismatch
+from testtools.content_type import UTF8_TEXT
+from testtools.matchers import (
+    Matcher,
+    Mismatch,
+    )
+from zope.interface.exceptions import (
+    BrokenImplementation,
+    BrokenMethodImplementation,
+    DoesNotImplement,
+    )
+from zope.interface.verify import verifyObject
+from zope.security.proxy import (
+    builtin_isinstance,
+    Proxy,
+    )
 
 
 class DoesNotProvide(Mismatch):
@@ -127,8 +137,7 @@ class _MismatchedQueryCount(Mismatch):
         result = []
         for query in self.query_collector.queries:
             result.append(unicode(query).encode('utf8'))
-        return {'queries': Content(ContentType('text', 'plain',
-            {'charset': 'utf8'}), lambda:['\n'.join(result)])}
+        return {'queries': Content(UTF8_TEXT, lambda:['\n'.join(result)])}
  
 
 class IsNotProxied(Mismatch):
@@ -175,3 +184,39 @@ class ProvidesAndIsProxied(Matcher):
         if mismatch is not None:
             return mismatch
         return IsProxied().match(matchee)
+
+
+class DoesNotStartWith(Mismatch):
+
+    def __init__(self, matchee, expected):
+        """Create a DoesNotStartWith Mismatch.
+
+        :param matchee: the string that did not match.
+        :param expected: the string that `matchee` was expected to start
+            with.
+        """
+        self.matchee = matchee
+        self.expected = expected
+
+    def describe(self):
+        return "'%s' does not start with '%s'." % (
+            self.matchee, self.expected)
+
+
+class StartsWith(Matcher):
+    """Checks whether one string starts with another."""
+
+    def __init__(self, expected):
+        """Create a StartsWith Matcher.
+
+        :param expected: the string that matchees should start with.
+        """
+        self.expected = expected
+
+    def __str__(self):
+        return "Starts with '%s'." % self.expected
+
+    def match(self, matchee):
+        if not matchee.startswith(self.expected):
+            return DoesNotStartWith(matchee, self.expected)
+        return None

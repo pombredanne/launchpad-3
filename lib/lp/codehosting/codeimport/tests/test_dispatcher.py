@@ -16,7 +16,6 @@ from unittest import TestLoader
 from canonical.launchpad import scripts
 from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.testing.layers import BaseLayer
-
 from lp.codehosting.codeimport.dispatcher import CodeImportDispatcher
 from lp.testing import TestCase
 

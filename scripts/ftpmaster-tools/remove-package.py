@@ -353,7 +353,7 @@ def what_to_remove(packages):
                 to_remove.append(d)
 
             if not Options.binaryonly:
-                for spp in distro_series.getPublishedReleases(removal):
+                for spp in distro_series.getPublishedSources(removal):
                     package = spp.sourcepackagerelease.sourcepackagename.name
                     version = spp.sourcepackagerelease.version
                     if (Options.component and

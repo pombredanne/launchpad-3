@@ -6,15 +6,15 @@
 __metaclass__ = type
 __all__ = ['BugSubscription']
 
-from zope.interface import implements
-
 from sqlobject import ForeignKey
+from zope.interface import implements
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
-
 from lp.bugs.interfaces.bugsubscription import IBugSubscription
+from lp.registry.enum import BugNotificationLevel
 from lp.registry.interfaces.person import validate_person
 
 
@@ -31,6 +31,10 @@ class BugSubscription(SQLBase):
         notNull=True
         )
     bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
+    bug_notification_level = EnumCol(
+        enum=BugNotificationLevel,
+        default=BugNotificationLevel.COMMENTS,
+        notNull=True)
     date_created = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     subscribed_by = ForeignKey(
         dbName='subscribed_by', foreignKey='Person',

@@ -13,19 +13,35 @@ __all__ = [
 
 from zope.app.form import CustomWidgetFactory
 from zope.formlib import form
-from zope.schema import Choice, List
-from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
+from zope.schema import (
+    Choice,
+    List,
+    )
+from zope.schema.vocabulary import (
+    SimpleTerm,
+    SimpleVocabulary,
+    )
 
 from canonical.cachedproperty import cachedproperty
-
 from canonical.launchpad import _
-from lp.code.enums import BranchVisibilityRule, TeamBranchVisibilityRule
-from lp.code.interfaces.branchvisibilitypolicy import (
-    IBranchVisibilityTeamPolicy)
 from canonical.launchpad.webapp import (
-    action, canonical_url, custom_widget, LaunchpadFormView, LaunchpadView)
+    action,
+    canonical_url,
+    custom_widget,
+    LaunchpadFormView,
+    LaunchpadView,
+    )
 from canonical.widgets.itemswidgets import (
-    LabeledMultiCheckBoxWidget, LaunchpadRadioWidgetWithDescription)
+    LabeledMultiCheckBoxWidget,
+    LaunchpadRadioWidgetWithDescription,
+    )
+from lp.code.enums import (
+    BranchVisibilityRule,
+    TeamBranchVisibilityRule,
+    )
+from lp.code.interfaces.branchvisibilitypolicy import (
+    IBranchVisibilityTeamPolicy,
+    )
 
 
 class BaseBranchVisibilityTeamPolicyView(LaunchpadFormView):
@@ -39,7 +55,7 @@ class BaseBranchVisibilityTeamPolicyView(LaunchpadFormView):
 
     @property
     def next_url(self):
-        return canonical_url(self.context) + '/+branchvisibility'
+        return canonical_url(self.context, view_name='+branchvisibility')
 
     cancel_url = next_url
 

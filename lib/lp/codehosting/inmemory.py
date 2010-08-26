@@ -12,27 +12,41 @@ __all__ = [
 import operator
 from xmlrpclib import Fault
 
-from bzrlib.urlutils import escape, unescape
-
-from zope.component import adapter, getSiteManager
+from bzrlib.urlutils import (
+    escape,
+    unescape,
+    )
+from zope.component import (
+    adapter,
+    getSiteManager,
+    )
 from zope.interface import implementer
 
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.xmlrpc import faults
-
-from lp.code.bzr import BranchFormat, ControlFormat, RepositoryFormat
-from lp.code.errors import UnknownBranchTypeError
-from lp.code.model.branchnamespace import BranchNamespaceSet
-from lp.code.model.branchtarget import (
-    PackageBranchTarget, ProductBranchTarget)
+from lp.code.bzr import (
+    BranchFormat,
+    ControlFormat,
+    RepositoryFormat,
+    )
 from lp.code.enums import BranchType
+from lp.code.errors import UnknownBranchTypeError
 from lp.code.interfaces.branch import IBranch
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.codehosting import (
-    BRANCH_ALIAS_PREFIX, BRANCH_TRANSPORT, CONTROL_TRANSPORT,
-    LAUNCHPAD_ANONYMOUS, LAUNCHPAD_SERVICES)
+    BRANCH_ALIAS_PREFIX,
+    BRANCH_TRANSPORT,
+    CONTROL_TRANSPORT,
+    LAUNCHPAD_ANONYMOUS,
+    LAUNCHPAD_SERVICES,
+    )
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
+from lp.code.model.branchnamespace import BranchNamespaceSet
+from lp.code.model.branchtarget import (
+    PackageBranchTarget,
+    ProductBranchTarget,
+    )
 from lp.code.xmlrpc.codehosting import datetime_from_tuple
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.utils import iter_split

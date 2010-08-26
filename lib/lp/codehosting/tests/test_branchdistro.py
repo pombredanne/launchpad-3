@@ -4,12 +4,18 @@
 """Tests for making new source package branches just after a distro release.
 """
 
+from __future__ import with_statement
+
 __metaclass__ = type
 
 import os
 import re
 from StringIO import StringIO
-from subprocess import PIPE, Popen, STDOUT
+from subprocess import (
+    PIPE,
+    Popen,
+    STDOUT,
+    )
 import textwrap
 import unittest
 
@@ -19,20 +25,23 @@ from bzrlib.errors import NotStacked
 from bzrlib.tests import TestCaseWithTransport
 from bzrlib.transport import get_transport
 from bzrlib.transport.chroot import ChrootServer
-
 from lazr.uri import URI
-
 import transaction
 
 from canonical.config import config
+from canonical.launchpad.scripts.logger import (
+    FakeLogger,
+    QuietFakeLogger,
+    )
 from canonical.testing.layers import LaunchpadZopelessLayer
-from canonical.launchpad.scripts.logger import FakeLogger, QuietFakeLogger
-
-from lp.codehosting.branchdistro import DistroBrancher, switch_branches
+from lp.codehosting.branchdistro import (
+    DistroBrancher,
+    switch_branches,
+    )
 from lp.codehosting.vfs import branch_id_to_path
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.osutils import override_environ
 from lp.testing import TestCaseWithFactory
-
 
 # We say "RELEASE" often enough to not want to say "PackagePublishingPocket."
 # each time.
@@ -66,7 +75,10 @@ class TestSwitchBranches(TestCaseWithTransport):
         old_branch = FakeBranch(1)
         self.get_transport(old_branch.unique_name).create_prefix()
         tree = self.make_branch_and_tree(old_branch.unique_name)
-        tree.commit(message='.')
+        # XXX: AaronBentley 2010-08-06 bug=614404: a bzr username is
+        # required to generate the revision-id.
+        with override_environ(BZR_EMAIL='me@example.com'):
+            tree.commit(message='.')
 
         new_branch = FakeBranch(2)
 
@@ -119,7 +131,10 @@ class TestDistroBrancher(TestCaseWithFactory):
 
         _, tree = self.create_branch_and_tree(
             tree_location=self.factory.getUniqueString(), db_branch=db_branch)
-        tree.commit('')
+        # XXX: AaronBentley 2010-08-06 bug=614404: a bzr username is
+        # required to generate the revision-id.
+        with override_environ(BZR_EMAIL='me@example.com'):
+            tree.commit('')
 
         return db_branch
 
@@ -484,8 +499,11 @@ class TestDistroBrancher(TestCaseWithFactory):
         brancher.makeOneNewBranch(db_branch)
         url = 'lp-internal:///' + db_branch.unique_name
         old_bzr_branch = Branch.open(url)
-        old_bzr_branch.create_checkout(
-            self.factory.getUniqueString()).commit('')
+        # XXX: AaronBentley 2010-08-06 bug=614404: a bzr username is
+        # required to generate the revision-id.
+        with override_environ(BZR_EMAIL='me@example.com'):
+            old_bzr_branch.create_checkout(
+                self.factory.getUniqueString()).commit('')
         ok = brancher.checkOneBranch(db_branch)
         self.assertLogMessages([
             '^WARNING Repository at lp-internal:///.*/.*/.*/.* has 1 '

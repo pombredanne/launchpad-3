@@ -16,7 +16,11 @@ __all__ = [
     'STANDARD_BADGES',
     ]
 
-from zope.interface import implements, Interface
+from zope.interface import (
+    implements,
+    Interface,
+    )
+
 from canonical.lazr.interfaces import IObjectPrivacy
 
 

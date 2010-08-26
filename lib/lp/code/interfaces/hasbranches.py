@@ -14,17 +14,29 @@ __all__ = [
     ]
 
 
+from lazr.restful.declarations import (
+    call_with,
+    export_factory_operation,
+    export_read_operation,
+    operation_parameters,
+    operation_returns_collection_of,
+    REQUEST_USER,
+    )
+from lazr.restful.fields import Reference
 from zope.interface import Interface
-from zope.schema import Choice, Datetime, List, TextLine
+from zope.schema import (
+    Choice,
+    Datetime,
+    List,
+    TextLine,
+    )
 
 from canonical.launchpad import _
 from lp.code.enums import (
-    BranchLifecycleStatus, BranchMergeProposalStatus, RevisionControlSystems)
-
-from lazr.restful.declarations import (
-    REQUEST_USER, call_with, export_factory_operation, export_read_operation,
-    operation_parameters, operation_returns_collection_of)
-from lazr.restful.fields import Reference
+    BranchLifecycleStatus,
+    BranchMergeProposalStatus,
+    RevisionControlSystems,
+    )
 
 
 class IHasBranches(Interface):

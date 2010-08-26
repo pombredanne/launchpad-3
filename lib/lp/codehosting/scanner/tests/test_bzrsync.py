@@ -5,33 +5,44 @@
 
 # pylint: disable-msg=W0141
 
+from __future__ import with_statement
+
 import datetime
 import os
 import random
 import time
-import transaction
 import unittest
 
-from bzrlib.revision import NULL_REVISION, Revision as BzrRevision
-from bzrlib.uncommit import uncommit
+from bzrlib.revision import (
+    NULL_REVISION,
+    Revision as BzrRevision,
+    )
 from bzrlib.tests import TestCaseWithTransport
+from bzrlib.uncommit import uncommit
 import pytz
+import transaction
 from twisted.python.util import mergeFunctionMetadata
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.launchpad.interfaces.lpstorm import IStore
-from lp.translations.interfaces.translations import (
-    TranslationsBranchImportMode)
+from canonical.testing import LaunchpadZopelessLayer
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.revision import IRevisionSet
 from lp.code.model.branchrevision import BranchRevision
-from lp.code.model.revision import Revision, RevisionAuthor, RevisionParent
+from lp.code.model.revision import (
+    Revision,
+    RevisionAuthor,
+    RevisionParent,
+    )
 from lp.codehosting.scanner.bzrsync import BzrSync
+from lp.services.osutils import override_environ
 from lp.testing import TestCaseWithFactory
-from canonical.testing import LaunchpadZopelessLayer
+from lp.translations.interfaces.translations import (
+    TranslationsBranchImportMode,
+    )
 
 
 def run_as_db_user(username):
@@ -160,10 +171,13 @@ class BzrSyncTestCase(TestCaseWithTransport, TestCaseWithFactory):
             committer = self.factory.getUniqueString()
         if extra_parents is not None:
             self.bzr_tree.add_pending_merge(*extra_parents)
-        return self.bzr_tree.commit(
-            message, committer=committer, rev_id=rev_id,
-            timestamp=timestamp, timezone=timezone, allow_pointless=True,
-            revprops=revprops)
+        # XXX: AaronBentley 2010-08-06 bug=614404: a bzr username is
+        # required to generate the revision-id.
+        with override_environ(BZR_EMAIL='me@example.com'):
+            return self.bzr_tree.commit(
+                message, committer=committer, rev_id=rev_id,
+                timestamp=timestamp, timezone=timezone, allow_pointless=True,
+                revprops=revprops)
 
     def uncommitRevision(self):
         branch = self.bzr_tree.branch
@@ -207,21 +221,24 @@ class BzrSyncTestCase(TestCaseWithTransport, TestCaseWithFactory):
         db_branch = self.makeDatabaseBranch()
         db_branch, trunk_tree = self.create_branch_and_tree(
             db_branch=db_branch)
-        trunk_tree.commit(u'base revision', rev_id=base_rev_id)
+        # XXX: AaronBentley 2010-08-06 bug=614404: a bzr username is
+        # required to generate the revision-id.
+        with override_environ(BZR_EMAIL='me@example.com'):
+            trunk_tree.commit(u'base revision', rev_id=base_rev_id)
 
-        # Branch from the base revision.
-        new_db_branch = self.makeDatabaseBranch(product=db_branch.product)
-        new_db_branch, branch_tree = self.create_branch_and_tree(
-            db_branch=new_db_branch)
-        branch_tree.pull(trunk_tree.branch)
+            # Branch from the base revision.
+            new_db_branch = self.makeDatabaseBranch(product=db_branch.product)
+            new_db_branch, branch_tree = self.create_branch_and_tree(
+                db_branch=new_db_branch)
+            branch_tree.pull(trunk_tree.branch)
 
-        # Commit to both branches.
-        trunk_tree.commit(u'trunk revision', rev_id=trunk_rev_id)
-        branch_tree.commit(u'branch revision', rev_id=branch_rev_id)
+            # Commit to both branches.
+            trunk_tree.commit(u'trunk revision', rev_id=trunk_rev_id)
+            branch_tree.commit(u'branch revision', rev_id=branch_rev_id)
 
-        # Merge branch into trunk.
-        trunk_tree.merge_from_branch(branch_tree.branch)
-        trunk_tree.commit(u'merge revision', rev_id=merge_rev_id)
+            # Merge branch into trunk.
+            trunk_tree.merge_from_branch(branch_tree.branch)
+            trunk_tree.commit(u'merge revision', rev_id=merge_rev_id)
 
         LaunchpadZopelessLayer.txn.commit()
         LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
