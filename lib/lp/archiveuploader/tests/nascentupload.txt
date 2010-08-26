@@ -499,9 +499,10 @@ XXX cprov 20070404: we are using a modified sync policy because we
 need unsigned changes and binaries uploads (same as security, but also
 accepts non-security uploads)
 
+  >>> from lp.archiveuploader.uploadpolicy import ArchiveUploadType
   >>> modified_sync_policy = getPolicy(
   ...     name='sync', distro='ubuntu', distroseries='hoary')
-  >>> modified_sync_policy.can_upload_binaries = True
+  >>> modified_sync_policy.accepted_type = ArchiveUploadType.BINARY_ONLY
 
   >>> ed_bin = NascentUpload.from_changesfile_path(
   ...      datadir('split-upload-test/ed_0.2-20_i386.changes'),

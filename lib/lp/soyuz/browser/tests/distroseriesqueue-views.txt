@@ -253,6 +253,7 @@ Now that "foo" is published in Hoary, we can upload a new build.
     ...     sourcename="foo", distroseries=hoary, version="1.0-2",
     ...     status=PackagePublishingStatus.PUBLISHED)
 
+    >>> from lp.archiveuploader.uploadpolicy import ArchiveUploadType
     >>> from canonical.launchpad.ftests import import_public_test_keys
     >>> from canonical.launchpad.interfaces import IComponentSet
     >>> from lp.soyuz.model.component import ComponentSelection
@@ -264,7 +265,7 @@ Now that "foo" is published in Hoary, we can upload a new build.
     >>> trash = ComponentSelection(distroseries=hoary, component=universe)
     >>> sync_policy = getPolicy(name='sync', distro='ubuntu',
     ...    distroseries='hoary')
-    >>> sync_policy.can_upload_binaries = True
+    >>> sync_policy.accepted_type = ArchiveUploadType.BINARY_ONLY
     >>> foo_upload = NascentUpload.from_changesfile_path(
     ...    datadir('suite/foo_1.0-2_multi_binary/foo_1.0-2_i386.changes'),
     ...    sync_policy, mock_logger_quiet)
