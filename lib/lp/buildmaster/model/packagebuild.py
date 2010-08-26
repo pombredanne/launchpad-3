@@ -14,7 +14,6 @@ __all__ = [
 import datetime
 import logging
 import os.path
-import subprocess
 
 from cStringIO import StringIO
 from lazr.delegates import delegates
@@ -36,11 +35,6 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database.enumcol import DBEnum
-from canonical.database.sqlbase import (
-    clear_current_connection_cache,
-    cursor,
-    flush_database_updates,
-    )
 from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
 from canonical.launchpad.helpers import filenameToContentType
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
