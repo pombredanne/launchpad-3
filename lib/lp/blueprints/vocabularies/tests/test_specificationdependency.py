@@ -46,6 +46,15 @@ class TestSpecificationDepCandidatesVocabulary(TestCaseWithFactory):
         self.assertEqual(
             candidate, vocab.getTermByToken(candidate.name).value)
 
+    def test_getTermByToken_lookup_error_on_nonsense(self):
+        # getTermByToken with the a string that does not name a spec raises
+        # LookupError.
+        product = self.factory.makeProduct()
+        spec = self.factory.makeSpecification(product=product)
+        vocab = self.getVocabularyForSpec(spec)
+        self.assertRaises(
+            LookupError, vocab.getTermByToken, self.factory.getUniqueString())
+
     def test_getTermByToken_disallows_blocked(self):
         # getTermByToken with the name of an candidate spec that is blocked by
         # the vocab's context raises LookupError.
