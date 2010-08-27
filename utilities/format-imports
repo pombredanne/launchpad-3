@@ -77,10 +77,10 @@ becomes
 
 = Format control =
 
-Tow special comments allow to control the operation of the formatter.
+Two special comments allow to control the operation of the formatter.
 
-When an import statement is directly preceded by a comment that starts with
-the word "FIRST", it is placed into the second subsection (see above).
+When an import statement is immediately preceded by a comment that starts
+with the word "FIRST", it is placed into the second subsection (see above).
 
 When the first import statement is directly preceded by a comment that starts
 with the word "SKIP", the entire file is exempt from formatting.
@@ -320,12 +320,12 @@ def format_imports(imports):
                     format_import_lines(module, section[module].objects))
         if len(import_lines) > 0:
             all_import_lines.append('\n'.join(import_lines))
-    # Sections are seperated by two blank lines.
+    # Sections are separated by two blank lines.
     return '\n\n'.join(all_import_lines)        
 
 
 def reformat_importsection(filename):
-    """Replace the given file with a reformated version of it."""
+    """Replace the given file with a reformatted version of it."""
     pyfile = file(filename).read()
     import_start, import_end = find_imports_section(pyfile)
     if import_start is None:
