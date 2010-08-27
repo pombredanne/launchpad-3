@@ -6,7 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
-    'DistroSeriesDifferenceMessage',
+    'DistroSeriesDifferenceComment',
     ]
 
 
@@ -17,13 +17,13 @@ from storm.locals import (
     )
 from zope.interface import implements
 
-from lp.registry.interfaces.distroseriesdifferencemessage import (
-    IDistroSeriesDifferenceMessage,
+from lp.registry.interfaces.distroseriesdifferencecomment import (
+    IDistroSeriesDifferenceComment,
     )
 
-class DistroSeriesDifferenceMessage(Storm):
-    """See `IDistroSeriesDifferenceMessage`."""
-    implements(IDistroSeriesDifferenceMessage)
+class DistroSeriesDifferenceComment(Storm):
+    """See `IDistroSeriesDifferenceComment`."""
+    implements(IDistroSeriesDifferenceComment)
     __storm_table__ = 'DistroSeriesDifferenceMessage'
 
     id = Int(primary=True)

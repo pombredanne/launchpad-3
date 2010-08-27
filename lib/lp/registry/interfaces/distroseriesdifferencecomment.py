@@ -5,7 +5,7 @@
 
 __metaclass__ = type
 __all__ = [
-    'IDistroSeriesDifferenceMessage',
+    'IDistroSeriesDifferenceComment',
     ]
 
 
@@ -20,7 +20,8 @@ from lp.registry.interfaces.distroseriesdifference import (
     )
 
 
-class IDistroSeriesDifferenceMessage(Interface):
+class IDistroSeriesDifferenceComment(Interface):
+    """A comment for a distroseries difference record."""
 
     id = Int(title=_('ID'), required=True, readonly=True)
 

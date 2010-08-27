@@ -116,8 +116,8 @@
 
     <!-- DistroSeriesDifferenceComment -->
     <class
-        class="lp.registry.model.distroseriesdifferencemessage.DistroSeriesDifferenceMessage">
-        <allow interface="lp.registry.interfaces.distroseriesdifferencemessage.IDistroSeriesDifferenceMessage"/>
+        class="lp.registry.model.distroseriesdifferencecomment.DistroSeriesDifferenceComment">
+        <allow interface="lp.registry.interfaces.distroseriesdifferencecomment.IDistroSeriesDifferenceComment"/>
     </class>
 
     <class

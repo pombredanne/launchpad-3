@@ -122,7 +122,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             "for package 'foonew' (1.0/0.9)", ds_diff.title)
 
     def test_addComment(self):
-        # Adding a comment creates a new DistroSeriesDifferenceMessage
+        # Adding a comment creates a new DistroSeriesDifferenceComment
         ds_diff = self.factory.makeDistroSeriesDifference(
             source_package_name_str="foonew")
         person = self.factory.makePerson()
