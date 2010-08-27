@@ -50,7 +50,6 @@ from lp.code.interfaces.sourcepackagerecipe import (
     )
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildSource,
-    MANUAL_BUILD_PRIORITY_BUMP,
     )
 from lp.code.model.sourcepackagerecipebuild import SourcePackageRecipeBuild
 from lp.code.model.sourcepackagerecipedata import SourcePackageRecipeData
@@ -251,7 +250,7 @@ class SourcePackageRecipe(Storm):
         build.queueBuild()
         queue_record = build.buildqueue_record
         if manual:
-            queue_record.manualScore(queue_record.lastscore + MANUAL_BUILD_PRIORITY_BUMP)
+            queue_record.manualScore(queue_record.lastscore + 100)
         return build
 
     def getBuilds(self, pending=False):
