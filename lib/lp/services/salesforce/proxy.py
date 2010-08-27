@@ -166,7 +166,10 @@ class SalesforceVoucherProxy:
                         voucher_id, identifier,
                         project.id, project.displayname)
                     return status
-        raise RuntimeError("Voucher %s not found" % voucher_id)
+        # This will fail, but raise the expected exception.
+        return self.server.redeemVoucher(
+            voucher_id, identifier,
+            project.id, project.displayname)
 
     @fault_mapper
     def updateProjectName(self, project):
@@ -181,11 +184,12 @@ class SalesforceVoucherProxy:
         from zope.security.proxy import removeSecurityProxy
         # Bypass zope's security because IEmailAddress.email is not public.
         naked_email = removeSecurityProxy(recipient.preferredemail)
-        admin_identifier = admin.account.openid_identifiers.any().identifier
-        approver_identifier = (
-            approver.account.openid_identifiers.any().identifier)
-        recipient_identifier = (
-            recipient.account.openid_identifiers.any().identifier)
+        admin_identifier = removeSecurityProxy(
+            admin.account).openid_identifiers.any().identifier
+        approver_identifier = removeSecurityProxy(
+            approver.account).openid_identifiers.any().identifier
+        recipient_identifier = removeSecurityProxy(
+            recipient.account).openid_identifiers.any().identifier
         voucher_id = self.server.grantVoucher(
             admin_identifier, approver_identifier,
             recipient_identifier, recipient.name,
