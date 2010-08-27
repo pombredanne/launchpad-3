@@ -12,7 +12,10 @@ __all__ = [
 
 from lazr.restful.fields import Reference
 from zope.interface import Interface
-from zope.schema import Int
+from zope.schema import (
+    Int,
+    Text,
+    )
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.message import IMessage
@@ -34,6 +37,10 @@ class IDistroSeriesDifferenceComment(Interface):
     message = Reference(
         IMessage, title=_("Message"), required=True, readonly=True,
         description=_("A comment about this difference."))
+
+    comment = Text(
+        title=_("Comment text"), readonly=True, description=_(
+            "The comment text for the related distro series difference."))
 
 
 class IDistroSeriesDifferenceCommentSource(Interface):
