@@ -46,7 +46,7 @@ A list of available actions in this queue:
 
 Let's instantiate the view for a specific queue:
 
-  >>> from canonical.launchpad.interfaces import PackageUploadStatus
+  >>> from lp.soyuz.enums import PackageUploadStatus
   >>> request = LaunchpadTestRequest(
   ...     form={'queue_state': PackageUploadStatus.DONE.value})
   >>> warty = ubuntu['warty']
@@ -230,7 +230,7 @@ for a package "foo" and uploading a new build that has "foo" and
 
     >>> from lp.soyuz.tests.test_publishing import (
     ...     SoyuzTestPublisher)
-    >>> from lp.soyuz.interfaces.publishing import (
+    >>> from lp.soyuz.enums import (
     ...     PackagePublishingStatus)
     >>> from canonical.launchpad.interfaces import ILibraryFileAliasSet
     >>> stp = SoyuzTestPublisher()

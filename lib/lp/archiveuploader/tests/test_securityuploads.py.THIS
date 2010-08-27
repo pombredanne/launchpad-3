@@ -1,7 +1,7 @@
 # Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Test buildd uploads use-cases."""
+"""Test security uploads use-cases."""
 
 __metaclass__ = type
 
@@ -9,18 +9,16 @@ import os
 
 from zope.component import getUtility
 
-from canonical.database.constants import UTC_NOW
-from canonical.launchpad.ftests import import_public_test_keys
-from lp.soyuz.enums import (
-    PackagePublishingStatus,
-    PackageUploadStatus,
+from canonical.launchpad.interfaces import (
+    IDistributionSet,
     )
 from lp.archiveuploader.tests.test_uploadprocessor import (
     TestUploadProcessorBase,
     )
-from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.soyuz.enums import PackageUploadStatus
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
+from lp.soyuz.model.processor import ProcessorFamily
 
 
 class TestStagedBinaryUploadBase(TestUploadProcessorBase):
@@ -139,112 +137,127 @@ class TestStagedBinaryUploadBase(TestUploadProcessorBase):
         return build
 
 
-class TestBuilddUploads(TestStagedBinaryUploadBase):
-    """Test how buildd uploads behave inside Soyuz.
+class TestStagedSecurityUploads(TestStagedBinaryUploadBase):
+    """Test how security uploads behave inside Soyuz.
 
-    Buildd uploads are exclusively binary uploads which use 'buildd' upload
-    policy.
+    Security uploads still coming from dak system, we have special upload
+    policy which allows source and binary uploads.
 
-    An upload of a binaries does not necessary need to happen in the same
-    batch, and Soyuz is prepared to cope with it.
+    An upload of a source and its binaries does not necessary need
+    to happen in the same batch, and Soyuz is prepared to cope with it.
 
     The only mandatory condition is to process the sources first.
 
     This class will start to tests all known/possible cases using a test
     (empty) upload and its binary.
 
-     * 'lib/lp/archiveuploader/tests/data/suite/foo_1.0-1/'
-     * 'lib/lp/archiveuploader/tests/data/suite/foo_1.0-1_binary/'
-
-    This class allows uploads to ubuntu/breezy in i386 & powerpc
-    architectures.
+     * 'lib/lp/archivepublisher/tests/data/suite/baz_1.0-1/'
+     * 'lib/lp/archivepublisher/tests/data/suite/baz_1.0-1_binary/'
     """
-    name = 'foo'
+    name = 'baz'
     version = '1.0-1'
     distribution_name = 'ubuntu'
-    distroseries_name = 'breezy'
-    pocket = PackagePublishingPocket.RELEASE
-    policy = 'buildd'
+    distroseries_name = 'warty'
+    pocket = PackagePublishingPocket.SECURITY
+    policy = 'security'
     no_mails = True
 
-    def setupBreezy(self):
-        """Extend breezy setup to enable uploads to powerpc architecture."""
-        TestStagedBinaryUploadBase.setupBreezy(self)
-        from lp.soyuz.model.processor import (
-            Processor, ProcessorFamily)
-        ppc_family = ProcessorFamily.selectOneBy(name='powerpc')
-        ppc_proc = Processor(
-            name='powerpc', title='PowerPC', description='not yet',
-            family=ppc_family)
-        breezy_ppc = self.breezy.newArch(
-            'powerpc', ppc_family, True, self.breezy.owner)
-
     def setUp(self):
-        """Setup environment for binary uploads.
+        """Setup base class and create the required new distroarchseries."""
+        super(TestStagedSecurityUploads, self).setUp()
+        distribution = getUtility(IDistributionSet).getByName(
+            self.distribution_name)
+        distroseries = distribution[self.distroseries.name]
+        proc_family = ProcessorFamily.selectOneBy(name='amd64')
+        distroseries.newArch(
+            'amd64', proc_family, True, distribution.owner)
 
-        1. import pub GPG keys
-        2. setup ubuntu/breezy for i386 & powerpc
-        3. override policy to upload the source in question via
-           TestStagedBinaryUploadBase.setUp()
-        4. restore 'buildd' policy.
+    def testBuildCreation(self):
+        """Check if the builds get created for a binary security uploads.
+
+        That is the usual case, security binary uploads come after the
+        not published (accepted) source but in the same batch.
+
+        NascentUpload should create appropriate builds attached to the
+        correct source for the incoming binaries.
         """
-        import_public_test_keys()
-        self.setupBreezy()
-        self.layer.txn.commit()
-
-        real_policy = self.policy
-        self.policy = 'insecure'
-        super(TestBuilddUploads, self).setUp()
-        self.policy = real_policy
-
-    def _publishBuildQueueItem(self, queue_item):
-        """Publish build part of the given queue item."""
-        queue_item.setAccepted()
-        pubrec = queue_item.builds[0].publish(self.log)[0]
-        pubrec.status = PackagePublishingStatus.PUBLISHED
-        pubrec.datepublished = UTC_NOW
-        queue_item.setDone()
-
-    def _setupUploadProcessorForBuild(self, build_candidate):
-        """Setup an UploadProcessor instance for a given buildd context."""
-        self.options.context = self.policy
-        self.options.buildid = str(build_candidate.id)
-        self.uploadprocessor = self.getUploadProcessor(
-            self.layer.txn)
-
-    def testDelayedBinaryUpload(self):
-        """Check if Soyuz copes with delayed binary uploads.
-
-        The binaries are build asynchronously, which means we can't
-        predict if the builds for all architectures of a given source
-        will be delivered within the same publication cycle.
-
-        Find more information on bug #89846.
-        """
-        # Upload i386 binary.
-        build_candidate = self._createBuild('i386')
-        self._setupUploadProcessorForBuild(build_candidate)
         build_used = self._uploadBinary('i386')
 
-        self.assertEqual(build_used.id, build_candidate.id)
         self.assertBuildsCreated(1)
         self.assertEqual(
-            u'i386 build of foo 1.0-1 in ubuntu breezy RELEASE',
+            u'i386 build of baz 1.0-1 in ubuntu warty SECURITY',
             build_used.title)
         self.assertEqual('FULLYBUILT', build_used.status.name)
 
-        # Force immediate publication.
-        queue_item = self.uploadprocessor.last_processed_upload.queue_root
-        self._publishBuildQueueItem(queue_item)
+        build_used = self._uploadBinary('amd64')
 
-        # Upload powerpc binary
-        build_candidate = self._createBuild('powerpc')
-        self._setupUploadProcessorForBuild(build_candidate)
-        build_used = self._uploadBinary('powerpc')
-
-        self.assertEqual(build_used.id, build_candidate.id)
         self.assertBuildsCreated(2)
         self.assertEqual(
-            u'powerpc build of foo 1.0-1 in ubuntu breezy RELEASE',
+            u'amd64 build of baz 1.0-1 in ubuntu warty SECURITY',
+            build_used.title)
+
+        self.assertEqual('FULLYBUILT', build_used.status.name)
+
+    def testBuildLookup(self):
+        """Check if an available build gets used when it is appropriate.
+
+        It happens when the security source upload got already published
+        when the binary uploads arrive.
+        The queue-build has already created build records for it and
+        NascentUpload should identify this condition and used them instead
+        of creating new ones.
+        Also verify that builds for another architecture does not got
+        erroneously attached.
+        """
+        build_right_candidate = self._createBuild('i386')
+        build_wrong_candidate = self._createBuild('hppa')
+        build_used = self._uploadBinary('i386')
+
+        self.assertEqual(build_right_candidate.id, build_used.id)
+        self.assertNotEqual(build_wrong_candidate.id, build_used.id)
+        self.assertBuildsCreated(2)
+        self.assertEqual(
+            u'i386 build of baz 1.0-1 in ubuntu warty SECURITY',
             build_used.title)
         self.assertEqual('FULLYBUILT', build_used.status.name)
+
+    def testCorrectBuildPassedViaCommandLine(self):
+        """Check if command-line build argument gets attached correctly.
+
+        It's also possible to pass an specific buildid via the command-line
+        to be attached to the current upload.
+
+        This is only used in 'buildd' policy and does not produce very useful
+        results in 'security', however we want to check if it, at least,
+        does not 'break the system' entirely.
+        """
+        build_candidate = self._createBuild('i386')
+        self.options.buildid = str(build_candidate.id)
+        self.uploadprocessor = self.getUploadProcessor(self.layer.txn)
+
+        build_used = self._uploadBinary('i386')
+
+        self.assertEqual(build_candidate.id, build_used.id)
+        self.assertBuildsCreated(1)
+        self.assertEqual(
+            u'i386 build of baz 1.0-1 in ubuntu warty SECURITY',
+            build_used.title)
+
+        self.assertEqual('FULLYBUILT', build_used.status.name)
+
+    def testWrongBuildPassedViaCommandLine(self):
+        """Check if a misapplied passed buildid is correctly identified.
+
+        When we identify misapplied build, either by getting it from command
+        line or by a failure in lookup methods the upload is rejected before
+        anything wrong gets into the DB.
+        """
+        build_candidate = self._createBuild('hppa')
+        self.options.buildid = str(build_candidate.id)
+        self.uploadprocessor = self.getUploadProcessor(self.layer.txn)
+
+        self.assertRaises(AssertionError, self._uploadBinary, 'i386')
+
+        self.assertLogContains(
+            "UploadError: Attempt to upload binaries specifying build %d, "
+            "where they don't fit.\n" % (build_candidate.id, ))

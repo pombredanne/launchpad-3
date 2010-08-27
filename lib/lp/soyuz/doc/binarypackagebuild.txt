@@ -304,11 +304,11 @@ given build record entry.
     >>> version = '0.0.1-demo'
     >>> summary = 'Summmmmmmmary'
     >>> description = 'Descripppppppption'
-    >>> from canonical.launchpad.interfaces import BinaryPackageFormat
+    >>> from lp.soyuz.enums import BinaryPackageFormat
     >>> binpackageformat = BinaryPackageFormat.DEB
     >>> component = firefox_build.source_package_release.component.id
     >>> section = firefox_build.source_package_release.section.id
-    >>> from canonical.launchpad.interfaces import PackagePublishingPriority
+    >>> from lp.soyuz.enums import PackagePublishingPriority
     >>> priority = PackagePublishingPriority.STANDARD
     >>> installedsize = 0
     >>> architecturespecific = False
@@ -589,7 +589,7 @@ getBuildRecords() ordered by descending creation date.
 
     # Create a DELETED and a SUPERSEDED source publication in
     # ubuntutest/breezy-autotest.
-    >>> from canonical.launchpad.interfaces import PackagePublishingStatus
+    >>> from lp.soyuz.enums import PackagePublishingStatus
     >>> login('foo.bar@canonical.com')
     >>> old_source_pub = test_publisher.getPubSource(
     ...     sourcename='old-source', version='1.0',
@@ -616,7 +616,7 @@ domain of SourcePackage.
     # Create a rebuild archive, copy the 'old-source' source
     # publications to it and create builds in the rebuild archive
     # context.
-    >>> from lp.soyuz.interfaces.archive import ArchivePurpose
+    >>> from lp.soyuz.enums import ArchivePurpose
     >>> login('foo.bar@canonical.com')
     >>> rebuild_archive = factory.makeArchive(
     ...     ubuntutest, ubuntutest.owner, 'test-rebuild',

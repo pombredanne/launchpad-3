@@ -16,7 +16,7 @@ from canonical.launchpad.scripts import FakeLogger
 from canonical.testing import LaunchpadZopelessLayer
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.series import SeriesStatus
-from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.model.publishing import (
     BinaryPackagePublishingHistory,
     SourcePackagePublishingHistory,
