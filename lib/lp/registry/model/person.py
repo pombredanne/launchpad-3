@@ -2788,26 +2788,37 @@ class PersonSet:
         # unnecessary.
         with MasterDatabasePolicy():
             store = IMasterStore(EmailAddress)
-            join = [
+            join = store.using(
                 EmailAddress,
-                LeftJoin(Account, EmailAddress.accountID == Account.id),
-                LeftJoin(
-                    OpenIdIdentifier,
-                    OpenIdIdentifier.identifier == openid_identifier)]
-            email, account, identifier = store.using(*join).find(
-                (EmailAddress, Account, OpenIdIdentifier),
-                EmailAddress.email == email_address
-                ).one() or (None, None, None)
+                LeftJoin(Account, EmailAddress.accountID == Account.id))
+            email, account = (
+                join.find(
+                    (EmailAddress, Account),
+                    Lower(EmailAddress.email) == Lower(email_address)).one()
+                or (None, None))
+            identifier = store.find(
+                OpenIdIdentifier, identifier=openid_identifier).one()
 
-            if email is None:
-                # Email address does not exist in the database. Create
-                # the email address, account, and associated info.
-                # OpenIdIdentifier is created later.
+            if email is None and identifier is None:
+                # Neither the Email Address not the OpenId Identifier
+                # exist in the database. Create the email address,
+                # account, and associated info. OpenIdIdentifier is
+                # created later.
                 account_set = getUtility(IAccountSet)
                 account, email = account_set.createAccountAndEmail(
                     email_address, creation_rationale, full_name,
                     password=None)
                 db_updated = True
+
+            elif email is None:
+                # The Email Address does not exist in the database,
+                # but the OpenId Identifier does. Create the Email
+                # Address and link it to the account.
+                assert account is None, 'Retrieved an account but not email?'
+                account = identifier.account
+                emailaddress_set = getUtility(IEmailAddressSet)
+                email = emailaddress_set.new(
+                    email_address, account=account)
 
             elif account is None:
                 # Email address exists, but there is no Account linked
