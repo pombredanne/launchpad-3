@@ -36,16 +36,16 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from lp.soyuz.interfaces.binarypackagerelease import (
+from lp.soyuz.enums import (
     BinaryPackageFileType,
     BinaryPackageFormat,
+    PackagePublishingPriority,
+    PackagePublishingStatus,
+    )
+from lp.soyuz.interfaces.binarypackagerelease import (
     IBinaryPackageRelease,
     IBinaryPackageReleaseDownloadCount,
     IBinaryPackageReleaseSet,
-    )
-from lp.soyuz.interfaces.publishing import (
-    PackagePublishingPriority,
-    PackagePublishingStatus,
     )
 from lp.soyuz.model.files import BinaryPackageFile
 

@@ -1627,6 +1627,7 @@ COMMENT ON COLUMN BuildFarmJob.builder IS 'Points to the builder which processed
 COMMENT ON COLUMN BuildFarmJob.status IS 'Stores the current build status.';
 COMMENT ON COLUMN BuildFarmJob.log IS 'Points to the log for this build farm job file stored in librarian.';
 COMMENT ON COLUMN BuildFarmJob.job_type IS 'The type of build farm job to which this record corresponds.';
+COMMENT ON COLUMN BuildFarmJob.failure_count IS 'The number of consecutive failures on this job.  If excessive, the job may be terminated.';
 
 -- PackageBuild
 COMMENT ON TABLE PackageBuild IS 'PackageBuild: This table stores the information common to build farm jobs that build source or binary packages.';
@@ -1651,6 +1652,7 @@ COMMENT ON COLUMN Builder.url IS 'The url to the build slave. There may be more 
 COMMENT ON COLUMN Builder.manual IS 'Whether or not builder was manual mode, i.e., collect any result from the it, but do not dispach anything to it automatically.';
 COMMENT ON COLUMN Builder.vm_host IS 'The virtual machine host associated to this builder. It should be empty for "native" builders (old fashion or architectures not yet supported by XEN).';
 COMMENT ON COLUMN Builder.active IS 'Whether to present or not the builder in the public list of builders avaialble. It is used to hide transient or defunct builders while they get fixed.';
+COMMENT ON COLUMN Builder.failure_count IS 'The number of consecutive failures on this builder.  Is reset to zero after a sucessful dispatch.';
 
 -- BuildQueue
 COMMENT ON TABLE BuildQueue IS 'BuildQueue: The queue of jobs in progress/scheduled to run on the Soyuz build farm.';
@@ -2405,3 +2407,9 @@ COMMENT ON TABLE DatabaseTableStats IS 'Snapshots of pg_stat_user_tables to let 
 -- DatabaseCpuStats
 COMMENT ON TABLE DatabaseCpuStats IS 'Snapshots of CPU utilization per database username.';
 COMMENT ON COLUMN DatabaseCpuStats.cpu IS '% CPU utilization * 100, as reported by ps -o cp';
+
+
+-- SuggestivePOTemplate
+COMMENT ON TABLE SuggestivePOTemplate IS
+'Cache of POTemplates that can provide external translation suggestions.';
+

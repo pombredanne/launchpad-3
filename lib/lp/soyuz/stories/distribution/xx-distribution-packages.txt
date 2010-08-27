@@ -130,7 +130,7 @@ archive as well as some new PPAs.
 
     # Publish the source 'netapplet' in the breezy-autotest and
     #  main archive.
-    >>> from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+    >>> from lp.soyuz.enums import PackagePublishingStatus
     >>> netapplet_pub_breezy = publisher.getPubSource(
     ...     sourcename="netapplet", archive=ubuntutest.main_archive,
     ...     status=PackagePublishingStatus.PUBLISHED, version='1.3.1')

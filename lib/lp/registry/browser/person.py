@@ -313,7 +313,7 @@ from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.soyuz.browser.archivesubscription import (
     traverse_archive_subscription_for_subscriber,
     )
-from lp.soyuz.interfaces.archive import ArchiveStatus
+from lp.soyuz.enums import ArchiveStatus
 from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
@@ -1692,11 +1692,22 @@ class PersonAdministerView(LaunchpadEditFormView):
     """Administer an `IPerson`."""
     schema = IPerson
     label = "Review person"
-    field_names = [
+    default_field_names = [
         'name', 'displayname',
         'personal_standing', 'personal_standing_reason']
     custom_widget(
         'personal_standing_reason', TextAreaWidget, height=5, width=60)
+
+    def setUpFields(self):
+        """Setup the normal fields from the schema, as appropriate.
+
+        If not an admin (e.g. registry expert), remove the displayname field.
+        """
+        self.field_names = self.default_field_names[:]
+        admin = check_permission('launchpad.Admin', self.context)
+        if not admin:
+            self.field_names.remove('displayname')
+        super(PersonAdministerView, self).setUpFields()
 
     @property
     def is_viewing_person(self):
@@ -3162,31 +3173,33 @@ class PersonParticipationView(LaunchpadView):
     def label(self):
         return 'Team participation for ' + self.context.displayname
 
-    def _asParticipation(self, membership=None, team=None, team_path=None):
+    def _asParticipation(self, membership=None, team=None, via=None):
         """Return a dict of participation information for the membership.
 
         Method requires membership or team, not both.
+        :param via: The team through which the membership in the indirect
+        team is established.
         """
         if ((membership is None and team is None) or
             (membership is not None and team is not None)):
             raise AssertionError(
                 "The membership or team argument must be provided, not both.")
 
-        if team_path is None:
-            via = None
-        else:
-            via = COMMASPACE.join(team.displayname for team in team_path)
+        if via is not None:
+            # When showing the path, it's unnecessary to show the team in
+            # question at the beginning of the path, or the user at the
+            # end of the path.
+            via = COMMASPACE.join(
+                [via_team.displayname for via_team in via[1:-1]])
 
         if membership is None:
-            #we have membership via an indirect team, and can use
-            #sane defaults
-
-            #the user can only be a member of this team
+            # Membership is via an indirect team so sane defaults exist.
+            # An indirect member cannot be an Owner or Admin of a team.
             role = 'Member'
-            #the user never joined, and can't have a join date
+            # The Person never joined, and can't have a join date.
             datejoined = None
         else:
-            #the member is a direct member, so we can use membership data
+            # The member is a direct member; use the membership data.
             team = membership.team
             datejoined = membership.datejoined
             if membership.person == team.teamowner:
@@ -3212,18 +3225,29 @@ class PersonParticipationView(LaunchpadView):
     @cachedproperty
     def active_participations(self):
         """Return the participation information for active memberships."""
-        participations = [self._asParticipation(membership=membership)
-                for membership in self.context.myactivememberships
-                if check_permission('launchpad.View', membership.team)]
-        membership_set = getUtility(ITeamMembershipSet)
-        for team in self.context.teams_indirectly_participated_in:
-            if not check_permission('launchpad.View', team):
+        paths, memberships = self.context.getPathsToTeams()
+        direct_teams = [membership.team for membership in memberships]
+        indirect_teams = [
+            team for team in paths.keys()
+            if team not in direct_teams]
+        participations = []
+
+        # First, create a participation for all direct memberships.
+        for membership in memberships:
+            # Add a participation record for the membership if allowed.
+            if check_permission('launchpad.View', membership.team):
+                participations.append(
+                    self._asParticipation(membership=membership))
+
+        # Second, create a participation for all indirect memberships,
+        # using the remaining paths.
+        for indirect_team in indirect_teams:
+            if not check_permission('launchpad.View', indirect_team):
                 continue
-            # The key points of the path for presentation are:
-            # [-?] indirect memberships, [-2] direct membership, [-1] team.
-            team_path = self.context.findPathToTeam(team)
             participations.append(
-                self._asParticipation(team_path=team_path[:-1], team=team))
+                self._asParticipation(
+                    via=paths[indirect_team],
+                    team=indirect_team))
         return sorted(participations, key=itemgetter('displayname'))
 
     @cachedproperty
@@ -4944,11 +4968,14 @@ class PersonLatestQuestionsView(LaunchpadFormView):
 
 
 class PersonSearchQuestionsView(SearchQuestionsView):
-    """View used to search and display questions in which an IPerson is
-    involved.
-    """
+    """View to search and display questions that involve an `IPerson`."""
 
     display_target_column = True
+
+    @property
+    def template(self):
+        # Persons always show the default template.
+        return self.default_template
 
     @property
     def pageheading(self):
@@ -4964,10 +4991,8 @@ class PersonSearchQuestionsView(SearchQuestionsView):
                  mapping=dict(name=self.context.displayname))
 
 
-class SearchAnsweredQuestionsView(SearchQuestionsView):
+class SearchAnsweredQuestionsView(PersonSearchQuestionsView):
     """View used to search and display questions answered by an IPerson."""
-
-    display_target_column = True
 
     def getDefaultFilter(self):
         """See `SearchQuestionsView`."""
@@ -4987,10 +5012,8 @@ class SearchAnsweredQuestionsView(SearchQuestionsView):
                  mapping=dict(name=self.context.displayname))
 
 
-class SearchAssignedQuestionsView(SearchQuestionsView):
+class SearchAssignedQuestionsView(PersonSearchQuestionsView):
     """View used to search and display questions assigned to an IPerson."""
-
-    display_target_column = True
 
     def getDefaultFilter(self):
         """See `SearchQuestionsView`."""
@@ -5010,10 +5033,8 @@ class SearchAssignedQuestionsView(SearchQuestionsView):
                  mapping=dict(name=self.context.displayname))
 
 
-class SearchCommentedQuestionsView(SearchQuestionsView):
+class SearchCommentedQuestionsView(PersonSearchQuestionsView):
     """View used to search and show questions commented on by an IPerson."""
-
-    display_target_column = True
 
     def getDefaultFilter(self):
         """See `SearchQuestionsView`."""
@@ -5033,10 +5054,8 @@ class SearchCommentedQuestionsView(SearchQuestionsView):
                  mapping=dict(name=self.context.displayname))
 
 
-class SearchCreatedQuestionsView(SearchQuestionsView):
+class SearchCreatedQuestionsView(PersonSearchQuestionsView):
     """View used to search and display questions created by an IPerson."""
-
-    display_target_column = True
 
     def getDefaultFilter(self):
         """See `SearchQuestionsView`."""
@@ -5056,10 +5075,8 @@ class SearchCreatedQuestionsView(SearchQuestionsView):
                  mapping=dict(name=self.context.displayname))
 
 
-class SearchNeedAttentionQuestionsView(SearchQuestionsView):
+class SearchNeedAttentionQuestionsView(PersonSearchQuestionsView):
     """View used to search and show questions needing an IPerson attention."""
-
-    display_target_column = True
 
     def getDefaultFilter(self):
         """See `SearchQuestionsView`."""
@@ -5078,10 +5095,8 @@ class SearchNeedAttentionQuestionsView(SearchQuestionsView):
                  mapping=dict(name=self.context.displayname))
 
 
-class SearchSubscribedQuestionsView(SearchQuestionsView):
+class SearchSubscribedQuestionsView(PersonSearchQuestionsView):
     """View used to search and show questions subscribed to by an IPerson."""
-
-    display_target_column = True
 
     def getDefaultFilter(self):
         """See `SearchQuestionsView`."""

@@ -80,7 +80,7 @@ class MilestoneOverlayMixin:
     @property
     def milestone_table_class(self):
         """The milestone table will be unseen if there are no milestones."""
-        if len(self.context.all_milestones) > 0:
+        if self.context.has_milestones:
             return 'listing'
         else:
             # The page can remove the 'unseen' class to make the table

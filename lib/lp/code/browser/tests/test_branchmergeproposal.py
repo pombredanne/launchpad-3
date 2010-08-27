@@ -60,11 +60,6 @@ class TestBranchMergeProposalPrimaryContext(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def setUp(self):
-        # Use an admin so we don't have to worry about launchpad.Edit
-        # permissions on the merge proposals.
-        TestCaseWithFactory.setUp(self, user="admin@canonical.com")
-
     def testPrimaryContext(self):
         # The primary context of a merge proposal is the same as the primary
         # context of the source_branch.
@@ -84,7 +79,6 @@ class TestBranchMergeProposalContextMenu(TestCaseWithFactory):
             set_state=BranchMergeProposalStatus.REJECTED)
         login_person(bmp.registrant)
         menu = BranchMergeProposalContextMenu(bmp)
-        link = menu.add_comment()
         self.assertTrue(menu.add_comment().enabled)
 
 
@@ -272,9 +266,6 @@ class TestBranchMergeProposalVoteView(TestCaseWithFactory):
         albert = self.factory.makePerson(name='albert')
         bob = self.factory.makePerson(name='bob')
         charles = self.factory.makePerson(name='charles')
-
-        owner = self.bmp.source_branch.owner
-
         self._createComment(albert, CodeReviewVote.APPROVE)
         self._createComment(bob, CodeReviewVote.ABSTAIN)
         self._createComment(charles, CodeReviewVote.DISAPPROVE)
@@ -290,9 +281,6 @@ class TestBranchMergeProposalVoteView(TestCaseWithFactory):
         # Request three reviews.
         albert = self.factory.makePerson(name='albert')
         bob = self.factory.makePerson(name='bob')
-
-        owner = self.bmp.source_branch.owner
-
         self._createComment(albert, CodeReviewVote.ABSTAIN)
         self._createComment(bob, CodeReviewVote.APPROVE)
         self._createComment(albert, CodeReviewVote.APPROVE)
@@ -305,7 +293,6 @@ class TestBranchMergeProposalVoteView(TestCaseWithFactory):
 
     def addReviewTeam(self):
         review_team = self.factory.makeTeam(name='reviewteam')
-        target_branch = self.factory.makeAnyBranch()
         self.bmp.target_branch.reviewer = review_team
 
     def test_review_team_members_trusted(self):

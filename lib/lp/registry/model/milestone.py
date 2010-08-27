@@ -82,6 +82,9 @@ def milestone_sort_key(milestone):
 class HasMilestonesMixin:
     implements(IHasMilestones)
 
+    _milestone_order = (
+        'milestone_sort_key(Milestone.dateexpected, Milestone.name) DESC')
+
     def _getMilestoneCondition(self):
         """Provides condition for milestones and all_milestones properties.
 
@@ -93,11 +96,15 @@ class HasMilestonesMixin:
             "Unexpected class for mixin: %r" % self)
 
     @property
+    def has_milestones(self):
+        return self.all_milestones.any() is not None
+
+    @property
     def all_milestones(self):
         """See `IHasMilestones`."""
         store = Store.of(self)
         result = store.find(Milestone, self._getMilestoneCondition())
-        return sorted(result, key=milestone_sort_key, reverse=True)
+        return result.order_by(self._milestone_order)
 
     @property
     def milestones(self):
@@ -106,7 +113,7 @@ class HasMilestonesMixin:
         result = store.find(Milestone,
                             And(self._getMilestoneCondition(),
                                 Milestone.active == True))
-        return sorted(result, key=milestone_sort_key, reverse=True)
+        return result.order_by(self._milestone_order)
 
 
 class Milestone(SQLBase, StructuralSubscriptionTargetMixin, HasBugsBase):

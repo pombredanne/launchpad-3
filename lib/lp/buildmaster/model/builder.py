@@ -206,6 +206,20 @@ def rescueBuilderIfLost(builder, logger=None):
     # IBuilder.slaveStatusSentence().
     status = status_sentence[0]
 
+    # If the cookie test below fails, it will request an abort of the
+    # builder.  This will leave the builder in the aborted state and
+    # with no assigned job, and we should now "clean" the slave which
+    # will reset its state back to IDLE, ready to accept new builds.
+    # This situation is usually caused by a temporary loss of
+    # communications with the slave and the build manager had to reset
+    # the job.
+    if status == 'BuilderStatus.ABORTED' and builder.currentjob is None:
+        builder.cleanSlave()
+        if logger is not None:
+            logger.info(
+                "Builder '%s' cleaned up from ABORTED" % builder.name)
+        return
+
     # If slave is not building nor waiting, it's not in need of rescuing.
     if status not in ident_position.keys():
         return
@@ -220,7 +234,7 @@ def rescueBuilderIfLost(builder, logger=None):
         else:
             builder.requestAbort()
         if logger:
-            logger.warn(
+            logger.info(
                 "Builder '%s' rescued from '%s': '%s'" %
                 (builder.name, slave_build_id, reason))
 
@@ -284,6 +298,7 @@ class Builder(SQLBase):
     manual = BoolCol(dbName='manual', default=False)
     vm_host = StringCol(dbName='vm_host')
     active = BoolCol(dbName='active', notNull=True, default=True)
+    failure_count = IntCol(dbName='failure_count', default=0, notNull=True)
 
     def _getCurrentBuildBehavior(self):
         """Return the current build behavior."""
@@ -322,6 +337,14 @@ class Builder(SQLBase):
     current_build_behavior = property(
         _getCurrentBuildBehavior, _setCurrentBuildBehavior)
 
+    def gotFailure(self):
+        """See `IBuilder`."""
+        self.failure_count += 1
+
+    def resetFailureCount(self):
+        """See `IBuilder`."""
+        self.failure_count = 0
+
     def checkSlaveAlive(self):
         """See IBuilder."""
         if self.slave.echo("Test")[0] != "Test":
@@ -339,6 +362,8 @@ class Builder(SQLBase):
         """See IBuilder."""
         return self.slave.clean()
 
+    # XXX 2010-08-24 Julian bug=623281
+    # This should not be a property!  It's masking a complicated query.
     @property
     def currentjob(self):
         """See IBuilder"""
@@ -669,6 +694,11 @@ class Builder(SQLBase):
             BuildQueue.builder == self.id,
             Job._status == JobStatus.RUNNING,
             Job.date_started != None).one()
+
+    def getCurrentBuildFarmJob(self):
+        """See `IBuilder`."""
+        # Don't make this a property, it's masking a few queries.
+        return self.currentjob.specific_job.build
 
 
 class BuilderSet(object):

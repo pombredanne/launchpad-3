@@ -387,7 +387,7 @@ class SanitizeDb(LaunchpadScript):
 
     def removePPAArchivePermissions(self):
         """Remove ArchivePermission records for PPAs."""
-        from lp.soyuz.interfaces.archive import ArchivePurpose
+        from lp.soyuz.enums import ArchivePurpose
         count = self.store.execute("""
             DELETE FROM ArchivePermission
             USING Archive

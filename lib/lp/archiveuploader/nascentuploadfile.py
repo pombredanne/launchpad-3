@@ -45,15 +45,15 @@ from lp.archiveuploader.utils import (
     re_valid_version,
     )
 from lp.buildmaster.interfaces.buildbase import BuildStatus
-from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
-from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
-from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFormat
-from lp.soyuz.interfaces.component import IComponentSet
-from lp.soyuz.interfaces.publishing import PackagePublishingPriority
-from lp.soyuz.interfaces.queue import (
+from lp.soyuz.enums import (
+    BinaryPackageFormat,
+    PackagePublishingPriority,
     PackageUploadCustomFormat,
     PackageUploadStatus,
     )
+from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
+from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
+from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.section import ISectionSet
 from lp.soyuz.model.files import SourceFileMixin
 
@@ -769,7 +769,7 @@ class BaseBinaryUploadFile(PackageUploadFile):
         in DB yet (see verifySourcepackagerelease).
         """
         distroseries = self.policy.distroseries
-        spphs = distroseries.getPublishedReleases(
+        spphs = distroseries.getPublishedSources(
             self.source_name, version=self.source_version,
             include_pending=True, archive=self.policy.archive)
 
@@ -777,7 +777,7 @@ class BaseBinaryUploadFile(PackageUploadFile):
         if spphs:
             # We know there's only going to be one release because
             # version is unique.
-            assert len(spphs) == 1, "Duplicated ancestry"
+            assert spphs.count() == 1, "Duplicated ancestry"
             sourcepackagerelease = spphs[0].sourcepackagerelease
         else:
             # XXX cprov 2006-08-09 bug=55774: Building from ACCEPTED is

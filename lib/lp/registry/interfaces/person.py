@@ -189,10 +189,8 @@ def validate_person(obj, attr, value):
 
 def validate_public_person(obj, attr, value):
     """Validate that the person identified by value is public."""
-
     def validate(person):
         return is_public_person(person)
-
     return validate_person_common(obj, attr, value, validate)
 
 
@@ -661,9 +659,9 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
                         readonly=True, required=False,
                         value_type=Reference(schema=IJabberID)),
         exported_as='jabber_ids')
-    myactivememberships = exported(
+    team_memberships = exported(
         CollectionField(
-            title=_("All TeamMemberships for Teams this Person is an "
+            title=_("All TeamMemberships for Teams this Team or Person is an "
                     "active member of."),
             value_type=Reference(schema=ITeamMembership),
             readonly=True, required=False),
@@ -979,8 +977,7 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
     # @operation_returns_collection_of(Interface) # Really IPerson
     # @export_read_operation()
     def findPathToTeam(team):
-        """Return the teams that cause this person to be a participant of the
-        given team.
+        """Return the teams providing membership to the given team.
 
         If there is more than one path leading this person to the given team,
         only the one with the oldest teams is returned.
@@ -1156,6 +1153,9 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
 
     def getLatestApprovedMembershipsForPerson(limit=5):
         """Return the <limit> latest approved membrships for this person."""
+
+    def getPathsToTeams():
+        """Return the paths to all teams related to this person."""
 
     def addLanguage(language):
         """Add a language to this person's preferences.
@@ -1383,7 +1383,7 @@ class IPersonViewRestricted(Interface):
 
     def getMembersWithPreferredEmailsCount():
         """Returns the count of persons/teams with preferred emails.
-        
+
         See also getMembersWithPreferredEmails.
         """
 

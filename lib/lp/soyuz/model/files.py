@@ -20,7 +20,7 @@ from canonical.database.sqlbase import (
     sqlvalues,
     )
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
-from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFileType
+from lp.soyuz.enums import BinaryPackageFileType
 from lp.soyuz.interfaces.files import (
     IBinaryPackageFile,
     IBinaryPackageFileSet,

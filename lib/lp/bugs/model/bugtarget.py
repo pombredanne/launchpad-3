@@ -207,13 +207,7 @@ class HasBugsBase:
     @property
     def has_bugtasks(self):
         """See `IHasBugs`."""
-        # Check efficiently if any bugtasks exist. We should avoid
-        # expensive calls like all_bugtasks.count(). all_bugtasks
-        # returns a storm.SQLObjectResultSet instance, and this
-        # class does not provide methods like is_empty(). But we can
-        # indirectly call SQLObjectResultSet._result_set.is_empty()
-        # by converting all_bugtasks into a boolean object.
-        return bool(self.all_bugtasks)
+        return not self.all_bugtasks.is_empty()
 
     def getBugCounts(self, user, statuses=None):
         """See `IHasBugs`."""

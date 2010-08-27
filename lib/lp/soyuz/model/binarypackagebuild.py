@@ -80,7 +80,7 @@ from lp.buildmaster.model.packagebuild import (
     PackageBuildDerived,
     )
 from lp.services.job.model.job import Job
-from lp.soyuz.interfaces.archive import ArchivePurpose
+from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.binarypackagebuild import (
     BuildSetStatus,
     CannotBeRescored,
@@ -357,7 +357,7 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
         self.buildqueue_record.manualScore(score)
 
     def makeJob(self):
-        """See `IBuildBase`."""
+        """See `IBuildFarmJob`."""
         store = Store.of(self)
         job = Job()
         store.add(job)
@@ -501,7 +501,7 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
             user_defined_fields=user_defined_fields, homepage=homepage)
 
     def estimateDuration(self):
-        """See `IBuildBase`."""
+        """See `IPackageBuild`."""
         # Always include the primary archive when looking for
         # past build times (just in case that none can be found
         # in a PPA or copy archive).
@@ -561,7 +561,7 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
         return self.binarypackages.count() > 0
 
     def notify(self, extra_info=None):
-        """See `IBuildBase`.
+        """See `IPackageBuild`.
 
         If config.buildmaster.build_notification is disable, simply
         return.
