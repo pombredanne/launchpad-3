@@ -6,11 +6,13 @@
 __metaclass__ = type
 __all__ = ['SpecificationDepCandidatesVocabulary']
 
+from zope.component import getUtility
 from zope.interface import implements
 from zope.schema.vocabulary import SimpleTerm
 
 from canonical.database.sqlbase import quote_like
 from canonical.launchpad.helpers import shortlist
+from canonical.launchpad.webapp import urlparse
 from canonical.launchpad.webapp.vocabulary import (
     CountableIterator,
     IHugeVocabulary,
@@ -19,15 +21,24 @@ from canonical.launchpad.webapp.vocabulary import (
 
 from lp.blueprints.interfaces.specification import SpecificationFilter
 from lp.blueprints.model.specification import Specification
-
+from lp.registry.interfaces.pillar import IPillarNameSet
 
 class SpecificationDepCandidatesVocabulary(SQLObjectVocabularyBase):
     """Specifications that could be dependencies of this spec.
 
-    This includes only those specs that are not blocked by this spec
-    (directly or indirectly), unless they are already dependencies.
+    This includes only those specs that are not blocked by this spec (directly
+    or indirectly), unless they are already dependencies.
 
-    The current spec is not included.
+    This vocabulary has a bit of a split personality.
+
+    Tokens are *either*:
+
+     - the name of a spec, in which case it must be a spec on the same target
+       as the context, or
+     - the full URL of the spec, in which case it can be any spec at all.
+
+    For the purposes of enumeration and searching we only consider the first
+    sort of spec for now.  The URL form of token only matches precisely.
     """
 
     implements(IHugeVocabulary)
@@ -36,8 +47,8 @@ class SpecificationDepCandidatesVocabulary(SQLObjectVocabularyBase):
     _orderBy = 'name'
     displayname = 'Select a blueprint'
 
-    def _filter_specs(self, specs):
-        """Filter `specs` to remove invalid candidates.
+    def _is_valid_candidate(self, spec, check_target=False):
+        """Is `spec` a valid candidate spec for self.context?
 
         Invalid candidates are:
 
@@ -47,28 +58,60 @@ class SpecificationDepCandidatesVocabulary(SQLObjectVocabularyBase):
 
         Preventing the last category prevents loops in the dependency graph.
         """
+        if check_target and spec.target != self.context.target:
+            return False
+        return spec != self.context and spec not in self.context.all_blocked
+
+    def _filter_specs(self, specs, check_target=False):
+        """Filter `specs` to remove invalid candidates.
+
+        See `_is_valid_candidate` for what an invalid candidate is.
+        """
         # XXX intellectronica 2007-07-05: is 100 a reasonable count before
         # starting to warn?
-        speclist = shortlist(specs, 100)
-        return [spec for spec in speclist
-                if (spec != self.context and
-                    spec.target == self.context.target
-                    and spec not in self.context.all_blocked)]
+        return [spec for spec in shortlist(specs, 100)
+                if self._is_valid_candidate(spec, check_target)]
 
     def toTerm(self, obj):
+        # XXX obj.name needs to be different if target is different.
         return SimpleTerm(obj, obj.name, obj.title)
+
+    def _target_name_blueprint_name_from_url(self, url):
+        """XXX."""
+        scheme, netloc, path, params, args, fragment = urlparse(url)
+        if not scheme or not netloc:
+            # Not enough like a URL
+            return None, None
+        path_segments = path.strip('/').split('/')
+        if len(path_segments) != 3:
+            return None, None
+        pillar_name, plus_spec, spec_name = path_segments
+        if plus_spec != '+spec':
+            return None, None
+        return pillar_name, spec_name
 
     def getTermByToken(self, token):
         """See `zope.schema.interfaces.IVocabularyTokenized`.
 
-        The tokens for specifications are just the name of the spec.
+        The tokens for specifications are either the name of a spec on the
+        same target or a URL for a spec.
         """
-        spec = self.context.target.getSpecification(token)
-        if spec is not None:
-            filtered = self._filter_specs([spec])
-            if len(filtered) > 0:
-                return self.toTerm(filtered[0])
-        raise LookupError(token)
+        pillar_name, spec_name = self._target_name_blueprint_name_from_url(
+            token)
+        if pillar_name is not None:
+            pillar = getUtility(IPillarNameSet).getByName(
+                pillar_name, ignore_inactive=True)
+            if pillar is None:
+                raise LookupError(token)
+            spec = pillar.getSpecification(spec_name)
+            if spec is None or not self._is_valid_candidate(spec):
+                raise LookupError(token)
+            return self.toTerm(spec)
+        else:
+            spec = self.context.target.getSpecification(token)
+            if spec is not None and self._is_valid_candidate(spec):
+                return self.toTerm(spec)
+            raise LookupError(token)
 
     def search(self, query):
         """See `SQLObjectVocabularyBase.search`.
@@ -87,18 +130,18 @@ class SpecificationDepCandidatesVocabulary(SQLObjectVocabularyBase):
             """
             % (quoted_query, quoted_query, quoted_query))
         all_specs = Specification.select(sql_query, orderBy=self._orderBy)
-        candidate_specs = self._filter_specs(all_specs)
+        candidate_specs = self._filter_specs(all_specs, check_target=True)
         return CountableIterator(len(candidate_specs), candidate_specs)
 
     @property
     def _all_specs(self):
         return self.context.target.specifications(
-            filter=[SpecificationFilter.ALL],
-            prejoin_people=False)
+            filter=[SpecificationFilter.ALL], prejoin_people=False)
 
     def __iter__(self):
-        return (self.toTerm(spec)
-                for spec in self._filter_specs(self._all_specs))
+        return (
+            self.toTerm(spec) for spec in self._filter_specs(self._all_specs))
 
     def __contains__(self, obj):
-        return obj in self._all_specs and len(self._filter_specs([obj])) > 0
+        # This probably needs to change to drop the _all_specs requirement.
+        return obj in self._all_specs and self._is_valid_candidate(obj)
