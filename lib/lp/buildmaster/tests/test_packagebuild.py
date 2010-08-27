@@ -21,8 +21,8 @@ from canonical.testing.layers import (
     LaunchpadZopelessLayer,
     )
 from lp.buildmaster.enums import (
-    BuildStatus,
     BuildFarmJobType,
+    BuildStatus,
     )
 from lp.buildmaster.interfaces.packagebuild import (
     IPackageBuild,

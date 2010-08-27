@@ -70,8 +70,8 @@ from canonical.launchpad.webapp.tales import DurationFormatterAPI
 from lp.app.errors import NotFoundError
 from lp.archivepublisher.utils import get_ppa_reference
 from lp.buildmaster.enums import (
-    BuildStatus,
     BuildFarmJobType,
+    BuildStatus,
     )
 from lp.buildmaster.interfaces.packagebuild import IPackageBuildSource
 from lp.buildmaster.model.builder import Builder

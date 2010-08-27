@@ -46,8 +46,8 @@ from lp.archiveuploader.uploadpolicy import (
     SOURCE_PACKAGE_RECIPE_UPLOAD_POLICY_NAME,
     )
 from lp.buildmaster.enums import (
-    BuildStatus,
     BuildFarmJobType,
+    BuildStatus,
     )
 from lp.buildmaster.model.buildfarmjob import BuildFarmJobOldDerived
 from lp.buildmaster.model.buildqueue import BuildQueue

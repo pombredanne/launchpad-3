@@ -28,8 +28,8 @@ from canonical.testing import (
     ZopelessDatabaseLayer,
     )
 from lp.buildmaster.enums import (
-    BuildStatus,
     BuildFarmJobType,
+    BuildStatus,
     )
 from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
