@@ -57,7 +57,6 @@ class DistroSeriesDifference(Storm):
     last_package_diff = Reference(
         last_package_diff_id, 'PackageDiff.id')
 
-    activity_log = Unicode(name='activity_log', allow_none=True)
     status = DBEnum(name='status', allow_none=False,
                     enum=DistroSeriesDifferenceStatus)
     difference_type = DBEnum(name='difference_type', allow_none=False,
@@ -91,6 +90,11 @@ class DistroSeriesDifference(Storm):
     def parent_source_pub(self):
         """See `IDistroSeriesDifference`."""
         return self._getLatestSourcePub(for_parent=True)
+
+    @property
+    def activity_log(self):
+        """See `IDistroSeriesDifference`."""
+        return u""
 
     def _getLatestSourcePub(self, for_parent=False):
         """Helper to keep source_pub/parent_source_pub DRY."""

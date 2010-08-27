@@ -54,7 +54,7 @@ class IDistroSeriesDifference(Interface):
             "The most recently generated package diff for this difference."))
 
     activity_log = Text(
-        title=_('A log of activity and comments for this difference'),
+        title=_('A log of activity and comments for this difference.'),
         required=False, readonly=True)
 
     status = Choice(
