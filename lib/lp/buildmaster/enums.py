@@ -95,3 +95,10 @@ class BuildStatus(DBEnumeratedType):
         buildlog, datebuilt, duration, builder, etc) and the buildd admins
         will be notified via process-upload about the reason of the rejection.
         """)
+
+    UPLOADING = DBItem(8, """
+        Uploading build
+
+        The build has completed and is waiting to be process by the 
+        upload processor.
+        """)

@@ -213,6 +213,11 @@ class UploadProcessor:
                 " skipping." % upload)
             return
         build = getUtility(IBinaryPackageBuildSet).getByBuildID(int(build_id))
+        if build.status != BuildStatus.UPLOADING:
+            self.log.warn(
+                "Expected build status to be 'UPLOADING', was %s. Skipping.",
+                build.status)
+            return
         self.log.debug("Build %s found" % build.id)
         logger = BufferLogger()
         upload_path = os.path.join(fsroot, upload)

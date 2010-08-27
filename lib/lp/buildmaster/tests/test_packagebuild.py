@@ -30,7 +30,6 @@ from lp.buildmaster.interfaces.packagebuild import (
 from lp.buildmaster.model.packagebuild import PackageBuild
 from lp.registry.interfaces.pocket import (
     PackagePublishingPocket,
-    pocketsuffix,
     )
 from lp.soyuz.tests.soyuzbuilddhelpers import WaitingSlave
 from lp.testing import (

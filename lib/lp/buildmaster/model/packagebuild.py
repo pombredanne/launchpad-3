@@ -325,9 +325,6 @@ class PackageBuildDerived:
             slave_file = slave.getFile(filemap[filename])
             copy_and_close(slave_file, out_file)
 
-        # Release the builder for another job.
-        self.buildqueue_record.builder.cleanSlave()
-
         # We only attempt the upload if we successfully copied all the
         # files from the slave.
         if successful_copy_from_slave:
@@ -337,6 +334,7 @@ class PackageBuildDerived:
             incoming_dir = os.path.join(config.builddmaster.root, 'incoming')
             if not os.path.exists(incoming_dir):
                 os.mkdir(incoming_dir)
+            self.status = BuildStatus.UPLOADING
             # Move the directory used to grab the binaries into
             # the incoming directory so the upload processor never
             # sees half-finished uploads.
@@ -354,6 +352,9 @@ class PackageBuildDerived:
         # Store build information, build record was already updated during
         # the binary upload.
         self.storeBuildInfo(self, librarian, slave_status)
+
+        # Release the builder for another job.
+        self.buildqueue_record.builder.cleanSlave()
 
         # Remove BuildQueue record.
         self.buildqueue_record.destroySelf()
