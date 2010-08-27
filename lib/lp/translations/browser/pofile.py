@@ -36,11 +36,14 @@ from lp.translations.browser.potemplate import POTemplateFacets
 from lp.registry.interfaces.person import IPersonSet
 from lp.translations.interfaces.pofile import IPOFile
 from lp.translations.interfaces.translationimporter import (
-    ITranslationImporter)
+    ITranslationImporter,
+    )
 from lp.translations.interfaces.translationimportqueue import (
-    ITranslationImportQueue)
+    ITranslationImportQueue,
+    )
 from lp.translations.interfaces.translationsperson import (
-    ITranslationsPerson)
+    ITranslationsPerson,
+    )
 from canonical.launchpad.interfaces import ILaunchBag
 from canonical.launchpad.webapp import (
     canonical_url, enabled_with_permission, LaunchpadView,
