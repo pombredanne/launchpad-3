@@ -508,9 +508,13 @@ COMMENT ON TABLE DistroSeriesDifference IS 'A difference of versions for a packa
 COMMENT ON COLUMN DistroSeriesDifference.derived_series IS 'The derived distroseries with the difference from its parent.';
 COMMENT ON COLUMN DistroSeriesDifference.source_package_name IS 'The name of the source package which is different in the two series.';
 COMMENT ON COLUMN DistroSeriesDifference.last_package_diff IS 'The most recent package diff that was created for this difference.';
-COMMENT ON COLUMN DistroSeriesDifference.activity_log IS 'A log of actions and/or comments by users regarding action to be taken.';
 COMMENT ON COLUMN DistroSeriesDifference.status IS 'A distroseries difference can be needing attention, ignored or resolved.';
 COMMENT ON COLUMN DistroSeriesDifference.difference_type IS 'The type of difference that this record represents - a package unique to the derived series, or missing, or in both.';
+
+-- DistroSeriesDifferenceMessage
+COMMENT ON TABLE DistroSeriesDifferenceMessage IS 'A message/comment on a distro series difference.';
+COMMENT ON COLUMN DistroSeriesDifferenceMessage.distro_series_difference IS 'The distro series difference for this comment.';
+COMMENT ON COLUMN DistroSeriesDifferenceMessage.message IS 'The comment for the distro series difference.';
 
 -- DistroSeriesPackageCache
 
