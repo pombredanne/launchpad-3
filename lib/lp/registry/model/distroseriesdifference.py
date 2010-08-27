@@ -14,7 +14,6 @@ from storm.locals import (
     Int,
     Reference,
     Storm,
-    Unicode,
     )
 from zope.interface import (
     classProvides,
@@ -31,6 +30,9 @@ from lp.registry.exceptions import NotADerivedSeriesError
 from lp.registry.interfaces.distroseriesdifference import (
     IDistroSeriesDifference,
     IDistroSeriesDifferenceSource,
+    )
+from lp.registry.model.distroseriesdifferencemessage import (
+    DistroSeriesDifferenceMessage,
     )
 
 
@@ -88,6 +90,19 @@ class DistroSeriesDifference(Storm):
         return self._getLatestSourcePub(for_parent=True)
 
     @property
+    def title(self):
+        """See `IDistroSeriesDifference`."""
+        parent_name = self.derived_series.parent_series.displayname
+        return ("Difference between distroseries '%(parent_name)s' and "
+                "'%(derived_name)s' for package '%(pkg_name)s' "
+                "(%(versions)s)" % {
+                    'parent_name': parent_name,
+                    'derived_name': self.derived_series.displayname,
+                    'pkg_name': self.source_package_name.name,
+                    'versions': self._getVersions(),
+                    })
+
+    @property
     def activity_log(self):
         """See `IDistroSeriesDifference`."""
         return u""
@@ -115,3 +130,21 @@ class DistroSeriesDifference(Storm):
         if self.parent_source_pub is not None:
             parent_src_pub_ver = self.parent_source_pub.source_package_version
         return parent_src_pub_ver + "/" + src_pub_ver
+
+    def addComment(self, owner, comment):
+        """See `IDistroSeriesDifference`."""
+        # Move this into a utility on IDSDSource
+        from canonical.launchpad.database.message import Message, MessageChunk
+        from email.Utils import make_msgid
+        msgid = make_msgid('distroseriesdifference')
+        message = Message(
+            parent=None, owner=owner, rfc822msgid=msgid, subject=self.title)
+        MessageChunk(message=message, content=comment, sequence=1)
+
+        store = IMasterStore(DistroSeriesDifference)
+        dsd_message = DistroSeriesDifferenceMessage()
+        dsd_message.distro_series_difference = self
+        dsd_message.message = message
+
+        return store.add(dsd_message)
+

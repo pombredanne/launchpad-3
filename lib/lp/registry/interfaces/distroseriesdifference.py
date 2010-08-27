@@ -17,6 +17,7 @@ from zope.schema import (
     Choice,
     Int,
     Text,
+    TextLine,
     )
 
 from canonical.launchpad import _
@@ -80,6 +81,13 @@ class IDistroSeriesDifference(Interface):
         title=_("Parent source pub"), readonly=True,
         description=_(
             "The most recent published version in the parent series."))
+
+    title = TextLine(
+        title=_("Title"), readonly=True, required=False, description=_(
+            "A human-readable name describing this difference."))
+
+    def addComment(owner, comment):
+        """Add a comment on this difference."""
 
 
 class IDistroSeriesDifferenceSource(Interface):

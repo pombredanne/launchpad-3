@@ -113,6 +113,13 @@
         class="lp.registry.model.distroseriesdifference.DistroSeriesDifference">
         <allow interface="lp.registry.interfaces.distroseriesdifference.IDistroSeriesDifference"/>
     </class>
+
+    <!-- DistroSeriesDifferenceComment -->
+    <class
+        class="lp.registry.model.distroseriesdifferencemessage.DistroSeriesDifferenceMessage">
+        <allow interface="lp.registry.interfaces.distroseriesdifferencemessage.IDistroSeriesDifferenceMessage"/>
+    </class>
+
     <class
         class="lp.registry.model.distroseries.DistroSeries">
         <allow

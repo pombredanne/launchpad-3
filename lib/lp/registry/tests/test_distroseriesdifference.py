@@ -94,7 +94,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             ds_diff.derived_series.parent_series,
             ds_diff.parent_source_pub.distroseries)
 
-    def test_paren_source_pub_gets_latest_pending(self):
+    def test_parent_source_pub_gets_latest_pending(self):
         # The most recent publication is always returned, even if its pending.
         ds_diff = self.factory.makeDistroSeriesDifference(
             source_package_name_str="foonew")
@@ -104,6 +104,35 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             status=PackagePublishingStatus.PENDING)
 
         self.assertEqual(pending_pub, ds_diff.parent_source_pub)
+
+    def test_title(self):
+        # The title is a friendly description of the difference.
+        parent_series = self.factory.makeDistroSeries(name="lucid")
+        derived_series = self.factory.makeDistroSeries(
+            parent_series=parent_series, name="derilucid")
+        ds_diff = self.factory.makeDistroSeriesDifference(
+            source_package_name_str="foonew", derived_series=derived_series,
+            versions={
+                'parent': '1.0',
+                'derived': '0.9',
+                })
+
+        self.assertEqual(
+            "Difference between distroseries 'Lucid' and 'Derilucid' "
+            "for package 'foonew' (1.0/0.9)", ds_diff.title)
+
+    def test_addComment(self):
+        # Adding a comment creates a new DistroSeriesDifferenceMessage
+        ds_diff = self.factory.makeDistroSeriesDifference(
+            source_package_name_str="foonew")
+        person = self.factory.makePerson()
+
+        dsd_comment = ds_diff.addComment(person, "Wait until version 2.1")
+
+        self.assertEqual(ds_diff, dsd_comment.distro_series_difference)
+        self.assertEqual(ds_diff.title, dsd_comment.message.subject)
+        self.assertEqual(
+            "Wait until version 2.1", dsd_comment.message.text_contents)
 
 
 def test_suite():
