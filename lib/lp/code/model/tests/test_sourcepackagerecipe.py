@@ -46,6 +46,7 @@ from lp.code.interfaces.sourcepackagerecipe import (
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuild,
     ISourcePackageRecipeBuildJob,
+    MANUAL_BUILD_PRIORITY_BUMP,
     )
 from lp.code.model.sourcepackagerecipe import (
     NonPPABuildRequest,
@@ -345,7 +346,7 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
             PackagePublishingPocket.RELEASE, manual=True)
         queue_record = build.buildqueue_record
         queue_record.score()
-        self.assertEqual(2505, queue_record.lastscore)
+        self.assertEqual(2405+MANUAL_BUILD_PRIORITY_BUMP, queue_record.lastscore)
 
     def test_requestBuild_relative_build_score(self):
         """Offsets for archives are respected."""
@@ -357,7 +358,7 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
             PackagePublishingPocket.RELEASE, manual=True)
         queue_record = build.buildqueue_record
         queue_record.score()
-        self.assertEqual(2605, queue_record.lastscore)
+        self.assertEqual(2505+MANUAL_BUILD_PRIORITY_BUMP, queue_record.lastscore)
 
     def test_requestBuildHonoursConfig(self):
         recipe = self.factory.makeSourcePackageRecipe()

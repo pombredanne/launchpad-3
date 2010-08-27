@@ -11,6 +11,7 @@ __all__ = [
     'ISourcePackageRecipeBuildSource',
     'ISourcePackageRecipeBuildJob',
     'ISourcePackageRecipeBuildJobSource',
+    'MANUAL_BUILD_PRIORITY_BUMP',
     ]
 
 from lazr.restful.declarations import export_as_webservice_entry
@@ -38,6 +39,9 @@ from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuild
 from lp.soyuz.interfaces.buildfarmbuildjob import IBuildFarmBuildJob
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
 
+#How much to boost manual build scores to give them priority on the build queue
+#TEMP FIX: this was 100 but caused build starvation of daily builds
+MANUAL_BUILD_PRIORITY_BUMP=0
 
 class ISourcePackageRecipeBuild(IPackageBuild):
     """A build of a source package."""
