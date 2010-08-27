@@ -51,12 +51,16 @@ from lp.registry.interfaces.sourcepackage import SourcePackageFileType
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.mail import stub
-from lp.soyuz.interfaces.archive import (
+from lp.soyuz.enums import (
+    ArchivePermissionType,
     ArchivePurpose,
+    PackageUploadStatus,
+    SourcePackageFormat,
+    )
+from lp.soyuz.interfaces.archive import (
     IArchiveSet,
     )
 from lp.soyuz.interfaces.archivepermission import (
-    ArchivePermissionType,
     IArchivePermissionSet,
     )
 from lp.soyuz.interfaces.component import IComponentSet
@@ -66,12 +70,10 @@ from lp.soyuz.interfaces.publishing import (
     PackagePublishingStatus,
     )
 from lp.soyuz.interfaces.queue import (
-    PackageUploadStatus,
     QueueInconsistentStateError,
     )
 from lp.soyuz.interfaces.sourcepackageformat import (
     ISourcePackageFormatSelectionSet,
-    SourcePackageFormat,
     )
 from lp.soyuz.model.archivepermission import ArchivePermission
 from lp.soyuz.model.binarypackagename import BinaryPackageName

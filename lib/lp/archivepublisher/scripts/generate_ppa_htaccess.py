@@ -25,15 +25,15 @@ from canonical.launchpad.webapp import canonical_url
 from lp.archivepublisher.config import getPubConfig
 from lp.services.mail.mailwrapper import MailWrapper
 from lp.services.scripts.base import LaunchpadCronScript
+from lp.soyuz.enums import ArchiveStatus
 from lp.soyuz.interfaces.archive import (
-    ArchiveStatus,
     IArchiveSet,
     )
 from lp.soyuz.interfaces.archiveauthtoken import IArchiveAuthTokenSet
 from lp.soyuz.interfaces.archivesubscriber import (
-    ArchiveSubscriberStatus,
     IArchiveSubscriberSet,
     )
+from lp.soyuz.enums import ArchiveSubscriberStatus
 
 # These PPAs should never have their htaccess/pwd files touched.
 BLACKLISTED_PPAS = {
