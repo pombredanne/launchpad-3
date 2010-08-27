@@ -55,19 +55,19 @@ class IDistroSeriesDifference(Interface):
 
     activity_log = Text(
         title=_('A log of activity and comments for this difference'),
-        required=False, readonly=False)
+        required=False, readonly=True)
 
     status = Choice(
         title=_('Distro series difference status.'),
         description=_('The current status of this difference.'),
         vocabulary=DistroSeriesDifferenceStatus,
-        required=True, readonly=False)
+        required=True, readonly=True)
 
     difference_type = Choice(
         title=_('Difference type'),
         description=_('The type of difference for this package.'),
         vocabulary=DistroSeriesDifferenceType,
-        required=True, readonly=False)
+        required=True, readonly=True)
 
     source_pub = Reference(
         ISourcePackagePublishingHistory,
