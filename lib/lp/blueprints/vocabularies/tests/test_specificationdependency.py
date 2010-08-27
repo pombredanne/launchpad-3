@@ -77,6 +77,24 @@ class TestSpecificationDepCandidatesVocabulary(TestCaseWithFactory):
         self.assertRaises(
             LookupError, vocab.getTermByToken, self.factory.getUniqueString())
 
+    def test_getTermByToken_lookup_error_on_url_with_invalid_pillar(self):
+        # getTermByToken with the a string that looks like a blueprint URL but
+        # has an invalid pillar name raises LookupError.
+        spec = self.factory.makeSpecification()
+        url = canonical_url(spec).replace(
+            spec.target.name, self.factory.getUniqueString())
+        vocab = self.getVocabularyForSpec(spec)
+        self.assertRaises(LookupError, vocab.getTermByToken, url)
+
+    def test_getTermByToken_lookup_error_on_url_with_invalid_spec_name(self):
+        # getTermByToken with the a string that looks like a blueprint URL but
+        # has an invalid spec name raises LookupError.
+        spec = self.factory.makeSpecification()
+        url = canonical_url(spec).replace(
+            spec.name, self.factory.getUniqueString())
+        vocab = self.getVocabularyForSpec(spec)
+        self.assertRaises(LookupError, vocab.getTermByToken, url)
+
     def test_getTermByToken_by_name_disallows_blocked(self):
         # getTermByToken with the name of an candidate spec that is blocked by
         # the vocab's context raises LookupError.

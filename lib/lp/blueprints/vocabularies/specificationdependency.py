@@ -38,7 +38,8 @@ class SpecificationDepCandidatesVocabulary(SQLObjectVocabularyBase):
      - the full URL of the spec, in which case it can be any spec at all.
 
     For the purposes of enumeration and searching we only consider the first
-    sort of spec for now.  The URL form of token only matches precisely.
+    sort of spec for now.  The URL form of token only matches precisely,
+    searching only looks for specs on the current target.
     """
 
     implements(IHugeVocabulary)
