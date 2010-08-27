@@ -39,13 +39,13 @@ from lp.registry.interfaces.pocket import (
     PackagePublishingPocket,
     pocketsuffix,
     )
-from lp.soyuz.interfaces.archive import (
+from lp.soyuz.enums import (
     ArchivePurpose,
     ArchiveStatus,
+    BinaryPackageFormat,
+    PackagePublishingStatus,
     )
-from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFormat
 from lp.soyuz.interfaces.component import IComponentSet
-from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 
 
 suffixpocket = dict((v, k) for (k, v) in pocketsuffix.items())

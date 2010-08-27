@@ -49,8 +49,7 @@ from lp.soyuz.interfaces.binarypackagebuild import (
     IBinaryPackageBuildSet,
     IBuildRescoreForm,
     )
-from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
-from lp.soyuz.interfaces.queue import PackageUploadStatus
+from lp.soyuz.enums import PackageUploadStatus
 
 
 class BuildUrl:

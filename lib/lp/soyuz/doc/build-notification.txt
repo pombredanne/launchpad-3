@@ -568,8 +568,8 @@ a just created named-ppa for Celso.
   >>> commit()
   >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
 
-  >>> from lp.soyuz.interfaces.archive import (
-  ...     ArchivePurpose, IArchiveSet)
+  >>> from lp.soyuz.enums import ArchivePurpose
+  >>> from lp.soyuz.interfaces.archive import IArchiveSet
   >>> named_ppa = getUtility(IArchiveSet).new(
   ...     owner=cprov, name='testing', purpose=ArchivePurpose.PPA)
 

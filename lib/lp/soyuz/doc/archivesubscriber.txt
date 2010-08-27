@@ -204,8 +204,9 @@ subscriber and archive.  To access subscriptions you need launchpad.View
 privilege which applies to the person in the subscriptions and launchpad
 admins.
 
+    >>> from lp.soyuz.enums import ArchiveSubscriberStatus
     >>> from lp.soyuz.interfaces.archivesubscriber import (
-    ...     ArchiveSubscriberStatus, IArchiveSubscriberSet)
+    ...     IArchiveSubscriberSet)
     >>> sub_set = getUtility(IArchiveSubscriberSet)
 
     >>> login("no-priv@canonical.com")
@@ -360,8 +361,6 @@ We can also do this as an admin.
 
     >>> login("admin@canonical.com")
     >>> new_sub.description = u"changed by admin"
-    >>> from lp.soyuz.interfaces.archivesubscriber import (
-    ...     ArchiveSubscriberStatus)
     >>> new_sub.status = ArchiveSubscriberStatus.EXPIRED
 
 The subscriber and registrant properties are not editable.

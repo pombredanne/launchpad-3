@@ -28,7 +28,7 @@ from lp.registry.interfaces.pocket import (
     pocketsuffix,
     )
 from lp.registry.model.sourcepackagename import SourcePackageName
-from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.model.component import Component
 from lp.soyuz.model.section import Section
 

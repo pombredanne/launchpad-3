@@ -16,7 +16,7 @@ from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.component import IComponentSet
-from lp.soyuz.interfaces.publishing import PackagePublishingPriority
+from lp.soyuz.enums import PackagePublishingPriority
 from lp.soyuz.interfaces.section import ISectionSet
 from lp.soyuz.scripts.changeoverride import (
     ArchiveOverriderError,

@@ -1,4 +1,6 @@
-== Legend and headers display ==
+==========================
+Legend and headers display
+==========================
 
 On template overview page, when user is not logged in (and there is no
 sufficient GeoIP data), or user has not set his preferred languages,
@@ -49,9 +51,7 @@ headers will not be shown.
     # translations.
     >>> admin_browser.open(
     ...   'http://launchpad.dev/netapplet/+configure-translations')
-    >>> admin_browser.getControl(
-    ...     'Translations for this project are done in Launchpad'
-    ...     ).selected = True
+    >>> admin_browser.getControl('Launchpad').click()
     >>> admin_browser.getControl('Change').click()
     >>> anon_browser.open(
     ...     'http://translations.launchpad.dev/netapplet/trunk/+pots/'
@@ -69,7 +69,8 @@ in packages:
     True
 
 
-= The PO Template Views =
+The PO Template Views
+=====================
 
 Carlos is a translator who translates things into Spanish and Catalan.
 When he looks at available translations for Evolution in Hoary, he
@@ -97,7 +98,8 @@ among the languages on the page.
 
 So, everything is fine, and Carlos can sleep calmly.
 
-== Links to filtered pages ==
+Links to filtered pages
+=======================
 
 The POTemplate overview page shows different statistics: a count of
 untranslated messages, messages with new, unreviewed suggestions, and
@@ -108,8 +110,8 @@ Looking at the POTemplate overview page, we can see that there are
 15 untranslated, 1 unreviewed and 1 changed in LP Spanish translations
 (all numbers repeated as hidden 'sortkey' values).
 
-    >>> browser.open('http://translations.launchpad.dev/ubuntu/hoary/+source/'+
-    ...              'evolution/+pots/evolution-2.2')
+    >>> browser.open('http://translations.launchpad.dev/ubuntu/hoary/'+
+    ...              '+source/evolution/+pots/evolution-2.2')
     >>> spanish_line = find_tag_by_id(browser.contents, 'evolution-2.2_es')
     >>> print extract_text(spanish_line)
     Spanish
