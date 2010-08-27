@@ -55,10 +55,6 @@ class InvolvedMenu(NavigationMenu):
         'report_bug', 'ask_question', 'help_translate', 'submit_code',
         'register_blueprint']
 
-    # The various involvment menus continue to use the old boolean's b/c
-    # they are still applicable: you can only report bugs on LP if  
-    # official_malone is true. You can only answer questions on LP if LP
-    # is the support tracker. And so forth.
     @property
     def pillar(self):
         return self.context
