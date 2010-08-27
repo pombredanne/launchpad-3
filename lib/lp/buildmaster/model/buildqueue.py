@@ -45,8 +45,8 @@ from canonical.launchpad.webapp.interfaces import (
     MAIN_STORE,
     )
 from lp.app.errors import NotFoundError
+from lp.buildmaster.enums import BuildFarmJobType
 from lp.buildmaster.interfaces.buildfarmjob import (
-    BuildFarmJobType,
     IBuildFarmJob,
     )
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (

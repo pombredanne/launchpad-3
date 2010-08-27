@@ -22,9 +22,11 @@ from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     )
-from lp.buildmaster.enums import BuildStatus
-from lp.buildmaster.interfaces.buildfarmjob import (
+from lp.buildmaster.enums import (
+    BuildStatus,
     BuildFarmJobType,
+    )
+from lp.buildmaster.interfaces.buildfarmjob import (
     IBuildFarmJob,
     IBuildFarmJobSet,
     IBuildFarmJobSource,

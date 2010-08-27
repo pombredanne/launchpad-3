@@ -20,8 +20,10 @@ from canonical.testing.layers import (
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
     )
-from lp.buildmaster.enums import BuildStatus
-from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
+from lp.buildmaster.enums import (
+    BuildStatus,
+    BuildFarmJobType,
+    )
 from lp.buildmaster.interfaces.packagebuild import (
     IPackageBuild,
     IPackageBuildSet,
