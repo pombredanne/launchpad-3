@@ -1164,8 +1164,8 @@ team he is member of.
 
     >>> ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
 
-    >>> from lp.soyuz.interfaces.archive import (
-    ...     ArchivePurpose, IArchiveSet)
+    >>> from lp.soyuz.enums import ArchivePurpose
+    >>> from lp.soyuz.interfaces.archive import IArchiveSet
     >>> ubuntu_team_ppa = getUtility(IArchiveSet).new(
     ...     owner=ubuntu_team, distribution=None, purpose=ArchivePurpose.PPA,
     ...     description="Don't we have a distribution ?")

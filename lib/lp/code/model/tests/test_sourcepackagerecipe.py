@@ -57,9 +57,9 @@ from lp.services.job.interfaces.job import (
     IJob,
     JobStatus,
     )
+from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.archive import (
     ArchiveDisabled,
-    ArchivePurpose,
     CannotUploadToArchive,
     InvalidPocketForPPA,
     )

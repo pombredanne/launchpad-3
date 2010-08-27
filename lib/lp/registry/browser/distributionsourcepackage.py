@@ -45,6 +45,7 @@ from canonical.launchpad.webapp.menu import (
     NavigationMenu,
     )
 from canonical.launchpad.webapp.sorting import sorted_dotted_numbers
+from canonical.launchpad.webapp.tales import CustomizableFormatter
 from canonical.lazr.utils import smartquote
 from lp.answers.browser.questiontarget import (
     QuestionTargetFacetMixin,
@@ -72,8 +73,18 @@ from lp.soyuz.interfaces.distributionsourcepackagerelease import (
     )
 from lp.soyuz.interfaces.packagediff import IPackageDiffSet
 from lp.translations.browser.customlanguagecode import (
-    HasCustomLanguageCodesTraversalMixin,
-    )
+    HasCustomLanguageCodesTraversalMixin)
+
+
+class DistributionSourcePackageFormatterAPI(CustomizableFormatter):
+    """Adapt IDistributionSourcePackage objects to a formatted string."""
+
+    _link_permission = 'zope.Public'
+    _link_summary_template = '%(displayname)s'
+
+    def _link_summary_values(self):
+        displayname = self._context.displayname
+        return {'displayname': displayname}
 
 
 class DistributionSourcePackageBreadcrumb(Breadcrumb):
