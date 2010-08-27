@@ -126,6 +126,7 @@ __metaclass__ = type
 import os
 import re
 import sys
+from textwrap import dedent
 
 sys.path[0:0] = [os.path.dirname(__file__)]
 from python_standard_libs import python_standard_libs
@@ -363,9 +364,19 @@ def process_tree(dpath):
 
 
 if __name__ == "__main__":
+    if len(sys.argv) == 1 or sys.argv[1] in ("-h", "-?", "--help"):
+        sys.stderr.write(dedent("""\
+        usage: format-imports <file or directory> ...
+        
+        Type "format-imports --docstring | less" to see the documentation.
+        """))
+        sys.exit(1)
+    if sys.argv[1] == "--docstring":
+        sys.stdout.write(__doc__)
+        sys.exit(2)
     for filename in sys.argv[1:]:
         if os.path.isdir(filename):
             process_tree(filename)
         else:
             process_file(filename)
-
+    sys.exit(0)
