@@ -94,16 +94,14 @@ class DistroSeriesDifference(Storm):
         if for_parent:
             distro_series = self.derived_series.parent_series
 
-        pubs = distro_series.getPublishedReleases(
+        pubs = distro_series.getPublishedSources(
             self.source_package_name, include_pending=True)
 
-        # XXX change to is_empty once getPublishedReleases branch hits
-        # db-devel.
-        if len(pubs) == 0:
-            return None
-
         # The most recent published source is the first one.
-        return pubs[0]
+        if pubs:
+            return pubs[0]
+        else:
+            return None
 
     def _getVersions(self):
         """Helper method returning versions string."""
