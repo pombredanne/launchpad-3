@@ -130,9 +130,6 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         dsd_comment = ds_diff.addComment(person, "Wait until version 2.1")
 
         self.assertEqual(ds_diff, dsd_comment.distro_series_difference)
-        self.assertEqual(ds_diff.title, dsd_comment.message.subject)
-        self.assertEqual(
-            "Wait until version 2.1", dsd_comment.message.text_contents)
 
 
 def test_suite():

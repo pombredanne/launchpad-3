@@ -32,7 +32,7 @@ class DistroSeriesDifferenceCommentTestCase(TestCaseWithFactory):
         dsd_comment = self.factory.makeDistroSeriesDifferenceComment(
             comment="Wait until version 2.3")
 
-        self.assertIs("Wait until version 2.3", dsd_comment.comment)
+        self.assertEqual("Wait until version 2.3", dsd_comment.comment)
 
     def test_subject(self):
         # The subject of the message is set from the distro series diff

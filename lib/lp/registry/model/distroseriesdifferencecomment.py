@@ -9,6 +9,7 @@ __all__ = [
     'DistroSeriesDifferenceComment',
     ]
 
+from email.Utils import make_msgid
 
 from storm.locals import (
     Int,
@@ -20,6 +21,7 @@ from zope.interface import (
     implements,
     )
 
+from canonical.launchpad.database.message import Message, MessageChunk
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from lp.registry.interfaces.distroseriesdifferencecomment import (
     IDistroSeriesDifferenceComment,
@@ -43,11 +45,14 @@ class DistroSeriesDifferenceComment(Storm):
     message_id = Int(name="message", allow_none=False)
     message = Reference(message_id, 'Message.id')
 
+    @property
+    def comment(self):
+        """See `IDistroSeriesDifferenceComment`."""
+        return self.message.text_contents
+
     @staticmethod
     def new(distro_series_difference, owner, comment):
-        """See `IDistroSeriesDifferenceComment`."""
-        from canonical.launchpad.database.message import Message, MessageChunk
-        from email.Utils import make_msgid
+        """See `IDistroSeriesDifferenceCommentSource`."""
         msgid = make_msgid('distroseriesdifference')
         message = Message(
             parent=None, owner=owner, rfc822msgid=msgid,
