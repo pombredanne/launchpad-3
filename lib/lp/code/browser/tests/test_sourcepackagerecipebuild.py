@@ -15,12 +15,20 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.testing.pages import (
-    extract_text, find_main_content, find_tags_by_class)
+    extract_text,
+    find_main_content,
+    find_tags_by_class,
+    )
 from canonical.launchpad.webapp import canonical_url
 from canonical.testing import DatabaseFunctionalLayer
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.soyuz.model.processor import ProcessorFamily
-from lp.testing import ANONYMOUS, BrowserTestCase, login, logout
+from lp.testing import (
+    ANONYMOUS,
+    BrowserTestCase,
+    login,
+    logout,
+    )
 
 
 class TestSourcePackageRecipeBuild(BrowserTestCase):

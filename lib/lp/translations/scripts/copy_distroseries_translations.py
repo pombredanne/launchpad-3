@@ -10,6 +10,8 @@ __all__ = ['copy_distroseries_translations']
 from zope.component import getUtility
 
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
+
+
 class SeriesTranslationFlagsModified(Warning):
     """`DistroSeries`' translation flags were modified while we were working.
 

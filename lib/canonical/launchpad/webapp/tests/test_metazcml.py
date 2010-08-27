@@ -5,7 +5,6 @@ __metaclass__ = type
 
 from zope.configuration import xmlconfig
 
-
 from lp.testing import TestCase
 from lp.testing.fakemethod import FakeMethod
 

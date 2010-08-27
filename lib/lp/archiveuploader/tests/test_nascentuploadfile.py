@@ -5,13 +5,16 @@
 
 __metaclass__ = type
 
-from debian.deb822 import Changes, Dsc
 import hashlib
 import os
 
+from debian.deb822 import (
+    Changes,
+    Dsc,
+    )
+
 from canonical.launchpad.scripts.logger import BufferLogger
 from canonical.testing import LaunchpadZopelessLayer
-
 from lp.archiveuploader.changesfile import ChangesFile
 from lp.archiveuploader.dscfile import DSCFile
 from lp.archiveuploader.nascentuploadfile import (
@@ -19,7 +22,7 @@ from lp.archiveuploader.nascentuploadfile import (
     DebBinaryUploadFile,
     )
 from lp.archiveuploader.tests import AbsolutelyAnythingGoesUploadPolicy
-from lp.soyuz.interfaces.queue import PackageUploadCustomFormat
+from lp.soyuz.enums import PackageUploadCustomFormat
 from lp.testing import TestCaseWithFactory
 
 
@@ -166,8 +169,7 @@ class DSCFileTests(PackageUploadFileTestCase):
         uploadfile = self.createDSCFile(
             "foo.dsc", dsc, "main/net", "extra", "dulwich", "0.42",
             self.createChangesFile("foo.changes", changes))
-        (uploadfile.changelog_path, changelog_digest, changelog_size) = (
-            self.writeUploadFile("changelog", "DUMMY"))
+        uploadfile.changelog = "DUMMY"
         uploadfile.files = []
         release = uploadfile.storeInDatabase(None)
         self.assertEquals("0.42", release.version)
@@ -196,8 +198,7 @@ class DSCFileTests(PackageUploadFileTestCase):
         uploadfile = self.createDSCFile(
             "foo.dsc", dsc, "main/net", "extra", "dulwich", "0.42",
             self.createChangesFile("foo.changes", changes))
-        (uploadfile.changelog_path, changelog_digest, changelog_size) = (
-            self.writeUploadFile("changelog", "DUMMY"))
+        uploadfile.changelog = "DUMMY"
         uploadfile.files = []
         release = uploadfile.storeInDatabase(None)
         # DSCFile lowercases the field names

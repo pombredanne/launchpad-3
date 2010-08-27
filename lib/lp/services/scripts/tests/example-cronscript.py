@@ -9,7 +9,10 @@ __all__ = []
 import sys
 
 from lp.services.scripts.base import (
-    LaunchpadCronScript, SilentLaunchpadScriptFailure)
+    LaunchpadCronScript,
+    SilentLaunchpadScriptFailure,
+    )
+
 
 class Script(LaunchpadCronScript):
     def main(self):

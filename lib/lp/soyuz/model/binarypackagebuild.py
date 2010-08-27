@@ -6,63 +6,96 @@
 __metaclass__ = type
 __all__ = ['BinaryPackageBuild', 'BinaryPackageBuildSet']
 
-import apt_pkg
 import datetime
 import logging
 import operator
 
-from storm.locals import Int, Reference
-from storm.store import EmptyResultSet
-
-from zope.interface import implements
-from zope.component import getUtility
-from zope.security.proxy import ProxyFactory, removeSecurityProxy
-from storm.expr import (
-    Desc, In, Join, LeftJoin)
-from storm.store import Store
+import apt_pkg
 from sqlobject import SQLObjectNotFound
+from storm.expr import (
+    Desc,
+    In,
+    Join,
+    LeftJoin,
+    )
+from storm.locals import (
+    Int,
+    Reference,
+    )
+from storm.store import (
+    EmptyResultSet,
+    Store,
+    )
+from zope.component import getUtility
+from zope.interface import implements
+from zope.security.proxy import (
+    ProxyFactory,
+    removeSecurityProxy,
+    )
 
 from canonical.config import config
-from canonical.database.sqlbase import quote_like, SQLBase, sqlvalues
-from canonical.launchpad.browser.librarian import (
-    ProxiedLibraryFileAlias)
+from canonical.database.sqlbase import (
+    quote_like,
+    SQLBase,
+    sqlvalues,
+    )
+from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
 from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet)
+    DecoratedResultSet,
+    )
 from canonical.launchpad.database.librarian import (
-    LibraryFileAlias, LibraryFileContent)
+    LibraryFileAlias,
+    LibraryFileContent,
+    )
 from canonical.launchpad.helpers import (
-     get_contact_email_addresses, get_email_template)
+    get_contact_email_addresses,
+    get_email_template,
+    )
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.interfaces.lpstorm import IMasterObject, ISlaveStore
+from canonical.launchpad.interfaces.lpstorm import (
+    IMasterObject,
+    ISlaveStore,
+    )
 from canonical.launchpad.mail import (
-    simple_sendmail, format_address)
+    format_address,
+    simple_sendmail,
+    )
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 from canonical.launchpad.webapp.tales import DurationFormatterAPI
 from lp.app.errors import NotFoundError
 from lp.archivepublisher.utils import get_ppa_reference
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
-from lp.buildmaster.interfaces.packagebuild import (
-    IPackageBuildSource)
+from lp.buildmaster.interfaces.packagebuild import IPackageBuildSource
+from lp.buildmaster.model.builder import Builder
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.buildmaster.model.packagebuild import (
-    PackageBuild, PackageBuildDerived)
+    PackageBuild,
+    PackageBuildDerived,
+    )
 from lp.services.job.model.job import Job
-from lp.soyuz.interfaces.archive import ArchivePurpose
+from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.binarypackagebuild import (
-    BuildSetStatus, CannotBeRescored, IBinaryPackageBuild,
-    IBinaryPackageBuildSet)
+    BuildSetStatus,
+    CannotBeRescored,
+    IBinaryPackageBuild,
+    IBinaryPackageBuildSet,
+    )
 from lp.soyuz.interfaces.publishing import active_publishing_status
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
-from lp.buildmaster.model.builder import Builder
 from lp.soyuz.model.buildpackagejob import BuildPackageJob
 from lp.soyuz.model.files import BinaryPackageFile
 from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 from lp.soyuz.model.queue import (
-    PackageUpload, PackageUploadBuild)
+    PackageUpload,
+    PackageUploadBuild,
+    )
 
 
 def get_binary_build_for_build_farm_job(build_farm_job):
@@ -324,7 +357,7 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
         self.buildqueue_record.manualScore(score)
 
     def makeJob(self):
-        """See `IBuildBase`."""
+        """See `IBuildFarmJob`."""
         store = Store.of(self)
         job = Job()
         store.add(job)
@@ -468,7 +501,7 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
             user_defined_fields=user_defined_fields)
 
     def estimateDuration(self):
-        """See `IBuildBase`."""
+        """See `IPackageBuild`."""
         # Always include the primary archive when looking for
         # past build times (just in case that none can be found
         # in a PPA or copy archive).
@@ -528,7 +561,7 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
         return self.binarypackages.count() > 0
 
     def notify(self, extra_info=None):
-        """See `IBuildBase`.
+        """See `IPackageBuild`.
 
         If config.buildmaster.build_notification is disable, simply
         return.

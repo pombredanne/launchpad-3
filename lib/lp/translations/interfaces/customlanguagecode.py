@@ -12,11 +12,17 @@ __all__ = [
     ]
 
 from zope.interface import Interface
-from zope.schema import Bool, Choice, Int, Object, Set, TextLine
+from zope.schema import (
+    Bool,
+    Choice,
+    Int,
+    Object,
+    Set,
+    TextLine,
+    )
 from zope.schema.interfaces import IObject
 
 from canonical.launchpad import _
-
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.sourcepackagename import ISourcePackageName

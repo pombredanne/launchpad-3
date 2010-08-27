@@ -5,12 +5,16 @@
 
 # arch-tag: 52e0c871-49a3-4186-beb8-9817d02d5465
 
-import apt_pkg
 import unittest
-from lp.archiveuploader.tests import datadir
+
+import apt_pkg
 
 from lp.archiveuploader.tagfiles import (
-    parse_tagfile, TagFile, TagFileParseError)
+    parse_tagfile,
+    TagFile,
+    TagFileParseError,
+    )
+from lp.archiveuploader.tests import datadir
 
 
 class Testtagfiles(unittest.TestCase):

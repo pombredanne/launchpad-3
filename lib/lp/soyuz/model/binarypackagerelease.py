@@ -11,24 +11,42 @@ __all__ = [
     ]
 
 
+import simplejson
+from sqlobject import (
+    BoolCol,
+    ForeignKey,
+    IntCol,
+    SQLMultipleJoin,
+    StringCol,
+    )
+from storm.locals import (
+    Date,
+    Int,
+    Reference,
+    Storm,
+    )
 from zope.interface import implements
 
-import simplejson
-
-from sqlobject import StringCol, ForeignKey, IntCol, SQLMultipleJoin, BoolCol
-from storm.locals import Date, Int, Reference, Storm
-
-from canonical.database.sqlbase import SQLBase, quote, sqlvalues, quote_like
-
-from lp.soyuz.interfaces.binarypackagerelease import (
-    BinaryPackageFileType, BinaryPackageFormat, IBinaryPackageRelease,
-    IBinaryPackageReleaseDownloadCount, IBinaryPackageReleaseSet)
-from lp.soyuz.interfaces.publishing import (
-    PackagePublishingPriority, PackagePublishingStatus)
-from canonical.database.enumcol import EnumCol
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
-
+from canonical.database.enumcol import EnumCol
+from canonical.database.sqlbase import (
+    quote,
+    quote_like,
+    SQLBase,
+    sqlvalues,
+    )
+from lp.soyuz.enums import (
+    BinaryPackageFileType,
+    BinaryPackageFormat,
+    PackagePublishingPriority,
+    PackagePublishingStatus,
+    )
+from lp.soyuz.interfaces.binarypackagerelease import (
+    IBinaryPackageRelease,
+    IBinaryPackageReleaseDownloadCount,
+    IBinaryPackageReleaseSet,
+    )
 from lp.soyuz.model.files import BinaryPackageFile
 
 

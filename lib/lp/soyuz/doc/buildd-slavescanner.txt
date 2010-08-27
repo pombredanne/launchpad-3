@@ -745,7 +745,7 @@ need to tweak the status of the current publication directly, as a
 permissive database user.
 
     >>> from canonical.config import config
-    >>> from canonical.launchpad.interfaces import PackagePublishingStatus
+    >>> from lp.soyuz.enums import PackagePublishingStatus
     >>> from canonical.testing.layers import LaunchpadZopelessLayer
 
     >>> spr = build.source_package_release

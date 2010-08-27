@@ -10,19 +10,26 @@ import shutil
 import subprocess
 import sys
 import tempfile
-from unittest import TestCase, TestLoader
+from unittest import (
+    TestCase,
+    TestLoader,
+    )
 
 from zope.component import getUtility
 
 from canonical.config import config
 from canonical.launchpad.scripts import BufferLogger
 from canonical.librarian.ftests.harness import (
-    fillLibrarianFile, cleanupLibrarianFiles)
+    cleanupLibrarianFiles,
+    fillLibrarianFile,
+    )
 from canonical.testing import LaunchpadZopelessLayer
 from lp.archiveuploader.tagfiles import parse_tagfile
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.soyuz.scripts.ftpmaster import (
-    SyncSource, SyncSourceError)
+    SyncSource,
+    SyncSourceError,
+    )
 
 
 class TestSyncSource(TestCase):

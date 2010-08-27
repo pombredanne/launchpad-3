@@ -30,26 +30,33 @@ import time
 
 from zope.component import getUtility
 
-from lp.archiveuploader.utils import (
-    prefix_multi_line_string, re_taint_free, re_isadeb, re_issource,
-    re_no_epoch, re_no_revision, re_valid_version, re_valid_pkg_name,
-    re_extract_src_version, determine_source_file_type)
 from canonical.encoding import guess as guess_encoding
-from lp.buildmaster.interfaces.buildbase import BuildStatus
-from lp.soyuz.interfaces.binarypackagename import (
-    IBinaryPackageNameSet)
-from lp.soyuz.interfaces.binarypackagerelease import (
-    BinaryPackageFormat)
-from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
-from lp.soyuz.interfaces.component import IComponentSet
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from lp.soyuz.interfaces.queue import (
-    PackageUploadCustomFormat, PackageUploadStatus)
-from lp.soyuz.interfaces.publishing import (
-    PackagePublishingPriority)
+from canonical.librarian.utils import filechunks
+from lp.archiveuploader.utils import (
+    determine_source_file_type,
+    prefix_multi_line_string,
+    re_extract_src_version,
+    re_isadeb,
+    re_issource,
+    re_no_epoch,
+    re_no_revision,
+    re_taint_free,
+    re_valid_pkg_name,
+    re_valid_version,
+    )
+from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.soyuz.enums import (
+    BinaryPackageFormat,
+    PackagePublishingPriority,
+    PackageUploadCustomFormat,
+    PackageUploadStatus,
+    )
+from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
+from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
+from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.section import ISectionSet
 from lp.soyuz.model.files import SourceFileMixin
-from canonical.librarian.utils import filechunks
 
 
 apt_pkg.InitSystem()
@@ -764,7 +771,7 @@ class BaseBinaryUploadFile(PackageUploadFile):
         in DB yet (see verifySourcepackagerelease).
         """
         distroseries = self.policy.distroseries
-        spphs = distroseries.getPublishedReleases(
+        spphs = distroseries.getPublishedSources(
             self.source_name, version=self.source_version,
             include_pending=True, archive=self.policy.archive)
 
@@ -772,7 +779,7 @@ class BaseBinaryUploadFile(PackageUploadFile):
         if spphs:
             # We know there's only going to be one release because
             # version is unique.
-            assert len(spphs) == 1, "Duplicated ancestry"
+            assert spphs.count() == 1, "Duplicated ancestry"
             sourcepackagerelease = spphs[0].sourcepackagerelease
         else:
             # XXX cprov 2006-08-09 bug=55774: Building from ACCEPTED is

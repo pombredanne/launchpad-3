@@ -1,12 +1,20 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+"""Utility classes for parsing Debian tag files."""
+
+__all__ = [
+    'TagFile',
+    'TagStanza',
+    'TagFileParseError',
+    'parse_tagfile',
+    'parse_tagfile_lines'
+    ]
+
+
 import apt_pkg
 import re
 
-__all__ = [
-    'TagFile', 'TagStanza', 'TagFileParseError',
-    'parse_tagfile', 'parse_tagfile_lines']
 
 class TagFile(object):
     """Provide an iterable interface to the apt_pkg.TagFile object"""

@@ -7,11 +7,15 @@
 
 from testtools import TestCase
 
-from lp.registry.interfaces.sourcepackage import SourcePackageFileType
-from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFileType
 from lp.archiveuploader.tests import datadir
-from lp.archiveuploader.utils import (determine_binary_file_type,
-    determine_source_file_type, re_isadeb, re_issource)
+from lp.archiveuploader.utils import (
+    determine_binary_file_type,
+    determine_source_file_type,
+    re_isadeb,
+    re_issource,
+    )
+from lp.registry.interfaces.sourcepackage import SourcePackageFileType
+from lp.soyuz.enums import BinaryPackageFileType
 
 
 class TestUtilities(TestCase):

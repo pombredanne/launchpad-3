@@ -1031,7 +1031,7 @@ report described by the bugwatch.
   last_error_type: None
   owner_link: u'http://.../~mark'
   remote_bug: u'2000'
-  remote_importance: None
+  remote_importance: u''
   remote_status: u''
   resource_type_link: u'http://.../#bug_watch'
   self_link: u'http://.../bugs/1/+watch/2'

@@ -9,30 +9,46 @@ from __future__ import with_statement
 __metaclass__ = type
 
 
-from datetime import datetime, timedelta
+from datetime import (
+    datetime,
+    timedelta,
+    )
 from textwrap import dedent
 
-import transaction
 from mechanize import LinkNotFoundError
 from pytz import utc
+import transaction
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.testing.pages import (
-    extract_text, find_main_content, find_tags_by_class)
+    extract_text,
+    find_main_content,
+    find_tags_by_class,
+    )
+from canonical.launchpad.webapp import canonical_url
 from canonical.testing import (
-    DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.code.browser.sourcepackagerecipe import (
-    SourcePackageRecipeView, SourcePackageRecipeRequestBuildsView)
+    SourcePackageRecipeRequestBuildsView,
+    SourcePackageRecipeView,
+    )
 from lp.code.browser.sourcepackagerecipebuild import (
-    SourcePackageRecipeBuildView)
+    SourcePackageRecipeBuildView,
+    )
 from lp.code.interfaces.sourcepackagerecipe import MINIMAL_RECIPE_TEXT
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.model.processor import ProcessorFamily
 from lp.testing import (
-    ANONYMOUS, BrowserTestCase, login, logout, person_logged_in)
+    ANONYMOUS,
+    BrowserTestCase,
+    login,
+    logout,
+    person_logged_in,
+    )
 from lp.testing.factory import remove_security_proxy_and_shout_at_engineer
 
 

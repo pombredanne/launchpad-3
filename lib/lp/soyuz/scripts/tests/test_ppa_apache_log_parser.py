@@ -7,15 +7,22 @@ import subprocess
 from zope.component import getUtility
 
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.soyuz.model.binarypackagerelease import (
-    BinaryPackageReleaseDownloadCount)
+    BinaryPackageReleaseDownloadCount,
+    )
 from lp.soyuz.scripts.ppa_apache_log_parser import get_ppa_file_key
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
-from lp.testing import TestCase, TestCaseWithFactory
+from lp.testing import (
+    TestCase,
+    TestCaseWithFactory,
+    )
 
 
 class TestPathParsing(TestCase):

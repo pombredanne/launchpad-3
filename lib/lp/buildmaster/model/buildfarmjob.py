@@ -13,30 +13,55 @@ __all__ = [
 import hashlib
 
 from lazr.delegates import delegates
-
 import pytz
-
-from storm.expr import Coalesce, Desc, LeftJoin, Or
-from storm.locals import Bool, DateTime, Int, Reference, Storm
+from storm.expr import (
+    Coalesce,
+    Desc,
+    LeftJoin,
+    Or,
+    )
+from storm.locals import (
+    Bool,
+    DateTime,
+    Int,
+    Reference,
+    Storm,
+    )
 from storm.store import Store
-
-from zope.component import ComponentLookupError, getAdapter, getUtility
-from zope.interface import classProvides, implements
+from zope.component import (
+    ComponentLookupError,
+    getAdapter,
+    getUtility,
+    )
+from zope.interface import (
+    classProvides,
+    implements,
+    )
 from zope.proxy import isProxy
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.enumcol import DBEnum
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.interfaces.lpstorm import IMasterStore, IStore
+from canonical.launchpad.interfaces.lpstorm import (
+    IMasterStore,
+    IStore,
+    )
 from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE)
-
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.interfaces.buildfarmjob import (
-    BuildFarmJobType, IBuildFarmJob, IBuildFarmJobOld,
-    IBuildFarmJobSet, IBuildFarmJobSource,
-    InconsistentBuildFarmJobError, ISpecificBuildFarmJob)
+    BuildFarmJobType,
+    IBuildFarmJob,
+    IBuildFarmJobOld,
+    IBuildFarmJobSet,
+    IBuildFarmJobSource,
+    InconsistentBuildFarmJobError,
+    ISpecificBuildFarmJob,
+    )
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.registry.model.teammembership import TeamParticipation
 
@@ -209,6 +234,8 @@ class BuildFarmJob(BuildFarmJobOld, Storm):
     job_type = DBEnum(
         name='job_type', allow_none=False, enum=BuildFarmJobType)
 
+    failure_count = Int(name='failure_count', allow_none=False)
+
     def __init__(self, job_type, status=BuildStatus.NEEDSBUILD,
                  processor=None, virtualized=None, date_created=None):
         super(BuildFarmJob, self).__init__()
@@ -341,6 +368,10 @@ class BuildFarmJob(BuildFarmJobOld, Storm):
             "Unproxied result returned from ISpecificBuildFarmJob adapter.")
 
         return build_without_outer_proxy
+
+    def gotFailure(self):
+        """See `IBuildFarmJob`."""
+        self.failure_count += 1
 
 
 class BuildFarmJobDerived:

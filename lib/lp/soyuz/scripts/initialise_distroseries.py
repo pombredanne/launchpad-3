@@ -11,16 +11,26 @@ __all__ = [
     ]
 
 from zope.component import getUtility
+
 from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
-
+    IStoreSelector,
+    MAIN_STORE,
+    MASTER_FLAVOR,
+    )
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.adapters.packagelocation import PackageLocation
-from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
-from lp.soyuz.interfaces.queue import PackageUploadStatus
+from lp.soyuz.enums import (
+    ArchivePurpose,
+    PackageUploadStatus,
+    )
+from lp.soyuz.interfaces.archive import (
+    IArchiveSet,
+    )
+from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.soyuz.model.packagecloner import clone_packages
+from lp.soyuz.model.packageset import Packageset
 
 
 class InitialisationError(Exception):
@@ -54,9 +64,10 @@ class InitialiseDistroSeries:
       in the initialisation of a derivative.
     """
 
-    def __init__(self, distroseries):
+    def __init__(self, distroseries, arches=()):
         self.distroseries = distroseries
         self.parent = self.distroseries.parent_series
+        self.arches = arches
         self._store = getUtility(
             IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
 
@@ -121,13 +132,16 @@ class InitialiseDistroSeries:
         self._copy_packagesets()
 
     def _copy_architectures(self):
+        include = ''
+        if self.arches:
+            include = "AND architecturetag IN %s" % sqlvalues(self.arches)
         self._store.execute("""
             INSERT INTO DistroArchSeries
             (distroseries, processorfamily, architecturetag, owner, official)
             SELECT %s, processorfamily, architecturetag, %s, official
-            FROM DistroArchSeries WHERE distroseries = %s
-            """ % sqlvalues(self.distroseries, self.distroseries.owner,
-            self.parent))
+            FROM DistroArchSeries WHERE distroseries = %s %s
+            """ % (sqlvalues(self.distroseries, self.distroseries.owner,
+            self.parent) + (include,)))
 
         self.distroseries.nominatedarchindep = self.distroseries[
             self.parent.nominatedarchindep.architecturetag]
@@ -140,6 +154,8 @@ class InitialiseDistroSeries:
         # shall be copied.
         distroarchseries_list = []
         for arch in self.distroseries.architectures:
+            if self.arches and (arch.architecturetag not in self.arches):
+                continue
             parent_arch = self.parent[arch.architecturetag]
             distroarchseries_list.append((parent_arch, arch))
         # Now copy source and binary packages.
@@ -258,10 +274,28 @@ class InitialiseDistroSeries:
 
     def _copy_packagesets(self):
         """Copy packagesets from the parent distroseries."""
-        self._store.execute("""
-            INSERT INTO Packageset
-            (distroseries, owner, name, description, packagesetgroup)
-            SELECT %s, %s, name, description, packagesetgroup
-            FROM Packageset WHERE distroseries = %s
-            """ % sqlvalues(
-            self.distroseries, self.distroseries.owner, self.parent))
+        packagesets = self._store.find(Packageset, distroseries=self.parent)
+        parent_to_child = {}
+        # Create the packagesets, and any archivepermissions
+        for parent_ps in packagesets:
+            child_ps = getUtility(IPackagesetSet).new(
+                parent_ps.name, parent_ps.description,
+                self.distroseries.owner, distroseries=self.distroseries,
+                related_set=parent_ps)
+            self._store.execute("""
+                INSERT INTO Archivepermission
+                (person, permission, archive, packageset, explicit)
+                SELECT person, permission, %s, %s, explicit
+                FROM Archivepermission WHERE packageset = %s
+                """ % sqlvalues(
+                    self.distroseries.main_archive, child_ps.id,
+                    parent_ps.id))
+            parent_to_child[parent_ps] = child_ps
+        # Copy the relations between sets, and the contents
+        for old_series_ps, new_series_ps in parent_to_child.items():
+            old_series_sets = old_series_ps.setsIncluded(
+                direct_inclusion=True)
+            for old_series_child in old_series_sets:
+                new_series_ps.add(parent_to_child[old_series_child])
+            new_series_ps.add(old_series_ps.sourcesIncluded(
+                direct_inclusion=True))

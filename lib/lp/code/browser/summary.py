@@ -12,7 +12,6 @@ __all__ = [
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.webapp.publisher import LaunchpadView
-
 from lp.code.interfaces.branch import DEFAULT_BRANCH_STATUS_IN_LISTING
 from lp.code.interfaces.branchcollection import IBranchCollection
 from lp.code.interfaces.revisioncache import IRevisionCache

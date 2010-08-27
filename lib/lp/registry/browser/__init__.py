@@ -16,17 +16,21 @@ __all__ = [
 
 from operator import attrgetter
 
+from storm.store import Store
 from zope.component import getUtility
 
-from storm.store import Store
-
-from lp.bugs.interfaces.bugtask import BugTaskSearchParams, IBugTaskSet
-from lp.registry.interfaces.productseries import IProductSeries
-from lp.registry.interfaces.series import SeriesStatus
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.launchpadform import (
-    action, LaunchpadEditFormView)
+    action,
+    LaunchpadEditFormView,
+    )
 from canonical.launchpad.webapp.publisher import canonical_url
+from lp.bugs.interfaces.bugtask import (
+    BugTaskSearchParams,
+    IBugTaskSet,
+    )
+from lp.registry.interfaces.productseries import IProductSeries
+from lp.registry.interfaces.series import SeriesStatus
 
 
 class StatusCount:
@@ -76,7 +80,7 @@ class MilestoneOverlayMixin:
     @property
     def milestone_table_class(self):
         """The milestone table will be unseen if there are no milestones."""
-        if len(self.context.all_milestones) > 0:
+        if self.context.has_milestones:
             return 'listing'
         else:
             # The page can remove the 'unseen' class to make the table

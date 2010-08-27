@@ -22,10 +22,13 @@ import traceback
 
 from zope.component import getGlobalSiteManager
 
-from lp.archiveuploader.uploadpolicy import (
-    AbstractUploadPolicy, findPolicyByName, IArchiveUploadPolicy)
-from lp.soyuz.model.queue import PackageUploadSet
 from canonical.librarian.ftests.harness import fillLibrarianFile
+from lp.archiveuploader.uploadpolicy import (
+    AbstractUploadPolicy,
+    findPolicyByName,
+    IArchiveUploadPolicy,
+    )
+from lp.soyuz.model.queue import PackageUploadSet
 
 
 here = os.path.dirname(os.path.realpath(__file__))
@@ -118,6 +121,10 @@ class AnythingGoesUploadPolicy(AbstractUploadPolicy):
         AbstractUploadPolicy.__init__(self)
         # We require the changes to be signed but not the dsc
         self.unsigned_dsc_ok = True
+
+    def validateUploadType(self, upload):
+        """We accept uploads of any type."""
+        pass
 
     def policySpecificChecks(self, upload):
         """Nothing, let it go."""

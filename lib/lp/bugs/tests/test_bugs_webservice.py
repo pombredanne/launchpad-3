@@ -8,19 +8,21 @@ __metaclass__ = type
 import re
 
 from BeautifulSoup import BeautifulSoup
-from simplejson import dumps
-
-from zope.component import getMultiAdapter
 from lazr.lifecycle.interfaces import IDoNotSnapshot
+from simplejson import dumps
+from zope.component import getMultiAdapter
 
-from lp.bugs.browser.bugtask import get_comments_for_bugtask
-from lp.bugs.interfaces.bug import IBug
-from canonical.launchpad.ftests import login, logout
-from lp.testing import TestCaseWithFactory
+from canonical.launchpad.ftests import (
+    login,
+    logout,
+    )
 from canonical.launchpad.testing.pages import LaunchpadWebServiceCaller
 from canonical.launchpad.webapp import snapshot
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import DatabaseFunctionalLayer
+from lp.bugs.browser.bugtask import get_comments_for_bugtask
+from lp.bugs.interfaces.bug import IBug
+from lp.testing import TestCaseWithFactory
 
 
 class TestBugDescriptionRepresentation(TestCaseWithFactory):
