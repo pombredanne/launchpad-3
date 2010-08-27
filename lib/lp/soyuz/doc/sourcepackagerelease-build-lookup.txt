@@ -118,7 +118,7 @@ In order to be independent of the sampledata we will use the
 SoyuzTestPublisher helper to create fake but complete publication for
 this test.
 
-    >>> from canonical.launchpad.interfaces import (
+    >>> from lp.soyuz.enums import (
     ...    PackagePublishingStatus)
     >>> from lp.soyuz.tests.test_publishing import (
     ...     SoyuzTestPublisher)

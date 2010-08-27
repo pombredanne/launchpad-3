@@ -27,6 +27,7 @@ from zope.schema import (
     Bool,
     Choice,
     Field,
+    Int,
     Text,
     TextLine,
     )
@@ -158,9 +159,19 @@ class IBuilder(IHasOwner):
                 "new jobs. "),
         required=False)
 
+    failure_count = Int(
+        title=_('Failure Count'), required=False, default=0,
+        description=_("Number of consecutive failures for this builder."))
+
     current_build_behavior = Field(
         title=u"The current behavior of the builder for the current job.",
         required=False)
+
+    def gotFailure():
+        """Increment failure_count on the builder."""
+
+    def resetFailureCount():
+        """Set the failure_count back to zero."""
 
     def checkSlaveAlive():
         """Check that the buildd slave is alive.
@@ -288,6 +299,9 @@ class IBuilder(IHasOwner):
 
         :return: A BuildQueue, or None.
         """
+
+    def getCurrentBuildFarmJob():
+        """Return a `BuildFarmJob` for this builder."""
 
 
 class IBuilderSet(Interface):

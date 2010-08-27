@@ -201,26 +201,26 @@ from lp.services.mail.signedmessage import SignedMessage
 from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.soyuz.adapters.packagelocation import PackageLocation
-from lp.soyuz.interfaces.archive import (
+from lp.soyuz.enums import (
     ArchivePurpose,
+    BinaryPackageFileType,
+    BinaryPackageFormat,
+    PackagePublishingPriority,
+    PackagePublishingStatus,
+    PackageUploadStatus,
+    )
+from lp.soyuz.interfaces.archive import (
     default_name_by_purpose,
     IArchiveSet,
     )
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
-from lp.soyuz.interfaces.binarypackagerelease import (
-    BinaryPackageFileType,
-    BinaryPackageFormat,
-    )
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.interfaces.publishing import (
     IPublishingSet,
-    PackagePublishingPriority,
-    PackagePublishingStatus,
     )
-from lp.soyuz.interfaces.queue import PackageUploadStatus
 from lp.soyuz.interfaces.section import ISectionSet
 from lp.soyuz.model.files import (
     BinaryPackageFile,
@@ -438,7 +438,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         registry_team = getUtility(ILaunchpadCelebrities).registry_experts
         registry_team.addMember(user, registry_team.teamowner)
         return user
-
 
     def makeCopyArchiveLocation(self, distribution=None, owner=None,
         name=None, enabled=True):
@@ -1310,7 +1309,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
         return removeSecurityProxy(bug).addTask(owner, target)
 
-    def makeBugTracker(self, base_url=None, bugtrackertype=None):
+    def makeBugTracker(self, base_url=None, bugtrackertype=None, title=None,
+                       name=None):
         """Make a new bug tracker."""
         owner = self.makePerson()
 
@@ -1320,7 +1320,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             bugtrackertype = BugTrackerType.BUGZILLA
 
         return getUtility(IBugTrackerSet).ensureBugTracker(
-            base_url, owner, bugtrackertype)
+            base_url, owner, bugtrackertype, title=title, name=name)
 
     def makeBugWatch(self, remote_bug=None, bugtracker=None, bug=None,
                      owner=None, bug_task=None):
@@ -1495,7 +1495,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         mail.parsed_string = mail.as_string()
         return mail
 
-    def makeSpecification(self, product=None, title=None, distribution=None):
+    def makeSpecification(self, product=None, title=None, distribution=None,
+                          name=None, summary=None,
+                          status=SpecificationDefinitionStatus.NEW):
         """Create and return a new, arbitrary Blueprint.
 
         :param product: The product to make the blueprint on.  If one is
@@ -1503,14 +1505,18 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         """
         if distribution is None and product is None:
             product = self.makeProduct()
+        if name is None:
+            name = self.getUniqueString('name')
+        if summary is None:
+            summary = self.getUniqueString('summary')
         if title is None:
             title = self.getUniqueString('title')
         return getUtility(ISpecificationSet).new(
-            name=self.getUniqueString('name'),
+            name=name,
             title=title,
             specurl=None,
-            summary=self.getUniqueString('summary'),
-            definition_status=SpecificationDefinitionStatus.NEW,
+            summary=summary,
+            definition_status=status,
             owner=self.makePerson(),
             product=product,
             distribution=distribution)

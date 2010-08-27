@@ -47,7 +47,7 @@ from lp.registry.interfaces.sourcepackage import (
     SourcePackageFileType,
     SourcePackageUrgency,
     )
-from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFileType
+from lp.soyuz.enums import BinaryPackageFileType
 
 
 class CannotDetermineFileTypeError(Exception):

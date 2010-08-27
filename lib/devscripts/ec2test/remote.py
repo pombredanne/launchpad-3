@@ -40,10 +40,11 @@ from xml.sax.saxutils import escape
 
 import bzrlib.branch
 import bzrlib.config
-import bzrlib.email_message
 import bzrlib.errors
-import bzrlib.smtp_connection
 import bzrlib.workingtree
+
+from bzrlib.email_message import EmailMessage
+from bzrlib.smtp_connection import SMTPConnection
 
 import subunit
 
@@ -134,19 +135,24 @@ class EC2Runner:
     SHUTDOWN_DELAY = 60
 
     def __init__(self, daemonize, pid_filename, shutdown_when_done,
-                 emails=None):
+                 smtp_connection=None, emails=None):
         """Make an EC2Runner.
 
         :param daemonize: Whether or not we will daemonize.
         :param pid_filename: The filename to store the pid in.
         :param shutdown_when_done: Whether or not to shut down when the tests
             are done.
+        :param smtp_connection: The `SMTPConnection` to use to send email.
         :param emails: The email address(es) to send catastrophic failure
             messages to. If not provided, the error disappears into the ether.
         """
         self._should_daemonize = daemonize
         self._pid_filename = pid_filename
         self._shutdown_when_done = shutdown_when_done
+        if smtp_connection is None:
+            config = bzrlib.config.GlobalConfig()
+            smtp_connection = SMTPConnection(config)
+        self._smtp_connection = smtp_connection
         self._emails = emails
         self._daemonized = False
 
@@ -188,10 +194,12 @@ class EC2Runner:
             config = bzrlib.config.GlobalConfig()
             # Handle exceptions thrown by the test() or daemonize() methods.
             if self._emails:
-                bzrlib.email_message.EmailMessage.send(
-                    config, config.username(),
-                    self._emails, '%s FAILED' % (name,),
-                    traceback.format_exc())
+                msg = EmailMessage(
+                    from_address=config.username(),
+                    to_address=self._emails,
+                    subject='%s FAILED' % (name,),
+                    body=traceback.format_exc())
+                self._smtp_connection.send_email(msg)
             raise
         finally:
             # When everything is over, if we've been ask to shut down, then
@@ -212,8 +220,6 @@ class EC2Runner:
 
 class LaunchpadTester:
     """Runs Launchpad tests and gathers their results in a useful way."""
-
-    # XXX: JonathanLange 2010-08-17: LaunchpadTester needs tests.
 
     def __init__(self, logger, test_directory, test_options=()):
         """Construct a TestOnMergeRunner.
@@ -236,8 +242,24 @@ class LaunchpadTester:
 
         Subclasses must provide their own implementation of this method.
         """
-        command = ['make', 'check', 'TESTOPTS="%s"' % self._test_options]
+        command = ['make', 'check']
+        if self._test_options:
+            command.append('TESTOPTS="%s"' % self._test_options)
         return command
+
+    def _spawn_test_process(self):
+        """Actually run the tests.
+
+        :return: A `subprocess.Popen` object for the test run.
+        """
+        call = self.build_test_command()
+        self._logger.write_line("Running %s" % (call,))
+        # bufsize=0 means do not buffer any of the output. We want to
+        # display the test output as soon as it is generated.
+        return subprocess.Popen(
+            call, bufsize=0,
+            stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+            cwd=self._test_directory)
 
     def test(self):
         """Run the tests, log the results.
@@ -247,26 +269,13 @@ class LaunchpadTester:
         the user the test results.
         """
         self._logger.prepare()
-
-        call = self.build_test_command()
-
         try:
-            self._logger.write_line("Running %s" % (call,))
-            # XXX: JonathanLange 2010-08-18: bufsize=-1 implies "use the
-            # system buffering", when we actually want no buffering at all.
-            popen = subprocess.Popen(
-                call, bufsize=-1,
-                stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                cwd=self._test_directory)
-
+            popen = self._spawn_test_process()
             self._gather_test_output(popen.stdout, self._logger)
-
             exit_status = popen.wait()
         except:
             self._logger.error_in_testrunner(sys.exc_info())
-            exit_status = 1
-            raise
-        finally:
+        else:
             self._logger.got_result(not exit_status)
 
     def _gather_test_output(self, input_stream, logger):
@@ -277,13 +286,14 @@ class LaunchpadTester:
         for line in input_stream:
             subunit_server.lineReceived(line)
             logger.got_line(line)
+            summary_stream.flush()
 
 
 class Request:
     """A request to have a branch tested and maybe landed."""
 
     def __init__(self, branch_url, revno, local_branch_path, sourcecode_path,
-                 emails=None, pqm_message=None):
+                 emails=None, pqm_message=None, smtp_connection=None):
         """Construct a `Request`.
 
         :param branch_url: The public URL to the Launchpad branch we are
@@ -299,6 +309,7 @@ class Request:
             provided, no emails are sent.
         :param pqm_message: The message to submit to PQM. If not provided, we
             don't submit to PQM.
+        :param smtp_connection: The `SMTPConnection` to use to send email.
         """
         self._branch_url = branch_url
         self._revno = revno
@@ -308,18 +319,20 @@ class Request:
         self._pqm_message = pqm_message
         # Used for figuring out how to send emails.
         self._bzr_config = bzrlib.config.GlobalConfig()
+        if smtp_connection is None:
+            smtp_connection = SMTPConnection(self._bzr_config)
+        self._smtp_connection = smtp_connection
 
     def _send_email(self, message):
         """Actually send 'message'."""
-        conn = bzrlib.smtp_connection.SMTPConnection(self._bzr_config)
-        conn.send_email(message)
+        self._smtp_connection.send_email(message)
 
-    def get_trunk_details(self):
+    def get_target_details(self):
         """Return (branch_url, revno) for trunk."""
         branch = bzrlib.branch.Branch.open(self._local_branch_path)
         return branch.get_parent().encode('utf-8'), branch.revno()
 
-    def get_branch_details(self):
+    def get_source_details(self):
         """Return (branch_url, revno) for the branch we're merging in.
 
         If we're not merging in a branch, but instead just testing a trunk,
@@ -337,11 +350,17 @@ class Request:
 
     def get_nick(self):
         """Get the nick of the branch we are testing."""
-        details = self.get_branch_details()
+        details = self.get_source_details()
         if not details:
-            details = self.get_trunk_details()
+            details = self.get_target_details()
         url, revno = details
         return self._last_segment(url)
+
+    def get_revno(self):
+        """Get the revno of the branch we are testing."""
+        if self._revno is not None:
+            return self._revno
+        return bzrlib.branch.Branch.open(self._local_branch_path).revno()
 
     def get_merge_description(self):
         """Get a description of the merge request.
@@ -353,10 +372,10 @@ class Request:
         # XXX: JonathanLange 2010-08-17: Not actually used yet. I think it
         # would be a great thing to have in the subject of the emails we
         # receive.
-        source = self.get_branch_details()
+        source = self.get_source_details()
         if not source:
-            return self.get_nick()
-        target = self.get_trunk_details()
+            return '%s r%s' % (self.get_nick(), self.get_revno())
+        target = self.get_target_details()
         return '%s => %s' % (
             self._last_segment(source[0]), self._last_segment(target[0]))
 
@@ -391,7 +410,8 @@ class Request:
             status = 'SUCCESS'
         else:
             status = 'FAILURE'
-        subject = 'Test results: %s' % (status,)
+        subject = 'Test results: %s: %s' % (
+            self.get_merge_description(), status)
         message['Subject'] = subject
 
         # Make the body.
@@ -403,7 +423,8 @@ class Request:
         zipped_log = MIMEApplication(full_log_gz, 'x-gzip')
         zipped_log.add_header(
             'Content-Disposition', 'attachment',
-            filename='%s.log.gz' % self.get_nick())
+            filename='%s-r%s.subunit.gz' % (
+                self.get_nick(), self.get_revno()))
         message.attach(zipped_log)
         return message
 
@@ -498,6 +519,13 @@ class WebTestLogger:
         summary.write('\n\nERROR IN TESTRUNNER\n\n')
         traceback.print_exception(exc_type, exc_value, exc_tb, file=summary)
         summary.flush()
+        if self._request.wants_email:
+            self._write_to_filename(
+                self._summary_filename,
+                '\n(See the attached file for the complete log)\n')
+            summary = self.get_summary_contents()
+            full_log_gz = gzip_data(self.get_full_log_contents())
+            self._request.send_report_email(False, summary, full_log_gz)
 
     def get_index_contents(self):
         """Return the contents of the index.html page."""
@@ -609,14 +637,14 @@ class WebTestLogger:
             ''')
 
         # Describe the trunk branch.
-        trunk, trunk_revno = self._request.get_trunk_details()
+        trunk, trunk_revno = self._request.get_target_details()
         msg = '%s, revision %d\n' % (trunk, trunk_revno)
         add_to_html('''\
             <p><strong>%s</strong></p>
             ''' % (escape(msg),))
         log(msg)
 
-        branch_details = self._request.get_branch_details()
+        branch_details = self._request.get_source_details()
         if not branch_details:
             add_to_html('<p>(no merged branch)</p>\n')
             log('(no merged branch)')
@@ -793,16 +821,19 @@ def main(argv):
 
     pid_filename = os.path.join(LAUNCHPAD_DIR, 'ec2test-remote.pid')
 
+    smtp_connection = SMTPConnection(bzrlib.config.GlobalConfig())
+
     request = Request(
         options.public_branch, options.public_branch_revno, TEST_DIR,
-        SOURCECODE_DIR, options.email, pqm_message)
+        SOURCECODE_DIR, options.email, pqm_message, smtp_connection)
     # Only write to stdout if we are running as the foreground process.
     echo_to_stdout = not options.daemon
     logger = WebTestLogger.make_in_directory(
         '/var/www', request, echo_to_stdout)
 
     runner = EC2Runner(
-        options.daemon, pid_filename, options.shutdown, options.email)
+        options.daemon, pid_filename, options.shutdown,
+        smtp_connection, options.email)
 
     tester = LaunchpadTester(logger, TEST_DIR, test_options=args[1:])
     runner.run("Test runner", tester.test)

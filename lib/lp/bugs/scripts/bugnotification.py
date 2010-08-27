@@ -27,10 +27,6 @@ from canonical.launchpad.helpers import (
     get_email_template,
     )
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.mailnotification import (
-    generate_bug_add_email,
-    MailWrapper,
-    )
 from canonical.launchpad.scripts.logger import log
 from canonical.launchpad.webapp import canonical_url
 from lp.bugs.interfaces.bugmessage import IBugMessageSet
@@ -38,7 +34,9 @@ from lp.bugs.mail.bugnotificationbuilder import (
     BugNotificationBuilder,
     get_bugmail_from_address,
     )
+from lp.bugs.mail.newbug import generate_bug_add_email
 from lp.registry.interfaces.person import IPersonSet
+from lp.services.mail.mailwrapper import MailWrapper
 
 
 def construct_email_notifications(bug_notifications):

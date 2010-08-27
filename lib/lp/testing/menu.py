@@ -5,10 +5,7 @@
 
 __metaclass__ = type
 
-from zope.component import getMultiAdapter
-
 from canonical.launchpad.webapp.publisher import canonical_url
-from canonical.lazr.testing.menus import make_fake_request
 
 
 def check_menu_links(menu):
@@ -21,10 +18,10 @@ def check_menu_links(menu):
             view_name, _args = link.target.split('?')
         else:
             view_name = link.target
-        url = canonical_url(context, view_name=view_name)
-        request = make_fake_request(url)
+        if view_name == '':
+            view_name = None
         try:
-            view = getMultiAdapter((context, request), name=view_name)
+            canonical_url(context, view_name=view_name, rootsite=link.site)
         except:
-            return 'Bad link %s: %s' % (link.name, url)
+            return 'Bad link %s: %s' % (link.name, canonical_url(context))
     return True

@@ -478,7 +478,7 @@ queue entry in the database.
   >>> print ed_src_dup.queue_root.status.name
   REJECTED
 
-  >>> from canonical.launchpad.interfaces import PackageUploadStatus
+  >>> from lp.soyuz.enums import PackageUploadStatus
   >>> hoary.getQueueItems(
   ...     status=PackageUploadStatus.REJECTED, name="ed").count()
   1
@@ -499,9 +499,10 @@ XXX cprov 20070404: we are using a modified sync policy because we
 need unsigned changes and binaries uploads (same as security, but also
 accepts non-security uploads)
 
+  >>> from lp.archiveuploader.uploadpolicy import ArchiveUploadType
   >>> modified_sync_policy = getPolicy(
   ...     name='sync', distro='ubuntu', distroseries='hoary')
-  >>> modified_sync_policy.can_upload_binaries = True
+  >>> modified_sync_policy.accepted_type = ArchiveUploadType.BINARY_ONLY
 
   >>> ed_bin = NascentUpload.from_changesfile_path(
   ...      datadir('split-upload-test/ed_0.2-20_i386.changes'),
@@ -889,8 +890,8 @@ an ArchivePermission record to permit him to upload "bar" specifically.
 
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-    >>> from canonical.launchpad.interfaces import (
-    ...     ArchivePermissionType, ISourcePackageNameSet)
+    >>> from lp.soyuz.enums import ArchivePermissionType
+    >>> from canonical.launchpad.interfaces import ISourcePackageNameSet
     >>> bar_name = getUtility(ISourcePackageNameSet).getOrCreateByName("bar")
     >>> discard = ArchivePermission(
     ...     archive=ubuntu.main_archive, person=name16,
@@ -915,8 +916,8 @@ Now try the "bar" upload:
 
 Uploads to copy archives are not allowed.
 
-    >>> from lp.soyuz.interfaces.archive import (
-    ...     ArchivePurpose, IArchiveSet)
+    >>> from lp.soyuz.enums import ArchivePurpose
+    >>> from lp.soyuz.interfaces.archive import IArchiveSet
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
     >>> copy_archive = getUtility(IArchiveSet).new(
     ...     owner=cprov, purpose=ArchivePurpose.COPY,

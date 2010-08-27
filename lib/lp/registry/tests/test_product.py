@@ -60,6 +60,38 @@ class TestProduct(TestCaseWithFactory):
         product.active = False
         self.assertEqual(False, product.active)
 
+    def test_milestone_sorting_getMilestonesAndReleases(self):
+        product = self.factory.makeProduct()
+        series = self.factory.makeProductSeries(product=product)
+        milestone_0_1 = self.factory.makeMilestone(
+            product=product,
+            productseries=series,
+            name='0.1')
+        milestone_0_2 = self.factory.makeMilestone(
+            product=product,
+            productseries=series,
+            name='0.2')
+        release_1 = self.factory.makeProductRelease(
+            product=product,
+            milestone=milestone_0_1)
+        release_2 = self.factory.makeProductRelease(
+            product=product,
+            milestone=milestone_0_2)
+        release_file1 = self.factory.makeProductReleaseFile(
+            product=product,
+            release=release_1,
+            productseries=series,
+            milestone=milestone_0_1)
+        release_file2 = self.factory.makeProductReleaseFile(
+            product=product,
+            release=release_2,
+            productseries=series,
+            milestone=milestone_0_2)
+        expected = [(milestone_0_2, release_2), (milestone_0_1, release_1)]
+        self.assertEqual(
+            expected,
+            list(product.getMilestonesAndReleases()))
+
 
 class TestProductFiles(unittest.TestCase):
     """Tests for downloadable product files."""
