@@ -469,11 +469,17 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             email_status = EmailAddressStatus.NEW
         email = self.makeEmail(
             email, person=None, account=account, email_status=email_status)
-        identifier = OpenIdIdentifier()
-        identifier.account = account
-        identifier.identifier = self.getUniqueString('openid').decode('ASCII')
-        IMasterStore(OpenIdIdentifier).add(identifier)
+        self.makeOpenIdIdentifier(account)
         return account
+
+    def makeOpenIdIdentifier(self, account, identifier=None):
+        """Attach an OpenIdIdentifier to an Account."""
+        if identifier is None:
+            identifier = self.getUniqueString('openid').decode('ASCII')
+        openid_identifier = OpenIdIdentifier()
+        openid_identifier.account = account
+        openid_identifier.identifier = identifier
+        IMasterStore(OpenIdIdentifier).add(openid_identifier)
 
     def makeGPGKey(self, owner):
         """Give 'owner' a crappy GPG key for the purposes of testing."""
@@ -547,6 +553,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             person.validateAndEnsurePreferredEmail(email)
 
         removeSecurityProxy(email).status = email_address_status
+
+        self.makeOpenIdIdentifier(person.account)
 
         # Ensure updated ValidPersonCache
         flush_database_updates()
