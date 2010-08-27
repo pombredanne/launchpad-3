@@ -97,7 +97,7 @@ class HasMilestonesMixin:
 
     @property
     def has_milestones(self):
-        return self.all_milestones.any() is not None
+        return not self.all_milestones.is_empty()
 
     @property
     def all_milestones(self):
