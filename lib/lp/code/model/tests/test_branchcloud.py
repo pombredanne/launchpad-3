@@ -12,16 +12,20 @@ from datetime import (
 import unittest
 
 import pytz
+from storm.locals import Store
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.launchpad.testing.databasehelpers import (
     remove_all_sample_data_branches,
     )
-from canonical.launchpad.webapp.interfaces import MASTER_FLAVOR
 from canonical.testing.layers import DatabaseFunctionalLayer
+
 from lp.code.enums import BranchType
 from lp.code.interfaces.branch import IBranchCloud
+from lp.code.interfaces.revision import IRevisionSet
+from lp.code.model.revision import RevisionCache
 from lp.testing import (
     TestCaseWithFactory,
     time_counter,
@@ -39,11 +43,19 @@ class TestBranchCloud(TestCaseWithFactory):
 
     def getProductsWithInfo(self, num_products=None):
         """Get product cloud information."""
-        # We use the MASTER_FLAVOR so that data changes made in these tests
-        # are visible to the query in getProductsWithInfo. The default
-        # implementation uses the SLAVE_FLAVOR.
-        return self._branch_cloud.getProductsWithInfo(
-            num_products, store_flavor=MASTER_FLAVOR)
+        # We use the master store so that data changes made in these tests are
+        # visible to the query in getProductsWithInfo. The default
+        # implementation uses the slave store.
+        cloud_info = self._branch_cloud.getProductsWithInfo(
+            num_products, IMasterStore(RevisionCache))
+        # The last commit time is timezone unaware as the storm Max function
+        # doesn't take into account the type that it is aggregating, so whack
+        # the UTC tz on it here for easier comparing in the tests.
+        def add_utc(value):
+            return value.replace(tzinfo=pytz.UTC)
+        return [
+            (name, commits, authors, add_utc(last_commit))
+            for name, commits, authors, last_commit in cloud_info]
 
     def makeBranch(self, product=None, branch_type=None,
                    last_commit_date=None, private=False):
@@ -51,14 +63,11 @@ class TestBranchCloud(TestCaseWithFactory):
         revision_count = 5
         delta = timedelta(days=1)
         if last_commit_date is None:
-            date_generator = None
+            # By default we create revisions that are within the last 30 days.
+            date_generator = time_counter(
+                datetime.now(pytz.UTC) - timedelta(days=25), delta)
         else:
             start_date = last_commit_date - delta * (revision_count - 1)
-            # The output of getProductsWithInfo doesn't include timezone
-            # information -- not sure why. To make the tests a little clearer,
-            # this method expects last_commit_date to be a naive datetime that
-            # can be compared directly with the output of getProductsWithInfo.
-            start_date = start_date.replace(tzinfo=pytz.UTC)
             date_generator = time_counter(start_date, delta)
         branch = self.factory.makeProductBranch(
             product=product, branch_type=branch_type, private=private)
@@ -66,6 +75,7 @@ class TestBranchCloud(TestCaseWithFactory):
             self.factory.makeRevisionsForBranch(
                 removeSecurityProxy(branch), count=revision_count,
                 date_generator=date_generator)
+        getUtility(IRevisionSet).updateRevisionCacheForBranch(branch)
         return branch
 
     def test_empty_with_no_branches(self):
@@ -80,7 +90,7 @@ class TestBranchCloud(TestCaseWithFactory):
         #
         # Note that this is tested implicitly by test_empty_with_no_branches,
         # since there are such products in the sample data.
-        product = self.factory.makeProduct()
+        self.factory.makeProduct()
         products_with_info = self.getProductsWithInfo()
         self.assertEqual([], list(products_with_info))
 
@@ -88,42 +98,41 @@ class TestBranchCloud(TestCaseWithFactory):
         # getProductsWithInfo doesn't consider branches that lack revision
         # data, 'empty branches', to contribute to the count of branches on a
         # product.
-        branch = self.factory.makeProductBranch()
-        products_with_info = self.getProductsWithInfo()
-        self.assertEqual([], list(products_with_info))
-
-    def test_import_branches_not_counted(self):
-        # getProductsWithInfo doesn't consider imported branches to contribute
-        # to the count of branches on a product.
-        branch = self.makeBranch(branch_type=BranchType.IMPORTED)
-        products_with_info = self.getProductsWithInfo()
-        self.assertEqual([], list(products_with_info))
-
-    def test_remote_branches_not_counted(self):
-        # getProductsWithInfo doesn't consider remote branches to contribute
-        # to the count of branches on a product.
-        branch = self.makeBranch(branch_type=BranchType.REMOTE)
+        self.factory.makeProductBranch()
         products_with_info = self.getProductsWithInfo()
         self.assertEqual([], list(products_with_info))
 
     def test_private_branches_not_counted(self):
         # getProductsWithInfo doesn't count private branches.
-        branch = self.makeBranch(private=True)
+        self.makeBranch(private=True)
         products_with_info = self.getProductsWithInfo()
         self.assertEqual([], list(products_with_info))
 
-    def test_hosted_and_mirrored_counted(self):
-        # getProductsWithInfo includes products that have hosted or mirrored
-        # branches with revisions.
+    def test_revisions_counted(self):
+        # getProductsWithInfo includes products that public revisions.
+        last_commit_date = datetime.now(pytz.UTC) - timedelta(days=5)
         product = self.factory.makeProduct()
-        self.makeBranch(product=product, branch_type=BranchType.HOSTED)
-        last_commit_date = datetime(2007, 1, 5)
-        self.makeBranch(
-            product=product, branch_type=BranchType.MIRRORED,
-            last_commit_date=last_commit_date)
-        products_with_info = self.getProductsWithInfo()
+        self.makeBranch(product=product, last_commit_date=last_commit_date)
+        products_with_info = list(self.getProductsWithInfo())
         self.assertEqual(
-            [(product.name, 2, last_commit_date)], list(products_with_info))
+            [(product.name, 5, 1, last_commit_date)], products_with_info)
+
+    def test_only_recent_revisions_counted(self):
+        # If the revision cache has revisions for the project, but they are
+        # over 30 days old, we don't count them.
+        product = self.factory.makeProduct()
+        date_generator = time_counter(
+            datetime.now(pytz.UTC) - timedelta(days=33),
+            delta=timedelta(days=2))
+        store = Store.of(product)
+        for i in range(4):
+            revision = self.factory.makeRevision(
+                revision_date=date_generator.next())
+            cache = RevisionCache(revision)
+            cache.product = product
+            store.add(cache)
+        products_with_info = list(self.getProductsWithInfo())
+        self.assertEqual([(product.name, 2, 2, revision.revision_date)], products_with_info)
 
     def test_includes_products_with_branches_with_revisions(self):
         # getProductsWithInfo includes all products that have branches with
