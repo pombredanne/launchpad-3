@@ -440,7 +440,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         registry_team.addMember(user, registry_team.teamowner)
         return user
 
-
     def makeCopyArchiveLocation(self, distribution=None, owner=None,
         name=None, enabled=True):
         """Create and return a new arbitrary location for copy packages."""
