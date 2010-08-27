@@ -18,6 +18,7 @@ from zope.interface.verify import verifyObject
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.constants import UTC_NOW
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.testing import (
     LaunchpadZopelessLayer,
@@ -238,7 +239,7 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
         # Test the canonical_url of the POFile.
         pofile_url = (
             'http://translations.launchpad.dev/foo/devel/+pots/messages/'
-            '%s' % self.devel_pofile.language.code )
+            '%s' % self.devel_pofile.language.code)
         self.assertEqual(pofile_url, canonical_url(self.devel_pofile))
         view_name = '+details'
         view_url = "%s/%s" % (pofile_url, view_name)
@@ -918,15 +919,15 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
                             "Diverged translation")])
 
 
-class TestSharedPOFileCreation(TestCaseWithFactory):
-    """Test that POFiles are created in shared POTemplates."""
+class TestSharingPOFileCreation(TestCaseWithFactory):
+    """Test that POFiles are created in sharing POTemplates."""
 
     layer = ZopelessDatabaseLayer
 
     def setUp(self):
-        # Create a product with two series and a shared POTemplate
+        # Create a product with two series and a sharing POTemplate
         # in different series ('devel' and 'stable').
-        super(TestSharedPOFileCreation, self).setUp()
+        super(TestSharingPOFileCreation, self).setUp()
         self.foo = self.factory.makeProduct()
         self.foo_devel = self.factory.makeProductSeries(
             name='devel', product=self.foo)
@@ -934,10 +935,10 @@ class TestSharedPOFileCreation(TestCaseWithFactory):
             name='stable', product=self.foo)
         self.foo.official_rosetta = True
 
-    def test_pofile_creation_shared(self):
+    def test_pofile_creation_sharing(self):
         # When a pofile is created in a POTemplate it is also created in
-        # all shared templates.
-        # POTemplate is 'shared' if it has the same name ('messages').
+        # all sharing templates.
+        # Two POTemplates are sharing if they have the same name ('messages').
         devel_potemplate = self.factory.makePOTemplate(
             productseries=self.foo_devel, name="messages")
         stable_potemplate = self.factory.makePOTemplate(
@@ -950,9 +951,76 @@ class TestSharedPOFileCreation(TestCaseWithFactory):
         self.assertEqual(pofile_devel.language.code,
                          pofile_stable.language.code)
 
-    def test_pofile_creation_not_shared(self):
+    def test_pofile_creation_sharing_upstream(self):
+        # When a pofile is created in a POTemplate of an Ubuntu package
+        # it is also created in all shared templates in the upstream project.
+        # POTemplate is 'shared' if it has the same name ('messages').
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        distroseries = self.factory.makeDistroSeries(distribution=ubuntu)
+        ubuntu.translation_focus = distroseries
+        sourcepackage = self.factory.makeSourcePackage(
+            distroseries=distroseries)
+        sourcepackage.setPackaging(self.foo_devel, self.factory.makePerson())
+        sourcepackage.setPackaging(self.foo_stable, self.factory.makePerson())
+        package_potemplate = self.factory.makePOTemplate(
+            distroseries=distroseries,
+            sourcepackagename=sourcepackage.sourcepackagename,
+            name="messages")
+        devel_potemplate = self.factory.makePOTemplate(
+            productseries=self.foo_devel, name="messages")
+        stable_potemplate = self.factory.makePOTemplate(
+            productseries=self.foo_stable, name="messages")
+
+        self.assertEqual(None, devel_potemplate.getPOFileByLang('eo'))
+        self.assertEqual(None, stable_potemplate.getPOFileByLang('eo'))
+
+        package_pofile = package_potemplate.newPOFile('eo')
+
+        devel_pofile = devel_potemplate.getPOFileByLang('eo')
+        self.assertNotEqual(None, devel_pofile)
+        stable_pofile = stable_potemplate.getPOFileByLang('eo')
+        self.assertNotEqual(None, stable_pofile)
+
+    def test_pofile_creation_sharing_in_ubuntu(self):
+        # When a pofile is created in a POTemplate of a project it is also
+        # created in all sharing templates in the linked Ubuntu package.
+        # Two POTemplates are sharing if they have the same name ('messages').
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        distroseries1 = self.factory.makeDistroSeries(distribution=ubuntu)
+        distroseries2 = self.factory.makeDistroSeries(distribution=ubuntu)
+        packagename = self.factory.makeSourcePackageName()
+        self.factory.makeSourcePackage(packagename, distroseries1)
+        self.factory.makeSourcePackage(packagename, distroseries2)
+        self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagename=packagename, distroseries=distroseries1)
+        self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagename=packagename, distroseries=distroseries2)
+        owner = self.factory.makePerson()
+        self.foo_stable.setPackaging(distroseries1, packagename, owner)
+        self.foo_stable.setPackaging(distroseries2, packagename, owner)
+
+        stable_potemplate = self.factory.makePOTemplate(
+            productseries=self.foo_stable, name="messages")
+        distroseries1_potemplate = self.factory.makePOTemplate(
+            distroseries=distroseries1, sourcepackagename=packagename,
+            name="messages")
+        distroseries2_potemplate = self.factory.makePOTemplate(
+            distroseries=distroseries2, sourcepackagename=packagename,
+            name="messages")
+
+        self.assertEqual(None, distroseries1_potemplate.getPOFileByLang('eo'))
+        self.assertEqual(None, distroseries2_potemplate.getPOFileByLang('eo'))
+
+        stable_pofile = stable_potemplate.newPOFile('eo')
+
+        distroseries1_pofile = distroseries1_potemplate.getPOFileByLang('eo')
+        self.assertNotEqual(None, distroseries1_pofile)
+        distroseries2_pofile = distroseries2_potemplate.getPOFileByLang('eo')
+        self.assertNotEqual(None, distroseries2_pofile)
+
+    def test_pofile_creation_not_sharing(self):
         # When a pofile is created in a POTemplate it is not created in
-        # other templates that are not shared.
+        # other templates that are not sharing.
         potemplate_devel_1 = self.factory.makePOTemplate(
             productseries=self.foo_devel, name="template-1")
         potemplate_stable_2 = self.factory.makePOTemplate(
@@ -964,7 +1032,7 @@ class TestSharedPOFileCreation(TestCaseWithFactory):
 
     def test_potemplate_creation(self):
         # When a potemplate is created it receives a copy of all pofiles in
-        # all shared potemplates.
+        # all sharing potemplates.
         foo_other = self.factory.makeProductSeries(
             name='other', product=self.foo)
         self.factory.makePOTemplate(
@@ -1054,7 +1122,7 @@ class TestTranslationPOFilePOTMsgSetOrdering(TestCaseWithFactory):
     layer = ZopelessDatabaseLayer
 
     def setUp(self):
-        # Create a product with two series and a shared POTemplate
+        # Create a product with two series and a sharing POTemplate
         # in different series ('devel' and 'stable').
         super(TestTranslationPOFilePOTMsgSetOrdering, self).setUp()
         self.foo = self.factory.makeProduct()
@@ -1064,7 +1132,7 @@ class TestTranslationPOFilePOTMsgSetOrdering(TestCaseWithFactory):
             name='stable', product=self.foo)
         self.foo.official_rosetta = True
 
-        # POTemplate is 'shared' if it has the same name ('messages').
+        # Two POTemplates are sharing if they have the same name ('messages').
         self.devel_potemplate = self.factory.makePOTemplate(
             productseries=self.foo_devel, name="messages")
         self.stable_potemplate = self.factory.makePOTemplate(self.foo_stable,
