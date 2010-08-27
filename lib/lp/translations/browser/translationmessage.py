@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=W0404
@@ -25,7 +25,6 @@ import operator
 import re
 import urllib
 
-import gettextpo
 import pytz
 from z3c.ptcompat import ViewPageTemplateFile
 from zope import datetime as zope_datetime
@@ -300,16 +299,16 @@ class BaseTranslationView(LaunchpadView):
 
         if self.request.method == 'POST':
             if self.user is None:
-                raise UnexpectedFormData, (
-                    'Anonymous users or users who are not accepting our '
-                    'licensing terms cannot do POST submissions.')
+                raise UnexpectedFormData(
+                    "Anonymous users or users who are not accepting our "
+                    "licensing terms cannot do POST submissions.")
             translations_person = ITranslationsPerson(self.user)
             if (translations_person.translations_relicensing_agreement
                     is not None and
                 not translations_person.translations_relicensing_agreement):
-                raise UnexpectedFormData, (
-                    'Users who do not agree to licensing terms '
-                    'cannot do POST submissions.')
+                raise UnexpectedFormData(
+                    "Users who do not agree to licensing terms "
+                    "cannot do POST submissions.")
             try:
                 # Try to get the timestamp when the submitted form was
                 # created. We use it to detect whether someone else updated
@@ -320,9 +319,9 @@ class BaseTranslationView(LaunchpadView):
             except zope_datetime.DateTimeError:
                 # invalid format. Either we don't have the timestamp in the
                 # submitted form or it has the wrong format.
-                raise UnexpectedFormData, (
-                    'We didn\'t find the timestamp that tells us when was'
-                    ' generated the submitted form.')
+                raise UnexpectedFormData(
+                    "We didn't find the timestamp that tells us when was"
+                    " generated the submitted form.")
 
             # Check if this is really the form we are listening for..
             if self.request.form.get("submit_translations"):
@@ -436,13 +435,14 @@ class BaseTranslationView(LaunchpadView):
                 force_suggestion=force_suggestion,
                 force_diverged=force_diverge)
 
-            # If suggestions were forced and user has the rights to do it,
-            # reset the current translation.
             empty_suggestions = self._areSuggestionsEmpty(translations)
             if (force_suggestion and
                 self.user_is_official_translator and
                 empty_suggestions):
-                potmsgset.resetCurrentTranslation(
+                # The user requested that the message be reviewed,
+                # without suggesting a new translation.  Reset the
+                # current translation so that it can be reviewed again.
+                potmsgset.old_resetCurrentTranslation(
                     self.pofile, self.lock_timestamp)
 
         except TranslationConflict:
@@ -1481,7 +1481,6 @@ class CurrentTranslationMessageView(LaunchpadView):
         return "%s_dismissable_button" % self.html_id
 
 
-
 class CurrentTranslationMessageZoomedView(CurrentTranslationMessageView):
     """A view that displays a `TranslationMessage`, but zoomed in.
 
@@ -1514,7 +1513,6 @@ class CurrentTranslationMessageZoomedView(CurrentTranslationMessageView):
 #
 # Pseudo-content class
 #
-
 
 class TranslationMessageSuggestions:
     """See `ITranslationMessageSuggestions`."""
@@ -1562,6 +1560,7 @@ class TranslationMessageSuggestions:
 
 class Submission:
     """A submission generated from a TranslationMessage"""
+
 
 def convert_translationmessage_to_submission(
     message, current_message, plural_form, pofile, legal_warning_needed,

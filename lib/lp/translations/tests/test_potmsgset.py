@@ -31,6 +31,7 @@ from lp.translations.interfaces.potmsgset import (
     POTMsgSetInIncompatibleTemplatesError,
     TranslationCreditsType,
     )
+from lp.translations.interfaces.side import ITranslationSideTraitsSet
 from lp.translations.interfaces.translationfileformat import (
     TranslationFileFormat,
     )
@@ -943,6 +944,12 @@ class TestPOTMsgSetResetTranslation(TestCaseWithFactory):
             yield now
             now += timedelta(milliseconds=1)
 
+    def _getCurrentMessage(self):
+        traits = getUtility(ITranslationSideTraitsSet).getTraits(
+            self.potemplate.translation_side)
+        return traits.getCurrentMessage(
+            self.potmsgset, self.potemplate, self.pofile.language)
+
     def setUp(self):
         # Create a product with all the boilerplate objects to be able to
         # create TranslationMessage objects.
@@ -960,59 +967,117 @@ class TestPOTMsgSetResetTranslation(TestCaseWithFactory):
         self.pofile = self.factory.makePOFile('eo', template)
 
     def test_resetCurrentTranslation_shared(self):
-        # Resetting a shared current translation will change iscurrent=False
-        # and there will be no other current translations for this POTMsgSet.
+        # Resetting a shared current translation deactivates it, and
+        # leaves no other current translation in its place.
+        translation = self.factory.makeCurrentTranslationMessage(
+            pofile=self.pofile, potmsgset=self.potmsgset)
 
-        translation = self.factory.makeTranslationMessage(
-            self.pofile, self.potmsgset, translations=[u'Shared translation'],
-            reviewer=self.factory.makePerson(),
-            is_current_upstream=False, force_diverged=False,
-            date_updated=self.now())
+        self.potmsgset.resetCurrentTranslation(self.pofile)
 
-        self.potmsgset.resetCurrentTranslation(self.pofile, self.now())
-        current = self.potmsgset.getCurrentTranslationMessage(
-            self.potemplate, self.pofile.language)
+        current = self._getCurrentMessage()
         self.assertTrue(current is None)
         self.assertFalse(translation.is_current_ubuntu)
         self.assertFalse(translation.is_current_upstream)
-        self.assertTrue(translation.potemplate is None)
+        self.assertFalse(translation.is_diverged)
 
     def test_resetCurrentTranslation_diverged_not_imported(self):
-        # Resetting a diverged current translation that was not
-        # imported, will change is_current_ubuntu to False and will make
-        # it shared.
-        translation = self.factory.makeTranslationMessage(
-            self.pofile, self.potmsgset, translations=[u'Diverged text'],
-            reviewer=self.factory.makePerson(),
-            is_current_upstream=False, force_diverged=True,
-            date_updated=self.now())
+        # Resetting a diverged current translation disables it and makes
+        # it shared.  In other words, it becomes a suggestion.
+        translation = self.factory.makeCurrentTranslationMessage(
+            pofile=self.pofile, potmsgset=self.potmsgset)
 
-        self.potmsgset.resetCurrentTranslation(self.pofile, self.now())
-        current = self.potmsgset.getCurrentTranslationMessage(
-            self.potemplate, self.pofile.language)
+        self.potmsgset.resetCurrentTranslation(self.pofile)
+
+        current = self._getCurrentMessage()
         self.assertTrue(current is None)
         self.assertFalse(translation.is_current_ubuntu)
         self.assertFalse(translation.is_current_upstream)
-        self.assertTrue(translation.potemplate is None)
+        self.assertFalse(translation.is_diverged)
 
-    def test_resetCurrentTranslation_diverged_imported(self):
-        # Resetting a diverged current translation that was imported in
-        # Launchpad will change iscurrent to False but the translation
-        # message will be still diverged.
+    def test_resetCurrentTranslation_unmasks_shared(self):
+        # Resetting a diverged translation reverts the POTMsgSet to its
+        # current shared translation.
+        shared = self.factory.makeCurrentTranslationMessage(
+            pofile=self.pofile, potmsgset=self.potmsgset)
+        diverged = self.factory.makeDivergedTranslationMessage(
+            pofile=self.pofile, potmsgset=self.potmsgset)
 
-        translation = self.factory.makeTranslationMessage(
-            self.pofile, self.potmsgset, translations=[u'Imported diverged'],
-            reviewer=self.factory.makePerson(),
-            is_current_upstream=True, force_diverged=True,
-            date_updated=self.now())
+        self.assertNotEqual(shared, diverged)
+        self.assertTrue(diverged.is_current_upstream)
+        self.assertTrue(shared.is_current_upstream)
+        self.assertEqual(diverged, self._getCurrentMessage())
 
-        self.potmsgset.resetCurrentTranslation(self.pofile, self.now())
-        current = self.potmsgset.getCurrentTranslationMessage(
-            self.potemplate, self.pofile.language)
-        self.assertTrue(current is None)
-        self.assertFalse(translation.is_current_ubuntu)
-        self.assertTrue(translation.is_current_upstream)
-        self.assertFalse(translation.potemplate is None)
+        self.potmsgset.resetCurrentTranslation(self.pofile)
+
+        self.assertEqual(shared, self._getCurrentMessage())
+
+    def test_resetCurrentTranslation_resets_one_side(self):
+        # By default, resetting a translation works only on one
+        # translation side.
+        current = self.factory.makeCurrentTranslationMessage(
+            pofile=self.pofile, potmsgset=self.potmsgset, current_other=True)
+        traits = getUtility(ITranslationSideTraitsSet).getTraits(
+            self.potemplate.translation_side)
+
+        self.assertTrue(traits.getFlag(current))
+        self.assertTrue(traits.other_side_traits.getFlag(current))
+
+        self.potmsgset.resetCurrentTranslation(
+            self.pofile, share_with_other_side=False)
+
+        self.assertFalse(traits.getFlag(current))
+        self.assertTrue(traits.other_side_traits.getFlag(current))
+
+    def test_resetCurrentTranslation_resets_both_sides(self):
+        # The share_with_other_side parameter lets you reset a current
+        # translation on both translation sides.
+        current = self.factory.makeCurrentTranslationMessage(
+            pofile=self.pofile, potmsgset=self.potmsgset, current_other=True)
+
+        self.assertTrue(current.is_current_upstream)
+        self.assertTrue(current.is_current_ubuntu)
+
+        self.potmsgset.resetCurrentTranslation(
+            self.pofile, share_with_other_side=True)
+
+        self.assertFalse(current.is_current_upstream)
+        self.assertFalse(current.is_current_ubuntu)
+
+    def test_resetCurrentTranslation_does_not_override_other_message(self):
+        # Resetting a message does not reset the current translation on
+        # the other translation side if it's not the same one as on this
+        # side.
+        self.assertIs(None, self.potemplate.distroseries)
+        other_potemplate = self.factory.makePOTemplate(
+            distroseries=self.factory.makeDistroSeries(),
+            sourcepackagename=self.factory.makeSourcePackageName())
+        other_pofile = self.factory.makePOFile(
+            self.pofile.language.code, potemplate=other_potemplate)
+
+        message_this = self.factory.makeCurrentTranslationMessage(
+            pofile=self.pofile, potmsgset=self.potmsgset)
+        message_other = self.factory.makeCurrentTranslationMessage(
+            pofile=other_pofile, potmsgset=self.potmsgset)
+        traits = getUtility(ITranslationSideTraitsSet).getTraits(
+            self.potemplate.translation_side)
+
+        self.assertTrue(traits.other_side_traits.getFlag(message_other))
+
+        self.potmsgset.resetCurrentTranslation(
+            self.pofile, share_with_other_side=True)
+
+        self.assertTrue(traits.other_side_traits.getFlag(message_other))
+
+    def test_resetCurrentTranslation_detects_conflict(self):
+        now = self.now()
+        current = self.factory.makeCurrentTranslationMessage(
+            pofile=self.pofile, potmsgset=self.potmsgset)
+        current.markReviewed(self.factory.makePerson(), now)
+
+        self.assertRaises(
+            TranslationConflict,
+            self.potmsgset.resetCurrentTranslation,
+            self.pofile, now - timedelta(1))
 
 
 class TestPOTMsgSetCornerCases(TestCaseWithFactory):
@@ -1587,8 +1652,7 @@ class TestSetCurrentTranslation(TestCaseWithFactory):
     def _makeTranslations(self, potmsgset, forms=1):
         return removeSecurityProxy(potmsgset)._findPOTranslations([
             self.factory.getUniqueString()
-            for counter in xrange(forms)
-            ])
+            for counter in xrange(forms)])
 
     def test_baseline(self):
         # setCurrentTranslation sets the current upstream translation
