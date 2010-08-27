@@ -21,7 +21,7 @@ from zope.interface import (
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.interfaces.account import IAccount
-from canonical.launchpad.interfaces.lpstorm import IMasterStore
+from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.webapp.vhosts import allvhosts
 from lp.registry.interfaces.person import IPerson
 from lp.services.openid.interfaces.openid import IOpenIDPersistentIdentity
@@ -64,7 +64,7 @@ class OpenIDPersistentIdentity:
         # We might have multiple OpenID identifiers linked to an
         # account. We just use the first one which is good enough
         # for our purposes.
-        identifier = IMasterStore(OpenIdIdentifier).find(
+        identifier = IStore(OpenIdIdentifier).find(
             OpenIdIdentifier, account=self.account).order_by(
                 OpenIdIdentifier.date_created).first()
         if identifier is None:
