@@ -14,7 +14,6 @@ import unittest
 import pytz
 from storm.locals import Store
 from zope.component import getUtility
-from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.launchpad.testing.databasehelpers import (
@@ -22,10 +21,9 @@ from canonical.launchpad.testing.databasehelpers import (
     )
 from canonical.testing.layers import DatabaseFunctionalLayer
 
-from lp.code.enums import BranchType
 from lp.code.interfaces.branch import IBranchCloud
-from lp.code.interfaces.revision import IRevisionSet
 from lp.code.model.revision import RevisionCache
+from lp.code.tests.helpers import make_project_branch_with_revisions
 from lp.testing import (
     TestCaseWithFactory,
     time_counter,
@@ -57,10 +55,9 @@ class TestBranchCloud(TestCaseWithFactory):
             (name, commits, authors, add_utc(last_commit))
             for name, commits, authors, last_commit in cloud_info]
 
-    def makeBranch(self, product=None, branch_type=None,
-                   last_commit_date=None, private=False):
+    def makeBranch(self, product=None, last_commit_date=None, private=False,
+                   revision_count=None):
         """Make a product branch with a particular last commit date"""
-        revision_count = 5
         delta = timedelta(days=1)
         if last_commit_date is None:
             # By default we create revisions that are within the last 30 days.
@@ -69,16 +66,8 @@ class TestBranchCloud(TestCaseWithFactory):
         else:
             start_date = last_commit_date - delta * (revision_count - 1)
             date_generator = time_counter(start_date, delta)
-        branch = self.factory.makeProductBranch(
-            product=product, branch_type=branch_type, private=private)
-        if branch_type != BranchType.REMOTE:
-            self.factory.makeRevisionsForBranch(
-                removeSecurityProxy(branch), count=revision_count,
-                date_generator=date_generator)
-        # The code that updates the revision cache doesn't need to care about
-        # the privacy of the branch.
-        getUtility(IRevisionSet).updateRevisionCacheForBranch(
-            removeSecurityProxy(branch))
+        branch = make_project_branch_with_revisions(
+            self.factory, date_generator, product, private, revision_count)
         return branch
 
     def test_empty_with_no_branches(self):

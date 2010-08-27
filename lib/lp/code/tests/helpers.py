@@ -9,12 +9,15 @@ __all__ = [
     'make_erics_fooix_project',
     'make_linked_package_branch',
     'make_official_package_branch',
+    'make_project_branch_with_revisions',
+    'make_project_cloud_data',
     ]
 
 
 from datetime import timedelta
 from difflib import unified_diff
 from itertools import count
+import transaction
 
 from zope.component import getUtility
 from zope.security.proxy import (
@@ -27,6 +30,7 @@ from lp.code.interfaces.branchmergeproposal import (
     IBranchMergeProposalJobSource,
     )
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
+from lp.code.interfaces.revision import IRevisionSet
 from lp.code.interfaces.seriessourcepackagebranch import (
     IMakeOfficialBranchLinks,
     )
@@ -256,3 +260,38 @@ def make_official_package_branch(factory, owner=None):
         ICanHasLinkedBranch(suite_sourcepackage).setBranch,
         branch, registrant)
     return branch
+
+
+def make_project_branch_with_revisions(factory, date_generator, product=None,
+                                       private=None, revision_count=None):
+    """Make a new branch with revisions."""
+    if revision_count is None:
+        revision_count = 5
+    branch = factory.makeProductBranch(product=product, private=private)
+    naked_branch = removeSecurityProxy(branch)
+    factory.makeRevisionsForBranch(
+        naked_branch, count=revision_count, date_generator=date_generator)
+    # The code that updates the revision cache doesn't need to care about
+    # the privacy of the branch.
+    getUtility(IRevisionSet).updateRevisionCacheForBranch(naked_branch)
+    return branch
+
+
+def make_project_cloud_data(factory, details):
+    """Make test data to populate the project cloud.
+
+    Details is a list of tuples containing:
+      (project-name, num_commits, num_authors, last_commit)
+    """
+    delta = timedelta(seconds=1)
+    for project_name, num_commits, num_authors, last_commit in details:
+        project = factory.makeProduct(name=project_name)
+        start_date = last_commit - delta * (num_commits - 1)
+        gen = time_counter(start_date, delta)
+        commits_each = num_commits / num_authors
+        for committer in range(num_authors - 1):
+            make_project_branch_with_revisions(
+                factory, gen, project, commits_each)
+            num_commits -= commits_each
+        make_project_branch_with_revisions(factory, gen, project, num_commits)
+    transaction.commit()
