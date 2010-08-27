@@ -147,3 +147,13 @@ class TestSpecificationDepCandidatesVocabulary(TestCaseWithFactory):
         results = vocab.searchForTerms(canonical_url(candidate))
         self.assertEqual(1, len(results))
         self.assertEqual(candidate, list(results)[0].value)
+
+    def test_searchForTerms_by_url_rejects_invalid(self):
+        # Calling searchForTerms with the URL of a invalid candidate spec
+        # returns an empty iterator.
+        spec = self.factory.makeSpecification()
+        candidate = self.factory.makeSpecification()
+        candidate.createDependency(spec)
+        vocab = self.getVocabularyForSpec(spec)
+        results = vocab.searchForTerms(canonical_url(candidate))
+        self.assertEqual(0, len(results))

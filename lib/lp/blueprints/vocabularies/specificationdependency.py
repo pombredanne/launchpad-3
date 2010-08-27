@@ -146,4 +146,4 @@ class SpecificationDepCandidatesVocabulary(SQLObjectVocabularyBase):
     def __contains__(self, obj):
         # This probably needs to change to drop the _all_specs requirement.
         return obj in self._all_specs and self._is_valid_candidate(obj)
-    
+
