@@ -216,7 +216,7 @@ class UploadProcessor:
         if build.status != BuildStatus.UPLOADING:
             self.log.warn(
                 "Expected build status to be 'UPLOADING', was %s. Skipping.",
-                build.status)
+                build.status.name)
             return
         self.log.debug("Build %s found" % build.id)
         logger = BufferLogger()

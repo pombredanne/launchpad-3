@@ -331,23 +331,22 @@ class PackageBuildDerived:
             logger.info(
                 "Gathered %s %d completely. Moving %s to uploader queue." % (
                 self.__class__.__name__, self.id, upload_leaf))
-            incoming_dir = os.path.join(config.builddmaster.root, 'incoming')
-            if not os.path.exists(incoming_dir):
-                os.mkdir(incoming_dir)
+            incoming_dir = os.path.join(root, 'incoming')
             self.status = BuildStatus.UPLOADING
-            # Move the directory used to grab the binaries into
-            # the incoming directory so the upload processor never
-            # sees half-finished uploads.
-            os.rename(grab_dir, os.path.join(incoming_dir, upload_leaf))
         else:
             logger.warning(
                 "Copy from slave for build %s was unsuccessful.", self.id)
             self.status = BuildStatus.FAILEDTOUPLOAD
             self.notify(extra_info='Copy from slave was unsuccessful.')
-            failed_dir = os.path.join(root, "failed")
-            if not os.path.exists(failed_dir):
-                os.mkdir(failed_dir)
-            os.rename(grab_dir, os.path.join(failed_dir, upload_leaf))
+            target_dir = os.path.join(root, "failed")
+
+        if not os.path.exists(target_dir):
+            os.mkdir(target_dir)
+
+        # Move the directory used to grab the binaries into
+        # the incoming directory so the upload processor never
+        # sees half-finished uploads.
+        os.rename(grab_dir, os.path.join(target_dir, upload_leaf))
 
         # Store build information, build record was already updated during
         # the binary upload.
