@@ -90,6 +90,13 @@ class LibraryAccessScenarioMixin:
             getUtility(ILibrarianClient).addFile,
             name, wrong_length, StringIO(text), 'text/plain')
 
+    def test_debugID_is_harmless(self):
+        # addFile takes an argument debugID that doesn't do anything
+        # observable.  We get a LibraryFileAlias regardless.
+        alias_id = getUtility(ILibraryFileAliasSet).create(
+            'txt.txt', 3, StringIO('txt'), 'text/plain', debugID='txt')
+        self.assertNotEqual(None, alias_id)
+
 
 class TestFakeLibrarian(LibraryAccessScenarioMixin, TestCaseWithFactory):
     """Test the supported interface subset on the fake librarian."""
