@@ -24,7 +24,7 @@ from zope.interface import (
     )
 
 from canonical.launchpad.webapp.interfaces import ILaunchpadPrincipal
-from lp.app.enums import IServiceUsage
+from lp.app.interfaces.launchpad import IServiceUsage
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.poll import (
     IPollSet,

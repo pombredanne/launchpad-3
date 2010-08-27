@@ -171,7 +171,7 @@
         factory="lp.registry.adapters.distroseries_to_launchpadusage"
         permission="zope.Public"/>
     <adapter
-        factory="lp.registry.adapters.distroseries_to_serviceusage"
+        factory="lp.registry.adapters.distroseries_to_serviceusage" />
     <adapter
         provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
         for="lp.registry.interfaces.distroseries.IDistroSeries"
