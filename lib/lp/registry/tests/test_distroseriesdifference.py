@@ -44,10 +44,15 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         # A DistroSeriesDifference cannot be created with a non-derived
         # series.
         distro_series = self.factory.makeDistroSeries()
+        source_package_name = self.factory.makeSourcePackageName('myfoo')
+        distroseriesdifference_factory = getUtility(
+            IDistroSeriesDifferenceSource)
+
         self.assertRaises(
-            NotADerivedSeriesError,
-            self.factory.makeDistroSeriesDifference,
-            derived_series=distro_series)
+            NotADerivedSeriesError, distroseriesdifference_factory.new,
+            distro_series, source_package_name,
+            DistroSeriesDifferenceType.UNIQUE_TO_DERIVED_SERIES
+            )
 
     def test_source_pub(self):
         # The related source pub is returned for the derived series.
