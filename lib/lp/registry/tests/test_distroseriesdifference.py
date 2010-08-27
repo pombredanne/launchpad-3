@@ -10,17 +10,10 @@ import unittest
 from storm.store import Store
 from zope.component import getUtility
 
-from canonical.cachedproperty import (
-    clear_cachedproperties,
-    is_cached,
-    )
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing import DatabaseFunctionalLayer
 from lp.testing import TestCaseWithFactory
-from lp.registry.enum import (
-    DistroSeriesDifferenceStatus,
-    DistroSeriesDifferenceType,
-    )
+from lp.registry.enum import DistroSeriesDifferenceType
 from lp.registry.exceptions import NotADerivedSeriesError
 from lp.registry.interfaces.distroseriesdifference import (
     IDistroSeriesDifference,
@@ -74,9 +67,16 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             sourcepackagename=ds_diff.source_package_name,
             distroseries=ds_diff.derived_series,
             status=PackagePublishingStatus.PENDING)
-        clear_cachedproperties(ds_diff)
 
         self.assertEqual(pending_pub, ds_diff.source_pub)
+
+    def test_source_pub_returns_none(self):
+        # None is returned when there is no source pub.
+        ds_diff = self.factory.makeDistroSeriesDifference(
+            difference_type=(
+                DistroSeriesDifferenceType.MISSING_FROM_DERIVED_SERIES))
+
+        self.assertIs(None, ds_diff.source_pub)
 
     def test_parent_source_pub(self):
         # The related source pub for the parent distro series is returned.
@@ -97,7 +97,6 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             sourcepackagename=ds_diff.source_package_name,
             distroseries=ds_diff.derived_series.parent_series,
             status=PackagePublishingStatus.PENDING)
-        clear_cachedproperties(ds_diff)
 
         self.assertEqual(pending_pub, ds_diff.parent_source_pub)
 
