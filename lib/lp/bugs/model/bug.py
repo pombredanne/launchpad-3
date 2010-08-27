@@ -1476,6 +1476,8 @@ class Bug(SQLBase):
                 self.who_made_private = None
                 self.date_made_private = None
 
+            # XXX: This should be a bulk update. RBC 20100827
+            # bug=https://bugs.edge.launchpad.net/storm/+bug/625071
             for attachment in self.attachments:
                 attachment.libraryfile.restricted = private
 
