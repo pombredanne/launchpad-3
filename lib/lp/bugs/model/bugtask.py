@@ -17,11 +17,12 @@ __all__ = [
     'bugtask_sort_key',
     'get_bug_privacy_filter',
     'get_related_bugtasks_search_params',
-    'search_value_to_where_condition']
+    'search_value_to_where_condition',
+    ]
 
 
 import datetime
-from operator import attrgetter, itemgetter
+from operator import attrgetter
 
 from lazr.enum import DBItem
 import pytz
@@ -42,7 +43,6 @@ from storm.expr import (
     Or,
     SQL,
     )
-from storm.sqlobject import SQLObjectResultSet
 from storm.store import EmptyResultSet
 from storm.zope.interfaces import (
     IResultSet,
@@ -74,7 +74,9 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from canonical.launchpad.components.decoratedresultset import DecoratedResultSet
+from canonical.launchpad.components.decoratedresultset import (
+    DecoratedResultSet,
+    )
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import IStore
@@ -90,8 +92,8 @@ from canonical.launchpad.webapp.interfaces import (
     ILaunchBag,
     IStoreSelector,
     MAIN_STORE,
-    SLAVE_FLAVOR,
     )
+from lp.app.enums import ServiceUsage
 from lp.app.errors import NotFoundError
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugattachment import BugAttachmentType
@@ -158,14 +160,16 @@ from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
 
-debbugsseveritymap = {None:        BugTaskImportance.UNDECIDED,
-                      'wishlist':  BugTaskImportance.WISHLIST,
-                      'minor':     BugTaskImportance.LOW,
-                      'normal':    BugTaskImportance.MEDIUM,
-                      'important': BugTaskImportance.HIGH,
-                      'serious':   BugTaskImportance.HIGH,
-                      'grave':     BugTaskImportance.HIGH,
-                      'critical':  BugTaskImportance.CRITICAL}
+debbugsseveritymap = {
+    None: BugTaskImportance.UNDECIDED,
+    'wishlist': BugTaskImportance.WISHLIST,
+    'minor': BugTaskImportance.LOW,
+    'normal': BugTaskImportance.MEDIUM,
+    'important': BugTaskImportance.HIGH,
+    'serious': BugTaskImportance.HIGH,
+    'grave': BugTaskImportance.HIGH,
+    'critical': BugTaskImportance.CRITICAL,
+    }
 
 
 def bugtask_sort_key(bugtask):
@@ -208,6 +212,7 @@ def bugtask_sort_key(bugtask):
     return (
         bugtask.bug.id, distribution_name, product_name, productseries_name,
         distroseries_name, sourcepackage_name)
+
 
 def get_related_bugtasks_search_params(user, context, **kwargs):
     """Returns a list of `BugTaskSearchParams` which can be used to
@@ -255,7 +260,9 @@ def get_related_bugtasks_search_params(user, context, **kwargs):
 
 class BugTaskDelta:
     """See `IBugTaskDelta`."""
+
     implements(IBugTaskDelta)
+
     def __init__(self, bugtask, status=None, importance=None,
                  assignee=None, milestone=None, statusexplanation=None,
                  bugwatch=None, target=None):
@@ -456,13 +463,14 @@ def validate_target_attribute(self, attr, value):
         sourcepackagename=self.sourcepackagename,
         distribution=self.distribution,
         distroseries=self.distroseries)
-    utility_iface = {
+    utility_iface_dict = {
         'productID': IProductSet,
         'productseriesID': IProductSeriesSet,
         'sourcepackagenameID': ISourcePackageNameSet,
         'distributionID': IDistributionSet,
-        'distroseriesID': IDistroSeriesSet
-        }[attr]
+        'distroseriesID': IDistroSeriesSet,
+        }
+    utility_iface = utility_iface_dict[attr]
     if value is None:
         target_params[attr[:-2]] = None
     else:
@@ -477,6 +485,7 @@ def validate_target_attribute(self, attr, value):
 
 class PassthroughValue:
     """A wrapper to allow setting values on conjoined bug tasks."""
+
     def __init__(self, value):
         self.value = value
 
@@ -589,7 +598,7 @@ class BugTask(SQLBase, BugTaskMixin):
         notNull=False, default=None)
     date_assigned = UtcDateTimeCol(notNull=False, default=None,
         storm_validator=validate_conjoined_attribute)
-    datecreated  = UtcDateTimeCol(notNull=False, default=UTC_NOW)
+    datecreated = UtcDateTimeCol(notNull=False, default=UTC_NOW)
     date_confirmed = UtcDateTimeCol(notNull=False, default=None,
         storm_validator=validate_conjoined_attribute)
     date_inprogress = UtcDateTimeCol(notNull=False, default=None,
@@ -650,7 +659,7 @@ class BugTask(SQLBase, BugTaskMixin):
     # one thing they often have to filter for is completeness. We maintain
     # this single canonical query string here so that it does not have to be
     # cargo culted into Product, Distribution, ProductSeries etc
-    completeness_clause =  """
+    completeness_clause = """
         BugTask.status IN ( %s )
         """ % ','.join([str(a.value) for a in RESOLVED_BUGTASK_STATUSES])
 
@@ -840,7 +849,7 @@ class BugTask(SQLBase, BugTaskMixin):
         """See `IBugTask`"""
         # XXX sinzui 2007-10-04 bug=149009:
         # This property is not needed. Code should inline this implementation.
-        return self.pillar.official_malone
+        return (self.pillar.bug_tracking_usage == ServiceUsage.LAUNCHPAD)
 
     def transitionToMilestone(self, new_milestone, user):
         """See `IBugTask`."""
@@ -1162,9 +1171,9 @@ class BugTask(SQLBase, BugTaskMixin):
             component_name = component.name
 
         if IUpstreamBugTask.providedBy(self):
-            header_value = 'product=%s;' %  self.target.name
+            header_value = 'product=%s;' % self.target.name
         elif IProductSeriesBugTask.providedBy(self):
-            header_value = 'product=%s; productseries=%s;' %  (
+            header_value = 'product=%s; productseries=%s;' % (
                 self.productseries.product.name, self.productseries.name)
         elif IDistroBugTask.providedBy(self):
             header_value = ((
@@ -1311,7 +1320,7 @@ def get_bug_privacy_filter(user):
 
 def _nocache_bug_decorator(obj):
     """A pass through decorator for consistency.
-    
+
     :seealso: get_bug_privacy_filter_with_decorator
     """
     return obj
@@ -1723,7 +1732,7 @@ class BugTaskSet:
                     sqlvalues(personid=params.subscriber.id))
 
         if params.structural_subscriber is not None:
-            structural_subscriber_clause = ( """BugTask.id IN (
+            structural_subscriber_clause = ("""BugTask.id IN (
                 SELECT BugTask.id FROM BugTask, StructuralSubscription
                 WHERE BugTask.product = StructuralSubscription.product
                   AND StructuralSubscription.subscriber = %(personid)s
@@ -2161,7 +2170,7 @@ class BugTaskSet:
 
     def search(self, params, *args, **kwargs):
         """See `IBugTaskSet`.
-        
+
         :param _noprejoins: Private internal parameter to BugTaskSet which
             disables all use of prejoins : consolidated from code paths that
             claim they were inefficient and unwanted.
@@ -2171,7 +2180,8 @@ class BugTaskSet:
         from lp.bugs.model.bug import Bug
         _noprejoins = kwargs.get('_noprejoins', False)
         store = IStore(BugTask)
-        query, clauseTables, orderby, bugtask_decorator = self.buildQuery(params)
+        query, clauseTables, orderby, bugtask_decorator = self.buildQuery(
+            params)
         if len(args) == 0:
             if _noprejoins:
                 resultset = store.find(BugTask,
@@ -2204,7 +2214,7 @@ class BugTaskSet:
                     (BugTask, Product, SourcePackageName, Bug),
                     AutoTables(SQL("1=1"), tables),
                     query)
-                decorator=lambda row:bugtask_decorator(row[0])
+                decorator=lambda row: bugtask_decorator(row[0])
             resultset.order_by(orderby)
             return DecoratedResultSet(resultset, result_decorator=decorator)
 
@@ -2228,8 +2238,8 @@ class BugTaskSet:
             return bugtask
 
         # Build up the joins.
-        # TODO: implement _noprejoins for this code path: as of 20100818 it has
-        # been silently disabled because clients of the API were setting
+        # TODO: implement _noprejoins for this code path: as of 20100818 it
+        # has been silently disabled because clients of the API were setting
         # prejoins=[] which had no effect; this TODO simply notes the reality
         # already existing when it was added.
         joins = Alias(result._get_select(), "BugTask")
@@ -2279,9 +2289,10 @@ class BugTaskSet:
             # Import here because of cyclic references.
             from lp.registry.model.milestone import (
                 Milestone, milestone_sort_key)
-            # We need the store that was used, we have no objects to key off of
-            # other than the search result, and Store.of() doesn't currently
-            # work on result sets. Additionally it may be a DecoratedResultSet.
+            # We need the store that was used, we have no objects to key off
+            # of other than the search result, and Store.of() doesn't
+            # currently work on result sets. Additionally it may be a
+            # DecoratedResultSet.
             if zope_isinstance(search_results, DecoratedResultSet):
                 store = removeSecurityProxy(search_results).result_set._store
             else:
