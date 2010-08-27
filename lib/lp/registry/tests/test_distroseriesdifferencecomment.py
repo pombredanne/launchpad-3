@@ -42,5 +42,3 @@ class DistroSeriesDifferenceCommentTestCase(TestCaseWithFactory):
         self.assertEqual(
             dsd_comment.distro_series_difference.title,
             dsd_comment.message.subject)
-
-

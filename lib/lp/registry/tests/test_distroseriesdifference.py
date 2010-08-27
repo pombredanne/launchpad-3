@@ -51,7 +51,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         self.assertRaises(
             NotADerivedSeriesError, distroseriesdifference_factory.new,
             distro_series, source_package_name,
-            DistroSeriesDifferenceType.UNIQUE_TO_DERIVED_SERIES
+            DistroSeriesDifferenceType.UNIQUE_TO_DERIVED_SERIES,
             )
 
     def test_source_pub(self):

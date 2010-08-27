@@ -165,6 +165,10 @@ from lp.registry.interfaces.distroseriesdifference import (
 from lp.registry.interfaces.distroseriesdifferencecomment import (
     IDistroSeriesDifferenceCommentSource,
     )
+from lp.registry.interfaces.gpg import (
+    GPGKeyAlgorithm,
+    IGPGKeySet,
+    )
 from lp.registry.interfaces.mailinglist import (
     IMailingListSet,
     MailingListStatus,
@@ -1866,7 +1870,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
         return getUtility(IDistroSeriesDifferenceCommentSource).new(
             distro_series_difference, owner, comment)
-
 
     def makeDistroArchSeries(self, distroseries=None,
                              architecturetag=None, processorfamily=None,
