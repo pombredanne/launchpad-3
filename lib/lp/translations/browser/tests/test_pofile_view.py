@@ -3,7 +3,11 @@
 
 __metaclass__ = type
 
-from datetime import datetime, timedelta
+from datetime import (
+    datetime,
+    timedelta,
+    )
+
 import pytz
 
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest

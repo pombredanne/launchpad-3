@@ -8,7 +8,10 @@ __all__ = [
     'ITranslationsPerson',
     ]
 
-from zope.interface import Attribute, Interface
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
 from zope.schema import Bool
 
 from canonical.launchpad import _

@@ -7,13 +7,44 @@ __metaclass__ = type
 
 import unittest
 
+from zope.interface import implements
+
 from storm.store import Store
 
-from canonical.testing import LaunchpadZopelessLayer
+from lazr.delegates import delegates
 
+from canonical.testing import LaunchpadZopelessLayer
 from lp.bugs.interfaces.bugtask import BugTaskStatus
+from lp.registry.interfaces.distributionsourcepackage import (
+    IDistributionSourcePackage)
 from lp.testing import TestCaseWithFactory
 from lp.testing.factory import LaunchpadObjectFactory
+
+
+class BugUpdateHeat(TestCaseWithFactory):
+
+    layer = LaunchpadZopelessLayer
+
+    def test_updateHeat_calls_recalculateBugHeatCache(self):
+        # This requires some instrumentation. The updateHeat() method is
+        # called by many methods that may be involved in setting up a bug
+        # target.
+        class TestTarget:
+            implements(IDistributionSourcePackage)
+            delegates(IDistributionSourcePackage, context='target')
+
+            def __init__(self, target):
+                self.target = target
+                self.called = False
+
+            def recalculateBugHeatCache(self):
+                self.called = True
+
+        self.target = TestTarget(
+            self.factory.makeDistributionSourcePackage(with_db=True))
+        self.bugtask = self.factory.makeBugTask(target=self.target)
+        self.bugtask.bug.updateHeat()
+        self.assertTrue(self.target.called)
 
 
 class MaxHeatByTargetBase:
@@ -115,9 +146,12 @@ class DistributionSourcePackageMultipleBugsRecalculateBugHeatCacheTest(
         self.bugtask1 = self.factory.makeBugTask(target=self.target)
         self.bugtask2 = self.factory.makeBugTask(target=self.target)
         self.bugtask3 = self.factory.makeBugTask(target=self.target)
+        self.bugtask4 = self.factory.makeBugTask(target=self.target)
         # A closed bug is not include in DSP bug heat calculations.
         self.bugtask3.transitionToStatus(
             BugTaskStatus.FIXRELEASED, self.target.distribution.owner)
+        # A duplicate bug is not include in DSP bug heat calculations.
+        self.bugtask4.bug.markAsDuplicate(self.bugtask1.bug)
         # Bug heat gets calculated by complicated rules in a db
         # stored procedure. We will override them here to avoid
         # testing inconsitencies if those values are calculated

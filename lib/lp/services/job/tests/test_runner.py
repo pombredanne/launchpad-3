@@ -11,23 +11,33 @@ from time import sleep
 from unittest import TestLoader
 
 import transaction
-
 from zope.component import getUtility
 from zope.error.interfaces import IErrorReportingUtility
 from zope.interface import implements
 
 from canonical.launchpad.webapp import errorlog
 from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE)
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 from canonical.testing import LaunchpadZopelessLayer
-
-from lp.code.interfaces.branchmergeproposal import (
-    IUpdatePreviewDiffJobSource)
-from lp.services.job.interfaces.job import JobStatus, IRunnableJob
+from lp.code.interfaces.branchmergeproposal import IUpdatePreviewDiffJobSource
+from lp.services.job.interfaces.job import (
+    IRunnableJob,
+    JobStatus,
+    )
 from lp.services.job.model.job import Job
 from lp.services.job.runner import (
-    BaseRunnableJob, JobCronScript, JobRunner, TwistedJobRunner)
-from lp.testing import TestCaseWithFactory, ZopeTestInSubProcess
+    BaseRunnableJob,
+    JobCronScript,
+    JobRunner,
+    TwistedJobRunner,
+    )
+from lp.testing import (
+    TestCaseWithFactory,
+    ZopeTestInSubProcess,
+    )
 from lp.testing.mail_helpers import pop_notifications
 
 

@@ -6,38 +6,49 @@
 __metaclass__ = type
 
 import atexit
-import re
 import os
+import re
 import unittest
 import xmlrpclib
 
 import bzrlib.branch
-from bzrlib.tests import multiply_tests, TestCaseWithTransport
+from bzrlib.tests import (
+    multiply_tests,
+    TestCaseWithTransport,
+    )
 from bzrlib.urlutils import local_path_from_url
 from bzrlib.workingtree import WorkingTree
-
 from zope.component import getUtility
 
 from canonical.config import config
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
 from canonical.testing import ZopelessAppServerLayer
 from canonical.testing.profiled import profiled
-
-from lp.code.bzr import BranchFormat, ControlFormat, RepositoryFormat
+from lp.code.bzr import (
+    BranchFormat,
+    ControlFormat,
+    RepositoryFormat,
+    )
 from lp.code.enums import BranchType
 from lp.code.interfaces.branch import IBranchSet
 from lp.code.interfaces.branchnamespace import get_branch_namespace
-
+from lp.codehosting import (
+    get_bzr_path,
+    get_BZR_PLUGIN_PATH_for_subprocess,
+    )
 from lp.codehosting.bzrutils import DenyingServer
-from lp.codehosting.tests.helpers import adapt_suite, LoomTestMixin
+from lp.codehosting.tests.helpers import (
+    adapt_suite,
+    LoomTestMixin,
+    )
 from lp.codehosting.tests.servers import (
-    CodeHostingTac, set_up_test_user, SSHCodeHostingServer)
-from lp.codehosting import get_bzr_path, get_BZR_PLUGIN_PATH_for_subprocess
+    CodeHostingTac,
+    set_up_test_user,
+    SSHCodeHostingServer,
+    )
 from lp.codehosting.vfs import branch_id_to_path
-
 from lp.registry.model.person import Person
 from lp.registry.model.product import Product
-
 from lp.testing import TestCaseWithFactory
 
 

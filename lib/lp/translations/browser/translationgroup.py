@@ -18,17 +18,25 @@ __all__ = [
 
 from zope.component import getUtility
 
-from lp.app.errors import NotFoundError
-from lp.translations.interfaces.translationgroup import (
-    ITranslationGroup, ITranslationGroupSet)
-from lp.translations.interfaces.translator import (
-    ITranslator, ITranslatorSet)
-from lp.registry.browser.objectreassignment import (
-    ObjectReassignmentView)
 from canonical.launchpad.webapp import (
-    action, canonical_url, GetitemNavigation, LaunchpadEditFormView,
-    LaunchpadFormView, LaunchpadView)
+    action,
+    canonical_url,
+    GetitemNavigation,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    LaunchpadView,
+    )
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
+from lp.app.errors import NotFoundError
+from lp.registry.browser.objectreassignment import ObjectReassignmentView
+from lp.translations.interfaces.translationgroup import (
+    ITranslationGroup,
+    ITranslationGroupSet,
+    )
+from lp.translations.interfaces.translator import (
+    ITranslator,
+    ITranslatorSet,
+    )
 
 
 class TranslationGroupNavigation(GetitemNavigation):

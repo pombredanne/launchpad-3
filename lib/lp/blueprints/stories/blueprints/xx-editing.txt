@@ -22,12 +22,12 @@ The page links back to the blueprint page, in case we change our minds.
 
 Launchpad won't let us use an URL already used in another blueprint.
 
-  >>> url = 'http://wiki.ubuntu.com/NetworkMagic'
+  >>> url = 'https://wiki.ubuntu.com/MediaIntegrityCheck'
   >>> browser.getControl('Specification URL').value = url
   >>> browser.getControl('Change').click()
 
-  >>> message = ('http://wiki.ubuntu.com/NetworkMagic is already registered '
-  ...            'by another blueprint')
+  >>> message = ('https://wiki.ubuntu.com/MediaIntegrityCheck is already '
+  ...            'registered by another blueprint')
   >>> message in browser.contents
   True
 

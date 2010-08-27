@@ -4,8 +4,10 @@
 """A pipeline handler for checking message sizes."""
 
 # pylint: disable-msg=F0401
-from Mailman import Errors
-from Mailman import mm_cfg
+from Mailman import (
+    Errors,
+    mm_cfg,
+    )
 from Mailman.Handlers.LPModerate import hold
 from Mailman.Logging.Syslog import syslog
 

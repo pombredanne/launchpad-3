@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 # pylint: disable-msg=F0401
 
@@ -29,42 +29,58 @@ import cgi
 import datetime
 import operator
 import os.path
+
 import pytz
 from zope.component import getUtility
 from zope.interface import implements
 from zope.publisher.browser import FileUpload
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.lazr.utils import smartquote
-
-from canonical.launchpad import helpers, _
+from canonical.launchpad import (
+    _,
+    helpers,
+    )
+from canonical.launchpad.webapp import (
+    action,
+    canonical_url,
+    enabled_with_permission,
+    GetitemNavigation,
+    LaunchpadEditFormView,
+    LaunchpadView,
+    Link,
+    Navigation,
+    NavigationMenu,
+    StandardLaunchpadFacets,
+    )
+from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.interfaces import ILaunchBag
+from canonical.launchpad.webapp.interfaces import (
+    ICanonicalUrlData,
+    ILaunchBag,
+    )
+from canonical.launchpad.webapp.launchpadform import ReturnToReferrerMixin
+from canonical.launchpad.webapp.menu import structured
+from canonical.lazr.utils import smartquote
 from lp.app.errors import NotFoundError
-from lp.translations.browser.poexportrequest import BaseExportView
 from lp.registry.browser.productseries import ProductSeriesFacets
-from lp.translations.browser.translations import TranslationsMixin
 from lp.registry.browser.sourcepackage import SourcePackageFacets
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.sourcepackage import ISourcePackage
+from lp.services.worlddata.interfaces.language import ILanguageSet
+from lp.translations.browser.poexportrequest import BaseExportView
+from lp.translations.browser.translations import TranslationsMixin
 from lp.translations.interfaces.pofile import IPOFileSet
 from lp.translations.interfaces.potemplate import (
     IPOTemplate,
     IPOTemplateSet,
-    IPOTemplateSubset)
+    IPOTemplateSubset,
+    )
 from lp.translations.interfaces.translationimporter import (
-    ITranslationImporter)
+    ITranslationImporter,
+    )
 from lp.translations.interfaces.translationimportqueue import (
-    ITranslationImportQueue)
-from lp.services.worlddata.interfaces.language import ILanguageSet
-from canonical.launchpad.webapp import (
-    action, canonical_url, enabled_with_permission, GetitemNavigation,
-    LaunchpadView, LaunchpadEditFormView, Link, Navigation, NavigationMenu,
-    StandardLaunchpadFacets)
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
-from canonical.launchpad.webapp.launchpadform import ReturnToReferrerMixin
-from canonical.launchpad.webapp.menu import structured
+    ITranslationImportQueue,
+    )
 
 
 class POTemplateNavigation(Navigation):
@@ -93,8 +109,10 @@ class POTemplateNavigation(Navigation):
             # It's just a query, get a fake one so we don't create new
             # POFiles just because someone is browsing the web.
             language = getUtility(ILanguageSet).getLanguageByCode(name)
-            return self.context.getDummyPOFile(language, requester=user,
-                                               check_for_existing=False)
+            if language is None:
+                raise NotFoundError(name)
+            return self.context.getDummyPOFile(
+                language, requester=user, check_for_existing=False)
         else:
             # It's a POST.
             # XXX CarlosPerelloMarin 2006-04-20 bug=40275: We should

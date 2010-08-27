@@ -12,16 +12,21 @@ import os
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.scripts.logger import log, DEBUG2
+from canonical.launchpad.scripts.logger import (
+    DEBUG2,
+    log,
+    )
 from canonical.launchpad.utilities.orderingcheck import OrderingCheck
+from lp.registry.interfaces.product import IProductSet
+from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.services.scripts.base import (
+    LaunchpadScript,
+    LaunchpadScriptFailure,
+    )
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.interfaces.translations import TranslationConstants
 from lp.translations.model.potmsgset import POTMsgSet
 from lp.translations.model.translationmessage import TranslationMessage
-from lp.registry.interfaces.product import IProductSet
-from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
-from lp.services.scripts.base import (
-    LaunchpadScript, LaunchpadScriptFailure)
 
 
 def get_potmsgset_key(potmsgset):

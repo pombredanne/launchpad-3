@@ -7,17 +7,20 @@ __metaclass__ = type
 __all__ = ['CommercialSubscription']
 
 import datetime
-import pytz
 
+import pytz
+from sqlobject import (
+    ForeignKey,
+    StringCol,
+    )
 from zope.interface import implements
 
-from sqlobject import (
-    ForeignKey, StringCol)
-
-from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.constants import UTC_NOW
+from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import SQLBase
-from lp.registry.interfaces.commercialsubscription import ICommercialSubscription
+from lp.registry.interfaces.commercialsubscription import (
+    ICommercialSubscription,
+    )
 from lp.registry.interfaces.person import validate_public_person
 
 

@@ -24,16 +24,32 @@ import urllib
 from zope.component import getUtility
 from zope.publisher.browser import FileUpload
 
-from canonical.lazr.utils import smartquote
-
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
-from lp.app.errors import NotFoundError, UnexpectedFormData
-from lp.translations.browser.translationmessage import (
-    BaseTranslationView, CurrentTranslationMessageView)
+from canonical.launchpad import _
+from canonical.launchpad.interfaces import ILaunchBag
+from canonical.launchpad.webapp import (
+    canonical_url,
+    enabled_with_permission,
+    LaunchpadView,
+    Link,
+    Navigation,
+    NavigationMenu,
+    )
+from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.menu import structured
+from canonical.lazr.utils import smartquote
+from lp.app.errors import (
+    NotFoundError,
+    UnexpectedFormData,
+    )
+from lp.registry.interfaces.person import IPersonSet
 from lp.translations.browser.poexportrequest import BaseExportView
 from lp.translations.browser.potemplate import POTemplateFacets
-from lp.registry.interfaces.person import IPersonSet
+from lp.translations.browser.translationmessage import (
+    BaseTranslationView,
+    CurrentTranslationMessageView,
+    )
 from lp.translations.interfaces.pofile import IPOFile
 from lp.translations.interfaces.translationimporter import (
     ITranslationImporter,
@@ -41,17 +57,7 @@ from lp.translations.interfaces.translationimporter import (
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue,
     )
-from lp.translations.interfaces.translationsperson import (
-    ITranslationsPerson,
-    )
-from canonical.launchpad.interfaces import ILaunchBag
-from canonical.launchpad.webapp import (
-    canonical_url, enabled_with_permission, LaunchpadView,
-    Link, Navigation, NavigationMenu)
-from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.menu import structured
-
-from canonical.launchpad import _
+from lp.translations.interfaces.translationsperson import ITranslationsPerson
 
 
 class POFileNavigation(Navigation):
@@ -786,7 +792,8 @@ class POFileTranslateView(BaseTranslationView, POFileMetadataViewMixin):
                 url = url + '?' + self.request['QUERY_STRING']
 
             return self.request.response.redirect(
-                canonical_url(self.user, view_name='+licensing') +
+                canonical_url(self.user, view_name='+licensing',
+                              rootsite='translations') +
                 '?' + urllib.urlencode({'back_to': url}))
 
         # The handling of errors is slightly tricky here. Because this

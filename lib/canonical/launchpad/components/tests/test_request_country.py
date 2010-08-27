@@ -5,8 +5,9 @@
 
 __metaclass__ = type
 
-import unittest
 from doctest import DocTestSuite
+import unittest
+
 
 def test_suite():
     import canonical.launchpad.components.request_country

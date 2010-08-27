@@ -9,13 +9,16 @@ import os
 
 from zope.component import getUtility
 
+from canonical.launchpad.interfaces import (
+    IDistributionSet,
+    )
 from lp.archiveuploader.tests.test_uploadprocessor import (
-    TestUploadProcessorBase)
+    TestUploadProcessorBase,
+    )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.soyuz.enums import PackageUploadStatus
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.processor import ProcessorFamily
-from canonical.launchpad.interfaces import (
-    IDistributionSet, PackageUploadStatus)
 
 
 class TestStagedBinaryUploadBase(TestUploadProcessorBase):

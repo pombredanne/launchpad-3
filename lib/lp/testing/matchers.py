@@ -14,14 +14,22 @@ __all__ = [
     'StartsWith',
     ]
 
-from zope.interface.verify import verifyObject
-from zope.interface.exceptions import (
-    BrokenImplementation, BrokenMethodImplementation, DoesNotImplement)
-from zope.security.proxy import builtin_isinstance, Proxy
-
 from testtools.content import Content
-from testtools.content_type import ContentType
-from testtools.matchers import Matcher, Mismatch
+from testtools.content_type import UTF8_TEXT
+from testtools.matchers import (
+    Matcher,
+    Mismatch,
+    )
+from zope.interface.exceptions import (
+    BrokenImplementation,
+    BrokenMethodImplementation,
+    DoesNotImplement,
+    )
+from zope.interface.verify import verifyObject
+from zope.security.proxy import (
+    builtin_isinstance,
+    Proxy,
+    )
 
 
 class DoesNotProvide(Mismatch):
@@ -129,8 +137,7 @@ class _MismatchedQueryCount(Mismatch):
         result = []
         for query in self.query_collector.queries:
             result.append(unicode(query).encode('utf8'))
-        return {'queries': Content(ContentType('text', 'plain',
-            {'charset': 'utf8'}), lambda:['\n'.join(result)])}
+        return {'queries': Content(UTF8_TEXT, lambda:['\n'.join(result)])}
  
 
 class IsNotProxied(Mismatch):

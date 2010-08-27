@@ -4,24 +4,33 @@
 __metaclass__ = type
 
 import re
-import transaction
 
-from zope.component import getMultiAdapter, getUtility
+import transaction
+from zope.component import (
+    getMultiAdapter,
+    getUtility,
+    )
 from zope.publisher.interfaces import NotFound
 from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad.browser.librarian import (
-    StreamOrRedirectLibraryFileAliasView)
+    StreamOrRedirectLibraryFileAliasView,
+    )
 from canonical.launchpad.interfaces import ILaunchBag
 from canonical.launchpad.interfaces.librarian import (
-    ILibraryFileAliasWithParent)
-from canonical.testing import LaunchpadFunctionalLayer
+    ILibraryFileAliasWithParent,
+    )
 from canonical.launchpad.webapp.publisher import RedirectionView
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-
+from canonical.testing import LaunchpadFunctionalLayer
 from lp.bugs.browser.bugattachment import (
-    BugAttachmentFileNavigation, SafeStreamOrRedirectLibraryFileAliasView)
-from lp.testing import login_person, TestCaseWithFactory
+    BugAttachmentFileNavigation,
+    SafeStreamOrRedirectLibraryFileAliasView,
+    )
+from lp.testing import (
+    login_person,
+    TestCaseWithFactory,
+    )
 
 
 class TestAccessToBugAttachmentFiles(TestCaseWithFactory):

@@ -13,78 +13,125 @@ __all__ = [
 from datetime import datetime
 import os.path
 
-from bzrlib.revision import NULL_REVISION
 from bzrlib import urlutils
+from bzrlib.revision import NULL_REVISION
+from lazr.uri import URI
 import pytz
-
+from sqlobject import (
+    BoolCol,
+    ForeignKey,
+    IntCol,
+    SQLMultipleJoin,
+    SQLRelatedJoin,
+    StringCol,
+    )
+from storm.expr import (
+    And,
+    Count,
+    Desc,
+    Max,
+    NamedFunc,
+    Not,
+    Or,
+    Select,
+    )
+from storm.locals import AutoReload
+from storm.store import Store
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
-from zope.security.proxy import ProxyFactory, removeSecurityProxy
-
-from storm.expr import (
-    And, Count, Desc, Max, Not, NamedFunc, Or, Select)
-from storm.locals import AutoReload
-from storm.store import Store
-from sqlobject import (
-    ForeignKey, IntCol, StringCol, BoolCol, SQLMultipleJoin, SQLRelatedJoin)
-
-from lazr.uri import URI
+from zope.security.proxy import (
+    ProxyFactory,
+    removeSecurityProxy,
+    )
 
 from canonical.config import config
-from canonical.database.constants import DEFAULT, UTC_NOW
-from canonical.database.sqlbase import (
-    SQLBase, sqlvalues)
+from canonical.database.constants import (
+    DEFAULT,
+    UTC_NOW,
+    )
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-
+from canonical.database.sqlbase import (
+    SQLBase,
+    sqlvalues,
+    )
 from canonical.launchpad import _
-from lp.services.job.model.job import Job
 from canonical.launchpad.interfaces.launchpad import (
-    ILaunchpadCelebrities, IPrivacy)
+    ILaunchpadCelebrities,
+    IPrivacy,
+    )
 from canonical.launchpad.webapp import urlappend
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, SLAVE_FLAVOR)
-
+    IStoreSelector,
+    MAIN_STORE,
+    SLAVE_FLAVOR,
+    )
 from lp.app.errors import UserCannotUnsubscribePerson
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.code.bzr import (
-    BranchFormat, ControlFormat, CURRENT_BRANCH_FORMATS,
-    CURRENT_REPOSITORY_FORMATS, RepositoryFormat)
+    BranchFormat,
+    ControlFormat,
+    CURRENT_BRANCH_FORMATS,
+    CURRENT_REPOSITORY_FORMATS,
+    RepositoryFormat,
+    )
 from lp.code.enums import (
-    BranchLifecycleStatus, BranchMergeControlStatus,
-    BranchMergeProposalStatus, BranchType)
+    BranchLifecycleStatus,
+    BranchMergeControlStatus,
+    BranchMergeProposalStatus,
+    BranchType,
+    )
 from lp.code.errors import (
-    BranchCannotBePrivate, BranchCannotBePublic, BranchTargetError,
-    BranchTypeError, BranchMergeProposalExists, CannotDeleteBranch,
-    InvalidBranchMergeProposal)
-from lp.code.mail.branch import send_branch_modified_notifications
-from lp.code.model.branchmergeproposal import (
-     BranchMergeProposal, BranchMergeProposalGetter)
-from lp.code.model.branchrevision import BranchRevision
-from lp.code.model.branchsubscription import BranchSubscription
-from lp.code.model.revision import Revision, RevisionAuthor
-from lp.code.model.seriessourcepackagebranch import SeriesSourcePackageBranch
+    BranchCannotBePrivate,
+    BranchCannotBePublic,
+    BranchMergeProposalExists,
+    BranchTargetError,
+    BranchTypeError,
+    CannotDeleteBranch,
+    InvalidBranchMergeProposal,
+    )
 from lp.code.event.branchmergeproposal import NewBranchMergeProposalEvent
 from lp.code.interfaces.branch import (
-    BzrIdentityMixin, DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch,
-    IBranchNavigationMenu, IBranchSet, user_has_special_branch_access)
+    BzrIdentityMixin,
+    DEFAULT_BRANCH_STATUS_IN_LISTING,
+    IBranch,
+    IBranchNavigationMenu,
+    IBranchSet,
+    user_has_special_branch_access,
+    )
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchmergeproposal import (
-     BRANCH_MERGE_PROPOSAL_FINAL_STATES)
+    BRANCH_MERGE_PROPOSAL_FINAL_STATES,
+    )
 from lp.code.interfaces.branchnamespace import IBranchNamespacePolicy
 from lp.code.interfaces.branchpuller import IBranchPuller
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.seriessourcepackagebranch import (
-    IFindOfficialBranchLinks)
+    IFindOfficialBranchLinks,
+    )
+from lp.code.mail.branch import send_branch_modified_notifications
+from lp.code.model.branchmergeproposal import (
+    BranchMergeProposal,
+    BranchMergeProposalGetter,
+    )
+from lp.code.model.branchrevision import BranchRevision
+from lp.code.model.branchsubscription import BranchSubscription
+from lp.code.model.revision import (
+    Revision,
+    RevisionAuthor,
+    )
+from lp.code.model.seriessourcepackagebranch import SeriesSourcePackageBranch
 from lp.codehosting.bzrutils import safe_open
 from lp.registry.interfaces.person import (
-    validate_person, validate_public_person)
+    validate_person,
+    validate_public_person,
+    )
 from lp.services.database.prejoin import prejoin
 from lp.services.job.interfaces.job import JobStatus
-from lp.services.mail.notificationrecipientset import (
-    NotificationRecipientSet)
+from lp.services.job.model.job import Job
+from lp.services.mail.notificationrecipientset import NotificationRecipientSet
 
 
 class Branch(SQLBase, BzrIdentityMixin):

@@ -14,16 +14,17 @@ __all__ = [
 from zope.interface import implements
 
 from canonical.launchpad.webapp import urlappend
-
+from lp.buildmaster.interfaces.builder import CannotBuild
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
-    IBuildFarmJobBehavior)
-from lp.buildmaster.model.buildfarmjobbehavior import (
-    BuildFarmJobBehaviorBase)
+    IBuildFarmJobBehavior,
+    )
+from lp.buildmaster.model.buildfarmjobbehavior import BuildFarmJobBehaviorBase
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.adapters.archivedependencies import (
-    get_primary_current_component, get_sources_list_for_building)
-from lp.soyuz.interfaces.archive import ArchivePurpose
-from lp.buildmaster.interfaces.builder import CannotBuild
+    get_primary_current_component,
+    get_sources_list_for_building,
+    )
+from lp.soyuz.enums import ArchivePurpose
 
 
 class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):

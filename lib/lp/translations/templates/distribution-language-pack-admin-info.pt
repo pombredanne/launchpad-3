@@ -13,8 +13,7 @@
     <tal:admin
        condition="context/required:launchpad.TranslationsAdmin">
       <a tal:attributes="
-           href
-           context/fmt:url/+select-language-pack-admin"
+           href context/fmt:url:translations/+select-language-pack-admin"
          class="edit sprite"></a>
     </tal:admin>
   </p>
@@ -23,7 +22,7 @@
     <p tal:condition="not:context/language_pack_admin">
       <a tal:attributes="
            href
-           context/fmt:url/+select-language-pack-admin"
+           context/fmt:url:translations/+select-language-pack-admin"
          class="edit sprite">Set language pack administrator</a>
     </p>
   </tal:admin>

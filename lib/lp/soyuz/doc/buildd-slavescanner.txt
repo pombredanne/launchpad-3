@@ -382,7 +382,7 @@ upload log information:
     * Build Log: http://.../...i386.mozilla-firefox_0.9_BUILDING.txt.gz
     ...
     Upload log:
-    INFO    Creating lockfile:...
+    DEBUG   ...
     DEBUG   Initialising connection.
     ...
     DEBUG   Removing lock file: /var/lock/process-upload-buildd.lock
@@ -625,7 +625,7 @@ Check the log from the uploader run has made it into the upload directory:
     ...                                  'uploader.log'))
 
     >>> print uploader_log.read()
-    INFO    Creating lockfile:...
+    DEBUG   ...
     DEBUG   Initialising connection.
     DEBUG   Beginning processing
     DEBUG   Creating directory /var/tmp/builddmaster/accepted
@@ -745,7 +745,7 @@ need to tweak the status of the current publication directly, as a
 permissive database user.
 
     >>> from canonical.config import config
-    >>> from canonical.launchpad.interfaces import PackagePublishingStatus
+    >>> from lp.soyuz.enums import PackagePublishingStatus
     >>> from canonical.testing.layers import LaunchpadZopelessLayer
 
     >>> spr = build.source_package_release

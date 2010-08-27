@@ -12,20 +12,31 @@ __all__ = [
     'CodeReviewDisplayComment',
     ]
 
-from zope.app.form.browser import TextAreaWidget, DropdownWidget
-from zope.interface import Interface, implements
-from zope.schema import Text
-
 from lazr.delegates import delegates
 from lazr.restful.interface import copy_field
+from zope.app.form.browser import (
+    DropdownWidget,
+    TextAreaWidget,
+    )
+from zope.interface import (
+    implements,
+    Interface,
+    )
+from zope.schema import Text
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import ILibraryFileAlias
 from canonical.launchpad.webapp import (
-    action, canonical_url, ContextMenu, custom_widget, LaunchpadFormView,
-    LaunchpadView, Link)
+    action,
+    canonical_url,
+    ContextMenu,
+    custom_widget,
+    LaunchpadFormView,
+    LaunchpadView,
+    Link,
+    )
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
 from lp.code.interfaces.codereviewcomment import ICodeReviewComment
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
