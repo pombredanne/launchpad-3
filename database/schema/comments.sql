@@ -321,6 +321,19 @@ COMMENT ON COLUMN BugTrackerPerson.bugtracker IS 'The external bug tracker in wh
 COMMENT ON COLUMN BugTrackerPerson.name IS 'The (within the bug tracker) unique username in the external bug tracker.';
 COMMENT ON COLUMN BugTrackerPerson.person IS 'The Person record in Launchpad this user corresponds to.';
 
+-- BugTrackerComponent
+
+COMMENT ON TABLE BugTrackerComponent IS 'A software component in a remote bug tracker, which can be linked to the corresponding source package in a distribution using this table.';
+COMMENT ON COLUMN BugTrackerComponent.name IS 'The name of the component as registered in the remote bug tracker.';
+COMMENT ON COLUMN BugTrackerComponent.componentgroup IS 'The product or other higher level category used by the remote bug tracker to group projects.  Some bug trackers do not group components thus all BugTrackerComponents will belong to a default componentgroup.';
+COMMENT ON COLUMN BugTrackerComponent.sourcepackage IS 'A link to the source package in a distribution that corresponds to this component.  This can be undefined if no link has been established yet.';
+
+-- BugTrackerComponentGroup
+
+COMMENT ON TABLE BugTrackerComponentGroup IS 'A collection of components as modeled in a remote bug tracker, often referred to as a product.  Some bug trackers do not categorize software components this way, so they will have a single default component group that all components belong to.';
+COMMENT ON COLUMN BugTrackerComponentGroup.name IS 'The product or category name used in the remote bug tracker for grouping components.';
+COMMENT ON COLUMN BugTrackerComponentGroup.bugtracker IS 'The external bug tracker this component group belongs to.';
+
 -- BugCve
 
 COMMENT ON TABLE BugCve IS 'A table that records the link between a given malone bug number, and a CVE entry.';
