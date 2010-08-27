@@ -74,7 +74,7 @@ from lp.archiveuploader.uploadpolicy import (
     SOURCE_PACKAGE_RECIPE_UPLOAD_POLICY_NAME,
     UploadPolicyError,
     )
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.soyuz.interfaces.archive import (

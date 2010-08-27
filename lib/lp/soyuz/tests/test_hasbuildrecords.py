@@ -144,7 +144,7 @@ class TestBuilderHasBuildRecords(TestHasBuildRecordsInterface):
         # can only test this by creating a lone IBuildFarmJob of a
         # different type.
         from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSource
-        from lp.buildmaster.interfaces.buildbase import BuildStatus
+        from lp.buildmaster.enums import BuildStatus
         build_farm_job = getUtility(IBuildFarmJobSource).new(
             job_type=BuildFarmJobType.RECIPEBRANCHBUILD, virtualized=True,
             status=BuildStatus.BUILDING)
