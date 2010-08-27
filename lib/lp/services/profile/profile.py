@@ -48,13 +48,11 @@ def start_request(event):
     """
     if not config.profiling.profiling_allowed:
         return
-
     actions = get_desired_profile_actions(event.request)
     if config.profiling.profile_all_requests:
         actions.add('log')
     _profilers.actions = actions
     _profilers.profiler = None
-
     if actions:
         if actions.difference(('help', )):
             # If this assertion has reason to fail, we'll need to add code
@@ -63,7 +61,6 @@ def start_request(event):
             assert getattr(_profilers, 'profiler', None) is None
             _profilers.profiler = BzrProfiler()
             _profilers.profiler.start()
-
     if config.profiling.memory_profile_log:
         _profilers.memory_profile_start = (memory(), resident())
 
@@ -76,16 +73,13 @@ def end_request(event):
     """If profiling is turned on, save profile data for the request."""
     if not config.profiling.profiling_allowed:
         return
-
     try:
         actions = _profilers.actions
     except AttributeError:
         # Some tests don't go through all the proper motions, like firing off
         # a start request event.  Just be quiet about it.
         return
-
     del _profilers.actions
-
     request = event.request
     # Create a timestamp including milliseconds.
     now = datetime.fromtimestamp(da.get_request_start_time())
@@ -93,7 +87,6 @@ def end_request(event):
         now.strftime('%Y-%m-%d_%H:%M:%S'), int(now.microsecond/1000.0))
     pageid = request._orig_env.get('launchpad.pageid', 'Unknown')
     oopsid = getattr(request, 'oopsid', None)
-
     content_type = request.response.getHeader('content-type')
     if content_type is None:
         content_type_params = {}
@@ -101,16 +94,13 @@ def end_request(event):
     else:
         _major, _minor, content_type_params = parse(content_type)
         is_html = _major == 'text' and _minor == 'html'
-
     template_context = {
         'actions': actions,
         'always_log': config.profiling.profile_all_requests}
-
     if _profilers.profiler is not None:
         prof_stats = _profilers.profiler.stop()
         # Free some memory.
         del _profilers.profiler
-
         if oopsid is None:
             # Log an OOPS to get a log of the SQL queries, and other
             # useful information,  together with the profiling
@@ -121,16 +111,13 @@ def end_request(event):
             oopsid = oops.id
         else:
             oops = request.oops
-
         if 'log' in actions:
             filename = '%s-%s-%s-%s.prof' % (
                 timestamp, pageid, oopsid,
                 threading.currentThread().getName())
-
             dump_path = os.path.join(config.profiling.profile_dir, filename)
             prof_stats.save(dump_path, format="callgrind")
             template_context['dump_path'] = os.path.abspath(dump_path)
-
         if is_html and 'show' in actions:
             # Generate raw OOPS results.
             f = StringIO.StringIO()
@@ -142,7 +129,6 @@ def end_request(event):
                 f = StringIO.StringIO()
                 prof_stats.pprint(top=25, file=f)
                 template_context[name] = f.getvalue()
-
     if actions and is_html:
         # Hack the new HTML in at the end of the page.
         encoding = content_type_params.get('charset', 'utf-8')
@@ -153,7 +139,6 @@ def end_request(event):
         new_html = ''.join(
             (e_start, added_html, e_close_body, e_end))
         request.response.setResult(new_html)
-
     # Dump memory profiling info.
     if config.profiling.memory_profile_log:
         log = file(config.profiling.memory_profile_log, 'a')
