@@ -12,7 +12,10 @@ from zope.schema.vocabulary import SimpleTerm
 
 from canonical.database.sqlbase import quote_like
 from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.webapp import urlparse
+from canonical.launchpad.webapp import (
+    canonical_url,
+    urlparse,
+    )
 from canonical.launchpad.webapp.vocabulary import (
     CountableIterator,
     IHugeVocabulary,
@@ -144,6 +147,5 @@ class SpecificationDepCandidatesVocabulary(SQLObjectVocabularyBase):
             self.toTerm(spec) for spec in self._filter_specs(self._all_specs))
 
     def __contains__(self, obj):
-        # This probably needs to change to drop the _all_specs requirement.
-        return obj in self._all_specs and self._is_valid_candidate(obj)
+        return self._is_valid_candidate(obj)
 
