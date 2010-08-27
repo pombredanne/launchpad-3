@@ -137,3 +137,13 @@ class TestSpecificationDepCandidatesVocabulary(TestCaseWithFactory):
         candidate = self.factory.makeSpecification()
         vocab = self.getVocabularyForSpec(spec)
         self.assertRaises(LookupError, vocab.getTermByToken, candidate.name)
+
+    def test_searchForTerms_by_url(self):
+        # Calling searchForTerms with the URL of a valid candidate spec
+        # returns just that spec.
+        spec = self.factory.makeSpecification()
+        candidate = self.factory.makeSpecification()
+        vocab = self.getVocabularyForSpec(spec)
+        results = vocab.searchForTerms(canonical_url(candidate))
+        self.assertEqual(1, len(results))
+        self.assertEqual(candidate, list(results)[0].value)

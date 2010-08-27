@@ -39,7 +39,8 @@ class SpecificationDepCandidatesVocabulary(SQLObjectVocabularyBase):
 
     For the purposes of enumeration and searching we only consider the first
     sort of spec for now.  The URL form of token only matches precisely,
-    searching only looks for specs on the current target.
+    searching only looks for specs on the current target if the search term is
+    not a URL.
     """
 
     implements(IHugeVocabulary)
@@ -77,19 +78,25 @@ class SpecificationDepCandidatesVocabulary(SQLObjectVocabularyBase):
         # XXX obj.name needs to be different if target is different.
         return SimpleTerm(obj, obj.name, obj.title)
 
-    def _target_name_blueprint_name_from_url(self, url):
+    def _spec_from_url(self, url):
         """XXX."""
         scheme, netloc, path, params, args, fragment = urlparse(url)
         if not scheme or not netloc:
             # Not enough like a URL
-            return None, None
+            return None
         path_segments = path.strip('/').split('/')
         if len(path_segments) != 3:
-            return None, None
+            # Can't be a spec url
+            return None
         pillar_name, plus_spec, spec_name = path_segments
         if plus_spec != '+spec':
-            return None, None
-        return pillar_name, spec_name
+            # Can't be a spec url
+            return None
+        pillar = getUtility(IPillarNameSet).getByName(
+            pillar_name, ignore_inactive=True)
+        if pillar is None:
+            return None
+        return pillar.getSpecification(spec_name)
 
     def getTermByToken(self, token):
         """See `zope.schema.interfaces.IVocabularyTokenized`.
@@ -97,22 +104,12 @@ class SpecificationDepCandidatesVocabulary(SQLObjectVocabularyBase):
         The tokens for specifications are either the name of a spec on the
         same target or a URL for a spec.
         """
-        pillar_name, spec_name = self._target_name_blueprint_name_from_url(
-            token)
-        if pillar_name is not None:
-            pillar = getUtility(IPillarNameSet).getByName(
-                pillar_name, ignore_inactive=True)
-            if pillar is None:
-                raise LookupError(token)
-            spec = pillar.getSpecification(spec_name)
-            if spec is None or not self._is_valid_candidate(spec):
-                raise LookupError(token)
-            return self.toTerm(spec)
-        else:
+        spec = self._spec_from_url(token)
+        if spec is None:
             spec = self.context.target.getSpecification(token)
-            if spec is not None and self._is_valid_candidate(spec):
-                return self.toTerm(spec)
-            raise LookupError(token)
+        if spec and self._is_valid_candidate(spec):
+            return self.toTerm(spec)
+        raise LookupError(token)
 
     def search(self, query):
         """See `SQLObjectVocabularyBase.search`.
@@ -123,6 +120,9 @@ class SpecificationDepCandidatesVocabulary(SQLObjectVocabularyBase):
         """
         if not query:
             return CountableIterator(0, [])
+        spec = self._spec_from_url(query)
+        if spec is not None and self._is_valid_candidate(spec):
+            return CountableIterator(1, [spec])
         quoted_query = quote_like(query)
         sql_query = ("""
             (Specification.name LIKE %s OR
@@ -146,3 +146,4 @@ class SpecificationDepCandidatesVocabulary(SQLObjectVocabularyBase):
     def __contains__(self, obj):
         # This probably needs to change to drop the _all_specs requirement.
         return obj in self._all_specs and self._is_valid_candidate(obj)
+    
