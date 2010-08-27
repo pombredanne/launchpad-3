@@ -464,7 +464,7 @@ has unpublished binaries.
 We will build and publish the architecture independent binary for
 pmount ('pmount-bin') and publish it in hoary/i386 and hoary/hppa.
 
-    >>> from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+    >>> from lp.soyuz.enums import PackagePublishingStatus
     >>> login('foo.bar@canonical.com')
     >>> jblack = person_set.getByName('jblack')
     >>> pmount_build = jblack.archive.getBuildRecords()[0]
@@ -512,8 +512,6 @@ hppa support.
 After the binary package go from PENDING->PUBLISHED, the page reflects the
 changes:
 
-    >>> from lp.soyuz.interfaces.publishing import (
-    ...     PackagePublishingStatus)
     >>> login('foo.bar@canonical.com')
     >>> for binary in pmount_binaries:
     ...     binary.setPublished()

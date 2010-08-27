@@ -1645,14 +1645,14 @@ class ViewBuildFarmJobOld(AuthorizationBase):
             return None
 
     def _getBuild(self):
-        """Get `IBuildBase` associated with this job, if any."""
+        """Get `IPackageBuild` associated with this job, if any."""
         if IBuildFarmBuildJob.providedBy(self.obj):
             return self.obj.build
         else:
             return None
 
     def _checkBuildPermission(self, user=None):
-        """Check access to `IBuildBase` for this job."""
+        """Check access to `IPackageBuild` for this job."""
         permission = ViewBinaryPackageBuild(self.obj.build)
         if user is None:
             return permission.checkUnauthenticated()
@@ -2561,3 +2561,14 @@ class EditLibraryFileAliasWithParent(AuthorizationBase):
         if parent is None:
             return False
         return check_permission(self.permission, parent)
+
+
+class AdminBugTracker(AuthorizationBase):
+    permission = 'launchpad.Admin'
+    usedfor = IBugTracker
+
+    def checkAuthenticated(self, user):
+        return (
+            user.in_janitor or
+            user.in_admin or
+            user.in_launchpad_developers)

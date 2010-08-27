@@ -125,4 +125,3 @@ class IDistroSeriesDifferenceSource(Interface):
             is not a derived series.
         :return: A new `DistroSeriesDifference` object.
         """
-

@@ -148,8 +148,8 @@ published in the same archive.
 We start by creating a COPY archive and a source publication to
 receive the DDEB.
 
-    >>> from lp.soyuz.interfaces.archive import (
-    ...     IArchiveSet, ArchivePurpose)
+    >>> from lp.soyuz.enums import ArchivePurpose
+    >>> from lp.soyuz.interfaces.archive import IArchiveSet
 
     >>> copy = getUtility(IArchiveSet).new(
     ...     owner=ubuntu.owner, purpose=ArchivePurpose.COPY,

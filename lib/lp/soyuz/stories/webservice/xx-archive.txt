@@ -607,7 +607,7 @@ ubuntu primary archive.
     ...     sourcename="package1", version="1.0",
     ...     archive=ubuntu_db.main_archive)
 
-    >>> from lp.soyuz.interfaces.publishing import (
+    >>> from lp.soyuz.enums import (
     ...     PackagePublishingStatus)
     >>> ignore = test_publisher.getPubSource(
     ...     sourcename="package1", version="1.1",

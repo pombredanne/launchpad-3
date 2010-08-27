@@ -144,7 +144,7 @@ private PPA.
     >>> from lp.buildmaster.interfaces.buildbase import BuildStatus
     >>> from lp.soyuz.tests.test_publishing import (
     ...      SoyuzTestPublisher)
-    >>> from lp.soyuz.interfaces.publishing import (
+    >>> from lp.soyuz.enums import (
     ...     PackagePublishingStatus)
 
     >>> test_publisher = SoyuzTestPublisher()

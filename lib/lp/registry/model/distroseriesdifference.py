@@ -151,5 +151,3 @@ class DistroSeriesDifference(Storm):
                 self._getVersions(),
                 ))
         return True
-
-

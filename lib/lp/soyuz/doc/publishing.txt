@@ -172,7 +172,7 @@ Note: if the related archive for this source package publishing is
 a rebuild archive then the status summary will always display
 FULLY_BUILT.
 
-    >>> from lp.soyuz.interfaces.archive import ArchivePurpose
+    >>> from lp.soyuz.enums import ArchivePurpose
     >>> spph.archive.purpose = ArchivePurpose.COPY
     >>> build_status_summary = spph.getStatusSummaryForBuilds()
     >>> print_build_status_summary(build_status_summary)
@@ -185,7 +185,7 @@ FULLY_BUILT.
 
 If one of the builds becomes published, it will not appear in the summary:
 
-    >>> from lp.soyuz.interfaces.publishing import (
+    >>> from lp.soyuz.enums import (
     ...     PackagePublishingStatus)
     >>> bpr = test_publisher.uploadBinaryForBuild(builds[0], 'abc-bin')
     >>> bpph = test_publisher.publishBinaryInArchive(bpr, spph.archive,
