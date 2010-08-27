@@ -402,35 +402,21 @@ class TestPersonSetMerge(TestCaseWithFactory):
         account.openid_identifier = openid_identifier
         return account
 
-    def test_reused_openid_identifier(self):
-        # Verify that an account can be merged when it has a reused OpenID
-        # identifier. eg. The identifier was freed by a previous merge.
-        test_identifier = 'Z1Y2X3W4'
-        test_date = datetime(
-            2010, 04, 01, 0, 0, 0, 0, tzinfo=pytz.timezone('UTC'))
-        # Free an OpenID identifier using merge.
-        first_duplicate = self.factory.makePerson()
-        first_account = self._get_testable_account(
-            first_duplicate, test_date, test_identifier)
-        first_person = self.factory.makePerson()
-        self._do_premerge(first_duplicate, first_person)
-        login_person(first_person)
-        self.person_set.merge(first_duplicate, first_person)
-        expected = 'merged-%s-%s' % (
-            test_identifier, time.mktime(test_date.timetuple()))
-        self.assertEqual(expected, first_account.openid_identifier)
-        # Create an account that reuses the freed OpenID_identifier.
-        test_date = test_date.replace(2010, 05)
-        second_duplicate = self.factory.makePerson()
-        second_account = self._get_testable_account(
-            second_duplicate, test_date, test_identifier)
-        second_person = self.factory.makePerson()
-        self._do_premerge(second_duplicate, second_person)
-        login_person(second_person)
-        self.person_set.merge(second_duplicate, second_person)
-        expected = 'merged-%s-%s' % (
-            test_identifier, time.mktime(test_date.timetuple()))
-        self.assertEqual(expected, second_account.openid_identifier)
+    def test_openid_identifiers(self):
+        # Verify that OpenId Identifiers are merged.
+        duplicate = self.factory.makePerson()
+        duplicate_identifier = removeSecurityProxy(
+            duplicate.account).openid_identifiers.any().identifier
+        person = self.factory.makePerson()
+        self._do_premerge(duplicate, person)
+        login_person(person)
+        self.person_set.merge(duplicate, person)
+        self.assertEqual(
+            0,
+            removeSecurityProxy(duplicate.account).openid_identifiers.count())
+        self.assert_(duplicate_identifier in [
+            identifier.identifier for identifier in
+                removeSecurityProxy(person.account).openid_identifiers])
 
 
 class TestCreatePersonAndEmail(TestCase):
