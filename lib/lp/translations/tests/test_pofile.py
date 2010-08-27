@@ -951,18 +951,20 @@ class TestSharingPOFileCreation(TestCaseWithFactory):
         self.assertEqual(pofile_devel.language.code,
                          pofile_stable.language.code)
 
-    def test_pofile_creation_shared_upstream(self):
+    def test_pofile_creation_sharing_upstream(self):
         # When a pofile is created in a POTemplate of an Ubuntu package
         # it is also created in all shared templates in the upstream project.
         # POTemplate is 'shared' if it has the same name ('messages').
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-        hoary = ubuntu ['hoary']
-        packagename = self.factory.makeSourcePackageName()
-        sourcepackage = self.factory.makeSourcePackage(packagename, hoary)
+        distroseries = self.factory.makeDistroSeries(distribution=ubuntu)
+        ubuntu.translation_focus = distroseries
+        sourcepackage = self.factory.makeSourcePackage(
+            distroseries=distroseries)
         sourcepackage.setPackaging(self.foo_devel, self.factory.makePerson())
         sourcepackage.setPackaging(self.foo_stable, self.factory.makePerson())
         package_potemplate = self.factory.makePOTemplate(
-            distroseries=hoary, sourcepackagename=packagename,
+            distroseries=distroseries,
+            sourcepackagename=sourcepackage.sourcepackagename,
             name="messages")
         devel_potemplate = self.factory.makePOTemplate(
             productseries=self.foo_devel, name="messages")
