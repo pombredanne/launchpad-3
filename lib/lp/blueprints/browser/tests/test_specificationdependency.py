@@ -1,7 +1,10 @@
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""XXX: Module docstring goes here."""
+"""Tests for the specification dependency views.
+
+There are also tests in lp/blueprints/stories/blueprints/xx-dependencies.txt.
+"""
 
 __metaclass__ = type
 
