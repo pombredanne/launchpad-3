@@ -47,7 +47,7 @@ from lp.bugs.interfaces.bugtarget import (
 from lp.bugs.interfaces.bugtask import IBugTask
 from lp.bugs.interfaces.bugtracker import IBugTracker
 from lp.bugs.interfaces.bugwatch import IBugWatch
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
 from lp.code.interfaces.branch import IBranch

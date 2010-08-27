@@ -27,7 +27,7 @@ from canonical.testing import (
     LaunchpadZopelessLayer,
     ZopelessDatabaseLayer,
     )
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.buildmaster.interfaces.buildfarmjob import (
     BuildFarmJobType,

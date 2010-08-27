@@ -45,7 +45,7 @@ from lp.archiveuploader.uploadpolicy import (
     IArchiveUploadPolicy,
     SOURCE_PACKAGE_RECIPE_UPLOAD_POLICY_NAME,
     )
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
 from lp.buildmaster.model.buildfarmjob import BuildFarmJobOldDerived
 from lp.buildmaster.model.buildqueue import BuildQueue

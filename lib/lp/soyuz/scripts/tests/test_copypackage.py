@@ -28,7 +28,7 @@ from lp.bugs.interfaces.bug import (
     IBugSet,
     )
 from lp.bugs.interfaces.bugtask import BugTaskStatus
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket

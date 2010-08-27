@@ -110,7 +110,7 @@ from lp.bugs.interfaces.bugtracker import (
     IBugTrackerSet,
     )
 from lp.bugs.interfaces.bugwatch import IBugWatchSet
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
 from lp.buildmaster.model.buildqueue import BuildQueue
