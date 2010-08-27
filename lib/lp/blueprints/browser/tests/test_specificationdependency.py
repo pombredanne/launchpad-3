@@ -16,6 +16,8 @@ class TestAddDependency(BrowserTestCase):
     layer = DatabaseFunctionalLayer
 
     def test_add_dependency_by_url(self):
+        # It is possible to use the URL of a specification in the "Depends On"
+        # field of the form to add a dependency to a spec.
         spec = self.factory.makeSpecification(owner=self.user)
         dependency = self.factory.makeSpecification()
         browser = self.getViewBrowser(spec, '+linkdependency')
