@@ -8,14 +8,10 @@ import email
 import time
 import unittest
 
-from zope.component import getUtility
-
 from canonical.database.sqlbase import commit
-from canonical.launchpad.interfaces.gpghandler import IGPGHandler
 from canonical.launchpad.ftests import import_secret_test_key
 from canonical.launchpad.mail.commands import BugEmailCommand
 from canonical.launchpad.mail.handlers import MaloneHandler
-from canonical.launchpad.mail.incoming import canonicalise_line_endings
 from canonical.testing import LaunchpadFunctionalLayer
 from lp.services.mail import stub
 from lp.testing import (
