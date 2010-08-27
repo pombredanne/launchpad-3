@@ -98,12 +98,7 @@ class TestFakeLibrarian(LibraryAccessScenarioMixin, TestCaseWithFactory):
 
     def setUp(self):
         super(TestFakeLibrarian, self).setUp()
-        self.fake_librarian = FakeLibrarian()
-        self.fake_librarian.installAsLibrarian()
-
-    def tearDown(self):
-        super(TestFakeLibrarian, self).tearDown()
-        self.fake_librarian.uninstall()
+        self.fake_librarian = self.installFixture(FakeLibrarian())
 
     def test_fake(self):
         self.assertTrue(verifyObject(ISynchronizer, self.fake_librarian))

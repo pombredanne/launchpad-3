@@ -115,6 +115,14 @@ class FakeLibrarian(object):
 
         self.installed_as_librarian = False
 
+    def setUp(self):
+        """Fixture API: install as the librarian."""
+        self.installAsLibrarian()
+
+    def tearDown(self):
+        """Fixture API: uninstall."""
+        self.uninstall()
+
     def __init__(self):
         self.aliases = {}
         self.download_url = config.librarian.download_url
@@ -183,8 +191,7 @@ class FakeLibrarian(object):
     def create(self, name, size, file, contentType, expires=None,
                debugID=None, restricted=False):
         "See `ILibraryFileAliasSet`."""
-        return self.addFile(
-            name, size, file, contentType, expires=expires, debugID=debugID)
+        return self.addFile(name, size, file, contentType, expires=expires)
 
     def __getitem__(self, key):
         "See `ILibraryFileAliasSet`."""

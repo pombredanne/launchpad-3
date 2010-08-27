@@ -287,9 +287,11 @@ class TestCase(testtools.TestCase):
         `addCleanup`).
 
         :param fixture: Any object that has a `setUp` and `tearDown` method.
+        :return: `fixture`.
         """
         fixture.setUp()
         self.addCleanup(fixture.tearDown)
+        return fixture
 
     def __str__(self):
         """The string representation of a test is its id.
