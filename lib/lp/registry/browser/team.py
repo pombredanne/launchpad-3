@@ -69,6 +69,7 @@ from canonical.widgets import (
     LaunchpadRadioWidget,
     )
 from lp.app.errors import UnexpectedFormData
+from lp.registry.browser import MapMixin
 from lp.registry.browser.branding import BrandingChangeView
 from lp.registry.interfaces.mailinglist import (
     IMailingList,
@@ -1031,7 +1032,7 @@ class TeamMemberAddView(LaunchpadFormView):
         self.request.response.addInfoNotification(msg)
 
 
-class TeamMapView(LaunchpadView):
+class TeamMapView(MapMixin, LaunchpadView):
     """Show all people with known locations on a map.
 
     Also provides links to edit the locations of people in the team without
@@ -1044,7 +1045,7 @@ class TeamMapView(LaunchpadView):
     def initialize(self):
         # Tell our base-layout to include Google's gmap2 javascript so that
         # we can render the map.
-        if self.mapped_participants_count > 0:
+        if self.gmap2_enabled and self.mapped_participants_count > 0:
             self.request.needs_gmap2 = True
 
     @cachedproperty
