@@ -11,7 +11,7 @@ from lazr.restfulclient.errors import HTTPError
 
 from canonical.launchpad.testing.pages import LaunchpadWebServiceCaller
 from canonical.testing import DatabaseFunctionalLayer
-from lp.soyuz.interfaces.archive import ArchivePurpose
+from lp.soyuz.enums import ArchivePurpose
 from lp.testing import (
     celebrity_logged_in,
     launchpadlib_for,

@@ -26,6 +26,7 @@ from testtools.content import Content
 from testtools.content_type import ContentType
 
 from devscripts.ec2test.remote import (
+    EC2Runner,
     FlagFallStream,
     gunzip_data,
     gzip_data,
@@ -36,6 +37,16 @@ from devscripts.ec2test.remote import (
     WebTestLogger,
     write_pidfile,
     )
+
+
+class LoggingSMTPConnection(object):
+    """An SMTPConnection double that logs sent email."""
+
+    def __init__(self, log):
+        self._log = log
+
+    def send_email(self, message):
+        self._log.append(message)
 
 
 class RequestHelpers:
@@ -60,7 +71,7 @@ class RequestHelpers:
 
     def make_request(self, branch_url=None, revno=None,
                      trunk=None, sourcecode_path=None,
-                     emails=None, pqm_message=None):
+                     emails=None, pqm_message=None, emails_sent=None):
         """Make a request to test, specifying only things we care about.
 
         Note that the returned request object will not ever send email, but
@@ -73,11 +84,12 @@ class RequestHelpers:
                 [('a', 'http://example.com/bzr/a', 2),
                  ('b', 'http://example.com/bzr/b', 3),
                  ('c', 'http://example.com/bzr/c', 5)])
+        if emails_sent is None:
+            emails_sent = []
+        smtp_connection = LoggingSMTPConnection(emails_sent)
         request = Request(
             branch_url, revno, trunk.basedir, sourcecode_path, emails,
-            pqm_message)
-        request.emails_sent = []
-        request._send_email = request.emails_sent.append
+            pqm_message, smtp_connection)
         return request
 
     def make_sourcecode(self, branches):
@@ -93,6 +105,13 @@ class RequestHelpers:
             for i in range(revno):
                 tree.commit(message=str(i))
         return 'sourcecode/'
+
+    def make_tester(self, logger=None, test_directory=None, test_options=()):
+        if not logger:
+            logger = self.make_logger()
+        if not test_directory:
+            test_directory = 'unspecified-test-directory'
+        return LaunchpadTester(logger, test_directory, test_options)
 
     def make_logger(self, request=None, echo_to_stdout=False):
         if request is None:
@@ -199,13 +218,6 @@ class FakePopen:
 
 class TestLaunchpadTester(TestCaseWithTransport, RequestHelpers):
 
-    def make_tester(self, logger=None, test_directory=None, test_options=()):
-        if not logger:
-            logger = self.make_logger()
-        if not test_directory:
-            test_directory = 'unspecified-test-directory'
-        return LaunchpadTester(logger, test_directory, test_options)
-
     def test_build_test_command_no_options(self):
         # The LaunchpadTester runs "make check" if given no options.
         tester = self.make_tester()
@@ -243,14 +255,15 @@ class TestLaunchpadTester(TestCaseWithTransport, RequestHelpers):
         # got_result with the result.  This test is more of a smoke test to
         # make sure that everything integrates well.
         message = {'Subject': "One Crowded Hour"}
-        request = self.make_request(pqm_message=message)
+        log = []
+        request = self.make_request(pqm_message=message, emails_sent=log)
         logger = self.make_logger(request=request)
         tester = self.make_tester(logger=logger)
         output = "test output\n"
         tester._spawn_test_process = lambda: FakePopen(output, 0)
         tester.test()
         # Message being sent implies got_result thought it got a success.
-        self.assertEqual([message], request.emails_sent)
+        self.assertEqual([message], log)
 
     def test_error_in_testrunner(self):
         # Any exception is raised within LaunchpadTester.test() is an error in
@@ -260,28 +273,30 @@ class TestLaunchpadTester(TestCaseWithTransport, RequestHelpers):
         #      failure.
         #   3. Re-raise the error. In the script, this triggers an email.
         message = {'Subject': "One Crowded Hour"}
-        request = self.make_request(pqm_message=message)
+        log = []
+        request = self.make_request(pqm_message=message, emails_sent=log)
         logger = self.make_logger(request=request)
         tester = self.make_tester(logger=logger)
         # Break the test runner deliberately. In production, this is more
         # likely to be a system error than a programming error.
         tester._spawn_test_process = lambda: 1/0
-        self.assertRaises(ZeroDivisionError, tester.test)
+        tester.test()
         # Message not being sent implies got_result thought it got a failure.
-        self.assertEqual([], request.emails_sent)
+        self.assertEqual([], log)
         self.assertIn("ERROR IN TESTRUNNER", logger.get_summary_contents())
         self.assertIn("ZeroDivisionError", logger.get_summary_contents())
 
     def test_nonzero_exit_code(self):
         message = {'Subject': "One Crowded Hour"}
-        request = self.make_request(pqm_message=message)
+        log = []
+        request = self.make_request(pqm_message=message, emails_sent=log)
         logger = self.make_logger(request=request)
         tester = self.make_tester(logger=logger)
         output = "test output\n"
         tester._spawn_test_process = lambda: FakePopen(output, 10)
         tester.test()
         # Message not being sent implies got_result thought it got a failure.
-        self.assertEqual([], request.emails_sent)
+        self.assertEqual([], log)
 
 
 class TestPidfileHelpers(TestCase):
@@ -449,9 +464,10 @@ class TestRequest(TestCaseWithTransport, RequestHelpers):
 
     def test_submit_to_pqm_no_message_doesnt_send(self):
         # If there's no PQM message, then 'submit_to_pqm' returns None.
-        req = self.make_request(pqm_message=None)
+        log = []
+        req = self.make_request(pqm_message=None, emails_sent=log)
         req.submit_to_pqm(successful=True)
-        self.assertEqual([], req.emails_sent)
+        self.assertEqual([], log)
 
     def test_submit_to_pqm_unsuccessful(self):
         # submit_to_pqm returns the subject of the PQM mail even if it's
@@ -464,17 +480,19 @@ class TestRequest(TestCaseWithTransport, RequestHelpers):
     def test_submit_to_pqm_unsuccessful_no_email(self):
         # submit_to_pqm doesn't send any email if the run was unsuccessful.
         message = {'Subject:': 'My PQM message'}
-        req = self.make_request(pqm_message=message)
+        log = []
+        req = self.make_request(pqm_message=message, emails_sent=log)
         req.submit_to_pqm(successful=False)
-        self.assertEqual([], req.emails_sent)
+        self.assertEqual([], log)
 
     def test_submit_to_pqm_successful(self):
         # submit_to_pqm returns the subject of the PQM mail.
         message = {'Subject:': 'My PQM message'}
-        req = self.make_request(pqm_message=message)
+        log = []
+        req = self.make_request(pqm_message=message, emails_sent=log)
         subject = req.submit_to_pqm(successful=True)
         self.assertIs(message.get('Subject'), subject)
-        self.assertEqual([message], req.emails_sent)
+        self.assertEqual([message], log)
 
     def test_report_email_subject_success(self):
         req = self.make_request(emails=['foo@example.com'])
@@ -523,10 +541,11 @@ class TestRequest(TestCaseWithTransport, RequestHelpers):
             "gobbledygook", attachment.get_payload().decode('base64'))
 
     def test_send_report_email_sends_email(self):
-        req = self.make_request(emails=['foo@example.com'])
+        log = []
+        req = self.make_request(emails=['foo@example.com'], emails_sent=log)
         expected = req._build_report_email(False, "foo", "gobbledygook")
         req.send_report_email(False, "foo", "gobbledygook")
-        [observed] = req.emails_sent
+        [observed] = log
         # The standard library sucks. None of the MIME objects have __eq__
         # implementations.
         for expected_part, observed_part in izip(
@@ -597,7 +616,7 @@ class TestWebTestLogger(TestCaseWithTransport, RequestHelpers):
         self.assertEqual('foo\n', logger.get_full_log_contents())
         self.assertEqual('foo\n', logger.get_summary_contents())
 
-    def test_error_in_testrunner(self):
+    def test_error_in_testrunner_logs_to_summary(self):
         # error_in_testrunner logs the traceback to the summary log in a very
         # prominent way.
         try:
@@ -610,6 +629,93 @@ class TestWebTestLogger(TestCaseWithTransport, RequestHelpers):
         self.assertEqual(
             "\n\nERROR IN TESTRUNNER\n\n%s" % (stack,),
             logger.get_summary_contents())
+
+    def test_error_in_testrunner_sends_email(self):
+        # If email addresses are configurd, error_in_testrunner emails them
+        # with the failure and the full log.
+        try:
+            1/0
+        except ZeroDivisionError:
+            exc_info = sys.exc_info()
+        log = []
+        request = self.make_request(
+            emails=['foo@example.com'], emails_sent=log)
+        logger = self.make_logger(request=request)
+        logger.error_in_testrunner(exc_info)
+        [email] = log
+        self.assertEqual(
+            'Test results: %s: FAILURE' % request.get_merge_description(),
+            email['Subject'])
+        [body, attachment] = email.get_payload()
+        self.assertIsInstance(body, MIMEText)
+        self.assertEqual('inline', body['Content-Disposition'])
+        self.assertEqual('text/plain; charset="utf-8"', body['Content-Type'])
+        self.assertEqual(
+            logger.get_summary_contents(), body.get_payload(decode=True))
+        self.assertIsInstance(attachment, MIMEApplication)
+        self.assertEqual('application/x-gzip', attachment['Content-Type'])
+        self.assertEqual(
+            'attachment;',
+            attachment['Content-Disposition'][:len('attachment;')])
+        self.assertEqual(
+            logger.get_full_log_contents(),
+            gunzip_data(attachment.get_payload().decode('base64')))
+
+
+class TestEC2Runner(TestCaseWithTransport, RequestHelpers):
+
+    def make_ec2runner(self, emails=None, email_log=None):
+        if email_log is None:
+            email_log = []
+        smtp_connection = LoggingSMTPConnection(email_log)
+        return EC2Runner(
+            False, "who-cares.pid", False, smtp_connection, emails=emails)
+
+    def test_run(self):
+        calls = []
+        runner = self.make_ec2runner()
+        runner.run(
+            "boring test method",
+            lambda *a, **kw: calls.append((a, kw)), "foo", "bar", baz="qux")
+        self.assertEqual([(("foo", "bar"), {'baz': 'qux'})], calls)
+
+    def test_email_on_failure_no_emails(self):
+        # If no emails are specified, then no email is sent on failure.
+        log = []
+        runner = self.make_ec2runner(email_log=log)
+        self.assertRaises(
+            ZeroDivisionError, runner.run, "failing method", lambda: 1/0)
+        self.assertEqual([], log)
+
+    def test_email_on_failure_some_emails(self):
+        # If no emails are specified, then no email is sent on failure.
+        log = []
+        runner = self.make_ec2runner(
+            email_log=log, emails=["foo@example.com"])
+        self.assertRaises(
+            ZeroDivisionError, runner.run, "failing method", lambda: 1/0)
+        # XXX: Expect this to fail. Fix the test to be more correct.
+        [message] = log
+        self.assertEqual('failing method FAILED', message['Subject'])
+        self.assertEqual('foo@example.com', message['To'])
+        self.assertIn('ZeroDivisionError', str(message))
+
+    def test_email_with_launchpad_tester_failure(self):
+        email_log = []
+        to_emails = ['foo@example.com']
+        request = self.make_request(emails=to_emails, emails_sent=email_log)
+        logger = self.make_logger(request=request)
+        tester = self.make_tester(logger=logger)
+        # Deliberately break 'tester'.  A likely failure in production is not
+        # being able to spawn the child process.
+        tester._spawn_test_process = lambda: 1/0
+        runner = self.make_ec2runner(emails=to_emails, email_log=email_log)
+        runner.run("launchpad tester", tester.test)
+        # The primary thing we care about is that email *was* sent.
+        self.assertNotEqual([], email_log)
+        [tester_msg] = email_log
+        self.assertEqual('foo@example.com', tester_msg['To'])
+        self.assertIn('ZeroDivisionError', str(tester_msg))
 
 
 class TestDaemonizationInteraction(TestCaseWithTransport, RequestHelpers):
@@ -662,59 +768,69 @@ class TestResultHandling(TestCaseWithTransport, RequestHelpers):
         return email.get_payload()[0].get_payload()
 
     def test_success_no_emails(self):
-        request = self.make_request(emails=[])
+        log = []
+        request = self.make_request(emails=[], emails_sent=log)
         logger = self.make_logger(request=request)
         logger.got_result(True)
-        self.assertEqual([], request.emails_sent)
+        self.assertEqual([], log)
 
     def test_failure_no_emails(self):
-        request = self.make_request(emails=[])
+        log = []
+        request = self.make_request(emails=[], emails_sent=log)
         logger = self.make_logger(request=request)
         logger.got_result(False)
-        self.assertEqual([], request.emails_sent)
+        self.assertEqual([], log)
 
     def test_submits_to_pqm_on_success(self):
-        message = {'Subject': 'foo'}
-        request = self.make_request(emails=[], pqm_message=message)
-        logger = self.make_logger(request=request)
-        logger.got_result(True)
-        self.assertEqual([message], request.emails_sent)
-
-    def test_records_pqm_submission_in_email(self):
+        log = []
         message = {'Subject': 'foo'}
         request = self.make_request(
-            emails=['foo@example.com'], pqm_message=message)
+            emails=[], pqm_message=message, emails_sent=log)
         logger = self.make_logger(request=request)
         logger.got_result(True)
-        [pqm_message, user_message] = request.emails_sent
+        self.assertEqual([message], log)
+
+    def test_records_pqm_submission_in_email(self):
+        log = []
+        message = {'Subject': 'foo'}
+        request = self.make_request(
+            emails=['foo@example.com'], pqm_message=message, emails_sent=log)
+        logger = self.make_logger(request=request)
+        logger.got_result(True)
+        [pqm_message, user_message] = log
         self.assertEqual(message, pqm_message)
         self.assertIn(
             'SUBMITTED TO PQM:\n%s' % (message['Subject'],),
             self.get_body_text(user_message))
 
     def test_doesnt_submit_to_pqm_no_failure(self):
-        message = {'Subject': 'foo'}
-        request = self.make_request(emails=[], pqm_message=message)
-        logger = self.make_logger(request=request)
-        logger.got_result(False)
-        self.assertEqual([], request.emails_sent)
-
-    def test_records_non_pqm_submission_in_email(self):
+        log = []
         message = {'Subject': 'foo'}
         request = self.make_request(
-            emails=['foo@example.com'], pqm_message=message)
+            emails=[], pqm_message=message, emails_sent=log)
         logger = self.make_logger(request=request)
         logger.got_result(False)
-        [user_message] = request.emails_sent
+        self.assertEqual([], log)
+
+    def test_records_non_pqm_submission_in_email(self):
+        log = []
+        message = {'Subject': 'foo'}
+        request = self.make_request(
+            emails=['foo@example.com'], pqm_message=message, emails_sent=log)
+        logger = self.make_logger(request=request)
+        logger.got_result(False)
+        [user_message] = log
         self.assertIn(
             '**NOT** submitted to PQM:\n%s' % (message['Subject'],),
             self.get_body_text(user_message))
 
     def test_email_refers_to_attached_log(self):
-        request = self.make_request(emails=['foo@example.com'])
+        log = []
+        request = self.make_request(
+            emails=['foo@example.com'], emails_sent=log)
         logger = self.make_logger(request=request)
         logger.got_result(False)
-        [user_message] = request.emails_sent
+        [user_message] = log
         self.assertIn(
             '(See the attached file for the complete log)\n',
             self.get_body_text(user_message))
@@ -726,23 +842,27 @@ class TestResultHandling(TestCaseWithTransport, RequestHelpers):
         # now and can vary independently from the contents of the sent
         # email. We probably just want the contents of the email to be a list
         # of failing tests.
-        request = self.make_request(emails=['foo@example.com'])
+        log = []
+        request = self.make_request(
+            emails=['foo@example.com'], emails_sent=log)
         logger = self.make_logger(request=request)
         logger.get_summary_stream().write('bar\nbaz\nqux\n')
         logger.got_result(False)
-        [user_message] = request.emails_sent
+        [user_message] = log
         self.assertEqual(
             'bar\nbaz\nqux\n\n(See the attached file for the complete log)\n',
             self.get_body_text(user_message))
 
     def test_gzip_of_full_log_attached(self):
         # The full log is attached to the email.
-        request = self.make_request(emails=['foo@example.com'])
+        log = []
+        request = self.make_request(
+            emails=['foo@example.com'], emails_sent=log)
         logger = self.make_logger(request=request)
         logger.got_line("output from test process\n")
         logger.got_line("more output\n")
         logger.got_result(False)
-        [user_message] = request.emails_sent
+        [user_message] = log
         [body, attachment] = user_message.get_payload()
         self.assertEqual('application/x-gzip', attachment['Content-Type'])
         self.assertEqual(

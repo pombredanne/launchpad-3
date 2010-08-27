@@ -6,8 +6,6 @@ import os
 
 from sqlobject import SQLObjectNotFound
 
-from lp.soyuz.interfaces.archive import ArchivePurpose
-
 
 class BuildDaemonPackagesArchSpecific:
     """Parse and implement "PackagesArchSpecific"."""
@@ -151,7 +149,7 @@ def determineArchitecturesToBuild(pubrec, legal_archseries,
     assert hint_string, 'Missing arch_hint_list'
 
     # Ignore P-a-s for PPA publications.
-    if pubrec.archive.purpose == ArchivePurpose.PPA:
+    if pubrec.archive.is_ppa:
         pas_verify = None
 
     # The 'PPA supported' flag only applies to virtualized archives

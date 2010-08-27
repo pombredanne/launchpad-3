@@ -12,7 +12,7 @@ import transaction
 from canonical.launchpad.scripts.tests import run_script
 from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
 from canonical.testing import ZopelessAppServerLayer
-from lp.soyuz.interfaces.archive import ArchivePurpose
+from lp.soyuz.enums import ArchivePurpose
 from lp.testing import TestCaseWithFactory
 
 

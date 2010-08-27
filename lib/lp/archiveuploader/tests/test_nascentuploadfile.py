@@ -22,7 +22,7 @@ from lp.archiveuploader.nascentuploadfile import (
     DebBinaryUploadFile,
     )
 from lp.archiveuploader.tests import AbsolutelyAnythingGoesUploadPolicy
-from lp.soyuz.interfaces.queue import PackageUploadCustomFormat
+from lp.soyuz.enums import PackageUploadCustomFormat
 from lp.testing import TestCaseWithFactory
 
 

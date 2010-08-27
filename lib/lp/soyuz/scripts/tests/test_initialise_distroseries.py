@@ -25,7 +25,7 @@ from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.packageset import IPackagesetSet
-from lp.soyuz.interfaces.sourcepackageformat import SourcePackageFormat
+from lp.soyuz.enums import SourcePackageFormat
 from lp.soyuz.model.distroarchseries import DistroArchSeries
 from lp.soyuz.scripts.initialise_distroseries import (
     InitialisationError,
@@ -93,9 +93,11 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
 
     def assertDistroSeriesInitialisedCorrectly(self, foobuntu):
         # Check that 'pmount' has been copied correctly
-        hoary_pmount_pubs = self.hoary.getPublishedReleases('pmount')
-        foobuntu_pmount_pubs = foobuntu.getPublishedReleases('pmount')
-        self.assertEqual(len(hoary_pmount_pubs), len(foobuntu_pmount_pubs))
+        hoary_pmount_pubs = self.hoary.getPublishedSources('pmount')
+        foobuntu_pmount_pubs = foobuntu.getPublishedSources('pmount')
+        self.assertEqual(
+            hoary_pmount_pubs.count(),
+            foobuntu_pmount_pubs.count())
         hoary_i386_pmount_pubs = self.hoary['i386'].getReleasedPackages(
             'pmount')
         foobuntu_i386_pmount_pubs = foobuntu['i386'].getReleasedPackages(
@@ -144,7 +146,7 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
         foobuntu = self._create_distroseries(self.hoary)
         self._set_pending_to_failed(self.hoary)
         transaction.commit()
-        ids = InitialiseDistroSeries(foobuntu, ('i386',))
+        ids = InitialiseDistroSeries(foobuntu, ('i386', ))
         ids.check()
         ids.initialise()
         self.assertDistroSeriesInitialisedCorrectly(foobuntu)
