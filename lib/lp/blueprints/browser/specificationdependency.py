@@ -37,7 +37,9 @@ class AddSpecificationDependencySchema(Interface):
             "If another blueprint needs to be fully implemented "
             "before this feature can be started, then specify that "
             "dependency here so Launchpad knows about it and can "
-            "give you an accurate project plan."))
+            "give you an accurate project plan.  You can enter the "
+            "name of a blueprint that has the same target, or the "
+            "URL of any blueprint."))
 
 
 class SpecificationDependencyAddView(LaunchpadFormView):
