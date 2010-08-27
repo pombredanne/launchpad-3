@@ -15,6 +15,7 @@ from storm.locals import (
     Reference,
     Storm,
     )
+from zope.component import getUtility
 from zope.interface import (
     classProvides,
     implements,
@@ -31,8 +32,8 @@ from lp.registry.interfaces.distroseriesdifference import (
     IDistroSeriesDifference,
     IDistroSeriesDifferenceSource,
     )
-from lp.registry.model.distroseriesdifferencecomment import (
-    DistroSeriesDifferenceComment,
+from lp.registry.interfaces.distroseriesdifferencecomment import (
+    IDistroSeriesDifferenceCommentSource,
     )
 
 
@@ -133,18 +134,5 @@ class DistroSeriesDifference(Storm):
 
     def addComment(self, owner, comment):
         """See `IDistroSeriesDifference`."""
-        # Move this into a utility on IDSDSource
-        from canonical.launchpad.database.message import Message, MessageChunk
-        from email.Utils import make_msgid
-        msgid = make_msgid('distroseriesdifference')
-        message = Message(
-            parent=None, owner=owner, rfc822msgid=msgid, subject=self.title)
-        MessageChunk(message=message, content=comment, sequence=1)
-
-        store = IMasterStore(DistroSeriesDifference)
-        dsd_comment = DistroSeriesDifferenceComment()
-        dsd_comment.distro_series_difference = self
-        dsd_comment.message = message
-
-        return store.add(dsd_comment)
-
+        return getUtility(IDistroSeriesDifferenceCommentSource).new(
+            self, owner, comment)

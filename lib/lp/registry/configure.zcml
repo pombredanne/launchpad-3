@@ -115,6 +115,11 @@
     </class>
 
     <!-- DistroSeriesDifferenceComment -->
+    <securedutility
+        component="lp.registry.model.distroseriesdifferencecomment.DistroSeriesDifferenceComment"
+        provides="lp.registry.interfaces.distroseriesdifferencecomment.IDistroSeriesDifferenceCommentSource">
+        <allow interface="lp.registry.interfaces.distroseriesdifferencecomment.IDistroSeriesDifferenceCommentSource"/>
+    </securedutility>
     <class
         class="lp.registry.model.distroseriesdifferencecomment.DistroSeriesDifferenceComment">
         <allow interface="lp.registry.interfaces.distroseriesdifferencecomment.IDistroSeriesDifferenceComment"/>
