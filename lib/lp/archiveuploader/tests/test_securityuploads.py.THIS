@@ -11,12 +11,12 @@ from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
     IDistributionSet,
-    PackageUploadStatus,
     )
 from lp.archiveuploader.tests.test_uploadprocessor import (
     TestUploadProcessorBase,
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.soyuz.enums import PackageUploadStatus
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.processor import ProcessorFamily
 

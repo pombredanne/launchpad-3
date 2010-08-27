@@ -117,6 +117,10 @@ class AnythingGoesUploadPolicy(AbstractUploadPolicy):
         # We require the changes to be signed but not the dsc
         self.unsigned_dsc_ok = True
 
+    def validateUploadType(self, upload):
+        """We accept uploads of any type."""
+        pass
+
     def policySpecificChecks(self, upload):
         """Nothing, let it go."""
         pass

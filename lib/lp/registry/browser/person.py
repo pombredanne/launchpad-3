@@ -313,7 +313,7 @@ from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.soyuz.browser.archivesubscription import (
     traverse_archive_subscription_for_subscriber,
     )
-from lp.soyuz.interfaces.archive import ArchiveStatus
+from lp.soyuz.enums import ArchiveStatus
 from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease

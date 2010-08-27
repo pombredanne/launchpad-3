@@ -60,7 +60,8 @@ from lp.app.browser.stringformatter import escape, FormattersAPI
 from lp.blueprints.interfaces.specification import ISpecification
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.code.interfaces.branch import IBranch
-from lp.soyuz.interfaces.archive import ArchivePurpose, IPPA
+from lp.soyuz.enums import ArchivePurpose
+from lp.soyuz.interfaces.archive import IPPA
 from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
 from lp.registry.interfaces.person import IPerson
 
