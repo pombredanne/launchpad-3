@@ -114,7 +114,8 @@ class PillarView(LaunchpadView):
             self._set_official_launchpad(pillar)
             if IDistroSeries.providedBy(self.context):
                 self.official_answers = False
-                self.codehosting_usage =  self.context.distribution.codehosting_usage
+                distribution = self.context.distribution
+                self.codehosting_usage = distribution.codehosting_usage
             elif IDistributionSourcePackage.providedBy(self.context):
                 self.official_blueprints = False
                 self.official_rosetta = False
