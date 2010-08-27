@@ -1251,16 +1251,7 @@ class BugTargetBugsView(BugTaskSearchListingView, FeedsMixin):
         if IDistroSeries.providedBy(self.context):
             bug_statuses_to_show.append(BugTaskStatus.FIXRELEASED)
 
-    @property
-    def uses_launchpad_bugtracker(self):
-        """Whether this distro or product tracks bugs in launchpad.
-
-        :returns: boolean
-        """
-        service_usage = IServiceUsage(self.context)
-        return service_usage.bug_tracking_usage == ServiceUsage.LAUNCHPAD
-
-    @property
+    @cachedproperty
     def external_bugtracker(self):
         """External bug tracking system designated for the context.
 
@@ -1272,13 +1263,13 @@ class BugTargetBugsView(BugTaskSearchListingView, FeedsMixin):
         else:
             return has_external_bugtracker.getExternalBugTracker()
 
-    @property
+    @cachedproperty
     def bugtracker(self):
         """Description of the context's bugtracker.
 
         :returns: str which may contain HTML.
         """
-        if self.uses_launchpad_bugtracker:
+        if self.context.bug_tracking_usage == ServiceUsage.LAUNCHPAD:
             return 'Launchpad'
         elif self.external_bugtracker:
             return BugTrackerFormatterAPI(self.external_bugtracker).link(None)

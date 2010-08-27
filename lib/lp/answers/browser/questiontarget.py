@@ -506,22 +506,6 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
                 question.sourcepackagename.name)
 
     @property
-    def ubuntu_packages(self):
-        """The Ubuntu `IDistributionSourcePackage`s linked to the context.
-
-        If the context is an `IProduct` and it has `IPackaging` links to
-        Ubuntu, a list is returned. Otherwise None is returned
-        """
-        if IProduct.providedBy(self.context):
-            ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-            packages = [
-                package for package in self.context.distrosourcepackages
-                if package.distribution == ubuntu]
-            if len(packages) > 0:
-                return packages
-        return None
-
-    @property
     def can_configure_answers(self):
         """Can the user configure answers for the `IQuestionTarget`."""
         target = self.context

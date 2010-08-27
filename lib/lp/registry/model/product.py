@@ -796,14 +796,21 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         dsps = []
         for packaging in ret:
             distro = packaging.distroseries.distribution
-            if distro in distros:
-                continue
             distros.add(distro)
             dsps.append(DistributionSourcePackage(
                 sourcepackagename=packaging.sourcepackagename,
                 distribution=distro))
         return sorted(dsps, key=lambda x:
             (x.sourcepackagename.name, x.distribution.name))
+
+    @property
+    def ubuntu_packages(self):
+        """The Ubuntu `IDistributionSourcePackage`s linked to the `IProduct`.
+        """
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        return [
+            package for package in self.distrosourcepackages
+            if package.distribution == ubuntu]
 
     @property
     def bugtargetdisplayname(self):

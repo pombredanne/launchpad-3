@@ -637,6 +637,9 @@ class IProductPublic(
     distrosourcepackages = Attribute(_("List of distribution packages for "
         "this product"))
 
+    ubuntu_packages = Attribute(
+        _("List of distribution packages for this product in Ubuntu"))
+
     series = exported(
         doNotSnapshot(
             CollectionField(value_type=Object(schema=IProductSeries))))
