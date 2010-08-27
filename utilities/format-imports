@@ -15,6 +15,11 @@ The script will process each filename on the command line. If the file is a
 directory it recurses into it an process all *.py files found in the tree.
 It will output the paths of all the files that have been changed.
 
+For Launchpad it was applied to the "lib/canonical/launchpad" and the "lib/lp"
+subtrees. Running it with those parameters on a freshly branched LP tree
+should not produce any output, meaning that all the files in the tree should
+be formatted correctly.
+
 The script identifies the import section of each file as a block of lines
 that start with "import" or "from" or are indented with at least one space or
 are blank lines. Comment lines are also included if they are followed by an
