@@ -275,6 +275,7 @@ class IPymeSignature(Interface):
 
     fingerprint = Attribute("Signer Fingerprint.")
     plain_data = Attribute("Plain Signed Text.")
+    timestamp = Attribute("The time at which the message was signed.")
 
 
 class IPymeKey(Interface):
