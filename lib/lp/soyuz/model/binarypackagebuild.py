@@ -80,7 +80,7 @@ from lp.buildmaster.model.packagebuild import (
     PackageBuildDerived,
     )
 from lp.services.job.model.job import Job
-from lp.soyuz.interfaces.archive import ArchivePurpose
+from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.binarypackagebuild import (
     BuildSetStatus,
     CannotBeRescored,

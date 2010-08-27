@@ -23,10 +23,12 @@ from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.model.buildfarmjob import BuildFarmJobOldDerived
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
-from lp.soyuz.interfaces.archive import ArchivePurpose
+from lp.soyuz.enums import (
+    ArchivePurpose,
+    PackagePublishingStatus,
+    )
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.buildpackagejob import IBuildPackageJob
-from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.model.buildfarmbuildjob import BuildFarmBuildJob
 
 
@@ -105,7 +107,7 @@ class BuildPackageJob(BuildFarmJobOldDerived, Storm):
         # otherwise.
         if self.build.source_package_release.section.name == 'translations':
             pass
-        elif self.build.archive.purpose == ArchivePurpose.COPY:
+        elif self.build.archive.is_copy:
             score = rebuild_archive_score
         else:
             # Calculates the urgency-related part of the score.

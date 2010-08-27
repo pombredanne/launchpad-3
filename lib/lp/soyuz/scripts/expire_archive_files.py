@@ -14,6 +14,7 @@ from canonical.launchpad.webapp.interfaces import (
     MAIN_STORE,
     )
 from lp.services.scripts.base import LaunchpadCronScript
+from lp.soyuz.enums import ArchivePurpose
 
 # PPAs that we never want to expire.
 BLACKLISTED_PPAS = """
@@ -58,9 +59,6 @@ class ArchiveExpirer(LaunchpadCronScript):
 
     def determineSourceExpirables(self, num_days):
         """Return expirable libraryfilealias IDs."""
-        # Avoid circular imports.
-        from lp.soyuz.interfaces.archive import ArchivePurpose
-
         stay_of_execution = '%d days' % num_days
         archive_types = (ArchivePurpose.PPA, ArchivePurpose.PARTNER)
 
@@ -113,9 +111,6 @@ class ArchiveExpirer(LaunchpadCronScript):
 
     def determineBinaryExpirables(self, num_days):
         """Return expirable libraryfilealias IDs."""
-        # Avoid circular imports.
-        from lp.soyuz.interfaces.archive import ArchivePurpose
-
         stay_of_execution = '%d days' % num_days
         archive_types = (ArchivePurpose.PPA, ArchivePurpose.PARTNER)
 

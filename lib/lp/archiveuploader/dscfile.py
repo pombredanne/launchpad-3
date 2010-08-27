@@ -67,11 +67,13 @@ from lp.registry.interfaces.person import (
     PersonCreationRationale,
     )
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
-from lp.soyuz.interfaces.archive import (
+from lp.soyuz.enums import (
     ArchivePurpose,
+    SourcePackageFormat,
+    )
+from lp.soyuz.interfaces.archive import (
     IArchiveSet,
     )
-from lp.soyuz.interfaces.sourcepackageformat import SourcePackageFormat
 
 
 class DpkgSourceError(Exception):

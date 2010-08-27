@@ -26,9 +26,9 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector,
     MAIN_STORE,
     )
+from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.interfaces.archivearch import IArchiveArchSet
 from lp.soyuz.interfaces.packagecloner import IPackageCloner
-from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 
 
 def clone_packages(origin, destination, distroarchseries_list=None):

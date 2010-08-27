@@ -18,7 +18,7 @@ from canonical.database.sqlbase import sqlvalues
 from lp.soyuz.interfaces.distroarchseriesbinarypackagerelease import (
     IDistroArchSeriesBinaryPackageRelease,
     )
-from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.model.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease,
     )

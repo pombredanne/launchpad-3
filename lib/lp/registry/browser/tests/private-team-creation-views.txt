@@ -293,8 +293,8 @@ those permitted by private teams.
     ...     evolution.setBranchVisibilityTeamPolicy(
     ...         team, BranchVisibilityRule.PRIVATE)
     ...     # A PPA.
-    ...     from lp.soyuz.interfaces.archive import (
-    ...         ArchivePurpose, IArchiveSet)
+    ...     from lp.soyuz.enums import ArchivePurpose
+    ...     from lp.soyuz.interfaces.archive import IArchiveSet
     ...     from lp.registry.interfaces.distribution import (
     ...         IDistributionSet)
     ...     ubuntu = getUtility(IDistributionSet)['ubuntu']

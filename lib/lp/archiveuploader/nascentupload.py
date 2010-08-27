@@ -46,7 +46,6 @@ from lp.archiveuploader.utils import determine_source_file_type
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
 from lp.soyuz.interfaces.archive import (
-    ArchivePurpose,
     MAIN_ARCHIVE_PURPOSES,
     )
 
@@ -439,7 +438,7 @@ class NascentUpload:
         if not self.policy.distroseries:
             # Greasy hack until above bug is fixed.
             return False
-        return self.policy.archive.purpose == ArchivePurpose.PPA
+        return self.policy.archive.is_ppa
 
     def getComponents(self):
         """Return a set of components present in the uploaded files."""
