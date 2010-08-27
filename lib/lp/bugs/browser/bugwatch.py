@@ -149,12 +149,12 @@ class BugWatchEditView(LaunchpadFormView):
             remote_bug=bugwatch.remotebug))
         bugwatch.bug.removeWatch(bugwatch, self.user)
 
-    def resetBugWatchCondition(self, action):
+    def showResetActionCondition(self, action):
         """Return True if the reset action can be shown to this user."""
         return check_permission('launchpad.Admin', self.context)
 
     @action('Reset this watch', name='reset',
-            condition=resetBugWatchCondition)
+            condition=showResetActionCondition)
     def reset_action(self, action, data):
         bug_watch = self.context
         bug_watch.reset()
