@@ -110,7 +110,7 @@ from lp.registry.model.productseries import ProductSeries
 from lp.services.worlddata.interfaces.language import ILanguage
 from lp.services.worlddata.model.country import Country
 from lp.services.worlddata.model.language import Language
-from lp.soyuz.interfaces.archive import ArchivePurpose
+from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.model.component import Component
 from lp.soyuz.model.distroarchseries import DistroArchSeries
 from lp.soyuz.model.processor import (

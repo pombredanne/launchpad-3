@@ -201,26 +201,26 @@ from lp.services.mail.signedmessage import SignedMessage
 from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.soyuz.adapters.packagelocation import PackageLocation
-from lp.soyuz.interfaces.archive import (
+from lp.soyuz.enums import (
     ArchivePurpose,
+    BinaryPackageFileType,
+    BinaryPackageFormat,
+    PackagePublishingPriority,
+    PackagePublishingStatus,
+    PackageUploadStatus,
+    )
+from lp.soyuz.interfaces.archive import (
     default_name_by_purpose,
     IArchiveSet,
     )
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
-from lp.soyuz.interfaces.binarypackagerelease import (
-    BinaryPackageFileType,
-    BinaryPackageFormat,
-    )
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.interfaces.publishing import (
     IPublishingSet,
-    PackagePublishingPriority,
-    PackagePublishingStatus,
     )
-from lp.soyuz.interfaces.queue import PackageUploadStatus
 from lp.soyuz.interfaces.section import ISectionSet
 from lp.soyuz.model.files import (
     BinaryPackageFile,
@@ -1496,7 +1496,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return mail
 
     def makeSpecification(self, product=None, title=None, distribution=None,
-                          name=None, summary=None,
+                          name=None, summary=None, owner=None,
                           status=SpecificationDefinitionStatus.NEW):
         """Create and return a new, arbitrary Blueprint.
 
@@ -1511,13 +1511,15 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             summary = self.getUniqueString('summary')
         if title is None:
             title = self.getUniqueString('title')
+        if owner is None:
+            owner = self.makePerson()
         return getUtility(ISpecificationSet).new(
             name=name,
             title=title,
             specurl=None,
             summary=summary,
             definition_status=status,
-            owner=self.makePerson(),
+            owner=owner,
             product=product,
             distribution=distribution)
 
