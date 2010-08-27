@@ -279,6 +279,10 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
         CollectionField(
             title=_("MultiJoin of bugs which are dupes of this one."),
             value_type=BugField(), readonly=True))
+    attachments_unpopulated = CollectionField(
+            title=_("List of bug attachments."),
+            value_type=Reference(schema=IBugAttachment),
+            readonly=True)
     attachments = exported(
         CollectionField(
             title=_("List of bug attachments."),

@@ -1478,7 +1478,7 @@ class Bug(SQLBase):
 
             # XXX: This should be a bulk update. RBC 20100827
             # bug=https://bugs.edge.launchpad.net/storm/+bug/625071
-            for attachment in self.attachments:
+            for attachment in self.attachments_unpopulated:
                 attachment.libraryfile.restricted = private
 
             # Correct the heat for the bug immediately, so that we don't have
@@ -1742,6 +1742,17 @@ class Bug(SQLBase):
             BugAttachment, BugAttachment.bug == self,
             BugAttachment.libraryfile == LibraryFileAlias.id,
             LibraryFileAlias.content != None).order_by(BugAttachment.id)
+
+    @property
+    def attachments_unpopulated(self):
+        """See `IBug`.
+        
+        This version dos not pre-lookup messages and LFA's.
+        
+        The regular 'attachments' property does prepopulation because it is
+        exposed in the API.
+        """
+        return self.attachments
 
 
 class BugSet:
