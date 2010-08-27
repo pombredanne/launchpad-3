@@ -75,14 +75,16 @@ class TestBranchCloud(TestCaseWithFactory):
             self.factory.makeRevisionsForBranch(
                 removeSecurityProxy(branch), count=revision_count,
                 date_generator=date_generator)
-        getUtility(IRevisionSet).updateRevisionCacheForBranch(branch)
+        # The code that updates the revision cache doesn't need to care about
+        # the privacy of the branch.
+        getUtility(IRevisionSet).updateRevisionCacheForBranch(
+            removeSecurityProxy(branch))
         return branch
 
     def test_empty_with_no_branches(self):
         # getProductsWithInfo returns an empty result set if there are no
         # branches in the database.
-        products_with_info = self.getProductsWithInfo()
-        self.assertEqual([], list(products_with_info))
+        self.assertEqual([], self.getProductsWithInfo())
 
     def test_empty_products_not_counted(self):
         # getProductsWithInfo doesn't include products that don't have any
@@ -91,31 +93,28 @@ class TestBranchCloud(TestCaseWithFactory):
         # Note that this is tested implicitly by test_empty_with_no_branches,
         # since there are such products in the sample data.
         self.factory.makeProduct()
-        products_with_info = self.getProductsWithInfo()
-        self.assertEqual([], list(products_with_info))
+        self.assertEqual([], self.getProductsWithInfo())
 
     def test_empty_branches_not_counted(self):
         # getProductsWithInfo doesn't consider branches that lack revision
         # data, 'empty branches', to contribute to the count of branches on a
         # product.
         self.factory.makeProductBranch()
-        products_with_info = self.getProductsWithInfo()
-        self.assertEqual([], list(products_with_info))
+        self.assertEqual([], self.getProductsWithInfo())
 
     def test_private_branches_not_counted(self):
         # getProductsWithInfo doesn't count private branches.
         self.makeBranch(private=True)
-        products_with_info = self.getProductsWithInfo()
-        self.assertEqual([], list(products_with_info))
+        self.assertEqual([], self.getProductsWithInfo())
 
     def test_revisions_counted(self):
         # getProductsWithInfo includes products that public revisions.
         last_commit_date = datetime.now(pytz.UTC) - timedelta(days=5)
         product = self.factory.makeProduct()
         self.makeBranch(product=product, last_commit_date=last_commit_date)
-        products_with_info = list(self.getProductsWithInfo())
         self.assertEqual(
-            [(product.name, 5, 1, last_commit_date)], products_with_info)
+            [(product.name, 5, 1, last_commit_date)],
+            self.getProductsWithInfo())
 
     def test_only_recent_revisions_counted(self):
         # If the revision cache has revisions for the project, but they are
@@ -131,34 +130,13 @@ class TestBranchCloud(TestCaseWithFactory):
             cache = RevisionCache(revision)
             cache.product = product
             store.add(cache)
-        products_with_info = list(self.getProductsWithInfo())
-        self.assertEqual([(product.name, 2, 2, revision.revision_date)], products_with_info)
-
-    def test_includes_products_with_branches_with_revisions(self):
-        # getProductsWithInfo includes all products that have branches with
-        # revisions.
-        last_commit_date = datetime(2008, 12, 25)
-        branch = self.makeBranch(last_commit_date=last_commit_date)
-        products_with_info = self.getProductsWithInfo()
         self.assertEqual(
-            [(branch.product.name, 1, last_commit_date)],
-            list(products_with_info))
+            [(product.name, 2, 2, revision.revision_date)],
+            self.getProductsWithInfo())
 
-    def test_uses_latest_revision_date(self):
-        # getProductsWithInfo uses the most recent revision date from all the
-        # branches in that product.
-        product = self.factory.makeProduct()
-        self.makeBranch(
-            product=product, last_commit_date=datetime(2008, 12, 25))
-        last_commit_date = datetime(2009, 01, 01)
-        self.makeBranch(product=product, last_commit_date=last_commit_date)
-        products_with_info = self.getProductsWithInfo()
-        self.assertEqual(
-            [(product.name, 2, last_commit_date)], list(products_with_info))
-
-    def test_sorted_by_branch_count(self):
+    def test_sorted_by_commit_count(self):
         # getProductsWithInfo returns a result set sorted so that the products
-        # with the most branches come first.
+        # with the most commits come first.
         product1 = self.factory.makeProduct()
         for i in range(3):
             self.makeBranch(product=product1)
@@ -167,7 +145,7 @@ class TestBranchCloud(TestCaseWithFactory):
             self.makeBranch(product=product2)
         self.assertEqual(
             [product2.name, product1.name],
-            [name for name, count, last_commit
+            [name for name, commits, count, last_commit
              in self.getProductsWithInfo()])
 
     def test_limit(self):
@@ -185,7 +163,7 @@ class TestBranchCloud(TestCaseWithFactory):
             self.makeBranch(product=product3)
         self.assertEqual(
             [product3.name, product2.name],
-            [name for name, count, last_commit
+            [name for name, commits, count, last_commit
              in self.getProductsWithInfo(num_products=2)])
 
 

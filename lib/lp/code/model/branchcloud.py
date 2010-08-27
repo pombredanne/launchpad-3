@@ -12,18 +12,9 @@ __all__ = [
 from datetime import datetime, timedelta
 
 import pytz
-from storm.expr import (
-    Alias,
-    Func,
-    )
-from storm.locals import (
-    Count,
-    Desc,
-    Max,
-    Not,
-    )
+from storm.expr import Alias, Func
+from storm.locals import Count, Desc, Max, Not
 from zope.interface import classProvides
-
 
 from canonical.launchpad.interfaces.lpstorm import ISlaveStore
 
