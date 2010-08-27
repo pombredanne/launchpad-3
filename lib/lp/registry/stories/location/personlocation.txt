@@ -27,7 +27,8 @@ sees the timezone, but no map.
 
     >>> anon_browser.open('http://launchpad.dev/~yyy')
     >>> markup = str(anon_browser.contents)
-    >>> print extract_text(find_tag_by_id(markup, 'portlet-map'), skip_tags=[])
+    >>> print extract_text(
+    ...     find_tag_by_id(markup, 'portlet-map'), skip_tags=[])
     Location
     Time zone: Europe/London...
 
@@ -46,7 +47,8 @@ for users.
 
     >>> anon_browser.open('http://launchpad.dev/~yyy')
     >>> markup = str(anon_browser.contents)
-    >>> print extract_text(find_tag_by_id(markup, 'portlet-map'), skip_tags=[])
+    >>> print extract_text(
+    ...     find_tag_by_id(markup, 'portlet-map'), skip_tags=[])
     Location
     Time zone: Europe/London...
     Y.lp.app.mapping.renderPersonMapSmall(...
