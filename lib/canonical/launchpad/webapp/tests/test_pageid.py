@@ -42,7 +42,7 @@ class FakeCollectionResourceView(FakeView):
     def __init__(self):
         super(FakeCollectionResourceView, self).__init__()
         self.type_url = (
-            u'https://launchpad.dev/api/devel/#origin-page-resource')
+            u'https://launchpad.dev/api/devel/#milestone-page-resource')
 
 
 class TestWebServicePageIDs(TestCase):
@@ -98,4 +98,4 @@ class TestCollectionResourcePageIDs(TestCase):
         # page resource is included in the page ID.
         self.assertEqual(
             self.makePageID(),
-            'FakeContext:FakeCollectionResourceView:#origin-page-resource')
+            'FakeContext:FakeCollectionResourceView:#milestone-page-resource')
