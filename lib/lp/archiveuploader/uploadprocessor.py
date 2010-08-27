@@ -81,7 +81,7 @@ from lp.soyuz.interfaces.archive import (
     IArchiveSet,
     NoSuchPPA,
     )
-from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
+from lp.buildmaster.interfaces.packagebuild import IPackageBuildSet
 
 
 __all__ = [
@@ -212,7 +212,11 @@ class UploadProcessor:
             self.log.warn("Unable to extract build id from leaf name %s,"
                 " skipping." % upload)
             return
-        build = getUtility(IBinaryPackageBuildSet).getByBuildID(int(build_id))
+        try:
+            build = getUtility(IPackageBuildSet).getByBuildID(build_id)
+        except NotFoundError:
+            self.log.warn("Unable to find build with id %d. Skipping.", build_id)
+            return
         if build.status != BuildStatus.UPLOADING:
             self.log.warn(
                 "Expected build status to be 'UPLOADING', was %s. Skipping.",

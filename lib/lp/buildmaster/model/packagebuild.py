@@ -470,3 +470,8 @@ class PackageBuildSet:
                 Desc(BuildFarmJob.date_finished), BuildFarmJob.id)
 
         return result_set
+
+    def getByID(self, build_id):
+        """See `IPackageBuildSet`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        return store.find(PackageBuild, PackageBuild.id == build_id).one()
