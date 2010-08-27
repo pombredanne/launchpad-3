@@ -157,3 +157,22 @@ class TestSpecificationDepCandidatesVocabulary(TestCaseWithFactory):
         vocab = self.getVocabularyForSpec(spec)
         results = vocab.searchForTerms(canonical_url(candidate))
         self.assertEqual(0, len(results))
+
+    def test_token_for_same_target_dep_is_name(self):
+        # The 'token' part of the term for a dependency candidate that has the
+        # same target is just the name of the candidate.
+        product = self.factory.makeProduct()
+        spec = self.factory.makeSpecification(product=product)
+        candidate = self.factory.makeSpecification(product=product)
+        vocab = self.getVocabularyForSpec(spec)
+        term = vocab.getTermByToken(candidate.name)
+        self.assertEqual(term.token, candidate.name)
+
+    def test_token_for_different_target_dep_is_url(self):
+        # The 'token' part of the term for a dependency candidate that has a
+        # different target is the canonical url of the candidate.
+        spec = self.factory.makeSpecification()
+        candidate = self.factory.makeSpecification()
+        vocab = self.getVocabularyForSpec(spec)
+        term = vocab.getTermByToken(canonical_url(candidate))
+        self.assertEqual(term.token, canonical_url(candidate))

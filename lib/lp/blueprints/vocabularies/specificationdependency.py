@@ -78,11 +78,20 @@ class SpecificationDepCandidatesVocabulary(SQLObjectVocabularyBase):
                 if self._is_valid_candidate(spec, check_target)]
 
     def toTerm(self, obj):
-        # XXX obj.name needs to be different if target is different.
-        return SimpleTerm(obj, obj.name, obj.title)
+        if obj.target == self.context.target:
+            token = obj.name
+        else:
+            token = canonical_url(obj)
+        return SimpleTerm(obj, token, obj.title)
 
     def _spec_from_url(self, url):
-        """XXX."""
+        """If `url` is the URL of a specification, return it.
+
+        This implementation is a little fuzzy and will return specs for URLs
+        that, for example, don't have the host name right.  This seems
+        unlikely to cause confusion in practice, and being too anal probably
+        would be confusing (e.g. not accepting edge URLs on lpnet).
+        """
         scheme, netloc, path, params, args, fragment = urlparse(url)
         if not scheme or not netloc:
             # Not enough like a URL
