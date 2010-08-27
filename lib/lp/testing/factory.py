@@ -152,7 +152,10 @@ from lp.hardwaredb.interfaces.hwdb import (
     IHWSubmissionDeviceSet,
     IHWSubmissionSet,
     )
-from lp.registry.enum import DistroSeriesDifferenceType
+from lp.registry.enum import (
+    DistroSeriesDifferenceStatus,
+    DistroSeriesDifferenceType,
+    )
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.distributionmirror import (
     MirrorContent,
@@ -1816,7 +1819,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
     def makeDistroSeriesDifference(
         self, derived_series=None, source_package_name_str=None,
         versions=None,
-        difference_type=DistroSeriesDifferenceType.DIFFERENT_VERSIONS):
+        difference_type=DistroSeriesDifferenceType.DIFFERENT_VERSIONS,
+        status=DistroSeriesDifferenceStatus.NEEDS_ATTENTION):
         """Create a new distro series source package difference."""
         if derived_series is None:
             parent_series = self.makeDistroSeries()

@@ -13,7 +13,10 @@ from zope.component import getUtility
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing import DatabaseFunctionalLayer
 from lp.testing import TestCaseWithFactory
-from lp.registry.enum import DistroSeriesDifferenceType
+from lp.registry.enum import (
+    DistroSeriesDifferenceStatus,
+    DistroSeriesDifferenceType,
+    )
 from lp.registry.exceptions import NotADerivedSeriesError
 from lp.registry.interfaces.distroseriesdifference import (
     IDistroSeriesDifference,
@@ -152,7 +155,6 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             sourcepackagename=ds_diff.source_package_name,
             distroseries=ds_diff.derived_series.parent_series,
             status=PackagePublishingStatus.PENDING)
-        clear_cachedproperties(ds_diff)
 
         self.assertTrue(ds_diff.updateDifferenceType())
         self.assertEqual(
@@ -170,7 +172,6 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             distroseries=ds_diff.derived_series.parent_series,
             status=PackagePublishingStatus.PENDING,
             version='1.0')
-        clear_cachedproperties(ds_diff)
 
         ds_diff.updateDifferenceType()
 
@@ -193,10 +194,10 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             distroseries=ds_diff.derived_series,
             status=PackagePublishingStatus.PENDING,
             version='1.0')
-        clear_cachedproperties(ds_diff)
 
-        ds_diff.updateDifferenceType()
+        was_updated = ds_diff.updateDifferenceType()
 
+        self.assertIs(True, was_updated)
         self.assertEqual(
             DistroSeriesDifferenceStatus.RESOLVED,
             ds_diff.status)
@@ -219,7 +220,6 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             distroseries=ds_diff.derived_series,
             status=PackagePublishingStatus.PENDING,
             version='1.1')
-        clear_cachedproperties(ds_diff)
 
         ds_diff.updateDifferenceType()
 
@@ -228,17 +228,10 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             ds_diff.status)
         self.assertIn(
             "Difference re-opened. Parent/derived versions: 1.0/1.1",
-            self.activity_log)
+            ds_diff.activity_log)
 
     def test_appendActivityLog_not_public(self):
         self.fail("Unimplemented")
-
-    def test_cached_properties(self):
-        # Both the derived and parent pubs are cached.
-        ds_diff = self.factory.makeDistroSeriesDifference()
-
-        self.assertTrue(is_cached(ds_diff, '_source_pub_cached_value'))
-        self.assertTrue(is_cached(ds_diff, '_parent_source_pub_cached_value'))
 
 
 def test_suite():
