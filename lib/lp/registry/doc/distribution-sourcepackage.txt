@@ -88,7 +88,7 @@ sorted by distroseries and component with publications in proposed and backports
 excluded.
 
     >>> from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
-    >>> from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+    >>> from lp.soyuz.enums import PackagePublishingStatus
     >>> publisher = SoyuzTestPublisher()
     >>> publisher.prepareBreezyAutotest()
     >>> warty = ubuntu['warty']
@@ -263,7 +263,6 @@ versions of a given source package have been published in.
     ...     name="beta", distribution=ubuntu_test)
 
     # Next publish some sources in them.
-    >>> from lp.soyuz.interfaces.publishing import PackagePublishingStatus
     >>> gedit_nightly_src_hist = publisher.getPubSource(
     ...     sourcename="gedit", archive=ppa_nightly,
     ...     creator=ppa_nightly.owner,

@@ -44,6 +44,7 @@ from canonical.launchpad.webapp.interfaces import (
     )
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageName
 from lp.soyuz.interfaces.binarypackagerelease import IBinaryPackageReleaseSet
@@ -55,7 +56,6 @@ from lp.soyuz.interfaces.distroarchseries import (
     )
 from lp.soyuz.interfaces.publishing import (
     ICanPublishPackages,
-    PackagePublishingStatus,
     )
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease

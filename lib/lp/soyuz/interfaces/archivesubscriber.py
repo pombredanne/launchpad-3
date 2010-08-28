@@ -8,17 +8,12 @@
 __metaclass__ = type
 
 __all__ = [
-    'ArchiveSubscriberStatus',
     'ArchiveSubscriptionError',
     'IArchiveSubscriber',
     'IArchiveSubscriberSet',
     'IPersonalArchiveSubscription'
     ]
 
-from lazr.enum import (
-    DBEnumeratedType,
-    DBItem,
-    )
 from lazr.restful.declarations import (
     export_as_webservice_entry,
     exported,
@@ -36,29 +31,8 @@ from zope.schema import (
 from canonical.launchpad import _
 from lp.registry.interfaces.person import IPerson
 from lp.services.fields import PersonChoice
+from lp.soyuz.enums import ArchiveSubscriberStatus
 from lp.soyuz.interfaces.archive import IArchive
-
-
-class ArchiveSubscriberStatus(DBEnumeratedType):
-    """The status of an `ArchiveSubscriber`."""
-
-    CURRENT = DBItem(1, """
-        Active
-
-        The subscription is current.
-        """)
-
-    EXPIRED = DBItem(2, """
-        Expired
-
-        The subscription has expired.
-        """)
-
-    CANCELLED = DBItem(3, """
-        Cancelled
-
-        The subscription was cancelled.
-        """)
 
 
 class ArchiveSubscriptionError(Exception):
