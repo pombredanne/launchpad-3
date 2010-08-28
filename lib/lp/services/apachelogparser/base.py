@@ -24,7 +24,7 @@ parser = apachelog.parser(apachelog.formats['extended'])
 
 
 def get_files_to_parse(root, file_names):
-    """Return a dict mapping files to the position where reading should start.
+    """Return an iterator of file and position where reading should start.
 
     The lines read from that position onwards will be the ones that have not
     been parsed yet.
@@ -32,7 +32,6 @@ def get_files_to_parse(root, file_names):
     :param root: The directory where the files are stored.
     :param file_names: The names of the files.
     """
-    files_to_parse = {}
     store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
     for file_name in file_names:
         file_path = os.path.join(root, file_name)
@@ -52,8 +51,7 @@ def get_files_to_parse(root, file_names):
                 # parse what's new.
                 position = parsed_file.bytes_read
 
-        files_to_parse[fd] = position
-    return files_to_parse
+        yield fd, position
 
 
 def get_fd_and_file_size(file_path):
