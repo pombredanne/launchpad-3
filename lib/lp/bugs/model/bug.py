@@ -1752,7 +1752,7 @@ class Bug(SQLBase):
         which wants the message_link for the attachment can answer that without
         O(N^2) overhead. As such it is moderately expensive to call (it
         currently retrieves all messages before any attachments, and does this
-        which attachments is evaluated, not when the resultset is processed).
+        when attachments is evaluated, not when the resultset is processed).
         """
         message_to_indexed = {}
         for message in self.indexed_messages:
