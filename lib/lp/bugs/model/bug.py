@@ -1772,12 +1772,12 @@ class Bug(SQLBase):
     def attachments_unpopulated(self):
         """See `IBug`.
         
-        This version dos not pre-lookup messages and LFA's.
+        This version does not pre-lookup messages and LibraryFileAliases.
         
         The regular 'attachments' property does prepopulation because it is
         exposed in the API.
         """
-        # Grab the attachment only; the LFA will be eager loaded.
+        # Grab the attachment only; the LibraryFileAlias will be eager loaded.
         return DecoratedResultSet(
             self._attachments_query(),
             operator.itemgetter(0))
