@@ -52,10 +52,11 @@ class BugAttachment(SQLBase):
 
     @cachedproperty('_message_cached')
     def message(self):
-        """This is a property to allow message to be an IIndexedMessage.
+        """This is a cachedproperty to allow message to be an IIndexedMessage.
         
-        This is needed for the bug/attachments API calls, which seem to be the
-        only users of .message.
+        This is needed for the bug/attachments API call which needs to index
+        an IIndexedMessage rather than a simple DB model IMessage. See
+        Bug.attachments where the injection occurs.
         """
         return self._message
 
