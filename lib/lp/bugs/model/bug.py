@@ -72,6 +72,7 @@ from zope.interface import (
 
 from canonical.cachedproperty import (
     cachedproperty,
+    cache_property,
     clear_property,
     )
 from canonical.config import config
@@ -82,6 +83,7 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
+from canonical.launchpad.components.decoratedresultset import DecoratedResultSet
 from canonical.launchpad.database.librarian import LibraryFileAlias
 from canonical.launchpad.database.message import (
     Message,
@@ -1732,16 +1734,31 @@ class Bug(SQLBase):
 
     @property
     def attachments(self):
-        """See `IBug`."""
-        # We omit those bug attachments that do not have a
-        # LibraryFileContent record in order to avoid OOPSes as
-        # mentioned in bug 542274. These bug attachments will be
-        # deleted anyway during the next garbo_daily run.
+        """See `IBug`.
+        
+        This property does eager loading of the index_messages so that the API
+        which wants the message_link for the attachment can answer that without
+        O(N^2) overhead. As such it is moderately expensive to call (it
+        currently retrieves all messages before any attachments, and does this
+        which attachments is evaluated, not when the resultset is processed).
+        """
+        # bug attachments with no LibraryFileContent have been deleted - the
+        # garbo_daily run will remove the LibraryFileAlias asynchronously.
+        # See bug 542274 for more details.
+        message_to_indexed = {}
+        for message in self.indexed_messages:
+            message_to_indexed[message.id] = message
+        def set_indexed_message(attachment):
+            indexed_message = message_to_indexed.get(attachment._messageID)
+            if indexed_message is not None:
+                cache_property(attachment, '_message_cached', indexed_message)
+            return attachment
         store = Store.of(self)
-        return store.find(
+        rawresults = store.find(
             BugAttachment, BugAttachment.bug == self,
             BugAttachment.libraryfile == LibraryFileAlias.id,
             LibraryFileAlias.content != None).order_by(BugAttachment.id)
+        return DecoratedResultSet(rawresults, set_indexed_message)
 
     @property
     def attachments_unpopulated(self):
@@ -1752,7 +1769,14 @@ class Bug(SQLBase):
         The regular 'attachments' property does prepopulation because it is
         exposed in the API.
         """
-        return self.attachments
+        # bug attachments with no LibraryFileContent have been deleted - the
+        # garbo_daily run will remove the LibraryFileAlias asynchronously.
+        # See bug 542274 for more details.
+        store = Store.of(self)
+        return store.find(
+            BugAttachment, BugAttachment.bug == self,
+            BugAttachment.libraryfile == LibraryFileAlias.id,
+            LibraryFileAlias.content != None).order_by(BugAttachment.id)
 
 
 class BugSet:

@@ -19,6 +19,7 @@ from storm.store import Store
 from zope.event import notify
 from zope.interface import implements
 
+from canonical.cachedproperty import cachedproperty
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
 from lp.app.errors import NotFoundError
@@ -46,8 +47,17 @@ class BugAttachment(SQLBase):
         foreignKey='LibraryFileAlias', dbName='libraryfile', notNull=True)
     data = ForeignKey(
         foreignKey='LibraryFileAlias', dbName='libraryfile', notNull=True)
-    message = ForeignKey(
+    _message = ForeignKey(
         foreignKey='Message', dbName='message', notNull=True)
+
+    @cachedproperty('_message_cached')
+    def message(self):
+        """This is a property to allow message to be an IIndexedMessage.
+        
+        This is needed for the bug/attachments API calls, which seem to be the
+        only users of .message.
+        """
+        return self._message
 
     @property
     def is_patch(self):
@@ -99,7 +109,7 @@ class BugAttachmentSet:
             attach_type = IBugAttachment['type'].default
         attachment = BugAttachment(
             bug=bug, libraryfile=filealias, type=attach_type, title=title,
-            message=message)
+            _message=message)
         # canonial_url(attachment) (called by notification subscribers
         # to generate the download URL of the attachments) blows up if
         # attachment.id is not (yet) set.
