@@ -281,6 +281,10 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
             value_type=BugField(), readonly=True))
     # See lp.bugs.model.bug.Bug.attachments for why there are two similar
     # properties here.
+    # attachments_unpopulated would more naturally be attachments, and
+    # attachments be attachments_prepopulated, but lazr.resful cannot
+    # export over a non-exported attribute in an interface.
+    # https://bugs.launchpad.net/lazr.restful/+bug/625102
     attachments_unpopulated = CollectionField(
             title=_("List of bug attachments."),
             value_type=Reference(schema=IBugAttachment),
