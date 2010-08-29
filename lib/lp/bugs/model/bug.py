@@ -1732,6 +1732,18 @@ class Bug(SQLBase):
             task.target.recalculateBugHeatCache()
         store.flush()
 
+    def _attachments_query(self):
+        """Helper for the attachments* properties."""
+        # bug attachments with no LibraryFileContent have been deleted - the
+        # garbo_daily run will remove the LibraryFileAlias asynchronously.
+        # See bug 542274 for more details.
+        store = Store.of(self)
+        return store.find(
+            (BugAttachment, LibraryFileAlias),
+            BugAttachment.bug == self,
+            BugAttachment.libraryfile == LibraryFileAlias.id,
+            LibraryFileAlias.content != None).order_by(BugAttachment.id)
+
     @property
     def attachments(self):
         """See `IBug`.
@@ -1742,22 +1754,18 @@ class Bug(SQLBase):
         currently retrieves all messages before any attachments, and does this
         which attachments is evaluated, not when the resultset is processed).
         """
-        # bug attachments with no LibraryFileContent have been deleted - the
-        # garbo_daily run will remove the LibraryFileAlias asynchronously.
-        # See bug 542274 for more details.
         message_to_indexed = {}
         for message in self.indexed_messages:
             message_to_indexed[message.id] = message
-        def set_indexed_message(attachment):
+        def set_indexed_message(row):
+            attachment = row[0]
+            # row[1] - the LibraryFileAlias is now in the storm cache and
+            # will be found without a query when dereferenced.
             indexed_message = message_to_indexed.get(attachment._messageID)
             if indexed_message is not None:
                 cache_property(attachment, '_message_cached', indexed_message)
             return attachment
-        store = Store.of(self)
-        rawresults = store.find(
-            BugAttachment, BugAttachment.bug == self,
-            BugAttachment.libraryfile == LibraryFileAlias.id,
-            LibraryFileAlias.content != None).order_by(BugAttachment.id)
+        rawresults = self._attachments_query()
         return DecoratedResultSet(rawresults, set_indexed_message)
 
     @property
@@ -1769,14 +1777,10 @@ class Bug(SQLBase):
         The regular 'attachments' property does prepopulation because it is
         exposed in the API.
         """
-        # bug attachments with no LibraryFileContent have been deleted - the
-        # garbo_daily run will remove the LibraryFileAlias asynchronously.
-        # See bug 542274 for more details.
-        store = Store.of(self)
-        return store.find(
-            BugAttachment, BugAttachment.bug == self,
-            BugAttachment.libraryfile == LibraryFileAlias.id,
-            LibraryFileAlias.content != None).order_by(BugAttachment.id)
+        # Grab the attachment only; the LFA will be eager loaded.
+        return DecoratedResultSet(
+            self._attachments_query(),
+            operator.itemgetter(0))
 
 
 class BugSet:
