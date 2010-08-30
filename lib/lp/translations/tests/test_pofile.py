@@ -24,6 +24,7 @@ from canonical.testing import (
     LaunchpadZopelessLayer,
     ZopelessDatabaseLayer,
     )
+from lp.app.enums import ServiceUsage
 from lp.testing import TestCaseWithFactory
 from lp.translations.interfaces.pofile import IPOFileSet
 from lp.translations.interfaces.translatablemessage import (
@@ -46,12 +47,13 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
         # Create a product with two series and a shared POTemplate
         # in different series ('devel' and 'stable').
         super(TestTranslationSharedPOFile, self).setUp()
-        self.foo = self.factory.makeProduct(name='foo')
+        self.foo = self.factory.makeProduct(
+            name='foo',
+            translations_usage=ServiceUsage.LAUNCHPAD)
         self.foo_devel = self.factory.makeProductSeries(
             name='devel', product=self.foo)
         self.foo_stable = self.factory.makeProductSeries(
             name='stable', product=self.foo)
-        self.foo.official_rosetta = True
 
         # POTemplate is 'shared' if it has the same name ('messages').
         self.devel_potemplate = self.factory.makePOTemplate(
@@ -879,12 +881,12 @@ class TestSharedPOFileCreation(TestCaseWithFactory):
         # Create a product with two series and a shared POTemplate
         # in different series ('devel' and 'stable').
         super(TestSharedPOFileCreation, self).setUp()
-        self.foo = self.factory.makeProduct()
+        self.foo = self.factory.makeProduct(
+            translations_usage=ServiceUsage.LAUNCHPAD)
         self.foo_devel = self.factory.makeProductSeries(
             name='devel', product=self.foo)
         self.foo_stable = self.factory.makeProductSeries(
             name='stable', product=self.foo)
-        self.foo.official_rosetta = True
 
     def test_pofile_creation_shared(self):
         # When a pofile is created in a POTemplate it is also created in
@@ -1009,12 +1011,12 @@ class TestTranslationPOFilePOTMsgSetOrdering(TestCaseWithFactory):
         # Create a product with two series and a shared POTemplate
         # in different series ('devel' and 'stable').
         super(TestTranslationPOFilePOTMsgSetOrdering, self).setUp()
-        self.foo = self.factory.makeProduct()
+        self.foo = self.factory.makeProduct(
+            translations_usage=ServiceUsage.LAUNCHPAD)
         self.foo_devel = self.factory.makeProductSeries(
             name='devel', product=self.foo)
         self.foo_stable = self.factory.makeProductSeries(
             name='stable', product=self.foo)
-        self.foo.official_rosetta = True
 
         # POTemplate is 'shared' if it has the same name ('messages').
         self.devel_potemplate = self.factory.makePOTemplate(
@@ -1288,8 +1290,8 @@ class TestPOFileSet(TestCaseWithFactory):
         # We create a product with two series, and attach
         # a POTemplate and Serbian POFile to each, making
         # sure they share translations (potemplates have the same name).
-        product = self.factory.makeProduct()
-        product.official_rosetta = True
+        product = self.factory.makeProduct(
+            translations_usage=ServiceUsage.LAUNCHPAD)
         series1 = self.factory.makeProductSeries(product=product,
                                                  name='one')
         series2 = self.factory.makeProductSeries(product=product,
@@ -1324,8 +1326,8 @@ class TestPOFileSet(TestCaseWithFactory):
         # This is a test for bug #414832 which caused sharing POFiles
         # of the touched POFile not to be returned if they had
         # IDs smaller than the touched POFile.
-        product = self.factory.makeProduct()
-        product.official_rosetta = True
+        product = self.factory.makeProduct(
+            translations_usage=ServiceUsage.LAUNCHPAD)
         series1 = self.factory.makeProductSeries(product=product,
                                                  name='one')
         series2 = self.factory.makeProductSeries(product=product,
@@ -1357,7 +1359,7 @@ class TestPOFileSet(TestCaseWithFactory):
         # POFile to each, making sure they share translations
         # (potemplates have the same name).
         distro = self.factory.makeDistribution()
-        distro.official_rosetta = True
+        distro.translations_usage = ServiceUsage.LAUNCHPAD 
         series1 = self.factory.makeDistroRelease(distribution=distro,
                                                  name='one')
         sourcepackagename = self.factory.makeSourcePackageName()
@@ -1395,9 +1397,9 @@ class TestPOFileSet(TestCaseWithFactory):
         # Make sure POFiles which are in different products
         # are not returned even though they have the same potemplate name.
         series1 = self.factory.makeProductSeries(name='one')
-        series1.product.official_rosetta = True
+        series1.product.translations_usage = ServiceUsage.LAUNCHPAD 
         series2 = self.factory.makeProductSeries(name='two')
-        series2.product.official_rosetta = True
+        series1.product.translations_usage = ServiceUsage.LAUNCHPAD 
         self.assertNotEqual(series1.product, series2.product)
 
         potemplate1 = self.factory.makePOTemplate(name='shared',
