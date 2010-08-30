@@ -51,10 +51,10 @@ class DistroSeriesDifference(Storm):
     source_package_name = Reference(
         source_package_name_id, 'SourcePackageName.id')
 
-    last_package_diff_id = Int(
-        name='last_package_diff', allow_none=True)
-    last_package_diff = Reference(
-        last_package_diff_id, 'PackageDiff.id')
+    package_diff_id = Int(
+        name='package_diff', allow_none=True)
+    package_diff = Reference(
+        package_diff_id, 'PackageDiff.id')
 
     status = DBEnum(name='status', allow_none=False,
                     enum=DistroSeriesDifferenceStatus)
