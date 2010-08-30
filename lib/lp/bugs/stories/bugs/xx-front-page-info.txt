@@ -19,7 +19,8 @@ not use Launchpad for bug tracking.
     >>> anon_browser.open('http://bugs.launchpad.dev/test-project')
     >>> uses_malone_p = find_tag_by_id(anon_browser.contents, 'no-malone')
     >>> print extract_text(uses_malone_p)
-    Simple Test Project does not use Launchpad for bug tracking.
+    Launchpad does not know where to forward bug reports to contact the
+    developers of Simple Test Project.
 
 Only users who have permission to do so can enable bug tracking
 for a project.
@@ -123,7 +124,8 @@ use Launchpad for bug tracking.
     >>> anon_browser.open('http://bugs.launchpad.dev/test-project')
     >>> uses_malone_p = find_tag_by_id(anon_browser.contents, 'no-malone')
     >>> print extract_text(uses_malone_p)
-    Simple Test Project does not use Launchpad for bug tracking.
+    Launchpad does not know where to forward bug reports to contact the
+    developers of Simple Test Project.
     >>> tracker_text = find_tag_by_id(anon_browser.contents, 'bugtracker')
     >>> print extract_text(tracker_text)
     Bugs are tracked in tracker.example.com/.

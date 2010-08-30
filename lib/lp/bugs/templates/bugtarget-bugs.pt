@@ -16,7 +16,7 @@
   </metal:block>
   <body>
     <tal:side metal:fill-slot="side"
-              condition="context/bug_tracking_usage/enumvalue:LAUNCHPAD">
+              condition="view/bug_tracking_usage/enumvalue:LAUNCHPAD">
       <div id="involvement" class="portlet">
         <ul class="involvement">
           <li style="border: none">
@@ -97,7 +97,7 @@
 
 
       <tal:uses_launchpad_bugtracker
-        condition="context/bug_tracking_usage/enumvalue:LAUNCHPAD">
+        condition="view/bug_tracking_usage/enumvalue:LAUNCHPAD">
       <tal:has_bugtasks condition="context/has_bugtasks">
         <div class="search-box" style="margin-bottom:2em">
           <metal:search
@@ -167,7 +167,7 @@
     </tal:uses_launchpad_bugtracker>
 
     <p id="no-malone"
-       tal:condition="context/bug_tracking_usage/enumvalue:UNKNOWN">
+       tal:condition="view/bug_tracking_usage/enumvalue:UNKNOWN">
       <strong>
         Launchpad does not know where to forward bug reports to contact the
         developers of <tal:project_title replace="context/title" />.
@@ -175,14 +175,16 @@
     </p>
 
     <p tal:condition="view/external_bugtracker"
-        id="bugtracker"><strong>Bugs are tracked in
-      <tal:bugtracker replace="structure view/bugtracker" />.</strong>
+       id="bugtracker">
+      <strong>Bugs are tracked in
+        <tal:bugtracker replace="structure view/bugtracker" />.
+      </strong>
     </p>
 
     <tal:also_in_ubuntu
-      condition="not: context/bug_tracking_usage/enumvalue:LAUNCHPAD">
-      <p tal:define="packages context/ubuntu_packages"
-           tal:condition="packages">
+      condition="not: view/bug_tracking_usage/enumvalue:LAUNCHPAD">
+      <p tal:define="packages context/ubuntu_packages | nothing"
+         tal:condition="packages">
         <tal:displayname replace="context/displayname"/>
         bug reports are
         <tal:also condition="view/external_bugtracker">also</tal:also>
@@ -195,7 +197,7 @@
     </tal:also_in_ubuntu>
 
     <div
-      tal:condition="not: context/bug_tracking_usage/enumvalue:LAUNCHPAD"
+      tal:condition="not: view/bug_tracking_usage/enumvalue:LAUNCHPAD"
       tal:define="configure_bugtracker context/menu:overview/configure_bugtracker | nothing">
       <a class="sprite maybe"
         href="https://help.launchpad.net/Bugs">Getting started
