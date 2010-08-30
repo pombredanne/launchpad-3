@@ -6,11 +6,13 @@
 __metaclass__ = type
 
 from storm.store import Store
+from zope.component import getUtility
 
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing import DatabaseFunctionalLayer
 from lp.registry.interfaces.distroseriesdifferencecomment import (
     IDistroSeriesDifferenceComment,
+    IDistroSeriesDifferenceCommentSource,
     )
 from lp.testing import TestCaseWithFactory
 
@@ -42,3 +44,21 @@ class DistroSeriesDifferenceCommentTestCase(TestCaseWithFactory):
         self.assertEqual(
             dsd_comment.distro_series_difference.title,
             dsd_comment.message.subject)
+
+
+class DifferenceCommentSourceTestCase(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_getCommentsForDifference(self):
+        # Returns all comments for a difference ordered by id.
+        dsd_comment = self.factory.makeDistroSeriesDifferenceComment()
+        dsd_comment_2 = self.factory.makeDistroSeriesDifferenceComment(
+            dsd_comment.distro_series_difference)
+        dsd_other_comment = self.factory.makeDistroSeriesDifferenceComment()
+
+        comment_source = getUtility(IDistroSeriesDifferenceCommentSource)
+        comments = comment_source.getCommentsForDifference(
+            distro_series_difference=dsd_comment.distro_series_difference)
+
+        self.assertEqual([dsd_comment, dsd_comment_2], list(comments))
