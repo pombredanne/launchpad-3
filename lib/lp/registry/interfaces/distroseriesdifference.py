@@ -74,6 +74,7 @@ class IDistroSeriesDifferencePublic(IHasOwner, Interface):
         title=_("Derived source pub"), readonly=True,
         description=_(
             "The most recent published version in the derived series."))
+
     source_version = TextLine(
         title=_("Source version"), readonly=True,
         description=_(
@@ -85,6 +86,7 @@ class IDistroSeriesDifferencePublic(IHasOwner, Interface):
         title=_("Parent source pub"), readonly=True,
         description=_(
             "The most recent published version in the parent series."))
+
     parent_source_version = TextLine(
         title=_("Parent source version"), readonly=True,
         description=_(
