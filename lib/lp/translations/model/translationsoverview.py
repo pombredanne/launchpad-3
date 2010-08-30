@@ -39,13 +39,15 @@ class TranslationsOverview:
             new_size = int(round(
                 real_minimum +
                 (size - offset - real_minimum) * multiplier))
-            normalized_sizes.append({'pillar' : pillar,
-                                     'weight' : new_size })
+            normalized_sizes.append({'pillar': pillar, 'weight': new_size})
         return normalized_sizes
 
     def getMostTranslatedPillars(self, limit=50):
         """See `ITranslationsOverview`."""
 
+        # XXX j.c.sackett 2010-08-30 Once data migration has happened for the
+        # usage enums, this sql needs to be updated to check for the
+        # translations_usage, not official_rosetta.
         query = """
         SELECT LOWER(COALESCE(product_name, distro_name)) AS name,
                product_id,
@@ -65,7 +67,8 @@ class TranslationsOverview:
                      distribution=distribution.id
               WHERE category=3 AND
                     (product IS NOT NULL OR distribution IS NOT NULL) AND
-                    (product.official_rosetta OR distribution.official_rosetta)
+                    (product.official_rosetta OR
+                        distribution.official_rosetta)
               GROUP BY product.displayname, product.id,
                        distribution.displayname, distribution.id
               HAVING SUM(karmavalue) > 0

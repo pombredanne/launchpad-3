@@ -65,6 +65,7 @@ from canonical.launchpad.interfaces.lpstorm import (
     IMasterStore,
     IStore,
     )
+from lp.app.enums import service_uses_launchpad
 from lp.app.errors import NotFoundError
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.model.sourcepackagename import SourcePackageName
@@ -1322,8 +1323,7 @@ class POTemplateSet:
             preferred_matches = [
                 match
                 for match in matches
-                if match.from_sourcepackagename == sourcepackagename
-            ]
+                if match.from_sourcepackagename == sourcepackagename]
 
             if len(preferred_matches) == 1:
                 return preferred_matches[0]
@@ -1378,6 +1378,9 @@ class POTemplateSet:
 
     def populateSuggestivePOTemplatesCache(self):
         """See `IPOTemplateSet`."""
+        # XXX j.c.sackett 2010-08-30 Once data migration has happened for the
+        # usage enums, this sql needs to be updated to check for the
+        # translations_usage, not official_rosetta.
         return IMasterStore(POTemplate).execute("""
             INSERT INTO SuggestivePOTemplate (
                 SELECT POTemplate.id
@@ -1437,15 +1440,13 @@ class POTemplateSharingSubset(object):
         if self.product:
             subsets = [
                 self.potemplateset.getSubset(productseries=series)
-                for series in self.product.series
-                ]
+                for series in self.product.series]
         else:
             subsets = [
                 self.potemplateset.getSubset(
                     distroseries=series,
                     sourcepackagename=self.sourcepackagename)
-                for series in self.distribution.series
-                ]
+                for series in self.distribution.series]
         for subset in subsets:
             for template in subset:
                 if name_pattern is None or re.match(name_pattern,
@@ -1548,8 +1549,7 @@ class POTemplateToTranslationFileDataAdapter:
                 msgset.flags = set([
                     flag.strip()
                     for flag in row.flags_comment.split(',')
-                    if flag
-                    ])
+                    if flag])
 
             # Store the message.
             messages.append(msgset)
@@ -1578,8 +1578,9 @@ class HasTranslationTemplatesMixin:
         collection = self.getTemplatesCollection()
 
         # XXX JeroenVermeulen 2010-07-15 bug=605924: Move the
-        # official_rosetta distinction into browser code.
-        if collection.target_pillar.official_rosetta:
+        # translations_usage distinction into browser code.
+        pillar = collection.target_pillar
+        if service_uses_launchpad(pillar.translations_usage):
             return collection.restrictCurrent(current_value)
         else:
             # Product/Distribution does not have translation enabled.
