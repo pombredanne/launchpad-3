@@ -139,7 +139,7 @@ the spph's related builds, getStatusSummaryForBuilds(), which just
 augments the IBuildSet.getStatusSummaryForBuilds() method to include the
 'pending' state when builds are fully built but not yet published.
 
-    >>> from lp.buildmaster.interfaces.buildbase import BuildStatus
+    >>> from lp.buildmaster.enums import BuildStatus
     >>> spph = test_publisher.getPubSource(
     ...     sourcename='abc', architecturehintlist='any')
     >>> builds = spph.createMissingBuilds()

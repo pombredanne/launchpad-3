@@ -608,7 +608,7 @@ eg ubuntu/warty.
 
 Check there's a SourcePackageRelease with no build.
 
-  >>> from lp.buildmaster.interfaces.buildbase import BuildStatus
+  >>> from lp.buildmaster.enums import BuildStatus
   >>> from lp.registry.model.sourcepackagename import SourcePackageName
   >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
   >>> from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
