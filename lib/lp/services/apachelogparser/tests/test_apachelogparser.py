@@ -297,20 +297,30 @@ class TestLogFileParsing(TestCase):
             here, 'apache-log-files', 'launchpadlibrarian.net.access-log'))
         self.addCleanup(fd.close)
 
+        # We want to start parsing on line 2 so we will have a value in
+        # "downloads" to make a positive assertion about.  (The first line is
+        # a 404 so wouldn't generate any output.)
+        start_position = len(fd.readline())
+
         # If we have already parsed some lines, then the number of lines
         # parsed will be passed in (parsed_lines argument) and parse_file will
         # take that number into account when determining if the maximum number
         # of lines to parse has been reached.
         parsed_lines = 1
         downloads, parsed_bytes, parsed_lines = parse_file(
-            fd, start_position=0, logger=self.logger,
+            fd, start_position=start_position, logger=self.logger,
             get_download_key=get_path_download_key, parsed_lines=parsed_lines)
 
-        # Since we told parse_file that we had already parsed 1 line and the
-        # limit is 2 lines, it only parsed the first line of the file which is
-        # a 404, so there were no downloads recorded.
+        # The total number of lines parsed during the run (1 line) plus the
+        # number of lines parsed previously (1 line, as passed in via
+        # parsed_lines) is returned.
         self.assertEqual(parsed_lines, 2)
-        self.assertContentEqual(downloads.items(), [])
+        # Since we told parse_file that we had already parsed 1 line and the
+        # limit is 2 lines, it only parsed a single line.
+        date = datetime(2008, 6, 13)
+        self.assertContentEqual(
+            downloads.items(),
+            [('/9096290/me-tv-icon-14x14.png', {date: {'AU': 1}})])
 
 
 class TestParsedFilesDetection(TestCase):
