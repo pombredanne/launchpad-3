@@ -503,6 +503,19 @@ COMMENT ON COLUMN DistributionSourcePackageCache.binpkgdescriptions IS 'The aggr
 COMMENT ON COLUMN DistributionSourcePackageCache.changelog IS 'A concatenation of the source package release changelogs for this source package, where the status is not REMOVED.';
 COMMENT ON COLUMN DistributionSourcePackageCache.archive IS 'The archive where the source is published.';
 
+-- DistroSeriesDifference
+COMMENT ON TABLE DistroSeriesDifference IS 'A difference of versions for a package in a derived distroseries and its parent distroseries.';
+COMMENT ON COLUMN DistroSeriesDifference.derived_series IS 'The derived distroseries with the difference from its parent.';
+COMMENT ON COLUMN DistroSeriesDifference.source_package_name IS 'The name of the source package which is different in the two series.';
+COMMENT ON COLUMN DistroSeriesDifference.package_diff IS 'The most recent package diff that was created for this difference.';
+COMMENT ON COLUMN DistroSeriesDifference.status IS 'A distroseries difference can be needing attention, ignored or resolved.';
+COMMENT ON COLUMN DistroSeriesDifference.difference_type IS 'The type of difference that this record represents - a package unique to the derived series, or missing, or in both.';
+
+-- DistroSeriesDifferenceMessage
+COMMENT ON TABLE DistroSeriesDifferenceMessage IS 'A message/comment on a distro series difference.';
+COMMENT ON COLUMN DistroSeriesDifferenceMessage.distro_series_difference IS 'The distro series difference for this comment.';
+COMMENT ON COLUMN DistroSeriesDifferenceMessage.message IS 'The comment for the distro series difference.';
+
 -- DistroSeriesPackageCache
 
 COMMENT ON TABLE DistroSeriesPackageCache IS 'A cache of the text associated with binary packages in the distroseries. This table allows for fast queries to find a binary packagename that matches a given text.';
@@ -533,13 +546,13 @@ COMMENT ON TABLE FeatureFlag IS
 can be changed without restarting Launchpad
 <https://dev.launchpad.net/LEP/FeatureFlags>';
 
-COMMENT ON COLUMN FeatureFlag.scope IS 
+COMMENT ON COLUMN FeatureFlag.scope IS
     'Scope in which this setting is active';
 
-COMMENT ON COLUMN FeatureFlag.priority IS 
+COMMENT ON COLUMN FeatureFlag.priority IS
     'Higher priority flags override lower';
 
-COMMENT ON COLUMN FeatureFlag.flag IS 
+COMMENT ON COLUMN FeatureFlag.flag IS
     'Name of the flag being controlled';
 
 -- KarmaCategory

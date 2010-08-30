@@ -65,7 +65,7 @@ class ParseApacheLogs(LaunchpadCronScript):
 
         self.setUpUtilities()
         country_set = getUtility(ICountrySet)
-        for fd, position in files_to_parse.items():
+        for fd, position in files_to_parse:
             downloads, parsed_bytes = parse_file(
                 fd, position, self.logger, self.getDownloadKey)
             # Use a while loop here because we want to pop items from the dict

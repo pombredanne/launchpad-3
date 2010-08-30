@@ -32,18 +32,20 @@ from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.mail import stub
-from lp.soyuz.interfaces.archive import (
+from lp.soyuz.enums import (
     ArchivePurpose,
+    PackagePublishingStatus,
+    PackageUploadStatus,
+    SourcePackageFormat,
+    )
+from lp.soyuz.interfaces.archive import (
     IArchiveSet,
     )
-from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.interfaces.queue import (
     NonBuildableSourceUploadError,
-    PackageUploadStatus,
     )
 from lp.soyuz.interfaces.sourcepackageformat import (
     ISourcePackageFormatSelectionSet,
-    SourcePackageFormat,
     )
 from lp.soyuz.model.publishing import BinaryPackagePublishingHistory
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
@@ -681,12 +683,9 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
             "bar_1.0-1-mixed", "~name16/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
 
-        self.assertEqual(
-            self.uploadprocessor.last_processed_upload.rejection_message,
-            'Upload rejected because it contains binary packages. Ensure '
-            'you are using `debuild -S`, or an equivalent command, to '
-            'generate only the source package before re-uploading. See '
-            'https://help.launchpad.net/Packaging/PPA for more information.')
+        self.assertIn(
+            'Source/binary (i.e. mixed) uploads are not allowed.',
+            self.uploadprocessor.last_processed_upload.rejection_message)
 
     def testPGPSignatureNotPreserved(self):
         """PGP signatures should be removed from PPA .changes files.
