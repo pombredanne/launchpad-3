@@ -949,6 +949,7 @@ class ArchiveView(ArchiveSourcePackageListViewBase):
             'NEEDSBUILD': 'Waiting to build',
             'FAILEDTOBUILD': 'Failed to build:',
             'BUILDING': 'Currently building',
+            'UPLOADING': 'Currently uploading',
             }
 
         now = datetime.now(tz=pytz.UTC)

@@ -227,6 +227,7 @@ class SourcePublishingRecordView(BasePublishingRecordView):
         """Return the image path for the current build status summary."""
         image_map = {
             BuildSetStatus.BUILDING: '/@@/processing',
+            BuildSetStatus.UPLOADING: '/@@/processing',
             BuildSetStatus.NEEDSBUILD: '/@@/build-needed',
             BuildSetStatus.FAILEDTOBUILD: '/@@/no',
             BuildSetStatus.FULLYBUILT_PENDING: '/@@/build-success-publishing'
