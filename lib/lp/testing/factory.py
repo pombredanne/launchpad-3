@@ -165,6 +165,13 @@ from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.distroseriesdifference import (
     IDistroSeriesDifferenceSource,
     )
+from lp.registry.interfaces.distroseriesdifferencecomment import (
+    IDistroSeriesDifferenceCommentSource,
+    )
+from lp.registry.interfaces.gpg import (
+    GPGKeyAlgorithm,
+    IGPGKeySet,
+    )
 from lp.registry.interfaces.mailinglist import (
     IMailingListSet,
     MailingListStatus,
@@ -1854,6 +1861,19 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
         return getUtility(IDistroSeriesDifferenceSource).new(
             derived_series, source_package_name, difference_type)
+
+    def makeDistroSeriesDifferenceComment(
+        self, distro_series_difference=None, owner=None, comment=None):
+        """Create a new distro series difference comment."""
+        if distro_series_difference is None:
+            distro_series_difference = self.makeDistroSeriesDifference()
+        if owner is None:
+            owner = self.makePerson()
+        if comment is None:
+            comment = self.getUniqueString('dsdcomment')
+
+        return getUtility(IDistroSeriesDifferenceCommentSource).new(
+            distro_series_difference, owner, comment)
 
     def makeDistroArchSeries(self, distroseries=None,
                              architecturetag=None, processorfamily=None,
