@@ -17,7 +17,7 @@ from canonical.config import config
 from lp.app.errors import NotFoundError
 from lp.archivepublisher.debversion import Version
 from lp.archivepublisher.utils import process_in_batches
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.series import SeriesStatus

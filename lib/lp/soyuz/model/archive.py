@@ -75,7 +75,7 @@ from lp.archiveuploader.utils import (
     re_isadeb,
     re_issource,
     )
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.packagebuild import IPackageBuildSet
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.packagebuild import PackageBuild
