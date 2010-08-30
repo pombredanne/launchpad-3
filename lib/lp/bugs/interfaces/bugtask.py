@@ -893,7 +893,7 @@ class IBugTaskSearchBase(Interface):
         title=_('Omit bugs marked as duplicate,'), required=False,
         default=True)
     omit_targeted = Bool(
-        title=_('Omit bugs targeted to series'), required=False,
+        title=_('Omit bugs targeted to a series'), required=False,
         default=True)
     statusexplanation = TextLine(
         title=_("Status notes"), required=False)
@@ -1064,7 +1064,7 @@ class IDistroBugTask(IBugTask):
 
 
 class IDistroSeriesBugTask(IBugTask):
-    """A bug needing fixing in a distrorealease, or a specific package."""
+    """A bug needing fixing in a distrorelease, or a specific package."""
     sourcepackagename = Choice(
         title=_("Source Package Name"), required=True,
         vocabulary='SourcePackageName')

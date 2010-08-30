@@ -12,7 +12,7 @@ __all__ = [
 from zope.interface import implements
 
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
-from lp.soyuz.interfaces.archivepermission import ArchivePermissionType
+from lp.soyuz.enums import ArchivePermissionType
 
 
 class ArchivePermissionURL:

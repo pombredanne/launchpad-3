@@ -31,7 +31,7 @@ from canonical.testing import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     )
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.buildmaster.enums import BuildStatus
 from lp.code.browser.sourcepackagerecipe import (
     SourcePackageRecipeRequestBuildsView,
     SourcePackageRecipeView,

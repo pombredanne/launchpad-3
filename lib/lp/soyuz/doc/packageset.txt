@@ -611,8 +611,8 @@ Create a new package set.
 As it stands package sets will first be used for governing source package
 uploads i.e. in conjunction with `ArchivePermission` data.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     ArchivePermissionType, IArchivePermissionSet)
+    >>> from lp.soyuz.enums import ArchivePermissionType
+    >>> from canonical.launchpad.interfaces import IArchivePermissionSet
     >>> ap_set = getUtility(IArchivePermissionSet)
 
 So, let's assign upload permissions for the 'mozilla' package set to our
@@ -636,8 +636,8 @@ happy hacker.
 Introduce a copy archive that will be used to disambiguate archive
 permissions.
 
-    >>> from lp.soyuz.interfaces.archive import (
-    ...     ArchivePurpose, IArchiveSet)
+    >>> from lp.soyuz.enums import ArchivePurpose
+    >>> from lp.soyuz.interfaces.archive import IArchiveSet
     >>> rebuild_archive = getUtility(IArchiveSet).new(
     ...     owner=person1, purpose=ArchivePurpose.COPY,
     ...     distribution=ubuntu, name='copy-archive',

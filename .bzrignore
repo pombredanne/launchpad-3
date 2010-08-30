@@ -77,3 +77,4 @@ lib/canonical/launchpad-buildd_*_source.build
 lib/canonical/launchpad-buildd_*_source.changes
 lib/canonical/buildd/debian/*
 lib/canonical/buildd/launchpad-files/*
+*.pt.py

@@ -894,6 +894,15 @@ class TestBugTaskSearch(TestCaseWithFactory):
         self.assertStatementCount(1,
             lambda:[task.getConjoinedMaster for task in tasks])
 
+    def test_omit_targeted_default_is_false(self):
+        # The default value of omit_targeted is false so bugs targeted
+        # to a series are not hidden.
+        target = self.factory.makeDistroRelease()
+        self.login()
+        task1 = self.factory.makeBugTask(target=target)
+        default_result = target.searchTasks(None)
+        self.assertEqual([task1], list(default_result))
+
 
 def test_suite():
     suite = unittest.TestSuite()

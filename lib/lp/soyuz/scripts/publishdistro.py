@@ -24,9 +24,11 @@ from lp.app.errors import NotFoundError
 from lp.archivepublisher.publishing import getPublisher
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.services.scripts.base import LaunchpadScriptFailure
-from lp.soyuz.interfaces.archive import (
+from lp.soyuz.enums import (
     ArchivePurpose,
     ArchiveStatus,
+    )
+from lp.soyuz.interfaces.archive import (
     IArchiveSet,
     MAIN_ARCHIVE_PURPOSES,
     )

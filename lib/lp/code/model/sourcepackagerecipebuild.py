@@ -40,12 +40,15 @@ from canonical.launchpad.interfaces.lpstorm import (
 from canonical.launchpad.webapp import errorlog
 from lp.app.errors import NotFoundError
 from lp.archiveuploader.uploadpolicy import (
+    ArchiveUploadType,
     BuildDaemonUploadPolicy,
     IArchiveUploadPolicy,
     SOURCE_PACKAGE_RECIPE_UPLOAD_POLICY_NAME,
     )
-from lp.buildmaster.interfaces.buildbase import BuildStatus
-from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
+from lp.buildmaster.enums import (
+    BuildFarmJobType,
+    BuildStatus,
+    )
 from lp.buildmaster.model.buildfarmjob import BuildFarmJobOldDerived
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.buildmaster.model.packagebuild import (
@@ -78,11 +81,7 @@ class SourcePackageRecipeUploadPolicy(BuildDaemonUploadPolicy):
     """Policy for uploading the results of a source package recipe build."""
 
     name = SOURCE_PACKAGE_RECIPE_UPLOAD_POLICY_NAME
-
-    def __init__(self):
-        super(SourcePackageRecipeUploadPolicy, self).__init__()
-        self.can_upload_source = True
-        self.can_upload_binaries = False
+    accepted_type = ArchiveUploadType.SOURCE_ONLY
 
     def getUploader(self, changes):
         """Return the person doing the upload."""

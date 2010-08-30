@@ -28,7 +28,7 @@ from canonical.testing.layers import (
     AppServerLayer,
     DatabaseFunctionalLayer,
     )
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.code.errors import (
@@ -57,9 +57,9 @@ from lp.services.job.interfaces.job import (
     IJob,
     JobStatus,
     )
+from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.archive import (
     ArchiveDisabled,
-    ArchivePurpose,
     CannotUploadToArchive,
     InvalidPocketForPPA,
     )

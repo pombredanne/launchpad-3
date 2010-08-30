@@ -21,6 +21,10 @@ from urllib import (
     splittype,
     )
 
+from zope.component import getUtility
+from zope.interface import implements
+from zope.security.interfaces import Unauthorized
+
 from lazr.uri import URI
 from pytz import timezone
 from sqlobject import (
@@ -36,6 +40,7 @@ from storm.expr import (
     Count,
     Desc,
     Not,
+    SQL,
     )
 from storm.locals import Bool
 from storm.store import Store
@@ -46,7 +51,6 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
     flush_database_updates,
     SQLBase,
-    sqlvalues,
     )
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
@@ -500,19 +504,20 @@ class BugTracker(SQLBase):
 
         return person
 
-    def resetWatches(self, now=None):
+    def resetWatches(self, new_next_check=None):
         """See `IBugTracker`."""
-        if now is None:
-            now = datetime.now(timezone('UTC'))
+        if new_next_check is None:
+            new_next_check = SQL(
+                "now() at time zone 'UTC' + (random() * interval '1 day')")
 
         store = Store.of(self)
-        store.execute(
-            "UPDATE BugWatch SET next_check = %s WHERE bugtracker = %s" %
-            sqlvalues(now, self))
+        store.find(BugWatch, BugWatch.bugtracker == self).set(
+            next_check=new_next_check, lastchecked=None,
+            last_error_type=None)
 
 
 class BugTrackerSet:
-    """Implements IBugTrackerSet for a container or set of BugTracker's,
+    """Implements IBugTrackerSet for a container or set of BugTrackers,
     either the full set in the db, or a subset.
     """
 
