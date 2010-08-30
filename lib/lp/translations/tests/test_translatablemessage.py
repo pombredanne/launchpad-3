@@ -15,6 +15,7 @@ import pytz
 import transaction
 
 from canonical.testing import ZopelessDatabaseLayer
+from lp.app.enums import ServiceUsage
 from lp.testing import TestCaseWithFactory
 from lp.translations.model.translatablemessage import TranslatableMessage
 
@@ -31,8 +32,8 @@ class TestTranslatableMessageBase(TestCaseWithFactory):
         `POTMsgSet`, as well as a Esperanto translation.
         """
         super(TestTranslatableMessageBase, self).setUp()
-        self.product = self.factory.makeProduct()
-        self.product.official_rosetta = True
+        self.product = self.factory.makeProduct(
+            translations_usage=ServiceUsage.LAUNCHPAD)
         self.trunk = self.product.getSeries('trunk')
         self.potemplate = self.factory.makePOTemplate(
             productseries=self.trunk)
@@ -137,7 +138,8 @@ class TestTranslatableMessageExternal(TestTranslatableMessageBase):
         super(TestTranslatableMessageExternal, self).setUp()
         common_msgid = self.potmsgset.singular_text
         self.external_potemplate = self.factory.makePOTemplate()
-        self.external_potemplate.productseries.product.official_rosetta = True
+        product = self.external_potemplate.productseries.product
+        product.translations_usage = ServiceUsage.LAUNCHPAD
         self.external_potmsgset = self.factory.makePOTMsgSet(
             potemplate=self.external_potemplate,
             singular=common_msgid, sequence=1)
