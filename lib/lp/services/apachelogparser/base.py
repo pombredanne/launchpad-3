@@ -77,7 +77,7 @@ def get_fd_and_file_size(file_path):
     return fd, file_size
 
 
-def parse_file(fd, start_position, logger, get_download_key):
+def parse_file(fd, start_position, logger, get_download_key, parsed_lines=0):
     """Parse the given file starting on the given position.
 
     Return a dictionary mapping file_ids (from the librarian) to days to
@@ -91,7 +91,6 @@ def parse_file(fd, start_position, logger, get_download_key):
 
     geoip = getUtility(IGeoIP)
     downloads = {}
-    parsed_lines = 0
 
     # Check for an optional max_parsed_lines config option.
     max_parsed_lines = getattr(
@@ -167,7 +166,7 @@ def parse_file(fd, start_position, logger, get_download_key):
         logger.info('Parsed %d lines resulting in %d download stats.' % (
             parsed_lines, len(downloads)))
 
-    return downloads, parsed_bytes
+    return downloads, parsed_bytes, parsed_lines
 
 
 def create_or_update_parsedlog_entry(first_line, parsed_bytes):
