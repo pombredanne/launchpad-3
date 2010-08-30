@@ -58,7 +58,7 @@ from lp.archiveuploader.utils import (
     re_valid_version,
     safe_fix_maintainer,
     )
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.buildmaster.enums import BuildStatus
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildSource,
     )

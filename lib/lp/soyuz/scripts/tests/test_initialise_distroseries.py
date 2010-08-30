@@ -17,7 +17,7 @@ from canonical.launchpad.interfaces import IDistributionSet
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.testing.layers import LaunchpadZopelessLayer
 
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.packageset import IPackagesetSet

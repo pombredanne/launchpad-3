@@ -28,9 +28,9 @@ from zope.schema import (
     )
 
 from canonical.launchpad import _
+from lp.buildmaster.enums import BuildFarmJobType
 from lp.buildmaster.interfaces.builder import IBuilder
 from lp.buildmaster.interfaces.buildfarmjob import (
-    BuildFarmJobType,
     IBuildFarmJob,
     )
 from lp.services.job.interfaces.job import IJob

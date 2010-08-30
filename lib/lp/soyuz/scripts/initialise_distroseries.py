@@ -15,7 +15,7 @@ from zope.component import getUtility
 from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
 
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.distroseries import DistroSeries
 from lp.soyuz.adapters.packagelocation import PackageLocation

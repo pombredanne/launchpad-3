@@ -17,7 +17,7 @@ from canonical.testing import (
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
     )
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.buildfarmbuildjob import IBuildFarmBuildJob
