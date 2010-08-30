@@ -7,10 +7,15 @@ __metaclass__ = type
 
 from unittest import TestLoader
 
-from lp.code.model.directbranchcommit import (
-    ConcurrentUpdateError, DirectBranchCommit)
-from lp.testing import map_branch_contents, TestCaseWithFactory
 from canonical.testing.layers import ZopelessDatabaseLayer
+from lp.code.model.directbranchcommit import (
+    ConcurrentUpdateError,
+    DirectBranchCommit,
+    )
+from lp.testing import (
+    map_branch_contents,
+    TestCaseWithFactory,
+    )
 
 
 class DirectBranchCommitTestCase(TestCaseWithFactory):

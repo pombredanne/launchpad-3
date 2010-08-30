@@ -8,7 +8,7 @@ __all__ = [
     'MailingListAPIView',
     ]
 
-
+import re
 import xmlrpclib
 
 from zope.component import getUtility
@@ -16,14 +16,22 @@ from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
+from canonical.encoding import escape_nonascii_uniquely
 from canonical.launchpad.interfaces import (
-    EmailAddressStatus, IEmailAddressSet, IMailingListAPIView,
-    IMailingListSet, IMessageApprovalSet, IMessageSet, IPersonSet,
-    MailingListStatus, PersonalStanding, PostedMessageStatus)
-from lp.registry.interfaces.person import PersonVisibility
+    EmailAddressStatus,
+    IEmailAddressSet,
+    IMailingListAPIView,
+    IMailingListSet,
+    IMessageApprovalSet,
+    IMessageSet,
+    IPersonSet,
+    MailingListStatus,
+    PersonalStanding,
+    PostedMessageStatus,
+    )
 from canonical.launchpad.webapp import LaunchpadXMLRPCView
 from canonical.launchpad.xmlrpc import faults
-
+from lp.registry.interfaces.person import PersonVisibility
 
 # Not all developers will have built the Mailman instance (via
 # 'make mailman_instance').  In that case, this import will fail, but in that
@@ -233,6 +241,15 @@ class MailingListAPIView(LaunchpadXMLRPCView):
         # though it's much more convenient to just pass 8-bit strings.
         if isinstance(bytes, xmlrpclib.Binary):
             bytes = bytes.data
+        # Although it is illegal for an email header to have unencoded
+        # non-ascii characters, it is better to let the list owner
+        # process the message than to cause an oops.
+        header_body_separator = re.compile('\r\n\r\n|\r\r|\n\n')
+        match = header_body_separator.search(bytes)
+        header = bytes[:match.start()]
+        header = escape_nonascii_uniquely(header)
+        bytes = header + bytes[match.start():]
+
         mailing_list = getUtility(IMailingListSet).get(team_name)
         message = getUtility(IMessageSet).fromEmail(bytes)
         mailing_list.holdMessage(message)

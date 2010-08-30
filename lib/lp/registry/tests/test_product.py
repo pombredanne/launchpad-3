@@ -3,28 +3,35 @@
 
 __metaclass__ = type
 
-import unittest
+from cStringIO import StringIO
 import datetime
+import unittest
+
+from lazr.lifecycle.snapshot import Snapshot
 import pytz
 import transaction
-from cStringIO import StringIO
-
 from zope.component import getUtility
 
-from canonical.launchpad.ftests import login
+from canonical.launchpad.ftests import (
+    login,
+    syncUpdate,
+    )
 from canonical.launchpad.testing.pages import (
-    find_main_content, get_feedback_messages, setupBrowser)
+    find_main_content,
+    get_feedback_messages,
+    setupBrowser,
+    )
 from canonical.testing import LaunchpadFunctionalLayer
-
-from canonical.launchpad.ftests import syncUpdate
-
 from lp.registry.interfaces.person import IPersonSet
-from lp.registry.interfaces.product import License
+from lp.registry.interfaces.product import (
+    IProduct,
+    License,
+    )
+from lp.registry.model.commercialsubscription import CommercialSubscription
 from lp.registry.model.product import Product
 from lp.registry.model.productlicense import ProductLicense
-from lp.registry.model.commercialsubscription import (
-    CommercialSubscription)
 from lp.testing import TestCaseWithFactory
+
 
 class TestProduct(TestCaseWithFactory):
     """Tests product object."""
@@ -52,6 +59,38 @@ class TestProduct(TestCaseWithFactory):
         self.assertEqual(True, product.active)
         product.active = False
         self.assertEqual(False, product.active)
+
+    def test_milestone_sorting_getMilestonesAndReleases(self):
+        product = self.factory.makeProduct()
+        series = self.factory.makeProductSeries(product=product)
+        milestone_0_1 = self.factory.makeMilestone(
+            product=product,
+            productseries=series,
+            name='0.1')
+        milestone_0_2 = self.factory.makeMilestone(
+            product=product,
+            productseries=series,
+            name='0.2')
+        release_1 = self.factory.makeProductRelease(
+            product=product,
+            milestone=milestone_0_1)
+        release_2 = self.factory.makeProductRelease(
+            product=product,
+            milestone=milestone_0_2)
+        release_file1 = self.factory.makeProductReleaseFile(
+            product=product,
+            release=release_1,
+            productseries=series,
+            milestone=milestone_0_1)
+        release_file2 = self.factory.makeProductReleaseFile(
+            product=product,
+            release=release_2,
+            productseries=series,
+            milestone=milestone_0_2)
+        expected = [(milestone_0_2, release_2), (milestone_0_1, release_1)]
+        self.assertEqual(
+            expected,
+            list(product.getMilestonesAndReleases()))
 
 
 class TestProductFiles(unittest.TestCase):
@@ -176,6 +215,32 @@ class ProductAttributeCacheTestCase(unittest.TestCase):
         # before the cache is populated.
         self.assertEqual(self.product.commercial_subscription.sales_system_id,
                          'new')
+
+
+class ProductSnapshotTestCase(TestCaseWithFactory):
+    """A TestCase for product snapshots."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        super(ProductSnapshotTestCase, self).setUp()
+        self.product = self.factory.makeProduct(name="shamwow")
+
+    def test_snapshot(self):
+        """Snapshots of products should not include marked attribues.
+
+        Wrap an export with 'doNotSnapshot' to force the snapshot to not
+        include that attribute.
+        """
+        snapshot = Snapshot(self.product, providing=IProduct)
+        omitted = [
+            'series',
+            'releases',
+            ]
+        for attribute in omitted:
+            self.assertFalse(
+                hasattr(snapshot, attribute),
+                "Snapshot should not include %s." % attribute)
 
 
 class BugSupervisorTestCase(TestCaseWithFactory):

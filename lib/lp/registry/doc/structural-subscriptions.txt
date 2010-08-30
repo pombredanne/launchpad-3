@@ -84,8 +84,9 @@ When notifying subscribers of bug activity, both subscribers to the
 target and to the target's parent are notified.
 
     >>> from canonical.launchpad.ftests import syncUpdate
+    >>> from lp.registry.enum import BugNotificationLevel
     >>> from canonical.launchpad.interfaces import (
-    ...     BlueprintNotificationLevel, BugNotificationLevel)
+    ...     BlueprintNotificationLevel)
     >>> from lp.bugs.mail.bugnotificationrecipients import (
     ...     BugNotificationRecipients)
 

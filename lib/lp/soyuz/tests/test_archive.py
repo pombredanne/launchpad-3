@@ -8,7 +8,6 @@ from __future__ import with_statement
 from datetime import date
 
 import transaction
-
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
@@ -16,31 +15,52 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
-from canonical.testing import DatabaseFunctionalLayer, LaunchpadZopelessLayer
-
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
+from canonical.testing import (
+    DatabaseFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.job.interfaces.job import JobStatus
-from lp.soyuz.interfaces.archive import (
-    ArchiveDisabled, ArchivePurpose, ArchiveStatus,
-    CannotRestrictArchitectures, CannotSwitchPrivacy, CannotUploadToPocket,
-    CannotUploadToPPA, IArchiveSet, InsufficientUploadRights,
-    InvalidPocketForPartnerArchive, InvalidPocketForPPA, NoRightsForArchive,
-    NoRightsForComponent)
 from lp.services.worlddata.interfaces.country import ICountrySet
+from lp.soyuz.enums import (
+    ArchivePurpose,
+    ArchiveStatus,
+    PackagePublishingStatus,
+    )
+from lp.soyuz.interfaces.archive import (
+    ArchiveDisabled,
+    CannotRestrictArchitectures,
+    CannotUploadToPocket,
+    CannotUploadToPPA,
+    IArchiveSet,
+    InsufficientUploadRights,
+    InvalidPocketForPartnerArchive,
+    InvalidPocketForPPA,
+    NoRightsForArchive,
+    NoRightsForComponent,
+    )
 from lp.soyuz.interfaces.archivearch import IArchiveArchSet
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
-from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.model.binarypackagerelease import (
-    BinaryPackageReleaseDownloadCount)
+    BinaryPackageReleaseDownloadCount,
+    )
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
-    ANONYMOUS, login, login_person, person_logged_in, TestCaseWithFactory)
+    ANONYMOUS,
+    login,
+    login_person,
+    person_logged_in,
+    TestCaseWithFactory,
+    )
 from lp.testing.sampledata import COMMERCIAL_ADMIN_EMAIL
 
 
@@ -502,8 +522,7 @@ class TestArchiveCanUpload(TestCaseWithFactory):
                 archive, person, sourcepackagename,
                 distroseries=distroseries, component=component,
                 pocket=pocket, strict_component=strict_component),
-            reason
-            )
+            reason)
 
     def test_checkUpload_partner_invalid_pocket(self):
         # Partner archives only have release and proposed pockets
@@ -976,52 +995,6 @@ class TestArchiveTokens(TestCaseWithFactory):
         url = self.joe.getArchiveSubscriptionURL(self.joe, self.private_ppa)
         token = self.private_ppa.getAuthToken(self.joe)
         self.assertEqual(token.archive_url, url)
-
-
-class TestArchivePrivacySwitching(TestCaseWithFactory):
-
-    layer = LaunchpadZopelessLayer
-
-    def setUp(self):
-        """Create a public and a private PPA."""
-        super(TestArchivePrivacySwitching, self).setUp()
-        self.public_ppa = self.factory.makeArchive()
-        self.private_ppa = self.factory.makeArchive()
-        self.private_ppa.buildd_secret = 'blah'
-        self.private_ppa.private = True
-
-    def make_ppa_private(self, ppa):
-        """Helper method to privatise a ppa."""
-        ppa.private = True
-        ppa.buildd_secret = "secret"
-
-    def make_ppa_public(self, ppa):
-        """Helper method to make a PPA public (and use for assertRaises)."""
-        ppa.private = False
-        ppa.buildd_secret = ''
-
-    def test_switch_privacy_no_pubs_succeeds(self):
-        # Changing the privacy is fine if there are no publishing
-        # records.
-        self.make_ppa_private(self.public_ppa)
-        self.assertTrue(self.public_ppa.private)
-
-        self.private_ppa.private = False
-        self.assertFalse(self.private_ppa.private)
-
-    def test_switch_privacy_with_pubs_fails(self):
-        # Changing the privacy is not possible when the archive already
-        # has published sources.
-        publisher = SoyuzTestPublisher()
-        publisher.prepareBreezyAutotest()
-        publisher.getPubSource(archive=self.public_ppa)
-        publisher.getPubSource(archive=self.private_ppa)
-
-        self.assertRaises(
-            CannotSwitchPrivacy, self.make_ppa_private, self.public_ppa)
-
-        self.assertRaises(
-            CannotSwitchPrivacy, self.make_ppa_public, self.private_ppa)
 
 
 class TestGetBinaryPackageRelease(TestCaseWithFactory):

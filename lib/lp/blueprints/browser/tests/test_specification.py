@@ -5,15 +5,13 @@ __metaclass__ = type
 
 import unittest
 
+from lazr.restful.testing.webservice import FakeRequest
 from zope.publisher.interfaces import NotFound
 
-from lp.testing import TestCaseWithFactory
 from canonical.launchpad.webapp.servers import StepsToGo
 from canonical.testing.layers import DatabaseFunctionalLayer
-
-from lazr.restful.testing.webservice import FakeRequest
-
 from lp.blueprints.browser import specification
+from lp.testing import TestCaseWithFactory
 
 
 class LocalFakeRequest(FakeRequest):

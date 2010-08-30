@@ -6,16 +6,22 @@ __metaclass__ = type
 
 import unittest
 
+from lazr.restful.utils import get_current_browser_request
 from zope.component import getUtility
 from zope.error.interfaces import IErrorReportingUtility
 
-from lazr.restful.utils import get_current_browser_request
-
 from canonical.launchpad.webapp.errorlog import (
-    LAZR_OOPS_USER_REQUESTED_KEY, maybe_record_user_requested_oops,
-    OopsNamespace)
+    LAZR_OOPS_USER_REQUESTED_KEY,
+    maybe_record_user_requested_oops,
+    OopsNamespace,
+    )
 from canonical.testing.layers import DatabaseFunctionalLayer
-from lp.testing import ANONYMOUS, login, logout, TestCase
+from lp.testing import (
+    ANONYMOUS,
+    login,
+    logout,
+    TestCase,
+    )
 
 
 class TestUserRequestedOops(TestCase):

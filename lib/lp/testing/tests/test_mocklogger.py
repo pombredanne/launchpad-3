@@ -5,9 +5,9 @@
 
 __metaclass__ = type
 
+from cStringIO import StringIO
 import logging
 import unittest
-from cStringIO import StringIO
 
 from lp.testing.logger import MockLogger
 

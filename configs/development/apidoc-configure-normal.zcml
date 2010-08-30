@@ -90,7 +90,6 @@
     <apidoc:rootModule module="martian" />
     <apidoc:rootModule module="manuel" />
     <apidoc:rootModule module="chameleon" />
-    <apidoc:rootModule module="bzrlib" />
     <apidoc:rootModule module="storm" />
 
     <apidoc:bookchapter
@@ -119,6 +118,12 @@
         id="buildout"
         title="Buildout"
         doc_path="../../doc/buildout.txt"
+        parent="lp"
+        />
+    <apidoc:bookchapter
+        id="profiling"
+        title="Profiling"
+        doc_path="../../lib/canonical/launchpad/doc/profiling.txt"
         parent="lp"
         />
 

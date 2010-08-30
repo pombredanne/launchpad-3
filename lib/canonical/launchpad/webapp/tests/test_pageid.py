@@ -5,10 +5,11 @@
 __metaclass__ = type
 
 
-import unittest
+from zope.interface import implements
+from lazr.restful.interfaces import ICollectionResource
 
-from lp.testing import TestCase
 from canonical.launchpad.webapp.servers import WebServicePublication
+from lp.testing import TestCase
 
 
 class FakeContext:
@@ -32,6 +33,16 @@ class FakeView:
     def __init__(self):
         self.context = FakeContext()
         self.request = FakeRequest()
+
+
+class FakeCollectionResourceView(FakeView):
+    """A view object that provides ICollectionResource."""
+    implements(ICollectionResource)
+
+    def __init__(self):
+        super(FakeCollectionResourceView, self).__init__()
+        self.type_url = (
+            u'https://launchpad.dev/api/devel/#milestone-page-resource')
 
 
 class TestWebServicePageIDs(TestCase):
@@ -68,3 +79,23 @@ class TestWebServicePageIDs(TestCase):
         self.view.request.query_string_params['ws.op'] = 'operation-name-2'
         self.assertEqual(
             self.makePageID(), 'FakeContext:FakeView:operation-name-2')
+
+
+class TestCollectionResourcePageIDs(TestCase):
+    """Ensure page ids for collections display the origin page resource."""
+
+    def setUp(self):
+        super(TestCollectionResourcePageIDs, self).setUp()
+        self.publication = WebServicePublication(db=None)
+        self.view = FakeCollectionResourceView()
+        self.context = FakeContext()
+
+    def makePageID(self):
+        return self.publication.constructPageID(self.view, self.context)
+
+    def test_origin_pageid_for_collection(self):
+        # When the view provides a ICollectionResource, make sure the origin
+        # page resource is included in the page ID.
+        self.assertEqual(
+            self.makePageID(),
+            'FakeContext:FakeCollectionResourceView:#milestone-page-resource')

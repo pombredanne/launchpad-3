@@ -13,13 +13,18 @@ See README.txt for discussion
 
 __metaclass__ = type
 
-from canonical.launchpad.webapp.menu import escape
-from zope.schema.interfaces import ValidationError
-from zope.app.form.interfaces import IWidgetInputError
-from zope.interface import implements, Interface
 from zope.app.form.browser.exception import (
-        WidgetInputErrorView as Z3WidgetInputErrorView
-        )
+    WidgetInputErrorView as Z3WidgetInputErrorView,
+    )
+from zope.app.form.interfaces import IWidgetInputError
+from zope.interface import (
+    implements,
+    Interface,
+    )
+from zope.schema.interfaces import ValidationError
+
+from canonical.launchpad.webapp.menu import escape
+
 
 __all__ = ['LaunchpadValidationError']
 

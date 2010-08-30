@@ -4,9 +4,9 @@
 __metaclass__ = type
 
 import os
+import shutil
 import subprocess
 import sys
-import shutil
 import tempfile
 import unittest
 
@@ -14,9 +14,7 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.testing import LaunchpadZopelessLayer
-
-from lp.services.scripts.interfaces.scriptactivity import (
-    IScriptActivitySet)
+from lp.services.scripts.interfaces.scriptactivity import IScriptActivitySet
 
 
 class TestProcessUpload(unittest.TestCase):
@@ -91,11 +89,12 @@ class TestProcessUpload(unittest.TestCase):
         # the process-upload call terminated with ERROR and
         # proper log message
         self.assertEqual(1, returncode)
-        self.assertEqual([
-            ('INFO    Creating lockfile: '
-             '/var/lock/process-upload-insecure.lock'),
-            'DEBUG   Lockfile /var/lock/process-upload-insecure.lock in use',
-             ], err.splitlines())
+        self.assert_(
+            'INFO    Creating lockfile: '
+            '/var/lock/process-upload-insecure.lock' in err.splitlines())
+        self.assert_(
+            'DEBUG   Lockfile /var/lock/process-upload-insecure.lock in use'
+            in err.splitlines())
 
         # release the locally acquired lockfile
         locker.release()

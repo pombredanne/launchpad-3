@@ -12,6 +12,7 @@ from twisted.internet import defer
 from lp.services.twistedsupport import extract_result
 from lp.testing import TestCase
 
+
 class TestExtractResult(TestCase):
     """Tests for `canonical.twisted_support.extract_result`."""
 

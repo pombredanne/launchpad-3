@@ -30,46 +30,74 @@ __all__ = [
     'ProjectView',
     ]
 
-from zope.lifecycleevent import ObjectCreatedEvent
+from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form.browser import TextWidget
 from zope.component import getUtility
 from zope.event import notify
 from zope.formlib import form
-from zope.interface import implements, Interface
+from zope.interface import (
+    implements,
+    Interface,
+    )
+from zope.lifecycleevent import ObjectCreatedEvent
 from zope.schema import Choice
-
-from z3c.ptcompat import ViewPageTemplateFile
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
-from lp.app.errors import NotFoundError
-from canonical.launchpad.webapp.menu import NavigationMenu
-from lp.blueprints.browser.specificationtarget import (
-    HasSpecificationsMenuMixin)
-from lp.registry.interfaces.product import IProductSet
-from lp.registry.interfaces.projectgroup import (
-    IProjectGroup, IProjectGroupSeries, IProjectGroupSet)
-from lp.registry.browser.announcement import HasAnnouncementsView
-from lp.registry.browser.menu import (
-    IRegistryCollectionNavigationMenu, RegistryCollectionActionMenuBase)
-from lp.registry.browser.product import (
-    ProductAddView, ProjectAddStepOne, ProjectAddStepTwo)
-from lp.registry.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.feeds import FeedsMixin
-from lp.registry.browser.structuralsubscription import (
-    StructuralSubscriptionTargetTraversalMixin)
+from canonical.launchpad.webapp import (
+    action,
+    ApplicationMenu,
+    canonical_url,
+    ContextMenu,
+    custom_widget,
+    enabled_with_permission,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    LaunchpadView,
+    Link,
+    Navigation,
+    StandardLaunchpadFacets,
+    stepthrough,
+    structured,
+    )
+from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
+from canonical.launchpad.webapp.menu import NavigationMenu
 from lp.answers.browser.question import QuestionAddView
 from lp.answers.browser.questiontarget import (
-    QuestionTargetFacetMixin, QuestionCollectionAnswersMenu)
-from lp.registry.browser.objectreassignment import (
-    ObjectReassignmentView)
-from canonical.launchpad.fields import PillarAliases, PublicPersonChoice
-from canonical.launchpad.webapp import (
-    ApplicationMenu, ContextMenu, LaunchpadEditFormView, LaunchpadFormView,
-    LaunchpadView, Link, Navigation, StandardLaunchpadFacets, action,
-    canonical_url, custom_widget, enabled_with_permission, stepthrough,
-    structured)
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
+    QuestionCollectionAnswersMenu,
+    QuestionTargetFacetMixin,
+    )
+from lp.app.errors import NotFoundError
+from lp.blueprints.browser.specificationtarget import (
+    HasSpecificationsMenuMixin,
+    )
+from lp.registry.browser.announcement import HasAnnouncementsView
+from lp.registry.browser.branding import BrandingChangeView
+from lp.registry.browser.menu import (
+    IRegistryCollectionNavigationMenu,
+    RegistryCollectionActionMenuBase,
+    )
+from lp.registry.browser.objectreassignment import ObjectReassignmentView
+from lp.registry.browser.product import (
+    ProductAddView,
+    ProjectAddStepOne,
+    ProjectAddStepTwo,
+    )
+from lp.registry.browser.structuralsubscription import (
+    StructuralSubscriptionTargetTraversalMixin,
+    )
+from lp.registry.interfaces.product import IProductSet
+from lp.registry.interfaces.projectgroup import (
+    IProjectGroup,
+    IProjectGroupSeries,
+    IProjectGroupSet,
+    )
+from lp.services.fields import (
+    PillarAliases,
+    PublicPersonChoice,
+    )
 
 
 class ProjectNavigation(Navigation,
@@ -115,7 +143,7 @@ class ProjectSetContextMenu(ContextMenu):
     usedfor = IProjectGroupSet
     links = ['register', 'listall']
 
-    @enabled_with_permission('launchpad.ProjectReview')
+    @enabled_with_permission('launchpad.Moderate')
     def register(self):
         text = 'Register a project group'
         return Link('+new', text, icon='add')
@@ -160,7 +188,7 @@ class ProjectFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
 
 class ProjectAdminMenuMixin:
 
-    @enabled_with_permission('launchpad.Admin')
+    @enabled_with_permission('launchpad.Moderate')
     def administer(self):
         text = 'Administer'
         return Link('+review', text, icon='edit')
@@ -328,7 +356,6 @@ class ProjectEditView(LaunchpadEditFormView):
         'homepageurl', 'bugtracker', 'sourceforgeproject',
         'freshmeatproject', 'wikiurl']
 
-
     @action('Change Details', name='change')
     def edit(self, action, data):
         self.updateContextFromData(data)
@@ -346,7 +373,7 @@ class ProjectEditView(LaunchpadEditFormView):
 class ProjectReviewView(ProjectEditView):
 
     label = "Review upstream project group details"
-    field_names = ['name', 'owner', 'active', 'reviewed']
+    default_field_names = ['name', 'owner', 'active', 'reviewed']
 
     def setUpFields(self):
         """Setup the normal fields from the schema plus adds 'Registrant'.
@@ -355,9 +382,16 @@ class ProjectReviewView(ProjectEditView):
         proper widget created by default.  Even though it is read-only, admins
         need the ability to change it.
         """
+        self.field_names = self.default_field_names[:]
+        admin = check_permission('launchpad.Admin', self.context)
+        if not admin:
+            self.field_names.remove('name')
+            self.field_names.remove('owner')
         super(ProjectReviewView, self).setUpFields()
-        self.form_fields = (self._createAliasesField() + self.form_fields
-                            + self._createRegistrantField())
+        self.form_fields = self._createAliasesField() + self.form_fields
+        if admin:
+            self.form_fields = (
+                self.form_fields + self._createRegistrantField())
 
     def _createAliasesField(self):
         """Return a PillarAliases field for IProjectGroup.aliases."""
@@ -457,7 +491,7 @@ class ProjectSetNavigationMenu(RegistryCollectionActionMenuBase):
         'view_all_project_groups',
         ]
 
-    @enabled_with_permission('launchpad.ProjectReview')
+    @enabled_with_permission('launchpad.Moderate')
     def register_project_group(self):
         text = 'Register a project group'
         return Link('+new', text, icon='add')
