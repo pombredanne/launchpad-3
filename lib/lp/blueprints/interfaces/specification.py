@@ -554,7 +554,7 @@ class SpecURLField(TextLine):
     def _validate(self, specurl):
         TextLine._validate(self, specurl)
         if (ISpecification.providedBy(self.context) and
-            specurl == getattr(self.context, 'specurl')):
+            specurl == self.context.specurl):
             # The specurl wasn't changed
             return
 

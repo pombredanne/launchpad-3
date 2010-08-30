@@ -167,14 +167,9 @@ class FileImporterTestCase(TestCaseWithFactory):
 
     def setUp(self):
         super(FileImporterTestCase, self).setUp()
-        self.fake_librarian = FakeLibrarian()
-        self.fake_librarian.installAsLibrarian()
+        self.fake_librarian = self.installFixture(FakeLibrarian())
         self.translation_import_queue = getUtility(ITranslationImportQueue)
         self.importer_person = self.factory.makePerson()
-
-    def tearDown(self):
-        self.fake_librarian.uninstall()
-        super(FileImporterTestCase, self).tearDown()
 
     def test_FileImporter_importMessage_NotImplemented(self):
         importer = self._createFileImporter()
@@ -501,14 +496,9 @@ class CreateFileImporterTestCase(TestCaseWithFactory):
 
     def setUp(self):
         super(CreateFileImporterTestCase, self).setUp()
-        self.fake_librarian = FakeLibrarian()
-        self.fake_librarian.installAsLibrarian()
+        self.fake_librarian = self.installFixture(FakeLibrarian())
         self.translation_import_queue = getUtility(ITranslationImportQueue)
         self.importer_person = self.factory.makePerson()
-
-    def tearDown(self):
-        self.fake_librarian.uninstall()
-        super(CreateFileImporterTestCase, self).tearDown()
 
     def _make_queue_entry(self, is_published):
         pofile = self.factory.makePOFile('eo')
