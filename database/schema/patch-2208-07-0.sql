@@ -20,6 +20,5 @@ CREATE TABLE DistroSeriesDifferenceMessage(
     message integer NOT NULL CONSTRAINT distroseriesdifferencemessage__message__fk REFERENCES message UNIQUE
 );
 CREATE INDEX distroseriesdifferencemessage__distroseriesdifference__idx ON distroseriesdifferencemessage(distro_series_difference);
-CREATE INDEX distroseriesdifferencemessage__message__idx ON distroseriesdifferencemessage(message);
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 07, 0);
