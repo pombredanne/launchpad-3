@@ -22,26 +22,24 @@ First, we set up a product with three blueprints.
     >>> sorted([spec.name for spec in specced_product.specifications()])
     [u'spec-a', u'spec-b', u'spec-c']
 
-The dependency candidates for spec_a are all blueprints for
-specced_product except for spec_a itself.
+
+Iterating over the vocabulary gives all blueprints for specced_product
+except for spec_a itself.
 
     >>> vocab = vocabulary_registry.get(
     ...     spec_a, "SpecificationDepCandidates")
     >>> sorted([term.value.name for term in vocab])
     [u'spec-b', u'spec-c']
 
-Dependency candidate come only from the same product of the blueprint
-they depend on.
+Blueprints for other targets are considered to be 'in' the vocabulary
+though.
 
     >>> unrelated_spec = factory.makeSpecification(
     ...     product=factory.makeProduct())
     >>> vocab = vocabulary_registry.get(
     ...     spec_a, "SpecificationDepCandidates")
     >>> unrelated_spec in vocab
-    False
-    >>> [term.value.product for term in vocab
-    ...  if term.value.product != specced_product]
-    []
+    True
 
 We mark spec_b as a dependency of spec_a and spec_c as a dependency of
 spec_b.
