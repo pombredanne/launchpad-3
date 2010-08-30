@@ -1009,24 +1009,28 @@ class BugTask(SQLBase, BugTaskMixin):
         if new_status < BugTaskStatus.FIXRELEASED:
             self.date_fix_released = None
 
+    def _userCanSetAssignee(self, user):
+        """Used by methods to check if user can assign or unassign bugtask."""
+        celebrities = getUtility(ILaunchpadCelebrities)
+        return (
+            user.inTeam(self.pillar.bug_supervisor) or
+            user.inTeam(self.pillar.owner) or
+            user.inTeam(self.pillar.driver) or
+            (self.distroseries is not None and
+             user.inTeam(self.distroseries.driver)) or
+            (self.productseries is not None and
+             user.inTeam(self.productseries.driver)) or
+            user.inTeam(celebrities.admin)
+            or user == celebrities.bug_importer)
+
     def userCanSetAnyAssignee(self, user):
         """See `IBugTask`."""
-        celebrities = getUtility(ILaunchpadCelebrities)
         if user is None:
             return False
         elif self.pillar.bug_supervisor is None:
             return True
         else:
-            return (
-                user.inTeam(self.pillar.bug_supervisor) or
-                user.inTeam(self.pillar.owner) or
-                user.inTeam(self.pillar.driver) or
-                (self.distroseries is not None and
-                 user.inTeam(self.distroseries.driver)) or
-                (self.productseries is not None and
-                 user.inTeam(self.productseries.driver)) or
-                user.inTeam(celebrities.admin)
-                or user == celebrities.bug_importer)
+            return self._userCanSetAssignee(user)
 
     def userCanUnassign(self, user):
         """True if user can set the assignee to None.
@@ -1036,7 +1040,7 @@ class BugTask(SQLBase, BugTaskMixin):
         Launchpad admins can always unassign.
         """
         return user is not None and (
-            user.inTeam(self.assignee) or self.userCanSetAnyAssignee(user))
+            user.inTeam(self.assignee) or self._userCanSetAssignee(user))
 
     def canTransitionToAssignee(self, assignee):
         """See `IBugTask`."""
