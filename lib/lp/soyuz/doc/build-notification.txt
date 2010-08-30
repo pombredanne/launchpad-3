@@ -419,7 +419,7 @@ in the main archive, the important differences are:
   >>> from lp.registry.interfaces.person import IPersonSet
   >>> cprov = getUtility(IPersonSet).getByName('cprov')
 
-  >>> from lp.buildmaster.interfaces.buildbase import BuildStatus
+  >>> from lp.buildmaster.enums import BuildStatus
   >>> failed_candidate = cprov.archive.getBuildRecords(
   ...     build_state=BuildStatus.FAILEDTOBUILD, name='cdrkit')[0]
 

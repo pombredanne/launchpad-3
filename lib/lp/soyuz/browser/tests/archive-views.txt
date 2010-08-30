@@ -360,7 +360,7 @@ are building as well as the number of packages waiting to build.
 
 Let's set some builds appropriately to see the results.
 
-    >>> from lp.buildmaster.interfaces.buildbase import BuildStatus
+    >>> from lp.buildmaster.enums import BuildStatus
     >>> from lp.soyuz.interfaces.binarypackagebuild import (
     ...     IBinaryPackageBuildSet)
     >>> warty_hppa = getUtility(IDistributionSet)['ubuntu']['warty']['hppa']
