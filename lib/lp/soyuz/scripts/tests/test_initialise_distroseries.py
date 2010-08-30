@@ -16,12 +16,11 @@ from canonical.config import config
 from canonical.launchpad.interfaces import IDistributionSet
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.testing.layers import LaunchpadZopelessLayer
-
 from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.soyuz.enums import SourcePackageFormat
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.packageset import IPackagesetSet
-from lp.soyuz.enums import SourcePackageFormat
 from lp.soyuz.model.distroarchseries import DistroArchSeries
 from lp.soyuz.scripts.initialise_distroseries import (
     InitialisationError,

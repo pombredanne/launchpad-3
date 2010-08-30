@@ -14,7 +14,6 @@ from zope.component import getUtility
 
 from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
-
 from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.distroseries import DistroSeries
@@ -23,9 +22,7 @@ from lp.soyuz.enums import (
     ArchivePurpose,
     PackageUploadStatus,
     )
-from lp.soyuz.interfaces.archive import (
-    IArchiveSet,
-    )
+from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.soyuz.model.packagecloner import clone_packages
 from lp.soyuz.model.packageset import Packageset
