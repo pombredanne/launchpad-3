@@ -3,16 +3,23 @@
 
 """Model tests for the DistroSeriesDifference class."""
 
+from __future__ import with_statement
+
 __metaclass__ = type
 
 import unittest
 
 from storm.store import Store
 from zope.component import getUtility
+from zope.security.interfaces import Unauthorized
 
+from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing import DatabaseFunctionalLayer
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    person_logged_in,
+    TestCaseWithFactory,
+    )
 from lp.registry.enum import (
     DistroSeriesDifferenceStatus,
     DistroSeriesDifferenceType,
@@ -218,9 +225,6 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             DistroSeriesDifferenceType.DIFFERENT_VERSIONS,
             ds_diff.difference_type)
 
-    def test_appendActivityLog_not_public(self):
-        self.fail("Unimplemented")
-
     def test_title(self):
         # The title is a friendly description of the difference.
         parent_series = self.factory.makeDistroSeries(name="lucid")
@@ -242,9 +246,10 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         # Adding a comment creates a new DistroSeriesDifferenceComment
         ds_diff = self.factory.makeDistroSeriesDifference(
             source_package_name_str="foonew")
-        person = self.factory.makePerson()
 
-        dsd_comment = ds_diff.addComment(person, "Wait until version 2.1")
+        with person_logged_in(ds_diff.owner):
+            dsd_comment = ds_diff.addComment(
+                ds_diff.owner, "Wait until version 2.1")
 
         self.assertEqual(ds_diff, dsd_comment.distro_series_difference)
 
@@ -252,13 +257,34 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         # All comments for this difference are returned.
         ds_diff = self.factory.makeDistroSeriesDifference()
 
-        dsd_comment = ds_diff.addComment(
-            ds_diff.derived_series.owner, "Wait until version 2.1")
-        dsd_comment_2 = ds_diff.addComment(
-            ds_diff.derived_series.owner, "Wait until version 2.1")
+        with person_logged_in(ds_diff.owner):
+            dsd_comment = ds_diff.addComment(
+                ds_diff.owner, "Wait until version 2.1")
+            dsd_comment_2 = ds_diff.addComment(
+                ds_diff.owner, "Wait until version 2.1")
 
         self.assertEqual(
             [dsd_comment, dsd_comment_2], list(ds_diff.getComments()))
+
+    def test_addComment_not_public(self):
+        # Comments cannot be added with launchpad.View.
+        ds_diff = self.factory.makeDistroSeriesDifference()
+        person = self.factory.makePerson()
+
+        with person_logged_in(person):
+            self.assertTrue(check_permission('launchpad.View', ds_diff))
+            self.assertFalse(check_permission('launchpad.Edit', ds_diff))
+            self.assertRaises(Unauthorized, getattr, ds_diff, 'addComment')
+
+    def test_addComment_for_owners(self):
+        # Comments can be added by any of the owners of the derived
+        # series.
+        ds_diff = self.factory.makeDistroSeriesDifference()
+
+        with person_logged_in(ds_diff.owner):
+            self.assertTrue(check_permission('launchpad.Edit', ds_diff))
+            diff_comment = ds_diff.addComment(
+                ds_diff.derived_series.owner, "Boo")
 
 
 def test_suite():

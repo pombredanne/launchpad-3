@@ -92,6 +92,11 @@ class DistroSeriesDifference(Storm):
         return self._getLatestSourcePub(for_parent=True)
 
     @property
+    def owner(self):
+        """See `IDistroSeriesDifference`."""
+        return self.derived_series.owner
+
+    @property
     def title(self):
         """See `IDistroSeriesDifference`."""
         parent_name = self.derived_series.parent_series.displayname

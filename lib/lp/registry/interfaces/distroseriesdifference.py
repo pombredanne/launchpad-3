@@ -8,6 +8,8 @@ __metaclass__ = type
 
 __all__ = [
     'IDistroSeriesDifference',
+    'IDistroSeriesDifferencePublic',
+    'IDistroSeriesDifferenceEdit',
     'IDistroSeriesDifferenceSource',
     ]
 
@@ -16,7 +18,6 @@ from zope.interface import Interface
 from zope.schema import (
     Choice,
     Int,
-    Text,
     TextLine,
     )
 
@@ -26,13 +27,15 @@ from lp.registry.enum import (
     DistroSeriesDifferenceType,
     )
 from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.sourcepackagename import ISourcePackageName
+from lp.registry.interfaces.role import IHasOwner
 from lp.soyuz.interfaces.packagediff import IPackageDiff
 from lp.soyuz.interfaces.publishing import ISourcePackagePublishingHistory
 
 
-class IDistroSeriesDifference(Interface):
-    """An interface for a package difference between two distroseries."""
+class IDistroSeriesDifferencePublic(IHasOwner, Interface):
+    """The public interface for distro series differences."""
 
     id = Int(title=_('ID'), required=True, readonly=True)
 
@@ -88,6 +91,11 @@ class IDistroSeriesDifference(Interface):
             "The version of the most recent source publishing in the "
             "parent series."))
 
+    owner = Reference(
+        IPerson, title=_("Owning team of the derived series"), readonly=True,
+        description=_(
+            "This attribute mirrors the owner of the derived series."))
+
     title = TextLine(
         title=_("Title"), readonly=True, required=False, description=_(
             "A human-readable name describing this difference."))
@@ -103,11 +111,21 @@ class IDistroSeriesDifference(Interface):
         :return: True if the record was updated, False otherwise.
         """
 
+    def getComments():
+        """Return a result set of the comments for this difference."""
+
+
+class IDistroSeriesDifferenceEdit(Interface):
+    """Difference attributes requiring launchpad.Edit."""
+
     def addComment(owner, comment):
         """Add a comment on this difference."""
 
-    def getComments():
-        """Return a result set of the comments for this difference."""
+
+class IDistroSeriesDifference(IDistroSeriesDifferencePublic,
+                              IDistroSeriesDifferenceEdit):
+    """An interface for a package difference between two distroseries."""
+
 
 
 class IDistroSeriesDifferenceSource(Interface):
