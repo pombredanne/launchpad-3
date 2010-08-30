@@ -1012,10 +1012,12 @@ class BugTask(SQLBase, BugTaskMixin):
     def userCanSetAnyAssignee(self, user):
         """See `IBugTask`."""
         celebrities = getUtility(ILaunchpadCelebrities)
-        if user is not None and self.pillar.bug_supervisor is None:
+        if user is None:
+            return False
+        elif self.pillar.bug_supervisor is None:
             return True
         else:
-            return user is not None and (
+            return (
                 user.inTeam(self.pillar.bug_supervisor) or
                 user.inTeam(self.pillar.owner) or
                 user.inTeam(self.pillar.driver) or
