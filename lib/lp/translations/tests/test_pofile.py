@@ -78,7 +78,8 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
             'http://translations.launchpad.dev/foo/devel/+pots/messages/sr',
             canonical_url(self.devel_sr_pofile))
         self.assertEqual(
-            'http://translations.launchpad.dev/foo/devel/+pots/messages/sr/+details',
+            ('http://translations.launchpad.dev/'
+            'foo/devel/+pots/messages/sr/+details'),
             canonical_url(self.devel_sr_pofile, view_name="+details"))
 
     def test_findPOTMsgSetsContaining(self):
@@ -1359,7 +1360,7 @@ class TestPOFileSet(TestCaseWithFactory):
         # POFile to each, making sure they share translations
         # (potemplates have the same name).
         distro = self.factory.makeDistribution()
-        distro.translations_usage = ServiceUsage.LAUNCHPAD 
+        distro.translations_usage = ServiceUsage.LAUNCHPAD
         series1 = self.factory.makeDistroRelease(distribution=distro,
                                                  name='one')
         sourcepackagename = self.factory.makeSourcePackageName()
@@ -1397,9 +1398,9 @@ class TestPOFileSet(TestCaseWithFactory):
         # Make sure POFiles which are in different products
         # are not returned even though they have the same potemplate name.
         series1 = self.factory.makeProductSeries(name='one')
-        series1.product.translations_usage = ServiceUsage.LAUNCHPAD 
+        series1.product.translations_usage = ServiceUsage.LAUNCHPAD
         series2 = self.factory.makeProductSeries(name='two')
-        series1.product.translations_usage = ServiceUsage.LAUNCHPAD 
+        series1.product.translations_usage = ServiceUsage.LAUNCHPAD
         self.assertNotEqual(series1.product, series2.product)
 
         potemplate1 = self.factory.makePOTemplate(name='shared',

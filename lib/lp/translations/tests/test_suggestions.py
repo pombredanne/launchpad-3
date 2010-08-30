@@ -227,5 +227,6 @@ class TestTranslationSuggestions(unittest.TestCase):
                           "TranslationMessage with errors is not correctly"
                           "marked as such in the database.")
 
+
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

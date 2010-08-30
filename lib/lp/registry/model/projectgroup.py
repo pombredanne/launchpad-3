@@ -165,7 +165,6 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
     max_bug_heat = Int()
 
     # convenient joins
-
     @property
     def products(self):
         return Product.selectBy(project=self, active=True, orderBy='name')
@@ -277,7 +276,7 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
         # filter based on completion. see the implementation of
         # Specification.is_complete() for more details
-        completeness =  Specification.completeness_clause
+        completeness = Specification.completeness_clause
 
         if SpecificationFilter.COMPLETE in filter:
             query += ' AND ( %s ) ' % completeness

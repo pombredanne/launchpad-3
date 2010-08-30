@@ -153,7 +153,7 @@ class HasTranslationTemplatesTestMixin:
 
         # A product or distribution that doesn't use Launchpad for
         # translations has no current templates.
-        self.product_or_distro.translations_usage = ServiceUsage.EXTERNAL 
+        self.product_or_distro.translations_usage = ServiceUsage.EXTERNAL
         self.assertFalse(self.container.has_current_translation_templates)
 
     def test_getTranslationTemplateFormats(self):
@@ -224,7 +224,7 @@ class TestSourcePackageHasTranslationTemplates(
         super(TestSourcePackageHasTranslationTemplates, self).setUp()
         self.container = self.factory.makeSourcePackage()
         self.product_or_distro = self.container.distroseries.distribution
-        self.product_or_distro.translations_usage = ServiceUsage.LAUNCHPAD 
+        self.product_or_distro.translations_usage = ServiceUsage.LAUNCHPAD
 
 
 class TestDistroSeriesHasTranslationTemplates(

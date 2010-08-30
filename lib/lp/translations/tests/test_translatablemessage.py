@@ -177,24 +177,24 @@ class TestTranslatableMessageSuggestions(TestTranslatableMessageBase):
         super(TestTranslatableMessageSuggestions, self).setUp()
         self.now = self.gen_now().next
         self.suggestion1 = self._createTranslation(date_updated=self.now())
-        self.current =  self._createTranslation(is_current=True,
+        self.current = self._createTranslation(is_current=True,
                                                 date_updated=self.now())
         self.suggestion2 = self._createTranslation(date_updated=self.now())
         self.message = TranslatableMessage(self.potmsgset, self.pofile)
 
     def test_getAllSuggestions(self):
-        # There are three different methods to return 
+        # There are three different methods to return
         suggestions = self.message.getAllSuggestions()
         self.assertContentEqual([self.suggestion1, self.suggestion2],
                                 suggestions)
 
     def test_getDismissedSuggestions(self):
-        # There are three different methods to return 
+        # There are three different methods to return
         suggestions = self.message.getDismissedSuggestions()
         self.assertContentEqual([self.suggestion1], suggestions)
 
     def test_getUnreviewedSuggestions(self):
-        # There are three different methods to return 
+        # There are three different methods to return
         suggestions = self.message.getUnreviewedSuggestions()
         self.assertContentEqual([self.suggestion2], suggestions)
 

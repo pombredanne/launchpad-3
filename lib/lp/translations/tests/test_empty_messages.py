@@ -4,7 +4,6 @@
 __metaclass__ = type
 
 from datetime import datetime
-import unittest
 
 from pytz import timezone
 from zope.component import getUtility
@@ -30,7 +29,9 @@ class TestTranslationEmptyMessages(TestCaseWithFactory):
         self.productseries = self.factory.makeProductSeries(product=product)
         self.potemplate = self.factory.makePOTemplate(self.productseries)
         self.serbian = getUtility(ILanguageSet).getLanguageByCode('sr')
-        self.pofile_sr = self.factory.makePOFile('sr', potemplate=self.potemplate)
+        self.pofile_sr = self.factory.makePOFile(
+            'sr',
+            potemplate=self.potemplate)
         self.now = datetime.now(timezone('UTC'))
 
     def test_NoEmptyImporedTranslation(self):

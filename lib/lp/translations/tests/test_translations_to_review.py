@@ -29,6 +29,7 @@ UTC = timezone('UTC')
 
 class ReviewTestMixin:
     """Base for testing which translations a reviewer can review."""
+
     def setUpMixin(self, for_product=True):
         """Set up test environment.
 
@@ -112,6 +113,7 @@ class ReviewableTranslationFilesTest:
 
     Can be applied to product or distribution setups.
     """
+
     def test_OneFileToReview(self):
         # In the base case, the method finds one POFile for self.person
         # to review.
