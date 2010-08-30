@@ -69,8 +69,10 @@ from canonical.launchpad.webapp.interfaces import (
 from canonical.launchpad.webapp.tales import DurationFormatterAPI
 from lp.app.errors import NotFoundError
 from lp.archivepublisher.utils import get_ppa_reference
-from lp.buildmaster.interfaces.buildbase import BuildStatus
-from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
+from lp.buildmaster.enums import (
+    BuildFarmJobType,
+    BuildStatus,
+    )
 from lp.buildmaster.interfaces.packagebuild import IPackageBuildSource
 from lp.buildmaster.model.builder import Builder
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
