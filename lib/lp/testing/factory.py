@@ -1862,7 +1862,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 sourcepackagename=source_package_name)
 
         return getUtility(IDistroSeriesDifferenceSource).new(
-            derived_series, source_package_name, difference_type)
+            derived_series, source_package_name, difference_type,
+            status=status)
 
     def makeDistroSeriesDifferenceComment(
         self, distro_series_difference=None, owner=None, comment=None):

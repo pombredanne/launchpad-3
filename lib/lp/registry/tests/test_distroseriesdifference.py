@@ -108,44 +108,24 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
 
         self.assertEqual(pending_pub, ds_diff.parent_source_pub)
 
-    def test_updateDifferenceType_returns_false(self):
-        # False is returned if the type of difference has not changed.
-        ds_diff = self.factory.makeDistroSeriesDifference()
-
-        self.assertFalse(ds_diff.updateDifferenceType())
-
-    def test_updateDifferenceType_returns_true(self):
-        # True is returned if the type of difference does change.
+    def test_source_version(self):
+        # The version of the source in the derived series is returned.
         ds_diff = self.factory.makeDistroSeriesDifference(
-            difference_type=(
-                DistroSeriesDifferenceType.UNIQUE_TO_DERIVED_SERIES))
-        parent_pub = self.factory.makeSourcePackagePublishingHistory(
-            sourcepackagename=ds_diff.source_package_name,
-            distroseries=ds_diff.derived_series.parent_series,
-            status=PackagePublishingStatus.PENDING)
+            source_package_name_str="foonew")
 
-        self.assertTrue(ds_diff.updateDifferenceType())
         self.assertEqual(
-            DistroSeriesDifferenceType.DIFFERENT_VERSIONS,
-            ds_diff.difference_type)
+            ds_diff.source_pub.source_package_version, ds_diff.source_version)
 
-    def test_updateDifferenceType_adds_comment(self):
-        # A comment is added when the type changes.
+    def test_source_version_none(self):
+        # None is returned for source_version when there is no source pub.
         ds_diff = self.factory.makeDistroSeriesDifference(
+            source_package_name_str="foonew",
             difference_type=(
-                DistroSeriesDifferenceType.UNIQUE_TO_DERIVED_SERIES),
-            versions={'derived': '0.9'})
-        parent_pub = self.factory.makeSourcePackagePublishingHistory(
-            sourcepackagename=ds_diff.source_package_name,
-            distroseries=ds_diff.derived_series.parent_series,
-            status=PackagePublishingStatus.PENDING,
-            version='1.0')
+                DistroSeriesDifferenceType.MISSING_FROM_DERIVED_SERIES))
 
-        ds_diff.updateDifferenceType()
+        self.assertEqual('', ds_diff.source_version)
 
-        self.fail("Not implemented")
-
-    def test_updateDifferenceType_resolves_difference(self):
+    def test_updateStatusAndType_resolves_difference(self):
         # Status is set to resolved when versions match.
         ds_diff = self.factory.makeDistroSeriesDifference(
             source_package_name_str="foonew",
@@ -159,14 +139,14 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             status=PackagePublishingStatus.PENDING,
             version='1.0')
 
-        was_updated = ds_diff.updateDifferenceType()
+        was_updated = ds_diff.updateStatusAndType()
 
         self.assertIs(True, was_updated)
         self.assertEqual(
             DistroSeriesDifferenceStatus.RESOLVED,
             ds_diff.status)
 
-    def test_updateDifferenceType_re_opens_difference(self):
+    def test_updateStatusAndType_re_opens_difference(self):
         # The status of a resolved difference will updated with new
         # uploads.
         ds_diff = self.factory.makeDistroSeriesDifference(
@@ -182,11 +162,61 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             status=PackagePublishingStatus.PENDING,
             version='1.1')
 
-        ds_diff.updateDifferenceType()
+        was_updated = ds_diff.updateStatusAndType()
 
+        self.assertIs(True, was_updated)
         self.assertEqual(
             DistroSeriesDifferenceStatus.NEEDS_ATTENTION,
             ds_diff.status)
+
+    def test_updateStatusAndType_new_version_no_change(self):
+        # Uploading a new (different) version does not necessarily
+        # update the record.
+        # In this case, a new version is uploaded, but there is still a
+        # difference needing attention.
+        ds_diff = self.factory.makeDistroSeriesDifference(
+            source_package_name_str="foonew",
+            versions={
+                'parent':'1.0',
+                'derived': '0.9',
+                })
+        new_derived_pub = self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagename=ds_diff.source_package_name,
+            distroseries=ds_diff.derived_series,
+            status=PackagePublishingStatus.PENDING,
+            version='1.1')
+
+        was_updated = ds_diff.updateStatusAndType()
+
+        self.assertIs(False, was_updated)
+        self.assertEqual(
+            DistroSeriesDifferenceStatus.NEEDS_ATTENTION,
+            ds_diff.status)
+
+    def test_updateStatusAndType_changes_type(self):
+        # The type of difference is updated when appropriate.
+        # In this case, a package that was previously only in the
+        # derived series (UNIQUE_TO_DERIVED_SERIES), is uploaded
+        # to the parent series with a different version.
+        ds_diff = self.factory.makeDistroSeriesDifference(
+            source_package_name_str="foonew",
+            versions={
+                'derived': '0.9',
+                },
+            difference_type=(
+                DistroSeriesDifferenceType.UNIQUE_TO_DERIVED_SERIES))
+        new_parent_pub = self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagename=ds_diff.source_package_name,
+            distroseries=ds_diff.derived_series.parent_series,
+            status=PackagePublishingStatus.PENDING,
+            version='1.1')
+
+        was_updated = ds_diff.updateStatusAndType()
+
+        self.assertIs(True, was_updated)
+        self.assertEqual(
+            DistroSeriesDifferenceType.DIFFERENT_VERSIONS,
+            ds_diff.difference_type)
 
     def test_appendActivityLog_not_public(self):
         self.fail("Unimplemented")

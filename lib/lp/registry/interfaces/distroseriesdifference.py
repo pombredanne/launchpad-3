@@ -71,27 +71,36 @@ class IDistroSeriesDifference(Interface):
         title=_("Derived source pub"), readonly=True,
         description=_(
             "The most recent published version in the derived series."))
+    source_version = TextLine(
+        title=_("Source version"), readonly=True,
+        description=_(
+            "The version of the most recent source publishing in the "
+            "derived series."))
 
     parent_source_pub = Reference(
         ISourcePackagePublishingHistory,
         title=_("Parent source pub"), readonly=True,
         description=_(
             "The most recent published version in the parent series."))
+    parent_source_version = TextLine(
+        title=_("Parent source version"), readonly=True,
+        description=_(
+            "The version of the most recent source publishing in the "
+            "parent series."))
 
     title = TextLine(
         title=_("Title"), readonly=True, required=False, description=_(
             "A human-readable name describing this difference."))
 
-    def updateDifferenceType():
-        """Checks that difference type matches the current publishings.
+    def updateStatusAndType():
+        """Checks that difference type and status matches current publishings.
 
-        If the type is updated, a relevant message is appended to the
-        activity log.
+        If the record is updated, a relevant comment is added.
 
         If there is no longer a difference (ie. the versions are
-        the same) then the status is updated to
+        the same) then the status is updated to RESOLVED.
 
-        :return: True if the type was updated, False otherwise.
+        :return: True if the record was updated, False otherwise.
         """
 
     def addComment(owner, comment):
