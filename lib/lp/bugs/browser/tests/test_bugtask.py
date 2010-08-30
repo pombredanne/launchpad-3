@@ -28,6 +28,11 @@ from lp.bugs.browser.bugtask import (
     )
 from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.testing import TestCaseWithFactory
+from lp.testing.sampledata import (
+    ADMIN_EMAIL,
+    NO_PRIVILEGE_EMAIL,
+    USER_EMAIL,
+    )
 
 
 class TestBugTasksAndNominationsView(TestCaseWithFactory):
@@ -36,7 +41,7 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
 
     def setUp(self):
         super(TestBugTasksAndNominationsView, self).setUp()
-        login('foo.bar@canonical.com')
+        login(ADMIN_EMAIL)
         self.bug = self.factory.makeBug()
         self.view = BugTasksAndNominationsView(
             self.bug, LaunchpadTestRequest())
@@ -248,7 +253,7 @@ class TestBugTaskEditViewStatusField(TestCaseWithFactory):
     def test_status_field_items_for_ordinary_users(self):
         # Ordinary users can set the status to all values except Won't fix,
         # Expired, Triaged, Unknown.
-        login('no-priv@canonical.com')
+        login(NO_PRIVILEGE_EMAIL)
         view = BugTaskEditView(
             self.bug.default_bugtask, LaunchpadTestRequest())
         view.initialize()
@@ -282,7 +287,7 @@ class TestBugTaskEditViewStatusField(TestCaseWithFactory):
         login_person(owner)
         self.bug.default_bugtask.transitionToStatus(
             BugTaskStatus.UNKNOWN, owner)
-        login('no-priv@canonical.com')
+        login(NO_PRIVILEGE_EMAIL)
         view = BugTaskEditView(
             self.bug.default_bugtask, LaunchpadTestRequest())
         view.initialize()
@@ -296,7 +301,7 @@ class TestBugTaskEditViewStatusField(TestCaseWithFactory):
         # in the options.
         removeSecurityProxy(self.bug.default_bugtask).status = (
             BugTaskStatus.EXPIRED)
-        login('no-priv@canonical.com')
+        login(NO_PRIVILEGE_EMAIL)
         view = BugTaskEditView(
             self.bug.default_bugtask, LaunchpadTestRequest())
         view.initialize()
@@ -317,7 +322,7 @@ class TestBugTaskEditViewAssigneeField(TestCaseWithFactory):
     def test_assignee_field_vocabulary_regular_user(self):
         # For regular users, the assignee vocabulary is
         # AllUserTeamsParticipation.
-        login('test@canonical.com')
+        login(USER_EMAIL)
         view = BugTaskEditView(self.bugtask, LaunchpadTestRequest())
         view.initialize()
         self.assertEqual(
