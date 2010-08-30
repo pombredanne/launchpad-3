@@ -127,7 +127,6 @@ class IDistroSeriesDifference(IDistroSeriesDifferencePublic,
     """An interface for a package difference between two distroseries."""
 
 
-
 class IDistroSeriesDifferenceSource(Interface):
     """A utility of this interface can be used to create differences."""
 

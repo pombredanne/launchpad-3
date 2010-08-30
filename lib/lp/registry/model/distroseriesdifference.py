@@ -9,8 +9,6 @@ __all__ = [
     'DistroSeriesDifference',
     ]
 
-from datetime import datetime
-
 from storm.locals import (
     Int,
     Reference,

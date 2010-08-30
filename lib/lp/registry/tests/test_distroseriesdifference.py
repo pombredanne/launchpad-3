@@ -137,7 +137,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         ds_diff = self.factory.makeDistroSeriesDifference(
             source_package_name_str="foonew",
             versions={
-                'parent':'1.0',
+                'parent': '1.0',
                 'derived': '0.9',
                 })
         new_derived_pub = self.factory.makeSourcePackagePublishingHistory(
@@ -159,7 +159,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         ds_diff = self.factory.makeDistroSeriesDifference(
             source_package_name_str="foonew",
             versions={
-                'parent':'1.0',
+                'parent': '1.0',
                 'derived': '1.0',
                 },
             status=DistroSeriesDifferenceStatus.RESOLVED)
@@ -184,7 +184,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         ds_diff = self.factory.makeDistroSeriesDifference(
             source_package_name_str="foonew",
             versions={
-                'parent':'1.0',
+                'parent': '1.0',
                 'derived': '0.9',
                 })
         new_derived_pub = self.factory.makeSourcePackagePublishingHistory(
