@@ -705,10 +705,16 @@ class TestBugTaskPermissionsToSetAssigneeMixin:
         self.assertTrue(
             self.series_bugtask.userCanSetAnyAssignee(
                 self.series_driver_member))
-        # But he cannot assign anybody to bug tasks of the main target.
-        self.assertFalse(
-            self.target_bugtask.userCanSetAnyAssignee(
-                self.series_driver_member))
+        if self.supervisor_member is not None:
+            # But he cannot assign anybody to bug tasks of the main target...
+            self.assertFalse(
+                self.target_bugtask.userCanSetAnyAssignee(
+                    self.series_driver_member))
+        else:
+            # ...unless a bug supervisor is not set.
+            self.assertTrue(
+                self.target_bugtask.userCanSetAnyAssignee(
+                    self.series_driver_member))
 
     def test_userCanUnassign_series_driver(self):
         # The target owner can unassign anybody from series bug tasks...
