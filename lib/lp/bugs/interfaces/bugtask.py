@@ -1402,7 +1402,7 @@ class IBugTaskSet(Interface):
     def searchBugIds(params):
         """Search bug ids.
 
-        This is a variation on IBugTaskSet.search that returns only the bug ids.
+        This is a variation on IBugTaskSet.search that returns only bug ids.
 
         :param params: the BugTaskSearchParams to search on.
         """

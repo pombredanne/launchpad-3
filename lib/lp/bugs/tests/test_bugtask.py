@@ -25,7 +25,6 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
     BugTaskSearchParams,
     BugTaskStatus,
-    IBugTaskSet,
     )
 from lp.bugs.model.bugtask import build_tag_search_clause
 from lp.hardwaredb.interfaces.hwdb import (
@@ -884,11 +883,11 @@ class TestBugTaskSearch(TestCaseWithFactory):
         person = self.login()
         self.factory.makeBug(product=target, private=True, owner=person)
         self.factory.makeBug(product=target, private=True, owner=person)
-        # Search style and parameters taken from the milestone index view where
-        # the issue was discovered.
+        # Search style and parameters taken from the milestone index view
+        # where the issue was discovered.
         login_person(person)
-        tasks = target.searchTasks(BugTaskSearchParams(person, omit_dupes=True,
-            orderby=['status', '-importance', 'id']))
+        tasks = target.searchTasks(BugTaskSearchParams(
+            person, omit_dupes=True, orderby=['status', '-importance', 'id']))
         # We must be finding the bugs.
         self.assertEqual(2, tasks.count())
         # Cache in the storm cache the account->person lookup so its not
@@ -898,7 +897,7 @@ class TestBugTaskSearch(TestCaseWithFactory):
         # allow access to getConjoinedMaster attribute - an attribute that
         # triggers a permission check (nb: id does not trigger such a check)
         self.assertStatementCount(1,
-            lambda:[task.getConjoinedMaster for task in tasks])
+            lambda: [task.getConjoinedMaster for task in tasks])
 
     def test_omit_targeted_default_is_false(self):
         # The default value of omit_targeted is false so bugs targeted
