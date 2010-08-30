@@ -13,11 +13,13 @@ from zope.component import getUtility
 
 from canonical.launchpad.database.librarian import LibraryFileAliasSet
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from canonical.launchpad.webapp.testing import verifyObject
 from canonical.librarian.client import LibrarianClient
 from canonical.librarian.interfaces import ILibrarianClient
-from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing import (
-    DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
 from lp.testing import TestCaseWithFactory
 from lp.testing.fakelibrarian import FakeLibrarian
 
@@ -88,6 +90,13 @@ class LibraryAccessScenarioMixin:
             getUtility(ILibrarianClient).addFile,
             name, wrong_length, StringIO(text), 'text/plain')
 
+    def test_debugID_is_harmless(self):
+        # addFile takes an argument debugID that doesn't do anything
+        # observable.  We get a LibraryFileAlias regardless.
+        alias_id = getUtility(ILibraryFileAliasSet).create(
+            'txt.txt', 3, StringIO('txt'), 'text/plain', debugID='txt')
+        self.assertNotEqual(None, alias_id)
+
 
 class TestFakeLibrarian(LibraryAccessScenarioMixin, TestCaseWithFactory):
     """Test the supported interface subset on the fake librarian."""
@@ -96,16 +105,20 @@ class TestFakeLibrarian(LibraryAccessScenarioMixin, TestCaseWithFactory):
 
     def setUp(self):
         super(TestFakeLibrarian, self).setUp()
-        self.fake_librarian = FakeLibrarian()
-        self.fake_librarian.installAsLibrarian()
-
-    def tearDown(self):
-        super(TestFakeLibrarian, self).tearDown()
-        self.fake_librarian.uninstall()
+        self.fake_librarian = self.installFixture(FakeLibrarian())
 
     def test_fake(self):
         self.assertTrue(verifyObject(ISynchronizer, self.fake_librarian))
         self.assertIsInstance(self.fake_librarian, FakeLibrarian)
+
+    def test_pretend_commit(self):
+        name, text, alias_id = self._storeFile()
+
+        self.fake_librarian.pretendCommit()
+
+        retrieved_alias = getUtility(ILibraryFileAliasSet)[alias_id]
+        retrieved_alias.open()
+        self.assertEqual(text, retrieved_alias.read())
 
 
 class TestRealLibrarian(LibraryAccessScenarioMixin, TestCaseWithFactory):

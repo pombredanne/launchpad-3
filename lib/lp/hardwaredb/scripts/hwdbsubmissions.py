@@ -16,6 +16,8 @@ __all__ = [
 
 import bz2
 from cStringIO import StringIO
+
+
 try:
     import xml.etree.cElementTree as etree
 except ImportError:

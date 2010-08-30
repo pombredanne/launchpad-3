@@ -16,60 +16,89 @@ __all__ = [
     ]
 
 
-import apt_pkg
 from datetime import datetime
 import operator
 import os
-import pytz
 import re
 import sys
 
+import apt_pkg
+import pytz
+from sqlobject import (
+    ForeignKey,
+    StringCol,
+    )
+from storm.expr import (
+    Desc,
+    In,
+    LeftJoin,
+    Sum,
+    )
+from storm.store import Store
 from zope.component import getUtility
 from zope.interface import implements
 
-from sqlobject import ForeignKey, StringCol
-
-from storm.expr import Desc, In, LeftJoin, Sum
-from storm.store import Store
-
-from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
+from canonical.database.sqlbase import (
+    SQLBase,
+    sqlvalues,
+    )
 from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet)
+    DecoratedResultSet,
+    )
+from canonical.launchpad.database.librarian import (
+    LibraryFileAlias,
+    LibraryFileContent,
+    )
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
-from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.launchpad.webapp.errorlog import (
-    ErrorReportingUtility, ScriptRequest)
+    ErrorReportingUtility,
+    ScriptRequest,
+    )
+from canonical.launchpad.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 from lp.app.errors import NotFoundError
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.packagebuild import PackageBuild
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.worlddata.model.country import Country
-from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFormat
-from lp.soyuz.model.binarypackagename import BinaryPackageName
-from lp.soyuz.model.binarypackagerelease import (BinaryPackageRelease,
-    BinaryPackageReleaseDownloadCount)
-from lp.soyuz.interfaces.archive import ArchivePurpose
-from lp.soyuz.model.files import (
-    BinaryPackageFile, SourcePackageReleaseFile)
-from canonical.launchpad.database.librarian import (
-    LibraryFileAlias, LibraryFileContent)
-from lp.soyuz.model.packagediff import PackageDiff
-from lp.soyuz.interfaces.archivearch import IArchiveArchSet
+from lp.soyuz.enums import (
+    BinaryPackageFormat,
+    PackagePublishingPriority,
+    PackagePublishingStatus,
+    PackageUploadStatus,
+    )
 from lp.soyuz.interfaces.binarypackagebuild import (
-    BuildSetStatus, IBinaryPackageBuildSet)
+    BuildSetStatus,
+    IBinaryPackageBuildSet,
+    )
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.publishing import (
-    active_publishing_status, IBinaryPackageFilePublishing,
-    IBinaryPackagePublishingHistory, IPublishingSet,
-    ISourcePackageFilePublishing, ISourcePackagePublishingHistory,
-    PackagePublishingPriority, PackagePublishingStatus, PoolFileOverwriteError)
-from lp.soyuz.interfaces.queue import PackageUploadStatus
+    active_publishing_status,
+    IBinaryPackageFilePublishing,
+    IBinaryPackagePublishingHistory,
+    IPublishingSet,
+    ISourcePackageFilePublishing,
+    ISourcePackagePublishingHistory,
+    PoolFileOverwriteError,
+    )
+from lp.soyuz.model.binarypackagename import BinaryPackageName
+from lp.soyuz.model.binarypackagerelease import (
+    BinaryPackageRelease,
+    BinaryPackageReleaseDownloadCount,
+    )
+from lp.soyuz.model.files import (
+    BinaryPackageFile,
+    SourcePackageReleaseFile,
+    )
+from lp.soyuz.model.packagediff import PackageDiff
 from lp.soyuz.pas import determineArchitecturesToBuild
 from lp.soyuz.scripts.changeoverride import ArchiveOverriderError
 
@@ -528,7 +557,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
     def createMissingBuilds(self, architectures_available=None,
                             pas_verify=None, logger=None):
         """See `ISourcePackagePublishingHistory`."""
-        if self.archive.purpose == ArchivePurpose.PPA:
+        if self.archive.is_ppa:
             pas_verify = None
 
         if architectures_available is None:
@@ -1689,7 +1718,7 @@ class PublishingSet:
         augmented_summary = summary
         if (source_publication.status in active_publishing_status and
                 summary['status'] == BuildSetStatus.FULLYBUILT and
-                source_publication.archive.purpose != ArchivePurpose.COPY):
+                not source_publication.archive.is_copy):
 
             unpublished_builds = list(
                 source_publication.getUnpublishedBuilds())

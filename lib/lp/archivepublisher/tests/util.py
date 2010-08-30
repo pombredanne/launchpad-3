@@ -7,9 +7,10 @@ __metaclass__ = type
 
 # Utility functions/classes for testing the archive publisher.
 
-from lp.archivepublisher.tests import datadir
 from canonical.launchpad.interfaces import SeriesStatus
+from lp.archivepublisher.tests import datadir
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+
 
 __all__ = ['FakeLogger']
 

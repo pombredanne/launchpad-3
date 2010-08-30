@@ -8,7 +8,6 @@ __metaclass__ = type
 import datetime
 import logging
 import os
-import pytz
 import re
 import shutil
 import StringIO
@@ -16,6 +15,7 @@ import tempfile
 from textwrap import dedent
 import unittest
 
+import pytz
 from twisted.python import log
 from twisted.trial.unittest import TestCase
 
@@ -23,9 +23,13 @@ from canonical.config import config
 from canonical.launchpad.webapp.errorlog import globalErrorUtility
 from canonical.testing.layers import TwistedLayer
 from lp.services.twistedsupport.loggingsupport import (
-    LaunchpadLogFile, OOPSLoggingObserver)
+    LaunchpadLogFile,
+    OOPSLoggingObserver,
+    )
 from lp.services.twistedsupport.tests.test_processmonitor import (
-    makeFailure, suppress_stderr)
+    makeFailure,
+    suppress_stderr,
+    )
 from lp.testing import TestCase as LaunchpadTestCase
 
 

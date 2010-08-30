@@ -25,11 +25,11 @@ from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.database import (BinaryPackagePublishingHistory,
                                           SourcePackagePublishingHistory)
-from canonical.launchpad.interfaces import (
-    IDistributionSet, PackagePublishingStatus)
+from canonical.launchpad.interfaces import IDistributionSet
 from canonical.launchpad.scripts import (execute_zcml_for_scripts,
                                          logger, logger_options)
 from canonical.lp import initZopeless
+from lp.soyuz.enums import PackagePublishingStatus
 
 from contrib.glock import GlobalLock
 
@@ -353,7 +353,7 @@ def what_to_remove(packages):
                 to_remove.append(d)
 
             if not Options.binaryonly:
-                for spp in distro_series.getPublishedReleases(removal):
+                for spp in distro_series.getPublishedSources(removal):
                     package = spp.sourcepackagerelease.sourcepackagename.name
                     version = spp.sourcepackagerelease.version
                     if (Options.component and

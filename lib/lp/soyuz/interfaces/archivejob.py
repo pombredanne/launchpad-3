@@ -1,23 +1,22 @@
-from zope.interface import Attribute, Interface
-from zope.schema import Int, Object
+# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Int,
+    Object,
+    )
 
 from canonical.launchpad import _
-
-from lazr.enum import DBEnumeratedType, DBItem
-
-from lp.services.job.interfaces.job import IJob, IJobSource, IRunnableJob
+from lp.services.job.interfaces.job import (
+    IJob,
+    IJobSource,
+    IRunnableJob,
+    )
 from lp.soyuz.interfaces.archive import IArchive
-
-
-class ArchiveJobType(DBEnumeratedType):
-    """Values that IArchiveJob.job_type can take."""
-
-    COPY_ARCHIVE = DBItem(0, """
-        Create a copy archive.
-
-        This job creates a copy archive from the current state of
-        the archive.
-        """)
 
 
 class IArchiveJob(Interface):

@@ -12,97 +12,174 @@ __all__ = ['Archive', 'ArchiveSet']
 import re
 
 from lazr.lifecycle.event import ObjectCreatedEvent
-from sqlobject import  (
-    BoolCol, ForeignKey, IntCol, StringCol)
+from sqlobject import (
+    BoolCol,
+    ForeignKey,
+    IntCol,
+    StringCol,
+    )
 from sqlobject.sqlbuilder import SQLConstant
-from storm.expr import And, Desc, Or, Select, Sum
-from storm.locals import Count, Join
+from storm.expr import (
+    And,
+    Desc,
+    Or,
+    Select,
+    Sum,
+    )
+from storm.locals import (
+    Count,
+    Join,
+    )
 from storm.store import Store
 from zope.component import getUtility
 from zope.event import notify
-from zope.interface import alsoProvides, implements
+from zope.interface import (
+    alsoProvides,
+    implements,
+    )
 
-from lp.app.errors import NotFoundError
-from lp.archivepublisher.debversion import Version
-from lp.archiveuploader.utils import re_issource, re_isadeb
 from canonical.cachedproperty import clear_property
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
-    cursor, quote, quote_like, sqlvalues, SQLBase)
-from canonical.launchpad.interfaces.lpstorm import ISlaveStore
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+    cursor,
+    quote,
+    quote_like,
+    SQLBase,
+    sqlvalues,
+    )
+from canonical.launchpad.components.tokens import (
+    create_unique_token_for_table,
+    )
+from canonical.launchpad.database.librarian import (
+    LibraryFileAlias,
+    LibraryFileContent,
+    )
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.lpstorm import (
+    ISlaveStore,
+    IStore,
+    )
+from canonical.launchpad.validators.name import valid_name
+from canonical.launchpad.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
+from canonical.launchpad.webapp.url import urlappend
+from lp.app.errors import NotFoundError
+from lp.archivepublisher.debversion import Version
+from lp.archiveuploader.utils import (
+    re_isadeb,
+    re_issource,
+    )
+from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.packagebuild import IPackageBuildSet
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.packagebuild import PackageBuild
+from lp.registry.interfaces.distroseries import IDistroSeriesSet
+from lp.registry.interfaces.person import (
+    PersonVisibility,
+    validate_person,
+    )
+from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.interfaces.role import IHasOwner
+from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.registry.model.teammembership import TeamParticipation
 from lp.services.job.interfaces.job import JobStatus
 from lp.soyuz.adapters.archivedependencies import expand_dependencies
 from lp.soyuz.adapters.packagelocation import PackageLocation
-from canonical.launchpad.components.tokens import (
-    create_unique_token_for_table)
-from lp.soyuz.model.archivedependency import ArchiveDependency
-from lp.soyuz.model.archiveauthtoken import ArchiveAuthToken
-from lp.soyuz.model.archivesubscriber import ArchiveSubscriber
-from lp.soyuz.model.binarypackagename import BinaryPackageName
-from lp.soyuz.model.binarypackagerelease import (
-    BinaryPackageReleaseDownloadCount)
-from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
-from lp.soyuz.model.component import Component
-from lp.soyuz.model.distributionsourcepackagecache import (
-    DistributionSourcePackageCache)
-from lp.soyuz.model.distroseriespackagecache import DistroSeriesPackageCache
-from lp.soyuz.model.files import (
-    BinaryPackageFile, SourcePackageReleaseFile)
-from canonical.launchpad.database.librarian import (
-    LibraryFileAlias, LibraryFileContent)
-from lp.soyuz.model.packagediff import PackageDiff
-from lp.soyuz.model.publishing import (
-    SourcePackagePublishingHistory, BinaryPackagePublishingHistory)
-from lp.soyuz.model.queue import PackageUpload, PackageUploadSource
-from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
-from lp.registry.model.teammembership import TeamParticipation
+from lp.soyuz.enums import (
+    ArchivePermissionType,
+    ArchivePurpose,
+    ArchiveStatus,
+    ArchiveSubscriberStatus,
+    PackagePublishingStatus,
+    PackageUploadStatus,
+    )
 from lp.soyuz.interfaces.archive import (
-    AlreadySubscribed, ArchiveDependencyError, ArchiveDisabled,
-    ArchiveNotPrivate, ArchivePurpose, ArchiveStatus, CannotCopy,
-    CannotRestrictArchitectures, CannotSwitchPrivacy, CannotUploadToPPA,
-    CannotUploadToPocket, DistroSeriesNotFound, IArchive, IArchiveSet,
-    IDistributionArchive, InsufficientUploadRights, InvalidPocketForPPA,
-    InvalidPocketForPartnerArchive, InvalidComponent, IPPA,
-    MAIN_ARCHIVE_PURPOSES, NoRightsForArchive, NoRightsForComponent,
-    NoSuchPPA, NoTokensForTeams, PocketNotFound, VersionRequiresName,
-    default_name_by_purpose)
-from lp.soyuz.interfaces.archiveauthtoken import IArchiveAuthTokenSet
+    AlreadySubscribed,
+    ArchiveDependencyError,
+    ArchiveDisabled,
+    ArchiveNotPrivate,
+    CannotCopy,
+    CannotRestrictArchitectures,
+    CannotSwitchPrivacy,
+    CannotUploadToPocket,
+    CannotUploadToPPA,
+    default_name_by_purpose,
+    DistroSeriesNotFound,
+    IArchive,
+    IArchiveSet,
+    IDistributionArchive,
+    InsufficientUploadRights,
+    InvalidComponent,
+    InvalidPocketForPartnerArchive,
+    InvalidPocketForPPA,
+    IPPA,
+    MAIN_ARCHIVE_PURPOSES,
+    NoRightsForArchive,
+    NoRightsForComponent,
+    NoSuchPPA,
+    NoTokensForTeams,
+    PocketNotFound,
+    VersionRequiresName,
+    )
 from lp.soyuz.interfaces.archivearch import IArchiveArchSet
+from lp.soyuz.interfaces.archiveauthtoken import IArchiveAuthTokenSet
 from lp.soyuz.interfaces.archivepermission import (
-    ArchivePermissionType, IArchivePermissionSet)
+    IArchivePermissionSet,
+    )
 from lp.soyuz.interfaces.archivesubscriber import (
-    ArchiveSubscriberStatus, IArchiveSubscriberSet, ArchiveSubscriptionError)
+    ArchiveSubscriptionError,
+    IArchiveSubscriberSet,
+    )
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.buildrecords import (
-    IHasBuildRecords, IncompatibleArguments)
-from lp.soyuz.interfaces.component import IComponent, IComponentSet
-from lp.registry.interfaces.distroseries import IDistroSeriesSet
-from lp.registry.interfaces.person import PersonVisibility
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.registry.interfaces.role import IHasOwner
-from lp.soyuz.interfaces.queue import PackageUploadStatus
+    IHasBuildRecords,
+    IncompatibleArguments,
+    )
+from lp.soyuz.interfaces.component import (
+    IComponent,
+    IComponentSet,
+    )
 from lp.soyuz.interfaces.packagecopyrequest import IPackageCopyRequestSet
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.interfaces.publishing import (
-    active_publishing_status, PackagePublishingStatus, IPublishingSet)
-from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
-from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+    active_publishing_status,
+    IPublishingSet,
+    )
+from lp.soyuz.model.archiveauthtoken import ArchiveAuthToken
+from lp.soyuz.model.archivedependency import ArchiveDependency
+from lp.soyuz.model.archivesubscriber import ArchiveSubscriber
+from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
+from lp.soyuz.model.binarypackagename import BinaryPackageName
+from lp.soyuz.model.binarypackagerelease import (
+    BinaryPackageRelease,
+    BinaryPackageReleaseDownloadCount,
+    )
+from lp.soyuz.model.component import Component
+from lp.soyuz.model.distributionsourcepackagecache import (
+    DistributionSourcePackageCache,
+    )
+from lp.soyuz.model.distroseriespackagecache import DistroSeriesPackageCache
+from lp.soyuz.model.files import (
+    BinaryPackageFile,
+    SourcePackageReleaseFile,
+    )
+from lp.soyuz.model.packagediff import PackageDiff
+from lp.soyuz.model.publishing import (
+    BinaryPackagePublishingHistory,
+    SourcePackagePublishingHistory,
+    )
+from lp.soyuz.model.queue import (
+    PackageUpload,
+    PackageUploadSource,
+    )
+from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 from lp.soyuz.scripts.packagecopier import do_copy
-
-from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
-from canonical.launchpad.webapp.url import urlappend
-from canonical.launchpad.validators.name import valid_name
-from lp.registry.interfaces.person import validate_person
 
 
 class Archive(SQLBase):

@@ -21,27 +21,42 @@ __all__ = [
 import os
 import shutil
 
-from bzrlib.branch import Branch, InterBranch
-from bzrlib.bzrdir import BzrDir, BzrDirFormat
+from bzrlib.branch import (
+    Branch,
+    InterBranch,
+    )
+from bzrlib.bzrdir import (
+    BzrDir,
+    BzrDirFormat,
+    )
+from bzrlib.errors import (
+    NoSuchFile,
+    NotBranchError,
+    )
 from bzrlib.transport import get_transport
-from bzrlib.errors import NoSuchFile, NotBranchError
 import bzrlib.ui
-from bzrlib.urlutils import join as urljoin, local_path_from_url
 from bzrlib.upgrade import upgrade
-
-from canonical.cachedproperty import cachedproperty
-from lp.code.enums import RevisionControlSystems
-from lp.codehosting.codeimport.foreigntree import (
-    CVSWorkingTree, SubversionWorkingTree)
-from lp.codehosting.codeimport.tarball import (
-    create_tarball, extract_tarball)
-from lp.codehosting.codeimport.uifactory import LoggingUIFactory
-from canonical.config import config
-
-from cscvs.cmds import totla
+from bzrlib.urlutils import (
+    join as urljoin,
+    local_path_from_url,
+    )
 import cscvs
+from cscvs.cmds import totla
 import CVS
 import SCM
+
+from canonical.cachedproperty import cachedproperty
+from canonical.config import config
+from lp.code.enums import RevisionControlSystems
+from lp.codehosting.codeimport.foreigntree import (
+    CVSWorkingTree,
+    SubversionWorkingTree,
+    )
+from lp.codehosting.codeimport.tarball import (
+    create_tarball,
+    extract_tarball,
+    )
+from lp.codehosting.codeimport.uifactory import LoggingUIFactory
 
 
 class CodeImportWorkerExitCode:

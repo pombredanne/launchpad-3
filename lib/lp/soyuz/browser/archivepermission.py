@@ -11,9 +11,9 @@ __all__ = [
 
 from zope.interface import implements
 
-from lp.soyuz.interfaces.archivepermission import (
-    ArchivePermissionType)
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
+from lp.soyuz.enums import ArchivePermissionType
+
 
 class ArchivePermissionURL:
     """Dynamic URL declaration for `IArchivePermission`."""

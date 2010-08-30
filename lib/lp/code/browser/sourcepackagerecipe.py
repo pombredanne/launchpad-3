@@ -15,33 +15,62 @@ __all__ = [
     ]
 
 
-from bzrlib.plugins.builder.recipe import RecipeParser, RecipeParseError
-from zope.interface import providedBy
+from bzrlib.plugins.builder.recipe import (
+    RecipeParseError,
+    RecipeParser,
+    )
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
 from lazr.restful.interface import use_template
 from storm.locals import Store
 from zope.component import getUtility
 from zope.event import notify
-from zope.interface import implements, Interface
-from zope.schema import Choice, List, Text
+from zope.interface import (
+    implements,
+    Interface,
+    providedBy,
+    )
+from zope.schema import (
+    Choice,
+    List,
+    Text,
+    )
 
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.browser.launchpad import Hierarchy
 from canonical.launchpad.webapp import (
-    action, canonical_url, ContextMenu, custom_widget,
-    enabled_with_permission, LaunchpadEditFormView, LaunchpadFormView,
-    LaunchpadView, Link, Navigation, NavigationMenu, stepthrough, structured)
+    action,
+    canonical_url,
+    ContextMenu,
+    custom_widget,
+    enabled_with_permission,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    LaunchpadView,
+    Link,
+    Navigation,
+    NavigationMenu,
+    stepthrough,
+    structured,
+    )
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from lp.code.errors import (
-    BuildAlreadyPending, ForbiddenInstruction, NoSuchBranch,
-    PrivateBranchRecipe)
+    BuildAlreadyPending,
+    ForbiddenInstruction,
+    NoSuchBranch,
+    PrivateBranchRecipe,
+    )
 from lp.code.interfaces.sourcepackagerecipe import (
-    ISourcePackageRecipe, ISourcePackageRecipeSource, MINIMAL_RECIPE_TEXT)
+    ISourcePackageRecipe,
+    ISourcePackageRecipeSource,
+    MINIMAL_RECIPE_TEXT,
+    )
 from lp.code.interfaces.sourcepackagerecipebuild import (
-    ISourcePackageRecipeBuildSource)
+    ISourcePackageRecipeBuildSource,
+    )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+
 
 RECIPE_BETA_MESSAGE = structured(
     'We\'re still working on source package recipes. '
@@ -65,7 +94,8 @@ class RecipesForPersonBreadcrumb(Breadcrumb):
 
     @property
     def url(self):
-        return canonical_url(self.context, view_name="+recipes")
+        return canonical_url(
+            self.context, view_name="+recipes", rootsite='code')
 
 
 class SourcePackageRecipeHierarchy(Hierarchy):

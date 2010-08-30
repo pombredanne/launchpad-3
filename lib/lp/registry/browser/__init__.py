@@ -7,6 +7,7 @@ __metaclass__ = type
 
 __all__ = [
     'get_status_counts',
+    'MapMixin',
     'MilestoneOverlayMixin',
     'RegistryEditFormView',
     'RegistryDeleteViewMixin',
@@ -16,17 +17,22 @@ __all__ = [
 
 from operator import attrgetter
 
+from storm.store import Store
 from zope.component import getUtility
 
-from storm.store import Store
-
-from lp.bugs.interfaces.bugtask import BugTaskSearchParams, IBugTaskSet
-from lp.registry.interfaces.productseries import IProductSeries
-from lp.registry.interfaces.series import SeriesStatus
+from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.launchpadform import (
-    action, LaunchpadEditFormView)
+    action,
+    LaunchpadEditFormView,
+    )
 from canonical.launchpad.webapp.publisher import canonical_url
+from lp.bugs.interfaces.bugtask import (
+    BugTaskSearchParams,
+    IBugTaskSet,
+    )
+from lp.registry.interfaces.productseries import IProductSeries
+from lp.registry.interfaces.series import SeriesStatus
 
 
 class StatusCount:
@@ -252,3 +258,19 @@ class RegistryEditFormView(LaunchpadEditFormView):
     @action("Change", name='change')
     def change_action(self, action, data):
         self.updateContextFromData(data)
+
+
+class MapMixin:
+
+    @cachedproperty
+    def gmap2_enabled(self):
+        # XXX sinzui 2010-08-27 bug=625556: This is a hack to use
+        # feature flags, which are not ready for general use in the production
+        # code, but has just enough to support this use case:
+        # Do not enable gmap2 if Google's service is not operational.
+        from lp.services.features.flags import FeatureController
+
+        def in_scope(value):
+            return True
+
+        return FeatureController(in_scope).getFlag('gmap2') == 'on'

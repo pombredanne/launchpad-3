@@ -15,24 +15,37 @@ __all__ = [
     'should_display_remote_comments',
     ]
 
-from datetime import datetime, timedelta
-from pytz import utc
-
-from zope.component import adapts, getMultiAdapter, getUtility
-from zope.interface import implements, Interface
+from datetime import (
+    datetime,
+    timedelta,
+    )
 
 from lazr.restful.interfaces import IWebServiceClientRequest
-
-from lp.bugs.interfaces.bugmessage import (
-    IBugComment, IBugMessageSet)
-from lp.registry.interfaces.person import IPersonSet
-from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
-from canonical.launchpad.webapp import canonical_url, LaunchpadView
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
+from pytz import utc
+from zope.component import (
+    adapts,
+    getMultiAdapter,
+    getUtility,
+    )
+from zope.interface import (
+    implements,
+    Interface,
+    )
 
 from canonical.config import config
+from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
+from canonical.launchpad.webapp import (
+    canonical_url,
+    LaunchpadView,
+    )
+from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
+from canonical.launchpad.webapp.interfaces import ILaunchBag
+from lp.bugs.interfaces.bugmessage import (
+    IBugComment,
+    IBugMessageSet,
+    )
+from lp.registry.interfaces.person import IPersonSet
 
 
 def should_display_remote_comments(user):

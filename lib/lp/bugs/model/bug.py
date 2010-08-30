@@ -19,72 +19,135 @@ __all__ = [
     ]
 
 
+from cStringIO import StringIO
+from datetime import (
+    datetime,
+    timedelta,
+    )
+from email.Utils import make_msgid
 import operator
 import re
-from cStringIO import StringIO
-from datetime import datetime, timedelta
-from email.Utils import make_msgid
-from pytz import timezone
-
-from zope.contenttype import guess_content_type
-from zope.component import getUtility
-from zope.event import notify
-from zope.interface import implements, providedBy
-
-from sqlobject import BoolCol, IntCol, ForeignKey, StringCol
-from sqlobject import SQLMultipleJoin, SQLRelatedJoin
-from sqlobject import SQLObjectNotFound
-from storm.expr import (
-    And, Count, Func, In, LeftJoin, Max, Not, Or, Select, SQL, SQLRaw, Union)
-from storm.store import EmptyResultSet, Store
 
 from lazr.lifecycle.event import (
-    ObjectCreatedEvent, ObjectDeletedEvent, ObjectModifiedEvent)
+    ObjectCreatedEvent,
+    ObjectDeletedEvent,
+    ObjectModifiedEvent,
+    )
 from lazr.lifecycle.snapshot import Snapshot
+from pytz import timezone
+from sqlobject import (
+    BoolCol,
+    ForeignKey,
+    IntCol,
+    SQLMultipleJoin,
+    SQLObjectNotFound,
+    SQLRelatedJoin,
+    StringCol,
+    )
+from storm.expr import (
+    And,
+    Count,
+    Func,
+    In,
+    LeftJoin,
+    Max,
+    Not,
+    Or,
+    Select,
+    SQL,
+    SQLRaw,
+    Union,
+    )
+from storm.store import (
+    EmptyResultSet,
+    Store,
+    )
+from zope.component import getUtility
+from zope.contenttype import guess_content_type
+from zope.event import notify
+from zope.interface import (
+    implements,
+    providedBy,
+    )
 
+from canonical.cachedproperty import (
+    cachedproperty,
+    cache_property,
+    clear_property,
+    )
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
+from canonical.database.sqlbase import (
+    cursor,
+    SQLBase,
+    sqlvalues,
+    )
+from canonical.launchpad.components.decoratedresultset import DecoratedResultSet
 from canonical.launchpad.database.librarian import LibraryFileAlias
 from canonical.launchpad.database.message import (
-    Message, MessageChunk, MessageSet)
-from lp.services.fields import DuplicateBug
+    Message,
+    MessageChunk,
+    MessageSet,
+    )
 from canonical.launchpad.helpers import shortlist
-from lp.hardwaredb.interfaces.hwdb import IHWSubmissionBugSet
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.launchpad import (
+    ILaunchpadCelebrities,
+    IPersonRoles,
+    )
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.interfaces.message import (
-    IMessage, IndexedMessage)
-from lp.registry.enum import BugNotificationLevel
-from lp.registry.interfaces.structuralsubscription import (
-    IStructuralSubscriptionTarget)
-from lp.bugs.mail.bugnotificationrecipients import BugNotificationRecipients
+    IMessage,
+    IndexedMessage,
+    )
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, DEFAULT_FLAVOR, MAIN_STORE)
-
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 from lp.answers.interfaces.questiontarget import IQuestionTarget
-from lp.app.errors import NotFoundError, UserCannotUnsubscribePerson
+from lp.app.errors import (
+    NotFoundError,
+    UserCannotUnsubscribePerson,
+    )
 from lp.bugs.adapters.bugchange import (
-    BranchLinkedToBug, BranchUnlinkedFromBug, BugConvertedToQuestion,
-    BugWatchAdded, BugWatchRemoved, SeriesNominated, UnsubscribedFromBug)
+    BranchLinkedToBug,
+    BranchUnlinkedFromBug,
+    BugConvertedToQuestion,
+    BugWatchAdded,
+    BugWatchRemoved,
+    SeriesNominated,
+    UnsubscribedFromBug,
+    )
 from lp.bugs.interfaces.bug import (
-    IBug, IBugBecameQuestionEvent, IBugSet, IFileBugData,
-    InvalidDuplicateValue)
+    IBug,
+    IBugBecameQuestionEvent,
+    IBugSet,
+    IFileBugData,
+    InvalidDuplicateValue,
+    )
 from lp.bugs.interfaces.bugactivity import IBugActivitySet
 from lp.bugs.interfaces.bugattachment import (
-    BugAttachmentType, IBugAttachmentSet)
+    BugAttachmentType,
+    IBugAttachmentSet,
+    )
 from lp.bugs.interfaces.bugmessage import IBugMessageSet
 from lp.bugs.interfaces.bugnomination import (
-    NominationError, NominationSeriesObsoleteError)
+    NominationError,
+    NominationSeriesObsoleteError,
+    )
 from lp.bugs.interfaces.bugnotification import IBugNotificationSet
 from lp.bugs.interfaces.bugtask import (
-    BugTaskStatus, IBugTaskSet, UNRESOLVED_BUGTASK_STATUSES)
+    BugTaskStatus,
+    IBugTaskSet,
+    UNRESOLVED_BUGTASK_STATUSES,
+    )
 from lp.bugs.interfaces.bugtracker import BugTrackerType
 from lp.bugs.interfaces.bugwatch import IBugWatchSet
 from lp.bugs.interfaces.cve import ICveSet
+from lp.bugs.mail.bugnotificationrecipients import BugNotificationRecipients
 from lp.bugs.model.bugattachment import BugAttachment
 from lp.bugs.model.bugbranch import BugBranch
 from lp.bugs.model.bugcve import BugCve
@@ -93,22 +156,38 @@ from lp.bugs.model.bugnomination import BugNomination
 from lp.bugs.model.bugnotification import BugNotification
 from lp.bugs.model.bugsubscription import BugSubscription
 from lp.bugs.model.bugtask import (
-    BugTask, BugTaskSet, NullBugTask, bugtask_sort_key,
-    get_bug_privacy_filter)
+    BugTask,
+    bugtask_sort_key,
+    BugTaskSet,
+    get_bug_privacy_filter,
+    NullBugTask,
+    )
 from lp.bugs.model.bugwatch import BugWatch
+from lp.hardwaredb.interfaces.hwdb import IHWSubmissionBugSet
+from lp.registry.enum import BugNotificationLevel
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
-    IDistributionSourcePackage)
-from lp.registry.interfaces.series import SeriesStatus
+    IDistributionSourcePackage,
+    )
 from lp.registry.interfaces.distroseries import IDistroSeries
-from lp.registry.interfaces.person import IPersonSet
-from lp.registry.interfaces.person import validate_public_person
+from lp.registry.interfaces.person import (
+    IPersonSet,
+    validate_public_person,
+    )
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
+from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackage import ISourcePackage
+from lp.registry.interfaces.structuralsubscription import (
+    IStructuralSubscriptionTarget,
+    )
 from lp.registry.model.mentoringoffer import MentoringOffer
-from lp.registry.model.person import Person, ValidPersonCache
+from lp.registry.model.person import (
+    Person,
+    ValidPersonCache,
+    )
 from lp.registry.model.pillar import pillar_sort_key
+from lp.services.fields import DuplicateBug
 
 
 _bug_tag_query_template = """
@@ -556,6 +635,7 @@ class Bug(SQLBase):
                 # disabled see the change.
                 store.flush()
                 self.updateHeat()
+                clear_property(self, '_cached_viewers')
                 return
 
     def unsubscribeFromDupes(self, person, unsubscribed_by):
@@ -1398,7 +1478,9 @@ class Bug(SQLBase):
                 self.who_made_private = None
                 self.date_made_private = None
 
-            for attachment in self.attachments:
+            # XXX: This should be a bulk update. RBC 20100827
+            # bug=https://bugs.edge.launchpad.net/storm/+bug/625071
+            for attachment in self.attachments_unpopulated:
                 attachment.libraryfile.restricted = private
 
             # Correct the heat for the bug immediately, so that we don't have
@@ -1548,21 +1630,31 @@ class Bug(SQLBase):
             self, self.messages[comment_number])
         bug_message.visible = visible
 
+    @cachedproperty('_cached_viewers')
+    def _known_viewers(self):
+        """A dict of of known persons able to view this bug."""
+        return set()
+
     def userCanView(self, user):
-        """See `IBug`."""
-        admins = getUtility(ILaunchpadCelebrities).admin
+        """See `IBug`.
+
+        Note that Editing is also controlled by this check,
+        because we permit editing of any bug one can see.
+        """
+        if user.id in self._known_viewers:
+            return True
         if not self.private:
             # This is a public bug.
             return True
-        elif user.inTeam(admins):
+        elif IPersonRoles(user).in_admin:
             # Admins can view all bugs.
             return True
         else:
             # This is a private bug. Only explicit subscribers may view it.
             for subscription in self.subscriptions:
                 if user.inTeam(subscription.person):
+                    self._known_viewers.add(user.id)
                     return True
-
         return False
 
     def linkHWSubmission(self, submission):
@@ -1636,19 +1728,59 @@ class Bug(SQLBase):
 
         self.heat = SQL("calculate_bug_heat(%s)" % sqlvalues(self))
         self.heat_last_updated = UTC_NOW
+        for task in self.bugtasks:
+            task.target.recalculateBugHeatCache()
+        store.flush()
+
+    def _attachments_query(self):
+        """Helper for the attachments* properties."""
+        # bug attachments with no LibraryFileContent have been deleted - the
+        # garbo_daily run will remove the LibraryFileAlias asynchronously.
+        # See bug 542274 for more details.
+        store = Store.of(self)
+        return store.find(
+            (BugAttachment, LibraryFileAlias),
+            BugAttachment.bug == self,
+            BugAttachment.libraryfile == LibraryFileAlias.id,
+            LibraryFileAlias.content != None).order_by(BugAttachment.id)
 
     @property
     def attachments(self):
-        """See `IBug`."""
-        # We omit those bug attachments that do not have a
-        # LibraryFileContent record in order to avoid OOPSes as
-        # mentioned in bug 542274. These bug attachments will be
-        # deleted anyway during the next garbo_daily run.
-        store = Store.of(self)
-        return store.find(
-            BugAttachment, BugAttachment.bug == self,
-            BugAttachment.libraryfile == LibraryFileAlias.id,
-            LibraryFileAlias.content != None).order_by(BugAttachment.id)
+        """See `IBug`.
+        
+        This property does eager loading of the index_messages so that the API
+        which wants the message_link for the attachment can answer that without
+        O(N^2) overhead. As such it is moderately expensive to call (it
+        currently retrieves all messages before any attachments, and does this
+        when attachments is evaluated, not when the resultset is processed).
+        """
+        message_to_indexed = {}
+        for message in self.indexed_messages:
+            message_to_indexed[message.id] = message
+        def set_indexed_message(row):
+            attachment = row[0]
+            # row[1] - the LibraryFileAlias is now in the storm cache and
+            # will be found without a query when dereferenced.
+            indexed_message = message_to_indexed.get(attachment._messageID)
+            if indexed_message is not None:
+                cache_property(attachment, '_message_cached', indexed_message)
+            return attachment
+        rawresults = self._attachments_query()
+        return DecoratedResultSet(rawresults, set_indexed_message)
+
+    @property
+    def attachments_unpopulated(self):
+        """See `IBug`.
+        
+        This version does not pre-lookup messages and LibraryFileAliases.
+        
+        The regular 'attachments' property does prepopulation because it is
+        exposed in the API.
+        """
+        # Grab the attachment only; the LibraryFileAlias will be eager loaded.
+        return DecoratedResultSet(
+            self._attachments_query(),
+            operator.itemgetter(0))
 
 
 class BugSet:
@@ -1872,6 +2004,10 @@ class BugSet:
         #      Transaction.iterSelect() will try to listify the results.
         #      This can be fixed by selecting from Bugs directly, but
         #      that's non-trivial.
+        # ---: Robert Collins 20100818: if bug_tasks implements IResultSset
+        #      then it should be very possible to improve on it, though
+        #      DecoratedResultSets would need careful handling (e.g. type
+        #      driven callbacks on columns)
         # We select more than :limit: since if a bug affects more than
         # one source package, it will be returned more than one time. 4
         # is an arbitrary number that should be large enough.

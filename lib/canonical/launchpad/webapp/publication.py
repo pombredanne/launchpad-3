@@ -14,48 +14,75 @@ import threading
 import traceback
 import urllib
 
-import tickcount
-import transaction
-
+from lazr.uri import (
+    InvalidURIError,
+    URI,
+    )
 from psycopg2.extensions import TransactionRollbackError
 from storm.database import STATE_DISCONNECTED
-from storm.exceptions import DisconnectionError, IntegrityError
+from storm.exceptions import (
+    DisconnectionError,
+    IntegrityError,
+    )
 from storm.zope.interfaces import IZStorm
-
+import tickcount
+import transaction
 from zc.zservertracelog.interfaces import ITraceLog
+# used to get at the adapters service
+from zope.app import zapi
 import zope.app.publication.browser
-from zope.app import zapi  # used to get at the adapters service
 from zope.app.publication.interfaces import BeforeTraverseEvent
 from zope.app.security.interfaces import IUnauthenticatedPrincipal
-from zope.component import getUtility, queryMultiAdapter
+from zope.component import (
+    getUtility,
+    queryMultiAdapter,
+    )
 from zope.error.interfaces import IErrorReportingUtility
 from zope.event import notify
-from zope.interface import implements, providedBy
-from zope.publisher.interfaces import IPublishTraverse, Retry
+from zope.interface import (
+    implements,
+    providedBy,
+    )
+from zope.publisher.interfaces import (
+    IPublishTraverse,
+    Retry,
+    )
 from zope.publisher.interfaces.browser import (
-    IDefaultSkin, IBrowserRequest)
+    IBrowserRequest,
+    IDefaultSkin,
+    )
 from zope.publisher.publish import mapply
-from zope.security.proxy import removeSecurityProxy
 from zope.security.management import newInteraction
-
-import canonical.launchpad.layers as layers
-import canonical.launchpad.webapp.adapter as da
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.oauth import IOAuthSignedRequest
+import canonical.launchpad.layers as layers
 from canonical.launchpad.readonly import is_read_only
-from lp.registry.interfaces.person import (
-    IPerson, IPersonSet, ITeam)
-from canonical.launchpad.webapp.interfaces import (
-    IDatabasePolicy, ILaunchpadRoot, INotificationResponse, IOpenLaunchBag,
-    IPlacelessAuthUtility, IPrimaryContext, IStoreSelector,
-    MASTER_FLAVOR, OffsiteFormPostError, NoReferrerError, StartRequestEvent)
+import canonical.launchpad.webapp.adapter as da
 from canonical.launchpad.webapp.dbpolicy import LaunchpadDatabasePolicy
+from canonical.launchpad.webapp.interfaces import (
+    IDatabasePolicy,
+    ILaunchpadRoot,
+    INotificationResponse,
+    IOpenLaunchBag,
+    IPlacelessAuthUtility,
+    IPrimaryContext,
+    IStoreSelector,
+    MASTER_FLAVOR,
+    NoReferrerError,
+    OffsiteFormPostError,
+    StartRequestEvent,
+    )
 from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.opstats import OpStats
-from lazr.uri import URI, InvalidURIError
 from canonical.launchpad.webapp.vhosts import allvhosts
+from lp.registry.interfaces.person import (
+    IPerson,
+    IPersonSet,
+    ITeam,
+    )
 
 
 METHOD_WRAPPER_TYPE = type({}.__setitem__)

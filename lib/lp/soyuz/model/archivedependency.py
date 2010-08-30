@@ -17,11 +17,9 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
-from lp.soyuz.adapters.archivedependencies import (
-    component_dependencies)
-from lp.soyuz.interfaces.archivedependency import (
-    IArchiveDependency)
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.soyuz.adapters.archivedependencies import component_dependencies
+from lp.soyuz.interfaces.archivedependency import IArchiveDependency
 
 
 class ArchiveDependency(SQLBase):

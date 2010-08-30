@@ -22,14 +22,14 @@ specifically referenced in Launchpad tests.
   This user is not supposed to be a member of any teams.
 
   >>> no_team_memberships = personset.getByName('no-team-memberships')
-  >>> no_team_memberships.myactivememberships.count()
+  >>> no_team_memberships.team_memberships.count()
   0
 
 * One Team Membership
   This user is supposed to be a member of only one team, the "Simple Team".
 
   >>> one_membership = personset.getByName('one-membership')
-  >>> for t in one_membership.myactivememberships: print t.team.displayname
+  >>> for t in one_membership.team_memberships: print t.team.displayname
   Simple Team
 
 

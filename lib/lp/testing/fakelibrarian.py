@@ -19,20 +19,22 @@ import hashlib
 from StringIO import StringIO
 from urlparse import urljoin
 
-import zope.component
-from zope.interface import implements
 import transaction
 from transaction.interfaces import ISynchronizer
+import zope.component
+from zope.interface import implements
 
 from canonical.config import config
-
 from canonical.launchpad.database.librarian import (
-    LibraryFileContent, LibraryFileAlias)
+    LibraryFileAlias,
+    LibraryFileContent,
+    )
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.librarian.client import get_libraryfilealias_download_path
 from canonical.librarian.interfaces import (
     ILibrarianClient,
-    LIBRARIAN_SERVER_DEFAULT_TIMEOUT)
+    LIBRARIAN_SERVER_DEFAULT_TIMEOUT,
+    )
 
 
 class InstrumentedLibraryFileAlias(LibraryFileAlias):
@@ -113,6 +115,14 @@ class FakeLibrarian(object):
 
         self.installed_as_librarian = False
 
+    def setUp(self):
+        """Fixture API: install as the librarian."""
+        self.installAsLibrarian()
+
+    def tearDown(self):
+        """Fixture API: uninstall."""
+        self.uninstall()
+
     def __init__(self):
         self.aliases = {}
         self.download_url = config.librarian.download_url
@@ -149,6 +159,19 @@ class FakeLibrarian(object):
         alias.checkCommitted()
         return StringIO(alias.content_string)
 
+    def pretendCommit(self):
+        """Pretend that there's been a commit.
+
+        When you add a file to the librarian (real or fake), it is not
+        fully available until the transaction that added the file has
+        been committed.  Call this method to make the FakeLibrarian act
+        as if there's been a commit, without actually committing a
+        database transaction.
+        """
+        # Note that all files have been committed to storage.
+        for alias in self.aliases.itervalues():
+            alias.file_committed = True
+
     def _makeAlias(self, file_id, name, content, content_type):
         """Create a `LibraryFileAlias`."""
         alias = InstrumentedLibraryFileAlias(
@@ -168,8 +191,7 @@ class FakeLibrarian(object):
     def create(self, name, size, file, contentType, expires=None,
                debugID=None, restricted=False):
         "See `ILibraryFileAliasSet`."""
-        return self.addFile(
-            name, size, file, contentType, expires=expires, debugID=debugID)
+        return self.addFile(name, size, file, contentType, expires=expires)
 
     def __getitem__(self, key):
         "See `ILibraryFileAliasSet`."""
@@ -193,9 +215,7 @@ class FakeLibrarian(object):
 
     def afterCompletion(self, txn):
         """See `ISynchronizer`."""
-        # Note that all files have been committed to storage.
-        for alias in self.aliases.itervalues():
-            alias.file_committed = True
+        self.pretendCommit()
 
     def newTransaction(self, txn):
         """See `ISynchronizer`."""
