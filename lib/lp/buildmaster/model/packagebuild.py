@@ -51,10 +51,7 @@ from canonical.launchpad.webapp.interfaces import (
     MAIN_STORE,
     )
 from canonical.librarian.utils import copy_and_close
-from lp.buildmaster.interfaces.buildbase import (
-    BUILDD_MANAGER_LOG_NAME,
-    BuildStatus,
-    )
+from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSource
 from lp.buildmaster.interfaces.packagebuild import (
     IPackageBuild,
@@ -68,7 +65,6 @@ from lp.buildmaster.model.buildfarmjob import (
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.registry.interfaces.pocket import (
     PackagePublishingPocket,
-    pocketsuffix,
     )
 from lp.soyuz.adapters.archivedependencies import (
     default_component_dependency_name,
@@ -317,6 +313,7 @@ class PackageBuildDerived:
 
     def handleStatus(self, status, librarian, slave_status):
         """See `IPackageBuild`."""
+        from lp.buildmaster.manager import BUILDD_MANAGER_LOG_NAME
         logger = logging.getLogger(BUILDD_MANAGER_LOG_NAME)
         method = getattr(self, '_handleStatus_' + status, None)
         if method is None:
