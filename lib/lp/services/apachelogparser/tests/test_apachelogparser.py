@@ -135,7 +135,7 @@ class TestLogFileParsing(TestCase):
         # it doesn't show up in the dict returned.
         fd = open(os.path.join(
             here, 'apache-log-files', 'launchpadlibrarian.net.access-log'))
-        downloads, parsed_bytes, ignored = parse_file(
+        downloads, parsed_bytes, parsed_lines = parse_file(
             fd, start_position=0, logger=self.logger,
             get_download_key=get_path_download_key)
         self.assertEqual(
@@ -159,7 +159,7 @@ class TestLogFileParsing(TestCase):
         # line without worrying about whether or not it's been truncated.
         fd = open(os.path.join(
             here, 'apache-log-files', 'launchpadlibrarian.net.access-log'))
-        downloads, parsed_bytes, ignored = parse_file(
+        downloads, parsed_bytes, parsed_lines = parse_file(
             fd, start_position=self._getLastLineStart(fd), logger=self.logger,
             get_download_key=get_path_download_key)
         self.assertEqual(
@@ -177,7 +177,7 @@ class TestLogFileParsing(TestCase):
         # parsed up to the line before the one where the failure occurred.
         # Here we force an unexpected error on the first line.
         fd = StringIO('Not a log')
-        downloads, parsed_bytes, ignored = parse_file(
+        downloads, parsed_bytes, parsed_lines = parse_file(
             fd, start_position=0, logger=self.logger,
             get_download_key=get_path_download_key)
         self.assertIn('Error', self.logger.buffer.getvalue())
@@ -188,7 +188,7 @@ class TestLogFileParsing(TestCase):
         """Assert that responses with the given status are ignored."""
         fd = StringIO(
             self.sample_line % dict(status=status, method='GET'))
-        downloads, parsed_bytes, ignored = parse_file(
+        downloads, parsed_bytes, parsed_lines = parse_file(
             fd, start_position=0, logger=self.logger,
             get_download_key=get_path_download_key)
         self.assertEqual(
@@ -213,7 +213,7 @@ class TestLogFileParsing(TestCase):
         """Assert that requests with the given method are ignored."""
         fd = StringIO(
             self.sample_line % dict(status='200', method=method))
-        downloads, parsed_bytes, ignored = parse_file(
+        downloads, parsed_bytes, parsed_lines = parse_file(
             fd, start_position=0, logger=self.logger,
             get_download_key=get_path_download_key)
         self.assertEqual(
@@ -231,7 +231,7 @@ class TestLogFileParsing(TestCase):
     def test_normal_request_is_not_ignored(self):
         fd = StringIO(
             self.sample_line % dict(status=200, method='GET'))
-        downloads, parsed_bytes, ignored = parse_file(
+        downloads, parsed_bytes, parsed_lines = parse_file(
             fd, start_position=0, logger=self.logger,
             get_download_key=get_path_download_key)
         self.assertEqual(
@@ -274,7 +274,7 @@ class TestLogFileParsing(TestCase):
 
         # And the subsequent parse will be for the 3rd and 4th lines,
         # corresponding to two downloads of the same file.
-        downloads, parsed_bytes, ignored = parse_file(
+        downloads, parsed_bytes, parsed_lines = parse_file(
             fd, start_position=parsed_bytes, logger=self.logger,
             get_download_key=get_path_download_key)
         self.assertContentEqual(
