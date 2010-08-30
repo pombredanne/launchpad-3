@@ -53,7 +53,7 @@ from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.errors import NotFoundError
 from lp.archiveuploader.utils import determine_source_file_type
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.sourcepackage import (
     SourcePackageType,

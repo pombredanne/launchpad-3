@@ -197,7 +197,7 @@ The 'Needs building' build is 14x14:
 
 The 'building' build is 14x14:
 
-    >>> from lp.buildmaster.interfaces.buildbase import BuildStatus
+    >>> from lp.buildmaster.enums import BuildStatus
     >>> from zope.security.proxy import removeSecurityProxy
     >>> removeSecurityProxy(build).status = BuildStatus.BUILDING
     >>> print test_tales("build/image:icon", build=build)

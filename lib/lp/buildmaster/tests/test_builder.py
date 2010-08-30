@@ -15,7 +15,7 @@ from canonical.launchpad.webapp.interfaces import (
     MAIN_STORE,
     )
 from canonical.testing import LaunchpadZopelessLayer
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior,

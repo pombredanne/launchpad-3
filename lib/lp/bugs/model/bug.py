@@ -72,6 +72,7 @@ from zope.interface import (
 
 from canonical.cachedproperty import (
     cachedproperty,
+    cache_property,
     clear_property,
     )
 from canonical.config import config
@@ -82,6 +83,7 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
+from canonical.launchpad.components.decoratedresultset import DecoratedResultSet
 from canonical.launchpad.database.librarian import LibraryFileAlias
 from canonical.launchpad.database.message import (
     Message,
@@ -1477,7 +1479,9 @@ class Bug(SQLBase):
                 self.who_made_private = None
                 self.date_made_private = None
 
-            for attachment in self.attachments:
+            # XXX: This should be a bulk update. RBC 20100827
+            # bug=https://bugs.edge.launchpad.net/storm/+bug/625071
+            for attachment in self.attachments_unpopulated:
                 attachment.libraryfile.restricted = private
 
             # Correct the heat for the bug immediately, so that we don't have
@@ -1729,18 +1733,55 @@ class Bug(SQLBase):
             task.target.recalculateBugHeatCache()
         store.flush()
 
-    @property
-    def attachments(self):
-        """See `IBug`."""
-        # We omit those bug attachments that do not have a
-        # LibraryFileContent record in order to avoid OOPSes as
-        # mentioned in bug 542274. These bug attachments will be
-        # deleted anyway during the next garbo_daily run.
+    def _attachments_query(self):
+        """Helper for the attachments* properties."""
+        # bug attachments with no LibraryFileContent have been deleted - the
+        # garbo_daily run will remove the LibraryFileAlias asynchronously.
+        # See bug 542274 for more details.
         store = Store.of(self)
         return store.find(
-            BugAttachment, BugAttachment.bug == self,
+            (BugAttachment, LibraryFileAlias),
+            BugAttachment.bug == self,
             BugAttachment.libraryfile == LibraryFileAlias.id,
             LibraryFileAlias.content != None).order_by(BugAttachment.id)
+
+    @property
+    def attachments(self):
+        """See `IBug`.
+        
+        This property does eager loading of the index_messages so that the API
+        which wants the message_link for the attachment can answer that without
+        O(N^2) overhead. As such it is moderately expensive to call (it
+        currently retrieves all messages before any attachments, and does this
+        when attachments is evaluated, not when the resultset is processed).
+        """
+        message_to_indexed = {}
+        for message in self.indexed_messages:
+            message_to_indexed[message.id] = message
+        def set_indexed_message(row):
+            attachment = row[0]
+            # row[1] - the LibraryFileAlias is now in the storm cache and
+            # will be found without a query when dereferenced.
+            indexed_message = message_to_indexed.get(attachment._messageID)
+            if indexed_message is not None:
+                cache_property(attachment, '_message_cached', indexed_message)
+            return attachment
+        rawresults = self._attachments_query()
+        return DecoratedResultSet(rawresults, set_indexed_message)
+
+    @property
+    def attachments_unpopulated(self):
+        """See `IBug`.
+        
+        This version does not pre-lookup messages and LibraryFileAliases.
+        
+        The regular 'attachments' property does prepopulation because it is
+        exposed in the API.
+        """
+        # Grab the attachment only; the LibraryFileAlias will be eager loaded.
+        return DecoratedResultSet(
+            self._attachments_query(),
+            operator.itemgetter(0))
 
 
 class BugSet:

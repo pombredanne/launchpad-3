@@ -42,7 +42,7 @@ from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.lazr.utils import safe_hasattr
 from lp.app.errors import UnexpectedFormData
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.buildmaster.enums import BuildStatus
 from lp.services.job.interfaces.job import JobStatus
 from lp.soyuz.interfaces.binarypackagebuild import (
     IBinaryPackageBuild,
