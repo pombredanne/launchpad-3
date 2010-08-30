@@ -312,16 +312,33 @@ class TestBugTaskEditViewAssigneeField(TestCaseWithFactory):
 
     def setUp(self):
         super(TestBugTaskEditViewAssigneeField, self).setUp()
-        self.bugtask = self.factory.makeBug().default_bugtask
+        self.owner = self.factory.makePerson()
+        self.product = self.factory.makeProduct(owner=self.owner)
+        self.bugtask = self.factory.makeBug(
+            product=self.product).default_bugtask
 
-    def test_assignee_field_vocabulary_regular_user(self):
+    def test_assignee_vocabulary_regular_user_with_bug_supervisor(self):
         # For regular users, the assignee vocabulary is
-        # AllUserTeamsParticipation.
+        # AllUserTeamsParticipation if there is a bug supervisor defined.
+        login_person(self.owner)
+        self.product.setBugSupervisor(self.owner, self.owner)
         login('test@canonical.com')
         view = BugTaskEditView(self.bugtask, LaunchpadTestRequest())
         view.initialize()
         self.assertEqual(
             'AllUserTeamsParticipation',
+            view.form_fields['assignee'].field.vocabularyName)
+
+    def test_assignee_vocabulary_regular_user_without_bug_supervisor(self):
+        # For regular users, the assignee vocabulary is
+        # ValidAssignee is there is not a bug supervisor defined.
+        login_person(self.owner)
+        self.product.setBugSupervisor(None, self.owner)
+        login('test@canonical.com')
+        view = BugTaskEditView(self.bugtask, LaunchpadTestRequest())
+        view.initialize()
+        self.assertEqual(
+            'ValidAssignee',
             view.form_fields['assignee'].field.vocabularyName)
 
     def test_assignee_field_vocabulary_privileged_user(self):
