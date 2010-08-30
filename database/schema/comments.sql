@@ -203,23 +203,11 @@ COMMENT ON COLUMN BugSubscription.bug_notification_level IS 'The level of notifi
 
 -- BugSubscriptionFilter
 COMMENT ON TABLE BugSubscriptionFilter IS 'A filter with search criteria. Emails are sent only if the affected bug matches the specified parameters. The parameters are the same as those used for bugtask searches.';
-COMMENT ON COLUMN BugSubscriptionFilter.bugsubscription IS 'The bug subscription to be filtered.';
 COMMENT ON COLUMN BugSubscriptionFilter.structuralsubscription IS 'The structural subscription to be filtered.';
-COMMENT ON COLUMN BugSubscriptionFilter.assignee IS 'Filter by bugtask assignee.';
-COMMENT ON COLUMN BugSubscriptionFilter.unassigned IS 'Remove all messages for bugs having an assignee.';
-COMMENT ON COLUMN BugSubscriptionFilter.reporter IS 'Filter by bug reporter.';
-COMMENT ON COLUMN BugSubscriptionFilter.supervisor IS 'Filter by bug supervisor.';
-COMMENT ON COLUMN BugSubscriptionFilter.commenter IS 'Filter by bug commenter.';
-COMMENT ON COLUMN BugSubscriptionFilter.subscriber IS 'Filter by bug subscriber.';
 COMMENT ON COLUMN BugSubscriptionFilter.find_all_tags IS 'If set, search for bugs having all tags specified in BugSubscriptionFilterTag, else search for bugs having any of the tags specified in BugSubscriptionFilterTag.';
 COMMENT ON COLUMN BugSubscriptionFilter.include_any_tags IS 'If True, include messages for bugs having any tag set.';
 COMMENT ON COLUMN BugSubscriptionFilter.exclude_any_tags IS 'If True, exclude bugs having any tag set.';
-COMMENT ON COLUMN BugSubscriptionFilter.has_cve IS 'If True, send only messages for bugs linked to a CVE';
-COMMENT ON COLUMN BugSubscriptionFilter.bugs_affecting_me IS 'If True, send only messages for bugs affecting the subscriber.';
-COMMENT ON COLUMN BugSubscriptionFilter.bugs_with_patches IS 'If True, send only messages for bugs having patches.';
-COMMENT ON COLUMN BugSubscriptionFilter.bugs_with_branches IS 'If True, send only messages for bugs with linked branches; if False, send only messages for bugs without linked branches; else do not filter by linked branches.';
-COMMENT ON COLUMN BugSubscriptionFilter.hide_duplicate_bugs IS 'If True, messages for bugs marked as duplicates are not sent.';
-COMMENT ON COLUMN BugSubscriptionFilter.fulltext_search IS 'A full text search term.';
+COMMENT ON COLUMN BugSubscriptionFilter.other_parameters IS 'Other filter paremeters. Actual filtering is implemented on Python level.';
 COMMENT ON COLUMN BugSubscriptionFilter.description IS 'A description of the filter, allowing subscribers to note the intent of the filter.';
 
 -- BugSubscriptionFilterStatus
@@ -232,26 +220,11 @@ COMMENT ON TABLE BugSubscriptionFilterImportance IS 'Filter a bugsubscription by
 COMMENT ON COLUMN BugSubscriptionFilterImportance.filter IS 'The subscription filter of this record.';
 COMMENT ON COLUMN BugSubscriptionFilterImportance.importance IS 'The bug task importance.';
 
--- BugSubscriptionFilterMilestone
-COMMENT ON TABLE BugSubscriptionFilterMilestone IS 'Filter a bugsubscription by milestone.';
-COMMENT ON COLUMN BugSubscriptionFilterMilestone.filter IS 'The subscription filter of this record.';
-COMMENT ON COLUMN BugSubscriptionFilterMilestone.milestone IS 'The milestone associated with a bugtask.';
-
 -- BugSubscriptionFilterTag
 COMMENT ON TABLE BugSubscriptionFilterTag IS 'Filter by bug tag.';
 COMMENT ON COLUMN BugSubscriptionFilterTag.filter IS 'The subscription filter of this record.';
 COMMENT ON COLUMN BugSubscriptionFilterTag.tag IS 'A bug tag.';
 COMMENT ON COLUMN BugSubscriptionFilterTag.include IS 'If True, send only messages for bugs having this tag, else send only messages for bugs which do not have this tag.';
-
--- BugSubscriptionFilterComponent
-COMMENT ON TABLE BugSubscriptionFilterComponent IS 'Filter by component where a package is located.';
-COMMENT ON COLUMN BugSubscriptionFilterComponent.filter IS 'The subscription filter of this record.';
-COMMENT ON COLUMN BugSubscriptionFilterComponent.component IS 'The component where the bug target package is located. E.g. main, universe, restricted.';
-
--- BugSubscriptionFilterUpstreamStatus
-COMMENT ON TABLE BugSubscriptionFilterUpstreamStatus IS 'Filter by upstream bugtask status.';
-COMMENT ON COLUMN BugSubscriptionFilterUpstreamStatus.filter IS 'The subscription filter of this record.';
-COMMENT ON COLUMN BugSubscriptionFilterUpstreamStatus.status IS 'The upstream bugtask status.';
 
 -- BugTag
 COMMENT ON TABLE BugTag IS 'Attaches simple text tags to a bug.';
