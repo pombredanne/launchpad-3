@@ -165,7 +165,12 @@ class PackageBugReportData(BugReportData):
         self.open_bugs_url = urlappend(
             dsp_bugs_url, get_buglisting_search_filter_url())
 
-        self.bug_tracking_usage = product.bug_tracking_usage
+        if product is not None:
+            self.bug_tracking_usage = product.bug_tracking_usage
+            self.branch = product.development_focus.branch
+        else:
+            self.bug_tracking_usage = ServiceUsage.UNKNOWN
+            self.branch = None
 
         # If a product is specified, build some convenient links to
         # pages which allow filling out required information. The
