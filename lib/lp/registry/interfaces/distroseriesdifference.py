@@ -49,8 +49,8 @@ class IDistroSeriesDifference(Interface):
             "The package with a difference between the derived series "
             "and its parent."))
 
-    last_package_diff = Reference(
-        IPackageDiff, title=_("Last package diff"), required=False,
+    package_diff = Reference(
+        IPackageDiff, title=_("Package diff"), required=False,
         readonly=True, description=_(
             "The most recently generated package diff for this difference."))
 
