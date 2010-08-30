@@ -275,6 +275,17 @@ class IBugWatch(IHasBug):
         :raises: `BugWatchCannotBeRescheduled` if
                  `IBugWatch.can_be_rescheduled` is False.
         """
+    def reset():
+        """Completely reset the watch.
+
+        When called, the following attributes are reset:
+         * last_error_type -> None
+         * lastchanged -> None
+         * lastchecked -> None
+         * nextcheck -> now
+         * remoteimportance -> None
+         * remotestatus -> None
+        """
 
 
 # Defined here because of circular imports.

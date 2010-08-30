@@ -72,6 +72,11 @@ map requires the google GMap JavaScript to display, so the views set the
 state of the request's needs_gmap2 attribute to true if there are
 members who have set their location.
 
+    >>> from lp.services.features.model import FeatureFlag, getFeatureStore
+    >>> ignore = getFeatureStore().add(FeatureFlag(
+    ...     scope=u'default', flag=u'gmap2', value=u'on', priority=1))
+    >>> transaction.commit()
+
     >>> team_view = create_initialized_view(ubuntu_team, '+index')
     >>> team_view.has_visible_location
     False
