@@ -113,8 +113,7 @@ But since the project has a bug, the search box is still visible.
     Advanced search
 
 Projects that use an external bug tracker will list the tracker on a
-bugs home page in addition to the message that the project does not
-use Launchpad for bug tracking.
+bugs home page.
 
     >>> login('foo.bar@canonical.com')
     >>> some_tracker = factory.makeBugTracker(
@@ -122,10 +121,6 @@ use Launchpad for bug tracking.
     >>> test_project.bugtracker = some_tracker
     >>> logout()
     >>> anon_browser.open('http://bugs.launchpad.dev/test-project')
-    >>> uses_malone_p = find_tag_by_id(anon_browser.contents, 'no-malone')
-    >>> print extract_text(uses_malone_p)
-    Launchpad does not know where to forward bug reports to contact the
-    developers of Simple Test Project.
     >>> tracker_text = find_tag_by_id(anon_browser.contents, 'bugtracker')
     >>> print extract_text(tracker_text)
     Bugs are tracked in tracker.example.com/.
