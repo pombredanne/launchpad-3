@@ -79,9 +79,6 @@ class DistroSeriesDifference(Storm):
         diff.status = status
         diff.difference_type = difference_type
 
-        diff.activity_log = u""
-        diff.appendActivityLog(
-            "Initial parent/derived versions: %s" % diff._getVersions())
         return store.add(diff)
 
     @property
@@ -107,11 +104,6 @@ class DistroSeriesDifference(Storm):
                     'versions': self._getVersions(),
                     })
 
-    @property
-    def activity_log(self):
-        """See `IDistroSeriesDifference`."""
-        return u""
-
     def _getLatestSourcePub(self, for_parent=False):
         """Helper to keep source_pub/parent_source_pub DRY."""
         distro_series = self.derived_series
@@ -136,19 +128,6 @@ class DistroSeriesDifference(Storm):
             parent_src_pub_ver = self.parent_source_pub.source_package_version
         return parent_src_pub_ver + "/" + src_pub_ver
 
-    def appendActivityLog(self, message, user=None):
-        """See `IDistroSeriesDifference`."""
-        username = " "
-        if user is not None:
-            username += user.name
-
-        self.activity_log += (
-            "%(datestamp)s%(username)s: %(message)s\n" % {
-            'datestamp': datetime.strftime(datetime.now(), "%Y-%m-%d"),
-            'username': username,
-            'message': message,
-            })
-
     def updateDifferenceType(self):
         """See `IDistroSeriesDifference`."""
         if self.source_pub is None:
@@ -162,14 +141,14 @@ class DistroSeriesDifference(Storm):
             return False
 
         self.difference_type = new_type
-        self.appendActivityLog(
-            "Difference type changed to '%s'. Parent/derived versions: %s" % (
-                new_type.title,
-                self._getVersions(),
-                ))
         return True
 
     def addComment(self, owner, comment):
         """See `IDistroSeriesDifference`."""
         return getUtility(IDistroSeriesDifferenceCommentSource).new(
             self, owner, comment)
+
+    def getComments(self):
+        """See `IDistroSeriesDifference`."""
+        comment_source = getUtility(IDistroSeriesDifferenceCommentSource)
+        return comment_source.getForDifference(self)

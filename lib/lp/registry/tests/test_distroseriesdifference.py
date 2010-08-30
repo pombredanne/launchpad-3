@@ -108,43 +108,6 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
 
         self.assertEqual(pending_pub, ds_diff.parent_source_pub)
 
-    def test_appendActivityLog(self):
-        # The message is prepended with date/version info and appended
-        # to the activity log with a new line.
-        ds_diff = self.factory.makeDistroSeriesDifference(
-            source_package_name_str="foonew")
-
-        ds_diff.appendActivityLog("Waiting for version 1.9")
-
-        self.assertIn(
-            "Waiting for version 1.9\n",
-            ds_diff.activity_log)
-
-    def test_appendActivityLog_includes_username(self):
-        # The username is included if a user is passed.
-        ds_diff = self.factory.makeDistroSeriesDifference(
-            source_package_name_str="foonew")
-
-        ds_diff.appendActivityLog(
-            "Waiting for version 1.9", ds_diff.derived_series.owner)
-
-        self.assertIn(
-            ds_diff.derived_series.owner.name,
-            ds_diff.activity_log)
-
-    def test_appendActivityLog_called_on_creation(self):
-        # The creation of a difference is logged with initial versions.
-        ds_diff = self.factory.makeDistroSeriesDifference(
-            source_package_name_str="foonew",
-            versions={
-                'parent':'1.0',
-                'derived': '0.9',
-                })
-
-        self.assertIn(
-            'Initial parent/derived versions: 1.0/0.9',
-            ds_diff.activity_log)
-
     def test_updateDifferenceType_returns_false(self):
         # False is returned if the type of difference has not changed.
         ds_diff = self.factory.makeDistroSeriesDifference()
@@ -166,8 +129,8 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             DistroSeriesDifferenceType.DIFFERENT_VERSIONS,
             ds_diff.difference_type)
 
-    def test_updateDifferenceType_appends_to_activity_log(self):
-        # A message is appended to activity log when the type changes.
+    def test_updateDifferenceType_adds_comment(self):
+        # A comment is added when the type changes.
         ds_diff = self.factory.makeDistroSeriesDifference(
             difference_type=(
                 DistroSeriesDifferenceType.UNIQUE_TO_DERIVED_SERIES),
@@ -180,11 +143,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
 
         ds_diff.updateDifferenceType()
 
-        self.assertIn(
-            "Difference type changed to 'Different versions'",
-            ds_diff.activity_log)
-        self.assertIn(
-            "Parent/derived versions: 1.0/0.9", ds_diff.activity_log)
+        self.fail("Not implemented")
 
     def test_updateDifferenceType_resolves_difference(self):
         # Status is set to resolved when versions match.
@@ -206,9 +165,6 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         self.assertEqual(
             DistroSeriesDifferenceStatus.RESOLVED,
             ds_diff.status)
-        self.assertIn(
-            "Difference resolved. Both versions now 1.0",
-            self.activity_log)
 
     def test_updateDifferenceType_re_opens_difference(self):
         # The status of a resolved difference will updated with new
@@ -231,9 +187,6 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         self.assertEqual(
             DistroSeriesDifferenceStatus.NEEDS_ATTENTION,
             ds_diff.status)
-        self.assertIn(
-            "Difference re-opened. Parent/derived versions: 1.0/1.1",
-            ds_diff.activity_log)
 
     def test_appendActivityLog_not_public(self):
         self.fail("Unimplemented")
@@ -264,6 +217,18 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         dsd_comment = ds_diff.addComment(person, "Wait until version 2.1")
 
         self.assertEqual(ds_diff, dsd_comment.distro_series_difference)
+
+    def test_getComments(self):
+        # All comments for this difference are returned.
+        ds_diff = self.factory.makeDistroSeriesDifference()
+
+        dsd_comment = ds_diff.addComment(
+            ds_diff.derived_series.owner, "Wait until version 2.1")
+        dsd_comment_2 = ds_diff.addComment(
+            ds_diff.derived_series.owner, "Wait until version 2.1")
+
+        self.assertEqual(
+            [dsd_comment, dsd_comment_2], list(ds_diff.getComments()))
 
 
 def test_suite():

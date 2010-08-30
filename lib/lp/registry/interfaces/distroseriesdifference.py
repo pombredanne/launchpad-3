@@ -54,10 +54,6 @@ class IDistroSeriesDifference(Interface):
         readonly=True, description=_(
             "The most recently generated package diff for this difference."))
 
-    activity_log = Text(
-        title=_('A log of activity and comments for this difference.'),
-        required=False, readonly=True)
-
     status = Choice(
         title=_('Distro series difference status.'),
         description=_('The current status of this difference.'),
@@ -86,14 +82,6 @@ class IDistroSeriesDifference(Interface):
         title=_("Title"), readonly=True, required=False, description=_(
             "A human-readable name describing this difference."))
 
-    def appendActivityLog(message, user=None):
-        """Add a message to the activity log.
-
-        :param message: The message to be appended to the activity log.
-        :param user: Optional user creating the message. If present the
-            username will be included when the message is appended.
-        """
-
     def updateDifferenceType():
         """Checks that difference type matches the current publishings.
 
@@ -108,6 +96,9 @@ class IDistroSeriesDifference(Interface):
 
     def addComment(owner, comment):
         """Add a comment on this difference."""
+
+    def getComments():
+        """Return a result set of the comments for this difference."""
 
 
 class IDistroSeriesDifferenceSource(Interface):

@@ -56,7 +56,7 @@ class IDistroSeriesDifferenceCommentSource(Interface):
         :return: A new `DistroSeriesDifferenceComment` object.
         """
 
-    def getCommentsForDifference(distro_series_difference):
+    def getForDifference(distro_series_difference):
         """Return a result set of comments for a difference.
 
         :param distro_series_difference: The distribution series difference

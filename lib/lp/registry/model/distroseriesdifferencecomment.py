@@ -67,7 +67,7 @@ class DistroSeriesDifferenceComment(Storm):
         return store.add(dsd_comment)
 
     @staticmethod
-    def getCommentsForDifference(distro_series_difference):
+    def getForDifference(distro_series_difference):
         """See `IDistroSeriesDifferenceCommentSource`."""
         DSDComment = DistroSeriesDifferenceComment
         from canonical.launchpad.interfaces.lpstorm import IStore

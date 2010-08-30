@@ -50,7 +50,7 @@ class DifferenceCommentSourceTestCase(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def test_getCommentsForDifference(self):
+    def test_getForDifference(self):
         # Returns all comments for a difference ordered by id.
         dsd_comment = self.factory.makeDistroSeriesDifferenceComment()
         dsd_comment_2 = self.factory.makeDistroSeriesDifferenceComment(
@@ -58,7 +58,7 @@ class DifferenceCommentSourceTestCase(TestCaseWithFactory):
         dsd_other_comment = self.factory.makeDistroSeriesDifferenceComment()
 
         comment_source = getUtility(IDistroSeriesDifferenceCommentSource)
-        comments = comment_source.getCommentsForDifference(
+        comments = comment_source.getForDifference(
             distro_series_difference=dsd_comment.distro_series_difference)
 
         self.assertEqual([dsd_comment, dsd_comment_2], list(comments))
