@@ -1,12 +1,21 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+from __future__ import with_statement
+
 __metaclass__ = type
 
 
+from contextlib import nested
 from doctest import DocTestSuite
 import unittest
 
+from storm.store import Store
+from testtools.matchers import (
+    Equals,
+    LessThan,
+    MatchesAny,
+    )
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.ftests import (
@@ -23,16 +32,66 @@ from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import LaunchpadFunctionalLayer
 from lp.bugs.browser import bugtask
 from lp.bugs.browser.bugtask import (
+    BugTaskView,
     BugTaskEditView,
     BugTasksAndNominationsView,
     )
 from lp.bugs.interfaces.bugtask import BugTaskStatus
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    person_logged_in,
+    StormStatementRecorder,
+    TestCaseWithFactory,
+    )
+from lp.testing.matchers import HasQueryCount
 from lp.testing.sampledata import (
     ADMIN_EMAIL,
     NO_PRIVILEGE_EMAIL,
     USER_EMAIL,
     )
+
+
+class TestBugTaskView(TestCaseWithFactory):
+
+    layer = LaunchpadFunctionalLayer
+
+    def initialize_view(self, bugtask, person):
+        self.invalidate_caches(bugtask)
+        # Login first because logging in triggers queries.
+        with nested(person_logged_in(person), StormStatementRecorder()) as (
+            _,
+            recorder):
+            view = BugTaskView(bugtask, LaunchpadTestRequest())
+            view.initialize()
+        return recorder
+
+    def invalidate_caches(self, obj):
+        store = Store.of(obj)
+        # Make sure everything is in the database.
+        store.flush()
+        # And invalidate the cache (not a reset, because that stops us using
+        # the domain objects)
+        store.invalidate()
+
+    def test_query_counts_constant_with_team_memberships(self):
+        login(ADMIN_EMAIL)
+        bugtask = self.factory.makeBugTask()
+        person_no_teams = self.factory.makePerson()
+        person_with_teams = self.factory.makePerson()
+        for _ in range(4):
+            team = self.factory.makeTeam()
+            team.addMember(person_with_teams, team.teamowner)
+        # count with no teams
+        recorder = self.initialize_view(bugtask, person_no_teams)
+        self.assertThat(recorder, HasQueryCount(LessThan(14)))
+        count_with_no_teams = recorder.count
+        # count with 2 teams
+        recorder2 = self.initialize_view(bugtask, person_with_teams)
+        # Allow an increase of one because storm bug 619017 causes additional
+        # queries, revalidating things unnecessarily. An increase of 1 from 
+        # four new teams shows it is definitely not growing per-team.
+        self.assertThat(recorder2, HasQueryCount(
+            LessThan(count_with_no_teams + 2),
+            ))
 
 
 class TestBugTasksAndNominationsView(TestCaseWithFactory):
@@ -341,10 +400,7 @@ class TestBugTaskEditViewAssigneeField(TestCaseWithFactory):
 
 
 def test_suite():
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(TestBugTasksAndNominationsView))
-    suite.addTest(unittest.makeSuite(TestBugTaskEditViewStatusField))
-    suite.addTest(unittest.makeSuite(TestBugTaskEditViewAssigneeField))
+    suite = unittest.TestLoader().loadTestsFromName(__name__)
     suite.addTest(DocTestSuite(bugtask))
     suite.addTest(LayeredDocFileSuite(
         'bugtask-target-link-titles.txt', setUp=setUp, tearDown=tearDown,
