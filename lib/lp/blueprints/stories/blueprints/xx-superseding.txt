@@ -5,15 +5,14 @@ specification, select its successor, and then update the database.
 
 First, we need to be able to see this page, we will go in as Carlos, the
 approver of the specification. Not only will we test the existence of the
-page, we will also test that the spec is currently in the Drafting status.
-NB: the sampledata has this spec as New, but other tests in this story
-modify that to Drafting, so this test will not run standalone.
+page, we will also test that the spec is currently in the New status (i.e.
+not already superseded).
 
 >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
 >>> browser.open(
 ...     'http://blueprints.launchpad.dev/firefox/+spec/'
 ...     + 'extension-manager-upgrades')
->>> 'Drafting' in browser.contents
+>>> 'New' in browser.contents
 True
 
 Make sure Bug 4116 stays fixed
@@ -31,7 +30,7 @@ Make sure Bug 4116 stays fixed
 The page contains a link back to the blueprint, in case we change our
 mind.
 
-    >>> back_link = browser.getLink('Extension Manager System Upgrades')
+    >>> back_link = browser.getLink('Extension Manager Upgrades')
     >>> back_link.url
     'http://blueprints.launchpad.dev/firefox/+spec/extension-manager-upgrades'
     >>> browser.getLink('Cancel').url

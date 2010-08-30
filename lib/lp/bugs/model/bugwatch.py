@@ -364,6 +364,15 @@ class BugWatch(SQLBase):
 
         self.next_check = next_check
 
+    def reset(self):
+        """See `IBugWatch`."""
+        self.last_error_type = None
+        self.lastchanged = None
+        self.lastchecked = None
+        self.next_check = UTC_NOW
+        self.remote_importance = None
+        self.remotestatus = None
+
 
 class BugWatchSet(BugSetBase):
     """A set for BugWatch"""

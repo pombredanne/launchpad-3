@@ -1496,7 +1496,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return mail
 
     def makeSpecification(self, product=None, title=None, distribution=None,
-                          name=None, summary=None,
+                          name=None, summary=None, owner=None,
                           status=SpecificationDefinitionStatus.NEW):
         """Create and return a new, arbitrary Blueprint.
 
@@ -1511,13 +1511,15 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             summary = self.getUniqueString('summary')
         if title is None:
             title = self.getUniqueString('title')
+        if owner is None:
+            owner = self.makePerson()
         return getUtility(ISpecificationSet).new(
             name=name,
             title=title,
             specurl=None,
             summary=summary,
             definition_status=status,
-            owner=self.makePerson(),
+            owner=owner,
             product=product,
             distribution=distribution)
 
