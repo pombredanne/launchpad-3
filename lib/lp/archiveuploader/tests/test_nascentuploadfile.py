@@ -22,7 +22,7 @@ from lp.archiveuploader.nascentuploadfile import (
     DebBinaryUploadFile,
     )
 from lp.archiveuploader.tests import AbsolutelyAnythingGoesUploadPolicy
-from lp.soyuz.interfaces.queue import PackageUploadCustomFormat
+from lp.soyuz.enums import PackageUploadCustomFormat
 from lp.testing import TestCaseWithFactory
 
 
@@ -183,8 +183,7 @@ class DSCFileTests(PackageUploadFileTestCase):
         uploadfile = self.createDSCFile(
             "foo.dsc", dsc, "main/net", "extra", "dulwich", "0.42",
             self.createChangesFile("foo.changes", changes))
-        (uploadfile.changelog_path, changelog_digest, changelog_size) = (
-            self.writeUploadFile("changelog", "DUMMY"))
+        uploadfile.changelog = "DUMMY"
         uploadfile.files = []
         release = uploadfile.storeInDatabase(None)
         # DSCFile lowercases the field names

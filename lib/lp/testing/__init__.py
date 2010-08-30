@@ -3,7 +3,6 @@
 
 # pylint: disable-msg=W0401,C0301,F0401
 
-
 from __future__ import with_statement
 
 
@@ -50,7 +49,6 @@ __all__ = [
     ]
 
 from contextlib import contextmanager
-from cStringIO import StringIO
 from datetime import (
     datetime,
     timedelta,
@@ -86,6 +84,8 @@ from storm.tracer import (
     )
 import subunit
 import testtools
+from testtools.content import Content
+from testtools.content_type import UTF8_TEXT
 import transaction
 # zope.exception demands more of frame objects than twisted.python.failure
 # provides in its fake frames.  This is enough to make it work with them
@@ -286,9 +286,11 @@ class TestCase(testtools.TestCase):
         `addCleanup`).
 
         :param fixture: Any object that has a `setUp` and `tearDown` method.
+        :return: `fixture`.
         """
         fixture.setUp()
         self.addCleanup(fixture.tearDown)
+        return fixture
 
     def __str__(self):
         """The string representation of a test is its id.
@@ -392,15 +394,6 @@ class TestCase(testtools.TestCase):
                 "Expected %s to be %s, but it was %s."
                 % (attribute_name, date, getattr(sql_object, attribute_name)))
 
-    def assertEqual(self, a, b, message=''):
-        """Assert that 'a' equals 'b'."""
-        if a == b:
-            return
-        if message:
-            message += '\n'
-        self.fail("%snot equal:\na = %s\nb = %s\n"
-                  % (message, pformat(a), pformat(b)))
-
     def assertIsInstance(self, instance, assert_class):
         """Assert that an instance is an instance of assert_class.
 
@@ -451,11 +444,8 @@ class TestCase(testtools.TestCase):
 
     def attachOopses(self):
         if len(self.oopses) > 0:
-            content_type = testtools.content_type.ContentType(
-                "text", "plain", {"charset": "utf8"})
             for (i, oops) in enumerate(self.oopses):
-                content = testtools.content.Content(
-                    content_type, oops.get_chunks)
+                content = Content(UTF8_TEXT, oops.get_chunks)
                 self.addDetail("oops-%d" % i, content)
 
     def setUp(self):
@@ -586,7 +576,8 @@ class TestCaseWithFactory(TestCase):
         bzr_branch = self.createBranchAtURL(db_branch.getInternalBzrUrl())
         if parent:
             bzr_branch.pull(parent)
-            removeSecurityProxy(db_branch).last_scanned_id = bzr_branch.last_revision()
+            naked_branch = removeSecurityProxy(db_branch)
+            naked_branch.last_scanned_id = bzr_branch.last_revision()
         return bzr_branch
 
     @staticmethod
@@ -642,6 +633,7 @@ class BrowserTestCase(TestCaseWithFactory):
     This testcase provides an API similar to page tests, and can be used for
     cases when one wants a unit test and not a frakking pagetest.
     """
+
     def setUp(self):
         """Provide useful defaults."""
         super(BrowserTestCase, self).setUp()
@@ -775,7 +767,7 @@ class ZopeTestInSubProcess:
         # unlikely that any one approach is going to work for every
         # class. It's better to fail early and draw attention here.
         assert isinstance(result, ZopeTestResult), (
-            "result must be a Zope result object, not %r." % (result,))
+            "result must be a Zope result object, not %r." % (result, ))
         pread, pwrite = os.pipe()
         pid = os.fork()
         if pid == 0:

@@ -46,7 +46,6 @@ from lp.archiveuploader.utils import determine_source_file_type
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
 from lp.soyuz.interfaces.archive import (
-    ArchivePurpose,
     MAIN_ARCHIVE_PURPOSES,
     )
 
@@ -146,10 +145,11 @@ class NascentUpload:
         UploadError will be raised and sent up to the caller. If this happens
         the caller should call the reject method and process a rejection.
         """
+        policy = self.policy
         self.logger.debug("Beginning processing.")
 
         try:
-            self.policy.setDistroSeriesAndPocket(self.changes.suite_name)
+            policy.setDistroSeriesAndPocket(self.changes.suite_name)
         except NotFoundError:
             self.reject(
                 "Unable to find distroseries: %s" % self.changes.suite_name)
@@ -185,35 +185,11 @@ class NascentUpload:
             isinstance(self.changes.files[0], CustomUploadFile)):
             self.logger.debug("Single Custom Upload detected.")
         else:
-            if self.sourceful and not self.policy.can_upload_source:
-                self.reject("Upload is sourceful, but policy refuses "
-                            "sourceful uploads.")
+            policy.validateUploadType(self)
 
-            elif self.binaryful and not self.policy.can_upload_binaries:
-                messages = [
-                    "Upload rejected because it contains binary packages.",
-                    "Ensure you are using `debuild -S`, or an equivalent",
-                    "command, to generate only the source package before",
-                    "re-uploading.",
-                    ]
-                if self.is_ppa:
-                    messages.append(
-                    "See https://help.launchpad.net/Packaging/PPA for more "
-                    "information.")
-                self.reject(" ".join(messages))
-
-            elif (self.sourceful and self.binaryful and
-                  not self.policy.can_upload_mixed):
-                self.reject("Upload is source/binary but policy refuses "
-                            "mixed uploads.")
-
-            elif self.sourceful and not self.changes.dsc:
+            if self.sourceful and not self.changes.dsc:
                 self.reject(
                     "Unable to find the DSC file in the source upload.")
-
-            else:
-                # Upload content are consistent with the current policy.
-                pass
 
             # Apply the overrides from the database. This needs to be done
             # before doing component verifications because the component
@@ -227,7 +203,7 @@ class NascentUpload:
         self.verify_acl()
 
         # Perform policy checks.
-        self.policy.checkUpload(self)
+        policy.checkUpload(self)
 
         # That's all folks.
         self.logger.debug("Finished checking upload.")
@@ -462,7 +438,7 @@ class NascentUpload:
         if not self.policy.distroseries:
             # Greasy hack until above bug is fixed.
             return False
-        return self.policy.archive.purpose == ArchivePurpose.PPA
+        return self.policy.archive.is_ppa
 
     def getComponents(self):
         """Return a set of components present in the uploaded files."""
@@ -589,7 +565,7 @@ class NascentUpload:
                 archive = self.policy.archive
             else:
                 archive = None
-            candidates = self.policy.distroseries.getPublishedReleases(
+            candidates = self.policy.distroseries.getPublishedSources(
                 source_name, include_pending=True, pocket=pocket,
                 archive=archive)
             if candidates:
@@ -996,8 +972,6 @@ class NascentUpload:
                     # so late in the game is that in the
                     # mixed-upload case we only have a
                     # sourcepackagerelease to verify here!
-                    assert self.policy.can_upload_mixed, (
-                        "Current policy does not allow mixed uploads.")
                     assert sourcepackagerelease, (
                         "No sourcepackagerelease was found.")
                     binary_package_file.verifySourcePackageRelease(
