@@ -9,13 +9,13 @@ from datetime import (
     datetime,
     timedelta,
     )
+import transaction
 import unittest
 
 import pytz
 from storm.locals import Store
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.launchpad.testing.databasehelpers import (
     remove_all_sample_data_branches,
     )
@@ -41,11 +41,10 @@ class TestBranchCloud(TestCaseWithFactory):
 
     def getProductsWithInfo(self, num_products=None):
         """Get product cloud information."""
-        # We use the master store so that data changes made in these tests are
-        # visible to the query in getProductsWithInfo. The default
-        # implementation uses the slave store.
-        cloud_info = self._branch_cloud.getProductsWithInfo(
-            num_products, IMasterStore(RevisionCache))
+        # Since we use the slave store to get the information, we need to
+        # commit the transaction to make the information visible to the slave.
+        transaction.commit()
+        cloud_info = self._branch_cloud.getProductsWithInfo(num_products)
         # The last commit time is timezone unaware as the storm Max function
         # doesn't take into account the type that it is aggregating, so whack
         # the UTC tz on it here for easier comparing in the tests.
@@ -58,6 +57,8 @@ class TestBranchCloud(TestCaseWithFactory):
     def makeBranch(self, product=None, last_commit_date=None, private=False,
                    revision_count=None):
         """Make a product branch with a particular last commit date"""
+        if revision_count is None:
+            revision_count = 5
         delta = timedelta(days=1)
         if last_commit_date is None:
             # By default we create revisions that are within the last 30 days.

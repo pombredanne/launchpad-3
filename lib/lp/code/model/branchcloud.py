@@ -29,17 +29,15 @@ class BranchCloud:
     classProvides(IBranchCloud)
 
     @staticmethod
-    def getProductsWithInfo(num_products=None, store=None):
+    def getProductsWithInfo(num_products=None):
         """See `IBranchCloud`."""
-        # It doesn't matter if this query is even a whole day out of date, so
-        # use the slave store by default.
-        if store is None:
-            store = ISlaveStore(RevisionCache)
         distinct_revision_author = Func(
             "distinct", RevisionCache.revision_author_id)
         commits = Alias(Count(RevisionCache.revision_id))
         epoch = datetime.now(pytz.UTC) - timedelta(days=30)
-        result = store.find(
+        # It doesn't matter if this query is even a whole day out of date, so
+        # use the slave store by default.
+        result = ISlaveStore(RevisionCache).find(
             (Product.name,
              commits,
              Count(distinct_revision_author),
