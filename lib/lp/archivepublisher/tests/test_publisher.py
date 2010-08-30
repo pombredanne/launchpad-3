@@ -35,13 +35,15 @@ from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
-from lp.soyuz.interfaces.archive import (
+from lp.soyuz.enums import (
     ArchivePurpose,
     ArchiveStatus,
+    BinaryPackageFormat,
+    PackagePublishingStatus,
+    )
+from lp.soyuz.interfaces.archive import (
     IArchiveSet,
     )
-from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFormat
-from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.tests.test_publishing import TestNativePublishingBase
 
 

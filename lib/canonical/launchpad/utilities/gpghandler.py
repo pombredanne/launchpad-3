@@ -218,8 +218,10 @@ class GPGHandler:
                 "Unable to map subkey: %s" % signature.fpr)
 
         # return the signature container
-        return PymeSignature(fingerprint=key.fingerprint,
-                             plain_data=plain.getvalue())
+        return PymeSignature(
+            fingerprint=key.fingerprint,
+            plain_data=plain.getvalue(),
+            timestamp=signature.timestamp)
 
     def importPublicKey(self, content):
         """See IGPGHandler."""
@@ -550,10 +552,11 @@ class PymeSignature(object):
     """See IPymeSignature."""
     implements(IPymeSignature)
 
-    def __init__(self, fingerprint=None, plain_data=None):
+    def __init__(self, fingerprint=None, plain_data=None, timestamp=None):
         """Initialized a signature container."""
         self.fingerprint = fingerprint
         self.plain_data = plain_data
+        self.timestamp = timestamp
 
 
 class PymeKey:

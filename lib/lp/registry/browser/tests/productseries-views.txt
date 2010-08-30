@@ -158,7 +158,7 @@ The view provides access to the latest release if it has one.
 The view also provides a link to register a new code import.
 
     >>> print view.request_import_link
-    http://launchpad.dev/firefox/+new-import
+    http://code.launchpad.dev/firefox/+new-import
 
 
 Edit ProductSeries
@@ -307,7 +307,7 @@ series, the most important of which are milestones. Bugtasks and
 specifications that will be unassigned, and release files that will be
 deleted are available.
 
-    >>> view.milestones
+    >>> list(view.milestones)
     []
     >>> view.bugtasks
     []

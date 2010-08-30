@@ -52,6 +52,7 @@ from operator import attrgetter
 
 import pytz
 from z3c.ptcompat import ViewPageTemplateFile
+from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser import (
     CheckBoxWidget,
     TextAreaWidget,
@@ -671,7 +672,7 @@ class ProductOverviewMenu(ApplicationMenu, ProductEditLinksMixin,
     def branch_add(self):
         text = 'Register a branch'
         summary = "Register a new Bazaar branch for this project"
-        return Link('+addbranch', text, summary, icon='add')
+        return Link('+addbranch', text, summary, icon='add', site='code')
 
 
 class ProductBugsMenu(PillarBugsMenu,
@@ -1399,6 +1400,28 @@ class ProductBrandingView(BrandingChangeView):
 class ProductConfigureBase(ReturnToReferrerMixin, LaunchpadEditFormView):
     implements(IProductEditMenu)
     schema = IProduct
+    usage_fieldname = None
+
+    def setUpFields(self):
+        super(ProductConfigureBase, self).setUpFields()
+        if self.usage_fieldname is not None:
+            # The usage fields are shared among pillars.  But when referring to
+            # an individual object in Launchpad it is better to call it by its
+            # real name, i.e. 'project' instead of 'pillar'.
+            usage_field = self.form_fields.get(self.usage_fieldname)
+            if usage_field:
+                usage_field.custom_widget = CustomWidgetFactory(
+                    LaunchpadRadioWidget, orientation='vertical')
+                # Copy the field or else the description in the interface will
+                # be modified in-place.
+                field = copy_field(usage_field.field)
+                field.description = (
+                    field.description.replace('pillar', 'project'))
+                usage_field.field = field
+
+    @property
+    def field_names(self):
+        return [self.usage_fieldname]
 
     @property
     def page_title(self):
@@ -1413,27 +1436,21 @@ class ProductConfigureBlueprintsView(ProductConfigureBase):
     """View class to configure the Launchpad Blueprints for a project."""
 
     label = "Configure Blueprints"
-    field_names = [
-        "official_blueprints",
-        ]
+    usage_fieldname = 'blueprints_usage'
 
 
 class ProductConfigureTranslationsView(ProductConfigureBase):
     """View class to configure the Launchpad Translations for a project."""
 
     label = "Configure Translations"
-    field_names = [
-        "official_rosetta",
-        ]
+    usage_fieldname = 'translations_usage'
 
 
 class ProductConfigureAnswersView(ProductConfigureBase):
     """View class to configure the Launchpad Answers for a project."""
 
     label = "Configure Answers"
-    field_names = [
-        "official_answers",
-        ]
+    usage_fieldname = 'answers_usage'
 
 
 class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):

@@ -44,7 +44,7 @@ from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget,
     )
-from lp.soyuz.interfaces.archive import ArchivePurpose
+from lp.soyuz.enums import ArchivePurpose
 
 
 class IDistributionSourcePackage(IBugTarget, IHasBranches, IHasMergeProposals,

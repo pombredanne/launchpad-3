@@ -10,6 +10,7 @@ __all__ = [
     'ProductSeriesBreadcrumb',
     'ProductSeriesBugsMenu',
     'ProductSeriesDeleteView',
+    'ProductSeriesDetailedDisplayView',
     'ProductSeriesEditView',
     'ProductSeriesFacets',
     'ProductSeriesFileBugRedirect',
@@ -428,7 +429,8 @@ class ProductSeriesView(LaunchpadView, MilestoneOverlayMixin):
     @property
     def request_import_link(self):
         """A link to the page for requesting a new code import."""
-        return canonical_url(self.context.product, view_name='+new-import')
+        return canonical_url(
+            self.context.product, view_name='+new-import', rootsite='code')
 
     @property
     def user_branch_visible(self):
@@ -479,6 +481,19 @@ class ProductSeriesView(LaunchpadView, MilestoneOverlayMixin):
             if len(list(release.files)) > 0:
                 return release
         return None
+
+
+class ProductSeriesDetailedDisplayView(ProductSeriesView):
+
+    @cachedproperty
+    def latest_milestones(self):
+        # Convert to list to avoid the query being run multiple times.
+        return list(self.context.milestones[:12])
+
+    @cachedproperty
+    def latest_releases(self):
+        # Convert to list to avoid the query being run multiple times.
+        return list(self.context.releases[:12])
 
 
 class ProductSeriesUbuntuPackagingView(LaunchpadFormView):

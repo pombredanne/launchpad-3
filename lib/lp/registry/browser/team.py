@@ -69,6 +69,7 @@ from canonical.widgets import (
     LaunchpadRadioWidget,
     )
 from lp.app.errors import UnexpectedFormData
+from lp.registry.browser import MapMixin
 from lp.registry.browser.branding import BrandingChangeView
 from lp.registry.interfaces.mailinglist import (
     IMailingList,
@@ -150,7 +151,7 @@ class TeamFormMixin:
         "name", "visibility", "displayname", "contactemail",
         "teamdescription", "subscriptionpolicy",
         "defaultmembershipperiod", "renewal_policy",
-        "defaultrenewalperiod",  "teamowner",
+        "defaultrenewalperiod", "teamowner",
         ]
     private_prefix = PRIVATE_TEAM_PREFIX
 
@@ -767,7 +768,7 @@ class TeamMailingListSubscribersView(LaunchpadView):
 
     def renderTable(self):
         html = ['<table style="max-width: 80em">']
-        items = self.subscribers.currentBatch()
+        items = list(self.subscribers.currentBatch())
         assert len(items) > 0, (
             "Don't call this method if there are no subscribers to show.")
         # When there are more than 10 items, we use multiple columns, but
@@ -1031,7 +1032,7 @@ class TeamMemberAddView(LaunchpadFormView):
         self.request.response.addInfoNotification(msg)
 
 
-class TeamMapView(LaunchpadView):
+class TeamMapView(MapMixin, LaunchpadView):
     """Show all people with known locations on a map.
 
     Also provides links to edit the locations of people in the team without
@@ -1044,7 +1045,7 @@ class TeamMapView(LaunchpadView):
     def initialize(self):
         # Tell our base-layout to include Google's gmap2 javascript so that
         # we can render the map.
-        if self.mapped_participants_count > 0:
+        if self.gmap2_enabled and self.mapped_participants_count > 0:
             self.request.needs_gmap2 = True
 
     @cachedproperty
