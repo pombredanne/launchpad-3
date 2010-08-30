@@ -69,10 +69,10 @@ class ParseApacheLogs(LaunchpadCronScript):
         parsed_lines = 0
         max_parsed_lines = getattr(
             config.launchpad, 'logparser_max_parsed_lines', None)
+        max_is_set = max_parsed_lines is not None
         for fd, position in files_to_parse:
             # If we've used up our budget of lines to process, stop.
-            if (max_parsed_lines is not None
-            and parsed_lines >= max_parsed_lines):
+            if (max_is_set and parsed_lines >= max_parsed_lines):
                 break
             downloads, parsed_bytes, parsed_lines = parse_file(
                 fd, position, self.logger, self.getDownloadKey)

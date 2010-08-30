@@ -80,6 +80,11 @@ def get_fd_and_file_size(file_path):
 def parse_file(fd, start_position, logger, get_download_key, parsed_lines=0):
     """Parse the given file starting on the given position.
 
+    parsed_lines accepts the number of lines that have been parsed during
+    previous calls to this function so they can be taken into account against
+    max_parsed_lines.  The total number of parsed lines is then returned so it
+    can be passed back to future calls to this function.
+
     Return a dictionary mapping file_ids (from the librarian) to days to
     countries to number of downloads.
     """

@@ -284,6 +284,9 @@ class TestLogFileParsing(TestCase):
         self.assertEqual(parsed_bytes, sum(line_lengths[:4]))
 
     def test_max_parsed_lines_exceeded(self):
+        # Show that if a non-zero parsed_lines is passed in, the number of
+        # lines parsed will be less than it would otherwise have been.
+
         # The max_parsed_lines config option limits the number of parsed
         # lines.
         config.push(
@@ -308,7 +311,6 @@ class TestLogFileParsing(TestCase):
         # a 404, so there were no downloads recorded.
         self.assertEqual(parsed_lines, 2)
         self.assertContentEqual(downloads.items(), [])
-        fd.seek(0)
 
 
 class TestParsedFilesDetection(TestCase):
