@@ -244,6 +244,13 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
 
     def test_script(self):
         # Do an end-to-end test using the command-line tool
+        uploader = self.factory.makePerson()
+        test1 = getUtility(IPackagesetSet).new(
+            u'test1', u'test 1 packageset', self.hoary.owner,
+            distroseries=self.hoary)
+        test1.addSources('pmount')
+        getUtility(IArchivePermissionSet).newPackagesetUploader(
+            self.hoary.main_archive, uploader, test1)
         foobuntu = self._create_distroseries(self.hoary)
         self._set_pending_to_failed(self.hoary)
         transaction.commit()

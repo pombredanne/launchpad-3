@@ -244,6 +244,7 @@ from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.code.browser.sourcepackagerecipelisting import HasRecipesMenuMixin
 from lp.code.errors import InvalidNamespace
 from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
+from lp.registry.browser import MapMixin
 from lp.registry.browser.branding import BrandingChangeView
 from lp.registry.browser.mailinglists import enabled_with_active_mailing_list
 from lp.registry.browser.menu import (
@@ -3324,7 +3325,7 @@ class EmailAddressVisibleState:
         return self.state is EmailAddressVisibleState.ALLOWED
 
 
-class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
+class PersonIndexView(XRDSContentNegotiationMixin, MapMixin, PersonView):
     """View class for person +index and +xrds pages."""
 
     xrds_template = ViewPageTemplateFile(
@@ -3337,7 +3338,8 @@ class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
         # the location is set, visible, and the viewing user wants to see it.
         launchpad_views = get_launchpad_views(self.request.cookies)
         self._small_map = launchpad_views['small_maps']
-        if (self.has_visible_location and self._small_map):
+        if (self.gmap2_enabled
+            and self.has_visible_location and self._small_map):
             self.request.needs_gmap2 = True
         if self.request.method == "POST":
             self.processForm()

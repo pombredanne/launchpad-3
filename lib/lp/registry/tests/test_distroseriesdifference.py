@@ -252,7 +252,8 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
 
         self.assertEqual(
             "Difference between distroseries 'Lucid' and 'Derilucid' "
-            "for package 'foonew' (1.0/0.9)", ds_diff.title)
+            "for package 'foonew' (1.0/0.9)",
+            ds_diff.title)
 
     def test_addComment(self):
         # Adding a comment creates a new DistroSeriesDifferenceComment
