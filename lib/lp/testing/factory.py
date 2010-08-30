@@ -473,12 +473,14 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
     def makeOpenIdIdentifier(self, account, identifier=None):
         """Attach an OpenIdIdentifier to an Account."""
-        if identifier is None:
-            identifier = self.getUniqueString('openid').decode('ASCII')
-        openid_identifier = OpenIdIdentifier()
-        openid_identifier.account = account
-        openid_identifier.identifier = identifier
-        IMasterStore(OpenIdIdentifier).add(openid_identifier)
+        # Unfortunately, there are many tests connecting as many
+        # different database users that expect to be able to create
+        # working accounts using these factory methods. The stored
+        # procedure provides a work around and avoids us having to
+        # grant INSERT rights to these database users and avoids the
+        # security problems that would cause.
+        IMasterStore(OpenIdIdentifier).execute(
+            "SELECT add_test_openid_identifier(%s)", (account.id,))
 
     def makeGPGKey(self, owner):
         """Give 'owner' a crappy GPG key for the purposes of testing."""

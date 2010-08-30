@@ -1601,6 +1601,22 @@ BEGIN
 END;
 $$;
 
+CREATE OR REPLACE FUNCTION add_test_openid_identifier(account_ integer)
+RETURNS BOOLEAN SECURITY DEFINER LANGUAGE plpgsql AS
+$$
+BEGIN
+    INSERT INTO OpenIdIdentifier (identifier, account)
+    VALUES ('test' || CAST(account_ AS text), account_);
+    RETURN TRUE;
+EXCEPTION
+    WHEN unique_violation THEN
+        RETURN FALSE;
+END;
+$$;
+
+COMMENT ON FUNCTION add_test_openid_identifier(integer) IS
+'Add an OpenIdIdentifier to an account that can be used to login in the test environment. These identifiers are not usable on production or staging.';
+
 -- Update the (redundant) column bug.latest_patch_uploaded when a
 -- a bug attachment is added or removed or if its type is changed.
 CREATE OR REPLACE FUNCTION bug_update_latest_patch_uploaded(integer)
