@@ -18,7 +18,9 @@ We need to get a POTMsgSet object to perform this test.
     ...     ILanguageSet, IPersonSet, IProductSet)
 
     >>> potemplate = factory.makePOTemplate()
-    >>> potmsgset = factory.makePOTMsgSet(potemplate=potemplate, singular="bla")
+    >>> potmsgset = factory.makePOTMsgSet(
+    ...     potemplate=potemplate,
+    ...     singular="bla")
 
 Verify interface.
 
@@ -138,7 +140,9 @@ This method syncs the new line chars to use the same as the associated msgid.
 As this test is too specific, we are going to change a msgid as we need for
 every test.
 
-    >>> potmsgset_windows = factory.makePOTMsgSet(potemplate, singular=u'\r\n')
+    >>> potmsgset_windows = factory.makePOTMsgSet(
+    ...                             potemplate,
+    ...                             singular=u'\r\n')
     >>> potmsgset_unix = factory.makePOTMsgSet(potemplate, singular=u'\n')
     >>> potmsgset_mac = factory.makePOTMsgSet(potemplate, singular=u'\r')
     >>> text_windows = u'\r\n'
@@ -954,8 +958,8 @@ To put 'external' suggestions in database, let's translate the
 
 Now, let's add 'translation-credits' message to a different POTemplate:
 
-     >>> new_credits = evolution_potemplate.createMessageSetFromText(
-     ...     singular_text=u'translation-credits', plural_text=None)
+    >>> new_credits = evolution_potemplate.createMessageSetFromText(
+    ...     singular_text=u'translation-credits', plural_text=None)
 
 However, this one doesn't show up as external suggestion for Spanish.
 

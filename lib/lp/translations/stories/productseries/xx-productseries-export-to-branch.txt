@@ -5,7 +5,6 @@ If a ProductSeries has its translations_branch set, Launchpad will
 periodically commit snapshots of the series' translations to that
 branch.
 
-    >>> from zope.security.proxy import removeSecurityProxy
     >>> from lp.app.enums import ServiceUsage
 
     >>> login(ANONYMOUS)

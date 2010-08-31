@@ -61,7 +61,8 @@ potemplate.
     ...     u'po/sr.po', 'foo', True, rosetta_experts,
     ...      productseries=evolution_productseries)
 
-This entry has no information about the IPOFile where it should be attached to:
+This entry has no information about the IPOFile where it should be attached
+to:
 
     >>> entry.import_into is None
     True
@@ -84,7 +85,8 @@ IPOTemplate.
     ...      sourcepackagename=evolution_sourcepackagename)
     >>> transaction.commit()
 
-This entry has no information about the IPOFile where it should be attached to:
+This entry has no information about the IPOFile where it should be attached
+to:
 
     >>> entry.import_into is None
     True
@@ -407,7 +409,9 @@ Create the template name and attach this new import to it.
 
 And set this entry as already imported.
 
-    >>> koffice_pot_entry.setStatus(RosettaImportStatus.IMPORTED, rosetta_experts)
+    >>> koffice_pot_entry.setStatus(
+    ...     RosettaImportStatus.IMPORTED,
+    ...     rosetta_experts)
     >>> flush_database_updates()
 
 Let's attach a .po file from koffice-l10n
@@ -505,7 +509,9 @@ Create the template name and attach this new import to it.
 
 And set this entry as already imported.
 
-    >>> adept_pot_entry.setStatus(RosettaImportStatus.IMPORTED, rosetta_experts)
+    >>> adept_pot_entry.setStatus(
+    ...     RosettaImportStatus.IMPORTED,
+    ...     rosetta_experts)
     >>> flush_database_updates()
 
 Let's attach a .po file now.
@@ -556,7 +562,9 @@ Create the template name and attach this new import to it.
 
 And set this entry as already imported.
 
-    >>> ktorrent_pot_entry.setStatus(RosettaImportStatus.IMPORTED, rosetta_experts)
+    >>> ktorrent_pot_entry.setStatus(
+    ...     RosettaImportStatus.IMPORTED,
+    ...     rosetta_experts)
     >>> flush_database_updates()
 
 Let's attach a .po file now.
@@ -809,7 +817,8 @@ This entry is for a productseries, and it's not blocked because the blocked
     True
 
 On the other hand, this other one is for the same
-distroseries/sourcepackagename than the .pot file we have so it's also blocked.
+distroseries/sourcepackagename than the .pot file we have so it's also
+blocked.
 
     >>> entry4 = translationimportqueue.get(4)
     >>> entry4.path
@@ -1546,7 +1555,8 @@ A user sets up Jokosher for translation, and uploads a template.
     >>> jokosher_trunk = jokosher.getSeries('trunk')
     >>> jokosher.translations_usage = ServiceUsage.LAUNCHPAD
     >>> syncUpdate(jokosher)
-    >>> jokosher_subset = potemplateset.getSubset(productseries=jokosher_trunk)
+    >>> jokosher_subset = potemplateset.getSubset(
+    ...     productseries=jokosher_trunk)
     >>> template = jokosher_subset.new(
     ...     'jokosher', 'jokosher', 'jokosher.pot', rosetta_experts)
     >>> syncUpdate(template)

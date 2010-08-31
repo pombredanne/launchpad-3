@@ -59,7 +59,9 @@ translation, we get two POFileTranslator records for each of the POFiles.
     >>> potmsgset = factory.makePOTMsgSet(devel_potemplate, sequence=1)
     >>> potmsgset.setSequence(stable_potemplate, 1)
     >>> tm = factory.makeTranslationMessage(
-    ...     pofile=devel_sr_pofile, potmsgset=potmsgset, translations=[u"blah"])
+    ...     pofile=devel_sr_pofile,
+    ...     potmsgset=potmsgset,
+    ...     translations=[u"blah"])
     >>> print POFileTranslator.select(
     ...     "latest_message=%s" % sqlvalues(tm)).count()
     2

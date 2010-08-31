@@ -54,7 +54,8 @@ normalizes `size` values into the range [MINIMUM_SIZE, MAXIMUM_SIZE].
 
     >>> test_list = [('one', 3), ('two', 0), ('three', 1)]
     >>> from zope.security.proxy import removeSecurityProxy
-    >>> result = removeSecurityProxy(overview)._normalizeSizes(test_list, 0, 3)
+    >>> naked_overview = removeSecurityProxy(overview)
+    >>> result = naked_overview._normalizeSizes(test_list, 0, 3)
     >>> for pillar in result:
     ...     print "%s: %d" % (pillar['pillar'], pillar['weight'])
     one: 18

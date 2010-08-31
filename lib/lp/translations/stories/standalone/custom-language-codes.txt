@@ -11,7 +11,6 @@ language or not.
 Custom language codes are attached to either a product or a source
 package.
 
-    >>> import re
     >>> from zope.component import getUtility
     >>> from zope.security.proxy import removeSecurityProxy
     >>> from canonical.launchpad.interfaces.launchpad import (
@@ -30,7 +29,7 @@ package.
     ...     getUtility(ILaunchpadCelebrities).rosetta_experts)
     >>> product = factory.makeProduct(displayname="Foo", owner=owner)
     >>> trunk = product.getSeries('trunk')
-    >>> naked_product = removeSecurityProxy(product) 
+    >>> naked_product = removeSecurityProxy(product)
     >>> naked_product.translations_usage = ServiceUsage.LAUNCHPAD
     >>> template = factory.makePOTemplate(productseries=trunk)
     >>> product_page = canonical_url(product, rootsite='translations')

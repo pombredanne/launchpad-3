@@ -26,7 +26,8 @@ but have no access to the 'Change permissions' menu.
     ...
     IndexError: list index out of range
 
-== Setting the translation focus ==
+Setting the translation focus
+=============================
 
     >>> login('admin@canonical.com')
     >>> from zope.security.proxy import removeSecurityProxy
@@ -36,7 +37,7 @@ but have no access to the 'Change permissions' menu.
     >>> pofile = factory.makePOFile("pt_BR", potemplate=pot_main)
     >>> logout()
 
-When the translation focus is not set, Launchpad suggests the 
+When the translation focus is not set, Launchpad suggests the
 development focus as the current series to be translated.
 It needs to be translatable.
 

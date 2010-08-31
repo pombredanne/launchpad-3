@@ -393,7 +393,7 @@ officially. Ubuntu uses all of them:
     >>> ubuntu.official_malone
     True
     >>> ubuntu.translations_usage.name
-    'LAUNCHPAD' 
+    'LAUNCHPAD'
     >>> ubuntu.official_answers
     True
     >>> ubuntu.official_blueprints
@@ -404,12 +404,12 @@ The bug_tracking_usage property currently only tracks official_malone.
     >>> print ubuntu.bug_tracking_usage.name
     LAUNCHPAD
 
-While the other attributes track the other official_ attributes. 
+While the other attributes track the other official_ attributes.
 
     >>> print ubuntu.official_rosetta
     True
     >>> print ubuntu.translations_usage.name
-    LAUNCHPAD 
+    LAUNCHPAD
     >>> print ubuntu.official_answers
     True
     >>> print ubuntu.answers_usage.name
@@ -436,7 +436,7 @@ no way for a distribution to use codehosting.
     >>> ubuntu.codehosting_usage = ServiceUsage.LAUNCHPAD
     Traceback (most recent call last):
     AttributeError: can't set attribute...
- 
+
 While Debian uses none:
 
     >>> debian = getUtility(ILaunchpadCelebrities).debian
@@ -454,7 +454,7 @@ While Debian uses none:
 Gentoo only uses Malone
 
     >>> print gentoo.bug_tracking_usage.name
-    LAUNCHPAD 
+    LAUNCHPAD
     >>> print gentoo.translations_usage.name
     UNKNOWN
     >>> print gentoo.answers_usage.name
@@ -504,87 +504,89 @@ related to a distro.
 Basically, we can filter by completeness, and by whether or not the spec is
 informational.
 
- >>> kubuntu = distroset.getByName("kubuntu")
+    >>> kubuntu = distroset.getByName("kubuntu")
 
- >>> from canonical.launchpad.interfaces import SpecificationFilter
+    >>> from canonical.launchpad.interfaces import SpecificationFilter
 
 First, there should be one informational spec for kubuntu, but it is
 complete so it will not show up unless we explicitly ask for complete specs:
 
- >>> filter = [SpecificationFilter.INFORMATIONAL]
- >>> kubuntu.specifications(filter=filter).count()
- 0
- >>> filter = [SpecificationFilter.INFORMATIONAL,
- ...           SpecificationFilter.COMPLETE]
- >>> kubuntu.specifications(filter=filter).count()
- 1
+    >>> filter = [SpecificationFilter.INFORMATIONAL]
+    >>> kubuntu.specifications(filter=filter).count()
+    0
+    >>> filter = [SpecificationFilter.INFORMATIONAL,
+    ...           SpecificationFilter.COMPLETE]
+    >>> kubuntu.specifications(filter=filter).count()
+    1
 
 
 There are 2 completed specs for Kubuntu:
 
- >>> filter = [SpecificationFilter.COMPLETE]
- >>> for spec in kubuntu.specifications(filter=filter):
- ...    print spec.name, spec.is_complete
- thinclient-local-devices True
- usplash-on-hibernation True
+    >>> filter = [SpecificationFilter.COMPLETE]
+    >>> for spec in kubuntu.specifications(filter=filter):
+    ...    print spec.name, spec.is_complete
+    thinclient-local-devices True
+    usplash-on-hibernation True
 
 
 And there are four incomplete specs:
 
- >>> filter = [SpecificationFilter.INCOMPLETE]
- >>> for spec in kubuntu.specifications(filter=filter):
- ...    print spec.name, spec.is_complete
- cluster-installation False
- revu False
- kde-desktopfile-langpacks False
- krunch-desktop-plan False
+    >>> filter = [SpecificationFilter.INCOMPLETE]
+    >>> for spec in kubuntu.specifications(filter=filter):
+    ...    print spec.name, spec.is_complete
+    cluster-installation False
+    revu False
+    kde-desktopfile-langpacks False
+    krunch-desktop-plan False
 
 
 If we ask for all specs, we get them in the order of priority.
 
- >>> filter = [SpecificationFilter.ALL]
- >>> for spec in kubuntu.specifications(filter=filter):
- ...    print spec.priority.title, spec.name
- Essential cluster-installation
- High revu
- Medium thinclient-local-devices
- Low usplash-on-hibernation
- Undefined kde-desktopfile-langpacks
- Not krunch-desktop-plan
+    >>> filter = [SpecificationFilter.ALL]
+    >>> for spec in kubuntu.specifications(filter=filter):
+    ...    print spec.priority.title, spec.name
+    Essential cluster-installation
+    High revu
+    Medium thinclient-local-devices
+    Low usplash-on-hibernation
+    Undefined kde-desktopfile-langpacks
+    Not krunch-desktop-plan
 
 
 And if we ask just for specs, we get the incomplete ones.
 
- >>> for spec in kubuntu.specifications():
- ...     print spec.name, spec.is_complete
- cluster-installation False
- revu False
- kde-desktopfile-langpacks False
- krunch-desktop-plan False
+    >>> for spec in kubuntu.specifications():
+    ...     print spec.name, spec.is_complete
+    cluster-installation False
+    revu False
+    kde-desktopfile-langpacks False
+    krunch-desktop-plan False
 
 We can filter for specifications that contain specific text:
 
- >>> for spec in kubuntu.specifications(filter=['package']):
- ...     print spec.name
- revu
+    >>> for spec in kubuntu.specifications(filter=['package']):
+    ...     print spec.name
+    revu
 
 We can get only valid specs (those that are not obsolete or superseded):
 
- >>> from canonical.launchpad.interfaces import SpecificationDefinitionStatus
- >>> login('mark@example.com')
- >>> for spec in kubuntu.specifications():
- ...     # Do this here, otherwise, the change will be flush before
- ...     # updateLifecycleStatus() acts and an IntegrityError will be
- ...     # raised.
- ...     owner = spec.owner
- ...     if spec.name in ['cluster-installation', 'revu']:
- ...         spec.definition_status = SpecificationDefinitionStatus.OBSOLETE
- ...     if spec.name in ['krunch-desktop-plan']:
- ...         spec.definition_status = SpecificationDefinitionStatus.SUPERSEDED
- ...     shim = spec.updateLifecycleStatus(owner)
- >>> for spec in kubuntu.valid_specifications:
- ...     print spec.name
- kde-desktopfile-langpacks
+    >>> from canonical.launchpad.interfaces import (
+    ...     SpecificationDefinitionStatus,
+    ...     )
+    >>> login('mark@example.com')
+    >>> for spec in kubuntu.specifications():
+    ...     # Do this here, otherwise, the change will be flush before
+    ...     # updateLifecycleStatus() acts and an IntegrityError will be
+    ...     # raised.
+    ...     owner = spec.owner
+    ...     if spec.name in ['cluster-installation', 'revu']:
+    ...         spec.definition_status = SpecificationDefinitionStatus.OBSOLETE
+    ...     if spec.name in ['krunch-desktop-plan']:
+    ...         spec.definition_status = SpecificationDefinitionStatus.SUPERSEDED
+    ...     shim = spec.updateLifecycleStatus(owner)
+    >>> for spec in kubuntu.valid_specifications:
+    ...     print spec.name
+    kde-desktopfile-langpacks
 
 
 Milestones

@@ -30,7 +30,7 @@ While some of them (homepageurl, icon, logo and mugshot) are optional, others
     u'project-test'
 
 
-Looking up existing projects 
+Looking up existing projects
 ----------------------------
 
 To fetch a project we use IProjectGroupSet.getByName() or
@@ -406,7 +406,8 @@ a project.
     1.1. active: True
     1.1 active: True
 
-ProjectGroup.all_milestones is a list of all milestones associated with a project.
+ProjectGroup.all_milestones is a list of all milestones associated with a
+project.
 
     >>> milestones = gnome.all_milestones
     >>> for milestone in milestones:
@@ -418,8 +419,8 @@ ProjectGroup.all_milestones is a list of all milestones associated with a projec
     1.1. active: True
     1.1 active: True
 
-ProjectGroup.getMilestone(name) returns the project milestone with the name `name'
-or None, if no milestone with this name exists.
+ProjectGroup.getMilestone(name) returns the project milestone with the name
+`name' or None, if no milestone with this name exists.
 
     >>> milestone = gnome.getMilestone('1.1')
     >>> print milestone.name
