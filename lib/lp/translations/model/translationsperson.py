@@ -262,7 +262,7 @@ class TranslationsPerson:
         The added joins may make the overall query non-distinct, so be
         sure to enforce distinctness.
         """
-        # XXX j.c.sackett 2010-08-30 Once data migration has happened for the
+        # XXX j.c.sackett 2010-08-30 bug=627631 Once data migration has happened for the
         # usage enums, this query needs to be updated to check for the
         # translations_usage, not official_rosetta.
 
