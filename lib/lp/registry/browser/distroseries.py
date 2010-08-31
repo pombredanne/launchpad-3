@@ -533,3 +533,11 @@ class DistroSeriesLocalDifferences(LaunchpadView):
     def label(self):
         return "Package differences between '%s' and parent series '%s'" % (
             self.context.displayname, self.context.parent_series.displayname)
+
+    @property
+    def ignored_packages_count(self):
+        return 1
+
+    @property
+    def ignored_packages_url(self):
+        return "%s?include_ignored=1" % self.request.URL

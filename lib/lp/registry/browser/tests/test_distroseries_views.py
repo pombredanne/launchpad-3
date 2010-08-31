@@ -11,6 +11,10 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.testing import LaunchpadZopelessLayer
+from lp.registry.enum import (
+    DistroSeriesDifferenceStatus,
+    DistroSeriesDifferenceType,
+    )
 from lp.testing import TestCaseWithFactory
 from lp.testing.views import create_initialized_view
 
@@ -49,11 +53,17 @@ class DistroSeriesLocalPackageDiffsTestCase(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
 
+    def makeDerivedSeries(self, derived_name=None, parent_name=None):
+        # Helper that creates a derived distro series.
+        parent = self.factory.makeDistroSeries(name=parent_name)
+        derived_series = self.factory.makeDistroSeries(
+            name=derived_name, parent_series=parent)
+        return derived_series
+
     def test_label(self):
         # The view label includes the names of both series.
-        parent = self.factory.makeDistroSeries(name="lucid")
-        derived_series = self.factory.makeDistroSeries(
-            name="derilucid", parent_series=parent)
+        derived_series = self.makeDerivedSeries(
+            parent_name='lucid', derived_name='derilucid')
 
         view = create_initialized_view(
             derived_series, '+localpackagediffs')
@@ -62,6 +72,55 @@ class DistroSeriesLocalPackageDiffsTestCase(TestCaseWithFactory):
             "Package differences between 'Derilucid' and parent series "
             "'Lucid'",
             view.label)
+
+    def test_ignored_packages_url(self):
+        # The ignored_packages_url is provided by the view.
+        derived_series = self.makeDerivedSeries('derilucid')
+
+        view = create_initialized_view(
+            derived_series, '+localpackagediffs',
+            server_url='https://launchpad.dev/ubuntu/derilucid/'
+                       '+localpackagediffs')
+
+        self.assertEqual(
+            "https://launchpad.dev/ubuntu/derilucid/+localpackagediffs"
+            "?include_ignored=1",
+            view.ignored_packages_url)
+
+    def test_ignored_packages_count(self):
+        # The number of ignored differences is returned.
+        derived_series = self.makeDerivedSeries('derilucid')
+        self.factory.makeDistroSeriesDifference(
+            derived_series=derived_series,
+            status=DistroSeriesDifferenceStatus.IGNORED)
+        self.factory.makeDistroSeriesDifference(
+            derived_series=derived_series,
+            status=DistroSeriesDifferenceStatus.IGNORED_ALWAYS)
+
+        view = create_initialized_view(
+            derived_series, '+localpackagediffs')
+
+        self.assertEqual(2, view.ignored_packages_count)
+
+    def test_ignored_packages_doesnt_include_other_types(self):
+        # Only diffs of the right type for the current derived series
+        # are counted.
+        # The following difference won't count as it is a different type
+        # of difference (not relevant to this view).
+        derived_series = self.makeDerivedSeries('derilucid')
+        self.factory.makeDistroSeriesDifference(
+            derived_series=derived_series,
+            difference_type=(
+                DistroSeriesDifferenceType.UNIQUE_TO_DERIVED_SERIES))
+        # The following difference won't count as it is for a different
+        # series.
+        self.factory.makeDistroSeriesDifference(
+            status=DistroSeriesDifferenceStatus.IGNORED)
+
+        view = create_initialized_view(
+            derived_series, '+localpackagediffs')
+
+        self.assertEqual(0, view.ignored_packages_count)
 
 
 def test_suite():
