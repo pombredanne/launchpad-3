@@ -713,7 +713,6 @@ class HasSpecificationsMixin:
         """
         # Circular import.
         from lp.registry.model.person import Person
-        constraints = []
         assignee = ClassAlias(Person, "assignee")
         approver = ClassAlias(Person, "approver")
         drafter = ClassAlias(Person, "drafter")
@@ -725,7 +724,6 @@ class HasSpecificationsMixin:
         columns = [Specification, assignee, approver, drafter]
         for alias in (assignee, approver, drafter):
             validity_info = Person._validity_queries(person_table=alias)
-            constraints.extend(validity_info["conditions"])
             origin.extend(validity_info["joins"])
             columns.extend(validity_info["tables"])
             # We only need one decorators list: all the decorators will be
@@ -736,7 +734,6 @@ class HasSpecificationsMixin:
         results = Store.of(self).using(*origin).find(
             columns,
             SQL(query),
-            *constraints
             )
         def cache_person(person, row, start_index):
             """apply caching decorators to person."""

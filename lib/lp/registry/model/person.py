@@ -1590,8 +1590,6 @@ class Person(
 
         * joins are additional joins to use. e.g. [LeftJoin,LeftJoin]
         * tables are tables to use e.g. [EmailAddress, Account]
-        * conditions are restrictions for the joins - and them together.
-          e.g. [Or(Account.id == NULL, Account.id==Person.account), ...]
         * decorators are callbacks to call for each row. Each decorator takes
         (Person, column) where column is the column in the result set for that
         decorators type.
@@ -1605,22 +1603,18 @@ class Person(
             account_table = ClassAlias(Account)
         origins = []
         columns = []
-        conditions = []
         decorators = []
         # Teams don't have email, so a left join
         origins.append(
-            LeftJoin(email_table, email_table.personID == person_table.id))
+            LeftJoin(email_table, And(
+                email_table.personID == person_table.id,
+                email_table.status == EmailAddressStatus.PREFERRED)))
         columns.append(email_table)
-        conditions.append(Or(email_table.status == None,
-                email_table.status == EmailAddressStatus.PREFERRED))
-        # May be used in a query that finds teams (teams are not valid people)
         origins.append(
-            LeftJoin(account_table, person_table.accountID == account_table.id))
+            LeftJoin(account_table, And(
+                person_table.accountID == account_table.id,
+                account_table.status == AccountStatus.ACTIVE)))
         columns.append(account_table)
-        conditions.append(
-            Or(
-                account_table.status == None,
-                account_table.status == AccountStatus.ACTIVE))
         def handleemail(person, column):
             #-- preferred email caching
             if not person:
@@ -1643,7 +1637,6 @@ class Person(
         return dict(
             joins=origins,
             tables=columns,
-            conditions=conditions,
             decorators=decorators)
 
     def _all_members(self, need_karma=False, need_ubuntu_coc=False,
@@ -1718,7 +1711,6 @@ class Person(
             valid_stuff = Person._validity_queries()
             origin.extend(valid_stuff["joins"])
             columns.extend(valid_stuff["tables"])
-            conditions = And(conditions, *valid_stuff["conditions"])
             decorators.extend(valid_stuff["decorators"])
         if len(columns) == 1:
             columns = columns[0]
