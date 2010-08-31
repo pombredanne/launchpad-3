@@ -21,7 +21,10 @@ from zope.interface import (
     )
 
 from canonical.database.enumcol import DBEnum
-from canonical.launchpad.interfaces.lpstorm import IMasterStore
+from canonical.launchpad.interfaces.lpstorm import (
+    IMasterStore,
+    IStore,
+    )
 from lp.registry.enum import (
     DistroSeriesDifferenceStatus,
     DistroSeriesDifferenceType,
@@ -34,6 +37,8 @@ from lp.registry.interfaces.distroseriesdifference import (
 from lp.registry.interfaces.distroseriesdifferencecomment import (
     IDistroSeriesDifferenceCommentSource,
     )
+from lp.registry.model.distroseriesdifferencecomment import (
+    DistroSeriesDifferenceComment)
 
 
 class DistroSeriesDifference(Storm):
@@ -171,5 +176,8 @@ class DistroSeriesDifference(Storm):
 
     def getComments(self):
         """See `IDistroSeriesDifference`."""
-        comment_source = getUtility(IDistroSeriesDifferenceCommentSource)
-        return comment_source.getForDifference(self)
+        DSDComment = DistroSeriesDifferenceComment
+        comments = IStore(DSDComment).find(
+            DistroSeriesDifferenceComment,
+            DSDComment.distro_series_difference == self)
+        return comments.order_by(DSDComment.id)
