@@ -13,25 +13,23 @@ import transaction
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.launchpad.ftests import login
 from canonical.launchpad.interfaces import IDistributionSet
-from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector,
-    MAIN_STORE,
-    MASTER_FLAVOR,
-    )
+from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.testing.layers import LaunchpadZopelessLayer
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.soyuz.enums import SourcePackageFormat
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.packageset import IPackagesetSet
-from lp.soyuz.enums import SourcePackageFormat
 from lp.soyuz.model.distroarchseries import DistroArchSeries
 from lp.soyuz.scripts.initialise_distroseries import (
     InitialisationError,
     InitialiseDistroSeries,
     )
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    login,
+    TestCaseWithFactory,
+    )
 
 
 class TestInitialiseDistroSeries(TestCaseWithFactory):
@@ -150,8 +148,8 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
         ids.check()
         ids.initialise()
         self.assertDistroSeriesInitialisedCorrectly(foobuntu)
-        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
-        das = list(store.find(DistroArchSeries, distroseries = foobuntu))
+        das = list(IStore(DistroArchSeries).find(
+            DistroArchSeries, distroseries = foobuntu))
         self.assertEqual(len(das), 1)
         self.assertEqual(das[0].architecturetag, 'i386')
 

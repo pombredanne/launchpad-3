@@ -63,7 +63,7 @@ from canonical.launchpad.webapp.interfaces import (
     MAIN_STORE,
     )
 from lp.app.errors import NotFoundError
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.packagebuild import PackageBuild
 from lp.registry.interfaces.person import validate_public_person

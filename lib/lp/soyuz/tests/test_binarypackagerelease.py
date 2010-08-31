@@ -47,3 +47,19 @@ class TestBinaryPackageRelease(TestCaseWithFactory):
         self.assertEquals([
             ["Python-Version", ">= 2.4"],
             ["Other", "Bla"]], release.user_defined_fields)
+
+    def test_homepage_default(self):
+        # By default, no homepage is set.
+        bpr = self.factory.makeBinaryPackageRelease()
+        self.assertEquals(None, bpr.homepage)
+
+    def test_homepage_empty(self):
+        # The homepage field can be empty.
+        bpr = self.factory.makeBinaryPackageRelease(homepage="")
+        self.assertEquals("", bpr.homepage)
+
+    def test_homepage_set_invalid(self):
+        # As the homepage field is inherited from the .deb, the URL
+        # does not have to be valid.
+        bpr = self.factory.makeBinaryPackageRelease(homepage="<invalid<url")
+        self.assertEquals("<invalid<url", bpr.homepage)
