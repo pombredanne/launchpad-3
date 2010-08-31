@@ -725,11 +725,13 @@ class HasSpecificationsMixin:
         columns = [Specification, assignee, approver, drafter]
         for alias in (assignee, approver, drafter):
             validity_info = Person._validity_queries(person_table=alias)
-            constraints.extend(validity_info[2])
-            origin.extend(validity_info[0])
-            columns.extend(validity_info[1])
-            # We only need one decorators list.
-            decorators = validity_info[3]
+            constraints.extend(validity_info["conditions"])
+            origin.extend(validity_info["joins"])
+            columns.extend(validity_info["tables"])
+            # We only need one decorators list: all the decorators will be
+            # bound the same, and having a single list lets us more easily call
+            # the right one.
+            decorators = validity_info["decorators"]
         columns = tuple(columns)
         results = Store.of(self).using(*origin).find(
             columns,

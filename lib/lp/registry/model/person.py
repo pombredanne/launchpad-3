@@ -1586,12 +1586,13 @@ class Person(
 
         :param person_table: The person table to join to. Only supply if
             ClassAliases are in use.
-        :return: A four tuple (joins, tables, conditions, decorators)
+        :return: A dict with four keys joins, tables, conditions, decorators
 
-        joins are additional joins to use.
-        tables are tables to use
-        conditions are restrictions for the joins - and them together.
-        decorators are callbacks to call for each row. Each decorator takes
+        * joins are additional joins to use. e.g. [LeftJoin,LeftJoin]
+        * tables are tables to use e.g. [EmailAddress, Account]
+        * conditions are restrictions for the joins - and them together.
+          e.g. [Or(Account.id == NULL, Account.id==Person.account), ...]
+        * decorators are callbacks to call for each row. Each decorator takes
         (Person, column) where column is the column in the result set for that
         decorators type.
         """
@@ -1639,7 +1640,11 @@ class Person(
                 and person.preferredemail is not None)
             cache_property(person, '_is_valid_person_cached', valid)
         decorators.append(handleaccount)
-        return origins, columns, conditions, decorators
+        return dict(
+            joins=origins,
+            tables=columns,
+            conditions=conditions,
+            decorators=decorators)
 
     def _all_members(self, need_karma=False, need_ubuntu_coc=False,
         need_location=False, need_archive=False, need_preferred_email=False,
@@ -1711,10 +1716,10 @@ class Person(
                     EmailAddress.status == EmailAddressStatus.PREFERRED))
         if need_validity:
             valid_stuff = Person._validity_queries()
-            origin.extend(valid_stuff[0])
-            columns.extend(valid_stuff[1])
-            conditions = And(conditions, *valid_stuff[2])
-            decorators.extend(valid_stuff[3])
+            origin.extend(valid_stuff["joins"])
+            columns.extend(valid_stuff["tables"])
+            conditions = And(conditions, *valid_stuff["conditions"])
+            decorators.extend(valid_stuff["decorators"])
         if len(columns) == 1:
             columns = columns[0]
             # Return a simple ResultSet
