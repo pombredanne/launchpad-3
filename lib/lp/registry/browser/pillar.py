@@ -75,7 +75,10 @@ class InvolvedMenu(NavigationMenu):
             enabled=self.pillar.official_rosetta)
 
     def submit_code(self):
-        if self.pillar.codehosting_usage == ServiceUsage.LAUNCHPAD:
+        if self.pillar.codehosting_usage in [
+                ServiceUsage.LAUNCHPAD, 
+                ServiceUsage.EXTERNAL,
+                ]:
             enabled = True
         else:
             enabled = False
