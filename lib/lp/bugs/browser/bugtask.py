@@ -674,7 +674,7 @@ class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView, FeedsMixin):
             if person.id == self.user.id:
                 subscription_terms.append(
                     SimpleTerm(
-                        person, person,
+                        person, person.name,
                         'Unsubscribe me from this bug'))
                 self_subscribed = True
             else:
