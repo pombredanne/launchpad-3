@@ -293,5 +293,6 @@ def make_project_cloud_data(factory, details):
             make_project_branch_with_revisions(
                 factory, gen, project, commits_each)
             num_commits -= commits_each
-        make_project_branch_with_revisions(factory, gen, project, num_commits)
+        make_project_branch_with_revisions(
+            factory, gen, project, revision_count=num_commits)
     transaction.commit()
