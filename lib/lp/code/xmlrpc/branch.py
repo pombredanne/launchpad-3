@@ -8,8 +8,11 @@
 
 __metaclass__ = type
 __all__ = [
-    'BranchSetAPI', 'IBranchSetAPI', 'IPublicCodehostingAPI',
-    'PublicCodehostingAPI']
+    'BranchSetAPI',
+    'IBranchSetAPI',
+    'IPublicCodehostingAPI',
+    'PublicCodehostingAPI',
+    ]
 
 
 from bzrlib import urlutils
