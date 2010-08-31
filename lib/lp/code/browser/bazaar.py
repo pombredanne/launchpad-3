@@ -179,7 +179,7 @@ class BazaarProductView:
         # is the first item of the tuple returned, and is guaranteed to be
         # unique by the sql query.
         product_info = sorted(
-            list(getUtility(IBranchCloud).getProductsWithInfo(num_products)))
+            getUtility(IBranchCloud).getProductsWithInfo(num_products))
         if len(product_info) == 0:
             return
         now = datetime.today()
