@@ -43,12 +43,29 @@ class TestDistroSeriesView(TestCaseWithFactory):
         view = create_initialized_view(distroseries, '+index')
         self.assertEqual(view.needs_linking, None)
 
-    def test_milestone_batch_navigator(self):
+
+class TestMilestoneBatchNavigatorAttribute(TestCaseWithFactory):
+    """Test the series.milestone_batch_navigator attribute."""
+
+    layer = LaunchpadZopelessLayer
+
+    def test_distroseries_milestone_batch_navigator(self):
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
         distroseries = self.factory.makeDistroSeries(distribution=ubuntu)
         for name in ('a', 'b', 'c', 'd'):
             distroseries.newMilestone(name)
         view = create_initialized_view(distroseries, name='+index')
+        self._check_milestone_batch_navigator(view)
+
+    def test_productseries_milestone_batch_navigator(self):
+        product = self.factory.makeProduct()
+        for name in ('a', 'b', 'c', 'd'):
+            product.development_focus.newMilestone(name)
+        view = create_initialized_view(
+            product.development_focus, name='+index')
+        self._check_milestone_batch_navigator(view)
+
+    def _check_milestone_batch_navigator(self, view):
         config.push('default-batch-size', """
         [launchpad]
         default_batch_size: 2
@@ -59,10 +76,11 @@ class TestDistroSeriesView(TestCaseWithFactory):
             % view.milestone_batch_navigator)
         self.assertEqual(4, view.milestone_batch_navigator.batch.total())
         expected = [
-            '0.9.2',
-            '0.9.1',
+            'd',
+            'c',
             ]
         milestone_names = [
             item.name
             for item in view.milestone_batch_navigator.currentBatch()]
+        self.assertEqual(expected, milestone_names)
         config.pop('default-batch-size')
