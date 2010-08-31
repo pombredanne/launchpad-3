@@ -301,7 +301,8 @@ class CheckwatchesMaster(WorkingBase):
             self.logger.info(
                 "Resetting %s bug watches for bug tracker '%s'" %
                 (bug_tracker.watches.count(), bug_tracker_name))
-            bug_tracker.resetWatches()
+            bug_tracker.resetWatches(
+                new_next_check=datetime.now(pytz.timezone('UTC')))
 
         # Loop over the bug watches in batches as specificed by
         # batch_size until there are none left to update.

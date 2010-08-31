@@ -55,7 +55,7 @@ class BaseBranchVisibilityTeamPolicyView(LaunchpadFormView):
 
     @property
     def next_url(self):
-        return canonical_url(self.context) + '/+branchvisibility'
+        return canonical_url(self.context, view_name='+branchvisibility')
 
     cancel_url = next_url
 

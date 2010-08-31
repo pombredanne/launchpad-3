@@ -13,6 +13,7 @@ import threading
 import xmlrpclib
 
 from lazr.restful.interfaces import (
+    ICollectionResource,
     IWebServiceConfiguration,
     IWebServiceVersion,
     )
@@ -1151,9 +1152,25 @@ class WebServicePublication(WebServicePublicationMixin,
     root_object_interface = IWebServiceApplication
 
     def constructPageID(self, view, context):
-        """Add the web service named operation (if any) to the page ID."""
+        """Add the web service named operation (if any) to the page ID.
+
+        See https://dev.launchpad.net/Foundations/Webservice for more
+        information about WebService page IDs.
+        """
         pageid = super(WebServicePublication, self).constructPageID(
             view, context)
+        if ICollectionResource.providedBy(view):
+            # collection_identifier is a way to differentiate between
+            # CollectionResource objects. CollectionResource objects are
+            # objects that serve a list of Entry resources through the
+            # WebService, so by querying the CollectionResource.type_url
+            # attribute we're able to find out the resource type the
+            # collection holds. See lazr.restful._resource.py to see how
+            # the type_url is constructed.
+            # We don't need the full URL, just the type of the resource.
+            collection_identifier = view.type_url.split('/')[-1]
+            if collection_identifier:
+                pageid += ':' + collection_identifier
         op = (view.request.get('ws.op')
             or view.request.query_string_params.get('ws.op'))
         if op:

@@ -35,6 +35,7 @@ from canonical.launchpad.webapp import (
     redirection,
     StandardLaunchpadFacets,
     )
+from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.menu import (
     ApplicationMenu,
@@ -43,6 +44,7 @@ from canonical.launchpad.webapp.menu import (
     NavigationMenu,
     )
 from canonical.launchpad.webapp.sorting import sorted_dotted_numbers
+from canonical.launchpad.webapp.tales import CustomizableFormatter
 from canonical.lazr.utils import smartquote
 from lp.answers.browser.questiontarget import (
     QuestionTargetFacetMixin,
@@ -71,8 +73,18 @@ from lp.soyuz.interfaces.distributionsourcepackagerelease import (
     )
 from lp.soyuz.interfaces.packagediff import IPackageDiffSet
 from lp.translations.browser.customlanguagecode import (
-    HasCustomLanguageCodesTraversalMixin,
-    )
+    HasCustomLanguageCodesTraversalMixin)
+
+
+class DistributionSourcePackageFormatterAPI(CustomizableFormatter):
+    """Adapt IDistributionSourcePackage objects to a formatted string."""
+
+    _link_permission = 'zope.Public'
+    _link_summary_template = '%(displayname)s'
+
+    def _link_summary_values(self):
+        displayname = self._context.displayname
+        return {'displayname': displayname}
 
 
 class DistributionSourcePackageBreadcrumb(Breadcrumb):
@@ -400,10 +412,10 @@ class DistributionSourcePackageView(DistributionSourcePackageBaseView,
 
         :param sourcepackage: ISourcePackage
         """
-        publications = sourcepackage.distroseries.getPublishedReleases(
+        publications = sourcepackage.distroseries.getPublishedSources(
             sourcepackage.sourcepackagename)
         pocket_dict = {}
-        for pub in publications:
+        for pub in shortlist(publications):
             version = pub.source_package_version
             pocket_dict.setdefault(version, []).append(pub)
         return pocket_dict

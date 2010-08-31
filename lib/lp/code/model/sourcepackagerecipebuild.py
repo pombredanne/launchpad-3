@@ -40,13 +40,15 @@ from canonical.launchpad.interfaces.lpstorm import (
 from canonical.launchpad.webapp import errorlog
 from lp.app.errors import NotFoundError
 from lp.archiveuploader.uploadpolicy import (
+    ArchiveUploadType,
     BuildDaemonUploadPolicy,
     IArchiveUploadPolicy,
     SOURCE_PACKAGE_RECIPE_UPLOAD_POLICY_NAME,
     )
-from lp.buildmaster.interfaces.buildbase import BuildStatus
-from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
-from lp.buildmaster.model.buildbase import BuildBase
+from lp.buildmaster.enums import (
+    BuildFarmJobType,
+    BuildStatus,
+    )
 from lp.buildmaster.model.buildfarmjob import BuildFarmJobOldDerived
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.buildmaster.model.packagebuild import (
@@ -79,11 +81,7 @@ class SourcePackageRecipeUploadPolicy(BuildDaemonUploadPolicy):
     """Policy for uploading the results of a source package recipe build."""
 
     name = SOURCE_PACKAGE_RECIPE_UPLOAD_POLICY_NAME
-
-    def __init__(self):
-        super(SourcePackageRecipeUploadPolicy, self).__init__()
-        self.can_upload_source = True
-        self.can_upload_binaries = False
+    accepted_type = ArchiveUploadType.SOURCE_ONLY
 
     def getUploader(self, changes):
         """Return the person doing the upload."""
@@ -128,7 +126,7 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
 
     @property
     def distribution(self):
-        """See `IBuildBase`."""
+        """See `IPackageBuild`."""
         return self.distroseries.distribution
 
     is_virtualized = True
@@ -160,7 +158,7 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
 
     @property
     def buildqueue_record(self):
-        """See `IBuildBase`."""
+        """See `IBuildFarmJob`."""
         store = Store.of(self)
         results = store.find(
             BuildQueue,
@@ -278,7 +276,7 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
         return specific_job
 
     def estimateDuration(self):
-        """See `IBuildBase`."""
+        """See `IPackageBuild`."""
         median = self.recipe.getMedianBuildDuration()
         if median is not None:
             return median
@@ -288,7 +286,7 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
         return self.source_package_release is not None
 
     def notify(self, extra_info=None):
-        """See `IBuildBase`."""
+        """See `IPackageBuild`."""
         mailer = SourcePackageRecipeBuildMailer.forStatus(self)
         mailer.sendAll()
 
@@ -327,13 +325,13 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
         except KeyError:
             raise NotFoundError(filename)
 
-    @staticmethod
-    def _handleStatus_OK(build, librarian, slave_status, logger):
-        """See `IBuildBase`."""
-        BuildBase._handleStatus_OK(build, librarian, slave_status, logger)
+    def _handleStatus_OK(self, librarian, slave_status, logger):
+        """See `IPackageBuild`."""
+        super(SourcePackageRecipeBuild, self)._handleStatus_OK(
+            librarian, slave_status, logger)
         # base implementation doesn't notify on success.
-        if build.status == BuildStatus.FULLYBUILT:
-            build.notify()
+        if self.status == BuildStatus.FULLYBUILT:
+            self.notify()
 
 
 class SourcePackageRecipeBuildJob(BuildFarmJobOldDerived, Storm):

@@ -24,7 +24,7 @@ from lp.soyuz.adapters.archivedependencies import (
     get_primary_current_component,
     get_sources_list_for_building,
     )
-from lp.soyuz.interfaces.archive import ArchivePurpose
+from lp.soyuz.enums import ArchivePurpose
 
 
 class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):

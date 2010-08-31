@@ -271,8 +271,8 @@ from lp.services.salesforce.interfaces import (
     VOUCHER_STATUSES,
     )
 from lp.services.worlddata.model.language import Language
+from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.archive import (
-    ArchivePurpose,
     IArchiveSet,
     )
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet

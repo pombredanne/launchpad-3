@@ -27,7 +27,7 @@ from canonical.launchpad.database import SourcePackagePublishingHistory
 from canonical.testing import LaunchpadZopelessLayer
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
-from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+from lp.soyuz.enums import PackagePublishingStatus
 
 
 class TestProcessDeathRow(TestCase):

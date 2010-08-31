@@ -72,8 +72,12 @@ from lp.registry.interfaces.pocket import (
     pocketsuffix,
     )
 from lp.services.propertycache import cachedproperty
+from lp.soyuz.enums import (
+    BinaryPackageFormat,
+    PackageUploadCustomFormat,
+    PackageUploadStatus,
+    )
 from lp.soyuz.interfaces.archive import MAIN_ARCHIVE_PURPOSES
-from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFormat
 from lp.soyuz.interfaces.publishing import (
     IPublishingSet,
     ISourcePackagePublishingHistory,
@@ -86,8 +90,6 @@ from lp.soyuz.interfaces.queue import (
     IPackageUploadSet,
     IPackageUploadSource,
     NonBuildableSourceUploadError,
-    PackageUploadCustomFormat,
-    PackageUploadStatus,
     QueueBuildAcceptError,
     QueueInconsistentStateError,
     QueueSourceAcceptError,

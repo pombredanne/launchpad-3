@@ -11,7 +11,7 @@ from canonical.database.sqlbase import flush_database_updates
 from lp.archivepublisher.domination import Dominator
 from lp.archivepublisher.publishing import Publisher
 from lp.registry.interfaces.series import SeriesStatus
-from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.tests.test_publishing import TestNativePublishingBase
 
 

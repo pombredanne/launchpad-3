@@ -29,10 +29,10 @@ from canonical.launchpad.webapp.tales import DurationFormatterAPI
 from canonical.librarian.utils import filechunks
 from lp.app.errors import NotFoundError
 from lp.services.propertycache import cachedproperty
+from lp.soyuz.enums import PackageUploadStatus
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.queue import (
     IPackageUploadSet,
-    PackageUploadStatus,
     QueueInconsistentStateError,
     )
 from lp.soyuz.interfaces.section import ISectionSet

@@ -389,7 +389,7 @@ class MailingList(SQLBase):
                              TeamParticipation.team == self.team,
                              MailingListSubscription.person == Person.id,
                              MailingListSubscription.mailing_list == self)
-        return results.order_by(Person.displayname)
+        return results.order_by(Person.displayname, Person.name)
 
     def subscribe(self, person, address=None):
         """See `IMailingList`."""
@@ -451,8 +451,9 @@ class MailingList(SQLBase):
                      MailingListSubscription.personID
                      == EmailAddress.personID),
             # pylint: disable-msg=C0301
-            LeftJoin(MailingList,
-                     MailingList.id == MailingListSubscription.mailing_listID),
+            LeftJoin(
+                MailingList,
+                MailingList.id == MailingListSubscription.mailing_listID),
             LeftJoin(TeamParticipation,
                      TeamParticipation.personID
                      == MailingListSubscription.personID),
@@ -472,8 +473,9 @@ class MailingList(SQLBase):
                      MailingListSubscription.email_addressID
                      == EmailAddress.id),
             # pylint: disable-msg=C0301
-            LeftJoin(MailingList,
-                     MailingList.id == MailingListSubscription.mailing_listID),
+            LeftJoin(
+                MailingList,
+                MailingList.id == MailingListSubscription.mailing_listID),
             LeftJoin(TeamParticipation,
                      TeamParticipation.personID
                      == MailingListSubscription.personID),
@@ -664,8 +666,9 @@ class MailingListSet:
                      MailingListSubscription.personID
                      == EmailAddress.personID),
             # pylint: disable-msg=C0301
-            LeftJoin(MailingList,
-                     MailingList.id == MailingListSubscription.mailing_listID),
+            LeftJoin(
+                MailingList,
+                MailingList.id == MailingListSubscription.mailing_listID),
             LeftJoin(TeamParticipation,
                      TeamParticipation.personID
                      == MailingListSubscription.personID),
@@ -678,8 +681,7 @@ class MailingListSet:
             team.id for team in store.find(
                 Person,
                 And(Person.name.is_in(team_names),
-                    Person.teamowner != None))
-            )
+                    Person.teamowner != None)))
         list_ids = set(
             mailing_list.id for mailing_list in store.find(
                 MailingList,
@@ -709,8 +711,9 @@ class MailingListSet:
                      MailingListSubscription.email_addressID
                      == EmailAddress.id),
             # pylint: disable-msg=C0301
-            LeftJoin(MailingList,
-                     MailingList.id == MailingListSubscription.mailing_listID),
+            LeftJoin(
+                MailingList,
+                MailingList.id == MailingListSubscription.mailing_listID),
             LeftJoin(TeamParticipation,
                      TeamParticipation.personID
                      == MailingListSubscription.personID),
@@ -756,8 +759,7 @@ class MailingListSet:
             team.id for team in store.find(
                 Person,
                 And(Person.name.is_in(team_names),
-                    Person.teamowner != None))
-            )
+                    Person.teamowner != None)))
         team_members = store.using(*tables).find(
             (Team.name, Person.displayname, EmailAddress.email),
             And(TeamParticipation.teamID.is_in(team_ids),

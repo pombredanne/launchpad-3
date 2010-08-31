@@ -29,7 +29,10 @@ from storm.locals import (
     Join,
     SQL,
     )
-from storm.store import Store
+from storm.store import (
+    EmptyResultSet,
+    Store,
+    )
 from zope.component import getUtility
 from zope.interface import implements
 
@@ -51,7 +54,6 @@ from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet,
     )
 from canonical.launchpad.database.librarian import LibraryFileAlias
-from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.mail import signed_message_from_string
@@ -113,9 +115,13 @@ from lp.registry.model.structuralsubscription import (
     )
 from lp.services.propertycache import cachedproperty
 from lp.services.worlddata.model.language import Language
+from lp.soyuz.enums import (
+    ArchivePurpose,
+    PackagePublishingStatus,
+    PackageUploadStatus,
+    )
 from lp.soyuz.interfaces.archive import (
     ALLOW_RELEASE_BUILDS,
-    ArchivePurpose,
     )
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageName
@@ -123,12 +129,10 @@ from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.soyuz.interfaces.publishing import (
     active_publishing_status,
     ICanPublishPackages,
-    PackagePublishingStatus,
     )
 from lp.soyuz.interfaces.queue import (
     IHasQueueItems,
     IPackageUploadSet,
-    PackageUploadStatus,
     )
 from lp.soyuz.interfaces.sourcepackageformat import (
     ISourcePackageFormatSelectionSet,
@@ -343,7 +347,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     @cachedproperty
     def _all_packagings(self):
         """Get an unordered list of all packagings.
-        
+
         :return: A ResultSet which can be decorated or tuned further. Use
             DistroSeries._packaging_row_to_packaging to extract the
             packaging objects out.
@@ -353,7 +357,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         # Packaging object.
         # NB: precaching objects like this method tries to do has a very poor
         # hit rate with storm - many queries will still be executed; consider
-        # ripping this out and instead allowing explicit inclusion of things 
+        # ripping this out and instead allowing explicit inclusion of things
         # like Person._all_members does - returning a cached object graph.
         # -- RBC 20100810
         # Avoid circular import failures.
@@ -963,7 +967,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return [SourcePackage(sourcepackagename=spn, distroseries=self) for
             spn in result]
 
-    def getPublishedReleases(self, sourcepackage_or_name, version=None,
+    def getPublishedSources(self, sourcepackage_or_name, version=None,
                              pocket=None, include_pending=False,
                              exclude_pocket=None, archive=None):
         """See `IDistroSeries`."""
@@ -979,7 +983,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             spns = getUtility(ISourcePackageNameSet)
             spn = spns.queryByName(sourcepackage_or_name)
             if spn is None:
-                return []
+                return EmptyResultSet()
 
         queries = ["""
         sourcepackagerelease=sourcepackagerelease.id AND
@@ -1011,7 +1015,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             " AND ".join(queries), clauseTables = ['SourcePackageRelease'],
             orderBy=['-id'])
 
-        return shortlist(published)
+        return published
 
     def isUnstable(self):
         """See `IDistroSeries`."""
@@ -1809,11 +1813,7 @@ class DistroSeriesSet:
             DistroSeries.hide_all_translations == False,
             DistroSeries.id == POTemplate.distroseriesID)
         result_set = result_set.config(distinct=True)
-        # XXX: henninge 2009-02-11 bug=217644: Convert to sequence right here
-        # because ResultSet reports a wrong count() when using DISTINCT. Also
-        # ResultSet does not implement __len__(), which would make it more
-        # like a sequence.
-        return list(result_set)
+        return result_set
 
     def findByName(self, name):
         """See `IDistroSeriesSet`."""

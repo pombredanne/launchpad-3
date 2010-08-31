@@ -141,7 +141,7 @@
     }
 
 html, body {
-    font-family: "dejavu sans", "bitstream vera sans", verdana, sans-serif;
+    font-family: UbuntuBeta, Ubuntu, 'Bitstream Vera Sans', 'DejaVu Sans', Tahoma, sans-serif;
     font-size: 93%;
     }
 body.private {
@@ -185,7 +185,8 @@ table.wide {
     width: 60em;
     }
 pre, code, samp, tt, .console {
-    font-size: 116%;
+    font-family: 'UbuntuBeta Mono', 'Ubuntu Mono', monospace;
+    font-size: 93%;
     margin-bottom: 0.8em;
     }
 pre.wrap {
@@ -220,7 +221,34 @@ div.three.column.left, div.three.column.right {
 hr {
     display: none;
     }
-
+div.profiling_info {
+    position: absolute;
+    top: 0;
+    left: 0;
+    border: 3px solid red;
+    background-color: white;
+    text-align: left;
+    padding: 1em;
+    }
+div.profiling_info h1 {
+    color: red;
+    }
+div.profiling_info h2 {
+    border-bottom: 3px solid gray;
+    color: black;
+    }
+div.profiling_info h3 {
+    border-bottom: 1px solid gray;
+    color: black;
+    }
+div.profiling_info p {
+    color: black;
+    }
+div.hide_reveal_profiling {
+    text-decoration: underline;
+    color: #093;
+    font-size: 85%;
+    }
 
 /* =========================
    Universal presentation
@@ -1092,7 +1120,7 @@ span.see-all {
     margin-top: 1em;
     }
 p.search-results {
-    font-size: 116%;
+    font-size: 93%;
     }
 .top-portlet .summary {
     margin: 0 0 1em 0;
@@ -1748,8 +1776,8 @@ a.unofficial-tag {
     }
 pre.changelog, table.diff,
 .bug-comment, .bug-activity, .codereviewcomment {
-    font-size: 116%;
-    font-family: monospace;
+    font-size: 93%;
+    font-family: 'UbuntuBeta Mono', 'Ubuntu Mono', monospace;
     }
 .cloud-size-smallest {
     font-size: 77%;

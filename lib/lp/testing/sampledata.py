@@ -9,10 +9,12 @@ just a small number, then you should define it as a constant here.
 
 __metaclass__ = type
 __all__ = [
+    'ADMIN_EMAIL',
     'BUILDD_ADMIN_USERNAME',
     'CHROOT_LIBRARYFILEALIAS',
     'ADMIN_EMAIL',
     'COMMERCIAL_ADMIN_EMAIL',
+    'SAMPLE_PERSON_EMAIL',
     'HOARY_DISTROSERIES_NAME',
     'I386_ARCHITECTURE_NAME',
     'LAUNCHPAD_DBUSER_NAME',
@@ -21,6 +23,8 @@ __all__ = [
     'UBUNTU_DEVELOPER_ADMIN_NAME',
     'UBUNTU_DISTRIBUTION_NAME',
     'UBUNTU_UPLOAD_TEAM_NAME',
+    'UBUNTUTEST_DISTRIBUTION_NAME',
+    'USER_EMAIL',
     'WARTY_DISTROSERIES_NAME',
     'WARTY_ONLY_SOURCEPACKAGENAME',
     'WARTY_ONLY_SOURCEPACKAGEVERSION',
@@ -32,6 +36,9 @@ __all__ = [
 # UBUNTU_DEVELOPER_NAME. Where intent is tricky to convey in the
 # name, please leave a comment as well.
 
+# A user with Launchpad Admin privileges.
+ADMIN_EMAIL = 'foo.bar@canonical.com'
+
 # A user with buildd admin rights and upload rights to Ubuntu.
 BUILDD_ADMIN_USERNAME = 'cprov'
 # The LibraryFileAlias of a chroot for attaching to a DistroArchSeries
@@ -40,10 +47,13 @@ HOARY_DISTROSERIES_NAME = 'hoary'
 I386_ARCHITECTURE_NAME = 'i386'
 LAUNCHPAD_DBUSER_NAME = 'launchpad'
 MAIN_COMPONENT_NAME = 'main'
+
 NO_PRIVILEGE_EMAIL = 'no-priv@canonical.com'
+USER_EMAIL = 'test@canonical.com'
+VCS_IMPORTS_MEMBER_EMAIL = 'david.allouche@canonical.com'
 COMMERCIAL_ADMIN_EMAIL = 'commercial-member@canonical.com'
 ADMIN_EMAIL = 'foo.bar@canonical.com'
-
+SAMPLE_PERSON_EMAIL = USER_EMAIL
 # A user that is an admin of ubuntu-team, which has upload rights
 # to Ubuntu.
 UBUNTU_DEVELOPER_ADMIN_NAME = 'name16'
