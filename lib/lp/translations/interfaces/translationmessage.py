@@ -229,6 +229,9 @@ class ITranslationMessage(Interface):
     def getOnePOFile():
         """Get any POFile containing this translation."""
 
+    def ensureBrowserPOFile():
+        """Make sure browser_pofile contains something if possible."""
+
     def isHidden(pofile):
         """Whether this is an unused, hidden suggestion in `pofile`.
 

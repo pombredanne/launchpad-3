@@ -160,6 +160,9 @@ class DummyTranslationMessage(TranslationMessageMixIn):
         """See `ITranslationMessage`."""
         return None
 
+    def ensureBrowserPOFile(self):
+        """See `ITranslationMessage`."""
+
     @property
     def all_msgstrs(self):
         """See `ITranslationMessage`."""
@@ -379,6 +382,11 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
             return pofile[0]
         else:
             return None
+
+    def ensureBrowserPOFile(self):
+        """See `ITranslationMessage`."""
+        if self.browser_pofile is None:
+            self.browser_pofile = self.getOnePOFile()
 
     def _getSharedEquivalent(self):
         """Get shared message that otherwise exactly matches this one.

@@ -926,7 +926,7 @@ class CurrentTranslationMessageView(LaunchpadView):
         self.force_suggestion = force_suggestion
         self.force_diverge = force_diverge
         self.user_is_official_translator = (
-            current_translation_message.pofile.canEditTranslations(self.user))
+            self.pofile.canEditTranslations(self.user))
         self.form_is_writeable = form_is_writeable
         if self.context.is_imported:
             # The imported translation matches the current one.
@@ -1033,12 +1033,14 @@ class CurrentTranslationMessageView(LaunchpadView):
                 # Imported one matches the current one.
                 imported_submission = None
             elif self.imported_translationmessage is not None:
+                self.imported_translationmessage.ensureBrowserPOFile()
+                pofile = self.imported_translationmessage.browser_pofile
                 imported_submission = (
                     convert_translationmessage_to_submission(
                         message=self.imported_translationmessage,
                         current_message=self.context,
                         plural_form=index,
-                        pofile=self.imported_translationmessage.pofile,
+                        pofile=pofile,
                         legal_warning_needed=False,
                         is_empty=False,
                         packaged=True))
@@ -1047,12 +1049,14 @@ class CurrentTranslationMessageView(LaunchpadView):
 
             if (self.context.potemplate is not None and
                 self.shared_translationmessage is not None):
+                self.shared_translationmessage.ensureBrowserPOFile()
+                pofile = self.shared_translationmessage.browser_pofile
                 shared_submission = (
                     convert_translationmessage_to_submission(
                         message=self.shared_translationmessage,
                         current_message=self.context,
                         plural_form=index,
-                        pofile=self.shared_translationmessage.pofile,
+                        pofile=pofile,
                         legal_warning_needed=False,
                         is_empty=False))
             else:
@@ -1527,7 +1531,7 @@ class TranslationMessageSuggestions:
                  plural_form, seen_translations=None, legal_warning=False):
         self.title = title
         self.potmsgset = translation.potmsgset
-        self.pofile = translation.pofile
+        self.pofile = translation.browser_pofile
         self.user_is_official_translator = user_is_official_translator
         self.form_is_writeable = form_is_writeable
         self.submissions = []
@@ -1578,10 +1582,10 @@ def convert_translationmessage_to_submission(
 
     submission = Submission()
     submission.translationmessage = message
-    for attribute in ['id', 'language', 'potmsgset', 'pofile',
-                      'date_created']:
+    for attribute in ['id', 'language', 'potmsgset', 'date_created']:
         setattr(submission, attribute, getattr(message, attribute))
 
+    submission.pofile = message.browser_pofile
     submission.person = message.submitter
 
     submission.is_empty = is_empty
@@ -1589,7 +1593,7 @@ def convert_translationmessage_to_submission(
     submission.suggestion_text = text_to_html(
         message.translations[plural_form],
         message.potmsgset.flags)
-    submission.is_local_to_pofile = (message.pofile == pofile)
+    submission.is_local_to_pofile = (submission.pofile == pofile)
     submission.legal_warning = legal_warning_needed and (
         message.origin == RosettaTranslationOrigin.SCM)
     submission.suggestion_html_id = (
