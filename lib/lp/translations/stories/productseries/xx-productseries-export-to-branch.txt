@@ -5,11 +5,12 @@ periodically commit snapshots of the series' translations to that
 branch.
 
     >>> from zope.security.proxy import removeSecurityProxy
+    >>> from lp.app.enums import ServiceUsage
 
     >>> login(ANONYMOUS)
     >>> owner = factory.makePerson(email='x@example.com', password='****')
-    >>> product = factory.makeProduct(owner=owner)
-    >>> removeSecurityProxy(product).official_rosetta = True
+    >>> product = factory.makeProduct(owner=owner,
+    ...     translations_usage=ServiceUsage.LAUNCHPAD)
     >>> productseries = product.getSeries('trunk')
     >>> branch = factory.makeBranch(product=product, owner=owner)
     >>> branch_name = branch.name

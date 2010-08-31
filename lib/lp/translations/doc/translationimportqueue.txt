@@ -1523,9 +1523,11 @@ have been deactivated.
 
 A user sets up Jokosher for translation, and uploads a template.
 
+    >>> from lp.app.enums import ServiceUsage
+
     >>> jokosher = productset['jokosher']
     >>> jokosher_trunk = jokosher.getSeries('trunk')
-    >>> jokosher.official_rosetta = True
+    >>> jokosher.translations_usage = ServiceUsage.LAUNCHPAD
     >>> syncUpdate(jokosher)
     >>> jokosher_subset = potemplateset.getSubset(productseries=jokosher_trunk)
     >>> template = jokosher_subset.new(

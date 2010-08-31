@@ -104,10 +104,13 @@ Evolution.
 
 Adding a little bit of karma to upstart will put it in the list as well.
 
+    >>> from lp.app.enums import ServiceUsage
+
     >>> start_karma_update()
     >>> upstart = product_set.getByName('upstart')
     >>> upstart_id = upstart.id
-    >>> removeSecurityProxy(upstart).official_rosetta = True
+    >>> naked_upstart = removeSecurityProxy(upstart)
+    >>> naked_upstart.translations_usage = ServiceUsage.LAUNCHPAD
     >>> cache_entry = karmacachemanager.new(
     ...     50, carlos.id, translations.id, product_id=upstart_id)
     >>> finish_karma_update()

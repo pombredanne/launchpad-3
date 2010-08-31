@@ -4,6 +4,7 @@ The translation import queue entry page shows various details about an
 entry and its target that may be helpful in queue review.
 
     >>> from zope.security.proxy import removeSecurityProxy
+    >>> from lp.app.enums import ServiceUsage
     >>> from lp.translations.model.translationimportqueue import (
     ...     TranslationImportQueue)
 
@@ -11,8 +12,8 @@ entry and its target that may be helpful in queue review.
 
     >>> login(ANONYMOUS)
     >>> queue = TranslationImportQueue()
-    >>> product = factory.makeProduct()
-    >>> removeSecurityProxy(product).official_rosetta = True
+    >>> product = factory.makeProduct(
+    ...     translations_usage=ServiceUsage.LAUNCHPAD)
     >>> trunk = product.getSeries('trunk')
     >>> uploader = factory.makePerson()
     >>> entry = queue.addOrUpdateEntry(

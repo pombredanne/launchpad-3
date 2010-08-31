@@ -690,10 +690,10 @@ Ubuntu Hoary distribution.
 
 Both, product and distribution use Launchpad Translations.
 
-    >>> evolution.official_rosetta
-    True
-    >>> ubuntu.official_rosetta
-    True
+    >>> evolution.translations_usage.name
+    'LAUNCHPAD'
+    >>> ubuntu.translations_usage.name
+    'LAUNCHPAD'
 
 And both translation templates are current
 
@@ -752,7 +752,9 @@ are not available as suggestions anymore:
 The same happens if the distribution is not officially using
 translations.
 
-    >>> ubuntu.official_rosetta = False
+    >>> from lp.app.enums import ServiceUsage
+
+    >>> ubuntu.translations_usage = ServiceUsage.NOT_APPLICABLE
 
     # We set the template as current again so we are sure that we don't show
     # suggestions just due to the change to the official_rosetta flag.
@@ -765,7 +767,7 @@ translations.
 
 And products not using translations officially have the same behaviour.
 
-    >>> evolution.official_rosetta = False
+    >>> evolution.translations_usage = ServiceUsage.NOT_APPLICABLE
     >>> transaction.commit()
     >>> suggestions = evo_distro_message.getExternallyUsedTranslationMessages(
     ...    spanish)
@@ -774,8 +776,8 @@ And products not using translations officially have the same behaviour.
 
 Let's restore the flags for next section.
 
-    >>> ubuntu.official_rosetta = True
-    >>> evolution.official_rosetta = True
+    >>> ubuntu.translations_usage = ServiceUsage.LAUNCHPAD
+    >>> evolution.translations_usage = ServiceUsage.LAUNCHPAD
     >>> transaction.commit()
 
 
@@ -874,7 +876,7 @@ Launchpad for translations.
     # We set the template as current again so we are sure that we don't show
     # suggestions just due to the change to the official_rosetta flag.
     >>> potmsgset_translated.potemplate.iscurrent = True
-    >>> ubuntu.official_rosetta = False
+    >>> ubuntu.translations_usage = ServiceUsage.NOT_APPLICABLE
     >>> transaction.commit()
 
     >>> wiki_submissions = (

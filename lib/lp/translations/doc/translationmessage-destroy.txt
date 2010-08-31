@@ -35,16 +35,17 @@ translation, we get two POFileTranslator records for each of the POFiles.
     >>> # a global 'postgres' permission which allows everything.
     >>> LaunchpadZopelessLayer.switchDbUser('postgres')
     >>> from canonical.database.sqlbase import sqlvalues
+    >>> from lp.app.enums import ServiceUsage
     >>> from lp.translations.model.pofiletranslator import POFileTranslator
     >>> from lp.testing.factory import LaunchpadObjectFactory
     >>> factory = LaunchpadObjectFactory()
 
-    >>> foo = factory.makeProduct()
+    >>> foo = factory.makeProduct(
+    ...     translations_usage=ServiceUsage.LAUNCHPAD)
     >>> foo_devel = factory.makeProductSeries(
     ...     name='devel', product=foo)
     >>> foo_stable = factory.makeProductSeries(
     ...     name='stable', product=foo)
-    >>> foo.official_rosetta = True
     >>> devel_potemplate = factory.makePOTemplate(
     ...     productseries=foo_devel, name="messages")
     >>> stable_potemplate = factory.makePOTemplate(foo_stable,

@@ -212,8 +212,10 @@ A product series with 7 templates is created.
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces.launchpad import (
     ...     ILaunchpadCelebrities)
+    >>> from lp.app.enums import ServiceUsage
     >>> login('admin@canonical.com')
-    >>> product = factory.makeProduct(name="fusa", official_rosetta=True)
+    >>> product = factory.makeProduct(name="fusa", 
+    ...     translations_usage=ServiceUsage.LAUNCHPAD)
     >>> product_trunk = product.getSeries('trunk')
     >>> template = factory.makePOTemplate(
     ...     productseries=product_trunk, name='first')

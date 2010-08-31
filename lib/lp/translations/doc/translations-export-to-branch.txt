@@ -76,10 +76,11 @@ The Gazblachko project is set up to export its trunk translations to a
 branch.
 
     >>> from zope.security.proxy import removeSecurityProxy
+    >>> from lp.app.enums import ServiceUsage
 
     >>> gazblachko = removeSecurityProxy(factory.makeProduct(
     ...     name='gazblachko', displayname='Gazblachko'))
-    >>> gazblachko.official_rosetta = True
+    >>> gazblachko.translations_usage = ServiceUsage.LAUNCHPAD
 
     >>> branch = removeSecurityProxy(factory.makeBranch(
     ...     name='gazpo', owner=gazblachko.owner, product=gazblachko))
@@ -162,13 +163,13 @@ translations to the DirectBranchCommit.
 When Gazblachko stops using Launchpad for Translations, the exports stop
 also.
 
-    >>> gazblachko.official_rosetta = False
+    >>> gazblachko.translations_usage = ServiceUsage.NOT_APPLICABLE
     >>> transaction.commit()
     >>> script.main()
     INFO Exporting to translations branches.
     INFO Processed 0 item(s); 0 failure(s), 0 unpushed branch(es).
 
-    >>> gazblachko.official_rosetta = True
+    >>> gazblachko.translations_usage = ServiceUsage.LAUNCHPAD
     >>> transaction.commit()
 
 
