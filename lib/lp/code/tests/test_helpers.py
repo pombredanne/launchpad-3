@@ -7,7 +7,6 @@ __metaclass__ = type
 
 from datetime import datetime, timedelta
 import pytz
-import unittest
 
 from zope.component import getUtility
 
@@ -39,7 +38,3 @@ class TestMakeProjectCloudData(TestCaseWithFactory):
             getUtility(IAllBranches).inProduct(fooix).getBranches())
         self.assertEqual(1, branch.revision_count)
         self.assertEqual(commit_time, branch.getTipRevision().revision_date)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
