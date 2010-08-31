@@ -8,6 +8,7 @@ __metaclass__ = type
 __all__ = [
     'BaseDispatchResult',
     'BuilddManager',
+    'BUILDD_MANAGER_LOG_NAME',
     'FailDispatchResult',
     'RecordingSlave',
     'ResetDispatchResult',
@@ -32,9 +33,11 @@ from zope.component import getUtility
 from canonical.config import config
 from canonical.launchpad.webapp import urlappend
 from canonical.librarian.db import write_transaction
-from lp.buildmaster.interfaces.buildbase import (
-    BuildStatus, BUILDD_MANAGER_LOG_NAME)
+from lp.buildmaster.enums import BuildStatus
 from lp.services.twistedsupport.processmonitor import ProcessWithTimeout
+
+
+BUILDD_MANAGER_LOG_NAME = "slave-scanner"
 
 
 buildd_success_result_map = {

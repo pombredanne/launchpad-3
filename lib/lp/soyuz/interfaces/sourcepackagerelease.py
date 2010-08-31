@@ -104,6 +104,14 @@ class ISourcePackageRelease(Interface):
 
     user_defined_fields = List(
         title=_("Sequence of user-defined fields as key-value pairs."))
+
+    homepage = TextLine(
+        title=_("Homepage"),
+        description=_(
+        "Upstream project homepage as set in the package. This URL is not "
+        "sanitized."),
+        required=False)
+
     # read-only properties
     name = Attribute('The sourcepackagename for this release, as text')
     title = Attribute('The title of this sourcepackagerelease')
