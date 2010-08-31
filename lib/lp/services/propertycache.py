@@ -20,6 +20,7 @@ from functools import partial
 from zope.component import (
     adapter,
     adapts,
+    getGlobalSiteManager,
     )
 from zope.interface import (
     implementer,
@@ -62,6 +63,11 @@ class IPropertyCacheManager(Interface):
         """Empty the cache."""
 
 
+# Register adapters with the global site manager so that they work even when
+# ZCML has not been executed.
+registerAdapter = getGlobalSiteManager().registerAdapter
+
+
 class DefaultPropertyCache:
     """A simple cache."""
 
@@ -94,6 +100,8 @@ def get_default_cache(target):
         naked_target._property_cache = DefaultPropertyCache()
         return naked_target._property_cache
 
+registerAdapter(get_default_cache)
+
 
 class PropertyCacheManager:
     """A simple `IPropertyCacheManager`.
@@ -112,6 +120,8 @@ class PropertyCacheManager:
         for name in list(self.cache):
             delattr(self.cache, name)
 
+registerAdapter(PropertyCacheManager)
+
 
 class DefaultPropertyCacheManager:
     """A `IPropertyCacheManager` specifically for `DefaultPropertyCache`.
@@ -127,6 +137,8 @@ class DefaultPropertyCacheManager:
 
     def clear(self):
         self.cache.__dict__.clear()
+
+registerAdapter(DefaultPropertyCacheManager)
 
 
 class CachedProperty:
