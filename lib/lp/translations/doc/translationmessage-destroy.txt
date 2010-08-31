@@ -1,4 +1,5 @@
-== destroySelf ==
+destroySelf
+===========
 
 (Note: this test runs as rosettaadmin to obtain the necessary
 privileges)
@@ -26,7 +27,8 @@ It should not exist now.
     SQLObjectNotFound:...
 
 
-== POFileTranslator update on remove ==
+POFileTranslator update on remove
+=================================
 
 In two sharing POTemplates with one shared POTMsgSet with one shared
 translation, we get two POFileTranslator records for each of the POFiles.

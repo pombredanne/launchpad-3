@@ -1,4 +1,5 @@
-= TranslationsOverview =
+TranslationsOverview
+====================
 
 This class provides a basic overview of the Launchpad Translations component.
 It includes data such as projects which have so far received the most
@@ -45,7 +46,8 @@ contribution weights.
     18
 
 
-== _normalizeSizes ==
+_normalizeSizes
+---------------
 
 This private method accepts a list of tuples (object, size) and
 normalizes `size` values into the range [MINIMUM_SIZE, MAXIMUM_SIZE].
@@ -60,7 +62,8 @@ normalizes `size` values into the range [MINIMUM_SIZE, MAXIMUM_SIZE].
     three: 13
 
 
-== Getting the most translated pillars ==
+Getting the most translated pillars
+-----------------------------------
 
 Method getMostTranslatedPillars() returns a list of dicts listing
 pillars with most translations karma so far, along with a relative
@@ -156,7 +159,8 @@ we change the default maximum number of returned entries.
     Ubuntu: 24
 
 
-== Zero karma ==
+Zero karma
+----------
 
 Sometimes a pillar appears to be listed in the karma cache with zero
 karma.  Our algorithm takes the logarithm of its karma, but it's

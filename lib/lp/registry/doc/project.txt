@@ -1,4 +1,5 @@
-= ProjectGroups =
+ProjectGroups
+=============
 
 A ProjectGroup is a group of Products, making it possible to for
 example see all bugs in the ProjectGroup's Product, or make them share a
@@ -11,7 +12,8 @@ common external bug tracker.
     >>> projectset = getUtility(IProjectGroupSet)
 
 
-== Creating new projects ==
+Creating new projects
+---------------------
 
 When creating a new project there are a bunch of things we need to provide.
 While some of them (homepageurl, icon, logo and mugshot) are optional, others
@@ -28,7 +30,8 @@ While some of them (homepageurl, icon, logo and mugshot) are optional, others
     u'project-test'
 
 
-== Looking up existing projects ==
+Looking up existing projects 
+----------------------------
 
 To fetch a project we use IProjectGroupSet.getByName() or
 IProjectGroupSet.__getitem__. The former will, by default, return active and
@@ -98,7 +101,8 @@ getByName() also accepts an argument to ignore inactive projects.
     >>> print projectgroups.getByName('gnome', ignore_inactive=True)
     None
 
-== Products which are part of a project ==
+Products which are part of a project
+------------------------------------
 
 The products which are part of a given project are given by a project's
 .products property. Note that only active products are included and they're
@@ -122,7 +126,8 @@ ordered by their names.
     >>> flush_database_updates()
 
 
-== Specification Listings ==
+Specification Listings
+----------------------
 
 We should be able to generate filtered lists of specs on a project.
 
@@ -200,7 +205,8 @@ and all valid specifications via the valid_specifications property:
     e4x
 
 
-== Specification Listings for a ProjectGroupSeries ==
+Specification Listings for a ProjectGroupSeries
+-----------------------------------------------
 
 An IProjectGroupSeries object can be retrieved by IProjectGroup.getSeries.
 
@@ -314,7 +320,8 @@ and all valid specifications via the valid_specifications property:
     e4x
 
 
-== translatables ==
+Translatables
+-------------
 
 A project would have IProduct objects that have resources to translate. This
 method return us the ones that are translatable and officially using Rosetta
@@ -376,7 +383,8 @@ Even if it has resources to translate.
     1
 
 
-== Milestones ==
+Milestones
+----------
 
 A project can have virtual milestones. If any of its products has milestones,
 these milestones are also associated with the project.

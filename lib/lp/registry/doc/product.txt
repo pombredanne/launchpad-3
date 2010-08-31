@@ -1,4 +1,5 @@
-= Product =
+Product
+=======
 
 Launchpad keeps track of the "upstream" world as well as the "distro" world.
 The anchorpiece of the "upstream" world is the Product, which is a piece of
@@ -162,7 +163,8 @@ returned.
     Obsolete Junk
 
 
-== Translatable Products ==
+Translatable Products
+---------------------
 
 IProductSet will also tell us which products can be translated:
 
@@ -307,7 +309,8 @@ None will of course be returned.
     True
 
 
-== Answer Tracking ==
+Answer Tracking
+---------------
 
 Firefox uses the Answer Tracker as the official application to provide
 answers to questions.
@@ -321,7 +324,8 @@ Alsa does not use Launchpad to track answers.
     False
 
 
-== Product Creation ==
+Product Creation
+----------------
 
 We can create new products with the createProduct() method:
 
@@ -374,7 +378,8 @@ This series is set as the development focus for the product:
     True
 
 
-== Specification Listings ==
+Specification Listings
+----------------------
 
 We should be able to set whether or not a Product uses specifications
 officially.  It defaults to False.
@@ -427,7 +432,8 @@ We can filter for specifications that contain specific text:
  e4x
 
 
-== Milestones ==
+Milestones
+----------
 
 We can use IProduct.milestones to get all milestones associated with any
 ProductSeries of a product.
@@ -470,7 +476,8 @@ To get all milestones of a given product we have the .all_milestones property.
     [u'1.0.0', u'0.9.2', u'0.9.1', u'0.9', u'1.0', u'1.0-rc1']
 
 
-== Release ==
+Release
+-------
 
 All the releases for a Product can be retrieved through the releases property.
 
@@ -489,7 +496,8 @@ version argument.
     0.9.1
 
 
-== Products With Branches ==
+Products With Branches
+----------------------
 
 Products are considered to officially support Launchpad as a location
 for their branches after a branch is set for the development focus
@@ -568,7 +576,8 @@ Only active products are returned.
     landscape
 
 
-== Primary translatable ==
+Primary translatable
+--------------------
 
 Primary translatable series in a product should follow series where
 development is focused on.  To be able to do changes to facilitate
@@ -647,7 +656,8 @@ If we change the development_focus, primary_translatable changes as well.
     1.0
 
 
-= Series list =
+Series list
+===========
 
 The series for a product are returned as a sorted list, with the
 exception that the current development focus is first.
@@ -702,7 +712,8 @@ still shows up in the list.
     ...     print series.name
     trunk
 
-= Changing ownership =
+Changing ownership
+==================
 
 If the owner of a project changes, all series and productreleases
 owned by the old owner are transfered to the new owner.

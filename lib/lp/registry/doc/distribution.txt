@@ -1,4 +1,5 @@
-= Distributions =
+Distributions
+=============
 
 From the DerivationOverview spec
 <https://launchpad.canonical.com/DerivationOverview>:
@@ -143,7 +144,8 @@ are available.
     False
 
 
-== Distribution Sorting ==
+Distribution Sorting
+--------------------
 
 If you ask for all the distributions in the DistributionSet you should get
 Ubuntu (and all flavours of it) first and the rest alphabetically:
@@ -164,7 +166,8 @@ DistributionSet also defines __iter__ as a shortcut to getDistros().
     True
 
 
-=== Searching for DistributionSourcePackages ===
+Searching for DistributionSourcePackages
+........................................
 
 The distribution also allows you to look for source packages that match
 a certain string through the magic of fti. For instance:
@@ -232,7 +235,8 @@ SourcePackagePublishingHistory table for the given distroseries.
     DistributionSourcePackage: alsa-utils
 
 
-=== Searching for binary packages ===
+Searching for binary packages
+.............................
 
 There are two useful functions for searching binary packages related
 to the distribution, searchBinaryPackages() and searchBinaryPackagesFTI().
@@ -291,7 +295,8 @@ We can do an FTI search:
     [u'mozilla-firefox']
 
 
-=== Finding distroseriess and pockets from distribution names ===
+Finding distroseriess and pockets from distribution names
+.........................................................
 
 A distribution knows what distroseriess it has. Those distroseriess have
 pockets which have suffixes used by the archive publisher. Because we
@@ -336,26 +341,27 @@ raise NotFoundError for us
     NotFoundError: 'hoary-bullshit'
 
 
-=== Upload related stuff ===
+Upload related stuff
+....................
 
 When uploading to a distribution we need to query its uploaders. Each
 uploader record is in fact an ArchivePermission record that tells us
 what component is uploadable to by what person or group of people.
 
-   >>> from operator import attrgetter
-   >>> for permission in sorted(
-   ...     ubuntu.uploaders, key=attrgetter("id")):
-   ...     assert not permission.archive.is_ppa
-   ...     print permission.component.name
-   ...     print permission.person.displayname
-   universe
-   Ubuntu Team
-   restricted
-   Ubuntu Team
-   main
-   Ubuntu Team
-   partner
-   Canonical Partner Developers
+    >>> from operator import attrgetter
+    >>> for permission in sorted(
+    ...     ubuntu.uploaders, key=attrgetter("id")):
+    ...     assert not permission.archive.is_ppa
+    ...     print permission.component.name
+    ...     print permission.person.displayname
+    universe
+    Ubuntu Team
+    restricted
+    Ubuntu Team
+    main
+    Ubuntu Team
+    partner
+    Canonical Partner Developers
 
 When processing an upload we may want to find a file (E.g. if an
 incomplete source is uploaded).
@@ -375,7 +381,8 @@ incomplete source is uploaded).
     AssertionError: searching in an explicitly empty space is pointless
 
 
-=== Launchpad Usage ===
+Launchpad Usage
+...............
 
 A distribution can specify if it uses Malone, Rosetta, or Answers
 officially. Ubuntu uses all of them:
@@ -488,7 +495,8 @@ But others can't.
     Unauthorized: (..., 'translations_usage', 'launchpad.Edit')
 
 
-=== Specification Listings ===
+Specification Listings
+......................
 
 We should be able to get lists of specifications in different states
 related to a distro.
@@ -579,7 +587,8 @@ We can get only valid specs (those that are not obsolete or superseded):
  kde-desktopfile-langpacks
 
 
-== Milestones ==
+Milestones
+----------
 
 We can use IDistribution.milestones to get all milestones associated with any
 series of a distribution.
@@ -622,7 +631,8 @@ To get all milestones of a given distro we have the .all_milestones property.
     [u'3.1', u'3.1-rc1', u'woody-rc1']
 
 
-== Archives ==
+Archives
+--------
 
 A distribution archive (primary, partner, debug or copy) can be retrieved
 by name using IDistribution.getArchive.

@@ -1,4 +1,5 @@
-= TranslationImportQueueEntry =
+TranslationImportQueueEntry
+===========================
 
 The TranslationImportQueueEntry is an entry of the queue that will be imported
 into Rosetta.
@@ -14,7 +15,8 @@ into Rosetta.
     ...     store.find(TranslationImportQueueEntry).remove()
 
 
-== getGuessedPOFile ==
+getGuessedPOFile
+----------------
 
 This property gives us the IPOFile where we think we should import this entry.
 
@@ -225,7 +227,8 @@ one we set a couple of lines ago (u'po/sr-old.pot'):
     >>> pofile.path
     u'po/sr.po'
 
-=== getGuessedPOFile with KDE ===
+getGuessedPOFile with KDE
+.........................
 
 Official KDE packages have a non standard layout where the .pot files are
 stored inside the sourcepackage with the binaries that will use it and the
@@ -363,7 +366,8 @@ Finally, we abort the transaction to undo all changes done.
     >>> transaction.abort()
 
 
-=== getGuessedPOFile with KOffice ===
+getGuessedPOFile with KOffice
+.............................
 
 Like official KDE packages, KOffice stores the .pot and .po files in different
 packages, the only difference it has is that there is just one source package
@@ -449,7 +453,8 @@ Finally, we abort the transaction to undo all changes done.
     >>> transaction.abort()
 
 
-=== getGuessedPOFile with .po files in different directories ===
+getGuessedPOFile with .po files in different directories
+........................................................
 
 Some packages have translations and templates inside the same package, but
 they don't have them inside the same directory. The layout is:
@@ -739,7 +744,8 @@ Finally, we abort the transaction to undo all changes done.
     >>> transaction.abort()
 
 
-== executeOptimisticBlock ==
+executeOptimisticBlock
+----------------------
 
 This method looks on the queue to find entries to block based on other .pot
 entries that are stored on the same directory and are already blocked.
@@ -820,7 +826,8 @@ And the .pot entry is still blocked.
     True
 
 
-== getElapsedTimeText ==
+getElapsedTimeText
+-----------------
 
 This method returns a string representing the elapsed time since the entry
 was added to the queue.
@@ -860,13 +867,15 @@ And this method gets the right text.
     '2 days 13 hours 5 minutes ago'
 
 
-= TranslationImportQueue =
+TranslationImportQueue
+======================
 
 The translation import queue is the place where the new translation imports
 end before being imported into Rosetta.
 
 
-== getTemplatesOnSameDirectory ==
+getTemplatesOnSameDirectory
+---------------------------
 
 This method allows us to get the set of .pot files we have on the same
 directory that a given entry.
@@ -905,7 +914,8 @@ no sense at all.
     0
 
 
-== getRequestTargets ==
+getRequestTargets
+-----------------
 
     >>> # Helper functions
     >>> def get_target_names(status=None):
@@ -1069,7 +1079,8 @@ having pending imports again.
     firefox         Mozilla Firefox
     ubuntu/hoary    Hoary
 
-== addOrUpdateEntry() ==
+addOrUpdateEntry()
+------------------
 
 addOrUpdateEntry adds a new entry to the import queue so we can handle it
 later with poimport script.
@@ -1264,7 +1275,8 @@ When uploading to the prouct now, the best matching entry is updated.
     >>> print entry.content.read()
     New bar content
 
-= Filename filters =
+Filename filters
+================
 
 A tarball doesn't always have everything in quite the right place.  If
 you need to manipulate the file paths within a tarball before the files
@@ -1307,7 +1319,8 @@ tarball were exactly as the filename filter returned them.
     netapplet       | None               | new-directory/fr.po
 
 
-= Invalid data =
+Invalid data
+============
 
 If administrators fail to correct certain errors in requests while approving
 them, and the admin user interface mistakenly accepts the approval, we may
@@ -1385,7 +1398,8 @@ Set the entry to approved, which is only possible if we don't use setStatus.
     >>> clear_queue(translationimportqueue)
 
 
-== getRequestTargets output ordering ==
+getRequestTargets output ordering
+---------------------------------
 
 The queue is populated with a wild mix of requests: for packages in
 different release series of Ubuntu, for packages in different distros,
@@ -1472,7 +1486,8 @@ You can also select by status.
     evolution           Evolution
 
 
-== cleanUpQueue ==
+cleanUpQueue
+------------
 
 The queue is cleaned up regularly.
 
@@ -1489,7 +1504,8 @@ nothing to purge, it returns zero.
     0
 
 
-=== State and Age ===
+State and Age
+.............
 
 Entries can be cleaned up because they have been in a specific state for
 at least a specified period of time.
@@ -1516,7 +1532,8 @@ Such requests are deleted after a few days.
     >>> print_queue_entries(translationimportqueue)
 
 
-=== Deactivated Products ===
+Deactivated Products
+....................
 
 Another reason for deleting entries is that they belong to products that
 have been deactivated.

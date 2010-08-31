@@ -1,4 +1,5 @@
-= Downloading Product Series Translations =
+Downloading Product Series Translations
+=======================================
 
 Products and product series that use Translations offer complete
 translation downloads.
@@ -33,7 +34,8 @@ it for source packages (tested and documented separately).
     Your request has been received.  Expect to receive an email shortly.
 
 
-== Use of Launchpad Translations ==
+Use of Launchpad Translations
+-----------------------------
 
 The Download link is not shown if the product does not use Launchpad
 Translations.
@@ -59,7 +61,8 @@ Translations.
     True
 
 
-== Authorization ==
+Authorization
+-------------
 
 Only logged-in users get the option to request downloads.
 

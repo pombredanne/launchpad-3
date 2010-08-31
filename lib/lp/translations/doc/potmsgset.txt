@@ -1,4 +1,5 @@
-= POTMsgSet tests =
+POTMsgSet tests
+===============
 
 POTMsgSet represents messages to translate that a POTemplate file has.
 
@@ -31,7 +32,8 @@ We also need some time and date functions to do translation updates.
     >>> import pytz
 
 
-== POTMsgSet.is_translation_credit and POTMsgSet.translation_credit_type ==
+POTMsgSet.is_translation_credit and POTMsgSet.translation_credit_type
+---------------------------------------------------------------------
 
 A POTMsgSet can be translation credits. These have special msgids that may
 differ for historical reason for the same type of credit. The property
@@ -51,7 +53,8 @@ property translation_credit_type contains the type of translation credits.
     Gnome credits message
 
 
-== POTMsgSet.normalizeWhitespaces ==
+POTMsgSet.normalizeWhitespaces
+------------------------------
 
 This function copies the leading and trailing whitespaces from
 POTMsgSet's msgid into the 'text' argument.
@@ -96,7 +99,8 @@ And if 'text' is None, we get 'text' unchanged.
     True
 
 
-== POTMsgSet.convertDotToSpace ==
+POTMsgSet.convertDotToSpace
+---------------------------
 
 This method changes the u'\u2022' char by the normal white space.
 
@@ -126,7 +130,8 @@ Now, msgid will have also that char, so 'text' should not change.
     u'a string with the char \u2022'
 
 
-== POTMsgSet.normalizeNewLines ==
+POTMsgSet.normalizeNewLines
+---------------------------
 
 This method syncs the new line chars to use the same as the associated msgid.
 
@@ -180,7 +185,8 @@ And finally, check to be sure that the broken options are detected.
     BrokenTextError: ...
 
 
-== POTMsgSet.applySanityFixes ==
+POTMsgSet.applySanityFixes
+--------------------------
 
 This function applies all checks we know to fix broken input
 
@@ -199,7 +205,8 @@ use '\r\n' like when we get a form submission.
     u'\nTranslation\nto test\n'
 
 
-== POTMsgSet.updateTranslation ==
+POTMsgSet.updateTranslation
+---------------------------
 
 This method is the core piece of Translations infrastructure: it
 updates a single language translation for a POTMsgSet, and modifies a
@@ -309,7 +316,8 @@ it does note a person which last changed it.
     >>> current.date_created is None
     False
 
-=== Unsetting a translation from the import ===
+Unsetting a translation from the import
+.......................................
 
 A translation can be removed from the import by being set to an empty string.
 
@@ -349,7 +357,8 @@ in upstream anymore, so it's now noted as newly translated in Launchpad.
     >>> upstream_pofile.updateStatistics()
     (0, 0, 0, 2)
 
-=== Activating an existing suggestion ===
+Activating an existing suggestion
+.................................
 
 Foo Bar is a privileged translator who can do reviews and submit translations
 directly, while No Privileges user can only submit suggestions.
@@ -438,7 +447,8 @@ Also, we should have Foo Bar as the reviewer of that translation.
     u'Foo Bar'
 
 
-== Plural forms ==
+Plural forms
+------------
 
 Let's focus on handling of messages with plural forms.
 
@@ -513,7 +523,8 @@ We can guess the pluralforms for this language through ILanguage.pluralforms:
     [None, None, None]
 
 
-=== Missing forms ===
+Missing forms
+.............
 
 Even when a message has a singular and a plural in English, a
 translation does not have to cover all plural forms available in the
@@ -538,7 +549,8 @@ gracefully accepted.
     False
 
 
-=== Extraneous forms ===
+Extraneous forms
+................
 
 It's not normally possible to input more plural forms for a translated
 message than the language has.  But that number is configurable, and can
@@ -614,7 +626,8 @@ This avoids the creation of redundant translation messages where
 possible.
 
 
-== isTranslationNewerThan ==
+isTranslationNewerThan
+----------------------
 
 This method tells us whether the active translation was reviewed after
 the given timestamp.
@@ -632,7 +645,8 @@ the given timestamp.
     False
 
 
-== External translation suggestions ==
+External translation suggestions
+--------------------------------
 
 External translation suggestions are current, imported or suggested
 translation for exactly the same English string, but in a different
@@ -668,7 +682,8 @@ We will use this helper function to print all suggestions found:
     ...         print line
 
 
-== POTMsgSet.getExternallyUsedTranslationMessages ==
+POTMsgSet.getExternallyUsedTranslationMessages
+----------------------------------------------
 
  On one side, we have a translation template for the evolution product.
 
@@ -781,7 +796,8 @@ Let's restore the flags for next section.
     >>> transaction.commit()
 
 
-== POTMsgSet.getExternallySuggestedTranslationMessages ==
+POTMsgSet.getExternallySuggestedTranslationMessages
+---------------------------------------------------
 
 This method returns a set of submissions that have suggested translations
 for the same msgid as the given POTMsgSet across the whole system.
@@ -886,7 +902,8 @@ Launchpad for translations.
     0
 
 
-== POTMsgSet.getCurrentDummyTranslationMessage ==
+POTMsgSet.getCurrentDummyTranslationMessage
+-------------------------------------------
 
 Sometimes, there are POTMsgSet objects with no translations to a language,
 and we need to get dummy objects which emulate them to do read operations.
@@ -908,7 +925,8 @@ and we request a dummy one, that's broken and we detect it.
     AssertionError: There is already a translation message ...
 
 
-== Suggestions for translator credits ==
+Suggestions for translator credits
+----------------------------------
 
 Messages with translator credits are translated automatically by
 Launchpad, so we should not get any suggestions for them.
@@ -946,7 +964,8 @@ However, this one doesn't show up as external suggestion for Spanish.
     >>> new_credits.getExternallySuggestedTranslationMessages(spanish)
     []
 
-== POTMsgSet.setSequence ==
+POTMsgSet.setSequence
+---------------------
 
 Finally, the new `IPOTMsgSet` should have an entry in the
 `TranslationTemplateItem` table once we assign a sequence number.
@@ -998,7 +1017,8 @@ If we change it back to zero, it's removed from the table:
     0
 
 
-== POTMsgSet.flags ==
+POTMsgSet.flags
+---------------
 
 The gettext format can associate flags with a POTMsgSet, such as "this
 is a fuzzily matched message" or "this message follows C format-string

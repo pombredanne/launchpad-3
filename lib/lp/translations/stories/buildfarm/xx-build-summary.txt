@@ -1,9 +1,11 @@
-= TranslationTemplatesBuildJob Build Summary =
+TranslationTemplatesBuildJob Build Summary
+==========================================
 
 The builders UI can show TranslationTemplateBuildJobs, although they
 look a little different from Soyuz-style jobs.
 
-== Setup ==
+Setup
+-----
 
 Create a builder working on a TranslationTemplatesBuildJob for a branch.
 
@@ -63,7 +65,8 @@ Helper: find the current build's summary on a browser's current page.
     ...     return find_tag_by_id(browser.contents, 'current-build-summary')
 
 
-== Show summary ==
+Show summary
+------------
 
 The job's summary shows that what type of job this is.  It also links
 to the branch.
