@@ -44,7 +44,7 @@ from lp.archiveuploader.utils import (
     re_valid_pkg_name,
     re_valid_version,
     )
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.buildmaster.enums import BuildStatus
 from lp.soyuz.enums import (
     BinaryPackageFormat,
     PackagePublishingPriority,

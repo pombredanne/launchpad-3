@@ -20,7 +20,7 @@ from canonical.testing import (
     LaunchpadZopelessLayer,
     )
 from lp.app.errors import NotFoundError
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.buildmaster.enums import BuildStatus
 from lp.registry.browser.person import (
     PersonEditView,
     PersonView,

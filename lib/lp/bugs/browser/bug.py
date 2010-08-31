@@ -519,7 +519,7 @@ class BugViewMixin:
                 'file': ProxiedLibraryFileAlias(
                     attachment.libraryfile, attachment),
                 }
-            for attachment in self.context.attachments
+            for attachment in self.context.attachments_unpopulated
             if attachment.type != BugAttachmentType.PATCH]
 
     @property
@@ -531,7 +531,7 @@ class BugViewMixin:
                 'file': ProxiedLibraryFileAlias(
                     attachment.libraryfile, attachment),
                 }
-            for attachment in self.context.attachments
+            for attachment in self.context.attachments_unpopulated
             if attachment.type == BugAttachmentType.PATCH]
 
 
@@ -877,15 +877,17 @@ class BugTextView(LaunchpadView):
         if bug.security_related:
             text.append('security: yes')
 
+        patches = []
         text.append('attachments: ')
-        for attachment in bug.attachments:
+        for attachment in bug.attachments_unpopulated:
             if attachment.type != BugAttachmentType.PATCH:
                 text.append(' %s' % self.attachment_text(attachment))
+            else:
+                patches.append(attachment)
 
         text.append('patches: ')
-        for attachment in bug.attachments:
-            if attachment.type == BugAttachmentType.PATCH:
-                text.append(' %s' % self.attachment_text(attachment))
+        for attachment in patches:
+            text.append(' %s' % self.attachment_text(attachment))
 
         text.append('tags: %s' % ' '.join(bug.tags))
 

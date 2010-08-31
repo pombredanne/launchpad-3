@@ -110,9 +110,11 @@ from lp.bugs.interfaces.bugtracker import (
     IBugTrackerSet,
     )
 from lp.bugs.interfaces.bugwatch import IBugWatchSet
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.buildmaster.enums import (
+    BuildFarmJobType,
+    BuildStatus,
+    )
 from lp.buildmaster.interfaces.builder import IBuilderSet
-from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.code.enums import (
     BranchMergeProposalStatus,
@@ -2479,7 +2481,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                                  date_uploaded=UTC_NOW,
                                  source_package_recipe_build=None,
                                  dscsigningkey=None,
-                                 user_defined_fields=None):
+                                 user_defined_fields=None,
+                                 homepage=None):
         """Make a `SourcePackageRelease`."""
         if distroseries is None:
             if source_package_recipe_build is not None:
@@ -2547,7 +2550,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             archive=archive,
             dateuploaded=date_uploaded,
             source_package_recipe_build=source_package_recipe_build,
-            user_defined_fields=user_defined_fields)
+            user_defined_fields=user_defined_fields,
+            homepage=homepage)
 
     def makeSourcePackageReleaseFile(self, sourcepackagerelease=None,
                                      library_file=None, filetype=None):
@@ -2775,7 +2779,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                                  provides=None, pre_depends=None,
                                  enhances=None, breaks=None,
                                  essential=False, installed_size=None,
-                                 date_created=None, debug_package=None):
+                                 date_created=None, debug_package=None,
+                                 homepage=None):
         """Make a `BinaryPackageRelease`."""
         if build is None:
             build = self.makeBinaryPackageBuild()
@@ -2806,7 +2811,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 suggests=suggests, conflicts=conflicts, replaces=replaces,
                 provides=provides, pre_depends=pre_depends,
                 enhances=enhances, breaks=breaks, essential=essential,
-                installedsize=installed_size, debug_package=debug_package)
+                installedsize=installed_size, debug_package=debug_package,
+                homepage=homepage)
         if date_created is not None:
             removeSecurityProxy(bpr).datecreated = date_created
         return bpr

@@ -41,7 +41,7 @@ from lp.archiveuploader.uploadprocessor import (
     parse_build_upload_leaf_name,
     UploadProcessor,
     )
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
