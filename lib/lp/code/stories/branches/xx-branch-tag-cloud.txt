@@ -26,5 +26,5 @@ the link is shown.
     >>> tags = find_tag_by_id(anon_browser.contents, 'project-tags')
     >>> for anchor in tags.fetch('a'):
     ...     print anchor.renderContents(), anchor['class']
-    linux ...
-    wibble ...
+    linux cloud-size-largest cloud-medium
+    wibble cloud-size-smallest cloud-dark
