@@ -10,6 +10,8 @@
   i18n:domain="malone"
 >
   <metal:block fill-slot="head_epilogue">
+    <meta tal:condition="not: view/bug_tracking_usage/enumvalue:LAUNCHPAD"
+          name="robots" content="noindex,nofollow" />
     <style type="text/css">
       p#more-hot-bugs {float:right; margin-top:7px;}
     </style>
