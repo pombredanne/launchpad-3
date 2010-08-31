@@ -50,7 +50,7 @@ from lp.bugs.model.bugtarget import (
     HasBugHeatMixin,
     )
 from lp.bugs.model.bugtask import BugTask
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.buildmaster.enums import BuildStatus
 from lp.code.interfaces.seriessourcepackagebranch import (
     IMakeOfficialBranchLinks,
     )
@@ -70,13 +70,15 @@ from lp.registry.interfaces.sourcepackage import (
     )
 from lp.registry.model.packaging import Packaging
 from lp.registry.model.suitesourcepackage import SuiteSourcePackage
-from lp.soyuz.interfaces.archive import (
+from lp.soyuz.enums import (
     ArchivePurpose,
+    PackagePublishingStatus,
+    PackageUploadCustomFormat,
+    )
+from lp.soyuz.interfaces.archive import (
     IArchiveSet,
     )
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
-from lp.soyuz.interfaces.publishing import PackagePublishingStatus
-from lp.soyuz.interfaces.queue import PackageUploadCustomFormat
 from lp.soyuz.model.binarypackagebuild import (
     BinaryPackageBuild,
     BinaryPackageBuildSet,

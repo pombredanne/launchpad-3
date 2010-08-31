@@ -21,7 +21,7 @@ from lp.archivepublisher.config import (
     )
 from lp.archivepublisher.diskpool import DiskPool
 from lp.archivepublisher.utils import process_in_batches
-from lp.soyuz.interfaces.archive import ArchivePurpose
+from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.publishing import (
     IBinaryPackagePublishingHistory,
     ISourcePackagePublishingHistory,

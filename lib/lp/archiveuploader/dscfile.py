@@ -58,7 +58,7 @@ from lp.archiveuploader.utils import (
     re_valid_version,
     safe_fix_maintainer,
     )
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.buildmaster.enums import BuildStatus
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildSource,
     )
@@ -67,11 +67,13 @@ from lp.registry.interfaces.person import (
     PersonCreationRationale,
     )
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
-from lp.soyuz.interfaces.archive import (
+from lp.soyuz.enums import (
     ArchivePurpose,
+    SourcePackageFormat,
+    )
+from lp.soyuz.interfaces.archive import (
     IArchiveSet,
     )
-from lp.soyuz.interfaces.sourcepackageformat import SourcePackageFormat
 
 
 class DpkgSourceError(Exception):

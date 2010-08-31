@@ -12,7 +12,7 @@ from lp.soyuz.adapters.packagelocation import (
     build_package_location,
     PackageLocationError,
     )
-from lp.soyuz.interfaces.archive import ArchivePurpose
+from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.testing import TestCaseWithFactory
 from lp.testing.factory import remove_security_proxy_and_shout_at_engineer

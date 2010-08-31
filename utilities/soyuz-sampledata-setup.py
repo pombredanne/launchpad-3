@@ -52,11 +52,13 @@ from lp.registry.interfaces.codeofconduct import ISignedCodeOfConductSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.model.codeofconduct import SignedCodeOfConduct
+from lp.soyuz.enums import SourcePackageFormat
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.interfaces.section import ISectionSet
 from lp.soyuz.interfaces.sourcepackageformat import (
-    ISourcePackageFormatSelectionSet, SourcePackageFormat)
+    ISourcePackageFormatSelectionSet,
+    )
 from lp.soyuz.model.section import SectionSelection
 from lp.soyuz.model.component import ComponentSelection
 from lp.soyuz.scripts.initialise_distroseries import InitialiseDistroSeries

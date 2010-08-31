@@ -7,12 +7,15 @@ __metaclass__ = type
 
 __all__ = [
     "AbstractUploadPolicy",
+    "ArchiveUploadType",
     "BuildDaemonUploadPolicy",
     "findPolicyByName",
     "IArchiveUploadPolicy",
     "SOURCE_PACKAGE_RECIPE_UPLOAD_POLICY_NAME",
     "UploadPolicyError",
     ]
+
+from textwrap import dedent
 
 from zope.component import (
     getGlobalSiteManager,
@@ -27,6 +30,9 @@ from canonical.launchpad.interfaces import ILaunchpadCelebrities
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
+
+from lazr.enum import EnumeratedType, Item
+
 
 # Defined here so that uploadpolicy.py doesn't depend on lp.code.
 SOURCE_PACKAGE_RECIPE_UPLOAD_POLICY_NAME = 'recipe'
@@ -52,6 +58,13 @@ class IArchiveUploadPolicy(Interface):
     """
 
 
+class ArchiveUploadType(EnumeratedType):
+
+    SOURCE_ONLY = Item("Source only")
+    BINARY_ONLY = Item("Binary only")
+    MIXED_ONLY = Item("Mixed only")
+
+
 class AbstractUploadPolicy:
     """Encapsulate the policy of an upload to a launchpad archive.
 
@@ -63,8 +76,9 @@ class AbstractUploadPolicy:
     """
     implements(IArchiveUploadPolicy)
 
-    options = None
     name = 'abstract'
+    options = None
+    accepted_type = None # Must be defined in subclasses.
 
     def __init__(self):
         """Prepare a policy..."""
@@ -75,13 +89,44 @@ class AbstractUploadPolicy:
         self.unsigned_changes_ok = False
         self.unsigned_dsc_ok = False
         self.create_people = True
-        self.can_upload_source = True
-        self.can_upload_binaries = True
-        self.can_upload_mixed = True
         # future_time_grace is in seconds. 28800 is 8 hours
         self.future_time_grace = 8 * HOURS
         # The earliest year we accept in a deb's file's mtime
         self.earliest_year = 1984
+
+    def validateUploadType(self, upload):
+        """Check that the type of the given upload is accepted by this policy.
+
+        When the type (e.g. sourceful, binaryful or mixed) is not accepted,
+        the upload is rejected.
+        """
+        if upload.sourceful and upload.binaryful:
+            if self.accepted_type != ArchiveUploadType.MIXED_ONLY:
+                upload.reject(
+                    "Source/binary (i.e. mixed) uploads are not allowed.")
+
+        elif upload.sourceful:
+            if self.accepted_type != ArchiveUploadType.SOURCE_ONLY:
+                upload.reject(
+                    "Sourceful uploads are not accepted by this policy.")
+
+        elif upload.binaryful:
+            if self.accepted_type != ArchiveUploadType.BINARY_ONLY:
+                message = dedent("""
+                    Upload rejected because it contains binary packages.
+                    Ensure you are using `debuild -S`, or an equivalent
+                    command, to generate only the source package before
+                    re-uploading.""")
+
+                if upload.is_ppa:
+                    message += dedent("""
+                        See https://help.launchpad.net/Packaging/PPA for
+                        more information.""")
+                upload.reject(message)
+
+        else:
+            raise AssertionError(
+                "Upload is not sourceful, binaryful or mixed.")
 
     def getUploader(self, changes):
         """Get the person who is doing the uploading."""
@@ -171,11 +216,7 @@ class InsecureUploadPolicy(AbstractUploadPolicy):
     """The insecure upload policy is used by the poppy interface."""
 
     name = 'insecure'
-
-    def __init__(self):
-        AbstractUploadPolicy.__init__(self)
-        self.can_upload_binaries = False
-        self.can_upload_mixed = False
+    accepted_type = ArchiveUploadType.SOURCE_ONLY
 
     def rejectPPAUploads(self, upload):
         """Insecure policy allows PPA upload."""
@@ -283,14 +324,13 @@ class BuildDaemonUploadPolicy(AbstractUploadPolicy):
     """The build daemon upload policy is invoked by the slave scanner."""
 
     name = 'buildd'
+    accepted_type = ArchiveUploadType.BINARY_ONLY
 
     def __init__(self):
         super(BuildDaemonUploadPolicy, self).__init__()
         # We permit unsigned uploads because we trust our build daemons
         self.unsigned_changes_ok = True
         self.unsigned_dsc_ok = True
-        self.can_upload_source = False
-        self.can_upload_mixed = False
 
     def setOptions(self, options):
         AbstractUploadPolicy.setOptions(self, options)
@@ -314,43 +354,19 @@ class SyncUploadPolicy(AbstractUploadPolicy):
     """This policy is invoked when processing sync uploads."""
 
     name = 'sync'
+    accepted_type = ArchiveUploadType.SOURCE_ONLY
 
     def __init__(self):
         AbstractUploadPolicy.__init__(self)
         # We don't require changes or dsc to be signed for syncs
         self.unsigned_changes_ok = True
         self.unsigned_dsc_ok = True
-        # We don't want binaries in a sync
-        self.can_upload_mixed = False
-        self.can_upload_binaries = False
 
     def policySpecificChecks(self, upload):
         """Perform sync specific checks."""
         # XXX: dsilvers 2005-10-14 bug=3135:
         # Implement this to check the sync
         pass
-
-
-class SecurityUploadPolicy(AbstractUploadPolicy):
-    """The security-upload policy.
-
-    It allows unsigned changes and binary uploads.
-    """
-
-    name = 'security'
-
-    def __init__(self):
-        AbstractUploadPolicy.__init__(self)
-        self.unsigned_dsc_ok = True
-        self.unsigned_changes_ok = True
-        self.can_upload_mixed = True
-        self.can_upload_binaries = True
-
-    def policySpecificChecks(self, upload):
-        """Deny uploads to any pocket other than the security pocket."""
-        if self.pocket != PackagePublishingPocket.SECURITY:
-            upload.reject(
-                "Not permitted to do security upload to non SECURITY pocket")
 
 
 def findPolicyByName(policy_name):
@@ -362,8 +378,7 @@ def register_archive_upload_policy_adapters():
     policies = [
         BuildDaemonUploadPolicy,
         InsecureUploadPolicy,
-        SyncUploadPolicy, 
-        SecurityUploadPolicy]
+        SyncUploadPolicy]
     sm = getGlobalSiteManager()
     for policy in policies:
         sm.registerUtility(

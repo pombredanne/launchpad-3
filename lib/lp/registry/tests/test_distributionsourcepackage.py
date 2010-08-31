@@ -17,7 +17,7 @@ from canonical.testing import (
     )
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.model.karma import KarmaTotalCache
-from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
 

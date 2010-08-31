@@ -98,7 +98,7 @@ from canonical.widgets.lazrjs import (
 from canonical.widgets.textwidgets import StrippedTextWidget
 from lp.app.browser.stringformatter import FormattersAPI
 from lp.app.errors import NotFoundError
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.person import (
     IPersonSet,
     PersonVisibility,
@@ -120,9 +120,13 @@ from lp.soyuz.browser.sourceslist import (
     SourcesListEntries,
     SourcesListEntriesView,
     )
-from lp.soyuz.interfaces.archive import (
+from lp.soyuz.enums import (
+    ArchivePermissionType,
     ArchivePurpose,
     ArchiveStatus,
+    PackagePublishingStatus,
+    )
+from lp.soyuz.interfaces.archive import (
     CannotCopy,
     IArchive,
     IArchiveEditDependenciesForm,
@@ -131,7 +135,6 @@ from lp.soyuz.interfaces.archive import (
     NoSuchPPA,
     )
 from lp.soyuz.interfaces.archivepermission import (
-    ArchivePermissionType,
     IArchivePermissionSet,
     )
 from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
@@ -140,7 +143,6 @@ from lp.soyuz.interfaces.binarypackagebuild import (
     IBinaryPackageBuildSet,
     )
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
-from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packagecopyrequest import IPackageCopyRequestSet
 from lp.soyuz.interfaces.packageset import IPackagesetSet
@@ -149,7 +151,6 @@ from lp.soyuz.interfaces.publishing import (
     active_publishing_status,
     inactive_publishing_status,
     IPublishingSet,
-    PackagePublishingStatus,
     )
 from lp.soyuz.scripts.packagecopier import do_copy
 

@@ -241,10 +241,11 @@ from lp.bugs.interfaces.bugtask import (
     IBugTaskSet,
     UNRESOLVED_BUGTASK_STATUSES,
     )
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.buildmaster.enums import BuildStatus
 from lp.code.browser.sourcepackagerecipelisting import HasRecipesMenuMixin
 from lp.code.errors import InvalidNamespace
 from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
+from lp.registry.browser import MapMixin
 from lp.registry.browser.branding import BrandingChangeView
 from lp.registry.browser.mailinglists import enabled_with_active_mailing_list
 from lp.registry.browser.menu import (
@@ -317,7 +318,7 @@ from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.soyuz.browser.archivesubscription import (
     traverse_archive_subscription_for_subscriber,
     )
-from lp.soyuz.interfaces.archive import ArchiveStatus
+from lp.soyuz.enums import ArchiveStatus
 from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
@@ -3328,7 +3329,7 @@ class EmailAddressVisibleState:
         return self.state is EmailAddressVisibleState.ALLOWED
 
 
-class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
+class PersonIndexView(XRDSContentNegotiationMixin, MapMixin, PersonView):
     """View class for person +index and +xrds pages."""
 
     xrds_template = ViewPageTemplateFile(
@@ -3341,7 +3342,8 @@ class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
         # the location is set, visible, and the viewing user wants to see it.
         launchpad_views = get_launchpad_views(self.request.cookies)
         self._small_map = launchpad_views['small_maps']
-        if (self.has_visible_location and self._small_map):
+        if (self.gmap2_enabled
+            and self.has_visible_location and self._small_map):
             self.request.needs_gmap2 = True
         if self.request.method == "POST":
             self.processForm()
@@ -5025,11 +5027,14 @@ class PersonLatestQuestionsView(LaunchpadFormView):
 
 
 class PersonSearchQuestionsView(SearchQuestionsView):
-    """View used to search and display questions in which an IPerson is
-    involved.
-    """
+    """View to search and display questions that involve an `IPerson`."""
 
     display_target_column = True
+
+    @property
+    def template(self):
+        # Persons always show the default template.
+        return self.default_template
 
     @property
     def pageheading(self):
@@ -5045,10 +5050,8 @@ class PersonSearchQuestionsView(SearchQuestionsView):
                  mapping=dict(name=self.context.displayname))
 
 
-class SearchAnsweredQuestionsView(SearchQuestionsView):
+class SearchAnsweredQuestionsView(PersonSearchQuestionsView):
     """View used to search and display questions answered by an IPerson."""
-
-    display_target_column = True
 
     def getDefaultFilter(self):
         """See `SearchQuestionsView`."""
@@ -5068,10 +5071,8 @@ class SearchAnsweredQuestionsView(SearchQuestionsView):
                  mapping=dict(name=self.context.displayname))
 
 
-class SearchAssignedQuestionsView(SearchQuestionsView):
+class SearchAssignedQuestionsView(PersonSearchQuestionsView):
     """View used to search and display questions assigned to an IPerson."""
-
-    display_target_column = True
 
     def getDefaultFilter(self):
         """See `SearchQuestionsView`."""
@@ -5091,10 +5092,8 @@ class SearchAssignedQuestionsView(SearchQuestionsView):
                  mapping=dict(name=self.context.displayname))
 
 
-class SearchCommentedQuestionsView(SearchQuestionsView):
+class SearchCommentedQuestionsView(PersonSearchQuestionsView):
     """View used to search and show questions commented on by an IPerson."""
-
-    display_target_column = True
 
     def getDefaultFilter(self):
         """See `SearchQuestionsView`."""
@@ -5114,10 +5113,8 @@ class SearchCommentedQuestionsView(SearchQuestionsView):
                  mapping=dict(name=self.context.displayname))
 
 
-class SearchCreatedQuestionsView(SearchQuestionsView):
+class SearchCreatedQuestionsView(PersonSearchQuestionsView):
     """View used to search and display questions created by an IPerson."""
-
-    display_target_column = True
 
     def getDefaultFilter(self):
         """See `SearchQuestionsView`."""
@@ -5137,10 +5134,8 @@ class SearchCreatedQuestionsView(SearchQuestionsView):
                  mapping=dict(name=self.context.displayname))
 
 
-class SearchNeedAttentionQuestionsView(SearchQuestionsView):
+class SearchNeedAttentionQuestionsView(PersonSearchQuestionsView):
     """View used to search and show questions needing an IPerson attention."""
-
-    display_target_column = True
 
     def getDefaultFilter(self):
         """See `SearchQuestionsView`."""
@@ -5159,10 +5154,8 @@ class SearchNeedAttentionQuestionsView(SearchQuestionsView):
                  mapping=dict(name=self.context.displayname))
 
 
-class SearchSubscribedQuestionsView(SearchQuestionsView):
+class SearchSubscribedQuestionsView(PersonSearchQuestionsView):
     """View used to search and show questions subscribed to by an IPerson."""
-
-    display_target_column = True
 
     def getDefaultFilter(self):
         """See `SearchQuestionsView`."""
