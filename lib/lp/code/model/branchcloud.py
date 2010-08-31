@@ -36,7 +36,7 @@ class BranchCloud:
         commits = Alias(Count(RevisionCache.revision_id))
         epoch = datetime.now(pytz.UTC) - timedelta(days=30)
         # It doesn't matter if this query is even a whole day out of date, so
-        # use the slave store by default.
+        # use the slave store.
         result = ISlaveStore(RevisionCache).find(
             (Product.name,
              commits,
