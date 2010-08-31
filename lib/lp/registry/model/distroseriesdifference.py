@@ -14,8 +14,8 @@ from storm.locals import (
     Int,
     Reference,
     Storm,
-    Unicode,
     )
+from zope.component import getUtility
 from zope.interface import (
     classProvides,
     implements,
@@ -31,6 +31,9 @@ from lp.registry.exceptions import NotADerivedSeriesError
 from lp.registry.interfaces.distroseriesdifference import (
     IDistroSeriesDifference,
     IDistroSeriesDifferenceSource,
+    )
+from lp.registry.interfaces.distroseriesdifferencecomment import (
+    IDistroSeriesDifferenceCommentSource,
     )
 
 
@@ -88,6 +91,19 @@ class DistroSeriesDifference(Storm):
         return self._getLatestSourcePub(for_parent=True)
 
     @property
+    def title(self):
+        """See `IDistroSeriesDifference`."""
+        parent_name = self.derived_series.parent_series.displayname
+        return ("Difference between distroseries '%(parent_name)s' and "
+                "'%(derived_name)s' for package '%(pkg_name)s' "
+                "(%(versions)s)" % {
+                    'parent_name': parent_name,
+                    'derived_name': self.derived_series.displayname,
+                    'pkg_name': self.source_package_name.name,
+                    'versions': self._getVersions(),
+                    })
+
+    @property
     def activity_log(self):
         """See `IDistroSeriesDifference`."""
         return u""
@@ -115,3 +131,8 @@ class DistroSeriesDifference(Storm):
         if self.parent_source_pub is not None:
             parent_src_pub_ver = self.parent_source_pub.source_package_version
         return parent_src_pub_ver + "/" + src_pub_ver
+
+    def addComment(self, owner, comment):
+        """See `IDistroSeriesDifference`."""
+        return getUtility(IDistroSeriesDifferenceCommentSource).new(
+            self, owner, comment)
