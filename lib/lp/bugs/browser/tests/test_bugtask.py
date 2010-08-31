@@ -54,7 +54,7 @@ class TestBugTaskView(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
 
-    def initialize_view(self, bugtask, person):
+    def record_view_initialization(self, bugtask, person):
         self.invalidate_caches(bugtask)
         # Login first because logging in triggers queries.
         with nested(person_logged_in(person), StormStatementRecorder()) as (
@@ -77,20 +77,20 @@ class TestBugTaskView(TestCaseWithFactory):
         bugtask = self.factory.makeBugTask()
         person_no_teams = self.factory.makePerson()
         person_with_teams = self.factory.makePerson()
-        for _ in range(4):
-            team = self.factory.makeTeam()
-            team.addMember(person_with_teams, team.teamowner)
+        for _ in range(10):
+            self.factory.makeTeam(members=[person_with_teams])
         # count with no teams
-        recorder = self.initialize_view(bugtask, person_no_teams)
+        recorder = self.record_view_initialization(bugtask, person_no_teams)
         self.assertThat(recorder, HasQueryCount(LessThan(14)))
         count_with_no_teams = recorder.count
-        # count with 2 teams
-        recorder2 = self.initialize_view(bugtask, person_with_teams)
+        # count with many teams
+        recorder2 = self.record_view_initialization(bugtask, person_with_teams)
         # Allow an increase of one because storm bug 619017 causes additional
-        # queries, revalidating things unnecessarily. An increase of 1 from 
-        # four new teams shows it is definitely not growing per-team.
+        # queries, revalidating things unnecessarily. An increase which is
+        # less than the number of new teams shows it is definitely not
+        # growing per-team.
         self.assertThat(recorder2, HasQueryCount(
-            LessThan(count_with_no_teams + 2),
+            LessThan(count_with_no_teams + 3),
             ))
 
 

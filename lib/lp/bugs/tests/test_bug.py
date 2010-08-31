@@ -31,12 +31,8 @@ class TestBug(TestCaseWithFactory):
     def test_get_subscribers_for_person_indirect_subscription(self):
         bug = self.factory.makeBug()
         person = self.factory.makePerson()
-        team1 = self.factory.makeTeam()
-        with person_logged_in(team1.teamowner):
-            team1.addMember(person, team1.teamowner)
-        team2 = self.factory.makeTeam()
-        with person_logged_in(team2.teamowner):
-            team2.addMember(person, team2.teamowner)
+        team1 = self.factory.makeTeam(members=[person])
+        team2 = self.factory.makeTeam(members=[person])
         with person_logged_in(person):
             bug.subscribe(team1, person)
         self.assertEqual([team1], list(bug.getSubscribersForPerson(person)))
@@ -44,12 +40,8 @@ class TestBug(TestCaseWithFactory):
     def test_get_subscribers_for_person_many_subscriptions(self):
         bug = self.factory.makeBug()
         person = self.factory.makePerson()
-        team1 = self.factory.makeTeam()
-        with person_logged_in(team1.teamowner):
-            team1.addMember(person, team1.teamowner)
-        team2 = self.factory.makeTeam()
-        with person_logged_in(team2.teamowner):
-            team2.addMember(person, team2.teamowner)
+        team1 = self.factory.makeTeam(members=[person])
+        team2 = self.factory.makeTeam(members=[person])
         with person_logged_in(person):
             bug.subscribe(team1, person)
             bug.subscribe(team2, person)
@@ -62,12 +54,8 @@ class TestBug(TestCaseWithFactory):
         bug = self.factory.makeBug()
         real_bug = self.factory.makeBug()
         person = self.factory.makePerson()
-        team1 = self.factory.makeTeam()
-        with person_logged_in(team1.teamowner):
-            team1.addMember(person, team1.teamowner)
-        team2 = self.factory.makeTeam()
-        with person_logged_in(team2.teamowner):
-            team2.addMember(person, team2.teamowner)
+        team1 = self.factory.makeTeam(members=[person])
+        team2 = self.factory.makeTeam(members=[person])
         with person_logged_in(person):
             bug.subscribe(team1, person)
             bug.subscribe(team2, person)
