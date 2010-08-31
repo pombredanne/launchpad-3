@@ -35,8 +35,8 @@ Pillars that do use launchpad applications have an involvement menu.
     True
     >>> view.official_answers
     True
-    >>> view.official_rosetta
-    False
+    >>> view.translations_usage.name
+    'UNKNOWN'
     >>> view.official_blueprints
     False
     >>> view.official_codehosting
@@ -230,9 +230,10 @@ DistributionSourcePackages can use this view. The distribution is used to
 set the links.  Despite the fact that the distribution uses blueprints,
 and translations those links are not enabled for DistributionSourcePackages.
 
+    >>> from lp.app.enums import ServiceUsage
     >>> login_person(distribution.owner)
     >>> distribution.official_blueprints = True
-    >>> distribution.official_rosetta = True
+    >>> distribution.translations_usage = ServiceUsage.LAUNCHPAD
     >>> package = factory.makeDistributionSourcePackage(
     ...     sourcepackagename="box",
     ...     distribution=distribution)

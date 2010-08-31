@@ -349,8 +349,8 @@ With its 'trunk' series translatable.
 
 That is using Rosetta officially.
 
-    >>> evolution.official_rosetta
-    True
+    >>> print evolution.translations_usage.name
+    LAUNCHPAD
 
 GNOME project has also another product, netapplet.
 
@@ -361,8 +361,8 @@ GNOME project has also another product, netapplet.
 But it was not returned from 'translatables' method because it's not using
 Rosetta officially.
 
-    >>> netapplet.official_rosetta
-    False
+    >>> print netapplet.translations_usage.name
+    UNKNOWN
 
 And thus, it doesn't have any translatable series.
 
