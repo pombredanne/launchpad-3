@@ -8,6 +8,8 @@ __metaclass__ = type
 
 __all__ = [
     'IDistroSeriesDifference',
+    'IDistroSeriesDifferencePublic',
+    'IDistroSeriesDifferenceEdit',
     'IDistroSeriesDifferenceSource',
     ]
 
@@ -16,7 +18,6 @@ from zope.interface import Interface
 from zope.schema import (
     Choice,
     Int,
-    Text,
     TextLine,
     )
 
@@ -26,13 +27,15 @@ from lp.registry.enum import (
     DistroSeriesDifferenceType,
     )
 from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.sourcepackagename import ISourcePackageName
+from lp.registry.interfaces.role import IHasOwner
 from lp.soyuz.interfaces.packagediff import IPackageDiff
 from lp.soyuz.interfaces.publishing import ISourcePackagePublishingHistory
 
 
-class IDistroSeriesDifference(Interface):
-    """An interface for a package difference between two distroseries."""
+class IDistroSeriesDifferencePublic(IHasOwner, Interface):
+    """The public interface for distro series differences."""
 
     id = Int(title=_('ID'), required=True, readonly=True)
 
@@ -54,10 +57,6 @@ class IDistroSeriesDifference(Interface):
         readonly=True, description=_(
             "The most recently generated package diff for this difference."))
 
-    activity_log = Text(
-        title=_('A log of activity and comments for this difference.'),
-        required=False, readonly=True)
-
     status = Choice(
         title=_('Distro series difference status.'),
         description=_('The current status of this difference.'),
@@ -76,18 +75,58 @@ class IDistroSeriesDifference(Interface):
         description=_(
             "The most recent published version in the derived series."))
 
+    source_version = TextLine(
+        title=_("Source version"), readonly=True,
+        description=_(
+            "The version of the most recent source publishing in the "
+            "derived series."))
+
     parent_source_pub = Reference(
         ISourcePackagePublishingHistory,
         title=_("Parent source pub"), readonly=True,
         description=_(
             "The most recent published version in the parent series."))
 
+    parent_source_version = TextLine(
+        title=_("Parent source version"), readonly=True,
+        description=_(
+            "The version of the most recent source publishing in the "
+            "parent series."))
+
+    owner = Reference(
+        IPerson, title=_("Owning team of the derived series"), readonly=True,
+        description=_(
+            "This attribute mirrors the owner of the derived series."))
+
     title = TextLine(
         title=_("Title"), readonly=True, required=False, description=_(
             "A human-readable name describing this difference."))
 
+    def updateStatusAndType():
+        """Checks that difference type and status matches current publishings.
+
+        If the record is updated, a relevant comment is added.
+
+        If there is no longer a difference (ie. the versions are
+        the same) then the status is updated to RESOLVED.
+
+        :return: True if the record was updated, False otherwise.
+        """
+
+    def getComments():
+        """Return a result set of the comments for this difference."""
+
+
+class IDistroSeriesDifferenceEdit(Interface):
+    """Difference attributes requiring launchpad.Edit."""
+
     def addComment(owner, comment):
         """Add a comment on this difference."""
+
+
+class IDistroSeriesDifference(IDistroSeriesDifferencePublic,
+                              IDistroSeriesDifferenceEdit):
+    """An interface for a package difference between two distroseries."""
 
 
 class IDistroSeriesDifferenceSource(Interface):

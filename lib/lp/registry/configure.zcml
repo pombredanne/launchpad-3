@@ -111,7 +111,10 @@
     </securedutility>
     <class
         class="lp.registry.model.distroseriesdifference.DistroSeriesDifference">
-        <allow interface="lp.registry.interfaces.distroseriesdifference.IDistroSeriesDifference"/>
+        <allow interface="lp.registry.interfaces.distroseriesdifference.IDistroSeriesDifferencePublic"/>
+        <require
+            permission="launchpad.Edit"
+            interface="lp.registry.interfaces.distroseriesdifference.IDistroSeriesDifferenceEdit"/>
     </class>
 
     <!-- DistroSeriesDifferenceComment -->

@@ -6,11 +6,13 @@
 __metaclass__ = type
 
 from storm.store import Store
+from zope.component import getUtility
 
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing import DatabaseFunctionalLayer
 from lp.registry.interfaces.distroseriesdifferencecomment import (
     IDistroSeriesDifferenceComment,
+    IDistroSeriesDifferenceCommentSource,
     )
 from lp.testing import TestCaseWithFactory
 

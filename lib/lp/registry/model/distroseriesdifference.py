@@ -9,7 +9,6 @@ __all__ = [
     'DistroSeriesDifference',
     ]
 
-
 from storm.locals import (
     Int,
     Reference,
@@ -22,7 +21,10 @@ from zope.interface import (
     )
 
 from canonical.database.enumcol import DBEnum
-from canonical.launchpad.interfaces.lpstorm import IMasterStore
+from canonical.launchpad.interfaces.lpstorm import (
+    IMasterStore,
+    IStore,
+    )
 from lp.registry.enum import (
     DistroSeriesDifferenceStatus,
     DistroSeriesDifferenceType,
@@ -35,6 +37,8 @@ from lp.registry.interfaces.distroseriesdifference import (
 from lp.registry.interfaces.distroseriesdifferencecomment import (
     IDistroSeriesDifferenceCommentSource,
     )
+from lp.registry.model.distroseriesdifferencecomment import (
+    DistroSeriesDifferenceComment)
 
 
 class DistroSeriesDifference(Storm):
@@ -91,22 +95,23 @@ class DistroSeriesDifference(Storm):
         return self._getLatestSourcePub(for_parent=True)
 
     @property
+    def owner(self):
+        """See `IDistroSeriesDifference`."""
+        return self.derived_series.owner
+
+    @property
     def title(self):
         """See `IDistroSeriesDifference`."""
         parent_name = self.derived_series.parent_series.displayname
         return ("Difference between distroseries '%(parent_name)s' and "
                 "'%(derived_name)s' for package '%(pkg_name)s' "
-                "(%(versions)s)" % {
+                "(%(parent_version)s/%(source_version)s)" % {
                     'parent_name': parent_name,
                     'derived_name': self.derived_series.displayname,
                     'pkg_name': self.source_package_name.name,
-                    'versions': self._getVersions(),
+                    'parent_version': self.parent_source_version,
+                    'source_version': self.source_version,
                     })
-
-    @property
-    def activity_log(self):
-        """See `IDistroSeriesDifference`."""
-        return u""
 
     def _getLatestSourcePub(self, for_parent=False):
         """Helper to keep source_pub/parent_source_pub DRY."""
@@ -123,16 +128,56 @@ class DistroSeriesDifference(Storm):
         else:
             return None
 
-    def _getVersions(self):
-        """Helper method returning versions string."""
-        src_pub_ver = parent_src_pub_ver = "-"
+    @property
+    def source_version(self):
+        """See `IDistroSeriesDifference`."""
         if self.source_pub:
-            src_pub_ver = self.source_pub.source_package_version
-        if self.parent_source_pub is not None:
-            parent_src_pub_ver = self.parent_source_pub.source_package_version
-        return parent_src_pub_ver + "/" + src_pub_ver
+            return self.source_pub.source_package_version
+        return None
+
+    @property
+    def parent_source_version(self):
+        """See `IDistroSeriesDifference`."""
+        if self.parent_source_pub:
+            return self.parent_source_pub.source_package_version
+        return None
+
+    def updateStatusAndType(self):
+        """See `IDistroSeriesDifference`."""
+        if self.source_pub is None:
+            new_type = DistroSeriesDifferenceType.MISSING_FROM_DERIVED_SERIES
+        elif self.parent_source_pub is None:
+            new_type = DistroSeriesDifferenceType.UNIQUE_TO_DERIVED_SERIES
+        else:
+            new_type = DistroSeriesDifferenceType.DIFFERENT_VERSIONS
+
+        updated = False
+        if new_type != self.difference_type:
+            updated = True
+            self.difference_type = new_type
+
+        version = self.source_version
+        parent_version = self.parent_source_version
+        if self.status == DistroSeriesDifferenceStatus.RESOLVED:
+            if version != parent_version:
+                updated = True
+                self.status = DistroSeriesDifferenceStatus.NEEDS_ATTENTION
+        else:
+            if version == parent_version:
+                updated = True
+                self.status = DistroSeriesDifferenceStatus.RESOLVED
+
+        return updated
 
     def addComment(self, owner, comment):
         """See `IDistroSeriesDifference`."""
         return getUtility(IDistroSeriesDifferenceCommentSource).new(
             self, owner, comment)
+
+    def getComments(self):
+        """See `IDistroSeriesDifference`."""
+        DSDComment = DistroSeriesDifferenceComment
+        comments = IStore(DSDComment).find(
+            DistroSeriesDifferenceComment,
+            DSDComment.distro_series_difference == self)
+        return comments.order_by(DSDComment.id)
