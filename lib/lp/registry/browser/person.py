@@ -3556,9 +3556,9 @@ class PersonEditWikiNamesView(LaunchpadFormView):
                         scheme=uri.scheme))
         except InvalidURIError:
             self.setFieldError(
-                        'wiki',
-                        structured(
-                            '"%(url)s" is not a valid URL.', url=url))
+                'wiki',
+                structured(
+                    '"%(url)s" is not a valid URL.', url=url))
 
     def _validateWikiName(self, name):
         """Ensure the wikiname is valid.
@@ -3571,7 +3571,7 @@ class PersonEditWikiNamesView(LaunchpadFormView):
             self.setFieldError(
                 'wikiname',
                 structured(
-                'The wiki name cannot exceed %d characters.' % max_len))
+                    'The wiki name cannot exceed %d characters.' % max_len))
 
     def _sanitizeWikiURL(self, url):
         """Strip whitespaces and make sure :url ends in a single '/'."""
