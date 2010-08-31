@@ -21,16 +21,16 @@ CREATE TABLE BugSubscriptionFilterStatus (
     filter integer REFERENCES BugSubscriptionFilter(id) NOT NULL,
     status integer NOT NULL);
 
-CREATE INDEX bugsubscriptionfilterstatus__filter
-    ON BugSubscriptionFilterStatus(filter);
+CREATE INDEX bugsubscriptionfilterstatus__filter__status__idx
+    ON BugSubscriptionFilterStatus(filter, status);
 
 CREATE TABLE BugSubscriptionFilterImportance (
     id serial PRIMARY KEY,
     filter integer REFERENCES BugSubscriptionFilter(id) NOT NULL,
     importance integer NOT NULL);
 
-CREATE INDEX bugsubscriptionfilterimportance__filter
-    ON BugSubscriptionFilterImportance(filter);
+CREATE INDEX bugsubscriptionfilterimportance__filter__importance__idx
+    ON BugSubscriptionFilterImportance(filter, importance);
 
 CREATE TABLE BugSubscriptionFilterTag (
     id serial PRIMARY KEY,
@@ -38,9 +38,7 @@ CREATE TABLE BugSubscriptionFilterTag (
     tag text NOT NULL,
     include boolean NOT NULL);
 
-CREATE INDEX bugsubscriptionfiltertag__filter
-    ON BugSubscriptionFilterTag(filter);
-CREATE INDEX bugsubscriptionfiltertag__tag
-    ON BugSubscriptionFilterTag(tag);
+CREATE INDEX bugsubscriptionfiltertag__filter__tag__idx
+    ON BugSubscriptionFilterTag(filter, tag);
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2207, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 08, 0);
