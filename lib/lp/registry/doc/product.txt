@@ -583,6 +583,11 @@ We'll also create new templates, so we need IPOTemplateSet:
     >>> from lp.translations.interfaces.potemplate import IPOTemplateSet
     >>> potemplate_set = getUtility(IPOTemplateSet)
 
+We're going to be setting the ServiceUsage values for products, so we 
+need those enums.
+
+    >>> from lp.app.enums import ServiceUsage
+
 Firefox has two series, but no translatable series either:
 
     >>> firefox = productset.getByName('firefox')
@@ -616,7 +621,7 @@ We can create and associate a new potemplate with Firefox 1.0.
 And set that product as using translations officially. We need it so
 translations are available.
 
-    >>> firefox.official_rosetta = True
+    >>> firefox.translations_usage = ServiceUsage.LAUNCHPAD
 
 The primary_translatable now points at firefox 1.0:
 
