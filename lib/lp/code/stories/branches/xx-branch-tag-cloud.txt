@@ -1,4 +1,5 @@
-= Projects with active branches =
+Projects with active branches
+=============================
 
 The tag cloud of projects is one way in which the number and scope of available
 bazaar branches is shown to the user.
@@ -25,4 +26,5 @@ the link is shown.
     >>> tags = find_tag_by_id(anon_browser.contents, 'project-tags')
     >>> for anchor in tags.fetch('a'):
     ...     print anchor.renderContents(), anchor['class']
-    firefox cloud-size-largest cloud-light
+    linux ...
+    wibble ...
