@@ -50,10 +50,10 @@ class BugAttachment(SQLBase):
     _message = ForeignKey(
         foreignKey='Message', dbName='message', notNull=True)
 
-    @cachedproperty('_message_cached')
+    @cachedproperty
     def message(self):
         """This is a cachedproperty to allow message to be an IIndexedMessage.
-        
+
         This is needed for the bug/attachments API call which needs to index
         an IIndexedMessage rather than a simple DB model IMessage. See
         Bug.attachments where the injection occurs.

@@ -70,11 +70,6 @@ from zope.interface import (
     providedBy,
     )
 
-from canonical.cachedproperty import (
-    cachedproperty,
-    cache_property,
-    clear_property,
-    )
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -1751,7 +1746,7 @@ class Bug(SQLBase):
     @property
     def attachments(self):
         """See `IBug`.
-        
+
         This property does eager loading of the index_messages so that the API
         which wants the message_link for the attachment can answer that without
         O(N^2) overhead. As such it is moderately expensive to call (it
@@ -1767,7 +1762,7 @@ class Bug(SQLBase):
             # will be found without a query when dereferenced.
             indexed_message = message_to_indexed.get(attachment._messageID)
             if indexed_message is not None:
-                cache_property(attachment, '_message_cached', indexed_message)
+                IPropertyCache(attachment).message = indexed_message
             return attachment
         rawresults = self._attachments_query()
         return DecoratedResultSet(rawresults, set_indexed_message)
@@ -1775,9 +1770,9 @@ class Bug(SQLBase):
     @property
     def attachments_unpopulated(self):
         """See `IBug`.
-        
+
         This version does not pre-lookup messages and LibraryFileAliases.
-        
+
         The regular 'attachments' property does prepopulation because it is
         exposed in the API.
         """
