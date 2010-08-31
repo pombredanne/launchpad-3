@@ -102,6 +102,32 @@
                 date_last_modified
                 person"/>
     </class>
+
+    <!-- DistroSeriesDifference -->
+    <securedutility
+        component="lp.registry.model.distroseriesdifference.DistroSeriesDifference"
+        provides="lp.registry.interfaces.distroseriesdifference.IDistroSeriesDifferenceSource">
+        <allow interface="lp.registry.interfaces.distroseriesdifference.IDistroSeriesDifferenceSource"/>
+    </securedutility>
+    <class
+        class="lp.registry.model.distroseriesdifference.DistroSeriesDifference">
+        <allow interface="lp.registry.interfaces.distroseriesdifference.IDistroSeriesDifferencePublic"/>
+        <require
+            permission="launchpad.Edit"
+            interface="lp.registry.interfaces.distroseriesdifference.IDistroSeriesDifferenceEdit"/>
+    </class>
+
+    <!-- DistroSeriesDifferenceComment -->
+    <securedutility
+        component="lp.registry.model.distroseriesdifferencecomment.DistroSeriesDifferenceComment"
+        provides="lp.registry.interfaces.distroseriesdifferencecomment.IDistroSeriesDifferenceCommentSource">
+        <allow interface="lp.registry.interfaces.distroseriesdifferencecomment.IDistroSeriesDifferenceCommentSource"/>
+    </securedutility>
+    <class
+        class="lp.registry.model.distroseriesdifferencecomment.DistroSeriesDifferenceComment">
+        <allow interface="lp.registry.interfaces.distroseriesdifferencecomment.IDistroSeriesDifferenceComment"/>
+    </class>
+
     <class
         class="lp.registry.model.distroseries.DistroSeries">
         <allow

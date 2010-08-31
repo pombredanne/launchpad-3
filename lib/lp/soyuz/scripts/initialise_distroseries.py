@@ -13,21 +13,16 @@ __all__ = [
 from zope.component import getUtility
 
 from canonical.database.sqlbase import sqlvalues
-from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector,
-    MAIN_STORE,
-    MASTER_FLAVOR,
-    )
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+from canonical.launchpad.interfaces.lpstorm import IMasterStore
+from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.model.distroseries import DistroSeries
 from lp.soyuz.adapters.packagelocation import PackageLocation
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackageUploadStatus,
     )
-from lp.soyuz.interfaces.archive import (
-    IArchiveSet,
-    )
+from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.soyuz.model.packagecloner import clone_packages
 from lp.soyuz.model.packageset import Packageset
@@ -68,8 +63,7 @@ class InitialiseDistroSeries:
         self.distroseries = distroseries
         self.parent = self.distroseries.parent_series
         self.arches = arches
-        self._store = getUtility(
-            IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        self._store = IMasterStore(DistroSeries)
 
     def check(self):
         if self.parent is None:

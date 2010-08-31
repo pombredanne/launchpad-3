@@ -52,9 +52,9 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector,
     MAIN_STORE,
     )
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.buildmaster.enums import BuildStatus
+from lp.buildmaster.enums import BuildFarmJobType
 from lp.buildmaster.interfaces.buildfarmjob import (
-    BuildFarmJobType,
     IBuildFarmJob,
     IBuildFarmJobOld,
     IBuildFarmJobSet,
