@@ -805,11 +805,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 description=description)
         return release_file
 
-    # XXX j.c.sackett 2010-08-30 While official_rosetta could be upgraded
-    # to translations_usage, official_malone had to be left alone as the
-    # usage enum bug_tracking_usage isn't assignable. It would be really
-    # nice if someone found a way to make this more consistent in the
-    # future.
     def makeProduct(
         self, name=None, project=None, displayname=None,
         licenses=None, owner=None, registrant=None,
