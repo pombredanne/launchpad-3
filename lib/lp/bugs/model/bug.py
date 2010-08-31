@@ -807,7 +807,7 @@ class Bug(SQLBase):
             # bug=https://bugs.edge.launchpad.net/storm/+bug/627137
             # RBC 20100831
             SQL("""Person.id = TeamParticipation.team"""),
-            )
+            ).order_by(Person.name).config(distinct=True)
 
     def getAlsoNotifiedSubscribers(self, recipients=None, level=None):
         """See `IBug`.
