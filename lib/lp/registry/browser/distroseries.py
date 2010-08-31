@@ -362,8 +362,6 @@ class DistroSeriesView(MilestoneOverlayMixin):
 
     @cachedproperty
     def milestone_batch_navigator(self):
-        x = [m.name for m in self.context.all_milestones]
-        import pdb; pdb.set_trace()
         return BatchNavigator(self.context.all_milestones, self.request)
 
 

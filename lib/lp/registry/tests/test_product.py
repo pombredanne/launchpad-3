@@ -5,7 +5,6 @@ __metaclass__ = type
 
 from cStringIO import StringIO
 import datetime
-import string
 import unittest
 
 from lazr.lifecycle.snapshot import Snapshot
