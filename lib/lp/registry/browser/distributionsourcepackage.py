@@ -26,6 +26,7 @@ from zope.interface import (
     Interface,
     )
 
+from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.webapp import (
     action,
     canonical_url,
@@ -35,7 +36,6 @@ from canonical.launchpad.webapp import (
     redirection,
     StandardLaunchpadFacets,
     )
-from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.menu import (
     ApplicationMenu,
@@ -73,7 +73,8 @@ from lp.soyuz.interfaces.distributionsourcepackagerelease import (
     )
 from lp.soyuz.interfaces.packagediff import IPackageDiffSet
 from lp.translations.browser.customlanguagecode import (
-    HasCustomLanguageCodesTraversalMixin)
+    HasCustomLanguageCodesTraversalMixin,
+    )
 
 
 class DistributionSourcePackageFormatterAPI(CustomizableFormatter):

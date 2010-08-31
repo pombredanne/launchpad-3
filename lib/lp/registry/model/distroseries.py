@@ -120,9 +120,7 @@ from lp.soyuz.enums import (
     PackagePublishingStatus,
     PackageUploadStatus,
     )
-from lp.soyuz.interfaces.archive import (
-    ALLOW_RELEASE_BUILDS,
-    )
+from lp.soyuz.interfaces.archive import ALLOW_RELEASE_BUILDS
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageName
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords

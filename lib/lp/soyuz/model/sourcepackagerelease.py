@@ -68,9 +68,7 @@ from lp.soyuz.interfaces.archive import (
     MAIN_ARCHIVE_PURPOSES,
     )
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
-from lp.soyuz.interfaces.packagediff import (
-    PackageDiffAlreadyRequested,
-    )
+from lp.soyuz.interfaces.packagediff import PackageDiffAlreadyRequested
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.files import SourcePackageReleaseFile

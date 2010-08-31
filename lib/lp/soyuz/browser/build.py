@@ -44,12 +44,12 @@ from lp.app.errors import UnexpectedFormData
 from lp.buildmaster.enums import BuildStatus
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.propertycache import cachedproperty
+from lp.soyuz.enums import PackageUploadStatus
 from lp.soyuz.interfaces.binarypackagebuild import (
     IBinaryPackageBuild,
     IBinaryPackageBuildSet,
     IBuildRescoreForm,
     )
-from lp.soyuz.enums import PackageUploadStatus
 
 
 class BuildUrl:

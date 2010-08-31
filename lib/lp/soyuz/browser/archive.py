@@ -134,9 +134,7 @@ from lp.soyuz.interfaces.archive import (
     IPPAActivateForm,
     NoSuchPPA,
     )
-from lp.soyuz.interfaces.archivepermission import (
-    IArchivePermissionSet,
-    )
+from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
 from lp.soyuz.interfaces.binarypackagebuild import (
     BuildSetStatus,

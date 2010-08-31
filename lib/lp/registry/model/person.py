@@ -272,9 +272,7 @@ from lp.services.salesforce.interfaces import (
     )
 from lp.services.worlddata.model.language import Language
 from lp.soyuz.enums import ArchivePurpose
-from lp.soyuz.interfaces.archive import (
-    IArchiveSet,
-    )
+from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
 from lp.soyuz.model.archive import Archive

@@ -25,11 +25,11 @@ from canonical.lazr.utils import smartquote
 from lp.app.errors import NotFoundError
 from lp.archivepublisher.debversion import Version
 from lp.services.propertycache import cachedproperty
+from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.distributionsourcepackagerelease import (
     IDistributionSourcePackageRelease,
     )
-from lp.soyuz.enums import PackagePublishingStatus
 
 
 class DistributionSourcePackageReleaseBreadcrumb(Breadcrumb):

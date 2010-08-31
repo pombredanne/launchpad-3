@@ -129,9 +129,7 @@ from lp.soyuz.interfaces.archive import (
     )
 from lp.soyuz.interfaces.archivearch import IArchiveArchSet
 from lp.soyuz.interfaces.archiveauthtoken import IArchiveAuthTokenSet
-from lp.soyuz.interfaces.archivepermission import (
-    IArchivePermissionSet,
-    )
+from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.archivesubscriber import (
     ArchiveSubscriptionError,
     IArchiveSubscriberSet,

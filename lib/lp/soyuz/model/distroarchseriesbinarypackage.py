@@ -21,10 +21,10 @@ from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.interfaces import IStore
 from lp.app.errors import NotFoundError
 from lp.services.propertycache import cachedproperty
+from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.interfaces.distroarchseriesbinarypackage import (
     IDistroArchSeriesBinaryPackage,
     )
-from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
 from lp.soyuz.model.distroarchseriesbinarypackagerelease import (
     DistroArchSeriesBinaryPackageRelease,

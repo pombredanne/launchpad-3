@@ -110,9 +110,7 @@ from lp.registry.interfaces.series import SeriesStatus
 from lp.services.propertycache import cachedproperty
 from lp.soyuz.browser.packagesearch import PackageSearchViewBase
 from lp.soyuz.enums import ArchivePurpose
-from lp.soyuz.interfaces.archive import (
-    IArchiveSet,
-    )
+from lp.soyuz.interfaces.archive import IArchiveSet
 
 
 class UsesLaunchpadMixin:
