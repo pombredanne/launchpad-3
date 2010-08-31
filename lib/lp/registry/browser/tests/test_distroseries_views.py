@@ -44,5 +44,25 @@ class TestDistroSeriesView(TestCaseWithFactory):
         self.assertEqual(view.needs_linking, None)
 
 
+class DistroSeriesLocalPackageDiffsTestCase(TestCaseWithFactory):
+    """Test the distroseries +localpackagediffs view."""
+
+    layer = LaunchpadZopelessLayer
+
+    def test_label(self):
+        # The view label includes the names of both series.
+        parent = self.factory.makeDistroSeries(name="lucid")
+        derived_series = self.factory.makeDistroSeries(
+            name="derilucid", parent_series=parent)
+
+        view = create_initialized_view(
+            derived_series, '+localpackagediffs')
+
+        self.assertEqual(
+            "Package differences between 'Derilucid' and parent series "
+            "'Lucid'",
+            view.label)
+
+
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

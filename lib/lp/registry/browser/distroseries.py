@@ -11,6 +11,7 @@ __all__ = [
     'DistroSeriesBreadcrumb',
     'DistroSeriesEditView',
     'DistroSeriesFacets',
+    'DistroSeriesLocalDifferences',
     'DistroSeriesPackageSearchView',
     'DistroSeriesPackagesView',
     'DistroSeriesNavigation',
@@ -521,3 +522,14 @@ class DistroSeriesNeedsPackagesView(LaunchpadView):
         navigator = BatchNavigator(packages, self.request, size=20)
         navigator.setHeadings('package', 'packages')
         return navigator
+
+
+class DistroSeriesLocalDifferences(LaunchpadView):
+    """Present differences betteen a derived series and its parent."""
+
+    page_title = 'Local package differences'
+
+    @property
+    def label(self):
+        return "Package differences between '%s' and parent series '%s'" % (
+            self.context.displayname, self.context.parent_series.displayname)
