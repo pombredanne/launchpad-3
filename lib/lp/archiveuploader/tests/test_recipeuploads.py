@@ -11,12 +11,13 @@ from storm.store import Store
 from zope.component import getUtility
 
 from lp.archiveuploader.tests.test_uploadprocessor import (
-    TestUploadProcessorBase)
-from lp.archiveuploader.uploadprocessor import UploadProcessor
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+    TestUploadProcessorBase,
+    )
+from lp.buildmaster.enums import BuildStatus
 from lp.code.interfaces.sourcepackagerecipebuild import (
-    ISourcePackageRecipeBuildSource)
-from lp.soyuz.interfaces.queue import PackageUploadStatus
+    ISourcePackageRecipeBuildSource,
+    )
+from lp.soyuz.enums import PackageUploadStatus
 
 
 class TestSourcePackageRecipeBuildUploads(TestUploadProcessorBase):
@@ -42,8 +43,8 @@ class TestSourcePackageRecipeBuildUploads(TestUploadProcessorBase):
         self.options.context = 'recipe'
         self.options.buildid = self.build.id
 
-        self.uploadprocessor = UploadProcessor(
-            self.options, self.layer.txn, self.log)
+        self.uploadprocessor = self.getUploadProcessor(
+            self.layer.txn)
 
     def testSetsBuildAndState(self):
         # Ensure that the upload processor correctly links the SPR to

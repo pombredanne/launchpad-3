@@ -10,6 +10,17 @@ Average Joe has recently installed Kubuntu. He has a problem with his
 system and goes to the Kubuntu's support page in Launchpad to see if
 somebody had a similar problem.
 
+    >>> # Kubuntu must enable answers to access questions.
+    >>> from zope.component import getUtility
+    >>> from lp.app.enums import ServiceUsage
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+
+    >>> login('admin@canonical.com')
+    >>> getUtility(IDistributionSet)['kubuntu'].answers_usage = (
+    ...     ServiceUsage.LAUNCHPAD)
+    >>> transaction.commit()
+    >>> logout()
+
     >>> browser.open('http://launchpad.dev/kubuntu')
     >>> browser.getLink('Answers').click()
 
@@ -397,6 +408,14 @@ The exact question he was searching for is displayed!
 
 If the user didn't make any questions on the product, a message
 informing him of this fact is displayed.
+
+    >>> # gnmomebaker must enable answers to access questions.
+    >>> from lp.registry.interfaces.product import IProductSet
+    >>> login('admin@canonical.com')
+    >>> getUtility(IProductSet)['gnomebaker'].answers_usage = (
+    ...     ServiceUsage.LAUNCHPAD)
+    >>> transaction.commit()
+    >>> logout()
 
     >>> sample_person_browser.open(
     ...     'http://launchpad.dev/gnomebaker/+questions')

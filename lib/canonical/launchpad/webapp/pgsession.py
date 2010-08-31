@@ -5,19 +5,26 @@
 
 __metaclass__ = type
 
-import time
-import cPickle as pickle
-from UserDict import DictMixin
+from datetime import (
+    datetime,
+    timedelta,
+    )
 from random import random
-from datetime import datetime, timedelta
+import time
+from UserDict import DictMixin
 
+import cPickle as pickle
+from storm.zope.interfaces import IZStorm
 from zope.app.security.interfaces import IUnauthenticatedPrincipal
 from zope.component import getUtility
 from zope.interface import implements
 from zope.session.interfaces import (
-    ISessionDataContainer, ISessionData, ISessionPkgData, IClientIdManager)
+    IClientIdManager,
+    ISessionData,
+    ISessionDataContainer,
+    ISessionPkgData,
+    )
 
-from storm.zope.interfaces import IZStorm
 from canonical.launchpad.webapp.publisher import get_current_browser_request
 
 

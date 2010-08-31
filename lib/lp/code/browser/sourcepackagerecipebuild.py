@@ -18,12 +18,19 @@ from zope.schema import Int
 
 from canonical.launchpad.browser.librarian import FileNavigationMixin
 from canonical.launchpad.webapp import (
-    action, canonical_url, ContextMenu, enabled_with_permission,
-    LaunchpadView, LaunchpadFormView, Link, Navigation)
-
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+    action,
+    canonical_url,
+    ContextMenu,
+    enabled_with_permission,
+    LaunchpadFormView,
+    LaunchpadView,
+    Link,
+    Navigation,
+    )
+from lp.buildmaster.enums import BuildStatus
 from lp.code.interfaces.sourcepackagerecipebuild import (
-    ISourcePackageRecipeBuild)
+    ISourcePackageRecipeBuild,
+    )
 from lp.services.job.interfaces.job import JobStatus
 
 
@@ -47,7 +54,7 @@ class SourcePackageRecipeBuildContextMenu(ContextMenu):
 
     links = ('cancel', 'rescore')
 
-    @enabled_with_permission('launchpad.Edit')
+    @enabled_with_permission('launchpad.Admin')
     def cancel(self):
         if self.context.status in UNEDITABLE_BUILD_STATES:
             enabled = False
@@ -55,7 +62,7 @@ class SourcePackageRecipeBuildContextMenu(ContextMenu):
             enabled = True
         return Link('+cancel', 'Cancel build', icon='remove', enabled=enabled)
 
-    @enabled_with_permission('launchpad.Edit')
+    @enabled_with_permission('launchpad.Admin')
     def rescore(self):
         if self.context.status in UNEDITABLE_BUILD_STATES:
             enabled = False

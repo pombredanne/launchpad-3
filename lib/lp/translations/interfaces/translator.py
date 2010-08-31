@@ -12,12 +12,21 @@ __all__ = [
     'ITranslatorSet',
     ]
 
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Choice,
+    Datetime,
+    Int,
+    )
+
 from canonical.launchpad import _
-from canonical.launchpad.fields import PublicPersonChoice, URIField
-
-from zope.interface import Interface, Attribute
-
-from zope.schema import Choice, Datetime, Int
+from lp.services.fields import (
+    PublicPersonChoice,
+    URIField,
+    )
 
 
 class IEditTranslator(Interface):

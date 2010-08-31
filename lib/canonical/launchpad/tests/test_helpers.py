@@ -4,15 +4,19 @@
 from doctest import DocTestSuite
 import unittest
 
-from canonical.testing import LaunchpadFunctionalLayer
-from zope.publisher.interfaces.browser import IBrowserRequest
 from zope.interface import implements
+from zope.publisher.interfaces.browser import IBrowserRequest
 
 from canonical.launchpad import helpers
 from canonical.launchpad.ftests import login
-from lp.translations.utilities.translation_export import LaunchpadWriteTarFile
-from canonical.launchpad.interfaces import ILanguageSet, IPerson, ILaunchBag
+from canonical.launchpad.interfaces import (
+    ILanguageSet,
+    ILaunchBag,
+    IPerson,
+    )
+from canonical.testing import LaunchpadFunctionalLayer
 from lp.testing.factory import LaunchpadObjectFactory
+from lp.translations.utilities.translation_export import LaunchpadWriteTarFile
 
 
 def make_test_tarball_1():

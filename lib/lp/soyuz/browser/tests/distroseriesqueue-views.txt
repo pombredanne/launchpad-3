@@ -46,7 +46,7 @@ A list of available actions in this queue:
 
 Let's instantiate the view for a specific queue:
 
-  >>> from canonical.launchpad.interfaces import PackageUploadStatus
+  >>> from lp.soyuz.enums import PackageUploadStatus
   >>> request = LaunchpadTestRequest(
   ...     form={'queue_state': PackageUploadStatus.DONE.value})
   >>> warty = ubuntu['warty']
@@ -230,7 +230,7 @@ for a package "foo" and uploading a new build that has "foo" and
 
     >>> from lp.soyuz.tests.test_publishing import (
     ...     SoyuzTestPublisher)
-    >>> from lp.soyuz.interfaces.publishing import (
+    >>> from lp.soyuz.enums import (
     ...     PackagePublishingStatus)
     >>> from canonical.launchpad.interfaces import ILibraryFileAliasSet
     >>> stp = SoyuzTestPublisher()
@@ -247,6 +247,13 @@ for a package "foo" and uploading a new build that has "foo" and
 
 Now that "foo" is published in Hoary, we can upload a new build.
 
+    # First we'll need to create a source publication for the foo-1.0-2,
+    # though, as our upload will only include binaries.
+    >>> foo_source_1_0_2 = stp.getPubSource(
+    ...     sourcename="foo", distroseries=hoary, version="1.0-2",
+    ...     status=PackagePublishingStatus.PUBLISHED)
+
+    >>> from lp.archiveuploader.uploadpolicy import ArchiveUploadType
     >>> from canonical.launchpad.ftests import import_public_test_keys
     >>> from canonical.launchpad.interfaces import IComponentSet
     >>> from lp.soyuz.model.component import ComponentSelection
@@ -258,8 +265,7 @@ Now that "foo" is published in Hoary, we can upload a new build.
     >>> trash = ComponentSelection(distroseries=hoary, component=universe)
     >>> sync_policy = getPolicy(name='sync', distro='ubuntu',
     ...    distroseries='hoary')
-    >>> sync_policy.can_upload_binaries = True
-    >>> sync_policy.can_upload_mixed = True
+    >>> sync_policy.accepted_type = ArchiveUploadType.BINARY_ONLY
     >>> foo_upload = NascentUpload.from_changesfile_path(
     ...    datadir('suite/foo_1.0-2_multi_binary/foo_1.0-2_i386.changes'),
     ...    sync_policy, mock_logger_quiet)

@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 import unittest
+
 import psycopg2
 
 from canonical.database.sqlbase import cursor

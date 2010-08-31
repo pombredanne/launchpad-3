@@ -9,22 +9,32 @@ __all__ = [
     'OAuthTokenAuthorizedView',
     'lookup_oauth_context']
 
+from lazr.restful import HTTPResource
 import simplejson
-
 from zope.component import getUtility
-from zope.formlib.form import Action, Actions
+from zope.formlib.form import (
+    Action,
+    Actions,
+    )
 
+from canonical.launchpad.interfaces.oauth import (
+    IOAuthConsumerSet,
+    IOAuthRequestToken,
+    IOAuthRequestTokenSet,
+    OAUTH_CHALLENGE,
+    )
+from canonical.launchpad.webapp import (
+    LaunchpadFormView,
+    LaunchpadView,
+    )
+from canonical.launchpad.webapp.authentication import (
+    check_oauth_signature,
+    get_oauth_authorization,
+    )
+from canonical.launchpad.webapp.interfaces import OAuthPermission
 from lp.app.errors import UnexpectedFormData
 from lp.registry.interfaces.distribution import IDistributionSet
-from canonical.launchpad.interfaces.oauth import (
-    IOAuthConsumerSet, IOAuthRequestToken, IOAuthRequestTokenSet,
-    OAUTH_CHALLENGE)
 from lp.registry.interfaces.pillar import IPillarNameSet
-from canonical.launchpad.webapp import LaunchpadFormView, LaunchpadView
-from canonical.launchpad.webapp.authentication import (
-    check_oauth_signature, get_oauth_authorization)
-from canonical.launchpad.webapp.interfaces import OAuthPermission
-from lazr.restful import HTTPResource
 
 
 class JSONTokenMixin:
@@ -78,8 +88,13 @@ class OAuthRequestTokenView(LaunchpadView, JSONTokenMixin):
 
         token = consumer.newRequestToken()
         if self.request.headers.get('Accept') == HTTPResource.JSON_TYPE:
+            # Don't show the client the GRANT_PERMISSIONS access
+            # level. If they have a legitimate need to use it, they'll
+            # already know about it.
+            permissions = [permission for permission in OAuthPermission.items
+                           if permission != OAuthPermission.GRANT_PERMISSIONS]
             return self.getJSONRepresentation(
-                OAuthPermission.items, token, include_secret=True)
+                permissions, token, include_secret=True)
         return u'oauth_token=%s&oauth_token_secret=%s' % (
             token.key, token.secret)
 
@@ -90,6 +105,7 @@ def token_exists_and_is_not_reviewed(form, action):
 def create_oauth_permission_actions():
     """Return a list of `Action`s for each possible `OAuthPermission`."""
     actions = Actions()
+    actions_excluding_grant_permissions = Actions()
     def success(form, action, data):
         form.reviewToken(action.permission)
     for permission in OAuthPermission.items:
@@ -98,13 +114,15 @@ def create_oauth_permission_actions():
             condition=token_exists_and_is_not_reviewed)
         action.permission = permission
         actions.append(action)
-    return actions
-
+        if permission != OAuthPermission.GRANT_PERMISSIONS:
+            actions_excluding_grant_permissions.append(action)
+    return actions, actions_excluding_grant_permissions
 
 class OAuthAuthorizeTokenView(LaunchpadFormView, JSONTokenMixin):
     """Where users authorize consumers to access Launchpad on their behalf."""
 
-    actions = create_oauth_permission_actions()
+    actions, actions_excluding_grant_permissions = (
+        create_oauth_permission_actions())
     label = "Authorize application to access Launchpad on your behalf"
     schema = IOAuthRequestToken
     field_names = []
@@ -122,28 +140,47 @@ class OAuthAuthorizeTokenView(LaunchpadFormView, JSONTokenMixin):
         acceptable subset of OAuthPermission.
 
         The user always has the option to deny the client access
-        altogether, so it makes sense for the client to specify the
-        least restrictions possible.
+        altogether, so it makes sense for the client to ask for the
+        least access possible.
 
         If the client sends nonsensical values for allow_permissions,
-        the end-user will be given an unrestricted choice.
+        the end-user will be given a choice among all the permissions
+        used by normal applications.
         """
+
         allowed_permissions = self.request.form_ng.getAll('allow_permission')
         if len(allowed_permissions) == 0:
-            return self.actions
+            return self.actions_excluding_grant_permissions
         actions = Actions()
+
+        # UNAUTHORIZED is always one of the options. If the client
+        # explicitly requested UNAUTHORIZED, remove it from the list
+        # to simplify the algorithm: we'll add it back later.
+        if OAuthPermission.UNAUTHORIZED.name in allowed_permissions:
+            allowed_permissions.remove(OAuthPermission.UNAUTHORIZED.name)
+
+        # GRANT_PERMISSIONS cannot be requested as one of several
+        # options--it must be the only option (other than
+        # UNAUTHORIZED). If GRANT_PERMISSIONS is one of several
+        # options, remove it from the list.
+        if (OAuthPermission.GRANT_PERMISSIONS.name in allowed_permissions
+            and len(allowed_permissions) > 1):
+            allowed_permissions.remove(OAuthPermission.GRANT_PERMISSIONS.name)
+
         for action in self.actions:
             if (action.permission.name in allowed_permissions
                 or action.permission is OAuthPermission.UNAUTHORIZED):
                 actions.append(action)
+
         if len(list(actions)) == 1:
             # The only visible action is UNAUTHORIZED. That means the
-            # client tried to restrict the actions but didn't name any
-            # actual actions (except possibly UNAUTHORIZED). Rather
-            # than present the end-user with an impossible situation
-            # where their only option is to deny access, we'll present
-            # the full range of actions.
-            return self.actions
+            # client tried to restrict the permissions but didn't name
+            # any actual permissions (except possibly
+            # UNAUTHORIZED). Rather than present the end-user with an
+            # impossible situation where their only option is to deny
+            # access, we'll present the full range of actions (except
+            # for GRANT_PERMISSIONS).
+            return self.actions_excluding_grant_permissions
         return actions
 
     def initialize(self):

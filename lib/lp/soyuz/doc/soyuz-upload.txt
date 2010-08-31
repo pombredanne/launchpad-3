@@ -429,8 +429,9 @@ candidates and promote them to ACCEPTED, the failures are kept
 as NEW
 
   >>> from lp.registry.interfaces.distribution import IDistributionSet
+  >>> from lp.soyuz.enums import PackageUploadStatus
   >>> from lp.soyuz.interfaces.queue import (
-  ...     PackageUploadStatus, QueueInconsistentStateError)
+  ...     QueueInconsistentStateError)
 
 Since we landed correct security adapters for Upload,
 we need to perform further actions logged in as an admins, which have
@@ -708,7 +709,7 @@ and SHA256) for each index published.
   Version: 6.6.6
   Codename: breezy-autotest
   Date: ...
-  Architectures: 
+  Architectures:
   Components: main restricted universe multiverse
   Description: ubuntutest Breezy Badger Autotest 6.6.6
   MD5Sum:

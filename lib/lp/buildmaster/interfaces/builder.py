@@ -19,14 +19,27 @@ __all__ = [
     'ProtocolVersionMismatch',
     ]
 
-from zope.interface import Interface, Attribute
-from zope.schema import Bool, Choice, Field, Text, TextLine
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Bool,
+    Choice,
+    Field,
+    Int,
+    Text,
+    TextLine,
+    )
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import Title, Description
-from lp.registry.interfaces.role import IHasOwner
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.validators.url import builder_url_validator
+from lp.registry.interfaces.role import IHasOwner
+from lp.services.fields import (
+    Description,
+    Title,
+    )
 
 
 class BuildDaemonError(Exception):
@@ -146,9 +159,19 @@ class IBuilder(IHasOwner):
                 "new jobs. "),
         required=False)
 
+    failure_count = Int(
+        title=_('Failure Count'), required=False, default=0,
+        description=_("Number of consecutive failures for this builder."))
+
     current_build_behavior = Field(
         title=u"The current behavior of the builder for the current job.",
         required=False)
+
+    def gotFailure():
+        """Increment failure_count on the builder."""
+
+    def resetFailureCount():
+        """Set the failure_count back to zero."""
 
     def checkSlaveAlive():
         """Check that the buildd slave is alive.
@@ -276,6 +299,9 @@ class IBuilder(IHasOwner):
 
         :return: A BuildQueue, or None.
         """
+
+    def getCurrentBuildFarmJob():
+        """Return a `BuildFarmJob` for this builder."""
 
 
 class IBuilderSet(Interface):

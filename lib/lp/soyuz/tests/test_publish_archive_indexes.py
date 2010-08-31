@@ -3,11 +3,13 @@
 
 """Test native archive index generation for Soyuz."""
 
-import apt_pkg
 import os
 import tempfile
 import unittest
 
+import apt_pkg
+
+from lp.soyuz.model.publishing import IndexStanzaFields
 from lp.soyuz.tests.test_publishing import TestNativePublishingBase
 
 
@@ -52,6 +54,34 @@ class TestNativeArchiveIndexes(TestNativePublishingBase):
              u' 5913c3ad52c14a62e6ae7eef51f9ef42 28 foo_666.dsc'],
             pub_source.getIndexStanza().splitlines())
 
+    def testSourceStanzaCustomFields(self):
+        """Check just-created source publication Index stanza 
+        with custom fields (Python-Version).
+        """
+        pub_source = self.getPubSource(
+            builddepends='fooish', builddependsindep='pyfoo',
+            build_conflicts='bar', build_conflicts_indep='pybar',
+            user_defined_fields=[("Python-Version", "< 1.5")])
+
+        self.assertEqual(
+            [u'Package: foo',
+             u'Binary: foo-bin',
+             u'Version: 666',
+             u'Section: base',
+             u'Maintainer: Foo Bar <foo@bar.com>',
+             u'Build-Depends: fooish',
+             u'Build-Depends-Indep: pyfoo',
+             u'Build-Conflicts: bar',
+             u'Build-Conflicts-Indep: pybar',
+             u'Architecture: all',
+             u'Standards-Version: 3.6.2',
+             u'Format: 1.0',
+             u'Directory: pool/main/f/foo',
+             u'Files:',
+             u' 5913c3ad52c14a62e6ae7eef51f9ef42 28 foo_666.dsc',
+             u'Python-Version: < 1.5'],
+            pub_source.getIndexStanza().splitlines())
+
     def testBinaryStanza(self):
         """Check just-created binary publication Index stanza.
 
@@ -88,6 +118,45 @@ class TestNativeArchiveIndexes(TestNativePublishingBase):
              u'Description: Foo app is great',
              u' Well ...',
              u' it does nothing, though'],
+            pub_binary.getIndexStanza().splitlines())
+
+    def testBinaryStanzaWithCustomFields(self):
+        """Check just-created binary publication Index stanza with
+        custom fields (Python-Version).
+
+        """
+        pub_binaries = self.getPubBinaries(
+            depends='biscuit', recommends='foo-dev', suggests='pyfoo',
+            conflicts='old-foo', replaces='old-foo', provides='foo-master',
+            pre_depends='master-foo', enhances='foo-super', breaks='old-foo',
+            user_defined_fields=[("Python-Version", ">= 2.4")])
+        pub_binary = pub_binaries[0]
+        self.assertEqual(
+            [u'Package: foo-bin',
+             u'Source: foo',
+             u'Priority: standard',
+             u'Section: base',
+             u'Installed-Size: 100',
+             u'Maintainer: Foo Bar <foo@bar.com>',
+             u'Architecture: all',
+             u'Version: 666',
+             u'Recommends: foo-dev',
+             u'Replaces: old-foo',
+             u'Suggests: pyfoo',
+             u'Provides: foo-master',
+             u'Depends: biscuit',
+             u'Conflicts: old-foo',
+             u'Pre-Depends: master-foo',
+             u'Enhances: foo-super',
+             u'Breaks: old-foo',
+             u'Filename: pool/main/f/foo/foo-bin_666_all.deb',
+             u'Size: 18',
+             u'MD5sum: 008409e7feb1c24a6ccab9f6a62d24c5',
+             u'SHA1: 30b7b4e583fa380772c5a40e428434628faef8cf',
+             u'Description: Foo app is great',
+             u' Well ...',
+             u' it does nothing, though',
+             u'Python-Version: >= 2.4'],
             pub_binary.getIndexStanza().splitlines())
 
     def testBinaryStanzaDescription(self):
@@ -301,18 +370,16 @@ class TestNativeArchiveIndexesReparsing(TestNativePublishingBase):
 
 
 class TestIndexStanzaFieldsHelper(unittest.TestCase):
+    """Check how this auxiliary class works...
 
-    def testIndexStanzaFields(self):
-        """Check how this auxiliary class works...
+    This class provides simple FIFO API for aggregating fields
+    (name & values) in a ordered way.
 
-        This class provides simple FIFO API for aggregating fields
-        (name & values) in a ordered way.
+    Provides an method to format the option in a ready-to-use string.
+    """
 
-        Provides an method to format the option in a ready-to-use string.
-        """
-        # Avoid circular imports.
-        from lp.soyuz.model.publishing import IndexStanzaFields
 
+    def test_simple(self):
         fields = IndexStanzaFields()
         fields.append('breakfast', 'coffee')
         fields.append('lunch', 'beef')
@@ -324,15 +391,18 @@ class TestIndexStanzaFieldsHelper(unittest.TestCase):
             ['breakfast: coffee', 'lunch: beef', 'dinner: fish',
              ], fields.makeOutput().splitlines())
 
+    def test_preserves_order(self):
         fields = IndexStanzaFields()
         fields.append('one', 'um')
         fields.append('three', 'tres')
         fields.append('two', 'dois')
+        fields.append(None, None)
 
         self.assertEqual(
             ['one: um', 'three: tres', 'two: dois',
              ], fields.makeOutput().splitlines())
 
+    def test_files(self):
         # Special treatment for field named 'Files'
         # do not add a space between <name>:<value>
         # <value> will always start with a new line.
@@ -342,3 +412,12 @@ class TestIndexStanzaFieldsHelper(unittest.TestCase):
 
         self.assertEqual(
             ['one: um', 'Files:<no_sep>'], fields.makeOutput().splitlines())
+
+    def test_extend(self):
+        fields = IndexStanzaFields()
+        fields.append('one', 'um')
+        fields.extend([('three', 'tres'), ['four', 'five']])
+
+        self.assertEqual(
+            ['one: um', 'three: tres', 'four: five',
+             ], fields.makeOutput().splitlines())

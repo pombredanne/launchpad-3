@@ -14,14 +14,12 @@ in the root element. The template provides common layout to Launchpad.
 __metaclass__ = type
 
 from BeautifulSoup import BeautifulSoup
-
 from z3c.ptcompat import ViewPageTemplateFile
 
+from canonical.launchpad.testing.pages import find_tag_by_id
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import DatabaseFunctionalLayer
-from canonical.launchpad.testing.pages import find_tag_by_id
-
 from lp.testing import TestCaseWithFactory
 
 

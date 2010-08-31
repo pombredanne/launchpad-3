@@ -8,12 +8,18 @@ Also define utilities that manipulate layers.
 
 __metaclass__ = type
 
-from zope.interface import (
-    alsoProvides, directlyProvides, directlyProvidedBy, Interface)
-from zope.publisher.interfaces.browser import (
-    IBrowserRequest, IDefaultBrowserLayer, IBrowserSkinType)
-
 from lazr.restful.interfaces import IWebServiceLayer
+from zope.interface import (
+    alsoProvides,
+    directlyProvidedBy,
+    directlyProvides,
+    Interface,
+    )
+from zope.publisher.interfaces.browser import (
+    IBrowserRequest,
+    IBrowserSkinType,
+    IDefaultBrowserLayer,
+    )
 
 
 def setAdditionalLayer(request, layer):

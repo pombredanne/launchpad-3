@@ -7,15 +7,23 @@ __metaclass__ = type
 __all__ = ['Roundup']
 
 import csv
-
 from urllib import quote_plus
 
-from lp.bugs.externalbugtracker import (
-    BugNotFound, ExternalBugTracker, InvalidBugId, LookupTree,
-    UnknownRemoteStatusError, UnparseableBugData)
-from lp.bugs.interfaces.bugtask import BugTaskImportance, BugTaskStatus
-from lp.bugs.interfaces.externalbugtracker import UNKNOWN_REMOTE_IMPORTANCE
 from lazr.uri import URI
+
+from lp.bugs.externalbugtracker import (
+    BugNotFound,
+    ExternalBugTracker,
+    InvalidBugId,
+    LookupTree,
+    UnknownRemoteStatusError,
+    UnparseableBugData,
+    )
+from lp.bugs.interfaces.bugtask import (
+    BugTaskImportance,
+    BugTaskStatus,
+    )
+from lp.bugs.interfaces.externalbugtracker import UNKNOWN_REMOTE_IMPORTANCE
 
 
 PYTHON_BUGS_HOSTNAME = 'bugs.python.org'

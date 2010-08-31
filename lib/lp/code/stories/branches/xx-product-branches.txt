@@ -66,6 +66,9 @@ in downloads that may have been added for the product.
     There are no branches for NetApplet in Launchpad.
     ...
     There are download files available for NetApplet.
+    >>> browser.getLink('download files')
+    <Link...url='http://launchpad.dev/netapplet/+download'>
+
 
 
 Development focus branches
@@ -156,7 +159,7 @@ Floating buttons
 ================
 
 There are two buttons that show on the right hand side of the screen
-for project branch listings.  'Register a branch' and 'Import your project'.
+for project branch listings.  'Register a branch' and 'Import a branch'.
 
     >>> from zope.component import getUtility
     >>> from lp.registry.interfaces.product import IProductSet
@@ -172,10 +175,10 @@ for project branch listings.  'Register a branch' and 'Import your project'.
     >>> browser.open('http://code.launchpad.dev/firefox')
     >>> print_links(browser)
     Register a branch
-    Import your project
+    Import a branch
 
 If the product specifies that it officially uses Launchpad code, then
-the 'Import your project' button is not shown.
+the 'Import a branch' button is still shown.
 
     >>> login('admin@canonical.com')
     >>> product.development_focus.branch = old_branch
@@ -183,6 +186,7 @@ the 'Import your project' button is not shown.
     >>> browser.open('http://code.launchpad.dev/firefox')
     >>> print_links(browser)
     Register a branch
+    Import a branch
 
 
 Nice wording of summary numbers

@@ -3,25 +3,31 @@
 
 __metaclass__ = type
 
+from lazr.enum import BaseItem
 from zope.component import getUtility
-from zope.security.proxy import removeSecurityProxy
 from zope.proxy import isProxy
 from zope.schema.vocabulary import getVocabularyRegistry
-from lazr.enum import BaseItem
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.constants import UTC_NOW
-from lp.bugs.adapters.bugchange import (
-    CveLinkedToBug, CveUnlinkedFromBug)
 from canonical.database.sqlbase import block_implicit_flushes
 from lp.bugs.adapters.bugchange import (
-    BugWatchAdded, BugWatchRemoved)
+    BugTaskAdded,
+    BugWatchAdded,
+    BugWatchRemoved,
+    CveLinkedToBug,
+    CveUnlinkedFromBug,
+    )
 from lp.bugs.interfaces.bug import IBug
 from lp.bugs.interfaces.bugactivity import IBugActivitySet
 from lp.registry.interfaces.milestone import IMilestone
-from lp.registry.interfaces.person import IPerson, PersonVisibility
+from lp.registry.interfaces.person import (
+    IPerson,
+    PersonVisibility,
+    )
 from lp.registry.interfaces.productrelease import IProductRelease
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
-from lp.bugs.adapters.bugchange import BugTaskAdded
+
 
 vocabulary_registry = getVocabularyRegistry()
 

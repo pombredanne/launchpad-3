@@ -3,32 +3,70 @@
 
 """Test Builder features."""
 
+import errno
+import socket
+
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
-from canonical.testing import LaunchpadZopelessLayer
-from lp.buildmaster.interfaces.buildbase import BuildStatus
-from lp.buildmaster.interfaces.builder import IBuilderSet
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadZopelessLayer
+    )
+from lp.buildmaster.enums import BuildStatus
+from lp.buildmaster.interfaces.builder import IBuilder, IBuilderSet
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
-    IBuildFarmJobBehavior)
+    IBuildFarmJobBehavior,
+    )
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.buildmaster.model.buildfarmjobbehavior import IdleBuildBehavior
 from lp.buildmaster.model.buildqueue import BuildQueue
-from lp.soyuz.interfaces.archive import ArchivePurpose
+from lp.soyuz.enums import (
+    ArchivePurpose,
+    PackagePublishingStatus,
+    )
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
-from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.model.binarypackagebuildbehavior import (
-    BinaryPackageBuildBehavior)
+    BinaryPackageBuildBehavior,
+    )
+from lp.soyuz.tests.soyuzbuilddhelpers import (
+    AbortedSlave,
+    MockBuilder,
+    )
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
+from lp.testing.fakemethod import FakeMethod
 
 
 class TestBuilder(TestCaseWithFactory):
     """Basic unit tests for `Builder`."""
 
-    layer = LaunchpadZopelessLayer
+    layer = DatabaseFunctionalLayer
+
+    def test_providesInterface(self):
+        # Builder provides IBuilder
+        builder = self.factory.makeBuilder()
+        self.assertProvides(builder, IBuilder)
+
+    def test_default_values(self):
+        builder = self.factory.makeBuilder()
+        # Make sure the Storm cache gets the values that the database
+        # initialises.
+        flush_database_updates()
+        self.assertEqual(0, builder.failure_count)
+
+    def test_getCurrentBuildFarmJob(self):
+        bq = self.factory.makeSourcePackageRecipeBuildJob(3333)
+        builder = self.factory.makeBuilder()
+        bq.markAsBuilding(builder)
+        self.assertEqual(
+            bq, builder.getCurrentBuildFarmJob().buildqueue_record)
 
     def test_getBuildQueue(self):
         buildqueueset = getUtility(IBuildQueueSet)
@@ -42,6 +80,63 @@ class TestBuilder(TestCaseWithFactory):
         active_job.builder = None
         bq = builder.getBuildQueue()
         self.assertIs(None, bq)
+
+    def test_updateBuilderStatus_catches_repeated_EINTR(self):
+        # A single EINTR return from a socket operation should cause the
+        # operation to be retried, not fail/reset the builder.
+        builder = removeSecurityProxy(self.factory.makeBuilder())
+        builder.handleTimeout = FakeMethod()
+        builder.rescueIfLost = FakeMethod()
+
+        def _fake_checkSlaveAlive():
+            # Raise an EINTR error for all invocations.
+            raise socket.error(errno.EINTR, "fake eintr")
+
+        builder.checkSlaveAlive = _fake_checkSlaveAlive
+        builder.updateStatus()
+
+        # builder.updateStatus should eventually have called
+        # handleTimeout()
+        self.assertEqual(1, builder.handleTimeout.call_count)
+
+    def test_updateBuilderStatus_catches_single_EINTR(self):
+        builder = removeSecurityProxy(self.factory.makeBuilder())
+        builder.handleTimeout = FakeMethod()
+        builder.rescueIfLost = FakeMethod()
+        self.eintr_returned = False
+
+        def _fake_checkSlaveAlive():
+            # raise an EINTR error for the first invocation only.
+            if not self.eintr_returned:
+                self.eintr_returned = True
+                raise socket.error(errno.EINTR, "fake eintr")
+
+        builder.checkSlaveAlive = _fake_checkSlaveAlive
+        builder.updateStatus()
+
+        # builder.updateStatus should never call handleTimeout() for a
+        # single EINTR.
+        self.assertEqual(0, builder.handleTimeout.call_count)
+
+
+class Test_rescueBuilderIfLost(TestCaseWithFactory):
+    """Tests for lp.buildmaster.model.builder.rescueBuilderIfLost."""
+
+    layer = LaunchpadZopelessLayer
+
+    def test_recovery_of_aborted_slave(self):
+        # If a slave is in the ABORTED state, rescueBuilderIfLost should
+        # clean it if we don't think it's currently building anything.
+        # See bug 463046.
+        aborted_slave = AbortedSlave()
+        # The slave's clean() method is normally an XMLRPC call, so we
+        # can just stub it out and check that it got called.
+        aborted_slave.clean = FakeMethod()
+        builder = MockBuilder("mock_builder", aborted_slave)
+        builder.currentjob = None
+        builder.rescueIfLost()
+
+        self.assertEqual(1, aborted_slave.clean.call_count)
 
 
 class TestFindBuildCandidateBase(TestCaseWithFactory):

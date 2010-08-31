@@ -11,7 +11,11 @@ __all__ = [
     ]
 
 
-from zope.component.interfaces import IObjectEvent, implements, ObjectEvent
+from zope.component.interfaces import (
+    implements,
+    IObjectEvent,
+    ObjectEvent,
+    )
 
 
 class ScannerEvent(ObjectEvent):

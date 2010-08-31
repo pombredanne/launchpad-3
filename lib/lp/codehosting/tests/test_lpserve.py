@@ -10,14 +10,19 @@ import re
 from subprocess import PIPE
 import unittest
 
-from bzrlib import errors, osutils
+from bzrlib import (
+    errors,
+    osutils,
+    )
 from bzrlib.smart import medium
 from bzrlib.tests import TestCaseWithTransport
 from bzrlib.transport import remote
 
 from canonical.config import config
-
-from lp.codehosting import get_bzr_path, get_BZR_PLUGIN_PATH_for_subprocess
+from lp.codehosting import (
+    get_bzr_path,
+    get_BZR_PLUGIN_PATH_for_subprocess,
+    )
 from lp.codehosting.bzrutils import make_error_utility
 
 

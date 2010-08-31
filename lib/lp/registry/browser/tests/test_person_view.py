@@ -1,31 +1,47 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
-
-import unittest
 
 import transaction
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.launchpad.ftests import ANONYMOUS, login
+from canonical.launchpad.ftests import (
+    ANONYMOUS,
+    login,
+    )
+from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from lp.app.errors import NotFoundError
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import (
-    DatabaseFunctionalLayer, LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
+from lp.app.errors import NotFoundError
+from lp.buildmaster.enums import BuildStatus
+from lp.registry.browser.person import (
+    PersonEditView,
+    PersonView,
+    )
 from lp.registry.interfaces.karma import IKarmaCacheManager
-from lp.registry.browser.person import PersonEditView, PersonView
 from lp.registry.interfaces.person import PersonVisibility
 from lp.registry.interfaces.teammembership import TeamMembershipStatus
 from lp.registry.model.karma import KarmaCategory
+from lp.soyuz.enums import (
+    ArchiveStatus,
+    PackagePublishingStatus,
+    )
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
-from lp.soyuz.interfaces.archive import ArchiveStatus
-from lp.soyuz.interfaces.publishing import PackagePublishingStatus
-from lp.testing import TestCaseWithFactory, login_person
-from lp.testing.views import create_initialized_view, create_view
+from lp.testing import (
+    login_person,
+    TestCaseWithFactory,
+    )
+from lp.testing.views import (
+    create_initialized_view,
+    create_view,
+    )
 
 
 class TestPersonViewKarma(TestCaseWithFactory):
@@ -254,7 +270,7 @@ class TestPersonParticipationView(TestCaseWithFactory):
         team = self.factory.makeTeam()
         login_person(team.teamowner)
         team.addMember(self.user, team.teamowner)
-        for membership in self.user.myactivememberships:
+        for membership in self.user.team_memberships:
             membership.setStatus(
                 TeamMembershipStatus.ADMIN, team.teamowner)
         [participation] = self.view.active_participations
@@ -274,7 +290,7 @@ class TestPersonParticipationView(TestCaseWithFactory):
         login_person(team.teamowner)
         team.addMember(self.user, team.teamowner)
         [participation] = self.view.active_participations
-        self.assertEqual(None, participation['subscribed'])
+        self.assertEqual('&mdash;', participation['subscribed'])
 
     def test__asParticpation_unsubscribed_to_mailing_list(self):
         # The default team role is 'Member'.
@@ -346,7 +362,7 @@ class TestPersonParticipationView(TestCaseWithFactory):
         self.assertEqual(['A', 'B', 'C'], display_names)
         self.assertEqual(None, participations[0]['via'])
         self.assertEqual('A', participations[1]['via'])
-        self.assertEqual('A, B', participations[2]['via'])
+        self.assertEqual('B, A', participations[2]['via'])
 
     def test_has_participations_false(self):
         participations = self.view.active_participations
@@ -548,5 +564,33 @@ class TestPersonRelatedSoftwareFailedBuild(TestCaseWithFactory):
                 self.build.id) in html)
 
 
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
+class TestPersonDeactivateAccountView(TestCaseWithFactory):
+    """Tests for the PersonDeactivateAccountView."""
+
+    layer = DatabaseFunctionalLayer
+    form = {
+        'field.comment': 'Gotta go.',
+        'field.actions.deactivate': 'Deactivate My Account',
+        }
+
+    def test_deactivate_user_active(self):
+        user = self.factory.makePerson()
+        login_person(user)
+        view = create_initialized_view(
+            user, '+deactivate-account', form=self.form)
+        self.assertEqual([], view.errors)
+        notifications = view.request.response.notifications
+        self.assertEqual(1, len(notifications))
+        self.assertEqual(
+            'Your account has been deactivated.', notifications[0].message)
+        self.assertEqual(AccountStatus.DEACTIVATED, user.account_status)
+
+    def test_deactivate_user_already_deactivated(self):
+        deactivated_user = self.factory.makePerson()
+        login_person(deactivated_user)
+        deactivated_user.deactivateAccount('going.')
+        view = create_initialized_view(
+            deactivated_user, '+deactivate-account', form=self.form)
+        self.assertEqual(1, len(view.errors))
+        self.assertEqual(
+            'This account is already deactivated.', view.errors[0])

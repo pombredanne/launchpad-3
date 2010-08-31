@@ -306,8 +306,8 @@ PPA uploads we will create a PPA for it.
     >>> print foobar.archive
     None
 
-    >>> from lp.soyuz.interfaces.archive import (
-    ...     ArchivePurpose, IArchiveSet)
+    >>> from lp.soyuz.enums import ArchivePurpose
+    >>> from lp.soyuz.interfaces.archive import IArchiveSet
     >>> ppa = getUtility(IArchiveSet).new(
     ...     owner=foobar, distribution=ubuntu, purpose=ArchivePurpose.PPA)
 

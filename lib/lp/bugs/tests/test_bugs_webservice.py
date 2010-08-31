@@ -8,19 +8,35 @@ __metaclass__ = type
 import re
 
 from BeautifulSoup import BeautifulSoup
-from simplejson import dumps
-
-from zope.component import getMultiAdapter
 from lazr.lifecycle.interfaces import IDoNotSnapshot
+from simplejson import dumps
+from testtools.matchers import (
+    Equals,
+    LessThan,
+    MatchesAny,
+    )
+from zope.component import getMultiAdapter
 
-from lp.bugs.browser.bugtask import get_comments_for_bugtask
-from lp.bugs.interfaces.bug import IBug
-from canonical.launchpad.ftests import login, logout
-from lp.testing import TestCaseWithFactory
+from canonical.launchpad.ftests import (
+    login,
+    logout,
+    )
 from canonical.launchpad.testing.pages import LaunchpadWebServiceCaller
 from canonical.launchpad.webapp import snapshot
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
+from lp.bugs.browser.bugtask import get_comments_for_bugtask
+from lp.bugs.interfaces.bug import IBug
+from lp.testing import TestCaseWithFactory
+from lp.testing.matchers import HasQueryCount
+from lp.testing.sampledata import (
+    ADMIN_EMAIL,
+    USER_EMAIL,
+    )
+from lp.testing._webservice import QueryCollector
 
 
 class TestBugDescriptionRepresentation(TestCaseWithFactory):
@@ -29,7 +45,7 @@ class TestBugDescriptionRepresentation(TestCaseWithFactory):
 
     def setUp(self):
         TestCaseWithFactory.setUp(self)
-        login('foo.bar@canonical.com')
+        login(ADMIN_EMAIL)
         # Make two bugs, one whose description points to the other, so it will
         # get turned into a HTML link.
         self.bug_one = self.factory.makeBug(title="generic")
@@ -126,12 +142,46 @@ class TestBugCommentRepresentation(TestCaseWithFactory):
             rendered_comment, self.expected_comment_html)
 
 
+class TestBugAttachments(TestCaseWithFactory):
+
+    layer = LaunchpadFunctionalLayer
+
+    def test_attachments_query_counts_constant(self):
+        login(USER_EMAIL)
+        self.bug = self.factory.makeBug()
+        self.factory.makeBugAttachment(self.bug)
+        self.factory.makeBugAttachment(self.bug)
+        webservice = LaunchpadWebServiceCaller(
+            'launchpad-library', 'salgado-change-anything')
+        collector = QueryCollector()
+        collector.register()
+        self.addCleanup(collector.unregister)
+        url = '/bugs/%d/attachments' % self.bug.id
+        response = webservice.get(url)
+        self.assertThat(collector, HasQueryCount(LessThan(24)))
+        with_2_count = collector.count
+        self.failUnlessEqual(response.status, 200)
+        login(USER_EMAIL)
+        self.factory.makeBugAttachment(self.bug)
+        logout()
+        response = webservice.get(url)
+        # XXX: Permit the second call to be == or less, because storm
+        # caching bugs (such as) https://bugs.launchpad.net/storm/+bug/619017
+        # which can cause spurious queries. There was an EC2 failure landing
+        # with this set to strictly equal which I could not reproduce locally,
+        # and the ec2 test did not report the storm egg used, so could not 
+        # confidently rule out some form of skew.
+        self.assertThat(collector, HasQueryCount(MatchesAny(
+            Equals(with_2_count),
+            LessThan(with_2_count))))
+
+
 class TestBugMessages(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        super(TestBugMessages, self).setUp('test@canonical.com')
+        super(TestBugMessages, self).setUp(USER_EMAIL)
         self.bug = self.factory.makeBug()
         self.message1 = self.factory.makeMessage()
         self.message2 = self.factory.makeMessage(parent=self.message1)
@@ -189,7 +239,7 @@ class TestPostBugWithLargeCollections(TestCaseWithFactory):
         real_hard_limit_for_snapshot = snapshot.HARD_LIMIT_FOR_SNAPSHOT
         snapshot.HARD_LIMIT_FOR_SNAPSHOT = 3
         try:
-            login('foo.bar@canonical.com')
+            login(ADMIN_EMAIL)
             for count in range(snapshot.HARD_LIMIT_FOR_SNAPSHOT + 1):
                 person = self.factory.makePerson()
                 bug.subscribe(person, person)

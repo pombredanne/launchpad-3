@@ -8,8 +8,8 @@ __metaclass__ = type
 
 
 import os
-import os.path
 import pwd
+import socket
 from subprocess import call
 import sys
 
@@ -75,11 +75,17 @@ class RecipeBuilder:
             recipe = recipe_file.read()
         finally:
             recipe_file.close()
+        # As of bzr 2.2, a defined identity is needed.  In this case, we're using
+        # buildd@<hostname>.
+        hostname = socket.gethostname()
+        bzr_email = 'buildd@%s' % hostname
+
         print 'Building recipe:'
         print recipe
         retcode = self.chroot([
-            'sudo', '-iu', self.username, 'DEBEMAIL=%s' % self.author_email,
-            'DEBFULLNAME=%s' % self.author_name.encode('utf-8'), 'bzr',
+            'sudo', '-i', '-u', self.username, 'DEBEMAIL=%s' % self.author_email,
+            'DEBFULLNAME=%s' % self.author_name.encode('utf-8'),
+            'BZR_EMAIL=%s' % bzr_email, 'bzr',
             'dailydeb', '--no-build', recipe_path_relative,
             self.tree_path_relative, '--manifest', manifest_path_relative,
             '--append-version', '~%s1' % self.distroseries_name],
@@ -126,6 +132,7 @@ class RecipeBuilder:
         if echo:
             print "Running in chroot: %s" % ' '.join(
                 "'%s'" % arg for arg in args)
+            sys.stdout.flush()
         return call([
             '/usr/bin/sudo', '/usr/sbin/chroot', self.chroot_path] + args)
 

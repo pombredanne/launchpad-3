@@ -26,28 +26,42 @@ __all__ = [
     ]
 
 
-from lazr.restful.declarations import (
-    export_as_webservice_entry)
-from zope.interface import Interface, Attribute
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    EnumeratedType,
+    Item,
+    )
+from lazr.restful.declarations import export_as_webservice_entry
 from zope.component import getUtility
-
-from zope.schema import Datetime, Int, Choice, Text, TextLine, Bool
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Bool,
+    Choice,
+    Datetime,
+    Int,
+    Text,
+    TextLine,
+    )
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import (
-    ContentNameField, PublicPersonChoice, Summary, Title)
+from canonical.launchpad.interfaces.validation import valid_webref
 from canonical.launchpad.validators import LaunchpadValidationError
-from lp.registry.interfaces.role import IHasOwner
+from lp.blueprints.interfaces.specificationtarget import IHasSpecifications
+from lp.blueprints.interfaces.sprint import ISprint
 from lp.code.interfaces.branchlink import IHasLinkedBranches
 from lp.registry.interfaces.mentoringoffer import ICanBeMentored
-from canonical.launchpad.interfaces.validation import valid_webref
 from lp.registry.interfaces.projectgroup import IProjectGroup
-from lp.blueprints.interfaces.sprint import ISprint
-from lp.blueprints.interfaces.specificationtarget import (
-    IHasSpecifications)
-
-from lazr.enum import (
-    DBEnumeratedType, DBItem, EnumeratedType, Item)
+from lp.registry.interfaces.role import IHasOwner
+from lp.services.fields import (
+    ContentNameField,
+    PublicPersonChoice,
+    Summary,
+    Title,
+    )
 
 
 class SpecificationImplementationStatus(DBEnumeratedType):
@@ -540,7 +554,7 @@ class SpecURLField(TextLine):
     def _validate(self, specurl):
         TextLine._validate(self, specurl)
         if (ISpecification.providedBy(self.context) and
-            specurl == getattr(self.context, 'specurl')):
+            specurl == self.context.specurl):
             # The specurl wasn't changed
             return
 
