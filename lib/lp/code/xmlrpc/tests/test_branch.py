@@ -61,14 +61,26 @@ class TestExpandURL(TestCaseWithFactory):
         naked_branch.private = True
         return branch
 
-    def assertResolves(self, lp_url_path, unique_name):
-        """Assert that `lp_url_path` path expands to `unique_name`."""
+    def assertResolves(self, lp_url_path, public_branch_path,
+                       ssh_branch_path=None):
+        """Assert that `lp_url_path` path expands to `unique_name`.
+
+        :param public_branch_path: The path that is accessible over http.
+        :param ssh_branch_path: The path that is accessible over sftp or
+            bzr+ssh.
+        """
         results = self.api.resolve_lp_path(lp_url_path)
+        if ssh_branch_path is None:
+            ssh_branch_path = public_branch_path
         # This improves the error message if results happens to be a fault.
         if isinstance(results, LaunchpadFault):
             raise results
         for url in results['urls']:
-            self.assertEqual('/' + unique_name, URI(url).path)
+            uri = URI(url)
+            if uri.scheme == 'http':
+                self.assertEqual('/' + public_branch_path, uri.path)
+            else:
+                self.assertEqual('/' + ssh_branch_path, uri.path)
 
     def assertFault(self, lp_url_path, expected_fault):
         """Trying to resolve lp_url_path raises the expected fault."""
