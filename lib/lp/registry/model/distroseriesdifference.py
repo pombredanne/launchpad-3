@@ -128,14 +128,14 @@ class DistroSeriesDifference(Storm):
         """See `IDistroSeriesDifference`."""
         if self.source_pub:
             return self.source_pub.source_package_version
-        return ''
+        return None
 
     @property
     def parent_source_version(self):
         """See `IDistroSeriesDifference`."""
         if self.parent_source_pub:
             return self.parent_source_pub.source_package_version
-        return ''
+        return None
 
     def updateStatusAndType(self):
         """See `IDistroSeriesDifference`."""

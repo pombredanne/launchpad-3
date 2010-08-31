@@ -130,7 +130,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             difference_type=(
                 DistroSeriesDifferenceType.MISSING_FROM_DERIVED_SERIES))
 
-        self.assertEqual('', ds_diff.source_version)
+        self.assertEqual(None, ds_diff.source_version)
 
     def test_updateStatusAndType_resolves_difference(self):
         # Status is set to resolved when versions match.
@@ -148,7 +148,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
 
         was_updated = ds_diff.updateStatusAndType()
 
-        self.assertIs(True, was_updated)
+        self.assertTrue(was_updated)
         self.assertEqual(
             DistroSeriesDifferenceStatus.RESOLVED,
             ds_diff.status)
@@ -171,7 +171,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
 
         was_updated = ds_diff.updateStatusAndType()
 
-        self.assertIs(True, was_updated)
+        self.assertTrue(was_updated)
         self.assertEqual(
             DistroSeriesDifferenceStatus.NEEDS_ATTENTION,
             ds_diff.status)
@@ -195,7 +195,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
 
         was_updated = ds_diff.updateStatusAndType()
 
-        self.assertIs(False, was_updated)
+        self.assertFalse(was_updated)
         self.assertEqual(
             DistroSeriesDifferenceStatus.NEEDS_ATTENTION,
             ds_diff.status)
@@ -220,7 +220,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
 
         was_updated = ds_diff.updateStatusAndType()
 
-        self.assertIs(True, was_updated)
+        self.assertTrue(was_updated)
         self.assertEqual(
             DistroSeriesDifferenceType.DIFFERENT_VERSIONS,
             ds_diff.difference_type)
