@@ -50,6 +50,7 @@ class TimedAction:
         return (offset, length, self.category, self.detail)
 
     def _td_to_ms(self, td):
+        """Tweak on a backport from python 2.7"""
         return (td.microseconds + (
             td.seconds + td.days * 24 * 3600) * 10**6) / 10**3
 
