@@ -54,8 +54,8 @@ Now begin a request, and issue a number of statements:
 
 A timeline is created too:
 
-    >>> for action in get_request_timeline(
-    ...    get_current_browser_request()).actions:
+    >>> timeline = get_request_timeline(get_current_browser_request())
+    >>> for action in timeline.actions:
     ...    if not action.category.startswith("SQL-"):
     ...        continue
     ...    print action.detail

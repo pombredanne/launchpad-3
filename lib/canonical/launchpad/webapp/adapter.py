@@ -209,7 +209,7 @@ def summarize_requests():
 def store_sql_statements_and_request_duration(event):
     actions = get_request_timeline(get_current_browser_request()).actions
     event.request.setInWSGIEnvironment(
-        'launchpad.nonpythonstatements', len(actions))
+        'launchpad.nonpythonactions', len(actions))
     event.request.setInWSGIEnvironment(
         'launchpad.requestduration', get_request_duration())
 

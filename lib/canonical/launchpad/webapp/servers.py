@@ -997,7 +997,7 @@ class LaunchpadAccessLogger(CommonAccessLogger):
         bytes_written = task.bytes_written
         userid = cgi_env.get('launchpad.userid', '')
         pageid = cgi_env.get('launchpad.pageid', '')
-        nonpython_statements = cgi_env.get('launchpad.nonpythonstatements', 0)
+        nonpython_actions = cgi_env.get('launchpad.nonpythonactions', 0)
         request_duration = cgi_env.get('launchpad.requestduration', 0)
         traversal_ticks = cgi_env.get('launchpad.traversalticks', 0)
         publication_ticks = cgi_env.get('launchpad.publicationticks', 0)
@@ -1015,7 +1015,7 @@ class LaunchpadAccessLogger(CommonAccessLogger):
                 first_line,
                 status,
                 bytes_written,
-                nonpython_statements,
+                nonpython_actions,
                 request_duration,
                 traversal_ticks,
                 publication_ticks,
