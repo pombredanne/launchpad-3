@@ -39,8 +39,8 @@ Pillars that do use launchpad applications have an involvement menu.
     'UNKNOWN'
     >>> view.official_blueprints
     False
-    >>> view.official_codehosting
-    False
+    >>> view.codehosting_usage.name
+    'NOT_APPLICABLE'
 
 The view provides a list of enabled links that is rendered by the template.
 
@@ -200,23 +200,23 @@ development focus series has a branch.
     >>> product.official_codehosting
     False
     >>> view = create_view(product, '+get-involved')
-    >>> view.official_codehosting
-    False
+    >>> view.codehosting_usage.name
+    'UNKNOWN'
 
     >>> product.development_focus.branch = factory.makeBranch(
     ...     product=product)
     >>> product.official_codehosting
     True
     >>> view = create_view(product, '+get-involved')
-    >>> view.official_codehosting
-    True
+    >>> view.codehosting_usage.name
+    'LAUNCHPAD' 
 
 Project groups cannot make links to register a branch, so
 official_codehosting is always false.
 
     >>> view = create_view(project_group, '+get-involved')
-    >>> view.official_codehosting
-    False
+    >>> view.codehosting_usage.name
+    'NOT_APPLICABLE'
 
 DistroSeries can use this view. The distribution is used to set the links.
 

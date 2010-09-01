@@ -78,9 +78,16 @@ class InvolvedMenu(NavigationMenu):
             enabled=service_uses_launchpad(self.pillar.translations_usage))
 
     def submit_code(self):
+        if self.pillar.codehosting_usage in [
+                ServiceUsage.LAUNCHPAD, 
+                ServiceUsage.EXTERNAL,
+                ]:
+            enabled = True
+        else:
+            enabled = False
         return Link(
             '+addbranch', 'Submit code', site='code', icon='code',
-            enabled=self.pillar.official_codehosting)
+            enabled=enabled)
 
     def register_blueprint(self):
         return Link(
@@ -101,19 +108,20 @@ class PillarView(LaunchpadView):
         self.official_answers = False
         self.official_blueprints = False
         self.translations_usage = ServiceUsage.UNKNOWN
-        self.official_codehosting = False
+        self.codehosting_usage = ServiceUsage.UNKNOWN
         pillar = nearest(self.context, IPillar)
         if IProjectGroup.providedBy(pillar):
             for product in pillar.products:
                 self._set_official_launchpad(product)
             # Project groups do not support submit code, override the
             # default.
-            self.official_codehosting = False
+            self.codehosting_usage = ServiceUsage.NOT_APPLICABLE
         else:
             self._set_official_launchpad(pillar)
             if IDistroSeries.providedBy(self.context):
                 self.official_answers = False
-                self.official_codehosting = False
+                distribution = self.context.distribution
+                self.codehosting_usage = distribution.codehosting_usage
             elif IDistributionSourcePackage.providedBy(self.context):
                 self.official_blueprints = False
                 self.translations_usage = ServiceUsage.UNKNOWN
@@ -132,8 +140,7 @@ class PillarView(LaunchpadView):
         if pillar.official_blueprints:
             self.official_blueprints = True
         self.translations_usage = IServiceUsage(pillar).translations_usage
-        if pillar.official_codehosting:
-            self.official_codehosting = True
+        self.codehosting_usage = IServiceUsage(pillar).codehosting_usage
 
     @property
     def has_involvement(self):
@@ -142,7 +149,7 @@ class PillarView(LaunchpadView):
             self.official_malone or self.official_answers
             or self.official_blueprints
             or service_uses_launchpad(self.translations_usage)
-            or self.official_codehosting)
+            or service_uses_launchpad(self.codehosting_usage))
 
     @property
     def enabled_links(self):
