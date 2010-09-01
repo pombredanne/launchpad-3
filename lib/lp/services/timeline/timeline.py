@@ -32,9 +32,15 @@ class Timeline:
     :ivar actions: The actions.
     """
 
-    def __init__(self):
-        """Create a Timeline."""
-        self.actions = []
+    def __init__(self, actions=None):
+        """Create a Timeline.
+        
+        :param actions: An optional object to use to store the timeline. This
+            must implement the list protocol.
+        """
+        if actions is None:
+            actions = []
+        self.actions = actions
 
     def start(self, category, detail):
         """Create a new TimedAction at the end of the timeline.

@@ -21,6 +21,11 @@ class TestTimeline(testtools.TestCase):
         self.assertEqual("Noone", action.detail)
         self.assertEqual(None, action.duration)
 
+    def test_can_supply_list(self):
+        actions = "foo"
+        timeline = Timeline(actions)
+        self.assertEqual(actions, timeline.actions)
+
     def test_start_with_unfinished_action_fails(self):
         # A design constraint of timeline says that overlapping actions are not
         # permitted. See the Timeline docstrings.
