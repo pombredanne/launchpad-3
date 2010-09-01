@@ -75,6 +75,7 @@ from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.widgets.image import ImageChangeWidget
+from lp.app.enums import service_uses_launchpad
 from lp.answers.browser.faqtarget import FAQTargetNavigationMixin
 from lp.answers.browser.questiontarget import (
     QuestionTargetFacetMixin,

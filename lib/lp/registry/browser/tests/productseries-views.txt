@@ -23,9 +23,10 @@ ProductSeries Involvement links
 The ProductSeries involvement view uses the ProductSeriesInvolvedMenu when
 rendering links:
 
+    >>> from lp.app.enums import ServiceUsage
     >>> login_person(product.owner)
     >>> product.official_answers = True
-    >>> product.official_blueprints = True
+    >>> product.blueprints_usage = ServiceUsage.LAUNCHPAD
     >>> product.official_malone = True
     >>> product.official_rosetta = True
     >>> view = create_view(series, '+get-involved')
@@ -33,8 +34,8 @@ rendering links:
     # official_answers is always false for product series.
     >>> print view.official_answers
     False
-    >>> print view.official_blueprints
-    True
+    >>> print view.blueprints_usage.name
+    'LAUNCHPAD'
     >>> print view.official_malone
     True
     >>> print view.official_rosetta

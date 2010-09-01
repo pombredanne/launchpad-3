@@ -87,7 +87,7 @@ class InvolvedMenu(NavigationMenu):
             'Register a blueprint',
             site='blueprints',
             icon='blueprints', 
-            enabled=service_uses_launchpad(self.pillar.blue_prints_usage))
+            enabled=service_uses_launchpad(self.pillar.blueprints_usage))
 
 
 class PillarView(LaunchpadView):
@@ -142,7 +142,7 @@ class PillarView(LaunchpadView):
         """This `IPillar` uses Launchpad."""
         return (
             self.official_malone or self.official_answers
-            or service_uses_launchpad(self.blue_prints_usage)
+            or service_uses_launchpad(self.blueprints_usage)
             or self.official_rosetta or self.official_codehosting)
 
     @property
