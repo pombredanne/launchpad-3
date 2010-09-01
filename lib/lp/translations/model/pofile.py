@@ -528,9 +528,11 @@ class POFile(SQLBase, POFileMixIn):
 
     @property
     def translation_messages(self):
+        """See `IPOFile`."""
         return self.getTranslationMessages()
 
     def getTranslationMessages(self, condition=None):
+        """See `IPOFile`."""
         clauses = [
             TranslationTemplateItem.potmsgsetID == TranslationMessage.potmsgsetID,
             TranslationTemplateItem.potemplate == self.potemplate,
