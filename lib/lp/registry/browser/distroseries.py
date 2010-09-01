@@ -360,6 +360,10 @@ class DistroSeriesView(MilestoneOverlayMixin):
 
     milestone_can_release = False
 
+    @cachedproperty
+    def milestone_batch_navigator(self):
+        return BatchNavigator(self.context.all_milestones, self.request)
+
 
 class DistroSeriesEditView(LaunchpadEditFormView, SeriesStatusMixin):
     """View class that lets you edit a DistroSeries object.

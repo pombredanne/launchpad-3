@@ -59,6 +59,7 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.helpers import browserLanguages
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp import (
     ApplicationMenu,
     canonical_url,
@@ -475,12 +476,16 @@ class ProductSeriesView(LaunchpadView, MilestoneOverlayMixin):
                 for status in sorted(status_counts,
                                      key=attrgetter('sortkey'))]
 
-    @property
+    @cachedproperty
     def latest_release_with_download_files(self):
         for release in self.context.releases:
             if len(list(release.files)) > 0:
                 return release
         return None
+
+    @cachedproperty
+    def milestone_batch_navigator(self):
+        return BatchNavigator(self.context.all_milestones, self.request)
 
 
 class ProductSeriesDetailedDisplayView(ProductSeriesView):

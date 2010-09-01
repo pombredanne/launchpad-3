@@ -97,7 +97,7 @@ class HasMilestonesMixin:
 
     @property
     def has_milestones(self):
-        return self.all_milestones.any() is not None
+        return not self.all_milestones.is_empty()
 
     @property
     def all_milestones(self):
@@ -293,7 +293,10 @@ class ProjectMilestone(HasBugsBase):
     def __init__(self, target, name, dateexpected, active):
         self.name = name
         self.code_name = None
-        self.id = None
+        # The id is necessary for generating a unique memcache key
+        # in a page template loop. The ProjectMilestone.id is passed
+        # in as the third argument to the "cache" TALes.
+        self.id = 'ProjectGroup:%s/Milestone:%s' % (target.name, name)
         self.code_name = None
         self.product = None
         self.distribution = None
