@@ -7,6 +7,10 @@ __all__ = ['Timeline']
 
 __metaclass__ = type
 
+import datetime
+
+from pytz import utc as UTC
+
 from timedaction import TimedAction
 
 
@@ -30,6 +34,7 @@ class Timeline:
     requests.
 
     :ivar actions: The actions.
+    :ivar baseline: The point the timeline starts at.
     """
 
     def __init__(self, actions=None):
@@ -41,6 +46,7 @@ class Timeline:
         if actions is None:
             actions = []
         self.actions = actions
+        self.baseline = datetime.datetime.now(UTC)
 
     def start(self, category, detail):
         """Create a new TimedAction at the end of the timeline.
@@ -49,7 +55,7 @@ class Timeline:
         :param detail: The detail for the action.
         :return: A TimedAction for that category and detail.
         """
-        result = TimedAction(category, detail)
+        result = TimedAction(category, detail, self)
         if self.actions and self.actions[-1].duration is None:
             raise OverlappingActionError(self.actions[-1], result)
         self.actions.append(result)
