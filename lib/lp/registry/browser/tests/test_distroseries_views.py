@@ -11,6 +11,10 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.testing import LaunchpadZopelessLayer
+from lp.registry.enum import (
+    DistroSeriesDifferenceStatus,
+    DistroSeriesDifferenceType,
+    )
 from lp.testing import TestCaseWithFactory
 from lp.testing.views import create_initialized_view
 
@@ -42,6 +46,32 @@ class TestDistroSeriesView(TestCaseWithFactory):
         distroseries = self.factory.makeDistroSeries(distribution=ubuntu)
         view = create_initialized_view(distroseries, '+index')
         self.assertEqual(view.needs_linking, None)
+
+
+class DistroSeriesLocalPackageDiffsTestCase(TestCaseWithFactory):
+    """Test the distroseries +localpackagediffs view."""
+
+    layer = LaunchpadZopelessLayer
+
+    def makeDerivedSeries(self, derived_name=None, parent_name=None):
+        # Helper that creates a derived distro series.
+        parent = self.factory.makeDistroSeries(name=parent_name)
+        derived_series = self.factory.makeDistroSeries(
+            name=derived_name, parent_series=parent)
+        return derived_series
+
+    def test_label(self):
+        # The view label includes the names of both series.
+        derived_series = self.makeDerivedSeries(
+            parent_name='lucid', derived_name='derilucid')
+
+        view = create_initialized_view(
+            derived_series, '+localpackagediffs')
+
+        self.assertEqual(
+            "Source package differences between 'Derilucid' and "
+            "parent series 'Lucid'",
+            view.label)
 
 
 def test_suite():

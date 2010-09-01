@@ -1,0 +1,29 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  metal:use-macro="view/macro:page/main_side"
+  i18n:domain="launchpad">
+  <body>
+    <tal:heading metal:fill-slot="heading">
+      <h1 tal:content="view/label">Package differences between ...</h1>
+    </tal:heading>
+
+    <div metal:fill-slot="main">
+       <p>Source packages shown here are present in both
+          <tal:replace replace="context/displayname">Derilucid</tal:replace>
+          and the parent series,
+          <tal:replace replace="context/parent_series/fullseriesname">Ubuntu Lucid
+          </tal:replace>, but are different somehow. Changes could be in
+          either or both series so check the versions (and the diff if
+          necessary) before syncing the
+          <tal:replace replace="context/parent_series/displayname">Lucid
+          </tal:replace> version (Read more about syncing from the parent
+          series).
+       </p>
+
+    </div>
+
+  </body>
+</html>
