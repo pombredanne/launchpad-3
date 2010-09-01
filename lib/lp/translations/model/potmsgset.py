@@ -598,7 +598,6 @@ class POTMsgSet(SQLBase):
         :param prefer_shared: Whether to prefer a shared match over a
             diverged one.
         """
-# XXX: Stormify
         clauses = ['potmsgset = %s' % sqlvalues(self),
                    'language = %s' % sqlvalues(pofile.language),
                    '(potemplate IS NULL OR potemplate = %s)' % sqlvalues(
