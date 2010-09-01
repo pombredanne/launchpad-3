@@ -33,11 +33,11 @@ for a Person:
 
     >>> for pt in translations_carlos.translation_history:
     ...     print pt.pofile.title
-    English (en) trans... of pkgconf-mozilla in Ubuntu Hoary package "mozilla"
-    Spanish (es) translation of alsa-utils in alsa-utils trunk
-    Spanish (es) translation of man in Ubuntu Hoary package "evolution"
-    Spanish (es) translation of evolution-2.2 in Evolution trunk
     Japanese (ja) tran... of evolution-2.2 in Ubuntu Hoary package "evolution"
+    Spanish (es) translation of alsa-utils in alsa-utils trunk
+    English (en) trans... of pkgconf-mozilla in Ubuntu Hoary package "mozilla"
     Spanish (es) trans... of evolution-2.2 in Ubuntu Hoary package "evolution"
+    Spanish (es) translation of evolution-2.2 in Evolution trunk
+    Spanish (es) translation of man in Ubuntu Hoary package "evolution"
 
 
