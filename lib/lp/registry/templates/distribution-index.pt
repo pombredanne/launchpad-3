@@ -52,7 +52,7 @@
       <div class="yui-g">
         <div class="yui-u first">
           <div tal:replace="structure context/@@+portlet-listfaqs"
-            tal:condition="context/official_answers" />
+            tal:condition="context/answers_usage/enumvalue:LAUNCHPAD" />
 
           <div tal:replace="structure context/@@+portlet-latestbugs"
             tal:condition="context/official_malone" />
@@ -62,7 +62,7 @@
 
         <div class="yui-u">
           <div tal:replace="structure context/@@+portlet-latestquestions"
-            tal:condition="context/official_answers" />
+            tal:condition="context/answers_usage/enumvalue:LAUNCHPAD" />
 
           <div tal:replace="structure context/@@+portlet-latestspecs"
             tal:condition="context/blueprints_usage/enumvalue:LAUNCHPAD" />

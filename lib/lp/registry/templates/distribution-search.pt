@@ -77,7 +77,7 @@
                     </a>
                     <a
                       tal:define="link package/menu:answers/new"
-                      tal:condition="distribution/official_answers"
+                      tal:condition="distribution/answers_usage/enumvalue:LAUNCHPAD"
                       tal:attributes="href link/url">
                     <img
                       tal:attributes="alt link/text"
