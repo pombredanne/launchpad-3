@@ -6,8 +6,6 @@ SET client_min_messages=ERROR;
 CREATE TABLE BugTrackerComponentGroup (
     id serial PRIMARY KEY,
     name text NOT NULL,
-    is_active boolean DEFAULT True,
-    is_custom boolean DEFAULT True,
     bug_tracker integer NOT NULL REFERENCES BugTracker
 );
 
@@ -17,6 +15,8 @@ CREATE INDEX bugtrackercomponentgroup__bugtracker__idx
 CREATE TABLE BugTrackerComponent (
     id serial PRIMARY KEY,
     name text NOT NULL,
+    is_active boolean DEFAULT True,
+    is_custom boolean DEFAULT True,
     component_group integer NOT NULL REFERENCES BugTrackerComponentGroup,
     source_package integer REFERENCES DistributionSourcePackage,
 
