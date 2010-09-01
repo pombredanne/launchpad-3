@@ -34,7 +34,7 @@ from canonical.launchpad import versioninfo
 from canonical.launchpad.layers import WebServiceLayer
 from canonical.launchpad.webapp.adapter import (
     get_request_duration,
-    get_request_statements,
+    get_request_start_time,
     soft_timeout_expired,
     )
 from canonical.launchpad.webapp.interfaces import (
@@ -45,7 +45,7 @@ from canonical.launchpad.webapp.interfaces import (
 from canonical.launchpad.webapp.opstats import OpStats
 from canonical.lazr.utils import safe_hasattr
 from lp.services.log.uniquefileallocator import UniqueFileAllocator
-
+from lp.services.timeline.requesttimeline import get_request_timeline
 
 UTC = pytz.utc
 
@@ -448,11 +448,18 @@ class ErrorReportingUtility:
         strurl = _safestr(url)
 
         duration = get_request_duration()
-
-        statements = sorted(
-            (start, end, _safestr(database_id), _safestr(statement))
-            for (start, end, database_id, statement)
-                in get_request_statements())
+        # In principle the timeline is per-request, but see bug=623199 -
+        # at this point the request is optional, but get_request_timeline
+        # does not care; when it starts caring, we will always have a 
+        # request object (or some annotations containing object).
+        # RBC 20100901
+        timeline = get_request_timeline(request)
+        statements = []
+        for action in timeline.actions:
+            log_tuple = action.log_tuple()
+            statements.append(
+                log_tuple[:2] + 
+                (_safestr(log_tuple[2]), _safestr(log_tuple[3])))
 
         oopsid, filename = self.log_namer.newId(now)
 

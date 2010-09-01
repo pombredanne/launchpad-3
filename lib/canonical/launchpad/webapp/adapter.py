@@ -6,6 +6,7 @@
 
 __metaclass__ = type
 
+import datetime
 import os
 import re
 import sys
@@ -22,6 +23,7 @@ from psycopg2.extensions import (
     ISOLATION_LEVEL_SERIALIZABLE,
     QueryCanceledError,
     )
+import pytz
 from storm.database import register_scheme
 from storm.databases.postgres import (
     Postgres,
@@ -63,7 +65,12 @@ from canonical.launchpad.webapp.interfaces import (
     SLAVE_FLAVOR,
     )
 from canonical.launchpad.webapp.opstats import OpStats
-from canonical.lazr.utils import safe_hasattr
+from canonical.lazr.utils import get_current_browser_request, safe_hasattr
+from lp.services.timeline.timeline import Timeline
+from lp.services.timeline.requesttimeline import (
+    get_request_timeline,
+    set_request_timeline,
+    )
 
 
 __all__ = [
@@ -79,6 +86,8 @@ __all__ = [
     'StoreSelector',
     ]
 
+
+UTC = pytz.utc
 
 classImplements(TimeoutError, IRequestExpired)
 
@@ -123,9 +132,9 @@ class CommitLogger:
         pass
 
     def afterCompletion(self, txn):
-        now = time()
-        _log_statement(
-            now, now, None, 'Transaction completed, status: %s' % txn.status)
+        action = get_request_timeline(get_current_browser_request()).start(
+            "SQL-nostore", 'Transaction completed, status: %s' % txn.status)
+        action.finish()
 
 
 def set_request_started(
@@ -151,10 +160,10 @@ def set_request_started(
     if starttime is None:
         starttime = time()
     _local.request_start_time = starttime
-    if request_statements is None:
-        _local.request_statements = []
-    else:
-        _local.request_statements = request_statements
+    if request_statements is not None:
+        # Requires poking at the API; default is to Just Work.
+        request = get_current_browser_request()
+        set_request_timeline(request, Timeline(request_statements))
     _local.current_statement_timeout = None
     _local.enable_timeout = enable_timeout
     if txn is not None:
@@ -167,9 +176,9 @@ def clear_request_started():
     """
     if getattr(_local, 'request_start_time', None) is None:
         warnings.warn('clear_request_started() called outside of a request')
-
     _local.request_start_time = None
-    _local.request_statements = []
+    request = get_current_browser_request()
+    set_request_timeline(request, Timeline())
     commit_logger = getattr(_local, 'commit_logger', None)
     if commit_logger is not None:
         _local.commit_logger.txn.unregisterSynch(_local.commit_logger)
@@ -179,7 +188,8 @@ def clear_request_started():
 def summarize_requests():
     """Produce human-readable summary of requests issued so far."""
     secs = get_request_duration()
-    statements = getattr(_local, 'request_statements', [])
+    request = get_current_browser_request()
+    timeline = get_request_timeline(request)
     from canonical.launchpad.webapp.errorlog import (
         maybe_record_user_requested_oops)
     oopsid = maybe_record_user_requested_oops()
@@ -187,14 +197,15 @@ def summarize_requests():
         oops_str = ""
     else:
         oops_str = " %s" % oopsid
-    log = "%s queries issued in %.2f seconds%s" % (
-        len(statements), secs, oops_str)
+    log = "%s queries/external actions issued in %.2f seconds%s" % (
+        len(timeline.actions), secs, oops_str)
     return log
 
 
 def store_sql_statements_and_request_duration(event):
+    actions = get_request_timeline(get_current_browser_request()).actions
     event.request.setInWSGIEnvironment(
-        'launchpad.sqlstatements', len(get_request_statements()))
+        'launchpad.nonpythonstatements', len(actions))
     event.request.setInWSGIEnvironment(
         'launchpad.requestduration', get_request_duration())
 
@@ -205,7 +216,16 @@ def get_request_statements():
     The list is composed of (starttime, endtime, db_id, statement) tuples.
     Times are given in milliseconds since the start of the request.
     """
-    return getattr(_local, 'request_statements', [])
+    result = []
+    request = get_current_browser_request()
+    for action in get_request_timeline(request).actions:
+        if not action.category.startswith("SQL-"):
+            continue
+        # Can't show incomplete requests in this API
+        if action.duration is None:
+            continue
+        result.append(action.log_tuple())
+    return result
 
 
 def get_request_start_time():
@@ -222,29 +242,6 @@ def get_request_duration(now=None):
     if now is None:
         now = time()
     return now - starttime
-
-
-def _log_statement(starttime, endtime, connection_wrapper, statement):
-    """Log that a database statement was executed."""
-    request_starttime = getattr(_local, 'request_start_time', None)
-    if request_starttime is None:
-        return
-
-    # convert times to integer millisecond values
-    starttime = int((starttime - request_starttime) * 1000)
-    endtime = int((endtime - request_starttime) * 1000)
-    # A string containing no whitespace that lets us identify which Store
-    # is being used.
-    if connection_wrapper is not None:
-        database_identifier = connection_wrapper._database.name
-    else:
-        database_identifier = None
-    _local.request_statements.append(
-        (starttime, endtime, database_identifier, statement))
-
-    # store the last executed statement as an attribute on the current
-    # thread
-    threading.currentThread().lp_last_sql_statement = statement
 
 
 def _check_expired(timeout):
@@ -530,15 +527,23 @@ class LaunchpadStatementTracer:
         if self._debug_sql or self._debug_sql_extra:
             sys.stderr.write(statement + "\n")
             sys.stderr.write("-" * 70 + "\n")
-
-        now = time()
-        connection._lp_statement_start_time = now
+        # store the last executed statement as an attribute on the current
+        # thread
+        threading.currentThread().lp_last_sql_statement = statement
+        request_starttime = getattr(_local, 'request_start_time', None)
+        if request_starttime is None:
+            return
+        action = get_request_timeline(get_current_browser_request()).start(
+            'SQL-%s' % connection._database.name, statement)
+        connection._lp_statement_action = action
 
     def connection_raw_execute_success(self, connection, raw_cursor,
                                        statement, params):
-        end = time()
-        start = getattr(connection, '_lp_statement_start_time', end)
-        _log_statement(start, end, connection, statement)
+        action = getattr(connection, '_lp_statement_action', None)
+        if action is not None:
+            # action may be None if the tracer was installed  the statement was
+            # submitted.
+            action.finish()
 
     def connection_raw_execute_error(self, connection, raw_cursor,
                                      statement, params, error):
