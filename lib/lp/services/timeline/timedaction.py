@@ -43,7 +43,7 @@ class TimedAction:
         self.detail = detail
         self.timeline = timeline
 
-    def log_tuple(self):
+    def logTuple(self):
         """Return a 4-tuple suitable for errorlog's use."""
         offset = self._td_to_ms(self.start - self.timeline.baseline)
         length = self._td_to_ms(self.duration)

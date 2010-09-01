@@ -37,6 +37,8 @@ class TestRequestTimeline(testtools.TestCase):
         self.assertEqual(timeline, get_request_timeline(req))
 
     # Tests while adapter._local contains the timeline --start---
+    # Delete when bug=623199 is fixed and the timeline store moved to
+    # annotations.
     def test_new_request_get_request_timeline_uses_webapp(self):
         req = TestRequest()
         timeline = get_request_timeline(req)

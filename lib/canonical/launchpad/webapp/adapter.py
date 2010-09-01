@@ -228,7 +228,7 @@ def get_request_statements():
         # Can't show incomplete requests in this API
         if action.duration is None:
             continue
-        result.append(action.log_tuple())
+        result.append(action.logTuple())
     return result
 
 

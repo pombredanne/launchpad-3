@@ -456,7 +456,7 @@ class ErrorReportingUtility:
         timeline = get_request_timeline(request)
         statements = []
         for action in timeline.actions:
-            start, end, category, detail = action.log_tuple()
+            start, end, category, detail = action.logTuple()
             statements.append(
                 (start, end, _safestr(category), _safestr(detail)))
 
