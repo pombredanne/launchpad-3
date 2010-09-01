@@ -10,6 +10,7 @@ import datetime
 import testtools
 
 from lp.services.timeline.timedaction import TimedAction
+from lp.services.timeline.timeline import Timeline
 
 
 class TestTimedAction(testtools.TestCase):
@@ -31,3 +32,16 @@ class TestTimedAction(testtools.TestCase):
     def test__init__sets_detail(self):
         action = TimedAction(None, "fred.jones@example.com")
         self.assertEqual("fred.jones@example.com", action.detail)
+
+    def test_log_tuple(self):
+        timeline = Timeline()
+        action = TimedAction("foo", "bar", timeline)
+        # Set variable for deterministic results
+        action.start = timeline.baseline + datetime.timedelta(0, 0, 0, 2)
+        action.duration = datetime.timedelta(0, 0, 0, 4)
+        log_tuple = action.log_tuple()
+        self.assertEqual(4, len(log_tuple), "!= 4 elements %s" % (log_tuple,))
+        self.assertAlmostEqual(2, log_tuple[0])
+        self.assertAlmostEqual(4, log_tuple[1])
+        self.assertEqual("foo", log_tuple[2])
+        self.assertEqual("bar", log_tuple[3])
