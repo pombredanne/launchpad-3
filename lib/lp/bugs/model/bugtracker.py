@@ -8,8 +8,6 @@ __all__ = [
     'BugTracker',
     'BugTrackerAlias',
     'BugTrackerAliasSet',
-    'BugTrackerComponent',
-    'BugTrackerComponentGroup',
     'BugTrackerSet']
 
 
@@ -61,8 +59,6 @@ from lp.bugs.interfaces.bugtracker import (
     IBugTracker,
     IBugTrackerAlias,
     IBugTrackerAliasSet,
-    IBugTrackerComponent,
-    IBugTrackerComponentGroup,
     IBugTrackerSet,
     SINGLE_PRODUCT_BUGTRACKERTYPES,
     )
@@ -656,41 +652,3 @@ class BugTrackerAliasSet:
     def queryByBugTracker(self, bugtracker):
         """See IBugTrackerSet."""
         return self.table.selectBy(bugtracker=bugtracker.id)
-
-
-class BugTrackerComponent(SQLBase):
-    """The software component in the remote bug tracker.
-
-    Most bug trackers organize bug reports by the software 'component'
-    they affect.  This class provides a mapping of this upstream component
-    to the corresponding source package in the distro.
-    """
-    implements(IBugTrackerComponent)
-
-    _table = 'BugTrackerComponent'
-
-    name = StringCol(notNull=True)
-
-    source_package = ForeignKey(
-        dbName='distrosourcepackage', foreignKey='id',
-        storm_validator=TODO, notNull=False)
-
-
-class BugTrackerComponentGroup(SQLBase):
-    """A collection of components in a remote bug tracker.
-
-    Some bug trackers organize sets of components into higher level groups,
-    such as Bugzilla's 'product'.
-    """
-    implements(IBugTrackerComponentGroup)
-
-    _table = 'BugTrackerComponentGroup'
-
-    name = StringCol(notNull=True)
-
-    bugtracker = ForeignKey(
-        dbName='bugtracker', foreignKey='id',
-        storm_validator=TODO, notNull=True)
-
-    components = SQLMultipleJoin(
-        'BugTrackerComponent', joinColumn='componentgroup', orderBy='name')
