@@ -69,7 +69,7 @@ class InvolvedMenu(NavigationMenu):
     def ask_question(self):
         return Link(
             '+addquestion', 'Ask a question', site='answers', icon='answers',
-            enabled=self.pillar.official_answers)
+            enabled=service_uses_launchpad(self.pillar.answers_usage))
 
     def help_translate(self):
         return Link(
@@ -100,7 +100,7 @@ class PillarView(LaunchpadView):
     def __init__(self, context, request):
         super(PillarView, self).__init__(context, request)
         self.official_malone = False
-        self.official_answers = False
+        self.answers_usage = ServiceUsage.UNKNOWN 
         self.blueprints_usage = ServiceUsage.UNKNOWN 
         self.official_rosetta = False
         self.official_codehosting = False
@@ -114,7 +114,7 @@ class PillarView(LaunchpadView):
         else:
             self._set_official_launchpad(pillar)
             if IDistroSeries.providedBy(self.context):
-                self.official_answers = False
+                self.answers_usage = ServiceUsage.UNKNOWN
                 self.official_codehosting = False
             elif IDistributionSourcePackage.providedBy(self.context):
                 self.blueprints_usage = ServiceUsage.UNKNOWN
@@ -129,8 +129,7 @@ class PillarView(LaunchpadView):
         # times to build the complete set of official applications.
         if pillar.official_malone:
             self.official_malone = True
-        if pillar.official_answers:
-            self.official_answers = True
+        self.answers_usage = pillar.answers_usage 
         self.blueprints_usage = pillar.blueprints_usage
         if pillar.official_rosetta:
             self.official_rosetta = True
@@ -141,7 +140,8 @@ class PillarView(LaunchpadView):
     def has_involvement(self):
         """This `IPillar` uses Launchpad."""
         return (
-            self.official_malone or self.official_answers
+            self.official_malone 
+            or service_uses_launchpad(self.answers_usage)
             or service_uses_launchpad(self.blueprints_usage)
             or self.official_rosetta or self.official_codehosting)
 

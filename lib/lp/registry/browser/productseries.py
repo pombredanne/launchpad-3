@@ -83,6 +83,7 @@ from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.tales import MenuAPI
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
+from lp.app.enums import ServiceUsage
 from lp.app.errors import (
     NotFoundError,
     UnexpectedFormData,
@@ -252,7 +253,7 @@ class ProductSeriesInvolvementView(PillarView):
     def __init__(self, context, request):
         super(ProductSeriesInvolvementView, self).__init__(context, request)
         self.official_codehosting = self.context.branch is not None
-        self.official_answers = False
+        self.answers_usage = ServiceUsage.NOT_APPLICABLE
 
     @property
     def configuration_links(self):

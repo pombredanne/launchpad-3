@@ -67,6 +67,7 @@ from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.menu import structured
 from canonical.widgets import LabeledMultiCheckBoxWidget
+from lp.app.enums import service_uses_launchpad
 from lp.app.errors import NotFoundError
 from lp.answers.browser.faqcollection import FAQCollectionMenu
 from lp.answers.interfaces.faqcollection import IFAQCollection
@@ -204,7 +205,7 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
             return self.default_template
         involvement = getMultiAdapter(
             (self.context, self.request), name='+get-involved')
-        if involvement.official_answers:
+        if service_uses_launchpad(involvement.answers_usage):
             # Primary contexts that officially use answers have a
             # search and listing presentation.
             return self.default_template
