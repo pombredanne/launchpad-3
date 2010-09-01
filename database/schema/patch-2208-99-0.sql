@@ -6,6 +6,8 @@ SET client_min_messages=ERROR;
 CREATE TABLE BugTrackerComponentGroup (
     id serial PRIMARY KEY,
     name text NOT NULL,
+    is_active boolean DEFAULT True,
+    is_custom boolean DEFAULT True,
     bug_tracker integer NOT NULL REFERENCES BugTracker
 );
 
