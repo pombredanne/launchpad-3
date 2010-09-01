@@ -126,7 +126,7 @@ class UsesLaunchpadMixin:
         if self.context.official_answers:
             url = canonical_url(self.context, rootsite='answers')
             uses.append(href_template % (url, 'Answers'))
-        if self.context.official_blueprints:
+        if service_uses_launchpad(self.context.blueprints_usage):
             url = canonical_url(self.context, rootsite='blueprints')
             uses.append(href_template % (url, 'Blueprints'))
         if self.context.official_malone:
