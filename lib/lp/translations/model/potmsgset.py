@@ -572,7 +572,7 @@ class POTMsgSet(SQLBase):
         return potranslations
 
     def findTranslationMessage(self, pofile, translations=None,
-                               potranslations=None, prefer_shared=False):
+                               prefer_shared=False):
         """Find the best matching message in this `pofile`.
 
         The returned message matches exactly the given `translations`
