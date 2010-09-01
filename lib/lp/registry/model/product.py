@@ -17,6 +17,7 @@ import datetime
 import operator
 
 from lazr.delegates import delegates
+from lazr.restful.error import expose
 import pytz
 from sqlobject import (
     BoolCol,
@@ -393,9 +394,9 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         # Validate deactivation.
         if self.active == True and value == False:
             if len(self.sourcepackages) > 0:
-                raise AssertionError(
+                raise expose(ValueError(
                     'This project cannot be deactivated since it is '
-                    'linked to source packages.')
+                    'linked to source packages.'))
         return value
 
     active = BoolCol(dbName='active', notNull=True, default=True,
