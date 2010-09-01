@@ -3,19 +3,28 @@
 
 """Manage a Timeline for a request."""
 
-__all__ = ['get_request_timeline', 'set_request_timeline']
+__all__ = [
+    'get_request_timeline',
+    'set_request_timeline',
+    ]
 
-__metaclass__ = type
+__metaclass__ = typea
 
-# XXX: undesirable but pragmatic. bug=623199 RBC 20100901
+# XXX RobertCollins 2010-09-01 bug=623199: Undesirable but pragmatic.
+# Because of this bug, rather than using request.annotations we have
+# to work in with the webapp.adapter request model, which is 
+# different to that used by get_current_browser_request.
 from canonical.launchpad import webapp
 from timeline import Timeline
 
 
 def get_request_timeline(request):
-    """Get a Timeline for request.
+    """Get a `Timeline` for request.
 
-    This returns the request.annotations['timeline'], creating it if necessary.
+    This should ideally return the request.annotations['timeline'], creating it
+    if necessary. However due to bug 623199 it instead using the adapter
+    context for 'requests'. Once bug 623199 is fixed it will instead use the
+    request annotations.
 
     :param request: A zope/launchpad request object.
     :return: A lp.services.timeline.timeline.Timeline object for the request.
@@ -24,12 +33,12 @@ def get_request_timeline(request):
         return webapp.adapter._local.request_timeline
     except AttributeError:
         return set_request_timeline(request, Timeline())
-    # Disabled code path: bug 623199
+    # Disabled code path: bug 623199, ideally we would use this code path.
     return request.annotations.setdefault('timeline', Timeline())
 
 
 def set_request_timeline(request, timeline):
-    """Explicitly set a tiemline for request.
+    """Explicitly set a timeline for request.
 
     This is used by code which wants to manually assemble a timeline.
 
@@ -38,5 +47,5 @@ def set_request_timeline(request, timeline):
     """
     webapp.adapter._local.request_timeline = timeline
     return timeline
-    # Disabled code path: bug 623199
+    # Disabled code path: bug 623199, ideally we would use this code path.
     request.annotations['timeline'] = timeline

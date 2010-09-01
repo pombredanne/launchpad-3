@@ -9,6 +9,6 @@ NOTE that it is not LP's timeline-view for products, though they are similar in
 intent and concept (If a better name presents itself, this package may be
 renamed).
 
-Because this part of lp.services, packages in this namespace can only use
+Because this is part of lp.services, packages in this namespace can only use
 general LAZR or library functionality.
 """
