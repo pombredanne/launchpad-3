@@ -186,11 +186,11 @@
     <tal:also_in_ubuntu
       condition="not: view/bug_tracking_usage/enumvalue:LAUNCHPAD">
       <p tal:define="packages context/ubuntu_packages | nothing"
-         tal:condition="packages">
-        <tal:displayname replace="context/displayname"/>
-        bug reports are
+         tal:condition="packages"
+         id="also-in-ubuntu">
+        Launchpad
         <tal:also condition="view/external_bugtracker">also</tal:also>
-        tracked in:
+        keeps track of bug reports for
         <tal:packages repeat="package packages">
           <span style="white-space: nowrap"
                 tal:content="structure package/fmt:link" /><tal:comma

@@ -38,6 +38,7 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
+
 from canonical.cachedproperty import cachedproperty
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -46,6 +47,9 @@ from canonical.database.sqlbase import (
     quote,
     SQLBase,
     sqlvalues,
+    )
+from canonical.launchpad.components.decoratedresultset import (
+    DecoratedResultSet,
     )
 from canonical.launchpad.interfaces.launchpad import (
     IHasIcon,
@@ -63,6 +67,7 @@ from canonical.launchpad.webapp.interfaces import (
     MAIN_STORE,
     )
 from canonical.launchpad.webapp.sorting import sorted_version_numbers
+
 from lp.answers.interfaces.faqtarget import IFAQTarget
 from lp.answers.interfaces.questioncollection import (
     QUESTION_STATUS_DEFAULT_SEARCH,
@@ -146,6 +151,7 @@ from lp.registry.model.pillar import HasAliasMixin
 from lp.registry.model.productlicense import ProductLicense
 from lp.registry.model.productrelease import ProductRelease
 from lp.registry.model.productseries import ProductSeries
+from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.registry.model.structuralsubscription import (
     StructuralSubscriptionTargetMixin,
     )
@@ -784,24 +790,31 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     @property
     def distrosourcepackages(self):
-        from lp.registry.model.distributionsourcepackage \
-            import DistributionSourcePackage
-        clause = """ProductSeries.id=Packaging.productseries AND
-                    ProductSeries.product = %s
-                    """ % sqlvalues(self.id)
-        clauseTables = ['ProductSeries']
-        ret = Packaging.select(clause, clauseTables,
-            prejoins=["sourcepackagename", "distroseries.distribution"])
-        distros = set()
-        dsps = []
-        for packaging in ret:
-            distro = packaging.distroseries.distribution
-            distros.add(distro)
-            dsps.append(DistributionSourcePackage(
-                sourcepackagename=packaging.sourcepackagename,
-                distribution=distro))
-        return sorted(dsps, key=lambda x:
-            (x.sourcepackagename.name, x.distribution.name))
+        from lp.registry.model.distributionsourcepackage import (
+            DistributionSourcePackage,
+            )
+        store = IStore(Packaging)
+        origin = [
+            Packaging,
+            Join(SourcePackageName,
+                 Packaging.sourcepackagename == SourcePackageName.id),
+            Join(ProductSeries, Packaging.productseries == ProductSeries.id),
+            Join(DistroSeries, Packaging.distroseries == DistroSeries.id),
+            Join(Distribution, DistroSeries.distribution == Distribution.id),
+            ]
+        result = store.using(*origin).find(
+            (SourcePackageName, Distribution),
+            ProductSeries.product == self)
+        result = result.order_by(SourcePackageName.name, Distribution.name)
+        result.config(distinct=True)
+
+        def decorate(row):
+            sourcepackagename, distro = row
+            return DistributionSourcePackage(
+                sourcepackagename=sourcepackagename,
+                distribution=distro)
+
+        return DecoratedResultSet(result, decorate)
 
     @property
     def ubuntu_packages(self):
