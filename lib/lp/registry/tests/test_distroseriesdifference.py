@@ -316,15 +316,13 @@ class DistroSeriesDifferenceSourceTestCase(TestCaseWithFactory):
         diffs['ignored'].append(
             self.factory.makeDistroSeriesDifference(
                 derived_series=derived_series,
-                status=DistroSeriesDifferenceStatus.IGNORED
-                ))
+                status=DistroSeriesDifferenceStatus.IGNORED))
         return diffs
 
     def makeDerivedSeries(self):
         # Keep tests DRY.
         return self.factory.makeDistroSeries(
             parent_series=self.factory.makeDistroSeries())
-
 
     def test_getForDistroSeries_default(self):
         # By default all differences needing attention for the given

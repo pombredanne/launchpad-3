@@ -96,7 +96,7 @@ class DistroSeriesDifference(Storm):
                 DistroSeriesDifferenceStatus.NEEDS_ATTENTION,
                 )
         elif isinstance(status, DBItem):
-            status = (status,)
+            status = (status, )
 
         return IStore(DistroSeriesDifference).find(
             DistroSeriesDifference,
