@@ -568,7 +568,7 @@
     <allow interface="lp.code.interfaces.branch.IBranchDelta"/>
   </class>
   <securedutility
-      class="lp.code.model.branch.BranchCloud"
+      class="lp.code.model.branchcloud.BranchCloud"
       provides="lp.code.interfaces.branch.IBranchCloud">
     <allow interface="lp.code.interfaces.branch.IBranchCloud"/>
   </securedutility>

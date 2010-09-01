@@ -737,8 +737,9 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
     def userCanSetAnyAssignee(user):
         """Check if the current user can set anybody sa a bugtask assignee.
 
-        Return True for project owner, project drivers, series drivers,
-        bug supervisors and Launchpad admins; return False for other users.
+        Owners, drivers, bug supervisors and Launchpad admins can always
+        assign to someone else.  Other users can assign to someone else if a
+        bug supervisor is not defined.
         """
 
     def userCanUnassign(user):
@@ -1401,7 +1402,7 @@ class IBugTaskSet(Interface):
     def searchBugIds(params):
         """Search bug ids.
 
-        This is a variation on IBugTaskSet.search that returns only the bug ids.
+        This is a variation on IBugTaskSet.search that returns only bug ids.
 
         :param params: the BugTaskSearchParams to search on.
         """
