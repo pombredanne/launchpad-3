@@ -21,11 +21,11 @@ from sqlobject import (
     BoolCol,
     ForeignKey,
     IntCol,
-    SQLMultipleJoin,
     StringCol,
     )
 from storm.expr import (
     And,
+    Coalesce,
     Exists,
     In,
     Join,
@@ -56,6 +56,7 @@ from canonical.database.sqlbase import (
     )
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.readonly import is_read_only
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
@@ -525,9 +526,19 @@ class POFile(SQLBase, POFileMixIn):
     from_sourcepackagename = ForeignKey(foreignKey='SourcePackageName',
         dbName='from_sourcepackagename', notNull=False, default=None)
 
-    # joins
-    translation_messages = SQLMultipleJoin(
-        'TranslationMessage', joinColumn='pofile', orderBy='id')
+    @property
+    def translation_messages(self):
+        return IStore(self).find(
+            TranslationMessage,
+            Or(
+                And(
+                    TranslationTemplateItem.potmsgsetID == (
+                        TranslationMessage.potmsgsetID),
+                    TranslationTemplateItem.potemplate == (
+                        self.potemplate)),
+                TranslationMessage.potemplate == self.potemplate),
+            TranslationMessage.language == self.language
+            ).order_by(TranslationMessage.id)
 
     @property
     def title(self):
