@@ -297,18 +297,91 @@ class DistroSeriesDifferenceSourceTestCase(TestCaseWithFactory):
 
         verifyObject(IDistroSeriesDifferenceSource, dsd_source)
 
+    def makeDiffsForDistroSeries(self, derived_series):
+        # Helper that creates a range of differences for a derived
+        # series.
+        diffs = {
+            'normal': [],
+            'unique': [],
+            'ignored': [],
+            }
+        diffs['normal'].append(
+            self.factory.makeDistroSeriesDifference(
+                derived_series=derived_series))
+        diffs['unique'].append(
+            self.factory.makeDistroSeriesDifference(
+                derived_series=derived_series,
+                difference_type=(
+                    DistroSeriesDifferenceType.UNIQUE_TO_DERIVED_SERIES)))
+        diffs['ignored'].append(
+            self.factory.makeDistroSeriesDifference(
+                derived_series=derived_series,
+                status=DistroSeriesDifferenceStatus.IGNORED
+                ))
+        return diffs
+
+    def makeDerivedSeries(self):
+        # Keep tests DRY.
+        return self.factory.makeDistroSeries(
+            parent_series=self.factory.makeDistroSeries())
+
+
     def test_getForDistroSeries_default(self):
         # By default all differences needing attention for the given
         # series are returned.
-        self.fail("Unimplemented")
+        derived_series = self.makeDerivedSeries()
+        diffs = self.makeDiffsForDistroSeries(derived_series)
+
+        result = getUtility(IDistroSeriesDifferenceSource).getForDistroSeries(
+            derived_series)
+
+        self.assertContentEqual(
+            diffs['normal'], result)
 
     def test_getForDistroSeries_filters_by_distroseries(self):
         # Differences for other series are not included.
-        self.fail("Unimplemented")
+        derived_series = self.makeDerivedSeries()
+        diffs = self.makeDiffsForDistroSeries(derived_series)
+        diff_for_other_series = self.factory.makeDistroSeriesDifference()
+
+        result = getUtility(IDistroSeriesDifferenceSource).getForDistroSeries(
+            derived_series)
+
+        self.assertFalse(diff_for_other_series in result)
 
     def test_getForDistroSeries_filters_by_type(self):
         # Only differences for the specified types are returned.
-        self.fail("Unimplemented")
+        derived_series = self.makeDerivedSeries()
+        diffs = self.makeDiffsForDistroSeries(derived_series)
+
+        result = getUtility(IDistroSeriesDifferenceSource).getForDistroSeries(
+            derived_series,
+            DistroSeriesDifferenceType.UNIQUE_TO_DERIVED_SERIES)
+
+    def test_getForDistroSeries_filters_by_status(self):
+        # A single status can be used to filter results.
+        derived_series = self.makeDerivedSeries()
+        diffs = self.makeDiffsForDistroSeries(derived_series)
+
+        result = getUtility(IDistroSeriesDifferenceSource).getForDistroSeries(
+            derived_series,
+            status=DistroSeriesDifferenceStatus.IGNORED)
+
+        self.assertContentEqual(diffs['ignored'], result)
+
+    def test_getForDistroSeries_filters_by_multiple_statuses(self):
+        # Multiple statuses can be passed for filtering.
+        derived_series = self.makeDerivedSeries()
+        diffs = self.makeDiffsForDistroSeries(derived_series)
+
+        result = getUtility(IDistroSeriesDifferenceSource).getForDistroSeries(
+            derived_series,
+            status=(
+                DistroSeriesDifferenceStatus.IGNORED,
+                DistroSeriesDifferenceStatus.NEEDS_ATTENTION,
+                ))
+
+        self.assertContentEqual(diffs['normal'] + diffs['ignored'], result)
 
 
 def test_suite():

@@ -9,6 +9,7 @@ __all__ = [
     'DistroSeriesDifference',
     ]
 
+from lazr.enum import DBItem
 from storm.locals import (
     Int,
     Reference,
@@ -83,6 +84,25 @@ class DistroSeriesDifference(Storm):
         diff.difference_type = difference_type
 
         return store.add(diff)
+
+    @staticmethod
+    def getForDistroSeries(
+        distro_series,
+        difference_type=DistroSeriesDifferenceType.DIFFERENT_VERSIONS,
+        status=None):
+        """See `IDistroSeriesDifferenceSource`."""
+        if status is None:
+            status = (
+                DistroSeriesDifferenceStatus.NEEDS_ATTENTION,
+                )
+        elif isinstance(status, DBItem):
+            status = (status,)
+
+        return IStore(DistroSeriesDifference).find(
+            DistroSeriesDifference,
+            DistroSeriesDifference.derived_series == distro_series,
+            DistroSeriesDifference.difference_type == difference_type,
+            DistroSeriesDifference.status.is_in(status))
 
     @property
     def source_pub(self):
