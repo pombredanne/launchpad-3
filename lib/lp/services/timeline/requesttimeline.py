@@ -8,7 +8,7 @@ __all__ = [
     'set_request_timeline',
     ]
 
-__metaclass__ = typea
+__metaclass__ = type
 
 # XXX RobertCollins 2010-09-01 bug=623199: Undesirable but pragmatic.
 # Because of this bug, rather than using request.annotations we have
