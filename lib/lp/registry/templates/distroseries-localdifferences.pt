@@ -10,18 +10,55 @@
       <h1 tal:content="view/label">Package differences between ...</h1>
     </tal:heading>
 
-    <div metal:fill-slot="main">
-       <p>Source packages shown here are present in both
-          <tal:replace replace="context/displayname">Derilucid</tal:replace>
-          and the parent series,
-          <tal:replace replace="context/parent_series/fullseriesname">Ubuntu Lucid
-          </tal:replace>, but are different somehow. Changes could be in
-          either or both series so check the versions (and the diff if
-          necessary) before syncing the
-          <tal:replace replace="context/parent_series/displayname">Lucid
-          </tal:replace> version (Read more about syncing from the parent
-          series).
-       </p>
+    <div metal:fill-slot="main"
+      tal:define="differences view/cached_differences;
+                  series_name context/displayname;
+                  parent_name context/parent_series/displayname;">
+      <p>Source packages shown here are present in both
+         <tal:replace replace="series_name">Derilucid</tal:replace>
+         and the parent series,
+         <tal:replace replace="context/parent_series/fullseriesname">Ubuntu Lucid
+         </tal:replace>, but are different somehow. Changes could be in
+         either or both series so check the versions (and the diff if
+         necessary) before syncing the
+         <tal:replace replace="parent_name">Lucid
+         </tal:replace> version (Read more about syncing from the parent
+         series).
+      </p>
+
+      <div tal:condition="differences/batch">
+        <tal:navigation_top
+          replace="structure differences/@@+navigation-links-upper" />
+          <table class="listing">
+          <thead>
+            <tr>
+              <th><tal:replace replace="parent_name" /> package</th>
+              <th><tal:replace replace="series_name" /> version</th>
+              <th>Last uploaded by</th>
+              <th>Latest comment</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tal:difference repeat="difference differences/batch">
+            <tr tal:define="parent_source_pub difference/parent_source_pub;
+                            source_pub difference/source_pub;
+                            signer source_pub/uploader/fmt:link|string:no signer;">
+              <td><a tal:attributes="href parent_source_pub/sourcepackagerelease/fmt:url">
+                    <tal:replace
+                    replace="parent_source_pub/sourcepackagerelease/title"/></a>
+              </td>
+              <td><a tal:attributes="href source_pub/sourcepackagerelease/fmt:url">
+                    <tal:replace
+                    replace="source_pub/sourcepackagerelease/version"/></a>
+              </td>
+              <td><a tal:replace="structure signer">Steph Smith</a></td>
+              <td>TODO:Add latest_comment attribute to difference</td>
+            </tr>
+
+            </tal:difference>
+          </tbody>
+        </table>
+      </div>
 
     </div>
 

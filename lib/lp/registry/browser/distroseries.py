@@ -72,6 +72,8 @@ from lp.registry.browser.structuralsubscription import (
     StructuralSubscriptionTargetTraversalMixin,
     )
 from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.distroseriesdifference import (
+    IDistroSeriesDifferenceSource)
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.worlddata.interfaces.country import ICountry
 from lp.services.worlddata.interfaces.language import ILanguageSet
@@ -541,5 +543,6 @@ class DistroSeriesLocalDifferences(LaunchpadView):
     @cachedproperty
     def cached_differences(self):
         """Return a batch navigator of potentially filtered results."""
-        differences = getUtility(IDistroSeriesDifferenceSource).getForDistroSeries()
-        return BatchNavigator(self.filtered_differences, self.request)
+        differences = getUtility(IDistroSeriesDifferenceSource).getForDistroSeries(
+            self.context)
+        return BatchNavigator(differences, self.request)
