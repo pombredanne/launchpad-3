@@ -528,8 +528,10 @@ class POFile(SQLBase, POFileMixIn):
 
     @property
     def translation_messages(self):
-        return IStore(self).find(
-            TranslationMessage,
+        return self.getTranslationMessages()
+
+    def getTranslationMessages(self, condition=None):
+        clauses = [
             Or(
                 And(
                     TranslationTemplateItem.potmsgsetID == (
@@ -537,7 +539,14 @@ class POFile(SQLBase, POFileMixIn):
                     TranslationTemplateItem.potemplate == (
                         self.potemplate)),
                 TranslationMessage.potemplate == self.potemplate),
-            TranslationMessage.language == self.language
+            TranslationMessage.language == self.language,
+            ]
+        if condition is not None:
+            clauses.append(condition)
+
+        return IStore(self).find(
+            TranslationMessage,
+            And(*clauses)
             ).order_by(TranslationMessage.id)
 
     @property
