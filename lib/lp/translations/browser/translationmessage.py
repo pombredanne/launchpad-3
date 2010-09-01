@@ -1043,7 +1043,8 @@ class CurrentTranslationMessageView(LaunchpadView):
                         pofile=pofile,
                         legal_warning_needed=False,
                         is_empty=False,
-                        packaged=True))
+                        packaged=True,
+                        local_to_pofile=True))
             else:
                 imported_submission = None
 
@@ -1058,7 +1059,8 @@ class CurrentTranslationMessageView(LaunchpadView):
                         plural_form=index,
                         pofile=pofile,
                         legal_warning_needed=False,
-                        is_empty=False))
+                        is_empty=False,
+                        local_to_pofile=True))
             else:
                 shared_submission = None
 
@@ -1253,7 +1255,7 @@ class CurrentTranslationMessageView(LaunchpadView):
                 self.seen_translations.add(imported.translations[index])
             local_suggestions = (
                 self._buildTranslationMessageSuggestions(
-                    'Suggestions', local, index))
+                    'Suggestions', local, index, local_to_pofile=True))
             externally_used_suggestions = (
                 self._buildTranslationMessageSuggestions(
                     'Used in', externally_used, index, legal_warning=True))
@@ -1276,7 +1278,8 @@ class CurrentTranslationMessageView(LaunchpadView):
                 len(alternate_language_suggestions.submissions))
 
     def _buildTranslationMessageSuggestions(self, title, suggestions, index,
-                                            legal_warning=False):
+                                            legal_warning=False,
+                                            local_to_pofile=False):
         """Build filtered list of submissions to be shown in the view.
 
         `title` is the title for the suggestion type, `suggestions` is
@@ -1286,7 +1289,8 @@ class CurrentTranslationMessageView(LaunchpadView):
             title, self.context,
             suggestions[:self.max_entries],
             self.user_is_official_translator, self.form_is_writeable,
-            index, self.seen_translations, legal_warning=legal_warning)
+            index, self.seen_translations, legal_warning=legal_warning,
+            local_to_pofile=local_to_pofile)
         self.seen_translations = iterable_submissions.seen_translations
         return iterable_submissions
 
@@ -1528,7 +1532,8 @@ class TranslationMessageSuggestions:
 
     def __init__(self, title, translation, submissions,
                  user_is_official_translator, form_is_writeable,
-                 plural_form, seen_translations=None, legal_warning=False):
+                 plural_form, seen_translations=None, legal_warning=False,
+                 local_to_pofile=False):
         self.title = title
         self.potmsgset = translation.potmsgset
         self.pofile = translation.browser_pofile
@@ -1561,7 +1566,8 @@ class TranslationMessageSuggestions:
                     plural_form,
                     self.pofile,
                     legal_warning,
-                    is_empty=False))
+                    is_empty=False,
+                    local_to_pofile=local_to_pofile))
         self.seen_translations = seen_translations
 
 
@@ -1570,7 +1576,7 @@ class Submission:
 
 def convert_translationmessage_to_submission(
     message, current_message, plural_form, pofile, legal_warning_needed,
-    is_empty=False, packaged=False):
+    is_empty=False, packaged=False, local_to_pofile=False):
     """Turn a TranslationMessage to an object used for rendering a submission.
 
     :param message: A TranslationMessage.
@@ -1593,7 +1599,7 @@ def convert_translationmessage_to_submission(
     submission.suggestion_text = text_to_html(
         message.translations[plural_form],
         message.potmsgset.flags)
-    submission.is_local_to_pofile = (submission.pofile == pofile)
+    submission.is_local_to_pofile = local_to_pofile
     submission.legal_warning = legal_warning_needed and (
         message.origin == RosettaTranslationOrigin.SCM)
     submission.suggestion_html_id = (
