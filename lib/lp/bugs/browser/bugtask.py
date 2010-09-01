@@ -309,7 +309,7 @@ def get_comments_for_bugtask(bugtask, truncate=False):
     """
     chunks = bugtask.bug.getMessageChunks()
     comments = build_comments_from_chunks(chunks, bugtask, truncate=truncate)
-    for attachment in bugtask.bug.attachments:
+    for attachment in bugtask.bug.attachments_unpopulated:
         message_id = attachment.message.id
         # All attachments are related to a message, so we can be
         # sure that the BugComment is already created.
@@ -667,23 +667,26 @@ class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView, FeedsMixin):
             return
 
         # Set up widgets in order to handle subscription requests.
-        if bug.isSubscribed(self.user) or bug.isSubscribedToDupes(self.user):
-            subscription_terms = [
-                SimpleTerm(
-                    self.user, self.user.name,
-                    'Unsubscribe me from this bug')]
-        else:
-            subscription_terms = [
-                SimpleTerm(
-                    self.user, self.user.name, 'Subscribe me to this bug')]
-        for team in self.user.teams_participated_in:
-            if (bug.isSubscribed(team) or bug.isSubscribedToDupes(team)):
+        subscription_terms = []
+        self_subscribed = False
+        for person in bug.getSubscribersForPerson(self.user):
+            if person.id == self.user.id:
                 subscription_terms.append(
                     SimpleTerm(
-                        team, team.name,
+                        person, person.name,
+                        'Unsubscribe me from this bug'))
+                self_subscribed = True
+            else:
+                subscription_terms.append(
+                    SimpleTerm(
+                        person, person.name,
                         'Unsubscribe <a href="%s">%s</a> from this bug' % (
-                            canonical_url(team),
-                            cgi.escape(team.displayname))))
+                            canonical_url(person),
+                            cgi.escape(person.displayname))))
+        if not self_subscribed:
+            subscription_terms.insert(0,
+                SimpleTerm(
+                    self.user, self.user.name, 'Subscribe me to this bug'))
         subscription_vocabulary = SimpleVocabulary(subscription_terms)
         person_field = Choice(
             __name__='subscription',

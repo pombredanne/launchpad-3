@@ -13,7 +13,7 @@ from canonical.config import config
 from canonical.launchpad.scripts import BufferLogger
 from canonical.testing import LaunchpadZopelessLayer
 from lp.archiveuploader.tests import datadir
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus

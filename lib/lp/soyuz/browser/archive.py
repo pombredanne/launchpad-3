@@ -98,7 +98,7 @@ from canonical.widgets.lazrjs import (
 from canonical.widgets.textwidgets import StrippedTextWidget
 from lp.app.browser.stringformatter import FormattersAPI
 from lp.app.errors import NotFoundError
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.person import (
     IPersonSet,
     PersonVisibility,

@@ -31,7 +31,7 @@ from canonical.testing import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     )
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.buildmaster.enums import BuildStatus
 from lp.code.browser.sourcepackagerecipe import (
     SourcePackageRecipeRequestBuildsView,
     SourcePackageRecipeView,
@@ -686,7 +686,7 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         # Secret Squirrel is checked by default.
         self.assertEqual(['Secret Squirrel', 'Woody'], build_distros)
         self.assertEqual(
-            set([2505]),
+            set([2605]),
             set(build.buildqueue_record.lastscore for build in builds))
 
     def test_request_builds_archive(self):

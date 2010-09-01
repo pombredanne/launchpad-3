@@ -19,7 +19,7 @@ from canonical.launchpad.scripts import (
     )
 from canonical.testing import LaunchpadZopelessLayer
 from canonical.testing.layers import DatabaseLayer
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.job.interfaces.job import JobStatus
