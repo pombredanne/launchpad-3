@@ -196,6 +196,57 @@ SINGLE_PRODUCT_BUGTRACKERTYPES = [
     ]
 
 
+class IBugTrackerComponent(Interface):
+    """The software component in the remote bug tracker.
+
+    Most bug trackers organize bug reports by the software 'component'
+    they affect.  This class provides a mapping of this upstream component
+    to the corresponding source package in the distro.
+    """
+    id = Int(title=_('ID'))
+    
+    name = exported(
+        BugTrackerNameField(
+            title=_('Name'),
+            constraint=name_validator,
+            description=_('The name of a software component'
+                          'in a remote bug tracker')))
+
+    source_package = exported(
+        BugTrackerNameField(
+            title=_('Source Package'),
+            constraint=name_validator,
+            description=_('The distro source package for this component, '
+                          'if one has been defined.')))
+
+class IBugTrackerComponentGroup(Interface):
+    """A collection of components in a remote bug tracker.
+
+    Some bug trackers organize sets of components into higher level groups,
+    such as Bugzilla's 'product'.
+    """
+    id = Int(title=_('ID'))
+
+    name = exported(
+        BugTrackerNameField(
+            title=_('Name'),
+            constraint=name_validator,
+            description=_('The name of the bug tracker product.')))
+
+    components = exported(
+        List(
+            title=_('Components'),
+            description=_(
+                'A list of components in the remote bug tracker that '
+                'are grouped together in this product'),
+            value_type=BugTrackerURL(
+                allowed_schemes=LOCATION_SCHEMES_ALLOWED),
+            required=False))
+
+    bugtracker = exported(
+        Reference(title=_('BugTracker'), schema=Interface))
+
+
 class IBugTracker(Interface):
     """A remote bug system."""
     export_as_webservice_entry()
