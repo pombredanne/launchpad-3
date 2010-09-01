@@ -11,7 +11,7 @@
     </tal:heading>
 
     <div metal:fill-slot="main">
-       <p>Packages shown here are present in both
+       <p>Source packages shown here are present in both
           <tal:replace replace="context/displayname">Derilucid</tal:replace>
           and the parent series,
           <tal:replace replace="context/parent_series/fullseriesname">Ubuntu Lucid
@@ -22,9 +22,6 @@
           </tal:replace> version (Read more about syncing from the parent
           series).
        </p>
-       <p tal:condition="view/ignored_packages_count">There are currently
-       <tal:replace replace="view/ignored_packages_count">5</tal:replace>
-       packages that have been ignored.</p>
 
     </div>
 

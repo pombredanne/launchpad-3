@@ -69,58 +69,9 @@ class DistroSeriesLocalPackageDiffsTestCase(TestCaseWithFactory):
             derived_series, '+localpackagediffs')
 
         self.assertEqual(
-            "Package differences between 'Derilucid' and parent series "
-            "'Lucid'",
+            "Source package differences between 'Derilucid' and "
+            "parent series 'Lucid'",
             view.label)
-
-    def test_ignored_packages_url(self):
-        # The ignored_packages_url is provided by the view.
-        derived_series = self.makeDerivedSeries('derilucid')
-
-        view = create_initialized_view(
-            derived_series, '+localpackagediffs',
-            server_url='https://launchpad.dev/ubuntu/derilucid/'
-                       '+localpackagediffs')
-
-        self.assertEqual(
-            "https://launchpad.dev/ubuntu/derilucid/+localpackagediffs"
-            "?include_ignored=1",
-            view.ignored_packages_url)
-
-    def test_ignored_packages_count(self):
-        # The number of ignored differences is returned.
-        derived_series = self.makeDerivedSeries('derilucid')
-        self.factory.makeDistroSeriesDifference(
-            derived_series=derived_series,
-            status=DistroSeriesDifferenceStatus.IGNORED)
-        self.factory.makeDistroSeriesDifference(
-            derived_series=derived_series,
-            status=DistroSeriesDifferenceStatus.IGNORED_ALWAYS)
-
-        view = create_initialized_view(
-            derived_series, '+localpackagediffs')
-
-        self.assertEqual(2, view.ignored_packages_count)
-
-    def test_ignored_packages_doesnt_include_other_types(self):
-        # Only diffs of the right type for the current derived series
-        # are counted.
-        # The following difference won't count as it is a different type
-        # of difference (not relevant to this view).
-        derived_series = self.makeDerivedSeries('derilucid')
-        self.factory.makeDistroSeriesDifference(
-            derived_series=derived_series,
-            difference_type=(
-                DistroSeriesDifferenceType.UNIQUE_TO_DERIVED_SERIES))
-        # The following difference won't count as it is for a different
-        # series.
-        self.factory.makeDistroSeriesDifference(
-            status=DistroSeriesDifferenceStatus.IGNORED)
-
-        view = create_initialized_view(
-            derived_series, '+localpackagediffs')
-
-        self.assertEqual(0, view.ignored_packages_count)
 
 
 def test_suite():
