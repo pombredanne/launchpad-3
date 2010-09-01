@@ -118,14 +118,15 @@ detects the problem when it checks that message.
     DEBUG Checking messages matching:  id=...
     DEBUG Checking message ...
     INFO ... (current): format specifications ... are not the same
-    INFO ...: unmasked ...
+    DEBUG Commit point.
+    COMMIT
     DEBUG Commit point.
     COMMIT
     INFO Done.
     INFO Messages checked: 1
     INFO Validation errors: 1
     INFO Messages disabled: 1
-    INFO Messages unmasked: 1
+    INFO Messages unmasked: 0
     INFO Commit points: ...
 
 The failed message is demoted to a mere suggestion.
@@ -133,15 +134,15 @@ The failed message is demoted to a mere suggestion.
     >>> current_message.is_current
     False
 
-In this case, there was a perfectly good imported message that was being
-masked by the invalid current translation.  So in addition to disabling
-the bad current message, the script activates the good imported one.
+Unmasking of imported messages is disabled in the script. That's why
+although there was a perfectly good imported message that was being
+masked by the invalid current translation, it will not be activated.
 
     >>> imported_message.is_current
-    True
+    False
 
 If the imported message is also bad, this is reported and the imported
-message is not activated.
+message is not activated. But unmasking is disabled anyway.
 
     >>> imported_message.is_current = False
     >>> current_message.is_current = True
@@ -157,7 +158,7 @@ message is not activated.
     COMMIT
     INFO Done.
     INFO Messages checked: 1
-    INFO Validation errors: 2
+    INFO Validation errors: 1
     INFO Messages disabled: 1
     INFO Messages unmasked: 0
     INFO Commit points: ...
@@ -188,7 +189,7 @@ add a sort order using the -o option.
     COMMIT
     INFO Done.
     INFO Messages checked: 2
-    INFO Validation errors: 3
+    INFO Validation errors: 2
     INFO Messages disabled: 0
     INFO Messages unmasked: 0
     INFO Commit points: 2
@@ -223,7 +224,7 @@ The --dry-run option makes the script abort all its database changes.
     ABORT
     INFO Done.
     INFO Messages checked: 1
-    INFO Validation errors: 2
+    INFO Validation errors: 1
     INFO Messages disabled: 1
     INFO Messages unmasked: 0
     INFO Commit points: 2
@@ -251,7 +252,7 @@ to close things off neatly.
     COMMIT
     INFO Done.
     INFO Messages checked: 2
-    INFO Validation errors: 3
+    INFO Validation errors: 2
     INFO Messages disabled: 0
     INFO Messages unmasked: 0
     INFO Commit points: 3

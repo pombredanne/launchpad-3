@@ -110,13 +110,18 @@ class GettextCheckMessages(LaunchpadScript):
 
     def _get_imported_alternative(self, translationmessage):
         """Look for a valid, imported alternative for this message."""
-        if translationmessage.is_imported:
-            return None
+        # Do not search for an imported alternative.
+        return None
+        # This code is disabled because translationmessage.pofile is not
+        # available anymore. Providing the same functionality now would
+        # require extensive changes to the whole script.
+        # if translationmessage.is_imported:
+        #     return None
 
-        potmsgset = translationmessage.potmsgset
-        pofile = translationmessage.pofile
-        return potmsgset.getImportedTranslationMessage(
-            pofile.potemplate, pofile.language)
+        # potmsgset = translationmessage.potmsgset
+        # pofile = translationmessage.pofile
+        # return potmsgset.getImportedTranslationMessage(
+        #     pofile.potemplate, pofile.language)
 
     def _check_and_fix(self, translationmessage):
         """Check message against gettext, and fix it if necessary."""
