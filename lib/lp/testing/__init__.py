@@ -33,6 +33,7 @@ __all__ = [
     'run_with_login',
     'run_with_storm_debug',
     'run_script',
+    'StormStatementRecorder',
     'TestCase',
     'TestCaseWithFactory',
     'test_tales',
@@ -219,10 +220,52 @@ class FakeTime:
 
 
 class StormStatementRecorder:
-    """A storm tracer to count queries."""
+    """A storm tracer to count queries.
+    
+    This exposes the count and queries as lp.testing._webservice.QueryCollector
+    does permitting its use with the HasQueryCount matcher.
+
+    It also meets the context manager protocol, so you can gather queries
+    easily:
+    with StormStatementRecorder() as recorder:
+        do somestuff
+    self.assertThat(recorder, HasQueryCount(LessThan(42)))
+
+    Note that due to the storm API used, only one of these recorders may be in
+    place at a time: all will be removed when the first one is removed (by
+    calling __exit__ or leaving the scope of a with statement).
+    """
 
     def __init__(self):
         self.statements = []
+
+    @property
+    def count(self):
+        return len(self.statements)
+
+    @property
+    def queries(self):
+        """The statements executed as per get_request_statements."""
+        # Perhaps we could just consolidate this code with the request tracer
+        # code and not need a custom tracer at all - if we provided a context
+        # factory to the tracer, which in the production tracers would
+        # use the adapter magic, and in test created ones would log to a list.
+        # We would need to be able to remove just one tracer though, which I
+        # haven't looked into yet. RBC 20100831
+        result = []
+        for statement in self.statements:
+            result.append((0, 0, 'unknown', statement))
+        return result
+
+    def __enter__(self):
+        """Context manager protocol - return this object as the context."""
+        install_tracer(self)
+        return self
+
+    def __exit__(self, _ignored, _ignored2, _ignored3):
+        """Content manager protocol - do not swallow exceptions."""
+        remove_tracer_type(StormStatementRecorder)
+        return False
 
     def connection_raw_execute(self, ignored, raw_cursor, statement, params):
         """Increment the counter.  We don't care about the args."""
@@ -243,12 +286,8 @@ def record_statements(function, *args, **kwargs):
     :return: a tuple containing the return value of the function,
         and a list of sql statements.
     """
-    recorder = StormStatementRecorder()
-    try:
-        install_tracer(recorder)
+    with StormStatementRecorder() as recorder:
         ret = function(*args, **kwargs)
-    finally:
-        remove_tracer_type(StormStatementRecorder)
     return (ret, recorder.statements)
 
 

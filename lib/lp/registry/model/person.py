@@ -1170,6 +1170,7 @@ class Person(
     @cachedproperty
     def is_valid_person(self):
         """See `IPerson`."""
+        # This is prepopulated by various queries in and out of person.py.
         if self.is_team:
             return False
         try:
@@ -1575,6 +1576,67 @@ class Person(
             need_location=True, need_archive=True, need_preferred_email=True,
             need_validity=True)
 
+    @staticmethod
+    def _validity_queries(person_table=None):
+        """Return storm expressions and a decorator function for validity.
+
+        Preloading validity implies preloading preferred email addresses.
+
+        :param person_table: The person table to join to. Only supply if
+            ClassAliases are in use.
+        :return: A dict with four keys joins, tables, conditions, decorators
+
+        * joins are additional joins to use. e.g. [LeftJoin,LeftJoin]
+        * tables are tables to use e.g. [EmailAddress, Account]
+        * decorators are callbacks to call for each row. Each decorator takes
+        (Person, column) where column is the column in the result set for that
+        decorators type.
+        """
+        if person_table is None:
+            person_table = Person
+            email_table = EmailAddress
+            account_table = Account
+        else:
+            email_table = ClassAlias(EmailAddress)
+            account_table = ClassAlias(Account)
+        origins = []
+        columns = []
+        decorators = []
+        # Teams don't have email, so a left join
+        origins.append(
+            LeftJoin(email_table, And(
+                email_table.personID == person_table.id,
+                email_table.status == EmailAddressStatus.PREFERRED)))
+        columns.append(email_table)
+        origins.append(
+            LeftJoin(account_table, And(
+                person_table.accountID == account_table.id,
+                account_table.status == AccountStatus.ACTIVE)))
+        columns.append(account_table)
+        def handleemail(person, column):
+            #-- preferred email caching
+            if not person:
+                return
+            email = column
+            IPropertyCache(person).preferredemail = email
+        decorators.append(handleemail)
+        def handleaccount(person, column):
+            #-- validity caching
+            if not person:
+                return
+            # valid if:
+            valid = (
+                # -- valid account found
+                column is not None
+                # -- preferred email found
+                and person.preferredemail is not None)
+            IPropertyCache(person).is_valid_person = valid
+        decorators.append(handleaccount)
+        return dict(
+            joins=origins,
+            tables=columns,
+            decorators=decorators)
+
     def _all_members(self, need_karma=False, need_ubuntu_coc=False,
         need_location=False, need_archive=False, need_preferred_email=False,
         need_validity=False):
@@ -1604,6 +1666,7 @@ class Person(
             # But not the team itself.
             TeamParticipation.person != self.id)
         columns = [Person]
+        decorators = []
         if need_karma:
             # New people have no karmatotalcache rows.
             origin.append(
@@ -1634,7 +1697,7 @@ class Person(
                     Archive.owner == Person.id, Archive),
                 Archive.purpose == ArchivePurpose.PPA)))
         # checking validity requires having a preferred email.
-        if need_preferred_email or need_validity:
+        if need_preferred_email and not need_validity:
             # Teams don't have email, so a left join
             origin.append(
                 LeftJoin(EmailAddress, EmailAddress.person == Person.id))
@@ -1643,14 +1706,10 @@ class Person(
                 Or(EmailAddress.status == None,
                     EmailAddress.status == EmailAddressStatus.PREFERRED))
         if need_validity:
-            # May find teams (teams are not valid people)
-            origin.append(
-                LeftJoin(Account, Person.account == Account.id))
-            columns.append(Account)
-            conditions = And(conditions,
-                Or(
-                    Account.status == None,
-                    Account.status == AccountStatus.ACTIVE))
+            valid_stuff = Person._validity_queries()
+            origin.extend(valid_stuff["joins"])
+            columns.extend(valid_stuff["tables"])
+            decorators.extend(valid_stuff["decorators"])
         if len(columns) == 1:
             columns = columns[0]
             # Return a simple ResultSet
@@ -1688,20 +1747,14 @@ class Person(
                 index += 1
                 cache.archive = archive
             #-- preferred email caching
-            if need_preferred_email:
+            if need_preferred_email and not need_validity:
                 email = row[index]
                 index += 1
                 cache.preferredemail = email
-            #-- validity caching
-            if need_validity:
-                # valid if:
-                valid = (
-                    # -- valid account found
-                    row[index] is not None
-                    # -- preferred email found
-                    and result.preferredemail is not None)
+            for decorator in decorators:
+                column = row[index]
                 index += 1
-                cache.is_valid_person = valid
+                decorator(result, column)
             return result
         return DecoratedResultSet(raw_result,
             result_decorator=prepopulate_person)

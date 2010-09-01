@@ -1036,13 +1036,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         # defaults for informationalness: we don't have to do anything
         # because the default if nothing is said is ANY
 
-        # sort by priority descending, by default
-        if sort is None or sort == SpecificationSort.PRIORITY:
-            order = (
-                ['-priority', 'Specification.definition_status',
-                 'Specification.name'])
-        elif sort == SpecificationSort.DATE:
-            order = ['-Specification.datecreated', 'Specification.id']
+        order = self._specification_sort(sort)
 
         # figure out what set of specifications we are interested in. for
         # products, we need to be able to filter on the basis of:
@@ -1085,9 +1079,15 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
                 query += ' AND Specification.fti @@ ftq(%s) ' % quote(
                     constraint)
 
-        results = Specification.select(query, orderBy=order, limit=quantity)
         if prejoin_people:
-            results = results.prejoin(['assignee', 'approver', 'drafter'])
+            results = self._preload_specifications_people(query)
+        else:
+            results = Store.of(self).find(
+                Specification,
+                SQL(query))
+        results.order_by(order)
+        if quantity is not None:
+            results = results[:quantity]
         return results
 
     def getSpecification(self, name):
