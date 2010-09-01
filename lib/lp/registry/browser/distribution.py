@@ -75,6 +75,7 @@ from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.widgets.image import ImageChangeWidget
+from lp.app.enums import service_uses_launchpad
 from lp.answers.browser.faqtarget import FAQTargetNavigationMixin
 from lp.answers.browser.questiontarget import (
     QuestionTargetFacetMixin,
@@ -126,7 +127,7 @@ class UsesLaunchpadMixin:
         if self.context.official_answers:
             url = canonical_url(self.context, rootsite='answers')
             uses.append(href_template % (url, 'Answers'))
-        if self.context.official_blueprints:
+        if service_uses_launchpad(self.context.blueprints_usage):
             url = canonical_url(self.context, rootsite='blueprints')
             uses.append(href_template % (url, 'Blueprints'))
         if self.context.official_malone:

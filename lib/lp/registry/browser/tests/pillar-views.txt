@@ -37,8 +37,8 @@ Pillars that do use launchpad applications have an involvement menu.
     True
     >>> view.official_rosetta
     False
-    >>> view.official_blueprints
-    False
+    >>> view.blueprints_usage.name
+    'UNKNOWN'
     >>> view.official_codehosting
     False
 
@@ -63,12 +63,13 @@ The view provides a list of enabled links that is rendered by the template.
 
 Products are supported.
 
+    >>> from lp.app.enums import ServiceUsage
     >>> product = factory.makeProduct(name='bread')
     >>> login_person(product.owner)
-    >>> product.official_blueprints = True
+    >>> product.blueprints_usage = ServiceUsage.LAUNCHPAD
     >>> view = create_view(product, '+get-involved')
-    >>> view.official_blueprints
-    True
+    >>> view.blueprints_usage.name
+    'LAUNCHPAD'
     >>> for link in view.enabled_links:
     ...     print link.name
     register_blueprint
@@ -114,7 +115,6 @@ dictionary, which makes it easy for use in the page template.
 
 Changing the product's usage is reflected in the view properties.
 
-    >>> from lp.app.enums import ServiceUsage
     >>> product.translations_usage = ServiceUsage.LAUNCHPAD
     >>> view = create_view(product, '+get-involved')
     >>> for key in sorted(view.configuration_states.keys()):
@@ -189,8 +189,8 @@ applications used by their products.
     >>> product.project = project_group
 
     >>> view = create_view(project_group, '+get-involved')
-    >>> view.official_blueprints
-    True
+    >>> view.blueprints_usage.name
+    'LAUNCHPAD'
 
 The offical_codehosting for a project is based on whether the project's
 development focus series has a branch.
@@ -230,8 +230,9 @@ DistributionSourcePackages can use this view. The distribution is used to
 set the links.  Despite the fact that the distribution uses blueprints,
 and translations those links are not enabled for DistributionSourcePackages.
 
+    >>> from lp.app.enums import ServiceUsage
     >>> login_person(distribution.owner)
-    >>> distribution.official_blueprints = True
+    >>> distribution.blueprints_usage = ServiceUsage.LAUNCHPAD
     >>> distribution.official_rosetta = True
     >>> package = factory.makeDistributionSourcePackage(
     ...     sourcepackagename="box",

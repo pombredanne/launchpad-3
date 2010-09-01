@@ -230,7 +230,7 @@
             tal:condition="context/official_answers" />
 
           <div tal:content="structure context/@@+portlet-latestspecs"
-            tal:condition="context/official_blueprints" />
+            tal:condition="context/blueprints_usage/enumvalue:LAUNCHPAD" />
 
           <div tal:content="structure context/@@+portlet-coming-sprints" />
         </div>

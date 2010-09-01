@@ -31,6 +31,10 @@ from canonical.launchpad.webapp.publisher import (
     nearest,
     )
 from canonical.launchpad.webapp.tales import MenuAPI
+from lp.app.enums import (
+    ServiceUsage,
+    service_uses_launchpad,
+    )
 from lp.registry.browser.structuralsubscription import (
     StructuralSubscriptionMenuMixin,
     )
@@ -79,8 +83,11 @@ class InvolvedMenu(NavigationMenu):
 
     def register_blueprint(self):
         return Link(
-            '+addspec', 'Register a blueprint', site='blueprints',
-            icon='blueprints', enabled=self.pillar.official_blueprints)
+            '+addspec',
+            'Register a blueprint',
+            site='blueprints',
+            icon='blueprints', 
+            enabled=service_uses_launchpad(self.pillar.blueprints_usage))
 
 
 class PillarView(LaunchpadView):
@@ -94,7 +101,7 @@ class PillarView(LaunchpadView):
         super(PillarView, self).__init__(context, request)
         self.official_malone = False
         self.official_answers = False
-        self.official_blueprints = False
+        self.blueprints_usage = ServiceUsage.UNKNOWN 
         self.official_rosetta = False
         self.official_codehosting = False
         pillar = nearest(self.context, IPillar)
@@ -110,7 +117,7 @@ class PillarView(LaunchpadView):
                 self.official_answers = False
                 self.official_codehosting = False
             elif IDistributionSourcePackage.providedBy(self.context):
-                self.official_blueprints = False
+                self.blueprints_usage = ServiceUsage.UNKNOWN
                 self.official_rosetta = False
             else:
                 # The context is used by all apps.
@@ -124,8 +131,7 @@ class PillarView(LaunchpadView):
             self.official_malone = True
         if pillar.official_answers:
             self.official_answers = True
-        if pillar.official_blueprints:
-            self.official_blueprints = True
+        self.blueprints_usage = pillar.blueprints_usage
         if pillar.official_rosetta:
             self.official_rosetta = True
         if pillar.official_codehosting:
@@ -136,8 +142,8 @@ class PillarView(LaunchpadView):
         """This `IPillar` uses Launchpad."""
         return (
             self.official_malone or self.official_answers
-            or self.official_blueprints or self.official_rosetta
-            or self.official_codehosting)
+            or service_uses_launchpad(self.blueprints_usage)
+            or self.official_rosetta or self.official_codehosting)
 
     @property
     def enabled_links(self):

@@ -71,8 +71,9 @@ support any applications.
 The portlet are rendered when a child product officially uses the Launchpad
 Answers, Blueprints, and Bugs applications.
 
+    >>> from lp.app.enums import ServiceUsage
     >>> product.official_answers = True
-    >>> product.official_blueprints = True
+    >>> product.blueprints_usage = ServiceUsage.LAUNCHPAD
     >>> product.official_malone = True
 
     >>> view = create_view(projectgroup, name='+index', principal=owner)

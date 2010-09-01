@@ -84,7 +84,8 @@
 
         <tal:has-many-project condition="view/has_many_projects">
           <tal:specs content="structure context/@@+portlet-latestspecs"
-            condition="context/@@+get-involved/official_blueprints" />
+            define="blueprints_usage context/@@+get-involved/blueprints_usage"
+            condition="blueprints_usage/enumvalue:LAUNCHPAD" />
         </tal:has-many-project>
 
         <tal:contributors content="structure context/@@+portlet-top-contributors"/>
@@ -122,7 +123,8 @@
             condition="context/@@+get-involved/official_answers" />
 
           <tal:specs content="structure context/@@+portlet-latestspecs"
-            condition="context/@@+get-involved/official_blueprints" />
+            define="blueprints_usage context/@@+get-involved/blueprints_usage"
+            condition="blueprints_usage/enumvalue:LAUNCHPAD" />
 
           <tal:sprints content="structure context/@@+portlet-coming-sprints" />
         </tal:has-few-project>
