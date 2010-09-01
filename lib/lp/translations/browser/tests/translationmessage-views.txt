@@ -37,7 +37,7 @@ without the plural form information.
 
 Here we can see that it's lacking that information.
 
-    >>> print translationmessage_page_view.context.pofile.language.pluralforms
+    >>> print translationmessage_page_view.context.language.pluralforms
     None
 
 And the view class detects it correctly.
@@ -61,7 +61,7 @@ dummy ones.
 
 We have the plural form information for this language.
 
-    >>> print translationmessage_page_view.context.pofile.language.pluralforms
+    >>> print translationmessage_page_view.context.language.pluralforms
     2
 
 And thus, the view class should know that it doesn't lacks the plural forms
@@ -228,25 +228,7 @@ And text_has_leading_or_trailing_space() determines ... well, you can guess.
 
 == Submitting translations ==
 
-It's time to check the submission of translations and the IPOFile statistics
-update.
-
-But first, let's see current values.
-
-    >>> translationmessage = TranslationMessage.get(1)
-    >>> pofile = translationmessage.pofile
-    >>> pofile.updateStatistics()
-    (7, 0, 1, 2)
-    >>> pofile.currentCount()
-    7
-    >>> pofile.updatesCount()
-    0
-    >>> pofile.rosettaCount()
-    1
-    >>> pofile.unreviewedCount()
-    2
-
-Now we do the submit.
+Let's submit a new translation through the view.
 
     >>> server_url = '/'.join(
     ...     [canonical_url(translationmessage), '+translate'])
@@ -287,17 +269,7 @@ We do a new submit, but this time including a lock_timestamp field.
     >>> translationmessage_page_view.initialize()
     >>> transaction.commit()
 
-This time we didn't get any problem with the submission, and we can see that
-statistics were updated accordingly.
-
-    >>> pofile.currentCount()
-    6
-    >>> pofile.updatesCount()
-    1
-    >>> pofile.rosettaCount()
-    2
-    >>> pofile.unreviewedCount()
-    2
+This time we didn't get any problem with the submission.
 
 Now, let's see how the system prevents a submission that has a timestamp older
 than when last current translation was submitted.
@@ -715,7 +687,6 @@ We need to force timestamp update, since suggestions are submitted too fast.
     >>> def submit_translation(
     ...     translationmessage, translation, force_suggestion=False):
     ...     global year_tick
-    ...     pofile = translationmessage.pofile
     ...     potmsgset = translationmessage.potmsgset
     ...     server_url = '/'.join(
     ...         [canonical_url(translationmessage), '+translate'])
@@ -723,7 +694,8 @@ We need to force timestamp update, since suggestions are submitted too fast.
     ...             datetime.now(UTC).strftime('-%m-%dT%H:%M:%S+00:00'))
     ...     year_tick += 1
     ...     msgset_id = 'msgset_' + str(potmsgset.id)
-    ...     msgset_id_lang = msgset_id + '_' + pofile.language.code
+    ...     language_code = translationmessage.language.code
+    ...     msgset_id_lang = msgset_id + '_' + language_code
     ...     form = {
     ...         'lock_timestamp': now,
     ...         'alt': None,

@@ -25,15 +25,7 @@ as a superuser so we can poke at it directly.
     >>> potmsgset_id = 1
 
 
-Note that our oldest TranslationMessage references pofile #1
-
-    >>> cur.execute("""
-    ...     SELECT pofile
-    ...     FROM TranslationMessage
-    ...     ORDER BY date_created
-    ...     LIMIT 1""")
-    >>> cur.fetchone()[0]
-    1
+Note that our oldest TranslationMessage references pofile #1.
 
 
 Stub has so far not translated anything in this pofile
