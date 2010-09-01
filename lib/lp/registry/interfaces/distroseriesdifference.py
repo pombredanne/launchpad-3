@@ -152,3 +152,21 @@ class IDistroSeriesDifferenceSource(Interface):
             is not a derived series.
         :return: A new `DistroSeriesDifference` object.
         """
+
+    def getForDistroSeries(
+        distro_series,
+        difference_type=DistroSeriesDifferenceType.DIFFERENT_VERSIONS,
+        status=None):
+        """Return differences for the derived distro series.
+
+        :param distro_series: The derived distribution series which is to be
+            searched for differences.
+        :type distro_series: `IDistroSeries`.
+        :param difference_type: The type of difference to include in the
+            results.
+        :type difference_type: `DistroSeriesDifferenceType`.
+        :param status: Only differences matching the status(es) will be
+            included.
+        :type status: `DistroSeriesDifferenceStatus`.
+        :return: A result set of differences.
+        """
