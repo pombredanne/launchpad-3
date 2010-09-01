@@ -160,10 +160,14 @@ def set_request_started(
     if starttime is None:
         starttime = time()
     _local.request_start_time = starttime
+    request = get_current_browser_request()
     if request_statements is not None:
-        # Requires poking at the API; default is to Just Work.
-        request = get_current_browser_request()
+        # Specify a specific sequence object for the timeline.
         set_request_timeline(request, Timeline(request_statements))
+    else: 
+        # Ensure a timeline is created, so that time offset for actions is
+        # reasonable.
+        set_request_timeline(request, Timeline())
     _local.current_statement_timeout = None
     _local.enable_timeout = enable_timeout
     if txn is not None:
