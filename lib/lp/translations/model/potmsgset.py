@@ -109,20 +109,22 @@ credits_message_str = (u'This is a dummy translation so that the '
 incumbent_unknown = object()
 
 
-def dictify_msgstrs(potranslations):
-    """Represent `potranslations` as a normalized dict.
+def dictify_translations(translations):
+    """Represent `translations` as a normalized dict.
 
-    :param potranslations: a dict or sequence of `POTranslation`s per
-        plural form.
-    :return: a dict mapping each translated plural form to a
-        `POTranslation`.  Untranslated forms are omitted.
+    :param translations: a dict or sequence of `POTranslation`s or
+        translation strings per plural form.
+    :return: a dict mapping each translated plural form to an item in
+        the original list.  Untranslated forms are omitted.
     """
-    if not isinstance(potranslations, dict):
-        potranslations = dict(enumerate(potranslations))
+    if not isinstance(translations, dict):
+        # Turn a sequence into a dict.
+        translations = dict(enumerate(translations))
+    # Filter out None values.
     return dict(
-        (form, msgstr)
-        for form, msgstr in potranslations.iteritems()
-        if msgstr is not None)
+        (form, translation)
+        for form, translation in translations.iteritems()
+        if translation is not None)
 
 
 class POTMsgSet(SQLBase):
@@ -560,25 +562,39 @@ class POTMsgSet(SQLBase):
         potranslations = {}
         # Set all POTranslations we can have (up to MAX_PLURAL_FORMS)
         for pluralform in xrange(TranslationConstants.MAX_PLURAL_FORMS):
-            if (pluralform in translations and
-                translations[pluralform] is not None):
+            translation = translations.get(pluralform)
+            if translation is not None:
                 # Find or create a POTranslation for the specified text
-                translation = translations[pluralform]
                 potranslations[pluralform] = (
                     POTranslation.getOrCreateTranslation(translation))
             else:
                 potranslations[pluralform] = None
         return potranslations
 
-    def _findTranslationMessage(self, pofile, potranslations,
-                                prefer_shared=True):
-        """Find a matching message in this `pofile`.
+    def findTranslationMessage(self, pofile, translations=None,
+                               prefer_shared=False):
+        """Find the best matching message in this `pofile`.
 
         The returned message matches exactly the given `translations`
         strings (except plural forms not supported by `pofile`, which
-        are ignored).
+        are ignored in the comparison).
 
-        :param potranslations: A list of translation strings.
+        :param translations: A dict mapping plural forms to translation
+            strings.
+        :param prefer_shared: Whether to prefer a shared match over a
+            diverged one.
+        """
+        potranslations = self._findPOTranslations(translations)
+        return self._findMatchingTranslationMessage(
+            pofile, potranslations, prefer_shared=prefer_shared)
+
+    def _findMatchingTranslationMessage(self, pofile, potranslations,
+                                        prefer_shared=False):
+        """Find the best matching message in this `pofile`.
+
+        :param pofile: The `POFile` to look in.
+        :param potranslations: a list of `POTranslation`s.  Forms that
+            are not translated should have None instead.
         :param prefer_shared: Whether to prefer a shared match over a
             diverged one.
         """
@@ -855,8 +871,8 @@ class POTMsgSet(SQLBase):
         # Find an existing TranslationMessage with exactly the same set
         # of translations.  None if there is no such message and needs to be
         # created.
-        matching_message = self._findTranslationMessage(
-            pofile, potranslations)
+        matching_message = self._findMatchingTranslationMessage(
+            pofile, potranslations, prefer_shared=True)
 
         match_is_upstream = (
             matching_message is not None and
@@ -952,8 +968,8 @@ class POTMsgSet(SQLBase):
 
         potranslations = self._findPOTranslations(new_translations)
 
-        existing_message = self._findTranslationMessage(
-            pofile, potranslations)
+        existing_message = self._findMatchingTranslationMessage(
+            pofile, potranslations, prefer_shared=True)
         if existing_message is not None:
             return existing_message
 
@@ -1012,8 +1028,8 @@ class POTMsgSet(SQLBase):
                 # We don't know what translations are going to be set;
                 # based on the timestamps this is a conflict.
                 raise
-            old_msgstrs = dictify_msgstrs(current_message.all_msgstrs)
-            new_msgstrs = dictify_msgstrs(potranslations)
+            old_msgstrs = dictify_translations(current_message.all_msgstrs)
+            new_msgstrs = dictify_translations(potranslations)
             if new_msgstrs != old_msgstrs:
                 # Yup, there really is a difference.  This is a proper
                 # conflict.
@@ -1134,7 +1150,7 @@ class POTMsgSet(SQLBase):
                               lock_timestamp=None):
         """See `IPOTMsgSet`."""
         potranslations = self._findPOTranslations(translations)
-        identical_message = self._findTranslationMessage(
+        identical_message = self._findMatchingTranslationMessage(
             pofile, potranslations, prefer_shared=False)
         return self._setTranslation(
             pofile, submitter, origin, potranslations,
@@ -1342,7 +1358,7 @@ class POTMsgSet(SQLBase):
                                 lock_timestamp=None):
         """See `IPOTMsgSet`."""
         message = self.setCurrentTranslation(
-            pofile, submitter, [], origin,
+            pofile, submitter, {}, origin,
             share_with_other_side=share_with_other_side,
             lock_timestamp=lock_timestamp)
         message.markReviewed(submitter)

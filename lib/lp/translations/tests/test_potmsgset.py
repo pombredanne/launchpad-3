@@ -1650,9 +1650,10 @@ class TestSetCurrentTranslation(TestCaseWithFactory):
         return pofile, potmsgset
 
     def _makeTranslations(self, potmsgset, forms=1):
-        return removeSecurityProxy(potmsgset)._findPOTranslations([
-            self.factory.getUniqueString()
-            for counter in xrange(forms)])
+        """Produce a POTranslations dict of random translations."""
+        return dict(
+            (form, self.factory.getUniqueString())
+            for form in xrange(forms))
 
     def test_baseline(self):
         # setCurrentTranslation sets the current upstream translation
@@ -1769,3 +1770,148 @@ class TestCheckForConflict(TestCaseWithFactory):
         potmsgset = removeSecurityProxy(current_tm.potmsgset)
 
         removeSecurityProxy(potmsgset)._checkForConflict(current_tm, None)
+
+
+class TestFindTranslationMessage(TestCaseWithFactory):
+    """Test `POTMsgSet.findTranslationMessage`."""
+
+    layer = ZopelessDatabaseLayer
+
+    def _makeTranslations(self):
+        """Produce an arbitrary translation."""
+        return {0: self.factory.getUniqueString()}
+
+    def _makeSharedAndDivergedMessages(self, pofile, potmsgset, translations):
+        """Create shared and diverged `TranslationMessage`s.
+
+        :param pofile: The `POFile` to create messages for.  Has to be
+            for a `Product`, not a `SourcePackage` to accommodate this
+            method's implementation.
+        :param potmsgset: The `POTMsgSet` that the `TranslationMessage`s
+            should translate.
+        :param translations: A dict mapping plural forms to strings.
+            The `TranslationMessage`s will translate to these strings.
+        :return: A tuple consisting of a shared `TranslationMessage` and
+            a diverged one.
+        """
+        template = pofile.potemplate
+        assert template.productseries is not None, (
+            "This test assumes a product template; got a package template.")
+        other_template = self.factory.makePOTemplate(
+            distroseries=self.factory.makeDistroSeries(),
+            sourcepackagename=self.factory.makeSourcePackageName())
+        other_pofile = self.factory.makePOFile(
+            pofile.language.code, potemplate=other_template)
+
+        diverged = self.factory.makeDivergedTranslationMessage(
+            pofile=pofile, potmsgset=potmsgset,
+            translations=translations)
+        shared = self.factory.makeCurrentTranslationMessage(
+            pofile=other_pofile, potmsgset=potmsgset,
+            translations=translations)
+
+        return shared, diverged
+
+    def test_makeSharedAndDivergedMessages(self):
+        pofile, potmsgset = self.factory.makePOFileAndPOTMsgSet('zun')
+        translations = self._makeTranslations()
+        shared, diverged = self._makeSharedAndDivergedMessages(
+            pofile, potmsgset, translations)
+
+        self.assertNotEqual(shared, diverged)
+        self.assertFalse(shared.is_diverged)
+        self.assertTrue(diverged.is_diverged)
+        for message in shared, diverged:
+            self.assertEqual(potmsgset, message.potmsgset)
+            self.assertEqual(translations[0], message.translations[0])
+
+    def test_finds_nothing_if_no_message(self):
+        pofile, potmsgset = self.factory.makePOFileAndPOTMsgSet('aa')
+        translations = self._makeTranslations()
+
+        potmsgset = removeSecurityProxy(potmsgset)
+        found = potmsgset.findTranslationMessage(
+            pofile, translations=translations)
+        self.assertIs(None, found)
+
+    def test_finds_matching_message(self):
+        pofile, potmsgset = self.factory.makePOFileAndPOTMsgSet('ab')
+        translations = self._makeTranslations()
+        message = self.factory.makeSuggestion(
+            pofile=pofile, potmsgset=potmsgset, translations=translations)
+
+        potmsgset = removeSecurityProxy(potmsgset)
+        found = potmsgset.findTranslationMessage(
+            pofile, translations=translations)
+        self.assertEqual(message, found)
+
+    def test_ignores_different_message(self):
+        pofile, potmsgset = self.factory.makePOFileAndPOTMsgSet('ae')
+        translations = self._makeTranslations()
+        self.factory.makeSuggestion(
+            pofile=pofile, potmsgset=potmsgset, translations=translations)
+
+        potmsgset = removeSecurityProxy(potmsgset)
+        found = potmsgset.findTranslationMessage(
+            pofile, translations=self._makeTranslations())
+        self.assertIs(None, found)
+
+    def test_finds_diverged_message(self):
+        pofile, potmsgset = self.factory.makePOFileAndPOTMsgSet('af')
+        translations = self._makeTranslations()
+        message = self.factory.makeCurrentTranslationMessage(
+            pofile=pofile, potmsgset=potmsgset, translations=translations,
+            diverged=True)
+
+        potmsgset = removeSecurityProxy(potmsgset)
+        found = potmsgset.findTranslationMessage(
+            pofile, translations=translations)
+        self.assertEqual(message, found)
+
+    def test_ignores_diverged_message_in_other_pofile(self):
+        pofile, potmsgset = self.factory.makePOFileAndPOTMsgSet('ak')
+        translations = self._makeTranslations()
+        other_pofile = self.factory.makePOFile(pofile.language.code)
+        potmsgset.setSequence(pofile.potemplate, 1)
+
+        self.factory.makeCurrentTranslationMessage(
+            pofile=other_pofile, potmsgset=potmsgset,
+            translations=translations, diverged=True)
+
+        potmsgset = removeSecurityProxy(potmsgset)
+        found = potmsgset.findTranslationMessage(
+            pofile, translations=translations)
+        self.assertIs(None, found)
+
+    def test_prefers_diverged_message_by_default(self):
+        pofile, potmsgset = self.factory.makePOFileAndPOTMsgSet('am')
+        translations = self._makeTranslations()
+        shared, diverged = self._makeSharedAndDivergedMessages(
+            pofile, potmsgset, translations)
+
+        potmsgset = removeSecurityProxy(potmsgset)
+        found = potmsgset.findTranslationMessage(
+            pofile, translations=translations)
+        self.assertEqual(diverged, found)
+
+    def test_prefers_diverged_message_if_instructed(self):
+        pofile, potmsgset = self.factory.makePOFileAndPOTMsgSet('am')
+        translations = self._makeTranslations()
+        shared, diverged = self._makeSharedAndDivergedMessages(
+            pofile, potmsgset, translations)
+
+        potmsgset = removeSecurityProxy(potmsgset)
+        found = potmsgset.findTranslationMessage(
+            pofile, translations=translations, prefer_shared=False)
+        self.assertEqual(diverged, found)
+
+    def test_prefers_shared_message_if_instructed(self):
+        pofile, potmsgset = self.factory.makePOFileAndPOTMsgSet('am')
+        translations = self._makeTranslations()
+        shared, diverged = self._makeSharedAndDivergedMessages(
+            pofile, potmsgset, translations)
+
+        potmsgset = removeSecurityProxy(potmsgset)
+        found = potmsgset.findTranslationMessage(
+            pofile, translations=translations, prefer_shared=True)
+        self.assertEqual(shared, found)
