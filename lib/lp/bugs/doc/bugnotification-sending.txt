@@ -29,6 +29,21 @@ easier.
     ...     print email_notification.get_payload(decode=True)
     ...     print "-" * 70
 
+We'll also define some helper functions to help us with database users.
+
+    >>> from canonical.config import config
+    >>> from canonical.database.sqlbase import commit
+    >>> from canonical.testing import LaunchpadZopelessLayer
+
+    >>> def switch_db_to_launchpad():
+    ...     commit()
+    ...     LaunchpadZopelessLayer.switchDbUser('launchpad')
+
+    >>> def switch_db_to_bugnotification():
+    ...     commit()
+    ...     LaunchpadZopelessLayer.switchDbUser(
+    ...         config.malone.bugnotification_dbuser)
+
 You'll note that we are printing out an X-Launchpad-Message-Rationale
 header. This header is a simple string that allows people to filter
 bugmail according to the reason they are getting emailed. For instance,
@@ -323,6 +338,7 @@ notification will be sent to all members individually.
     ...     print member.preferredemail.email
     marilize@hbd.com
 
+    >>> switch_db_to_launchpad()
     >>> bug_one.subscribe(shipit_admins, shipit_admins)
     <...>
 
@@ -330,6 +346,8 @@ notification will be sent to all members individually.
     ...     'subject', 'a comment.', sample_person,
     ...     datecreated=ten_minutes_ago)
     >>> bug_one.addCommentNotification(comment)
+
+    >>> switch_db_to_bugnotification()
     >>> pending_notifications = getUtility(
     ...     IBugNotificationSet).getNotificationsToSend()
     >>> len(pending_notifications)
@@ -349,21 +367,6 @@ notification will be sent to all members individually.
 
 
 == Duplicates ==
-
-We will need some helper functions.
-
-    >>> from canonical.config import config
-    >>> from canonical.database.sqlbase import commit
-    >>> from canonical.testing import LaunchpadZopelessLayer
-
-    >>> def switch_db_to_launchpad():
-    ...     commit()
-    ...     LaunchpadZopelessLayer.switchDbUser('launchpad')
-
-    >>> def switch_db_to_bugnotification():
-    ...     commit()
-    ...     LaunchpadZopelessLayer.switchDbUser(
-    ...         config.malone.bugnotification_dbuser)
 
 We will also need a fresh new bug.
 
