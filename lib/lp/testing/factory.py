@@ -2280,7 +2280,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if translations is None:
             translations = [self.getUniqueString()]
         if isinstance(translations, list):
-            #
+            # Support the list-of-strings format for convenience.
             translations = dict(enumerate(translations))
 
         message = potmsgset.setCurrentTranslation(
