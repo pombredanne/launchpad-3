@@ -26,7 +26,6 @@ from lp.registry.model.distribution import Distribution
 from lp.registry.model.distroseries import DistroSeries
 from lp.soyuz.interfaces.distributionjob import (
     IDistributionJob,
-    IDistributionJobSource,
     DistributionJobType)
 from lp.services.job.model.job import Job
 from lp.services.job.runner import BaseRunnableJob
@@ -67,31 +66,13 @@ class DistributionJob(Storm):
     def metadata(self):
         return simplejson.loads(self._json_data)
 
-    @classmethod
-    def get(cls, key):
-        """Return the instance of this class whose key is supplied."""
-        instance = IStore(DistributionJob).get(cls, key)
-        if instance is None:
-            raise SQLObjectNotFound(
-                'No occurence of %s has key %s' % (cls.__name__, key))
-        return instance
-
 
 class DistributionJobDerived(BaseRunnableJob):
-    """Intermediate class for deriving from DistributionJob."""
+    """Abstract class for deriving from DistributionJob."""
     delegates(IDistributionJob)
-    classProvides(IDistributionJobSource)
 
     def __init__(self, job):
         self.context = job
-
-    @classmethod
-    def create(cls, distribution, distroseries):
-        """See `IDistributionJob`."""
-        # If there's already a job, don't create a new one.
-        job = DistributionJob(
-            distribution, distroseries, cls.class_job_type, {})
-        return cls(job)
 
     @classmethod
     def get(cls, job_id):

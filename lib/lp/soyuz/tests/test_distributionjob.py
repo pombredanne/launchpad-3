@@ -19,18 +19,17 @@ class DistributionJobTestCase(TestCaseWithFactory):
     layer = LaunchpadZopelessLayer
 
     def test_instantiate(self):
-        distribution = self.factory.makeDistribution()
-        distroseries = self.factory.makeDistroSeries(
-            distribution=distribution)
+        distroseries = self.factory.makeDistroSeries()
 
         metadata = ('some', 'arbitrary', 'metadata')
         distribution_job = DistributionJob(
-            distribution, distroseries,
-            DistributionJobType.DO_INITIALISE, metadata)
+            distroseries.distribution, distroseries,
+            DistributionJobType.INITIALISE_SERIES, metadata)
 
-        self.assertEqual(distribution, distribution_job.distribution)
+        self.assertEqual(
+            distroseries.distribution, distribution_job.distribution)
         self.assertEqual(distroseries, distribution_job.distroseries)
-        self.assertEqual(DistributionJobType.DO_INITIALISE,
+        self.assertEqual(DistributionJobType.INITIALISE_SERIES,
             distribution_job.job_type)
 
         # When we actually access the DistributionJob's metadata it gets
@@ -39,24 +38,3 @@ class DistributionJobTestCase(TestCaseWithFactory):
         # passed in.
         metadata_expected = [u'some', u'arbitrary', u'metadata']
         self.assertEqual(metadata_expected, distribution_job.metadata)
-
-    
-class DistributionJobDerivedTestCase(TestCaseWithFactory):
-    """Test case for the DistributionJobDerived class."""
-
-    layer = LaunchpadZopelessLayer
-        
-    def test_create_explodes(self):
-        # DistributionJobDerived.create() will blow up because it needs
-        # to be subclassed to work properly.
-        distribution = self.factory.makeDistribution()
-        distroseries = self.factory.makeDistroSeries(
-            distribution=distribution)
-        self.assertRaises(
-            AttributeError, DistributionJobDerived.create, distribution,
-            distroseries)
-        
-        
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
-

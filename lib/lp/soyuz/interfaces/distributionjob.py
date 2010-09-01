@@ -4,11 +4,10 @@
 __metaclass__ = type
 
 __all__ = [
-    "IDoDistributionJob",
-    "IDoDistributionJobSource",
-    "IDistributionJob",
-    "IDistributionJobSource",
     "DistributionJobType",
+    "IDistributionJob",
+    "IInitialiseDistroSeriesJob",
+    "IInitialiseDistroSeriesJobSource",
 ]
 
 from lazr.enum import DBEnumeratedType, DBItem
@@ -23,7 +22,7 @@ from lp.registry.interfaces.distroseries import IDistroSeries
 
 
 class IDistributionJob(Interface):
-    """A Job that initialises a distro series, based on a parent."""
+    """A Job that initialises acts on a distribution."""
     
     id = Int(
         title=_('DB ID'), required=True, readonly=True,                       
@@ -46,16 +45,9 @@ class IDistributionJob(Interface):
         """Destroy this object."""
 
 
-class IDistributionJobSource(IJobSource):
-    """An interface for acquiring IDistributionJobs."""
-
-    def create(distribution, distroseries):
-        """Create a new IDistributionJob for a distribution."""
-
-
 class DistributionJobType(DBEnumeratedType):
 
-    DO_INITIALISE = DBItem(0, """
+    INITIALISE_SERIES = DBItem(1, """
         Initialise a Distro Series.
 
         This job initialises a given distro series, creating builds, and
@@ -63,10 +55,13 @@ class DistributionJobType(DBEnumeratedType):
         """)
 
 
-class IDoDistributionJob(IRunnableJob):
+class IInitialiseDistroSeriesJobSource(IJobSource):
+    """An interface for acquiring IDistributionJobs."""
+
+    def create(distroseries):
+        """Create a new initialisation job for a distroseries."""
+
+
+class IInitialiseDistroSeriesJob(IRunnableJob):
     """A Job that performs actions on a distribution."""
    
-
-class IDoDistributionJobSource(IDistributionJobSource):
-    """An interface for acquiring IDistributionJobs."""
-    
