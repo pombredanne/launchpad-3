@@ -2526,6 +2526,11 @@ class ChangeOfficialSourcePackageBranchLinks(AuthorizationBase):
         return user.in_ubuntu_branches or user.in_admin
 
 
+class ViewPackageset(AnonymousAuthorization):
+    """Anyone can view an IPackageset."""
+    usedfor = IPackageset
+
+
 class EditPackageset(AuthorizationBase):
     permission = 'launchpad.Edit'
     usedfor = IPackageset
