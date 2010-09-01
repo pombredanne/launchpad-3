@@ -24,7 +24,8 @@ be rendered. The newly created pillar does not use any launchpad applications.
 
 Pillars that do use launchpad applications have an involvement menu.
 
-    >>> distribution.official_answers = True
+    >>> from lp.app.enums import ServiceUsage
+    >>> distribution.answers_usage = ServiceUsage.LAUNCHPAD
     >>> distribution.official_malone = True
     >>> view = create_view(
     ...     distribution, '+get-involved', principal=distribution.owner)
@@ -33,8 +34,8 @@ Pillars that do use launchpad applications have an involvement menu.
 
     >>> view.official_malone
     True
-    >>> view.official_answers
-    True
+    >>> view.answers_usage.name
+    'LAUNCHPAD'
     >>> view.official_rosetta
     False
     >>> view.blueprints_usage.name
@@ -63,7 +64,6 @@ The view provides a list of enabled links that is rendered by the template.
 
 Products are supported.
 
-    >>> from lp.app.enums import ServiceUsage
     >>> product = factory.makeProduct(name='bread')
     >>> login_person(product.owner)
     >>> product.blueprints_usage = ServiceUsage.LAUNCHPAD

@@ -278,7 +278,7 @@ If the distribution officially uses the application, its portlet does appear.
 
     # When the cache regenerated, all users will see the change.
     >>> MemcachedLayer.purge()
-    >>> distribution.official_answers = True
+    >>> distribution.answers_usage = ServiceUsage.LAUNCHPAD
     >>> distribution.blueprints_usage = ServiceUsage.LAUNCHPAD
     >>> distribution.official_malone = True
 

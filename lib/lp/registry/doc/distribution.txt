@@ -394,8 +394,8 @@ officially. Ubuntu uses all of them:
     True
     >>> ubuntu.official_rosetta
     True
-    >>> ubuntu.official_answers
-    True
+    >>> ubuntu.answers_usage.name
+    'LAUNCHPAD'
     >>> ubuntu.blueprints_usage.name
     'LAUNCHPAD'
 
@@ -410,8 +410,8 @@ While the other attributes track the other official_ attributes.
     True
     >>> print ubuntu.translations_usage.name
     LAUNCHPAD 
-    >>> print ubuntu.official_answers
-    True
+    >>> print ubuntu.answers_usage.name
+    LAUNCHPAD
     >>> print ubuntu.answers_usage.name
     LAUNCHPAD
     >>> print ubuntu.official_blueprints
@@ -445,8 +445,8 @@ While Debian uses none:
     False
     >>> debian.official_rosetta
     False
-    >>> debian.official_answers
-    False
+    >>> debian.answers_usage.name
+    'LAUNCHPAD' 
     >>> debian.official_codehosting
     False
     >>> debian.blueprints_usage.name
@@ -458,8 +458,8 @@ Gentoo only uses Malone
     True
     >>> print gentoo.official_rosetta
     False
-    >>> print gentoo.official_answers
-    False
+    >>> print gentoo.answers_usage.name
+    'LAUNCHPAD'
 
 Launchpad admins and the distro owner can set these fields.
 

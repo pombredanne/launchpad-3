@@ -25,15 +25,15 @@ rendering links:
 
     >>> from lp.app.enums import ServiceUsage
     >>> login_person(product.owner)
-    >>> product.official_answers = True
+    >>> product.answers_usage = ServiceUsage.LAUNCHPAD
     >>> product.blueprints_usage = ServiceUsage.LAUNCHPAD
     >>> product.official_malone = True
     >>> product.official_rosetta = True
     >>> view = create_view(series, '+get-involved')
 
-    # official_answers is always false for product series.
-    >>> print view.official_answers
-    False
+    # answers_usage is never LAUNCHPAD for product series.
+    >>> print view.answers_usage.name
+    UNKNOWN
     >>> print view.blueprints_usage.name
     'LAUNCHPAD'
     >>> print view.official_malone

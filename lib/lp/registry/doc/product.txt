@@ -315,13 +315,13 @@ Answer Tracking
 Firefox uses the Answer Tracker as the official application to provide
 answers to questions.
 
-    >>> firefox.official_answers
-    True
+    >>> firefox.answers_usage.name
+    'LAUNCHPAD'
 
 Alsa does not use Launchpad to track answers.
 
-    >>> alsa.official_answers
-    False
+    >>> alsa.answers_usage.name
+    'UNKNOWN'
 
 
 Product Creation

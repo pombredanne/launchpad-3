@@ -72,7 +72,7 @@ The portlet are rendered when a child product officially uses the Launchpad
 Answers, Blueprints, and Bugs applications.
 
     >>> from lp.app.enums import ServiceUsage
-    >>> product.official_answers = True
+    >>> product.answers_usage = ServiceUsage.LAUNCHPAD
     >>> product.blueprints_usage = ServiceUsage.LAUNCHPAD
     >>> product.official_malone = True
 
