@@ -213,7 +213,7 @@ class BugTaskAdded(BugChangeBase):
         lines.append(u"%13s: %s" % (
             u"Status", self.bug_task.status.title))
         return {
-            'text': '\n'.join(lines)
+            'text': '\n'.join(lines),
             }
 
 
@@ -508,7 +508,7 @@ class BugSecurityChange(AttributeChange):
     def getBugNotification(self):
         return {
             'text': self.notification_mapping[
-                (self.old_value, self.new_value)]
+                (self.old_value, self.new_value)],
             }
 
 
@@ -701,9 +701,9 @@ class BugTaskAttributeChange(AttributeChange):
             u"** Changed in: %(bug_target_name)s\n"
             "%(label)13s: %(oldval)s => %(newval)s\n" % {
                 'bug_target_name': self.bug_task.bugtargetname,
-                'label' : self.display_notification_label,
-                'oldval' : self.display_old_value,
-                'newval' : self.display_new_value,
+                'label': self.display_notification_label,
+                'oldval': self.display_old_value,
+                'newval': self.display_new_value,
             })
 
         return {'text': text.rstrip()}
