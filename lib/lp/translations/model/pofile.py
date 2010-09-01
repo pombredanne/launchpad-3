@@ -532,22 +532,18 @@ class POFile(SQLBase, POFileMixIn):
 
     def getTranslationMessages(self, condition=None):
         clauses = [
-            Or(
-                And(
-                    TranslationTemplateItem.potmsgsetID == (
-                        TranslationMessage.potmsgsetID),
-                    TranslationTemplateItem.potemplate == (
-                        self.potemplate)),
-                TranslationMessage.potemplate == self.potemplate),
+            TranslationTemplateItem.potmsgsetID == TranslationMessage.potmsgsetID,
+            TranslationTemplateItem.potemplate == self.potemplate,
             TranslationMessage.language == self.language,
+            Coalesce(
+                TranslationMessage.potemplateID,
+                self.potemplate.id) == self.potemplate.id,
             ]
         if condition is not None:
             clauses.append(condition)
 
         return IStore(self).find(
-            TranslationMessage,
-            And(*clauses)
-            ).order_by(TranslationMessage.id)
+            TranslationMessage, *clauses).order_by(TranslationMessage.id)
 
     @property
     def title(self):
@@ -1106,9 +1102,9 @@ class POFile(SQLBase, POFileMixIn):
             entry_to_import.setErrorOutput(None)
 
         # Prepare the mail notification.
-        msgsets_imported = TranslationMessage.select(
-            'was_obsolete_in_last_import IS FALSE AND pofile=%s' %
-            (sqlvalues(self.id))).count()
+        msgsets_imported = self.getTranslationMessages(
+            TranslationMessage.was_obsolete_in_last_import == False
+            ).count()
 
         replacements = collect_import_info(entry_to_import, self, warnings)
         replacements.update({
