@@ -22,7 +22,7 @@ class OverlappingActionError(Exception):
     # queries, as both are timed and accrued. OTOH it makes analysis and
     # serialisation of timelines simpler, and for the current use cases in 
     # Launchpad this is sufficient. This constraint should not be considered
-    # sancrosant - if, in future, we desire timelines with overlapping actions,
+    # sacrosanct - if, in future, we desire timelines with overlapping actions,
     # as long as the OOPS analysis code is extended to generate sensible
     # reports in those situations, this can be changed.
 
