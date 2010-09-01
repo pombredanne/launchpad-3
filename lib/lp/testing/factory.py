@@ -2259,8 +2259,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             omitted, one will be created.
         :param reviewer: `Person` who reviewed the translation.  If
             omitted, one will be created.
-        :param translations: List of strings to translate the `POTMsgSet`
-            to.  If omitted, will translate to a single random string.
+        :param translations: Strings to translate the `POTMsgSet`
+            to.  Can be either a list, or a dict mapping plural form
+            numbers to the forms' respective translations.
+            If omitted, will translate to a single random string.
         :param diverged: Create a diverged message?
         :param current_other: Should the message also be current on the
             other translation side?  (Cannot be combined with `diverged`).
@@ -2277,9 +2279,12 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             reviewer = self.makePerson()
         if translations is None:
             translations = [self.getUniqueString()]
+        if isinstance(translations, list):
+            #
+            translations = dict(enumerate(translations))
 
         message = potmsgset.setCurrentTranslation(
-            pofile, translator, dict(enumerate(translations)),
+            pofile, translator, translations,
             RosettaTranslationOrigin.ROSETTAWEB,
             share_with_other_side=current_other)
 
