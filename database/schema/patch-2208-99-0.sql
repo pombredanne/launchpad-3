@@ -6,7 +6,7 @@ SET client_min_messages=ERROR;
 CREATE TABLE BugTrackerComponentGroup (
     id serial PRIMARY KEY,
     name text NOT NULL,
-    bugtracker integer NOT NULL REFERENCES BugTracker
+    bug_tracker integer NOT NULL REFERENCES BugTracker
 );
 
 CREATE INDEX bugtrackercomponentgroup__bugtracker__idx
@@ -15,17 +15,17 @@ CREATE INDEX bugtrackercomponentgroup__bugtracker__idx
 CREATE TABLE BugTrackerComponent (
     id serial PRIMARY KEY,
     name text NOT NULL,
-    componentgroup integer NOT NULL REFERENCES BugTrackerComponentGroup,
-    sourcepackage integer REFERENCES DistributionSourcePackage,
+    component_group integer NOT NULL REFERENCES BugTrackerComponentGroup,
+    source_package integer REFERENCES DistributionSourcePackage,
 
     -- There should be only one component per source package
     CONSTRAINT bugtrackercomponent__distributionsourcepackage__fk
-        FOREIGN KEY(sourcepackage) REFERENCES DistributionSourcePackage
+        FOREIGN KEY(source_package) REFERENCES DistributionSourcePackage
 );
 
 CREATE INDEX bugtrackercomponent__componentgroup__idx
-    ON BugTrackerComponent(componentgroup);
+    ON BugTrackerComponent(component_group);
 CREATE INDEX bugtrackercomponent__distributionsourcepackage__idx
-    ON BugTrackerComponent(sourcepackage);
+    ON BugTrackerComponent(source_package);
 
 INSERT INTO LaunchpadDatabaseRevision VALUES(2208, 99, 0);
