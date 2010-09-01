@@ -287,5 +287,29 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
                 ds_diff.derived_series.owner, "Boo")
 
 
+class DistroSeriesDifferenceSourceTestCase(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_implements_interface(self):
+        # The implementation implements the interface correctly.
+        dsd_source = getUtility(IDistroSeriesDifferenceSource)
+
+        verifyObject(IDistroSeriesDifferenceSource, dsd_source)
+
+    def test_getForDistroSeries_default(self):
+        # By default all differences needing attention for the given
+        # series are returned.
+        self.fail("Unimplemented")
+
+    def test_getForDistroSeries_filters_by_distroseries(self):
+        # Differences for other series are not included.
+        self.fail("Unimplemented")
+
+    def test_getForDistroSeries_filters_by_type(self):
+        # Only differences for the specified types are returned.
+        self.fail("Unimplemented")
+
+
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
