@@ -102,7 +102,7 @@ class TestLibrarianLogFileParsing(TestCase):
             '69.233.136.42 - - [13/Jun/2008:14:55:22 +0100] "GET '
             '/15018215/ul_logo_64x64.png HTTP/1.1" 200 2261 '
             '"https://launchpad.net/~ubuntulite/+archive" "Mozilla"')
-        downloads, parsed_bytes = parse_file(
+        downloads, parsed_bytes, ignored = parse_file(
             fd, start_position=0, logger=self.logger,
             get_download_key=get_library_file_id)
         self.assertEqual(
@@ -121,7 +121,7 @@ class TestLibrarianLogFileParsing(TestCase):
         fd = StringIO(
             '69.233.136.42 - - [13/Jun/2008:14:55:22 +0100] "GET / HTTP/1.1" '
             '200 2261 "https://launchpad.net/~ubuntulite/+archive" "Mozilla"')
-        downloads, parsed_bytes = parse_file(
+        downloads, parsed_bytes, ignored = parse_file(
             fd, start_position=0, logger=self.logger,
             get_download_key=get_library_file_id)
         self.assertEqual(
