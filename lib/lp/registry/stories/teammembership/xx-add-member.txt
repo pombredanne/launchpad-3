@@ -1,4 +1,3 @@
-========================
 Adding members to a team
 ========================
 
@@ -66,7 +65,7 @@ successfully added.
 
 
 Adding teams
-============
+------------
 
 Teams are not added as members like we do with people. Instead, teams are
 invited and one of their admins have to accept the invitation for them to
@@ -149,7 +148,7 @@ the Launchpad Developers.
     'http://launchpad.dev/~launchpad'
     >>> print extract_text(
     ...     find_tags_by_class(browser.contents, 'informational')[0])
-    This team is now a member of Landscape Developers
+    This team is now a member of Landscape Developers.
 
 Now we'll decline the invitation sent on behalf of Ubuntu Team to
 Warty Security Team:
@@ -164,7 +163,7 @@ Warty Security Team:
 
 
 Corner cases
-============
+------------
 
 Given that team can have more than one admin, it's possible that at the time
 one admin is browsing the invitation page, another admin might be doing the
@@ -204,7 +203,7 @@ Accept the invitation in the first browser.
     >>> for tag in find_tags_by_class(browser.contents,
     ...                               'informational message'):
     ...     print tag.renderContents()
-    This team is now a member of Ubuntu Team
+    This team is now a member of Ubuntu Team.
 
 Accepting the invitation in the second browser, redirects to the team page
 and a message is displayed.
@@ -220,7 +219,7 @@ and a message is displayed.
 
 
 Evil workarounds
-================
+----------------
 
 One thing to keep in mind is that we can't invite a team without active
 members.
@@ -250,3 +249,56 @@ the bug sice we could skip the notification sent to the team in this case.
     ...     print tag.renderContents()
     There is 1 error.
     You can't add a team that doesn't have any active members.
+
+
+Avoiding cycles in teams
+------------------------
+
+If two teams invite each other to join, the first one can accept the
+invitation but then attempting to accept the second invitation fails
+with a cyclical team membership error, which is reported to the team
+admin.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> person_set = getUtility(IPersonSet)
+    >>> login(ANONYMOUS)
+    >>> stevea = person_set.getByName('stevea')
+    >>> team_a = factory.makeTeam(name="team-a", displayname="A Team", owner=stevea)
+
+    >>> jdub = person_set.getByName('jdub')
+    >>> team_b = factory.makeTeam(name="team-b", displayname="B Team", owner=jdub)
+    >>> logout()
+
+    >>> stevea_browser = setupBrowser(
+    ...     auth='Basic steve.alexander@ubuntulinux.com:test')
+    >>> jdub_browser = setupBrowser(
+    ...     auth='Basic jeff.waugh@ubuntulinux.com:jdub')
+
+Each team invites the other to become a member.
+
+    >>> stevea_browser.open('http://launchpad.dev/~team-a/+addmember')
+    >>> stevea_browser.getControl('New member').value = 'team-b'
+    >>> stevea_browser.getControl('Add Member').click()
+    >>> for message in get_feedback_messages(stevea_browser.contents):
+    ...     print message
+    B Team (team-b) has been invited to join this team.
+
+    >>> jdub_browser.open('http://launchpad.dev/~team-b/+addmember')
+    >>> jdub_browser.getControl('New member').value = 'team-a'
+    >>> jdub_browser.getControl('Add Member').click()
+    >>> for message in get_feedback_messages(jdub_browser.contents):
+    ...     print message
+    A Team (team-a) has been invited to join this team.
+
+    >>> stevea_browser.open('http://launchpad.dev/~team-a/+invitation/team-b')
+    >>> stevea_browser.getControl('Accept').click()
+    >>> for message in get_feedback_messages(stevea_browser.contents):
+    ...     print message
+    This team is now a member of B Team.
+
+    >>> jdub_browser.open('http://launchpad.dev/~team-b/+invitation/team-a')
+    >>> jdub_browser.getControl('Accept').click()
+    >>> for message in get_feedback_messages(jdub_browser.contents):
+    ...     print message
+    This team may not be added to A Team because it is a member of B Team.

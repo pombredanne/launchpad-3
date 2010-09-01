@@ -326,4 +326,4 @@ class CyclicalTeamMembershipError(Exception):
     any cyclical relationships.  So if A is a member of B and B is
     a member of C then attempting to make C a member of A will
     result in this error being raised.
-    """    
+    """
