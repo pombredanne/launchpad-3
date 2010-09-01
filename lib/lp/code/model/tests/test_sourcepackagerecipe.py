@@ -177,7 +177,8 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         recipe = self.makeSourcePackageRecipeFromBuilderRecipe(
             self.factory.makeRecipe())
         transaction.commit()
-        self.assertProvides(recipe, ISourcePackageRecipe)
+        with person_logged_in(recipe.owner):
+            self.assertProvides(recipe, ISourcePackageRecipe)
 
     def test_base_branch(self):
         # When a recipe is created, we can access its base branch.
@@ -484,7 +485,8 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         self.factory.makeSourcePackageRecipeBuildJob(
             recipe_build=past_build)
         removeSecurityProxy(past_build).datebuilt = datetime.now(UTC)
-        recipe.destroySelf()
+        with person_logged_in(recipe.owner):
+            recipe.destroySelf()
         # Show no database constraints were violated
         Store.of(recipe).flush()
 
