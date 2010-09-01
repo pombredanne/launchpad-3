@@ -56,8 +56,8 @@ DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT = 7
 class UserCannotChangeMembershipSilently(Unauthorized):
     """User not permitted to change membership status silently.
 
-    Raised when a user tries to change someone's membership silently, and is not
-    a Launchpad Administrator.
+    Raised when a user tries to change someone's membership silently, and is
+    not a Launchpad Administrator.
     """
     webservice_error(401) # HTTP Error: 'Unauthorized'
 
@@ -213,7 +213,8 @@ class ITeamMembership(Interface):
 
         A membership can be renewed if the team's renewal policy is ONDEMAND,
         the membership itself is active (status = [ADMIN|APPROVED]) and it's
-        set to expire in less than DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT days.
+        set to expire in less than DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT
+        days.
         """
 
     def sendSelfRenewalNotification():
@@ -241,8 +242,8 @@ class ITeamMembership(Interface):
     @operation_parameters(
         status=copy_field(status),
         comment=copy_field(reviewer_comment),
-        silent=Bool(title=_("Do not send notifications of status change.  For "
-                            "use by Launchpad administrators only."),
+        silent=Bool(title=_("Do not send notifications of status change.  "
+                            "For use by Launchpad administrators only."),
                             required=False, default=False))
     @export_write_operation()
     def setStatus(status, user, comment=None, silent=False):

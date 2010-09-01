@@ -723,8 +723,8 @@ class TeamInvitationView(LaunchpadFormView):
                 self.context.team, data['acknowledger_comment'])
         except CyclicalTeamMembershipError:
             self.request.response.addInfoNotification(
-                _("This team may not be added to ${that_team} because it is a "
-                  "member of ${this_team}.",
+                _("This team may not be added to ${that_team} because it is "
+                  "a member of ${this_team}.",
                   mapping=dict(
                       that_team=self.context.team.displayname,
                       this_team=member.displayname)))

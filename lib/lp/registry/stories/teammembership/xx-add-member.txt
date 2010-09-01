@@ -16,7 +16,8 @@ Any administrator of a team can add new members to that team.
     ...     print tag.renderContents()
     Celso Providelo (cprov) has been added as a member of this team.
 
-Let's make sure that 'cprov' is now an Approved member of 'landscape-developers'
+Let's make sure that 'cprov' is now an Approved member of
+'landscape-developers'.
 
     >>> from lp.registry.model.person import Person
     >>> from lp.registry.model.teammembership import TeamMembership
@@ -123,7 +124,7 @@ invitation. Not even an admin of the landscape team (which as so has the
 rights to edit the membership in question) can do it.
 
     >>> landscape_admin_browser.open(
-    ...     'http://launchpad.dev/~launchpad/+invitation/landscape-developers')
+    ...    'http://launchpad.dev/~launchpad/+invitation/landscape-developers')
     Traceback (most recent call last):
     ...
     Unauthorized: ...
@@ -264,10 +265,12 @@ admin.
     >>> person_set = getUtility(IPersonSet)
     >>> login(ANONYMOUS)
     >>> stevea = person_set.getByName('stevea')
-    >>> team_a = factory.makeTeam(name="team-a", displayname="A Team", owner=stevea)
+    >>> team_a = factory.makeTeam(name="team-a", displayname="A Team",
+    ...                           owner=stevea)
 
     >>> jdub = person_set.getByName('jdub')
-    >>> team_b = factory.makeTeam(name="team-b", displayname="B Team", owner=jdub)
+    >>> team_b = factory.makeTeam(name="team-b", displayname="B Team",
+    ...                           owner=jdub)
     >>> logout()
 
     >>> stevea_browser = setupBrowser(
