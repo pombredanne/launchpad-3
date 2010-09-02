@@ -80,6 +80,7 @@ from lp.answers.browser.questiontarget import (
     QuestionTargetFacetMixin,
     QuestionTargetTraversalMixin,
     )
+from lp.app.enums import ServiceUsage
 from lp.app.errors import NotFoundError
 from lp.blueprints.browser.specificationtarget import (
     HasSpecificationsMenuMixin,
@@ -109,8 +110,8 @@ from lp.registry.interfaces.distributionmirror import (
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.series import SeriesStatus
 from lp.soyuz.browser.packagesearch import PackageSearchViewBase
+from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.archive import (
-    ArchivePurpose,
     IArchiveSet,
     )
 
@@ -133,7 +134,7 @@ class UsesLaunchpadMixin:
             url = canonical_url(self.context, rootsite='bugs')
             uses.append(href_template % (url, 'Bug Tracking'))
         if IProduct.providedBy(self.context):
-            if self.context.official_codehosting:
+            if self.context.codehosting_usage == ServiceUsage.LAUNCHPAD:
                 url = canonical_url(self.context, rootsite='code')
                 uses.append(href_template % (url, 'Branches'))
         if self.context.official_rosetta:
@@ -199,8 +200,14 @@ class DistributionFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
 
     usedfor = IDistribution
 
-    enable_only = ['overview', 'branches', 'bugs', 'answers',
-                   'specifications', 'translations']
+    enable_only = [
+        'overview',
+        'branches',
+        'bugs',
+        'answers',
+        'specifications',
+        'translations',
+        ]
 
     def specifications(self):
         text = 'Blueprints'
@@ -313,13 +320,30 @@ class DistributionOverviewMenu(ApplicationMenu, DistributionLinksMixin):
 
     usedfor = IDistribution
     facet = 'overview'
-    links = ['edit', 'branding', 'driver', 'search', 'members',
-             'mirror_admin', 'reassign', 'addseries', 'series', 'milestones',
-             'top_contributors',
-             'builds', 'cdimage_mirrors', 'archive_mirrors',
-             'pending_review_mirrors', 'disabled_mirrors',
-             'unofficial_mirrors', 'newmirror', 'announce', 'announcements',
-             'ppas',]
+    links = [
+        'edit',
+        'branding',
+        'driver',
+        'search',
+        'members',
+        'mirror_admin',
+        'reassign',
+        'addseries',
+        'series',
+        'milestones',
+        'top_contributors',
+        'builds',
+        'cdimage_mirrors',
+        'archive_mirrors',
+        'pending_review_mirrors',
+        'disabled_mirrors',
+        'unofficial_mirrors',
+        'newmirror',
+        'announce',
+        'announcements',
+        'ppas',
+        'configure_answers',
+        ]
 
     @enabled_with_permission('launchpad.Edit')
     def branding(self):
@@ -423,6 +447,12 @@ class DistributionOverviewMenu(ApplicationMenu, DistributionLinksMixin):
     def ppas(self):
         text = 'Personal Package Archives'
         return Link('+ppas', text, icon='info')
+
+    @enabled_with_permission('launchpad.Edit')
+    def configure_answers(self):
+        text = 'Configure support tracker'
+        summary = 'Allow users to ask questions on this project'
+        return Link('+edit', text, summary, icon='edit')
 
 
 class DerivativeDistributionOverviewMenu(DistributionOverviewMenu):
@@ -582,6 +612,7 @@ class DistributionPackageSearchView(PackageSearchViewBase):
 
         return self.has_exact_matches
 
+
 class DistributionView(HasAnnouncementsView, FeedsMixin, UsesLaunchpadMixin):
     """Default Distribution view class."""
 
@@ -724,10 +755,19 @@ class DistributionAddView(LaunchpadFormView):
 
     schema = IDistribution
     label = "Register a new distribution"
-    field_names = ["name", "displayname", "title", "summary", "description",
-                   "domainname", "members",
-                   "official_malone", "official_blueprints",
-                   "official_rosetta", "official_answers"]
+    field_names = [
+        "name",
+        "displayname",
+        "title",
+        "summary",
+        "description",
+        "domainname",
+        "members",
+        "official_malone",
+        "official_blueprints",
+        "official_rosetta",
+        "official_answers",
+        ]
 
     @property
     def page_title(self):
@@ -758,12 +798,23 @@ class DistributionAddView(LaunchpadFormView):
 class DistributionEditView(RegistryEditFormView):
 
     schema = IDistribution
-    field_names = ['displayname', 'title', 'summary', 'description',
-                   'bug_reporting_guidelines', 'bug_reported_acknowledgement',
-                   'icon', 'logo', 'mugshot',
-                   'official_malone', 'enable_bug_expiration',
-                   'official_blueprints', 'official_rosetta',
-                   'official_answers', 'translation_focus', ]
+    field_names = [
+        'displayname',
+        'title',
+        'summary',
+        'description',
+        'bug_reporting_guidelines',
+        'bug_reported_acknowledgement',
+        'icon',
+        'logo',
+        'mugshot',
+        'official_malone',
+        'enable_bug_expiration',
+        'official_blueprints',
+        'official_rosetta',
+        'official_answers',
+        'translation_focus',
+        ]
 
     custom_widget('icon', ImageChangeWidget, ImageChangeWidget.EDIT_STYLE)
     custom_widget('logo', ImageChangeWidget, ImageChangeWidget.EDIT_STYLE)

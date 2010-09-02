@@ -14,9 +14,9 @@ distribution:
 
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
+    >>> from lp.soyuz.enums import PackagePublishingStatus
     >>> from canonical.launchpad.interfaces import (
-    ...     ISourcePackageName, IBinaryPackageName,
-    ...     PackagePublishingStatus)
+    ...     ISourcePackageName, IBinaryPackageName)
 
     >>> distroset = getUtility(IDistributionSet)
     >>> gentoo = distroset.getByName("gentoo")
@@ -398,7 +398,6 @@ source to another location within the PPA.
 Publishing the record will exclude Celso's PPA from pending-publication
 state:
 
-    >>> from canonical.launchpad.interfaces import PackagePublishingStatus
     >>> src_pub.status = PackagePublishingStatus.PUBLISHED
 
     >>> ubuntu.getPendingPublicationPPAs().count()

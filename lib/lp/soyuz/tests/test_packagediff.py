@@ -18,7 +18,7 @@ from canonical.launchpad.webapp.interfaces import (
     MAIN_STORE,
     )
 from canonical.testing import LaunchpadZopelessLayer
-from lp.soyuz.interfaces.packagediff import PackageDiffStatus
+from lp.soyuz.enums import PackageDiffStatus
 from lp.soyuz.tests.soyuz import TestPackageDiffsBase
 
 
