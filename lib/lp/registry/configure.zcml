@@ -171,6 +171,8 @@
         factory="lp.registry.adapters.distroseries_to_launchpadusage"
         permission="zope.Public"/>
     <adapter
+        factory="lp.registry.adapters.distroseries_to_serviceusage" />
+    <adapter
         provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
         for="lp.registry.interfaces.distroseries.IDistroSeries"
         factory="lp.registry.browser.distroseries.DistroSeriesBreadcrumb"
@@ -1375,6 +1377,11 @@
     </class>
     <adapter
         provides="canonical.launchpad.interfaces.IHasExternalBugTracker"
+        for="lp.registry.interfaces.productseries.IProductSeries"
+        factory="lp.registry.adapters.productseries_to_product"
+        permission="zope.Public"/>
+    <adapter
+        provides="lp.app.interfaces.launchpad.IServiceUsage"
         for="lp.registry.interfaces.productseries.IProductSeries"
         factory="lp.registry.adapters.productseries_to_product"
         permission="zope.Public"/>
