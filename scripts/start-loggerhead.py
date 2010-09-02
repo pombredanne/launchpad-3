@@ -53,7 +53,7 @@ def setup_logging(home, foreground):
     if not log_folder:
         log_folder = os.path.join(home, 'logs')
     if not os.path.exists(log_folder):
-        os.mkdir(log_folder)
+        os.makedirs(log_folder)
 
     f = logging.Formatter(
         '%(levelname)-.3s [%(asctime)s.%(msecs)03d] [%(thread)d] %(name)s: %(message)s',
