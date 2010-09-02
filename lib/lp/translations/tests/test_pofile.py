@@ -1729,8 +1729,7 @@ class TestPOFile(TestCaseWithFactory):
 
     def test_makeTranslatableMessage(self):
         # TranslatableMessages can be created from the PO file
-        potmsgset = self.factory.makePOTMsgSet(self.potemplate,
-                                                    sequence=1)
+        potmsgset = self.factory.makePOTMsgSet(self.potemplate, sequence=1)
         message = self.pofile.makeTranslatableMessage(potmsgset)
         verifyObject(ITranslatableMessage, message)
 
@@ -1753,6 +1752,77 @@ class TestPOFile(TestCaseWithFactory):
                 "getTranslationRows does not sort obsolete messages "
                 "(sequence=0) to the end of the file.")
 
+    def test_getTranslationMessages_baseline(self):
+        # Return all translation messages for this POFile.
+        # Shared, diverged and obsolete.
+        potmsgset = self.factory.makePOTMsgSet(self.potemplate, sequence=1)
+        suggestion = self.factory.makeTranslationMessage(
+            potmsgset=potmsgset, pofile=self.pofile)
+        current_shared = self.factory.makeTranslationMessage(
+            potmsgset=potmsgset, pofile=self.pofile, force_shared=True)
+        current_diverged = self.factory.makeTranslationMessage(
+            potmsgset=potmsgset, pofile=self.pofile, force_diverged=True)
+        obsolete_potmsgset = self.factory.makePOTMsgSet(
+            self.potemplate, sequence=0)
+        obsolete = self.factory.makeTranslationMessage(
+            potmsgset=obsolete_potmsgset, pofile=self.pofile,
+            force_shared=True)
+        
+        self.assertContentEqual(
+            [current_shared, current_diverged, suggestion, obsolete],
+            self.pofile.getTranslationMessages())
+        
+    def test_getTranslationMessages_condition(self):
+        # Narrow the result set down using a condition.
+        potmsgset = self.factory.makePOTMsgSet(self.potemplate, sequence=1)
+        suggestion = self.factory.makeTranslationMessage(
+            potmsgset=potmsgset, pofile=self.pofile)
+        current_shared = self.factory.makeTranslationMessage(
+            potmsgset=potmsgset, pofile=self.pofile, force_shared=True)
+        current_diverged = self.factory.makeTranslationMessage(
+            potmsgset=potmsgset, pofile=self.pofile, force_diverged=True)
+        obsolete_potmsgset = self.factory.makePOTMsgSet(
+            self.potemplate, sequence=0)
+        obsolete = self.factory.makeTranslationMessage(
+            potmsgset=obsolete_potmsgset, pofile=self.pofile,
+            force_shared=True)
+        
+        self.assertContentEqual(
+            [current_shared, suggestion, obsolete],
+            self.pofile.getTranslationMessages(
+                "TranslationMessage.potemplate IS NULL"))
+       
+    def test_getTranslationMessages_other_pofile(self):
+        # Messages from other POFiles are not included.
+        potmsgset = self.factory.makePOTMsgSet(self.potemplate, sequence=1)
+        other_pofile = self.factory.makePOFile('de')
+        my_message = self.factory.makeTranslationMessage(
+            potmsgset=potmsgset, pofile=self.pofile)
+        other_message = self.factory.makeTranslationMessage(
+            potmsgset=potmsgset, pofile=other_pofile)
+        
+    def test_getTranslationMessages_diverged_elsewhere(self):
+        # Diverged messages from sharing POTemplates are not included.
+        potmsgset = self.factory.makePOTMsgSet(self.potemplate, sequence=1)
+        
+        # Create a sharing potemplate in another product series and share
+        # potmsgset in both templates.
+        other_series = self.factory.makeProductSeries(
+            product=self.potemplate.productseries.product)
+        other_template = self.factory.makePOTemplate(
+            productseries=other_series, name=self.potemplate.name)
+        other_pofile = other_template.getPOFileByLang(
+            self.pofile.language.code)
+        potmsgset.setSequence(other_template, 1)
+
+        my_message = self.factory.makeTranslationMessage(
+            potmsgset=potmsgset, pofile=self.pofile)
+        other_message = self.factory.makeTranslationMessage(
+            potmsgset=potmsgset, pofile=other_pofile, force_diverged=True)
+        
+        self.assertContentEqual(
+            [my_message], self.pofile.getTranslationMessages())
+       
 
 class TestPOFileToTranslationFileDataAdapter(TestCaseWithFactory):
     """Test POFile being adapted to IPOFileToTranslationFileData."""
