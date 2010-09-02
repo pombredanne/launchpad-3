@@ -1241,7 +1241,6 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         return (
             DistroSeries.distribution == self,
             DistroSeries.status != SeriesStatus.OBSOLETE,
-            BinaryPackageRelease.binarypackagename == BinaryPackageName.id,
             DistroArchSeries.distroseries == DistroSeries.id,
             BinaryPackageBuild.distro_arch_series == DistroArchSeries.id,
             BinaryPackageRelease.build == BinaryPackageBuild.id,
@@ -1261,7 +1260,9 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         select_spec = (DistributionSourcePackageCache,)
 
         if exact_match:
-            find_spec = self._binaryPackageSearchClause
+            find_spec = self._binaryPackageSearchClause + (
+                BinaryPackageRelease.binarypackagename == BinaryPackageName.id,
+                )
             match_clause = (BinaryPackageName.name == package_name,)
         else:
             # In this case we can use a simplified find-spec as the
