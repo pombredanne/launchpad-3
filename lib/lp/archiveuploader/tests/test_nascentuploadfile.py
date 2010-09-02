@@ -185,8 +185,7 @@ class DSCFileTests(PackageUploadFileTestCase):
             "foo.dsc", dsc, "main/net", "extra", "dulwich", "0.42",
             self.createChangesFile("foo.changes", changes))
         uploadfile.files = []
-        (uploadfile.changelog_path, changelog_digest, changelog_size) = (
-            self.writeUploadFile("changelog", "DUMMY"))
+        uploadfile.changelog = "DUMMY"
         release = uploadfile.storeInDatabase(None)
         self.assertEquals("dpkg, bzr", release.builddepends)
 
