@@ -38,6 +38,7 @@ from lp.archiveuploader.utils import (
     determine_binary_file_type,
     determine_source_file_type,
     )
+from lp.archiveuploader.changesfile import ChangesFile
 from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.person import (
     IPersonSet,
@@ -64,7 +65,6 @@ from lp.soyuz.scripts.gina.packages import (
     PoolFileNotFound,
     prioritymap,
     SourcePackageData,
-    urgencymap,
     )
 
 
@@ -637,7 +637,7 @@ class SourcePackageHandler:
             sourcepackagename=name.id,
             maintainer=maintainer.id,
             dscsigningkey=key,
-            urgency=urgencymap[src.urgency],
+            urgency=ChangesFile.urgency_map[src.urgency],
             dateuploaded=src.date_uploaded,
             dsc=src.dsc,
             copyright=src.copyright,
