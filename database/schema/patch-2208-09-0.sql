@@ -11,27 +11,28 @@ CREATE TABLE BugTrackerComponentGroup (
     CONSTRAINT valid_name CHECK (valid_name(name))
 );
 
-CREATE INDEX bugtrackercomponentgroup__bugtracker__idx
-    ON BugTracker(id);
+ALTER TABLE BugTrackerComponentGroup
+    ADD CONSTRAINT bugtrackercomponentgroup__bug_tracker__name__key
+    UNIQUE (bug_tracker, name);
+
 
 CREATE TABLE BugTrackerComponent (
     id serial PRIMARY KEY,
     name text NOT NULL,
-    is_shown  boolean DEFAULT True,
-    is_custom boolean DEFAULT True,
+    is_shown  boolean NOT NULL DEFAULT True,
+    is_custom boolean NOT NULL DEFAULT True,
     component_group integer NOT NULL REFERENCES BugTrackerComponentGroup,
     distro_source_package integer REFERENCES DistributionSourcePackage,
 
     CONSTRAINT valid_name CHECK (valid_name(name))
-
-    -- There should be only one component per source package
-    CONSTRAINT bugtrackercomponent__distributionsourcepackage__fk
-        FOREIGN KEY(distro_source_package) REFERENCES DistributionSourcePackage
 );
 
-CREATE INDEX bugtrackercomponent__componentgroup__idx
-    ON BugTrackerComponent(component_group);
-CREATE INDEX bugtrackercomponent__distributionsourcepackage__idx
-    ON BugTrackerComponent(distro_source_package);
+ALTER TABLE BugTrackerComponent
+    ADD CONSTRAINT bugtrackercomponent__component_group__name__key
+    UNIQUE (component_group, name);
 
-INSERT INTO LaunchpadDatabaseRevision VALUES(2208, 99, 0);
+ALTER TABLE BugTrackerComponent
+    ADD CONSTRAINT bugtrackercomponent__source_package__key
+    UNIQUE (source_package);
+
+INSERT INTO LaunchpadDatabaseRevision VALUES(2208, 09, 0);
