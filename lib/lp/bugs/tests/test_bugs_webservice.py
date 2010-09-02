@@ -21,7 +21,6 @@ from canonical.launchpad.ftests import (
     login,
     logout,
     )
-from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.launchpad.testing.pages import LaunchpadWebServiceCaller
 from canonical.launchpad.webapp import snapshot
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
@@ -31,7 +30,6 @@ from canonical.testing import (
     )
 from lp.bugs.browser.bugtask import get_comments_for_bugtask
 from lp.bugs.interfaces.bug import IBug
-from lp.bugs.model.bug import Bug
 from lp.testing import TestCaseWithFactory
 from lp.testing.matchers import HasQueryCount
 from lp.testing.sampledata import (
@@ -166,11 +164,6 @@ class TestBugAttachments(TestCaseWithFactory):
         login(USER_EMAIL)
         self.factory.makeBugAttachment(self.bug)
         logout()
-        # This is a hammer; but we are having some issues with this
-        # test failing and per the XXX below it seems they have to
-        # to do with caching.
-        IMasterStore(Bug).flush()
-        IMasterStore(Bug).reset()
         response = webservice.get(url)
         # XXX: Permit the second call to be == or less, because storm
         # caching bugs (such as) https://bugs.launchpad.net/storm/+bug/619017
