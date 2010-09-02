@@ -273,6 +273,13 @@ class TestGetQaClause(unittest.TestCase):
         self.assertRaises(MissingBugsIncrementalError,
             get_qa_clause, bugs, no_qa, incr)
 
+    def test_bugs_incr_and_noqa_option_given(self):
+        bug1 = FakeBug(20)
+        no_qa = True
+        incr = True
+        self.assertEqual('[no-qa][incr]',
+            get_qa_clause([bug1], no_qa, incr))
+
 
 class TestGetReviewerHandle(unittest.TestCase):
     """Tests for `get_reviewer_handle`."""

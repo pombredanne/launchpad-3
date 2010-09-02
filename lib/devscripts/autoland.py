@@ -189,8 +189,8 @@ def get_testfix_clause(testfix=False):
 def get_qa_clause(bugs, no_qa=False, incremental=False):
     """Check the no-qa and incremental options, getting the qa clause.
 
-    The qa clause will always be or no-qa, or incremental or no tags, never both at
-    the same time.
+    The qa clause will always be or no-qa, or incremental, or no-qa and
+    incremental, or no tags.
     """
     qa_clause = ""
 
@@ -200,7 +200,9 @@ def get_qa_clause(bugs, no_qa=False, incremental=False):
     if incremental and not bugs:
         raise MissingBugsIncrementalError
 
-    if incremental:
+    if no_qa and incremental:
+        qa_clause = '[no-qa][incr]'
+    elif incremental:
         qa_clause = '[incr]'
     elif no_qa:
         qa_clause = '[no-qa]'

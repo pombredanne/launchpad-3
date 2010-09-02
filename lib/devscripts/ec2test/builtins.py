@@ -382,9 +382,6 @@ class cmd_land(EC2Command):
         if print_commit and dry_run:
             raise BzrCommandError(
                 "Cannot specify --print-commit and --dry-run.")
-        if no_qa and incremental:
-            raise BzrCommandError(
-                "--no-qa and --incremental cannot be given at the same time.")
         lander = LaunchpadBranchLander.load()
 
         if merge_proposal is None:
