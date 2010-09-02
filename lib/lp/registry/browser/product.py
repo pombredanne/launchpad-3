@@ -2001,7 +2001,7 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
     """Step 2 (of 2) in the +new project add wizard."""
 
     _field_names = ['displayname', 'name', 'title', 'summary',
-                    'description', 'licenses', 'license_info',
+                    'description', 'homepageurl', 'licenses', 'license_info',
                     ]
     schema = IProduct
     step_name = 'projectaddstep2'
@@ -2012,6 +2012,7 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
 
     custom_widget('displayname', TextWidget, displayWidth=50, label='Name')
     custom_widget('name', ProductNameWidget, label='URL')
+    custom_widget('homepageurl', TextWidget, displayWidth=30)
     custom_widget('licenses', LicenseWidget)
     custom_widget('license_info', GhostWidget)
 
@@ -2169,6 +2170,7 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
             title=data['title'],
             summary=data['summary'],
             description=description,
+            homepageurl=data.get('homepageurl'),
             licenses=data['licenses'],
             license_info=data['license_info'],
             project=project)

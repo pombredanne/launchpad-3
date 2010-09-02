@@ -250,6 +250,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         "format",
         "standards-version",
         "filecontents",
+        "homepage",
         ]))
 
     # Note that files is actually only set inside verify().
@@ -707,6 +708,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
             architecturehintlist=encoded.get('architecture', ''),
             creator=self.changes.changed_by['person'],
             urgency=self.changes.converted_urgency,
+            homepage=encoded.get('homepage'),
             dsc=encoded['filecontents'],
             dscsigningkey=self.signingkey,
             dsc_maintainer_rfc822=encoded['maintainer'],
