@@ -64,6 +64,9 @@ class IBugSubscription(Interface):
     display_subscribed_by = Attribute(
         "`subscribed_by` formatted for display.")
 
+    display_duplicate_subscribed_by = Attribute(
+        "duplicate bug `subscribed_by` formatted for display.")
+
     @call_with(user=REQUEST_USER)
     @export_read_operation()
     def canBeUnsubscribedByUser(user):

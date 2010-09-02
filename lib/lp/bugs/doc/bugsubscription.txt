@@ -877,6 +877,6 @@ subscriptions themselves, rather than the subscribers.
     >>> for subscription in ff_bug.getSubscriptionsFromDuplicates():
     ...     print '%s (%s)' % (
     ...         subscription.person.displayname,
-    ...         subscription.display_subscribed_by)
-    Foo Bar (Subscribed by Robert Collins)
-    Scott James Remnant (Subscribed themselves)
+    ...         subscription.display_duplicate_subscribed_by)
+    Foo Bar (Subscribed to bug 28 by Robert Collins)
+    Scott James Remnant (Subscribed themselves to bug 28)
