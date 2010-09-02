@@ -28,6 +28,8 @@ class TestingLPForkingServiceInAThread(lpserve.LPForkingService):
     SOCKET_TIMEOUT = 0.01
     SLEEP_FOR_CHILDREN_TIMEOUT = 0.01
 
+    _fork_function = None
+
     def __init__(self, host='127.0.0.1', port=0):
         self.service_started = threading.Event()
         self.service_stopped = threading.Event()
@@ -46,7 +48,7 @@ class TestingLPForkingServiceInAThread(lpserve.LPForkingService):
         super(TestingLPForkingServiceInAThread, self).main_loop()
         self.service_stopped.set()
 
-    def fork_one_request(self, conn, client_addr, user_id):
+    def fork_one_request(self, conn, client_addr, command):
         # We intentionally don't allow the test suite to request a fork, as
         # threads + forks and everything else don't exactly play well together
         raise NotImplementedError(self.fork_one_request)
@@ -126,6 +128,24 @@ class TestCaseWithLPForkingService(tests.TestCaseWithTransport):
         except socket.error, e:
             raise RuntimeError('Failed to connect: %s' % (e,))
         return response
+
+
+class TestLPForkingServiceCommandToArgv(tests.TestCase):
+
+    def assertAsArgv(self, argv, command_str):
+        self.assertEqual(argv,
+            lpserve.LPForkingService.command_to_argv(command_str))
+
+    def test_simple(self):
+        self.assertAsArgv([u'foo'], 'foo')
+        self.assertAsArgv([u'foo', u'bar'], 'foo bar')
+
+    def test_quoted(self):
+        self.assertAsArgv([u'foo'], 'foo')
+        self.assertAsArgv([u'foo bar'], '"foo bar"')
+
+    def test_unicode(self):
+        self.assertAsArgv([u'command', u'\xe5'], 'command \xc3\xa5')
 
 
 class TestLPForkingService(TestCaseWithLPForkingService):
