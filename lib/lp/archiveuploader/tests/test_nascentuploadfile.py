@@ -198,8 +198,7 @@ class DSCFileTests(PackageUploadFileTestCase):
         uploadfile = self.createDSCFile(
             "foo.dsc", dsc, "main/net", "extra", "dulwich", "0.42",
             self.createChangesFile("foo.changes", changes))
-        (uploadfile.changelog_path, changelog_digest, changelog_size) = (
-            self.writeUploadFile("changelog", "DUMMY"))
+        uploadfile.changelog = "DUMMY"
         uploadfile.files = []
         release = uploadfile.storeInDatabase(None)
         self.assertEquals(u"http://samba.org/~jelmer/bzr", release.homepage)
