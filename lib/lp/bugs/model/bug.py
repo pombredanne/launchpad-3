@@ -187,6 +187,7 @@ from lp.registry.model.person import (
     ValidPersonCache,
     )
 from lp.registry.model.pillar import pillar_sort_key
+from lp.registry.model.teammembership import TeamParticipation
 from lp.services.fields import DuplicateBug
 
 
@@ -780,6 +781,33 @@ class Bug(SQLBase):
 
         return sorted(
             dupe_subscribers, key=operator.attrgetter("displayname"))
+
+    def getSubscribersForPerson(self, person):
+        """See `IBug."""
+        assert person is not None
+        return Store.of(self).find(
+            # return people
+            Person,
+            # For this bug or its duplicates
+            Or(
+                Bug.id == self.id,
+                Bug.duplicateof == self.id),
+            # Get subscriptions for these bugs
+            BugSubscription.bug == Bug.id,
+            # Filter by subscriptions to any team person is in.
+            # Note that teamparticipation includes self-participation entries
+            # (person X is in the team X)
+            TeamParticipation.person == person.id,
+            # XXX: Storm fails to compile this, so manually done.
+            # bug=https://bugs.edge.launchpad.net/storm/+bug/627137
+            # RBC 20100831
+            SQL("""TeamParticipation.team = BugSubscription.person"""),
+            # Join in the Person rows we want
+            # XXX: Storm fails to compile this, so manually done.
+            # bug=https://bugs.edge.launchpad.net/storm/+bug/627137
+            # RBC 20100831
+            SQL("""Person.id = TeamParticipation.team"""),
+            ).order_by(Person.name).config(distinct=True)
 
     def getAlsoNotifiedSubscribers(self, recipients=None, level=None):
         """See `IBug`.
