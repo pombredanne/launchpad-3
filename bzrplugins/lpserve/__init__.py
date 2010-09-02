@@ -221,12 +221,12 @@ class LPForkingService(object):
         sys.stderr.close()
         sys.stdout.close()
 
-    def become_child(self, command, path, conn):
+    def become_child(self, command_argv, path, conn):
         """We are in the spawned child code, do our magic voodoo."""
         # Reset the start time
         trace._bzr_log_start_time = time.time()
-        trace.mutter('%d starting %s'
-                     % (os.getpid(), command,))
+        trace.mutter('%d starting %r'
+                     % (os.getpid(), command_argv,))
         self._create_child_file_descriptors(path)
         # Now that we've set everything up, send the response to the client,
         # and close everything out. we create them first, so the client can
@@ -238,12 +238,14 @@ class LPForkingService(object):
         self.port = None
         self._sockname = None
         self._bind_child_file_descriptors(path)
+        self._run_child_command(command_argv)
+
+    def _run_child_command(self, command_argv):
         # This is the point where we would actually want to do something with
         # our life
-        cmd = cmd_launchpad_server()
-        retcode = cmd.run_argv_aliases(['--inet', command])
+        retcode = commands.run_bzr_catch_errors(command_argv)
         self._close_child_file_descriptons()
-        trace.mutter('%d finished cmd_launchpad_server %s'
+        trace.mutter('%d finished %r'
                      % (os.getpid(), command,))
         sys.exit(retcode)
 
@@ -253,20 +255,20 @@ class LPForkingService(object):
         # command_str must be a utf-8 string
         return [s.decode('utf-8') for s in shlex.split(command_str)]
 
-    def fork_one_request(self, conn, client_addr, command):
+    def fork_one_request(self, conn, client_addr, command_argv):
         """Fork myself and serve a request."""
-        temp_name = tempfile.mkdtemp(prefix='lp-service-child-')
+        temp_name = tempfile.mkdtemp(prefix='lp-forking-service-child-')
         pid = self._fork_function()
         if pid == 0:
             trace.mutter('%d spawned' % (os.getpid(),))
             self._server_socket.close()
-            self.become_child(command, temp_name, conn)
+            self.become_child(command_argv, temp_name, conn)
             trace.warning('become_child returned!!!')
             sys.exit(1)
         else:
             self._child_processes[pid] = temp_name
-            self.log(client_addr, 'Spawned process %s for user %r: %s'
-                            % (pid, command, temp_name))
+            self.log(client_addr, 'Spawned process %s for %r: %s'
+                            % (pid, command_argv, temp_name))
 
     def main_loop(self):
         self._should_terminate.clear()
@@ -382,10 +384,20 @@ class LPForkingService(object):
             self.log(client_addr, 'quit requested')
         elif request.startswith('fork '):
             command = request[5:]
-            self.log(client_addr, 'fork requested for %r' % (command,))
-            # TODO: Do we want to limit the number of children? And/or prefork
-            #       additional instances?
-            self.fork_one_request(conn, client_addr, command)
+            try:
+                command_argv = self.command_to_argv(command)
+            except Exception, e:
+                # TODO: Log the traceback?
+                self.log(client_addr, 'command parsing failed: %r'
+                                      % (str(e),))
+                conn.sendall('FAILURE: command parsing failed: %r'
+                             % (str(e),))
+            else:
+                self.log(client_addr, 'fork requested for %r' % (command,))
+                # TODO: Do we want to limit the number of children? And/or
+                #       prefork additional instances? (the design will need to
+                #       change if we prefork and run arbitrary commands.)
+                self.fork_one_request(conn, client_addr, command_argv)
         else:
             self.log(client_addr, 'FAILURE: unknown request: %r' % (request,))
             # TODO: Do we want to be friendly here? Or do we want to just

@@ -246,12 +246,16 @@ class TestCaseWithLPForkingServiceSubprocess(TestCaseWithSubprocess):
             socket.AF_UNSPEC, socket.SOCK_STREAM, 0, socket.AI_PASSIVE)
         (family, socktype, proto, canonname, sockaddr) = addrs[0]
         client_sock = socket.socket(family, socktype, proto)
+        trace.mutter('sending %r to port %s' % (message, self.service_port))
         try:
             client_sock.connect(sockaddr)
             client_sock.sendall(message)
             response = client_sock.recv(1024)
         except socket.error, e:
             raise RuntimeError('Failed to connect: %s' % (e,))
+        trace.mutter('response: %r' % (response,))
+        if response.startswith("FAILURE"):
+            raise RuntimeError('Failed to send message: %r' % (response,))
         return response
 
     def start_service_subprocess(self):
@@ -288,10 +292,10 @@ class TestCaseWithLPForkingServiceSubprocess(TestCaseWithSubprocess):
         self.assertEqual('quit command requested... exiting\n', response)
 
     def test_fork_child_hello(self):
-        response = self.send_message_to_service('fork 2\n')
+        response = self.send_message_to_service('fork lp-serve --inet 2\n')
         if response.startswith('FAILURE'):
             self.fail('Fork request failed')
-        self.assertContainsRe(response, '/lp-service-child-')
+        self.assertContainsRe(response, '/lp-forking-service-child-')
         path = response.strip()
         stdin_path = os.path.join(path, 'stdin')
         stdout_path = os.path.join(path, 'stdout')
