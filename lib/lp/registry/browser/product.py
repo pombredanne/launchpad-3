@@ -2170,7 +2170,7 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
             title=data['title'],
             summary=data['summary'],
             description=description,
-            homepageurl=data['homepageurl'],
+            homepageurl=data.get('homepageurl'),
             licenses=data['licenses'],
             license_info=data['license_info'],
             project=project)

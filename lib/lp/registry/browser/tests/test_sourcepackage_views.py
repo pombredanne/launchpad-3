@@ -34,8 +34,7 @@ class TestSourcePackageViewHelpers(TestCaseWithFactory):
             name='walrus')
         source_package = self.factory.makeSourcePackage(
             distroseries=distroseries,
-            sourcepackagename='python-super-package',
-            homepage='http://www.someproj.org/')
+            sourcepackagename='python-super-package')
         url = get_register_upstream_url(source_package)
         expected_base = '/projects/+new'
         expected_params = [
@@ -49,7 +48,6 @@ class TestSourcePackageViewHelpers(TestCaseWithFactory):
             ('field.displayname', 'Python Super Package'),
             ('field.distroseries', 'zoobuntu/walrus'),
             ('field.name', 'python-super-package'),
-            ('field.homepage', 'http://www.someproj.org/'),
             # The summary is missing, since the source package doesn't
             # have a binary package release, and parse_qsl() excludes
             # empty params.
