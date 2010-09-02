@@ -19,14 +19,15 @@ __all__ = [
     'splitComponentAndSection',
     ]
 
+import apt_inst
+import apt_pkg
+from debian.deb822 import Deb822Dict
 import hashlib
 import os
 import subprocess
 import sys
 import time
 
-import apt_inst
-import apt_pkg
 from zope.component import getUtility
 
 from canonical.encoding import guess as guess_encoding
@@ -883,7 +884,7 @@ class BaseBinaryUploadFile(PackageUploadFile):
         """Insert this binary release and build into the database."""
         # Reencode everything we are supplying, because old packages
         # contain latin-1 text and that sucks.
-        encoded = {}
+        encoded = Deb822Dict()
         for key, value in self.control.items():
             encoded[key] = guess_encoding(value)
 
