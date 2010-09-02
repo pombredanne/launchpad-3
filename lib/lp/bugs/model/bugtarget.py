@@ -272,31 +272,39 @@ class HasBugHeatMixin:
             return
 
         if IDistribution.providedBy(self):
-            sql = ["""SELECT MAX(Bug.heat)
+            sql = ["""SELECT Bug.heat
                       FROM Bug, Bugtask
                       WHERE Bugtask.bug = Bug.id
-                      AND Bugtask.distribution = %s""" % sqlvalues(self),
-                   """SELECT MAX(Bug.heat)
+                      AND Bugtask.distribution = %s
+                      ORDER BY Bug.heat DESC LIMIT 1""" % sqlvalues(self),
+                   """SELECT Bug.heat
                       FROM Bug, Bugtask, DistroSeries
                       WHERE Bugtask.bug = Bug.id
                       AND Bugtask.distroseries = DistroSeries.id
-                      AND DistroSeries.distribution = %s""" % sqlvalues(self)]
+                      AND Bugtask.distroseries IS NOT NULL
+                      AND DistroSeries.distribution = %s
+                      ORDER BY Bug.heat DESC LIMIT 1""" % sqlvalues(self)]
         elif IProduct.providedBy(self):
-            sql = ["""SELECT MAX(Bug.heat)
+            sql = ["""SELECT Bug.heat
                       FROM Bug, Bugtask
                       WHERE Bugtask.bug = Bug.id
-                      AND Bugtask.product = %s""" % sqlvalues(self),
-                   """SELECT MAX(Bug.heat)
+                      AND Bugtask.product = %s
+                      ORDER BY Bug.heat DESC LIMIT 1""" % sqlvalues(self),
+                   """SELECT Bug.heat
                       FROM Bug, Bugtask, ProductSeries
                       WHERE Bugtask.bug = Bug.id
+                      AND Bugtask.productseries IS NOT NULL
                       AND Bugtask.productseries = ProductSeries.id
-                      AND ProductSeries.product = %s""" % sqlvalues(self)]
+                      AND ProductSeries.product = %s
+                      ORDER BY Bug.heat DESC LIMIT 1""" % sqlvalues(self)]
         elif IProjectGroup.providedBy(self):
-            sql = ["""SELECT MAX(heat)
+            sql = ["""SELECT heat
                       FROM Bug, Bugtask, Product
                       WHERE Bugtask.bug = Bug.id AND
                       Bugtask.product = Product.id AND
-                      Product.project =  %s""" % sqlvalues(self)]
+                      Product.project IS NOT NULL
+                      Product.project =  %s
+                      ORDER BY Bug.heat DESC LIMIT 1""" % sqlvalues(self)]
         else:
             raise NotImplementedError
 
