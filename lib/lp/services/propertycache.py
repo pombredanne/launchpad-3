@@ -184,3 +184,36 @@ def cachedproperty(name_or_function):
         name = name_or_function.__name__
         populate = name_or_function
         return CachedProperty(name=name, populate=populate)
+
+
+# XXX: GavinPanella 2010-09-02 bug=628762: There are some weird adaption
+# failures when running the full test suite, so this is a temporary non-Zope
+# (almost) workaround.
+
+_IPropertyCache = IPropertyCache
+_IPropertyCacheManager = IPropertyCacheManager
+
+def IPropertyCache(target):
+    """Return the `IPropertyCache` for `target`.
+
+    Note: this is a work-around, see bug 628762.
+    """
+    if _IPropertyCache.providedBy(target):
+        return target
+    else:
+        return get_default_cache(target)
+
+def IPropertyCacheManager(target):
+    """Return the `IPropertyCacheManager` for `target`.
+
+    Note: this is a work-around, see bug 628762.
+    """
+    if _IPropertyCache.providedBy(target):
+        cache = target
+    else:
+        cache = IPropertyCache(target)
+
+    if isinstance(cache, DefaultPropertyCache):
+        return DefaultPropertyCacheManager(cache)
+    else:
+        return PropertyCacheManager(cache)
