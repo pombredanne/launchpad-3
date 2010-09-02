@@ -187,8 +187,8 @@ def cachedproperty(name_or_function):
 
 
 # XXX: GavinPanella 2010-09-02 bug=628762: There are some weird adaption
-# failures when running the full test suite, so this is a temporary non-Zope
-# (almost) workaround.
+# failures when running the full test suite. All that follows is a temporary,
+# mostly non-Zope, workaround.
 
 _IPropertyCache = IPropertyCache
 _IPropertyCacheManager = IPropertyCacheManager
@@ -196,7 +196,7 @@ _IPropertyCacheManager = IPropertyCacheManager
 def IPropertyCache(target):
     """Return the `IPropertyCache` for `target`.
 
-    Note: this is a work-around, see bug 628762.
+    Note: this is a workaround; see bug 628762.
     """
     if _IPropertyCache.providedBy(target):
         return target
@@ -206,13 +206,9 @@ def IPropertyCache(target):
 def IPropertyCacheManager(target):
     """Return the `IPropertyCacheManager` for `target`.
 
-    Note: this is a work-around, see bug 628762.
+    Note: this is a workaround; see bug 628762.
     """
-    if _IPropertyCache.providedBy(target):
-        cache = target
-    else:
-        cache = IPropertyCache(target)
-
+    cache = IPropertyCache(target)
     if isinstance(cache, DefaultPropertyCache):
         return DefaultPropertyCacheManager(cache)
     else:
