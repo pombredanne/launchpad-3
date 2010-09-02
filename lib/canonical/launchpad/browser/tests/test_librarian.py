@@ -63,14 +63,18 @@ class TestProxiedLibraryFileAlias(TestCaseWithFactory):
 
     def setUpWebInteraction(self):
         principal = get_current_principal()
+        environment = {
+            'SERVER_URL': 'http://bugs.launchpad.dev',
+            }
         setupInteraction(
-            principal=principal, participation=LaunchpadTestRequest())
+            principal=principal,
+            participation=LaunchpadTestRequest(environ=environment))
 
     def setUpApiInteraction(self):
         principal = get_current_principal()
-        from lazr.restful.interfaces import IWebServiceClientRequest
         setupInteraction(
-            principal=principal, participation=WebServiceTestRequest())
+            principal=principal,
+            participation=WebServiceTestRequest(SCRIPT_NAME='api/devel'))
 
     def test_http_url(self):
         # ProxiedLibraryFileAlias.http_url returns a URL relative to
@@ -108,7 +112,6 @@ class TestProxiedLibraryFileAlias(TestCaseWithFactory):
         self.setUpWebInteraction()
         mo = re.search(self.url_pattern, self.proxied_lfa.api_url)
         self.assertEqual(
-            ('http://api.launchpad.dev/api/devel/bugs/', '/+attachment/',
+            ('http://bugs.launchpad.dev/api/devel/bugs/', '/+attachment/',
              '/+files/foo.txt'),
             mo.groups())
-

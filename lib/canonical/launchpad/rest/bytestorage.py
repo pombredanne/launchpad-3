@@ -88,5 +88,8 @@ class RestrictedLibraryBackedByteStorage(LibraryBackedByteStorage):
     @property
     def alias_url(self):
         """See `IByteStorage`."""
-        return ProxiedLibraryFileAlias(
-            self.file_alias, self.entry.context).api_url
+        if self.file_alias.restricted:
+            return ProxiedLibraryFileAlias(
+                self.file_alias, self.entry.context).api_url
+        else:
+            return self.file_alias.getURL()

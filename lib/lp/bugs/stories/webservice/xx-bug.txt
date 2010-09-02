@@ -1353,6 +1353,53 @@ But we can remove the attachment altogether.
   ---
 
 
+Attachments of private bugs
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Attachments of private bugs are served by the app server itself.
+
+  >>> print webservice.patch(
+  ...     bug_one['self_link'], 'application/json', dumps(dict(private=True)))
+  HTTP/1.1 209 Content Returned...
+
+  >>> response = webservice.named_post(
+  ...     bug_one['self_link'], 'addAttachment',
+  ...     data="67890", filename="more-numbers.txt", content_type='foo/bar',
+  ...     comment="The numbers you asked for.")
+  >>> attachments = webservice.get(
+  ...     bug_one['attachments_collection_link']).jsonBody()
+  >>> attachment = attachments['entries'][0]
+  >>> pprint_entry(attachment)
+  bug_link:...
+  data_link: u'http://api.launchpad.dev/beta/bugs/1/+attachment/.../data'
+  ...
+
+  >>> response = webservice.get(attachment['data_link'])
+  >>> print response
+  HTTP/1.1 303 See Other
+  Status: 303 See Other
+  ...
+  Location: http://api.launchpad.dev/.../+files/more-numbers.txt
+  ...
+
+  >>> response = webservice.get(response.getHeader('Location'))
+  >>> print response
+  HTTP/1.1 200 Ok
+  Status: 200 Ok
+  Content-Disposition: attachment
+  Content-Encoding: None
+  Content-Length: 5
+  Content-Type: foo/bar
+  Vary: Accept
+  X-Powered-By: Zope (www.zope.org), Python (www.python.org)
+  <BLANKLINE>
+  67890
+
+  >>> print webservice.patch(
+  ...     bug_one['self_link'], 'application/json', dumps(dict(private=False)))
+  HTTP/1.1 209 Content Returned...
+
+
 Searching for bugs
 ------------------
 
