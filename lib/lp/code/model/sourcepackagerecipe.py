@@ -160,13 +160,13 @@ class SourcePackageRecipe(Storm):
         return str(self.builder_recipe)
 
     @staticmethod
-    def new(registrant, owner, name, builder_recipe, description,
+    def new(registrant, owner, name, recipe, description,
             distroseries=None, daily_build_archive=None, build_daily=False):
         """See `ISourcePackageRecipeSource.new`."""
         store = IMasterStore(SourcePackageRecipe)
         sprecipe = SourcePackageRecipe()
-        parsed = SourcePackageRecipeData.getParsedRecipe(builder_recipe)
-        SourcePackageRecipeData(parsed, sprecipe)
+        builder_recipe = SourcePackageRecipeData.getParsedRecipe(recipe)
+        SourcePackageRecipeData(builder_recipe, sprecipe)
         sprecipe.registrant = registrant
         sprecipe.owner = owner
         sprecipe.name = name

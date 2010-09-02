@@ -99,7 +99,7 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
             distroseries = [self.factory.makeDistroSeries()],
             name = self.factory.getUniqueString(u'recipe-name'),
             description = self.factory.getUniqueString(u'recipe-description'),
-            builder_recipe = self.factory.makeRecipeText(*branches))
+            recipe = self.factory.makeRecipeText(*branches))
 
     def test_creation(self):
         # The metadata supplied when a SourcePackageRecipe is created is
@@ -218,7 +218,7 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
             branches=[branch1])
         branch2 = self.factory.makeAnyBranch()
         builder_recipe2 = self.factory.makeRecipe(branch2)
-        with person_logged_in(sp_recipe.owner.teamowner):
+        with person_logged_in(sp_recipe.owner):
             sp_recipe.setRecipeText(str(builder_recipe2))
         self.assertEquals([branch2], list(sp_recipe.getReferencedBranches()))
 
@@ -244,9 +244,9 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         run touch test
         ''' % dict(base=self.factory.makeAnyBranch().bzr_identity)
         recipe_text = textwrap.dedent(recipe_text)
-        login_person(sp_recipe.owner.teamowner)
-        self.assertRaises(
-            ForbiddenInstructionError, sp_recipe.setRecipeText, recipe_text)
+        with person_logged_in(sp_recipe.owner):
+            self.assertRaises(
+                ForbiddenInstructionError, sp_recipe.setRecipeText, recipe_text)
         self.assertEquals(
             old_branches, list(sp_recipe.getReferencedBranches()))
 
@@ -533,7 +533,7 @@ class TestRecipeBranchRoundTripping(TestCaseWithFactory):
         description = self.factory.getUniqueString(u'recipe-description')
         recipe = getUtility(ISourcePackageRecipeSource).new(
             registrant=registrant, owner=owner, distroseries=[distroseries],
-            name=name, description=description, builder_recipe=builder_recipe)
+            name=name, description=description, recipe=builder_recipe)
         transaction.commit()
         return recipe.builder_recipe
 
