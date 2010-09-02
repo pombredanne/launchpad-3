@@ -39,7 +39,7 @@ from storm.info import ClassAlias
 from storm.store import (
     EmptyResultSet,
     Store,
-)
+    )
 from zope.component import (
     getAdapter,
     getUtility,
