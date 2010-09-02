@@ -138,10 +138,6 @@ class SourcePackageRecipe(Storm):
             SourcePackageRecipeData,
             SourcePackageRecipeData.sourcepackage_recipe == self).one()
 
-    def _set_builder_recipe(self, value):
-        """Setting of the recipe goes to the SourcePackageRecipeData."""
-        self._recipe_data.setRecipe(value)
-
     @property
     def builder_recipe(self):
         """Accesses of the recipe go to the SourcePackageRecipeData."""

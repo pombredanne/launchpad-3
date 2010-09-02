@@ -189,7 +189,6 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         # returns all of them.
         branch1 = self.factory.makeAnyBranch()
         branch2 = self.factory.makeAnyBranch()
-        builder_recipe = self.factory.makeRecipe()
         sp_recipe = self.factory.makeSourcePackageRecipe(
             branches=[branch1, branch2])
         transaction.commit()
@@ -200,11 +199,9 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
     def test_random_user_cant_edit(self):
         # An arbitrary user can't set attributes.
         branch1 = self.factory.makeAnyBranch()
-        builder_recipe1 = self.factory.makeRecipeText(branch1)
+        recipe_1 = self.factory.makeRecipeText(branch1)
         sp_recipe = self.factory.makeSourcePackageRecipe(
-            recipe=builder_recipe1)
-        branch2 = self.factory.makeAnyBranch()
-        builder_recipe2 = self.factory.makeRecipeText(branch2)
+            recipe=recipe_1)
         login_person(self.factory.makePerson())
         self.assertRaises(
             Unauthorized, getattr, sp_recipe, 'setRecipeText')
@@ -213,13 +210,12 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         # When the recipe_text is replaced, getReferencedBranches returns
         # (only) the branches referenced by the new recipe.
         branch1 = self.factory.makeAnyBranch()
-        builder_recipe1 = self.factory.makeRecipe(branch1)
         sp_recipe = self.factory.makeSourcePackageRecipe(
             branches=[branch1])
         branch2 = self.factory.makeAnyBranch()
-        builder_recipe2 = self.factory.makeRecipe(branch2)
+        new_recipe = self.factory.makeRecipeText(branch2)
         with person_logged_in(sp_recipe.owner):
-            sp_recipe.setRecipeText(str(builder_recipe2))
+            sp_recipe.setRecipeText(new_recipe)
         self.assertEquals([branch2], list(sp_recipe.getReferencedBranches()))
 
     def test_rejects_run_command(self):
@@ -234,8 +230,6 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
             recipe=recipe_text)
 
     def test_run_rejected_without_mangling_recipe(self):
-        branch1 = self.factory.makeAnyBranch()
-        builder_recipe1 = self.factory.makeRecipe(branch1)
         sp_recipe = self.factory.makeSourcePackageRecipe()
         old_branches = list(sp_recipe.getReferencedBranches())
         recipe_text = '''\
@@ -525,7 +519,7 @@ class TestRecipeBranchRoundTripping(TestCaseWithFactory):
             }
 
     def get_recipe(self, recipe_text):
-        builder_recipe = textwrap.dedent(recipe_text)
+        recipe_text = textwrap.dedent(recipe_text)
         registrant = self.factory.makePerson()
         owner = self.factory.makeTeam(owner=registrant)
         distroseries = self.factory.makeDistroSeries()
@@ -533,7 +527,7 @@ class TestRecipeBranchRoundTripping(TestCaseWithFactory):
         description = self.factory.getUniqueString(u'recipe-description')
         recipe = getUtility(ISourcePackageRecipeSource).new(
             registrant=registrant, owner=owner, distroseries=[distroseries],
-            name=name, description=description, recipe=builder_recipe)
+            name=name, description=description, recipe=recipe_text)
         transaction.commit()
         return recipe.builder_recipe
 
