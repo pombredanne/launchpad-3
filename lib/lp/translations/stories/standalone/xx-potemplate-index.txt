@@ -116,6 +116,9 @@ they are all displayed on the template page.
 
 A source package with five templates is created.
 
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+
     >>> login('admin@canonical.com')
     >>> ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
     >>> hoary = ubuntu.getSeries('hoary')
