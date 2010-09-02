@@ -81,6 +81,7 @@ from lp.answers.browser.questiontarget import (
     QuestionTargetFacetMixin,
     QuestionTargetTraversalMixin,
     )
+from lp.app.enums import ServiceUsage
 from lp.app.errors import NotFoundError
 from lp.blueprints.browser.specificationtarget import (
     HasSpecificationsMenuMixin,
@@ -134,7 +135,7 @@ class UsesLaunchpadMixin:
             url = canonical_url(self.context, rootsite='bugs')
             uses.append(href_template % (url, 'Bug Tracking'))
         if IProduct.providedBy(self.context):
-            if self.context.official_codehosting:
+            if self.context.codehosting_usage == ServiceUsage.LAUNCHPAD:
                 url = canonical_url(self.context, rootsite='code')
                 uses.append(href_template % (url, 'Branches'))
         if self.context.official_rosetta:

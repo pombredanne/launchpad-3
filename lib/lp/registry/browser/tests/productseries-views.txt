@@ -40,8 +40,8 @@ rendering links:
     True
     >>> print view.official_rosetta
     True
-    >>> print view.official_codehosting
-    False
+    >>> print view.codehosting_usage.name
+    UNKNOWN
     >>> for link in view.enabled_links:
     ...     print link.url
     http://bugs.launchpad.dev/app/simple/+filebug
@@ -55,8 +55,8 @@ Setting a branch for the series should enable the +addbranch link.
 
     >>> series.branch = factory.makeBranch()
     >>> view = create_view(series, '+get-involved')
-    >>> print view.official_codehosting
-    True
+    >>> print view.codehosting_usage.name
+    LAUNCHPAD
     >>> for link in view.enabled_links:
     ...     print link.url
     http://bugs.launchpad.dev/app/simple/+filebug
