@@ -45,6 +45,11 @@ from lp.code.errors import (
 from lp.code.interfaces.branch import IBranch
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchnamespace import get_branch_namespace
+from lp.code.interfaces.codehosting import (
+    BRANCH_ALIAS_PREFIX,
+    compose_public_url,
+    SUPPORTED_SCHEMES,
+    )
 from lp.registry.interfaces.distroseries import NoSuchDistroSeries
 from lp.registry.interfaces.person import (
     IPersonSet,
@@ -174,8 +179,7 @@ class IPublicCodehostingAPI(Interface):
     def resolve_lp_path(path):
         """Expand the path segment of an lp: URL into a list of branch URLs.
 
-        This method is added to support Bazaar 0.93. It cannot be removed
-        until we stop supporting Bazaar 0.93.
+        This method is added to Bazaar in 0.93.
 
         :return: A dict containing a single 'urls' key that maps to a list of
             URLs. Clients should use the first URL in the list that they can
@@ -197,12 +201,25 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
 
     implements(IPublicCodehostingAPI)
 
-    supported_schemes = 'bzr+ssh', 'http'
+    def _compose_http_url(unique_name, path, suffix):
+        return compose_public_url('http', unique_name, suffix)
 
-    def _getResultDict(self, branch, suffix=None, supported_schemes=None):
+    def _compose_bzr_ssh_url(unique_name, path, suffix):
+        if not path.startswith('~'):
+            path = '%s/%s' % (BRANCH_ALIAS_PREFIX, path)
+        return compose_public_url('bzr+ssh', path, suffix)
+
+    scheme_funcs = {
+        'bzr+ssh': _compose_bzr_ssh_url,
+        'http': _compose_http_url,
+        }
+
+    def _getResultDict(self, branch, lp_path, suffix=None,
+                       supported_schemes=None):
         """Return a result dict with a list of URLs for the given branch.
 
         :param branch: A Branch object.
+        :param lp_path: The path that was used to traverse to the branch.
         :param suffix: The section of the path that follows the branch
             specification.
         :return: {'urls': [list_of_branch_urls]}.
@@ -213,17 +230,18 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
             return dict(urls=[branch.url])
         else:
             return self._getUniqueNameResultDict(
-                branch.unique_name, suffix, supported_schemes)
+                branch.unique_name, suffix, supported_schemes, lp_path)
 
     def _getUniqueNameResultDict(self, unique_name, suffix=None,
-                                 supported_schemes=None):
-        from lp.code.model.branch import compose_public_url
+                                 supported_schemes=None, path=None):
         if supported_schemes is None:
-            supported_schemes = self.supported_schemes
+            supported_schemes = SUPPORTED_SCHEMES
+        if path is None:
+            path = unique_name
         result = dict(urls=[])
         for scheme in supported_schemes:
             result['urls'].append(
-                compose_public_url(scheme, unique_name, suffix))
+                self.scheme_funcs[scheme](unique_name, path, suffix))
         return result
 
     @return_fault
@@ -236,7 +254,7 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
         strip_path = path.strip('/')
         if strip_path == '':
             raise faults.InvalidBranchIdentifier(path)
-        supported_schemes = self.supported_schemes
+        supported_schemes = SUPPORTED_SCHEMES
         hot_products = [product.strip() for product
                         in config.codehosting.hot_products.split(',')]
         if strip_path in hot_products:
@@ -273,7 +291,14 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
             raise faults.CannotHaveLinkedBranch(e.component)
         except InvalidNamespace, e:
             raise faults.InvalidBranchUniqueName(urlutils.escape(e.name))
-        return self._getResultDict(branch, suffix, supported_schemes)
+        # Reverse engineer the actual lp_path that is used, so we need to
+        # remove any suffix that may be there from the strip_path.
+        lp_path = strip_path
+        if suffix is not None:
+            # E.g. 'project/trunk/filename.txt' the suffix is 'filename.txt'
+            # we want lp_path to be 'project/trunk'.
+            lp_path = lp_path[:-(len(suffix)+1)]
+        return self._getResultDict(branch, lp_path, suffix, supported_schemes)
 
     def resolve_lp_path(self, path):
         """See `IPublicCodehostingAPI`."""

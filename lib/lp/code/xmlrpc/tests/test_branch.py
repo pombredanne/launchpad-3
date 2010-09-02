@@ -291,8 +291,7 @@ class TestExpandURL(TestCaseWithFactory):
         # the '+junk' project, which doesn't actually exist.
         owner = self.factory.makePerson()
         nonexistent_branch = '~%s/+junk/doesntexist' % owner.name
-        self.assertResolves(
-            nonexistent_branch, urlutils.escape(nonexistent_branch))
+        self.assertResolves(nonexistent_branch, nonexistent_branch)
 
     def test_no_such_branch_package(self):
         # Resolve paths to package branches even if there's no branch of that
