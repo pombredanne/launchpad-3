@@ -25,11 +25,11 @@ from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.database import (BinaryPackagePublishingHistory,
                                           SourcePackagePublishingHistory)
-from canonical.launchpad.interfaces import (
-    IDistributionSet, PackagePublishingStatus)
+from canonical.launchpad.interfaces import IDistributionSet
 from canonical.launchpad.scripts import (execute_zcml_for_scripts,
                                          logger, logger_options)
 from canonical.lp import initZopeless
+from lp.soyuz.enums import PackagePublishingStatus
 
 from contrib.glock import GlobalLock
 

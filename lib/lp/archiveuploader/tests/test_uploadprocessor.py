@@ -41,7 +41,7 @@ from lp.archiveuploader.uploadprocessor import (
     parse_build_upload_leaf_name,
     UploadProcessor,
     )
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -50,12 +50,16 @@ from lp.registry.interfaces.sourcepackage import SourcePackageFileType
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.mail import stub
-from lp.soyuz.interfaces.archive import (
+from lp.soyuz.enums import (
+    ArchivePermissionType,
     ArchivePurpose,
+    PackageUploadStatus,
+    SourcePackageFormat,
+    )
+from lp.soyuz.interfaces.archive import (
     IArchiveSet,
     )
 from lp.soyuz.interfaces.archivepermission import (
-    ArchivePermissionType,
     IArchivePermissionSet,
     )
 from lp.soyuz.interfaces.component import IComponentSet
@@ -65,12 +69,10 @@ from lp.soyuz.interfaces.publishing import (
     PackagePublishingStatus,
     )
 from lp.soyuz.interfaces.queue import (
-    PackageUploadStatus,
     QueueInconsistentStateError,
     )
 from lp.soyuz.interfaces.sourcepackageformat import (
     ISourcePackageFormatSelectionSet,
-    SourcePackageFormat,
     )
 from lp.soyuz.model.archivepermission import ArchivePermission
 from lp.soyuz.model.binarypackagename import BinaryPackageName

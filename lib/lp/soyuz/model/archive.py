@@ -75,7 +75,7 @@ from lp.archiveuploader.utils import (
     re_isadeb,
     re_issource,
     )
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.packagebuild import IPackageBuildSet
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.packagebuild import PackageBuild
@@ -91,13 +91,19 @@ from lp.registry.model.teammembership import TeamParticipation
 from lp.services.job.interfaces.job import JobStatus
 from lp.soyuz.adapters.archivedependencies import expand_dependencies
 from lp.soyuz.adapters.packagelocation import PackageLocation
+from lp.soyuz.enums import (
+    ArchivePermissionType,
+    ArchivePurpose,
+    ArchiveStatus,
+    ArchiveSubscriberStatus,
+    PackagePublishingStatus,
+    PackageUploadStatus,
+    )
 from lp.soyuz.interfaces.archive import (
     AlreadySubscribed,
     ArchiveDependencyError,
     ArchiveDisabled,
     ArchiveNotPrivate,
-    ArchivePurpose,
-    ArchiveStatus,
     CannotCopy,
     CannotRestrictArchitectures,
     CannotSwitchPrivacy,
@@ -124,11 +130,9 @@ from lp.soyuz.interfaces.archive import (
 from lp.soyuz.interfaces.archivearch import IArchiveArchSet
 from lp.soyuz.interfaces.archiveauthtoken import IArchiveAuthTokenSet
 from lp.soyuz.interfaces.archivepermission import (
-    ArchivePermissionType,
     IArchivePermissionSet,
     )
 from lp.soyuz.interfaces.archivesubscriber import (
-    ArchiveSubscriberStatus,
     ArchiveSubscriptionError,
     IArchiveSubscriberSet,
     )
@@ -146,9 +150,7 @@ from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.interfaces.publishing import (
     active_publishing_status,
     IPublishingSet,
-    PackagePublishingStatus,
     )
-from lp.soyuz.interfaces.queue import PackageUploadStatus
 from lp.soyuz.model.archiveauthtoken import ArchiveAuthToken
 from lp.soyuz.model.archivedependency import ArchiveDependency
 from lp.soyuz.model.archivesubscriber import ArchiveSubscriber
