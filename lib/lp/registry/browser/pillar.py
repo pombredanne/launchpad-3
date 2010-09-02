@@ -86,7 +86,7 @@ class InvolvedMenu(NavigationMenu):
             '+addspec',
             'Register a blueprint',
             site='blueprints',
-            icon='blueprints', 
+            icon='blueprints',
             enabled=service_uses_launchpad(self.pillar.blueprints_usage))
 
 
@@ -100,8 +100,8 @@ class PillarView(LaunchpadView):
     def __init__(self, context, request):
         super(PillarView, self).__init__(context, request)
         self.official_malone = False
-        self.answers_usage = ServiceUsage.UNKNOWN 
-        self.blueprints_usage = ServiceUsage.UNKNOWN 
+        self.answers_usage = ServiceUsage.UNKNOWN
+        self.blueprints_usage = ServiceUsage.UNKNOWN
         self.official_rosetta = False
         self.official_codehosting = False
         pillar = nearest(self.context, IPillar)
@@ -129,7 +129,7 @@ class PillarView(LaunchpadView):
         # times to build the complete set of official applications.
         if pillar.official_malone:
             self.official_malone = True
-        self.answers_usage = pillar.answers_usage 
+        self.answers_usage = pillar.answers_usage
         self.blueprints_usage = pillar.blueprints_usage
         if pillar.official_rosetta:
             self.official_rosetta = True
@@ -140,7 +140,7 @@ class PillarView(LaunchpadView):
     def has_involvement(self):
         """This `IPillar` uses Launchpad."""
         return (
-            self.official_malone 
+            self.official_malone
             or service_uses_launchpad(self.answers_usage)
             or service_uses_launchpad(self.blueprints_usage)
             or self.official_rosetta or self.official_codehosting)

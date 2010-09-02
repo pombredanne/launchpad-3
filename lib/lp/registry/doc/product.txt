@@ -219,11 +219,11 @@ Package links
 The packaging table allows us to list source and distro source packages
 related to a certain upstream:
 
-   >>> alsa = productset.getByName('alsa-utils')
-   >>> [(sp.name, sp.distroseries.name) for sp in alsa.sourcepackages]
-   [(u'alsa-utils', u'sid'), (u'alsa-utils', u'warty')]
-   >>> [(sp.name, sp.distribution.name) for sp in alsa.distrosourcepackages]
-   [(u'alsa-utils', u'debian'), (u'alsa-utils', u'ubuntu')]
+    >>> alsa = productset.getByName('alsa-utils')
+    >>> [(sp.name, sp.distroseries.name) for sp in alsa.sourcepackages]
+    [(u'alsa-utils', u'sid'), (u'alsa-utils', u'warty')]
+    >>> [(sp.name, sp.distribution.name) for sp in alsa.distrosourcepackages]
+    [(u'alsa-utils', u'debian'), (u'alsa-utils', u'ubuntu')]
 
 The date_next_suggest_packaging attribute records the date when Launchpad can
 resume suggesting Ubuntu packages that the project provides. A value of None
@@ -272,7 +272,8 @@ This is true even if its project has a bug tracker specified.
     >>> from canonical.launchpad.interfaces import IBugTrackerSet
 
     >>> login_person(firefox.owner)
-    >>> gnome_bugzilla = getUtility(IBugTrackerSet).getByName('gnome-bugzilla')
+    >>> bug_tracker_set = getUtility(IBugTrackerSet)
+    >>> gnome_bugzilla = bug_tracker_set.getByName('gnome-bugzilla')
     >>> firefox.project.bugtracker = gnome_bugzilla
     >>> firefox.getExternalBugTracker() is None
     True
@@ -384,16 +385,16 @@ Specification Listings
 We should be able to set whether or not a Product uses specifications
 officially.  It defaults to UNKNOWN.
 
- >>> firefox = productset.getByName('firefox')
- >>> firefox.blueprints_usage.name
- 'UNKNOWN'
+    >>> firefox = productset.getByName('firefox')
+    >>> firefox.blueprints_usage.name
+    'UNKNOWN'
 
 We can change it to use LAUNCHPAD.
 
- >>> from lp.app.enums import ServiceUsage
- >>> firefox.blueprints_usage = ServiceUsage.LAUNCHPAD
- >>> firefox.blueprints_usage.name
- 'LAUNCHPAD'
+    >>> from lp.app.enums import ServiceUsage
+    >>> firefox.blueprints_usage = ServiceUsage.LAUNCHPAD
+    >>> firefox.blueprints_usage.name
+    'LAUNCHPAD'
 
 We should be able to get lists of specifications in different states
 related to a product.
@@ -401,36 +402,36 @@ related to a product.
 Basically, we can filter by completeness, and by whether or not the spec is
 informational.
 
- >>> firefox = productset.getByName('firefox')
- >>> from canonical.launchpad.interfaces import SpecificationFilter
+    >>> firefox = productset.getByName('firefox')
+    >>> from canonical.launchpad.interfaces import SpecificationFilter
 
 First, there should be only one informational spec for firefox:
 
- >>> filter = [SpecificationFilter.INFORMATIONAL]
- >>> for spec in firefox.specifications(filter=filter):
- ...    print spec.name
- extension-manager-upgrades
+    >>> filter = [SpecificationFilter.INFORMATIONAL]
+    >>> for spec in firefox.specifications(filter=filter):
+    ...    print spec.name
+    extension-manager-upgrades
 
 
 There are no completed specs for firefox:
 
- >>> filter = [SpecificationFilter.COMPLETE]
- >>> for spec in firefox.specifications(filter=filter):
- ...    print spec.name
+    >>> filter = [SpecificationFilter.COMPLETE]
+    >>> for spec in firefox.specifications(filter=filter):
+    ...    print spec.name
 
 
 And there are five incomplete specs:
 
- >>> filter = [SpecificationFilter.INCOMPLETE]
- >>> firefox.specifications(filter=filter).count()
- 5
+    >>> filter = [SpecificationFilter.INCOMPLETE]
+    >>> firefox.specifications(filter=filter).count()
+    5
 
 We can filter for specifications that contain specific text:
 
- >>> for spec in firefox.specifications(filter=['new']):
- ...     print spec.name
- canvas
- e4x
+    >>> for spec in firefox.specifications(filter=['new']):
+    ...     print spec.name
+    canvas
+    e4x
 
 
 Milestones
