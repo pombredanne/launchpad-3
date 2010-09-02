@@ -408,16 +408,21 @@ class TestPersonSetMerge(TestCaseWithFactory):
         duplicate_identifier = removeSecurityProxy(
             duplicate.account).openid_identifiers.any().identifier
         person = self.factory.makePerson()
+        person_identifier = removeSecurityProxy(
+            person.account).openid_identifiers.any().identifier
         self._do_premerge(duplicate, person)
         login_person(person)
         self.person_set.merge(duplicate, person)
         self.assertEqual(
             0,
             removeSecurityProxy(duplicate.account).openid_identifiers.count())
-        self.assert_(duplicate_identifier in [
-            identifier.identifier for identifier in
-                removeSecurityProxy(person.account).openid_identifiers])
 
+        merged_identifiers = [
+            identifier.identifier for identifier in
+                removeSecurityProxy(person.account).openid_identifiers]
+
+        self.assertIn(duplicate_identifier, merged_identifiers)
+        self.assertIn(person_identifier, merged_identifiers)
 
 class TestCreatePersonAndEmail(TestCase):
     """Test `IPersonSet`.createPersonAndEmail()."""

@@ -478,7 +478,12 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         # working accounts using these factory methods. The stored
         # procedure provides a work around and avoids us having to
         # grant INSERT rights to these database users and avoids the
-        # security problems that would cause.
+        # security problems that would cause. The stored procedure
+        # ensures that there is at least one OpenId Identifier attached
+        # to the account that can be used to login. If the OpenId
+        # Identifier needed to be created, it will not be usable in the
+        # production environments so access to execute this stored
+        # procedure cannot be used to compromise accounts.
         IMasterStore(OpenIdIdentifier).execute(
             "SELECT add_test_openid_identifier(%s)", (account.id,))
 

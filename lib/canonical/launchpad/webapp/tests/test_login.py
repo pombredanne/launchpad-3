@@ -343,11 +343,11 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
             view, html = self._createAndRenderView(openid_response)
         self.assertTrue(view.login_called)
 
-        # The existing account's had a new openid_identifier added, the
+        # The existing accounts had a new openid_identifier added, the
         # account was reactivated and its preferred email was set, but
         # its display name was not changed.
         identifiers = [i.identifier for i in account.openid_identifiers]
-        self.assert_(identifier in identifiers)
+        self.assertIn(identifier, identifiers)
 
         self.assertEquals(AccountStatus.ACTIVE, account.status)
         self.assertEquals(
@@ -368,11 +368,8 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
         account = self.factory.makeAccount(
             'Test account', email=email, status=AccountStatus.DEACTIVATED)
         self.assertIs(None, IPerson(account, None))
-        openid_identifier = IStore(OpenIdIdentifier).find(
-            OpenIdIdentifier.identifier,
-            OpenIdIdentifier.account_id == account.id).order_by(
-                OpenIdIdentifier.account_id).order_by(
-                    OpenIdIdentifier.account_id).first()
+        openid_identifier = removeSecurityProxy(
+            account).openid_identifiers.any().identifier
         openid_response = FakeOpenIDResponse(
             'http://testopenid.dev/+id/%s' % openid_identifier,
             status=SUCCESS, email=email, full_name=account.displayname)

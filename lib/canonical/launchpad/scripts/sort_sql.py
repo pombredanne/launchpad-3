@@ -12,9 +12,6 @@ __metaclass__ = type
 import re
 import sys
 
-class IncompleteLine(Exception):
-    pass
-
 
 class Parser:
     r"""Parse an SQL dump into logical lines.
