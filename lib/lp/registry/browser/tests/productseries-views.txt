@@ -35,7 +35,7 @@ rendering links:
     >>> print view.answers_usage.name
     UNKNOWN
     >>> print view.blueprints_usage.name
-    'LAUNCHPAD'
+    LAUNCHPAD
     >>> print view.official_malone
     True
     >>> print view.official_rosetta

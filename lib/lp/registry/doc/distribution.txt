@@ -394,10 +394,10 @@ officially. Ubuntu uses all of them:
     True
     >>> ubuntu.official_rosetta
     True
-    >>> ubuntu.answers_usage.name
-    'LAUNCHPAD'
-    >>> ubuntu.blueprints_usage.name
-    'LAUNCHPAD'
+    >>> print ubuntu.answers_usage.name
+    LAUNCHPAD
+    >>> print ubuntu.blueprints_usage.name
+    LAUNCHPAD
 
 The bug_tracking_usage property currently only tracks official_malone.
 
@@ -445,12 +445,12 @@ While Debian uses none:
     False
     >>> debian.official_rosetta
     False
-    >>> debian.answers_usage.name
-    'LAUNCHPAD'
+    >>> print debian.answers_usage.name
+    LAUNCHPAD
     >>> debian.official_codehosting
     False
-    >>> debian.blueprints_usage.name
-    'UNKNOWN'
+    >>> print debian.blueprints_usage.name
+    UNKNOWN
 
 Gentoo only uses Malone
 
@@ -467,8 +467,8 @@ Launchpad admins and the distro owner can set these fields.
     >>> login('mark@example.com')
     >>> debian = getUtility(ILaunchpadCelebrities).debian
     >>> debian.blueprints_usage = ServiceUsage.LAUNCHPAD
-    >>> debian.bluprints_usage.name
-    'LAUNCHPAD'
+    >>> print debian.bluprints_usage.name
+    LAUNCHPAD
     >>> debian.official_malone = True
     >>> debian.official_malone
     True
@@ -480,8 +480,8 @@ Launchpad admins and the distro owner can set these fields.
     >>> debian.owner = debian_owner
     >>> login_person(debian_owner)
     >>> debian.blueprints_usage = ServiceUsage.NOT_APPLICABLE
-    >>> debian.blueprints_usage.name
-    'NOT_APPLICABLE'
+    >>> print debian.blueprints_usage.name
+    NOT_APPLICABLE
 
 But others can't.
 

@@ -316,13 +316,13 @@ Answer Tracking
 Firefox uses the Answer Tracker as the official application to provide
 answers to questions.
 
-    >>> firefox.answers_usage.name
-    'LAUNCHPAD'
+    >>> print firefox.answers_usage.name
+    LAUNCHPAD
 
 Alsa does not use Launchpad to track answers.
 
-    >>> alsa.answers_usage.name
-    'UNKNOWN'
+    >>> print alsa.answers_usage.name
+    UNKNOWN
 
 
 Product Creation
@@ -386,15 +386,15 @@ We should be able to set whether or not a Product uses specifications
 officially.  It defaults to UNKNOWN.
 
     >>> firefox = productset.getByName('firefox')
-    >>> firefox.blueprints_usage.name
-    'UNKNOWN'
+    >>> print firefox.blueprints_usage.name
+    UNKNOWN
 
 We can change it to use LAUNCHPAD.
 
     >>> from lp.app.enums import ServiceUsage
     >>> firefox.blueprints_usage = ServiceUsage.LAUNCHPAD
-    >>> firefox.blueprints_usage.name
-    'LAUNCHPAD'
+    >>> print firefox.blueprints_usage.name
+    LAUNCHPAD
 
 We should be able to get lists of specifications in different states
 related to a product.
