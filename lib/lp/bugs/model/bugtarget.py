@@ -271,6 +271,10 @@ class HasBugHeatMixin:
             # recalculating max_heat.
             return
 
+        # XXX: deryck The queries here are a source of pain and have
+        # been changed a couple times looking for the best
+        # performaning version.  Use caution and have EXPLAIN ANALYZE
+        # data ready when changing these.
         if IDistribution.providedBy(self):
             sql = ["""SELECT Bug.heat
                       FROM Bug, Bugtask
