@@ -36,7 +36,10 @@ from storm.expr import (
     SQL,
     )
 from storm.info import ClassAlias
-from storm.store import Store
+from storm.store import (
+    EmptyResultSet,
+    Store,
+)
 from zope.component import (
     getAdapter,
     getUtility,
@@ -1372,16 +1375,13 @@ class DummyPOFile(POFileMixIn):
         """See `IPOFile`."""
         return self.potemplate.translationpermission
 
-    def emptySelectResults(self):
-        return POFile.select("1=2")
-
     def getTranslationsFilteredBy(self, person):
         """See `IPOFile`."""
         return None
 
     def getPOTMsgSetTranslated(self):
         """See `IPOFile`."""
-        return self.emptySelectResults()
+        return EmptyResultSet()
 
     def getPOTMsgSetUntranslated(self):
         """See `IPOFile`."""
@@ -1389,15 +1389,19 @@ class DummyPOFile(POFileMixIn):
 
     def getPOTMsgSetWithNewSuggestions(self):
         """See `IPOFile`."""
-        return self.emptySelectResults()
+        return EmptyResultSet()
 
     def getPOTMsgSetChangedInLaunchpad(self):
         """See `IPOFile`."""
-        return self.emptySelectResults()
+        return EmptyResultSet()
 
     def getPOTMsgSetWithErrors(self):
         """See `IPOFile`."""
-        return self.emptySelectResults()
+        return EmptyResultSet()
+
+    def getTranslationMessages(self, condition=None):
+        """See `IPOFile`."""
+        return EmptyResultSet()
 
     def hasMessageID(self, msgid):
         """See `IPOFile`."""
