@@ -72,8 +72,8 @@ class RecipeBuilder:
             recipe = recipe_file.read()
         finally:
             recipe_file.close()
-        # As of bzr 2.2, a defined identity is needed.  In this case, we're using
-        # buildd@<hostname>.
+        # As of bzr 2.2, a defined identity is needed.  In this case, we're
+        # using buildd@<hostname>.
         hostname = socket.gethostname()
         bzr_email = 'buildd@%s' % hostname
 
@@ -85,7 +85,7 @@ class RecipeBuilder:
             'DEBFULLNAME': self.author_name.encode('utf-8'),
             'BZR_EMAIL': bzr_email}
         retcode = call([
-            'bzr', 'dailydeb', '--no-build', recipe_path,
+            'bzr', 'dailydeb', '--safe', '--no-build', recipe_path,
             self.tree_path, '--manifest', manifest_path,
             '--append-version', '~%s1' % self.distroseries_name], env=env)
         if retcode != 0:
