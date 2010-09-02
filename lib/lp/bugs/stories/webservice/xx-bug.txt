@@ -1395,6 +1395,7 @@ Attachments of private bugs are served by the app server itself.
   <BLANKLINE>
   67890
 
+  >>> # Let's make the bug public again for later tests.
   >>> print webservice.patch(
   ...     bug_one['self_link'], 'application/json', dumps(dict(private=False)))
   HTTP/1.1 209 Content Returned...
