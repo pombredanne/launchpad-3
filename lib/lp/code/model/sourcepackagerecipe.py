@@ -11,7 +11,6 @@ __all__ = [
     'SourcePackageRecipe',
     ]
 
-from bzrlib.plugins.builder.recipe import RecipeParser
 from lazr.delegates import delegates
 from storm.locals import (
     Bool,
@@ -139,22 +138,22 @@ class SourcePackageRecipe(Storm):
             SourcePackageRecipeData,
             SourcePackageRecipeData.sourcepackage_recipe == self).one()
 
-    def _get_builder_recipe(self):
-        """Accesses of the recipe go to the SourcePackageRecipeData."""
-        return self._recipe_data.getRecipe()
-
     def _set_builder_recipe(self, value):
         """Setting of the recipe goes to the SourcePackageRecipeData."""
         self._recipe_data.setRecipe(value)
 
-    builder_recipe = property(_get_builder_recipe, _set_builder_recipe)
+    @property
+    def builder_recipe(self):
+        """Accesses of the recipe go to the SourcePackageRecipeData."""
+        return self._recipe_data.getRecipe()
 
     @property
     def base_branch(self):
         return self._recipe_data.base_branch
 
     def setRecipeText(self, recipe_text):
-        self.builder_recipe = RecipeParser(recipe_text).parse()
+        parsed = SourcePackageRecipeData.getParsedRecipe(recipe_text)
+        self._recipe_data.setRecipe(parsed)
 
     @property
     def recipe_text(self):
@@ -166,7 +165,8 @@ class SourcePackageRecipe(Storm):
         """See `ISourcePackageRecipeSource.new`."""
         store = IMasterStore(SourcePackageRecipe)
         sprecipe = SourcePackageRecipe()
-        SourcePackageRecipeData(builder_recipe, sprecipe)
+        parsed = SourcePackageRecipeData.getParsedRecipe(builder_recipe)
+        SourcePackageRecipeData(parsed, sprecipe)
         sprecipe.registrant = registrant
         sprecipe.owner = owner
         sprecipe.name = name
@@ -201,6 +201,7 @@ class SourcePackageRecipe(Storm):
         store = Store.of(self)
         self.distroseries.clear()
         self._recipe_data.instructions.find().remove()
+
         def destroyBuilds(pending):
             builds = self.getBuilds(pending=pending)
             for build in builds:

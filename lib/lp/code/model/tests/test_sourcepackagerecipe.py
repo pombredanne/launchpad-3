@@ -14,7 +14,9 @@ from datetime import (
 import textwrap
 import unittest
 
-from bzrlib.plugins.builder.recipe import RecipeParser
+from bzrlib.plugins.builder.recipe import (
+    ForbiddenInstructionError,
+)
 from pytz import UTC
 from storm.locals import Store
 import transaction
@@ -33,7 +35,6 @@ from lp.buildmaster.interfaces.buildqueue import IBuildQueue
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.code.errors import (
     BuildAlreadyPending,
-    ForbiddenInstruction,
     PrivateBranchRecipe,
     TooManyBuilds,
     TooNewRecipeFormat,
@@ -84,18 +85,6 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         recipe = self.factory.makeSourcePackageRecipe()
         verifyObject(ISourcePackageRecipe, recipe)
 
-    def makeSourcePackageRecipeFromBuilderRecipe(self, builder_recipe):
-        """Make a SourcePackageRecipe from a recipe with arbitrary other data.
-        """
-        registrant = self.factory.makePerson()
-        owner = self.factory.makeTeam(owner=registrant)
-        distroseries = self.factory.makeDistroSeries()
-        name = self.factory.getUniqueString(u'recipe-name')
-        description = self.factory.getUniqueString(u'recipe-description')
-        return getUtility(ISourcePackageRecipeSource).new(
-            registrant=registrant, owner=owner, distroseries=[distroseries],
-            name=name, description=description, builder_recipe=builder_recipe)
-
     def makeRecipeComponents(self, branches=()):
         """Return a dict of values that can be used to make a recipe.
 
@@ -110,7 +99,7 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
             distroseries = [self.factory.makeDistroSeries()],
             name = self.factory.getUniqueString(u'recipe-name'),
             description = self.factory.getUniqueString(u'recipe-description'),
-            builder_recipe = self.factory.makeRecipe(*branches))
+            builder_recipe = self.factory.makeRecipeText(*branches))
 
     def test_creation(self):
         # The metadata supplied when a SourcePackageRecipe is created is
@@ -174,8 +163,7 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
 
     def test_recipe_implements_interface(self):
         # SourcePackageRecipe objects implement ISourcePackageRecipe.
-        recipe = self.makeSourcePackageRecipeFromBuilderRecipe(
-            self.factory.makeRecipe())
+        recipe = self.factory.makeSourcePackageRecipe()
         transaction.commit()
         with person_logged_in(recipe.owner):
             self.assertProvides(recipe, ISourcePackageRecipe)
@@ -183,9 +171,7 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
     def test_base_branch(self):
         # When a recipe is created, we can access its base branch.
         branch = self.factory.makeAnyBranch()
-        builder_recipe = self.factory.makeRecipe(branch)
-        sp_recipe = self.makeSourcePackageRecipeFromBuilderRecipe(
-            builder_recipe)
+        sp_recipe = self.factory.makeSourcePackageRecipe(branches=[branch])
         transaction.commit()
         self.assertEquals(branch, sp_recipe.base_branch)
 
@@ -193,9 +179,8 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         # When a recipe is created, we can query it for links to the branch
         # it references.
         branch = self.factory.makeAnyBranch()
-        builder_recipe = self.factory.makeRecipe(branch)
-        sp_recipe = self.makeSourcePackageRecipeFromBuilderRecipe(
-            builder_recipe)
+        sp_recipe = self.factory.makeSourcePackageRecipe(
+            branches=[branch])
         transaction.commit()
         self.assertEquals([branch], list(sp_recipe.getReferencedBranches()))
 
@@ -204,9 +189,9 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         # returns all of them.
         branch1 = self.factory.makeAnyBranch()
         branch2 = self.factory.makeAnyBranch()
-        builder_recipe = self.factory.makeRecipe(branch1, branch2)
-        sp_recipe = self.makeSourcePackageRecipeFromBuilderRecipe(
-            builder_recipe)
+        builder_recipe = self.factory.makeRecipe()
+        sp_recipe = self.factory.makeSourcePackageRecipe(
+            branches=[branch1, branch2])
         transaction.commit()
         self.assertEquals(
             sorted([branch1, branch2]),
@@ -215,27 +200,26 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
     def test_random_user_cant_edit(self):
         # An arbitrary user can't set attributes.
         branch1 = self.factory.makeAnyBranch()
-        builder_recipe1 = self.factory.makeRecipe(branch1)
-        sp_recipe = self.makeSourcePackageRecipeFromBuilderRecipe(
-            builder_recipe1)
+        builder_recipe1 = self.factory.makeRecipeText(branch1)
+        sp_recipe = self.factory.makeSourcePackageRecipe(
+            recipe=builder_recipe1)
         branch2 = self.factory.makeAnyBranch()
-        builder_recipe2 = self.factory.makeRecipe(branch2)
+        builder_recipe2 = self.factory.makeRecipeText(branch2)
         login_person(self.factory.makePerson())
         self.assertRaises(
-            Unauthorized, setattr, sp_recipe, 'builder_recipe',
-            builder_recipe2)
+            Unauthorized, getattr, sp_recipe, 'setRecipeText')
 
     def test_set_recipe_text_resets_branch_references(self):
         # When the recipe_text is replaced, getReferencedBranches returns
         # (only) the branches referenced by the new recipe.
         branch1 = self.factory.makeAnyBranch()
         builder_recipe1 = self.factory.makeRecipe(branch1)
-        sp_recipe = self.makeSourcePackageRecipeFromBuilderRecipe(
-            builder_recipe1)
+        sp_recipe = self.factory.makeSourcePackageRecipe(
+            branches=[branch1])
         branch2 = self.factory.makeAnyBranch()
         builder_recipe2 = self.factory.makeRecipe(branch2)
-        login_person(sp_recipe.owner.teamowner)
-        sp_recipe.builder_recipe = builder_recipe2
+        with person_logged_in(sp_recipe.owner.teamowner):
+            sp_recipe.setRecipeText(str(builder_recipe2))
         self.assertEquals([branch2], list(sp_recipe.getReferencedBranches()))
 
     def test_rejects_run_command(self):
@@ -244,36 +228,34 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         %(base)s
         run touch test
         ''' % dict(base=self.factory.makeAnyBranch().bzr_identity)
-        parser = RecipeParser(textwrap.dedent(recipe_text))
-        builder_recipe = parser.parse()
+        recipe_text = textwrap.dedent(recipe_text)
         self.assertRaises(
-            ForbiddenInstruction,
-            self.makeSourcePackageRecipeFromBuilderRecipe, builder_recipe)
+            ForbiddenInstructionError, self.factory.makeSourcePackageRecipe,
+            recipe=recipe_text)
 
     def test_run_rejected_without_mangling_recipe(self):
         branch1 = self.factory.makeAnyBranch()
         builder_recipe1 = self.factory.makeRecipe(branch1)
-        sp_recipe = self.makeSourcePackageRecipeFromBuilderRecipe(
-            builder_recipe1)
+        sp_recipe = self.factory.makeSourcePackageRecipe()
+        old_branches = list(sp_recipe.getReferencedBranches())
         recipe_text = '''\
         # bzr-builder format 0.2 deb-version 0.1-{revno}
         %(base)s
         run touch test
         ''' % dict(base=self.factory.makeAnyBranch().bzr_identity)
-        parser = RecipeParser(textwrap.dedent(recipe_text))
-        builder_recipe2 = parser.parse()
+        recipe_text = textwrap.dedent(recipe_text)
         login_person(sp_recipe.owner.teamowner)
         self.assertRaises(
-            ForbiddenInstruction, setattr, sp_recipe, 'builder_recipe',
-            builder_recipe2)
-        self.assertEquals([branch1], list(sp_recipe.getReferencedBranches()))
+            ForbiddenInstructionError, sp_recipe.setRecipeText, recipe_text)
+        self.assertEquals(
+            old_branches, list(sp_recipe.getReferencedBranches()))
 
     def test_reject_newer_formats(self):
         builder_recipe = self.factory.makeRecipe()
         builder_recipe.format = 0.3
         self.assertRaises(
             TooNewRecipeFormat,
-            self.makeSourcePackageRecipeFromBuilderRecipe, builder_recipe)
+            self.factory.makeSourcePackageRecipe, recipe=str(builder_recipe))
 
     def test_requestBuild(self):
         recipe = self.factory.makeSourcePackageRecipe()
@@ -503,6 +485,7 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
             SourcePackageRecipe.findStaleDailyBuilds())
 
     def test_getMedianBuildDuration(self):
+
         def set_duration(build, minutes):
             duration = timedelta(minutes=minutes)
             build = removeSecurityProxy(build)
@@ -542,7 +525,7 @@ class TestRecipeBranchRoundTripping(TestCaseWithFactory):
             }
 
     def get_recipe(self, recipe_text):
-        builder_recipe = RecipeParser(textwrap.dedent(recipe_text)).parse()
+        builder_recipe = textwrap.dedent(recipe_text)
         registrant = self.factory.makePerson()
         owner = self.factory.makeTeam(owner=registrant)
         distroseries = self.factory.makeDistroSeries()
@@ -724,8 +707,8 @@ class TestWebservice(TestCaseWithFactory):
         return MINIMAL_RECIPE_TEXT % branch.bzr_identity
 
     def makeRecipe(self, user=None, owner=None, recipe_text=None):
-        # rockstar 21 Jul 2010 - This function does more commits than I'd like,
-        # but it's the result of the fact that the webservice runs in a
+        # rockstar 21 Jul 2010 - This function does more commits than I'd
+        # like, but it's the result of the fact that the webservice runs in a
         # separate thread so doesn't get the database updates without those
         # commits.
         if user is None:
