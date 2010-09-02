@@ -331,7 +331,7 @@ class PackageBuildDerived:
             logger.info(
                 "Gathered %s %d completely. Moving %s to uploader queue." % (
                 self.__class__.__name__, self.id, upload_leaf))
-            incoming_dir = os.path.join(root, 'incoming')
+            target_dir = os.path.join(root, "incoming")
             self.status = BuildStatus.UPLOADING
         else:
             logger.warning(

@@ -1862,17 +1862,24 @@ class TestBuildUploadProcessor(TestUploadProcessorBase):
         self.uploadprocessor = self.setupBreezyAndGetUploadProcessor()
 
     def testInvalidLeafName(self):
+        # Directories with invalid leaf names should be skipped,
+        # and a warning logged.
         upload_dir = self.queueUpload("bar_1.0-1")
         self.uploadprocessor.processBuildUpload(upload_dir, "bar_1.0-1")
         self.assertLogContains('Unable to extract build id from leaf '
                                'name bar_1.0-1, skipping.')
 
     def testNoBuildEntry(self):
+        # Directories with that refer to a nonexisting build
+        # should be skipped and a warning logged.
         upload_dir = self.queueUpload("bar_1.0-1", queue_entry="42-60")
-        self.assertRaises(NotFoundError, self.uploadprocessor.processBuildUpload,
-                upload_dir, "42-60")
+        self.uploadprocessor.processBuildUpload(upload_dir, "42-60")
+        self.assertLogContains("Unable to find package build with id")
 
     def testNoFiles(self):
+        # If the upload directory is empty, the upload
+        # will fail.
+
         # Upload a source package
         upload_dir = self.queueUpload("bar_1.0-1")
         self.processUpload(self.uploadprocessor, upload_dir)
@@ -1905,6 +1912,8 @@ class TestBuildUploadProcessor(TestUploadProcessorBase):
             in log_contents)
 
     def testSuccess(self):
+        # Properly uploaded binaries should result in the
+        # build status changing to FULLYBUILT.
         # Upload a source package
         upload_dir = self.queueUpload("bar_1.0-1")
         self.processUpload(self.uploadprocessor, upload_dir)

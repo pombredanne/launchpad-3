@@ -178,8 +178,7 @@ class IPackageBuildSet(Interface):
             will be returned.
         :return: a `ResultSet` representing the requested package builds.
         """
-
-    def getByID(self, build_id):
+    def getByID(build_id):
         """Get a `IPackageBuild` by build id.
 
         :param build_id: Build id.

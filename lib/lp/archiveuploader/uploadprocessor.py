@@ -212,10 +212,11 @@ class UploadProcessor:
             self.log.warn("Unable to extract build id from leaf name %s,"
                 " skipping." % upload)
             return
-        try:
-            build = getUtility(IPackageBuildSet).getByBuildID(build_id)
-        except NotFoundError:
-            self.log.warn("Unable to find build with id %d. Skipping.", build_id)
+        build = getUtility(IPackageBuildSet).getByID(build_id)
+        if build is None:
+            self.log.warn(
+                "Unable to find package build with id %d. Skipping.",
+                build_id)
             return
         if build.status != BuildStatus.UPLOADING:
             self.log.warn(
