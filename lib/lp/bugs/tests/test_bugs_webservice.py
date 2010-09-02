@@ -158,12 +158,8 @@ class TestBugAttachments(TestCaseWithFactory):
         self.addCleanup(collector.unregister)
         url = '/bugs/%d/attachments' % self.bug.id
         response = webservice.get(url)
-        self.assertThat(collector, HasQueryCount(LessThan(24)))
+        self.assertThat(collector, HasQueryCount(LessThan(20)))
         with_2_count = collector.count
-        # deliberate break to get data, will be backed out shortly.
-        self.assertThat(collector, HasQueryCount(MatchesAny(
-            Equals(with_2_count-1),
-            LessThan(with_2_count-1))))
         self.failUnlessEqual(response.status, 200)
         login(USER_EMAIL)
         self.factory.makeBugAttachment(self.bug)
