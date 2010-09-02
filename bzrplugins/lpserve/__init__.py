@@ -9,13 +9,14 @@ Cribbed from bzrlib.builtins.cmd_serve from Bazaar 0.16.
 __metaclass__ = type
 
 __all__ = ['cmd_launchpad_server',
-           'cmd_launchpad_service',
+           'cmd_launchpad_forking_service',
           ]
 
 
 import errno
 import os
 import resource
+import shlex
 import shutil
 import socket
 import sys
@@ -121,7 +122,7 @@ class cmd_launchpad_server(Command):
 register_command(cmd_launchpad_server)
 
 
-class LPService(object):
+class LPForkingService(object):
     """A class encapsulating the state of the LP Service."""
 
     DEFAULT_HOST = '127.0.0.1'
@@ -129,6 +130,8 @@ class LPService(object):
     WAIT_FOR_CHILDREN_TIMEOUT = 5*60 # Wait no more than 5 min for children
     SOCKET_TIMEOUT = 1.0
     SLEEP_FOR_CHILDREN_TIMEOUT = 1.0
+
+    _fork_function = os.fork
 
     def __init__(self, host=DEFAULT_HOST, port=DEFAULT_PORT):
         if host is None:
@@ -218,12 +221,12 @@ class LPService(object):
         sys.stderr.close()
         sys.stdout.close()
 
-    def become_child(self, user_id, path, conn):
+    def become_child(self, command, path, conn):
         """We are in the spawned child code, do our magic voodoo."""
         # Reset the start time
         trace._bzr_log_start_time = time.time()
-        trace.mutter('%d starting cmd_launchpad_server %s'
-                     % (os.getpid(), user_id,))
+        trace.mutter('%d starting %s'
+                     % (os.getpid(), command,))
         self._create_child_file_descriptors(path)
         # Now that we've set everything up, send the response to the client,
         # and close everything out. we create them first, so the client can
@@ -238,26 +241,32 @@ class LPService(object):
         # This is the point where we would actually want to do something with
         # our life
         cmd = cmd_launchpad_server()
-        retcode = cmd.run_argv_aliases(['--inet', user_id])
+        retcode = cmd.run_argv_aliases(['--inet', command])
         self._close_child_file_descriptons()
         trace.mutter('%d finished cmd_launchpad_server %s'
-                     % (os.getpid(), user_id,))
+                     % (os.getpid(), command,))
         sys.exit(retcode)
 
-    def fork_one_request(self, conn, client_addr, user_id):
+    @staticmethod
+    def command_to_argv(command_str):
+        """Convert a 'foo bar' style command to [u'foo', u'bar']"""
+        # command_str must be a utf-8 string
+        return [s.decode('utf-8') for s in shlex.split(command_str)]
+
+    def fork_one_request(self, conn, client_addr, command):
         """Fork myself and serve a request."""
         temp_name = tempfile.mkdtemp(prefix='lp-service-child-')
-        pid = os.fork()
+        pid = self._fork_function()
         if pid == 0:
             trace.mutter('%d spawned' % (os.getpid(),))
             self._server_socket.close()
-            self.become_child(user_id, temp_name, conn)
+            self.become_child(command, temp_name, conn)
             trace.warning('become_child returned!!!')
             sys.exit(1)
         else:
             self._child_processes[pid] = temp_name
             self.log(client_addr, 'Spawned process %s for user %r: %s'
-                            % (pid, user_id, temp_name))
+                            % (pid, command, temp_name))
 
     def main_loop(self):
         self._should_terminate.clear()
@@ -372,11 +381,11 @@ class LPService(object):
             conn.sendall('quit command requested... exiting\n')
             self.log(client_addr, 'quit requested')
         elif request.startswith('fork '):
-            user_id = request[5:]
-            self.log(client_addr, 'fork requested for %r' % (user_id,))
+            command = request[5:]
+            self.log(client_addr, 'fork requested for %r' % (command,))
             # TODO: Do we want to limit the number of children? And/or prefork
             #       additional instances?
-            self.fork_one_request(conn, client_addr, user_id)
+            self.fork_one_request(conn, client_addr, command)
         else:
             self.log(client_addr, 'FAILURE: unknown request: %r' % (request,))
             # TODO: Do we want to be friendly here? Or do we want to just
@@ -386,10 +395,15 @@ class LPService(object):
         conn.close()
 
 
-class cmd_launchpad_service(Command):
+class cmd_launchpad_forking_service(Command):
     """Launch a long-running process, where you can ask for new processes.
 
     The process will block on a given --port waiting for requests to be made.
+    When a request is made, it will fork itself and redirect stdout/in/err to
+    fifos on the filesystem, and start running the requseted command. The
+    caller will be informed where those file handles can be found. Thus it only
+    makes sense that the process connecting to the port must be on the same
+    system.
     """
 
     aliases = ['lp-service']
@@ -417,12 +431,13 @@ class cmd_launchpad_service(Command):
 
     def run(self, port=None):
         host, port = self._get_host_and_port(port)
+        # We note this because it often takes a fair amount of time.
         trace.note('Preloading %d modules' % (len(libraries_to_preload),))
         self._preload_libraries()
-        service = LPService(host, port)
+        service = LPForkingService(host, port)
         service.main_loop()
 
-register_command(cmd_launchpad_service)
+register_command(cmd_launchpad_forking_service)
 
 
 libraries_to_preload = [

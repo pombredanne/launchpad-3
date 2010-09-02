@@ -19,8 +19,8 @@ from canonical.config import config
 from lp.codehosting import get_bzr_path, get_BZR_PLUGIN_PATH_for_subprocess
 
 
-class TestingLPServiceInAThread(lpserve.LPService):
-    """Wrap starting and stopping an LPService instance in a thread."""
+class TestingLPForkingServiceInAThread(lpserve.LPForkingService):
+    """Wrap starting and stopping an LPForkingService instance in a thread."""
 
     # For testing, we set the timeouts much lower, because we want the tests to
     # run quickly
@@ -32,17 +32,18 @@ class TestingLPServiceInAThread(lpserve.LPService):
         self.service_started = threading.Event()
         self.service_stopped = threading.Event()
         self.this_thread = None
-        super(TestingLPServiceInAThread, self).__init__(host=host, port=port)
+        super(TestingLPForkingServiceInAThread, self).__init__(host=host,
+                                                               port=port)
 
     def _create_master_socket(self):
         trace.mutter('creating master socket')
-        super(TestingLPServiceInAThread, self)._create_master_socket()
+        super(TestingLPForkingServiceInAThread, self)._create_master_socket()
         trace.mutter('setting service_started')
         self.service_started.set()
 
     def main_loop(self):
         self.service_stopped.clear()
-        super(TestingLPServiceInAThread, self).main_loop()
+        super(TestingLPForkingServiceInAThread, self).main_loop()
         self.service_stopped.set()
 
     def fork_one_request(self, conn, client_addr, user_id):
@@ -52,24 +53,24 @@ class TestingLPServiceInAThread(lpserve.LPService):
 
     @staticmethod
     def start_service(test):
-        """Start a new LPService in a thread on a random port.
+        """Start a new LPForkingService in a thread on a random port.
 
         This will block until the service has created its socket, and is ready
         to communicate.
 
-        :return: A new TestingLPServiceInAThread instance
+        :return: A new TestingLPForkingServiceInAThread instance
         """
         # Allocate a new port on only the loopback device
-        new_service = TestingLPServiceInAThread()
+        new_service = TestingLPForkingServiceInAThread()
         thread = threading.Thread(target=new_service.main_loop,
-                                  name='TestingLPServiceInAThread')
+                                  name='TestingLPForkingServiceInAThread')
         new_service.this_thread = thread
         # should we be doing thread.setDaemon(True) ?
         thread.start()
         new_service.service_started.wait(10.0)
         if not new_service.service_started.isSet():
             raise RuntimeError(
-                'Failed to start the TestingLPServiceInAThread')
+                'Failed to start the TestingLPForkingServiceInAThread')
         test.addCleanup(new_service.stop_service)
         # what about returning new_service._sockname ?
         return new_service
@@ -83,34 +84,34 @@ class TestingLPServiceInAThread(lpserve.LPService):
         self.service_stopped.wait(10.0)
         if not self.service_stopped.isSet():
             raise RuntimeError(
-                'Failed to stop the TestingLPServiceInAThread')
+                'Failed to stop the TestingLPForkingServiceInAThread')
         self.this_thread.join()
         # Break any refcycles
         self.this_thread = None
 
 
-class TestTestingLPServiceInAThread(tests.TestCaseWithTransport):
+class TestTestingLPForkingServiceInAThread(tests.TestCaseWithTransport):
 
     def test_start_and_stop_service(self):
-        service = TestingLPServiceInAThread.start_service(self)
+        service = TestingLPForkingServiceInAThread.start_service(self)
         service.stop_service()
 
     def test_multiple_stops(self):
-        service = TestingLPServiceInAThread.start_service(self)
+        service = TestingLPForkingServiceInAThread.start_service(self)
         service.stop_service()
         service.stop_service()
 
     def test_autostop(self):
         # We shouldn't leak a thread here, as it should be part of the test
         # case teardown.
-        service = TestingLPServiceInAThread.start_service(self)
+        service = TestingLPForkingServiceInAThread.start_service(self)
 
 
-class TestCaseWithLPService(tests.TestCaseWithTransport):
+class TestCaseWithLPForkingService(tests.TestCaseWithTransport):
 
     def setUp(self):
-        super(TestCaseWithLPService, self).setUp()
-        self.service = TestingLPServiceInAThread.start_service(self)
+        super(TestCaseWithLPForkingService, self).setUp()
+        self.service = TestingLPForkingServiceInAThread.start_service(self)
 
     def send_message_to_service(self, message):
         host, port = self.service._sockname
@@ -127,7 +128,7 @@ class TestCaseWithLPService(tests.TestCaseWithTransport):
         return response
 
 
-class TestLPService(TestCaseWithLPService):
+class TestLPForkingService(TestCaseWithLPForkingService):
 
     def test_send_quit_message(self):
         response = self.send_message_to_service('quit\n')
@@ -206,7 +207,7 @@ class TestCaseWithSubprocess(tests.TestCaseWithTransport):
         return process
 
 
-class TestCaseWithLPServiceSubprocess(TestCaseWithSubprocess):
+class TestCaseWithLPForkingServiceSubprocess(TestCaseWithSubprocess):
     """Tests will get a separate process to communicate to.
 
     The number of these tests should be small, because it is expensive to start
@@ -216,7 +217,7 @@ class TestCaseWithLPServiceSubprocess(TestCaseWithSubprocess):
     """
 
     def setUp(self):
-        super(TestCaseWithLPServiceSubprocess, self).setUp()
+        super(TestCaseWithLPForkingServiceSubprocess, self).setUp()
         self.service_process, self.service_port = self.start_service_subprocess()
         self.addCleanup(self.stop_service)
 
