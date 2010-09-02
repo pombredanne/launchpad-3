@@ -9,6 +9,7 @@ __metaclass__ = type
 
 __all__ = [
     'BuildStatus',
+    'BuildFarmJobType',
     ]
 
 from lazr.enum import (
@@ -101,4 +102,36 @@ class BuildStatus(DBEnumeratedType):
 
         The build has completed and is waiting to be process by the 
         upload processor.
+        """)
+
+
+class BuildFarmJobType(DBEnumeratedType):
+    """Soyuz build farm job type.
+
+    An enumeration with the types of jobs that may be run on the Soyuz build
+    farm.
+    """
+
+    PACKAGEBUILD = DBItem(1, """
+        Binary package build
+
+        Build a source package.
+        """)
+
+    BRANCHBUILD = DBItem(2, """
+        Branch build
+
+        Build a package from a bazaar branch.
+        """)
+
+    RECIPEBRANCHBUILD = DBItem(3, """
+        Recipe branch build
+
+        Build a package from a bazaar branch and a recipe.
+        """)
+
+    TRANSLATIONTEMPLATESBUILD = DBItem(4, """
+        Translation template build
+
+        Generate translation templates from a bazaar branch.
         """)

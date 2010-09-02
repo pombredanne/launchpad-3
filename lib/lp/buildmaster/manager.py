@@ -8,7 +8,7 @@ __metaclass__ = type
 __all__ = [
     'BaseDispatchResult',
     'BuilddManager',
-    'BUILDD_MANAGER_LOG_NAME '
+    'BUILDD_MANAGER_LOG_NAME',
     'FailDispatchResult',
     'RecordingSlave',
     'ResetDispatchResult',

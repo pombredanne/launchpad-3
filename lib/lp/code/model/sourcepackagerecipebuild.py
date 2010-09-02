@@ -45,8 +45,10 @@ from lp.archiveuploader.uploadpolicy import (
     IArchiveUploadPolicy,
     SOURCE_PACKAGE_RECIPE_UPLOAD_POLICY_NAME,
     )
-from lp.buildmaster.enums import BuildStatus
-from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
+from lp.buildmaster.enums import (
+    BuildFarmJobType,
+    BuildStatus,
+    )
 from lp.buildmaster.model.buildfarmjob import BuildFarmJobOldDerived
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.buildmaster.model.packagebuild import (
@@ -379,7 +381,7 @@ class SourcePackageRecipeBuildJob(BuildFarmJobOldDerived, Storm):
         return "%s-%s" % (self.id, self.build_id)
 
     def score(self):
-        return 2405 + self.build.archive.relative_build_score
+        return 2505 + self.build.archive.relative_build_score
 
 
 def register_archive_upload_policy_adapter():

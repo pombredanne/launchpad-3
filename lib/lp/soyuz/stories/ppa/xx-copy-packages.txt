@@ -972,7 +972,7 @@ in No Privileges' PPA.
     ...     archive=jblack_friends.archive,
     ...     status=PackagePublishingStatus.PUBLISHED)
     >>> [build] = jblack_friends_foo_src.createMissingBuilds()
-    >>> from lp.buildmaster.interfaces.buildbase import BuildStatus
+    >>> from lp.buildmaster.enums import BuildStatus
     >>> build.status = BuildStatus.FAILEDTOBUILD
 
     >>> flush_database_updates()
