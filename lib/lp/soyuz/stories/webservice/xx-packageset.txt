@@ -185,7 +185,7 @@ sorted by name.
     ...     for entry in body['entries']:
     ...         print entry['self_link']
 
-    >>> response = webservice.get("/package-sets/")
+    >>> response = anon_webservice.get("/package-sets/")
     >>> print_payload(response)
     http://api.launchpad.dev/beta/package-sets/hoary/umbrella
 
