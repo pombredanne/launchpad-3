@@ -253,8 +253,8 @@ class SourcePackageRecipeData(Storm):
 
     def setRecipe(self, builder_recipe):
         """Convert the BaseRecipeBranch `builder_recipe` to the db form."""
-        if builder_recipe.format > 0.2:
-            raise TooNewRecipeFormat(builder_recipe.format, 0.2)
+        if builder_recipe.format > 0.3:
+            raise TooNewRecipeFormat(builder_recipe.format, 0.3)
         branch_map = self._scanInstructions(builder_recipe)
         # If this object hasn't been added to a store yet, there can't be any
         # instructions linking to us yet.

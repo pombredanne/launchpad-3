@@ -239,7 +239,7 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
 
     def test_rejects_run_command(self):
         recipe_text = '''\
-        # bzr-builder format 0.2 deb-version 0.1-{revno}
+        # bzr-builder format 0.3 deb-version 0.1-{revno}
         %(base)s
         run touch test
         ''' % dict(base=self.factory.makeAnyBranch().bzr_identity)
@@ -255,7 +255,7 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         sp_recipe = self.makeSourcePackageRecipeFromBuilderRecipe(
             builder_recipe1)
         recipe_text = '''\
-        # bzr-builder format 0.2 deb-version 0.1-{revno}
+        # bzr-builder format 0.3 deb-version 0.1-{revno}
         %(base)s
         run touch test
         ''' % dict(base=self.factory.makeAnyBranch().bzr_identity)
@@ -267,9 +267,15 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
             builder_recipe2)
         self.assertEquals([branch1], list(sp_recipe.getReferencedBranches()))
 
-    def test_reject_newer_formats(self):
+    def test_accept_format_0_3(self):
+        """Recipe format 0.3 is accepted."""
         builder_recipe = self.factory.makeRecipe()
         builder_recipe.format = 0.3
+        self.makeSourcePackageRecipeFromBuilderRecipe(builder_recipe)
+
+    def test_reject_newer_formats(self):
+        builder_recipe = self.factory.makeRecipe()
+        builder_recipe.format = 0.4
         self.assertRaises(
             TooNewRecipeFormat,
             self.makeSourcePackageRecipeFromBuilderRecipe, builder_recipe)
@@ -568,7 +574,7 @@ class TestRecipeBranchRoundTripping(TestCaseWithFactory):
 
     def test_builds_simplest_recipe(self):
         recipe_text = '''\
-        # bzr-builder format 0.2 deb-version 0.1-{revno}
+        # bzr-builder format 0.3 deb-version 0.1-{revno}
         %(base)s
         ''' % self.branch_identities
         base_branch = self.get_recipe(recipe_text)
@@ -578,7 +584,7 @@ class TestRecipeBranchRoundTripping(TestCaseWithFactory):
 
     def test_builds_recipe_with_merge(self):
         recipe_text = '''\
-        # bzr-builder format 0.2 deb-version 0.1-{revno}
+        # bzr-builder format 0.3 deb-version 0.1-{revno}
         %(base)s
         merge bar %(merged)s
         ''' % self.branch_identities
@@ -593,7 +599,7 @@ class TestRecipeBranchRoundTripping(TestCaseWithFactory):
 
     def test_builds_recipe_with_nest(self):
         recipe_text = '''\
-        # bzr-builder format 0.2 deb-version 0.1-{revno}
+        # bzr-builder format 0.3 deb-version 0.1-{revno}
         %(base)s
         nest bar %(nested)s baz
         ''' % self.branch_identities
@@ -608,7 +614,7 @@ class TestRecipeBranchRoundTripping(TestCaseWithFactory):
 
     def test_builds_recipe_with_nest_then_merge(self):
         recipe_text = '''\
-        # bzr-builder format 0.2 deb-version 0.1-{revno}
+        # bzr-builder format 0.3 deb-version 0.1-{revno}
         %(base)s
         nest bar %(nested)s baz
         merge zam %(merged)s
@@ -628,7 +634,7 @@ class TestRecipeBranchRoundTripping(TestCaseWithFactory):
 
     def test_builds_recipe_with_merge_then_nest(self):
         recipe_text = '''\
-        # bzr-builder format 0.2 deb-version 0.1-{revno}
+        # bzr-builder format 0.3 deb-version 0.1-{revno}
         %(base)s
         merge zam %(merged)s
         nest bar %(nested)s baz
@@ -648,7 +654,7 @@ class TestRecipeBranchRoundTripping(TestCaseWithFactory):
 
     def test_builds_a_merge_in_to_a_nest(self):
         recipe_text = '''\
-        # bzr-builder format 0.2 deb-version 0.1-{revno}
+        # bzr-builder format 0.3 deb-version 0.1-{revno}
         %(base)s
         nest bar %(nested)s baz
           merge zam %(merged)s
@@ -671,7 +677,7 @@ class TestRecipeBranchRoundTripping(TestCaseWithFactory):
         nested2 = self.factory.makeAnyBranch()
         self.branch_identities['nested2'] = nested2.bzr_identity
         recipe_text = '''\
-        # bzr-builder format 0.2 deb-version 0.1-{revno}
+        # bzr-builder format 0.3 deb-version 0.1-{revno}
         %(base)s
         nest bar %(nested)s baz
           nest zam %(nested2)s zoo
@@ -691,7 +697,7 @@ class TestRecipeBranchRoundTripping(TestCaseWithFactory):
 
     def tests_builds_recipe_with_revspecs(self):
         recipe_text = '''\
-        # bzr-builder format 0.2 deb-version 0.1-{revno}
+        # bzr-builder format 0.3 deb-version 0.1-{revno}
         %(base)s revid:a
         nest bar %(nested)s baz tag:b
         merge zam %(merged)s 2

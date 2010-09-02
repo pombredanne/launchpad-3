@@ -59,7 +59,7 @@ from lp.soyuz.interfaces.archive import IArchive
 
 
 MINIMAL_RECIPE_TEXT = dedent(u'''\
-    # bzr-builder format 0.2 deb-version 0+{revno}
+    # bzr-builder format 0.3 deb-version 0+{revno}
     %s
     ''')
 
