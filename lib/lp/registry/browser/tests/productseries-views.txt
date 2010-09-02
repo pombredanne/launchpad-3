@@ -33,7 +33,7 @@ rendering links:
 
     # answers_usage is never LAUNCHPAD for product series.
     >>> print view.answers_usage.name
-    UNKNOWN
+    NOT_APPLICABLE
     >>> print view.blueprints_usage.name
     LAUNCHPAD
     >>> print view.official_malone
