@@ -38,7 +38,7 @@ from lp.archiveuploader.utils import (
     determine_binary_file_type,
     determine_source_file_type,
     )
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.person import (
     IPersonSet,
     PersonCreationRationale,

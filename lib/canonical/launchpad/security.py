@@ -56,6 +56,7 @@ from lp.bugs.interfaces.bugbranch import IBugBranch
 from lp.bugs.interfaces.bugnomination import IBugNomination
 from lp.bugs.interfaces.bugsubscription import IBugSubscription
 from lp.bugs.interfaces.bugtracker import IBugTracker
+from lp.bugs.interfaces.bugwatch import IBugWatch
 from lp.buildmaster.interfaces.builder import (
     IBuilder,
     IBuilderSet,
@@ -2525,6 +2526,11 @@ class ChangeOfficialSourcePackageBranchLinks(AuthorizationBase):
         return user.in_ubuntu_branches or user.in_admin
 
 
+class ViewPackageset(AnonymousAuthorization):
+    """Anyone can view an IPackageset."""
+    usedfor = IPackageset
+
+
 class EditPackageset(AuthorizationBase):
     permission = 'launchpad.Edit'
     usedfor = IPackageset
@@ -2570,5 +2576,15 @@ class AdminBugTracker(AuthorizationBase):
     def checkAuthenticated(self, user):
         return (
             user.in_janitor or
+            user.in_admin or
+            user.in_launchpad_developers)
+
+
+class AdminBugWatch(AuthorizationBase):
+    permission = 'launchpad.Admin'
+    usedfor = IBugWatch
+
+    def checkAuthenticated(self, user):
+        return (
             user.in_admin or
             user.in_launchpad_developers)

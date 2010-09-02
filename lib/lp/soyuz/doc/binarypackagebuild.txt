@@ -136,7 +136,7 @@ property:
 
 If the build does not have any uploads, None is returned:
 
-    >>> from lp.buildmaster.interfaces.buildbase import BuildStatus
+    >>> from lp.buildmaster.enums import BuildStatus
     >>> from lp.soyuz.interfaces.binarypackagebuild import (
     ...     IBinaryPackageBuildSet)
     >>> at_build = getUtility(IBinaryPackageBuildSet).getByBuildID(15)

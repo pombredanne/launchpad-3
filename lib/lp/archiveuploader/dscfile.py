@@ -59,7 +59,7 @@ from lp.archiveuploader.utils import (
     re_valid_version,
     safe_fix_maintainer,
     )
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.buildmaster.enums import BuildStatus
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildSource,
     )
@@ -251,6 +251,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         "Format",
         "Standards-Version",
         "filecontents",
+        "homepage",
         ]))
 
     # Note that files is actually only set inside verify().
@@ -708,6 +709,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
             architecturehintlist=encoded.get('Architecture', ''),
             creator=self.changes.changed_by['person'],
             urgency=self.changes.converted_urgency,
+            homepage=encoded.get('homepage'),
             dsc=encoded['filecontents'],
             dscsigningkey=self.signingkey,
             dsc_maintainer_rfc822=encoded['Maintainer'],

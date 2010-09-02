@@ -110,9 +110,11 @@ from lp.bugs.interfaces.bugtracker import (
     IBugTrackerSet,
     )
 from lp.bugs.interfaces.bugwatch import IBugWatchSet
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.buildmaster.enums import (
+    BuildFarmJobType,
+    BuildStatus,
+    )
 from lp.buildmaster.interfaces.builder import IBuilderSet
-from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.code.enums import (
     BranchMergeProposalStatus,
@@ -152,12 +154,22 @@ from lp.hardwaredb.interfaces.hwdb import (
     IHWSubmissionDeviceSet,
     IHWSubmissionSet,
     )
+from lp.registry.enum import (
+    DistroSeriesDifferenceStatus,
+    DistroSeriesDifferenceType,
+    )
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.distributionmirror import (
     MirrorContent,
     MirrorSpeed,
     )
 from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.distroseriesdifference import (
+    IDistroSeriesDifferenceSource,
+    )
+from lp.registry.interfaces.distroseriesdifferencecomment import (
+    IDistroSeriesDifferenceCommentSource,
+    )
 from lp.registry.interfaces.gpg import (
     GPGKeyAlgorithm,
     IGPGKeySet,
@@ -1496,7 +1508,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return mail
 
     def makeSpecification(self, product=None, title=None, distribution=None,
-                          name=None, summary=None,
+                          name=None, summary=None, owner=None,
                           status=SpecificationDefinitionStatus.NEW):
         """Create and return a new, arbitrary Blueprint.
 
@@ -1511,13 +1523,15 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             summary = self.getUniqueString('summary')
         if title is None:
             title = self.getUniqueString('title')
+        if owner is None:
+            owner = self.makePerson()
         return getUtility(ISpecificationSet).new(
             name=name,
             title=title,
             specurl=None,
             summary=summary,
             definition_status=status,
-            owner=self.makePerson(),
+            owner=owner,
             product=product,
             distribution=distribution)
 
@@ -1812,6 +1826,59 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
     # Most people think of distro releases as distro series.
     makeDistroSeries = makeDistroRelease
+
+    def makeDistroSeriesDifference(
+        self, derived_series=None, source_package_name_str=None,
+        versions=None,
+        difference_type=DistroSeriesDifferenceType.DIFFERENT_VERSIONS,
+        status=DistroSeriesDifferenceStatus.NEEDS_ATTENTION):
+        """Create a new distro series source package difference."""
+        if derived_series is None:
+            parent_series = self.makeDistroSeries()
+            derived_series = self.makeDistroSeries(
+                parent_series=parent_series)
+
+        if source_package_name_str is None:
+            source_package_name_str = self.getUniqueString('src-name')
+
+        source_package_name = self.getOrMakeSourcePackageName(
+            source_package_name_str)
+
+        if versions is None:
+            versions = {}
+
+        if difference_type is not (
+            DistroSeriesDifferenceType.MISSING_FROM_DERIVED_SERIES):
+
+            source_pub = self.makeSourcePackagePublishingHistory(
+                distroseries=derived_series,
+                version=versions.get('derived'),
+                sourcepackagename=source_package_name)
+
+        if difference_type is not (
+            DistroSeriesDifferenceType.UNIQUE_TO_DERIVED_SERIES):
+
+            source_pub = self.makeSourcePackagePublishingHistory(
+                distroseries=derived_series.parent_series,
+                version=versions.get('parent'),
+                sourcepackagename=source_package_name)
+
+        return getUtility(IDistroSeriesDifferenceSource).new(
+            derived_series, source_package_name, difference_type,
+            status=status)
+
+    def makeDistroSeriesDifferenceComment(
+        self, distro_series_difference=None, owner=None, comment=None):
+        """Create a new distro series difference comment."""
+        if distro_series_difference is None:
+            distro_series_difference = self.makeDistroSeriesDifference()
+        if owner is None:
+            owner = self.makePerson()
+        if comment is None:
+            comment = self.getUniqueString('dsdcomment')
+
+        return getUtility(IDistroSeriesDifferenceCommentSource).new(
+            distro_series_difference, owner, comment)
 
     def makeDistroArchSeries(self, distroseries=None,
                              architecturetag=None, processorfamily=None,
@@ -2414,7 +2481,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                                  date_uploaded=UTC_NOW,
                                  source_package_recipe_build=None,
                                  dscsigningkey=None,
-                                 user_defined_fields=None):
+                                 user_defined_fields=None,
+                                 homepage=None):
         """Make a `SourcePackageRelease`."""
         if distroseries is None:
             if source_package_recipe_build is not None:
@@ -2482,7 +2550,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             archive=archive,
             dateuploaded=date_uploaded,
             source_package_recipe_build=source_package_recipe_build,
-            user_defined_fields=user_defined_fields)
+            user_defined_fields=user_defined_fields,
+            homepage=homepage)
 
     def makeSourcePackageReleaseFile(self, sourcepackagerelease=None,
                                      library_file=None, filetype=None):
@@ -2710,7 +2779,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                                  provides=None, pre_depends=None,
                                  enhances=None, breaks=None,
                                  essential=False, installed_size=None,
-                                 date_created=None, debug_package=None):
+                                 date_created=None, debug_package=None,
+                                 homepage=None):
         """Make a `BinaryPackageRelease`."""
         if build is None:
             build = self.makeBinaryPackageBuild()
@@ -2741,7 +2811,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 suggests=suggests, conflicts=conflicts, replaces=replaces,
                 provides=provides, pre_depends=pre_depends,
                 enhances=enhances, breaks=breaks, essential=essential,
-                installedsize=installed_size, debug_package=debug_package)
+                installedsize=installed_size, debug_package=debug_package,
+                homepage=homepage)
         if date_created is not None:
             removeSecurityProxy(bpr).datecreated = date_created
         return bpr
