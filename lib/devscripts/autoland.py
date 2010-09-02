@@ -161,7 +161,7 @@ class MergeProposal:
         return URI(scheme='bzr+ssh', host=host, path='/' + branch.unique_name)
 
     def get_commit_message(self, commit_text, testfix=False, no_qa=False,
-                           incremental=False):
+                           incremental=False, rollback=None):
         """Get the Launchpad-style commit message for a merge proposal."""
         reviews = self.get_reviews()
         bugs = self.get_bugs()
@@ -171,7 +171,7 @@ class MergeProposal:
             get_reviewer_clause(reviews),
             get_bugs_clause(bugs),
             get_qa_clause(bugs, no_qa,
-                incremental),
+                incremental, rollback=rollback),
             ])
 
         return '%s %s' % (tags, commit_text)
@@ -186,15 +186,18 @@ def get_testfix_clause(testfix=False):
     return testfix_clause
 
 
-def get_qa_clause(bugs, no_qa=False, incremental=False):
+def get_qa_clause(bugs, no_qa=False, incremental=False, rollback=None):
     """Check the no-qa and incremental options, getting the qa clause.
 
     The qa clause will always be or no-qa, or incremental, or no-qa and
-    incremental, or no tags.
+    incremental, or a revno for the rollback clause, or no tags.
+
+    See https://dev.launchpad.net/QAProcessContinuousRollouts for detailed
+    explanation of each clause.
     """
     qa_clause = ""
 
-    if not bugs and not no_qa and not incremental:
+    if not bugs and not no_qa and not incremental and not rollback:
         raise MissingBugsError
 
     if incremental and not bugs:
@@ -206,6 +209,8 @@ def get_qa_clause(bugs, no_qa=False, incremental=False):
         qa_clause = '[incr]'
     elif no_qa:
         qa_clause = '[no-qa]'
+    elif rollback:
+        qa_clause = '[rollback=%d]' % rollback
     else:
         qa_clause = ''
 

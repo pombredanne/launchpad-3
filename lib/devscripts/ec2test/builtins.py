@@ -329,6 +329,11 @@ class cmd_land(EC2Command):
             'incremental',
             help="Incremental to other bug fix (tags commit with [incr])."),
         Option(
+            'rollback', type=int,
+            help=(
+                "Rollback given revision number. (tags commit with "
+                "[rollback=revno]).")),
+        Option(
             'commit-text', short_name='s', type=str,
             help=(
                 'A description of the landing, not including reviewer '
@@ -361,8 +366,8 @@ class cmd_land(EC2Command):
     def run(self, merge_proposal=None, machine=None,
             instance_type=DEFAULT_INSTANCE_TYPE, postmortem=False,
             debug=False, commit_text=None, dry_run=False, testfix=False,
-            no_qa=False, incremental=False, print_commit=False, force=False,
-            attached=False):
+            no_qa=False, incremental=False, rollback=None, print_commit=False,
+            force=False, attached=False):
         try:
             from devscripts.autoland import (
                 LaunchpadBranchLander, MissingReviewError, MissingBugsError,
@@ -405,7 +410,7 @@ class cmd_land(EC2Command):
                 "message on the merge proposal.")
         try:
             commit_message = mp.get_commit_message(
-                commit_text, testfix, no_qa, incremental)
+                commit_text, testfix, no_qa, incremental, rollback=rollback)
         except MissingReviewError:
             raise BzrCommandError(
                 "Cannot land branches that haven't got approved code "
@@ -420,6 +425,10 @@ class cmd_land(EC2Command):
             raise BzrCommandError(
                 "--incremental option requires bugs linked to the branch. "
                 "Link the bugs or remove the --incremental option.")
+        except TypeError:
+            raise BzrCommandError(
+                "--rollback option requires a revision number to be rolled "
+                "back. ")
 
         if print_commit:
             print commit_message

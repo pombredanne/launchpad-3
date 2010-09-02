@@ -215,6 +215,28 @@ class TestGetCommitMessage(unittest.TestCase):
             self.mp.get_commit_message("Foobaring the sbrubble.",
                 testfix, no_qa, incr))
 
+    def test_commit_with_noqa_and_incr(self):
+        incr = True
+        no_qa = True
+        testfix = False
+
+        self.mp.get_bugs = FakeMethod([self.fake_bug])
+        self.mp.get_reviews = FakeMethod({None : [self.fake_person]})
+
+        self.assertEqual(
+            "[r=foo][ui=none][bug=20][no-qa][incr] Foobaring the sbrubble.",
+            self.mp.get_commit_message("Foobaring the sbrubble.", 
+                testfix, no_qa, incr))
+
+    def test_commit_with_rollback(self):
+        self.mp.get_bugs = FakeMethod([self.fake_bug])
+        self.mp.get_reviews = FakeMethod({None : [self.fake_person]})
+
+        self.assertEqual(
+            "[r=foo][ui=none][bug=20][rollback=123] Foobaring the sbrubble.",
+            self.mp.get_commit_message("Foobaring the sbrubble.", 
+                rollback=123))
+
 
 class TestGetTestfixClause(unittest.TestCase):
     """Tests for `get_testfix_clause`"""
@@ -279,6 +301,11 @@ class TestGetQaClause(unittest.TestCase):
         incr = True
         self.assertEqual('[no-qa][incr]',
             get_qa_clause([bug1], no_qa, incr))
+
+    def test_rollback_given(self):
+        bugs = None
+        self.assertEqual('[rollback=123]',
+            get_qa_clause(bugs, rollback=123))
 
 
 class TestGetReviewerHandle(unittest.TestCase):
