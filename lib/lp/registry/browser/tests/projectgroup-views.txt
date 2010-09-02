@@ -78,6 +78,7 @@ Answers, Blueprints, and Bugs applications.
 
     >>> view = create_view(projectgroup, name='+index', principal=owner)
     >>> content = find_tag_by_id(view.render(), 'maincontent')
+    >>> import pdb; pdb.set_trace()
     >>> print find_tag_by_id(content, 'portlet-latest-faqs')['id']
     portlet-latest-faqs
     >>> print find_tag_by_id(content, 'portlet-latest-questions')['id']
