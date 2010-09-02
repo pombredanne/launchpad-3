@@ -300,10 +300,10 @@ class HasBugHeatMixin:
         elif IProjectGroup.providedBy(self):
             sql = ["""SELECT heat
                       FROM Bug, Bugtask, Product
-                      WHERE Bugtask.bug = Bug.id AND
-                      Bugtask.product = Product.id AND
-                      Product.project IS NOT NULL
-                      Product.project =  %s
+                      WHERE Bugtask.bug = Bug.id
+                      AND Bugtask.product = Product.id
+                      AND Product.project IS NOT NULL
+                      AND Product.project =  %s
                       ORDER BY Bug.heat DESC LIMIT 1""" % sqlvalues(self)]
         else:
             raise NotImplementedError
