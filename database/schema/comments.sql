@@ -201,6 +201,31 @@ COMMENT ON COLUMN BugNomination.decider IS 'The person who approved or declined 
 COMMENT ON TABLE BugSubscription IS 'A subscription by a Person to a bug.';
 COMMENT ON COLUMN BugSubscription.bug_notification_level IS 'The level of notifications which the Person will receive from this subscription.';
 
+-- BugSubscriptionFilter
+COMMENT ON TABLE BugSubscriptionFilter IS 'A filter with search criteria. Emails are sent only if the affected bug matches the specified parameters. The parameters are the same as those used for bugtask searches.';
+COMMENT ON COLUMN BugSubscriptionFilter.structuralsubscription IS 'The structural subscription to be filtered.';
+COMMENT ON COLUMN BugSubscriptionFilter.find_all_tags IS 'If set, search for bugs having all tags specified in BugSubscriptionFilterTag, else search for bugs having any of the tags specified in BugSubscriptionFilterTag.';
+COMMENT ON COLUMN BugSubscriptionFilter.include_any_tags IS 'If True, include messages for bugs having any tag set.';
+COMMENT ON COLUMN BugSubscriptionFilter.exclude_any_tags IS 'If True, exclude bugs having any tag set.';
+COMMENT ON COLUMN BugSubscriptionFilter.other_parameters IS 'Other filter paremeters. Actual filtering is implemented on Python level.';
+COMMENT ON COLUMN BugSubscriptionFilter.description IS 'A description of the filter, allowing subscribers to note the intent of the filter.';
+
+-- BugSubscriptionFilterStatus
+COMMENT ON TABLE BugSubscriptionFilterStatus IS 'Filter a bugsubscription by bug task status.';
+COMMENT ON COLUMN BugSubscriptionFilterStatus.filter IS 'The subscription filter of this record.';
+COMMENT ON COLUMN BugSubscriptionFilterStatus.status IS 'The bug task status.';
+
+-- BugSubscriptionFilterImportance
+COMMENT ON TABLE BugSubscriptionFilterImportance IS 'Filter a bugsubscription by bug task status.';
+COMMENT ON COLUMN BugSubscriptionFilterImportance.filter IS 'The subscription filter of this record.';
+COMMENT ON COLUMN BugSubscriptionFilterImportance.importance IS 'The bug task importance.';
+
+-- BugSubscriptionFilterTag
+COMMENT ON TABLE BugSubscriptionFilterTag IS 'Filter by bug tag.';
+COMMENT ON COLUMN BugSubscriptionFilterTag.filter IS 'The subscription filter of this record.';
+COMMENT ON COLUMN BugSubscriptionFilterTag.tag IS 'A bug tag.';
+COMMENT ON COLUMN BugSubscriptionFilterTag.include IS 'If True, send only messages for bugs having this tag, else send only messages for bugs which do not have this tag.';
+
 -- BugTag
 COMMENT ON TABLE BugTag IS 'Attaches simple text tags to a bug.';
 COMMENT ON COLUMN BugTag.bug IS 'The bug the tags is attached to.';

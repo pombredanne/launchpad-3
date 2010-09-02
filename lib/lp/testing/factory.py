@@ -154,12 +154,22 @@ from lp.hardwaredb.interfaces.hwdb import (
     IHWSubmissionDeviceSet,
     IHWSubmissionSet,
     )
+from lp.registry.enum import (
+    DistroSeriesDifferenceStatus,
+    DistroSeriesDifferenceType,
+    )
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.distributionmirror import (
     MirrorContent,
     MirrorSpeed,
     )
 from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.distroseriesdifference import (
+    IDistroSeriesDifferenceSource,
+    )
+from lp.registry.interfaces.distroseriesdifferencecomment import (
+    IDistroSeriesDifferenceCommentSource,
+    )
 from lp.registry.interfaces.gpg import (
     GPGKeyAlgorithm,
     IGPGKeySet,
@@ -1816,6 +1826,59 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
     # Most people think of distro releases as distro series.
     makeDistroSeries = makeDistroRelease
+
+    def makeDistroSeriesDifference(
+        self, derived_series=None, source_package_name_str=None,
+        versions=None,
+        difference_type=DistroSeriesDifferenceType.DIFFERENT_VERSIONS,
+        status=DistroSeriesDifferenceStatus.NEEDS_ATTENTION):
+        """Create a new distro series source package difference."""
+        if derived_series is None:
+            parent_series = self.makeDistroSeries()
+            derived_series = self.makeDistroSeries(
+                parent_series=parent_series)
+
+        if source_package_name_str is None:
+            source_package_name_str = self.getUniqueString('src-name')
+
+        source_package_name = self.getOrMakeSourcePackageName(
+            source_package_name_str)
+
+        if versions is None:
+            versions = {}
+
+        if difference_type is not (
+            DistroSeriesDifferenceType.MISSING_FROM_DERIVED_SERIES):
+
+            source_pub = self.makeSourcePackagePublishingHistory(
+                distroseries=derived_series,
+                version=versions.get('derived'),
+                sourcepackagename=source_package_name)
+
+        if difference_type is not (
+            DistroSeriesDifferenceType.UNIQUE_TO_DERIVED_SERIES):
+
+            source_pub = self.makeSourcePackagePublishingHistory(
+                distroseries=derived_series.parent_series,
+                version=versions.get('parent'),
+                sourcepackagename=source_package_name)
+
+        return getUtility(IDistroSeriesDifferenceSource).new(
+            derived_series, source_package_name, difference_type,
+            status=status)
+
+    def makeDistroSeriesDifferenceComment(
+        self, distro_series_difference=None, owner=None, comment=None):
+        """Create a new distro series difference comment."""
+        if distro_series_difference is None:
+            distro_series_difference = self.makeDistroSeriesDifference()
+        if owner is None:
+            owner = self.makePerson()
+        if comment is None:
+            comment = self.getUniqueString('dsdcomment')
+
+        return getUtility(IDistroSeriesDifferenceCommentSource).new(
+            distro_series_difference, owner, comment)
 
     def makeDistroArchSeries(self, distroseries=None,
                              architecturetag=None, processorfamily=None,
