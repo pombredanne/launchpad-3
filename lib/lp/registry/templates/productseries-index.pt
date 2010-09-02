@@ -145,8 +145,7 @@
         <div class="yui-u">
           <div
             tal:content="structure context/@@+portlet-latestspecs"
-            tal:define="blueprints_usage context/@@+get-involved/blueprints_usage"
-            condition="official_blueprints/enumvalue:LAUNCHPAD" />
+            tal:condition="context/@@+get-involved/blueprints_usage/enumvalue:LAUNCHPAD" />
 
           <div tal:replace="structure context/product/@@+portlet-coming-sprints" />
 
