@@ -1145,6 +1145,61 @@ class POTMsgSet(SQLBase):
             template.awardKarma(translator, 'translationsuggestionapproved')
             template.awardKarma(reviewer, 'translationreview')
 
+    def approveAsDiverged(self, pofile, suggestion, reviewer,
+                          lock_timestamp=None):
+        """Approve a suggestion to become a diverged translation."""
+        template = pofile.potemplate
+        traits = getUtility(ITranslationSideTraitsSet).getTraits(
+            template.translation_side)
+        if suggestion.potemplate == template and traits.getFlag(suggestion):
+            # The suggestion is already current and diverged for the
+            # right template.
+            return suggestion
+
+        incumbent = traits.getCurrentMessage(self, template, pofile.language)
+        if incumbent is not None:
+            self._checkForConflict(incumbent, lock_timestamp)
+            if incumbent.is_diverged:
+                # The incumbent is in the way.  Disable it.
+                traits.setFlag(incumbent, False)
+                incumbent.shareIfPossible()
+            else:
+                # This incumbent isn't really in the way.
+                incumbent = None
+
+        if traits.other_side_traits.getFlag(suggestion):
+            # The suggestion is already current on the other side.  Can't
+            # reuse it as a diverged message here, so clone it.
+            message = None
+        elif not traits.getFlag(suggestion):
+            # No obstacles.  Diverge & activate.
+            suggestion.potemplate = template
+            traits.setFlag(suggestion, True)
+            message = reviewed_message = suggestion
+        elif suggestion.is_diverged:
+            # The suggestion is already current in another template.
+            # Can't reuse it as a diverged message here, so clone it.
+            message = None
+        else:
+            # This message is already the shared current message.  If it
+            # was previously masked by a diverged message, it no longer
+            # is.  This is probably the behaviour the user would expect.
+            message = suggestion
+            reviewed_message = incumbent
+
+        if message is None:
+            potranslations = self._findPOTranslations(
+                dict(enumerate(suggestion.translations)))
+            message = reviewed_message = self._makeTranslationMessage(
+                pofile, suggestion.submitter, potranslations,
+                suggestion.origin, diverged=True)
+            traits.setFlag(message, True)
+
+        pofile.markChanged()
+        if reviewed_message is not None:
+            reviewed_message.markReviewed(reviewer)
+        return message
+
     def setCurrentTranslation(self, pofile, submitter, translations, origin,
                               share_with_other_side=False,
                               lock_timestamp=None):
