@@ -382,9 +382,9 @@ class BugDuplicateChange(AttributeChange):
             else:
                 new_value_text = (
                     "** This bug has been marked a duplicate of bug "
-                    "%(bug_id)d\n   %(bug_title)s\n You can subscribe to "
-                    "bug %(bug_id)d by following this link: "
-                    "%(subscribe_link)s" % {
+                    "%(bug_id)d\n   %(bug_title)s\n"
+                    " * You can subscribe to bug %(bug_id)d by following "
+                    "this link: %(subscribe_link)s" % {
                         'bug_id': self.new_value.id,
                         'bug_title': self.new_value.title,
                         'subscribe_link': canonical_url(
@@ -402,9 +402,9 @@ class BugDuplicateChange(AttributeChange):
             else:
                 text = (
                     "** This bug has been marked a duplicate of bug "
-                    "%(bug_id)d\n   %(bug_title)s\n You can subscribe to "
-                    "bug %(bug_id)d by following this link: "
-                    "%(subscribe_link)s" % {
+                    "%(bug_id)d\n   %(bug_title)s\n"
+                    " * You can subscribe to bug %(bug_id)d by following "
+                    "this link: %(subscribe_link)s" % {
                         'bug_id': self.new_value.id,
                         'bug_title': self.new_value.title,
                         'subscribe_link': canonical_url(
