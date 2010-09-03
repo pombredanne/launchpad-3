@@ -259,9 +259,9 @@ All the products in a project using Malone.
 
     >>> mozilla_project = getUtility(IProjectGroupSet).getByName('mozilla')
     >>> for product in mozilla_project.products:
-    ...     print "%s: %s" % (product.name, product.official_malone)
-    firefox: True
-    thunderbird: False
+    ...     print "%s: %s" % (product.name, product.bug_tracking_usage.name)
+    firefox: LAUNCHPAD
+    thunderbird: UNKNOWN
 
     >>> mozilla_products_vocabulary = vocabulary_registry.get(
     ...     mozilla_project,'ProjectProductsUsingMalone')
