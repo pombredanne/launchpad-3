@@ -45,3 +45,17 @@ class TestTimedAction(testtools.TestCase):
         self.assertAlmostEqual(4, log_tuple[1])
         self.assertEqual("foo", log_tuple[2])
         self.assertEqual("bar", log_tuple[3])
+
+    def test_logTupleIncomplete(self):
+        # Things that start and hit a timeout *may* not get recorded as
+        # finishing in normal operation.
+        timeline = Timeline()
+        action = TimedAction("foo", "bar", timeline)
+        # Set variable for deterministic results
+        action.start = timeline.baseline + datetime.timedelta(0, 0, 0, 2)
+        log_tuple = action.logTuple()
+        self.assertEqual(4, len(log_tuple), "!= 4 elements %s" % (log_tuple,))
+        self.assertAlmostEqual(2, log_tuple[0])
+        self.assertAlmostEqual(999999, log_tuple[1])
+        self.assertEqual("foo", log_tuple[2])
+        self.assertEqual("bar", log_tuple[3])

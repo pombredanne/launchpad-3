@@ -46,7 +46,17 @@ class TimedAction:
     def logTuple(self):
         """Return a 4-tuple suitable for errorlog's use."""
         offset = self._td_to_ms(self.start - self.timeline.baseline)
-        length = self._td_to_ms(self.duration)
+        if self.duration is None:
+            # This action wasn't finished: give it a duration that will stand
+            # out. This is pretty normal when action ends are recorded by
+            # callbacks rather than stack-like structures. E.g. storm 
+            # tracers in launchpad:
+            # log-trace START : starts action
+            # timeout-trace START : raises 
+            # log-trace FINISH is never called.
+            length = 999999
+        else:
+            length = self._td_to_ms(self.duration)
         return (offset, length, self.category, self.detail)
 
     def _td_to_ms(self, td):
