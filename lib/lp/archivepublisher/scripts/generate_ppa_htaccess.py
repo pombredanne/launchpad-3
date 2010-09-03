@@ -195,7 +195,7 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
         :param send_email: Whether to send a cancellation email to the owner
             of the token.  This defaults to False to speed up the test
             suite.
-        :return: the list of valid tokens for each affected PPA.
+        :return: the set of ppa ids affected by token deactivations.
         """
         # First we grab all the active tokens for which there is a
         # matching current archive subscription for a team of which the
@@ -216,6 +216,8 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
             ArchiveAuthToken.date_deactivated == None)
         invalid_tokens = all_active_tokens.difference(valid_tokens)
 
+        # We note the ppas affected by these token deactivations so that
+        # we can later update their htpasswd files.
         affected_ppa_ids = set()
         for token in invalid_tokens:
             if send_email:
@@ -223,19 +225,7 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
             token.deactivate()
             affected_ppa_ids.add(token.archive_id)
 
-        # Now get the list of valid tokens for each of the affected
-        # PPAs, and return a dict keyed on archive.
-        affected_ppas = defaultdict(list)
-        if affected_ppa_ids:
-            affected_ppa_tokens = store.find(
-                ArchiveAuthToken,
-                ArchiveAuthToken.date_deactivated == None,
-                ArchiveAuthToken.archive_id.is_in(affected_ppa_ids))
-
-            for token in affected_ppa_tokens:
-                affected_ppas[token.archive].append(token)
-
-        return affected_ppas
+        return affected_ppa_ids
 
     def expireSubscriptions(self):
         """Expire subscriptions as necessary.
@@ -279,19 +269,38 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
 
         return new_ppa_tokens
 
+    def _getValidTokensForPPAIDs(self, ppa_ids):
+        """Returns a dict keyed by archive with all the tokens for each."""
+        affected_ppas_with_tokens = defaultdict(list)
+        store = IStore(ArchiveAuthToken)
+        affected_ppa_tokens = store.find(
+            ArchiveAuthToken,
+            ArchiveAuthToken.date_deactivated == None,
+            ArchiveAuthToken.archive_id.is_in(ppa_ids))
+
+        for token in affected_ppa_tokens:
+            affected_ppas_with_tokens[token.archive].append(token)
+
+        return affected_ppas_with_tokens
+
     def main(self):
         """Script entry point."""
         self.logger.info('Starting the PPA .htaccess generation')
         self.expireSubscriptions()
-        affected_ppa_tokens = self.deactivateTokens(send_email=True)
+        affected_ppa_ids = self.deactivateTokens(send_email=True)
 
         # In addition to the ppas that are affected by deactivated
         # tokens, we also want to include any ppas that have tokens
         # created since the last time we ran.
         for token in self.getNewTokensSinceLastRun():
-            affected_ppa_tokens[token.archive].append(token)
+            affected_ppa_ids.add(token.archive_id)
 
-        for ppa, valid_tokens in affected_ppa_tokens.iteritems():
+        affected_ppas_with_tokens = {}
+        if affected_ppa_ids:
+            affected_ppas_with_tokens = self._getValidTokensForPPAIDs(
+                affected_ppa_ids)
+
+        for ppa, valid_tokens in affected_ppas_with_tokens.iteritems():
             # If this PPA is blacklisted, do not touch it's htaccess/pwd
             # files.
             blacklisted_ppa_names_for_owner = self.blacklist.get(
