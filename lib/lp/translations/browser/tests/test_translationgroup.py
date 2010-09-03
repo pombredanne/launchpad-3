@@ -7,6 +7,7 @@ __metaclass__ = type
 
 import unittest
 
+import transaction
 from zope.component import getUtility
 
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
@@ -40,6 +41,7 @@ class TestTranslationGroupView(TestCaseWithFactory):
         # translator_list composes dicts using _makeTranslatorDict.
         group = self._makeGroup()
         tr_translator = self.factory.makeTranslator('tr', group)
+        transaction.commit()
         view = self._makeView(group)
         translator_dict = view._makeTranslatorDict(
             tr_translator, tr_translator.language, tr_translator.translator)
