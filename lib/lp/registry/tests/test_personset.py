@@ -177,7 +177,8 @@ class TestPersonSetGetOrCreateByOpenIDIdentifier(TestCaseWithFactory):
             person.account).openid_identifiers.any().identifier
         person_set = getUtility(IPersonSet)
 
-        result, db_updated = self.callGetOrCreate(openid_ident)
+        result, db_updated = self.callGetOrCreate(
+            openid_ident, email=person.preferredemail.email)
 
         self.assertEqual(person, result)
         self.assertFalse(db_updated)
