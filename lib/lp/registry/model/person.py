@@ -34,7 +34,6 @@ from operator import attrgetter
 import random
 import re
 import subprocess
-import time
 import weakref
 
 from bzrlib.plugins.builder.recipe import RecipeParser
@@ -2819,13 +2818,16 @@ class PersonSet:
                 emailaddress_set = getUtility(IEmailAddressSet)
                 email = emailaddress_set.new(
                     email_address, account=account)
+                db_updated = True
 
             elif account is None:
                 # Email address exists, but there is no Account linked
                 # to it. Create the Account and link it to the
                 # EmailAddress.
                 account_set = getUtility(IAccountSet)
-                account = account_set.new(creation_rationale, full_name)
+                account = account_set.new(
+                    AccountCreationRationale.OWNER_CREATED_LAUNCHPAD,
+                    full_name)
                 email.account = account
                 db_updated = True
 
@@ -2858,6 +2860,7 @@ class PersonSet:
                 password = '' # Needed just to please reactivate() below.
                 removeSecurityProxy(account).reactivate(
                     comment, password, removeSecurityProxy(email))
+                db_updated = True
             else:
                 # Account is active, so nothing to do.
                 pass
@@ -2867,7 +2870,12 @@ class PersonSet:
                     creation_rationale, comment=comment)
                 db_updated = True
 
-            return IPerson(account), db_updated
+            person = IPerson(account)
+            if email.personID != person.id:
+                removeSecurityProxy(email).person = person
+                db_updated = True
+
+            return person, db_updated
 
     def newTeam(self, teamowner, name, displayname, teamdescription=None,
                 subscriptionpolicy=TeamSubscriptionPolicy.MODERATED,
