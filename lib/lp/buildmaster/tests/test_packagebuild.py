@@ -230,6 +230,18 @@ class TestPackageBuildSet(TestPackageBuildBase):
             self.package_build_set.getBuildsForArchive(
                 self.archive, pocket=PackagePublishingPocket.UPDATES))
 
+    def test_getBuildByID(self):
+        # getByID returns the build with the specified id, if it exists.
+        store = Store.of(self.package_builds[0])
+        store.flush()
+        build = self.package_build_set.getByID(self.package_builds[0].id)
+        self.assertEqual(build, self.package_builds[0])
+
+    def test_getBuildByID_nonexistant(self):
+        # getByID returns None if the build does not exist.
+        self.assertIs(None,
+            self.package_build_set.getByID(43243242))
+
 
 class TestGetUploadMethodsMixin:
     """Tests for `IPackageBuild` that need objects from the rest of LP."""

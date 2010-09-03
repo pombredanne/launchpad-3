@@ -461,6 +461,7 @@ class PackageBuildSet:
         unfinished_states = [
             BuildStatus.NEEDSBUILD,
             BuildStatus.BUILDING,
+            BuildStatus.UPLOADING,
             BuildStatus.SUPERSEDED]
         if status is None or status in unfinished_states:
             result_set.order_by(

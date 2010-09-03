@@ -1874,7 +1874,7 @@ class TestBuildUploadProcessor(TestUploadProcessorBase):
         # should be skipped and a warning logged.
         upload_dir = self.queueUpload("bar_1.0-1", queue_entry="42-60")
         self.uploadprocessor.processBuildUpload(upload_dir, "42-60")
-        self.assertLogContains("Unable to find package build with id")
+        self.assertLogContains("Unable to find package build with id 42. Skipping.")
 
     def testNoFiles(self):
         # If the upload directory is empty, the upload
