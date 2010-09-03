@@ -46,10 +46,13 @@ class TestExpandURL(TestCaseWithFactory):
         return product, trunk
 
     def assertResolves(self, lp_url_path, public_branch_path, lp_path=None):
-        """Assert that `lp_url_path` path expands to `unique_name`.
+        """Assert that `lp_url_path` resolves to the specified paths.
 
         :param public_branch_path: The path that is accessible over http.
-        :param lp_path: The path the short lp alias path for the branch.
+        :param lp_path: The short branch alias that will be resolved over
+            bzr+ssh.  The branch alias prefix is prefixed to this path.
+            If it is not set, the bzr+ssh resolved name will be checked
+            against the public_branch_path instead.
         """
         api = PublicCodehostingAPI(None, None)
         results = api.resolve_lp_path(lp_url_path)

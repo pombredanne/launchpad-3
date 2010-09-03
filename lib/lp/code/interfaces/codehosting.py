@@ -60,7 +60,6 @@ BRANCH_ALIAS_PREFIX = '+branch'
 SUPPORTED_SCHEMES = 'bzr+ssh', 'http'
 
 
-
 class ICodehostingApplication(ILaunchpadApplication):
     """Branch Puller application root."""
 
