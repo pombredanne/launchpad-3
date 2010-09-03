@@ -229,13 +229,16 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
         newly_expired_subscriptions = store.find(
             ArchiveSubscriber,
             ArchiveSubscriber.status == ArchiveSubscriberStatus.CURRENT,
+            ArchiveSubscriber.date_expires != None,
             ArchiveSubscriber.date_expires <= now)
 
-        # Can we update multiple items at once in storm?
-        for subscriber in newly_expired_subscriptions:
+        subscription_names = [
+            subs.displayname for subs in newly_expired_subscriptions]
+        if subscription_names:
+            newly_expired_subscriptions.set(
+                status=ArchiveSubscriberStatus.EXPIRED)
             self.logger.info(
-                "Expiring subscription: %s" % subscriber.displayname)
-            subscriber.status = ArchiveSubscriberStatus.EXPIRED
+                "Expired subscriptions: %s" % ", ".join(subscription_names))
 
     def main(self):
         """Script entry point."""
