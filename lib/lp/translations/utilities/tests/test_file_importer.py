@@ -225,8 +225,8 @@ class FileImporterTestCase(TestCaseWithFactory):
         pot_importer = self._createPOTFileImporter(
             TEST_TEMPLATE_EXPORTED, is_published=True)
         importer = self._createPOFileImporter(
-            pot_importer, TEST_TRANSLATION_EXPORTED, is_published=True,
-            person=self.importer_person)
+            pot_importer, TEST_TRANSLATION_EXPORTED,
+            is_published=is_published, person=self.importer_person)
 
         # Empty message to import.
         message = TranslationMessageData()
