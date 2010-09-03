@@ -29,7 +29,6 @@ from zope.schema import Choice
 from zope.schema.vocabulary import SimpleVocabulary
 from zope.security.interfaces import Unauthorized
 
-from canonical.cachedproperty import cachedproperty
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad import _
 from canonical.launchpad.helpers import (
@@ -69,6 +68,7 @@ from lp.bugs.interfaces.bugtracker import (
     IBugTrackerSet,
     IRemoteBug,
     )
+from lp.services.propertycache import cachedproperty
 
 # A set of bug tracker types for which there can only ever be one bug
 # tracker.

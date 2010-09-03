@@ -26,7 +26,7 @@ from zope.interface import (
     Interface,
     )
 
-from canonical.cachedproperty import cachedproperty
+from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.webapp import (
     action,
     canonical_url,
@@ -36,7 +36,6 @@ from canonical.launchpad.webapp import (
     redirection,
     StandardLaunchpadFacets,
     )
-from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.menu import (
     ApplicationMenu,
@@ -62,6 +61,7 @@ from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
     )
 from lp.registry.interfaces.pocket import pocketsuffix
+from lp.services.propertycache import cachedproperty
 from lp.soyuz.browser.sourcepackagerelease import (
     extract_bug_numbers,
     extract_email_addresses,
@@ -73,7 +73,8 @@ from lp.soyuz.interfaces.distributionsourcepackagerelease import (
     )
 from lp.soyuz.interfaces.packagediff import IPackageDiffSet
 from lp.translations.browser.customlanguagecode import (
-    HasCustomLanguageCodesTraversalMixin)
+    HasCustomLanguageCodesTraversalMixin,
+    )
 
 
 class DistributionSourcePackageFormatterAPI(CustomizableFormatter):

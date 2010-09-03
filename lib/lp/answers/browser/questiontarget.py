@@ -28,8 +28,8 @@ from urllib import urlencode
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form.browser import DropdownWidget
 from zope.component import (
-    getUtility,
     getMultiAdapter,
+    getUtility,
     queryMultiAdapter,
     )
 from zope.formlib import form
@@ -43,7 +43,6 @@ from zope.schema.vocabulary import (
     SimpleVocabulary,
     )
 
-from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.helpers import (
     browserLanguages,
@@ -67,8 +66,6 @@ from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.menu import structured
 from canonical.widgets import LabeledMultiCheckBoxWidget
-from lp.app.enums import service_uses_launchpad
-from lp.app.errors import NotFoundError
 from lp.answers.browser.faqcollection import FAQCollectionMenu
 from lp.answers.interfaces.faqcollection import IFAQCollection
 from lp.answers.interfaces.questioncollection import (
@@ -81,10 +78,13 @@ from lp.answers.interfaces.questiontarget import (
     IQuestionTarget,
     ISearchQuestionsForm,
     )
+from lp.app.enums import service_uses_launchpad
+from lp.app.errors import NotFoundError
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.services.fields import PublicPersonChoice
+from lp.services.propertycache import cachedproperty
 from lp.services.worlddata.interfaces.language import ILanguageSet
 
 

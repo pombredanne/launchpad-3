@@ -19,15 +19,22 @@ from canonical.testing import (
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
     )
+
 from lp.app.errors import NotFoundError
 from lp.buildmaster.enums import BuildStatus
 from lp.registry.browser.person import (
     PersonEditView,
     PersonView,
+    TeamInvitationView,
     )
+
 from lp.registry.interfaces.karma import IKarmaCacheManager
 from lp.registry.interfaces.person import PersonVisibility
-from lp.registry.interfaces.teammembership import TeamMembershipStatus
+from lp.registry.interfaces.teammembership import (
+    ITeamMembershipSet,
+    TeamMembershipStatus,
+    )
+
 from lp.registry.model.karma import KarmaCategory
 from lp.soyuz.enums import (
     ArchiveStatus,
@@ -594,3 +601,85 @@ class TestPersonDeactivateAccountView(TestCaseWithFactory):
         self.assertEqual(1, len(view.errors))
         self.assertEqual(
             'This account is already deactivated.', view.errors[0])
+
+class TestTeamInvitationView(TestCaseWithFactory):
+    """Tests for TeamInvitationView."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestTeamInvitationView, self).setUp()
+        self.a_team = self.factory.makeTeam(name="team-a",
+                                            displayname="A-Team")
+        self.b_team = self.factory.makeTeam(name="team-b",
+                                            displayname="B-Team")
+        transaction.commit()
+
+    def test_circular_invite(self):
+        """Two teams can invite each other without horrifying results."""
+
+        # Make the criss-cross invitations.
+        # A invites B.
+        login_person(self.a_team.teamowner)
+        form = {
+            'field.newmember': 'team-b',
+            'field.actions.add': 'Add Member',
+            }
+        view = create_initialized_view(
+            self.a_team, "+addmember", form=form)
+        self.assertEqual([], view.errors)
+        notifications = view.request.response.notifications
+        self.assertEqual(1, len(notifications))
+        self.assertEqual(
+            u'B-Team (team-b) has been invited to join this team.',
+            notifications[0].message)
+
+        # B invites A.
+        login_person(self.b_team.teamowner)
+        form['field.newmember'] = 'team-a'
+        view = create_initialized_view(
+            self.b_team, "+addmember", form=form)
+        self.assertEqual([], view.errors)
+        notifications = view.request.response.notifications
+        self.assertEqual(1, len(notifications))
+        self.assertEqual(
+            u'A-Team (team-a) has been invited to join this team.',
+            notifications[0].message)
+
+        # Team A accepts the invitation.
+        login_person(self.a_team.teamowner)
+        form = {
+            'field.actions.accept': 'Accept',
+            'field.acknowledger_comment': 'Thanks for inviting us.',
+            }
+        request = LaunchpadTestRequest(form=form, method='POST')
+        request.setPrincipal(self.a_team.teamowner)
+        membership_set = getUtility(ITeamMembershipSet)
+        membership = membership_set.getByPersonAndTeam(self.a_team,
+                                                       self.b_team)
+        view = TeamInvitationView(membership, request)
+        view.initialize()
+        self.assertEqual([], view.errors)
+        notifications = view.request.response.notifications
+        self.assertEqual(1, len(notifications))
+        self.assertEqual(
+            u'This team is now a member of B-Team.',
+            notifications[0].message)
+
+        # Team B attempts to accept the invitation.
+        login_person(self.b_team.teamowner)
+        request = LaunchpadTestRequest(form=form, method='POST')
+        request.setPrincipal(self.b_team.teamowner)
+        membership = membership_set.getByPersonAndTeam(self.b_team,
+                                                       self.a_team)
+        view = TeamInvitationView(membership, request)
+        view.initialize()
+        self.assertEqual([], view.errors)
+        notifications = view.request.response.notifications
+        self.assertEqual(1, len(notifications))
+        expected = (
+            u'This team may not be added to A-Team because it is a member '
+            'of B-Team.')
+        self.assertEqual(
+            expected,
+            notifications[0].message)

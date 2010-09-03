@@ -54,7 +54,6 @@ from zope.schema.vocabulary import (
     SimpleVocabulary,
     )
 
-from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.helpers import browserLanguages
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
@@ -137,6 +136,7 @@ from lp.registry.interfaces.packaging import (
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.fields import URIField
+from lp.services.propertycache import cachedproperty
 from lp.services.worlddata.interfaces.country import ICountry
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.translations.interfaces.potemplate import IPOTemplateSet
