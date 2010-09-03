@@ -21,7 +21,6 @@ from storm.expr import (
     LeftJoin,
     )
 from storm.store import Store
-from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.database.constants import DEFAULT
@@ -31,12 +30,7 @@ from canonical.launchpad.database.librarian import (
     LibraryFileAlias,
     LibraryFileContent,
     )
-from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    SLAVE_FLAVOR,
-    )
+from canonical.launchpad.interfaces.lpstorm import ISlaveStore
 from lp.app.errors import NotFoundError
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.model.distribution import Distribution
@@ -84,8 +78,7 @@ class TranslationGroup(SQLBase):
 
     def __getitem__(self, language_code):
         """See `ITranslationGroup`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        query = store.find(
+        query = Store.of(self).find(
             Translator,
             Translator.translationgroup == self,
             Translator.languageID == Language.id,
@@ -155,7 +148,6 @@ class TranslationGroup(SQLBase):
 
     def fetchTranslatorData(self):
         """See `ITranslationGroup`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         # Fetch Translator, Language, and Person; but also prefetch the
         # icon information.
         using = [
@@ -174,7 +166,7 @@ class TranslationGroup(SQLBase):
             LibraryFileAlias,
             LibraryFileContent,
             )
-        translator_data = store.using(*using).find(
+        translator_data = Store.of(self).using(*using).find(
             tables,
             Translator.translationgroup == self,
             Language.id == Translator.languageID,
@@ -186,7 +178,6 @@ class TranslationGroup(SQLBase):
 
     def fetchProjectsForDisplay(self):
         """See `ITranslationGroup`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, SLAVE_FLAVOR)
         using = [
             Product,
             LeftJoin(LibraryFileAlias, LibraryFileAlias.id == Product.iconID),
@@ -200,7 +191,7 @@ class TranslationGroup(SQLBase):
             LibraryFileAlias,
             LibraryFileContent,
             )
-        product_data = store.using(*using).find(
+        product_data = ISlaveStore(Product).using(*using).find(
             columns,
             Product.translationgroupID == self.id, Product.active == True)
         product_data = product_data.order_by(Product.displayname)
@@ -211,7 +202,6 @@ class TranslationGroup(SQLBase):
 
     def fetchProjectGroupsForDisplay(self):
         """See `ITranslationGroup`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, SLAVE_FLAVOR)
         using = [
             ProjectGroup,
             LeftJoin(
@@ -225,17 +215,16 @@ class TranslationGroup(SQLBase):
             LibraryFileAlias,
             LibraryFileContent,
             )
-        product_data = store.using(*using).find(
+        project_data = ISlaveStore(ProjectGroup).using(*using).find(
             tables,
             ProjectGroup.translationgroupID == self.id,
             ProjectGroup.active == True)
 
         return prejoin(
-            product_data.order_by(ProjectGroup.displayname), slice(0, 1))
+            project_data.order_by(ProjectGroup.displayname), slice(0, 1))
 
     def fetchDistrosForDisplay(self):
         """See `ITranslationGroup`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, SLAVE_FLAVOR)
         using = [
             Distribution,
             LeftJoin(
@@ -249,11 +238,11 @@ class TranslationGroup(SQLBase):
             LibraryFileAlias,
             LibraryFileContent,
             )
-        product_data = store.using(*using).find(
+        distro_data = ISlaveStore(Distribution).using(*using).find(
             tables, Distribution.translationgroupID == self.id)
 
         return prejoin(
-            product_data.order_by(Distribution.displayname), slice(0, 1))
+            distro_data.order_by(Distribution.displayname), slice(0, 1))
 
 
 class TranslationGroupSet:

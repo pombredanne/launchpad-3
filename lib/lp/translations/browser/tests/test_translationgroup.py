@@ -5,8 +5,6 @@
 
 __metaclass__ = type
 
-import unittest
-
 import transaction
 from zope.component import getUtility
 
@@ -64,7 +62,3 @@ class TestTranslationGroupView(TestCaseWithFactory):
         self.assertEqual(xhosa.datecreated, output['datecreated'])
         self.assertEqual(xhosa.style_guide_url, output['style_guide_url'])
         self.assertEqual(xhosa, output['context'])
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
