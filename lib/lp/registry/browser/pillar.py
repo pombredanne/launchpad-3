@@ -124,7 +124,7 @@ class PillarView(LaunchpadView):
             if IDistroSeries.providedBy(self.context):
                 distribution = self.context.distribution
                 self.codehosting_usage = distribution.codehosting_usage
-                self.answers_usage = distribution.answers_usage 
+                self.answers_usage = ServiceUsage.NOT_APPLICABLE
             elif IDistributionSourcePackage.providedBy(self.context):
                 self.blueprints_usage = ServiceUsage.UNKNOWN
                 self.official_rosetta = False
