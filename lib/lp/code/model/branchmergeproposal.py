@@ -152,6 +152,10 @@ class BranchMergeProposal(SQLBase):
     _table = 'BranchMergeProposal'
     _defaultOrder = ['-date_created', 'id']
 
+    @property
+    def incremental_diffs(self):
+        return getattr(self, '_incremental_diffs', [])
+
     registrant = ForeignKey(
         dbName='registrant', foreignKey='Person',
         storm_validator=validate_public_person, notNull=True)

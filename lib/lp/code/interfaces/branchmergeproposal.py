@@ -17,6 +17,7 @@ __all__ = [
     'ICodeReviewCommentEmailJobSource',
     'ICreateMergeProposalJob',
     'ICreateMergeProposalJobSource',
+    'IGenerateIncrementalDiffJobSource',
     'IMergeProposalCreatedJob',
     'IMergeProposalCreatedJobSource',
     'IMergeProposalUpdatedEmailJob',
@@ -547,6 +548,8 @@ class IBranchMergeProposalJob(Interface):
 class IBranchMergeProposalJobSource(IJobSource):
     """A job source that will get all supported merge proposal jobs."""
 
+class IBranchMergeProposalJobSource(IJobSource):
+    """A job source that will get all supported merge proposal jobs."""
 
 class IBranchMergeProposalListingBatchNavigator(ITableBatchNavigator):
     """A marker interface for registering the appropriate listings."""
@@ -651,6 +654,23 @@ class IUpdatePreviewDiffJobSource(Interface):
 
     def get(id):
         """Return the UpdatePreviewDiffJob with this id."""
+
+
+class IGenerateIncrementalDiffJob(IRunnableJob):
+    """Interface for the job to update the diff for a merge proposal."""
+
+    def checkReady():
+        """Check to see if this job is ready to run."""
+
+
+class IGenerateIncrementalDiffJobSource(Interface):
+    """Create or retrieve jobs that update preview diffs."""
+
+    def create(bmp, old_revision_id, new_revision_id):
+        """Create job to generate incremental diff for this merge proposal."""
+
+    def get(id):
+        """Return the GenerateIncrementalDiffJob with this id."""
 
 
 class ICodeReviewCommentEmailJob(IRunnableJob):

@@ -232,6 +232,7 @@
                     review_diff
                     next_preview_diff_job
                     preview_diff
+                    incremental_diffs
                     votes
                     all_comments
                     related_bugs

@@ -1,23 +1,26 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+from __future__ import with_statement
+
 """Implementation classes for IDiff, etc."""
 
 __metaclass__ = type
-__all__ = ['Diff', 'PreviewDiff', 'StaticDiff']
+__all__ = ['Diff', 'IncrementalDiff', 'PreviewDiff', 'StaticDiff']
 
 from cStringIO import StringIO
+from contextlib import nested
 import sys
 from uuid import uuid1
 
 from bzrlib import trace
-from bzrlib.branch import Branch
 from bzrlib.diff import show_diff_trees
 from bzrlib.merge import Merge3Merger
 from bzrlib.patches import (
     parse_patches,
     Patch,
     )
+from bzrlib.plugins.difftacular.generate_diff import diff_ignore_branches
 from lazr.delegates import delegates
 import simplejson
 from sqlobject import (
@@ -44,10 +47,12 @@ from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from lp.app.errors import NotFoundError
 from lp.code.interfaces.diff import (
     IDiff,
+    IIncrementalDiff,
     IPreviewDiff,
     IStaticDiff,
     IStaticDiffSource,
     )
+from lp.codehosting.bzrutils import read_locked
 
 
 class Diff(SQLBase):
@@ -192,9 +197,13 @@ class Diff(SQLBase):
         diff_content = StringIO()
         show_diff_trees(from_tree, to_tree, diff_content, old_label='',
                         new_label='')
+        return klass.fromFileAtEnd(diff_content, filename)
+
+    @classmethod
+    def fromFileAtEnd(cls, diff_content, filename=None):
         size = diff_content.tell()
         diff_content.seek(0)
-        return klass.fromFile(diff_content, size, filename)
+        return cls.fromFile(diff_content, size, filename)
 
     @classmethod
     def fromFile(cls, diff_content, size, filename=None):
@@ -301,6 +310,32 @@ class StaticDiff(SQLBase):
         diff = self.diff
         SQLBase.destroySelf(self)
         diff.destroySelf()
+
+
+class IncrementalDiff:
+
+    implements(IIncrementalDiff)
+    delegates(IDiff, context='diff')
+
+    def __init__(self, diff, merge_proposal):
+        self.diff = diff
+        self.merge_proposal = merge_proposal
+
+    @classmethod
+    def fromMergeProposal(cls, merge_proposal, old_revision, new_revision):
+        source_branch = merge_proposal.source_branch.getBzrBranch()
+        ignore_branches = [merge_proposal.target_branch.getBzrBranch()]
+        if merge_proposal.prerequisite_branch is not None:
+            ignore_branches.append(
+                merge_proposal.prerequisite_branch.getBzrBranch())
+        diff_content = StringIO()
+        read_locks = [read_locked(branch) for branch in [source_branch] +
+                ignore_branches]
+        with nested(*read_locks):
+            diff_ignore_branches(source_branch, ignore_branches, old_revision,
+                new_revision, diff_content)
+        diff = Diff.fromFileAtEnd(diff_content)
+        return cls(diff, merge_proposal)
 
 
 class PreviewDiff(Storm):

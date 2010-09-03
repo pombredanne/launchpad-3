@@ -14,6 +14,7 @@ import logging
 from unittest import TestLoader
 
 from bzrlib import trace
+from bzrlib.patches import InsertLine, parse_patches, RemoveLine
 import transaction
 from zope.security.proxy import removeSecurityProxy
 
@@ -26,12 +27,14 @@ from canonical.testing import (
 from lp.app.errors import NotFoundError
 from lp.code.interfaces.diff import (
     IDiff,
+    IIncrementalDiff,
     IPreviewDiff,
     IStaticDiff,
     IStaticDiffSource,
     )
 from lp.code.model.diff import (
     Diff,
+    IncrementalDiff,
     PreviewDiff,
     StaticDiff,
     )
@@ -42,6 +45,7 @@ from lp.testing import (
     login_person,
     TestCaseWithFactory,
     )
+from lp.testing.fakelibrarian import FakeLibrarian
 
 
 class RecordLister(logging.Handler):
@@ -523,6 +527,40 @@ class TestPreviewDiff(DiffTestCase):
         self.assertRaises(
             NotFoundError, diff.getFileByName, 'preview.diff')
 
+
+class TestIncrementalDiff(DiffTestCase):
+    """Test that IncrementalDiff objects work."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def test_providesInterface(self):
+        incremental_diff = self.factory.makeIncrementalDiff()
+        verifyObject(IIncrementalDiff, incremental_diff)
+
+    def test_fromBranchMergeProposal(self):
+        """Test fromPreviewDiff when no conflicts are present."""
+        self.useBzrBranches(direct_database=True)
+        with FakeLibrarian() as librarian:
+            bmp = self.factory.makeBranchMergeProposal()
+            self.createBzrBranch(bmp.source_branch)
+            self.createBzrBranch(bmp.target_branch)
+            old_revision = self.commitFile(bmp.source_branch, 'foo', 'a\nb\n')
+            new_revision = self.commitFile(bmp.source_branch, 'foo', 'a\nb\nc\n')
+            incremental_diff = IncrementalDiff.fromMergeProposal(
+                bmp, old_revision, new_revision)
+            librarian.pretendCommit()
+            diff_bytes = incremental_diff.text
+            inserted = []
+            removed = []
+            for patch in parse_patches(diff_bytes.splitlines(True)):
+                for hunk in patch.hunks:
+                    for line in hunk.lines:
+                        if isinstance(line, InsertLine):
+                            inserted.append(line.contents)
+                        if isinstance(line, RemoveLine):
+                            removed.append(line.contents)
+            self.assertEqual(['c\n'], inserted)
+            self.assertEqual([], removed)
 
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)

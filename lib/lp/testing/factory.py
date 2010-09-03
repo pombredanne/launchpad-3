@@ -144,6 +144,7 @@ from lp.code.interfaces.sourcepackagerecipebuild import (
     )
 from lp.code.model.diff import (
     Diff,
+    IncrementalDiff,
     PreviewDiff,
     StaticDiff,
     )
@@ -1164,6 +1165,11 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         preview_diff.source_revision_id = self.getUniqueUnicode()
         preview_diff.target_revision_id = self.getUniqueUnicode()
         return preview_diff
+
+    def makeIncrementalDiff(self):
+        diff = self.makeDiff()
+        bmp = self.makeBranchMergeProposal()
+        return IncrementalDiff(diff, bmp)
 
     def makeStaticDiff(self):
         return StaticDiff.acquireFromText(

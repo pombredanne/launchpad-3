@@ -9,6 +9,7 @@ __metaclass__ = type
 
 __all__ = [
     'IDiff',
+    'IIncrementalDiff',
     'IPreviewDiff',
     'IStaticDiff',
     'IStaticDiffSource',
@@ -60,6 +61,19 @@ class IDiff(Interface):
     removed_lines_count = exported(
         Int(title=_('The number of lines removed in this diff.'),
             readonly=True))
+
+
+class IIncrementalDiff(Interface):
+    """An incremental diff for a merge proposal."""
+
+    diff = exported(
+        Reference(IDiff, title=_('The Diff object.'), readonly=True))
+
+    # The schema for the Reference gets patched in _schema_circular_imports.
+    merge_proposal = exported(
+        Reference(
+            Interface, readonly=True,
+            title=_('The branch merge proposal that diff relates to.')))
 
 
 class IStaticDiff(Interface):
