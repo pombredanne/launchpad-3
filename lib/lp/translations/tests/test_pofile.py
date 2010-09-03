@@ -1799,24 +1799,27 @@ class TestPOFileTranslationMessages(TestCaseWithFactory):
         self.assertEqual(
             [message], list(self.pofile.getTranslationMessages()))
         
-    def test_getTranslationMessages_condition(self):
-        # Narrow the result set down using a condition.
-        suggestion = self.factory.makeTranslationMessage(
-            potmsgset=self.potmsgset, pofile=self.pofile)
-        current_shared = self.factory.makeTranslationMessage(
-            potmsgset=self.potmsgset, pofile=self.pofile, force_shared=True)
-        current_diverged = self.factory.makeTranslationMessage(
+    def test_getTranslationMessages_condition_matches(self):
+        # A message matching the given condition is included.
+        # Diverged messages are linked to a specific POTemplate.
+        message = self.factory.makeTranslationMessage(
             potmsgset=self.potmsgset, pofile=self.pofile, force_diverged=True)
-        obsolete_potmsgset = self.factory.makePOTMsgSet(
-            self.potemplate, sequence=0)
-        obsolete = self.factory.makeTranslationMessage(
-            potmsgset=obsolete_potmsgset, pofile=self.pofile,
-            force_shared=True)
         
         self.assertContentEqual(
-            [current_shared, suggestion, obsolete],
+            [message],
             self.pofile.getTranslationMessages(
-                "TranslationMessage.potemplate IS NULL"))
+                "TranslationMessage.potemplate IS NOT NULL"))
+       
+    def test_getTranslationMessages_condition_matches_not(self):
+        # A message not matching the given condition is excluded.
+        # Shared messages are not linked to a POTemplate.
+        message = self.factory.makeTranslationMessage(
+            potmsgset=self.potmsgset, pofile=self.pofile, force_shared=True)
+        
+        self.assertContentEqual(
+            [],
+            self.pofile.getTranslationMessages(
+                "TranslationMessage.potemplate IS NOT NULL"))
        
     def test_getTranslationMessages_other_pofile(self):
         # Messages from other POFiles are not included.
