@@ -18,6 +18,7 @@ import os
 import resource
 import shlex
 import shutil
+import signal
 import socket
 import sys
 import tempfile
@@ -334,45 +335,50 @@ class LPForkingService(object):
         # TODO: I think we can change this to a simple 'while True: (c_pid,
         # status) = os.wait() if c_pid == 0: break. But that needs some
         # testing.
-        for child_pid, child_path in self._child_processes.iteritems():
-            remove_child = True
-            try:
-                (c_pid, status) = os.waitpid(child_pid, os.WNOHANG)
-            except OSError, e:
-                trace.warning('Exception while checking child %s status: %s'
-                              % (child_pid, e))
-            else:
-                if c_pid == 0: # Child did not exit
-                    remove_child = False
-                else:
-                    self.log(None, 'child %s exited with status: %s'
-                                    % (c_pid, status))
-            if remove_child:
-                # On error or child exiting, stop tracking the child
-                to_remove.append(child_pid)
-        for c_id in to_remove:
-            # Should we do something about the temporary paths?
+        while self._child_processes:
+            c_id, exit_code, rusage = os.wait3(os.WNOHANG)
+            if c_id == 0:
+                # No children stopped right now
+                return
             c_path = self._child_processes.pop(c_id)
+            trace.mutter('%s exited %s and usage: %s'
+                         % (c_id, exit_code, rusage))
             if os.path.exists(c_path):
                 # The child failed to cleanup after itself, do the work here
                 trace.warning('Had to clean up after child %d: %s\n'
                               % (c_id, c_path))
                 shutil.rmtree(c_path)
 
-    def _wait_for_children(self):
+    def _wait_secs_for_children(self, secs):
         start = time.time()
-        end = start + self.WAIT_FOR_CHILDREN_TIMEOUT
+        end = start + secs
         while self._child_processes:
             self._poll_children()
-            if self.WAIT_FOR_CHILDREN_TIMEOUT > 0 and time.time() > end:
+            if secs > 0 and time.time() > end:
                 break
             time.sleep(self.SLEEP_FOR_CHILDREN_TIMEOUT)
+
+    def _wait_for_children(self):
+        self._wait_secs_for_children(self.WAIT_FOR_CHILDREN_TIMEOUT)
         if self._child_processes:
             trace.warning('Failed to stop children: %s'
                 % ', '.join(map(str, self._child_processes)))
             for c_id, c_path in self._child_processes.iteritems():
+                trace.warning('sending SIGINT to %d' % (c_id,))
+                os.kill(c_id, signal.SIGINT)
+            # We sent the SIGINT signal, see if they exited
+            self._wait_secs_for_children(1.0)
+        if self._child_processes:
+            # No? Then maybe something more powerful
+            for c_id, c_path in self._child_processes.iteritems():
+                trace.warning('sending SIGKILL to %d' % (c_id,))
+                os.kill(c_id, signal.SIGKILL)
+            # We sent the SIGKILL signal, see if they exited
+            self._wait_secs_for_children(1.0)
+        if self._child_processes:
+            for c_id, c_path in self._child_processes.iteritems():
                 if os.path.exists(c_path):
-                    trace.warning('Had to clean up after child %d: %s\n'
+                    trace.warning('Cleaning up after immortal child %d: %s\n'
                                   % (c_id, c_path))
                     shutil.rmtree(c_path)
 
@@ -484,9 +490,10 @@ class cmd_launchpad_replay(Command):
                 sys.stdout.flush()
             elif channel == 2:
                 sys.stderr.write(contents)
-                sys.stdout.flush()
+                sys.stderr.flush()
             else:
                 raise RuntimeError('Invalid channel request.')
+        return 0
 
 register_command(cmd_launchpad_replay)
 
