@@ -6,8 +6,9 @@
 __metaclass__ = type
 __all__ = []
 
-import memcache
 import re
+
+import memcache
 
 from canonical.config import config
 

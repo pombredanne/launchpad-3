@@ -125,7 +125,7 @@ Let's make sure we can load the branch creation form on a product.
 
 Now, post the branch creation form for the product.
 
-    >>> user_browser.open('http://launchpad.dev/applets/+addbranch')
+    >>> user_browser.open('http://code.launchpad.dev/applets/+addbranch')
 
 The specified URL has a trailing slash. In the next test, we will check that it
 has been stripped.
@@ -175,7 +175,7 @@ A user can register a branch from the project series page using the
     >>> browser.open('http://launchpad.dev/gnome-terminal/trunk')
     >>> browser.getLink('registering a mirrored branch').click()
     >>> print browser.title
-    Register a branch : GNOME Terminal
+    Register a branch : Code : GNOME Terminal
 
 The user sees that he is registering a branch for the series' project.
 
@@ -241,7 +241,7 @@ already exists.
 
 Try a adding a conflicting branch from the product/+addbranch form.
 
-    >>> browser.open('http://launchpad.dev/gnome-terminal/+addbranch')
+    >>> browser.open('http://code.launchpad.dev/gnome-terminal/+addbranch')
     >>> browser.getControl('Branch URL').value = (
     ...     'http://example.com/gnome-terminal/main-dup')
 
@@ -249,7 +249,7 @@ Trying to post the form without filling a name at all should not cause an oops!
 
     >>> browser.getControl('Register Branch').click()
     >>> browser.url
-    'http://launchpad.dev/gnome-terminal/+addbranch'
+    'http://code.launchpad.dev/gnome-terminal/+addbranch'
 
 Now, complete the form, but give a name that is alredy in use for that owner
 and product.
@@ -260,7 +260,7 @@ and product.
 That should give us the form back with an error message.
 
     >>> browser.url
-    'http://launchpad.dev/gnome-terminal/+addbranch'
+    'http://code.launchpad.dev/gnome-terminal/+addbranch'
     >>> for message in get_feedback_messages(browser.contents):
     ...     print extract_text(message)
     There is 1 error.
@@ -269,7 +269,7 @@ That should give us the form back with an error message.
 If the user is trying to add a branch for a team that conflicts,
 then the team name is given in the error message.
 
-    >>> browser.open('http://launchpad.dev/gnome-terminal/+addbranch')
+    >>> browser.open('http://code.launchpad.dev/gnome-terminal/+addbranch')
     >>> browser.getControl('Owner').displayValue = [
     ...     'Landscape Developers']
     >>> browser.getControl('Name').value = 'main'
@@ -282,7 +282,7 @@ then the team name is given in the error message.
 
 Now registering again with the same name.
 
-    >>> browser.open('http://launchpad.dev/gnome-terminal/+addbranch')
+    >>> browser.open('http://code.launchpad.dev/gnome-terminal/+addbranch')
     >>> browser.getControl('Owner').displayValue = [
     ...     'Landscape Developers']
     >>> browser.getControl('Name').value = 'main'

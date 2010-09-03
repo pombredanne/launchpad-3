@@ -17,23 +17,25 @@ __all__ = [
     ]
 
 
+from datetime import datetime
 import errno
 import hashlib
+
 import pytz
-
-from datetime import datetime
-
 from zope.component import getUtility
 
-from lp.soyuz.interfaces.component import IComponentSet
-from lp.soyuz.interfaces.section import ISectionSet
-from canonical.launchpad.webapp.interfaces import NotFoundError
-from lp.soyuz.interfaces.queue import (
-    IPackageUploadSet, PackageUploadStatus, QueueInconsistentStateError)
-from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad.webapp.tales import DurationFormatterAPI
 from canonical.librarian.utils import filechunks
+from lp.app.errors import NotFoundError
+from lp.services.propertycache import cachedproperty
+from lp.soyuz.enums import PackageUploadStatus
+from lp.soyuz.interfaces.component import IComponentSet
+from lp.soyuz.interfaces.queue import (
+    IPackageUploadSet,
+    QueueInconsistentStateError,
+    )
+from lp.soyuz.interfaces.section import ISectionSet
 
 
 name_queue_map = {
@@ -189,7 +191,8 @@ class QueueAction:
                            self.distroseries.distribution.name,
                            self.distroseries.name, self.pocket.name))
 
-                self.items.append(item)
+                if item not in self.items:
+                    self.items.append(item)
                 self.explicit_ids_specified = True
             else:
                 # retrieve PackageUpload item by name/version key
@@ -201,7 +204,8 @@ class QueueAction:
                 for item in self.distroseries.getQueueItems(
                     status=self.queue, name=term, version=version,
                     exact_match=self.exact_match, pocket=self.pocket):
-                    self.items.append(item)
+                    if item not in self.items:
+                        self.items.append(item)
                 self.package_names.append(term)
 
         self.items_size = len(self.items)
@@ -529,6 +533,7 @@ class QueueActionOverride(QueueAction):
                              priority_name, announcelist, display,
                              no_mail=True, exact_match=False, log=log)
         self.terms_start_index = 1
+        self.overrides_performed = 0
 
     def run(self):
         """Perform Override action."""
@@ -575,6 +580,7 @@ class QueueActionOverride(QueueAction):
                         component,
                         queue_item.sourcepackagerelease.component
                         ])
+                self.overrides_performed += 1
             self.displayInfo(queue_item)
 
     def _override_binary(self):
@@ -614,6 +620,7 @@ class QueueActionOverride(QueueAction):
                                         binary.priority.name))
                         binary.override(component=component, section=section,
                                         priority=priority)
+                        self.overrides_performed += 1
                         self.displayInfo(queue_item, only=binary.name)
                 # See if the new component requires a new archive on the
                 # build:

@@ -179,10 +179,13 @@ buildonce_eggs: $(PY)
 # The download-cache dependency comes *before* eggs so that developers get the
 # warning before the eggs directory is made.  The target for the eggs directory
 # is only there for deployment convenience.
+# Note that the buildout version must be maintained here and in versions.cfg
+# to make sure that the build does not go over the network.
 bin/buildout: download-cache eggs
 	$(SHHH) PYTHONPATH= $(PYTHON) bootstrap.py\
 		--setup-source=ez_setup.py \
-		--download-base=download-cache/dist --eggs=eggs
+		--download-base=download-cache/dist --eggs=eggs \
+		--version=1.5.1
 
 # This target is used by LOSAs to prepare a build to be pushed out to
 # destination machines.  We only want eggs: they are the expensive bits,
@@ -200,6 +203,7 @@ $(BUILDOUT_BIN): bin/buildout versions.cfg $(BUILDOUT_CFG) setup.py
                 configuration:instance_name=${LPCONFIG} -c $(BUILDOUT_CFG)
 
 compile: $(PY) $(BZR_VERSION_INFO)
+	mkdir -p /var/tmp/vostok-archive
 	${SHHH} $(MAKE) -C sourcecode build PYTHON=${PYTHON} \
 	    LPCONFIG=${LPCONFIG}
 	${SHHH} LPCONFIG=${LPCONFIG} ${PY} -t buildmailman.py
@@ -398,11 +402,13 @@ copy-apache-config:
 	# We insert the absolute path to the branch-rewrite script
 	# into the Apache config as we copy the file into position.
 	sed -e 's,%BRANCH_REWRITE%,$(shell pwd)/scripts/branch-rewrite.py,' configs/development/local-launchpad-apache > /etc/apache2/sites-available/local-launchpad
+	cp configs/development/local-vostok-apache /etc/apache2/sites-available/local-vostok
 	touch /var/tmp/bazaar.launchpad.dev/rewrite.log
 	chown $(SUDO_UID):$(SUDO_GID) /var/tmp/bazaar.launchpad.dev/rewrite.log
 
 enable-apache-launchpad: copy-apache-config copy-certificates
 	a2ensite local-launchpad
+	a2ensite local-vostok
 
 reload-apache: enable-apache-launchpad
 	/etc/init.d/apache2 restart

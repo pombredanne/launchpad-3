@@ -136,7 +136,7 @@ property:
 
 If the build does not have any uploads, None is returned:
 
-    >>> from lp.buildmaster.interfaces.buildbase import BuildStatus
+    >>> from lp.buildmaster.enums import BuildStatus
     >>> from lp.soyuz.interfaces.binarypackagebuild import (
     ...     IBinaryPackageBuildSet)
     >>> at_build = getUtility(IBinaryPackageBuildSet).getByBuildID(15)
@@ -304,11 +304,11 @@ given build record entry.
     >>> version = '0.0.1-demo'
     >>> summary = 'Summmmmmmmary'
     >>> description = 'Descripppppppption'
-    >>> from canonical.launchpad.interfaces import BinaryPackageFormat
+    >>> from lp.soyuz.enums import BinaryPackageFormat
     >>> binpackageformat = BinaryPackageFormat.DEB
     >>> component = firefox_build.source_package_release.component.id
     >>> section = firefox_build.source_package_release.section.id
-    >>> from canonical.launchpad.interfaces import PackagePublishingPriority
+    >>> from lp.soyuz.enums import PackagePublishingPriority
     >>> priority = PackagePublishingPriority.STANDARD
     >>> shlibdeps = None
     >>> depends = None
@@ -323,6 +323,7 @@ given build record entry.
     >>> pre_depends = None
     >>> enhances = None
     >>> breaks = None
+    >>> debug_package = None
 
 Invoke createBinaryPackageRelease with all required arguments.
 
@@ -334,7 +335,7 @@ Invoke createBinaryPackageRelease with all required arguments.
     ...     binpackageformat, component, section, priority, shlibdeps,
     ...     depends, recommends, suggests, conflicts, replaces, provides,
     ...     pre_depends, enhances, breaks, essential, installedsize,
-    ...     architecturespecific)
+    ...     architecturespecific, debug_package)
 
     >>> from canonical.launchpad.interfaces import IBinaryPackageRelease
     >>> from canonical.launchpad.webapp.testing import verifyObject
@@ -367,7 +368,7 @@ Emulate a huge list of binaries for 'pmount':
     ...         binpackageformat, component, section, priority, shlibdeps,
     ...         depends, recommends, suggests, conflicts, replaces, provides,
     ...         pre_depends, enhances, breaks, essential, installedsize,
-    ...         architecturespecific)
+    ...         architecturespecific, debug_package)
 
 
 Check if the property is still working:
@@ -422,33 +423,33 @@ It receives list of architectures IDs:
 
     >>> hoary = ubuntu.getSeries('hoary')
     >>> arch_ids = [arch.id for arch in hoary.architectures]
-    >>> bs.getBuildsByArchIds(arch_ids).count()
+    >>> bs.getBuildsByArchIds(ubuntu, arch_ids).count()
     5
 
 It still working for empty list or None:
 
-    >>> bs.getBuildsByArchIds([]).count()
+    >>> bs.getBuildsByArchIds(ubuntu, []).count()
     0
 
-    >>> bs.getBuildsByArchIds(None).count()
+    >>> bs.getBuildsByArchIds(ubuntu, None).count()
     0
 
 Using build status, only the successfully built ones:
 
-    >>> bs.getBuildsByArchIds(arch_ids,
+    >>> bs.getBuildsByArchIds(ubuntu, arch_ids,
     ...     status=BuildStatus.FULLYBUILT).count()
     2
 
 Check the result content:
 
-    >>> [b.title for b in bs.getBuildsByArchIds(arch_ids,
+    >>> [b.title for b in bs.getBuildsByArchIds(ubuntu, arch_ids,
     ...     status=BuildStatus.FULLYBUILT)]
     [u'i386 build of pmount 0.1-1 in ubuntu hoary RELEASE', u'hppa build
     of pmount 0.1-1 in ubuntu hoary RELEASE']
 
 Using optional 'name' filter (matching with SQL LIKE %||filter||%)
 
-    >>> bs.getBuildsByArchIds(arch_ids,
+    >>> bs.getBuildsByArchIds(ubuntu, arch_ids,
     ...     status=BuildStatus.FULLYBUILT,
     ...     name='pmo').count()
     2
@@ -456,11 +457,11 @@ Using optional 'name' filter (matching with SQL LIKE %||filter||%)
 Checking optional 'pocket' restriction:
 
     >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
-    >>> bs.getBuildsByArchIds(arch_ids,
+    >>> bs.getBuildsByArchIds(ubuntu, arch_ids,
     ...     pocket=PackagePublishingPocket.UPDATES).count()
     0
 
-    >>> bs.getBuildsByArchIds(arch_ids,
+    >>> bs.getBuildsByArchIds(ubuntu, arch_ids,
     ...     pocket=PackagePublishingPocket.RELEASE).count()
     5
 
@@ -470,7 +471,7 @@ primary archive.
     >>> breezy = ubuntu.getSeries('breezy-autotest')
     >>> arch_ids = [arch.id for arch in breezy.architectures]
     >>> [(build.archive.purpose.name, build.title) for build in
-    ...    bs.getBuildsByArchIds(arch_ids, name='commercialpackage')]
+    ...    bs.getBuildsByArchIds(ubuntu, arch_ids, name='commercialpackage')]
     [('PARTNER', u'i386 build of commercialpackage 1.0-1 in ubuntu breezy-autotest RELEASE')]
 
 `IBinaryPackageBuildSet` also provides getStatusSummaryForBuilds which
@@ -599,7 +600,7 @@ getBuildRecords() ordered by descending creation date.
 
     # Create a DELETED and a SUPERSEDED source publication in
     # ubuntutest/breezy-autotest.
-    >>> from canonical.launchpad.interfaces import PackagePublishingStatus
+    >>> from lp.soyuz.enums import PackagePublishingStatus
     >>> login('foo.bar@canonical.com')
     >>> old_source_pub = test_publisher.getPubSource(
     ...     sourcename='old-source', version='1.0',
@@ -626,7 +627,7 @@ domain of SourcePackage.
     # Create a rebuild archive, copy the 'old-source' source
     # publications to it and create builds in the rebuild archive
     # context.
-    >>> from lp.soyuz.interfaces.archive import ArchivePurpose
+    >>> from lp.soyuz.enums import ArchivePurpose
     >>> login('foo.bar@canonical.com')
     >>> rebuild_archive = factory.makeArchive(
     ...     ubuntutest, ubuntutest.owner, 'test-rebuild',
@@ -1199,7 +1200,7 @@ launchpad.Edit.
     >>> properties = {
     ...     'log': 1,
     ...     'date_finished': UTC_NOW,
-    ...     'date_started': None,
+    ...     'date_started': UTC_NOW,
     ...     'builder': bob,
     ...     'status': BuildStatus.FAILEDTOUPLOAD,
     ...     'dependencies': u'whatever',
@@ -1416,10 +1417,12 @@ specified builder ID, ordered from most-recently built.
     >>> earlier_builds = src_pkg_earlier.createMissingBuilds()
     >>> eg_build_date = earlier_builds[0].date_created
     >>> for build in earlier_builds:
+    ...     build.date_started = eg_build_date - timedelta(1)
     ...     build.date_finished = eg_build_date - timedelta(1)
 
     >>> later_builds = src_pkg_later.createMissingBuilds()
     >>> for build in later_builds:
+    ...     build.date_started = eg_build_date
     ...     build.date_finished = eg_build_date
 
     Ensure that the i386 builds are created by the 'frog' builder,

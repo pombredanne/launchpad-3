@@ -5,31 +5,39 @@ __metaclass__ = type
 __all__ = ['StructuralSubscription',
            'StructuralSubscriptionTargetMixin']
 
+from sqlobject import ForeignKey
 from zope.component import getUtility
 from zope.interface import implements
-
-from sqlobject import ForeignKey
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import quote, SQLBase
-
+from canonical.database.sqlbase import (
+    quote,
+    SQLBase,
+    )
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.registry.enum import BugNotificationLevel
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
-    IDistributionSourcePackage)
+    IDistributionSourcePackage,
+    )
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.milestone import IMilestone
+from lp.registry.interfaces.person import (
+    validate_person,
+    validate_public_person,
+    )
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.structuralsubscription import (
-    BlueprintNotificationLevel, BugNotificationLevel, DeleteSubscriptionError,
-    IStructuralSubscription, IStructuralSubscriptionTarget,
-    UserCannotSubscribePerson)
-from lp.registry.interfaces.person import (
-    validate_public_person, validate_person_not_private_membership)
+    BlueprintNotificationLevel,
+    DeleteSubscriptionError,
+    IStructuralSubscription,
+    IStructuralSubscriptionTarget,
+    UserCannotSubscribePerson,
+    )
 
 
 class StructuralSubscription(SQLBase):
@@ -61,7 +69,7 @@ class StructuralSubscription(SQLBase):
         notNull=False, default=None)
     subscriber = ForeignKey(
         dbName='subscriber', foreignKey='Person',
-        storm_validator=validate_person_not_private_membership, notNull=True)
+        storm_validator=validate_person, notNull=True)
     subscribed_by = ForeignKey(
         dbName='subscribed_by', foreignKey='Person',
         storm_validator=validate_public_person, notNull=True)
@@ -105,11 +113,12 @@ class StructuralSubscription(SQLBase):
         elif self.distroseries is not None:
             return self.distroseries
         else:
-            raise AssertionError, 'StructuralSubscription has no target.'
+            raise AssertionError('StructuralSubscription has no target.')
 
 
 class StructuralSubscriptionTargetMixin:
     """Mixin class for implementing `IStructuralSubscriptionTarget`."""
+
     @property
     def _target_args(self):
         """Target Arguments.
@@ -178,12 +187,35 @@ class StructuralSubscriptionTargetMixin:
                 subscribed_by=subscribed_by,
                 **self._target_args)
 
+    def userCanAlterBugSubscription(self, subscriber, subscribed_by):
+        """See `IStructuralSubscriptionTarget`."""
+
+        admins = getUtility(ILaunchpadCelebrities).admin
+        # If the object to be structurally subscribed to for bug
+        # notifications is a distribution and that distribution has a
+        # bug supervisor then only the bug supervisor or a member of
+        # that team or, of course, admins, can subscribe someone to it.
+        if IDistribution.providedBy(self) and self.bug_supervisor is not None:
+            if subscriber is None or subscribed_by is None:
+                return False
+            elif (subscriber != self.bug_supervisor
+                and not subscriber.inTeam(self.bug_supervisor)
+                and not subscribed_by.inTeam(admins)):
+                return False
+        return True
+
     def addBugSubscription(self, subscriber, subscribed_by):
         """See `IStructuralSubscriptionTarget`."""
         # This is a helper method for creating a structural
         # subscription and immediately giving it a full
         # bug notification level. It is useful so long as
         # subscriptions are mainly used to implement bug contacts.
+
+        if not self.userCanAlterBugSubscription(subscriber, subscribed_by):
+            raise UserCannotSubscribePerson(
+                '%s does not have permission to subscribe %s' % (
+                    subscribed_by.name, subscriber.name))
+
         sub = self.addSubscription(subscriber, subscribed_by)
         sub.bug_notification_level = BugNotificationLevel.COMMENTS
         return sub
@@ -238,7 +270,7 @@ class StructuralSubscriptionTargetMixin:
         for key, value in self._target_args.items():
             if value is None:
                 target_clause_parts.append(
-                    "StructuralSubscription.%s IS NULL " % (key,))
+                    "StructuralSubscription.%s IS NULL " % (key, ))
             else:
                 target_clause_parts.append(
                     "StructuralSubscription.%s = %s " % (key, quote(value)))

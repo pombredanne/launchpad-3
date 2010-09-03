@@ -6,16 +6,17 @@
 __metaclass__ = type
 __all__ = [
     'LibraryBackedByteStorage',
+    'RestrictedLibraryBackedByteStorage',
 ]
 
 
 from cStringIO import StringIO
 
+from lazr.restful.interfaces import IByteStorage
 from zope.component import getUtility
 from zope.interface import implements
 
-from lazr.restful.interfaces import IByteStorage
-
+from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 
@@ -74,3 +75,21 @@ class LibraryBackedByteStorage:
     def deleteStored(self):
         """See `IByteStorage`."""
         setattr(self.entry, self.field.__name__, None)
+
+
+class RestrictedLibraryBackedByteStorage(LibraryBackedByteStorage):
+    """See `IByteStorage`.
+
+    This variant of LibraryBackedByteStorage provides an alias_url
+    which points to a StreamOrRedirectLibraryFileAliasView for
+    restricted Librarian files.
+    """
+
+    @property
+    def alias_url(self):
+        """See `IByteStorage`."""
+        if self.file_alias.restricted:
+            return ProxiedLibraryFileAlias(
+                self.file_alias, self.entry.context).api_url
+        else:
+            return self.file_alias.getURL()

@@ -11,15 +11,23 @@ from unittest import TestLoader
 from zope.security.proxy import isinstance
 
 from canonical.launchpad.ftests import login_person
-from lp.testing import TestCaseWithFactory
-from lp.code.model.branchmergequeue import (
-    BranchMergeQueueSet, MultiBranchMergeQueue, SingleBranchMergeQueue)
-from lp.code.enums import BranchMergeControlStatus, BranchMergeProposalStatus
-from lp.code.interfaces.branchmergequeue import (
-    IBranchMergeQueue, IBranchMergeQueueSet, IMultiBranchMergeQueue)
 from canonical.launchpad.webapp.testing import verifyObject
-
 from canonical.testing import DatabaseFunctionalLayer
+from lp.code.enums import (
+    BranchMergeControlStatus,
+    BranchMergeProposalStatus,
+    )
+from lp.code.interfaces.branchmergequeue import (
+    IBranchMergeQueue,
+    IBranchMergeQueueSet,
+    IMultiBranchMergeQueue,
+    )
+from lp.code.model.branchmergequeue import (
+    BranchMergeQueueSet,
+    MultiBranchMergeQueue,
+    SingleBranchMergeQueue,
+    )
+from lp.testing import TestCaseWithFactory
 
 
 class TestBranchMergeQueueInterfaces(TestCaseWithFactory):

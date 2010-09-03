@@ -6,33 +6,37 @@
 __metaclass__ = type
 __all__ = []
 
-import transaction
 import unittest
 
+import transaction
 import windmill
 
 from canonical.launchpad.windmill.testing.constants import PAGE_LOAD
 from canonical.launchpad.windmill.testing.lpuser import (
-    login_person as windmill_login_person)
+    login_person as windmill_login_person,
+    )
 from lp.bugs.windmill.testing import BugsWindmillLayer
 from lp.code.tests.helpers import make_erics_fooix_project
 from lp.code.windmill.testing import CodeWindmillLayer
-from lp.testing import WindmillTestCase, login_person
+from lp.testing import (
+    login_person,
+    WindmillTestCase,
+    )
 
 
 POPUP_DIFF = (
     u'//dd[contains(@class, "popup-diff")]'
     '/a[contains(@class, "js-action")]')
 VISIBLE_DIFF = (
-    u'//table[contains(@class, "yui-diff-overlay") and '
+    u'//div[contains(@class, "yui-diff-overlay ") and '
      'not(contains(@class, "yui-diff-overlay-hidden"))]')
 CLOSE_VISIBLE_DIFF = (
-    u'//table[contains(@class, "yui-diff-overlay")]'
+    u'//div[contains(@class, "yui-diff-overlay ")]'
      '//a[@class="close-button"]')
 JS_ONLOAD_EXECUTE_DELAY = 2000
 ADD_BRANCH_MENU = u'//a[contains(@class, "menu-link-addbranch")]'
 VISIBLE_PICKER_OVERLAY = (
-    u'//table[contains(@class, "yui-picker") and '
+    u'//div[contains(@class, "yui-picker ") and '
      'not(contains(@class, "yui-picker-hidden"))]')
 BRANCH_SEARCH_FIELD = VISIBLE_PICKER_OVERLAY + u'//input[@name="search"]'
 BRANCH_SEARCH_BUTTON = (

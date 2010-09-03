@@ -7,6 +7,7 @@ __metaclass__ = type
 
 __all__ = [
     'get_status_counts',
+    'MapMixin',
     'MilestoneOverlayMixin',
     'RegistryEditFormView',
     'RegistryDeleteViewMixin',
@@ -16,17 +17,22 @@ __all__ = [
 
 from operator import attrgetter
 
+from storm.store import Store
 from zope.component import getUtility
 
-from storm.store import Store
-
-from lp.bugs.interfaces.bugtask import BugTaskSearchParams, IBugTaskSet
-from lp.registry.interfaces.productseries import IProductSeries
-from lp.registry.interfaces.series import SeriesStatus
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.launchpadform import (
-    action, LaunchpadEditFormView)
+    action,
+    LaunchpadEditFormView,
+    )
 from canonical.launchpad.webapp.publisher import canonical_url
+from lp.bugs.interfaces.bugtask import (
+    BugTaskSearchParams,
+    IBugTaskSet,
+    )
+from lp.registry.interfaces.productseries import IProductSeries
+from lp.registry.interfaces.series import SeriesStatus
+from lp.services.propertycache import cachedproperty
 
 
 class StatusCount:
@@ -115,10 +121,11 @@ class MilestoneOverlayMixin:
                     var create_milestone_link = Y.get(
                         '.menu-link-create_milestone');
                     create_milestone_link.addClass('js-action');
+                    var milestone_table = Y.lp.registry.milestonetable;
                     var config = {
                         milestone_form_uri: milestone_form_uri,
                         series_uri: series_uri,
-                        next_step: Y.lp.registry.milestonetable.get_milestone_row,
+                        next_step: milestone_table.get_milestone_row,
                         activate_node: create_milestone_link
                         };
                     Y.lp.registry.milestoneoverlay.attach_widget(config);
@@ -216,7 +223,10 @@ class RegistryDeleteViewMixin:
         """Delete a milestone and unlink related objects."""
         self._unsubscribe_structure(milestone)
         for bugtask in self._getBugtasks(milestone):
-            bugtask.milestone = None
+            if bugtask.conjoined_master is not None:
+                Store.of(bugtask).remove(bugtask.conjoined_master)
+            else:
+                bugtask.milestone = None
         for spec in self._getSpecifications(milestone):
             spec.milestone = None
         self._deleteRelease(milestone.product_release)
@@ -248,3 +258,19 @@ class RegistryEditFormView(LaunchpadEditFormView):
     @action("Change", name='change')
     def change_action(self, action, data):
         self.updateContextFromData(data)
+
+
+class MapMixin:
+
+    @cachedproperty
+    def gmap2_enabled(self):
+        # XXX sinzui 2010-08-27 bug=625556: This is a hack to use
+        # feature flags, which are not ready for general use in the production
+        # code, but has just enough to support this use case:
+        # Do not enable gmap2 if Google's service is not operational.
+        from lp.services.features.flags import FeatureController
+
+        def in_scope(value):
+            return True
+
+        return FeatureController(in_scope).getFlag('gmap2') == 'on'

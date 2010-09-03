@@ -14,9 +14,15 @@ from zope.component import getUtility
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.code.feed.branch import (
-    ProductRevisionFeed, revision_feed_id, RevisionListingFeed)
+    ProductRevisionFeed,
+    revision_feed_id,
+    RevisionListingFeed,
+    )
 from lp.code.interfaces.revision import IRevisionSet
-from lp.testing import login_person, TestCaseWithFactory
+from lp.testing import (
+    login_person,
+    TestCaseWithFactory,
+    )
 
 
 class TestRevisionFeedId(TestCaseWithFactory):

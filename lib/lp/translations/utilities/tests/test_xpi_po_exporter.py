@@ -3,28 +3,37 @@
 
 __metaclass__ = type
 
-import unittest
 from textwrap import dedent
-from zope.component import getAdapter, getUtility
+import unittest
+
+from zope.component import (
+    getAdapter,
+    getUtility,
+    )
 from zope.interface.verify import verifyObject
 
 from canonical.database.sqlbase import commit
 from canonical.launchpad.ftests import sync
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.testing import LaunchpadZopelessLayer
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.interfaces.translationcommonformat import (
-    ITranslationFileData)
+    ITranslationFileData,
+    )
 from lp.translations.interfaces.translationexporter import (
-    ITranslationFormatExporter)
+    ITranslationFormatExporter,
+    )
 from lp.translations.interfaces.translationimportqueue import (
-    ITranslationImportQueue, RosettaImportStatus)
-from lp.translations.utilities.xpi_po_exporter import (
-    XPIPOExporter)
-from canonical.testing import LaunchpadZopelessLayer
+    ITranslationImportQueue,
+    RosettaImportStatus,
+    )
 from lp.translations.utilities.tests.test_xpi_import import (
-    get_en_US_xpi_file_to_import)
+    get_en_US_xpi_file_to_import,
+    )
+from lp.translations.utilities.translation_export import ExportFileStorage
+from lp.translations.utilities.xpi_po_exporter import XPIPOExporter
 
 
 class XPIPOExporterTestCase(unittest.TestCase):
@@ -106,8 +115,9 @@ class XPIPOExporterTestCase(unittest.TestCase):
 
         translation_file_data = getAdapter(
             self.firefox_template, ITranslationFileData, 'all_messages')
-        exported_template = self.translation_exporter.exportTranslationFiles(
-            [translation_file_data])
+        storage = ExportFileStorage()
+        self.translation_exporter.exportTranslationFile(
+            translation_file_data, storage)
 
         expected_template = dedent(ur'''
             #, fuzzy
@@ -215,5 +225,5 @@ class XPIPOExporterTestCase(unittest.TestCase):
             msgstr ""
             ''').strip()
 
-        output = exported_template.read().decode("utf-8")
+        output = storage.export().read().decode("utf-8")
         self._compareExpectedAndExported(expected_template, output)

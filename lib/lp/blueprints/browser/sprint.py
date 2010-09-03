@@ -23,36 +23,54 @@ __all__ = [
     ]
 
 import csv
-import pytz
 from StringIO import StringIO
 
+import pytz
 from zope.app.form.browser import TextAreaWidget
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.webapp import (
-    GetitemNavigation, LaunchpadEditFormView,
-    LaunchpadFormView, LaunchpadView, Link, Navigation, NavigationMenu,
-    StandardLaunchpadFacets, action, canonical_url, custom_widget,
-    enabled_with_permission)
+    action,
+    canonical_url,
+    custom_widget,
+    enabled_with_permission,
+    GetitemNavigation,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    LaunchpadView,
+    Link,
+    Navigation,
+    NavigationMenu,
+    StandardLaunchpadFacets,
+    )
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.lazr.utils import smartquote
 from canonical.widgets.date import DateTimeWidget
-
 from lp.app.interfaces.headings import IMajorHeadingView
 from lp.blueprints.browser.specificationtarget import (
-    HasSpecificationsMenuMixin, HasSpecificationsView)
+    HasSpecificationsMenuMixin,
+    HasSpecificationsView,
+    )
 from lp.blueprints.interfaces.specification import (
-    SpecificationDefinitionStatus, SpecificationFilter, SpecificationPriority,
-    SpecificationSort)
-from lp.blueprints.interfaces.sprint import ISprint, ISprintSet
+    SpecificationDefinitionStatus,
+    SpecificationFilter,
+    SpecificationPriority,
+    SpecificationSort,
+    )
+from lp.blueprints.interfaces.sprint import (
+    ISprint,
+    ISprintSet,
+    )
 from lp.registry.browser.branding import BrandingChangeView
 from lp.registry.browser.menu import (
-    IRegistryCollectionNavigationMenu, RegistryCollectionActionMenuBase)
+    IRegistryCollectionNavigationMenu,
+    RegistryCollectionActionMenuBase,
+    )
+from lp.services.propertycache import cachedproperty
 
 
 class SprintFacets(StandardLaunchpadFacets):
@@ -140,8 +158,6 @@ class SprintSetFacets(StandardLaunchpadFacets):
 
 class SprintView(HasSpecificationsView, LaunchpadView):
 
-    __used_for__ = ISprint
-
     implements(IMajorHeadingView)
 
     # XXX Michael Nelson 20090923 bug=435255
@@ -149,7 +165,7 @@ class SprintView(HasSpecificationsView, LaunchpadView):
     # a second h1 to display. But as this view implements IMajorHeadingView
     # it should not include an h1 below the app buttons.
     label = None
-    
+
     @property
     def page_title(self):
         return '%s (sprint or meeting)' % self.context.title

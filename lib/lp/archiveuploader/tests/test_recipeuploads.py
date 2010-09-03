@@ -11,12 +11,13 @@ from storm.store import Store
 from zope.component import getUtility
 
 from lp.archiveuploader.tests.test_uploadprocessor import (
-    TestUploadProcessorBase)
-from lp.archiveuploader.uploadprocessor import UploadProcessor
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+    TestUploadProcessorBase,
+    )
+from lp.buildmaster.enums import BuildStatus
 from lp.code.interfaces.sourcepackagerecipebuild import (
-    ISourcePackageRecipeBuildSource)
-from lp.soyuz.interfaces.queue import PackageUploadStatus
+    ISourcePackageRecipeBuildSource,
+    )
+from lp.soyuz.enums import PackageUploadStatus
 
 
 class TestSourcePackageRecipeBuildUploads(TestUploadProcessorBase):
@@ -42,14 +43,14 @@ class TestSourcePackageRecipeBuildUploads(TestUploadProcessorBase):
         self.options.context = 'recipe'
         self.options.buildid = self.build.id
 
-        self.uploadprocessor = UploadProcessor(
-            self.options, self.layer.txn, self.log)
+        self.uploadprocessor = self.getUploadProcessor(
+            self.layer.txn)
 
     def testSetsBuildAndState(self):
         # Ensure that the upload processor correctly links the SPR to
         # the SPRB, and that the status is set properly.
         # This test depends on write access being granted to anybody
-        # (it does not matter who) on SPRB.{buildstate,upload_log}.
+        # (it does not matter who) on SPRB.{status,upload_log}.
         self.assertIs(None, self.build.source_package_release)
         self.assertEqual(False, self.build.verifySuccessfulUpload())
         self.queueUpload('bar_1.0-1', '%d/ubuntu' % self.build.archive.id)
@@ -67,5 +68,5 @@ class TestSourcePackageRecipeBuildUploads(TestUploadProcessorBase):
         spr = queue_item.sources[0].sourcepackagerelease
         self.assertEqual(self.build, spr.source_package_recipe_build)
         self.assertEqual(spr, self.build.source_package_release)
-        self.assertEqual(BuildStatus.FULLYBUILT, self.build.buildstate)
+        self.assertEqual(BuildStatus.FULLYBUILT, self.build.status)
         self.assertEqual(True, self.build.verifySuccessfulUpload())

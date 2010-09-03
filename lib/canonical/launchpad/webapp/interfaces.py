@@ -7,62 +7,43 @@ __metaclass__ = type
 
 import logging
 
-import zope.app.publication.interfaces
-from zope.component.interfaces import IObjectEvent
-from zope.interface import Interface, Attribute, implements
-from zope.app.security.interfaces import (
-    IAuthentication, IPrincipal, IPrincipalSource)
-from zope.traversing.interfaces import IContainmentRoot
-from zope.schema import Bool, Choice, Datetime, Int, Object, Text, TextLine
 from lazr.batchnavigator.interfaces import IBatchNavigator
-from lazr.enum import DBEnumeratedType, DBItem, use_template
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    use_template,
+    )
+import zope.app.publication.interfaces
+from zope.app.security.interfaces import (
+    IAuthentication,
+    IPrincipal,
+    IPrincipalSource,
+    )
+from zope.component.interfaces import IObjectEvent
+from zope.interface import (
+    Attribute,
+    implements,
+    Interface,
+    )
+from zope.schema import (
+    Bool,
+    Choice,
+    Datetime,
+    Int,
+    Object,
+    Text,
+    TextLine,
+    )
+from zope.traversing.interfaces import IContainmentRoot
 
 from canonical.launchpad import _
+# Import only added to allow change to land.  Needs to be removed when shipit
+# is updated.
+from lp.app.errors import UnexpectedFormData
 
 
-class TranslationUnavailable(Exception):
-    """Translation objects are unavailable."""
-
-
-class NotFoundError(KeyError):
-    """Launchpad object not found."""
-
-
-class GoneError(KeyError):
-    """Launchpad object is gone."""
-
-
-class NameLookupFailed(NotFoundError):
-    """Raised when a lookup by name fails.
-
-    Subclasses should define the `_message_prefix` class variable, which will
-    be prefixed to the quoted name of the name that could not be found.
-
-    :ivar name: The name that could not be found.
-    """
-
-    _message_prefix = "Not found"
-
-    def __init__(self, name, message=None):
-        if message is None:
-            message = self._message_prefix
-        self.message = "%s: '%s'." % (message, name)
-        self.name = name
-        NotFoundError.__init__(self, self.message)
-
-    def __str__(self):
-        return self.message
-
-
-class UnexpectedFormData(AssertionError):
-    """Got form data that is not what is expected by a form handler."""
-
-
-class POSTToNonCanonicalURL(UnexpectedFormData):
-    """Got a POST to an incorrect URL.
-
-    One example would be a URL containing uppercase letters.
-    """
+class IAPIDocRoot(IContainmentRoot):
+    """Marker interface for the root object of the apidoc vhost."""
 
 
 class ILaunchpadContainer(Interface):
@@ -300,7 +281,6 @@ class NoCanonicalUrl(TypeError):
 # is very Launchpad-specific. I suggest we split the interface and
 # implementation into two parts, having a different name for the webapp/ bits.
 class ILaunchBag(Interface):
-    site = Attribute('The application object, or None')
     person = Attribute('IPerson, or None')
     project = Attribute('IProjectGroup, or None')
     product = Attribute('IProduct, or None')
@@ -547,6 +527,15 @@ class OAuthPermission(DBEnumeratedType):
         for reading and changing anything, including private data.
         """)
 
+    GRANT_PERMISSIONS = DBItem(60, """
+        Grant Permissions
+
+        The application will be able to grant access to your Launchpad
+        account to any other application. This is a very powerful
+        level of access. You should not grant this level of access to
+        any application except the official Launchpad credential
+        manager.
+        """)
 
 class AccessLevel(DBEnumeratedType):
     """The level of access any given principal has."""

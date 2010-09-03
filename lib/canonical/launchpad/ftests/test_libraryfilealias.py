@@ -11,8 +11,12 @@ import unittest
 import transaction
 from zope.component import getUtility
 
+from canonical.launchpad.ftests import (
+    ANONYMOUS,
+    login,
+    logout,
+    )
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.launchpad.ftests import ANONYMOUS, login, logout
 from canonical.testing import LaunchpadFunctionalLayer
 
 

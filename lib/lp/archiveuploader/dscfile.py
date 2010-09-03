@@ -13,11 +13,11 @@ __all__ = [
     'SignableTagFile',
     'DSCFile',
     'DSCUploadedFile',
-    'findChangelog',
-    'findCopyright',
+    'find_changelog',
+    'find_copyright',
     ]
 
-import apt_pkg
+from cStringIO import StringIO
 import errno
 import glob
 import os
@@ -25,28 +25,119 @@ import shutil
 import subprocess
 import tempfile
 
+import apt_pkg
 from zope.component import getUtility
 
 from canonical.encoding import guess as guess_encoding
 from canonical.launchpad.interfaces import (
-    GPGVerificationError, IGPGHandler, IGPGKeySet,
-    ISourcePackageNameSet, NotFoundError)
+    GPGVerificationError,
+    IGPGHandler,
+    IGPGKeySet,
+    ISourcePackageNameSet,
+    )
 from canonical.librarian.utils import copy_and_close
+from lp.app.errors import NotFoundError
 from lp.archiveuploader.nascentuploadfile import (
-    UploadWarning, UploadError, NascentUploadFile, SourceUploadFile)
+    NascentUploadFile,
+    SourceUploadFile,
+    UploadError,
+    UploadWarning,
+    )
 from lp.archiveuploader.tagfiles import (
-    parse_tagfile, TagFileParseError)
+    parse_tagfile,
+    TagFileParseError,
+    )
 from lp.archiveuploader.utils import (
-    determine_source_file_type, get_source_file_extension,
-    ParseMaintError, prefix_multi_line_string, re_is_component_orig_tar_ext,
-    re_issource, re_valid_pkg_name, re_valid_version, safe_fix_maintainer)
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+    determine_source_file_type,
+    get_source_file_extension,
+    ParseMaintError,
+    prefix_multi_line_string,
+    re_is_component_orig_tar_ext,
+    re_issource,
+    re_valid_pkg_name,
+    re_valid_version,
+    safe_fix_maintainer,
+    )
+from lp.buildmaster.enums import BuildStatus
 from lp.code.interfaces.sourcepackagerecipebuild import (
-    ISourcePackageRecipeBuildSource)
-from lp.registry.interfaces.person import IPersonSet, PersonCreationRationale
+    ISourcePackageRecipeBuildSource,
+    )
+from lp.registry.interfaces.person import (
+    IPersonSet,
+    PersonCreationRationale,
+    )
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
-from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
-from lp.soyuz.interfaces.sourcepackageformat import SourcePackageFormat
+from lp.soyuz.enums import (
+    ArchivePurpose,
+    SourcePackageFormat,
+    )
+from lp.soyuz.interfaces.archive import (
+    IArchiveSet,
+    )
+
+
+class DpkgSourceError(Exception):
+
+    _fmt = "Unable to unpack source package (%(result)s): %(output)s"
+
+    def __init__(self, output, result):
+        Exception.__init__(
+            self, self._fmt % {"output": output, "result": result})
+        self.output = output
+        self.result = result
+
+
+def unpack_source(dsc_filepath):
+    """Unpack a source package into a temporary directory
+
+    :param dsc_filepath: Path to the dsc file
+    :return: Path to the temporary directory with the unpacked sources
+    """
+    # Get a temporary dir together.
+    unpacked_dir = tempfile.mkdtemp()
+    try:
+        # chdir into it
+        cwd = os.getcwd()
+        os.chdir(unpacked_dir)
+        try:
+            args = ["dpkg-source", "-sn", "-x", dsc_filepath]
+            dpkg_source = subprocess.Popen(args, stdout=subprocess.PIPE,
+                                           stderr=subprocess.PIPE)
+            output, unused = dpkg_source.communicate()
+            result = dpkg_source.wait()
+        finally:
+            # When all is said and done, chdir out again so that we can
+            # clean up the tree with shutil.rmtree without leaving the
+            # process in a directory we're trying to remove.
+            os.chdir(cwd)
+
+        if result != 0:
+            dpkg_output = prefix_multi_line_string(output, "  ")
+            raise DpkgSourceError(result=result, output=dpkg_output)
+    except:
+        shutil.rmtree(unpacked_dir)
+        raise
+
+    return unpacked_dir
+
+
+def cleanup_unpacked_dir(unpacked_dir):
+    """Remove the directory with an unpacked source package.
+
+    :param unpacked_dir: Path to the directory.
+    """
+    try:
+        shutil.rmtree(unpacked_dir)
+    except OSError, error:
+        if errno.errorcode[error.errno] != 'EACCES':
+            raise UploadError(
+                "couldn't remove tmp dir %s: code %s" % (
+                unpacked_dir, error.errno))
+        else:
+            result = os.system("chmod -R u+rwx " + unpacked_dir)
+            if result != 0:
+                raise UploadError("chmod failed with %s" % result)
+            shutil.rmtree(unpacked_dir)
 
 
 class SignableTagFile:
@@ -136,7 +227,7 @@ class SignableTagFile:
             "rfc2047": rfc2047,
             "name": name,
             "email": email,
-            "person": person
+            "person": person,
             }
 
 
@@ -153,9 +244,9 @@ class DSCFile(SourceUploadFile, SignableTagFile):
 
     # Note that files is actually only set inside verify().
     files = None
-    # Copyright and changelog_path are only set inside unpackAndCheckSource().
+    # Copyright and changelog are only set inside unpackAndCheckSource().
     copyright = None
-    changelog_path = None
+    changelog = None
 
     def __init__(self, filepath, digest, size, component_and_section,
                  priority, package, version, changes, policy, logger):
@@ -204,12 +295,9 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         else:
             self.processSignature()
 
-        self.unpacked_dir = None
-
     #
     # Useful properties.
     #
-
     @property
     def source(self):
         """Return the DSC source name."""
@@ -243,12 +331,11 @@ class DSCFile(SourceUploadFile, SignableTagFile):
     #
     # DSC file checks.
     #
-
     def verify(self):
         """Verify the uploaded .dsc file.
 
-        This method is an error generator, i.e, it returns an iterator over all
-        exceptions that are generated while processing DSC file checks.
+        This method is an error generator, i.e, it returns an iterator over
+        all exceptions that are generated while processing DSC file checks.
         """
 
         for error in SourceUploadFile.verify(self):
@@ -484,81 +571,52 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         self.logger.debug(
             "Verifying uploaded source package by unpacking it.")
 
-        # Get a temporary dir together.
-        self.unpacked_dir = tempfile.mkdtemp()
-
-        # chdir into it
-        cwd = os.getcwd()
-        os.chdir(self.unpacked_dir)
-        dsc_in_tmpdir = os.path.join(self.unpacked_dir, self.filename)
-
-        package_files = self.files + [self]
         try:
-            for source_file in package_files:
-                os.symlink(
-                    source_file.filepath,
-                    os.path.join(self.unpacked_dir, source_file.filename))
-            args = ["dpkg-source", "-sn", "-x", dsc_in_tmpdir]
-            dpkg_source = subprocess.Popen(args, stdout=subprocess.PIPE,
-                                           stderr=subprocess.PIPE)
-            output, unused = dpkg_source.communicate()
-            result = dpkg_source.wait()
-        finally:
-            # When all is said and done, chdir out again so that we can
-            # clean up the tree with shutil.rmtree without leaving the
-            # process in a directory we're trying to remove.
-            os.chdir(cwd)
-
-        if result != 0:
-            dpkg_output = prefix_multi_line_string(output, "  ")
+            unpacked_dir = unpack_source(self.filepath)
+        except DpkgSourceError, e:
             yield UploadError(
                 "dpkg-source failed for %s [return: %s]\n"
                 "[dpkg-source output: %s]"
-                % (self.filename, result, dpkg_output))
-
-        # Copy debian/copyright file content. It will be stored in the
-        # SourcePackageRelease records.
-
-        # Check if 'dpkg-source' created only one directory.
-        temp_directories = [
-            dirname for dirname in os.listdir(self.unpacked_dir)
-            if os.path.isdir(dirname)]
-        if len(temp_directories) > 1:
-            yield UploadError(
-                'Unpacked source contains more than one directory: %r'
-                % temp_directories)
-
-        # XXX cprov 20070713: We should access only the expected directory
-        # name (<sourcename>-<no_epoch(no_revision(version))>).
-
-        # Locate both the copyright and changelog files for later processing.
-        for error in findCopyright(self, self.unpacked_dir, self.logger):
-            yield error
-
-        for error in findChangelog(self, self.unpacked_dir, self.logger):
-            yield error
-
-        self.logger.debug("Cleaning up source tree.")
-        self.logger.debug("Done")
-
-    def cleanUp(self):
-        if self.unpacked_dir is None:
+                % (self.filename, e.result, e.output))
             return
-        try:
-            shutil.rmtree(self.unpacked_dir)
-        except OSError, error:
-            # XXX: dsilvers 2006-03-15: We currently lack a test for this.
-            if errno.errorcode[error.errno] != 'EACCES':
-                raise UploadError(
-                    "%s: couldn't remove tmp dir %s: code %s" % (
-                    self.filename, self.unpacked_dir, error.errno))
-            else:
-                result = os.system("chmod -R u+rwx " + self.unpacked_dir)
-                if result != 0:
-                    raise UploadError("chmod failed with %s" % result)
-                shutil.rmtree(self.unpacked_dir)
-        self.unpacked_dir = None
 
+        try:
+            # Copy debian/copyright file content. It will be stored in the
+            # SourcePackageRelease records.
+
+            # Check if 'dpkg-source' created only one directory.
+            temp_directories = [
+                dirname for dirname in os.listdir(unpacked_dir)
+                if os.path.isdir(dirname)]
+            if len(temp_directories) > 1:
+                yield UploadError(
+                    'Unpacked source contains more than one directory: %r'
+                    % temp_directories)
+
+            # XXX cprov 20070713: We should access only the expected directory
+            # name (<sourcename>-<no_epoch(no_revision(version))>).
+
+            # Locate both the copyright and changelog files for later
+            # processing.
+            try:
+                self.copyright = find_copyright(unpacked_dir, self.logger)
+            except UploadError, error:
+                yield error
+                return
+            except UploadWarning, warning:
+                yield warning
+
+            try:
+                self.changelog = find_changelog(unpacked_dir, self.logger)
+            except UploadError, error:
+                yield error
+                return
+            except UploadWarning, warning:
+                yield warning
+        finally:
+            self.logger.debug("Cleaning up source tree.")
+            cleanup_unpacked_dir(unpacked_dir)
+        self.logger.debug("Done")
 
     def findBuild(self):
         """Find and return the SourcePackageRecipeBuild, if one is specified.
@@ -573,7 +631,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         build = getUtility(ISourcePackageRecipeBuildSource).getById(build_id)
 
         # The master verifies the status to confirm successful upload.
-        build.buildstate = BuildStatus.FULLYBUILT
+        build.status = BuildStatus.FULLYBUILT
         # If this upload is successful, any existing log is wrong and
         # unuseful.
         build.upload_log = None
@@ -617,8 +675,8 @@ class DSCFile(SourceUploadFile, SignableTagFile):
 
         changelog_lfa = self.librarian.create(
             "changelog",
-            os.stat(self.changelog_path).st_size,
-            open(self.changelog_path, "r"),
+            len(self.changelog),
+            StringIO(self.changelog),
             "text/x-debian-source-changelog",
             restricted=self.policy.archive.private)
 
@@ -678,6 +736,7 @@ class DSCUploadedFile(NascentUploadFile):
           validation inside DSCFile.verify(); there is no
           store_in_database() method.
     """
+
     def __init__(self, filepath, digest, size, policy, logger):
         component_and_section = priority = "--no-value--"
         NascentUploadFile.__init__(
@@ -697,7 +756,7 @@ def findFile(source_dir, filename):
 
     :param source_file: The directory where the source was extracted
     :param source_dir: The directory where the source was extracted.
-    :return fullpath: The full path of the file, else return None if the 
+    :return fullpath: The full path of the file, else return None if the
                       file is not found.
     """
     # Instead of trying to predict the unpacked source directory name,
@@ -720,49 +779,42 @@ def findFile(source_dir, filename):
             return fullpath
     return None
 
-def findCopyright(dsc_file, source_dir, logger):
+
+def find_copyright(source_dir, logger):
     """Find and store any debian/copyright.
 
-    :param dsc_file: A DSCFile object where the copyright will be stored.
     :param source_dir: The directory where the source was extracted.
     :param logger: A logger object for debug output.
+    :return: Contents of copyright file
     """
-    try:
-        copyright_file = findFile(source_dir, 'debian/copyright')
-    except UploadError, error:
-        yield error
-        return
+    copyright_file = findFile(source_dir, 'debian/copyright')
     if copyright_file is None:
-        yield UploadWarning("No copyright file found.")
-        return
+        raise UploadWarning("No copyright file found.")
 
     logger.debug("Copying copyright contents.")
-    dsc_file.copyright = open(copyright_file).read().strip()
+    return open(copyright_file).read().strip()
 
-def findChangelog(dsc_file, source_dir, logger):
+
+def find_changelog(source_dir, logger):
     """Find and move any debian/changelog.
 
     This function finds the changelog file within the source package. The
     changelog file is later uploaded to the librarian by
     DSCFile.storeInDatabase().
 
-    :param dsc_file: A DSCFile object where the copyright will be stored.
     :param source_dir: The directory where the source was extracted.
     :param logger: A logger object for debug output.
+    :return: Changelog contents
     """
-    try:
-        changelog_file = findFile(source_dir, 'debian/changelog')
-    except UploadError, error:
-        yield error
-        return
+    changelog_file = findFile(source_dir, 'debian/changelog')
     if changelog_file is None:
         # Policy requires debian/changelog to always exist.
-        yield UploadError("No changelog file found.")
-        return
+        raise UploadError("No changelog file found.")
 
     # Move the changelog file out of the package direcotry
     logger.debug("Found changelog")
-    dsc_file.changelog_path = changelog_file
+    return open(changelog_file, 'r').read()
+
 
 def check_format_1_0_files(filename, file_type_counts, component_counts,
                            bzip2_count):

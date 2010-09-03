@@ -6,13 +6,15 @@ __metaclass__ = type
 from zope.component import getUtility
 
 from canonical.lazr.utils import smartquote
-
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing.breadcrumbs import BaseBreadcrumbTestCase
+from lp.testing.factory import remove_security_proxy_and_shout_at_engineer
 from lp.translations.interfaces.distroserieslanguage import (
-    IDistroSeriesLanguageSet)
+    IDistroSeriesLanguageSet,
+    )
 from lp.translations.interfaces.productserieslanguage import (
-    IProductSeriesLanguageSet)
+    IProductSeriesLanguageSet,
+    )
 from lp.translations.interfaces.translationgroup import ITranslationGroupSet
 
 
@@ -109,7 +111,8 @@ class TestSeriesLanguageBreadcrumbs(BaseBreadcrumbTestCase):
             name='crumb-tester', displayname="Crumb Tester")
         series = self.factory.makeDistroRelease(
             name="test", version="1.0", distribution=distribution)
-        series.hide_all_translations = False
+        naked_series = remove_security_proxy_and_shout_at_engineer(series)
+        naked_series.hide_all_translations = False
         serieslanguage = getUtility(IDistroSeriesLanguageSet).getDummy(
             series, self.language)
 

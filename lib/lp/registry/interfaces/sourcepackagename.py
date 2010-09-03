@@ -13,13 +13,19 @@ __all__ = [
     'NoSuchSourcePackageName',
     ]
 
-from zope.schema import Int, TextLine
-from zope.interface import Interface, Attribute
+from lazr.restful.declarations import webservice_error
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Int,
+    TextLine,
+    )
 
 from canonical.launchpad import _
 from canonical.launchpad.validators.name import name_validator
-from canonical.launchpad.webapp.interfaces import NameLookupFailed
-from lazr.restful.declarations import webservice_error
+from lp.app.errors import NameLookupFailed
 
 
 class ISourcePackageName(Interface):

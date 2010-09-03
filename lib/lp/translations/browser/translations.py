@@ -17,21 +17,27 @@ __all__ = [
 
 from zope.component import getUtility
 
-from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces.geoip import IRequestPreferredLanguages
 from canonical.launchpad.interfaces.launchpad import (
-    ILaunchpadCelebrities, IRosettaApplication)
-from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
-from lp.registry.interfaces.product import IProductSet
-from lp.services.worlddata.interfaces.country import ICountry
-from lp.registry.interfaces.person import IPersonSet
-from canonical.launchpad.layers import TranslationsLayer
+    ILaunchpadCelebrities,
+    IRosettaApplication,
+    )
 from canonical.launchpad.webapp import (
-    LaunchpadView, Navigation, stepto, canonical_url)
+    canonical_url,
+    LaunchpadView,
+    Navigation,
+    stepto,
+    )
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
+from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
+from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.product import IProductSet
+from lp.services.propertycache import cachedproperty
+from lp.services.worlddata.interfaces.country import ICountry
+from lp.translations.publisher import TranslationsLayer
 
 
 class HelpTranslateButtonView:
@@ -183,7 +189,7 @@ class PageRedirectView:
         self.request.response.redirect(
             '/'.join([
                 canonical_url(self.context, rootsite='translations'),
-                self.page
+                self.page,
                 ]), status=301)
 
 
@@ -208,6 +214,7 @@ class TranslationsVHostBreadcrumb(Breadcrumb):
 
 class TranslationsLanguageBreadcrumb(Breadcrumb):
     """Breadcrumb for objects with language."""
+
     @property
     def text(self):
         return self.context.language.displayname

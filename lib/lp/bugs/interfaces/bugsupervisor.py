@@ -11,20 +11,24 @@ __all__ = [
     'IHasBugSupervisor',
     ]
 
-from canonical.launchpad import _
-from canonical.launchpad.fields import ParticipatingPersonChoice
-
+from lazr.restful.declarations import (
+    call_with,
+    export_write_operation,
+    exported,
+    mutator_for,
+    operation_parameters,
+    REQUEST_USER,
+    )
+from lazr.restful.interface import copy_field
 from zope.interface import Interface
 
-from lazr.restful.declarations import (
-    REQUEST_USER, call_with, exported, export_write_operation,
-    mutator_for, operation_parameters)
-from lazr.restful.interface import copy_field
+from canonical.launchpad import _
+from lp.services.fields import PersonChoice
 
 
 class IHasBugSupervisor(Interface):
 
-    bug_supervisor = exported(ParticipatingPersonChoice(
+    bug_supervisor = exported(PersonChoice(
         title=_("Bug Supervisor"),
         description=_(
             "The Launchpad id of the person or team (preferred) responsible "

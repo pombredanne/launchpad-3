@@ -8,6 +8,7 @@ __metaclass__ = type
 __all__ = [
     'BaseDispatchResult',
     'BuilddManager',
+    'BUILDD_MANAGER_LOG_NAME',
     'FailDispatchResult',
     'RecordingSlave',
     'ResetDispatchResult',
@@ -16,22 +17,26 @@ __all__ = [
 
 import logging
 import os
-import transaction
 
+import transaction
 from twisted.application import service
-from twisted.internet import defer, reactor
+from twisted.internet import (
+    defer,
+    reactor,
+    )
 from twisted.protocols.policies import TimeoutMixin
 from twisted.python import log
 from twisted.python.failure import Failure
 from twisted.web import xmlrpc
-
 from zope.component import getUtility
 
 from canonical.config import config
 from canonical.launchpad.webapp import urlappend
 from canonical.librarian.db import write_transaction
-from lp.buildmaster.interfaces.buildbase import BUILDD_MANAGER_LOG_NAME
 from lp.services.twistedsupport.processmonitor import ProcessWithTimeout
+
+
+BUILDD_MANAGER_LOG_NAME = "slave-scanner"
 
 
 buildd_success_result_map = {
@@ -208,23 +213,323 @@ class ResetDispatchResult(BaseDispatchResult):
         self._cleanJob(builder.currentjob)
 
 
-class BuilddManager(service.Service):
-    """Build slave manager."""
+class SlaveScanner:
+    """A manager for a single builder."""
 
-    # Dispatch result factories, used to build objects of type
-    # BaseDispatchResult representing the result of a dispatching chain.
+    SCAN_INTERVAL = 5
+
+    # These are for the benefit of tests; see `TestingSlaveScanner`.
+    # It pokes fake versions in here so that it can verify methods were
+    # called.  The tests should really be using FakeMethod() though.
     reset_result = ResetDispatchResult
     fail_result = FailDispatchResult
 
-    def __init__(self):
-        # Store for running chains.
-        self._deferreds = []
+    def __init__(self, builder_name, logger):
+        self.builder_name = builder_name
+        self.logger = logger
+        self._deferred_list = []
 
-        # Keep track of build slaves that need handling in a scan/dispatch
-        # cycle.
-        self.remaining_slaves = []
+    def scheduleNextScanCycle(self):
+        """Schedule another scan of the builder some time in the future."""
+        self._deferred_list = []
+        reactor.callLater(self.SCAN_INTERVAL, self.startCycle)
 
+    def startCycle(self):
+        """Scan the builder and dispatch to it or deal with failures."""
+        self.logger.debug("Scanning builder: %s" % self.builder_name)
+
+        try:
+            slave = self.scan()
+            if slave is None:
+                self.scheduleNextScanCycle()
+            else:
+                self.resumeAndDispatch(slave)
+        except:
+            error = Failure()
+            self.logger.info("Scanning failed with: %s\n%s" %
+                (error.getErrorMessage(), error.getTraceback()))
+            # We should probably detect continuous failures here and mark
+            # the builder down.
+            self.scheduleNextScanCycle()
+
+    @write_transaction
+    def scan(self):
+        """Probe the builder and update/dispatch/collect as appropriate.
+
+        The whole method is wrapped in a transaction, but we do partial
+        commits to avoid holding locks on tables.
+
+        :return: A `RecordingSlave` if we dispatched a job to it, or None.
+        """
+        # We need to re-fetch the builder object on each cycle as the
+        # Storm store is invalidated over transaction boundaries.
+
+        # Avoid circular import.
+        from lp.buildmaster.interfaces.builder import IBuilderSet
+        builder_set = getUtility(IBuilderSet)
+        self.builder = builder_set[self.builder_name]
+
+        if self.builder.builderok:
+            self.builder.updateStatus(self.logger)
+            transaction.commit()
+
+        # See if we think there's an active build on the builder.
+        buildqueue = self.builder.getBuildQueue()
+
+        # XXX Julian 2010-07-29 bug=611258
+        # We're not using the RecordingSlave until dispatching, which
+        # means that this part blocks until we've received a response
+        # from the builder.  updateBuild() needs to be made
+        # asyncronous.
+
+        # Scan the slave and get the logtail, or collect the build if
+        # it's ready.  Yes, "updateBuild" is a bad name.
+        if buildqueue is not None:
+            self.builder.updateBuild(buildqueue)
+            transaction.commit()
+
+        # If the builder is in manual mode, don't dispatch anything.
+        if self.builder.manual:
+            self.logger.debug(
+                '%s is in manual mode, not dispatching.' % self.builder.name)
+            return None
+
+        # If the builder is marked unavailable, don't dispatch anything.
+        # Additionaly, because builders can be removed from the pool at
+        # any time, we need to see if we think there was a build running
+        # on it before it was marked unavailable. In this case we reset
+        # the build thusly forcing it to get re-dispatched to another
+        # builder.
+        if not self.builder.is_available:
+            job = self.builder.currentjob
+            if job is not None and not self.builder.builderok:
+                self.logger.info(
+                    "%s was made unavailable, resetting attached "
+                    "job" % self.builder.name)
+                job.reset()
+                transaction.commit()
+            return None
+
+        # See if there is a job we can dispatch to the builder slave.
+        slave = RecordingSlave(
+            self.builder.name, self.builder.url, self.builder.vm_host)
+        candidate = self.builder.findAndStartJob(buildd_slave=slave)
+        if self.builder.currentjob is not None:
+            transaction.commit()
+            return slave
+
+        return None
+
+    def resumeAndDispatch(self, slave):
+        """Chain the resume and dispatching Deferreds."""
+        if slave.resume_requested:
+            # The slave needs to be reset before we can dispatch to
+            # it (e.g. a virtual slave)
+            d = slave.resumeSlave()
+            d.addBoth(self.checkResume, slave)
+        else:
+            # No resume required, build dispatching can commence.
+            d = defer.succeed(None)
+
+        # Dispatch the build to the slave asynchronously.
+        d.addCallback(self.initiateDispatch, slave)
+        # Store this deferred so we can wait for it along with all
+        # the others that will be generated by RecordingSlave during
+        # the dispatch process, and chain a callback after they've
+        # all fired.
+        self._deferred_list.append(d)
+
+    def initiateDispatch(self, resume_result, slave):
+        """Start dispatching a build to a slave.
+
+        If the previous task in chain (slave resuming) has failed it will
+        receive a `ResetBuilderRequest` instance as 'resume_result' and
+        will immediately return that so the subsequent callback can collect
+        it.
+
+        If the slave resuming succeeded, it starts the XMLRPC dialogue.  The
+        dialogue may consist of many calls to the slave before the build
+        starts.  Each call is done via a Deferred event, where slave calls
+        are sent in callSlave(), and checked in checkDispatch() which will
+        keep firing events via callSlave() until all the events are done or
+        an error occurs.
+        """
+        if resume_result is not None:
+            self.slaveConversationEnded()
+            return resume_result
+
+        self.logger.info('Dispatching: %s' % slave)
+        self.callSlave(slave)
+
+    def _getProxyForSlave(self, slave):
+        """Return a twisted.web.xmlrpc.Proxy for the buildd slave.
+
+        Uses a protocol with timeout support, See QueryFactoryWithTimeout.
+        """
+        proxy = xmlrpc.Proxy(str(urlappend(slave.url, 'rpc')))
+        proxy.queryFactory = QueryFactoryWithTimeout
+        return proxy
+
+    def callSlave(self, slave):
+        """Dispatch the next XMLRPC for the given slave."""
+        if len(slave.calls) == 0:
+            # That's the end of the dialogue with the slave.
+            self.slaveConversationEnded()
+            return
+
+        # Get an XMLRPC proxy for the buildd slave.
+        proxy = self._getProxyForSlave(slave)
+        method, args = slave.calls.pop(0)
+        d = proxy.callRemote(method, *args)
+        d.addBoth(self.checkDispatch, method, slave)
+        self._deferred_list.append(d)
+        self.logger.debug('%s -> %s(%s)' % (slave, method, args))
+
+    def slaveConversationEnded(self):
+        """After all the Deferreds are set up, chain a callback on them."""
+        dl = defer.DeferredList(self._deferred_list, consumeErrors=True)
+        dl.addBoth(self.evaluateDispatchResult)
+        return dl
+
+    def evaluateDispatchResult(self, deferred_list_results):
+        """Process the DispatchResult for this dispatch chain.
+
+        After waiting for the Deferred chain to finish, we'll have a
+        DispatchResult to evaluate, which deals with the result of
+        dispatching.
+        """
+        # The `deferred_list_results` is what we get when waiting on a
+        # DeferredList.  It's a list of tuples of (status, result) where
+        # result is what the last callback in that chain returned.
+
+        # If the result is an instance of BaseDispatchResult we need to
+        # evaluate it, as there's further action required at the end of
+        # the dispatch chain.  None, resulting from successful chains,
+        # are discarded.
+
+        dispatch_results = [
+            result for status, result in deferred_list_results
+            if isinstance(result, BaseDispatchResult)]
+
+        for result in dispatch_results:
+            self.logger.info("%r" % result)
+            result()
+
+        # At this point, we're done dispatching, so we can schedule the
+        # next scan cycle.
+        self.scheduleNextScanCycle()
+
+        # For the test suite so that it can chain callback results.
+        return deferred_list_results
+
+    def checkResume(self, response, slave):
+        """Check the result of resuming a slave.
+
+        If there's a problem resuming, we return a ResetDispatchResult which
+        will get evaluated at the end of the scan, or None if the resume
+        was OK.
+
+        :param response: the tuple that's constructed in
+            ProcessWithTimeout.processEnded(), or a Failure that
+            contains the tuple.
+        :param slave: the slave object we're talking to
+        """
+        if isinstance(response, Failure):
+            out, err, code = response.value
+        else:
+            out, err, code = response
+            if code == os.EX_OK:
+                return None
+
+        error_text = '%s\n%s' % (out, err)
+        self.logger.error('%s resume failure: %s' % (slave, error_text))
+        return self.reset_result(slave, error_text)
+
+    def checkDispatch(self, response, method, slave):
+        """Verify the results of a slave xmlrpc call.
+
+        If it failed and it compromises the slave then return a corresponding
+        `FailDispatchResult`, if it was a communication failure, simply
+        reset the slave by returning a `ResetDispatchResult`.
+        """
+        # XXX these DispatchResult classes are badly named and do the
+        # same thing.  We need to fix that.
+        self.logger.debug(
+            '%s response for "%s": %s' % (slave, method, response))
+
+        if isinstance(response, Failure):
+            self.logger.warn(
+                '%s communication failed (%s)' %
+                (slave, response.getErrorMessage()))
+            self.slaveConversationEnded()
+            return self.reset_result(slave)
+
+        if isinstance(response, list) and len(response) == 2:
+            if method in buildd_success_result_map:
+                expected_status = buildd_success_result_map.get(method)
+                status, info = response
+                if status == expected_status:
+                    self.callSlave(slave)
+                    return None
+            else:
+                info = 'Unknown slave method: %s' % method
+        else:
+            info = 'Unexpected response: %s' % repr(response)
+
+        self.logger.error(
+            '%s failed to dispatch (%s)' % (slave, info))
+
+        self.slaveConversationEnded()
+        return self.fail_result(slave, info)
+
+
+class NewBuildersScanner:
+    """If new builders appear, create a scanner for them."""
+
+    # How often to check for new builders, in seconds.
+    SCAN_INTERVAL = 300
+
+    def __init__(self, manager, clock=None):
+        self.manager = manager
+        # Use the clock if provided, it's so that tests can
+        # advance it.  Use the reactor by default.
+        if clock is None:
+            clock = reactor
+        self._clock = clock
+        # Avoid circular import.
+        from lp.buildmaster.interfaces.builder import IBuilderSet
+        self.current_builders = [
+            builder.name for builder in getUtility(IBuilderSet)]
+
+    def scheduleScan(self):
+        """Schedule a callback SCAN_INTERVAL seconds later."""
+        return self._clock.callLater(self.SCAN_INTERVAL, self.scan)
+
+    def scan(self):
+        """If a new builder appears, create a SlaveScanner for it."""
+        new_builders = self.checkForNewBuilders()
+        self.manager.addScanForBuilders(new_builders)
+        self.scheduleScan()
+
+    def checkForNewBuilders(self):
+        """See if any new builders were added."""
+        # Avoid circular import.
+        from lp.buildmaster.interfaces.builder import IBuilderSet
+        new_builders = set(
+            builder.name for builder in getUtility(IBuilderSet))
+        old_builders = set(self.current_builders)
+        extra_builders = new_builders.difference(old_builders)
+        return list(extra_builders)
+
+
+class BuilddManager(service.Service):
+    """Main Buildd Manager service class."""
+
+    def __init__(self, clock=None):
+        self.builder_slaves = []
         self.logger = self._setupLogger()
+        self.new_builders_scanner = NewBuildersScanner(
+            manager=self, clock=clock)
 
     def _setupLogger(self):
         """Setup a 'slave-scanner' logger that redirects to twisted.
@@ -247,252 +552,26 @@ class BuilddManager(service.Service):
         return logger
 
     def startService(self):
-        """Service entry point, run at the start of a scan/dispatch cycle."""
-        self.logger.info('Starting scanning cycle.')
+        """Service entry point, called when the application starts."""
 
-        d = defer.maybeDeferred(self.scan)
-        d.addCallback(self.resumeAndDispatch)
-        d.addErrback(self.scanFailed)
+        # Get a list of builders and set up scanners on each one.
 
-    def scanFailed(self, error):
-        """Deal with scanning failures."""
-        self.logger.info(
-            'Scanning failed with: %s\n%s' %
-            (error.getErrorMessage(), error.getTraceback()))
-        self.finishCycle()
-
-    def nextCycle(self):
-        """Schedule the next scanning cycle."""
-        self.logger.debug('Next cycle in 5 seconds.')
-        reactor.callLater(5, self.startService)
-
-    def slaveDone(self, slave):
-        """Mark slave as done for this cycle.
-
-        When all active slaves are processed, call `finishCycle`.
-        """
-        self.remaining_slaves.remove(slave)
-
-        self.logger.info(
-            '%r marked as done. [%d]' % (slave, len(self.remaining_slaves)))
-
-        if len(self.remaining_slaves) == 0:
-            self.finishCycle()
-
-    def finishCycle(self, r=None):
-        """Finishes a slave-scanning cycle.
-
-        Once all the active events were executed:
-
-         * Evaluate pending builder update results;
-         * Clean the list of active events (_deferreds);
-         * Call `nextCycle`.
-        """
-        def done(deferred_results):
-            """Called when all events quiesce.
-
-            Perform the finishing-cycle tasks mentioned above.
-            """
-            self.logger.debug('Scanning cycle finished.')
-            # We are only interested in returned objects of type
-            # BaseDispatchResults, those are the ones that needs evaluation.
-            # None, resulting from successful chains, are discarded.
-            dispatch_results = [
-                result for status, result in deferred_results
-                if isinstance(result, BaseDispatchResult)]
-
-            # Evaluate then, which will synchronize the database information.
-            for result in dispatch_results:
-                self.logger.info('%r' % result)
-                result()
-
-            # Clean the events stored for this cycle and schedule the
-            # next one.
-            self._deferreds = []
-            self.nextCycle()
-
-            # Return the evaluated events for testing purpose.
-            return deferred_results
-
-        self.logger.debug('Finishing scanning cycle.')
-        dl = defer.DeferredList(self._deferreds, consumeErrors=True)
-        dl.addBoth(done)
-        return dl
-
-    @write_transaction
-    def scan(self):
-        """Scan all builders and dispatch build jobs to the idle ones.
-
-        All builders are polled for status and any required post-processing
-        actions are performed.
-
-        Subsequently, build job candidates are selected and assigned to the
-        idle builders. The necessary build job assignment actions are not
-        carried out directly though but merely memorized by the recording
-        build slaves.
-
-        In a second stage (see resumeAndDispatch()) each of the latter will be
-        handled in an asynchronous and parallel fashion.
-        """
         # Avoiding circular imports.
         from lp.buildmaster.interfaces.builder import IBuilderSet
-
-        recording_slaves = []
         builder_set = getUtility(IBuilderSet)
+        builders = [builder.name for builder in builder_set]
+        self.addScanForBuilders(builders)
+        self.new_builders_scanner.scheduleScan()
 
-        # Builddmaster will perform partial commits for avoiding
-        # long-living trasaction with changes that affects other
-        # parts of the system.
-        builder_set.pollBuilders(self.logger, transaction)
+        # Events will now fire in the SlaveScanner objects to scan each
+        # builder.
 
-        for builder in builder_set:
-            self.logger.debug("Considering %s" % builder.name)
+    def addScanForBuilders(self, builders):
+        """Set up scanner objects for the builders specified."""
+        for builder in builders:
+            slave_scanner = SlaveScanner(builder, self.logger)
+            self.builder_slaves.append(slave_scanner)
+            slave_scanner.scheduleNextScanCycle()
 
-            if builder.manual:
-                self.logger.debug('Builder is in manual state, ignored.')
-                continue
-
-            if not builder.is_available:
-                self.logger.debug('Builder is not available, ignored.')
-                job = builder.currentjob
-                if job is not None and not builder.builderok:
-                    self.logger.debug('Reseting attached job.')
-                    job.reset()
-                    transaction.commit()
-                continue
-
-            slave = RecordingSlave(builder.name, builder.url, builder.vm_host)
-            candidate = builder.findAndStartJob(buildd_slave=slave)
-            if builder.currentjob is not None:
-                recording_slaves.append(slave)
-                transaction.commit()
-
-        return recording_slaves
-
-    def checkResume(self, response, slave):
-        """Deal with a slave resume failure.
-
-        Return a corresponding `ResetDispatchResult` dispatch result,
-        which is chained to the next callback, dispatchBuild.
-        """
-        # 'response' is the tuple that's constructed in
-        # ProcessWithTimeout.processEnded(), or is a Failure that
-        # contains the tuple.
-        if isinstance(response, Failure):
-            out, err, code = response.value
-        else:
-            out, err, code = response
-            if code == os.EX_OK:
-                return None
-
-        error_text = '%s\n%s' % (out, err)
-        self.logger.error('%s resume failure: %s' % (slave, error_text))
-        return self.reset_result(slave, error_text)
-
-    def checkDispatch(self, response, method, slave):
-        """Verify the results of a slave xmlrpc call.
-
-        If it failed and it compromises the slave then return a corresponding
-        `FailDispatchResult`, if it was a communication failure, simply
-        reset the slave by returning a `ResetDispatchResult`.
-
-        Otherwise dispatch the next call if there are any and return None.
-        """
-        self.logger.debug(
-            '%s response for "%s": %s' % (slave, method, response))
-
-        if isinstance(response, Failure):
-            self.logger.warn(
-                '%s communication failed (%s)' %
-                (slave, response.getErrorMessage()))
-            self.slaveDone(slave)
-            return self.reset_result(slave)
-
-        if isinstance(response, list) and len(response) == 2 :
-            if method in buildd_success_result_map.keys():
-                expected_status = buildd_success_result_map.get(method)
-                status, info = response
-                if status == expected_status:
-                    self._mayDispatch(slave)
-                    return None
-            else:
-                info = 'Unknown slave method: %s' % method
-        else:
-            info = 'Unexpected response: %s' % repr(response)
-
-        self.logger.error(
-            '%s failed to dispatch (%s)' % (slave, info))
-
-        self.slaveDone(slave)
-        return self.fail_result(slave, info)
-
-    def resumeAndDispatch(self, recording_slaves):
-        """Dispatch existing resume procedure calls and chain dispatching.
-
-        See `RecordingSlave.resumeSlaveHost` for more details.
-        """
-        self.logger.debug('Resuming slaves: %s' % recording_slaves)
-        self.remaining_slaves = recording_slaves
-        if len(self.remaining_slaves) == 0:
-            self.finishCycle()
-
-        for slave in recording_slaves:
-            if slave.resume_requested:
-                # The buildd slave needs to be reset before we can dispatch
-                # builds to it.
-                d = slave.resumeSlave()
-                d.addBoth(self.checkResume, slave)
-            else:
-                # Buildd slave is clean, we can dispatch a build to it
-                # straightaway.
-                d = defer.succeed(None)
-            d.addCallback(self.dispatchBuild, slave)
-            # Store the active deferred.
-            self._deferreds.append(d)
-
-    def dispatchBuild(self, resume_result, slave):
-        """Start dispatching a build to a slave.
-
-        If the previous task in chain (slave resuming) has failed it will
-        receive a `ResetBuilderRequest` instance as 'resume_result' and
-        will immediately return that so the subsequent callback can collect
-        it.
-
-        If the slave resuming succeed, it starts the XMLRPC dialog. See
-        `_mayDispatch` for more information.
-        """
-        if resume_result is not None:
-            self.slaveDone(slave)
-            return resume_result
-        self.logger.info('Dispatching: %s' % slave)
-        self._mayDispatch(slave)
-
-    def _getProxyForSlave(self, slave):
-        """Return a twisted.web.xmlrpc.Proxy for the buildd slave.
-
-        Uses a protocol with timeout support, See QueryFactoryWithTimeout.
-        """
-        proxy = xmlrpc.Proxy(str(urlappend(slave.url, 'rpc')))
-        proxy.queryFactory = QueryFactoryWithTimeout
-        return proxy
-
-    def _mayDispatch(self, slave):
-        """Dispatch the next XMLRPC for the given slave.
-
-        If there are no messages to dispatch return None and mark the slave
-        as done for this cycle. Otherwise it will fetch a new XMLRPC proxy,
-        dispatch the call and set `checkDispatch` as callback.
-        """
-        if len(slave.calls) == 0:
-            self.slaveDone(slave)
-            return
-
-        # Get an XMPRPC proxy for the buildd slave.
-        proxy = self._getProxyForSlave(slave)
-        method, args = slave.calls.pop(0)
-        d = proxy.callRemote(method, *args)
-        d.addBoth(self.checkDispatch, method, slave)
-
-        # Store another active event.
-        self._deferreds.append(d)
-        self.logger.debug('%s -> %s(%s)' % (slave, method, args))
+        # Return the slave list for the benefit of tests.
+        return self.builder_slaves

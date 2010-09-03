@@ -7,45 +7,64 @@ from __future__ import with_statement
 __metaclass__ = type
 
 import cgi
+from datetime import (
+    datetime,
+    timedelta,
+    )
 import urllib
 
-from datetime import datetime, timedelta
-
 from BeautifulSoup import UnicodeDammit
-
-from openid.consumer.consumer import CANCEL, Consumer, FAILURE, SUCCESS
+from openid.consumer.consumer import (
+    CANCEL,
+    Consumer,
+    FAILURE,
+    SUCCESS,
+    )
 from openid.extensions import sreg
-from openid.fetchers import setDefaultFetcher, Urllib2Fetcher
-
+from openid.fetchers import (
+    setDefaultFetcher,
+    Urllib2Fetcher,
+    )
 import transaction
-
+from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.security.interfaces import IUnauthenticatedPrincipal
-from zope.component import getUtility, getSiteManager
+from zope.component import (
+    getSiteManager,
+    getUtility,
+    )
 from zope.event import notify
 from zope.interface import Interface
 from zope.publisher.browser import BrowserPage
 from zope.publisher.interfaces.http import IHTTPApplicationRequest
 from zope.security.proxy import removeSecurityProxy
-from zope.session.interfaces import ISession, IClientIdManager
+from zope.session.interfaces import (
+    IClientIdManager,
+    ISession,
+    )
 
-from z3c.ptcompat import ViewPageTemplateFile
-
-from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.account import AccountSuspendedError
 from canonical.launchpad.interfaces.openidconsumer import IOpenIDConsumerStore
-from lp.registry.interfaces.person import IPersonSet, PersonCreationRationale
 from canonical.launchpad.readonly import is_read_only
 from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
 from canonical.launchpad.webapp.error import SystemErrorView
 from canonical.launchpad.webapp.interfaces import (
-    CookieAuthLoggedInEvent, ILaunchpadApplication, IPlacelessAuthUtility,
-    IPlacelessLoginSource, LoggedOutEvent)
+    CookieAuthLoggedInEvent,
+    ILaunchpadApplication,
+    IPlacelessAuthUtility,
+    IPlacelessLoginSource,
+    LoggedOutEvent,
+    )
 from canonical.launchpad.webapp.metazcml import ILaunchpadPermission
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.url import urlappend
 from canonical.launchpad.webapp.vhosts import allvhosts
+from lp.registry.interfaces.person import (
+    IPersonSet,
+    PersonCreationRationale,
+    )
+from lp.services.propertycache import cachedproperty
 
 
 class UnauthorizedView(SystemErrorView):
@@ -248,9 +267,12 @@ class OpenIDCallbackView(OpenIDLogin):
 
     def _gather_params(self, request):
         params = dict(request.form)
-        query_string = request.get('QUERY_STRING')
-        if query_string is not None:
-            params.update(cgi.parse_qsl(query_string))
+        for key, value in request.query_string_params.iteritems():
+            if len(value) > 1:
+                raise ValueError(
+                    'Did not expect multi-valued fields.')
+            params[key] = value[0]
+
         return params
 
     def _get_requested_url(self, request):

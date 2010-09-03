@@ -20,12 +20,13 @@ from xml.sax.saxutils import unescape as xml_unescape
 from zope.component import getUtility
 from zope.interface import implements
 from zope.traversing.interfaces import (
-    ITraversable, TraversalError)
+    ITraversable,
+    TraversalError,
+    )
 
 from canonical.config import config
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import ILaunchBag
-
 from lp.answers.interfaces.faq import IFAQSet
 from lp.registry.interfaces.person import IPersonSet
 
@@ -156,6 +157,7 @@ def break_long_words(text):
 
     The text may contain entity references or HTML tags.
     """
+
     def replace(match):
         if match.group('tag'):
             return match.group()
@@ -176,7 +178,7 @@ class FormattersAPI:
 
     def nl_to_br(self):
         """Quote HTML characters, then replace newlines with <br /> tags."""
-        return cgi.escape(self._stringtoformat).replace('\n','<br />\n')
+        return cgi.escape(self._stringtoformat).replace('\n', '<br />\n')
 
     def escape(self):
         return escape(self._stringtoformat)
@@ -580,7 +582,7 @@ class FormattersAPI:
             if in_fold and line.endswith('</p>') and in_false_paragraph:
                 # The line ends with a false paragraph in a PGP signature.
                 # Restore the line break to join with the next paragraph.
-                line = '%s<br />\n<br />' %  strip_trailing_p_tag(line)
+                line = '%s<br />\n<br />' % strip_trailing_p_tag(line)
             elif (in_quoted and self._re_quoted.match(line) is None):
                 # The line is not quoted like the previous line.
                 # End fold before we append this line.
@@ -684,7 +686,8 @@ class FormattersAPI:
             if person is not None and not person.hide_email_addresses:
                 # Circular dependancies now. Should be resolved by moving the
                 # object image display api.
-                from canonical.launchpad.webapp.tales import ObjectImageDisplayAPI
+                from canonical.launchpad.webapp.tales import (
+                    ObjectImageDisplayAPI)
                 css_sprite = ObjectImageDisplayAPI(person).sprite_css()
                 text = text.replace(
                     address, '<a href="%s" class="%s">%s</a>' % (
@@ -770,7 +773,7 @@ class FormattersAPI:
         letter.
 
         :param prefix: an optional string to prefix to the id. It can be
-            used to ensure that the start of the id is predicable.
+            used to ensure that the start of the id is predictable.
         """
         if prefix is not None:
             raw_text = prefix + self._stringtoformat

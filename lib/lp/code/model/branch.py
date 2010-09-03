@@ -13,83 +13,131 @@ __all__ = [
 from datetime import datetime
 import os.path
 
-from bzrlib.revision import NULL_REVISION
 from bzrlib import urlutils
+from bzrlib.revision import NULL_REVISION
+from lazr.uri import URI
 import pytz
-
+from sqlobject import (
+    BoolCol,
+    ForeignKey,
+    IntCol,
+    SQLMultipleJoin,
+    SQLRelatedJoin,
+    StringCol,
+    )
+from storm.expr import (
+    And,
+    Count,
+    Desc,
+    Max,
+    NamedFunc,
+    Not,
+    Or,
+    Select,
+    )
+from storm.locals import AutoReload
+from storm.store import Store
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
-from zope.security.proxy import ProxyFactory, removeSecurityProxy
-
-from storm.expr import (
-    And, Count, Desc, Max, Not, NamedFunc, Or, Select)
-from storm.locals import AutoReload
-from storm.store import Store
-from sqlobject import (
-    ForeignKey, IntCol, StringCol, BoolCol, SQLMultipleJoin, SQLRelatedJoin)
-
-from lazr.uri import URI
+from zope.security.proxy import (
+    ProxyFactory,
+    removeSecurityProxy,
+    )
 
 from canonical.config import config
-from canonical.database.constants import DEFAULT, UTC_NOW
-from canonical.database.sqlbase import (
-    SQLBase, sqlvalues)
+from canonical.database.constants import (
+    DEFAULT,
+    UTC_NOW,
+    )
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-
+from canonical.database.sqlbase import (
+    SQLBase,
+    sqlvalues,
+    )
 from canonical.launchpad import _
-from lp.services.job.model.job import Job
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.launchpad import (
+    ILaunchpadCelebrities,
+    IPrivacy,
+    )
 from canonical.launchpad.webapp import urlappend
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, SLAVE_FLAVOR)
-
+    IStoreSelector,
+    MAIN_STORE,
+    SLAVE_FLAVOR,
+    )
 from lp.app.errors import UserCannotUnsubscribePerson
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.code.bzr import (
-    BranchFormat, ControlFormat, CURRENT_BRANCH_FORMATS,
-    CURRENT_REPOSITORY_FORMATS, RepositoryFormat)
+    BranchFormat,
+    ControlFormat,
+    CURRENT_BRANCH_FORMATS,
+    CURRENT_REPOSITORY_FORMATS,
+    RepositoryFormat,
+    )
 from lp.code.enums import (
-    BranchLifecycleStatus, BranchMergeControlStatus,
-    BranchMergeProposalStatus, BranchType)
+    BranchLifecycleStatus,
+    BranchMergeControlStatus,
+    BranchMergeProposalStatus,
+    BranchType,
+    )
 from lp.code.errors import (
-    BranchMergeProposalExists, InvalidBranchMergeProposal)
-from lp.code.mail.branch import send_branch_modified_notifications
-from lp.code.model.branchmergeproposal import (
-     BranchMergeProposal, BranchMergeProposalGetter)
-from lp.code.model.branchrevision import BranchRevision
-from lp.code.model.branchsubscription import BranchSubscription
-from lp.code.model.revision import Revision, RevisionAuthor
-from lp.code.model.seriessourcepackagebranch import SeriesSourcePackageBranch
+    BranchCannotBePrivate,
+    BranchCannotBePublic,
+    BranchMergeProposalExists,
+    BranchTargetError,
+    BranchTypeError,
+    CannotDeleteBranch,
+    InvalidBranchMergeProposal,
+    )
 from lp.code.event.branchmergeproposal import NewBranchMergeProposalEvent
 from lp.code.interfaces.branch import (
-    BranchCannotBePrivate, BranchCannotBePublic,
-    BranchTargetError, BranchTypeError, BzrIdentityMixin, CannotDeleteBranch,
-    DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch,
-    IBranchNavigationMenu, IBranchSet, user_has_special_branch_access)
+    BzrIdentityMixin,
+    DEFAULT_BRANCH_STATUS_IN_LISTING,
+    IBranch,
+    IBranchNavigationMenu,
+    IBranchSet,
+    user_has_special_branch_access,
+    )
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchmergeproposal import (
-     BRANCH_MERGE_PROPOSAL_FINAL_STATES)
+    BRANCH_MERGE_PROPOSAL_FINAL_STATES,
+    )
 from lp.code.interfaces.branchnamespace import IBranchNamespacePolicy
 from lp.code.interfaces.branchpuller import IBranchPuller
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.seriessourcepackagebranch import (
-    IFindOfficialBranchLinks)
+    IFindOfficialBranchLinks,
+    )
+from lp.code.mail.branch import send_branch_modified_notifications
+from lp.code.model.branchmergeproposal import (
+    BranchMergeProposal,
+    BranchMergeProposalGetter,
+    )
+from lp.code.model.branchrevision import BranchRevision
+from lp.code.model.branchsubscription import BranchSubscription
+from lp.code.model.revision import (
+    Revision,
+    RevisionAuthor,
+    )
+from lp.code.model.seriessourcepackagebranch import SeriesSourcePackageBranch
 from lp.codehosting.bzrutils import safe_open
 from lp.registry.interfaces.person import (
-    validate_person_not_private_membership, validate_public_person)
+    validate_person,
+    validate_public_person,
+    )
 from lp.services.database.prejoin import prejoin
 from lp.services.job.interfaces.job import JobStatus
-from lp.services.mail.notificationrecipientset import (
-    NotificationRecipientSet)
+from lp.services.job.model.job import Job
+from lp.services.mail.notificationrecipientset import NotificationRecipientSet
 
 
 class Branch(SQLBase, BzrIdentityMixin):
     """A sequence of ordered revisions in Bazaar."""
 
-    implements(IBranch, IBranchNavigationMenu)
+    implements(IBranch, IBranchNavigationMenu, IPrivacy)
     _table = 'Branch'
 
     branch_type = EnumCol(enum=BranchType, notNull=True)
@@ -126,7 +174,7 @@ class Branch(SQLBase, BzrIdentityMixin):
         storm_validator=validate_public_person, notNull=True)
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
-        storm_validator=validate_person_not_private_membership, notNull=True)
+        storm_validator=validate_person, notNull=True)
 
     def setOwner(self, new_owner, user):
         """See `IBranch`."""
@@ -649,6 +697,7 @@ class Branch(SQLBase, BzrIdentityMixin):
         # actually a very interesting thing to tell the user about.
         if self.code_import is not None:
             DeleteCodeImport(self.code_import)()
+        Store.of(self).flush()
 
     def associatedProductSeries(self):
         """See `IBranch`."""
@@ -851,7 +900,7 @@ class Branch(SQLBase, BzrIdentityMixin):
         mirrored.
         """
         new_data_pushed = (
-             self.branch_type in (BranchType.HOSTED, BranchType.IMPORTED)
+             self.branch_type == BranchType.IMPORTED
              and self.next_mirror_time is not None)
         # XXX 2010-04-22, MichaelHudson: This should really look for a branch
         # scan job.
@@ -897,7 +946,7 @@ class Branch(SQLBase, BzrIdentityMixin):
 
     def requestMirror(self):
         """See `IBranch`."""
-        if self.branch_type == BranchType.REMOTE:
+        if self.branch_type in (BranchType.REMOTE, BranchType.HOSTED):
             raise BranchTypeError(self.unique_name)
         branch = Store.of(self).find(
             Branch,
@@ -910,7 +959,7 @@ class Branch(SQLBase, BzrIdentityMixin):
 
     def startMirroring(self):
         """See `IBranch`."""
-        if self.branch_type == BranchType.REMOTE:
+        if self.branch_type in (BranchType.REMOTE, BranchType.HOSTED):
             raise BranchTypeError(self.unique_name)
         self.last_mirror_attempt = UTC_NOW
         self.next_mirror_time = None
@@ -949,7 +998,7 @@ class Branch(SQLBase, BzrIdentityMixin):
 
     def mirrorFailed(self, reason):
         """See `IBranch`."""
-        if self.branch_type == BranchType.REMOTE:
+        if self.branch_type in (BranchType.REMOTE, BranchType.HOSTED):
             raise BranchTypeError(self.unique_name)
         self.mirror_failures += 1
         self.mirror_status_message = reason
@@ -1130,7 +1179,6 @@ class ClearDependentBranch(DeletionOperation):
 
     def __call__(self):
         self.affected_object.prerequisite_branch = None
-        Store.of(self.affected_object).flush()
 
 
 class ClearSeriesBranch(DeletionOperation):
@@ -1144,7 +1192,6 @@ class ClearSeriesBranch(DeletionOperation):
     def __call__(self):
         if self.affected_object.branch == self.branch:
             self.affected_object.branch = None
-        Store.of(self.affected_object).flush()
 
 
 class ClearSeriesTranslationsBranch(DeletionOperation):
@@ -1157,9 +1204,8 @@ class ClearSeriesTranslationsBranch(DeletionOperation):
         self.branch = branch
 
     def __call__(self):
-        if self.affected_object.branch == self.branch:
-            self.affected_object.branch = None
-        self.affected_object.syncUpdate()
+        if self.affected_object.translations_branch == self.branch:
+            self.affected_object.translations_branch = None
 
 
 class ClearOfficialPackageBranch(DeletionOperation):
@@ -1191,13 +1237,6 @@ class BranchSet:
     """The set of all branches."""
 
     implements(IBranchSet)
-
-    def countBranchesWithAssociatedBugs(self):
-        """See `IBranchSet`."""
-        return Branch.select(
-            'NOT Branch.private AND Branch.id = BugBranch.branch',
-            clauseTables=['BugBranch'],
-            distinct=True).count()
 
     def getRecentlyChangedBranches(
         self, branch_count=None,
@@ -1267,37 +1306,6 @@ class BranchSet:
         return branches
 
 
-class BranchCloud:
-    """See `IBranchCloud`."""
-
-    def getProductsWithInfo(self, num_products=None, store_flavor=None):
-        """See `IBranchCloud`."""
-        # Circular imports are fun.
-        from lp.registry.model.product import Product
-        # It doesn't matter if this query is even a whole day out of date, so
-        # use the slave store by default.
-        if store_flavor is None:
-            store_flavor = SLAVE_FLAVOR
-        store = getUtility(IStoreSelector).get(MAIN_STORE, store_flavor)
-        # Get all products, the count of all hosted & mirrored branches and
-        # the last revision date.
-        result = store.find(
-            (Product.name, Count(Branch.id), Max(Revision.revision_date)),
-            Branch.private == False,
-            Branch.product == Product.id,
-            Or(Branch.branch_type == BranchType.HOSTED,
-               Branch.branch_type == BranchType.MIRRORED),
-            Branch.last_scanned_id == Revision.revision_id)
-        result = result.group_by(Product.name)
-        result = result.order_by(Desc(Count(Branch.id)))
-        if num_products:
-            result.config(limit=num_products)
-        # XXX: JonathanLange 2009-02-10: The revision date in the result set
-        # isn't timezone-aware. Not sure why this is. Doesn't matter too much
-        # for the purposes of cloud calculation though.
-        return result
-
-
 def update_trigger_modified_fields(branch):
     """Make the trigger updated fields reload when next accessed."""
     # Not all the fields are exposed through the interface, and some are read
@@ -1328,6 +1336,6 @@ def compose_public_url(scheme, unique_name, suffix=None):
     assert scheme in accepted_schemes, "Unknown scheme: %s" % scheme
     host = URI(config.codehosting.supermirror_root).host
     path = '/' + urlutils.escape(unique_name)
-    if suffix is not None:
+    if suffix:
         path = os.path.join(path, suffix)
     return str(URI(scheme=scheme, host=host, path=path))

@@ -9,16 +9,14 @@ __metaclass__ = type
 
 import contextlib
 import datetime
-import errno
 from itertools import repeat
 import logging
-import os
 import re
 import rfc822
-import threading
 import types
 import urllib
 
+from lazr.restful.utils import get_current_browser_request
 import pytz
 from zope.component.interfaces import ObjectEvent
 from zope.error.interfaces import IErrorReportingUtility
@@ -28,18 +26,23 @@ from zope.interface import implements
 from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
 from zope.traversing.namespace import view
 
-from lazr.restful.utils import get_current_browser_request
-from canonical.lazr.utils import safe_hasattr
 from canonical.config import config
 from canonical.launchpad import versioninfo
 from canonical.launchpad.layers import WebServiceLayer
 from canonical.launchpad.webapp.adapter import (
-    get_request_statements, get_request_duration,
-    soft_timeout_expired)
+    get_request_duration,
+    get_request_statements,
+    soft_timeout_expired,
+    )
 from canonical.launchpad.webapp.interfaces import (
-    IErrorReport, IErrorReportEvent, IErrorReportRequest)
-from lp.services.log.uniquefileallocator import UniqueFileAllocator
+    IErrorReport,
+    IErrorReportEvent,
+    IErrorReportRequest,
+    )
 from canonical.launchpad.webapp.opstats import OpStats
+from canonical.lazr.utils import safe_hasattr
+from lp.services.log.uniquefileallocator import UniqueFileAllocator
+
 
 UTC = pytz.utc
 
@@ -58,11 +61,13 @@ _rate_restrict_period = datetime.timedelta(seconds=60)
 # minute.
 _rate_restrict_burst = 5
 
+
 def _normalise_whitespace(s):
     """Normalise the whitespace in a string to spaces"""
     if s is None:
         return None
     return ' '.join(s.split())
+
 
 def _safestr(obj):
     if isinstance(obj, unicode):
@@ -79,13 +84,13 @@ def _safestr(obj):
             'Error in ErrorReportingService while getting a str '
             'representation of an object')
         value = '<unprintable %s object>' % (
-            str(type(obj).__name__)
-            )
+            str(type(obj).__name__))
     # encode non-ASCII characters
     value = value.replace('\\', '\\\\')
     value = re.sub(r'[\x80-\xff]',
                    lambda match: '\\x%02x' % ord(match.group(0)), value)
     return value
+
 
 def _is_sensitive(request, name):
     """Return True if the given request variable name is sensitive.
@@ -151,35 +156,42 @@ class ErrorReport:
         self.req_vars = req_vars
         self.db_statements = db_statements
         self.branch_nick = versioninfo.branch_nick
-        self.revno  = versioninfo.revno
+        self.revno = versioninfo.revno
         self.informational = informational
 
     def __repr__(self):
         return '<ErrorReport %s %s: %s>' % (self.id, self.type, self.value)
 
-    def write(self, fp):
-        fp.write('Oops-Id: %s\n' % _normalise_whitespace(self.id))
-        fp.write('Exception-Type: %s\n' % _normalise_whitespace(self.type))
-        fp.write('Exception-Value: %s\n' % _normalise_whitespace(self.value))
-        fp.write('Date: %s\n' % self.time.isoformat())
-        fp.write('Page-Id: %s\n' % _normalise_whitespace(self.pageid))
-        fp.write('Branch: %s\n' % self.branch_nick)
-        fp.write('Revision: %s\n' % self.revno)
-        fp.write('User: %s\n' % _normalise_whitespace(self.username))
-        fp.write('URL: %s\n' % _normalise_whitespace(self.url))
-        fp.write('Duration: %s\n' % self.duration)
-        fp.write('Informational: %s\n' % self.informational)
-        fp.write('\n')
+    def get_chunks(self):
+        chunks = []
+        chunks.append('Oops-Id: %s\n' % _normalise_whitespace(self.id))
+        chunks.append(
+            'Exception-Type: %s\n' % _normalise_whitespace(self.type))
+        chunks.append(
+            'Exception-Value: %s\n' % _normalise_whitespace(self.value))
+        chunks.append('Date: %s\n' % self.time.isoformat())
+        chunks.append('Page-Id: %s\n' % _normalise_whitespace(self.pageid))
+        chunks.append('Branch: %s\n' % self.branch_nick)
+        chunks.append('Revision: %s\n' % self.revno)
+        chunks.append('User: %s\n' % _normalise_whitespace(self.username))
+        chunks.append('URL: %s\n' % _normalise_whitespace(self.url))
+        chunks.append('Duration: %s\n' % self.duration)
+        chunks.append('Informational: %s\n' % self.informational)
+        chunks.append('\n')
         safe_chars = ';/\\?:@&+$, ()*!'
         for key, value in self.req_vars:
-            fp.write('%s=%s\n' % (urllib.quote(key, safe_chars),
+            chunks.append('%s=%s\n' % (urllib.quote(key, safe_chars),
                                   urllib.quote(value, safe_chars)))
-        fp.write('\n')
+        chunks.append('\n')
         for (start, end, database_id, statement) in self.db_statements:
-            fp.write('%05d-%05d@%s %s\n' % (
+            chunks.append('%05d-%05d@%s %s\n' % (
                 start, end, database_id, _normalise_whitespace(statement)))
-        fp.write('\n')
-        fp.write(self.tb_text)
+        chunks.append('\n')
+        chunks.append(self.tb_text)
+        return chunks
+
+    def write(self, fp):
+        fp.writelines(self.get_chunks())
 
     @classmethod
     def read(cls, fp):
@@ -194,7 +206,7 @@ class ErrorReport:
         duration = int(float(msg.getheader('duration', '-1')))
         informational = msg.getheader('informational')
 
-        # Explicitely use an iterator so we can process the file
+        # Explicitly use an iterator so we can process the file
         # sequentially. In most instances the iterator will actually
         # be the file object passed in because file objects should
         # support iteration.
@@ -215,8 +227,11 @@ class ErrorReport:
             line = line.strip()
             if line == '':
                 break
-            start, end, db_id, statement = re.match(
-                r'^(\d+)-(\d+)(?:@([\w-]+))?\s+(.*)', line).groups()
+            match = re.match(
+                r'^(\d+)-(\d+)(?:@([\w-]+))?\s+(.*)', line)
+            assert match is not None, (
+                "Unable to interpret oops line: %s" % line)
+            start, end, db_id, statement = match.groups()
             if db_id is not None:
                 db_id = intern(db_id) # This string is repeated lots.
             statements.append(
@@ -281,7 +296,7 @@ class ErrorReportingUtility:
         # the current log_namer naming rules and the exact timestamp.
         oops_filename = self.log_namer.getFilename(serial_from_time, time)
         # Note that if there were no logs written, or if there were two
-        # oops that matched the time window of directory on disk, this 
+        # oops that matched the time window of directory on disk, this
         # call can raise an IOError.
         oops_report = open(oops_filename, 'r')
         try:
@@ -324,7 +339,8 @@ class ErrorReportingUtility:
             determined if not supplied.  Useful for testing.  Not part of
             IErrorReportingUtility).
         """
-        self._raising(info, request=request, now=now, informational=False)
+        return self._raising(
+            info, request=request, now=now, informational=False)
 
     def _raising(self, info, request=None, now=None, informational=False):
         """Private method used by raising() and handling()."""
@@ -341,6 +357,7 @@ class ErrorReportingUtility:
             self._do_copy_to_zlog(
                 entry.time, entry.type, entry.url, info, entry.id)
         notify(ErrorReportEvent(entry))
+        return entry
 
     def _makeErrorReport(self, info, request=None, now=None,
                          informational=False):
@@ -458,7 +475,8 @@ class ErrorReportingUtility:
         :param now: The datetime to use as the current time.  Will be
             determined if not supplied.  Useful for testing.
         """
-        self._raising(info, request=request, now=now, informational=True)
+        return self._raising(
+            info, request=request, now=now, informational=True)
 
     def _do_copy_to_zlog(self, now, strtype, url, info, oopsid):
         distant_past = datetime.datetime(1970, 1, 1, 0, 0, 0, tzinfo=UTC)

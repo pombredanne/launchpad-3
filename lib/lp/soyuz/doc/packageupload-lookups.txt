@@ -29,7 +29,7 @@ in the sampladata.
 
     # Audit the source publication and builds of a given archive
     # and report missing uploads.
-    >>> from lp.buildmaster.interfaces.buildbase import BuildStatus
+    >>> from lp.buildmaster.enums import BuildStatus
     >>> def check_upload_lookups(archive):
     ...     sources_missing_upload = []
     ...     sources = list(archive.getPublishedSources())

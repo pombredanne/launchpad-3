@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009-2010 Canonical Ltd.  All rights reserved.
 from __future__ import with_statement
 
 # pylint: disable-msg=W0105
@@ -6,38 +6,67 @@ from __future__ import with_statement
 
 __metaclass__ = type
 
-__all__ = []
+__all__ = [
+    'FakeOpenIDConsumer',
+    'FakeOpenIDResponse',
+    'IAccountSet_getByOpenIDIdentifier_monkey_patched',
+    'SRegResponse_fromSuccessResponse_stubbed',
+    'fill_login_form_and_submit',
+    ]
 
 from contextlib import contextmanager
-from datetime import datetime, timedelta
+from datetime import (
+    datetime,
+    timedelta,
+    )
 import httplib
 import unittest
 
 import mechanize
-
-from openid.consumer.consumer import FAILURE, SUCCESS
+from openid.consumer.consumer import (
+    FAILURE,
+    SUCCESS,
+    )
 from openid.extensions import sreg
-
 from zope.component import getUtility
 from zope.security.management import newInteraction
 from zope.security.proxy import removeSecurityProxy
 from zope.session.interfaces import ISession
 
-from canonical.launchpad.interfaces.account import AccountStatus, IAccountSet
+from canonical.launchpad.interfaces.account import (
+    AccountStatus,
+    IAccountSet,
+    )
+from canonical.launchpad.testing.browser import (
+    Browser,
+    setUp,
+    tearDown,
+    )
 from canonical.launchpad.testing.pages import (
-    extract_text, find_main_content, find_tag_by_id, find_tags_by_class)
+    extract_text,
+    find_main_content,
+    find_tag_by_id,
+    find_tags_by_class,
+    )
 from canonical.launchpad.testing.systemdocs import LayeredDocFileSuite
-from canonical.launchpad.testing.browser import Browser, setUp, tearDown
 from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
-from canonical.launchpad.webapp.login import OpenIDCallbackView, OpenIDLogin
 from canonical.launchpad.webapp.interfaces import IStoreSelector
+from canonical.launchpad.webapp.login import (
+    OpenIDCallbackView,
+    OpenIDLogin,
+    )
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import (
-    AppServerLayer, DatabaseFunctionalLayer, FunctionalLayer)
-
+    AppServerLayer,
+    DatabaseFunctionalLayer,
+    FunctionalLayer,
+    )
 from lp.registry.interfaces.person import IPerson
+from lp.testing import (
+    logout,
+    TestCaseWithFactory,
+    )
 from lp.testopenid.interfaces.server import ITestOpenIDPersistentIdentity
-from lp.testing import logout, TestCaseWithFactory
 
 
 class FakeOpenIDResponse:
@@ -64,7 +93,8 @@ class StubbedOpenIDCallbackView(OpenIDCallbackView):
 
 
 class FakeConsumer:
-    """An OpenID consumer that stashes away arguments for test instection."""
+    """An OpenID consumer that stashes away arguments for test inspection."""
+
     def complete(self, params, requested_url):
         self.params = params
         self.requested_url = requested_url
@@ -72,6 +102,7 @@ class FakeConsumer:
 
 class FakeConsumerOpenIDCallbackView(OpenIDCallbackView):
     """An OpenID handler with fake consumer so arguments can be inspected."""
+
     def _getConsumer(self):
         self.fake_consumer = FakeConsumer()
         return self.fake_consumer
@@ -187,6 +218,30 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
         }
         self.assertEquals(params, expected_params)
 
+    def test_gather_params_with_unicode_data(self):
+        # If the currently requested URL includes a query string, the
+        # parameters in the query string will be included when constructing
+        # the params mapping (which is then used to complete the open ID
+        # response) and if there are non-ASCII characters in the query string,
+        # they are properly decoded.
+        request = LaunchpadTestRequest(
+            SERVER_URL='http://example.com',
+            QUERY_STRING='foo=%E1%9B%9D',
+            environ={'PATH_INFO': '/'})
+        view = OpenIDCallbackView(context=None, request=None)
+        params = view._gather_params(request)
+        self.assertEquals(params['foo'], u'\u16dd')
+
+    def test_unexpected_multivalue_fields(self):
+        # The parameter gatering doesn't expect to find multi-valued form
+        # field and it reports an error if it finds any.
+        request = LaunchpadTestRequest(
+            SERVER_URL='http://example.com',
+            QUERY_STRING='foo=1&foo=2',
+            environ={'PATH_INFO': '/'})
+        view = OpenIDCallbackView(context=None, request=None)
+        self.assertRaises(ValueError, view._gather_params, request)
+
     def test_get_requested_url(self):
         # The OpenIDCallbackView needs to pass the currently-being-requested
         # URL to the OpenID library.  OpenIDCallbackView._get_requested_url
@@ -218,7 +273,7 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
                 'foo': 'bar',
             })
         self.assertEquals(
-            view.fake_consumer.requested_url,'http://example.com?foo=bar')
+            view.fake_consumer.requested_url, 'http://example.com?foo=bar')
 
     def test_personless_account(self):
         # When there is no Person record associated with the account, we
@@ -378,8 +433,10 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
         # the response and redirect to the starting_url specified in the
         # OpenID response.
         test_account = self.factory.makeAccount('Test account')
+
         class StubbedOpenIDCallbackViewLoggedIn(StubbedOpenIDCallbackView):
             account = test_account
+
         view, html = self._createViewWithResponse(
             test_account, response_status=FAILURE,
             response_msg='Server denied check_authentication',
@@ -490,7 +547,7 @@ class TestOpenIDReplayAttack(TestCaseWithFactory):
         fill_login_form_and_submit(browser, 'test@canonical.com', 'test')
         login_status = extract_text(
             find_tag_by_id(browser.contents, 'logincontrol'))
-        self.assertIn('Sample Person', login_status)
+        self.assertIn('name12', login_status)
 
         # Now we look up (in urls_redirected_to) the +openid-callback URL that
         # was used to complete the authentication and open it on a different
@@ -527,11 +584,13 @@ class FakeOpenIDRequest:
 
 
 class FakeOpenIDConsumer:
+
     def begin(self, url):
         return FakeOpenIDRequest()
 
 
 class StubbedOpenIDLogin(OpenIDLogin):
+
     def _getConsumer(self):
         return FakeOpenIDConsumer()
 

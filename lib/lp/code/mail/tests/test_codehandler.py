@@ -3,55 +3,81 @@
 
 """Testing the CodeHandler."""
 
+from __future__ import with_statement
+
 __metaclass__ = type
 
 from difflib import unified_diff
 from textwrap import dedent
-import transaction
 import unittest
 
 from bzrlib.branch import Branch
-from bzrlib.bzrdir import BzrDir
-from bzrlib import errors as bzr_errors
-from bzrlib.transport import get_transport
 from bzrlib.urlutils import join as urljoin
 from bzrlib.workingtree import WorkingTree
 from storm.store import Store
+import transaction
 from zope.component import getUtility
-from zope.interface import directlyProvides, directlyProvidedBy
+from zope.interface import (
+    directlyProvidedBy,
+    directlyProvides,
+    )
 from zope.security.management import setSecurityPolicy
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.launchpad.database import MessageSet
 from canonical.launchpad.interfaces.mail import (
-    EmailProcessingError, IWeaklyAuthenticatedPrincipal)
+    EmailProcessingError,
+    IWeaklyAuthenticatedPrincipal,
+    )
 from canonical.launchpad.mail.handlers import mail_handlers
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 from canonical.launchpad.webapp.interaction import (
-    get_current_principal, setupInteraction)
+    get_current_principal,
+    setupInteraction,
+    )
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
-from canonical.testing import LaunchpadZopelessLayer, ZopelessAppServerLayer
-
+from canonical.testing import (
+    LaunchpadZopelessLayer,
+    ZopelessAppServerLayer,
+    )
 from lp.code.enums import (
-    BranchMergeProposalStatus, BranchSubscriptionNotificationLevel,
-    BranchType, CodeReviewNotificationLevel, CodeReviewVote)
-from lp.code.enums import BranchVisibilityRule
+    BranchMergeProposalStatus,
+    BranchSubscriptionNotificationLevel,
+    BranchType,
+    BranchVisibilityRule,
+    CodeReviewNotificationLevel,
+    CodeReviewVote,
+    )
 from lp.code.interfaces.branchlookup import IBranchLookup
-from lp.code.model.branchmergeproposaljob import (
-    BranchMergeProposalJob, BranchMergeProposalJobType,
-    CreateMergeProposalJob, MergeProposalCreatedJob)
 from lp.code.mail.codehandler import (
-    AddReviewerEmailCommand, CodeEmailCommands, CodeHandler,
+    AddReviewerEmailCommand,
+    CodeEmailCommands,
+    CodeHandler,
     CodeReviewEmailCommandExecutionContext,
     InvalidBranchMergeProposalAddress,
-    MissingMergeDirective, NonLaunchpadTarget,
-    UpdateStatusEmailCommand, VoteEmailCommand)
+    MissingMergeDirective,
+    NonLaunchpadTarget,
+    UpdateStatusEmailCommand,
+    VoteEmailCommand,
+    )
+from lp.code.model.branchmergeproposaljob import (
+    BranchMergeProposalJob,
+    BranchMergeProposalJobType,
+    CreateMergeProposalJob,
+    MergeProposalCreatedJob,
+    )
 from lp.code.model.diff import PreviewDiff
 from lp.codehosting.vfs import get_lp_server
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.job.runner import JobRunner
-from lp.testing import login, login_person, TestCase, TestCaseWithFactory
+from lp.services.osutils import override_environ
+from lp.testing import (
+    login,
+    login_person,
+    TestCase,
+    TestCaseWithFactory,
+    )
 from lp.testing.mail_helpers import pop_notifications
 
 
@@ -891,13 +917,16 @@ class TestCodeHandlerProcessMergeDirective(TestCaseWithFactory):
         db_target_branch, target_tree = self.create_branch_and_tree(
             tree_location='.', format=format)
         target_tree.branch.set_public_branch(db_target_branch.bzr_identity)
-        target_tree.commit('rev1')
-        # Make sure that the created branch has been mirrored.
-        db_target_branch.startMirroring()
-        removeSecurityProxy(db_target_branch).branchChanged(
-            '', 'rev1', None, None, None)
-        source_tree = target_tree.bzrdir.sprout('source').open_workingtree()
-        source_tree.commit('rev2')
+        # XXX: AaronBentley 2010-08-06 bug=614404: a bzr username is
+        # required to generate the revision-id.
+        with override_environ(BZR_EMAIL='me@example.com'):
+            target_tree.commit('rev1')
+            # Make sure that the created branch has been mirrored.
+            removeSecurityProxy(db_target_branch).branchChanged(
+                '', 'rev1', None, None, None)
+            sprout_bzrdir = target_tree.bzrdir.sprout('source')
+            source_tree = sprout_bzrdir.open_workingtree()
+            source_tree.commit('rev2')
         message = self.factory.makeBundleMergeDirectiveEmail(
             source_tree.branch, db_target_branch)
         return db_target_branch, source_tree.branch, message
@@ -931,6 +960,9 @@ class TestCodeHandlerProcessMergeDirective(TestCaseWithFactory):
         # branch that is created is an empty hosted branch.  The new branch
         # will not have a mirror requested as there are no revisions, and
         # there is no branch created in the hosted area.
+
+        # XXX Tim Penhey 2010-07-27 bug 610292
+        # We should fail here and return an oops email to the user.
         self.useBzrBranches()
         branch, source, message = self._createTargetSourceAndBundle(
             format="pack-0.92")
@@ -964,7 +996,7 @@ class TestCodeHandlerProcessMergeDirective(TestCaseWithFactory):
         bmp = self._processMergeDirective(message)
         source_bzr_branch = self._openBazaarBranchAsClient(bmp.source_branch)
         self.assertEqual(BranchType.HOSTED, bmp.source_branch.branch_type)
-        self.assertIsNot(None, bmp.source_branch.next_mirror_time)
+        self.assertTrue(bmp.source_branch.pending_writes)
         self.assertEqual(
             source.last_revision(), source_bzr_branch.last_revision())
 
@@ -995,7 +1027,10 @@ class TestCodeHandlerProcessMergeDirective(TestCaseWithFactory):
         branch, source, message = self._createTargetSourceAndBundle(
             format="1.9")
         target_tree = WorkingTree.open('.')
-        target_tree.commit('rev2b')
+        # XXX: AaronBentley 2010-08-06 bug=614404: a bzr username is
+        # required to generate the revision-id.
+        with override_environ(BZR_EMAIL='me@example.com'):
+            target_tree.commit('rev2b')
         bmp = self._processMergeDirective(message)
         lp_branch = self._openBazaarBranchAsClient(bmp.source_branch)
         self.assertEqual(source.last_revision(), lp_branch.last_revision())
@@ -1006,20 +1041,24 @@ class TestCodeHandlerProcessMergeDirective(TestCaseWithFactory):
         db_target_branch, target_tree = self.create_branch_and_tree(
             'target', format=target_format)
         target_tree.branch.set_public_branch(db_target_branch.bzr_identity)
-        revid = target_tree.commit('rev1')
-        removeSecurityProxy(db_target_branch).branchChanged(
-            '', revid, None, None, None)
+        # XXX: AaronBentley 2010-08-06 bug=614404: a bzr username is
+        # required to generate the revision-id.
+        with override_environ(BZR_EMAIL='me@example.com'):
+            revid = target_tree.commit('rev1')
+            removeSecurityProxy(db_target_branch).branchChanged(
+                '', revid, None, None, None)
 
-        db_source_branch, source_tree = self.create_branch_and_tree(
-            'lpsource', db_target_branch.product, format=source_format)
-        # The branch is not scheduled to be mirrorred.
-        self.assertIs(db_source_branch.next_mirror_time, None)
-        source_tree.pull(target_tree.branch)
-        source_tree.commit('rev2', rev_id='rev2')
-        # bundle_tree is effectively behaving like a local copy of
-        # db_source_branch, and is used to create the merge directive.
-        bundle_tree = source_tree.bzrdir.sprout('source').open_workingtree()
-        bundle_tree.commit('rev3', rev_id='rev3')
+            db_source_branch, source_tree = self.create_branch_and_tree(
+                'lpsource', db_target_branch.product, format=source_format)
+            # The branch is not scheduled to be mirrorred.
+            self.assertIs(db_source_branch.next_mirror_time, None)
+            source_tree.pull(target_tree.branch)
+            source_tree.commit('rev2', rev_id='rev2')
+            # bundle_tree is effectively behaving like a local copy of
+            # db_source_branch, and is used to create the merge directive.
+            sprout_bzrdir = source_tree.bzrdir.sprout('source')
+            bundle_tree = sprout_bzrdir.open_workingtree()
+            bundle_tree.commit('rev3', rev_id='rev3')
         bundle_tree.branch.set_public_branch(db_source_branch.bzr_identity)
         message = self.factory.makeBundleMergeDirectiveEmail(
             bundle_tree.branch, db_target_branch,

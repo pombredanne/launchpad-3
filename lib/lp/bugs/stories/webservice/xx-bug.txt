@@ -572,7 +572,7 @@ similar to bug 1 for Firefox.
   ...     firefox_bugtask['self_link'],
   ...     'findSimilarBugs')
   HTTP/1.1 200 Ok...
-  {"total_size": 0, "start": null, "entries": []}
+  {"total_size": 0, "start": 0, "entries": []}
 
 If we add a new bug that's quite similar to others, findSimilarBugs()
 will return something more useful.
@@ -626,7 +626,7 @@ Initially there are no nominations.
 
     >>> pprint_collection(webservice.named_get(
     ...     '/bugs/%d' % bug.id, 'getNominations').jsonBody())
-    start: None
+    start: 0
     total_size: 0
     ---
 
@@ -1031,7 +1031,7 @@ report described by the bugwatch.
   last_error_type: None
   owner_link: u'http://.../~mark'
   remote_bug: u'2000'
-  remote_importance: None
+  remote_importance: u''
   remote_status: u''
   resource_type_link: u'http://.../#bug_watch'
   self_link: u'http://.../bugs/1/+watch/2'
@@ -1216,7 +1216,7 @@ Bug 1 has no attachments:
   ...     bug_one['attachments_collection_link']).jsonBody()
   >>> pprint_collection(attachments)
   resource_type_link: u'http://.../#bug_attachment-page-resource'
-  start: None
+  start: 0
   total_size: 0
   ---
 
@@ -1348,9 +1348,57 @@ But we can remove the attachment altogether.
   ...     bug_one['attachments_collection_link']).jsonBody()
   >>> pprint_collection(attachments)
   resource_type_link: u'http://api.launchpad.dev/beta/#bug_attachment-page-resource'
-  start: None
+  start: 0
   total_size: 0
   ---
+
+
+Attachments of private bugs
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Attachments of private bugs are served by the app server itself.
+
+  >>> print webservice.patch(
+  ...     bug_one['self_link'], 'application/json', dumps(dict(private=True)))
+  HTTP/1.1 209 Content Returned...
+
+  >>> response = webservice.named_post(
+  ...     bug_one['self_link'], 'addAttachment',
+  ...     data="67890", filename="more-numbers.txt", content_type='foo/bar',
+  ...     comment="The numbers you asked for.")
+  >>> attachments = webservice.get(
+  ...     bug_one['attachments_collection_link']).jsonBody()
+  >>> attachment = attachments['entries'][0]
+  >>> pprint_entry(attachment)
+  bug_link:...
+  data_link: u'http://api.launchpad.dev/beta/bugs/1/+attachment/.../data'
+  ...
+
+  >>> response = webservice.get(attachment['data_link'])
+  >>> print response
+  HTTP/1.1 303 See Other
+  Status: 303 See Other
+  ...
+  Location: http://api.launchpad.dev/.../+files/more-numbers.txt
+  ...
+
+  >>> response = webservice.get(response.getHeader('Location'))
+  >>> print response
+  HTTP/1.1 200 Ok
+  Status: 200 Ok
+  Content-Disposition: attachment
+  Content-Encoding: None
+  Content-Length: 5
+  Content-Type: foo/bar
+  Vary: Accept
+  X-Powered-By: Zope (www.zope.org), Python (www.python.org)
+  <BLANKLINE>
+  67890
+
+  >>> # Let's make the bug public again for later tests.
+  >>> print webservice.patch(
+  ...     bug_one['self_link'], 'application/json', dumps(dict(private=False)))
+  HTTP/1.1 209 Content Returned...
 
 
 Searching for bugs
@@ -1433,7 +1481,7 @@ setting the tags_combinator parameter to 'All'.
     ...     '/ubuntu', 'searchTasks',
     ...     tags=['crash', 'dataloss'],
     ...     tags_combinator='All').jsonBody())
-    start: None
+    start: 0
     total_size: 0
     ---
 
@@ -1442,7 +1490,7 @@ It can also be used to find bugs modified since a certain date.
     >>> pprint_collection(webservice.named_get(
     ...     '/ubuntu', 'searchTasks',
     ...     modified_since=u'2011-01-01T00:00:00+00:00').jsonBody())
-    start: None
+    start: 0
     total_size: 0
     ---
 
@@ -1684,7 +1732,7 @@ empty:
     ...     '/~testuser3', 'searchTasks'
     ...     ).jsonBody()
     >>> pprint_collection(related)
-    start: None
+    start: 0
     total_size: 0
     ---
 
@@ -1841,7 +1889,7 @@ Unlink CVEs from that bug.
     HTTP/1.1 200 Ok...
     >>> pprint_collection(webservice.get(bug_one_cves_url).jsonBody())
     resource_type_link: u'http://.../#cve-page-resource'
-    start: None
+    start: 0
     total_size: 0
     ---
 

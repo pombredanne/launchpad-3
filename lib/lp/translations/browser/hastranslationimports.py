@@ -10,32 +10,42 @@ __all__ = [
     ]
 
 import datetime
+
 import pytz
 import simplejson
+from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form.browser import DropdownWidget
 from zope.component import getUtility
 from zope.formlib import form
 from zope.interface import implements
 from zope.schema import Choice
 from zope.schema.interfaces import IContextSourceBinder
-from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
+from zope.schema.vocabulary import (
+    SimpleTerm,
+    SimpleVocabulary,
+    )
 
-from z3c.ptcompat import ViewPageTemplateFile
-
-from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
-from canonical.launchpad.webapp.interfaces import UnexpectedFormData
-from canonical.launchpad.webapp.vocabulary import ForgivingSimpleVocabulary
-from lp.registry.interfaces.distribution import IDistribution
-from lp.registry.interfaces.pillar import IPillarNameSet
-from lp.translations.interfaces.translationimportqueue import (
-    IHasTranslationImports, ITranslationImportQueue, RosettaImportStatus,
-    SpecialTranslationImportTargetFilter)
 from canonical.launchpad.webapp import (
-    LaunchpadFormView, action, custom_widget, safe_action)
+    action,
+    custom_widget,
+    LaunchpadFormView,
+    safe_action,
+    )
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import TableBatchNavigator
+from canonical.launchpad.webapp.vocabulary import ForgivingSimpleVocabulary
 from canonical.widgets.lazrjs import vocabulary_to_choice_edit_items
+from lp.app.errors import UnexpectedFormData
+from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.pillar import IPillarNameSet
+from lp.services.propertycache import cachedproperty
+from lp.translations.interfaces.translationimportqueue import (
+    IHasTranslationImports,
+    ITranslationImportQueue,
+    RosettaImportStatus,
+    SpecialTranslationImportTargetFilter,
+    )
 
 
 class HasTranslationImportsView(LaunchpadFormView):

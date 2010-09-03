@@ -15,23 +15,34 @@ __all__ = [
     'IBinaryPackageBuildSet',
     ]
 
-from zope.interface import Interface, Attribute
-from zope.schema import Bool, Int, Text
-from lazr.enum import EnumeratedType, Item
+from lazr.enum import (
+    EnumeratedType,
+    Item,
+    )
+from lazr.restful.declarations import (
+    export_as_webservice_entry,
+    export_write_operation,
+    exported,
+    operation_parameters,
+    webservice_error,
+    )
+from lazr.restful.fields import Reference
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Bool,
+    Int,
+    Text,
+    )
 
 from canonical.launchpad import _
-from lp.buildmaster.interfaces.buildbase import BuildStatus
-from lp.buildmaster.interfaces.packagebuild import (
-    IPackageBuild)
+from lp.buildmaster.enums import BuildStatus
+from lp.buildmaster.interfaces.packagebuild import IPackageBuild
 from lp.soyuz.interfaces.processor import IProcessor
-from lp.soyuz.interfaces.publishing import (
-    ISourcePackagePublishingHistory)
-from lp.soyuz.interfaces.sourcepackagerelease import (
-    ISourcePackageRelease)
-from lazr.restful.fields import Reference
-from lazr.restful.declarations import (
-    export_as_webservice_entry, exported, export_write_operation,
-    operation_parameters, webservice_error)
+from lp.soyuz.interfaces.publishing import ISourcePackagePublishingHistory
+from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
 
 
 class CannotBeRescored(Exception):
@@ -127,7 +138,8 @@ class IBinaryPackageBuildView(IPackageBuild):
         binarypackagename, version, summary, description, binpackageformat,
         component, section, priority, shlibdeps, depends, recommends,
         suggests, conflicts, replaces, provides, pre_depends, enhances,
-        breaks, essential, installedsize, architecturespecific):
+        breaks, essential, installedsize, architecturespecific,
+        debug_package):
         """Create and return a `BinaryPackageRelease`.
 
         The binarypackagerelease will be attached to this specific build.
@@ -150,6 +162,13 @@ class IBinaryPackageBuildView(IPackageBuild):
         :raises NotFoundError if no file could not be found.
 
         :return the corresponding `ILibraryFileAlias` if the file was found.
+        """
+
+    def getBinaryPackageFileByName(filename):
+        """Return the corresponding `IBinaryPackageFile` in this context.
+
+        :param filename: the filename to look up.
+        :return: the corresponding `IBinaryPackageFile` if it was found.
         """
 
 
@@ -276,7 +295,8 @@ class IBinaryPackageBuildSet(Interface):
         :return: a `ResultSet` representing the requested builds.
         """
 
-    def getBuildsByArchIds(arch_ids, status=None, name=None, pocket=None):
+    def getBuildsByArchIds(distribution, arch_ids, status=None, name=None,
+                           pocket=None):
         """Retrieve Build Records for a given arch_ids list.
 
         Optionally, for a given status and/or pocket, if ommited return all

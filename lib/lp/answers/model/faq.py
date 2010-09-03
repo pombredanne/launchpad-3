@@ -13,23 +13,37 @@ __all__ = [
     'FAQSet',
     ]
 
+from lazr.lifecycle.event import ObjectCreatedEvent
 from sqlobject import (
-    ForeignKey, SQLMultipleJoin, SQLObjectNotFound, StringCol)
+    ForeignKey,
+    SQLMultipleJoin,
+    SQLObjectNotFound,
+    StringCol,
+    )
 from sqlobject.sqlbuilder import SQLConstant
-
 from zope.event import notify
 from zope.interface import implements
-
-from lazr.lifecycle.event import ObjectCreatedEvent
 
 from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.nl_search import nl_phrase_search
-from canonical.database.sqlbase import quote, SQLBase, sqlvalues
-
-from canonical.launchpad.interfaces import (
-    IDistribution, IFAQ, IFAQSet, FAQSort, IPerson, IProduct, IProjectGroup)
-from lp.registry.interfaces.person import validate_public_person
+from canonical.database.sqlbase import (
+    quote,
+    SQLBase,
+    sqlvalues,
+    )
+from lp.answers.interfaces.faq import (
+    IFAQ,
+    IFAQSet,
+    )
+from lp.answers.interfaces.faqcollection import FAQSort
+from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.person import (
+    IPerson,
+    validate_public_person,
+    )
+from lp.registry.interfaces.product import IProduct
+from lp.registry.interfaces.projectgroup import IProjectGroup
 
 
 class FAQ(SQLBase):
@@ -279,4 +293,3 @@ class FAQSet:
         """See `IFAQSet`."""
         return FAQSearch(
             search_text=search_text, owner=owner, sort=sort).getResults()
-

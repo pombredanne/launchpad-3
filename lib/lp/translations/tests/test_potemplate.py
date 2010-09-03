@@ -6,13 +6,16 @@ __metaclass__ = type
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from lp.services.worlddata.interfaces.language import ILanguageSet
-from lp.translations.model.pofile import DummyPOFile
-from lp.translations.model.potemplate import get_pofiles_for, POTemplateSet
-from lp.translations.interfaces.potemplate import IPOTemplateSet
 from canonical.testing import DatabaseFunctionalLayer
 from lp.registry.interfaces.distribution import IDistributionSet
+from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing import TestCaseWithFactory
+from lp.translations.interfaces.potemplate import IPOTemplateSet
+from lp.translations.model.pofile import DummyPOFile
+from lp.translations.model.potemplate import (
+    get_pofiles_for,
+    POTemplateSet,
+    )
 
 
 class TestPOTemplate(TestCaseWithFactory):
@@ -36,8 +39,10 @@ class TestPOTemplate(TestCaseWithFactory):
             "(Expected: '%s' Got: '%s')" % (expected, result))
 
         self.potemplate.path = "testdir/messages.pot"
-        expected = "testdir/testdomain-eo@VARIANT.po"
-        result = self.potemplate._composePOFilePath(esperanto, 'VARIANT')
+        expected = "testdir/testdomain-eo@variant.po"
+        esperanto_variant = self.factory.makeLanguage(
+            'eo@variant', 'Esperanto Variant')
+        result = self.potemplate._composePOFilePath(esperanto_variant)
         self.failUnlessEqual(expected, result,
             "_composePOFilePath does not create a correct file name with "
             "directory, language code and variant. "
@@ -58,6 +63,31 @@ class TestPOTemplate(TestCaseWithFactory):
             "_composePOFilePath does not create a correct file name with "
             "missing directory and language code. "
             "(Expected: '%s' Got: '%s')" % (expected, result))
+
+    def test_getDummyPOFile_no_existing_pofile(self):
+        # Test basic behaviour of getDummyPOFile.
+        language = self.factory.makeLanguage('sr@test')
+        dummy = self.potemplate.getDummyPOFile(language)
+        self.assertEquals(DummyPOFile, type(dummy))
+
+    def test_getDummyPOFile_with_existing_pofile(self):
+        # Test that getDummyPOFile fails when trying to get a DummyPOFile
+        # where a POFile already exists for that language.
+        language = self.factory.makeLanguage('sr@test')
+        pofile = self.potemplate.newPOFile(language.code)
+        self.assertRaises(
+            AssertionError, self.potemplate.getDummyPOFile, language)
+
+    def test_getDummyPOFile_with_existing_pofile_no_check(self):
+        # Test that getDummyPOFile succeeds when trying to get a DummyPOFile
+        # where a POFile already exists for that language when
+        # check_for_existing=False is passed in.
+        language = self.factory.makeLanguage('sr@test')
+        pofile = self.potemplate.newPOFile(language.code)
+        # This is just "assertNotRaises".
+        dummy = self.potemplate.getDummyPOFile(language,
+                                               check_for_existing=False)
+        self.assertEquals(DummyPOFile, type(dummy))
 
     def test_getTranslationCredits(self):
         # getTranslationCredits returns only translation credits.

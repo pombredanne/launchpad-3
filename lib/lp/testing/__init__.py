@@ -3,7 +3,6 @@
 
 # pylint: disable-msg=W0401,C0301,F0401
 
-
 from __future__ import with_statement
 
 
@@ -34,6 +33,7 @@ __all__ = [
     'run_with_login',
     'run_with_storm_debug',
     'run_script',
+    'StormStatementRecorder',
     'TestCase',
     'TestCaseWithFactory',
     'test_tales',
@@ -50,47 +50,75 @@ __all__ = [
     ]
 
 from contextlib import contextmanager
-from datetime import datetime, timedelta
-from inspect import getargspec, getmembers, getmro, isclass, ismethod
+from datetime import (
+    datetime,
+    timedelta,
+    )
+from inspect import (
+    getargspec,
+    getmro,
+    isclass,
+    ismethod,
+    )
 import os
 from pprint import pformat
 import re
 import shutil
 import subprocess
-import subunit
 import sys
 import tempfile
 import time
 import unittest
 
-from bzrlib.bzrdir import BzrDir, format_registry
+from bzrlib.bzrdir import (
+    BzrDir,
+    format_registry,
+    )
 from bzrlib.transport import get_transport
-
 import pytz
 from storm.expr import Variable
 from storm.store import Store
-from storm.tracer import install_tracer, remove_tracer_type
-
+from storm.tracer import (
+    install_tracer,
+    remove_tracer_type,
+    )
+import subunit
 import testtools
+from testtools.content import Content
+from testtools.content_type import UTF8_TEXT
 import transaction
-
+# zope.exception demands more of frame objects than twisted.python.failure
+# provides in its fake frames.  This is enough to make it work with them
+# as of 2009-09-16.  See https://bugs.edge.launchpad.net/bugs/425113.
+from twisted.python.failure import _Frame
 from windmill.authoring import WindmillTestClient
-
-from zope.component import adapter, getUtility
+from zope.component import (
+    adapter,
+    getUtility,
+    )
 import zope.event
-from zope.interface.verify import verifyClass, verifyObject
+from zope.interface.verify import verifyClass
 from zope.security.proxy import (
-    isinstance as zope_isinstance, removeSecurityProxy)
+    isinstance as zope_isinstance,
+    removeSecurityProxy,
+    )
 from zope.testing.testrunner.runner import TestResult as ZopeTestResult
 
-from canonical.launchpad.webapp import canonical_url, errorlog
-from canonical.launchpad.webapp.servers import WebServiceTestRequest
 from canonical.config import config
+from canonical.launchpad.webapp import (
+    canonical_url,
+    errorlog,
+    )
 from canonical.launchpad.webapp.errorlog import ErrorReportEvent
 from canonical.launchpad.webapp.interaction import ANONYMOUS
+from canonical.launchpad.webapp.servers import WebServiceTestRequest
 from canonical.launchpad.windmill.testing import constants
-from lp.codehosting.vfs import branch_id_to_path, get_rw_server
+from lp.codehosting.vfs import (
+    branch_id_to_path,
+    get_rw_server,
+    )
 from lp.registry.interfaces.packaging import IPackagingUtil
+from lp.services.osutils import override_environ
 # Import the login helper functions here as it is a much better
 # place to import them from in tests.
 from lp.testing._login import (
@@ -113,13 +141,14 @@ from lp.testing._login import (
 # XXX: JonathanLange 2010-01-01: Why?!
 from lp.testing._tales import test_tales
 from lp.testing._webservice import (
-    launchpadlib_credentials_for, launchpadlib_for, oauth_access_token_for)
+    launchpadlib_credentials_for,
+    launchpadlib_for,
+    oauth_access_token_for,
+    )
 from lp.testing.fixture import ZopeEventHandlerFixture
+from lp.testing.matchers import Provides
 
-# zope.exception demands more of frame objects than twisted.python.failure
-# provides in its fake frames.  This is enough to make it work with them
-# as of 2009-09-16.  See https://bugs.edge.launchpad.net/bugs/425113.
-from twisted.python.failure import _Frame
+
 _Frame.f_locals = property(lambda self: {})
 
 
@@ -191,10 +220,52 @@ class FakeTime:
 
 
 class StormStatementRecorder:
-    """A storm tracer to count queries."""
+    """A storm tracer to count queries.
+    
+    This exposes the count and queries as lp.testing._webservice.QueryCollector
+    does permitting its use with the HasQueryCount matcher.
+
+    It also meets the context manager protocol, so you can gather queries
+    easily:
+    with StormStatementRecorder() as recorder:
+        do somestuff
+    self.assertThat(recorder, HasQueryCount(LessThan(42)))
+
+    Note that due to the storm API used, only one of these recorders may be in
+    place at a time: all will be removed when the first one is removed (by
+    calling __exit__ or leaving the scope of a with statement).
+    """
 
     def __init__(self):
         self.statements = []
+
+    @property
+    def count(self):
+        return len(self.statements)
+
+    @property
+    def queries(self):
+        """The statements executed as per get_request_statements."""
+        # Perhaps we could just consolidate this code with the request tracer
+        # code and not need a custom tracer at all - if we provided a context
+        # factory to the tracer, which in the production tracers would
+        # use the adapter magic, and in test created ones would log to a list.
+        # We would need to be able to remove just one tracer though, which I
+        # haven't looked into yet. RBC 20100831
+        result = []
+        for statement in self.statements:
+            result.append((0, 0, 'unknown', statement))
+        return result
+
+    def __enter__(self):
+        """Context manager protocol - return this object as the context."""
+        install_tracer(self)
+        return self
+
+    def __exit__(self, _ignored, _ignored2, _ignored3):
+        """Content manager protocol - do not swallow exceptions."""
+        remove_tracer_type(StormStatementRecorder)
+        return False
 
     def connection_raw_execute(self, ignored, raw_cursor, statement, params):
         """Increment the counter.  We don't care about the args."""
@@ -215,12 +286,8 @@ def record_statements(function, *args, **kwargs):
     :return: a tuple containing the return value of the function,
         and a list of sql statements.
     """
-    recorder = StormStatementRecorder()
-    try:
-        install_tracer(recorder)
+    with StormStatementRecorder() as recorder:
         ret = function(*args, **kwargs)
-    finally:
-        remove_tracer_type(StormStatementRecorder)
     return (ret, recorder.statements)
 
 
@@ -257,9 +324,11 @@ class TestCase(testtools.TestCase):
         `addCleanup`).
 
         :param fixture: Any object that has a `setUp` and `tearDown` method.
+        :return: `fixture`.
         """
         fixture.setUp()
         self.addCleanup(fixture.tearDown)
+        return fixture
 
     def __str__(self):
         """The string representation of a test is its id.
@@ -285,13 +354,7 @@ class TestCase(testtools.TestCase):
 
     def assertProvides(self, obj, interface):
         """Assert 'obj' correctly provides 'interface'."""
-        self.assertTrue(
-            interface.providedBy(obj),
-            "%r does not provide %r." % (obj, interface))
-        self.assertTrue(
-            verifyObject(interface, obj),
-            "%r claims to provide %r but does not do so correctly."
-            % (obj, interface))
+        self.assertThat(obj, Provides(interface))
 
     def assertClassImplements(self, cls, interface):
         """Assert 'cls' may correctly implement 'interface'."""
@@ -369,15 +432,6 @@ class TestCase(testtools.TestCase):
                 "Expected %s to be %s, but it was %s."
                 % (attribute_name, date, getattr(sql_object, attribute_name)))
 
-    def assertEqual(self, a, b, message=''):
-        """Assert that 'a' equals 'b'."""
-        if a == b:
-            return
-        if message:
-            message += '\n'
-        self.fail("%snot equal:\na = %s\nb = %s\n"
-                  % (message, pformat(a), pformat(b)))
-
     def assertIsInstance(self, instance, assert_class):
         """Assert that an instance is an instance of assert_class.
 
@@ -426,6 +480,12 @@ class TestCase(testtools.TestCase):
         config.push(name, "\n[%s]\n%s\n" % (section, body))
         self.addCleanup(config.pop, name)
 
+    def attachOopses(self):
+        if len(self.oopses) > 0:
+            for (i, oops) in enumerate(self.oopses):
+                content = Content(UTF8_TEXT, oops.get_chunks)
+                self.addDetail("oops-%d" % i, content)
+
     def setUp(self):
         testtools.TestCase.setUp(self)
         from lp.testing.factory import ObjectFactory
@@ -433,6 +493,7 @@ class TestCase(testtools.TestCase):
         # Record the oopses generated during the test run.
         self.oopses = []
         self.installFixture(ZopeEventHandlerFixture(self._recordOops))
+        self.addCleanup(self.attachOopses)
 
     @adapter(ErrorReportEvent)
     def _recordOops(self, event):
@@ -553,7 +614,8 @@ class TestCaseWithFactory(TestCase):
         bzr_branch = self.createBranchAtURL(db_branch.getInternalBzrUrl())
         if parent:
             bzr_branch.pull(parent)
-            removeSecurityProxy(db_branch).last_scanned_id = bzr_branch.last_revision()
+            naked_branch = removeSecurityProxy(db_branch)
+            naked_branch.last_scanned_id = bzr_branch.last_revision()
         return bzr_branch
 
     @staticmethod
@@ -571,18 +633,11 @@ class TestCaseWithFactory(TestCase):
         return os.path.join(base, branch_id_to_path(branch.id))
 
     def useTempBzrHome(self):
-        # XXX: Extract the temporary environment blatting into a generic
-        # helper function.
         self.useTempDir()
         # Avoid leaking local user configuration into tests.
-        old_bzr_home = os.environ.get('BZR_HOME')
-        def restore_bzr_home():
-            if old_bzr_home is None:
-                del os.environ['BZR_HOME']
-            else:
-                os.environ['BZR_HOME'] = old_bzr_home
-        os.environ['BZR_HOME'] = os.getcwd()
-        self.addCleanup(restore_bzr_home)
+        self.useContext(override_environ(
+            BZR_HOME=os.getcwd(), BZR_EMAIL=None, EMAIL=None,
+            ))
 
     def useBzrBranches(self, direct_database=False):
         """Prepare for using bzr branches.
@@ -616,6 +671,7 @@ class BrowserTestCase(TestCaseWithFactory):
     This testcase provides an API similar to page tests, and can be used for
     cases when one wants a unit test and not a frakking pagetest.
     """
+
     def setUp(self):
         """Provide useful defaults."""
         super(BrowserTestCase, self).setUp()
@@ -749,7 +805,7 @@ class ZopeTestInSubProcess:
         # unlikely that any one approach is going to work for every
         # class. It's better to fail early and draw attention here.
         assert isinstance(result, ZopeTestResult), (
-            "result must be a Zope result object, not %r." % (result,))
+            "result must be a Zope result object, not %r." % (result, ))
         pread, pwrite = os.pipe()
         pid = os.fork()
         if pid == 0:
@@ -966,7 +1022,13 @@ def validate_mock_class(mock_class):
     assert isclass(mock_class), (
         "validate_mock_class() must be called for a class")
     base_classes = getmro(mock_class)
-    for name, obj in getmembers(mock_class):
+    # Don't use inspect.getmembers() here because it fails on __provides__, a
+    # descriptor added by zope.interface as part of its caching strategy. See
+    # http://comments.gmane.org/gmane.comp.python.zope.interface/241.
+    for name in dir(mock_class):
+        if name == '__provides__':
+            continue
+        obj = getattr(mock_class, name)
         if ismethod(obj):
             for base_class in base_classes[1:]:
                 if name in base_class.__dict__:

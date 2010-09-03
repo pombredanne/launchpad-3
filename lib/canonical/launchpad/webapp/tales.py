@@ -15,6 +15,7 @@ import os.path
 import rfc822
 import sys
 import urllib
+
 ##import warnings
 
 from datetime import datetime, timedelta
@@ -22,7 +23,7 @@ from lazr.enum import enumerated_type_registry
 from lazr.uri import URI
 
 from zope.interface import Interface, Attribute, implements
-from zope.component import getUtility, queryAdapter, getMultiAdapter
+from zope.component import adapts, getUtility, queryAdapter, getMultiAdapter
 from zope.app import zapi
 from zope.publisher.browser import BrowserView
 from zope.publisher.interfaces import IApplicationRequest
@@ -31,6 +32,7 @@ from zope.traversing.interfaces import (
     ITraversable, IPathAdapter, TraversalError)
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import isinstance as zope_isinstance
+from zope.schema import TextLine
 
 import pytz
 from z3c.ptcompat import ViewPageTemplateFile
@@ -41,6 +43,7 @@ from canonical.launchpad.interfaces import (
     ISprint, LicenseStatus)
 from canonical.launchpad.interfaces.launchpad import (
     IHasIcon, IHasLogo, IHasMugshot, IPrivacy)
+from canonical.launchpad.layers import LaunchpadLayer
 import canonical.launchpad.pagetitles
 from canonical.launchpad.webapp import canonical_url, urlappend
 from canonical.launchpad.webapp.authorization import check_permission
@@ -55,9 +58,10 @@ from canonical.launchpad.webapp.session import get_cookie_domain
 from canonical.lazr.canonicalurl import nearest_adapter
 from lp.app.browser.stringformatter import escape, FormattersAPI
 from lp.blueprints.interfaces.specification import ISpecification
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.buildmaster.enums import BuildStatus
 from lp.code.interfaces.branch import IBranch
-from lp.soyuz.interfaces.archive import ArchivePurpose, IPPA
+from lp.soyuz.enums import ArchivePurpose
+from lp.soyuz.interfaces.archive import IPPA
 from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
 from lp.registry.interfaces.person import IPerson
 
@@ -290,7 +294,6 @@ class HTMLFormAPI:
 
     """
     implements(ITraversable)
-    __used_for__ = IBrowserApplicationRequest
 
     def __init__(self, request):
         self.form = request.form
@@ -339,8 +342,6 @@ class IRequestAPI(Interface):
 class RequestAPI:
     """Adapter from IApplicationRequest to IRequestAPI."""
     implements(IRequestAPI)
-
-    __used_for__ = IApplicationRequest
 
     def __init__(self, request):
         self.request = request
@@ -1064,6 +1065,7 @@ class PersonFormatterAPI(ObjectFormatterAPI):
                          'icon': 'icon',
                          'displayname': 'displayname',
                          'unique_displayname': 'unique_displayname',
+                         'name_link': 'nameLink',
                          }
 
     final_traversable_names = {'local-time': 'local_time'}
@@ -1083,6 +1085,19 @@ class PersonFormatterAPI(ObjectFormatterAPI):
         """
         return super(PersonFormatterAPI, self).url(view_name, rootsite)
 
+    def _makeLink(self, view_name, rootsite, text):
+        person = self._context
+        url = self.url(view_name, rootsite)
+        custom_icon = ObjectImageDisplayAPI(person)._get_custom_icon_url()
+        if custom_icon is None:
+            css_class = ObjectImageDisplayAPI(person).sprite_css()
+            return (u'<a href="%s" class="%s">%s</a>') % (
+                url, css_class, cgi.escape(text))
+        else:
+            return (u'<a href="%s" class="bg-image" '
+                     'style="background-image: url(%s)">%s</a>') % (
+                url, custom_icon, cgi.escape(text))
+
     def link(self, view_name, rootsite='mainsite'):
         """See `ObjectFormatterAPI`.
 
@@ -1090,17 +1105,7 @@ class PersonFormatterAPI(ObjectFormatterAPI):
         followed by the person's name. The default URL for a person is to
         the mainsite.
         """
-        person = self._context
-        url = self.url(view_name, rootsite)
-        custom_icon = ObjectImageDisplayAPI(person)._get_custom_icon_url()
-        if custom_icon is None:
-            css_class = ObjectImageDisplayAPI(person).sprite_css()
-            return (u'<a href="%s" class="%s">%s</a>') % (
-                url, css_class, cgi.escape(person.displayname))
-        else:
-            return (u'<a href="%s" class="bg-image" '
-                     'style="background-image: url(%s)">%s</a>') % (
-                url, custom_icon, cgi.escape(person.displayname))
+        return self._makeLink(view_name, rootsite, self._context.displayname)
 
     def displayname(self, view_name, rootsite=None):
         """Return the displayname as a string."""
@@ -1121,6 +1126,10 @@ class PersonFormatterAPI(ObjectFormatterAPI):
             return '<span class="' + css_class + '"></span>'
         else:
             return '<img src="%s" width="14" height="14" />' % custom_icon
+
+    def nameLink(self, view_name):
+        """Return the Launchpad id of the person, linked to their profile."""
+        return self._makeLink(view_name, None, self._context.name)
 
 
 class TeamFormatterAPI(PersonFormatterAPI):
@@ -2300,6 +2309,20 @@ class PermissionRequiredQuery:
         return check_permission(name, self.context)
 
 
+class IMainTemplateFile(Interface):
+    path = TextLine(title=u'The absolute path to this main template.')
+
+
+class LaunchpadLayerToMainTemplateAdapter:
+    adapts(LaunchpadLayer)
+    implements(IMainTemplateFile)
+
+    def __init__(self, context):
+        here = os.path.dirname(os.path.realpath(__file__))
+        self.path = os.path.join(
+            here, '../../../lp/app/templates/base-layout.pt')
+
+
 class PageMacroDispatcher:
     """Selects a macro, while storing information about page layout.
 
@@ -2319,11 +2342,14 @@ class PageMacroDispatcher:
 
     implements(ITraversable)
 
-    base = ViewPageTemplateFile('../../../lp/app/templates/base-layout.pt')
-
     def __init__(self, context):
         # The context of this object is a view object.
         self.context = context
+
+    @property
+    def base(self):
+        return ViewPageTemplateFile(
+            IMainTemplateFile(self.context.request).path)
 
     def traverse(self, name, furtherPath):
         if name == 'page':

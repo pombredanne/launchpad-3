@@ -12,19 +12,27 @@ __all__ = [
     ]
 
 
-from xmlrpclib import Fault, ServerProxy
+from xmlrpclib import (
+    Fault,
+    ServerProxy,
+    )
 
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.cachedproperty import cachedproperty
 from canonical.config import config
-from lp.registry.interfaces.product import IProductSet
-from lp.services.salesforce.interfaces import (
-    ISalesforceVoucher, ISalesforceVoucherProxy, SFDCError,
-    SVPAlreadyRedeemedException, SVPNotAllowedException, SVPNotFoundException,
-    SalesforceVoucherProxyException)
 from canonical.lazr.timeout import SafeTransportWithTimeout
+from lp.registry.interfaces.product import IProductSet
+from lp.services.propertycache import cachedproperty
+from lp.services.salesforce.interfaces import (
+    ISalesforceVoucher,
+    ISalesforceVoucherProxy,
+    SalesforceVoucherProxyException,
+    SFDCError,
+    SVPAlreadyRedeemedException,
+    SVPNotAllowedException,
+    SVPNotFoundException,
+    )
 
 
 def fault_mapper(func):
