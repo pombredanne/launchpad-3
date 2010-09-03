@@ -121,6 +121,17 @@ class StreamOrRedirectLibraryFileAliasView(LaunchpadView):
 
     It streams the contents of restricted library files or redirects
     to public ones.
+
+    Note that streaming restricted files is a security concern - they show up
+    in the launchpad.net domain rather than launchpadlibrarian.net and thus
+    we have to take special care about their origin.
+    SafeStreamOrRedirectLibraryFileAliasView is used when we do not trust the
+    content, otherwise StreamOrRedirectLibraryFileAliasView. We are working
+    to remove both of these views entirely, but some transition will be 
+    needed.
+
+    The context provides a file-like interface - it can be opened and closed
+    and read from.
     """
     implements(IBrowserPublisher, IHTTPResource)
 
@@ -130,6 +141,8 @@ class StreamOrRedirectLibraryFileAliasView(LaunchpadView):
         # the shell environment changes. Download the library file
         # content into a local temporary file. Finally, restore original
         # proxy-settings and refresh the urllib2 opener.
+        # XXX: This is note threadsafe, so two calls at once will collide and
+        # can then corrupt the variable.
         original_proxy = os.getenv('http_proxy')
         try:
             if original_proxy is not None:
@@ -182,13 +195,16 @@ class StreamOrRedirectLibraryFileAliasView(LaunchpadView):
         chain with this view. If the context file is public return the
         appropriate `RedirectionView` for its HTTP url.
         """
+        # Perhaps we should give a 404 at this point rather than asserting?
+        # -- RBC 20100726.
         assert not self.context.deleted, (
             "StreamOrRedirectLibraryFileAliasView can not operate on "
             "deleted librarian files, since their URL is undefined.")
 
         if self.context.restricted:
+            # Private content, deliver in-line (for now).
             return self, ()
-
+        # Tell the client to retrieve the content.
         return RedirectionView(self.context.http_url, self.request), ()
 
     def publishTraverse(self, request, name):
