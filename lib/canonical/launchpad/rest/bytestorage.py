@@ -89,6 +89,7 @@ class RestrictedLibraryBackedByteStorage(LibraryBackedByteStorage):
     def alias_url(self):
         """See `IByteStorage`."""
         if self.file_alias.restricted:
+            # XXX Abel Deuring 2010-09-03, bug=629804
             # This is a bad hack: We can't give ordinary users API access to
             # restricted files at present. But we can allow access to
             # some machines in the data center (and should do that).

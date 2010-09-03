@@ -1374,6 +1374,11 @@ Attachments of private bugs are served by the app server itself.
   data_link: u'http://api.launchpad.dev/beta/bugs/1/+attachment/.../data'
   ...
 
+XXX Abel Deuring 2010-09-03, bug=629804: Please note that the http URLs in this
+example are part of a temporary hack.  Please see the comment in
+canonical.launchpad.rest.bytestorage.RestrictedLibraryBackedByteStorage.
+alias_url for details.
+
   >>> response = webservice.get(attachment['data_link'])
   >>> print response
   HTTP/1.1 303 See Other
