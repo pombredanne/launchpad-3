@@ -100,7 +100,6 @@ a plain SQL WHERE clause.
     INFO Messages checked: 1
     INFO Validation errors: 0
     INFO Messages disabled: 0
-    INFO Messages unmasked: 0
     INFO Commit points: ...
 
 
@@ -126,7 +125,6 @@ detects the problem when it checks that message.
     INFO Messages checked: 1
     INFO Validation errors: 1
     INFO Messages disabled: 1
-    INFO Messages unmasked: 0
     INFO Commit points: ...
 
 The failed message is demoted to a mere suggestion.
@@ -134,45 +132,14 @@ The failed message is demoted to a mere suggestion.
     >>> current_message.is_current
     False
 
-Unmasking of imported messages is disabled in the script. That's why
-although there was a perfectly good imported message that was being
-masked by the invalid current translation, it will not be activated.
-
-    >>> imported_message.is_current
-    False
-
-If the imported message is also bad, this is reported and the imported
-message is not activated. But unmasking is disabled anyway.
-
-    >>> imported_message.is_current = False
-    >>> current_message.is_current = True
-    >>> imported_message.translations = [u'%s %s i']
-
-    >>> run_checker(["-w id=%s" % quote(current_message.id)])
-    DEBUG Checking messages matching:  id=...
-    DEBUG Checking message ...
-    INFO ... (current): format specifications ... are not the same
-    DEBUG Commit point.
-    COMMIT
-    DEBUG Commit point.
-    COMMIT
-    INFO Done.
-    INFO Messages checked: 1
-    INFO Validation errors: 1
-    INFO Messages disabled: 1
-    INFO Messages unmasked: 0
-    INFO Commit points: ...
-
-    >>> current_message.is_current
-    False
-    >>> imported_message.is_current
-    False
-
 
 == Output ==
 
 Besides current messages, the script's output also distinguishes
-imported ones, and ones that are completely unused.
+imported ones, and ones that are completely unused. The imported message
+happens to produce validation errors.
+
+    >>> imported_message.translations = [u'%s %s i']
 
 In this example we'd like to see a nicely predictable ordering, so we
 add a sort order using the -o option.
@@ -191,7 +158,6 @@ add a sort order using the -o option.
     INFO Messages checked: 2
     INFO Validation errors: 2
     INFO Messages disabled: 0
-    INFO Messages unmasked: 0
     INFO Commit points: 2
 
 In this case the imported message is checked twice: once all by itself
@@ -226,7 +192,6 @@ The --dry-run option makes the script abort all its database changes.
     INFO Messages checked: 1
     INFO Validation errors: 1
     INFO Messages disabled: 1
-    INFO Messages unmasked: 0
     INFO Commit points: 2
 
 
@@ -254,5 +219,4 @@ to close things off neatly.
     INFO Messages checked: 2
     INFO Validation errors: 2
     INFO Messages disabled: 0
-    INFO Messages unmasked: 0
     INFO Commit points: 3
