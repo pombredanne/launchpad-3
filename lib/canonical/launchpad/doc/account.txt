@@ -196,11 +196,11 @@ database. Only an admin can change the status.
     >>> account.status = AccountStatus.ACTIVE
     >>> login('no-priv@canonical.com')
 
-An Account has an OpenID identifier used to generate the OpenID identity
-URL.
+An Account has at least one OpenID identifier used to generate the
+OpenID identity URL.
 
-    >>> print account.openid_identifier
-    no-priv_oid
+    >>> account.openid_identifiers.any().identifier
+    u'no-priv_oid'
 
 
 Creating new accounts
@@ -339,16 +339,3 @@ address, a new Person cannot be created.
 
     >>> db_policy = getUtility(IStoreSelector).pop()
 
-
-OpenID identifiers
-------------------
-
-The account is given an openid identifier. The identifier is created directly
-in the database; it not available until the account object is synced.
-
-    >>> new_account = account_set.new(
-    ...     AccountCreationRationale.OWNER_CREATED_LAUNCHPAD, 'OID Account',
-    ...     password=u'clear_password')
-    >>> syncUpdate(new_account)
-    >>> len(new_account.openid_identifier) == 7
-    True
