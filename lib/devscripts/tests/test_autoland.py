@@ -307,6 +307,13 @@ class TestGetQaClause(unittest.TestCase):
         self.assertEqual('[rollback=123]',
             get_qa_clause(bugs, rollback=123))
 
+    def test_rollback_and_noqa_and_incr_given(self):
+        bugs = None
+        no_qa = True
+        incr = True
+        self.assertEqual('[rollback=123]',
+            get_qa_clause(bugs, rollback=123))
+
 
 class TestGetReviewerHandle(unittest.TestCase):
     """Tests for `get_reviewer_handle`."""

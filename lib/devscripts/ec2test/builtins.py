@@ -408,6 +408,8 @@ class cmd_land(EC2Command):
             raise BzrCommandError(
                 "Commit text not specified. Use --commit-text, or specify a "
                 "message on the merge proposal.")
+        if rollback and (no_qa or incremental):
+            print "--rollback option used. Ignoring --no-qa and --incremental."
         try:
             commit_message = mp.get_commit_message(
                 commit_text, testfix, no_qa, incremental, rollback=rollback)
@@ -425,10 +427,6 @@ class cmd_land(EC2Command):
             raise BzrCommandError(
                 "--incremental option requires bugs linked to the branch. "
                 "Link the bugs or remove the --incremental option.")
-        except TypeError:
-            raise BzrCommandError(
-                "--rollback option requires a revision number to be rolled "
-                "back. ")
 
         if print_commit:
             print commit_message
