@@ -328,3 +328,7 @@ class TestCaseWithLPForkingServiceSubprocess(TestCaseWithSubprocess):
             '1 hello\n2 goodbye\n1 maybe\n')
         self.assertEqualDiff('hello\nmaybe\n', stdout_content)
         self.assertEqualDiff('goodbye\n', stderr_content)
+
+    def test_just_run_service(self):
+        # Start and stop are defined in setUp()
+        pass
