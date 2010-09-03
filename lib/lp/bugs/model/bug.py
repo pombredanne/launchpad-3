@@ -108,6 +108,7 @@ from canonical.launchpad.webapp.interfaces import (
     MAIN_STORE,
     )
 from lp.answers.interfaces.questiontarget import IQuestionTarget
+from lp.app.enums import ServiceUsage
 from lp.app.errors import (
     NotFoundError,
     UserCannotUnsubscribePerson,
@@ -1198,7 +1199,7 @@ class Bug(SQLBase):
         if len(non_invalid_bugtasks) != 1:
             return None
         [valid_bugtask] = non_invalid_bugtasks
-        if valid_bugtask.pillar.official_malone:
+        if valid_bugtask.pillar.bug_tracking_usage == ServiceUsage.LAUNCHPAD:
             return valid_bugtask
         else:
             return None

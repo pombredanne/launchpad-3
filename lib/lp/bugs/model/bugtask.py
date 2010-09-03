@@ -17,7 +17,8 @@ __all__ = [
     'bugtask_sort_key',
     'get_bug_privacy_filter',
     'get_related_bugtasks_search_params',
-    'search_value_to_where_condition']
+    'search_value_to_where_condition',
+    ]
 
 
 import datetime
@@ -92,6 +93,7 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector,
     MAIN_STORE,
     )
+from lp.app.enums import ServiceUsage
 from lp.app.errors import NotFoundError
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugattachment import BugAttachmentType
@@ -460,13 +462,14 @@ def validate_target_attribute(self, attr, value):
         sourcepackagename=self.sourcepackagename,
         distribution=self.distribution,
         distroseries=self.distroseries)
-    utility_iface = {
+    utility_iface_dict = {
         'productID': IProductSet,
         'productseriesID': IProductSeriesSet,
         'sourcepackagenameID': ISourcePackageNameSet,
         'distributionID': IDistributionSet,
         'distroseriesID': IDistroSeriesSet,
-        }[attr]
+        }
+    utility_iface = utility_iface_dict[attr]
     if value is None:
         target_params[attr[:-2]] = None
     else:
@@ -655,7 +658,7 @@ class BugTask(SQLBase, BugTaskMixin):
     # one thing they often have to filter for is completeness. We maintain
     # this single canonical query string here so that it does not have to be
     # cargo culted into Product, Distribution, ProductSeries etc
-    completeness_clause =  """
+    completeness_clause = """
         BugTask.status IN ( %s )
         """ % ','.join([str(a.value) for a in RESOLVED_BUGTASK_STATUSES])
 
@@ -845,7 +848,7 @@ class BugTask(SQLBase, BugTaskMixin):
         """See `IBugTask`"""
         # XXX sinzui 2007-10-04 bug=149009:
         # This property is not needed. Code should inline this implementation.
-        return self.pillar.official_malone
+        return (self.pillar.bug_tracking_usage == ServiceUsage.LAUNCHPAD)
 
     def transitionToMilestone(self, new_milestone, user):
         """See `IBugTask`."""
@@ -1178,7 +1181,7 @@ class BugTask(SQLBase, BugTaskMixin):
         if IUpstreamBugTask.providedBy(self):
             header_value = 'product=%s;' % self.target.name
         elif IProductSeriesBugTask.providedBy(self):
-            header_value = 'product=%s; productseries=%s;' %  (
+            header_value = 'product=%s; productseries=%s;' % (
                 self.productseries.product.name, self.productseries.name)
         elif IDistroBugTask.providedBy(self):
             header_value = ((
@@ -2219,7 +2222,7 @@ class BugTaskSet:
                     (BugTask, Product, SourcePackageName, Bug),
                     AutoTables(SQL("1=1"), tables),
                     query)
-                decorator=lambda row:bugtask_decorator(row[0])
+                decorator=lambda row: bugtask_decorator(row[0])
             resultset.order_by(orderby)
             return DecoratedResultSet(resultset, result_decorator=decorator)
 
