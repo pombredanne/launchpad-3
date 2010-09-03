@@ -5,8 +5,6 @@
 
 __metaclass__ = type
 
-import unittest
-
 from zope.component import getUtility
 from zope.interface.verify import verifyObject
 
@@ -248,4 +246,3 @@ class TranslationImporterTestCase(TestCaseWithFactory):
         msg2._translations = ["le foo", "les foos", "beaucoup des foos", None]
         self.assertTrue(is_identical_translation(msg1, msg2),
             "Identical multi-form messages not accepted as identical.")
-

@@ -11,7 +11,6 @@ __all__ = [
 
 import datetime
 from operator import attrgetter
-import os
 
 import gettextpo
 import posixpath
@@ -550,7 +549,6 @@ class FileImporter(object):
                         self.translation_import_queue_entry.format)
         return self._cached_format_exporter
 
-
     def _addUpdateError(self, message, potmsgset, errormsg):
         """Add an error returned by updateTranslation.
 
@@ -569,7 +567,7 @@ class FileImporter(object):
             'pofile': self.pofile,
             'pomessage': self.format_exporter.exportTranslationMessageData(
                 message),
-            'error-message': unicode(errormsg)
+            'error-message': unicode(errormsg),
         })
 
     def _addConflictError(self, message, potmsgset):
