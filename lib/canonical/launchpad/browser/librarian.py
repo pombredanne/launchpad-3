@@ -19,7 +19,6 @@ import tempfile
 import urllib2
 
 from lazr.delegates import delegates
-from lazr.restful.interfaces import IWebServiceClientRequest, IHTTPResource
 from zope.interface import implements
 from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.browser import IBrowserPublisher
@@ -84,7 +83,7 @@ class StreamOrRedirectLibraryFileAliasView(LaunchpadView):
     It streams the contents of restricted library files or redirects
     to public ones.
     """
-    implements(IBrowserPublisher, IHTTPResource)
+    implements(IBrowserPublisher)
 
     def getFileContents(self):
         # Reset system proxy setting if it exists. The urllib2 default
@@ -204,14 +203,22 @@ class ProxiedLibraryFileAlias:
         self.context = context
         self.parent = parent
 
-    def getUrl(self, request):
-        """Return the URL for the context `LibraryFileAlias`.
+    @property
+    def http_url(self):
+        """Return the webapp URL for the context `LibraryFileAlias`.
 
         Preserve the `LibraryFileAlias.http_url` behavior for deleted
         files, returning None.
+
+        Mask webservice requests if it's the case, so the returned URL will
+        be always relative to the parent webapp URL.
         """
         if self.context.deleted:
             return None
+
+        request = get_current_browser_request()
+        if WebServiceLayer.providedBy(request):
+            request = IWebBrowserOriginatingRequest(request)
 
         parent_url = canonical_url(self.parent, request=request)
         traversal_url = urlappend(parent_url, '+files')
@@ -219,23 +226,3 @@ class ProxiedLibraryFileAlias:
             traversal_url,
             url_path_quote(self.context.filename.encode('utf-8')))
         return url
-
-    @property
-    def http_url(self):
-        """Return the webapp URL for the context `LibraryFileAlias`.
-
-        Mask webservice requests if it's the case, so the returned URL will
-        be always relative to the parent webapp URL.
-        """
-        request = get_current_browser_request()
-        if WebServiceLayer.providedBy(request):
-            request = IWebBrowserOriginatingRequest(request)
-        return self.getUrl(request)
-
-    @property
-    def api_url(self):
-        """Return the webservice URL for the context `LibraryFileAlias`."""
-        request = get_current_browser_request()
-        if not WebServiceLayer.providedBy(request):
-            request = IWebServiceClientRequest(request)
-        return self.getUrl(request)
