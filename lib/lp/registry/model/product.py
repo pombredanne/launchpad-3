@@ -38,7 +38,6 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.cachedproperty import cachedproperty
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
@@ -150,6 +149,10 @@ from lp.registry.model.structuralsubscription import (
     StructuralSubscriptionTargetMixin,
     )
 from lp.services.database.prejoin import prejoin
+from lp.services.propertycache import (
+    cachedproperty,
+    IPropertyCache,
+    )
 from lp.translations.interfaces.customlanguagecode import (
     IHasCustomLanguageCodes,
     )
@@ -428,7 +431,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
                                notNull=True, default=False,
                                storm_validator=_validate_license_approved)
 
-    @cachedproperty('_commercial_subscription_cached')
+    @cachedproperty
     def commercial_subscription(self):
         return CommercialSubscription.selectOneBy(product=self)
 
@@ -475,7 +478,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
                 purchaser=purchaser,
                 sales_system_id=voucher,
                 whiteboard=whiteboard)
-            self._commercial_subscription_cached = subscription
+            IPropertyCache(self).commercial_subscription = subscription
         else:
             if current_datetime <= self.commercial_subscription.date_expires:
                 # Extend current subscription.

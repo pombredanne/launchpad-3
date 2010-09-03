@@ -141,7 +141,6 @@ from zope.schema.vocabulary import (
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad import (
@@ -310,6 +309,10 @@ from lp.services.openid.browser.openiddiscovery import (
     )
 from lp.services.openid.interfaces.openid import IOpenIDPersistentIdentity
 from lp.services.openid.interfaces.openidrpsummary import IOpenIDRPSummarySet
+from lp.services.propertycache import (
+    cachedproperty,
+    IPropertyCache,
+    )
 from lp.services.salesforce.interfaces import (
     ISalesforceVoucherProxy,
     SalesforceVoucherProxyException,
@@ -5753,10 +5756,7 @@ class ContactViaWebNotificationRecipientSet:
     def _reset_state(self):
         """Reset the cache because the recipients changed."""
         self._count_recipients = None
-        if safe_hasattr(self, '_all_recipients_cached'):
-            # The clear the cache of _all_recipients. The caching will fail
-            # if this method creates the attribute before _all_recipients.
-            del self._all_recipients_cached
+        del IPropertyCache(self)._all_recipients
 
     def _getPrimaryReason(self, person_or_team):
         """Return the primary reason enumeration.
@@ -5864,7 +5864,7 @@ class ContactViaWebNotificationRecipientSet:
                 'You are contacting %s of the %s (%s) team directly.'
                 % (text, person_or_team.displayname, person_or_team.name))
 
-    @cachedproperty('_all_recipients_cached')
+    @cachedproperty
     def _all_recipients(self):
         """Set the cache of all recipients."""
         all_recipients = {}

@@ -21,7 +21,6 @@ import transaction
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.database.sqlbase import (
     cursor,
@@ -33,6 +32,7 @@ from lp.registry.interfaces.person import (
     IPersonSet,
     PersonCreationRationale,
     )
+from lp.services.propertycache import cachedproperty
 from lp.translations.interfaces.translationexporter import (
     ITranslationExporter,
     )

@@ -30,7 +30,6 @@ from storm.store import Store
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.cachedproperty import cachedproperty
 from canonical.database.constants import (
     DEFAULT,
     UTC_NOW,
@@ -59,6 +58,7 @@ from lp.registry.interfaces.sourcepackage import (
     SourcePackageType,
     SourcePackageUrgency,
     )
+from lp.services.propertycache import cachedproperty
 from lp.soyuz.enums import (
     PackageDiffStatus,
     PackagePublishingStatus,
@@ -68,9 +68,7 @@ from lp.soyuz.interfaces.archive import (
     MAIN_ARCHIVE_PURPOSES,
     )
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
-from lp.soyuz.interfaces.packagediff import (
-    PackageDiffAlreadyRequested,
-    )
+from lp.soyuz.interfaces.packagediff import PackageDiffAlreadyRequested
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.files import SourcePackageReleaseFile
