@@ -272,8 +272,8 @@ class AccountSet:
                               password_is_encrypted=False,
                               openid_identifier=None):
         """See `IAccountSet`."""
-        # ShipIt is sending us byte strings. Ideally call sites will
-        # pass through Unicode strings.
+        # XXX bug=628832 StuartBishop 20100903: ShipIt is sending us byte
+        # strings. Call sites should send unicode strings.
         if isinstance(openid_identifier, str):
             openid_identifier = openid_identifier.decode('US-ASCII')
 
@@ -301,8 +301,8 @@ class AccountSet:
     def getByOpenIDIdentifier(self, openid_identifier):
         """See `IAccountSet`."""
         store = IStore(Account)
-        # ShipIt is passing us byte strings. Ideally call sites would
-        # pass us Unicode.
+        # XXX bug=628832 StuartBishop 20100903: ShipIt is sending us byte
+        # strings. Call sites should send unicode strings.
         if isinstance(openid_identifier, str):
             openid_identifier = openid_identifier.decode('US-ASCII')
         account = store.find(
