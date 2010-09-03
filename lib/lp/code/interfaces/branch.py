@@ -1300,9 +1300,7 @@ class BzrIdentityMixin:
     def branchIdentities(self):
         """See `IBranch`."""
         lp_prefix = config.codehosting.bzr_lp_prefix
-        if self.private or not self.target.supports_short_identites:
-            # XXX: thumper 2010-04-08, bug 261609
-            # We have to get around to fixing this
+        if not self.target.supports_short_identites:
             identities = []
         else:
             identities = [
