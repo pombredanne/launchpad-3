@@ -228,7 +228,7 @@ And text_has_leading_or_trailing_space() determines ... well, you can guess.
 
 == Submitting translations ==
 
-Let's submit a new translation through the view.
+A new translation is submitted through the view.
 
     >>> server_url = '/'.join(
     ...     [canonical_url(translationmessage), '+translate'])
