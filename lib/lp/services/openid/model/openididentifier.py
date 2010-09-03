@@ -6,7 +6,10 @@
 __metaclass__ = type
 __all__ = ['OpenIdIdentifier']
 
-from storm.locals import Int, Reference, Storm, Unicode, DateTime
+from storm.locals import Int, Reference, Storm, Unicode
+
+from canonical.database.constants import UTC_NOW
+from canonical.database.datetimecol import UtcDateTimeCol
 
 
 class OpenIdIdentifier(Storm):
@@ -15,4 +18,4 @@ class OpenIdIdentifier(Storm):
     identifier = Unicode(primary=True)
     account_id = Int("account")
     account = Reference(account_id, "Account.id")
-    date_created = DateTime()
+    date_created = UtcDateTimeCol(notNull=True, default=UTC_NOW)
