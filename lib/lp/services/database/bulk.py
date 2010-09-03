@@ -11,12 +11,11 @@ __all__ = [
 
 from collections import defaultdict
 
-from zope.security.proxy import removeSecurityProxy
-
 from storm.base import Storm
 from storm.expr import In
 from storm.info import get_cls_info
 from storm.store import Store
+from zope.security.proxy import removeSecurityProxy
 
 
 def collate(things, key):

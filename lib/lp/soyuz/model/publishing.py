@@ -16,59 +16,89 @@ __all__ = [
     ]
 
 
-import apt_pkg
 from datetime import datetime
 import operator
 import os
-import pytz
 import re
 import sys
 
+import apt_pkg
+import pytz
+from sqlobject import (
+    ForeignKey,
+    StringCol,
+    )
+from storm.expr import (
+    Desc,
+    In,
+    LeftJoin,
+    Sum,
+    )
+from storm.store import Store
 from zope.component import getUtility
 from zope.interface import implements
 
-from sqlobject import ForeignKey, StringCol
-
-from storm.expr import Desc, In, LeftJoin, Sum
-from storm.store import Store
-
-from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
+from canonical.database.sqlbase import (
+    SQLBase,
+    sqlvalues,
+    )
 from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet)
+    DecoratedResultSet,
+    )
+from canonical.launchpad.database.librarian import (
+    LibraryFileAlias,
+    LibraryFileContent,
+    )
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
-from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.launchpad.webapp.errorlog import (
-    ErrorReportingUtility, ScriptRequest)
-from canonical.launchpad.webapp.interfaces import NotFoundError
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+    ErrorReportingUtility,
+    ScriptRequest,
+    )
+from canonical.launchpad.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
+from lp.app.errors import NotFoundError
+from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.packagebuild import PackageBuild
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.worlddata.model.country import Country
-from lp.soyuz.model.binarypackagename import BinaryPackageName
-from lp.soyuz.model.binarypackagerelease import (BinaryPackageRelease,
-    BinaryPackageReleaseDownloadCount)
-from lp.soyuz.interfaces.archive import ArchivePurpose
-from lp.soyuz.model.files import (
-    BinaryPackageFile, SourcePackageReleaseFile)
-from canonical.launchpad.database.librarian import (
-    LibraryFileAlias, LibraryFileContent)
-from lp.soyuz.model.packagediff import PackageDiff
-from lp.soyuz.interfaces.archivearch import IArchiveArchSet
+from lp.soyuz.enums import (
+    BinaryPackageFormat,
+    PackagePublishingPriority,
+    PackagePublishingStatus,
+    PackageUploadStatus,
+    )
 from lp.soyuz.interfaces.binarypackagebuild import (
-    BuildSetStatus, IBinaryPackageBuildSet)
+    BuildSetStatus,
+    IBinaryPackageBuildSet,
+    )
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.publishing import (
-    active_publishing_status, IBinaryPackageFilePublishing,
-    IBinaryPackagePublishingHistory, IPublishingSet,
-    ISourcePackageFilePublishing, ISourcePackagePublishingHistory,
-    PackagePublishingPriority, PackagePublishingStatus, PoolFileOverwriteError)
-from lp.soyuz.interfaces.queue import PackageUploadStatus
+    active_publishing_status,
+    IBinaryPackageFilePublishing,
+    IBinaryPackagePublishingHistory,
+    IPublishingSet,
+    ISourcePackageFilePublishing,
+    ISourcePackagePublishingHistory,
+    PoolFileOverwriteError,
+    )
+from lp.soyuz.model.binarypackagename import BinaryPackageName
+from lp.soyuz.model.binarypackagerelease import (
+    BinaryPackageRelease,
+    BinaryPackageReleaseDownloadCount,
+    )
+from lp.soyuz.model.files import (
+    BinaryPackageFile,
+    SourcePackageReleaseFile,
+    )
+from lp.soyuz.model.packagediff import PackageDiff
 from lp.soyuz.pas import determineArchitecturesToBuild
 from lp.soyuz.scripts.changeoverride import ArchiveOverriderError
 
@@ -517,19 +547,17 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         :param available_archs: Architectures to consider
         :return: Sequence of `IDistroArch` instances.
         """
-        associated_proc_families = [
-            archivearch.processorfamily for archivearch
-            in getUtility(IArchiveArchSet).getByArchive(self.archive)]
         # Return all distroarches with unrestricted processor families or with
         # processor families the archive is explicitly associated with.
         return [distroarch for distroarch in available_archs
             if not distroarch.processorfamily.restricted or
-               distroarch.processorfamily in associated_proc_families]
+               distroarch.processorfamily in
+                    self.archive.enabled_restricted_families]
 
     def createMissingBuilds(self, architectures_available=None,
                             pas_verify=None, logger=None):
         """See `ISourcePackagePublishingHistory`."""
-        if self.archive.purpose == ArchivePurpose.PPA:
+        if self.archive.is_ppa:
             pas_verify = None
 
         if architectures_available is None:
@@ -975,6 +1003,26 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
                 section=self.section,
                 priority=self.priority)
 
+    def _getCorrespondingDDEBPublications(self):
+        """Return remaining publications of the corresponding DDEB.
+
+        Only considers binary publications in the corresponding debug
+        archive with the same distroarchseries, pocket, component, section
+        and priority.
+        """
+        return IMasterStore(BinaryPackagePublishingHistory).find(
+                BinaryPackagePublishingHistory,
+                BinaryPackagePublishingHistory.status.is_in(
+                    [PUBLISHED, PENDING]),
+                BinaryPackagePublishingHistory.distroarchseries ==
+                    self.distroarchseries,
+                binarypackagerelease=self.binarypackagerelease.debug_package,
+                archive=self.archive.debug_archive,
+                pocket=self.pocket,
+                component=self.component,
+                section=self.section,
+                priority=self.priority)
+
     def supersede(self, dominant=None, logger=None):
         """See `IBinaryPackagePublishingHistory`."""
         # At this point only PUBLISHED (ancient versions) or PENDING (
@@ -993,6 +1041,16 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         super(BinaryPackagePublishingHistory, self).supersede()
 
         if dominant is not None:
+            # DDEBs cannot themselves be dominant; they are always dominated
+            # by their corresponding DEB. Any attempt to dominate with a
+            # dominant DDEB is a bug.
+            assert (
+                dominant.binarypackagerelease.binpackageformat !=
+                    BinaryPackageFormat.DDEB), (
+                "Should not dominate with %s (%s); DDEBs cannot dominate" % (
+                    dominant.binarypackagerelease.title,
+                    dominant.distroarchseries.architecturetag))
+
             dominant_build = dominant.binarypackagerelease.build
             distroarchseries = dominant_build.distro_arch_series
             if logger is not None:
@@ -1010,7 +1068,10 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
             # between releases.
             self.supersededby = dominant_build
 
-        # If this is architecture-independet, all publications with the same
+        for dominated in self._getCorrespondingDDEBPublications():
+            dominated.supersede(dominant, logger)
+
+        # If this is architecture-independent, all publications with the same
         # context and overrides should be dominated simultaneously.
         if not self.binarypackagerelease.architecturespecific:
             for dominated in self._getOtherPublications():
@@ -1657,7 +1718,7 @@ class PublishingSet:
         augmented_summary = summary
         if (source_publication.status in active_publishing_status and
                 summary['status'] == BuildSetStatus.FULLYBUILT and
-                source_publication.archive.purpose != ArchivePurpose.COPY):
+                not source_publication.archive.is_copy):
 
             unpublished_builds = list(
                 source_publication.getUnpublishedBuilds())

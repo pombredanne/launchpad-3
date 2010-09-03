@@ -114,8 +114,8 @@ PPA ownership
 
 Private teams can own PPAs.
 
-    >>> from lp.soyuz.interfaces.archive import (
-    ...     ArchivePurpose, IArchiveSet)
+    >>> from lp.soyuz.enums import ArchivePurpose
+    >>> from lp.soyuz.interfaces.archive import IArchiveSet
     >>> from lp.registry.interfaces.distribution import (
     ...     IDistributionSet)
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
@@ -315,7 +315,7 @@ Not every type of team can become a member of other types.
     >>> private = PersonVisibility.PRIVATE
 
     >>> visibility_list = list(PersonVisibility.items)
-    >>> visibility_list.remove(PersonVisibility.PRIVATE_MEMBERSHIP)
+
     >>> for joined in visibility_list:
     ...     for joiner in visibility_list:
     ...         join_team(joined, joiner)

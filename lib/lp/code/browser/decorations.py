@@ -12,12 +12,15 @@ __all__ = [
 
 from collections import defaultdict
 
-from canonical.cachedproperty import cachedproperty
-from canonical.launchpad.webapp.authorization import check_permission
 from lazr.delegates import delegates
 
+from canonical.launchpad.webapp.authorization import check_permission
 from lp.bugs.interfaces.bug import IBug
-from lp.code.interfaces.branch import BzrIdentityMixin, IBranch
+from lp.code.interfaces.branch import (
+    BzrIdentityMixin,
+    IBranch,
+    )
+from lp.services.propertycache import cachedproperty
 
 
 class DecoratedBug:

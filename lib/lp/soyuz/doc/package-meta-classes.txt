@@ -73,7 +73,7 @@ First, publish a build in the main archive of ubuntutest.
 
     >>> from lp.registry.interfaces.distribution import (
     ...     IDistributionSet)
-    >>> from lp.soyuz.interfaces.publishing import (
+    >>> from lp.soyuz.enums import (
     ...     PackagePublishingStatus)
     >>> from lp.soyuz.tests.test_publishing import (
     ...      SoyuzTestPublisher)

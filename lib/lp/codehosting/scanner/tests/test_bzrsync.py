@@ -1,42 +1,56 @@
 #!/usr/bin/python
 #
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=W0141
+
+from __future__ import with_statement
 
 import datetime
 import os
 import random
 import time
-import transaction
 import unittest
 
-from bzrlib.revision import NULL_REVISION, Revision as BzrRevision
-from bzrlib.uncommit import uncommit
+from bzrlib.revision import (
+    NULL_REVISION,
+    Revision as BzrRevision,
+    )
 from bzrlib.tests import TestCaseWithTransport
+from bzrlib.uncommit import uncommit
 import pytz
+import transaction
 from twisted.python.util import mergeFunctionMetadata
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from lp.translations.interfaces.translations import (
-    TranslationsBranchImportMode)
+from canonical.launchpad.interfaces.lpstorm import IStore
+from canonical.testing import LaunchpadZopelessLayer
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.revision import IRevisionSet
 from lp.code.model.branchrevision import BranchRevision
-from lp.code.model.revision import Revision, RevisionAuthor, RevisionParent
+from lp.code.model.revision import (
+    Revision,
+    RevisionAuthor,
+    RevisionParent,
+    )
 from lp.codehosting.scanner.bzrsync import BzrSync
+from lp.services.osutils import override_environ
 from lp.testing import TestCaseWithFactory
-from canonical.testing import LaunchpadZopelessLayer
+from lp.translations.interfaces.translations import (
+    TranslationsBranchImportMode,
+    )
 
 
 def run_as_db_user(username):
     """Create a decorator that will run a function as the given database user.
     """
+
     def _run_with_different_user(f):
+
         def decorated(*args, **kwargs):
             current_user = LaunchpadZopelessLayer.txn._dbuser
             if current_user == username:
@@ -47,6 +61,7 @@ def run_as_db_user(username):
             finally:
                 LaunchpadZopelessLayer.switchDbUser(current_user)
         return mergeFunctionMetadata(f, decorated)
+
     return _run_with_different_user
 
 
@@ -94,10 +109,12 @@ class BzrSyncTestCase(TestCaseWithTransport, TestCaseWithFactory):
         :return: (num_revisions, num_branch_revisions, num_revision_parents,
             num_revision_authors)
         """
-        return (Revision.select().count(),
-                BranchRevision.select().count(),
-                RevisionParent.select().count(),
-                RevisionAuthor.select().count())
+        store = IStore(Revision)
+        return (
+            store.find(Revision).count(),
+            store.find(BranchRevision).count(),
+            store.find(RevisionParent).count(),
+            store.find(RevisionAuthor).count())
 
     def assertCounts(self, counts, new_revisions=0, new_numbers=0,
                      new_parents=0, new_authors=0):
@@ -154,10 +171,13 @@ class BzrSyncTestCase(TestCaseWithTransport, TestCaseWithFactory):
             committer = self.factory.getUniqueString()
         if extra_parents is not None:
             self.bzr_tree.add_pending_merge(*extra_parents)
-        return self.bzr_tree.commit(
-            message, committer=committer, rev_id=rev_id,
-            timestamp=timestamp, timezone=timezone, allow_pointless=True,
-            revprops=revprops)
+        # XXX: AaronBentley 2010-08-06 bug=614404: a bzr username is
+        # required to generate the revision-id.
+        with override_environ(BZR_EMAIL='me@example.com'):
+            return self.bzr_tree.commit(
+                message, committer=committer, rev_id=rev_id,
+                timestamp=timestamp, timezone=timezone, allow_pointless=True,
+                revprops=revprops)
 
     def uncommitRevision(self):
         branch = self.bzr_tree.branch
@@ -201,21 +221,24 @@ class BzrSyncTestCase(TestCaseWithTransport, TestCaseWithFactory):
         db_branch = self.makeDatabaseBranch()
         db_branch, trunk_tree = self.create_branch_and_tree(
             db_branch=db_branch)
-        trunk_tree.commit(u'base revision', rev_id=base_rev_id)
+        # XXX: AaronBentley 2010-08-06 bug=614404: a bzr username is
+        # required to generate the revision-id.
+        with override_environ(BZR_EMAIL='me@example.com'):
+            trunk_tree.commit(u'base revision', rev_id=base_rev_id)
 
-        # Branch from the base revision.
-        new_db_branch = self.makeDatabaseBranch(product=db_branch.product)
-        new_db_branch, branch_tree = self.create_branch_and_tree(
-            db_branch=new_db_branch)
-        branch_tree.pull(trunk_tree.branch)
+            # Branch from the base revision.
+            new_db_branch = self.makeDatabaseBranch(product=db_branch.product)
+            new_db_branch, branch_tree = self.create_branch_and_tree(
+                db_branch=new_db_branch)
+            branch_tree.pull(trunk_tree.branch)
 
-        # Commit to both branches.
-        trunk_tree.commit(u'trunk revision', rev_id=trunk_rev_id)
-        branch_tree.commit(u'branch revision', rev_id=branch_rev_id)
+            # Commit to both branches.
+            trunk_tree.commit(u'trunk revision', rev_id=trunk_rev_id)
+            branch_tree.commit(u'branch revision', rev_id=branch_rev_id)
 
-        # Merge branch into trunk.
-        trunk_tree.merge_from_branch(branch_tree.branch)
-        trunk_tree.commit(u'merge revision', rev_id=merge_rev_id)
+            # Merge branch into trunk.
+            trunk_tree.merge_from_branch(branch_tree.branch)
+            trunk_tree.commit(u'merge revision', rev_id=merge_rev_id)
 
         LaunchpadZopelessLayer.txn.commit()
         LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
@@ -228,10 +251,10 @@ class BzrSyncTestCase(TestCaseWithTransport, TestCaseWithFactory):
         :return: A set of tuples (sequence, revision-id) for all the
             BranchRevisions rows belonging to self.db_branch.
         """
-        return set(
-            (branch_revision.sequence, branch_revision.revision.revision_id)
-            for branch_revision
-            in BranchRevision.selectBy(branch=db_branch))
+        return set(IStore(BranchRevision).find(
+            (BranchRevision.sequence, Revision.revision_id),
+            Revision.id == BranchRevision.revision_id,
+            BranchRevision.branch == db_branch))
 
     def writeToFile(self, filename="file", contents=None):
         """Set the contents of the specified file.
@@ -459,8 +482,9 @@ class TestBzrSync(BzrSyncTestCase):
         # retrieveDatabaseAncestry.
         branch = getUtility(IBranchLookup).getByUniqueName(
             '~name12/+junk/junk.contrib')
-        sampledata = list(
-            BranchRevision.selectBy(branch=branch).orderBy('sequence'))
+        branch_revisions = IStore(BranchRevision).find(
+            BranchRevision, BranchRevision.branch == branch)
+        sampledata = list(branch_revisions.order_by(BranchRevision.sequence))
         expected_ancestry = set(branch_revision.revision.revision_id
             for branch_revision in sampledata)
         expected_history = [branch_revision.revision.revision_id
@@ -540,7 +564,7 @@ class TestBzrTranslationsUploadJob(BzrSyncTestCase):
 
     def test_upload_on_new_revision_series_not_configured(self):
         # Syncing a branch with a changed tip does not create a
-        # new RosettaUploadJob if the linked product series is not 
+        # new RosettaUploadJob if the linked product series is not
         # configured for translation uploads.
         self._makeProductSeries()
         self.commitRevision()

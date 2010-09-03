@@ -21,44 +21,51 @@ __all__ = [
 
 import cgi
 import datetime
-import gettextpo
 import operator
-import pytz
 import re
 import urllib
 
+import gettextpo
+import pytz
+from z3c.ptcompat import ViewPageTemplateFile
 from zope import datetime as zope_datetime
 from zope.app.form import CustomWidgetFactory
-from zope.app.form.utility import setUpWidgets
 from zope.app.form.browser import DropdownWidget
 from zope.app.form.interfaces import IInputWidget
+from zope.app.form.utility import setUpWidgets
 from zope.component import getUtility
 from zope.interface import implements
 from zope.schema.vocabulary import getVocabularyRegistry
 
-from z3c.ptcompat import ViewPageTemplateFile
-
-from canonical.cachedproperty import cachedproperty
+from canonical.launchpad.webapp import (
+    ApplicationMenu,
+    canonical_url,
+    enabled_with_permission,
+    LaunchpadView,
+    Link,
+    urlparse,
+    )
+from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.interfaces import ILaunchBag
+from canonical.launchpad.webapp.menu import structured
+from lp.app.errors import UnexpectedFormData
+from lp.services.propertycache import cachedproperty
 from lp.translations.browser.browser_helpers import (
-    contract_rosetta_escapes, convert_newlines_to_web_form, count_lines,
-    text_to_html)
+    contract_rosetta_escapes,
+    convert_newlines_to_web_form,
+    count_lines,
+    text_to_html,
+    )
 from lp.translations.browser.potemplate import POTemplateFacets
-from canonical.launchpad.webapp.interfaces import (
-    ILaunchBag,
-    UnexpectedFormData)
 from lp.translations.interfaces.pofile import IPOFileAlternativeLanguage
 from lp.translations.interfaces.translationmessage import (
-    ITranslationMessage, ITranslationMessageSet,
-    ITranslationMessageSuggestions, RosettaTranslationOrigin,
-    TranslationConflict)
-from lp.translations.interfaces.translationsperson import (
-    ITranslationsPerson)
-from canonical.launchpad.webapp import (
-    ApplicationMenu, canonical_url, enabled_with_permission, LaunchpadView,
-    Link, urlparse)
-from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.menu import structured
-
+    ITranslationMessage,
+    ITranslationMessageSet,
+    ITranslationMessageSuggestions,
+    RosettaTranslationOrigin,
+    TranslationConflict,
+    )
+from lp.translations.interfaces.translationsperson import ITranslationsPerson
 
 #
 # Exceptions and helper classes

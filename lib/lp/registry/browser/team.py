@@ -23,49 +23,75 @@ __all__ = [
     ]
 
 
-from urllib import quote
 from datetime import datetime
 import math
-import pytz
+from urllib import quote
 
+import pytz
 from zope.app.form.browser import TextAreaWidget
 from zope.component import getUtility
 from zope.formlib import form
-from zope.interface import Interface, implements
+from zope.interface import (
+    implements,
+    Interface,
+    )
 from zope.schema import Choice
-from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
-
-from canonical.widgets import HiddenUserWidget, LaunchpadRadioWidget
+from zope.schema.vocabulary import (
+    SimpleTerm,
+    SimpleVocabulary,
+    )
 
 from canonical.launchpad import _
-from lp.registry.browser.branding import BrandingChangeView
-from canonical.launchpad.fields import PublicPersonChoice
-from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.cachedproperty import cachedproperty
-from canonical.launchpad.webapp import (
-    action, canonical_url, custom_widget, LaunchpadEditFormView,
-    LaunchpadFormView, LaunchpadView)
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.badge import HasBadgeBase
-from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.interfaces import (
-    ILaunchBag, UnexpectedFormData)
-from canonical.launchpad.webapp.menu import structured
-from canonical.launchpad.webapp.tales import PersonFormatterAPI
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
 from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
-from lp.registry.interfaces.mailinglist import (
-    IMailingList, IMailingListSet, MailingListStatus, PURGE_STATES,
-    PostedMessageStatus)
-from lp.registry.interfaces.person import (
-    IPerson, IPersonSet, ITeam, ITeamContactAddressForm, ITeamCreation,
-    ImmutableVisibilityError, PRIVATE_TEAM_PREFIX, PersonVisibility,
-    TeamContactMethod, TeamSubscriptionPolicy)
-from lp.registry.interfaces.teammembership import TeamMembershipStatus
 from canonical.launchpad.interfaces.validation import validate_new_team_email
+from canonical.launchpad.validators import LaunchpadValidationError
+from canonical.launchpad.webapp import (
+    action,
+    canonical_url,
+    custom_widget,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    LaunchpadView,
+    )
+from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.badge import HasBadgeBase
+from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.interfaces import ILaunchBag
+from canonical.launchpad.webapp.menu import structured
+from canonical.launchpad.webapp.tales import PersonFormatterAPI
 from canonical.lazr.interfaces import IObjectPrivacy
+from canonical.widgets import (
+    HiddenUserWidget,
+    LaunchpadRadioWidget,
+    )
+from lp.app.errors import UnexpectedFormData
+from lp.registry.browser import MapMixin
+from lp.registry.browser.branding import BrandingChangeView
+from lp.registry.interfaces.mailinglist import (
+    IMailingList,
+    IMailingListSet,
+    MailingListStatus,
+    PostedMessageStatus,
+    PURGE_STATES,
+    )
+from lp.registry.interfaces.person import (
+    ImmutableVisibilityError,
+    IPerson,
+    IPersonSet,
+    ITeam,
+    ITeamContactAddressForm,
+    ITeamCreation,
+    PersonVisibility,
+    PRIVATE_TEAM_PREFIX,
+    TeamContactMethod,
+    TeamSubscriptionPolicy,
+    )
+from lp.registry.interfaces.teammembership import TeamMembershipStatus
+from lp.services.fields import PublicPersonChoice
+from lp.services.propertycache import cachedproperty
 
 
 class TeamPrivacyAdapter:
@@ -125,7 +151,7 @@ class TeamFormMixin:
         "name", "visibility", "displayname", "contactemail",
         "teamdescription", "subscriptionpolicy",
         "defaultmembershipperiod", "renewal_policy",
-        "defaultrenewalperiod",  "teamowner",
+        "defaultrenewalperiod", "teamowner",
         ]
     private_prefix = PRIVATE_TEAM_PREFIX
 
@@ -166,28 +192,6 @@ class TeamFormMixin:
         """Remove the visibility field if not authorized."""
         if not check_permission('launchpad.Commercial', self.context):
             self.form_fields = self.form_fields.omit('visibility')
-        else:
-            # XXX: BradCrittenden 2010-07-12 bug=602773:  This code can be
-            # removed when PRIVATE_MEMBERSHIP disappears fully.
-
-            # Remove the visibility selector and replace with one with a more
-            # limited vocabulary.
-            terms = [SimpleTerm(PersonVisibility.PUBLIC,
-                                PersonVisibility.PUBLIC.name,
-                                PersonVisibility.PUBLIC.title),
-                     SimpleTerm(PersonVisibility.PRIVATE,
-                                PersonVisibility.PRIVATE.name,
-                                PersonVisibility.PRIVATE.title),
-                     ]
-            visibility = self.form_fields['visibility'].field
-            field = Choice(
-                __name__=visibility.getName(),
-                title=visibility.title,
-                source=SimpleVocabulary(terms))
-            self.form_fields = (
-                self.form_fields.omit('visibility') +
-                form.Fields(field))
-            self.form_fields = self.form_fields.select(*self.field_names)
 
 
 class TeamEditView(TeamFormMixin, HasRenewalPolicyMixin,
@@ -764,7 +768,7 @@ class TeamMailingListSubscribersView(LaunchpadView):
 
     def renderTable(self):
         html = ['<table style="max-width: 80em">']
-        items = self.subscribers.currentBatch()
+        items = list(self.subscribers.currentBatch())
         assert len(items) > 0, (
             "Don't call this method if there are no subscribers to show.")
         # When there are more than 10 items, we use multiple columns, but
@@ -1028,7 +1032,7 @@ class TeamMemberAddView(LaunchpadFormView):
         self.request.response.addInfoNotification(msg)
 
 
-class TeamMapView(LaunchpadView):
+class TeamMapView(MapMixin, LaunchpadView):
     """Show all people with known locations on a map.
 
     Also provides links to edit the locations of people in the team without
@@ -1041,7 +1045,7 @@ class TeamMapView(LaunchpadView):
     def initialize(self):
         # Tell our base-layout to include Google's gmap2 javascript so that
         # we can render the map.
-        if self.mapped_participants_count > 0:
+        if self.gmap2_enabled and self.mapped_participants_count > 0:
             self.request.needs_gmap2 = True
 
     @cachedproperty

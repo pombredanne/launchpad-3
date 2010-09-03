@@ -2,38 +2,6 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
-
-import warnings
-from datetime import datetime
-import re
-from textwrap import dedent
-import psycopg2
-from psycopg2.extensions import (
-    ISOLATION_LEVEL_AUTOCOMMIT, ISOLATION_LEVEL_READ_COMMITTED,
-    ISOLATION_LEVEL_SERIALIZABLE)
-import pytz
-import storm
-from storm.databases.postgres import compile as postgres_compile
-from storm.expr import State
-from storm.expr import compile as storm_compile
-from storm.locals import Storm, Store
-from storm.zope.interfaces import IZStorm
-
-from sqlobject.sqlbuilder import sqlrepr
-import transaction
-
-from twisted.python.util import mergeFunctionMetadata
-
-from zope.component import getUtility
-from zope.interface import implements
-from zope.security.proxy import removeSecurityProxy
-
-from lazr.restful.interfaces import IRepresentationCache
-
-from canonical.config import config, dbconfig
-from canonical.database.interfaces import ISQLBase
-
-
 __all__ = [
     'alreadyInstalledMsg',
     'begin',
@@ -62,7 +30,47 @@ __all__ = [
     'SQLBase',
     'sqlvalues',
     'StupidCache',
-    'ZopelessTransactionManager',]
+    'ZopelessTransactionManager',
+]
+
+
+from datetime import datetime
+import re
+from textwrap import dedent
+import warnings
+
+from lazr.restful.interfaces import IRepresentationCache
+import psycopg2
+from psycopg2.extensions import (
+    ISOLATION_LEVEL_AUTOCOMMIT,
+    ISOLATION_LEVEL_READ_COMMITTED,
+    ISOLATION_LEVEL_SERIALIZABLE,
+    )
+import pytz
+from sqlobject.sqlbuilder import sqlrepr
+import storm
+from storm.databases.postgres import compile as postgres_compile
+from storm.expr import (
+    compile as storm_compile,
+    State,
+    )
+from storm.locals import (
+    Store,
+    Storm,
+    )
+from storm.zope.interfaces import IZStorm
+import transaction
+from twisted.python.util import mergeFunctionMetadata
+from zope.component import getUtility
+from zope.interface import implements
+from zope.security.proxy import removeSecurityProxy
+
+from canonical.config import (
+    config,
+    dbconfig,
+    )
+from canonical.database.interfaces import ISQLBase
+from lp.services.propertycache import IPropertyCacheManager
 
 # Default we want for scripts, and the PostgreSQL default. Note psycopg1 will
 # use SERIALIZABLE unless we override, but psycopg2 will not.
@@ -175,6 +183,9 @@ class SQLBase(storm.sqlobject.SQLObjectBase):
         correct master Store.
         """
         from canonical.launchpad.interfaces import IMasterStore
+        # Make it simple to write dumb-invalidators - initialised
+        # _cached_properties to a valid list rather than just-in-time creation.
+        self._cached_properties = []
         store = IMasterStore(self.__class__)
 
         # The constructor will fail if objects from a different Store
@@ -252,6 +263,14 @@ class SQLBase(storm.sqlobject.SQLObjectBase):
         """Invalidate the web service cache."""
         cache = getUtility(IRepresentationCache)
         cache.delete(self)
+
+    def __storm_invalidated__(self):
+        """Flush cached properties."""
+        # XXX: RobertCollins 2010-08-16 bug=622648: Note this is not directly
+        # tested, but the entire test suite blows up awesomely if it's broken.
+        # It's entirely unclear where tests for this should be.
+        IPropertyCacheManager(self).clear()
+
 
 alreadyInstalledMsg = ("A ZopelessTransactionManager with these settings is "
 "already installed.  This is probably caused by calling initZopeless twice.")

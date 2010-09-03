@@ -1,4 +1,5 @@
-= Personal Home Pages =
+Personal Home Pages
+===================
 
 Launchpad creates profiles for people that have contributed to free
 software (e.g. in a bug import or a translation template upload). It's
@@ -15,7 +16,8 @@ profile for them.
     2006-12-13 when importing the Portuguese...
 
 
-== Email address disclosure ==
+Email address disclosure
+------------------------
 
 Mark has a registered email address, and he has chosen to disclose it to
 the world. Anonymous users cannot see Mark's address
@@ -51,9 +53,11 @@ But Foo Bar can:
     testing@canonical.com
 
 
-== Open ID link ==
+Open ID link
+------------
 
-When a person visits his or her own page, they'll see their OpenID login URL.
+When a person visits his or her own page, they'll see their OpenID login
+URL.
 
     >>> user_browser.open('http://launchpad.dev/~no-priv')
     >>> print extract_text(
@@ -80,7 +84,8 @@ And there is no helpful link.
     LinkNotFoundError
 
 
-== Jabber IDs ==
+Jabber IDs
+----------
 
 A person's jabber IDs are only show to authenticated users.
 
@@ -95,11 +100,12 @@ A person's jabber IDs are only show to authenticated users.
     Jabber: &lt;email address hidden&gt;
 
 
-== OpenPGP keys ==
+OpenPGP keys
+------------
 
-In order to avoid email harvesters to find a person's email addresses just by
-following the link to that person's OpenPGP keys, only authenticated users can
-see the key ID with a link to the keyserver.
+In order to avoid email harvesters to find a person's email addresses
+just by following the link to that person's OpenPGP keys, only
+authenticated users can see the key ID with a link to the keyserver.
 
     >>> user_browser.open('http://launchpad.dev/~name16')
     >>> print find_tag_by_id(user_browser.contents, 'pgp-keys')
@@ -112,18 +118,19 @@ see the key ID with a link to the keyserver.
     <dd> 12345678...
 
 
-== Languages ==
+Languages
+---------
 
-The contact details portlet shows the languages that the user speaks.
-No Privileges Person can see the languages that mark speaks.
+The contact details portlet shows the languages that the user speaks. No
+Privileges Person can see the languages that mark speaks.
 
     >>> user_browser.open('http://launchpad.dev/~carlos')
     >>> print extract_text(find_tag_by_id(user_browser.contents, 'languages'))
     Languages:
     Catalan, English, Spanish
 
-When viewing his own page, No Privileges Person sees his languages and can
-edit them.
+When viewing his own page, No Privileges Person sees his languages and
+can edit them.
 
     >>> user_browser.open('http://launchpad.dev/~no-priv')
     >>> print extract_text(find_tag_by_id(user_browser.contents, 'languages'))
@@ -131,7 +138,8 @@ edit them.
     English
 
 
-== Summary Pagelets ==
+Summary Pagelets
+----------------
 
 A person's homepage also lists Karma information:
 
@@ -154,6 +162,7 @@ You can grab certain bits of information programatically:
 
     >>> print extract_text(find_tag_by_id(browser.contents, 'karma-total'))
     130
+
     >>> print extract_text(find_tag_by_id(browser.contents, 'member-since'))
     2005-06-06
 
@@ -164,7 +173,8 @@ Teams don't have member-since; they have created-date:
     2005-06-06
 
 
-=== Time zones ===
+Time zones
+..........
 
 The user's time zone is displayed next to their location details:
 
@@ -174,26 +184,20 @@ The user's time zone is displayed next to their location details:
     Location
     Time zone: Europe/London...
 
-If the user does not have location data set then the portlet will not
-be shown.
+If the user does not have location data set then the portlet will not be
+shown.
 
     >>> browser.open('http://launchpad.dev/~bac')
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'portlet-map'))
 
-Teams don't have a time zone field.
 
-    >>> browser.open('http://launchpad.dev/~guadamen')
-    >>> 'Time zone' in extract_text(
-    ...     find_tag_by_id(browser.contents, 'portlet-map'))
-    False
+Table of contributions
+----------------------
 
-
-== Table of contributions ==
-
-A person's home page also displays a table with the contributions made by that
-person. This table includes 5 projects in which this person is most active
-and also the areas in which (s)he worked on each project.
+A person's home page also displays a table with the contributions made
+by that person. This table includes 5 projects in which this person is
+most active and also the areas in which (s)he worked on each project.
 
     >>> anon_browser.open('http://launchpad.dev/~name16')
     >>> table = find_tag_by_id(anon_browser.contents, 'contributions')
@@ -220,8 +224,8 @@ The portlet also has a link to see the most recent karmic activity.
     >>> anon_browser.getLink('Recent activities')
     <Link text='Recent activities' url='http://launchpad.dev/~name16/+karma'>
 
-If the person hasn't made any contributions, the table is not present in its
-page.
+If the person hasn't made any contributions, the table is not present in
+its page.
 
     >>> anon_browser.open('http://launchpad.dev/~jdub')
     >>> print find_tag_by_id(anon_browser.contents, 'contributions')
@@ -237,9 +241,9 @@ The same for teams.
 Unactivated profiles
 --------------------
 
-Many profiles are created for users who contributed to projects that were
-imported into Launchpad. Any user can see an unclaimed profile and a link
-to request a claim the profile.
+Many profiles are created for users who contributed to projects that
+were imported into Launchpad. Any user can see an unclaimed profile and
+a link to request a claim the profile.
 
     >>> anon_browser.open('https://launchpad.dev/~jvprat')
     >>> print anon_browser.title
@@ -252,13 +256,13 @@ to request a claim the profile.
     >>> anon_browser.getLink('Are you Jordi Vilalta')
     <Link text='Are you Jordi Vilalta?' url='.../people/+requestmerge...'>
 
-It is possible for the preferred email address to be set if it is associated
-with an Ubuntu Single Signon account. Anonymous and logged in users cannot
-see this, but admins like Foo Bar can.
+It is possible for the preferred email address to be set if it is
+associated with an Ubuntu Single Signon account. Anonymous and logged in
+users cannot see this, but admins like Foo Bar can.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces.emailaddress import (
-    ... EmailAddressStatus, IEmailAddressSet)
+    ...     EmailAddressStatus, IEmailAddressSet)
 
     >>> login('admin@canonical.com')
     >>> address = getUtility(IEmailAddressSet).getByEmail('jvprat@wanadoo.es')
@@ -279,3 +283,5 @@ see this, but admins like Foo Bar can.
     ...     find_tag_by_id(admin_browser.contents, 'email-addresses'))
     jvprat@wanadoo.es
     Change e-mail settings
+
+

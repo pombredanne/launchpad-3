@@ -14,8 +14,12 @@
   <authorizations module="lp.code.security" />
 
   <publisher
-     name="code"
-     factory="lp.code.publisher.code_request_publication_factory"/>
+      name="code"
+      factory="lp.code.publisher.code_request_publication_factory"/>
+  <utility
+      component="lp.code.publisher.CodeLayer"
+      provides="zope.publisher.interfaces.browser.IDefaultBrowserLayer"
+      name="code" />
 
   <!-- Branch Merge Queue -->
 
@@ -564,7 +568,7 @@
     <allow interface="lp.code.interfaces.branch.IBranchDelta"/>
   </class>
   <securedutility
-      class="lp.code.model.branch.BranchCloud"
+      class="lp.code.model.branchcloud.BranchCloud"
       provides="lp.code.interfaces.branch.IBranchCloud">
     <allow interface="lp.code.interfaces.branch.IBranchCloud"/>
   </securedutility>
@@ -606,6 +610,11 @@
       for="lp.registry.interfaces.sourcepackage.ISourcePackage"
       provides="lp.code.interfaces.branchtarget.IBranchTarget"
       factory="lp.code.model.branchtarget.PackageBranchTarget"/>
+  <adapter
+      for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
+      provides="lp.code.interfaces.branchtarget.IBranchTarget"
+      factory="lp.code.model.branchtarget.distribution_sourcepackage_to_branch_target"/>
+
   <class class="lp.code.model.branchtarget.PersonBranchTarget">
     <allow interface="lp.code.interfaces.branchtarget.IBranchTarget"/>
   </class>
@@ -613,6 +622,7 @@
       for="lp.registry.interfaces.person.IPerson"
       provides="lp.code.interfaces.branchtarget.IBranchTarget"
       factory="lp.code.model.branchtarget.PersonBranchTarget"/>
+
   <class class="lp.code.model.branchtarget.ProductBranchTarget">
     <allow interface="lp.code.interfaces.branchtarget.IBranchTarget"/>
   </class>
@@ -620,6 +630,10 @@
       for="lp.registry.interfaces.product.IProduct"
       provides="lp.code.interfaces.branchtarget.IBranchTarget"
       factory="lp.code.model.branchtarget.ProductBranchTarget"/>
+  <adapter
+      for="lp.registry.interfaces.productseries.IProductSeries"
+      provides="lp.code.interfaces.branchtarget.IBranchTarget"
+      factory="lp.code.model.branchtarget.product_series_to_branch_target"/>
   <adapter
       for="lp.code.interfaces.branchtarget.IBranchTarget"
       provides="canonical.launchpad.webapp.interfaces.ICanonicalUrlData"
@@ -920,7 +934,7 @@
     <require permission="launchpad.View" interface="lp.code.interfaces.sourcepackagerecipebuild.ISourcePackageRecipeBuild"/>
     <!-- This is needed for UploadProcessor to run. The permission isn't
          important; launchpad.Edit isn't actually held by anybody. -->
-    <require permission="launchpad.Edit" set_attributes="buildstate upload_log" />
+    <require permission="launchpad.Edit" set_attributes="status upload_log" />
   </class>
 
   <securedutility
@@ -989,6 +1003,16 @@
   <utility component="lp.code.model.sourcepackagerecipebuild.SourcePackageRecipeBuildJob"
         name="RECIPEBRANCHBUILD"
         provides="lp.buildmaster.interfaces.buildfarmjob.IBuildFarmJob"/>
-  <webservice:register module="lp.code.interfaces.webservice" />
 
+  <call
+    callable="lp.code.model.sourcepackagerecipebuild.register_archive_upload_policy_adapter"
+    />
+
+  <webservice:register module="lp.code.interfaces.webservice" />
+    <adapter
+        provides="lp.buildmaster.interfaces.buildfarmjob.ISpecificBuildFarmJob"
+        for="lp.buildmaster.interfaces.buildfarmjob.IBuildFarmJob"
+        factory="lp.code.model.sourcepackagerecipebuild.get_recipe_build_for_build_farm_job"
+        name="RECIPEBRANCHBUILD"
+        permission="zope.Public"/>
 </configure>

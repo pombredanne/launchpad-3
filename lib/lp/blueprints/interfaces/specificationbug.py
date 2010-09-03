@@ -14,8 +14,9 @@ __all__ = [
 from zope.schema import Object
 
 from canonical.launchpad import _
-from lp.bugs.interfaces.buglink import IBugLink
 from lp.blueprints.interfaces.specification import ISpecification
+from lp.bugs.interfaces.buglink import IBugLink
+
 
 class ISpecificationBug(IBugLink):
     """A link between a Bug and a specification."""

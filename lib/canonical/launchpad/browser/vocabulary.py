@@ -14,30 +14,33 @@ __all__ = [
     'sourcepackagename_to_vocabularyjson',
     ]
 
+from lazr.restful.interfaces import IWebServiceClientRequest
 import simplejson
-
-from zope.app.schema.vocabulary import IVocabularyFactory
-from zope.component import getUtility
-from zope.interface import implementer
-from zope.component import adapter
-from zope.component.interfaces import ComponentLookupError
-from zope.interface import Attribute, implements, Interface
 from zope.app.form.interfaces import MissingInputError
+from zope.app.schema.vocabulary import IVocabularyFactory
+from zope.component import (
+    adapter,
+    getUtility,
+    )
+from zope.component.interfaces import ComponentLookupError
+from zope.interface import (
+    Attribute,
+    implementer,
+    implements,
+    Interface,
+    )
 from zope.security.interfaces import Unauthorized
 
-from lazr.restful.interfaces import IWebServiceClientRequest
-
+from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.interfaces import NoCanonicalUrl
+from canonical.launchpad.webapp.publisher import canonical_url
+from canonical.launchpad.webapp.tales import ObjectImageDisplayAPI
+from canonical.launchpad.webapp.vocabulary import IHugeVocabulary
+from lp.app.errors import UnexpectedFormData
 from lp.code.interfaces.branch import IBranch
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.sourcepackagename import ISourcePackageName
 from lp.registry.model.sourcepackagename import getSourcePackageDescriptions
-
-from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.interfaces import (
-    NoCanonicalUrl, UnexpectedFormData)
-from canonical.launchpad.webapp.publisher import canonical_url
-from canonical.launchpad.webapp.tales import ObjectImageDisplayAPI
-from canonical.launchpad.webapp.vocabulary import IHugeVocabulary
 
 # XXX: EdwinGrubbs 2009-07-27 bug=405476
 # This limits the output to one line of text, since the sprite class

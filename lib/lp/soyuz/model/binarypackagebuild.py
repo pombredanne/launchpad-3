@@ -6,63 +6,98 @@
 __metaclass__ = type
 __all__ = ['BinaryPackageBuild', 'BinaryPackageBuildSet']
 
-import apt_pkg
 import datetime
 import logging
 import operator
 
-from storm.locals import Int, Reference
-from storm.store import EmptyResultSet
-
-from zope.interface import implements
-from zope.component import getUtility
-from zope.security.proxy import ProxyFactory, removeSecurityProxy
-from storm.expr import (
-    Desc, In, Join, LeftJoin)
-from storm.store import Store
+import apt_pkg
 from sqlobject import SQLObjectNotFound
+from storm.expr import (
+    Desc,
+    In,
+    Join,
+    LeftJoin,
+    )
+from storm.locals import (
+    Int,
+    Reference,
+    )
+from storm.store import (
+    EmptyResultSet,
+    Store,
+    )
+from zope.component import getUtility
+from zope.interface import implements
+from zope.security.proxy import (
+    ProxyFactory,
+    removeSecurityProxy,
+    )
 
 from canonical.config import config
-from canonical.database.sqlbase import quote_like, SQLBase, sqlvalues
-from canonical.launchpad.browser.librarian import (
-    ProxiedLibraryFileAlias)
+from canonical.database.sqlbase import (
+    quote_like,
+    SQLBase,
+    sqlvalues,
+    )
+from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
 from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet)
+    DecoratedResultSet,
+    )
 from canonical.launchpad.database.librarian import (
-    LibraryFileAlias, LibraryFileContent)
+    LibraryFileAlias,
+    LibraryFileContent,
+    )
 from canonical.launchpad.helpers import (
-     get_contact_email_addresses, get_email_template)
-from canonical.launchpad.interfaces.launchpad import (
-    NotFoundError, ILaunchpadCelebrities)
-from canonical.launchpad.interfaces.lpstorm import IMasterObject, ISlaveStore
+    get_contact_email_addresses,
+    get_email_template,
+    )
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.lpstorm import (
+    IMasterObject,
+    ISlaveStore,
+    )
 from canonical.launchpad.mail import (
-    simple_sendmail, format_address)
+    format_address,
+    simple_sendmail,
+    )
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 from canonical.launchpad.webapp.tales import DurationFormatterAPI
+from lp.app.errors import NotFoundError
 from lp.archivepublisher.utils import get_ppa_reference
-from lp.buildmaster.interfaces.buildbase import BuildStatus
-from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
-from lp.buildmaster.interfaces.packagebuild import (
-    IPackageBuildSource)
+from lp.buildmaster.enums import (
+    BuildFarmJobType,
+    BuildStatus,
+    )
+from lp.buildmaster.interfaces.packagebuild import IPackageBuildSource
+from lp.buildmaster.model.builder import Builder
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.buildmaster.model.packagebuild import (
-    PackageBuild, PackageBuildDerived)
+    PackageBuild,
+    PackageBuildDerived,
+    )
 from lp.services.job.model.job import Job
-from lp.soyuz.interfaces.archive import ArchivePurpose
+from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.binarypackagebuild import (
-    BuildSetStatus, CannotBeRescored, IBinaryPackageBuild,
-    IBinaryPackageBuildSet)
+    BuildSetStatus,
+    CannotBeRescored,
+    IBinaryPackageBuild,
+    IBinaryPackageBuildSet,
+    )
 from lp.soyuz.interfaces.publishing import active_publishing_status
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
-from lp.buildmaster.model.builder import Builder
 from lp.soyuz.model.buildpackagejob import BuildPackageJob
 from lp.soyuz.model.files import BinaryPackageFile
 from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 from lp.soyuz.model.queue import (
-    PackageUpload, PackageUploadBuild)
+    PackageUpload,
+    PackageUploadBuild,
+    )
 
 
 def get_binary_build_for_build_farm_job(build_farm_job):
@@ -324,7 +359,7 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
         self.buildqueue_record.manualScore(score)
 
     def makeJob(self):
-        """See `IBuildBase`."""
+        """See `IBuildFarmJob`."""
         store = Store.of(self)
         job = Job()
         store.add(job)
@@ -451,7 +486,7 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
         binpackageformat, component,section, priority, shlibdeps,
         depends, recommends, suggests, conflicts, replaces, provides,
         pre_depends, enhances, breaks, essential, installedsize,
-        architecturespecific):
+        architecturespecific, debug_package):
         """See IBuild."""
         return BinaryPackageRelease(
             build=self, binarypackagename=binarypackagename, version=version,
@@ -462,10 +497,11 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
             suggests=suggests, conflicts=conflicts, replaces=replaces,
             provides=provides, pre_depends=pre_depends, enhances=enhances,
             breaks=breaks, essential=essential, installedsize=installedsize,
-            architecturespecific=architecturespecific)
+            architecturespecific=architecturespecific,
+            debug_package=debug_package)
 
     def estimateDuration(self):
-        """See `IBuildBase`."""
+        """See `IPackageBuild`."""
         # Always include the primary archive when looking for
         # past build times (just in case that none can be found
         # in a PPA or copy archive).
@@ -525,7 +561,7 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
         return self.binarypackages.count() > 0
 
     def notify(self, extra_info=None):
-        """See `IBuildBase`.
+        """See `IPackageBuild`.
 
         If config.buildmaster.build_notification is disable, simply
         return.
@@ -678,14 +714,11 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
 
     def _getDebByFileName(self, filename):
         """Helper function to get a .deb LFA in the context of this build."""
-        store = Store.of(self)
-        return store.find(
-            LibraryFileAlias,
-            BinaryPackageRelease.build == self.id,
-            BinaryPackageFile.binarypackagerelease == BinaryPackageRelease.id,
-            LibraryFileAlias.id == BinaryPackageFile.libraryfileID,
-            LibraryFileAlias.filename == filename
-            ).one()
+        bpf = self.getBinaryPackageFileByName(filename)
+        if bpf is not None:
+            return bpf.libraryfile
+        else:
+            return None
 
     def getFileByName(self, filename):
         """See `IBuild`."""
@@ -704,6 +737,15 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
             return file_object
 
         raise NotFoundError(filename)
+
+    def getBinaryPackageFileByName(self, filename):
+        """See `IBuild`."""
+        return Store.of(self).find(
+            BinaryPackageFile,
+            BinaryPackageRelease.build == self.id,
+            BinaryPackageFile.binarypackagerelease == BinaryPackageRelease.id,
+            LibraryFileAlias.id == BinaryPackageFile.libraryfileID,
+            LibraryFileAlias.filename == filename).one()
 
     def getSpecificJob(self):
         """See `IBuildFarmJob`."""
@@ -878,8 +920,8 @@ class BinaryPackageBuildSet:
             BinaryPackageBuild.select(
                 clause, clauseTables=clauseTables, orderBy=orderBy))
 
-    def getBuildsByArchIds(self, arch_ids, status=None, name=None,
-                           pocket=None):
+    def getBuildsByArchIds(self, distribution, arch_ids, status=None,
+                           name=None, pocket=None):
         """See `IBinaryPackageBuildSet`."""
         # If not distroarchseries was found return empty list
         if not arch_ids:
@@ -938,12 +980,9 @@ class BinaryPackageBuildSet:
 
         # Only pick builds from the distribution's main archive to
         # exclude PPA builds
-        clauseTables.append("Archive")
-        condition_clauses.append("""
-            Archive.purpose IN (%s) AND
-            Archive.id = PackageBuild.archive
-            """ % ','.join(
-                sqlvalues(ArchivePurpose.PRIMARY, ArchivePurpose.PARTNER)))
+        condition_clauses.append(
+            "PackageBuild.archive IN %s" %
+            sqlvalues(list(distribution.all_distro_archive_ids)))
 
         return self._decorate_with_prejoins(
             BinaryPackageBuild.select(' AND '.join(condition_clauses),
@@ -1152,7 +1191,7 @@ class BinaryPackageBuildSet:
             )
         result_set = store.using(*origin).find(
             (BuildQueue, Builder, BuildPackageJob),
-            In(BinaryPackageBuild.id, build_ids))
+            BinaryPackageBuild.id.is_in(build_ids))
 
         return result_set
 

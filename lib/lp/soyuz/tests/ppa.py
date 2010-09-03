@@ -9,22 +9,31 @@ __metaclass__ = type
 from zope.component import getUtility
 
 from canonical.database.constants import UTC_NOW
-
-from lp.soyuz.model.publishing import (
-    BinaryPackagePublishingHistory,
-    SourcePackagePublishingHistory)
-from lp.soyuz.model.binarypackagerelease import (
-    BinaryPackageRelease)
-from lp.soyuz.model.sourcepackagerelease import (
-    SourcePackageRelease)
-from lp.soyuz.interfaces.component import IComponentSet
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
-from lp.soyuz.interfaces.publishing import (
-    PackagePublishingPriority, PackagePublishingStatus)
+from lp.soyuz.interfaces.component import IComponentSet
+from lp.soyuz.enums import (
+    PackagePublishingPriority,
+    PackagePublishingStatus,
+    )
+from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
+from lp.soyuz.model.publishing import (
+    BinaryPackagePublishingHistory,
+    SourcePackagePublishingHistory,
+    )
+from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
+from lp.testing.sampledata import (
+    HOARY_DISTROSERIES_NAME,
+    I386_ARCHITECTURE_NAME,
+    MAIN_COMPONENT_NAME,
+    UBUNTU_DEVELOPER_ADMIN_NAME,
+    UBUNTU_UPLOAD_TEAM_NAME,
+    WARTY_ONLY_SOURCEPACKAGENAME,
+    WARTY_ONLY_SOURCEPACKAGEVERSION,
+    )
 
 
 def publishToTeamPPA(team_name=None, distroseries_name=None,
@@ -40,14 +49,15 @@ def publishToTeamPPA(team_name=None, distroseries_name=None,
     The team PPA must already be created.
     """
     if team_name is None:
-        team_name = "ubuntu-team"
+        team_name = UBUNTU_UPLOAD_TEAM_NAME
     if team_member_name is None:
-        team_member_name = "name16"
+        team_member_name = UBUNTU_DEVELOPER_ADMIN_NAME
     team = getUtility(IPersonSet).getByName(team_name)
     _publishToPPA(
         team.archive, team_member_name, distroseries_name,
         sourcepackage_name, sourcepackage_version, distribution_name,
         binarypackage_version, publishing_status, arch)
+
 
 def publishToPPA(person_name, distroseries_name=None, sourcepackage_name=None,
                  sourcepackage_version=None, distribution_name=None,
@@ -59,6 +69,7 @@ def publishToPPA(person_name, distroseries_name=None, sourcepackage_name=None,
                   distribution_name, binarypackage_version, publishing_status,
                   arch)
 
+
 def _publishToPPA(archive, person_name, distroseries_name, sourcepackage_name,
                   sourcepackage_version, distribution_name,
                   binarypackage_version, publishing_status, arch):
@@ -67,15 +78,15 @@ def _publishToPPA(archive, person_name, distroseries_name, sourcepackage_name,
     else:
         distribution = getUtility(IDistributionSet)[distribution_name]
     if distroseries_name is None:
-        distroseries_name = "hoary"
+        distroseries_name = HOARY_DISTROSERIES_NAME
     if sourcepackage_name is None:
-        sourcepackage_name = "mozilla-firefox"
+        sourcepackage_name = WARTY_ONLY_SOURCEPACKAGENAME
     if sourcepackage_version is None:
-        sourcepackage_version = "0.9"
+        sourcepackage_version = WARTY_ONLY_SOURCEPACKAGEVERSION
     if publishing_status is None:
         publishing_status = PackagePublishingStatus.PENDING
     if arch is None:
-        arch = "i386"
+        arch = I386_ARCHITECTURE_NAME
 
     sourcepackagename = getUtility(ISourcePackageNameSet)[sourcepackage_name]
     distroseries = distribution[distroseries_name]
@@ -88,7 +99,7 @@ def _publishToPPA(archive, person_name, distroseries_name, sourcepackage_name,
         # XXX: kiko 2007-10-25: oy, what a hack. I need to test with cprov
         # and he doesn't have a signing key in the database
         sourcepackagerelease.dscsigningkey = person.gpg_keys[0]
-    main_component = getUtility(IComponentSet)['main']
+    main_component = getUtility(IComponentSet)[MAIN_COMPONENT_NAME]
     SourcePackagePublishingHistory(
         distroseries=distroseries,
         sourcepackagerelease=sourcepackagerelease,

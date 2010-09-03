@@ -9,16 +9,22 @@ __all__ = [
     'FeaturedProjectsView',
     ]
 
-from zope.interface import Interface
 from zope.component import getUtility
-from zope.schema import Choice, Set
+from zope.interface import Interface
+from zope.schema import (
+    Choice,
+    Set,
+    )
 
 from canonical.launchpad import _
-from lp.registry.interfaces.pillar import IPillarNameSet
 from canonical.launchpad.webapp import (
-    action, canonical_url, custom_widget, LaunchpadFormView,
+    action,
+    canonical_url,
+    custom_widget,
+    LaunchpadFormView,
     )
 from canonical.widgets import LabeledMultiCheckBoxWidget
+from lp.registry.interfaces.pillar import IPillarNameSet
 
 
 class FeaturedProjectForm(Interface):

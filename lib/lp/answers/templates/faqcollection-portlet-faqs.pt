@@ -26,8 +26,7 @@
     </li>
   </ul>
 
-  <ul class="horizontal"
-    tal:condition="context/required:launchpad.Moderate">
+  <ul class="horizontal">
     <li>
       <a tal:replace="structure view/menu:answers/create_faq/fmt:link" />
     </li>

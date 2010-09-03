@@ -49,7 +49,7 @@ Create a source with one single specific architecture to be built.
     ...     sourcename='test-buildd-4', version='670',
     ...     architecturehintlist="hppa")
 
-Create sources with 'any-$(ARCH)' and 'linux-$(ARCH)' notation.
+Create sources with 'any-$(ARCH)', 'linux-$(ARCH)' and 'linux-any' notation.
 
     >>> pub_any_foo = test_publisher.getPubSource(
     ...     sourcename='test-buildd-6', version='672',
@@ -59,13 +59,17 @@ Create sources with 'any-$(ARCH)' and 'linux-$(ARCH)' notation.
     ...     sourcename='test-buildd-7', version='673',
     ...     architecturehintlist="linux-i386")
 
+    >>> pub_linux_any = test_publisher.getPubSource(
+    ...     sourcename='test-buildd-7', version='674',
+    ...     architecturehintlist="linux-any")
+
 Create a PPA source publication.
 
     >>> from canonical.launchpad.interfaces import IPersonSet
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
 
     >>> pub_ppa = test_publisher.getPubSource(
-    ...     sourcename='test-ppa', version='674',
+    ...     sourcename='test-ppa', version='675',
     ...     architecturehintlist="i386 hppa",
     ...     archive=cprov.archive)
 
@@ -134,6 +138,10 @@ corresponding architecture, since only linux is supported in Ubuntu.
     hppa
 
     >>> print_build_architectures(pub_linux_foo)
+    i386
+
+    >>> print_build_architectures(pub_linux_any)
+    hppa
     i386
 
 
@@ -247,7 +255,7 @@ this aspect below.
 To check binary PAS listings we'll use a source publication for which
 produces a single binary.
 
-    >>> from lp.soyuz.interfaces.publishing import (
+    >>> from lp.soyuz.enums import (
     ...     PackagePublishingStatus)
 
     >>> LaunchpadZopelessLayer.switchDbUser("launchpad")

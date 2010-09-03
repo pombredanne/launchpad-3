@@ -4,13 +4,16 @@
 """Character encoding utilities"""
 
 __metaclass__ = type
+__all__ = [
+    'ascii_smash',
+    'escape_nonascii_uniquely',
+    'guess',
+    ]
+
 import re
 import codecs
 import unicodedata
-from htmlentitydefs import codepoint2name
 from cStringIO import StringIO
-
-__all__ = ['guess', 'ascii_smash']
 
 _boms = [
     (codecs.BOM_UTF16_BE, 'utf_16_be'),
@@ -149,33 +152,6 @@ def guess(s):
 
     # Otherwise we default to ISO-8859-1
     return unicode(s, 'ISO-8859-1', 'replace')
-
-
-# def unicode_to_unaccented_str(text):
-#     """Converts a unicode string into an ascii-only str, converting accented
-#     characters to their plain equivalents.
-#
-#     >>> unicode_to_unaccented_str(u'')
-#     ''
-#     >>> unicode_to_unaccented_str(u'foo bar 123')
-#     'foo bar 123'
-#     >>> unicode_to_unaccented_str(u'viva S\xe3o Carlos!')
-#     'viva Sao Carlos!'
-#     """
-#     assert isinstance(text, unicode)
-#     L = []
-#     for char in text:
-#         charnum = ord(char)
-#         codepoint = codepoint2name.get(charnum)
-#         if codepoint is not None:
-#             strchar = codepoint[0]
-#         else:
-#             try:
-#                 strchar = char.encode('ascii')
-#             except UnicodeEncodeError:
-#                 strchar = ''
-#         L.append(strchar)
-#     return ''.join(L)
 
 
 def ascii_smash(unicode_string):
@@ -370,6 +346,44 @@ def ascii_char_smash(char):
     if match is not None:
         return match.group(1)
 
-    # Something we can"t represent. Return empty string.
+    # Something we can't represent. Return empty string.
     return ""
 
+
+def escape_nonascii_uniquely(bogus_string):
+    """Replace non-ascii characters with a hex representation.
+
+    This is mainly for preventing emails with invalid characters from causing
+    oopses. The nonascii characters could have been removed or just converted
+    to "?", but this provides some insight into what the bogus data was, and
+    it prevents the message-id from two unrelated emails matching because
+    all the nonascii characters have been replaced with the same ascii
+    character.
+
+    Unfortunately, all the strings below are actually part of this
+    function's docstring, so python processes the backslash once before
+    doctest, and then python processes it again when doctest runs the
+    test. This makes it confusing, since four backslashes will get
+    converted into a single ascii character.
+
+    >>> print len('\xa9'), len('\\xa9'), len('\\\\xa9')
+    1 1 4
+    >>> print escape_nonascii_uniquely('hello \xa9')
+    hello \\xa9
+    >>> print escape_nonascii_uniquely('hello \\xa9')
+    hello \\xa9
+
+    This string only has ascii characters, so escape_nonascii_uniquely()
+    actually has no effect.
+
+    >>> print escape_nonascii_uniquely('hello \\\\xa9')
+    hello \\xa9
+    """
+    nonascii_regex = re.compile(r'[\200-\377]')
+    # By encoding the invalid ascii with a backslash, x, and then the
+    # hex value, it makes it easy to decode it by pasting into a python
+    # interpreter. quopri() is not used, since that could caused the
+    # decoding of an email to fail.
+    def quote(match):
+        return '\\x%x' % ord(match.group(0))
+    return nonascii_regex.sub(quote, bogus_string)

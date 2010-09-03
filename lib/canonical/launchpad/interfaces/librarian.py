@@ -9,6 +9,7 @@ __metaclass__ = type
 
 __all__ = [
     'ILibraryFileAlias',
+    'ILibraryFileAliasWithParent',
     'ILibraryFileAliasSet',
     'ILibraryFileContent',
     'ILibraryFileDownloadCount',
@@ -16,12 +17,21 @@ __all__ = [
     ]
 
 from datetime import datetime
-from pytz import utc
-
-from zope.interface import Attribute, Interface
-from zope.schema import Bool, Choice, Date, Datetime, Int, TextLine
 
 from lazr.restful.fields import Reference
+from pytz import utc
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Bool,
+    Choice,
+    Date,
+    Datetime,
+    Int,
+    TextLine,
+    )
 
 from canonical.launchpad import _
 from canonical.librarian.interfaces import LIBRARIAN_SERVER_DEFAULT_TIMEOUT
@@ -114,6 +124,10 @@ class ILibraryFileAlias(Interface):
         given day/country, we create one with the given count.  Otherwise we
         just increase the count of the existing one by the given count.
         """
+
+
+class ILibraryFileAliasWithParent(ILibraryFileAlias):
+    """A ILibraryFileAlias that knows about its parent."""
 
 
 class ILibraryFileContent(Interface):

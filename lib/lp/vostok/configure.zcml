@@ -1,0 +1,25 @@
+<configure
+   xmlns="http://namespaces.zope.org/zope"
+   xmlns:browser="http://namespaces.zope.org/browser"
+   xmlns:i18n="http://namespaces.zope.org/i18n"
+   xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
+   i18n_domain="launchpad">
+
+  <include package=".browser" />
+
+  <publisher
+      name="vostok"
+      factory="lp.vostok.publisher.vostok_request_publication_factory"
+      methods="*"
+      mimetypes="*" />
+  <utility
+      component="lp.vostok.publisher.VostokLayer"
+      provides="zope.publisher.interfaces.browser.IDefaultBrowserLayer"
+      name="vostok" />
+
+  <securedutility
+     class="lp.vostok.publisher.VostokRoot"
+     provides="lp.vostok.publisher.IVostokRoot">
+    <allow interface="lp.vostok.publisher.IVostokRoot" />
+  </securedutility>
+</configure>

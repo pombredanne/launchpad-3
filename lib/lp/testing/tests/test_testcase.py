@@ -7,18 +7,21 @@ __metaclass__ = type
 
 from StringIO import StringIO
 import sys
-
-from storm.store import Store
 import unittest
 
+from storm.store import Store
 from zope.component import getUtility
 
 from canonical.launchpad.webapp import errorlog
 from canonical.testing.layers import (
-    DatabaseFunctionalLayer, FunctionalLayer)
-
+    DatabaseFunctionalLayer,
+    FunctionalLayer,
+    )
 from lp.code.interfaces.branch import IBranchSet
-from lp.testing import record_statements, TestCaseWithFactory
+from lp.testing import (
+    record_statements,
+    TestCaseWithFactory,
+    )
 
 
 class TestRecordStatements(TestCaseWithFactory):
@@ -86,7 +89,7 @@ class TestCaptureOops(TestCaseWithFactory):
         oops = errorlog.globalErrorUtility.getLastOopsReport()
         # We have to serialise and read in again, as that is what
         # getLastOopsReport does, and doing so changes whether the
-        # timezone is in the timestamp
+        # timezone is in the timestamp.
         content = StringIO()
         content.writelines(self.getDetails()['oops-0'].iter_text())
         content.seek(0)

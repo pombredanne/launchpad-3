@@ -10,14 +10,21 @@ __all__ = [
     ]
 
 
-from zope.interface import Interface, Attribute
-from zope.schema import Choice, Object, TextLine
 from lazr.restful.declarations import exported
 from lazr.restful.fields import Reference
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Choice,
+    Object,
+    TextLine,
+    )
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
@@ -106,7 +113,7 @@ class IPackageBuild(IBuildFarmJob):
             stored.
         """
 
-    def getLogFromSlave():
+    def getLogFromSlave(build):
         """Get last buildlog from slave. """
 
     def getUploadLogContent(root, leaf):
@@ -120,7 +127,7 @@ class IPackageBuild(IBuildFarmJob):
     def estimateDuration():
         """Estimate the build duration."""
 
-    def storeBuildInfo(librarian, slave_status):
+    def storeBuildInfo(build, librarian, slave_status):
         """Store available information for the build job.
 
         Derived classes can override this as needed, and call it from
@@ -193,4 +200,3 @@ class IPackageBuildSet(Interface):
             will be returned.
         :return: a `ResultSet` representing the requested package builds.
         """
-
