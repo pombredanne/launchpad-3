@@ -215,7 +215,7 @@ class UploadProcessor:
         build = getUtility(IPackageBuildSet).getByID(build_id)
         if build is None:
             self.log.warn(
-                "Unable to find package build with id %d. Skipping.",
+                "Unable to find package build with id %d. Skipping." %
                 build_id)
             return
         if build.status != BuildStatus.UPLOADING:

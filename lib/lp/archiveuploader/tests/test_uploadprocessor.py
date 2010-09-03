@@ -1886,6 +1886,8 @@ class TestBuildUploadProcessor(TestUploadProcessorBase):
         source_pub = self.publishPackage('bar', '1.0-1')
         [build] = source_pub.createMissingBuilds()
 
+        build.status = BuildStatus.UPLOADING
+
         # Move the source from the accepted queue.
         [queue_item] = self.breezy.getQueueItems(
             status=PackageUploadStatus.ACCEPTED,
@@ -1919,6 +1921,8 @@ class TestBuildUploadProcessor(TestUploadProcessorBase):
         self.processUpload(self.uploadprocessor, upload_dir)
         source_pub = self.publishPackage('bar', '1.0-1')
         [build] = source_pub.createMissingBuilds()
+
+        build.status = BuildStatus.UPLOADING
 
         # Move the source from the accepted queue.
         [queue_item] = self.breezy.getQueueItems(
