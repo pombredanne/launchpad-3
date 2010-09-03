@@ -312,9 +312,12 @@ class TestCaseWithLPForkingServiceSubprocess(TestCaseWithSubprocess):
         stdin_path = os.path.join(path, 'stdin')
         stdout_path = os.path.join(path, 'stdout')
         stderr_path = os.path.join(path, 'stderr')
+        # Consider the ordering, the other side should open 'stdin' first, but
+        # we want it to block until we open the last one, or we race and it can
+        # delete the other handles before we get to open them.
+        child_stdin = open(stdin_path, 'wb')
         child_stdout = open(stdout_path, 'rb')
         child_stderr = open(stderr_path, 'rb')
-        child_stdin = open(stdin_path, 'wb')
         return child_stdin, child_stdout, child_stderr
 
     def communicate_with_fork(self, path, stdin=None):
@@ -362,4 +365,3 @@ class TestCaseWithLPForkingServiceSubprocess(TestCaseWithSubprocess):
                 '1 %s2 %s' % (stdout_msg, stderr_msg))
             self.assertEqualDiff(stdout_msg, stdout)
             self.assertEqualDiff(stderr_msg, stderr)
-        self.fail('failure')

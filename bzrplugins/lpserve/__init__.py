@@ -299,7 +299,7 @@ class LPForkingService(object):
         trace.note('Shutting down. Waiting up to %.0fs for %d child processes'
                    % (self.WAIT_FOR_CHILDREN_TIMEOUT,
                       len(self._child_processes),))
-        self._wait_for_children()
+        self._shutdown_children()
         trace.note('Exiting')
 
     def log(self, client_addr, message):
@@ -349,7 +349,7 @@ class LPForkingService(object):
                               % (c_id, c_path))
                 shutil.rmtree(c_path)
 
-    def _wait_secs_for_children(self, secs):
+    def _wait_for_children(self, secs):
         start = time.time()
         end = start + secs
         while self._child_processes:
@@ -358,8 +358,8 @@ class LPForkingService(object):
                 break
             time.sleep(self.SLEEP_FOR_CHILDREN_TIMEOUT)
 
-    def _wait_for_children(self):
-        self._wait_secs_for_children(self.WAIT_FOR_CHILDREN_TIMEOUT)
+    def _shutdown_children(self):
+        self._wait_for_children(self.WAIT_FOR_CHILDREN_TIMEOUT)
         if self._child_processes:
             trace.warning('Failed to stop children: %s'
                 % ', '.join(map(str, self._child_processes)))
@@ -367,14 +367,14 @@ class LPForkingService(object):
                 trace.warning('sending SIGINT to %d' % (c_id,))
                 os.kill(c_id, signal.SIGINT)
             # We sent the SIGINT signal, see if they exited
-            self._wait_secs_for_children(1.0)
+            self._wait_for_children(1.0)
         if self._child_processes:
             # No? Then maybe something more powerful
             for c_id, c_path in self._child_processes.iteritems():
                 trace.warning('sending SIGKILL to %d' % (c_id,))
                 os.kill(c_id, signal.SIGKILL)
             # We sent the SIGKILL signal, see if they exited
-            self._wait_secs_for_children(1.0)
+            self._wait_for_children(1.0)
         if self._child_processes:
             for c_id, c_path in self._child_processes.iteritems():
                 if os.path.exists(c_path):
