@@ -19,7 +19,6 @@ from zope.component import getUtility
 from zope.interface import Interface
 from zope.schema import TextLine
 
-from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.webapp import (
     action,
@@ -35,6 +34,7 @@ from lp.code.enums import (
     )
 from lp.code.interfaces.codeimportevent import ICodeImportEvent
 from lp.code.interfaces.codeimportmachine import ICodeImportMachineSet
+from lp.services.propertycache import cachedproperty
 
 
 class CodeImportMachineBreadcrumb(Breadcrumb):

@@ -43,8 +43,8 @@ created from a bug (but it will not state why). The most important
 prerequisite for a bug to become a question is that the bugtarget's
 pillar must use Launchpad to track bugs.
 
-    >>> bug.affected_pillars[0].official_malone
-    True
+    >>> bug.affected_pillars[0].bug_tracking_usage
+    <DBItem ServiceUsage.LAUNCHPAD, (20) Launchpad>   
     >>> bug.canBeAQuestion()
     True
 
@@ -56,8 +56,8 @@ distribution does not use Launchpad to track bugs.
     >>> firefox = firefox_bug.bugtasks[0].target
     >>> IQuestionTarget.providedBy(firefox)
     True
-    >>> firefox.distribution.official_malone
-    False
+    >>> firefox.distribution.bug_tracking_usage
+    <DBItem ServiceUsage.UNKNOWN, (10) Unknown>
     >>> firefox_bug.canBeAQuestion()
     False
 
