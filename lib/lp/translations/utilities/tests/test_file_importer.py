@@ -219,14 +219,16 @@ class FileImporterTestCase(TestCaseWithFactory):
             "FileImporter.getOrCreatePOTMessageSet did not get an existing "
             "IPOTMsgSet object from the database.")
 
-    def test_storeTranslationsInDatabase_empty_imported(self):
+    def _test_storeTranslationsInDatabase_empty(self, is_published=True):
         """Check whether we store empty messages appropriately."""
+        # Construct a POFile importer.
         pot_importer = self._createPOTFileImporter(
             TEST_TEMPLATE_EXPORTED, is_published=True)
         importer = self._createPOFileImporter(
             pot_importer, TEST_TRANSLATION_EXPORTED, is_published=True,
             person=self.importer_person)
 
+        # Empty message to import.
         message = TranslationMessageData()
         message.addTranslation(0, u'')
 
@@ -234,25 +236,16 @@ class FileImporterTestCase(TestCaseWithFactory):
             potemplate = importer.potemplate, sequence=50)
         translation = importer.storeTranslationsInDatabase(
             message, potmsgset)
+        # No TranslationMessage is created.
         self.assertIs(None, translation)
 
+    def test_storeTranslationsInDatabase_empty_imported(self):
+        """Storing empty messages for published imports appropriately."""
+        self._test_storeTranslationsInDatabase_empty(is_published=True)
+
     def test_storeTranslationsInDatabase_empty_user(self):
-        """Check whether we store empty messages appropriately."""
-        pot_importer = self._createPOTFileImporter(
-            TEST_TEMPLATE_EXPORTED, is_published=True)
-        importer = self._createPOFileImporter(
-            pot_importer, TEST_TRANSLATION_EXPORTED, is_published=False,
-            person=self.importer_person)
-
-        message = TranslationMessageData()
-        message.addTranslation(0, u'')
-
-        potmsgset = self.factory.makePOTMsgSet(
-            potemplate = importer.potemplate, sequence=50)
-        translation = importer.storeTranslationsInDatabase(
-            message, potmsgset)
-        self.assertIsNot(None, translation)
-        self.assertEquals(importer.last_translator, translation.reviewer)
+        """Store empty messages for user uploads appropriately."""
+        self._test_storeTranslationsInDatabase_empty(is_published=False)
 
     def test_FileImporter_storeTranslationsInDatabase_privileges(self):
         """Test `storeTranslationsInDatabase` privileges."""

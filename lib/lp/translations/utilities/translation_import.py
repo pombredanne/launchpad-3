@@ -450,7 +450,9 @@ class FileImporter(object):
             # store English strings in an IPOFile.
             return None
 
-        if not message.translations:
+        if (not message.translations or
+            set(message.translations) == set([u'']) or
+            set(message.translations) == set([None])):
             # We don't have anything to import.
             return None
 
