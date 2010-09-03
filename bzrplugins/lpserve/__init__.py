@@ -26,7 +26,7 @@ import time
 
 from bzrlib.commands import Command, register_command
 from bzrlib.option import Option
-from bzrlib import errors, lockdir, ui, trace
+from bzrlib import commands, errors, lockdir, ui, trace
 
 from bzrlib.smart import medium, server
 from bzrlib.transport import get_transport
@@ -169,6 +169,7 @@ class LPForkingService(object):
         self.port = self._sockname[1]
         self._server_socket.listen(1)
         self._server_socket.settimeout(self.SOCKET_TIMEOUT)
+        trace.mutter('set socket timeout to: %s' % (self.SOCKET_TIMEOUT,))
 
     def _create_child_file_descriptors(self, base_path):
         stdin_path = os.path.join(base_path, 'stdin')
@@ -280,7 +281,6 @@ class LPForkingService(object):
             except self._socket_timeout:
                 # Check on the children, and see if we think we should quit
                 # anyway
-                trace.mutter('*timeout*')
                 self._poll_children()
             except self._socket_error, e:
                 # we might get a EBADF here, any other socket errors
@@ -424,7 +424,9 @@ class cmd_launchpad_forking_service(Command):
                         help='Listen for connections on [host:]portnumber',
                         type=str),
                      Option('preload',
-                        help='Do/don\'t preload libraries before startup.'),
+                        help="Do/don't preload libraries before startup."),
+                     Option('children-timeout', type=int,
+                        help="Only wait XX seconds for children to exit"),
                     ]
 
     def _preload_libraries(self):
@@ -443,13 +445,15 @@ class cmd_launchpad_forking_service(Command):
             port = int(port)
         return host, port
 
-    def run(self, port=None, preload=True):
+    def run(self, port=None, preload=True,
+            children_timeout=LPForkingService.WAIT_FOR_CHILDREN_TIMEOUT):
         host, port = self._get_host_and_port(port)
         if preload:
             # We note this because it often takes a fair amount of time.
             trace.note('Preloading %d modules' % (len(libraries_to_preload),))
             self._preload_libraries()
         service = LPForkingService(host, port)
+        service.WAIT_FOR_CHILDREN_TIMEOUT = children_timeout
         service.main_loop()
 
 register_command(cmd_launchpad_forking_service)

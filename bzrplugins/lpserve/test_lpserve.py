@@ -261,11 +261,13 @@ class TestCaseWithLPForkingServiceSubprocess(TestCaseWithSubprocess):
     def start_service_subprocess(self):
         # Make sure this plugin is exposed to the subprocess
         # SLOOWWW (~2.4 seconds, which is why we are doing the work anyway)
-        old_val = osutils.set_or_unset_env('BZR_PLUGIN_PATH',
-                                           lpserve.__path__[0])
-        self.addCleanup(osutils.set_or_unset_env, 'BZR_PLUGIN_PATH', old_val)
+        env_changes = {'BZR_PLUGIN_PATH': lpserve.__path__[0],
+                       # This may break in bzr 2.3
+                       'BZR_LOG': self._log_file_name}
         proc = self.start_bzr_subprocess(
-            ['lp-service', '--port', '127.0.0.1:0', '--no-preload'])
+            ['lp-service', '--port', '127.0.0.1:0', '--no-preload',
+             '--children-timeout=1'],
+            env_changes=env_changes)
         trace.mutter('started lp-service subprocess')
         # preload_line = proc.stderr.readline()
         # self.assertStartsWith(preload_line, 'Preloading')
@@ -292,20 +294,37 @@ class TestCaseWithLPForkingServiceSubprocess(TestCaseWithSubprocess):
             time.sleep(0.1)
         self.assertEqual('quit command requested... exiting\n', response)
 
-    def test_fork_child_hello(self):
-        response = self.send_message_to_service('fork rocks\n')
-        if response.startswith('FAILURE'):
-            self.fail('Fork request failed')
-        self.assertContainsRe(response, '/lp-forking-service-child-')
-        path = response.strip()
+    def communicate_with_fork(self, path, stdin=None):
         stdin_path = os.path.join(path, 'stdin')
         stdout_path = os.path.join(path, 'stdout')
         stderr_path = os.path.join(path, 'stderr')
         child_stdout = open(stdout_path, 'rb')
         child_stderr = open(stderr_path, 'rb')
         child_stdin = open(stdin_path, 'wb')
+        if stdin is not None:
+            child_stdin.write(stdin)
         child_stdin.close()
         stdout_content = child_stdout.read()
         stderr_content = child_stderr.read()
-        self.assertEqual('it sure does!\n', stdout_content)
+        return stdout_content, stderr_content
+
+    def test_fork_child_rocks(self):
+        response = self.send_message_to_service('fork rocks\n')
+        if response.startswith('FAILURE'):
+            self.fail('Fork request failed: %s' % (response,))
+        self.assertContainsRe(response, '/lp-forking-service-child-')
+        path = response.strip()
+        stdout_content, stderr_content = self.communicate_with_fork(path, None)
+        self.assertEqual('It sure does!\n', stdout_content)
+        self.assertEqual('', stderr_content)
+
+    def test_fork_child_hello(self):
+        response = self.send_message_to_service('fork lp-serve --inet 2\n')
+        if response.startswith('FAILURE'):
+            self.fail('Fork request failed')
+        self.assertContainsRe(response, '/lp-forking-service-child-')
+        path = response.strip()
+        stdout_content, stderr_content = self.communicate_with_fork(path,
+            'hello\n')
+        self.assertEqual('ok\x012\n', stdout_content)
         self.assertEqual('', stderr_content)
