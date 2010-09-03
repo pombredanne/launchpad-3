@@ -9128,13 +9128,10 @@ hardware_is_linked_to_bug to True.</p>
             <wadl:param style="query" name="ws.op"
                         required="true" fixed="searchTasks"/>
             <wadl:param style="query" required="false"
-                        name="hardware_vendor_id">
+                        name="status_upstream">
               <wadl:doc xmlns="http://www.w3.org/1999/xhtml">
-<p>The vendor ID of a hardware device related to a bug.</p>
-<p>Allowed values of the vendor ID depend on the bus of the device.</p>
-<p>Vendor IDs of PCI, PCCard and USB devices are hexadecimal string representations of 16 bit integers in the format '0x01ab': The prefix '0x', followed by exactly 4 digits; where a digit is one of the characters 0..9, a..f. The characters A..F are not allowed.</p>
-<p>SCSI vendor IDs are strings with exactly 8 characters. Shorter names are right-padded with space (0x20) characters.</p>
-<p>IDs for other buses may be arbitrary strings.</p>
+<p>Status upstream</p>
+<p>Indicates the status of any remote watches associated with the bug.  Possible values include: pending_bugwatch, hide_upstream, resolved_upstream, and open_upstream.</p>
 
 </wadl:doc>
               
@@ -9145,10 +9142,13 @@ hardware_is_linked_to_bug to True.</p>
               <wadl:link resource_type="https://api.launchpad.dev/1.0/#person"/>
             </wadl:param>
             <wadl:param style="query" required="false"
-                        name="status_upstream">
+                        name="hardware_vendor_id">
               <wadl:doc xmlns="http://www.w3.org/1999/xhtml">
-<p>Status upstream</p>
-<p>Indicates the status of any remote watches associated with the bug.  Possible values include: pending_bugwatch, hide_upstream, resolved_upstream, and open_upstream.</p>
+<p>The vendor ID of a hardware device related to a bug.</p>
+<p>Allowed values of the vendor ID depend on the bus of the device.</p>
+<p>Vendor IDs of PCI, PCCard and USB devices are hexadecimal string representations of 16 bit integers in the format '0x01ab': The prefix '0x', followed by exactly 4 digits; where a digit is one of the characters 0..9, a..f. The characters A..F are not allowed.</p>
+<p>SCSI vendor IDs are strings with exactly 8 characters. Shorter names are right-padded with space (0x20) characters.</p>
+<p>IDs for other buses may be arbitrary strings.</p>
 
 </wadl:doc>
               
@@ -9302,7 +9302,7 @@ Search for bugs where a bug subscriber owns the given device or uses the given h
             <wadl:param style="query" required="false"
                         name="omit_targeted">
               <wadl:doc xmlns="http://www.w3.org/1999/xhtml">
-Omit bugs targeted to series
+Omit bugs targeted to a series
 </wadl:doc>
               
             </wadl:param>
@@ -11939,13 +11939,10 @@ hardware_is_linked_to_bug to True.</p>
             <wadl:param style="query" name="ws.op"
                         required="true" fixed="searchTasks"/>
             <wadl:param style="query" required="false"
-                        name="hardware_vendor_id">
+                        name="status_upstream">
               <wadl:doc xmlns="http://www.w3.org/1999/xhtml">
-<p>The vendor ID of a hardware device related to a bug.</p>
-<p>Allowed values of the vendor ID depend on the bus of the device.</p>
-<p>Vendor IDs of PCI, PCCard and USB devices are hexadecimal string representations of 16 bit integers in the format '0x01ab': The prefix '0x', followed by exactly 4 digits; where a digit is one of the characters 0..9, a..f. The characters A..F are not allowed.</p>
-<p>SCSI vendor IDs are strings with exactly 8 characters. Shorter names are right-padded with space (0x20) characters.</p>
-<p>IDs for other buses may be arbitrary strings.</p>
+<p>Status upstream</p>
+<p>Indicates the status of any remote watches associated with the bug.  Possible values include: pending_bugwatch, hide_upstream, resolved_upstream, and open_upstream.</p>
 
 </wadl:doc>
               
@@ -11956,10 +11953,13 @@ hardware_is_linked_to_bug to True.</p>
               <wadl:link resource_type="https://api.launchpad.dev/1.0/#person"/>
             </wadl:param>
             <wadl:param style="query" required="false"
-                        name="status_upstream">
+                        name="hardware_vendor_id">
               <wadl:doc xmlns="http://www.w3.org/1999/xhtml">
-<p>Status upstream</p>
-<p>Indicates the status of any remote watches associated with the bug.  Possible values include: pending_bugwatch, hide_upstream, resolved_upstream, and open_upstream.</p>
+<p>The vendor ID of a hardware device related to a bug.</p>
+<p>Allowed values of the vendor ID depend on the bus of the device.</p>
+<p>Vendor IDs of PCI, PCCard and USB devices are hexadecimal string representations of 16 bit integers in the format '0x01ab': The prefix '0x', followed by exactly 4 digits; where a digit is one of the characters 0..9, a..f. The characters A..F are not allowed.</p>
+<p>SCSI vendor IDs are strings with exactly 8 characters. Shorter names are right-padded with space (0x20) characters.</p>
+<p>IDs for other buses may be arbitrary strings.</p>
 
 </wadl:doc>
               
@@ -12113,7 +12113,7 @@ Search for bugs where a bug subscriber owns the given device or uses the given h
             <wadl:param style="query" required="false"
                         name="omit_targeted">
               <wadl:doc xmlns="http://www.w3.org/1999/xhtml">
-Omit bugs targeted to series
+Omit bugs targeted to a series
 </wadl:doc>
               
             </wadl:param>
@@ -13833,13 +13833,10 @@ hardware_is_linked_to_bug to True.</p>
             <wadl:param style="query" name="ws.op"
                         required="true" fixed="searchTasks"/>
             <wadl:param style="query" required="false"
-                        name="hardware_vendor_id">
+                        name="status_upstream">
               <wadl:doc xmlns="http://www.w3.org/1999/xhtml">
-<p>The vendor ID of a hardware device related to a bug.</p>
-<p>Allowed values of the vendor ID depend on the bus of the device.</p>
-<p>Vendor IDs of PCI, PCCard and USB devices are hexadecimal string representations of 16 bit integers in the format '0x01ab': The prefix '0x', followed by exactly 4 digits; where a digit is one of the characters 0..9, a..f. The characters A..F are not allowed.</p>
-<p>SCSI vendor IDs are strings with exactly 8 characters. Shorter names are right-padded with space (0x20) characters.</p>
-<p>IDs for other buses may be arbitrary strings.</p>
+<p>Status upstream</p>
+<p>Indicates the status of any remote watches associated with the bug.  Possible values include: pending_bugwatch, hide_upstream, resolved_upstream, and open_upstream.</p>
 
 </wadl:doc>
               
@@ -13850,10 +13847,13 @@ hardware_is_linked_to_bug to True.</p>
               <wadl:link resource_type="https://api.launchpad.dev/1.0/#person"/>
             </wadl:param>
             <wadl:param style="query" required="false"
-                        name="status_upstream">
+                        name="hardware_vendor_id">
               <wadl:doc xmlns="http://www.w3.org/1999/xhtml">
-<p>Status upstream</p>
-<p>Indicates the status of any remote watches associated with the bug.  Possible values include: pending_bugwatch, hide_upstream, resolved_upstream, and open_upstream.</p>
+<p>The vendor ID of a hardware device related to a bug.</p>
+<p>Allowed values of the vendor ID depend on the bus of the device.</p>
+<p>Vendor IDs of PCI, PCCard and USB devices are hexadecimal string representations of 16 bit integers in the format '0x01ab': The prefix '0x', followed by exactly 4 digits; where a digit is one of the characters 0..9, a..f. The characters A..F are not allowed.</p>
+<p>SCSI vendor IDs are strings with exactly 8 characters. Shorter names are right-padded with space (0x20) characters.</p>
+<p>IDs for other buses may be arbitrary strings.</p>
 
 </wadl:doc>
               
@@ -14007,7 +14007,7 @@ Search for bugs where a bug subscriber owns the given device or uses the given h
             <wadl:param style="query" required="false"
                         name="omit_targeted">
               <wadl:doc xmlns="http://www.w3.org/1999/xhtml">
-Omit bugs targeted to series
+Omit bugs targeted to a series
 </wadl:doc>
               
             </wadl:param>
@@ -14895,13 +14895,10 @@ hardware_is_linked_to_bug to True.</p>
             <wadl:param style="query" name="ws.op"
                         required="true" fixed="searchTasks"/>
             <wadl:param style="query" required="false"
-                        name="hardware_vendor_id">
+                        name="status_upstream">
               <wadl:doc xmlns="http://www.w3.org/1999/xhtml">
-<p>The vendor ID of a hardware device related to a bug.</p>
-<p>Allowed values of the vendor ID depend on the bus of the device.</p>
-<p>Vendor IDs of PCI, PCCard and USB devices are hexadecimal string representations of 16 bit integers in the format '0x01ab': The prefix '0x', followed by exactly 4 digits; where a digit is one of the characters 0..9, a..f. The characters A..F are not allowed.</p>
-<p>SCSI vendor IDs are strings with exactly 8 characters. Shorter names are right-padded with space (0x20) characters.</p>
-<p>IDs for other buses may be arbitrary strings.</p>
+<p>Status upstream</p>
+<p>Indicates the status of any remote watches associated with the bug.  Possible values include: pending_bugwatch, hide_upstream, resolved_upstream, and open_upstream.</p>
 
 </wadl:doc>
               
@@ -14912,10 +14909,13 @@ hardware_is_linked_to_bug to True.</p>
               <wadl:link resource_type="https://api.launchpad.dev/1.0/#person"/>
             </wadl:param>
             <wadl:param style="query" required="false"
-                        name="status_upstream">
+                        name="hardware_vendor_id">
               <wadl:doc xmlns="http://www.w3.org/1999/xhtml">
-<p>Status upstream</p>
-<p>Indicates the status of any remote watches associated with the bug.  Possible values include: pending_bugwatch, hide_upstream, resolved_upstream, and open_upstream.</p>
+<p>The vendor ID of a hardware device related to a bug.</p>
+<p>Allowed values of the vendor ID depend on the bus of the device.</p>
+<p>Vendor IDs of PCI, PCCard and USB devices are hexadecimal string representations of 16 bit integers in the format '0x01ab': The prefix '0x', followed by exactly 4 digits; where a digit is one of the characters 0..9, a..f. The characters A..F are not allowed.</p>
+<p>SCSI vendor IDs are strings with exactly 8 characters. Shorter names are right-padded with space (0x20) characters.</p>
+<p>IDs for other buses may be arbitrary strings.</p>
 
 </wadl:doc>
               
@@ -15069,7 +15069,7 @@ Search for bugs where a bug subscriber owns the given device or uses the given h
             <wadl:param style="query" required="false"
                         name="omit_targeted">
               <wadl:doc xmlns="http://www.w3.org/1999/xhtml">
-Omit bugs targeted to series
+Omit bugs targeted to a series
 </wadl:doc>
               
             </wadl:param>
@@ -18992,13 +18992,10 @@ hardware_is_linked_to_bug to True.</p>
             <wadl:param style="query" name="ws.op"
                         required="true" fixed="searchTasks"/>
             <wadl:param style="query" required="false"
-                        name="hardware_vendor_id">
+                        name="status_upstream">
               <wadl:doc xmlns="http://www.w3.org/1999/xhtml">
-<p>The vendor ID of a hardware device related to a bug.</p>
-<p>Allowed values of the vendor ID depend on the bus of the device.</p>
-<p>Vendor IDs of PCI, PCCard and USB devices are hexadecimal string representations of 16 bit integers in the format '0x01ab': The prefix '0x', followed by exactly 4 digits; where a digit is one of the characters 0..9, a..f. The characters A..F are not allowed.</p>
-<p>SCSI vendor IDs are strings with exactly 8 characters. Shorter names are right-padded with space (0x20) characters.</p>
-<p>IDs for other buses may be arbitrary strings.</p>
+<p>Status upstream</p>
+<p>Indicates the status of any remote watches associated with the bug.  Possible values include: pending_bugwatch, hide_upstream, resolved_upstream, and open_upstream.</p>
 
 </wadl:doc>
               
@@ -19009,10 +19006,13 @@ hardware_is_linked_to_bug to True.</p>
               <wadl:link resource_type="https://api.launchpad.dev/1.0/#person"/>
             </wadl:param>
             <wadl:param style="query" required="false"
-                        name="status_upstream">
+                        name="hardware_vendor_id">
               <wadl:doc xmlns="http://www.w3.org/1999/xhtml">
-<p>Status upstream</p>
-<p>Indicates the status of any remote watches associated with the bug.  Possible values include: pending_bugwatch, hide_upstream, resolved_upstream, and open_upstream.</p>
+<p>The vendor ID of a hardware device related to a bug.</p>
+<p>Allowed values of the vendor ID depend on the bus of the device.</p>
+<p>Vendor IDs of PCI, PCCard and USB devices are hexadecimal string representations of 16 bit integers in the format '0x01ab': The prefix '0x', followed by exactly 4 digits; where a digit is one of the characters 0..9, a..f. The characters A..F are not allowed.</p>
+<p>SCSI vendor IDs are strings with exactly 8 characters. Shorter names are right-padded with space (0x20) characters.</p>
+<p>IDs for other buses may be arbitrary strings.</p>
 
 </wadl:doc>
               
@@ -19166,7 +19166,7 @@ Search for bugs where a bug subscriber owns the given device or uses the given h
             <wadl:param style="query" required="false"
                         name="omit_targeted">
               <wadl:doc xmlns="http://www.w3.org/1999/xhtml">
-Omit bugs targeted to series
+Omit bugs targeted to a series
 </wadl:doc>
               
             </wadl:param>
@@ -20260,13 +20260,10 @@ hardware_is_linked_to_bug to True.</p>
             <wadl:param style="query" name="ws.op"
                         required="true" fixed="searchTasks"/>
             <wadl:param style="query" required="false"
-                        name="hardware_vendor_id">
+                        name="status_upstream">
               <wadl:doc xmlns="http://www.w3.org/1999/xhtml">
-<p>The vendor ID of a hardware device related to a bug.</p>
-<p>Allowed values of the vendor ID depend on the bus of the device.</p>
-<p>Vendor IDs of PCI, PCCard and USB devices are hexadecimal string representations of 16 bit integers in the format '0x01ab': The prefix '0x', followed by exactly 4 digits; where a digit is one of the characters 0..9, a..f. The characters A..F are not allowed.</p>
-<p>SCSI vendor IDs are strings with exactly 8 characters. Shorter names are right-padded with space (0x20) characters.</p>
-<p>IDs for other buses may be arbitrary strings.</p>
+<p>Status upstream</p>
+<p>Indicates the status of any remote watches associated with the bug.  Possible values include: pending_bugwatch, hide_upstream, resolved_upstream, and open_upstream.</p>
 
 </wadl:doc>
               
@@ -20277,10 +20274,13 @@ hardware_is_linked_to_bug to True.</p>
               <wadl:link resource_type="https://api.launchpad.dev/1.0/#person"/>
             </wadl:param>
             <wadl:param style="query" required="false"
-                        name="status_upstream">
+                        name="hardware_vendor_id">
               <wadl:doc xmlns="http://www.w3.org/1999/xhtml">
-<p>Status upstream</p>
-<p>Indicates the status of any remote watches associated with the bug.  Possible values include: pending_bugwatch, hide_upstream, resolved_upstream, and open_upstream.</p>
+<p>The vendor ID of a hardware device related to a bug.</p>
+<p>Allowed values of the vendor ID depend on the bus of the device.</p>
+<p>Vendor IDs of PCI, PCCard and USB devices are hexadecimal string representations of 16 bit integers in the format '0x01ab': The prefix '0x', followed by exactly 4 digits; where a digit is one of the characters 0..9, a..f. The characters A..F are not allowed.</p>
+<p>SCSI vendor IDs are strings with exactly 8 characters. Shorter names are right-padded with space (0x20) characters.</p>
+<p>IDs for other buses may be arbitrary strings.</p>
 
 </wadl:doc>
               
@@ -20434,7 +20434,7 @@ Search for bugs where a bug subscriber owns the given device or uses the given h
             <wadl:param style="query" required="false"
                         name="omit_targeted">
               <wadl:doc xmlns="http://www.w3.org/1999/xhtml">
-Omit bugs targeted to series
+Omit bugs targeted to a series
 </wadl:doc>
               
             </wadl:param>
@@ -22217,13 +22217,10 @@ hardware_is_linked_to_bug to True.</p>
             <wadl:param style="query" name="ws.op"
                         required="true" fixed="searchTasks"/>
             <wadl:param style="query" required="false"
-                        name="hardware_vendor_id">
+                        name="status_upstream">
               <wadl:doc xmlns="http://www.w3.org/1999/xhtml">
-<p>The vendor ID of a hardware device related to a bug.</p>
-<p>Allowed values of the vendor ID depend on the bus of the device.</p>
-<p>Vendor IDs of PCI, PCCard and USB devices are hexadecimal string representations of 16 bit integers in the format '0x01ab': The prefix '0x', followed by exactly 4 digits; where a digit is one of the characters 0..9, a..f. The characters A..F are not allowed.</p>
-<p>SCSI vendor IDs are strings with exactly 8 characters. Shorter names are right-padded with space (0x20) characters.</p>
-<p>IDs for other buses may be arbitrary strings.</p>
+<p>Status upstream</p>
+<p>Indicates the status of any remote watches associated with the bug.  Possible values include: pending_bugwatch, hide_upstream, resolved_upstream, and open_upstream.</p>
 
 </wadl:doc>
               
@@ -22234,10 +22231,13 @@ hardware_is_linked_to_bug to True.</p>
               <wadl:link resource_type="https://api.launchpad.dev/1.0/#person"/>
             </wadl:param>
             <wadl:param style="query" required="false"
-                        name="status_upstream">
+                        name="hardware_vendor_id">
               <wadl:doc xmlns="http://www.w3.org/1999/xhtml">
-<p>Status upstream</p>
-<p>Indicates the status of any remote watches associated with the bug.  Possible values include: pending_bugwatch, hide_upstream, resolved_upstream, and open_upstream.</p>
+<p>The vendor ID of a hardware device related to a bug.</p>
+<p>Allowed values of the vendor ID depend on the bus of the device.</p>
+<p>Vendor IDs of PCI, PCCard and USB devices are hexadecimal string representations of 16 bit integers in the format '0x01ab': The prefix '0x', followed by exactly 4 digits; where a digit is one of the characters 0..9, a..f. The characters A..F are not allowed.</p>
+<p>SCSI vendor IDs are strings with exactly 8 characters. Shorter names are right-padded with space (0x20) characters.</p>
+<p>IDs for other buses may be arbitrary strings.</p>
 
 </wadl:doc>
               
@@ -22391,7 +22391,7 @@ Search for bugs where a bug subscriber owns the given device or uses the given h
             <wadl:param style="query" required="false"
                         name="omit_targeted">
               <wadl:doc xmlns="http://www.w3.org/1999/xhtml">
-Omit bugs targeted to series
+Omit bugs targeted to a series
 </wadl:doc>
               
             </wadl:param>
@@ -24200,13 +24200,10 @@ hardware_is_linked_to_bug to True.</p>
             <wadl:param style="query" name="ws.op"
                         required="true" fixed="searchTasks"/>
             <wadl:param style="query" required="false"
-                        name="hardware_vendor_id">
+                        name="status_upstream">
               <wadl:doc xmlns="http://www.w3.org/1999/xhtml">
-<p>The vendor ID of a hardware device related to a bug.</p>
-<p>Allowed values of the vendor ID depend on the bus of the device.</p>
-<p>Vendor IDs of PCI, PCCard and USB devices are hexadecimal string representations of 16 bit integers in the format '0x01ab': The prefix '0x', followed by exactly 4 digits; where a digit is one of the characters 0..9, a..f. The characters A..F are not allowed.</p>
-<p>SCSI vendor IDs are strings with exactly 8 characters. Shorter names are right-padded with space (0x20) characters.</p>
-<p>IDs for other buses may be arbitrary strings.</p>
+<p>Status upstream</p>
+<p>Indicates the status of any remote watches associated with the bug.  Possible values include: pending_bugwatch, hide_upstream, resolved_upstream, and open_upstream.</p>
 
 </wadl:doc>
               
@@ -24217,10 +24214,13 @@ hardware_is_linked_to_bug to True.</p>
               <wadl:link resource_type="https://api.launchpad.dev/1.0/#person"/>
             </wadl:param>
             <wadl:param style="query" required="false"
-                        name="status_upstream">
+                        name="hardware_vendor_id">
               <wadl:doc xmlns="http://www.w3.org/1999/xhtml">
-<p>Status upstream</p>
-<p>Indicates the status of any remote watches associated with the bug.  Possible values include: pending_bugwatch, hide_upstream, resolved_upstream, and open_upstream.</p>
+<p>The vendor ID of a hardware device related to a bug.</p>
+<p>Allowed values of the vendor ID depend on the bus of the device.</p>
+<p>Vendor IDs of PCI, PCCard and USB devices are hexadecimal string representations of 16 bit integers in the format '0x01ab': The prefix '0x', followed by exactly 4 digits; where a digit is one of the characters 0..9, a..f. The characters A..F are not allowed.</p>
+<p>SCSI vendor IDs are strings with exactly 8 characters. Shorter names are right-padded with space (0x20) characters.</p>
+<p>IDs for other buses may be arbitrary strings.</p>
 
 </wadl:doc>
               
@@ -24374,7 +24374,7 @@ Search for bugs where a bug subscriber owns the given device or uses the given h
             <wadl:param style="query" required="false"
                         name="omit_targeted">
               <wadl:doc xmlns="http://www.w3.org/1999/xhtml">
-Omit bugs targeted to series
+Omit bugs targeted to a series
 </wadl:doc>
               
             </wadl:param>
@@ -26523,13 +26523,10 @@ hardware_is_linked_to_bug to True.</p>
             <wadl:param style="query" name="ws.op"
                         required="true" fixed="searchTasks"/>
             <wadl:param style="query" required="false"
-                        name="hardware_vendor_id">
+                        name="status_upstream">
               <wadl:doc xmlns="http://www.w3.org/1999/xhtml">
-<p>The vendor ID of a hardware device related to a bug.</p>
-<p>Allowed values of the vendor ID depend on the bus of the device.</p>
-<p>Vendor IDs of PCI, PCCard and USB devices are hexadecimal string representations of 16 bit integers in the format '0x01ab': The prefix '0x', followed by exactly 4 digits; where a digit is one of the characters 0..9, a..f. The characters A..F are not allowed.</p>
-<p>SCSI vendor IDs are strings with exactly 8 characters. Shorter names are right-padded with space (0x20) characters.</p>
-<p>IDs for other buses may be arbitrary strings.</p>
+<p>Status upstream</p>
+<p>Indicates the status of any remote watches associated with the bug.  Possible values include: pending_bugwatch, hide_upstream, resolved_upstream, and open_upstream.</p>
 
 </wadl:doc>
               
@@ -26540,10 +26537,13 @@ hardware_is_linked_to_bug to True.</p>
               <wadl:link resource_type="https://api.launchpad.dev/1.0/#person"/>
             </wadl:param>
             <wadl:param style="query" required="false"
-                        name="status_upstream">
+                        name="hardware_vendor_id">
               <wadl:doc xmlns="http://www.w3.org/1999/xhtml">
-<p>Status upstream</p>
-<p>Indicates the status of any remote watches associated with the bug.  Possible values include: pending_bugwatch, hide_upstream, resolved_upstream, and open_upstream.</p>
+<p>The vendor ID of a hardware device related to a bug.</p>
+<p>Allowed values of the vendor ID depend on the bus of the device.</p>
+<p>Vendor IDs of PCI, PCCard and USB devices are hexadecimal string representations of 16 bit integers in the format '0x01ab': The prefix '0x', followed by exactly 4 digits; where a digit is one of the characters 0..9, a..f. The characters A..F are not allowed.</p>
+<p>SCSI vendor IDs are strings with exactly 8 characters. Shorter names are right-padded with space (0x20) characters.</p>
+<p>IDs for other buses may be arbitrary strings.</p>
 
 </wadl:doc>
               
@@ -26697,7 +26697,7 @@ Search for bugs where a bug subscriber owns the given device or uses the given h
             <wadl:param style="query" required="false"
                         name="omit_targeted">
               <wadl:doc xmlns="http://www.w3.org/1999/xhtml">
-Omit bugs targeted to series
+Omit bugs targeted to a series
 </wadl:doc>
               
             </wadl:param>
@@ -27468,13 +27468,10 @@ hardware_is_linked_to_bug to True.</p>
             <wadl:param style="query" name="ws.op"
                         required="true" fixed="searchTasks"/>
             <wadl:param style="query" required="false"
-                        name="hardware_vendor_id">
+                        name="status_upstream">
               <wadl:doc xmlns="http://www.w3.org/1999/xhtml">
-<p>The vendor ID of a hardware device related to a bug.</p>
-<p>Allowed values of the vendor ID depend on the bus of the device.</p>
-<p>Vendor IDs of PCI, PCCard and USB devices are hexadecimal string representations of 16 bit integers in the format '0x01ab': The prefix '0x', followed by exactly 4 digits; where a digit is one of the characters 0..9, a..f. The characters A..F are not allowed.</p>
-<p>SCSI vendor IDs are strings with exactly 8 characters. Shorter names are right-padded with space (0x20) characters.</p>
-<p>IDs for other buses may be arbitrary strings.</p>
+<p>Status upstream</p>
+<p>Indicates the status of any remote watches associated with the bug.  Possible values include: pending_bugwatch, hide_upstream, resolved_upstream, and open_upstream.</p>
 
 </wadl:doc>
               
@@ -27485,10 +27482,13 @@ hardware_is_linked_to_bug to True.</p>
               <wadl:link resource_type="https://api.launchpad.dev/1.0/#person"/>
             </wadl:param>
             <wadl:param style="query" required="false"
-                        name="status_upstream">
+                        name="hardware_vendor_id">
               <wadl:doc xmlns="http://www.w3.org/1999/xhtml">
-<p>Status upstream</p>
-<p>Indicates the status of any remote watches associated with the bug.  Possible values include: pending_bugwatch, hide_upstream, resolved_upstream, and open_upstream.</p>
+<p>The vendor ID of a hardware device related to a bug.</p>
+<p>Allowed values of the vendor ID depend on the bus of the device.</p>
+<p>Vendor IDs of PCI, PCCard and USB devices are hexadecimal string representations of 16 bit integers in the format '0x01ab': The prefix '0x', followed by exactly 4 digits; where a digit is one of the characters 0..9, a..f. The characters A..F are not allowed.</p>
+<p>SCSI vendor IDs are strings with exactly 8 characters. Shorter names are right-padded with space (0x20) characters.</p>
+<p>IDs for other buses may be arbitrary strings.</p>
 
 </wadl:doc>
               
@@ -27642,7 +27642,7 @@ Search for bugs where a bug subscriber owns the given device or uses the given h
             <wadl:param style="query" required="false"
                         name="omit_targeted">
               <wadl:doc xmlns="http://www.w3.org/1999/xhtml">
-Omit bugs targeted to series
+Omit bugs targeted to a series
 </wadl:doc>
               
             </wadl:param>
@@ -28693,13 +28693,10 @@ hardware_is_linked_to_bug to True.</p>
             <wadl:param style="query" name="ws.op"
                         required="true" fixed="searchTasks"/>
             <wadl:param style="query" required="false"
-                        name="hardware_vendor_id">
+                        name="status_upstream">
               <wadl:doc xmlns="http://www.w3.org/1999/xhtml">
-<p>The vendor ID of a hardware device related to a bug.</p>
-<p>Allowed values of the vendor ID depend on the bus of the device.</p>
-<p>Vendor IDs of PCI, PCCard and USB devices are hexadecimal string representations of 16 bit integers in the format '0x01ab': The prefix '0x', followed by exactly 4 digits; where a digit is one of the characters 0..9, a..f. The characters A..F are not allowed.</p>
-<p>SCSI vendor IDs are strings with exactly 8 characters. Shorter names are right-padded with space (0x20) characters.</p>
-<p>IDs for other buses may be arbitrary strings.</p>
+<p>Status upstream</p>
+<p>Indicates the status of any remote watches associated with the bug.  Possible values include: pending_bugwatch, hide_upstream, resolved_upstream, and open_upstream.</p>
 
 </wadl:doc>
               
@@ -28710,10 +28707,13 @@ hardware_is_linked_to_bug to True.</p>
               <wadl:link resource_type="https://api.launchpad.dev/1.0/#person"/>
             </wadl:param>
             <wadl:param style="query" required="false"
-                        name="status_upstream">
+                        name="hardware_vendor_id">
               <wadl:doc xmlns="http://www.w3.org/1999/xhtml">
-<p>Status upstream</p>
-<p>Indicates the status of any remote watches associated with the bug.  Possible values include: pending_bugwatch, hide_upstream, resolved_upstream, and open_upstream.</p>
+<p>The vendor ID of a hardware device related to a bug.</p>
+<p>Allowed values of the vendor ID depend on the bus of the device.</p>
+<p>Vendor IDs of PCI, PCCard and USB devices are hexadecimal string representations of 16 bit integers in the format '0x01ab': The prefix '0x', followed by exactly 4 digits; where a digit is one of the characters 0..9, a..f. The characters A..F are not allowed.</p>
+<p>SCSI vendor IDs are strings with exactly 8 characters. Shorter names are right-padded with space (0x20) characters.</p>
+<p>IDs for other buses may be arbitrary strings.</p>
 
 </wadl:doc>
               
@@ -28867,7 +28867,7 @@ Search for bugs where a bug subscriber owns the given device or uses the given h
             <wadl:param style="query" required="false"
                         name="omit_targeted">
               <wadl:doc xmlns="http://www.w3.org/1999/xhtml">
-Omit bugs targeted to series
+Omit bugs targeted to a series
 </wadl:doc>
               
             </wadl:param>
@@ -31410,13 +31410,10 @@ hardware_is_linked_to_bug to True.</p>
             <wadl:param style="query" name="ws.op"
                         required="true" fixed="searchTasks"/>
             <wadl:param style="query" required="false"
-                        name="hardware_vendor_id">
+                        name="status_upstream">
               <wadl:doc xmlns="http://www.w3.org/1999/xhtml">
-<p>The vendor ID of a hardware device related to a bug.</p>
-<p>Allowed values of the vendor ID depend on the bus of the device.</p>
-<p>Vendor IDs of PCI, PCCard and USB devices are hexadecimal string representations of 16 bit integers in the format '0x01ab': The prefix '0x', followed by exactly 4 digits; where a digit is one of the characters 0..9, a..f. The characters A..F are not allowed.</p>
-<p>SCSI vendor IDs are strings with exactly 8 characters. Shorter names are right-padded with space (0x20) characters.</p>
-<p>IDs for other buses may be arbitrary strings.</p>
+<p>Status upstream</p>
+<p>Indicates the status of any remote watches associated with the bug.  Possible values include: pending_bugwatch, hide_upstream, resolved_upstream, and open_upstream.</p>
 
 </wadl:doc>
               
@@ -31427,10 +31424,13 @@ hardware_is_linked_to_bug to True.</p>
               <wadl:link resource_type="https://api.launchpad.dev/1.0/#person"/>
             </wadl:param>
             <wadl:param style="query" required="false"
-                        name="status_upstream">
+                        name="hardware_vendor_id">
               <wadl:doc xmlns="http://www.w3.org/1999/xhtml">
-<p>Status upstream</p>
-<p>Indicates the status of any remote watches associated with the bug.  Possible values include: pending_bugwatch, hide_upstream, resolved_upstream, and open_upstream.</p>
+<p>The vendor ID of a hardware device related to a bug.</p>
+<p>Allowed values of the vendor ID depend on the bus of the device.</p>
+<p>Vendor IDs of PCI, PCCard and USB devices are hexadecimal string representations of 16 bit integers in the format '0x01ab': The prefix '0x', followed by exactly 4 digits; where a digit is one of the characters 0..9, a..f. The characters A..F are not allowed.</p>
+<p>SCSI vendor IDs are strings with exactly 8 characters. Shorter names are right-padded with space (0x20) characters.</p>
+<p>IDs for other buses may be arbitrary strings.</p>
 
 </wadl:doc>
               
@@ -31584,7 +31584,7 @@ Search for bugs where a bug subscriber owns the given device or uses the given h
             <wadl:param style="query" required="false"
                         name="omit_targeted">
               <wadl:doc xmlns="http://www.w3.org/1999/xhtml">
-Omit bugs targeted to series
+Omit bugs targeted to a series
 </wadl:doc>
               
             </wadl:param>
