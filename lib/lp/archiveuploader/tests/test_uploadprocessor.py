@@ -1870,7 +1870,7 @@ class TestBuildUploadProcessor(TestUploadProcessorBase):
                                'name bar_1.0-1, skipping.')
 
     def testNoBuildEntry(self):
-        # Directories with that refer to a nonexisting build
+        # Directories with that refer to a nonexistent build
         # should be skipped and a warning logged.
         upload_dir = self.queueUpload("bar_1.0-1", queue_entry="42-60")
         self.uploadprocessor.processBuildUpload(upload_dir, "42-60")
