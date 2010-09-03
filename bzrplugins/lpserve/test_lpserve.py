@@ -265,12 +265,12 @@ class TestCaseWithLPForkingServiceSubprocess(TestCaseWithSubprocess):
                        # This may break in bzr 2.3
                        'BZR_LOG': self._log_file_name}
         proc = self.start_bzr_subprocess(
-            ['lp-service', '--port', '127.0.0.1:0', '--no-preload',
+            ['lp-service', '--port', '127.0.0.1:0',
              '--children-timeout=1'],
             env_changes=env_changes)
         trace.mutter('started lp-service subprocess')
-        # preload_line = proc.stderr.readline()
-        # self.assertStartsWith(preload_line, 'Preloading')
+        preload_line = proc.stderr.readline()
+        self.assertStartsWith(preload_line, 'Preloading')
         prefix = 'Listening on port: '
         port_line = proc.stderr.readline()
         self.assertStartsWith(port_line, prefix)
@@ -307,16 +307,6 @@ class TestCaseWithLPForkingServiceSubprocess(TestCaseWithSubprocess):
         stdout_content = child_stdout.read()
         stderr_content = child_stderr.read()
         return stdout_content, stderr_content
-
-    def test_fork_child_rocks(self):
-        response = self.send_message_to_service('fork rocks\n')
-        if response.startswith('FAILURE'):
-            self.fail('Fork request failed: %s' % (response,))
-        self.assertContainsRe(response, '/lp-forking-service-child-')
-        path = response.strip()
-        stdout_content, stderr_content = self.communicate_with_fork(path, None)
-        self.assertEqual('It sure does!\n', stdout_content)
-        self.assertEqual('', stderr_content)
 
     def test_fork_child_hello(self):
         response = self.send_message_to_service('fork lp-serve --inet 2\n')
