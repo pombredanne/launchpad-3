@@ -77,6 +77,10 @@ class TranslationsPerson:
         entries = Store.of(self.person).find(POFileTranslator, conditions)
         return entries.order_by(Desc(POFileTranslator.date_last_touched))
 
+    def hasTranslated(self):
+        """See `ITranslationsPerson`."""
+        return self.getTranslationHistory().any() is not None
+
     @property
     def translation_history(self):
         """See `ITranslationsPerson`."""

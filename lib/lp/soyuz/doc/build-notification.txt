@@ -419,7 +419,7 @@ in the main archive, the important differences are:
   >>> from lp.registry.interfaces.person import IPersonSet
   >>> cprov = getUtility(IPersonSet).getByName('cprov')
 
-  >>> from lp.buildmaster.interfaces.buildbase import BuildStatus
+  >>> from lp.buildmaster.enums import BuildStatus
   >>> failed_candidate = cprov.archive.getBuildRecords(
   ...     build_state=BuildStatus.FAILEDTOBUILD, name='cdrkit')[0]
 
@@ -568,8 +568,8 @@ a just created named-ppa for Celso.
   >>> commit()
   >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
 
-  >>> from lp.soyuz.interfaces.archive import (
-  ...     ArchivePurpose, IArchiveSet)
+  >>> from lp.soyuz.enums import ArchivePurpose
+  >>> from lp.soyuz.interfaces.archive import IArchiveSet
   >>> named_ppa = getUtility(IArchiveSet).new(
   ...     owner=cprov, name='testing', purpose=ArchivePurpose.PPA)
 

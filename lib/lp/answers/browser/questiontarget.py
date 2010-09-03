@@ -28,6 +28,7 @@ from urllib import urlencode
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form.browser import DropdownWidget
 from zope.component import (
+    getMultiAdapter,
     getUtility,
     queryMultiAdapter,
     )
@@ -42,7 +43,6 @@ from zope.schema.vocabulary import (
     SimpleVocabulary,
     )
 
-from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.helpers import (
     browserLanguages,
@@ -61,6 +61,7 @@ from canonical.launchpad.webapp import (
     stepto,
     urlappend,
     )
+from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.menu import structured
@@ -79,8 +80,10 @@ from lp.answers.interfaces.questiontarget import (
     )
 from lp.app.errors import NotFoundError
 from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.services.fields import PublicPersonChoice
+from lp.services.propertycache import cachedproperty
 from lp.services.worlddata.interfaces.language import ILanguageSet
 
 
@@ -187,7 +190,32 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
     custom_widget('status', LabeledMultiCheckBoxWidget,
                   orientation='horizontal')
 
-    template = ViewPageTemplateFile('../templates/question-listing.pt')
+    default_template = ViewPageTemplateFile(
+        '../templates/question-listing.pt')
+    unknown_template = ViewPageTemplateFile('../templates/unknown-support.pt')
+
+    @property
+    def template(self):
+        """The template to render the presentation.
+
+        Subclasses can redefine this property to choose their own template.
+        """
+        if IQuestionSet.providedBy(self.context):
+            return self.default_template
+        involvement = getMultiAdapter(
+            (self.context, self.request), name='+get-involved')
+        if involvement.official_answers:
+            # Primary contexts that officially use answers have a
+            # search and listing presentation.
+            return self.default_template
+        else:
+            # Primary context that do not officially use answers have an
+            # an explanation about about the current state.
+            return self.unknown_template
+
+    def render(self):
+        """See `LaunchpadView`."""
+        return self.template()
 
     @property
     def page_title(self):
@@ -476,6 +504,31 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
             return '<a href="%s">%s</a>' % (
                 canonical_url(sourcepackage, rootsite='answers'),
                 question.sourcepackagename.name)
+
+    @property
+    def ubuntu_packages(self):
+        """The Ubuntu `IDistributionSourcePackage`s linked to the context.
+
+        If the context is an `IProduct` and it has `IPackaging` links to
+        Ubuntu, a list is returned. Otherwise None is returned
+        """
+        if IProduct.providedBy(self.context):
+            ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+            packages = [
+                package for package in self.context.distrosourcepackages
+                if package.distribution == ubuntu]
+            if len(packages) > 0:
+                return packages
+        return None
+
+    @property
+    def can_configure_answers(self):
+        """Can the user configure answers for the `IQuestionTarget`."""
+        target = self.context
+        if IProduct.providedBy(target) or IDistribution.providedBy(target):
+            return check_permission('launchpad.Edit', self.context)
+        else:
+            return False
 
 
 class QuestionCollectionMyQuestionsView(SearchQuestionsView):

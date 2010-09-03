@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -8,17 +8,14 @@
 __metaclass__ = type
 
 __all__ = [
-    'BUILDD_MANAGER_LOG_NAME',
     'BuildStatus',
+    'BuildFarmJobType',
     ]
 
 from lazr.enum import (
     DBEnumeratedType,
     DBItem,
     )
-
-
-BUILDD_MANAGER_LOG_NAME = "slave-scanner"
 
 
 class BuildStatus(DBEnumeratedType):
@@ -99,3 +96,38 @@ class BuildStatus(DBEnumeratedType):
         buildlog, datebuilt, duration, builder, etc) and the buildd admins
         will be notified via process-upload about the reason of the rejection.
         """)
+
+
+class BuildFarmJobType(DBEnumeratedType):
+    """Soyuz build farm job type.
+
+    An enumeration with the types of jobs that may be run on the Soyuz build
+    farm.
+    """
+
+    PACKAGEBUILD = DBItem(1, """
+        Binary package build
+
+        Build a source package.
+        """)
+
+    BRANCHBUILD = DBItem(2, """
+        Branch build
+
+        Build a package from a bazaar branch.
+        """)
+
+    RECIPEBRANCHBUILD = DBItem(3, """
+        Recipe branch build
+
+        Build a package from a bazaar branch and a recipe.
+        """)
+
+    TRANSLATIONTEMPLATESBUILD = DBItem(4, """
+        Translation template build
+
+        Generate translation templates from a bazaar branch.
+        """)
+
+
+

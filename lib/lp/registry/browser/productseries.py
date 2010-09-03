@@ -55,10 +55,10 @@ from zope.schema.vocabulary import (
     SimpleVocabulary,
     )
 
-from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.helpers import browserLanguages
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp import (
     ApplicationMenu,
     canonical_url,
@@ -84,6 +84,7 @@ from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.tales import MenuAPI
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
+from lp.app.enums import ServiceUsage
 from lp.app.errors import (
     NotFoundError,
     UnexpectedFormData,
@@ -137,6 +138,7 @@ from lp.registry.interfaces.packaging import (
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.fields import URIField
+from lp.services.propertycache import cachedproperty
 from lp.services.worlddata.interfaces.country import ICountry
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.translations.interfaces.potemplate import IPOTemplateSet
@@ -238,7 +240,7 @@ class ProductSeriesInvolvedMenu(InvolvedMenu):
     def submit_code(self):
         target = canonical_url(
             self.pillar, view_name='+addbranch', rootsite='code')
-        enabled = self.view.official_codehosting
+        enabled = self.view.codehosting_usage == ServiceUsage.LAUNCHPAD
         return Link(
             target, 'Submit code', icon='code', enabled=enabled)
 
@@ -252,7 +254,10 @@ class ProductSeriesInvolvementView(PillarView):
 
     def __init__(self, context, request):
         super(ProductSeriesInvolvementView, self).__init__(context, request)
-        self.official_codehosting = self.context.branch is not None
+        if self.context.branch is not None:
+            self.codehosting_usage = ServiceUsage.LAUNCHPAD
+        else:
+            self.codehosting_usage = ServiceUsage.UNKNOWN
         self.official_answers = False
 
     @property
@@ -261,8 +266,12 @@ class ProductSeriesInvolvementView(PillarView):
         series_menu = MenuAPI(self.context).overview
         set_branch = series_menu['set_branch']
         set_branch.text = 'Configure series branch'
+        if self.codehosting_usage == ServiceUsage.LAUNCHPAD:
+            configured = True
+        else:
+            configured = False
         return [dict(link=set_branch,
-                     configured=self.official_codehosting)]
+                     configured=configured)]
 
 
 class ProductSeriesOverviewMenu(
@@ -475,12 +484,16 @@ class ProductSeriesView(LaunchpadView, MilestoneOverlayMixin):
                 for status in sorted(status_counts,
                                      key=attrgetter('sortkey'))]
 
-    @property
+    @cachedproperty
     def latest_release_with_download_files(self):
         for release in self.context.releases:
             if len(list(release.files)) > 0:
                 return release
         return None
+
+    @cachedproperty
+    def milestone_batch_navigator(self):
+        return BatchNavigator(self.context.all_milestones, self.request)
 
 
 class ProductSeriesDetailedDisplayView(ProductSeriesView):

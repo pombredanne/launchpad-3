@@ -347,6 +347,11 @@ will still be False and the map_portlet_html property cannot be called.
 When the user set's his visibility to True, needs_gmap2 will be true and
 the map_portlet_html can be called.
 
+    >>> from lp.services.features.model import FeatureFlag, getFeatureStore
+    >>> ignore = getFeatureStore().add(FeatureFlag(
+    ...     scope=u'default', flag=u'gmap2', value=u'on', priority=1))
+    >>> transaction.commit()
+
     >>> login_person(sample_person)
     >>> sample_person.setLocationVisibility(True)
 

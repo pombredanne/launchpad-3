@@ -69,8 +69,10 @@ from canonical.launchpad.webapp.interfaces import (
 from canonical.launchpad.webapp.tales import DurationFormatterAPI
 from lp.app.errors import NotFoundError
 from lp.archivepublisher.utils import get_ppa_reference
-from lp.buildmaster.interfaces.buildbase import BuildStatus
-from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
+from lp.buildmaster.enums import (
+    BuildFarmJobType,
+    BuildStatus,
+    )
 from lp.buildmaster.interfaces.packagebuild import IPackageBuildSource
 from lp.buildmaster.model.builder import Builder
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
@@ -80,7 +82,7 @@ from lp.buildmaster.model.packagebuild import (
     PackageBuildDerived,
     )
 from lp.services.job.model.job import Job
-from lp.soyuz.interfaces.archive import ArchivePurpose
+from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.binarypackagebuild import (
     BuildSetStatus,
     CannotBeRescored,
@@ -485,7 +487,7 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
         architecturespecific, shlibdeps=None, depends=None, recommends=None,
         suggests=None, conflicts=None, replaces=None, provides=None,
         pre_depends=None, enhances=None, breaks=None, essential=False,
-        debug_package=None, user_defined_fields=None):
+        debug_package=None, user_defined_fields=None, homepage=None):
         """See IBuild."""
         return BinaryPackageRelease(
             build=self, binarypackagename=binarypackagename, version=version,
@@ -498,7 +500,7 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
             breaks=breaks, essential=essential, installedsize=installedsize,
             architecturespecific=architecturespecific,
             debug_package=debug_package,
-            user_defined_fields=user_defined_fields)
+            user_defined_fields=user_defined_fields, homepage=homepage)
 
     def estimateDuration(self):
         """See `IPackageBuild`."""

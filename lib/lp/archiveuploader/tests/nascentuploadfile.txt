@@ -233,8 +233,8 @@ Some fields extracted from the tag_file are required, they are always
 present in ChangesFile and DSCFile:
 
     >>> sig_file._dict = {}
-    >>> sig_file._dict['source'] = 'some-source'
-    >>> sig_file._dict['version'] = '6.6.6'
+    >>> sig_file._dict['Source'] = 'some-source'
+    >>> sig_file._dict['Version'] = '6.6.6'
 
 After initiliasing sig_file we can parse addresses and look them up in
 Launchpad:
@@ -531,9 +531,10 @@ It also checks the priority against the changes file:
 The timestamp of the files in the .deb are tested against the policy for being 
 too new:
 
+   >>> from lp.archiveuploader.uploadpolicy import ArchiveUploadType
    >>> old_only_policy = getPolicy(
    ...     name='insecure', distro='ubuntu', distroseries='hoary')
-   >>> old_only_policy.can_upload_binaries = True
+   >>> old_only_policy.accepted_type = ArchiveUploadType.BINARY_ONLY
    >>> old_only_policy.future_time_grace = -5 * 365 * 24 * 60 * 60
 
    >>> ed_binary_deb = DebBinaryUploadFile(ed_deb_path,
@@ -549,7 +550,7 @@ too new:
 
    >>> new_only_policy = getPolicy(
    ...     name='insecure', distro='ubuntu', distroseries='hoary')
-   >>> new_only_policy.can_upload_binaries = True
+   >>> new_only_policy.accepted_type = ArchiveUploadType.BINARY_ONLY
    >>> new_only_policy.earliest_year = 2010
    >>> ed_binary_deb = DebBinaryUploadFile(ed_deb_path,
    ...                     'e31eeb0b6b3b87e1ea79378df864ffff',

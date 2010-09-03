@@ -24,11 +24,11 @@ from canonical.launchpad.ftests.keys_for_tests import import_secret_test_key
 from canonical.launchpad.interfaces import (
     IDistributionSet,
     IGPGHandler,
-    PackageUploadStatus,
     )
 from canonical.launchpad.scripts import QuietFakeLogger
 from lp.archiveuploader.nascentupload import NascentUpload
 from lp.archiveuploader.uploadpolicy import findPolicyByName
+from lp.soyuz.enums import PackageUploadStatus
 
 
 changelog_entry_template = (

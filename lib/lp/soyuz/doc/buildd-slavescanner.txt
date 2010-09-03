@@ -429,7 +429,7 @@ Create a mock slave so the builder gets the right responses for this test.
 Now in order to emulate a successfully binary upload we will update
 the build record to FULLYBUILT, as the process-upload would do:
 
-    >>> from lp.buildmaster.interfaces.buildbase import BuildStatus
+    >>> from lp.buildmaster.enums import BuildStatus
     >>> build.status = BuildStatus.FULLYBUILT
 
 Now the updateBuild should recognize this build record as a
@@ -745,7 +745,7 @@ need to tweak the status of the current publication directly, as a
 permissive database user.
 
     >>> from canonical.config import config
-    >>> from canonical.launchpad.interfaces import PackagePublishingStatus
+    >>> from lp.soyuz.enums import PackagePublishingStatus
     >>> from canonical.testing.layers import LaunchpadZopelessLayer
 
     >>> spr = build.source_package_release

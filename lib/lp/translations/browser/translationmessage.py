@@ -37,7 +37,6 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.schema.vocabulary import getVocabularyRegistry
 
-from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.webapp import (
     ApplicationMenu,
     canonical_url,
@@ -50,6 +49,7 @@ from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.menu import structured
 from lp.app.errors import UnexpectedFormData
+from lp.services.propertycache import cachedproperty
 from lp.translations.browser.browser_helpers import (
     contract_rosetta_escapes,
     convert_newlines_to_web_form,

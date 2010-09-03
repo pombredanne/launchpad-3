@@ -176,8 +176,7 @@ First set up some additional data: a package diff to show in the listing.
     >>> from zope.security.proxy import removeSecurityProxy
     >>> from canonical.database.constants import UTC_NOW
     >>> from canonical.librarian.interfaces import ILibrarianClient
-    >>> from lp.soyuz.interfaces.packagediff import (
-    ...     PackageDiffStatus)
+    >>> from lp.soyuz.enums import PackageDiffStatus
     >>> login(ANONYMOUS)
     >>> old = main_archive.getPublishedSources(
     ...     name='alsa-utils', version='1.0.9a-4')[0].sourcepackagerelease

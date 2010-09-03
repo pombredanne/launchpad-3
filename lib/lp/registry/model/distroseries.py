@@ -29,11 +29,13 @@ from storm.locals import (
     Join,
     SQL,
     )
-from storm.store import Store
+from storm.store import (
+    EmptyResultSet,
+    Store,
+    )
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.cachedproperty import cachedproperty
 from canonical.database.constants import (
     DEFAULT,
     UTC_NOW,
@@ -52,7 +54,6 @@ from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet,
     )
 from canonical.launchpad.database.librarian import LibraryFileAlias
-from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.mail import signed_message_from_string
@@ -112,23 +113,24 @@ from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.registry.model.structuralsubscription import (
     StructuralSubscriptionTargetMixin,
     )
+from lp.services.propertycache import cachedproperty
 from lp.services.worlddata.model.language import Language
-from lp.soyuz.interfaces.archive import (
-    ALLOW_RELEASE_BUILDS,
+from lp.soyuz.enums import (
     ArchivePurpose,
+    PackagePublishingStatus,
+    PackageUploadStatus,
     )
+from lp.soyuz.interfaces.archive import ALLOW_RELEASE_BUILDS
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageName
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.soyuz.interfaces.publishing import (
     active_publishing_status,
     ICanPublishPackages,
-    PackagePublishingStatus,
     )
 from lp.soyuz.interfaces.queue import (
     IHasQueueItems,
     IPackageUploadSet,
-    PackageUploadStatus,
     )
 from lp.soyuz.interfaces.sourcepackageformat import (
     ISourcePackageFormatSelectionSet,
@@ -547,7 +549,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             orderBy=["Language.englishname"])
         return result
 
-    @cachedproperty('_previous_series_cached')
+    @cachedproperty
     def previous_series(self):
         """See `IDistroSeries`."""
         # This property is cached because it is used intensely inside
@@ -963,7 +965,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return [SourcePackage(sourcepackagename=spn, distroseries=self) for
             spn in result]
 
-    def getPublishedReleases(self, sourcepackage_or_name, version=None,
+    def getPublishedSources(self, sourcepackage_or_name, version=None,
                              pocket=None, include_pending=False,
                              exclude_pocket=None, archive=None):
         """See `IDistroSeries`."""
@@ -979,7 +981,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             spns = getUtility(ISourcePackageNameSet)
             spn = spns.queryByName(sourcepackage_or_name)
             if spn is None:
-                return []
+                return EmptyResultSet()
 
         queries = ["""
         sourcepackagerelease=sourcepackagerelease.id AND
@@ -1011,7 +1013,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             " AND ".join(queries), clauseTables = ['SourcePackageRelease'],
             orderBy=['-id'])
 
-        return shortlist(published)
+        return published
 
     def isUnstable(self):
         """See `IDistroSeries`."""
@@ -1186,7 +1188,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         dsc_maintainer_rfc822, dsc_standards_version, dsc_format,
         dsc_binaries, archive, copyright, build_conflicts,
         build_conflicts_indep, dateuploaded=DEFAULT,
-        source_package_recipe_build=None, user_defined_fields=None):
+        source_package_recipe_build=None, user_defined_fields=None,
+        homepage=None):
         """See `IDistroSeries`."""
         return SourcePackageRelease(
             upload_distroseries=self, sourcepackagename=sourcepackagename,
@@ -1203,7 +1206,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             build_conflicts=build_conflicts,
             build_conflicts_indep=build_conflicts_indep,
             source_package_recipe_build=source_package_recipe_build,
-            user_defined_fields=user_defined_fields)
+            user_defined_fields=user_defined_fields, homepage=homepage)
 
     def getComponentByName(self, name):
         """See `IDistroSeries`."""

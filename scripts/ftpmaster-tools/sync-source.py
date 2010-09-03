@@ -47,12 +47,13 @@ from contrib.glock import GlobalLock
 
 from canonical.database.sqlbase import sqlvalues, cursor
 from canonical.launchpad.interfaces import (
-    IDistributionSet, IPersonSet, PackagePublishingStatus)
+    IDistributionSet, IPersonSet)
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger, logger_options)
 from canonical.librarian.client import LibrarianClient
 from canonical.lp import initZopeless
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.scripts.ftpmaster import SyncSource, SyncSourceError
 
 
@@ -169,7 +170,7 @@ def generate_changes(dsc, dsc_files, suite, changelog, urgency, closes,
     if closes:
         changes += "Closes: %s\n" % (" ".join(closes))
     if lp_closes:
-        changes += "Launchpad-Bugs-Fixed: %s\n" % (" ".join(lp_closes))
+        changes += "Launchpad-bugs-fixed: %s\n" % (" ".join(lp_closes))
     changes += "Changes: \n"
     changes += changelog
     changes += "Files: \n"
@@ -379,7 +380,7 @@ def split_gpg_and_payload(sequence):
     Each element of the returned tuple is a list of lines (with trailing
     whitespace stripped).
     """
-    # XXX JRV 20100211: Copied from deb822.py in python-debian. When 
+    # XXX JRV 20100211: Copied from deb822.py in python-debian. When
     # Launchpad switches to Lucid this copy should be removed.
     # bug=520508
 
@@ -446,11 +447,11 @@ def import_dsc(dsc_filename, suite, previous_version, signing_rules,
     if signing_rules.startswith("must be signed"):
         dsc_file.seek(0)
         # XXX JRV 20100211: When Launchpad starts depending on Lucid,
-        # use dsc.split_gpg_and_payload() instead. 
+        # use dsc.split_gpg_and_payload() instead.
         # bug=520508
         (gpg_pre, payload, gpg_post) = split_gpg_and_payload(dsc_file)
         if gpg_pre == [] and gpg_post == []:
-            dak_utils.fubar("signature required for %s but not present" 
+            dak_utils.fubar("signature required for %s but not present"
                 % dsc_filename)
         if signing_rules == "must be signed and valid":
             if (gpg_pre[0] != "-----BEGIN PGP SIGNED MESSAGE-----" or
@@ -523,7 +524,7 @@ def read_current_source(distro_series, valid_component=None, arguments=None):
     else:
         spp = []
         for package in arguments:
-            spp.extend(distro_series.getPublishedReleases(package))
+            spp.extend(distro_series.getPublishedSources(package))
 
     for sp in spp:
         component = sp.component.name

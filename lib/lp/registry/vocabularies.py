@@ -88,7 +88,6 @@ from zope.security.proxy import (
     removeSecurityProxy,
     )
 
-from canonical.cachedproperty import cachedproperty
 from canonical.database.sqlbase import (
     quote,
     quote_like,
@@ -169,6 +168,7 @@ from lp.registry.model.productseries import ProductSeries
 from lp.registry.model.projectgroup import ProjectGroup
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.registry.model.teammembership import TeamParticipation
+from lp.services.propertycache import cachedproperty
 
 
 class BasePersonVocabulary:

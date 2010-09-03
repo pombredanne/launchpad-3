@@ -38,17 +38,19 @@ from lp.archiveuploader.utils import (
     determine_binary_file_type,
     determine_source_file_type,
     )
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.person import (
     IPersonSet,
     PersonCreationRationale,
     )
 from lp.registry.interfaces.sourcepackage import SourcePackageType
 from lp.registry.model.sourcepackagename import SourcePackageName
+from lp.soyuz.enums import (
+    BinaryPackageFormat,
+    PackagePublishingStatus,
+    )
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
-from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFormat
-from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.model.component import Component
 from lp.soyuz.model.files import (
     BinaryPackageFile,
@@ -518,6 +520,9 @@ class SourcePackageHandler:
         log.debug("Found a source package for %s (%s) in %s" % (sp_name,
             sp_version, sp_component))
         dsc_contents = parse_tagfile(dsc_path, allow_unsigned=True)
+        dsc_contents = dict([
+            (name.lower(), value) for
+            (name, value) in dsc_contents.iteritems()])
 
         # Since the dsc doesn't know, we add in the directory, package
         # component and section
