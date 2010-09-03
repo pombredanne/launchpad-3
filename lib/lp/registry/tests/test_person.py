@@ -17,15 +17,22 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.sqlbase import cursor
 from canonical.launchpad.database import Bug
+from canonical.launchpad.database.account import Account
+from canonical.launchpad.database.emailaddress import EmailAddress
 from canonical.launchpad.ftests import (
     ANONYMOUS,
     login,
+    )
+from canonical.launchpad.interfaces.account import (
+    AccountCreationRationale,
+    AccountStatus,
     )
 from canonical.launchpad.interfaces.emailaddress import (
     EmailAddressAlreadyTaken,
     EmailAddressStatus,
     InvalidEmailAddress,
     )
+from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.launchpad.testing.pages import LaunchpadWebServiceCaller
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
@@ -49,6 +56,7 @@ from lp.registry.interfaces.product import IProductSet
 from lp.registry.model.karma import KarmaCategory
 from lp.registry.model.person import Person
 from lp.registry.model.structuralsubscription import StructuralSubscription
+from lp.services.openid.model.openididentifier import OpenIdIdentifier
 from lp.testing import (
     celebrity_logged_in,
     login_person,
@@ -422,6 +430,173 @@ class TestPersonSetMerge(TestCaseWithFactory):
 
         self.assertIn(duplicate_identifier, merged_identifiers)
         self.assertIn(person_identifier, merged_identifiers)
+
+
+class TestPersonSetCreateByOpenId(TestCaseWithFactory):
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestPersonSetCreateByOpenId, self).setUp()
+        self.person_set = getUtility(IPersonSet)
+        self.store = IMasterStore(Account)
+
+        # Generate some valid test data.
+        self.account = self.makeAccount()
+        self.identifier = self.makeOpenIdIdentifier(self.account, u'whatever')
+        self.person = self.makePerson(self.account)
+        self.email = self.makeEmailAddress(
+            email='whatever@example.com',
+            account=self.account, person=self.person)
+
+    def makeAccount(self):
+        return self.store.add(Account(
+            displayname='Displayname',
+            creation_rationale=AccountCreationRationale.UNKNOWN,
+            status=AccountStatus.ACTIVE))
+
+    def makeOpenIdIdentifier(self, account, identifier):
+        openid_identifier = OpenIdIdentifier()
+        openid_identifier.identifier = identifier
+        openid_identifier.account = account
+        return self.store.add(openid_identifier)
+
+    def makePerson(self, account):
+        return self.store.add(Person(
+            name='acc%d' % account.id, account=account,
+            displayname='Displayname',
+            creation_rationale=PersonCreationRationale.UNKNOWN))
+
+    def makeEmailAddress(self, email, account, person):
+            return self.store.add(EmailAddress(
+                email=email,
+                account=account,
+                person=person,
+                status=EmailAddressStatus.PREFERRED))
+
+    def testAllValid(self):
+        found, updated = self.person_set.getOrCreateByOpenIDIdentifier(
+            self.identifier.identifier, self.email.email, 'Ignored Name',
+            PersonCreationRationale.UNKNOWN, 'No Comment')
+        found = removeSecurityProxy(found)
+
+        self.assertIs(False, updated)
+        self.assertIs(self.person, found)
+        self.assertIs(self.account, found.account)
+        self.assertIs(self.email, found.preferredemail)
+        self.assertIs(self.email.account, self.account)
+        self.assertIs(self.email.person, self.person)
+        self.assertEqual(
+            [self.identifier], list(self.account.openid_identifiers))
+
+    def testEmailAddressCaseInsensitive(self):
+        # As per testAllValid, but the email address used for the lookup
+        # is all upper case.
+        found, updated = self.person_set.getOrCreateByOpenIDIdentifier(
+            self.identifier.identifier, self.email.email.upper(),
+            'Ignored Name', PersonCreationRationale.UNKNOWN, 'No Comment')
+        found = removeSecurityProxy(found)
+
+        self.assertIs(False, updated)
+        self.assertIs(self.person, found)
+        self.assertIs(self.account, found.account)
+        self.assertIs(self.email, found.preferredemail)
+        self.assertIs(self.email.account, self.account)
+        self.assertIs(self.email.person, self.person)
+        self.assertEqual(
+            [self.identifier], list(self.account.openid_identifiers))
+
+    def testNewOpenId(self):
+        # Account looked up by email and the new OpenId identifier
+        # attached. We can do this because we trust our OpenId Provider.
+        new_identifier = u'newident'
+        found, updated = self.person_set.getOrCreateByOpenIDIdentifier(
+            new_identifier, self.email.email, 'Ignored Name',
+            PersonCreationRationale.UNKNOWN, 'No Comment')
+        found = removeSecurityProxy(found)
+
+        self.assertIs(True, updated)
+        self.assertIs(self.person, found)
+        self.assertIs(self.account, found.account)
+        self.assertIs(self.email, found.preferredemail)
+        self.assertIs(self.email.account, self.account)
+        self.assertIs(self.email.person, self.person)
+
+        # Old OpenId Identifier still attached.
+        self.assertIn(self.identifier, list(self.account.openid_identifiers))
+
+        # So is our new one.
+        identifiers = [
+            identifier.identifier for identifier
+                in self.account.openid_identifiers]
+        self.assertIn(new_identifier, identifiers)
+
+    def testNewEmailAddress(self):
+        # Account looked up by OpenId identifier and new EmailAddress
+        # attached. We can do this because we trust our OpenId Provider.
+        new_email = u'new_email@example.com'
+        found, updated = self.person_set.getOrCreateByOpenIDIdentifier(
+            self.identifier.identifier, new_email, 'Ignored Name',
+            PersonCreationRationale.UNKNOWN, 'No Comment')
+        found = removeSecurityProxy(found)
+
+        self.assertIs(True, updated)
+        self.assertIs(self.person, found)
+        self.assertIs(self.account, found.account)
+        self.assertEqual(
+            [self.identifier], list(self.account.openid_identifiers))
+
+        # The old email address is still there and correctly linked.
+        self.assertIs(self.email, found.preferredemail)
+        self.assertIs(self.email.account, self.account)
+        self.assertIs(self.email.person, self.person)
+
+        # The new email address is there too and correctly linked.
+        new_email = self.store.find(EmailAddress, email=new_email).one()
+        self.assertIs(new_email.account, self.account)
+        self.assertIs(new_email.person, self.person)
+        self.assertEqual(EmailAddressStatus.NEW, new_email.status)
+
+    def testNewAccountAndIdentifier(self):
+        # If neither the OpenId Identifier nor the email address are
+        # found, we create everything.
+        new_email = u'new_email@example.com'
+        new_identifier = u'new_identifier'
+        found, updated = self.person_set.getOrCreateByOpenIDIdentifier(
+            new_identifier, new_email, 'New Name',
+            PersonCreationRationale.UNKNOWN, 'No Comment')
+        found = removeSecurityProxy(found)
+
+        # We have a new Person
+        self.assertIs(True, updated)
+        self.assertIsNot(None, found)
+
+        # It is correctly linked to an account, emailaddress and
+        # identifier.
+        self.assertIs(found, found.preferredemail.person)
+        self.assertIs(found.account, found.preferredemail.account)
+        self.assertEqual(
+            new_identifier, found.account.openid_identifiers.any().identifier)
+
+    def testNoAccount(self):
+        # EmailAddress is linked to a Person, but there is no Account.
+        # Convert this stub into something valid.
+        self.email.account = None
+        self.email.status = EmailAddressStatus.NEW
+        self.person.account = None
+        new_identifier = u'new_identifier'
+        found, updated = self.person_set.getOrCreateByOpenIDIdentifier(
+            new_identifier, self.email.email, 'Ignored',
+            PersonCreationRationale.UNKNOWN, 'No Comment')
+        found = removeSecurityProxy(found)
+
+        self.assertIs(True, updated)
+
+        self.assertIsNot(None, found.account)
+        self.assertEqual(
+            new_identifier, found.account.openid_identifiers.any().identifier)
+        self.assertIs(self.email.person, found)
+        self.assertIs(self.email.account, found.account)
+        self.assertEqual(EmailAddressStatus.PREFERRED, self.email.status)
 
 
 class TestCreatePersonAndEmail(TestCase):
