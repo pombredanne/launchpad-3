@@ -5,8 +5,11 @@ import os
 import signal
 import socket
 import subprocess
+import tempfile
 import threading
 import time
+
+from testtools import content
 
 from bzrlib import (
     osutils,
@@ -261,9 +264,19 @@ class TestCaseWithLPForkingServiceSubprocess(TestCaseWithSubprocess):
     def start_service_subprocess(self):
         # Make sure this plugin is exposed to the subprocess
         # SLOOWWW (~2.4 seconds, which is why we are doing the work anyway)
+        fd, tempname = tempfile.mkstemp(prefix='tmp-log-bzr-lp-forking-')
+        def read_log():
+            f = os.fdopen(fd)
+            f.seek(0)
+            content = f.read()
+            f.close()
+            os.remove(tempname)
+            return [content]
+        self.addDetail('server-log', content.Content(
+            content.ContentType('text', 'plain', {"charset": "utf8"}),
+            read_log))
         env_changes = {'BZR_PLUGIN_PATH': lpserve.__path__[0],
-                       # This may break in bzr 2.3
-                       'BZR_LOG': self._log_file_name}
+                       'BZR_LOG': tempname}
         proc = self.start_bzr_subprocess(
             ['lp-service', '--port', '127.0.0.1:0', '--no-preload',
              '--children-timeout=1'],
@@ -295,6 +308,7 @@ class TestCaseWithLPForkingServiceSubprocess(TestCaseWithSubprocess):
         self.assertEqual('quit command requested... exiting\n', response)
 
     def _get_fork_handles(self, path):
+        trace.mutter('getting handles for: %s' % (path,))
         stdin_path = os.path.join(path, 'stdin')
         stdout_path = os.path.join(path, 'stdout')
         stderr_path = os.path.join(path, 'stderr')
@@ -332,3 +346,19 @@ class TestCaseWithLPForkingServiceSubprocess(TestCaseWithSubprocess):
     def test_just_run_service(self):
         # Start and stop are defined in setUp()
         pass
+
+    def test_fork_multiple_children(self):
+        paths = []
+        for idx in range(4):
+            path = self.send_message_to_service('fork launchpad-replay\n')
+            path = path.strip()
+            paths.append(path)
+        for idx in [3, 2, 0, 1]:
+            p = paths[idx]
+            stdout_msg = 'hello %d\n' % (idx,)
+            stderr_msg = 'goodbye %d\n' % (idx+1,)
+            stdout, stderr = self.communicate_with_fork(p,
+                '1 %s2 %s' % (stdout_msg, stderr_msg))
+            self.assertEqualDiff(stdout_msg, stdout)
+            self.assertEqualDiff(stderr_msg, stderr)
+        self.fail('failure')

@@ -230,7 +230,6 @@ class LPForkingService(object):
         trace._bzr_log_start_time = time.time()
         trace.mutter('%d starting %r'
                      % (os.getpid(), command_argv,))
-        self._create_child_file_descriptors(path)
         # Now that we've set everything up, send the response to the client,
         # and close everything out. we create them first, so the client can
         # start trying to connect to them, while we do the same.
@@ -249,7 +248,7 @@ class LPForkingService(object):
         retcode = commands.run_bzr_catch_errors(command_argv)
         self._close_child_file_descriptons()
         trace.mutter('%d finished %r'
-                     % (os.getpid(), command,))
+                     % (os.getpid(), command_argv,))
         sys.exit(retcode)
 
     @staticmethod
@@ -261,6 +260,7 @@ class LPForkingService(object):
     def fork_one_request(self, conn, client_addr, command_argv):
         """Fork myself and serve a request."""
         temp_name = tempfile.mkdtemp(prefix='lp-forking-service-child-')
+        self._create_child_file_descriptors(temp_name)
         self._children_spawned += 1
         pid = self._fork_function()
         if pid == 0:
