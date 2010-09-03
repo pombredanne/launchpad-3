@@ -17,6 +17,7 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.launchpad.helpers import get_email_template
+from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.mail import (
     format_address,
     simple_sendmail,
@@ -34,6 +35,8 @@ from lp.soyuz.interfaces.archivesubscriber import (
     IArchiveSubscriberSet,
     )
 from lp.soyuz.enums import ArchiveSubscriberStatus
+from lp.soyuz.model.archivesubscriber import ArchiveSubscriber
+
 
 # These PPAs should never have their htaccess/pwd files touched.
 BLACKLISTED_PPAS = {
@@ -214,29 +217,32 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
                 valid_tokens.append(token)
         return valid_tokens
 
-    def expireSubscriptions(self, ppa):
+    def expireSubscriptions(self):
         """Expire subscriptions as necessary.
 
         If an `ArchiveSubscriber`'s date_expires has passed, then
         set its status to EXPIRED.
-
-        :param ppa: The PPA to expire subscriptons for.
         """
         now = datetime.now(pytz.UTC)
-        subscribers = getUtility(IArchiveSubscriberSet).getByArchive(ppa)
-        for subscriber in subscribers:
-            date_expires = subscriber.date_expires
-            if date_expires is not None and date_expires <= now:
-                self.logger.info(
-                    "Expiring subscription: %s" % subscriber.displayname)
-                subscriber.status = ArchiveSubscriberStatus.EXPIRED
+
+        store = IStore(ArchiveSubscriber)
+        newly_expired_subscriptions = store.find(
+            ArchiveSubscriber,
+            ArchiveSubscriber.status == ArchiveSubscriberStatus.CURRENT,
+            ArchiveSubscriber.date_expires <= now)
+
+        # Can we update multiple items at once in storm?
+        for subscriber in newly_expired_subscriptions:
+            self.logger.info(
+                "Expiring subscription: %s" % subscriber.displayname)
+            subscriber.status = ArchiveSubscriberStatus.EXPIRED
 
     def main(self):
         """Script entry point."""
         self.logger.info('Starting the PPA .htaccess generation')
+        self.expireSubscriptions()
         ppas = getUtility(IArchiveSet).getPrivatePPAs()
         for ppa in ppas:
-            self.expireSubscriptions(ppa)
             valid_tokens = self.deactivateTokens(ppa, send_email=True)
 
             # If this PPA is blacklisted, do not touch it's htaccess/pwd
