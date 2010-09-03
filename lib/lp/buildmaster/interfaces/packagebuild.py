@@ -99,6 +99,10 @@ class IPackageBuild(IBuildFarmJob):
             directory name. If not provided, defaults to now.
         """
 
+    def getBuildCookie():
+        """Return the build cookie (build id and build queue record id).
+        """
+
     def getLogFromSlave(build):
         """Get last buildlog from slave. """
 

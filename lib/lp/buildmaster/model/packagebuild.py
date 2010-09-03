@@ -157,6 +157,10 @@ class PackageBuild(BuildFarmJobDerived, Storm):
         timestamp = now.strftime("%Y%m%d-%H%M%S")
         return '%s-%s' % (timestamp, build_cookie)
 
+    def getBuildCookie(self):
+        """See `IPackageBuild`."""
+        return '%s-%s' % (self.id, self.buildqueue_record.id)
+
     @staticmethod
     def getLogFromSlave(package_build):
         """See `IPackageBuild`."""
@@ -294,8 +298,7 @@ class PackageBuildDerived:
         root = os.path.abspath(config.builddmaster.root)
 
         # Create a single directory to store build result files.
-        upload_leaf = self.getUploadDirLeaf(
-            '%s-%s' % (self.id, self.buildqueue_record.id))
+        upload_leaf = self.getUploadDirLeaf(self.getBuildCookie())
         grab_dir = os.path.join(root, "grabbing", upload_leaf)
         logger.debug("Storing build result at '%s'" % grab_dir)
 

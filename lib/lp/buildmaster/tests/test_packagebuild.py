@@ -20,6 +20,9 @@ from canonical.testing.layers import (
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
     )
+from lp.archiveuploader.uploadprocessor import (
+    parse_build_upload_leaf_name,
+    )
 from lp.buildmaster.enums import (
     BuildFarmJobType,
     BuildStatus,
@@ -281,6 +284,24 @@ class TestGetUploadMethodsMixin:
             f.write('foo')
         self.assertEquals(
             'foo', self.build.getUploadLogContent(os.getcwd(), "myleaf"))
+
+    def test_getBuildCookie(self):
+        # A build cookie is made up of the package build id and record id.
+        # The uploadprocessor relies on this format.
+        cookie = self.build.getBuildCookie()
+        expected_cookie = "%d-%d" % (
+            self.build.id, self.build.buildqueue_record.id)
+        self.assertEquals(expected_cookie, cookie)
+
+    def test_getUploadDirLeafCookie_parseable(self):
+        # getUploadDirLeaf should return a directory name
+        # that is parseable by the upload processor.
+        upload_leaf = self.build.getUploadDirLeaf(
+            self.build.getBuildCookie())
+        (build_id, queue_record_id) = parse_build_upload_leaf_name(upload_leaf)
+        self.assertEqual(build_id, self.build.id)
+        self.assertEqual(
+            queue_record_id, self.build.buildqueue_record.id)
 
 
 class TestHandleStatusMixin:
