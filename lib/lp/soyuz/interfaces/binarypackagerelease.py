@@ -74,6 +74,13 @@ class IBinaryPackageRelease(Interface):
     user_defined_fields = List(
         title=_("Sequence of user-defined fields as key-value pairs."))
 
+    homepage = TextLine(
+        title=_("Homepage"),
+        description=_(
+        "Upstream project homepage as set in the package. This URL is not "
+        "sanitized."),
+        required=False)
+
     files = Attribute("Related list of IBinaryPackageFile entries")
 
     title = TextLine(required=True, readonly=True)

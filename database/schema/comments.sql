@@ -201,6 +201,31 @@ COMMENT ON COLUMN BugNomination.decider IS 'The person who approved or declined 
 COMMENT ON TABLE BugSubscription IS 'A subscription by a Person to a bug.';
 COMMENT ON COLUMN BugSubscription.bug_notification_level IS 'The level of notifications which the Person will receive from this subscription.';
 
+-- BugSubscriptionFilter
+COMMENT ON TABLE BugSubscriptionFilter IS 'A filter with search criteria. Emails are sent only if the affected bug matches the specified parameters. The parameters are the same as those used for bugtask searches.';
+COMMENT ON COLUMN BugSubscriptionFilter.structuralsubscription IS 'The structural subscription to be filtered.';
+COMMENT ON COLUMN BugSubscriptionFilter.find_all_tags IS 'If set, search for bugs having all tags specified in BugSubscriptionFilterTag, else search for bugs having any of the tags specified in BugSubscriptionFilterTag.';
+COMMENT ON COLUMN BugSubscriptionFilter.include_any_tags IS 'If True, include messages for bugs having any tag set.';
+COMMENT ON COLUMN BugSubscriptionFilter.exclude_any_tags IS 'If True, exclude bugs having any tag set.';
+COMMENT ON COLUMN BugSubscriptionFilter.other_parameters IS 'Other filter paremeters. Actual filtering is implemented on Python level.';
+COMMENT ON COLUMN BugSubscriptionFilter.description IS 'A description of the filter, allowing subscribers to note the intent of the filter.';
+
+-- BugSubscriptionFilterStatus
+COMMENT ON TABLE BugSubscriptionFilterStatus IS 'Filter a bugsubscription by bug task status.';
+COMMENT ON COLUMN BugSubscriptionFilterStatus.filter IS 'The subscription filter of this record.';
+COMMENT ON COLUMN BugSubscriptionFilterStatus.status IS 'The bug task status.';
+
+-- BugSubscriptionFilterImportance
+COMMENT ON TABLE BugSubscriptionFilterImportance IS 'Filter a bugsubscription by bug task status.';
+COMMENT ON COLUMN BugSubscriptionFilterImportance.filter IS 'The subscription filter of this record.';
+COMMENT ON COLUMN BugSubscriptionFilterImportance.importance IS 'The bug task importance.';
+
+-- BugSubscriptionFilterTag
+COMMENT ON TABLE BugSubscriptionFilterTag IS 'Filter by bug tag.';
+COMMENT ON COLUMN BugSubscriptionFilterTag.filter IS 'The subscription filter of this record.';
+COMMENT ON COLUMN BugSubscriptionFilterTag.tag IS 'A bug tag.';
+COMMENT ON COLUMN BugSubscriptionFilterTag.include IS 'If True, send only messages for bugs having this tag, else send only messages for bugs which do not have this tag.';
+
 -- BugTag
 COMMENT ON TABLE BugTag IS 'Attaches simple text tags to a bug.';
 COMMENT ON COLUMN BugTag.bug IS 'The bug the tags is attached to.';
@@ -503,6 +528,19 @@ COMMENT ON COLUMN DistributionSourcePackageCache.binpkgdescriptions IS 'The aggr
 COMMENT ON COLUMN DistributionSourcePackageCache.changelog IS 'A concatenation of the source package release changelogs for this source package, where the status is not REMOVED.';
 COMMENT ON COLUMN DistributionSourcePackageCache.archive IS 'The archive where the source is published.';
 
+-- DistroSeriesDifference
+COMMENT ON TABLE DistroSeriesDifference IS 'A difference of versions for a package in a derived distroseries and its parent distroseries.';
+COMMENT ON COLUMN DistroSeriesDifference.derived_series IS 'The derived distroseries with the difference from its parent.';
+COMMENT ON COLUMN DistroSeriesDifference.source_package_name IS 'The name of the source package which is different in the two series.';
+COMMENT ON COLUMN DistroSeriesDifference.package_diff IS 'The most recent package diff that was created for this difference.';
+COMMENT ON COLUMN DistroSeriesDifference.status IS 'A distroseries difference can be needing attention, ignored or resolved.';
+COMMENT ON COLUMN DistroSeriesDifference.difference_type IS 'The type of difference that this record represents - a package unique to the derived series, or missing, or in both.';
+
+-- DistroSeriesDifferenceMessage
+COMMENT ON TABLE DistroSeriesDifferenceMessage IS 'A message/comment on a distro series difference.';
+COMMENT ON COLUMN DistroSeriesDifferenceMessage.distro_series_difference IS 'The distro series difference for this comment.';
+COMMENT ON COLUMN DistroSeriesDifferenceMessage.message IS 'The comment for the distro series difference.';
+
 -- DistroSeriesPackageCache
 
 COMMENT ON TABLE DistroSeriesPackageCache IS 'A cache of the text associated with binary packages in the distroseries. This table allows for fast queries to find a binary packagename that matches a given text.';
@@ -533,13 +571,13 @@ COMMENT ON TABLE FeatureFlag IS
 can be changed without restarting Launchpad
 <https://dev.launchpad.net/LEP/FeatureFlags>';
 
-COMMENT ON COLUMN FeatureFlag.scope IS 
+COMMENT ON COLUMN FeatureFlag.scope IS
     'Scope in which this setting is active';
 
-COMMENT ON COLUMN FeatureFlag.priority IS 
+COMMENT ON COLUMN FeatureFlag.priority IS
     'Higher priority flags override lower';
 
-COMMENT ON COLUMN FeatureFlag.flag IS 
+COMMENT ON COLUMN FeatureFlag.flag IS
     'Name of the flag being controlled';
 
 -- KarmaCategory
@@ -1337,6 +1375,7 @@ COMMENT ON COLUMN SourcePackageRelease.build_conflicts IS 'The list of packages 
 COMMENT ON COLUMN SourcePackageRelease.build_conflicts_indep IS 'The list of packages that will conflict with this source while building in architecture independent environment, as mentioned in the control file "Build-Conflicts-Indep:" field.';
 COMMENT ON COLUMN SourcePackageRelease.changelog IS 'The LibraryFileAlias ID of changelog associated with this sourcepackage.  Often in the case of debian packages and will be found after the installation in /usr/share/doc/<binarypackagename>/changelog.Debian.gz';
 COMMENT ON COLUMN SourcePackageRelease.user_defined_fields IS 'A JSON struct containing a sequence of key-value pairs with user defined fields in the control file.';
+COMMENT ON COLUMN SourcePackageRelease.homepage IS 'Upstream project homepage URL, not checked for validity.';
 
 -- SourcePackageName
 
@@ -1478,6 +1517,7 @@ COMMENT ON COLUMN BinaryPackageRelease.enhances IS 'The list of packages pointed
 COMMENT ON COLUMN BinaryPackageRelease.breaks IS 'The list of packages which will be broken by the installtion of this package, as it is in the control file "Breaks:" field.';
 COMMENT ON COLUMN BinaryPackageRelease.debug_package IS 'The corresponding binary package release containing debug symbols for this binary, if any.';
 COMMENT ON COLUMN BinaryPackageRelease.user_defined_fields IS 'A JSON struct containing a sequence of key-value pairs with user defined fields in the control file.';
+COMMENT ON COLUMN BinaryPackageRelease.homepage IS 'Upstream project homepage URL, not checked for validity.';
 
 
 -- BinaryPackageFile

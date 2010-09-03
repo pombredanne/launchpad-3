@@ -1008,8 +1008,8 @@ Bad user joins a team, and he is approved. An admin later suspends him.
     >>> from canonical.launchpad.interfaces import IMasterObject
     >>> IMasterObject(bad_user.account).status = AccountStatus.SUSPENDED
     >>> IMasterObject(bad_user.preferredemail).status = EmailAddressStatus.OLD
-    >>> from canonical.cachedproperty import clear_property
-    >>> clear_property(removeSecurityProxy(bad_user), '_preferredemail_cached')
+    >>> from lp.services.propertycache import IPropertyCache
+    >>> del IPropertyCache(removeSecurityProxy(bad_user)).preferredemail
     >>> transaction.commit()
 
     >>> [m.displayname for m in t3.allmembers]

@@ -41,7 +41,7 @@ from lp.archiveuploader.uploadprocessor import (
     parse_build_upload_leaf_name,
     UploadProcessor,
     )
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -1202,7 +1202,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         error_report.write(fp)
         error_text = fp.getvalue()
         self.assertTrue(
-            "Unable to find mandatory field 'files' in the changes file" in error_text)
+            "Unable to find mandatory field 'Files' in the changes file" in error_text)
 
         # Housekeeping so the next test won't fail.
         shutil.rmtree(upload_dir)
@@ -1369,7 +1369,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
             % error_text)
 
         expected_explanation = (
-            "Unable to find mandatory field 'files' in the changes file.")
+            "Unable to find mandatory field 'Files' in the changes file.")
         self.failUnless(
             error_text.find(expected_explanation) >= 0,
             'Expected Exception text not found in OOPS report:\n%s'

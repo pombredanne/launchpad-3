@@ -298,7 +298,7 @@
           </p>
         </tal:singular>
         <ul class="product-bug-options" tal:repeat="product context/products">
-          <li condition="product/official_malone">
+          <li condition="product/bug_tracking_usage/enumvalue:LAUNCHPAD">
             <tal:link replace="structure product/fmt:link" />
             <ul class="bulleted">
               <tal:external-tracker
