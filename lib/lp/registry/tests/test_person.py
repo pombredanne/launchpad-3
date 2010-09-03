@@ -6,7 +6,6 @@ from __future__ import with_statement
 __metaclass__ = type
 
 from datetime import datetime
-import time
 
 from lazr.lifecycle.snapshot import Snapshot
 import pytz
@@ -423,6 +422,7 @@ class TestPersonSetMerge(TestCaseWithFactory):
 
         self.assertIn(duplicate_identifier, merged_identifiers)
         self.assertIn(person_identifier, merged_identifiers)
+
 
 class TestCreatePersonAndEmail(TestCase):
     """Test `IPersonSet`.createPersonAndEmail()."""

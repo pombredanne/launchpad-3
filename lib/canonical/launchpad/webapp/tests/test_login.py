@@ -112,6 +112,7 @@ class FakeConsumerOpenIDCallbackView(OpenIDCallbackView):
 
 @contextmanager
 def SRegResponse_fromSuccessResponse_stubbed():
+
     def sregFromFakeSuccessResponse(cls, success_response, signed_only=True):
         return {'email': success_response.sreg_email,
                 'fullname': success_response.sreg_fullname}

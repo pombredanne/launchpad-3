@@ -10,7 +10,6 @@ database/schema/.
 __metaclass__ = type
 
 import re
-import sys
 
 
 class Parser:
@@ -101,12 +100,12 @@ class Parser:
 
         Something trickier: multiple lines, and a ');' in the middle.
 
-        >>> p.parse_line('''INSERT INTO foo (id, x) VALUES (3, 'blah',
-        ... 'blah
-        ... blah);
-        ... blah');
+        >>> p.parse_line('''INSERT INTO foo (id, x) VALUES (3, 'b',
+        ... 'b
+        ... b);
+        ... b');
         ... ''')
-        (3, "INSERT INTO foo (id, x) VALUES (3, 'blah',\n'blah\nblah);\nblah');\n")
+        (3, "INSERT INTO foo (id, x) VALUES (3, 'b',\n'b\nb);\nb');\n")
         """
 
         if not line.startswith('INSERT '):
@@ -125,7 +124,6 @@ class Parser:
         else:
             return line, line
 
-
     def feed(self, s):
         """Give the parser some text to parse."""
 
@@ -142,6 +140,7 @@ class Parser:
             else:
                 self.lines.append((value, self.line[:-1]))
                 self.line = ''
+
 
 def print_lines_sorted(file, lines):
     r"""Print a set of (value, line) pairs in sorted order.

@@ -263,7 +263,7 @@ COMMENT ON FUNCTION valid_name(text)
     IS 'validate a name.
 
     Names must contain only lowercase letters, numbers, ., & -. They
-    must start with an alphanumeric. They are ASCII only. Names are useful 
+    must start with an alphanumeric. They are ASCII only. Names are useful
     for mneumonic identifiers such as nicknames and as URL components.
     This specification is the same as the Debian product naming policy.
 
@@ -447,7 +447,7 @@ COMMENT ON FUNCTION is_team(integer) IS
 
 
 CREATE OR REPLACE FUNCTION is_team(text) returns boolean
-LANGUAGE sql STABLE RETURNS NULL ON NULL INPUT AS 
+LANGUAGE sql STABLE RETURNS NULL ON NULL INPUT AS
 $$
     SELECT count(*)>0 FROM Person WHERE name=$1 AND teamowner IS NOT NULL;
 $$;
@@ -464,7 +464,7 @@ $$;
 
 COMMENT ON FUNCTION is_person(text) IS
     'True if the given name identifies a person in the Person table';
-    
+
 SET check_function_bodies=true;
 
 
@@ -785,7 +785,7 @@ CREATE OR REPLACE FUNCTION set_shipit_normalized_address() RETURNS trigger
 LANGUAGE plpgsql AS
 $$
     BEGIN
-        NEW.normalized_address = 
+        NEW.normalized_address =
             lower(
                 -- Strip off everything that's not alphanumeric
                 -- characters.
@@ -1298,7 +1298,7 @@ BEGIN
         needs_update := TRUE;
     END IF;
 
-    IF needs_update THEN   
+    IF needs_update THEN
         SELECT
             Person.name AS owner_name,
             COALESCE(Product.name, SPN.name) AS target_suffix,
@@ -1440,7 +1440,7 @@ BEGIN
         registrant, logo, renewal_policy, personal_standing,
         personal_standing_reason, mail_resumption_date,
         mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates,
-        visibility, verbose_bugnotifications, account) 
+        visibility, verbose_bugnotifications, account)
         SELECT NEW.*;
     RETURN NULL; -- Ignored for AFTER triggers.
 END;
@@ -1534,7 +1534,7 @@ BEGIN
         personal_standing = NEW.personal_standing,
         personal_standing_reason = NEW.personal_standing_reason,
         mail_resumption_date = NEW.mail_resumption_date,
-        mailing_list_auto_subscribe_policy 
+        mailing_list_auto_subscribe_policy
             = NEW.mailing_list_auto_subscribe_policy,
         mailing_list_receive_duplicates = NEW.mailing_list_receive_duplicates,
         visibility = NEW.visibility,

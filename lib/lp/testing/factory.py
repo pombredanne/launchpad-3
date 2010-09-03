@@ -485,7 +485,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         # production environments so access to execute this stored
         # procedure cannot be used to compromise accounts.
         IMasterStore(OpenIdIdentifier).execute(
-            "SELECT add_test_openid_identifier(%s)", (account.id,))
+            "SELECT add_test_openid_identifier(%s)", (account.id, ))
 
     def makeGPGKey(self, owner):
         """Give 'owner' a crappy GPG key for the purposes of testing."""
