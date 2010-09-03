@@ -19,7 +19,7 @@ ALTER TABLE BugTrackerComponentGroup
 CREATE TABLE BugTrackerComponent (
     id serial PRIMARY KEY,
     name text NOT NULL,
-    is_shown  boolean NOT NULL DEFAULT True,
+    is_visible boolean NOT NULL DEFAULT True,
     is_custom boolean NOT NULL DEFAULT True,
     component_group integer NOT NULL REFERENCES BugTrackerComponentGroup,
     distro_source_package integer REFERENCES DistributionSourcePackage,
