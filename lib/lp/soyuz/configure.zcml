@@ -866,4 +866,14 @@
       callable="lp.archiveuploader.tests.register_archive_upload_policy_adapters"
       />
 
+    <!-- InitialiseDistroSeriesJobSource -->
+    <securedutility
+      component="lp.soyuz.model.initialisedistroseriesjob.InitialiseDistroSeriesJob"
+      provides="lp.soyuz.interfaces.distributionjob.IInitialiseDistroSeriesJobSource">
+        <allow interface="lp.soyuz.interfaces.distributionjob.IInitialiseDistroSeriesJobSource"/>
+    </securedutility>
+    <class class="lp.soyuz.model.initialisedistroseriesjob.InitialiseDistroSeriesJob">
+        <allow interface="lp.services.job.interfaces.job.IRunnableJob" />
+    </class>
+
 </configure>

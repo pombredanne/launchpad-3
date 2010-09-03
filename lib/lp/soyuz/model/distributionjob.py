@@ -10,7 +10,6 @@ __all__ = [
 
 import simplejson
 
-from sqlobject import SQLObjectNotFound
 from storm.base import Storm
 from storm.locals import And, Int, Reference, Unicode
 
@@ -25,8 +24,9 @@ from lazr.delegates import delegates
 from lp.registry.model.distribution import Distribution
 from lp.registry.model.distroseries import DistroSeries
 from lp.soyuz.interfaces.distributionjob import (
+    DistributionJobType,
     IDistributionJob,
-    DistributionJobType)
+    )
 from lp.services.job.model.job import Job
 from lp.services.job.runner import BaseRunnableJob
 
@@ -97,9 +97,7 @@ class DistributionJobDerived(BaseRunnableJob):
             DistributionJob,
             And(DistributionJob.job_type == cls.class_job_type,
                 DistributionJob.job == Job.id,
-                Job.id.is_in(Job.ready_jobs),
-                DistributionJob.distribution == Distribution.id,
-                DistributionJob.distroseries == DistroSeries.id))
+                Job.id.is_in(Job.ready_jobs)))
         return (cls(job) for job in jobs)
 
     def getOopsVars(self):

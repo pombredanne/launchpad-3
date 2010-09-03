@@ -10,7 +10,7 @@ __all__ = [
 from zope.component import getUtility
 from zope.interface import classProvides, implements
 
-from canonical.launchpad.interfaces.lpstorm import IStore
+from canonical.launchpad.interfaces.lpstorm import IMasterStore
 
 from lp.services.job.model.job import Job
 from lp.soyuz.interfaces.distributionjob import (
@@ -26,6 +26,7 @@ from lp.soyuz.scripts.initialise_distroseries import (
     InitialiseDistroSeries,
     )
 
+
 class InitialiseDistroSeriesJob(DistributionJobDerived):
 
     implements(IInitialiseDistroSeriesJob)
@@ -39,7 +40,7 @@ class InitialiseDistroSeriesJob(DistributionJobDerived):
         job = DistributionJob(
             distroseries.distribution, distroseries, cls.class_job_type,
             ())
-        IStore(DistributionJob).add(job)
+        IMasterStore(DistributionJob).add(job)
         return cls(job)
 
     def run(self):
