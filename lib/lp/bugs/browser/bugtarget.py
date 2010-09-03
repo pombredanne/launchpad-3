@@ -92,11 +92,15 @@ from canonical.widgets.product import (
     GhostWidget,
     ProductBugTrackerWidget,
     )
+from lp.app.enums import ServiceUsage
 from lp.app.errors import (
     NotFoundError,
     UnexpectedFormData,
     )
-from lp.app.interfaces.launchpad import ILaunchpadUsage
+from lp.app.interfaces.launchpad import (
+    ILaunchpadUsage,
+    IServiceUsage,
+    )
 from lp.bugs.browser.bugrole import BugRoleMixin
 from lp.bugs.browser.bugtask import BugTaskSearchListingView
 from lp.bugs.interfaces.apportjob import IProcessApportBlobJobSource
@@ -384,7 +388,7 @@ class FileBugViewBase(LaunchpadFormView):
         # actually uses Malone for its bug tracking.
         product_or_distro = self.getProductOrDistroFromContext()
         if (product_or_distro is not None and
-            not product_or_distro.official_malone):
+            product_or_distro.bug_tracking_usage != ServiceUsage.LAUNCHPAD):
             self.setFieldError(
                 'bugtarget',
                 "%s does not use Launchpad as its bug tracker " %
@@ -426,10 +430,11 @@ class FileBugViewBase(LaunchpadFormView):
         if IProjectGroup.providedBy(self.context):
             products_using_malone = [
                 product for product in self.context.products
-                if product.official_malone]
+                if product.bug_tracking_usage == ServiceUsage.LAUNCHPAD]
             return len(products_using_malone) > 0
         else:
-            return self.getMainContext().official_malone
+            bug_tracking_usage = self.getMainContext().bug_tracking_usage
+            return bug_tracking_usage == ServiceUsage.LAUNCHPAD
 
     def getMainContext(self):
         if IDistributionSourcePackage.providedBy(self.context):
@@ -1084,7 +1089,7 @@ class ProjectFileBugGuidedView(FileBugGuidedView):
     def products_using_malone(self):
         return [
             product for product in self.context.products
-            if product.official_malone]
+            if product.bug_tracking_usage == ServiceUsage.LAUNCHPAD]
 
     @property
     def default_product(self):
@@ -1252,8 +1257,8 @@ class BugTargetBugsView(BugTaskSearchListingView, FeedsMixin):
 
         :returns: boolean
         """
-        launchpad_usage = ILaunchpadUsage(self.context)
-        return launchpad_usage.official_malone
+        service_usage = IServiceUsage(self.context)
+        return service_usage.bug_tracking_usage == ServiceUsage.LAUNCHPAD
 
     @property
     def external_bugtracker(self):
