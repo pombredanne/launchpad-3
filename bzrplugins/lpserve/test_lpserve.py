@@ -265,12 +265,12 @@ class TestCaseWithLPForkingServiceSubprocess(TestCaseWithSubprocess):
                        # This may break in bzr 2.3
                        'BZR_LOG': self._log_file_name}
         proc = self.start_bzr_subprocess(
-            ['lp-service', '--port', '127.0.0.1:0',
+            ['lp-service', '--port', '127.0.0.1:0', '--no-preload',
              '--children-timeout=1'],
             env_changes=env_changes)
         trace.mutter('started lp-service subprocess')
-        preload_line = proc.stderr.readline()
-        self.assertStartsWith(preload_line, 'Preloading')
+        # preload_line = proc.stderr.readline()
+        # self.assertStartsWith(preload_line, 'Preloading')
         prefix = 'Listening on port: '
         port_line = proc.stderr.readline()
         self.assertStartsWith(port_line, prefix)
@@ -294,13 +294,17 @@ class TestCaseWithLPForkingServiceSubprocess(TestCaseWithSubprocess):
             time.sleep(0.1)
         self.assertEqual('quit command requested... exiting\n', response)
 
-    def communicate_with_fork(self, path, stdin=None):
+    def _get_fork_handles(self, path):
         stdin_path = os.path.join(path, 'stdin')
         stdout_path = os.path.join(path, 'stdout')
         stderr_path = os.path.join(path, 'stderr')
         child_stdout = open(stdout_path, 'rb')
         child_stderr = open(stderr_path, 'rb')
         child_stdin = open(stdin_path, 'wb')
+        return child_stdin, child_stdout, child_stderr
+
+    def communicate_with_fork(self, path, stdin=None):
+        child_stdin, child_stdout, child_stderr = self._get_fork_handles(path)
         if stdin is not None:
             child_stdin.write(stdin)
         child_stdin.close()
@@ -308,13 +312,19 @@ class TestCaseWithLPForkingServiceSubprocess(TestCaseWithSubprocess):
         stderr_content = child_stderr.read()
         return stdout_content, stderr_content
 
-    def test_fork_child_hello(self):
+    def test_fork_lp_serve_hello(self):
         response = self.send_message_to_service('fork lp-serve --inet 2\n')
-        if response.startswith('FAILURE'):
-            self.fail('Fork request failed')
         self.assertContainsRe(response, '/lp-forking-service-child-')
         path = response.strip()
         stdout_content, stderr_content = self.communicate_with_fork(path,
             'hello\n')
         self.assertEqual('ok\x012\n', stdout_content)
         self.assertEqual('', stderr_content)
+
+    def test_fork_replay(self):
+        response = self.send_message_to_service('fork launchpad-replay\n')
+        path = response.strip()
+        stdout_content, stderr_content = self.communicate_with_fork(path,
+            '1 hello\n2 goodbye\n1 maybe\n')
+        self.assertEqualDiff('hello\nmaybe\n', stdout_content)
+        self.assertEqualDiff('goodbye\n', stderr_content)

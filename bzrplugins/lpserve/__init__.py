@@ -142,6 +142,7 @@ class LPForkingService(object):
             self.port = self.DEFAULT_PORT
         else:
             self.port = port
+        self._start_time = time.time()
         self._should_terminate = threading.Event()
         # We address these locally, in case of shutdown socket may be gc'd
         # before we are
@@ -151,6 +152,7 @@ class LPForkingService(object):
         self._socket_error = socket.error
         # Map from pid => information
         self._child_processes = {}
+        self._children_spawned = 0
 
     def _create_master_socket(self):
         addrs = socket.getaddrinfo(self.host, self.port, socket.AF_UNSPEC,
@@ -259,6 +261,7 @@ class LPForkingService(object):
     def fork_one_request(self, conn, client_addr, command_argv):
         """Fork myself and serve a request."""
         temp_name = tempfile.mkdtemp(prefix='lp-forking-service-child-')
+        self._children_spawned += 1
         pid = self._fork_function()
         if pid == 0:
             trace.mutter('%d spawned' % (os.getpid(),))
@@ -317,8 +320,10 @@ class LPForkingService(object):
 
         This includes stuff like number of children, and ... ?
         """
-        self.log(None, '%d children currently running'
-                       % (len(self._child_processes)))
+        self.log(None, 'Running for %.3fs' % (time.time() - self._start_time))
+        self.log(None, '%d children currently running (spawned %d total)'
+                       % (len(self._child_processes), self._children_spawned))
+        # Read the current information about memory consumption, etc.
 
     def _poll_children(self):
         """See if children are still running, etc.
@@ -458,6 +463,32 @@ class cmd_launchpad_forking_service(Command):
 
 register_command(cmd_launchpad_forking_service)
 
+
+class cmd_launchpad_replay(Command):
+    """Write input from stdin back to stdout or stderr.
+
+    This is a hidden command, primarily available for testing
+    cmd_launchpad_forking_service.
+    """
+
+    hidden = True
+
+    def run(self):
+        # Just read line-by-line from stdin, and write out to stdout or stderr
+        # depending on the prefix
+        for line in sys.stdin:
+            channel, contents = line.split(' ', 1)
+            channel = int(channel)
+            if channel == 1:
+                sys.stdout.write(contents)
+                sys.stdout.flush()
+            elif channel == 2:
+                sys.stderr.write(contents)
+                sys.stdout.flush()
+            else:
+                raise RuntimeError('Invalid channel request.')
+
+register_command(cmd_launchpad_replay)
 
 libraries_to_preload = [
     'bzrlib.errors',
