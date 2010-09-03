@@ -62,7 +62,6 @@ from zope.server.http.commonaccesslogger import CommonAccessLogger
 from zope.server.http.wsgihttpserver import PMDBWSGIHTTPServer
 from zope.session.interfaces import ISession
 
-from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad.interfaces.launchpad import (
     IFeedsApplication,
@@ -117,6 +116,7 @@ from canonical.lazr.interfaces.feed import IFeed
 from canonical.lazr.timeout import set_default_timeout_function
 from lp.app.errors import UnexpectedFormData
 from lp.services.features.flags import NullFeatureController
+from lp.services.propertycache import cachedproperty
 from lp.testopenid.interfaces.server import ITestOpenIDApplication
 
 
@@ -1300,19 +1300,10 @@ class WebServicePublication(WebServicePublicationMixin,
         return principal
 
 
-class LaunchpadWebServiceRequestTraversal(WebServiceRequestTraversal):
-    implements(canonical.launchpad.layers.WebServiceLayer)
-
-    def getRootURL(self, rootsite):
-        """See IBasicLaunchpadRequest."""
-        # When browsing the web service, we want URLs to point back at the web
-        # service, so we basically ignore rootsite.
-        return self.getApplicationURL() + '/'
-
-
-class WebServiceClientRequest(LaunchpadWebServiceRequestTraversal,
+class WebServiceClientRequest(WebServiceRequestTraversal,
                               LaunchpadBrowserRequest):
     """Request type for a resource published through the web service."""
+    implements(canonical.launchpad.layers.WebServiceLayer)
 
     def __init__(self, body_instream, environ, response=None):
         super(WebServiceClientRequest, self).__init__(
@@ -1338,14 +1329,20 @@ class WebServiceClientRequest(LaunchpadWebServiceRequestTraversal,
         # than ETag, we may have to revisit this.
         self.response.setHeader('Vary', 'Accept')
 
+    def getRootURL(self, rootsite):
+        """See IBasicLaunchpadRequest."""
+        # When browsing the web service, we want URLs to point back at the web
+        # service, so we basically ignore rootsite.
+        return self.getApplicationURL() + '/'
 
-class WebServiceTestRequest(LaunchpadWebServiceRequestTraversal,
-                            LaunchpadTestRequest):
+
+class WebServiceTestRequest(WebServiceRequestTraversal, LaunchpadTestRequest):
     """Test request for the webservice.
 
     It provides the WebServiceLayer and supports the getResource()
     web publication hook.
     """
+    implements(canonical.launchpad.layers.WebServiceLayer)
 
     def __init__(self, body_instream=None, environ=None, version=None, **kw):
         test_environ = {
