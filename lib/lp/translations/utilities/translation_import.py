@@ -282,6 +282,7 @@ class ExistingPOFileInDatabase:
         else:
             return False
 
+
 class TranslationImporter:
     """Handle translation resources imports."""
 
@@ -345,13 +346,13 @@ class TranslationImporter:
     def importFile(self, translation_import_queue_entry, logger=None):
         """See ITranslationImporter."""
         assert translation_import_queue_entry is not None, (
-            "The translation import queue entry cannot be None.")
+            "Import queue entry cannot be None.")
         assert (translation_import_queue_entry.status ==
                 RosettaImportStatus.APPROVED), (
-                "The entry is not approved!.")
+            "Import queue entry is not approved.")
         assert (translation_import_queue_entry.potemplate is not None or
                 translation_import_queue_entry.pofile is not None), (
-                "The entry has not any import target.")
+            "Import queue entry has no import target.")
 
         importer = self.getTranslationFormatImporter(
             translation_import_queue_entry.format)
@@ -438,7 +439,7 @@ class FileImporter(object):
         is added to the list in self.errors but the translations are stored
         anyway, marked as having an error.
 
-        :param message: The message who's translations will be stored.
+        :param message: The message for which translations will be stored.
         :param potmsgset: The POTMsgSet that this message belongs to.
 
         :return: The updated translation_message entry or None, if no storing
@@ -487,7 +488,6 @@ class FileImporter(object):
                         "Conflicting updates; ignoring invalid message %d." %
                             potmsgset.id)
                 return None
-
 
         just_replaced_msgid = (
             self.importer.uses_source_string_msgids and
