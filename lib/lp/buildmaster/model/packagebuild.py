@@ -303,8 +303,8 @@ class PackageBuildDerived:
         # can be correctly found during the upload:
         #       <archive_id>/distribution_name
         # for all destination archive types.
-        upload_path = os.path.join(grab_dir, str(self.archive.id),
-                                   self.distribution.name)
+        upload_path = os.path.join(
+            grab_dir, str(self.archive.id), self.distribution.name)
         os.makedirs(upload_path)
 
         slave = removeSecurityProxy(self.buildqueue_record.builder.slave)
