@@ -577,6 +577,28 @@ class TestPersonSetCreateByOpenId(TestCaseWithFactory):
         self.assertEqual(
             new_identifier, found.account.openid_identifiers.any().identifier)
 
+    def testNoPerson(self):
+        # If the account is not linked to a Person, create one. ShipIt
+        # users fall into this category the first time they log into
+        # Launchpad.
+        self.email.person = None
+        self.person.account = None
+
+        found, updated = self.person_set.getOrCreateByOpenIDIdentifier(
+            self.identifier.identifier, self.email.email, 'New Name',
+            PersonCreationRationale.UNKNOWN, 'No Comment')
+        found = removeSecurityProxy(found)
+
+        # We have a new Person
+        self.assertIs(True, updated)
+        self.assertIsNot(self.person, found)
+
+        # It is correctly linked to an account, emailaddress and
+        # identifier.
+        self.assertIs(found, found.preferredemail.person)
+        self.assertIs(found.account, found.preferredemail.account)
+        self.assertIn(self.identifier, list(found.account.openid_identifiers))
+
     def testNoAccount(self):
         # EmailAddress is linked to a Person, but there is no Account.
         # Convert this stub into something valid.
@@ -597,6 +619,28 @@ class TestPersonSetCreateByOpenId(TestCaseWithFactory):
         self.assertIs(self.email.person, found)
         self.assertIs(self.email.account, found.account)
         self.assertEqual(EmailAddressStatus.PREFERRED, self.email.status)
+
+    def testMovedEmailAddress(self):
+        # The EmailAddress and OpenId Identifier are both in the
+        # database, but they are not linked to the same account. The
+        # identifier needs to be relinked to the correct account - the
+        # user able to log into the trusted SSO with that email address
+        # should be able to log into Launchpad with that email address.
+        # This lets us cope with the SSO migrating email addresses
+        # between SSO accounts.
+        self.identifier.account = self.store.find(
+            Account, displayname='Foo Bar').one()
+
+        found, updated = self.person_set.getOrCreateByOpenIDIdentifier(
+            self.identifier.identifier, self.email.email, 'New Name',
+            PersonCreationRationale.UNKNOWN, 'No Comment')
+        found = removeSecurityProxy(found)
+
+        self.assertIs(True, updated)
+        self.assertIs(self.person, found)
+
+        self.assertIs(found.account, self.identifier.account)
+        self.assertIn(self.identifier, list(found.account.openid_identifiers))
 
 
 class TestCreatePersonAndEmail(TestCase):
