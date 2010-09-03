@@ -62,7 +62,6 @@ from zope.server.http.commonaccesslogger import CommonAccessLogger
 from zope.server.http.wsgihttpserver import PMDBWSGIHTTPServer
 from zope.session.interfaces import ISession
 
-from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad.interfaces.launchpad import (
     IFeedsApplication,
@@ -117,6 +116,7 @@ from canonical.lazr.interfaces.feed import IFeed
 from canonical.lazr.timeout import set_default_timeout_function
 from lp.app.errors import UnexpectedFormData
 from lp.services.features.flags import NullFeatureController
+from lp.services.propertycache import cachedproperty
 from lp.testopenid.interfaces.server import ITestOpenIDApplication
 
 
@@ -977,7 +977,7 @@ class LaunchpadAccessLogger(CommonAccessLogger):
         request string  (1st line of request)
         response status
         response bytes written
-        number of sql statements
+        number of nonpython statements (sql, email, memcache, rabbit etc)
         request duration
         number of ticks during traversal
         number of ticks during publication
@@ -998,7 +998,7 @@ class LaunchpadAccessLogger(CommonAccessLogger):
         bytes_written = task.bytes_written
         userid = cgi_env.get('launchpad.userid', '')
         pageid = cgi_env.get('launchpad.pageid', '')
-        sql_statements = cgi_env.get('launchpad.sqlstatements', 0)
+        nonpython_actions = cgi_env.get('launchpad.nonpythonactions', 0)
         request_duration = cgi_env.get('launchpad.requestduration', 0)
         traversal_ticks = cgi_env.get('launchpad.traversalticks', 0)
         publication_ticks = cgi_env.get('launchpad.publicationticks', 0)
@@ -1016,7 +1016,7 @@ class LaunchpadAccessLogger(CommonAccessLogger):
                 first_line,
                 status,
                 bytes_written,
-                sql_statements,
+                nonpython_actions,
                 request_duration,
                 traversal_ticks,
                 publication_ticks,

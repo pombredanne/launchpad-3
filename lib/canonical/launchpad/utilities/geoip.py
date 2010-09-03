@@ -15,7 +15,6 @@ from zope.component import getUtility
 from zope.i18n.interfaces import IUserPreferredLanguages
 from zope.interface import implements
 
-from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad.components.request_country import (
     ipaddress_from_request,
@@ -26,6 +25,7 @@ from canonical.launchpad.interfaces.geoip import (
     IRequestLocalLanguages,
     IRequestPreferredLanguages,
     )
+from lp.services.propertycache import cachedproperty
 from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.services.worlddata.interfaces.language import ILanguageSet
 

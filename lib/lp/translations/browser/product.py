@@ -11,7 +11,6 @@ __all__ = [
     'ProductView',
     ]
 
-from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.webapp import (
     canonical_url,
     enabled_with_permission,
@@ -25,6 +24,7 @@ from lp.registry.browser.product import ProductEditView
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.propertycache import cachedproperty
 from lp.translations.browser.translations import TranslationsMixin
 
 

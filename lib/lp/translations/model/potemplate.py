@@ -48,7 +48,6 @@ from zope.component import (
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.cachedproperty import cachedproperty
 from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
@@ -71,6 +70,7 @@ from lp.registry.interfaces.person import validate_public_person
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.database.collection import Collection
 from lp.services.database.prejoin import prejoin
+from lp.services.propertycache import cachedproperty
 from lp.services.worlddata.model.language import Language
 from lp.translations.interfaces.pofile import IPOFileSet
 from lp.translations.interfaces.potemplate import (

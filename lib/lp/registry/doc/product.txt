@@ -260,8 +260,8 @@ Firefox uses Malone as it's bug tracker, so it can't have an external
 one.
 
     >>> firefox = getUtility(IProductSet).getByName('firefox')
-    >>> firefox.official_malone
-    True
+    >>> firefox.bug_tracking_usage
+    <DBItem ServiceUsage.LAUNCHPAD, (20) Launchpad>
     >>> print firefox.bug_tracking_usage.name
     LAUNCHPAD
     >>> firefox.getExternalBugTracker() is None

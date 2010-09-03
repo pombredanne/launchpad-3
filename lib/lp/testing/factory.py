@@ -837,7 +837,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             project=project,
             registrant=registrant)
         if official_malone is not None:
-            product.official_malone = official_malone
+            removeSecurityProxy(product).official_malone = official_malone
         if translations_usage is not None:
             naked_product = removeSecurityProxy(product)
             naked_product.translations_usage = translations_usage
