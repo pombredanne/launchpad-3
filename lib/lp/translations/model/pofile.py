@@ -536,13 +536,13 @@ class POFile(SQLBase, POFileMixIn):
 
     def getTranslationMessages(self, condition=None):
         """See `IPOFile`."""
+        applicable_template = Coalesce(
+            TranslationMessage.potemplateID, self.potemplate.id)
         clauses = [
             TranslationTemplateItem.potmsgsetID == TranslationMessage.potmsgsetID,
             TranslationTemplateItem.potemplate == self.potemplate,
             TranslationMessage.language == self.language,
-            Coalesce(
-                TranslationMessage.potemplateID,
-                self.potemplate.id) == self.potemplate.id,
+            applicable_template == self.potemplate.id,
             ]
         if condition is not None:
             clauses.append(condition)
