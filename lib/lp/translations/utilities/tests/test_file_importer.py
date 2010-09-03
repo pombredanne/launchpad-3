@@ -154,14 +154,14 @@ class FileImporterTestCase(TestCaseWithFactory):
         return self._createFileImporters(
             TEST_TEMPLATE_PUBLISHED, TEST_TRANSLATION_PUBLISHED, True)
 
-    def _createFileImporter(self, is_published=False):
+    def _createFileImporter(self):
         """Create just an (incomplete) FileImporter for basic tests.
         The importer is based on a template.
         These tests don't care about Imported or Published."""
         potemplate = self.factory.makePOTemplate()
         template_entry = self.translation_import_queue.addOrUpdateEntry(
             potemplate.path, TEST_TEMPLATE_EXPORTED,
-            is_published, self.importer_person,
+            False, self.importer_person,
             productseries=potemplate.productseries,
             potemplate=potemplate)
         self.fake_librarian.pretendCommit()
