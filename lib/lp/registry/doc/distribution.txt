@@ -446,7 +446,7 @@ While Debian uses none:
     >>> debian.official_rosetta
     False
     >>> print debian.answers_usage.name
-    LAUNCHPAD
+    UNKNOWN
     >>> debian.official_codehosting
     False
     >>> print debian.blueprints_usage.name
@@ -459,7 +459,7 @@ Gentoo only uses Malone
     >>> print gentoo.official_rosetta
     False
     >>> print gentoo.answers_usage.name
-    'LAUNCHPAD'
+    UNKNOWN
 
 Launchpad admins and the distro owner can set these fields.
 
@@ -467,7 +467,7 @@ Launchpad admins and the distro owner can set these fields.
     >>> login('mark@example.com')
     >>> debian = getUtility(ILaunchpadCelebrities).debian
     >>> debian.blueprints_usage = ServiceUsage.LAUNCHPAD
-    >>> print debian.bluprints_usage.name
+    >>> print debian.blueprints_usage.name
     LAUNCHPAD
     >>> debian.official_malone = True
     >>> debian.official_malone
