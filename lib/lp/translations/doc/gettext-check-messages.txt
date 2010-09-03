@@ -136,7 +136,10 @@ The failed message is demoted to a mere suggestion.
 == Output ==
 
 Besides current messages, the script's output also distinguishes
-imported ones, and ones that are completely unused.
+imported ones, and ones that are completely unused. The imported message
+happens to produce validation errors.
+
+    >>> imported_message.translations = [u'%s %s i']
 
 In this example we'd like to see a nicely predictable ordering, so we
 add a sort order using the -o option.
