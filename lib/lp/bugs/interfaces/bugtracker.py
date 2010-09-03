@@ -465,7 +465,16 @@ class IBugTrackerComponent(Interface):
     they affect.  This class provides a mapping of this upstream component
     to the corresponding source package in the distro.
     """
-    id = Int(title=_('ID'))
+    id = Int(title=_('ID'), required=True, readonly=True)
+    is_visible = Bool(title=_('Is Visible?'),
+                      description=_("Should the component be shown in "
+                                    "the Launchpad web interface?"),
+                      readonly=True)
+    is_custom = Bool(title=_('Is Custom?'),
+                     description=_("Was the component added locally in "
+                                   "Launchpad?  If it was, we must retain "
+                                   "it across updates of bugtracker data."),
+                     readonly=True)
     
     name = exported(
         BugTrackerNameField(
@@ -474,12 +483,19 @@ class IBugTrackerComponent(Interface):
             description=_('The name of a software component'
                           'in a remote bug tracker')))
 
-    source_package = exported(
+    distro_source_package = exported(
         BugTrackerNameField(
-            title=_('Source Package'),
-            constraint=name_validator,
-            description=_('The distro source package for this component, '
-                          'if one has been defined.')))
+            title=_('Distribution Source Package'),
+            description=_('The distribution source package for this '
+                          'component, if one has been defined.')))
+
+    @export_write_operation()
+    def show():
+        """Cause this component to be shown in the Launchpad web interface"""
+
+    @export_write_operation()
+    def hide():
+        """Cause this component not to be shown in the Launchpad web interface"""
 
 
 class IBugTrackerComponentGroup(Interface):
@@ -503,11 +519,15 @@ class IBugTrackerComponentGroup(Interface):
                 'A list of components in the remote bug tracker that '
                 'are grouped together in this product'),
             value_type=BugTrackerURL(
-                allowed_schemes=LOCATION_SCHEMES_ALLOWED),
+                allowed_schemes=LOCATION_SCHEMES_ALLOWED),  # What's this?
             required=False))
 
-    bugtracker = exported(
+    bug_tracker = exported(
         Reference(title=_('BugTracker'), schema=Interface))
+
+    @export_write_operation()
+    def addComponent(component_name):
+        """Adds a component to be tracked as part of this component group"""
 
 
 class IRemoteBug(Interface):
