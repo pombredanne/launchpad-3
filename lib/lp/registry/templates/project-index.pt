@@ -119,8 +119,7 @@
 
         <tal:has-few-project condition="not: view/has_many_projects">
           <tal:questions content="structure context/@@+portlet-latestquestions"
-            define="answers_usage context/@@+get-involved/answers_usage"
-            condition="answers_usage/enumvalue:LAUNCHPAD" />
+            condition="context/@@+get-involved/answers_usage/enumvalue:LAUNCHPAD" />
 
           <tal:specs content="structure context/@@+portlet-latestspecs"
             condition="context/@@+get-involved/blueprints_usage/enumvalue:LAUNCHPAD" />
