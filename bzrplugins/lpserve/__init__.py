@@ -423,6 +423,8 @@ class cmd_launchpad_forking_service(Command):
     takes_options = [Option('port',
                         help='Listen for connections on [host:]portnumber',
                         type=str),
+                     Option('preload',
+                        help='Do/don\'t preload libraries before startup.'),
                     ]
 
     def _preload_libraries(self):
@@ -441,11 +443,12 @@ class cmd_launchpad_forking_service(Command):
             port = int(port)
         return host, port
 
-    def run(self, port=None):
+    def run(self, port=None, preload=True):
         host, port = self._get_host_and_port(port)
-        # We note this because it often takes a fair amount of time.
-        trace.note('Preloading %d modules' % (len(libraries_to_preload),))
-        self._preload_libraries()
+        if preload:
+            # We note this because it often takes a fair amount of time.
+            trace.note('Preloading %d modules' % (len(libraries_to_preload),))
+            self._preload_libraries()
         service = LPForkingService(host, port)
         service.main_loop()
 

@@ -264,10 +264,11 @@ class TestCaseWithLPForkingServiceSubprocess(TestCaseWithSubprocess):
         old_val = osutils.set_or_unset_env('BZR_PLUGIN_PATH',
                                            lpserve.__path__[0])
         self.addCleanup(osutils.set_or_unset_env, 'BZR_PLUGIN_PATH', old_val)
-        proc = self.start_bzr_subprocess(['lp-service', '--port', '127.0.0.1:0'])
+        proc = self.start_bzr_subprocess(
+            ['lp-service', '--port', '127.0.0.1:0', '--no-preload'])
         trace.mutter('started lp-service subprocess')
-        preload_line = proc.stderr.readline()
-        self.assertStartsWith(preload_line, 'Preloading')
+        # preload_line = proc.stderr.readline()
+        # self.assertStartsWith(preload_line, 'Preloading')
         prefix = 'Listening on port: '
         port_line = proc.stderr.readline()
         self.assertStartsWith(port_line, prefix)
@@ -292,7 +293,7 @@ class TestCaseWithLPForkingServiceSubprocess(TestCaseWithSubprocess):
         self.assertEqual('quit command requested... exiting\n', response)
 
     def test_fork_child_hello(self):
-        response = self.send_message_to_service('fork lp-serve --inet 2\n')
+        response = self.send_message_to_service('fork rocks\n')
         if response.startswith('FAILURE'):
             self.fail('Fork request failed')
         self.assertContainsRe(response, '/lp-forking-service-child-')
@@ -303,9 +304,8 @@ class TestCaseWithLPForkingServiceSubprocess(TestCaseWithSubprocess):
         child_stdout = open(stdout_path, 'rb')
         child_stderr = open(stderr_path, 'rb')
         child_stdin = open(stdin_path, 'wb')
-        child_stdin.write('hello\n')
         child_stdin.close()
         stdout_content = child_stdout.read()
         stderr_content = child_stderr.read()
-        self.assertEqual('ok\x012\n', stdout_content)
+        self.assertEqual('it sure does!\n', stdout_content)
         self.assertEqual('', stderr_content)
