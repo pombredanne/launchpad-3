@@ -230,7 +230,10 @@ class ITranslationMessage(Interface):
         """Get any POFile containing this translation."""
 
     def ensureBrowserPOFile():
-        """Make sure browser_pofile contains something if possible."""
+        """Assign the result of getOnePOFile to browser_pofile.
+
+        If browser_pofile is already set, it is left unchanged.
+        """
 
     def isHidden(pofile):
         """Whether this is an unused, hidden suggestion in `pofile`.
