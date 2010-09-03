@@ -197,6 +197,9 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
             suite.
         :return: the list of valid tokens for each affected PPA.
         """
+        # First we grab all the active tokens for which there is a
+        # matching current archive subscription for a team of which the
+        # token owner is a member.
         store = IStore(ArchiveSubscriber)
         valid_tokens = store.find(
             ArchiveAuthToken,
@@ -206,6 +209,8 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
             ArchiveSubscriber.subscriber_id == TeamParticipation.teamID,
             TeamParticipation.personID == ArchiveAuthToken.person_id)
 
+        # We can then evaluate the invalid tokens by the difference of
+        # all active tokens and valid tokens.
         all_active_tokens = store.find(
             ArchiveAuthToken,
             ArchiveAuthToken.date_deactivated == None)
