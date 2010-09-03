@@ -138,12 +138,14 @@ class PillarView(LaunchpadView):
         # times to build the complete set of official applications.
         if pillar.official_malone:
             self.official_malone = True
-        self.answers_usage = pillar.answers_usage
-        self.blueprints_usage = pillar.blueprints_usage
+        if service_uses_launchpad(IServiceUsage(pillar).answers_usage):
+            self.answers_usage = ServiceUsage.LAUNCHPAD
+        if service_uses_launchpad(IServiceUsage(pillar).blueprints_usage):
+            self.blueprints_usage = ServiceUsage.LAUNCHPAD
         if pillar.official_rosetta:
             self.official_rosetta = True
-        self.codehosting_usage = IServiceUsage(pillar).codehosting_usage
-
+        if service_uses_launchpad(IServiceUsage(pillar).codehosting_usage):
+            self.codehosting_usage = ServiceUsage.LAUNCHPAD
     @property
     def has_involvement(self):
         """This `IPillar` uses Launchpad."""
