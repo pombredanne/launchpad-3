@@ -96,7 +96,7 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
             # It's not there, so create it.
             if not os.path.exists(pub_config.htaccessroot):
                 os.makedirs(pub_config.htaccessroot)
-            interpolations = {"path" : pub_config.htaccessroot}
+            interpolations = {"path": pub_config.htaccessroot}
             file = open(htaccess_filename, "w")
             file.write(HTACCESS_TEMPLATE % interpolations)
             file.close()
@@ -169,9 +169,9 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
 
         to_address = [send_to_person.preferredemail.email]
         replacements = {
-            'recipient_name' : send_to_person.displayname,
-            'ppa_name' : ppa_name,
-            'ppa_owner_url' : ppa_owner_url,
+            'recipient_name': send_to_person.displayname,
+            'ppa_name': ppa_name,
+            'ppa_owner_url': ppa_owner_url,
             }
         body = MailWrapper(72).format(
             template % replacements, force_wrap=True)
@@ -181,7 +181,7 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
             config.canonical.noreply_from_address)
 
         headers = {
-            'Sender' : config.canonical.bounce_address,
+            'Sender': config.canonical.bounce_address,
             }
 
         simple_sendmail(from_address, to_address, subject, body, headers)

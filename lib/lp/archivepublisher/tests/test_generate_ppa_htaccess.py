@@ -592,7 +592,8 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
         tokens = self.setupDummyTokens()[1]
         getUtility(IScriptActivitySet).recordSuccess(
             'generate-ppa-htaccess', now, now - timedelta(minutes=3))
-        removeSecurityProxy(tokens[0]).date_created = now - timedelta(minutes=4)
+        removeSecurityProxy(tokens[0]).date_created = (
+            now - timedelta(minutes=4))
 
         script = self.getScript()
         self.assertContentEqual(tokens[1:], script.getNewTokensSinceLastRun())
