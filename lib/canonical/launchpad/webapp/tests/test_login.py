@@ -157,11 +157,12 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
 
     def _createViewWithResponse(
             self, account, response_status=SUCCESS, response_msg='',
-            view_class=StubbedOpenIDCallbackView):
+            view_class=StubbedOpenIDCallbackView,
+            email='non-existent@example.com'):
         openid_response = FakeOpenIDResponse(
             ITestOpenIDPersistentIdentity(account).openid_identity_url,
             status=response_status, message=response_msg,
-            email='non-existent@example.com', full_name='Foo User')
+            email=email, full_name='Foo User')
         return self._createAndRenderView(
             openid_response, view_class=view_class)
 
@@ -191,7 +192,8 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
         # in the 'starting_url' query arg.
         person = self.factory.makePerson()
         with SRegResponse_fromSuccessResponse_stubbed():
-            view, html = self._createViewWithResponse(person.account)
+            view, html = self._createViewWithResponse(
+                person.account, email=person.preferredemail.email)
         self.assertTrue(view.login_called)
         response = view.request.response
         self.assertEquals(httplib.TEMPORARY_REDIRECT, response.getStatus())
