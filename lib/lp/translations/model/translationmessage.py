@@ -24,7 +24,6 @@ from storm.locals import SQL
 from storm.store import Store
 from zope.interface import implements
 
-from canonical.cachedproperty import cachedproperty
 from canonical.database.constants import (
     DEFAULT,
     UTC_NOW,
@@ -37,6 +36,7 @@ from canonical.database.sqlbase import (
     sqlvalues,
     )
 from lp.registry.interfaces.person import validate_public_person
+from lp.services.propertycache import cachedproperty
 from lp.translations.interfaces.translationmessage import (
     ITranslationMessage,
     ITranslationMessageSet,
