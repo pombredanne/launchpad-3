@@ -30,7 +30,7 @@ database/sampledata/newsampledata.sql
 database/sampledata/newsampledata-dev.sql
 database/sampledata/lintdata.sql
 database/sampledata/lintdata-dev.sql
-lib/canonical/launchpad/apidoc/*.html
+lib/canonical/launchpad/apidoc/index.html
 xxx-report.*
 lib/canonical/launchpad/apidoc/wadl-test-playground.xml
 lib/canonical/launchpad/icing/build/*
