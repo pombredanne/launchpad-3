@@ -24,6 +24,7 @@ from canonical.launchpad.mail import (
     )
 from canonical.launchpad.webapp import canonical_url
 from lp.archivepublisher.config import getPubConfig
+from lp.registry.model.teammembership import TeamParticipation
 from lp.services.mail.mailwrapper import MailWrapper
 from lp.services.scripts.base import LaunchpadCronScript
 from lp.soyuz.enums import ArchiveStatus
@@ -35,6 +36,7 @@ from lp.soyuz.interfaces.archivesubscriber import (
     IArchiveSubscriberSet,
     )
 from lp.soyuz.enums import ArchiveSubscriberStatus
+from lp.soyuz.model.archiveauthtoken import ArchiveAuthToken
 from lp.soyuz.model.archivesubscriber import ArchiveSubscriber
 
 
@@ -189,32 +191,36 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
 
         simple_sendmail(from_address, to_address, subject, body, headers)
 
-    def deactivateTokens(self, ppa, send_email=False):
+    def deactivateTokens(self, send_email=False):
         """Deactivate tokens as necessary.
 
         If a subscriber no longer has an active token for the PPA, we
         deactivate it.
 
-        :param ppa: The PPA to check tokens for.
         :param send_email: Whether to send a cancellation email to the owner
             of the token.  This defaults to False to speed up the test
             suite.
         :return: a list of valid tokens.
         """
-        tokens = getUtility(IArchiveAuthTokenSet).getByArchive(ppa)
-        valid_tokens = []
-        for token in tokens:
-            result = getUtility(
-                IArchiveSubscriberSet).getBySubscriberWithActiveToken(
-                    token.person, ppa)
-            if result.count() == 0:
-                # The subscriber's token is no longer active,
-                # deactivate it.
-                if send_email:
-                    self.sendCancellationEmail(token)
-                token.deactivate()
-            else:
-                valid_tokens.append(token)
+        store = IStore(ArchiveSubscriber)
+        valid_tokens = store.find(
+            ArchiveAuthToken,
+            ArchiveAuthToken.date_deactivated == None,
+            ArchiveAuthToken.archive_id == ArchiveSubscriber.archive_id,
+            ArchiveSubscriber.status == ArchiveSubscriberStatus.CURRENT,
+            ArchiveSubscriber.subscriber_id == TeamParticipation.teamID,
+            TeamParticipation.personID == ArchiveAuthToken.person_id)
+
+        all_active_tokens = store.find(
+            ArchiveAuthToken,
+            ArchiveAuthToken.date_deactivated == None)
+        invalid_tokens = all_active_tokens.difference(valid_tokens)
+
+        for token in invalid_tokens:
+            if send_email:
+                self.sendCancellationEmail(token)
+            token.deactivate()
+
         return valid_tokens
 
     def expireSubscriptions(self):
@@ -244,10 +250,10 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
         """Script entry point."""
         self.logger.info('Starting the PPA .htaccess generation')
         self.expireSubscriptions()
+        valid_tokens = self.deactivateTokens(send_email=True)
+
         ppas = getUtility(IArchiveSet).getPrivatePPAs()
         for ppa in ppas:
-            valid_tokens = self.deactivateTokens(ppa, send_email=True)
-
             # If this PPA is blacklisted, do not touch it's htaccess/pwd
             # files.
             blacklisted_ppa_names_for_owner = self.blacklist.get(
@@ -268,7 +274,10 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
                 continue
 
             self.ensureHtaccess(ppa)
-            temp_htpasswd = self.generateHtpasswd(ppa, valid_tokens)
+            # XXX Just a temporary inefficient filter for step towards
+            # solution.
+            valid_tokens_for_ppa = [token for token in valid_tokens if token.archive == ppa]
+            temp_htpasswd = self.generateHtpasswd(ppa, valid_tokens_for_ppa)
             if not self.replaceUpdatedHtpasswd(ppa, temp_htpasswd):
                 os.remove(temp_htpasswd)
 

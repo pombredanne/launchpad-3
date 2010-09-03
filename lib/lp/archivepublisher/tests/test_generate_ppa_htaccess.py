@@ -298,7 +298,7 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
 
         # Initially, nothing is eligible for deactivation.
         script = self.getScript()
-        script.deactivateTokens(self.ppa)
+        script.deactivateTokens()
         for person in tokens:
             self.assertNotDeactivated(tokens[person])
 
@@ -311,7 +311,7 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
         # Clear out emails generated when leaving a team.
         pop_notifications()
 
-        script.deactivateTokens(self.ppa, send_email=True)
+        script.deactivateTokens(send_email=True)
         self.assertDeactivated(tokens[team1_person])
         del tokens[team1_person]
         for person in tokens:
@@ -332,7 +332,7 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
         self.layer.switchDbUser(self.dbuser)
         # Clear out emails generated when leaving a team.
         pop_notifications()
-        script.deactivateTokens(self.ppa, send_email=True)
+        script.deactivateTokens(send_email=True)
         self.assertNotDeactivated(tokens[promiscuous_person])
         for person in tokens:
             self.assertNotDeactivated(tokens[person])
@@ -353,7 +353,7 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
         self.assertFalse(team2.inTeam(parent_team))
         self.layer.txn.commit()
         self.layer.switchDbUser(self.dbuser)
-        script.deactivateTokens(self.ppa)
+        script.deactivateTokens()
         for person in persons2:
             self.assertDeactivated(tokens[person])
 
