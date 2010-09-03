@@ -1886,8 +1886,6 @@ class TestBuildUploadProcessor(TestUploadProcessorBase):
         source_pub = self.publishPackage('bar', '1.0-1')
         [build] = source_pub.createMissingBuilds()
 
-        build.status = BuildStatus.UPLOADING
-
         # Move the source from the accepted queue.
         [queue_item] = self.breezy.getQueueItems(
             status=PackageUploadStatus.ACCEPTED,
@@ -1897,16 +1895,19 @@ class TestBuildUploadProcessor(TestUploadProcessorBase):
         build.jobStarted()
         build.builder = self.factory.makeBuilder()
 
+        build.status = BuildStatus.UPLOADING
+
         # Upload and accept a binary for the primary archive source.
         shutil.rmtree(upload_dir)
         self.layer.txn.commit()
-        leaf_name = "%d-%d" % (build.id, 60)
+        leaf_name = build.getUploadDirLeaf("%d-60" % build.package_build.id)
         os.mkdir(os.path.join(self.incoming_folder, leaf_name))
         self.options.context = 'buildd'
         self.options.builds = True
         self.uploadprocessor.processBuildUpload(self.incoming_folder, leaf_name)
         self.layer.txn.commit()
-        self.assertEquals(BuildStatus.FAILEDTOUPLOAD, build.status)
+        self.assertEquals(
+            BuildStatus.FAILEDTOUPLOAD, build.status)
         log_contents = build.upload_log.read()
         self.assertTrue('ERROR: Exception while processing upload '
             in log_contents)
@@ -1922,8 +1923,6 @@ class TestBuildUploadProcessor(TestUploadProcessorBase):
         source_pub = self.publishPackage('bar', '1.0-1')
         [build] = source_pub.createMissingBuilds()
 
-        build.status = BuildStatus.UPLOADING
-
         # Move the source from the accepted queue.
         [queue_item] = self.breezy.getQueueItems(
             status=PackageUploadStatus.ACCEPTED,
@@ -1933,10 +1932,12 @@ class TestBuildUploadProcessor(TestUploadProcessorBase):
         build.jobStarted()
         build.builder = self.factory.makeBuilder()
 
+        build.status = BuildStatus.UPLOADING
+
         # Upload and accept a binary for the primary archive source.
         shutil.rmtree(upload_dir)
         self.layer.txn.commit()
-        leaf_name = "%d-%d" % (build.id, 60)
+        leaf_name = build.getUploadDirLeaf("%d-60" % build.package_build.id)
         upload_dir = self.queueUpload("bar_1.0-1_binary",
                 queue_entry=leaf_name)
         self.options.context = 'buildd'
@@ -1944,7 +1945,8 @@ class TestBuildUploadProcessor(TestUploadProcessorBase):
         self.uploadprocessor.processBuildUpload(self.incoming_folder, leaf_name)
         self.layer.txn.commit()
         self.assertEquals(BuildStatus.FULLYBUILT, build.status)
-        log_lines = build.upload_log.read().splitlines()
+        log_contents = build.upload_log.read()
+        log_lines = log_contents.splitlines()
         self.assertTrue(
             'INFO: Processing upload bar_1.0-1_i386.changes' in log_lines)
         self.assertTrue(
