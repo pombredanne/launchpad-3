@@ -329,6 +329,7 @@ class TestApproveAsDiverged(TestCaseWithFactory):
 
         self.assertEqual(suggestion, resulting_message)
         self.assertTrue(suggestion.is_current_upstream)
+        self.assertTrue(suggestion.is_diverged)
         self.assertEqual(pofile.potemplate, suggestion.potemplate)
 
     def test_activating_reviews(self):
@@ -342,8 +343,8 @@ class TestApproveAsDiverged(TestCaseWithFactory):
         self.assertEqual(reviewer, resulting_message.reviewer)
 
     def test_diverge_current_shared_leaves_message_intact(self):
-        # Approving and diverging a message that's already the current
-        # shared message leaves it untouched.
+        # Calling approveAsDiverged on the current shared translation
+        # leaves it untouched.
         original_reviewer = self.factory.makePerson()
         later_reviewer = self.factory.makePerson()
         pofile = self.factory.makePOFile('es_CL')
@@ -354,9 +355,11 @@ class TestApproveAsDiverged(TestCaseWithFactory):
 
         self.assertEqual(message, resulting_message)
         self.assertEqual(original_reviewer, message.reviewer)
-        self.assertIs(None, message.potemplate)
+        self.assertFalse(message.is_diverged)
 
     def test_diverge_current_shared_message_unmasks_it(self):
+        # Calling approveAsDiverged on the current shared translation
+        # deactivates any diverged message that may be masking it.
         pofile = self.factory.makePOFile('es_CO')
         reviewer = self.factory.makePerson()
         shared = self.factory.makeCurrentTranslationMessage(pofile=pofile)
@@ -391,7 +394,7 @@ class TestApproveAsDiverged(TestCaseWithFactory):
 
         self.assertNotEqual(suggestion, resulting_message)
         self.assertEqual(pofile.potemplate, resulting_message.potemplate)
-        self.assertIs(None, suggestion.potemplate)
+        self.assertFalse(suggestion.is_diverged)
         self.assertTrue(resulting_message.is_current_upstream)
         self.assertEqual(
             (False, True),

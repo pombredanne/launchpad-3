@@ -2301,9 +2301,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if reviewer is None:
             reviewer = self.makePerson()
 
-        # This creates a suggestion, then diverges it, then activates it.
-        # Once we have a method for diverging messages, do this in a more
-        # proper way.
         message = self.makeSuggestion(
             pofile=pofile, potmsgset=potmsgset, translator=translator,
             translations=translations)
