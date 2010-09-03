@@ -14,7 +14,7 @@ TESTOPTS=
 SHHH=utilities/shhh.py
 HERE:=$(shell pwd)
 
-LPCONFIG=development
+LPCONFIG?=development
 
 JSFLAGS=
 ICING=lib/canonical/launchpad/icing
