@@ -40,10 +40,11 @@ from xml.sax.saxutils import escape
 
 import bzrlib.branch
 import bzrlib.config
-import bzrlib.email_message
 import bzrlib.errors
-import bzrlib.smtp_connection
 import bzrlib.workingtree
+
+from bzrlib.email_message import EmailMessage
+from bzrlib.smtp_connection import SMTPConnection
 
 import subunit
 
@@ -134,19 +135,24 @@ class EC2Runner:
     SHUTDOWN_DELAY = 60
 
     def __init__(self, daemonize, pid_filename, shutdown_when_done,
-                 emails=None):
+                 smtp_connection=None, emails=None):
         """Make an EC2Runner.
 
         :param daemonize: Whether or not we will daemonize.
         :param pid_filename: The filename to store the pid in.
         :param shutdown_when_done: Whether or not to shut down when the tests
             are done.
+        :param smtp_connection: The `SMTPConnection` to use to send email.
         :param emails: The email address(es) to send catastrophic failure
             messages to. If not provided, the error disappears into the ether.
         """
         self._should_daemonize = daemonize
         self._pid_filename = pid_filename
         self._shutdown_when_done = shutdown_when_done
+        if smtp_connection is None:
+            config = bzrlib.config.GlobalConfig()
+            smtp_connection = SMTPConnection(config)
+        self._smtp_connection = smtp_connection
         self._emails = emails
         self._daemonized = False
 
@@ -188,10 +194,12 @@ class EC2Runner:
             config = bzrlib.config.GlobalConfig()
             # Handle exceptions thrown by the test() or daemonize() methods.
             if self._emails:
-                bzrlib.email_message.EmailMessage.send(
-                    config, config.username(),
-                    self._emails, '%s FAILED' % (name,),
-                    traceback.format_exc())
+                msg = EmailMessage(
+                    from_address=config.username(),
+                    to_address=self._emails,
+                    subject='%s FAILED' % (name,),
+                    body=traceback.format_exc())
+                self._smtp_connection.send_email(msg)
             raise
         finally:
             # When everything is over, if we've been ask to shut down, then
@@ -267,9 +275,7 @@ class LaunchpadTester:
             exit_status = popen.wait()
         except:
             self._logger.error_in_testrunner(sys.exc_info())
-            exit_status = 1
-            raise
-        finally:
+        else:
             self._logger.got_result(not exit_status)
 
     def _gather_test_output(self, input_stream, logger):
@@ -287,7 +293,7 @@ class Request:
     """A request to have a branch tested and maybe landed."""
 
     def __init__(self, branch_url, revno, local_branch_path, sourcecode_path,
-                 emails=None, pqm_message=None):
+                 emails=None, pqm_message=None, smtp_connection=None):
         """Construct a `Request`.
 
         :param branch_url: The public URL to the Launchpad branch we are
@@ -303,6 +309,7 @@ class Request:
             provided, no emails are sent.
         :param pqm_message: The message to submit to PQM. If not provided, we
             don't submit to PQM.
+        :param smtp_connection: The `SMTPConnection` to use to send email.
         """
         self._branch_url = branch_url
         self._revno = revno
@@ -312,11 +319,13 @@ class Request:
         self._pqm_message = pqm_message
         # Used for figuring out how to send emails.
         self._bzr_config = bzrlib.config.GlobalConfig()
+        if smtp_connection is None:
+            smtp_connection = SMTPConnection(self._bzr_config)
+        self._smtp_connection = smtp_connection
 
     def _send_email(self, message):
         """Actually send 'message'."""
-        conn = bzrlib.smtp_connection.SMTPConnection(self._bzr_config)
-        conn.send_email(message)
+        self._smtp_connection.send_email(message)
 
     def get_target_details(self):
         """Return (branch_url, revno) for trunk."""
@@ -510,6 +519,13 @@ class WebTestLogger:
         summary.write('\n\nERROR IN TESTRUNNER\n\n')
         traceback.print_exception(exc_type, exc_value, exc_tb, file=summary)
         summary.flush()
+        if self._request.wants_email:
+            self._write_to_filename(
+                self._summary_filename,
+                '\n(See the attached file for the complete log)\n')
+            summary = self.get_summary_contents()
+            full_log_gz = gzip_data(self.get_full_log_contents())
+            self._request.send_report_email(False, summary, full_log_gz)
 
     def get_index_contents(self):
         """Return the contents of the index.html page."""
@@ -805,16 +821,19 @@ def main(argv):
 
     pid_filename = os.path.join(LAUNCHPAD_DIR, 'ec2test-remote.pid')
 
+    smtp_connection = SMTPConnection(bzrlib.config.GlobalConfig())
+
     request = Request(
         options.public_branch, options.public_branch_revno, TEST_DIR,
-        SOURCECODE_DIR, options.email, pqm_message)
+        SOURCECODE_DIR, options.email, pqm_message, smtp_connection)
     # Only write to stdout if we are running as the foreground process.
     echo_to_stdout = not options.daemon
     logger = WebTestLogger.make_in_directory(
         '/var/www', request, echo_to_stdout)
 
     runner = EC2Runner(
-        options.daemon, pid_filename, options.shutdown, options.email)
+        options.daemon, pid_filename, options.shutdown,
+        smtp_connection, options.email)
 
     tester = LaunchpadTester(logger, TEST_DIR, test_options=args[1:])
     runner.run("Test runner", tester.test)

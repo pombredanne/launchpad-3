@@ -13,6 +13,7 @@ import threading
 import xmlrpclib
 
 from lazr.restful.interfaces import (
+    ICollectionResource,
     IWebServiceConfiguration,
     IWebServiceVersion,
     )
@@ -61,7 +62,6 @@ from zope.server.http.commonaccesslogger import CommonAccessLogger
 from zope.server.http.wsgihttpserver import PMDBWSGIHTTPServer
 from zope.session.interfaces import ISession
 
-from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad.interfaces.launchpad import (
     IFeedsApplication,
@@ -116,6 +116,7 @@ from canonical.lazr.interfaces.feed import IFeed
 from canonical.lazr.timeout import set_default_timeout_function
 from lp.app.errors import UnexpectedFormData
 from lp.services.features.flags import NullFeatureController
+from lp.services.propertycache import cachedproperty
 from lp.testopenid.interfaces.server import ITestOpenIDApplication
 
 
@@ -1151,9 +1152,25 @@ class WebServicePublication(WebServicePublicationMixin,
     root_object_interface = IWebServiceApplication
 
     def constructPageID(self, view, context):
-        """Add the web service named operation (if any) to the page ID."""
+        """Add the web service named operation (if any) to the page ID.
+
+        See https://dev.launchpad.net/Foundations/Webservice for more
+        information about WebService page IDs.
+        """
         pageid = super(WebServicePublication, self).constructPageID(
             view, context)
+        if ICollectionResource.providedBy(view):
+            # collection_identifier is a way to differentiate between
+            # CollectionResource objects. CollectionResource objects are
+            # objects that serve a list of Entry resources through the
+            # WebService, so by querying the CollectionResource.type_url
+            # attribute we're able to find out the resource type the
+            # collection holds. See lazr.restful._resource.py to see how
+            # the type_url is constructed.
+            # We don't need the full URL, just the type of the resource.
+            collection_identifier = view.type_url.split('/')[-1]
+            if collection_identifier:
+                pageid += ':' + collection_identifier
         op = (view.request.get('ws.op')
             or view.request.query_string_params.get('ws.op'))
         if op:

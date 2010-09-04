@@ -3,7 +3,7 @@
 
 __all__ = ['HARDCODED_COMPONENT_ORDER', 'ELIGIBLE_DOMINATION_STATES']
 
-from canonical.launchpad.interfaces import PackagePublishingStatus
+from lp.soyuz.enums import PackagePublishingStatus
 
 # XXX: kiko 2006-08-23: if people actually start seriously using
 # ComponentSelections this will need to be revisited. For instance, adding

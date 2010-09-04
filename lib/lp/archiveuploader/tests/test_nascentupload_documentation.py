@@ -30,6 +30,7 @@ from lp.archiveuploader.tests import (
     getPolicy,
     mock_logger_quiet,
     )
+from lp.archiveuploader.uploadpolicy import ArchiveUploadType
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.soyuz.interfaces.component import IComponentSet
 
@@ -52,7 +53,7 @@ def getPPAUploadForSource(upload_path, ppa):
 def getUploadForBinary(upload_path):
     """Return a NascentUpload object for binaries."""
     policy = getPolicy(name='sync', distro='ubuntu', distroseries='hoary')
-    policy.can_upload_binaries = True
+    policy.accepted_type = ArchiveUploadType.BINARY_ONLY
     return NascentUpload.from_changesfile_path(
         datadir(upload_path), policy, mock_logger_quiet)
 

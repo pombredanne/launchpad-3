@@ -26,7 +26,7 @@ from zope.interface import (
     Interface,
     )
 
-from canonical.cachedproperty import cachedproperty
+from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.webapp import (
     action,
     canonical_url,
@@ -44,6 +44,7 @@ from canonical.launchpad.webapp.menu import (
     NavigationMenu,
     )
 from canonical.launchpad.webapp.sorting import sorted_dotted_numbers
+from canonical.launchpad.webapp.tales import CustomizableFormatter
 from canonical.lazr.utils import smartquote
 from lp.answers.browser.questiontarget import (
     QuestionTargetFacetMixin,
@@ -60,6 +61,7 @@ from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
     )
 from lp.registry.interfaces.pocket import pocketsuffix
+from lp.services.propertycache import cachedproperty
 from lp.soyuz.browser.sourcepackagerelease import (
     extract_bug_numbers,
     extract_email_addresses,
@@ -73,6 +75,17 @@ from lp.soyuz.interfaces.packagediff import IPackageDiffSet
 from lp.translations.browser.customlanguagecode import (
     HasCustomLanguageCodesTraversalMixin,
     )
+
+
+class DistributionSourcePackageFormatterAPI(CustomizableFormatter):
+    """Adapt IDistributionSourcePackage objects to a formatted string."""
+
+    _link_permission = 'zope.Public'
+    _link_summary_template = '%(displayname)s'
+
+    def _link_summary_values(self):
+        displayname = self._context.displayname
+        return {'displayname': displayname}
 
 
 class DistributionSourcePackageBreadcrumb(Breadcrumb):
@@ -400,10 +413,10 @@ class DistributionSourcePackageView(DistributionSourcePackageBaseView,
 
         :param sourcepackage: ISourcePackage
         """
-        publications = sourcepackage.distroseries.getPublishedReleases(
+        publications = sourcepackage.distroseries.getPublishedSources(
             sourcepackage.sourcepackagename)
         pocket_dict = {}
-        for pub in publications:
+        for pub in shortlist(publications):
             version = pub.source_package_version
             pocket_dict.setdefault(version, []).append(pub)
         return pocket_dict

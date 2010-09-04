@@ -28,7 +28,7 @@ from canonical.testing.layers import (
     AppServerLayer,
     DatabaseFunctionalLayer,
     )
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.code.errors import (
@@ -57,9 +57,9 @@ from lp.services.job.interfaces.job import (
     IJob,
     JobStatus,
     )
+from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.archive import (
     ArchiveDisabled,
-    ArchivePurpose,
     CannotUploadToArchive,
     InvalidPocketForPPA,
     )
@@ -335,7 +335,7 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
             PackagePublishingPocket.RELEASE)
         queue_record = build.buildqueue_record
         queue_record.score()
-        self.assertEqual(2405, queue_record.lastscore)
+        self.assertEqual(2505, queue_record.lastscore)
 
     def test_requestBuildManualScore(self):
         """Normal build requests have a score equivalent to binary builds."""
@@ -345,7 +345,7 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
             PackagePublishingPocket.RELEASE, manual=True)
         queue_record = build.buildqueue_record
         queue_record.score()
-        self.assertEqual(2505, queue_record.lastscore)
+        self.assertEqual(2605, queue_record.lastscore)
 
     def test_requestBuild_relative_build_score(self):
         """Offsets for archives are respected."""
@@ -357,7 +357,7 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
             PackagePublishingPocket.RELEASE, manual=True)
         queue_record = build.buildqueue_record
         queue_record.score()
-        self.assertEqual(2605, queue_record.lastscore)
+        self.assertEqual(2705, queue_record.lastscore)
 
     def test_requestBuildHonoursConfig(self):
         recipe = self.factory.makeSourcePackageRecipe()

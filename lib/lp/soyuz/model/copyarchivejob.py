@@ -1,3 +1,5 @@
+# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = object
 
@@ -17,8 +19,8 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.job.model.job import Job
 from lp.soyuz.adapters.packagelocation import PackageLocation
 from lp.soyuz.interfaces.archive import IArchiveSet
+from lp.soyuz.enums import ArchiveJobType
 from lp.soyuz.interfaces.archivejob import (
-    ArchiveJobType,
     ICopyArchiveJob,
     ICopyArchiveJobSource,
     )

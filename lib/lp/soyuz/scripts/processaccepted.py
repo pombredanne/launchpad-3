@@ -27,13 +27,15 @@ from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.scripts.base import LaunchpadScript
-from lp.soyuz.interfaces.archive import (
+from lp.soyuz.enums import (
     ArchivePurpose,
+    PackageUploadStatus,
+    )
+from lp.soyuz.interfaces.archive import (
     IArchiveSet,
     )
 from lp.soyuz.interfaces.queue import (
     IPackageUploadSet,
-    PackageUploadStatus,
     )
 
 
@@ -46,7 +48,7 @@ def get_bugs_from_changes_file(changes_file):
     contents = changes_file.read()
     changes_lines = contents.splitlines(True)
     tags = parse_tagfile_lines(changes_lines, allow_unsigned=True)
-    bugs_fixed_line = tags.get('launchpad-bugs-fixed', '')
+    bugs_fixed_line = tags.get('Launchpad-bugs-fixed', '')
     bugs = []
     for bug_id in bugs_fixed_line.split():
         if not bug_id.isdigit():

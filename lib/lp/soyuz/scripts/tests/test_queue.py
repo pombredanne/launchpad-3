@@ -48,14 +48,16 @@ from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.mail import stub
-from lp.soyuz.interfaces.archive import (
+from lp.soyuz.enums import (
     ArchivePurpose,
+    PackagePublishingStatus,
+    PackageUploadStatus,
+    )
+from lp.soyuz.interfaces.archive import (
     IArchiveSet,
     )
-from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.interfaces.queue import (
     IPackageUploadSet,
-    PackageUploadStatus,
     )
 from lp.soyuz.scripts.queue import (
     CommandRunner,
@@ -380,10 +382,10 @@ class TestQueueTool(TestQueueBase):
         queue_action = self.execute_command('accept bar', no_mail=False)
 
         # The upload wants to close bug 6:
-        bugs_fixed_header = bar2_src.changes._dict['launchpad-bugs-fixed']
+        bugs_fixed_header = bar2_src.changes._dict['Launchpad-bugs-fixed']
         self.assertEqual(
             bugs_fixed_header, str(the_bug_id),
-            'Expected bug %s in launchpad-bugs-fixed, got %s'
+            'Expected bug %s in Launchpad-bugs-fixed, got %s'
                 % (the_bug_id, bugs_fixed_header))
 
         # The upload should be in the DONE state:

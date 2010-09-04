@@ -32,7 +32,7 @@ ALTER TABLE BugTrackerComponent
     UNIQUE (component_group, name);
 
 ALTER TABLE BugTrackerComponent
-    ADD CONSTRAINT bugtrackercomponent__source_package__key
-    UNIQUE (source_package);
+    ADD CONSTRAINT bugtrackercomponent__distro_source_package__key
+    UNIQUE (distro_source_package);
 
 INSERT INTO LaunchpadDatabaseRevision VALUES(2208, 09, 0);

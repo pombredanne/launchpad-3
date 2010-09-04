@@ -346,12 +346,13 @@ class IBugTracker(Interface):
     def destroySelf():
         """Delete this bug tracker."""
 
-    def resetWatches(now=None):
+    def resetWatches(new_next_check=None):
         """Reset the next_check times of this BugTracker's `BugWatch`es.
 
-        :param now: If specified, contains the datetime to which to set
-                    the BugWatches' next_check times. Defaults to
-                    datetime.now().
+        :param new_next_check: If specified, contains the datetime to
+            which to set the BugWatches' next_check times.  If not
+            specified, the watches' next_check times will be set to a
+            point between now and 24 hours hence.
         """
 
 

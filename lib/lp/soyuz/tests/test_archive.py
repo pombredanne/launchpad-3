@@ -23,15 +23,18 @@ from canonical.testing import (
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
     )
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.worlddata.interfaces.country import ICountrySet
-from lp.soyuz.interfaces.archive import (
-    ArchiveDisabled,
+from lp.soyuz.enums import (
     ArchivePurpose,
     ArchiveStatus,
+    PackagePublishingStatus,
+    )
+from lp.soyuz.interfaces.archive import (
+    ArchiveDisabled,
     CannotRestrictArchitectures,
     CannotUploadToPocket,
     CannotUploadToPPA,
@@ -47,7 +50,6 @@ from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
-from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.model.binarypackagerelease import (
     BinaryPackageReleaseDownloadCount,
     )

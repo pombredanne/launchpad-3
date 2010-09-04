@@ -36,10 +36,10 @@ from canonical.launchpad.webapp.interfaces import (
     MAIN_STORE,
     )
 from canonical.librarian.utils import copy_and_close
+from lp.soyuz.enums import PackageDiffStatus
 from lp.soyuz.interfaces.packagediff import (
     IPackageDiff,
     IPackageDiffSet,
-    PackageDiffStatus,
     )
 
 

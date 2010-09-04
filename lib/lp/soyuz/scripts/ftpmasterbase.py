@@ -21,6 +21,7 @@ from lp.services.scripts.base import (
     LaunchpadScriptFailure,
     )
 from lp.soyuz.adapters.packagelocation import build_package_location
+from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.component import IComponentSet
 
 
@@ -241,9 +242,6 @@ class SoyuzScript(LaunchpadScript):
 
     def setupLocation(self):
         """Setup `PackageLocation` for context distribution and suite."""
-        # Avoid circular imports.
-        from lp.soyuz.interfaces.archive import ArchivePurpose
-
         # These can raise PackageLocationError, but we're happy to pass
         # it upwards.
         if getattr(self.options, 'partner_archive', ''):
