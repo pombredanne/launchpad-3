@@ -41,8 +41,10 @@ class TestTimedAction(testtools.TestCase):
         action.duration = datetime.timedelta(0, 0, 0, 4)
         log_tuple = action.logTuple()
         self.assertEqual(4, len(log_tuple), "!= 4 elements %s" % (log_tuple,))
+        # The first element is the start offset in ms.
         self.assertAlmostEqual(2, log_tuple[0])
-        self.assertAlmostEqual(4, log_tuple[1])
+        # The second element is the end offset in ms.
+        self.assertAlmostEqual(6, log_tuple[1])
         self.assertEqual("foo", log_tuple[2])
         self.assertEqual("bar", log_tuple[3])
 
@@ -56,6 +58,6 @@ class TestTimedAction(testtools.TestCase):
         log_tuple = action.logTuple()
         self.assertEqual(4, len(log_tuple), "!= 4 elements %s" % (log_tuple,))
         self.assertAlmostEqual(2, log_tuple[0])
-        self.assertAlmostEqual(999999, log_tuple[1])
+        self.assertAlmostEqual(1000001, log_tuple[1])
         self.assertEqual("foo", log_tuple[2])
         self.assertEqual("bar", log_tuple[3])

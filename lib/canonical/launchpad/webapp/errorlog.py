@@ -85,6 +85,9 @@ def _safestr(obj):
             'representation of an object')
         value = '<unprintable %s object>' % (
             str(type(obj).__name__))
+    # Some str() calls return unicode objects.
+    if isinstance(value, unicode):
+        return _safestr(value)
     # encode non-ASCII characters
     value = value.replace('\\', '\\\\')
     value = re.sub(r'[\x80-\xff]',
@@ -163,6 +166,7 @@ class ErrorReport:
         return '<ErrorReport %s %s: %s>' % (self.id, self.type, self.value)
 
     def get_chunks(self):
+        """Returns a list of bytestrings making up the oops disk content."""
         chunks = []
         chunks.append('Oops-Id: %s\n' % _normalise_whitespace(self.id))
         chunks.append(
@@ -171,7 +175,7 @@ class ErrorReport:
             'Exception-Value: %s\n' % _normalise_whitespace(self.value))
         chunks.append('Date: %s\n' % self.time.isoformat())
         chunks.append('Page-Id: %s\n' % _normalise_whitespace(self.pageid))
-        chunks.append('Branch: %s\n' % self.branch_nick)
+        chunks.append('Branch: %s\n' % _safestr(self.branch_nick))
         chunks.append('Revision: %s\n' % self.revno)
         chunks.append('User: %s\n' % _normalise_whitespace(self.username))
         chunks.append('URL: %s\n' % _normalise_whitespace(self.url))
