@@ -123,10 +123,12 @@ class Library:
             # with a token and a path we may be able to serve restricted files
             # on the public port.
             store = session_store()
-            if store.find(TimeLimitedToken,
+            token_found = store.find(TimeLimitedToken,
                 SQL("age(created) < interval '1 day'"),
                 TimeLimitedToken.token==token,
-                TimeLimitedToken.url==path).is_empty():
+                TimeLimitedToken.url==path).is_empty()
+            store.reset()
+            if token_found:
                 raise LookupError("Token stale/pruned/path mismatch")
             else:
                 restricted = True
