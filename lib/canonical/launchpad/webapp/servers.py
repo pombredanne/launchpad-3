@@ -977,7 +977,7 @@ class LaunchpadAccessLogger(CommonAccessLogger):
         request string  (1st line of request)
         response status
         response bytes written
-        number of sql statements
+        number of nonpython statements (sql, email, memcache, rabbit etc)
         request duration
         number of ticks during traversal
         number of ticks during publication
@@ -998,7 +998,7 @@ class LaunchpadAccessLogger(CommonAccessLogger):
         bytes_written = task.bytes_written
         userid = cgi_env.get('launchpad.userid', '')
         pageid = cgi_env.get('launchpad.pageid', '')
-        sql_statements = cgi_env.get('launchpad.sqlstatements', 0)
+        nonpython_actions = cgi_env.get('launchpad.nonpythonactions', 0)
         request_duration = cgi_env.get('launchpad.requestduration', 0)
         traversal_ticks = cgi_env.get('launchpad.traversalticks', 0)
         publication_ticks = cgi_env.get('launchpad.publicationticks', 0)
@@ -1016,7 +1016,7 @@ class LaunchpadAccessLogger(CommonAccessLogger):
                 first_line,
                 status,
                 bytes_written,
-                sql_statements,
+                nonpython_actions,
                 request_duration,
                 traversal_ticks,
                 publication_ticks,
@@ -1300,10 +1300,19 @@ class WebServicePublication(WebServicePublicationMixin,
         return principal
 
 
-class WebServiceClientRequest(WebServiceRequestTraversal,
+class LaunchpadWebServiceRequestTraversal(WebServiceRequestTraversal):
+    implements(canonical.launchpad.layers.WebServiceLayer)
+
+    def getRootURL(self, rootsite):
+        """See IBasicLaunchpadRequest."""
+        # When browsing the web service, we want URLs to point back at the web
+        # service, so we basically ignore rootsite.
+        return self.getApplicationURL() + '/'
+
+
+class WebServiceClientRequest(LaunchpadWebServiceRequestTraversal,
                               LaunchpadBrowserRequest):
     """Request type for a resource published through the web service."""
-    implements(canonical.launchpad.layers.WebServiceLayer)
 
     def __init__(self, body_instream, environ, response=None):
         super(WebServiceClientRequest, self).__init__(
@@ -1329,20 +1338,14 @@ class WebServiceClientRequest(WebServiceRequestTraversal,
         # than ETag, we may have to revisit this.
         self.response.setHeader('Vary', 'Accept')
 
-    def getRootURL(self, rootsite):
-        """See IBasicLaunchpadRequest."""
-        # When browsing the web service, we want URLs to point back at the web
-        # service, so we basically ignore rootsite.
-        return self.getApplicationURL() + '/'
 
-
-class WebServiceTestRequest(WebServiceRequestTraversal, LaunchpadTestRequest):
+class WebServiceTestRequest(LaunchpadWebServiceRequestTraversal,
+                            LaunchpadTestRequest):
     """Test request for the webservice.
 
     It provides the WebServiceLayer and supports the getResource()
     web publication hook.
     """
-    implements(canonical.launchpad.layers.WebServiceLayer)
 
     def __init__(self, body_instream=None, environ=None, version=None, **kw):
         test_environ = {
