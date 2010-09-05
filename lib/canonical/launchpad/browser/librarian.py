@@ -105,8 +105,8 @@ class RedirectPerhapsWithTokenLibraryFileAliasView(LaunchpadView):
             # Avoids a circular import seen in
             # scripts/ftests/librarianformatter.txt
             from canonical.launchpad.database.librarian import TimeLimitedToken
-            token = TimeLimitedToken.allocate(self.context.https_url)
-            final_url = self.context.https_url + '?token=%s' % token
+            token = TimeLimitedToken.allocate(self.context.private_url)
+            final_url = self.context.private_url + '?token=%s' % token
             return RedirectionView(final_url, self.request), ()
         return RedirectionView(self.context.http_url, self.request), ()
 

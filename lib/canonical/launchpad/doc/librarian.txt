@@ -84,7 +84,9 @@ We can get its URL too
     ...     ) is not None
     True
 
-Librarian also serves the same file through https.
+Librarian also serves the same file through https, we use this for branding
+and similar inline-presented objects which would trigger security warnings on
+https pages otherwise.
 
     >>> re.search(
     ...     r'^https://localhost:58000/\d+/text.txt$', alias.https_url
@@ -109,7 +111,7 @@ https one, depending on a config value.
     ...     """)
     >>> config.push('test', test_data)
     >>> re.search(
-    ...     r'^https://localhost:58000/\d+/text.txt$', alias.getURL()
+    ...     r'^https://localhost:58000/\d+/text.txt$', alias.https_url
     ...     ) is not None
     True
 
@@ -208,6 +210,15 @@ files in the Librarian.
     >>> url = client.getURLForAlias(aid)
     >>> re.search(r'^http://localhost:58000/\d+/text.txt$', url) is not None
     True
+
+When secure=True, the returned url has the id as part of the domain name and
+the protocol is https:
+
+    >>> expected = 'https://i%d.restricted.localhost:58000/%d/text.txt' % (
+    ...     aid, aid)
+    >>> expected == client.getURLForAlias(aid, secure=True)
+    True
+
 
 Librarian reads are logged in the request timeline.
 
@@ -555,16 +566,22 @@ traversals.
     True
 
 When the context file is a restricted `LibraryFileAlias`, traversal causes an
-access token to be allocated and a redirection to https to be issued.
+access token to be allocated and a redirection to https on a unique domain to
+be issued.
 
     >>> view, extra = restricted_view.browserDefault(empty_request)
     >>> print view
     <...RedirectionView...>
     >>> view.target
     'https://...restricted.txt?token=...'
-    >>> https_url = restricted_file.https_url
+    >>> private_url = restricted_file.private_url
     >>> view.target.endswith(session_store().find(TimeLimitedToken,
-    ...     url=https_url).any().token)
+    ...     url=private_url).any().token)
+    True
+    
+The domain for the target starts with the id of the LibraryFileAlias.
+
+    >>> view.target.startswith('https://i%d.restricted.' % restricted_file.id)
     True
 
 Otherwise, no token is allocated and a redirection is issued to the http url.

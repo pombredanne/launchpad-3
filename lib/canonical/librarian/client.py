@@ -23,7 +23,11 @@ import urllib2
 
 from select import select
 from socket import SOCK_STREAM, AF_INET
-from urlparse import urljoin
+from urlparse import (
+    urlparse,
+    urljoin,
+    urlunparse,
+    )
 
 from storm.store import Store
 from zope.interface import implements
@@ -319,18 +323,37 @@ class FileDownloadClient:
         return get_libraryfilealias_download_path(
             aliasID, lfa.filename.encode('utf-8'))
 
-    def getURLForAlias(self, aliasID):
+    def getURLForAlias(self, aliasID, secure=False):
         """Returns the url for talking to the librarian about the given
         alias.
 
         :param aliasID: A unique ID for the alias
-
+        :param secure: If true generate https urls on unique domains for 
+            security.
         :returns: String URL, or None if the file has expired and been deleted.
         """
         path = self._getPathForAlias(aliasID)
         if path is None:
             return None
-        base = self.download_url
+        if not secure:
+            base = self.download_url
+        else:
+            # Secure url generation is the same for both restricted and
+            # unrestricted files aliases : it is used to give web clients (not
+            # appservers) a url to use to access a file which is either
+            # restricted (and so they will also need a TimeLimitedToken) or
+            # is suspected hostile (and so it should be isolated on its own
+            # domain). Note that only the former is currently used in LP.
+            # The algorithm is: 
+            # parse the url 
+            download_url = config.librarian.download_url
+            parsed = list(urlparse(download_url))
+            # Force the scheme to https
+            parsed[0] = 'https'
+            # Insert the alias id (which is a unique key, thus unique) in the
+            # netloc
+            parsed[1] = ('i%d.restricted.' % aliasID) + parsed[1]
+            base = urlunparse(parsed)
         return urljoin(base, path)
 
     def _getURLForDownload(self, aliasID):

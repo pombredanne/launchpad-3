@@ -134,8 +134,15 @@ class LibraryFileAlias(SQLBase):
             return url
         return url.replace('http', 'https', 1)
 
+    @property
+    def private_url(self):
+        """See ILibraryFileAlias.https_url"""
+        return self.client.getURLForAlias(self.id, secure=True)
+
     def getURL(self):
         """See ILibraryFileAlias.getURL"""
+        if self.restricted:
+            return self.private_url
         if config.librarian.use_https:
             return self.https_url
         else:
