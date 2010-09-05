@@ -13,12 +13,19 @@ __all__ = [
 from psycopg2.extensions import TransactionRollbackError
 from sqlobject.sqlbuilder import AND
 from storm.exceptions import DisconnectionError, IntegrityError
+from storm.expr import SQL
 import transaction
 from twisted.python.util import mergeFunctionMetadata
 
-from canonical.database.sqlbase import reset_store
+from canonical.database.sqlbase import (
+    reset_store,
+    session_store,
+    )
 from canonical.launchpad.database.librarian import (
-    LibraryFileContent, LibraryFileAlias)
+    LibraryFileAlias,
+    LibraryFileContent,
+    TimeLimitedToken,
+    )
 
 
 RETRY_ATTEMPTS = 3
@@ -98,19 +105,38 @@ class Library:
     def lookupBySHA1(self, digest):
         return [fc.id for fc in LibraryFileContent.selectBy(sha1=digest)]
 
-    def getAlias(self, aliasid):
+    def getAlias(self, aliasid, token, path):
         """Returns a LibraryFileAlias, or raises LookupError.
 
         A LookupError is raised if no record with the given ID exists
         or if not related LibraryFileContent exists.
+
+        :param token: The token for the file. If None no token is present.
+            When a token is supplied, it is looked up with path.
+        :param path: The path the request is for, unused unless a token
+            is supplied; when supplied it must match the token. The 
+            value of path is expected to be that from a twisted request.args
+            e.g. /foo/bar. 
         """
+        restricted = self.restricted
+        if token and path:
+            # with a token and a path we may be able to serve restricted files
+            # on the public port.
+            store = session_store()
+            if store.find(TimeLimitedToken,
+                SQL("age(created) < interval '1 day'"),
+                TimeLimitedToken.token==token,
+                TimeLimitedToken.url==path).is_empty():
+                raise LookupError("Token stale/pruned/path mismatch")
+            else:
+                restricted = True
         alias = LibraryFileAlias.selectOne(AND(
             LibraryFileAlias.q.id==aliasid,
             LibraryFileAlias.q.contentID==LibraryFileContent.q.id,
-            LibraryFileAlias.q.restricted==self.restricted,
+            LibraryFileAlias.q.restricted==restricted,
             ))
         if alias is None:
-            raise LookupError
+            raise LookupError("No file alias with LibraryFileContent")
         return alias
 
     def getAliases(self, fileid):

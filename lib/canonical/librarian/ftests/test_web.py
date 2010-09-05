@@ -7,13 +7,21 @@ import unittest
 from urllib2 import urlopen, HTTPError
 
 import pytz
-
+from storm.expr import SQL
 import transaction
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.database.sqlbase import flush_database_updates, cursor
-from canonical.librarian.client import LibrarianClient
+from canonical.database.sqlbase import (
+    cursor,
+    flush_database_updates,
+    session_store,
+    )
+from canonical.launchpad.database.librarian import TimeLimitedToken
+from canonical.librarian.client import (
+    LibrarianClient,
+    RestrictedLibrarianClient,
+    )
 from canonical.librarian.interfaces import DownloadFailed
 from canonical.launchpad.database import LibraryFileAlias
 from canonical.launchpad.interfaces import IMasterStore
@@ -57,12 +65,7 @@ class LibrarianWebTestCase(unittest.TestCase):
             # librarian allow access to files that don't exist in the DB
             # and spitting them out with an 'unknown' mime-type
             # -- StuartBishop)
-            try:
-                urlopen(url)
-                self.fail('Should have raised a 404')
-            except HTTPError, x:
-                self.failUnlessEqual(x.code, 404)
-
+            self.require404(url)
             self.commit()
 
             # Make sure we can download it using the API
@@ -148,11 +151,7 @@ class LibrarianWebTestCase(unittest.TestCase):
                 config.librarian.download_port,
                 aid, filename
                 )
-        try:
-            urlopen(self._makeURL(aid, 'different.txt'))
-            self.fail('404 not raised')
-        except HTTPError, x:
-            self.failUnlessEqual(x.code, 404)
+        self.require404(self._makeURL(aid, 'different.txt'))
 
     def _makeURL(self, aliasID, filename):
         host = config.librarian.download_host
@@ -172,18 +171,9 @@ class LibrarianWebTestCase(unittest.TestCase):
         self.failUnlessEqual(url, self._makeURL(aid, filename))
 
         # Change the aliasid and assert we get a 404
-        try:
-            urlopen(self._makeURL(aid+1, filename))
-            self.fail('404 not raised')
-        except HTTPError, x:
-            self.failUnlessEqual(x.code, 404)
-
+        self.require404(self._makeURL(aid+1, filename))
         # Change the filename and assert we get a 404
-        try:
-            urlopen(self._makeURL(aid, 'different.txt'))
-            self.fail('404 not raised')
-        except HTTPError, x:
-            self.failUnlessEqual(x.code, 404)
+        self.require404(self._makeURL(aid, 'different.txt'))
 
     def test_duplicateuploads(self):
         client = LibrarianClient()
@@ -236,6 +226,101 @@ class LibrarianWebTestCase(unittest.TestCase):
         # And we should have a correct Last-Modified header too.
         self.failUnlessEqual(
             last_modified_header, 'Tue, 30 Jan 2001 13:45:59 GMT')
+
+    def get_restricted_file_and_public_url(self):
+        # Use a regular LibrarianClient to ensure we speak to the nonrestricted
+        # port on the librarian which is where secured restricted files are
+        # served from.
+        client = LibrarianClient()
+        fileAlias = client.addFile('sample', 12, StringIO('a'*12),
+            contentType='text/plain')
+        # Note: We're deliberately using the wrong url here: we should be
+        # passing secure=True to getURLForAlias, but to use the returned URL we
+        # would need a wildcard DNS facility patched into urlopen; instead
+        # we use the *deliberate* choice of having the path of secure and insecure
+        # urls be the same, so that we can test it: the server code doesn't need
+        # to know about the fancy wildcard domains.
+        url = client.getURLForAlias(fileAlias)
+        # Now that we have a url which talks to the public librarian, make the
+        # file restricted.
+        IMasterStore(LibraryFileAlias).find(LibraryFileAlias,
+            LibraryFileAlias.id==fileAlias).set(
+            LibraryFileAlias.restricted==True)
+        self.commit()
+        return fileAlias, url
+
+    def test_restricted_no_token(self):
+        fileAlias, url = self.get_restricted_file_and_public_url()
+        # The file should not be able to be opened - we haven't allocated a
+        # token.  When the token is wrong or stale a 404 is given (to avoid
+        # disclosure about what content we hold. Alternatively a 401 could be
+        # given (as long as we give a 401 when the file is missing as well -
+        # but that requires some more complex changes in the deployment
+        # infrastructure to permit more backend knowledge of the frontend
+        # request.
+        self.require404(url)
+
+    def test_restricted_made_up_token(self):
+        fileAlias, url = self.get_restricted_file_and_public_url()
+        # The file should not be able to be opened - the token supplied
+        # is not one we issued.
+        self.require404(url + '?token=haxx0r')
+
+    def test_restricted_with_token(self):
+        fileAlias, url = self.get_restricted_file_and_public_url()
+        # We have the base url for a restricted file; grant access to it 
+        # for a short time.
+        token = TimeLimitedToken.allocate(url)
+        url = url + "?token=%s" % token
+        # Now we should be able to access the file.
+        fileObj = urlopen(url)
+        try:
+            self.assertEqual("a"*12, fileObj.read())
+        finally:
+            fileObj.close()
+
+    def test_restricted_with_expired_token(self):
+        fileAlias, url = self.get_restricted_file_and_public_url()
+        # We have the base url for a restricted file; grant access to it 
+        # for a short time.
+        token = TimeLimitedToken.allocate(url)
+        # But time has passed 
+        store = session_store()
+        tokens = store.find(TimeLimitedToken, TimeLimitedToken.token==token)
+        tokens.set(
+            TimeLimitedToken.created==SQL("created - interval '1 week'"))
+        url = url + "?token=%s" % token
+        # Now, as per test_restricted_no_token we should get a 404.
+        self.require404(url)
+
+    def test_restricted_file_headers(self):
+        fileAlias, url = self.get_restricted_file_and_public_url()
+        token = TimeLimitedToken.allocate(url)
+        url = url + "?token=%s" % token
+        # Change the date_created to a known value for testing.
+        file_alias = IMasterStore(LibraryFileAlias).get(
+            LibraryFileAlias, fileAlias)
+        file_alias.date_created = datetime(
+            2001, 01, 30, 13, 45, 59, tzinfo=pytz.utc)
+        # Commit the update.
+        self.commit()
+        # Fetch the file via HTTP, recording the interesting headers
+        result = urlopen(url)
+        last_modified_header = result.info()['Last-Modified']
+        cache_control_header = result.info()['Cache-Control']
+        # No caching for restricted files.
+        self.failUnlessEqual(cache_control_header, 'max-age=0, private')
+        # And we should have a correct Last-Modified header too.
+        self.failUnlessEqual(
+            last_modified_header, 'Tue, 30 Jan 2001 13:45:59 GMT')
+        # Perhaps we should also set Expires to the Last-Modified.
+
+    def require404(self, url):
+        try:
+            urlopen(url)
+            self.fail('404 not raised')
+        except HTTPError, e:
+            self.failUnlessEqual(e.code, 404)
 
 
 class LibrarianZopelessWebTestCase(LibrarianWebTestCase):

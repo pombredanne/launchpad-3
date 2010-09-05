@@ -66,7 +66,8 @@ class LibraryFileAliasResource(resource.Resource):
         # If we still have another component of the path, then we have
         # an old URL that encodes the content ID. We want to keep supporting
         # these, so we just ignore the content id that is currently in
-        # self.aliasID and extract the real one from the URL.
+        # self.aliasID and extract the real one from the URL. Note that
+        # tokens do not work with the old URL style: they are URL specific.
         if len(request.postpath) == 1:
             try:
                 self.aliasID = int(filename)
@@ -74,7 +75,9 @@ class LibraryFileAliasResource(resource.Resource):
                 return fourOhFour
             filename = request.postpath[0]
 
-        deferred = deferToThread(self._getFileAlias, self.aliasID)
+        token = request.args.get('token', [None])[0]
+        path = request.path
+        deferred = deferToThread(self._getFileAlias, self.aliasID, token, path)
         deferred.addCallback(
                 self._cb_getFileAlias, filename, request
                 )
@@ -82,12 +85,12 @@ class LibraryFileAliasResource(resource.Resource):
         return util.DeferredResource(deferred)
 
     @write_transaction
-    def _getFileAlias(self, aliasID):
+    def _getFileAlias(self, aliasID, token, path):
         try:
-            alias = self.storage.getFileAlias(aliasID)
+            alias = self.storage.getFileAlias(aliasID, token, path)
             alias.updateLastAccessed()
             return (alias.contentID, alias.filename,
-                alias.mimetype, alias.date_created)
+                alias.mimetype, alias.date_created, alias.restricted)
         except LookupError:
             raise NotFound
 
@@ -96,7 +99,7 @@ class LibraryFileAliasResource(resource.Resource):
         return fourOhFour
 
     def _cb_getFileAlias(
-            self, (dbcontentID, dbfilename, mimetype, date_created),
+            self, (dbcontentID, dbfilename, mimetype, date_created, restricted),
             filename, request
             ):
         # Return a 404 if the filename in the URL is incorrect. This offers
@@ -105,8 +108,14 @@ class LibraryFileAliasResource(resource.Resource):
         if dbfilename.encode('utf-8') != filename:
             return fourOhFour
 
-        # Set our caching headers. Librarian files can be cached forever.
-        request.setHeader('Cache-Control', 'max-age=31536000, public')
+        if not restricted:
+            # Set our caching headers. Librarian files can be cached forever.
+            request.setHeader('Cache-Control', 'max-age=31536000, public')
+        else:
+            # Restricted files require revalidation every time. For now,
+            # until the deployment details are completely reviewed, the
+            # simplest, most cautious approach is taken: no caching permited.
+            request.setHeader('Cache-Control', 'max-age=0, private')
 
         if self.storage.hasFile(dbcontentID) or self.upstreamHost is None:
             # XXX: Brad Crittenden 2007-12-05 bug=174204: When encodings are

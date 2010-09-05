@@ -295,16 +295,17 @@ class FileDownloadClient:
     #         raise DownloadFailed, 'Incomplete response'
     #     return paths
 
-    def _getPathForAlias(self, aliasID):
+    def _getPathForAlias(self, aliasID, secure=False):
         """Returns the path inside the librarian to talk about the given
         alias.
 
         :param aliasID: A unique ID for the alias
-
+        :param secure: Controls the behaviour when looking up restricted
+            files.  If False restricted files are only permitted when
+            self.restricted is True. See getURLForAlias.
         :returns: String path, url-escaped.  Unicode is UTF-8 encoded before
             url-escaping, as described in section 2.2.5 of RFC 2718.
             None if the file has been deleted.
-
         :raises: DownloadFailed if the alias is invalid
         """
         from canonical.launchpad.database import LibraryFileAlias
@@ -315,7 +316,7 @@ class FileDownloadClient:
             lfa = LibraryFileAlias.get(aliasID)
         except SQLObjectNotFound:
             raise DownloadFailed('Alias %d not found' % aliasID)
-        if self.restricted != lfa.restricted:
+        if not secure and self.restricted != lfa.restricted:
             raise DownloadFailed(
                 'Alias %d cannot be downloaded from this client.' % aliasID)
         if lfa.deleted:
@@ -332,7 +333,11 @@ class FileDownloadClient:
             security.
         :returns: String URL, or None if the file has expired and been deleted.
         """
-        path = self._getPathForAlias(aliasID)
+        # Note that the path is the same for both secure and insecure URLs - 
+        # this is deliberate: the server doesn't need to know about the original
+        # Host the client provides, testing is easier as we don't need wildcard
+        # https environments on dev machines.
+        path = self._getPathForAlias(aliasID, secure=secure)
         if path is None:
             return None
         if not secure:

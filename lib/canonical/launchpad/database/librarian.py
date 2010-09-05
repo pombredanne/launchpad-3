@@ -19,6 +19,7 @@ from datetime import (
     )
 from hashlib import md5
 import random
+from urlparse import urlparse
 
 from lazr.delegates import delegates
 import pytz
@@ -320,9 +321,11 @@ class TimeLimitedToken(storm.base.Storm):
 
     @staticmethod
     def allocate(url):
-        """Allocate a token for url.
+        """Allocate a token for url path in the librarian.
 
-        :param url: A url bytestring.
+        :param url: A url bytestring. e.g.
+            https://i123.restricted.launchpad-librarian.net/123/foo.txt
+            Note that the token is generated for 123/foo.txt
         :return: A url fragment token ready to be attached to the url.
             e.g. 'a%20token'
         """
@@ -337,10 +340,11 @@ class TimeLimitedToken(storm.base.Storm):
         hashed = md5(baseline).hexdigest()
         token = hashed
         store = session_store()
-        store.add(TimeLimitedToken(url, token))
-        # XXX: Check this statement, RobertCollins 20100728
-        # The session isn't part of the main transaction model.
-        # If it is part of the overall ztransaction stuff we could / should
-        # just flush.
+        path = urlparse(url)[2]
+        store.add(TimeLimitedToken(path, token))
+        # The session isn't part of the main transaction model, and in fact it
+        # has autocommit on. The commit here is belts and bracers: after
+        # allocation the external librarian must be able to serve the file
+        # immediately.
         store.commit()
         return token
