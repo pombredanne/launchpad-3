@@ -57,7 +57,7 @@ class TimedAction:
             length = 999999
         else:
             length = self._td_to_ms(self.duration)
-        return (offset, length, self.category, self.detail)
+        return (offset, offset + length, self.category, self.detail)
 
     def _td_to_ms(self, td):
         """Tweak on a backport from python 2.7"""
