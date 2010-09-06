@@ -3,6 +3,8 @@
 
 """Tests for `IPackageBuild`."""
 
+from __future__ import with_statement
+
 __metaclass__ = type
 
 from datetime import datetime

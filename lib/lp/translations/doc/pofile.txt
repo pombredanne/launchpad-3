@@ -773,7 +773,7 @@ As we can see, is the msgid we were looking for.
     Found %i invalid file.
     >>> print pofile_sr.language.code
     sr
-    >>> print translation_message.pofile.language.code
+    >>> print translation_message.language.code
     sr
 
 This entry is in fact one that is not used anymore, that means, its sequence

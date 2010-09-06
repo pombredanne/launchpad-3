@@ -69,7 +69,7 @@
                     tal:define="distribution package/distribution">
                     <a
                       tal:define="link package/menu:bugs/filebug"
-                      tal:condition="distribution/official_malone"
+                      tal:condition="distribution/bug_tracking_usage/enumvalue:LAUNCHPAD"
                       tal:attributes="href link/url">
                       <img
                         tal:attributes="alt link/text"
