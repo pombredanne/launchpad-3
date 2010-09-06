@@ -339,7 +339,7 @@ the builder was OK:
     >>> build.status.title
     'Uploading build'
 
-    >>> build.buildqueue_record.destroySelf()
+    >>> bqItem10.destroySelf()
 
 === Successfully collected and uploaded  (FULLYBUILT) ===
 
@@ -371,6 +371,8 @@ processing succeeded.
 
     >>> build.upload_log is None
     True
+
+    >>> bqItem10.destroySelf()
 
 WAITING -> GIVENBACK - slave requested build record to be rescheduled.
 
@@ -439,6 +441,7 @@ let's see how this method works:
     ...     6).queueBuild()
     >>> setupBuildQueue(bqItem10, a_builder)
     >>> build = bqItem10.specific_job.build
+    >>> from lp.buildmaster.enums import BuildStatus
     >>> build.status = BuildStatus.FULLYBUILT
     >>> bqItem10.builder.setSlaveForTesting(WaitingSlave('BuildStatus.OK'))
 
@@ -528,13 +531,6 @@ users to view it.
 
     >>> print headers['content-type']
     text/plain
-
-Check the failed builds have made it into the failed directory:
-
-    >>> failed_dir = os.path.join(config.builddmaster.root, 'failed')
-    >>> failed_uploads = sorted(os.listdir(failed_dir))
-    >>> len(failed_uploads)
-    2
 
 Remove build upload results root
 
@@ -1056,7 +1052,6 @@ the restricted librarian.
     >>> build.upload_log = None
     >>> candidate.builder.setSlaveForTesting(WaitingSlave('BuildStatus.OK'))
     >>> a_builder.updateBuild(candidate)
-    WARNING:slave-scanner:Build ... upload failed.
     >>> local_transaction.commit()
 
     >>> build.archive.private
@@ -1067,6 +1062,7 @@ the restricted librarian.
     True
     >>> print lfa.filename
     buildlog_ubuntu-hoary-i386.mozilla-firefox_0.9_BUILDING.txt.gz
+    >>> candidate.destroySelf()
 
 The attempt to fetch the buildlog from the common librarian will fail
 since this is a build in a private archive and the buildlog was thus
