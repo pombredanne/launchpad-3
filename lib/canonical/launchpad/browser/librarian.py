@@ -46,7 +46,7 @@ from canonical.librarian.utils import (
     filechunks,
     guess_librarian_encoding,
     )
-from lp.servers.features import getFeatureFlag
+from lp.services.features import getFeatureFlag
 
 
 class LibraryFileAliasView(LaunchpadView):
@@ -201,8 +201,7 @@ class MixedFileAliasView(LaunchpadView):
 
 
 
-class SafeStreamOrRedirectLibraryFileAliasView(
-    StreamOrRedirectLibraryFileAliasView):
+class SafeStreamOrRedirectLibraryFileAliasView(MixedFileAliasView):
     """A view for Librarian files that sets the content disposition header."""
 
     def _when_streaming(self):

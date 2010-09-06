@@ -4,7 +4,6 @@
 __metaclass__ = type
 
 from datetime import datetime
-import re
 import time
 from urlparse import urlparse
 
@@ -88,11 +87,11 @@ class LibraryFileAliasResource(resource.Resource):
             download_url = config.librarian.download_url
             parsed = list(urlparse(download_url))
             netloc = parsed[1]
+            # Strip port if present
             if netloc.find(':') > -1:
                 netloc = netloc[:netloc.find(':')]
-            match = re.match(r'^i(\d+)\.restricted.%s$' % netloc,
-                hostname)
-            if not match or not int(match.groups()[0]) == self.aliasID:
+            expected_hostname = 'i%d.restricted.%s' % (self.aliasID, netloc)
+            if expected_hostname != hostname:
                 return fourOhFour
 
         token = request.args.get('token', [None])[0]
