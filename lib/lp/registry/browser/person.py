@@ -141,7 +141,6 @@ from zope.schema.vocabulary import (
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad import (
@@ -219,6 +218,7 @@ from canonical.widgets import (
     LaunchpadRadioWidgetWithDescription,
     LocationWidget,
     PasswordChangeWidget,
+    URIWidget,
     )
 from canonical.widgets.image import ImageChangeWidget
 from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
@@ -240,7 +240,7 @@ from lp.bugs.interfaces.bugtask import (
     IBugTaskSet,
     UNRESOLVED_BUGTASK_STATUSES,
     )
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.buildmaster.enums import BuildStatus
 from lp.code.browser.sourcepackagerecipelisting import HasRecipesMenuMixin
 from lp.code.errors import InvalidNamespace
 from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
@@ -292,12 +292,16 @@ from lp.registry.interfaces.ssh import (
     SSHKeyType,
     )
 from lp.registry.interfaces.teammembership import (
+    CyclicalTeamMembershipError,
     DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT,
     ITeamMembership,
     ITeamMembershipSet,
     TeamMembershipStatus,
     )
-from lp.registry.interfaces.wikiname import IWikiNameSet
+from lp.registry.interfaces.wikiname import (
+    IWikiName,
+    IWikiNameSet,
+    )
 from lp.services.fields import LocationField
 from lp.services.openid.adapters.openid import CurrentOpenIDEndPoint
 from lp.services.openid.browser.openiddiscovery import (
@@ -305,6 +309,10 @@ from lp.services.openid.browser.openiddiscovery import (
     )
 from lp.services.openid.interfaces.openid import IOpenIDPersistentIdentity
 from lp.services.openid.interfaces.openidrpsummary import IOpenIDRPSummarySet
+from lp.services.propertycache import (
+    cachedproperty,
+    IPropertyCache,
+    )
 from lp.services.salesforce.interfaces import (
     ISalesforceVoucherProxy,
     SalesforceVoucherProxyException,
@@ -717,11 +725,20 @@ class TeamInvitationView(LaunchpadFormView):
                 _("This invitation has already been processed."))
             return
         member = self.context.person
-        member.acceptInvitationToBeMemberOf(
-            self.context.team, data['acknowledger_comment'])
-        self.request.response.addInfoNotification(
-            _("This team is now a member of ${team}", mapping=dict(
-                  team=self.context.team.displayname)))
+        try:
+            member.acceptInvitationToBeMemberOf(
+                self.context.team, data['acknowledger_comment'])
+        except CyclicalTeamMembershipError:
+            self.request.response.addInfoNotification(
+                _("This team may not be added to ${that_team} because it is "
+                  "a member of ${this_team}.",
+                  mapping=dict(
+                      that_team=self.context.team.displayname,
+                      this_team=member.displayname)))
+        else:
+            self.request.response.addInfoNotification(
+                _("This team is now a member of ${team}.", mapping=dict(
+                    team=self.context.team.displayname)))
 
     @action(_("Decline"), name="decline")
     def decline_action(self, action, data):
@@ -3498,35 +3515,76 @@ class PersonCodeOfConductEditView(LaunchpadView):
                 sCoC_util.modifySignature(sig_id, self.user, comment, False)
 
 
-class PersonEditWikiNamesView(LaunchpadView):
+class PersonEditWikiNamesView(LaunchpadFormView):
     """View for ~person/+editwikinames"""
+
+    schema = IWikiName
+    fields = ['wiki', 'wikiname']
+    # Use custom widgets solely to get the width correct.  The URIWidget has a
+    # CSS class that does not respect the displayWidth, thus the need to use a
+    # different cssClass.
+    custom_widget('wiki', URIWidget, displayWidth=40, cssClass="textType")
+    custom_widget('wikiname', TextWidget, displayWidth=40)
 
     @property
     def label(self):
         return smartquote("%s's wiki names" % self.context.displayname)
 
     @property
-    def cancel_url(self):
-        return canonical_url(self.context, view_name="+edit")
+    def next_url(self):
+        return canonical_url(self.context)
+
+    cancel_url = next_url
+
+    def setUpFields(self):
+        super(PersonEditWikiNamesView, self).setUpFields()
+        if self.context.wiki_names.count() > 0:
+            # Make the wiki and wiki_name entries optional on the edit page if
+            # one or more ids already exist, which allows the removal of ids
+            # without filling out the new wiki fields.
+            wiki_field = self.form_fields['wiki']
+            wikiname_field = self.form_fields['wikiname']
+            # Copy the fields so as not to modify the interface.
+            wiki_field.field = copy_field(wiki_field.field)
+            wiki_field.field.required = False
+            wikiname_field.field = copy_field(wikiname_field.field)
+            wikiname_field.field.required = False
 
     def _validateWikiURL(self, url):
         """Validate the URL.
 
         Make sure that the result is a valid URL with only the
-        appropriate schemes.
+        appropriate schemes.  The url is assumed to be a string.
         """
+        if url is None:
+            return
         try:
             uri = URI(url)
             if uri.scheme not in ('http', 'https'):
-                self.error_message = structured(
-                    'The URL scheme "%(scheme)s" is not allowed.  '
-                    'Only http or https URLs may be used.', scheme=uri.scheme)
-                return False
+                self.setFieldError(
+                    'wiki',
+                    structured(
+                        'The URL scheme "%(scheme)s" is not allowed.  '
+                        'Only http or https URLs may be used.',
+                        scheme=uri.scheme))
         except InvalidURIError:
-            self.error_message = structured(
-                '"%(url)s" is not a valid URL.', url=url)
-            return False
-        return True
+            self.setFieldError(
+                'wiki',
+                structured(
+                    '"%(url)s" is not a valid URL.', url=url))
+
+    def _validateWikiName(self, name):
+        """Ensure the wikiname is valid.
+
+        It must not be longer than 100 characters.  Name is assumed to be a
+        string.
+        """
+        max_len = 100
+        if len(name) > max_len:
+            self.setFieldError(
+                'wikiname',
+                structured(
+                    'The wiki name cannot exceed %d characters.' % max_len))
 
     def _sanitizeWikiURL(self, url):
         """Strip whitespaces and make sure :url ends in a single '/'."""
@@ -3534,72 +3592,82 @@ class PersonEditWikiNamesView(LaunchpadView):
             return url
         return '%s/' % url.strip().rstrip('/')
 
-    def initialize(self):
-        """Process the WikiNames form."""
-        self.error_message = None
-        if self.request.method != "POST":
-            # Nothing to do
+    def validate(self, data):
+        # If there are already form errors then just show them.
+        if self.errors:
+            return
+        wikiurl = self._sanitizeWikiURL(data.get('wiki'))
+        wikiname = data.get('wikiname')
+        if wikiurl or wikiname:
+            if not wikiurl:
+                self.setFieldError(
+                    'wiki',
+                    structured(
+                        'The Wiki URL must be specified.'))
+            if not wikiname:
+                self.setFieldError(
+                    'wikiname',
+                    structured(
+                        'The Wiki name must be specified.'))
+
+        if self.errors:
             return
 
-        form = self.request.form
-        context = self.context
+        if wikiurl is not None:
+            self._validateWikiURL(wikiurl)
+        if wikiname is not None:
+            self._validateWikiName(wikiname)
+
+        if self.errors:
+            return
+
         wikinameset = getUtility(IWikiNameSet)
-
-        for w in context.wiki_names:
-            # XXX: GuilhermeSalgado 2005-08-25:
-            # We're exposing WikiName IDs here because that's the only
-            # unique column we have. If we don't do this we'll have to
-            # generate the field names using the WikiName.wiki and
-            # WikiName.wikiname columns (because these two columns make
-            # another unique identifier for WikiNames), but that's tricky and
-            # not worth the extra work.
-            if form.get('remove_%d' % w.id):
-                w.destroySelf()
-            else:
-                wiki = self._sanitizeWikiURL(form.get('wiki_%d' % w.id))
-                wikiname = form.get('wikiname_%d' % w.id)
-                if not (wiki and wikiname):
-                    self.error_message = structured(
-                        "Neither Wiki nor WikiName can be empty.")
-                    return
-                if not self._validateWikiURL(wiki):
-                    return
-                w.wiki = wiki
-                w.wikiname = wikiname
-
-        wiki = self._sanitizeWikiURL(form.get('newwiki'))
-        wikiname = form.get('newwikiname')
-        if wiki or wikiname:
-            if wiki and wikiname:
-                existingwiki = wikinameset.getByWikiAndName(wiki, wikiname)
-                if existingwiki and existingwiki.person != context:
-                    owner_name = urllib.quote(existingwiki.person.name)
-                    merge_url = (
-                        '%s/+requestmerge?field.dupe_person=%s'
-                        % (canonical_url(getUtility(IPersonSet)), owner_name))
-                    self.error_message = structured(
+        existingwiki = wikinameset.getByWikiAndName(wikiurl, wikiname)
+        if existingwiki:
+            if existingwiki.person != self.context:
+                owner_name = urllib.quote(existingwiki.person.name)
+                merge_url = (
+                    '%s/+requestmerge?field.dupe_person=%s'
+                    % (canonical_url(getUtility(IPersonSet)), owner_name))
+                self.setFieldError(
+                    'wikiname',
+                    structured(
                         'The WikiName %s%s is already registered by '
                         '<a href="%s">%s</a>. If you think this is a '
                         'duplicated account, you can <a href="%s">merge it'
                         '</a> into your account.',
-                        wiki, wikiname, canonical_url(existingwiki.person),
-                        existingwiki.person.displayname, merge_url)
-                    return
-
-                elif existingwiki:
-                    self.error_message = structured(
-                        'The WikiName %s%s already belongs to you.',
-                        wiki, wikiname)
-                    return
-                if not self._validateWikiURL(wiki):
-                    return
-                wikinameset.new(context, wiki, wikiname)
+                        wikiurl, wikiname,
+                        canonical_url(existingwiki.person),
+                        existingwiki.person.displayname, merge_url))
             else:
-                self.newwiki = wiki
-                self.newwikiname = wikiname
-                self.error_message = structured(
-                    "Neither Wiki nor WikiName can be empty.")
-                return
+                # The person already has this wiki.
+                self.setFieldError(
+                    'wikiname',
+                    'The WikiName %s%s already belongs to you.' %
+                    (wikiurl, wikiname))
+
+    def _save(self, wikiurl, wikiname):
+        """Given a wikiurl and wikiname, attempt to save it.
+
+        Verify someone else doesn't have it already.
+        """
+
+    @action(_("Save Changes"), name="save")
+    def save(self, action, data):
+        """Process the wiki names form."""
+        form = self.request.form
+        for obj in self.context.wiki_names:
+            if form.get('remove_%s' % obj.id):
+                obj.destroySelf()
+
+        if not self.errors:
+            wikiurl = self._sanitizeWikiURL(data.get('wiki'))
+            wikiname = data.get('wikiname')
+            # If either url or name are present then they both must be
+            # entered.
+            if wikiurl and wikiname:
+                wikinameset = getUtility(IWikiNameSet)
+                wikinameset.new(self.context, wikiurl, wikiname)
 
 
 class PersonEditIRCNicknamesView(LaunchpadFormView):
@@ -3664,6 +3732,8 @@ class PersonEditJabberIDsView(LaunchpadFormView):
             # ids already exist, which allows the removal of ids without
             # filling out the new jabberid field.
             jabber_field = self.form_fields['jabberid']
+            # Copy the field so as not to modify the interface.
+            jabber_field.field = copy_field(jabber_field.field)
             jabber_field.field.required = False
 
     @property
@@ -5686,10 +5756,7 @@ class ContactViaWebNotificationRecipientSet:
     def _reset_state(self):
         """Reset the cache because the recipients changed."""
         self._count_recipients = None
-        if safe_hasattr(self, '_all_recipients_cached'):
-            # The clear the cache of _all_recipients. The caching will fail
-            # if this method creates the attribute before _all_recipients.
-            del self._all_recipients_cached
+        del IPropertyCache(self)._all_recipients
 
     def _getPrimaryReason(self, person_or_team):
         """Return the primary reason enumeration.
@@ -5797,7 +5864,7 @@ class ContactViaWebNotificationRecipientSet:
                 'You are contacting %s of the %s (%s) team directly.'
                 % (text, person_or_team.displayname, person_or_team.name))
 
-    @cachedproperty('_all_recipients_cached')
+    @cachedproperty
     def _all_recipients(self):
         """Set the cache of all recipients."""
         all_recipients = {}

@@ -24,6 +24,14 @@ from sqlobject import (
     SQLRelatedJoin,
     StringCol,
     )
+from storm.expr import (
+    LeftJoin,
+    )
+from storm.locals import (
+    ClassAlias,
+    Desc,
+    SQL,
+    )
 from storm.store import Store
 from zope.event import notify
 from zope.interface import implements
@@ -39,6 +47,9 @@ from canonical.database.sqlbase import (
     quote,
     SQLBase,
     sqlvalues,
+    )
+from canonical.launchpad.components.decoratedresultset import (
+    DecoratedResultSet,
     )
 from canonical.launchpad.helpers import (
     get_contact_email_addresses,
@@ -679,6 +690,73 @@ class HasSpecificationsMixin:
         """See IHasSpecifications."""
         # this should be implemented by the actual context class
         raise NotImplementedError
+
+    def _specification_sort(self, sort):
+        """Return the storm sort order for 'specifications'.
+        
+        :param sort: As per HasSpecificationsMixin.specifications.
+        """
+        # sort by priority descending, by default
+        if sort is None or sort == SpecificationSort.PRIORITY:
+            return (
+                Desc(Specification.priority), Specification.definition_status,
+                Specification.name)
+        elif sort == SpecificationSort.DATE:
+            return (Desc(Specification.datecreated), Specification.id)
+
+    def _preload_specifications_people(self, query):
+        """Perform eager loading of people and their validity for query.
+        
+        :param query: a string query generated in the 'specifications'
+            method.
+        :return: A DecoratedResultSet with Person precaching setup.
+        """
+        # Circular import.
+        from lp.registry.model.person import Person
+        assignee = ClassAlias(Person, "assignee")
+        approver = ClassAlias(Person, "approver")
+        drafter = ClassAlias(Person, "drafter")
+        origin = [Specification,
+            LeftJoin(assignee, Specification.assignee==assignee.id),
+            LeftJoin(approver, Specification.approver==approver.id),
+            LeftJoin(drafter, Specification.drafter==drafter.id),
+            ]
+        columns = [Specification, assignee, approver, drafter]
+        for alias in (assignee, approver, drafter):
+            validity_info = Person._validity_queries(person_table=alias)
+            origin.extend(validity_info["joins"])
+            columns.extend(validity_info["tables"])
+            # We only need one decorators list: all the decorators will be
+            # bound the same, and having a single list lets us more easily call
+            # the right one.
+            decorators = validity_info["decorators"]
+        columns = tuple(columns)
+        results = Store.of(self).using(*origin).find(
+            columns,
+            SQL(query),
+            )
+        def cache_person(person, row, start_index):
+            """apply caching decorators to person."""
+            index = start_index
+            for decorator in decorators:
+                column = row[index]
+                index += 1
+                decorator(person, column)
+            return index
+        def cache_validity(row):
+            # Assignee
+            person = row[1]
+            # After drafter
+            index = 4
+            index = cache_person(person, row, index)
+            # approver
+            person = row[2]
+            index = cache_person(person, row, index)
+            # drafter
+            person = row[3]
+            index = cache_person(person, row, index)
+            return row[0]
+        return DecoratedResultSet(results, cache_validity)
 
     @property
     def valid_specifications(self):

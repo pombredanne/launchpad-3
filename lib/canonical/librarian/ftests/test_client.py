@@ -32,7 +32,7 @@ class InstrumentedLibrarianClient(LibrarianClient):
 
 
 def make_mock_file(error, max_raise):
-    """Return a surrogate for clinet._File.
+    """Return a surrogate for client._File.
 
     The surrogate function raises error when called for the first
     max_raise times.
@@ -44,13 +44,14 @@ def make_mock_file(error, max_raise):
         'num_calls': 0,
         }
 
-    def mock_file(url):
+    def mock_file(url_file, url):
         if file_status['num_calls'] < file_status['max_raise']:
             file_status['num_calls'] += 1
             raise file_status['error']
         return 'This is a fake file object'
 
     return mock_file
+
 
 class LibrarianClientTestCase(unittest.TestCase):
     layer = LaunchpadFunctionalLayer

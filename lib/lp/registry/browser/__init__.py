@@ -20,7 +20,6 @@ from operator import attrgetter
 from storm.store import Store
 from zope.component import getUtility
 
-from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.launchpadform import (
     action,
@@ -33,6 +32,7 @@ from lp.bugs.interfaces.bugtask import (
     )
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.propertycache import cachedproperty
 
 
 class StatusCount:

@@ -36,7 +36,6 @@ from storm.store import (
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.cachedproperty import cachedproperty
 from canonical.database.constants import (
     DEFAULT,
     UTC_NOW,
@@ -114,15 +113,14 @@ from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.registry.model.structuralsubscription import (
     StructuralSubscriptionTargetMixin,
     )
+from lp.services.propertycache import cachedproperty
 from lp.services.worlddata.model.language import Language
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackagePublishingStatus,
     PackageUploadStatus,
     )
-from lp.soyuz.interfaces.archive import (
-    ALLOW_RELEASE_BUILDS,
-    )
+from lp.soyuz.interfaces.archive import ALLOW_RELEASE_BUILDS
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageName
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
@@ -551,7 +549,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             orderBy=["Language.englishname"])
         return result
 
-    @cachedproperty('_previous_series_cached')
+    @cachedproperty
     def previous_series(self):
         """See `IDistroSeries`."""
         # This property is cached because it is used intensely inside
@@ -1190,7 +1188,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         dsc_maintainer_rfc822, dsc_standards_version, dsc_format,
         dsc_binaries, archive, copyright, build_conflicts,
         build_conflicts_indep, dateuploaded=DEFAULT,
-        source_package_recipe_build=None, user_defined_fields=None):
+        source_package_recipe_build=None, user_defined_fields=None,
+        homepage=None):
         """See `IDistroSeries`."""
         return SourcePackageRelease(
             upload_distroseries=self, sourcepackagename=sourcepackagename,
@@ -1207,7 +1206,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             build_conflicts=build_conflicts,
             build_conflicts_indep=build_conflicts_indep,
             source_package_recipe_build=source_package_recipe_build,
-            user_defined_fields=user_defined_fields)
+            user_defined_fields=user_defined_fields, homepage=homepage)
 
     def getComponentByName(self, name):
         """See `IDistroSeries`."""
