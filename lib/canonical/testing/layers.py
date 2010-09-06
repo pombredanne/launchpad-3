@@ -96,8 +96,11 @@ from canonical.lazr import pidfile
 from canonical.config import CanonicalConfig, config, dbconfig
 from canonical.database.revision import (
     confirm_dbrevision, confirm_dbrevision_on_startup)
-from canonical.database.sqlbase import (cursor, session_store,
-    ZopelessTransactionManager)
+from canonical.database.sqlbase import (
+    cursor,
+    session_store,
+    ZopelessTransactionManager,
+    )
 from canonical.launchpad.interfaces import IMailBox, IOpenLaunchBag
 from lp.testing import ANONYMOUS, login, logout, is_logged_in
 import lp.services.mail.stub
