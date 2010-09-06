@@ -54,7 +54,7 @@
       </p>
 
       <div id="project-cloud-preview" tal:content="cache:public,6 hours">
-        <h2>Selection of projects with active branches</h2>
+        <h2>Most active projects in the last month</h2>
         <a tal:repeat="product view/short_product_tag_cloud"
            tal:attributes="href product/url;
                            class product/html_class;
