@@ -351,5 +351,5 @@ class TimeLimitedToken(storm.base.Storm):
 
     @staticmethod
     def url_to_token_path(url):
-        """Return the token path used for authorising acces to url."""
+        """Return the token path used for authorising access to url."""
         return urlparse(url)[2]
