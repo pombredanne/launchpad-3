@@ -15,6 +15,7 @@ from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad.browser.librarian import (
     StreamOrRedirectLibraryFileAliasView,
+    SafeStreamOrRedirectLibraryFileAliasView,
     )
 from canonical.launchpad.interfaces import ILaunchBag
 from canonical.launchpad.interfaces.librarian import (
@@ -25,7 +26,6 @@ from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import LaunchpadFunctionalLayer
 from lp.bugs.browser.bugattachment import (
     BugAttachmentFileNavigation,
-    SafeStreamOrRedirectLibraryFileAliasView,
     )
 from lp.testing import (
     login_person,

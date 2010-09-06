@@ -1159,7 +1159,7 @@
             classes="
                 BugWatchSetNavigation"/>
     </facet>
-    <class class="lp.bugs.browser.bugattachment.SafeStreamOrRedirectLibraryFileAliasView">
+    <class class="canonical.launchpad.browser.librarian.SafeStreamOrRedirectLibraryFileAliasView">
       <allow attributes="__call__" />
       <allow interface="zope.publisher.interfaces.browser.IBrowserPublisher" />
     </class>

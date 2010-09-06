@@ -11,6 +11,7 @@ __all__ = [
     'LibraryFileAliasMD5View',
     'LibraryFileAliasView',
     'ProxiedLibraryFileAlias',
+    'SafeStreamOrRedirectLibraryFileAliasView',
     'StreamOrRedirectLibraryFileAliasView',
     'RedirectPerhapsWithTokenLibraryFileAliasView',
     ]
@@ -213,6 +214,21 @@ class StreamOrRedirectLibraryFileAliasView(LaunchpadView):
     def publishTraverse(self, request, name):
         """See `IBrowserPublisher`."""
         raise NotFound(name, self.context)
+
+
+class SafeStreamOrRedirectLibraryFileAliasView(
+    StreamOrRedirectLibraryFileAliasView):
+    """A view for Librarian files that sets the content disposion header."""
+
+    def __call__(self):
+        """Stream the content of the context `ILibraryFileAlias`.
+
+        Set the content disposition header to the safe value "attachment".
+        """
+        self.request.response.setHeader(
+            'Content-Disposition', 'attachment')
+        return super(
+            SafeStreamOrRedirectLibraryFileAliasView, self).__call__()
 
 
 class DeletedProxiedLibraryFileAlias(NotFound):
