@@ -570,6 +570,15 @@ traversals.
     ...     RedirectPerhapsWithTokenLibraryFileAliasView)
 
     >>> empty_request = LaunchpadTestRequest()
+
+XXX bug=631884 we have to establish the flags object manually for testing.
+
+    >>> from lp.services.features.webapp import ScopesFromRequest
+    >>> from lp.services.features.flags import FeatureController
+    >>> from lp.services.features import per_thread
+    >>> per_thread.features = FeatureController(
+    ...     ScopesFromRequest(empty_request).lookup)
+
     >>> restricted_view = RedirectPerhapsWithTokenLibraryFileAliasView(
     ...     restricted_file, empty_request)
 
@@ -586,9 +595,10 @@ be issued.
     <...RedirectionView...>
     >>> view.target
     'https://...restricted.txt?token=...'
-    >>> private_url = restricted_file.private_url
+    >>> private_path = TimeLimitedToken.url_to_token_path(
+    ...     restricted_file.private_url)
     >>> view.target.endswith(session_store().find(TimeLimitedToken,
-    ...     path=private_url).any().token)
+    ...     path=private_path).any().token)
     True
     
 The domain for the target starts with the id of the LibraryFileAlias.
@@ -619,8 +629,8 @@ AssertionError when it gets traversed.
     >>> view, extra = deleted_view.browserDefault(empty_request)
     Traceback (most recent call last):
     ...
-    AssertionError: RedirectPerhapsWithTokenLibraryFileAliasView can not
-    operate on deleted librarian files, since their URL is undefined.
+    AssertionError: MixedFileAliasView can not operate on deleted librarian
+    files, since their URL is undefined.
 
 
 As RedirectPerhapsWithTokenLibraryFileAliasView is
@@ -628,8 +638,15 @@ StreamOrRedirectLibraryFileAliasView influence by a feature flag, until the
 proxy code is removed, we must remove the feature to test the old behaviour.
 
     >>> ignore = getFeatureStore().find(FeatureFlag,
-    ...     FeatureFlag.flag=='publicrestrictedlibrarian').remove()
+    ...     FeatureFlag.flag==u'publicrestrictedlibrarian').remove()
     >>> transaction.commit()
+
+Because the flags code aggressively caches, we have to do a small dance to 
+convince it a new request has started too.
+
+    >>> empty_request = LaunchpadTestRequest()
+    >>> per_thread.features = FeatureController(
+    ...     ScopesFromRequest(empty_request).lookup)
 
 == StreamOrRedirectLibraryFileAliasView ==
 
@@ -654,6 +671,8 @@ When the context file is a restricted `LibraryFileAlias`, the
 traversal chain is finished with the view object itself.
 
     >>> view, extra = restricted_view.browserDefault(empty_request)
+    >>> if view != restricted_view:
+    ...     print view
     >>> view == restricted_view
     True
 
@@ -741,8 +760,8 @@ appropriate AssertionError when it gets traversed.
     >>> view, extra = deleted_view.browserDefault(empty_request)
     Traceback (most recent call last):
     ...
-    AssertionError: StreamOrRedirectLibraryFileAliasView can not
-    operate on deleted librarian files, since their URL is undefined.
+    AssertionError: MixedFileAliasView can not operate on deleted librarian
+    files, since their URL is undefined.
 
 
 == LibraryFileAliasMD5View ==
