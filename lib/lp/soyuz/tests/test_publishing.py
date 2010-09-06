@@ -357,7 +357,7 @@ class SoyuzTestPublisher:
         depends=None, recommends=None, suggests=None, conflicts=None,
         replaces=None, provides=None, pre_depends=None, enhances=None,
         breaks=None, format=BinaryPackageFormat.DEB, debug_package=None,
-        user_defined_fields=None):
+        user_defined_fields=None, homepage=None):
         """Return the corresponding `BinaryPackageRelease`."""
         sourcepackagerelease = build.source_package_release
         distroarchseries = build.distro_arch_series
@@ -390,7 +390,7 @@ class SoyuzTestPublisher:
             binpackageformat=format,
             priority=PackagePublishingPriority.STANDARD,
             debug_package=debug_package,
-            user_defined_fields=user_defined_fields)
+            user_defined_fields=user_defined_fields, homepage=homepage)
 
         # Create the corresponding binary file.
         if architecturespecific:

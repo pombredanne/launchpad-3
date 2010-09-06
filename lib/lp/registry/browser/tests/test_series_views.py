@@ -3,18 +3,16 @@
 
 __metaclass__ = type
 
-import unittest
-
 from storm.zope.interfaces import IResultSet
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+import unittest
+
+from canonical.config import config
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.testing import LaunchpadZopelessLayer
-from lp.registry.enum import (
-    DistroSeriesDifferenceStatus,
-    DistroSeriesDifferenceType,
-    )
 from lp.testing import TestCaseWithFactory
 from lp.testing.views import create_initialized_view
 
@@ -72,6 +70,49 @@ class DistroSeriesLocalPackageDiffsTestCase(TestCaseWithFactory):
             "Source package differences between 'Derilucid' and "
             "parent series 'Lucid'",
             view.label)
+
+
+class TestMilestoneBatchNavigatorAttribute(TestCaseWithFactory):
+    """Test the series.milestone_batch_navigator attribute."""
+
+    layer = LaunchpadZopelessLayer
+
+    def test_distroseries_milestone_batch_navigator(self):
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        distroseries = self.factory.makeDistroSeries(distribution=ubuntu)
+        for name in ('a', 'b', 'c', 'd'):
+            distroseries.newMilestone(name)
+        view = create_initialized_view(distroseries, name='+index')
+        self._check_milestone_batch_navigator(view)
+
+    def test_productseries_milestone_batch_navigator(self):
+        product = self.factory.makeProduct()
+        for name in ('a', 'b', 'c', 'd'):
+            product.development_focus.newMilestone(name)
+
+        view = create_initialized_view(
+            product.development_focus, name='+index')
+        self._check_milestone_batch_navigator(view)
+
+    def _check_milestone_batch_navigator(self, view):
+        config.push('default-batch-size', """
+        [launchpad]
+        default_batch_size: 2
+        """)
+        self.assert_(
+            isinstance(view.milestone_batch_navigator, BatchNavigator),
+            'milestone_batch_navigator is not a BatchNavigator object: %r'
+            % view.milestone_batch_navigator)
+        self.assertEqual(4, view.milestone_batch_navigator.batch.total())
+        expected = [
+            'd',
+            'c',
+            ]
+        milestone_names = [
+            item.name
+            for item in view.milestone_batch_navigator.currentBatch()]
+        self.assertEqual(expected, milestone_names)
+        config.pop('default-batch-size')
 
 
 def test_suite():

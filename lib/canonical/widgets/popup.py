@@ -7,18 +7,19 @@
 
 __metaclass__ = type
 
-import os
 import cgi
+import os
+
 import simplejson
-
-from zope.schema.interfaces import IChoice
-from zope.app.form.browser.itemswidgets import (
-    ItemsWidgetBase, SingleDataHelper)
-
 from z3c.ptcompat import ViewPageTemplateFile
+from zope.app.form.browser.itemswidgets import (
+    ItemsWidgetBase,
+    SingleDataHelper,
+    )
+from zope.schema.interfaces import IChoice
 
 from canonical.launchpad.webapp import canonical_url
-from canonical.cachedproperty import cachedproperty
+from lp.services.propertycache import cachedproperty
 
 
 class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):

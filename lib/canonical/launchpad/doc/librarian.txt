@@ -183,6 +183,25 @@ files in the Librarian.
     >>> re.search(r'^http://localhost:58000/\d+/text.txt$', url) is not None
     True
 
+Librarian reads are logged in the request timeline.
+
+    >>> from canonical.lazr.utils import get_current_browser_request
+    >>> from lp.services.timeline.requesttimeline import get_request_timeline
+    >>> request = get_current_browser_request()
+    >>> timeline = get_request_timeline(request)
+    >>> f = client.getFileByAlias(aid)
+    >>> action = timeline.actions[-1]
+    >>> action.category
+    'librarian-connection'
+    >>> action.detail.endswith('/text.txt')
+    True
+    >>> _unused = f.read()
+    >>> action = timeline.actions[-1]
+    >>> action.category
+    'librarian-read'
+    >>> action.detail.endswith('/text.txt')
+    True
+
 At this level we can also reverse the transactional semantics by using the
 remoteAddFile instead of the addFile method. In this case, the database
 rows are added by the Librarian, which means that the file is downloadable

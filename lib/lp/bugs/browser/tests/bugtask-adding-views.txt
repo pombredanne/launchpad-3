@@ -224,8 +224,8 @@ This worked without any problems since Evolution does use Malone as its
 offical bug tracker.
 
     >>> evolution_task = bug_four.bugtasks[0]
-    >>> evolution_task.target.official_malone
-    True
+    >>> evolution_task.target.bug_tracking_usage
+    <DBItem ServiceUsage.LAUNCHPAD, (20) Launchpad>
 
     >>> transaction.commit()
 
@@ -275,8 +275,8 @@ But since no bug watch was specified, the status and importance
 are set to the default values.
 
     >>> alsa_task = bug_four.bugtasks[0]
-    >>> alsa_task.target.official_malone
-    False
+    >>> alsa_task.target.bug_tracking_usage
+    <DBItem ServiceUsage.UNKNOWN, (10) Unknown>
     >>> alsa_task.status.title
     'New'
     >>> alsa_task.importance.title
@@ -368,8 +368,8 @@ the bug watch's status later.
     >>> alsa_task = bug_four.bugtasks[0]
     >>> alsa_task.bugtargetname
     u'alsa-utils'
-    >>> alsa_task.product.official_malone
-    False
+    >>> alsa_task.product.bug_tracking_usage
+    <DBItem ServiceUsage.UNKNOWN, (10) Unknown>
     >>> alsa_task.bugwatch == bug_four.watches[0]
     True
 

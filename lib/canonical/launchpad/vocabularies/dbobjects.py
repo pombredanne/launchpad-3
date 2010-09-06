@@ -85,6 +85,7 @@ from canonical.launchpad.webapp.vocabulary import (
     SQLObjectVocabularyBase,
     )
 from lp.app.browser.stringformatter import FormattersAPI
+from lp.app.enums import ServiceUsage
 from lp.blueprints.model.specification import Specification
 from lp.blueprints.model.sprint import Sprint
 from lp.bugs.interfaces.bugtask import IBugTask
@@ -231,6 +232,7 @@ class HostedBranchRestrictedOnOwnerVocabulary(BranchVocabularyBase):
     These are branches that the user is guaranteed to be able to push
     to.
     """
+
     def __init__(self, context=None):
         """Pass a Person as context, or anything else for the current user."""
         super(HostedBranchRestrictedOnOwnerVocabulary, self).__init__(context)
@@ -338,6 +340,7 @@ class TranslatableLanguageVocabulary(LanguageVocabulary):
     This vocabulary contains all the languages known to Launchpad,
     excluding English and non-visible languages.
     """
+
     def __contains__(self, language):
         """See `IVocabulary`.
 
@@ -379,7 +382,7 @@ def project_products_using_malone_vocabulary_factory(context):
     return SimpleVocabulary([
         SimpleTerm(product, product.name, title=product.displayname)
         for product in project.products
-        if product.official_malone])
+        if product.bug_tracking_usage == ServiceUsage.LAUNCHPAD])
 
 
 class TranslationGroupVocabulary(NamedSQLObjectVocabulary):
@@ -413,14 +416,12 @@ class TranslationTemplateVocabulary(SQLObjectVocabularyBase):
         if context.productseries != None:
             self._filter = AND(
                 POTemplate.iscurrent == True,
-                POTemplate.productseries == context.productseries
-            )
+                POTemplate.productseries == context.productseries)
         else:
             self._filter = AND(
                 POTemplate.iscurrent == True,
                 POTemplate.distroseries == context.distroseries,
-                POTemplate.sourcepackagename == context.sourcepackagename
-            )
+                POTemplate.sourcepackagename == context.sourcepackagename)
         super(TranslationTemplateVocabulary, self).__init__(context)
 
     def toTerm(self, obj):
@@ -661,7 +662,8 @@ class DistributionUsingMaloneVocabulary:
         return Distribution.selectBy(official_malone=True).count()
 
     def __contains__(self, obj):
-        return IDistribution.providedBy(obj) and obj.official_malone
+        return (IDistribution.providedBy(obj)
+                and obj.bug_tracking_usage == ServiceUsage.LAUNCHPAD)
 
     def getQuery(self):
         return None

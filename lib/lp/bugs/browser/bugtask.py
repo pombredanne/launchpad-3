@@ -119,15 +119,10 @@ from zope.schema.vocabulary import (
     SimpleVocabulary,
     )
 from zope.security.interfaces import Unauthorized
-from zope.security.proxy import (
-    isinstance as zope_isinstance,
-    removeSecurityProxy,
-    )
+from zope.security.proxy import isinstance as zope_isinstance
 from zope.traversing.interfaces import IPathAdapter
 
-from canonical.cachedproperty import cachedproperty
 from canonical.config import config
-from canonical.database.sqlbase import cursor
 from canonical.launchpad import (
     _,
     helpers,
@@ -193,6 +188,7 @@ from canonical.widgets.lazrjs import (
     )
 from canonical.widgets.project import ProjectScopeWidget
 from lp.answers.interfaces.questiontarget import IQuestionTarget
+from lp.app.enums import ServiceUsage
 from lp.app.errors import (
     NotFoundError,
     UnexpectedFormData,
@@ -260,6 +256,7 @@ from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.vocabularies import MilestoneVocabulary
 from lp.services.fields import PersonChoice
+from lp.services.propertycache import cachedproperty
 
 
 @component.adapter(IBugTask, IReferenceChoice, IWebServiceClientRequest)
@@ -275,6 +272,7 @@ def assignee_renderer(context, field, request):
                 PersonFormatterAPI(context.assignee).link(None))
     return render
 
+
 @component.adapter(IBugTask, IReference, IWebServiceClientRequest)
 @implementer(IFieldHTMLRenderer)
 def bugtarget_renderer(context, field, request):
@@ -288,6 +286,7 @@ def bugtarget_renderer(context, field, request):
             'displayname': cgi.escape(context.bugtargetdisplayname)}
         return html
     return render
+
 
 def unique_title(title):
     """Canonicalise a message title to help identify messages with new
@@ -668,23 +667,26 @@ class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView, FeedsMixin):
             return
 
         # Set up widgets in order to handle subscription requests.
-        if bug.isSubscribed(self.user) or bug.isSubscribedToDupes(self.user):
-            subscription_terms = [
-                SimpleTerm(
-                    self.user, self.user.name,
-                    'Unsubscribe me from this bug')]
-        else:
-            subscription_terms = [
-                SimpleTerm(
-                    self.user, self.user.name, 'Subscribe me to this bug')]
-        for team in self.user.teams_participated_in:
-            if (bug.isSubscribed(team) or bug.isSubscribedToDupes(team)):
+        subscription_terms = []
+        self_subscribed = False
+        for person in bug.getSubscribersForPerson(self.user):
+            if person.id == self.user.id:
                 subscription_terms.append(
                     SimpleTerm(
-                        team, team.name,
+                        person, person.name,
+                        'Unsubscribe me from this bug'))
+                self_subscribed = True
+            else:
+                subscription_terms.append(
+                    SimpleTerm(
+                        person, person.name,
                         'Unsubscribe <a href="%s">%s</a> from this bug' % (
-                            canonical_url(team),
-                            cgi.escape(team.displayname))))
+                            canonical_url(person),
+                            cgi.escape(person.displayname))))
+        if not self_subscribed:
+            subscription_terms.insert(0,
+                SimpleTerm(
+                    self.user, self.user.name, 'Subscribe me to this bug'))
         subscription_vocabulary = SimpleVocabulary(subscription_terms)
         person_field = Choice(
             __name__='subscription',
@@ -1082,7 +1084,7 @@ class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView, FeedsMixin):
             activity_and_comments.append({
                 'activity': activity_dict,
                 'date': date,
-                'person': activity_dict[0]['activity'][0].person
+                'person': activity_dict[0]['activity'][0].person,
                 })
 
         activity_and_comments.sort(key=itemgetter('date'))
@@ -1668,7 +1670,7 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
 
         new_product = data.get('product')
         if (old_product is None or old_product == new_product or
-            not bugtask.pillar.official_malone):
+            bugtask.pillar.bug_tracking_usage != ServiceUsage.LAUNCHPAD):
             # Either the product wasn't changed, we're dealing with a #
             # distro task, or the bugtask's product doesn't use Launchpad,
             # which means the product can't be changed.
@@ -1823,9 +1825,11 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
                 #     Launchpad status, but it's not trivial to do at the
                 #     moment. I will fix this later.
                 bugtask.transitionToStatus(
-                    BugTaskStatus.UNKNOWN, bug_importer)
+                    BugTaskStatus.UNKNOWN,
+                    bug_importer)
                 bugtask.transitionToImportance(
-                    BugTaskImportance.UNKNOWN,  bug_importer)
+                    BugTaskImportance.UNKNOWN,
+                    bug_importer)
                 bugtask.transitionToAssignee(None)
 
         if changed:
@@ -1994,7 +1998,7 @@ class BugsInfoMixin:
         """
         if not IProduct.providedBy(self.context):
             return None
-        if self.context.official_malone:
+        if self.context.bug_tracking_usage == ServiceUsage.LAUNCHPAD:
             return None
         return "%s?field.status_upstream=pending_bugwatch" % (
             canonical_url(self.context, view_name='+bugs'))
@@ -2081,7 +2085,7 @@ class BugsStatsMixin(BugsInfoMixin):
         """
         if not IProduct.providedBy(self.context):
             return None
-        if self.context.official_malone:
+        if self.context.bug_tracking_usage == ServiceUsage.LAUNCHPAD:
             return None
         params = get_default_search_params(self.user)
         params.pending_bugwatch_elsewhere = True
@@ -2359,9 +2363,12 @@ class NominatedBugListingBatchNavigator(BugListingBatchNavigator):
         bugtask_listing_item.review_action_widget = CustomWidgetFactory(
             NominationReviewActionWidget)
         setUpWidget(
-            bugtask_listing_item, 'review_action',
-            review_action_field, IInputWidget,
-            value=NominatedBugReviewAction.NO_CHANGE, context=bug_nomination)
+            bugtask_listing_item,
+            'review_action',
+            review_action_field,
+            IInputWidget,
+            value=NominatedBugReviewAction.NO_CHANGE,
+            context=bug_nomination)
 
         return bugtask_listing_item
 
@@ -2913,7 +2920,7 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
 
             if fieldname != "orderby":
                 sortlink += "%s&" % urllib.urlencode(
-                    {fieldname : fieldvalue}, doseq=True)
+                    {fieldname: fieldvalue}, doseq=True)
 
         sorted, ascending = self._getSortStatus(colname)
         if sorted and ascending:
@@ -2997,7 +3004,7 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
         """Is the context a Product that does not use Malone?"""
         return (
             IProduct.providedBy(self.context)
-            and not self.context.official_malone)
+            and self.context.bug_tracking_usage != ServiceUsage.LAUNCHPAD)
 
     def _upstreamContext(self):
         """Is this page being viewed in an upstream context?
@@ -3065,7 +3072,6 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
             return None
 
 
-
 class BugNominationsView(BugTaskSearchListingView):
     """View for accepting/declining bug nominations."""
 
@@ -3129,8 +3135,7 @@ class NominationsReviewTableBatchNavigatorView(LaunchpadFormView):
                 declined += 1
             else:
                 raise AssertionError(
-                    'Unknown NominatedBugReviewAction: %r' % (
-                        review_action,))
+                    'Unknown NominatedBugReviewAction: %r' % review_action)
 
         if accepted > 0:
             self.request.response.addInfoNotification(
@@ -3197,7 +3202,7 @@ class TextualBugTaskSearchListingView(BugTaskSearchListingView):
         else:
             raise AssertionError('Uknown context type: %s' % self.context)
 
-        return u"".join("%d\n" % bug_id for bug_id in 
+        return u"".join("%d\n" % bug_id for bug_id in
             getUtility(IBugTaskSet).searchBugIds(search_params))
 
 
@@ -3370,8 +3375,7 @@ class BugTasksAndNominationsView(LaunchpadView):
                 self._getTableRowView(
                     nomination, is_converted_to_question, False)
                 for nomination in target_nominations
-                if nomination.status != BugNominationStatus.APPROVED
-                )
+                if nomination.status != BugNominationStatus.APPROVED)
 
         # Fill the ValidPersonOrTeamCache cache (using getValidPersons()),
         # so that checking person.is_valid_person, when rendering the
@@ -3849,6 +3853,7 @@ class BugTaskRemoveQuestionView(LaunchpadFormView):
 
 class BugTaskExpirableListingView(LaunchpadView):
     """View for listing Incomplete bugs that can expire."""
+
     @property
     def can_show_expirable_bugs(self):
         """Return True or False if expirable bug listing can be shown."""

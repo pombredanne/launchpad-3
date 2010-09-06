@@ -210,6 +210,7 @@ from lp.registry.interfaces.ssh import ISSHKeySet
 from lp.registry.model.milestone import Milestone
 from lp.registry.model.suitesourcepackage import SuiteSourcePackage
 from lp.services.mail.signedmessage import SignedMessage
+from lp.services.openid.model.openididentifier import OpenIdIdentifier
 from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.soyuz.adapters.packagelocation import PackageLocation
@@ -479,7 +480,24 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             email_status = EmailAddressStatus.NEW
         email = self.makeEmail(
             email, person=None, account=account, email_status=email_status)
+        self.makeOpenIdIdentifier(account)
         return account
+
+    def makeOpenIdIdentifier(self, account, identifier=None):
+        """Attach an OpenIdIdentifier to an Account."""
+        # Unfortunately, there are many tests connecting as many
+        # different database users that expect to be able to create
+        # working accounts using these factory methods. The stored
+        # procedure provides a work around and avoids us having to
+        # grant INSERT rights to these database users and avoids the
+        # security problems that would cause. The stored procedure
+        # ensures that there is at least one OpenId Identifier attached
+        # to the account that can be used to login. If the OpenId
+        # Identifier needed to be created, it will not be usable in the
+        # production environments so access to execute this stored
+        # procedure cannot be used to compromise accounts.
+        IMasterStore(OpenIdIdentifier).execute(
+            "SELECT add_test_openid_identifier(%s)", (account.id, ))
 
     def makeGPGKey(self, owner):
         """Give 'owner' a crappy GPG key for the purposes of testing."""
@@ -553,6 +571,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             person.validateAndEnsurePreferredEmail(email)
 
         removeSecurityProxy(email).status = email_address_status
+
+        self.makeOpenIdIdentifier(person.account)
 
         # Ensure updated ValidPersonCache
         flush_database_updates()
@@ -846,7 +866,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             project=project,
             registrant=registrant)
         if official_malone is not None:
-            product.official_malone = official_malone
+            removeSecurityProxy(product).official_malone = official_malone
         if official_rosetta is not None:
             removeSecurityProxy(product).official_rosetta = official_rosetta
         if bug_supervisor is not None:
