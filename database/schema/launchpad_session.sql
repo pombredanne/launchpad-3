@@ -17,7 +17,7 @@ GRANT EXECUTE ON FUNCTION
 CREATE TABLE TimeLimitedToken (
     url text NOT NULL,
     token text NOT NULL,
-    created timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created timestamp without time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
     constraint timelimitedtoken_pky primary key (url, token)
     ) WITHOUT OIDS;
 COMMENT ON TABLE TimeLimitedToken IS 'stores tokens for granting access to a single url for a short while. The garbo takes care of cleanups, and we should only have a few thousand at a time. Tokens are handed out just-in-time on the appserver, when a client attempts to dereference a private thing which we do not want to deliver in-line. OAuth tokens cannot be used for the launchpadlibrarian content because they would then be attackable. See lib.canonical.database.librarian for the python class.';
