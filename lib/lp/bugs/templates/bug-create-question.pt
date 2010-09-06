@@ -17,7 +17,7 @@
                 A question was already created from this bug.
               </tal:question>
               <tal:uses-malone
-                condition="not: context/pillar/official_malone">
+                condition="not: context/pillar/bug_tracking_usage/enumvalue:LAUNCHPAD">
                 <tal:target
                   replace="context/target/displayname">Firefox</tal:target>
                 does not use Launchpad to track bugs.
