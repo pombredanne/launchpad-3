@@ -547,6 +547,20 @@ Clear out existing tokens for these test urls.
 
 == RedirectPerhapsWithTokenLibraryFileAliasView ==
 
+This is the eventual name of StreamOrRedirectLibraryFileAliasView once we have
+migrated over to the token based approach. For now the code for the two things
+is interleaved: zope's registration system is too static to permit doing it
+cleanly with separate classes.
+
+To enable the behaviour we want to test while its controlled by a feature flag,
+we must enable a feature flag for it:
+
+    >>> from lp.services.features.model import FeatureFlag, getFeatureStore
+    >>> ignore = getFeatureStore().add(FeatureFlag(
+    ...     scope=u'default', flag=u'publicrestrictedlibrarian', value=u'on',
+    ...     priority=1))
+    >>> transaction.commit()
+
 This special view allows granting access to restricted `LibraryFileAlias`
 objects on the launchpadlibrarian. All requests get redirected, restricted
 files have an access token allocated.
@@ -609,6 +623,15 @@ AssertionError when it gets traversed.
     ...
     AssertionError: RedirectPerhapsWithTokenLibraryFileAliasView can not
     operate on deleted librarian files, since their URL is undefined.
+
+
+As RedirectPerhapsWithTokenLibraryFileAliasView is
+StreamOrRedirectLibraryFileAliasView influence by a feature flag, until the
+proxy code is removed, we must remove the feature to test the old behaviour.
+
+    >>> ignore = getFeatureStore().find(FeatureFlag,
+    ...     FeatureFlag.flag=='publicrestrictedlibrarian').remove()
+    >>> transaction.commit()
 
 == StreamOrRedirectLibraryFileAliasView ==
 

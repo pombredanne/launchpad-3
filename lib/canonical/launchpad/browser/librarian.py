@@ -80,51 +80,18 @@ class LibraryFileAliasMD5View(LaunchpadView):
         return '%s %s' % (self.context.content.md5, self.context.filename)
 
 
-class RedirectPerhapsWithTokenLibraryFileAliasView(LaunchpadView):
-    """Redirect clients to the librarian giving private files an access token.
-
-    This is a replacement for StreamOrRedirectLibraryFileAliasView which has
-    some implementation downsides that can lead to timeouts or slow requrests
-    on the appservers.
-
-    Once we've fully switched over to this, it can be consolidated with
-    LibraryFileAliasView and the differences eliminated.
-    """
-    implements(IBrowserPublisher)
-
-    __used_for__ = ILibraryFileAlias
-
-    def browserDefault(self, request):
-        """Decides whether to allocate a token when redirecting the client.
-
-        Only restricted file contents are granted a token to avoid writing to
-        the session db for anonymous content which is the bulk of the librarian
-        content.
-        """
-        # Cloned from the streaming code, but perhaps better to just return
-        # None / signal 404 ? -- RobertCollins 20100727
-        assert not self.context.deleted, (
-            "RedirectPerhapsWithTokenLibraryFileAliasView can not operate on "
-            "deleted librarian files, since their URL is undefined.")
-        if self.context.restricted:
-            # Avoids a circular import seen in
-            # scripts/ftests/librarianformatter.txt
-            from canonical.launchpad.database.librarian import TimeLimitedToken
-            token = TimeLimitedToken.allocate(self.context.private_url)
-            final_url = self.context.private_url + '?token=%s' % token
-            return RedirectionView(final_url, self.request), ()
-        return RedirectionView(self.context.http_url, self.request), ()
-
-    def publishTraverse(self, request, name):
-        """See `IBrowserPublisher` - can't traverse below a file."""
-        raise NotFound(name, self.context)
-
-
-class StreamOrRedirectLibraryFileAliasView(LaunchpadView):
+class MixedFileAliasView(LaunchpadView):
     """Stream or redirects to `ILibraryFileAlias`.
 
-    It streams the contents of restricted library files or redirects
-    to public ones.
+    If the file is public, it will redirect to the files http url.
+
+    Otherwise if the feature flag publicrestrictedlibrarian is set to 'on' this
+    will allocate a token and redirect to the aliases private url.
+
+    Otherwise it will proxy the file in the appserver.
+    
+    Once we no longer have any proxy code at all it should be possible to
+    consolidate this with LibraryFileAliasView.
 
     Note that streaming restricted files is a security concern - they show up
     in the launchpad.net domain rather than launchpadlibrarian.net and thus
@@ -193,7 +160,12 @@ class StreamOrRedirectLibraryFileAliasView(LaunchpadView):
         return tmp_file
 
     def browserDefault(self, request):
-        """Decides whether to redirect or stream the file content.
+        """Decides how to deliver the file.
+        
+        The options are:
+         - redirect to the contecxts http url
+         - redirect to a time limited secure url
+         - stream the file content.
 
         Only restricted file contents are streamed, finishing the traversal
         chain with this view. If the context file is public return the
@@ -204,31 +176,46 @@ class StreamOrRedirectLibraryFileAliasView(LaunchpadView):
         assert not self.context.deleted, (
             "StreamOrRedirectLibraryFileAliasView can not operate on "
             "deleted librarian files, since their URL is undefined.")
-
-        if self.context.restricted:
-            # Private content, deliver in-line (for now).
+        if not self.context.restricted:
+            # Public file, just point the client at the right place.
+            return RedirectionView(self.context.http_url, self.request), ()
+        if getFeatureFlag('publicrestrictedlibrarian') != 'on':
+            # Restricted file and we have not enabled the public 
+            # restricted librarian yet :- deliver inline.
             return self, ()
-        # Tell the client to retrieve the content.
-        return RedirectionView(self.context.http_url, self.request), ()
+        # Avoids a circular import seen in
+        # scripts/ftests/librarianformatter.txt
+        from canonical.launchpad.database.librarian import TimeLimitedToken
+        # Allocate a token for the file to be accessed for a limited time and
+        # redirect the client to the file.
+        token = TimeLimitedToken.allocate(self.context.private_url)
+        final_url = self.context.private_url + '?token=%s' % token
+        return RedirectionView(final_url, self.request), ()
 
     def publishTraverse(self, request, name):
-        """See `IBrowserPublisher`."""
+        """See `IBrowserPublisher` - can't traverse below a file."""
         raise NotFound(name, self.context)
+
+    def _when_streaming(self):
+        """Hook for SafeStreamOrRedirectLibraryFileAliasView."""
+
 
 
 class SafeStreamOrRedirectLibraryFileAliasView(
     StreamOrRedirectLibraryFileAliasView):
-    """A view for Librarian files that sets the content disposion header."""
+    """A view for Librarian files that sets the content disposition header."""
 
-    def __call__(self):
-        """Stream the content of the context `ILibraryFileAlias`.
-
-        Set the content disposition header to the safe value "attachment".
-        """
+    def _when_streaming(self):
+        super(SafeStreamOrRedirectLibraryFileAliasView, self)._when_streaming()
         self.request.response.setHeader(
             'Content-Disposition', 'attachment')
-        return super(
-            SafeStreamOrRedirectLibraryFileAliasView, self).__call__()
+
+
+# The eventual name of MixedFileAliasView once the proxy code
+# is ripped out.
+RedirectPerhapsWithTokenLibraryFileAliasView = MixedFileAliasView
+# The name for the old behaviour being removed:
+StreamOrRedirectLibraryFileAliasView = MixedFileAliasView
 
 
 class DeletedProxiedLibraryFileAlias(NotFound):
