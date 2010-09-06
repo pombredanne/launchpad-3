@@ -21,5 +21,5 @@ CREATE TABLE DistributionJob (
 
 ALTER TABLE DistributionJob ADD CONSTRAINT distributionjob__job__key UNIQUE (job);
 CREATE UNIQUE INDEX distribution_job__initialise_series__distroseries ON DistributionJob (distroseries) WHERE job_type = 1;
-INSERT INTO LaunchpadDatabaseRevision VALUES (2207, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 10, 0);
 
