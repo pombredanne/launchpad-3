@@ -843,9 +843,11 @@ class POTMsgSet(SQLBase):
                         imported_message.is_current = False
                 return None
             else:
+                # The pofile=pofile is only needed until 10.09 rollout.
                 matching_message = TranslationMessage(
                     potmsgset=self,
                     potemplate=pofile.potemplate,
+                    pofile=pofile,
                     language=pofile.language,
                     origin=origin,
                     submitter=submitter,
