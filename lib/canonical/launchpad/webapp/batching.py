@@ -4,13 +4,10 @@
 __metaclass__ = type
 
 import lazr.batchnavigator
-from storm import Undef
-# and ISQLObjectResultSet
 from storm.zope.interfaces import IResultSet
 from zope.component import adapts
 from zope.interface import implements
 from zope.interface.common.sequence import IFiniteSequence
-from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
