@@ -35,6 +35,7 @@ special_test_layer = {
     'product-edit-people-view.txt': LaunchpadFunctionalLayer,
     'product-files-views.txt': LaunchpadFunctionalLayer,
     'product-views.txt': LaunchpadFunctionalLayer,
+    'productseries-views.txt': LaunchpadFunctionalLayer,
     'projectgroup-views.txt': LaunchpadFunctionalLayer,
     'user-to-user-views.txt': LaunchpadFunctionalLayer,
 }

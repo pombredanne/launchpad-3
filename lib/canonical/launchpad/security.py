@@ -56,6 +56,7 @@ from lp.bugs.interfaces.bugbranch import IBugBranch
 from lp.bugs.interfaces.bugnomination import IBugNomination
 from lp.bugs.interfaces.bugsubscription import IBugSubscription
 from lp.bugs.interfaces.bugtracker import IBugTracker
+from lp.bugs.interfaces.bugwatch import IBugWatch
 from lp.buildmaster.interfaces.builder import (
     IBuilder,
     IBuilderSet,
@@ -148,6 +149,7 @@ from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.interfaces.teammembership import ITeamMembership
 from lp.registry.interfaces.wikiname import IWikiName
+from lp.services.openid.interfaces.openididentifier import IOpenIdIdentifier
 from lp.services.worlddata.interfaces.country import ICountry
 from lp.services.worlddata.interfaces.language import (
     ILanguage,
@@ -354,6 +356,18 @@ class EditAccountBySelfOrAdmin(AuthorizationBase):
 
 class ViewAccount(EditAccountBySelfOrAdmin):
     permission = 'launchpad.View'
+
+
+class ViewOpenIdIdentifierBySelfOrAdmin(AuthorizationBase):
+    permission = 'launchpad.View'
+    usedfor = IOpenIdIdentifier
+
+    def checkAccountAuthenticated(self, account):
+        if account == self.obj.account:
+            return True
+        return super(
+            ViewOpenIdIdentifierBySelfOrAdmin,
+            self).checkAccountAuthenticated(account)
 
 
 class SpecialAccount(EditAccountBySelfOrAdmin):
@@ -988,24 +1002,8 @@ class EditBugTask(AuthorizationBase):
     usedfor = IHasBug
 
     def checkAuthenticated(self, user):
-
-        if user.in_admin:
-            # Admins can always edit bugtasks, whether they're reported on a
-            # private bug or not.
-            return True
-
-        if not self.obj.bug.private:
-            # This is a public bug, so anyone can edit it.
-            return True
-        else:
-            # This is a private bug, and we know the user isn't an admin, so
-            # we'll only allow editing if the user is explicitly subscribed to
-            # this bug.
-            for subscription in self.obj.bug.subscriptions:
-                if user.inTeam(subscription.person):
-                    return True
-
-            return False
+        # Delegated entirely to the bug.
+        return self.obj.bug.userCanView(user)
 
 
 class PublicToAllOrPrivateToExplicitSubscribersForBugTask(AuthorizationBase):
@@ -1027,21 +1025,10 @@ class EditPublicByLoggedInUserAndPrivateByExplicitSubscribers(
 
     def checkAuthenticated(self, user):
         """Allow any logged in user to edit a public bug, and only
-        explicit subscribers to edit private bugs.
+        explicit subscribers to edit private bugs. Any bug that can be seen can
+        be edited.
         """
-        if not self.obj.private:
-            # This is a public bug.
-            return True
-        elif user.in_admin:
-            # Admins can edit all bugs.
-            return True
-        else:
-            # This is a private bug. Only explicit subscribers may edit it.
-            for subscription in self.obj.subscriptions:
-                if user.inTeam(subscription.person):
-                    return True
-
-        return False
+        return self.obj.userCanView(user)
 
     def checkUnauthenticated(self):
         """Never allow unauthenticated users to edit a bug."""
@@ -1672,14 +1659,14 @@ class ViewBuildFarmJobOld(AuthorizationBase):
             return None
 
     def _getBuild(self):
-        """Get `IBuildBase` associated with this job, if any."""
+        """Get `IPackageBuild` associated with this job, if any."""
         if IBuildFarmBuildJob.providedBy(self.obj):
             return self.obj.build
         else:
             return None
 
     def _checkBuildPermission(self, user=None):
-        """Check access to `IBuildBase` for this job."""
+        """Check access to `IPackageBuild` for this job."""
         permission = ViewBinaryPackageBuild(self.obj.build)
         if user is None:
             return permission.checkUnauthenticated()
@@ -2552,6 +2539,11 @@ class ChangeOfficialSourcePackageBranchLinks(AuthorizationBase):
         return user.in_ubuntu_branches or user.in_admin
 
 
+class ViewPackageset(AnonymousAuthorization):
+    """Anyone can view an IPackageset."""
+    usedfor = IPackageset
+
+
 class EditPackageset(AuthorizationBase):
     permission = 'launchpad.Edit'
     usedfor = IPackageset
@@ -2588,3 +2580,24 @@ class EditLibraryFileAliasWithParent(AuthorizationBase):
         if parent is None:
             return False
         return check_permission(self.permission, parent)
+
+
+class AdminBugTracker(AuthorizationBase):
+    permission = 'launchpad.Admin'
+    usedfor = IBugTracker
+
+    def checkAuthenticated(self, user):
+        return (
+            user.in_janitor or
+            user.in_admin or
+            user.in_launchpad_developers)
+
+
+class AdminBugWatch(AuthorizationBase):
+    permission = 'launchpad.Admin'
+    usedfor = IBugWatch
+
+    def checkAuthenticated(self, user):
+        return (
+            user.in_admin or
+            user.in_launchpad_developers)

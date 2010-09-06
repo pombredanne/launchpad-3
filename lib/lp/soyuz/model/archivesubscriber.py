@@ -34,9 +34,9 @@ from lp.registry.interfaces.person import validate_person
 from lp.registry.model.teammembership import TeamParticipation
 from lp.soyuz.interfaces.archiveauthtoken import IArchiveAuthTokenSet
 from lp.soyuz.interfaces.archivesubscriber import (
-    ArchiveSubscriberStatus,
     IArchiveSubscriber,
     )
+from lp.soyuz.enums import ArchiveSubscriberStatus
 from lp.soyuz.model.archiveauthtoken import ArchiveAuthToken
 
 

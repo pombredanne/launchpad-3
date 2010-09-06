@@ -231,6 +231,12 @@ class ITranslationMessage(Interface):
     def getOnePOFile():
         """Get any POFile containing this translation."""
 
+    def ensureBrowserPOFile():
+        """Assign the result of getOnePOFile to browser_pofile.
+
+        If browser_pofile is already set, it is left unchanged.
+        """
+
     def getSharedEquivalent():
         """Find shared message that otherwise exactly matches this one."""
 

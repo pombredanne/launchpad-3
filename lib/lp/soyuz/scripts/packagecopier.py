@@ -25,10 +25,10 @@ from zope.component import getUtility
 
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.librarian.utils import copy_and_close
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.buildmaster.enums import BuildStatus
 from lp.soyuz.adapters.packagelocation import build_package_location
+from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.archive import (
-    ArchivePurpose,
     CannotCopy,
     )
 from lp.soyuz.interfaces.binarypackagebuild import BuildSetStatus
@@ -43,7 +43,7 @@ from lp.soyuz.interfaces.queue import (
     IPackageUploadCustom,
     IPackageUploadSet,
     )
-from lp.soyuz.interfaces.sourcepackageformat import SourcePackageFormat
+from lp.soyuz.enums import SourcePackageFormat
 from lp.soyuz.scripts.ftpmasterbase import (
     SoyuzScript,
     SoyuzScriptError,

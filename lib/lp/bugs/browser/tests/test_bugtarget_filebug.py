@@ -212,7 +212,7 @@ class TestBugTargetFileBugConfirmationMessage(TestCaseWithFactory):
 
     def test_getAcknowledgementMessage_dsp_custom_distro_message(self):
         # If a distribution has a customized conformatom message, it
-        # is used for bugs filed on DsitributionSourcePackages.
+        # is used for bugs filed on DistributionSourcePackages.
         dsp = self.factory.makeDistributionSourcePackage()
         dsp.distribution.bug_reported_acknowledgement = (
             u"Thank you for filing a bug in our distribution")

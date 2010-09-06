@@ -470,7 +470,7 @@ We get a POTMsgSet and verify it's a singular form:
 
 A TranslationMessage knows what language it is in.
 
-    >>> print pt_BR_dummy_current.pofile.language.code
+    >>> print pt_BR_dummy_current.language.code
     pt_BR
 
 Using another dummy pofile we'll get a POTMsgset that's not a singular
@@ -619,7 +619,8 @@ the given timestamp.
 
     >>> translationmessage = TranslationMessage.get(2)
     >>> potmsgset = translationmessage.potmsgset
-    >>> pofile = translationmessage.pofile
+    >>> from lp.translations.model.pofile import POFile
+    >>> pofile = POFile.get(1)
     >>> translationmessage.date_reviewed.isoformat()
     '2005-04-07T13:19:17.601068+00:00'
     >>> potmsgset.isTranslationNewerThan(pofile,
@@ -658,8 +659,9 @@ We will use this helper function to print all suggestions found:
     ...             usage.append('Upstream')
     ...         if not usage:
     ...             usage.append('None')
+    ...         pofile = suggestion.getOnePOFile()
     ...         lines.append('%s: %s (%s)' % (
-    ...             suggestion.pofile.title,
+    ...             pofile.title,
     ...             suggestion.translations[0],
     ...             ' & '.join(usage)))
     ...     for line in sorted(lines):

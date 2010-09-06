@@ -50,16 +50,11 @@ Now, in order to really submit the bug, this email would have to be PGP
 signed, so that the system can verify the sender. But to avoid having
 to sign each email, we'll create a class which fakes a signed email:
 
-    >>> import time
-    >>> class MockSignature(object):
-    ...     def __init__(self):
-    ...         self.timestamp = time.time()
-
     >>> import email.Message
     >>> class MockSignedMessage(email.Message.Message):
     ...     def __init__(self, *args, **kws):
     ...         email.Message.Message.__init__(self, *args, **kws)
-    ...         self.signature = MockSignature()
+    ...         self.signature = 'fake'
     ...     @property
     ...     def signedMessage(self):
     ...         return self
@@ -82,9 +77,14 @@ bug got submitted correctly:
     ...         msg['Message-Id'] = factory.makeUniqueRFC822MsgId()
     ...     return msg
 
+    >>> import time
+    >>> def fake_extract_signature_timestamp(signed_msg):
+    ...     return time.time()
+
     >>> def process_email(raw_mail):
     ...     msg = construct_email(raw_mail)
-    ...     handler.process(msg, msg['To'])
+    ...     handler.process(msg, msg['To'],
+    ...         extract_signature_timestamp=fake_extract_signature_timestamp)
 
     >>> process_email(submit_mail)
 
@@ -410,7 +410,9 @@ The same will happen if we send the same email without signing it:
     ...     signature = None
     >>> msg = email.message_from_string(
     ...     comment_mail, _class=MockUnsignedMessage)
-    >>> handler.process(msg, msg['To'])
+    >>> handler.process(
+    ...     msg, msg['To'],
+    ...     extract_signature_timestamp=fake_extract_signature_timestamp)
     True
     >>> commit()
 
@@ -482,7 +484,9 @@ to edit bug 4:
     ...     return construct_email(edit_mail)
 
     >>> def submit_command_email(msg):
-    ...     handler.process(msg, msg['To'])
+    ...     handler.process(
+    ...         msg, msg['To'],
+    ...         extract_signature_timestamp=fake_extract_signature_timestamp)
     ...     commit()
     ...     sync(bug)
 
@@ -1756,7 +1760,9 @@ signing the mail:
     >>> msg = signed_message_from_string(submit_mail)
     >>> import email.Utils
     >>> msg['Message-Id'] = email.Utils.make_msgid()
-    >>> handler.process(msg, msg['To'])
+    >>> handler.process(
+    ...     msg, msg['To'],
+    ...     extract_signature_timestamp=fake_extract_signature_timestamp)
     True
     >>> print_latest_email()
     Subject: Submit Request Failure

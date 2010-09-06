@@ -609,8 +609,7 @@ class RevisionCache(Storm):
     revision_author_id = Int(name='revision_author', allow_none=False)
     revision_author = Reference(revision_author_id, 'RevisionAuthor.id')
 
-    revision_date = DateTime(
-        name='revision_date', allow_none=False, tzinfo=pytz.UTC)
+    revision_date = UtcDateTimeCol(notNull=True)
 
     product_id = Int(name='product', allow_none=True)
     product = Reference(product_id, 'Product.id')

@@ -47,11 +47,13 @@ from lp.registry.interfaces.pocket import (
     PackagePublishingPocket,
     pocketsuffix,
     )
+from lp.soyuz.enums import (
+    ArchivePurpose,
+    PackagePublishingStatus,
+    )
 from lp.soyuz.interfaces.archive import (
     ALLOW_RELEASE_BUILDS,
-    ArchivePurpose,
     )
-from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 
 
 component_dependencies = {

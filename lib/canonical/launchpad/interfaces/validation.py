@@ -312,7 +312,7 @@ def valid_upstreamtask(bug, product):
     errors = []
     user = getUtility(ILaunchBag).user
     params = BugTaskSearchParams(user, bug=bug)
-    if product.searchTasks(params):
+    if not product.searchTasks(params).is_empty():
         errors.append(LaunchpadValidationError(_(
             'A fix for this bug has already been requested for ${product}',
             mapping={'product': product.displayname})))

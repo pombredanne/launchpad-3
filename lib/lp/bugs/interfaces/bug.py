@@ -279,6 +279,16 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
         CollectionField(
             title=_("MultiJoin of bugs which are dupes of this one."),
             value_type=BugField(), readonly=True))
+    # See lp.bugs.model.bug.Bug.attachments for why there are two similar
+    # properties here.
+    # attachments_unpopulated would more naturally be attachments, and
+    # attachments be attachments_prepopulated, but lazr.resful cannot
+    # export over a non-exported attribute in an interface.
+    # https://bugs.launchpad.net/lazr.restful/+bug/625102
+    attachments_unpopulated = CollectionField(
+            title=_("List of bug attachments."),
+            value_type=Reference(schema=IBugAttachment),
+            readonly=True)
     attachments = exported(
         CollectionField(
             title=_("List of bug attachments."),
@@ -478,6 +488,14 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
 
     def getSubscribersFromDuplicates():
         """Return IPersons subscribed from dupes of this bug."""
+
+    def getSubscribersForPerson(person):
+        """Find the persons or teams by which person is subscribed.
+        
+        This call should be quite cheap to make and performs a single query.
+        
+        :return: An IResultSet.
+        """
 
     def getBugNotificationRecipients(duplicateof=None, old_bug=None,
                                      include_master_dupe_subscribers=False):
