@@ -7,7 +7,7 @@ __metaclass__ = type
 
 from datetime import datetime
 import hashlib
-import os.path
+import os
 
 from storm.store import Store
 from zope.component import getUtility
@@ -259,32 +259,6 @@ class TestGetUploadMethodsMixin:
         super(TestGetUploadMethodsMixin, self).setUp()
         self.build = self.makeBuild()
 
-    def test_getUploadLogContent_nolog(self):
-        """If there is no log file there, a string explanation is returned.
-        """
-        self.useTempDir()
-        self.assertEquals(
-            'Could not find upload log file',
-            self.build.getUploadLogContent(os.getcwd(), "myleaf"))
-
-    def test_getUploadLogContent_only_dir(self):
-        """If there is a directory but no log file, expect the error string,
-        not an exception."""
-        self.useTempDir()
-        os.makedirs("accepted/myleaf")
-        self.assertEquals(
-            'Could not find upload log file',
-            self.build.getUploadLogContent(os.getcwd(), "myleaf"))
-
-    def test_getUploadLogContent_readsfile(self):
-        """If there is a log file, return its contents."""
-        self.useTempDir()
-        os.makedirs("accepted/myleaf")
-        with open('accepted/myleaf/uploader.log', 'w') as f:
-            f.write('foo')
-        self.assertEquals(
-            'foo', self.build.getUploadLogContent(os.getcwd(), "myleaf"))
-
     def test_getBuildCookie(self):
         # A build cookie is made up of the package build id and record id.
         # The uploadprocessor relies on this format.
@@ -307,9 +281,6 @@ class TestGetUploadMethodsMixin:
 class TestHandleStatusMixin:
     """Tests for `IPackageBuild`s handleStatus method.
 
-    Note: these tests do *not* test the updating of the build
-    status to FULLYBUILT as this happens during the upload which
-    is stubbed out by a mock function.
     """
 
     layer = LaunchpadZopelessLayer
@@ -331,22 +302,22 @@ class TestHandleStatusMixin:
         builder.setSlaveForTesting(self.slave)
 
         # We overwrite the buildmaster root to use a temp directory.
-        tmp_dir = self.makeTemporaryDirectory()
+        self.upload_root = self.makeTemporaryDirectory()
         tmp_builddmaster_root = """
         [builddmaster]
         root: %s
-        """ % tmp_dir
+        """ % self.upload_root
         config.push('tmp_builddmaster_root', tmp_builddmaster_root)
 
         # We stub out our builds getUploaderCommand() method so
         # we can check whether it was called as well as
         # verifySuccessfulUpload().
-        self.fake_getUploaderCommand = FakeMethod(
-            result=['echo', 'noop'])
-        removeSecurityProxy(self.build).getUploaderCommand = (
-            self.fake_getUploaderCommand)
         removeSecurityProxy(self.build).verifySuccessfulUpload = FakeMethod(
             result=True)
+
+    def assertResultCount(self, count, result):
+        self.assertEquals(
+            1, len(os.listdir(os.path.join(self.upload_root, result))))
 
     def test_handleStatus_OK_normal_file(self):
         # A filemap with plain filenames should not cause a problem.
@@ -356,8 +327,8 @@ class TestHandleStatusMixin:
                 'filemap': {'myfile.py': 'test_file_hash'},
                 })
 
-        self.assertEqual(BuildStatus.FULLYBUILT, self.build.status)
-        self.assertEqual(1, self.fake_getUploaderCommand.call_count)
+        self.assertEqual(BuildStatus.UPLOADING, self.build.status)
+        self.assertResultCount(1, "incoming")
 
     def test_handleStatus_OK_absolute_filepath(self):
         # A filemap that tries to write to files outside of
@@ -366,7 +337,7 @@ class TestHandleStatusMixin:
             'filemap': {'/tmp/myfile.py': 'test_file_hash'},
             })
         self.assertEqual(BuildStatus.FAILEDTOUPLOAD, self.build.status)
-        self.assertEqual(0, self.fake_getUploaderCommand.call_count)
+        self.assertResultCount(0, "failed")
 
     def test_handleStatus_OK_relative_filepath(self):
         # A filemap that tries to write to files outside of
@@ -375,7 +346,7 @@ class TestHandleStatusMixin:
             'filemap': {'../myfile.py': 'test_file_hash'},
             })
         self.assertEqual(BuildStatus.FAILEDTOUPLOAD, self.build.status)
-        self.assertEqual(0, self.fake_getUploaderCommand.call_count)
+        self.assertResultCount(0, "failed")
 
     def test_handleStatus_OK_sets_build_log(self):
         # The build log is set during handleStatus.
