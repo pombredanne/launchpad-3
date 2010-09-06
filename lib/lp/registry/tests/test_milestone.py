@@ -14,11 +14,17 @@ from canonical.launchpad.ftests import (
     login,
     logout,
     )
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing import (
+    LaunchpadFunctionalLayer,
+    DatabaseFunctionalLayer,
+    )
+
+from lazr.restfulclient.errors import ClientError
 from lp.app.errors import NotFoundError
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.milestone import IMilestoneSet
 from lp.registry.interfaces.product import IProductSet
+from lp.testing import launchpadlib_for, TestCaseWithFactory
 
 
 class MilestoneTest(unittest.TestCase):
@@ -79,9 +85,36 @@ class MilestoneTest(unittest.TestCase):
             all_visible_milestones_ids,
             [1, 2, 3])
 
+
 def test_suite():
     """Return the test suite for the tests in this module."""
     return unittest.TestLoader().loadTestsFromName(__name__)
+
+
+def get_last_oops_id():
+    return getattr(globalErrorUtility.getLastOopsReport(), 'id', None)
+
+
+class TestLaunchpadlibAPI(TestCaseWithFactory):
+    layer = DatabaseFunctionalLayer
+
+    def test_inappropriate_deactivation_does_not_cause_an_OOPS(self):
+        # Make sure a 400 error and not an OOPS is returned when a ValueError
+        # is raised when trying to deactivate a project that has source
+        # releases.
+        last_oops = get_last_oops_id()
+        launchpad = launchpadlib_for("test", "salgado", "WRITE_PUBLIC")
+
+        project = launchpad.projects['evolution']
+        project.active = False
+        e = self.assertRaises(ClientError, project.lp_save)
+
+        # no OOPS was generated as a result of the exception
+        self.assertEqual(get_last_oops_id(), last_oops)
+        self.assertEqual(400, e.response.status)
+        self.assertIn(
+            'This project cannot be deactivated since it is linked to source '
+            'packages.', e.content)
 
 
 if __name__ == '__main__':

@@ -36,6 +36,7 @@ from canonical.database.sqlbase import (
     sqlvalues,
     )
 from canonical.launchpad.webapp.sorting import expand_numbers
+from lazr.restful.error import expose
 from lp.app.errors import NotFoundError
 from lp.blueprints.model.specification import Specification
 from lp.bugs.interfaces.bugtarget import IHasBugs
@@ -194,8 +195,8 @@ class Milestone(SQLBase, StructuralSubscriptionTargetMixin, HasBugsBase):
                              changelog=None, release_notes=None):
         """See `IMilestone`."""
         if self.product_release is not None:
-            raise AssertionError(
-                'A milestone can only have one ProductRelease.')
+            raise expose(RuntimeError(
+                'A milestone can only have one ProductRelease.'))
         release = ProductRelease(
             owner=owner,
             changelog=changelog,

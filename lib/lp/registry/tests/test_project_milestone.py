@@ -15,7 +15,11 @@ from canonical.launchpad.ftests import (
     login,
     syncUpdate,
     )
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing import (
+    LaunchpadFunctionalLayer,
+    DatabaseFunctionalLayer,
+    )
+
 from lp.blueprints.interfaces.specification import (
     ISpecificationSet,
     SpecificationDefinitionStatus,
@@ -30,6 +34,10 @@ from lp.bugs.interfaces.bugtask import (
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.projectgroup import IProjectGroupSet
+from lp.testing import (
+    launchpadlib_for,
+    TestCaseWithFactory,
+    )
 
 
 class ProjectMilestoneTest(unittest.TestCase):
@@ -315,6 +323,19 @@ class ProjectMilestoneTest(unittest.TestCase):
         self._createProductBugtask('evolution', '1.1')
         self._createProductBugtask('gnomebaker', '1.1')
         self._createProductSeriesBugtask('evolution', 'trunk', '1.1')
+
+
+        gnome = getUtility(IProjectGroupSet)['gnome']
+        evolution_milestone = self.createProductMilestone(
+            '1.1', 'evolution', None)
+
+
+class TestLaunchpadlibAPI(TestCaseWithFactory):
+    layer = DatabaseFunctionalLayer
+
+    def test_inappropriate_release_does_not_cause_an_OOPS(self):
+        milestone = self.createProductMilestone('1.1', 'evolution', None)
+        import pdb;pdb.set_trace()
 
 
 def test_suite():
