@@ -159,7 +159,9 @@ class PackageBuild(BuildFarmJobDerived, Storm):
 
     def getBuildCookie(self):
         """See `IPackageBuild`."""
-        return '%s-%s' % (self.id, self.buildqueue_record.id)
+        return '%s-%s-%s' % (
+            self.id, self.build_farm_job.job_type.name,
+            self.build_farm_job.id)
 
     @staticmethod
     def getLogFromSlave(package_build):

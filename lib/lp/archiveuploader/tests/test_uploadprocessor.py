@@ -42,7 +42,10 @@ from lp.archiveuploader.uploadprocessor import (
     parse_build_upload_leaf_name,
     UploadProcessor,
     )
-from lp.buildmaster.enums import BuildStatus
+from lp.buildmaster.enums import (
+    BuildFarmJobType,
+    BuildStatus,
+    )
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -1872,9 +1875,11 @@ class TestBuildUploadProcessor(TestUploadProcessorBase):
     def testNoBuildEntry(self):
         # Directories with that refer to a nonexistent build
         # should be skipped and a warning logged.
-        upload_dir = self.queueUpload("bar_1.0-1", queue_entry="42-60")
-        self.uploadprocessor.processBuildUpload(upload_dir, "42-60")
-        self.assertLogContains("Unable to find package build with id 42. Skipping.")
+        cookie = "%s-%d" % (BuildFarmJobType.PACKAGEBUILD.name, 42)
+        upload_dir = self.queueUpload("bar_1.0-1", queue_entry=cookie)
+        self.uploadprocessor.processBuildUpload(upload_dir, cookie)
+        self.assertLogContains(
+            "Unable to find package build job with id 42. Skipping.")
 
     def testNoFiles(self):
         # If the upload directory is empty, the upload
@@ -1892,19 +1897,19 @@ class TestBuildUploadProcessor(TestUploadProcessorBase):
             version="1.0-1", name="bar")
         queue_item.setDone()
 
-        build.jobStarted()
-        build.builder = self.factory.makeBuilder()
+        #build.queueBuild()
 
         build.status = BuildStatus.UPLOADING
 
         # Upload and accept a binary for the primary archive source.
         shutil.rmtree(upload_dir)
         self.layer.txn.commit()
-        leaf_name = build.getUploadDirLeaf("%d-60" % build.package_build.id)
+        leaf_name = build.getUploadDirLeaf(build.getBuildCookie())
         os.mkdir(os.path.join(self.incoming_folder, leaf_name))
         self.options.context = 'buildd'
         self.options.builds = True
-        self.uploadprocessor.processBuildUpload(self.incoming_folder, leaf_name)
+        self.uploadprocessor.processBuildUpload(
+            self.incoming_folder, leaf_name)
         self.layer.txn.commit()
         self.assertEquals(
             BuildStatus.FAILEDTOUPLOAD, build.status)
@@ -1929,20 +1934,20 @@ class TestBuildUploadProcessor(TestUploadProcessorBase):
             version="1.0-1", name="bar")
         queue_item.setDone()
 
-        build.jobStarted()
-        build.builder = self.factory.makeBuilder()
+        build.buildqueue_record.markAsBuilding(self.factory.makeBuilder())
 
         build.status = BuildStatus.UPLOADING
 
         # Upload and accept a binary for the primary archive source.
         shutil.rmtree(upload_dir)
         self.layer.txn.commit()
-        leaf_name = build.getUploadDirLeaf("%d-60" % build.package_build.id)
+        leaf_name = build.getUploadDirLeaf(build.getBuildCookie())
         upload_dir = self.queueUpload("bar_1.0-1_binary",
                 queue_entry=leaf_name)
         self.options.context = 'buildd'
         self.options.builds = True
-        self.uploadprocessor.processBuildUpload(self.incoming_folder, leaf_name)
+        self.uploadprocessor.processBuildUpload(
+            self.incoming_folder, leaf_name)
         self.layer.txn.commit()
         self.assertEquals(BuildStatus.FULLYBUILT, build.status)
         log_contents = build.upload_log.read()
@@ -1959,11 +1964,16 @@ class ParseBuildUploadLeafNameTests(TestCase):
 
     def test_valid(self):
         self.assertEquals(
-            (42, 60), parse_build_upload_leaf_name("20100812-300-42-60"))
+            (BuildFarmJobType.PACKAGEBUILD, 60),
+            parse_build_upload_leaf_name("20100812-300-42-PACKAGEBUILD-60"))
 
-    def test_invalid_chars(self):
+    def test_invalid_jobtype(self):
         self.assertRaises(
-            ValueError, parse_build_upload_leaf_name, "aaba-a42-460")
+            ValueError, parse_build_upload_leaf_name, "aaba-a42-2a-460")
+
+    def test_invalid_jobid(self):
+        self.assertRaises(
+            ValueError, parse_build_upload_leaf_name, "aaba-a42-PACKAGEBUILD-abc")
 
     def test_no_dash(self):
         self.assertRaises(ValueError, parse_build_upload_leaf_name, "32")

@@ -361,7 +361,7 @@ class TestAsBuildmaster(TestCaseWithFactory):
             assertNotifyOnce(status, prepare_build())
         build = prepare_build()
         removeSecurityProxy(build).verifySuccessfulUpload = FakeMethod(
-        result=True)
+                result=True)
         assertNotifyOnce('OK', prepare_build())
 
 
