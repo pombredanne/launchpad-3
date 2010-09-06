@@ -263,8 +263,8 @@ class TestGetUploadMethodsMixin:
         # A build cookie is made up of the package build id and record id.
         # The uploadprocessor relies on this format.
         cookie = self.build.getBuildCookie()
-        expected_cookie = "%d-%d" % (
-            self.build.id, self.build.buildqueue_record.id)
+        expected_cookie = "%d-PACKAGEBUILD-%d" % (
+            self.build.package_build.id, self.build.build_farm_job.id)
         self.assertEquals(expected_cookie, cookie)
 
     def test_getUploadDirLeafCookie_parseable(self):
@@ -272,10 +272,8 @@ class TestGetUploadMethodsMixin:
         # that is parseable by the upload processor.
         upload_leaf = self.build.getUploadDirLeaf(
             self.build.getBuildCookie())
-        (build_id, queue_record_id) = parse_build_upload_leaf_name(upload_leaf)
-        self.assertEqual(build_id, self.build.id)
-        self.assertEqual(
-            queue_record_id, self.build.buildqueue_record.id)
+        job_id = parse_build_upload_leaf_name(upload_leaf)
+        self.assertEqual(job_id, self.build.build_farm_job.id)
 
 
 class TestHandleStatusMixin:

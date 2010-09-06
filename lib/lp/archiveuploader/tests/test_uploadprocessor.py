@@ -1867,10 +1867,10 @@ class TestBuildUploadProcessor(TestUploadProcessorBase):
     def testInvalidLeafName(self):
         # Directories with invalid leaf names should be skipped,
         # and a warning logged.
-        upload_dir = self.queueUpload("bar_1.0-1")
-        self.uploadprocessor.processBuildUpload(upload_dir, "bar_1.0-1")
+        upload_dir = self.queueUpload("bar_1.0-1", queue_entry="bar")
+        self.uploadprocessor.processBuildUpload(upload_dir, "bar")
         self.assertLogContains('Unable to extract build id from leaf '
-                               'name bar_1.0-1, skipping.')
+                               'name bar, skipping.')
 
     def testNoBuildEntry(self):
         # Directories with that refer to a nonexistent build
@@ -1897,7 +1897,9 @@ class TestBuildUploadProcessor(TestUploadProcessorBase):
             version="1.0-1", name="bar")
         queue_item.setDone()
 
-        #build.queueBuild()
+        builder = self.factory.makeBuilder()
+        build.buildqueue_record.markAsBuilding(builder)
+        build.builder = build.buildqueue_record.builder
 
         build.status = BuildStatus.UPLOADING
 
@@ -1910,9 +1912,13 @@ class TestBuildUploadProcessor(TestUploadProcessorBase):
         self.options.builds = True
         self.uploadprocessor.processBuildUpload(
             self.incoming_folder, leaf_name)
+        self.assertEquals(1, len(self.oopses))
         self.layer.txn.commit()
         self.assertEquals(
             BuildStatus.FAILEDTOUPLOAD, build.status)
+        self.assertEquals(builder, build.builder)
+        self.assertIsNot(None, build.date_finished)
+        self.assertIsNot(None, build.duration)
         log_contents = build.upload_log.read()
         self.assertTrue('ERROR: Exception while processing upload '
             in log_contents)
@@ -1946,9 +1952,12 @@ class TestBuildUploadProcessor(TestUploadProcessorBase):
                 queue_entry=leaf_name)
         self.options.context = 'buildd'
         self.options.builds = True
+        last_stub_mail_count = len(stub.test_emails)
         self.uploadprocessor.processBuildUpload(
             self.incoming_folder, leaf_name)
         self.layer.txn.commit()
+        # No emails are sent on success
+        self.assertEquals(len(stub.test_emails), last_stub_mail_count)
         self.assertEquals(BuildStatus.FULLYBUILT, build.status)
         log_contents = build.upload_log.read()
         log_lines = log_contents.splitlines()
@@ -1964,16 +1973,8 @@ class ParseBuildUploadLeafNameTests(TestCase):
 
     def test_valid(self):
         self.assertEquals(
-            (BuildFarmJobType.PACKAGEBUILD, 60),
-            parse_build_upload_leaf_name("20100812-300-42-PACKAGEBUILD-60"))
-
-    def test_invalid_jobtype(self):
-        self.assertRaises(
-            ValueError, parse_build_upload_leaf_name, "aaba-a42-2a-460")
+            60, parse_build_upload_leaf_name("20100812-42-PACKAGEBUILD-60"))
 
     def test_invalid_jobid(self):
         self.assertRaises(
             ValueError, parse_build_upload_leaf_name, "aaba-a42-PACKAGEBUILD-abc")
-
-    def test_no_dash(self):
-        self.assertRaises(ValueError, parse_build_upload_leaf_name, "32")

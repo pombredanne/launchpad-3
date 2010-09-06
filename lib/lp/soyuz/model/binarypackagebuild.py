@@ -669,6 +669,10 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
             buildduration = 'not available'
             buildlog_url = 'not available'
             builder_url = 'not available'
+        elif self.status == BuildStatus.UPLOADING:
+            buildduration = 'uploading'
+            buildlog_url = 'see builder page'
+            builder_url = 'not available'
         elif self.status == BuildStatus.BUILDING:
             # build in process
             buildduration = 'not finished'

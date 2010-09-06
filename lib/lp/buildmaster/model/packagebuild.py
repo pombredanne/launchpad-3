@@ -330,6 +330,10 @@ class PackageBuildDerived:
             slave_file = slave.getFile(filemap[filename])
             copy_and_close(slave_file, out_file)
 
+        # Store build information, build record was already updated during
+        # the binary upload.
+        self.storeBuildInfo(self, librarian, slave_status)
+
         # We only attempt the upload if we successfully copied all the
         # files from the slave.
         if successful_copy_from_slave:
@@ -353,15 +357,8 @@ class PackageBuildDerived:
         # sees half-finished uploads.
         os.rename(grab_dir, os.path.join(target_dir, upload_leaf))
 
-        # Store build information, build record was already updated during
-        # the binary upload.
-        self.storeBuildInfo(self, librarian, slave_status)
-
         # Release the builder for another job.
         self.buildqueue_record.builder.cleanSlave()
-
-        # Remove BuildQueue record.
-        self.buildqueue_record.destroySelf()
 
     def _handleStatus_PACKAGEFAIL(self, librarian, slave_status, logger):
         """Handle a package that had failed to build.

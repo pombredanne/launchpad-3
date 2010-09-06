@@ -422,7 +422,7 @@ class TestStoreBuildInfo(TestCaseWithFactory):
     def testDependencies(self):
         """Verify that storeBuildInfo sets any dependencies."""
         self.build.storeBuildInfo(
-            self.build, None, {'dependencies': 'somepackage'})
+            self.build, {'dependencies': 'somepackage'})
         self.assertIsNot(None, self.build.log)
         self.assertEqual(self.builder, self.build.builder)
         self.assertEqual(u'somepackage', self.build.dependencies)

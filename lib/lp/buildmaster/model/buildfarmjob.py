@@ -52,6 +52,7 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector,
     MAIN_STORE,
     )
+from lp.app.errors import NotFoundError
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.enums import BuildFarmJobType
 from lp.buildmaster.interfaces.buildfarmjob import (
@@ -425,3 +426,11 @@ class BuildFarmJobSet:
         filtered_builds.config(distinct=True)
 
         return filtered_builds
+
+    def __getitem__(self, job_id):
+        """See `IBuildfarmJobSet`."""
+        job = IStore(BuildFarmJob).find(BuildFarmJob,
+                BuildFarmJob.id == job_id).one()
+        if job is None:
+            raise NotFoundError(job_id)
+        return job
