@@ -568,19 +568,19 @@ class TestGarbo(TestCaseWithFactory):
         map(store.remove, store.find(TimeLimitedToken))
         store.flush()
         self.assertEqual(0, len(list(store.find(TimeLimitedToken,
-            url="sample url"))))
+            path="sample path"))))
         # One to clean and one to keep
-        store.add(TimeLimitedToken(url="sample url", token="foo",
+        store.add(TimeLimitedToken(path="sample path", token="foo",
             created=datetime(2008, 01, 01, tzinfo=UTC)))
-        store.add(TimeLimitedToken(url="sample url", token="bar")),
+        store.add(TimeLimitedToken(path="sample path", token="bar")),
         store.commit()
         self.assertEqual(2, len(list(store.find(TimeLimitedToken,
-            url="sample url"))))
+            path="sample path"))))
         self.runDaily()
         self.assertEqual(0, len(list(store.find(TimeLimitedToken,
-            url="sample url", token="foo"))))
+            path="sample path", token="foo"))))
         self.assertEqual(1, len(list(store.find(TimeLimitedToken,
-            url="sample url", token="bar"))))
+            path="sample path", token="bar"))))
 
     def test_CacheSuggestivePOTemplates(self):
         LaunchpadZopelessLayer.switchDbUser('testadmin')

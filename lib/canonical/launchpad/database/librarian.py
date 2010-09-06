@@ -308,15 +308,15 @@ class TimeLimitedToken(storm.base.Storm):
     __storm_table__ = 'TimeLimitedToken'
 
     created = UtcDateTimeCol(notNull=True, default=UTC_NOW)
-    url = StringCol(notNull=True)
+    path = StringCol(notNull=True)
     token = StringCol(notNull=True)
-    __storm_primary__ = ("url", "token")
+    __storm_primary__ = ("path", "token")
 
-    def __init__(self, url, token, created=None):
+    def __init__(self, path, token, created=None):
         """Create a TimeLimitedToken."""
         if created is not None:
             self.created = created
-        self.url = url
+        self.path = path
         self.token = token
 
     @staticmethod

@@ -539,11 +539,9 @@ Commit the just-created files.
     >>> print deleted_file.deleted
     True
 
-Clear out existing tokens for these test urls.
+Clear out existing tokens.
 
-   >>> _ = session_store().find(TimeLimitedToken, TimeLimitedToken.url in
-   ...     (public_file.http_url, public_file.https_url,
-   ...      restricted_file.http_url, restricted_file.https_url)).remove()
+   >>> _ = session_store().find(TimeLimitedToken).remove()
 
 == RedirectPerhapsWithTokenLibraryFileAliasView ==
 
@@ -590,7 +588,7 @@ be issued.
     'https://...restricted.txt?token=...'
     >>> private_url = restricted_file.private_url
     >>> view.target.endswith(session_store().find(TimeLimitedToken,
-    ...     url=private_url).any().token)
+    ...     path=private_url).any().token)
     True
     
 The domain for the target starts with the id of the LibraryFileAlias.
