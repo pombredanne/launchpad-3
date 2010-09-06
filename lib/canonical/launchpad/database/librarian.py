@@ -340,7 +340,7 @@ class TimeLimitedToken(storm.base.Storm):
         hashed = md5(baseline).hexdigest()
         token = hashed
         store = session_store()
-        path = urlparse(url)[2]
+        path = TimeLimitedToken.url_to_token_path(url)
         store.add(TimeLimitedToken(path, token))
         # The session isn't part of the main transaction model, and in fact it
         # has autocommit on. The commit here is belts and bracers: after
@@ -348,3 +348,8 @@ class TimeLimitedToken(storm.base.Storm):
         # immediately.
         store.commit()
         return token
+
+    @staticmethod
+    def url_to_token_path(url):
+        """Return the token path used for authorising acces to url."""
+        return urlparse(url)[2]
