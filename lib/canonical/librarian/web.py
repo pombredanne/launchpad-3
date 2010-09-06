@@ -4,11 +4,14 @@
 __metaclass__ = type
 
 from datetime import datetime
+import re
 import time
+from urlparse import urlparse
 
 from twisted.web import resource, static, util, server, proxy
 from twisted.internet.threads import deferToThread
 
+from canonical.config import config
 from canonical.librarian.client import url_path_quote
 from canonical.librarian.db import read_transaction, write_transaction
 from canonical.librarian.utils import guess_librarian_encoding
@@ -62,7 +65,6 @@ class LibraryFileAliasResource(resource.Resource):
         self.upstreamPort = upstreamPort
 
     def getChild(self, filename, request):
-
         # If we still have another component of the path, then we have
         # an old URL that encodes the content ID. We want to keep supporting
         # these, so we just ignore the content id that is currently in
@@ -74,6 +76,24 @@ class LibraryFileAliasResource(resource.Resource):
             except ValueError:
                 return fourOhFour
             filename = request.postpath[0]
+
+        # IFF the request has a .restricted. subdomain, ensure there is a
+        # alias id in the right most subdomain, and that it matches
+        # self.aliasIDd, And that the host precisely matches what we generate
+        # (specifically to stop people putting a good prefix to the left of an
+        # attacking one).
+        hostname = request.getRequestHostname()
+        if '.restricted.' in hostname:
+            # Configs can change without warning: evaluate every time.
+            download_url = config.librarian.download_url
+            parsed = list(urlparse(download_url))
+            netloc = parsed[1]
+            if netloc.find(':') > -1:
+                netloc = netloc[:netloc.find(':')]
+            match = re.match(r'^i(\d+)\.restricted.%s$' % netloc,
+                hostname)
+            if not match or not int(match.groups()[0]) == self.aliasID:
+                return fourOhFour
 
         token = request.args.get('token', [None])[0]
         path = request.path

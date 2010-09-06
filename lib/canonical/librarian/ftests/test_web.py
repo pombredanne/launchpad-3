@@ -3,8 +3,10 @@
 
 from cStringIO import StringIO
 from datetime import datetime
+import httplib
 import unittest
 from urllib2 import urlopen, HTTPError
+from urlparse import urlparse
 
 import pytz
 from storm.expr import SQL
@@ -19,6 +21,7 @@ from canonical.database.sqlbase import (
     )
 from canonical.launchpad.database.librarian import TimeLimitedToken
 from canonical.librarian.client import (
+    get_libraryfilealias_download_path,
     LibrarianClient,
     RestrictedLibrarianClient,
     )
@@ -248,6 +251,50 @@ class LibrarianWebTestCase(unittest.TestCase):
             LibraryFileAlias.restricted==True)
         self.commit()
         return fileAlias, url
+
+    def test_restricted_subdomain_must_match_file_alias(self):
+        # IFF there is a .restricted. in the host, then the library file alias
+        # in the subdomain must match that in the path.
+        client = LibrarianClient()
+        fileAlias = client.addFile('sample', 12, StringIO('a'*12),
+            contentType='text/plain')
+        fileAlias2 = client.addFile('sample', 12, StringIO('b'*12),
+            contentType='text/plain')
+        self.commit()
+        url = client.getURLForAlias(fileAlias)
+        download_host = urlparse(config.librarian.download_url)[1]
+        if ':' in download_host:
+            download_host = download_host[:download_host.find(':')]
+        template_host = 'i%%d.restricted.%s' % download_host
+        path = get_libraryfilealias_download_path(fileAlias, 'sample')
+        # The basic URL must work.
+        urlopen(url)
+        # Use the network level protocol because DNS resolution won't work
+        # here (no wildcard support)
+        connection = httplib.HTTPConnection(
+            config.librarian.download_host,
+            config.librarian.download_port)
+        # A valid subdomain based URL must work.
+        good_host = template_host % fileAlias
+        connection.request("GET", path, headers={'Host': good_host})
+        response = connection.getresponse()
+        response.read()
+        self.assertEqual(200, response.status)
+        # A subdomain based URL trying to put fileAlias into the restricted
+        # domain of fileAlias2 must not work.
+        hostile_host = template_host % fileAlias2
+        connection.request("GET", path, headers={'Host': hostile_host})
+        response = connection.getresponse()
+        response.read()
+        self.assertEqual(404, response.status)
+        # A subdomain which matches the LFA but is nested under one that
+        # doesn't is also treated as hostile.
+        nested_host = 'i%d.restricted.i%d.restricted.%s' % (
+            fileAlias, fileAlias2, download_host)
+        connection.request("GET", path, headers={'Host': nested_host})
+        response = connection.getresponse()
+        response.read()
+        self.assertEqual(404, response.status)
 
     def test_restricted_no_token(self):
         fileAlias, url = self.get_restricted_file_and_public_url()
