@@ -32,24 +32,6 @@ class FiniteSequenceAdapter:
         return iter(self.context)
 
     def __len__(self):
-        # XXX 2010-08-24 leonardr bug=620508
-        #
-        # Slicing a ResultSet object returns a copy with ._limit and
-        # ._offset set appropriately. The original object's ._limit
-        # and ._offset are not affected. However, the original and
-        # the copy share a _select object, which means the original
-        # object's ._select.limit and ._select.offset are shared with
-        # the copy.
-        #
-        # This breaks Storm--count() is not supported on a ResultSet
-        # that has a limit or offset set. This code sets
-        # ._select.limit and ._select.offset to the appropriate values
-        # before running the count() query, just as __getitem__ sets
-        # those values before running its query.
-        resultset = removeSecurityProxy(self.context)
-        if hasattr(resultset, '_select'):
-            resultset._select.limit = Undef
-            resultset._select.offset = Undef
         return self.context.count()
 
 
