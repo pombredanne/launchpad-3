@@ -112,8 +112,8 @@ class MixedFileAliasView(LaunchpadView):
         # the shell environment changes. Download the library file
         # content into a local temporary file. Finally, restore original
         # proxy-settings and refresh the urllib2 opener.
-        # XXX: This is note threadsafe, so two calls at once will collide and
-        # can then corrupt the variable.
+        # XXX: This is not threadsafe, so two calls at once will collide and
+        # can then corrupt the variable. bug=395960
         original_proxy = os.getenv('http_proxy')
         try:
             if original_proxy is not None:
@@ -163,7 +163,7 @@ class MixedFileAliasView(LaunchpadView):
         """Decides how to deliver the file.
         
         The options are:
-         - redirect to the contecxts http url
+         - redirect to the contexts http url
          - redirect to a time limited secure url
          - stream the file content.
 
@@ -172,7 +172,9 @@ class MixedFileAliasView(LaunchpadView):
         appropriate `RedirectionView` for its HTTP url.
         """
         # Perhaps we should give a 404 at this point rather than asserting?
-        # -- RBC 20100726.
+        # If someone has a page open with an attachment link, then someone
+        # else deletes the attachment, this is a normal situation, not an
+        # error. -- RBC 20100726.
         assert not self.context.deleted, (
             "StreamOrRedirectLibraryFileAliasView can not operate on "
             "deleted librarian files, since their URL is undefined.")
