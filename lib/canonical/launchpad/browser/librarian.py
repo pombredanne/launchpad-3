@@ -176,12 +176,12 @@ class MixedFileAliasView(LaunchpadView):
         # else deletes the attachment, this is a normal situation, not an
         # error. -- RBC 20100726.
         assert not self.context.deleted, (
-            "StreamOrRedirectLibraryFileAliasView can not operate on "
-            "deleted librarian files, since their URL is undefined.")
+            "MixedFileAliasView can not operate on deleted librarian files, "
+            "since their URL is undefined.")
         if not self.context.restricted:
             # Public file, just point the client at the right place.
             return RedirectionView(self.context.http_url, self.request), ()
-        if getFeatureFlag('publicrestrictedlibrarian') != 'on':
+        if getFeatureFlag(u'publicrestrictedlibrarian') != 'on':
             # Restricted file and we have not enabled the public 
             # restricted librarian yet :- deliver inline.
             return self, ()
