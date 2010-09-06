@@ -3,6 +3,7 @@
 
 __metaclass__ = type
 
+from BeautifulSoup import BeautifulSoup
 from storm.zope.interfaces import IResultSet
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -13,6 +14,10 @@ from canonical.config import config
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.testing import LaunchpadZopelessLayer
+from lp.registry.enum import (
+    DistroSeriesDifferenceStatus,
+    DistroSeriesDifferenceType,
+    )
 from lp.testing import TestCaseWithFactory
 from lp.testing.views import create_initialized_view
 
@@ -70,6 +75,64 @@ class DistroSeriesLocalPackageDiffsTestCase(TestCaseWithFactory):
             "Source package differences between 'Derilucid' and "
             "parent series 'Lucid'",
             view.label)
+
+    def test_batch_includes_needing_attention_only(self):
+        # The differences attribute includes differences needing
+        # attention only.
+        derived_series = self.makeDerivedSeries(
+            parent_name='lucid', derived_name='derilucid')
+        current_difference = self.factory.makeDistroSeriesDifference(
+            derived_series=derived_series)
+        old_difference = self.factory.makeDistroSeriesDifference(
+            derived_series=derived_series,
+            status=DistroSeriesDifferenceStatus.RESOLVED)
+
+        view = create_initialized_view(
+            derived_series, '+localpackagediffs')
+
+        self.assertContentEqual(
+            [current_difference], view.cached_differences.batch)
+
+    def test_batch_includes_different_versions_only(self):
+        derived_series = self.makeDerivedSeries(
+            parent_name='lucid', derived_name='derilucid')
+        different_versions_diff = self.factory.makeDistroSeriesDifference(
+            derived_series=derived_series)
+        unique_diff = self.factory.makeDistroSeriesDifference(
+            derived_series=derived_series,
+            difference_type=(
+                DistroSeriesDifferenceType.UNIQUE_TO_DERIVED_SERIES))
+
+        view = create_initialized_view(
+            derived_series, '+localpackagediffs')
+
+        self.assertContentEqual(
+            [different_versions_diff], view.cached_differences.batch)
+
+    def test_template_includes_help_link(self):
+        self.fail("Unimplemented")
+
+    def test_diff_row_includes_last_comment_only(self):
+        # The most recent comment is rendered for each difference.
+        derived_series = self.makeDerivedSeries(
+            parent_name='lucid', derived_name='derilucid')
+        difference = self.factory.makeDistroSeriesDifference(
+            derived_series=derived_series)
+        difference.addComment(difference.owner, "Earlier comment")
+        difference.addComment(difference.owner, "Latest comment")
+
+        view = create_initialized_view(
+            derived_series, '+localpackagediffs')
+
+        # Find all the rows within the body of the table
+        # listing the differences.
+        soup = BeautifulSoup(view())
+        diff_table = soup.find('table', {'class': 'listing'})
+        rows = diff_table.tbody.findAll('tr')
+
+        self.assertEqual(1, len(rows))
+        self.assertIn("Latest comment", unicode(rows[0]))
+        self.assertNotIn("Earlier comment", unicode(rows[0]))
 
 
 class TestMilestoneBatchNavigatorAttribute(TestCaseWithFactory):
