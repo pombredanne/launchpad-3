@@ -184,6 +184,7 @@ class MixedFileAliasView(LaunchpadView):
         if getFeatureFlag(u'publicrestrictedlibrarian') != 'on':
             # Restricted file and we have not enabled the public 
             # restricted librarian yet :- deliver inline.
+            self._when_streaming()
             return self, ()
         # Avoids a circular import seen in
         # scripts/ftests/librarianformatter.txt
