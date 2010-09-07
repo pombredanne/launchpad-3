@@ -96,8 +96,8 @@ class TestAccessToBugAttachmentFiles(TestCaseWithFactory):
         request.setTraversalStack(['foo.txt'])
         navigation = BugAttachmentFileNavigation(self.bugattachment, request)
         view = navigation.publishTraverse(request, '+files')
-        # Ensure the feature will be off - everything is off with
-        # NullFeatureController.
+        # XXX Ensure the feature will be off - everything is off with
+        # NullFeatureController. bug=631884
         lp.services.features.per_thread.features = NullFeatureController()
         self.addCleanup(
             setattr, lp.services.features.per_thread, 'features', None)
@@ -140,8 +140,8 @@ class TestAccessToBugAttachmentFiles(TestCaseWithFactory):
         request.setTraversalStack(['foo.txt'])
         navigation = BugAttachmentFileNavigation(self.bugattachment, request)
         view = navigation.publishTraverse(request, '+files')
-        # Ensure the feature will be off - everything is off with
-        # NullFeatureController.
+        # XXX Ensure the feature will be off - everything is off with
+        # NullFeatureController. bug=631884
         lp.services.features.per_thread.features = NullFeatureController()
         self.addCleanup(
             setattr, lp.services.features.per_thread, 'features', None)
