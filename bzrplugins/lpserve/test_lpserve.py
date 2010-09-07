@@ -356,8 +356,7 @@ class TestCaseWithLPForkingServiceSubprocess(TestCaseWithSubprocess):
             path = self.send_message_to_service('fork launchpad-replay\n')
             path = path.strip()
             paths.append(path)
-        # for idx in [3, 2, 0, 1]:
-        for idx in range(4):
+        for idx in [3, 2, 0, 1]:
             p = paths[idx]
             stdout_msg = 'hello %d\n' % (idx,)
             stderr_msg = 'goodbye %d\n' % (idx+1,)
