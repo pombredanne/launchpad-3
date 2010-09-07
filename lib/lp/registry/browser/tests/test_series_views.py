@@ -19,6 +19,7 @@ from lp.registry.enum import (
     DistroSeriesDifferenceStatus,
     DistroSeriesDifferenceType,
     )
+from lp.services.features.model import FeatureFlag, getFeatureStore
 from lp.testing import TestCaseWithFactory
 from lp.testing.views import create_initialized_view
 
@@ -63,6 +64,12 @@ class DistroSeriesLocalPackageDiffsTestCase(TestCaseWithFactory):
         derived_series = self.factory.makeDistroSeries(
             name=derived_name, parent_series=parent)
         return derived_series
+
+    def setDerivedSeriesUIFeatureFlag(self):
+        # Helper to set the feature flag enabling the derived series ui.
+        ignore = getFeatureStore().add(FeatureFlag(
+            scope=u'default', flag=u'soyuz.derived-series-ui.enabled',
+            value=u'on', priority=1))
 
     def test_view_redirects_without_feature_flag(self):
         # If the feature flag soyuz.derived-series-ui.enabled is not set the
@@ -130,6 +137,7 @@ class DistroSeriesLocalPackageDiffsTestCase(TestCaseWithFactory):
         derived_series = self.makeDerivedSeries(
             parent_name='lucid', derived_name='derilucid')
 
+        self.setDerivedSeriesUIFeatureFlag()
         view = create_initialized_view(
             derived_series, '+localpackagediffs')
 
@@ -147,6 +155,7 @@ class DistroSeriesLocalPackageDiffsTestCase(TestCaseWithFactory):
         difference.addComment(difference.owner, "Earlier comment")
         difference.addComment(difference.owner, "Latest comment")
 
+        self.setDerivedSeriesUIFeatureFlag()
         view = create_initialized_view(
             derived_series, '+localpackagediffs')
 
