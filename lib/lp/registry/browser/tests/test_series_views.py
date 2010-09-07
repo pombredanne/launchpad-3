@@ -110,7 +110,16 @@ class DistroSeriesLocalPackageDiffsTestCase(TestCaseWithFactory):
             [different_versions_diff], view.cached_differences.batch)
 
     def test_template_includes_help_link(self):
-        self.fail("Unimplemented")
+        derived_series = self.makeDerivedSeries(
+            parent_name='lucid', derived_name='derilucid')
+
+        view = create_initialized_view(
+            derived_series, '+localpackagediffs')
+
+        soup = BeautifulSoup(view())
+        help_links = soup.findAll(
+            'a', href='/+help/soyuz/derived-series-syncing.html')
+        self.assertEqual(1, len(help_links))
 
     def test_diff_row_includes_last_comment_only(self):
         # The most recent comment is rendered for each difference.

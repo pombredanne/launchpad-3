@@ -22,8 +22,9 @@
          either or both series so check the versions (and the diff if
          necessary) before syncing the
          <tal:replace replace="parent_name">Lucid
-         </tal:replace> version (Read more about syncing from the parent
-         series).
+         </tal:replace> version
+         (<a href="/+help/soyuz/derived-series-syncing.html" target="help">Read
+             more about syncing from the parent series</a>).
       </p>
 
       <div tal:condition="differences/batch">
