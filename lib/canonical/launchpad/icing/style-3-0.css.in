@@ -1804,6 +1804,14 @@ pre.changelog, table.diff,
     color: #b8b8ff;
     }
 
+/* Inline description editing.
+ * Override the lazr-js style for all uses.
+ */
+div#edit-description {
+    font-family: 'UbuntuBeta Mono', 'Ubuntu Mono', monospace;
+    font-size: 93%;
+    }
+
 
 /* =========================
    Universal presentation
