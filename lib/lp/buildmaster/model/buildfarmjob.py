@@ -338,6 +338,7 @@ class BuildFarmJob(BuildFarmJobOld, Storm):
         """See `IBuild`"""
         return self.status not in [BuildStatus.NEEDSBUILD,
                                    BuildStatus.BUILDING,
+                                   BuildStatus.UPLOADING,
                                    BuildStatus.SUPERSEDED]
 
     def getSpecificJob(self):

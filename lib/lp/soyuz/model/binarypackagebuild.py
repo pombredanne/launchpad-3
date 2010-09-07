@@ -251,6 +251,7 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
         """See `IBuild`"""
         return self.status not in [BuildStatus.NEEDSBUILD,
                                    BuildStatus.BUILDING,
+                                   BuildStatus.UPLOADING,
                                    BuildStatus.SUPERSEDED]
 
     @property
@@ -961,11 +962,14 @@ class BinaryPackageBuildSet:
                 % sqlvalues(BuildStatus.FULLYBUILT))
 
         # Ordering according status
-        # * NEEDSBUILD & BUILDING by -lastscore
+        # * NEEDSBUILD, BUILDING & UPLOADING by -lastscore
         # * SUPERSEDED & All by -datecreated
         # * FULLYBUILT & FAILURES by -datebuilt
         # It should present the builds in a more natural order.
-        if status in [BuildStatus.NEEDSBUILD, BuildStatus.BUILDING]:
+        if status in [
+            BuildStatus.NEEDSBUILD,
+            BuildStatus.BUILDING,
+            BuildStatus.UPLOADING]:
             orderBy = ["-BuildQueue.lastscore", "BinaryPackageBuild.id"]
             clauseTables.append('BuildQueue')
             clauseTables.append('BuildPackageJob')
@@ -1081,7 +1085,8 @@ class BinaryPackageBuildSet:
                                 BuildStatus.CHROOTWAIT,
                                 BuildStatus.FAILEDTOUPLOAD)
         needsbuild = collect_builds(BuildStatus.NEEDSBUILD)
-        building = collect_builds(BuildStatus.BUILDING)
+        building = collect_builds(BuildStatus.BUILDING,
+                                  BuildStatus.UPLOADING)
         successful = collect_builds(BuildStatus.FULLYBUILT)
 
         # Note: the BuildStatus DBItems are used here to summarize the

@@ -2007,6 +2007,7 @@ class ArchiveSet:
                 ),
             'pending': (
                 BuildStatus.BUILDING,
+                BuildStatus.UPLOADING,
                 BuildStatus.NEEDSBUILD,
                 ),
             'succeeded': (

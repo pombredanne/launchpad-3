@@ -464,7 +464,8 @@ class PackageBuildSet:
             BuildStatus.NEEDSBUILD,
             BuildStatus.BUILDING,
             BuildStatus.UPLOADING,
-            BuildStatus.SUPERSEDED]
+            BuildStatus.SUPERSEDED,
+            ]
         if status is None or status in unfinished_states:
             result_set.order_by(
                 Desc(BuildFarmJob.date_created), BuildFarmJob.id)
