@@ -214,7 +214,7 @@ class UploadProcessor:
                 " skipping." % upload)
             return
         try:
-            buildfarm_job = getUtility(IBuildFarmJobSet)[job_id]
+            buildfarm_job = getUtility(IBuildFarmJobSet).getByID(job_id)
         except NotFoundError:
             self.log.warn(
                 "Unable to find package build job with id %d. Skipping." %

@@ -100,7 +100,7 @@ class BuildStatus(DBEnumeratedType):
     UPLOADING = DBItem(8, """
         Uploading build
 
-        The build has completed and is waiting to be process by the 
+        The build has completed and is waiting to be processed by the 
         upload processor.
         """)
 

@@ -284,6 +284,6 @@ class IBuildFarmJobSet(Interface):
         :return: a `ResultSet` representing the requested builds.
         """
 
-    def __getitem__(job_id):
+    def getByID(job_id):
         """Look up a `IBuildFarmJob` record by id.
         """

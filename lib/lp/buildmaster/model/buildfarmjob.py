@@ -428,7 +428,7 @@ class BuildFarmJobSet:
 
         return filtered_builds
 
-    def __getitem__(self, job_id):
+    def getByID(self, job_id):
         """See `IBuildfarmJobSet`."""
         job = IStore(BuildFarmJob).find(BuildFarmJob,
                 BuildFarmJob.id == job_id).one()

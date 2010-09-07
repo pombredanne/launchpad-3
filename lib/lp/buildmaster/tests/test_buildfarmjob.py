@@ -317,16 +317,16 @@ class TestBuildFarmJobSet(TestBuildFarmJobMixin, TestCaseWithFactory):
 
         self.assertEqual([build_1, build_2], list(result))
 
-    def test_getitem_by_id(self):
-        # __getitem__ returns a job by id.
+    def test_getByID(self):
+        # getByID returns a job by id.
         build_1 = self.makeBuildFarmJob(
             builder=self.builder,
             date_finished=datetime(2008, 10, 10, tzinfo=pytz.UTC))
         flush_database_updates()
         self.assertEquals(
-            build_1, self.build_farm_job_set[build_1.id])
+            build_1, self.build_farm_job_set.getByID(build_1.id))
 
-    def test_getitem_nonexistant(self):
-        # __getitem__ raises NotFoundError for unknown job ids.
+    def test_getByID_nonexistant(self):
+        # getByID raises NotFoundError for unknown job ids.
         self.assertRaises(NotFoundError,
-            self.build_farm_job_set.__getitem__, 423432432432)
+            self.build_farm_job_set.getByID, 423432432432)
