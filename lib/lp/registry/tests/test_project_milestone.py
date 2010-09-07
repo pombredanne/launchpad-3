@@ -209,7 +209,7 @@ class ProjectMilestoneTest(unittest.TestCase):
         spec = specset.new(
             name='%s-specification' % product_name,
             title='Title %s specification' % product_name,
-            specurl='http://www.example.com/spec/%s' %product_name ,
+            specurl='http://www.example.com/spec/%s' % product_name,
             summary='summary',
             definition_status=SpecificationDefinitionStatus.APPROVED,
             priority=SpecificationPriority.HIGH,

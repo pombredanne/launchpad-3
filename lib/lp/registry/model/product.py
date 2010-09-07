@@ -274,6 +274,7 @@ class ProductWithLicenses:
 
 class UnDeactivateable(Exception):
     """Raised when a project is requested to deactivate but can not."""
+
     def __init__(self, msg):
         super(UnDeactivateable, self).__init__(msg)
 

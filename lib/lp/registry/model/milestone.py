@@ -112,6 +112,7 @@ class HasMilestonesMixin:
 
 class MultipleProductReleases(Exception):
     """Raised when a second ProductRelease is created for a milestone."""
+
     def __init__(self, msg='A milestone can only have one ProductRelease.'):
         super(MultipleProductReleases, self).__init__(msg)
 

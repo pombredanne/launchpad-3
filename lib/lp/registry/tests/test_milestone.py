@@ -14,12 +14,8 @@ from canonical.launchpad.ftests import (
     login,
     logout,
     )
-from canonical.testing import (
-    LaunchpadFunctionalLayer,
-    DatabaseFunctionalLayer,
-    )
+from canonical.testing import LaunchpadFunctionalLayer
 
-from lazr.restfulclient.errors import ClientError
 from lp.app.errors import NotFoundError
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.milestone import IMilestoneSet
