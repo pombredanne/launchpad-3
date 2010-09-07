@@ -110,10 +110,6 @@ class ProjectGroupSearchTestCase(TestCaseWithFactory):
         self.assertEqual(self.project3, results[0])
 
 
-def get_last_oops_id():
-    return getattr(globalErrorUtility.getLastOopsReport(), 'id', None)
-
-
 class TestLaunchpadlibAPI(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
@@ -121,7 +117,7 @@ class TestLaunchpadlibAPI(TestCaseWithFactory):
         # Make sure a 400 error and not an OOPS is returned when a ValueError
         # is raised when trying to deactivate a project that has source
         # releases.
-        last_oops = get_last_oops_id()
+        last_oops = globalErrorUtility.getLastOopsReport()
         launchpad = launchpadlib_for("test", "salgado", "WRITE_PUBLIC")
 
         project = launchpad.projects['evolution']
@@ -129,7 +125,7 @@ class TestLaunchpadlibAPI(TestCaseWithFactory):
         e = self.assertRaises(ClientError, project.lp_save)
 
         # no OOPS was generated as a result of the exception
-        self.assertEqual(get_last_oops_id(), last_oops)
+        self.assertNoNewOops(last_oops)
         self.assertEqual(400, e.response.status)
         self.assertIn(
             'This project cannot be deactivated since it is linked to source '

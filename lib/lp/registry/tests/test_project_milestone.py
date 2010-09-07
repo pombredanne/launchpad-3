@@ -329,10 +329,6 @@ class ProjectMilestoneTest(unittest.TestCase):
         self._createProductSeriesBugtask('evolution', 'trunk', '1.1')
 
 
-def get_last_oops_id():
-    return getattr(globalErrorUtility.getLastOopsReport(), 'id', None)
-
-
 class TestDuplicateProductReleases(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
@@ -358,7 +354,7 @@ class TestDuplicateProductReleases(TestCaseWithFactory):
         # Make sure a 400 error and not an OOPS is returned when an exception
         # is raised when trying to create a product release when a milestone
         # already has one.
-        last_oops = get_last_oops_id()
+        last_oops = globalErrorUtility.getLastOopsReport()
         launchpad = launchpadlib_for("test", "salgado", "WRITE_PUBLIC")
 
         project = launchpad.projects['evolution']
@@ -369,7 +365,7 @@ class TestDuplicateProductReleases(TestCaseWithFactory):
             ClientError, milestone.createProductRelease, date_released=now)
 
         # no OOPS was generated as a result of the exception
-        self.assertEqual(get_last_oops_id(), last_oops)
+        self.assertNoNewOops(last_oops)
         self.assertEqual(400, e.response.status)
         self.assertIn(
             'A milestone can only have one ProductRelease.', e.content)
