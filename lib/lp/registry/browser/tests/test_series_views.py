@@ -13,6 +13,7 @@ import unittest
 from canonical.config import config
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.testing import LaunchpadZopelessLayer
 from lp.registry.enum import (
     DistroSeriesDifferenceStatus,
@@ -62,6 +63,22 @@ class DistroSeriesLocalPackageDiffsTestCase(TestCaseWithFactory):
         derived_series = self.factory.makeDistroSeries(
             name=derived_name, parent_series=parent)
         return derived_series
+
+    def test_view_redirects_without_feature_flag(self):
+        # If the feature flag soyuz.derived-series-ui.enabled is not set the
+        # view simply redirects to the derived series.
+        derived_series = self.makeDerivedSeries(
+            parent_name='lucid', derived_name='derilucid')
+
+        # self.assertIs(
+        #     None, getFeatureFlag('soyuz.derived-series-ui.enabled'))
+        view = create_initialized_view(
+            derived_series, '+localpackagediffs')
+
+        response = view.request.response
+        self.assertEqual(302, response.getStatus())
+        self.assertEqual(
+            canonical_url(derived_series), response.getHeader('location'))
 
     def test_label(self):
         # The view label includes the names of both series.

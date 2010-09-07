@@ -535,6 +535,15 @@ class DistroSeriesLocalDifferences(LaunchpadView):
 
     page_title = 'Local package differences'
 
+    def initialize(self):
+        """Redirect to the derived series if the feature is not enabled."""
+        if not self.request.features.getFlag(
+            'soyuz.derived-series-ui.enabled'):
+            self.request.response.redirect(
+                canonical_url(self.context))
+            return
+        super(DistroSeriesLocalDifferences, self).initialize()
+
     @property
     def label(self):
         return (
