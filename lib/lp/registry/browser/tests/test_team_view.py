@@ -101,7 +101,8 @@ class TestProposedTeamMembersEditView(TestCaseWithFactory):
         self.assertEqual(1, len(notifications))
         expected = (
             u'B-Team is a member of the following teams, so those teams '
-            'could not be accepted:  A-Team.  These teams should be declined.')
+            'could not be accepted:  A-Team.  These teams should be '
+            'declined.')
         self.assertEqual(
             expected,
             notifications[0].message)

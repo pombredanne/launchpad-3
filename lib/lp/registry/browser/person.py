@@ -208,10 +208,7 @@ from canonical.launchpad.webapp.tales import (
     DateTimeFormatterAPI,
     PersonFormatterAPI,
     )
-from canonical.lazr.utils import (
-    safe_hasattr,
-    smartquote,
-    )
+from canonical.lazr.utils import smartquote
 from canonical.widgets import (
     LaunchpadDropdownWidget,
     LaunchpadRadioWidget,
