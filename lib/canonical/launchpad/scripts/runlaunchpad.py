@@ -176,6 +176,32 @@ class MemcachedService(Service):
         stop_at_exit(process)
 
 
+class ForkingSessionService(Service):
+    """A lp-forking-service for handling ssh access."""
+
+    @property
+    def should_launch(self):
+        return config['codehosting'].launch
+
+    def launch(self):
+        # Following the logic in TacFile. Specifically, if you configure sftp
+        # to not run (and thus bzr+ssh) then we don't want to run the forking
+        # service.
+        if not self.should_launch:
+            return
+        # What should we do for logfile? For now we just use the regular bzr
+        # log file... not optimal
+        from lp.codehosting import get_bzr_path
+        # TODO: Configs for the port to serve on, etc.
+        command = [config.root + '/bin/py', get_bzr_path(),
+                   'launchpad-forking-service']
+        env = dict(os.environ)
+        env['BZR_PLUGIN_PATH'] = config.root + '/bzrplugins'
+        process = subprocess.Popen(command, env=env, stdin=subprocess.PIPE)
+        process.stdin.close()
+        stop_at_exit(process)
+
+
 def stop_at_exit(process):
     """Create and register an atexit hook for killing a process.
 
@@ -199,6 +225,9 @@ SERVICES = {
     'librarian': TacFile('librarian', 'daemons/librarian.tac',
                          'librarian_server', prepare_for_librarian),
     'sftp': TacFile('sftp', 'daemons/sftp.tac', 'codehosting'),
+    # TODO, we probably need to run the forking service whenever somebody
+    #       requests the sftp service...
+    'forker': ForkingSessionService(),
     'mailman': MailmanService(),
     'codebrowse': CodebrowseService(),
     'google-webservice': GoogleWebService(),

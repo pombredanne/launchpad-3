@@ -166,7 +166,7 @@ class LPForkingService(object):
         try:
             self._server_socket.bind(sockaddr)
         except self._socket_error, message:
-            raise errors.CannotBindAddress(host, port, message)
+            raise errors.CannotBindAddress(self.host, self.port, message)
         self._sockname = self._server_socket.getsockname()
         # self.host = self._sockname[0]
         self.port = self._sockname[1]
