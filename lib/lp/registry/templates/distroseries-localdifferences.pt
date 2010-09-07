@@ -61,7 +61,7 @@
                              tal:condition="comment">
                   <span tal:replace="structure
                       comment/message/owner/name">joesmith</span>:
-                  <span tal:replace="comment/comment">I'm on this.</span>
+                  <span tal:replace="comment/comment/fmt:shorten/50">I'm on this.</span>
                   (<span
                       tal:replace="comment/message/datecreated/fmt:approximatedate">2005-09-16</span>)
                 </tal:comment>
