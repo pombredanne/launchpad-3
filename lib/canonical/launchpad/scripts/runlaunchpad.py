@@ -197,6 +197,7 @@ class ForkingSessionService(Service):
                    'launchpad-forking-service']
         env = dict(os.environ)
         env['BZR_PLUGIN_PATH'] = config.root + '/bzrplugins'
+        # env['BZR_LOG'] = ? probably config.something
         process = subprocess.Popen(command, env=env, stdin=subprocess.PIPE)
         process.stdin.close()
         stop_at_exit(process)

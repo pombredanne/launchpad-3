@@ -9,10 +9,13 @@ __all__ = [
     ]
 
 import os
+import socket
 import urlparse
 
 from zope.event import notify
+from zope.interfaces import implements
 
+from twisted.internet.interfaces import IProcessTransport
 from twisted.internet.process import ProcessExitedAlready
 from twisted.python import log
 
@@ -35,6 +38,44 @@ class BazaarSSHClosed(AvatarEvent):
 class ForbiddenCommand(Exception):
     """Raised when a session is asked to execute a forbidden command."""
 
+
+class ForkedProcessTransport(object):
+    # I assume we don't need to do 'implements(IProcessProtocol)' since the
+    # base class already does this.
+
+    implements(IProcessTransport)
+
+    def sendMessageToService(self, message):
+        """Send a message to the Forking service and get the response"""
+        # TODO: Config entries for what port this will be found in?
+        DEFAULT_SERVICE_PORT = 4156
+        addrs = socket.getaddrinfo('127.0.0.1', DEFAULT_SERVICE_PORT,
+            socket.AF_UNSPEC, socket.SOCK_STREAM, 0, socket.AI_PASSIVE)
+        (family, socktype, proto, canonname, sockaddr) = addrs[0]
+        client_sock = socket.socket(family, socktype, proto)
+        # TODO: How do we do logging in this codebase?
+        try:
+            client_sock.connect(sockaddr)
+            client_sock.sendall(msg)
+            # We define the requests to be no bigger than 1kB. (For now)
+            response = client_sock.recv(1024)
+        except socket.error, e:
+            # TODO: What exceptions should be raised?
+            raise RuntimeError('Failed to connect: %s' % (e,))
+        if response.startswith("FAILURE"):
+            raise RuntimeError('Failed to send message: %r' % (response,))
+        return response
+
+    @classmethod
+    def requestFork(cls, command):
+        """Request that the Forking service fork and run this command."""
+        response = self.sendMessageToService('fork %s' % (command,))
+        # The response is the path to the file handles, and we've explicitly
+        # checked for FAILURE already.
+        path = response.strip()
+        stdin_path = os.path.join(path, 'stdin')
+        stdout_path = os.path.join(path, 'stdout')
+        stderr_path = os.path.join(path, 'stderr')
 
 class ExecOnlySession(DoNothingSession):
     """Conch session that only allows executing commands."""
@@ -77,6 +118,11 @@ class ExecOnlySession(DoNothingSession):
         :param command: A whitespace-separated command line. The first token is
         used as the name of the executable, the rest are used as arguments.
         """
+        # XXX: What do do with the protocol argument? It implements
+        #      IProcessProtocol, which is how the process gets spawned, but we
+        #      are intentionally overriding that. Are we supposed to be
+        #      implementing a custom IProcessProtocol, and
+        #      installing/registering that higher up?
         try:
             executable, arguments = self.getCommandToRun(command)
         except ForbiddenCommand, e:
@@ -149,8 +195,8 @@ def launch_smart_server(avatar):
     from twisted.internet import reactor
 
     command = (
-        "%(root)s/bin/py %(bzr)s lp-serve --inet "
-        % {'root': config.root, 'bzr': get_bzr_path()})
+        "lp-serve --inet %(user_id)s"
+        )
 
     environment = dict(os.environ)
 
