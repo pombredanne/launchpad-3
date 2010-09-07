@@ -51,7 +51,6 @@ from zope.interface import (
     )
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.database.constants import (
     DEFAULT,
@@ -95,6 +94,7 @@ from lp.registry.interfaces.mailinglist import (
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.model.person import Person
 from lp.registry.model.teammembership import TeamParticipation
+from lp.services.propertycache import cachedproperty
 
 
 EMAIL_ADDRESS_STATUSES = (
