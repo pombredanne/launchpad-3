@@ -17,6 +17,7 @@ __all__ = [
     'ICodeReviewCommentEmailJobSource',
     'ICreateMergeProposalJob',
     'ICreateMergeProposalJobSource',
+    'IGenerateIncrementalDiffJob',
     'IGenerateIncrementalDiffJobSource',
     'IMergeProposalCreatedJob',
     'IMergeProposalCreatedJobSource',

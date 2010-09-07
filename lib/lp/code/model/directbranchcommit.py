@@ -55,7 +55,8 @@ class DirectBranchCommit:
     is_locked = False
     commit_builder = None
 
-    def __init__(self, db_branch, committer=None, no_race_check=False):
+    def __init__(self, db_branch, committer=None, no_race_check=False,
+            merge_parents=None):
         """Create context for direct commit to branch.
 
         Before constructing a `DirectBranchCommit`, set up a server that
@@ -107,6 +108,7 @@ class DirectBranchCommit:
             raise
 
         self.files = set()
+        self.merge_parents = merge_parents
 
     def _getDir(self, path):
         """Get trans_id for directory "path."  Create if necessary."""
@@ -200,7 +202,8 @@ class DirectBranchCommit:
             # required to generate the revision-id.
             with override_environ(BZR_EMAIL=committer_id):
                 new_rev_id = self.transform_preview.commit(
-                    self.bzrbranch, commit_message, committer=committer_id)
+                    self.bzrbranch, commit_message, self.merge_parents,
+                    committer=committer_id)
             IMasterObject(self.db_branch).branchChanged(
                 get_stacked_on_url(self.bzrbranch), new_rev_id,
                 self.db_branch.control_format, self.db_branch.branch_format,

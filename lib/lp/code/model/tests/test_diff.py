@@ -61,13 +61,14 @@ class RecordLister(logging.Handler):
 class DiffTestCase(TestCaseWithFactory):
 
     @staticmethod
-    def commitFile(branch, path, contents):
+    def commitFile(branch, path, contents, merge_parents=None):
         """Create a commit that updates a file to specified contents.
 
         This will create or modify the file, as needed.
         """
         committer = DirectBranchCommit(
-            removeSecurityProxy(branch), no_race_check=True)
+            removeSecurityProxy(branch), no_race_check=True,
+            merge_parents=merge_parents)
         committer.writeFile(path, contents)
         try:
             return committer.commit('committing')
@@ -537,30 +538,59 @@ class TestIncrementalDiff(DiffTestCase):
         incremental_diff = self.factory.makeIncrementalDiff()
         verifyObject(IIncrementalDiff, incremental_diff)
 
+    @staticmethod
+    def diff_changes(diff_bytes):
+        inserted = []
+        removed = []
+        for patch in parse_patches(diff_bytes.splitlines(True)):
+            for hunk in patch.hunks:
+                for line in hunk.lines:
+                    if isinstance(line, InsertLine):
+                        inserted.append(line.contents)
+                    if isinstance(line, RemoveLine):
+                        removed.append(line.contents)
+        return inserted, removed
+
     def test_fromBranchMergeProposal(self):
-        """Test fromPreviewDiff when no conflicts are present."""
+        """FromBranchMergeProposal works.
+
+        Changes merged from the prerequisite and target are ignored in the
+        diff.
+        """
         self.useBzrBranches(direct_database=True)
         with FakeLibrarian() as librarian:
-            bmp = self.factory.makeBranchMergeProposal()
-            self.createBzrBranch(bmp.source_branch)
-            self.createBzrBranch(bmp.target_branch)
-            old_revision = self.commitFile(bmp.source_branch, 'foo', 'a\nb\n')
-            new_revision = self.commitFile(bmp.source_branch, 'foo', 'a\nb\nc\n')
+            prerequisite_branch = self.factory.makeAnyBranch()
+            bmp = self.factory.makeBranchMergeProposal(
+                prerequisite_branch=prerequisite_branch)
+            target_branch = self.createBzrBranch(bmp.target_branch)
+            old_revision = self.commitFile(
+                bmp.target_branch, 'foo', 'a\nb\ne\n')
+            source_branch = self.createBzrBranch(
+                bmp.source_branch, target_branch)
+            self.commitFile(
+                bmp.source_branch, 'foo', 'a\nc\ne\n')
+            prerequisite = self.createBzrBranch(
+                bmp.prerequisite_branch, target_branch)
+            prerequisite_revision = self.commitFile(bmp.prerequisite_branch,
+                'foo', 'd\na\nb\ne\n')
+            merge_parent = self.commitFile(bmp.target_branch, 'foo',
+                'a\nb\ne\nf\n')
+            source_branch.repository.fetch(target_branch.repository,
+                revision_id=merge_parent)
+            new_revision = self.commitFile(
+                bmp.source_branch, 'foo', 'a\nc\ne\nf\n', [merge_parent])
+            source_branch.repository.fetch(prerequisite.repository,
+                revision_id=prerequisite_revision)
+            new_revision = self.commitFile(
+                bmp.source_branch, 'foo', 'd\na\nc\ne\nf\n',
+                [prerequisite_revision])
             incremental_diff = IncrementalDiff.fromMergeProposal(
                 bmp, old_revision, new_revision)
             librarian.pretendCommit()
-            diff_bytes = incremental_diff.text
-            inserted = []
-            removed = []
-            for patch in parse_patches(diff_bytes.splitlines(True)):
-                for hunk in patch.hunks:
-                    for line in hunk.lines:
-                        if isinstance(line, InsertLine):
-                            inserted.append(line.contents)
-                        if isinstance(line, RemoveLine):
-                            removed.append(line.contents)
+            inserted, removed = self.diff_changes(incremental_diff.text)
             self.assertEqual(['c\n'], inserted)
-            self.assertEqual([], removed)
+            self.assertEqual(['b\n'], removed)
+
 
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)
