@@ -219,14 +219,14 @@ class FileImporterTestCase(TestCaseWithFactory):
             "FileImporter.getOrCreatePOTMessageSet did not get an existing "
             "IPOTMsgSet object from the database.")
 
-    def _test_storeTranslationsInDatabase_empty(self, is_published=True):
+    def _test_storeTranslationsInDatabase_empty(self, from_upstream=True):
         """Check whether we store empty messages appropriately."""
         # Construct a POFile importer.
         pot_importer = self._createPOTFileImporter(
-            TEST_TEMPLATE_EXPORTED, is_published=True)
+            TEST_TEMPLATE_EXPORTED, from_upstream=True)
         importer = self._createPOFileImporter(
             pot_importer, TEST_TRANSLATION_EXPORTED,
-            is_published=is_published, person=self.importer_person)
+            from_upstream=from_upstream, person=self.importer_person)
 
         # Empty message to import.
         message = TranslationMessageData()
@@ -241,11 +241,11 @@ class FileImporterTestCase(TestCaseWithFactory):
 
     def test_storeTranslationsInDatabase_empty_imported(self):
         """Storing empty messages for published imports appropriately."""
-        self._test_storeTranslationsInDatabase_empty(is_published=True)
+        self._test_storeTranslationsInDatabase_empty(from_upstream=True)
 
     def test_storeTranslationsInDatabase_empty_user(self):
         """Store empty messages for user uploads appropriately."""
-        self._test_storeTranslationsInDatabase_empty(is_published=False)
+        self._test_storeTranslationsInDatabase_empty(from_upstream=False)
 
     def test_FileImporter_storeTranslationsInDatabase_privileges(self):
         """Test `storeTranslationsInDatabase` privileges."""
@@ -369,7 +369,7 @@ class FileImporterTestCase(TestCaseWithFactory):
         # exported and upstream files.
         importers = (
             self._createImporterForExportedEntries(),
-            self._createImporterForPublishedEntries(),
+            self._createImporterForUpstreamEntries(),
             )
         for (pot_importer, po_importer) in importers:
             # Run the import and see if PotMsgSet and TranslationMessage
