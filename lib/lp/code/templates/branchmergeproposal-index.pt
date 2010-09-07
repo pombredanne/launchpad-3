@@ -18,7 +18,7 @@
     #code-review-votes {
       margin: 1em 0;
     }
-    #description, #edit-description {
+    #description {
       margin: 1em 0;
     }
     #add-comment-form {
@@ -46,8 +46,6 @@
     #proposal-summary td {
       padding-left: 0.5em;
     }
-    /* A page-specific fix for inline text are editing to line up box. */
-    #edit-description .yui-ieditor-input { top: 0; }
     #edit-commit_message .yui-ieditor-input { top: 0; }
   </style>
 </metal:block>
