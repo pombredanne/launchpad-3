@@ -329,11 +329,6 @@ class ProjectMilestoneTest(unittest.TestCase):
         self._createProductSeriesBugtask('evolution', 'trunk', '1.1')
 
 
-        gnome = getUtility(IProjectGroupSet)['gnome']
-        evolution_milestone = self.createProductMilestone(
-            '1.1', 'evolution', None)
-
-
 def get_last_oops_id():
     return getattr(globalErrorUtility.getLastOopsReport(), 'id', None)
 
