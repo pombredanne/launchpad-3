@@ -24,8 +24,11 @@ from lp.registry.interfaces.distroseries import (
     NoSuchDistroSeries,
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.soyuz.interfaces.archive import (
+from lp.soyuz.enums import (
     ArchivePurpose,
+    PackagePublishingStatus,
+    )
+from lp.soyuz.interfaces.archive import (
     IArchiveSet,
     )
 from lp.soyuz.interfaces.component import IComponentSet
@@ -34,7 +37,6 @@ from lp.soyuz.interfaces.distroseriessourcepackagerelease import (
     )
 from lp.soyuz.interfaces.publishing import (
     active_publishing_status,
-    PackagePublishingStatus,
     )
 from lp.soyuz.model.processor import ProcessorFamilySet
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher

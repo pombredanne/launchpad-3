@@ -33,10 +33,6 @@ from zope.interface import (
     implements,
     )
 
-from canonical.cachedproperty import (
-    cachedproperty,
-    clear_property,
-    )
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
@@ -68,7 +64,6 @@ from canonical.launchpad.validators.name import (
     valid_name,
     )
 from canonical.launchpad.webapp.url import urlparse
-from canonical.lazr.utils import safe_hasattr
 from lp.answers.interfaces.faqtarget import IFAQTarget
 from lp.answers.interfaces.questioncollection import (
     QUESTION_STATUS_DEFAULT_SEARCH,
@@ -154,20 +149,24 @@ from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.registry.model.structuralsubscription import (
     StructuralSubscriptionTargetMixin,
     )
-from lp.soyuz.interfaces.archive import (
+from lp.services.propertycache import (
+    cachedproperty,
+    IPropertyCache,
+    )
+from lp.soyuz.enums import (
     ArchivePurpose,
     ArchiveStatus,
+    PackagePublishingStatus,
+    PackageUploadStatus,
+    )
+from lp.soyuz.interfaces.archive import (
     IArchiveSet,
     MAIN_ARCHIVE_PURPOSES,
     )
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
-from lp.soyuz.interfaces.publishing import (
-    active_publishing_status,
-    PackagePublishingStatus,
-    )
-from lp.soyuz.interfaces.queue import PackageUploadStatus
+from lp.soyuz.interfaces.publishing import active_publishing_status
 from lp.soyuz.model.archive import Archive
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.binarypackagename import BinaryPackageName
@@ -273,7 +272,6 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         else:
             alsoProvides(self, IDerivativeDistribution)
 
-
     @property
     def uploaders(self):
         """See `IDistribution`."""
@@ -310,21 +308,85 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         return True in (self.official_malone, self.official_rosetta,
                         self.official_blueprints, self.official_answers)
 
-    answers_usage = EnumCol(
+    _answers_usage = EnumCol(
         dbName="answers_usage", notNull=True,
         schema=ServiceUsage,
         default=ServiceUsage.UNKNOWN)
-    blueprints_usage = EnumCol(
+
+    def _get_answers_usage(self):
+        if self._answers_usage != ServiceUsage.UNKNOWN:
+            # If someone has set something with the enum, use it.
+            return self._answers_usage
+        elif self.official_answers:
+            return ServiceUsage.LAUNCHPAD
+        return self._answers_usage
+
+    def _set_answers_usage(self, val):
+        self._answers_usage = val
+        if val == ServiceUsage.LAUNCHPAD:
+            self.official_answers = True
+        else:
+            self.official_answers = False
+
+    answers_usage = property(
+        _get_answers_usage,
+        _set_answers_usage,
+        doc="Indicates if the product uses the answers service.")
+
+    _blueprints_usage = EnumCol(
         dbName="blueprints_usage", notNull=True,
         schema=ServiceUsage,
         default=ServiceUsage.UNKNOWN)
-    translations_usage = EnumCol(
+
+    def _get_blueprints_usage(self):
+        if self._blueprints_usage != ServiceUsage.UNKNOWN:
+            # If someone has set something with the enum, use it.
+            return self._blueprints_usage
+        elif self.official_blueprints:
+            return ServiceUsage.LAUNCHPAD
+        return self._blueprints_usage
+
+    def _set_blueprints_usage(self, val):
+        self._blueprints_usage = val
+        if val == ServiceUsage.LAUNCHPAD:
+            self.official_blueprints = True
+        else:
+            self.official_blueprints = False
+
+    blueprints_usage = property(
+        _get_blueprints_usage,
+        _set_blueprints_usage,
+        doc="Indicates if the product uses the blueprints service.")
+
+    _translations_usage = EnumCol(
         dbName="translations_usage", notNull=True,
         schema=ServiceUsage,
         default=ServiceUsage.UNKNOWN)
+
+    def _get_translations_usage(self):
+        if self._translations_usage != ServiceUsage.UNKNOWN:
+            # If someone has set something with the enum, use it.
+            return self._translations_usage
+        elif self.official_rosetta:
+            return ServiceUsage.LAUNCHPAD
+        return self._translations_usage
+
+    def _set_translations_usage(self, val):
+        self._translations_usage = val
+        if val == ServiceUsage.LAUNCHPAD:
+            self.official_rosetta = True
+        else:
+            self.official_rosetta = False
+
+    translations_usage = property(
+        _get_translations_usage,
+        _set_translations_usage,
+        doc="Indicates if the product uses the translations service.")
+
     @property
     def codehosting_usage(self):
         return ServiceUsage.NOT_APPLICABLE
+
     @property
     def bug_tracking_usage(self):
         if not self.official_malone:
@@ -456,7 +518,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             return (2, self.name)
         return (3, self.name)
 
-    @cachedproperty('_cached_series')
+    @cachedproperty
     def series(self):
         """See `IDistribution`."""
         ret = Store.of(self).find(
@@ -551,9 +613,9 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         if not self.full_functionality:
             return None
 
-        urls = {'http_base_url' : http_base_url,
-                'ftp_base_url' : ftp_base_url,
-                'rsync_base_url' : rsync_base_url}
+        urls = {'http_base_url': http_base_url,
+                'ftp_base_url': ftp_base_url,
+                'rsync_base_url': rsync_base_url}
         for name, value in urls.items():
             if value is not None:
                 urls[name] = IDistributionMirror[name].normalize(value)
@@ -743,13 +805,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         # defaults for informationalness: we don't have to do anything
         # because the default if nothing is said is ANY
 
-        # sort by priority descending, by default
-        if sort is None or sort == SpecificationSort.PRIORITY:
-            order = (
-                ['-priority', 'Specification.definition_status',
-                 'Specification.name'])
-        elif sort == SpecificationSort.DATE:
-            order = ['-Specification.datecreated', 'Specification.id']
+        order = self._specification_sort(sort)
 
         # figure out what set of specifications we are interested in. for
         # distributions, we need to be able to filter on the basis of:
@@ -766,7 +822,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
 
         # filter based on completion. see the implementation of
         # Specification.is_complete() for more details
-        completeness =  Specification.completeness_clause
+        completeness = Specification.completeness_clause
 
         if SpecificationFilter.COMPLETE in filter:
             query += ' AND ( %s ) ' % completeness
@@ -792,9 +848,15 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                 query += ' AND Specification.fti @@ ftq(%s) ' % quote(
                     constraint)
 
-        results = Specification.select(query, orderBy=order, limit=quantity)
         if prejoin_people:
-            results = results.prejoin(['assignee', 'approver', 'drafter'])
+            results = self._preload_specifications_people(query)
+        else:
+            results = Store.of(self).find(
+                Specification,
+                SQL(query))
+        results.order_by(order)
+        if quantity is not None:
+            results = results[:quantity]
         return results
 
     def getSpecification(self, name):
@@ -1091,15 +1153,15 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         find_spec = (
             DistributionSourcePackageCache,
             SourcePackageName,
-            SQL('rank(fti, ftq(%s)) AS rank' % sqlvalues(text))
+            SQL('rank(fti, ftq(%s)) AS rank' % sqlvalues(text)),
             )
         origin = [
             DistributionSourcePackageCache,
             Join(
                 SourcePackageName,
                 DistributionSourcePackageCache.sourcepackagename ==
-                    SourcePackageName.id
-                )
+                    SourcePackageName.id,
+                ),
             ]
 
         publishing_condition = ''
@@ -1140,8 +1202,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                    quote(text), quote_like(text), has_packaging_condition,
                    publishing_condition)
         dsp_caches_with_ranks = store.using(*origin).find(
-            find_spec, condition
-            ).order_by('rank DESC')
+            find_spec, condition).order_by('rank DESC')
 
         return dsp_caches_with_ranks
 
@@ -1160,8 +1221,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             cache, source_package_name, rank = result
             return DistributionSourcePackage(
                 self,
-                source_package_name
-                )
+                source_package_name)
 
         # Return the decorated result set so the consumer of these
         # results will only see DSPs
@@ -1176,7 +1236,6 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         return (
             DistroSeries.distribution == self,
             DistroSeries.status != SeriesStatus.OBSOLETE,
-            BinaryPackageRelease.binarypackagename == BinaryPackageName.id,
             DistroArchSeries.distroseries == DistroSeries.id,
             BinaryPackageBuild.distro_arch_series == DistroArchSeries.id,
             BinaryPackageRelease.build == BinaryPackageBuild.id,
@@ -1196,7 +1255,9 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         select_spec = (DistributionSourcePackageCache,)
 
         if exact_match:
-            find_spec = self._binaryPackageSearchClause
+            find_spec = self._binaryPackageSearchClause + (
+                BinaryPackageRelease.binarypackagename == BinaryPackageName.id,
+                )
             match_clause = (BinaryPackageName.name == package_name,)
         else:
             # In this case we can use a simplified find-spec as the
@@ -1225,7 +1286,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         extra_clauses = (
             BinaryPackageRelease.binarypackagenameID ==
                 DistroSeriesPackageCache.binarypackagenameID,
-            Match(search_vector_column, query_function)
+            Match(search_vector_column, query_function),
             )
         where_spec = (self._binaryPackageSearchClause + extra_clauses)
 
@@ -1481,11 +1542,11 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         # XXX Julian 2007-08-16
         # These component names should be Soyuz-wide constants.
         componentMapToArchivePurpose = {
-            'main' : ArchivePurpose.PRIMARY,
-            'restricted' : ArchivePurpose.PRIMARY,
-            'universe' : ArchivePurpose.PRIMARY,
-            'multiverse' : ArchivePurpose.PRIMARY,
-            'partner' : ArchivePurpose.PARTNER,
+            'main': ArchivePurpose.PRIMARY,
+            'restricted': ArchivePurpose.PRIMARY,
+            'universe': ArchivePurpose.PRIMARY,
+            'multiverse': ArchivePurpose.PRIMARY,
+            'partner': ArchivePurpose.PARTNER,
             'contrib': ArchivePurpose.PRIMARY,
             'non-free': ArchivePurpose.PRIMARY,
             }
@@ -1694,7 +1755,8 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
 
         # May wish to add this to the series rather than clearing the cache --
         # RBC 20100816.
-        clear_property(self, '_cached_series')
+        del IPropertyCache(self).series
+
         return series
 
     @property

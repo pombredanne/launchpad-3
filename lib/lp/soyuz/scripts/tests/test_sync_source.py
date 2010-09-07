@@ -322,25 +322,25 @@ class TestSyncSourceScript(TestCase):
             expected_changesfile, allow_unsigned=True)
 
         # It refers to the right source/version.
-        self.assertEqual(parsed_changes['source'], 'bar')
-        self.assertEqual(parsed_changes['version'], '1.0-1')
+        self.assertEqual(parsed_changes['Source'], 'bar')
+        self.assertEqual(parsed_changes['Version'], '1.0-1')
 
         # It includes the correct 'origin' and 'target' information.
-        self.assertEqual(parsed_changes['origin'], 'Debian/incoming')
-        self.assertEqual(parsed_changes['distribution'], 'hoary')
+        self.assertEqual(parsed_changes['Origin'], 'Debian/incoming')
+        self.assertEqual(parsed_changes['Distribution'], 'hoary')
 
         # 'closes' and 'launchpad-bug-fixed' are filled according to
         # what is listed in the debian/changelog.
-        self.assertEqual(parsed_changes['closes'], '1 2 1234 4321')
-        self.assertEqual(parsed_changes['launchpad-bugs-fixed'], '1234 4321')
+        self.assertEqual(parsed_changes['Closes'], '1 2 1234 4321')
+        self.assertEqual(parsed_changes['Launchpad-bugs-fixed'], '1234 4321')
 
         # And finally, 'maintainer' role was preserved and 'changed-by'
         # role was assigned as specified in the sync-source command-line.
         self.assertEqual(
-            parsed_changes['maintainer'],
+            parsed_changes['Maintainer'],
             'Launchpad team <launchpad@lists.canonical.com>')
         self.assertEqual(
-            parsed_changes['changed-by'],
+            parsed_changes['Changed-By'],
             'Celso Providelo <celso.providelo@canonical.com>')
 
         os.unlink(expected_changesfile)
@@ -397,20 +397,20 @@ class TestSyncSourceScript(TestCase):
             expected_changesfile, allow_unsigned=True)
 
         # It refers to the right source/version.
-        self.assertEqual(parsed_changes['source'], 'sample1')
-        self.assertEqual(parsed_changes['version'], '1.0-1')
+        self.assertEqual(parsed_changes['Source'], 'sample1')
+        self.assertEqual(parsed_changes['Version'], '1.0-1')
 
         # It includes the correct 'origin' and 'target' information.
-        self.assertEqual(parsed_changes['origin'], 'Debian/incoming')
-        self.assertEqual(parsed_changes['distribution'], 'hoary')
+        self.assertEqual(parsed_changes['Origin'], 'Debian/incoming')
+        self.assertEqual(parsed_changes['Distribution'], 'hoary')
 
         # And finally, 'maintainer' role was preserved and 'changed-by'
         # role was assigned as specified in the sync-source command-line.
         self.assertEqual(
-            parsed_changes['maintainer'],
+            parsed_changes['Maintainer'],
             'Raphael Hertzog <hertzog@debian.org>')
         self.assertEqual(
-            parsed_changes['changed-by'],
+            parsed_changes['Changed-By'],
             'Celso Providelo <celso.providelo@canonical.com>')
 
         os.unlink(expected_changesfile)

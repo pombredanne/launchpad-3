@@ -207,13 +207,7 @@ class HasBugsBase:
     @property
     def has_bugtasks(self):
         """See `IHasBugs`."""
-        # Check efficiently if any bugtasks exist. We should avoid
-        # expensive calls like all_bugtasks.count(). all_bugtasks
-        # returns a storm.SQLObjectResultSet instance, and this
-        # class does not provide methods like is_empty(). But we can
-        # indirectly call SQLObjectResultSet._result_set.is_empty()
-        # by converting all_bugtasks into a boolean object.
-        return bool(self.all_bugtasks)
+        return not self.all_bugtasks.is_empty()
 
     def getBugCounts(self, user, statuses=None):
         """See `IHasBugs`."""
@@ -277,32 +271,44 @@ class HasBugHeatMixin:
             # recalculating max_heat.
             return
 
+        # XXX: deryck The queries here are a source of pain and have
+        # been changed a couple times looking for the best
+        # performaning version.  Use caution and have EXPLAIN ANALYZE
+        # data ready when changing these.
         if IDistribution.providedBy(self):
-            sql = ["""SELECT MAX(Bug.heat)
+            sql = ["""SELECT Bug.heat
                       FROM Bug, Bugtask
                       WHERE Bugtask.bug = Bug.id
-                      AND Bugtask.distribution = %s""" % sqlvalues(self),
-                   """SELECT MAX(Bug.heat)
+                      AND Bugtask.distribution = %s
+                      ORDER BY Bug.heat DESC LIMIT 1""" % sqlvalues(self),
+                   """SELECT Bug.heat
                       FROM Bug, Bugtask, DistroSeries
                       WHERE Bugtask.bug = Bug.id
                       AND Bugtask.distroseries = DistroSeries.id
-                      AND DistroSeries.distribution = %s""" % sqlvalues(self)]
+                      AND Bugtask.distroseries IS NOT NULL
+                      AND DistroSeries.distribution = %s
+                      ORDER BY Bug.heat DESC LIMIT 1""" % sqlvalues(self)]
         elif IProduct.providedBy(self):
-            sql = ["""SELECT MAX(Bug.heat)
+            sql = ["""SELECT Bug.heat
                       FROM Bug, Bugtask
                       WHERE Bugtask.bug = Bug.id
-                      AND Bugtask.product = %s""" % sqlvalues(self),
-                   """SELECT MAX(Bug.heat)
+                      AND Bugtask.product = %s
+                      ORDER BY Bug.heat DESC LIMIT 1""" % sqlvalues(self),
+                   """SELECT Bug.heat
                       FROM Bug, Bugtask, ProductSeries
                       WHERE Bugtask.bug = Bug.id
+                      AND Bugtask.productseries IS NOT NULL
                       AND Bugtask.productseries = ProductSeries.id
-                      AND ProductSeries.product = %s""" % sqlvalues(self)]
+                      AND ProductSeries.product = %s
+                      ORDER BY Bug.heat DESC LIMIT 1""" % sqlvalues(self)]
         elif IProjectGroup.providedBy(self):
-            sql = ["""SELECT MAX(heat)
+            sql = ["""SELECT heat
                       FROM Bug, Bugtask, Product
-                      WHERE Bugtask.bug = Bug.id AND
-                      Bugtask.product = Product.id AND
-                      Product.project =  %s""" % sqlvalues(self)]
+                      WHERE Bugtask.bug = Bug.id
+                      AND Bugtask.product = Product.id
+                      AND Product.project IS NOT NULL
+                      AND Product.project =  %s
+                      ORDER BY Bug.heat DESC LIMIT 1""" % sqlvalues(self)]
         else:
             raise NotImplementedError
 

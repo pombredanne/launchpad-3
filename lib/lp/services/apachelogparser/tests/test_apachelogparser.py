@@ -6,7 +6,7 @@ import gzip
 import os
 from StringIO import StringIO
 import tempfile
-import textwrap
+from operator import itemgetter
 import unittest
 
 from zope.component import getUtility
@@ -124,17 +124,18 @@ class TestLogFileParsing(TestCase):
 
     def test_parsing(self):
         # The parse_file() function returns a tuple containing a dict (mapping
-        # days and library file IDs to number of downloads) and the total
-        # number of bytes that have been parsed from this file.  In our sample
+        # days and library file IDs to number of downloads), the total number
+        # of bytes that have been parsed from this file, and the running total
+        # of lines parsed (for testing against the maximum).  In our sample
         # log, the file with ID 8196569 has been downloaded twice (once from
-        # Argentina and once from Japan) and the files with ID 12060796
-        # and 9096290 have been downloaded once.  The file with ID 15018215
-        # has also been downloaded once (last line of the sample log), but
+        # Argentina and once from Japan) and the files with ID 12060796 and
+        # 9096290 have been downloaded once.  The file with ID 15018215 has
+        # also been downloaded once (last line of the sample log), but
         # parse_file() always skips the last line as it may be truncated, so
         # it doesn't show up in the dict returned.
         fd = open(os.path.join(
             here, 'apache-log-files', 'launchpadlibrarian.net.access-log'))
-        downloads, parsed_bytes = parse_file(
+        downloads, parsed_bytes, parsed_lines = parse_file(
             fd, start_position=0, logger=self.logger,
             get_download_key=get_path_download_key)
         self.assertEqual(
@@ -158,7 +159,7 @@ class TestLogFileParsing(TestCase):
         # line without worrying about whether or not it's been truncated.
         fd = open(os.path.join(
             here, 'apache-log-files', 'launchpadlibrarian.net.access-log'))
-        downloads, parsed_bytes = parse_file(
+        downloads, parsed_bytes, parsed_lines = parse_file(
             fd, start_position=self._getLastLineStart(fd), logger=self.logger,
             get_download_key=get_path_download_key)
         self.assertEqual(
@@ -176,7 +177,7 @@ class TestLogFileParsing(TestCase):
         # parsed up to the line before the one where the failure occurred.
         # Here we force an unexpected error on the first line.
         fd = StringIO('Not a log')
-        downloads, parsed_bytes = parse_file(
+        downloads, parsed_bytes, parsed_lines = parse_file(
             fd, start_position=0, logger=self.logger,
             get_download_key=get_path_download_key)
         self.assertIn('Error', self.logger.buffer.getvalue())
@@ -187,7 +188,7 @@ class TestLogFileParsing(TestCase):
         """Assert that responses with the given status are ignored."""
         fd = StringIO(
             self.sample_line % dict(status=status, method='GET'))
-        downloads, parsed_bytes = parse_file(
+        downloads, parsed_bytes, parsed_lines = parse_file(
             fd, start_position=0, logger=self.logger,
             get_download_key=get_path_download_key)
         self.assertEqual(
@@ -212,7 +213,7 @@ class TestLogFileParsing(TestCase):
         """Assert that requests with the given method are ignored."""
         fd = StringIO(
             self.sample_line % dict(status='200', method=method))
-        downloads, parsed_bytes = parse_file(
+        downloads, parsed_bytes, parsed_lines = parse_file(
             fd, start_position=0, logger=self.logger,
             get_download_key=get_path_download_key)
         self.assertEqual(
@@ -230,7 +231,7 @@ class TestLogFileParsing(TestCase):
     def test_normal_request_is_not_ignored(self):
         fd = StringIO(
             self.sample_line % dict(status=200, method='GET'))
-        downloads, parsed_bytes = parse_file(
+        downloads, parsed_bytes, parsed_lines = parse_file(
             fd, start_position=0, logger=self.logger,
             get_download_key=get_path_download_key)
         self.assertEqual(
@@ -248,22 +249,20 @@ class TestLogFileParsing(TestCase):
         # lines.
         config.push(
             'log_parser config',
-            textwrap.dedent('''\
-                [launchpad]
-                logparser_max_parsed_lines: 2
-                '''))
+            '[launchpad]\nlogparser_max_parsed_lines: 2')
         self.addCleanup(config.pop, 'log_parser config')
         fd = open(os.path.join(
             here, 'apache-log-files', 'launchpadlibrarian.net.access-log'))
         self.addCleanup(fd.close)
 
-        downloads, parsed_bytes = parse_file(
+        downloads, parsed_bytes, parsed_lines = parse_file(
             fd, start_position=0, logger=self.logger,
             get_download_key=get_path_download_key)
 
         # We have initially parsed only the first two lines of data,
         # corresponding to one download (the first line is a 404 and
         # so ignored).
+        self.assertEqual(parsed_lines, 2)
         date = datetime(2008, 6, 13)
         self.assertContentEqual(
             downloads.items(),
@@ -275,7 +274,7 @@ class TestLogFileParsing(TestCase):
 
         # And the subsequent parse will be for the 3rd and 4th lines,
         # corresponding to two downloads of the same file.
-        downloads, parsed_bytes = parse_file(
+        downloads, parsed_bytes, parsed_lines = parse_file(
             fd, start_position=parsed_bytes, logger=self.logger,
             get_download_key=get_path_download_key)
         self.assertContentEqual(
@@ -283,6 +282,45 @@ class TestLogFileParsing(TestCase):
             [('/12060796/me-tv-icon-64x64.png', {date: {'AU': 1}}),
              ('/8196569/mediumubuntulogo.png', {date: {'AR': 1}})])
         self.assertEqual(parsed_bytes, sum(line_lengths[:4]))
+
+    def test_max_parsed_lines_exceeded(self):
+        # Show that if a non-zero parsed_lines is passed in, the number of
+        # lines parsed will be less than it would otherwise have been.
+
+        # The max_parsed_lines config option limits the number of parsed
+        # lines.
+        config.push(
+            'log_parser config',
+            '[launchpad]\nlogparser_max_parsed_lines: 2')
+        self.addCleanup(config.pop, 'log_parser config')
+        fd = open(os.path.join(
+            here, 'apache-log-files', 'launchpadlibrarian.net.access-log'))
+        self.addCleanup(fd.close)
+
+        # We want to start parsing on line 2 so we will have a value in
+        # "downloads" to make a positive assertion about.  (The first line is
+        # a 404 so wouldn't generate any output.)
+        start_position = len(fd.readline())
+
+        # If we have already parsed some lines, then the number of lines
+        # parsed will be passed in (parsed_lines argument) and parse_file will
+        # take that number into account when determining if the maximum number
+        # of lines to parse has been reached.
+        parsed_lines = 1
+        downloads, parsed_bytes, parsed_lines = parse_file(
+            fd, start_position=start_position, logger=self.logger,
+            get_download_key=get_path_download_key, parsed_lines=parsed_lines)
+
+        # The total number of lines parsed during the run (1 line) plus the
+        # number of lines parsed previously (1 line, as passed in via
+        # parsed_lines) is returned.
+        self.assertEqual(parsed_lines, 2)
+        # Since we told parse_file that we had already parsed 1 line and the
+        # limit is 2 lines, it only parsed a single line.
+        date = datetime(2008, 6, 13)
+        self.assertContentEqual(
+            downloads.items(),
+            [('/9096290/me-tv-icon-14x14.png', {date: {'AU': 1}})])
 
 
 class TestParsedFilesDetection(TestCase):
@@ -301,7 +339,8 @@ class TestParsedFilesDetection(TestCase):
         # start.
         file_name = 'launchpadlibrarian.net.access-log'
         files_to_parse = get_files_to_parse(self.root, [file_name])
-        self.failUnlessEqual(files_to_parse.values(), [0])
+        fd, position = list(files_to_parse)[0]
+        self.assertEqual(position, 0)
 
     def test_completely_parsed_file(self):
         # A file that has been completely parsed will be skipped.
@@ -311,7 +350,8 @@ class TestParsedFilesDetection(TestCase):
         fd.seek(0)
         ParsedApacheLog(first_line, len(fd.read()))
 
-        self.failUnlessEqual(get_files_to_parse(self.root, [file_name]), {})
+        files_to_parse = get_files_to_parse(self.root, [file_name])
+        self.failUnlessEqual(list(files_to_parse), [])
 
     def test_parsed_file_with_new_content(self):
         # A file that has been parsed already but in which new content was
@@ -321,8 +361,12 @@ class TestParsedFilesDetection(TestCase):
         first_line = open(os.path.join(self.root, file_name)).readline()
         ParsedApacheLog(first_line, len(first_line))
 
-        files_to_parse = get_files_to_parse(self.root, [file_name])
-        self.failUnlessEqual(files_to_parse.values(), [len(first_line)])
+        files_to_parse = list(get_files_to_parse(self.root, [file_name]))
+        self.assertEqual(len(files_to_parse), 1)
+        fd, position = files_to_parse[0]
+        # Since we parsed the first line above, we'll be told to start where
+        # the first line ends.
+        self.assertEqual(position, len(first_line))
 
     def test_different_files_with_same_name(self):
         # Thanks to log rotation, two runs of our script may see files with
@@ -341,22 +385,27 @@ class TestParsedFilesDetection(TestCase):
         fd.write(content2)
         fd.close()
         files_to_parse = get_files_to_parse(self.root, [file_name])
-        self.failUnlessEqual(files_to_parse.values(), [0])
+        positions = map(itemgetter(1), files_to_parse)
+        self.failUnlessEqual(positions, [0])
 
-    def test_gzipped_file(self):
+    def test_fresh_gzipped_file(self):
         # get_files_to_parse() handles gzipped files just like uncompressed
-        # ones.
-        # The first time we see one, we'll parse from the beginning.
+        # ones.  The first time we see one, we'll parse from the beginning.
         file_name = 'launchpadlibrarian.net.access-log.1.gz'
         first_line = gzip.open(os.path.join(self.root, file_name)).readline()
         files_to_parse = get_files_to_parse(self.root, [file_name])
-        self.failUnlessEqual(files_to_parse.values(), [0])
+        positions = map(itemgetter(1), files_to_parse)
+        self.assertEqual(positions, [0])
 
-        # And in subsequent runs of the script we will resume from where we
+    def test_resumed_gzipped_file(self):
+        # In subsequent runs of the script we will resume from where we
         # stopped last time. (Here we pretend we parsed only the first line)
+        file_name = 'launchpadlibrarian.net.access-log.1.gz'
+        first_line = gzip.open(os.path.join(self.root, file_name)).readline()
         ParsedApacheLog(first_line, len(first_line))
         files_to_parse = get_files_to_parse(self.root, [file_name])
-        self.failUnlessEqual(files_to_parse.values(), [len(first_line)])
+        positions = map(itemgetter(1), files_to_parse)
+        self.failUnlessEqual(positions, [len(first_line)])
 
 
 class Test_create_or_update_parsedlog_entry(TestCase):

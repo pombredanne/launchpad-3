@@ -320,7 +320,7 @@ through direct or indirect participations.
 
     >>> sample_person = person_set.getByName('name12')
     >>> [membership.team.name
-    ...  for membership in sample_person.myactivememberships]
+    ...  for membership in sample_person.team_memberships]
     [u'hwdb-team', u'landscape-developers', u'launchpad-users', u'name20']
     >>> [team.name for team in sample_person.teams_participated_in]
     [u'hwdb-team', u'landscape-developers', u'launchpad-users', u'name18',
