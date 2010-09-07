@@ -10,15 +10,18 @@ import unittest
 
 from storm.store import Store
 from zope.component import getUtility
+import pytz
 
 from canonical.launchpad.ftests import (
     login,
     syncUpdate,
     )
+from canonical.launchpad.webapp.errorlog import globalErrorUtility
 from canonical.testing import (
     LaunchpadFunctionalLayer,
     DatabaseFunctionalLayer,
     )
+from lazr.restfulclient.errors import ClientError
 
 from lp.blueprints.interfaces.specification import (
     ISpecificationSet,
@@ -34,6 +37,7 @@ from lp.bugs.interfaces.bugtask import (
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.projectgroup import IProjectGroupSet
+from lp.registry.model.milestone import MultipleProductReleases
 from lp.testing import (
     launchpadlib_for,
     TestCaseWithFactory,
@@ -330,12 +334,50 @@ class ProjectMilestoneTest(unittest.TestCase):
             '1.1', 'evolution', None)
 
 
-class TestLaunchpadlibAPI(TestCaseWithFactory):
+def get_last_oops_id():
+    return getattr(globalErrorUtility.getLastOopsReport(), 'id', None)
+
+
+class TestDuplicateProductReleases(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
-    def test_inappropriate_release_does_not_cause_an_OOPS(self):
-        milestone = self.createProductMilestone('1.1', 'evolution', None)
-        import pdb;pdb.set_trace()
+    def test_inappropriate_release_raises(self):
+        # A milestone that already has a ProductRelease can not be given
+        # another one.
+        login('foo.bar@canonical.com')
+        product_set = getUtility(IProductSet)
+        product = product_set['evolution']
+        series = product.getSeries('trunk')
+        milestone = series.newMilestone(name='1.1', dateexpected=None)
+        now = datetime.now(pytz.UTC)
+        milestone.createProductRelease(1, now)
+        self.assertRaises(MultipleProductReleases,
+            milestone.createProductRelease, 1, now)
+        try:
+            milestone.createProductRelease(1, now)
+        except MultipleProductReleases, e:
+            self.assert_(
+                str(e), 'A milestone can only have one ProductRelease.')
+
+    def test_inappropriate_deactivation_does_not_cause_an_OOPS(self):
+        # Make sure a 400 error and not an OOPS is returned when an exception
+        # is raised when trying to create a product release when a milestone
+        # already has one.
+        last_oops = get_last_oops_id()
+        launchpad = launchpadlib_for("test", "salgado", "WRITE_PUBLIC")
+
+        project = launchpad.projects['evolution']
+        milestone = project.getMilestone(name='2.1.6')
+        now = datetime.now(pytz.UTC)
+
+        e = self.assertRaises(
+            ClientError, milestone.createProductRelease, date_released=now)
+
+        # no OOPS was generated as a result of the exception
+        self.assertEqual(get_last_oops_id(), last_oops)
+        self.assertEqual(400, e.response.status)
+        self.assertIn(
+            'A milestone can only have one ProductRelease.', e.content)
 
 
 def test_suite():

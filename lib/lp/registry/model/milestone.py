@@ -110,6 +110,12 @@ class HasMilestonesMixin:
         return sorted(result, key=milestone_sort_key, reverse=True)
 
 
+class MultipleProductReleases(Exception):
+    """Raised when a second ProductRelease is created for a milestone."""
+    def __init__(self, msg='A milestone can only have one ProductRelease.'):
+        super(MultipleProductReleases, self).__init__(msg)
+
+
 class Milestone(SQLBase, StructuralSubscriptionTargetMixin, HasBugsBase):
     implements(IHasBugs, IMilestone)
 
@@ -195,8 +201,7 @@ class Milestone(SQLBase, StructuralSubscriptionTargetMixin, HasBugsBase):
                              changelog=None, release_notes=None):
         """See `IMilestone`."""
         if self.product_release is not None:
-            raise expose(RuntimeError(
-                'A milestone can only have one ProductRelease.'))
+            raise expose(MultipleProductReleases())
         release = ProductRelease(
             owner=owner,
             changelog=changelog,
