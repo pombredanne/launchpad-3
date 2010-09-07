@@ -234,7 +234,7 @@ start-gdb: check_schema inplace stop support_files
 		-r librarian,google-webservice
 		> ${LPCONFIG}-nohup.out 2>&1 &
 
-run_all: check_schema inplace stop hosted_branches
+run_all: check_schema inplace stop
 	$(RM) thread*.request
 	bin/run -r librarian,sftp,mailman,codebrowse,google-webservice,memcached \
 	    -i $(LPCONFIG)
@@ -248,7 +248,7 @@ start_codebrowse: build
 stop_codebrowse:
 	$(PY) scripts/stop-loggerhead.py
 
-run_codehosting: check_schema inplace stop hosted_branches
+run_codehosting: check_schema inplace stop
 	$(RM) thread*.request
 	bin/run -r librarian,sftp,codebrowse -i $(LPCONFIG)
 
