@@ -27,7 +27,6 @@ from zope.schema.vocabulary import (
     SimpleVocabulary,
     )
 
-from canonical.cachedproperty import cachedproperty
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad import (
     _,
@@ -72,6 +71,7 @@ from lp.registry.browser.structuralsubscription import (
     )
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.propertycache import cachedproperty
 from lp.services.worlddata.interfaces.country import ICountry
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.soyuz.browser.packagesearch import PackageSearchViewBase
@@ -359,6 +359,10 @@ class DistroSeriesView(MilestoneOverlayMixin):
         return None
 
     milestone_can_release = False
+
+    @cachedproperty
+    def milestone_batch_navigator(self):
+        return BatchNavigator(self.context.all_milestones, self.request)
 
 
 class DistroSeriesEditView(LaunchpadEditFormView, SeriesStatusMixin):

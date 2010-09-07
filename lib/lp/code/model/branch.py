@@ -1304,37 +1304,6 @@ class BranchSet:
         return branches
 
 
-class BranchCloud:
-    """See `IBranchCloud`."""
-
-    def getProductsWithInfo(self, num_products=None, store_flavor=None):
-        """See `IBranchCloud`."""
-        # Circular imports are fun.
-        from lp.registry.model.product import Product
-        # It doesn't matter if this query is even a whole day out of date, so
-        # use the slave store by default.
-        if store_flavor is None:
-            store_flavor = SLAVE_FLAVOR
-        store = getUtility(IStoreSelector).get(MAIN_STORE, store_flavor)
-        # Get all products, the count of all hosted & mirrored branches and
-        # the last revision date.
-        result = store.find(
-            (Product.name, Count(Branch.id), Max(Revision.revision_date)),
-            Branch.private == False,
-            Branch.product == Product.id,
-            Or(Branch.branch_type == BranchType.HOSTED,
-               Branch.branch_type == BranchType.MIRRORED),
-            Branch.last_scanned_id == Revision.revision_id)
-        result = result.group_by(Product.name)
-        result = result.order_by(Desc(Count(Branch.id)))
-        if num_products:
-            result.config(limit=num_products)
-        # XXX: JonathanLange 2009-02-10: The revision date in the result set
-        # isn't timezone-aware. Not sure why this is. Doesn't matter too much
-        # for the purposes of cloud calculation though.
-        return result
-
-
 def update_trigger_modified_fields(branch):
     """Make the trigger updated fields reload when next accessed."""
     # Not all the fields are exposed through the interface, and some are read

@@ -31,7 +31,7 @@ from canonical.launchpad import versioninfo
 from canonical.launchpad.layers import WebServiceLayer
 from canonical.launchpad.webapp.adapter import (
     get_request_duration,
-    get_request_statements,
+    get_request_start_time,
     soft_timeout_expired,
     )
 from canonical.launchpad.webapp.interfaces import (
@@ -42,7 +42,7 @@ from canonical.launchpad.webapp.interfaces import (
 from canonical.launchpad.webapp.opstats import OpStats
 from canonical.lazr.utils import safe_hasattr
 from lp.services.log.uniquefileallocator import UniqueFileAllocator
-
+from lp.services.timeline.requesttimeline import get_request_timeline
 
 UTC = pytz.utc
 
@@ -85,6 +85,9 @@ def _safestr(obj):
             'representation of an object')
         value = '<unprintable %s object>' % (
             str(type(obj).__name__))
+    # Some str() calls return unicode objects.
+    if isinstance(value, unicode):
+        return _safestr(value)
     # encode non-ASCII characters
     value = value.replace('\\', '\\\\')
     value = re.sub(r'[\x80-\xff]',
@@ -163,6 +166,7 @@ class ErrorReport:
         return '<ErrorReport %s %s: %s>' % (self.id, self.type, self.value)
 
     def get_chunks(self):
+        """Returns a list of bytestrings making up the oops disk content."""
         chunks = []
         chunks.append('Oops-Id: %s\n' % _normalise_whitespace(self.id))
         chunks.append(
@@ -171,7 +175,7 @@ class ErrorReport:
             'Exception-Value: %s\n' % _normalise_whitespace(self.value))
         chunks.append('Date: %s\n' % self.time.isoformat())
         chunks.append('Page-Id: %s\n' % _normalise_whitespace(self.pageid))
-        chunks.append('Branch: %s\n' % self.branch_nick)
+        chunks.append('Branch: %s\n' % _safestr(self.branch_nick))
         chunks.append('Revision: %s\n' % self.revno)
         chunks.append('User: %s\n' % _normalise_whitespace(self.username))
         chunks.append('URL: %s\n' % _normalise_whitespace(self.url))
@@ -451,11 +455,17 @@ class ErrorReportingUtility:
         strurl = _safestr(url)
 
         duration = get_request_duration()
-
-        statements = sorted(
-            (start, end, _safestr(database_id), _safestr(statement))
-            for (start, end, database_id, statement)
-                in get_request_statements())
+        # In principle the timeline is per-request, but see bug=623199 -
+        # at this point the request is optional, but get_request_timeline
+        # does not care; when it starts caring, we will always have a 
+        # request object (or some annotations containing object).
+        # RBC 20100901
+        timeline = get_request_timeline(request)
+        statements = []
+        for action in timeline.actions:
+            start, end, category, detail = action.logTuple()
+            statements.append(
+                (start, end, _safestr(category), _safestr(detail)))
 
         oopsid, filename = self.log_namer.newId(now)
 

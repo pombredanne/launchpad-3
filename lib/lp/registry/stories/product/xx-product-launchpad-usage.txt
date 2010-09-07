@@ -47,7 +47,8 @@ doesn't use any bug tracker at all.
     >>> registrant_browser.getControl('Somewhere else').selected = True
     >>> registrant_browser.getControl('Change').click()
 
-We'll also set it as officially using codehosting.
+We'll also set up a development focus branch. Because it's a mirrored
+branch, codehosting won't show up as a service the product uses.
 
     >>> registrant_browser.getLink('Configure project branch').click()
     >>> registrant_browser.getControl(name='field.branch_location').value = (
@@ -89,7 +90,7 @@ tracker, not even Launchpad.
 
     >>> uses = find_tag_by_id(registrant_browser.contents, id='uses')
     >>> print extract_text(uses)
-    Uses Launchpad for: Branches and Translations.
+    Uses Launchpad for: Translations.
 
 Blueprints can be enabled too, though it isn't easy.
 
@@ -110,12 +111,12 @@ Blueprints can be enabled too, though it isn't easy.
 
 
 On the product page, we can see that the product doesn't use any bug
-tracker, not even Launchpad, but does use other apps.
+tracker, not even Launchpad, but does use Translations.
 
     >>> registrant_browser.open('http://launchpad.dev/firefox')
     >>> uses = find_tag_by_id(registrant_browser.contents, id='uses')
     >>> print extract_text(uses)
-    Uses Launchpad for: Blueprints, Branches, and Translations.
+    Uses Launchpad for: Blueprints and Translations.
 
 Setting a usage to external is reflected in the "Uses" message.
 Change translations to external.
@@ -127,7 +128,7 @@ Change translations to external.
 
     >>> uses = find_tag_by_id(registrant_browser.contents, id='uses')
     >>> print extract_text(uses)
-    Uses Launchpad for: Blueprints and Branches.
+    Uses Launchpad for: Blueprints.
 
 
 Tracking bugs by email

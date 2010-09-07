@@ -1292,8 +1292,17 @@ class TestBugChanges(unittest.TestCase):
 
         expected_notification = {
             'person': self.user,
-            'text': ("** This bug has been marked a duplicate of bug %d\n"
-                     "   %s" % (self.bug.id, self.bug.title)),
+            'text': (
+                "** This bug has been marked a duplicate of bug "
+                "%(bug_id)d\n   %(bug_title)s\n"
+                " * You can subscribe to bug %(bug_id)d by following "
+                "this link: %(subscribe_link)s" % {
+                    'bug_id': self.bug.id,
+                    'bug_title': self.bug.title,
+                    'subscribe_link': canonical_url(
+                        self.bug.default_bugtask,
+                        view_name='+subscribe'),
+                    }),
             'recipients': duplicate_bug_recipients,
             }
 
@@ -1361,11 +1370,21 @@ class TestBugChanges(unittest.TestCase):
 
         expected_notification = {
             'person': self.user,
-            'text': ("** This bug is no longer a duplicate of bug %d\n"
-                     "   %s\n"
-                     "** This bug has been marked a duplicate of bug %d\n"
-                     "   %s" % (bug_one.id, bug_one.title,
-                                bug_two.id, bug_two.title)),
+            'text': (
+                "** This bug is no longer a duplicate of bug "
+                "%(bug_one_id)d\n   %(bug_one_title)s\n"
+                "** This bug has been marked a duplicate of bug "
+                "%(bug_two_id)d\n   %(bug_two_title)s\n"
+                " * You can subscribe to bug %(bug_two_id)d by following "
+                "this link: %(subscribe_link)s" % {
+                    'bug_one_id': bug_one.id,
+                    'bug_one_title': bug_one.title,
+                    'bug_two_id': bug_two.id,
+                    'bug_two_title': bug_two.title,
+                    'subscribe_link': canonical_url(
+                        bug_two.default_bugtask,
+                        view_name='+subscribe'),
+                    }),
             'recipients': bug_recipients,
             }
 
@@ -1474,10 +1493,20 @@ class TestBugChanges(unittest.TestCase):
         expected_notification = {
             'person': self.user,
             'text': (
-                "** This bug is no longer a duplicate of private bug %d\n"
-                "** This bug has been marked a duplicate of bug %d\n"
-                "   %s" % (private_bug.id, public_bug.id,
-                           public_bug.title)),
+                "** This bug is no longer a duplicate of private bug "
+                "%(private_bug_id)d\n"
+                "** This bug has been marked a duplicate of bug "
+                "%(public_bug_id)d\n   %(public_bug_title)s\n"
+                " * You can subscribe to bug %(public_bug_id)d by following "
+                "this link: %(subscribe_link)s" % {
+                    'private_bug_id': private_bug.id,
+                    'private_bug_title': private_bug.title,
+                    'public_bug_id': public_bug.id,
+                    'public_bug_title': public_bug.title,
+                    'subscribe_link': canonical_url(
+                        public_bug.default_bugtask,
+                        view_name='+subscribe'),
+                    }),
             'recipients': bug_recipients,
             }
 

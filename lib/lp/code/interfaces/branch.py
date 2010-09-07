@@ -1277,9 +1277,12 @@ class IBranchCloud(Interface):
     """
 
     def getProductsWithInfo(num_products=None):
-        """Get products with their branch activity information.
+        """Get products with their recent activity information.
 
-        :return: a `ResultSet` of (product, num_branches, last_revision_date).
+        The counts are for the last 30 days.
+
+        :return: a `ResultSet` of (product, num_commits, num_authors,
+            last_revision_date).
         """
 
 
