@@ -1,11 +1,12 @@
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Enumerations used in the lp/app modules."""
+"""Enumerations and related utilities used in the lp/app modules."""
 
 __metaclass__ = type
 __all__ = [
     'ServiceUsage',
+    'service_uses_launchpad',
     ]
 
 from lazr.enum import (
@@ -45,3 +46,7 @@ class ServiceUsage(DBEnumeratedType):
 
     The pillar does not use this type of service in Launchpad or externally.
     """)
+
+
+def service_uses_launchpad(usage_enum):
+    return usage_enum == ServiceUsage.LAUNCHPAD

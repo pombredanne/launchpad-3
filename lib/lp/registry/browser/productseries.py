@@ -252,11 +252,11 @@ class ProductSeriesInvolvementView(PillarView):
 
     def __init__(self, context, request):
         super(ProductSeriesInvolvementView, self).__init__(context, request)
+        self.answers_usage = ServiceUsage.NOT_APPLICABLE
         if self.context.branch is not None:
             self.codehosting_usage = ServiceUsage.LAUNCHPAD
         else:
             self.codehosting_usage = ServiceUsage.UNKNOWN
-        self.official_answers = False
 
     @property
     def configuration_links(self):
