@@ -43,7 +43,7 @@
             <tal:difference repeat="difference differences/batch">
             <tr tal:define="parent_source_pub difference/parent_source_pub;
                             source_pub difference/source_pub;
-                            signer source_pub/uploader/fmt:link|string:no signer;">
+                            signer source_pub/sourcepackagerelease/uploader/fmt:link|string:no signer;">
               <td><a tal:attributes="href parent_source_pub/sourcepackagerelease/fmt:url">
                     <tal:replace
                     replace="parent_source_pub/sourcepackagerelease/title"/></a>
