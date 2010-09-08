@@ -1618,13 +1618,16 @@ class Person(
                 person_table.accountID == account_table.id,
                 account_table.status == AccountStatus.ACTIVE)))
         columns.append(account_table)
+
         def handleemail(person, column):
             #-- preferred email caching
             if not person:
                 return
             email = column
             IPropertyCache(person).preferredemail = email
+
         decorators.append(handleemail)
+
         def handleaccount(person, column):
             #-- validity caching
             if not person:
