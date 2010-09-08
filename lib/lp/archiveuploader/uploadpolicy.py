@@ -324,7 +324,6 @@ class BuildDaemonUploadPolicy(AbstractUploadPolicy):
     """The build daemon upload policy is invoked by the slave scanner."""
 
     name = 'buildd'
-    accepted_type = ArchiveUploadType.BINARY_ONLY
 
     def __init__(self):
         super(BuildDaemonUploadPolicy, self).__init__()
@@ -348,6 +347,15 @@ class BuildDaemonUploadPolicy(AbstractUploadPolicy):
     def rejectPPAUploads(self, upload):
         """Buildd policy allows PPA upload."""
         return False
+
+    def validateUploadType(self, upload):
+        if upload.sourceful and upload.binaryful:
+            if self.accepted_type != ArchiveUploadType.MIXED_ONLY:
+                upload.reject(
+                    "Source/binary (i.e. mixed) uploads are not allowed.")
+        elif not upload.sourceful and not upload.binaryful:
+            raise AssertionError(
+                "Upload is not sourceful, binaryful or mixed.")
 
 
 class SyncUploadPolicy(AbstractUploadPolicy):

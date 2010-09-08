@@ -251,11 +251,11 @@ class UploadProcessor:
             UploadStatusEnum.REJECTED: "rejected",
             UploadStatusEnum.ACCEPTED: "accepted"}[result]
         self.moveProcessedUpload(upload_path, destination, logger)
+        build.date_finished = datetime.datetime.now(pytz.UTC)
         if not (result == UploadStatusEnum.ACCEPTED and
                 build.verifySuccessfulUpload() and
                 build.status == BuildStatus.FULLYBUILT):
             build.status = BuildStatus.FAILEDTOUPLOAD
-            build.date_finished = datetime.datetime.now(pytz.UTC)
             build.notify(extra_info="Uploading build %s failed." % upload)
         build.storeUploadLog(logger.buffer.getvalue())
 
