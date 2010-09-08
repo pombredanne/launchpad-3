@@ -960,14 +960,24 @@ class ProposedTeamMembersEditView(LaunchpadFormView):
 
         if len(failed_joins) > 0:
             failed_names = [person.displayname for person in failed_joins]
-            failed_list = ",".join(failed_names)
-            self.request.response.addInfoNotification(
-                _("${this_team} is a member of the following teams, so those "
-                  "teams could not be accepted:  "
-                  "${failed_list}.  These teams should be declined.",
-                  mapping=dict(
-                      this_team=target_team.displayname,
-                      failed_list=failed_list)))
+            failed_list = ", ".join(failed_names)
+
+            mapping=dict(
+                this_team=target_team.displayname,
+                failed_list=failed_list)
+
+            if len(failed_joins) == 1:
+                self.request.response.addInfoNotification(
+                    _('${this_team} is a member of the following team, so it '
+                      'could not be accepted:  '
+                      '${failed_list}.  You need to "Decline" that team.',
+                      mapping=mapping))
+            else:
+                self.request.response.addInfoNotification(
+                    _('${this_team} is a member of the following teams, so '
+                      'they could not be accepted:  '
+                      '${failed_list}.  You need to "Decline" those teams.',
+                      mapping=mapping))
             self.next_url = ''
         else:
             self.next_url = self._next_url
