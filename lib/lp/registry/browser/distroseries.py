@@ -532,7 +532,7 @@ class DistroSeriesNeedsPackagesView(LaunchpadView):
 
 
 class DistroSeriesLocalDifferences(LaunchpadView):
-    """Present differences betteen a derived series and its parent."""
+    """Present differences between a derived series and its parent."""
 
     page_title = 'Local package differences'
 
@@ -543,8 +543,7 @@ class DistroSeriesLocalDifferences(LaunchpadView):
 
         feature_controller = FeatureController(in_scope)
         if feature_controller.getFlag('soyuz.derived-series-ui.enabled') != 'on':
-            self.request.response.redirect(
-                canonical_url(self.context))
+            self.request.response.redirect(canonical_url(self.context))
             return
         super(DistroSeriesLocalDifferences, self).initialize()
 

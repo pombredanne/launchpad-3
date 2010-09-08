@@ -19,6 +19,7 @@ from lp.registry.enum import (
     DistroSeriesDifferenceStatus,
     DistroSeriesDifferenceType,
     )
+from lp.services.features.flags import FeatureController
 from lp.services.features.model import FeatureFlag, getFeatureStore
 from lp.testing import TestCaseWithFactory
 from lp.testing.views import create_initialized_view
@@ -71,14 +72,23 @@ class DistroSeriesLocalPackageDiffsTestCase(TestCaseWithFactory):
             scope=u'default', flag=u'soyuz.derived-series-ui.enabled',
             value=u'on', priority=1))
 
+    def getDerivedSeriesUIFeatureFlag(self, flag):
+        """Helper to return the given flag leaving tests more readable."""
+        def in_scope(value):
+            return True
+
+        feature_controller = FeatureController(in_scope)
+        return feature_controller.getFlag(flag)
+
     def test_view_redirects_without_feature_flag(self):
         # If the feature flag soyuz.derived-series-ui.enabled is not set the
         # view simply redirects to the derived series.
         derived_series = self.makeDerivedSeries(
             parent_name='lucid', derived_name='derilucid')
 
-        # self.assertIs(
-        #     None, getFeatureFlag('soyuz.derived-series-ui.enabled'))
+        self.assertIs(
+            None, self.getDerivedSeriesUIFeatureFlag(
+                'soyuz.derived-series-ui.enabled'))
         view = create_initialized_view(
             derived_series, '+localpackagediffs')
 
@@ -118,6 +128,7 @@ class DistroSeriesLocalPackageDiffsTestCase(TestCaseWithFactory):
             [current_difference], view.cached_differences.batch)
 
     def test_batch_includes_different_versions_only(self):
+        # The view contains differences of type DIFFERENT_VERSIONS only.
         derived_series = self.makeDerivedSeries(
             parent_name='lucid', derived_name='derilucid')
         different_versions_diff = self.factory.makeDistroSeriesDifference(
@@ -134,6 +145,7 @@ class DistroSeriesLocalPackageDiffsTestCase(TestCaseWithFactory):
             [different_versions_diff], view.cached_differences.batch)
 
     def test_template_includes_help_link(self):
+        # The help link for popup help is included.
         derived_series = self.makeDerivedSeries(
             parent_name='lucid', derived_name='derilucid')
 
