@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'MembershipJobType',
     'BugNotificationLevel',
     'DistroSeriesDifferenceStatus',
     'DistroSeriesDifferenceType',
@@ -103,4 +104,12 @@ class DistroSeriesDifferenceType(DBEnumeratedType):
         Different versions
 
         This package is present in both series with different versions.
+        """)
+
+
+class MembershipJobType(DBEnumeratedType):
+    """Values that IMembershipJob.job_type can take."""
+
+    ADD_MEMBER_NOTIFICATION = DBItem(0, """
+        Notify affected users of new team membership.
         """)
