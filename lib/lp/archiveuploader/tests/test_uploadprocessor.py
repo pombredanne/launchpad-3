@@ -1905,6 +1905,8 @@ class TestBuildUploadProcessor(TestUploadProcessorBase):
 
         # Upload and accept a binary for the primary archive source.
         shutil.rmtree(upload_dir)
+
+        # Commit so the build cookie has the right ids.
         self.layer.txn.commit()
         leaf_name = build.getUploadDirLeaf(build.getBuildCookie())
         os.mkdir(os.path.join(self.incoming_folder, leaf_name))
@@ -1925,7 +1927,7 @@ class TestBuildUploadProcessor(TestUploadProcessorBase):
         self.assertTrue('DEBUG: Moving upload directory '
             in log_contents)
 
-    def testSuccess(self):
+    def testBinaryPackageBuilds(self):
         # Properly uploaded binaries should result in the
         # build status changing to FULLYBUILT.
         # Upload a source package
@@ -1946,6 +1948,8 @@ class TestBuildUploadProcessor(TestUploadProcessorBase):
 
         # Upload and accept a binary for the primary archive source.
         shutil.rmtree(upload_dir)
+
+        # Commit so the build cookie has the right ids.
         self.layer.txn.commit()
         leaf_name = build.getUploadDirLeaf(build.getBuildCookie())
         upload_dir = self.queueUpload("bar_1.0-1_binary",
@@ -1958,6 +1962,35 @@ class TestBuildUploadProcessor(TestUploadProcessorBase):
         self.layer.txn.commit()
         # No emails are sent on success
         self.assertEquals(len(stub.test_emails), last_stub_mail_count)
+        self.assertEquals(BuildStatus.FULLYBUILT, build.status)
+        log_contents = build.upload_log.read()
+        log_lines = log_contents.splitlines()
+        self.assertTrue(
+            'INFO: Processing upload bar_1.0-1_i386.changes' in log_lines)
+        self.assertTrue(
+            'INFO: Committing the transaction and any mails associated with '
+            'this upload.' in log_lines)
+
+    def testSourcePackageRecipes(self):
+        # Properly uploaded source packages should result in the
+        # build status changing to FULLYBUILT.
+
+        import pdb; pdb.set_trace()
+
+        # Upload a source package
+        build = self.factory.makeSourcePackageRecipeBuild(sourcename=u"bar")
+        bq = self.factory.makeSourcePackageRecipeBuildJob(recipe_build=build)
+        # Commit so the build cookie has the right ids.
+        self.layer.txn.commit()
+        leaf_name = build.getUploadDirLeaf(build.getBuildCookie())
+        upload_dir = self.queueUpload("bar_1.0-1", queue_entry=leaf_name)
+        self.options.context = 'buildd'
+        self.options.builds = True
+        build.status = BuildStatus.UPLOADING
+        self.uploadprocessor.processBuildUpload(
+            self.incoming_folder, leaf_name)
+        self.layer.txn.commit()
+
         self.assertEquals(BuildStatus.FULLYBUILT, build.status)
         log_contents = build.upload_log.read()
         log_lines = log_contents.splitlines()

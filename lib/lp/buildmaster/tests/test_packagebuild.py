@@ -254,7 +254,7 @@ class TestGetUploadMethodsMixin:
         # The uploadprocessor relies on this format.
         cookie = self.build.getBuildCookie()
         expected_cookie = "%d-PACKAGEBUILD-%d" % (
-            self.build.package_build.id, self.build.build_farm_job.id)
+            self.build.id, self.build.build_farm_job.id)
         self.assertEquals(expected_cookie, cookie)
 
     def test_getUploadDirLeafCookie_parseable(self):

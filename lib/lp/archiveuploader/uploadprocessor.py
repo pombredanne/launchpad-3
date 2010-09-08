@@ -233,7 +233,7 @@ class UploadProcessor:
             [changes_file] = self.locateChangesFiles(upload_path)
             logger.debug("Considering changefile %s" % changes_file)
             result = self.processChangesFile(
-                upload_path, changes_file, logger)
+                upload_path, changes_file, logger, buildid=build.id)
         except (KeyboardInterrupt, SystemExit):
             raise
         except:
@@ -376,7 +376,8 @@ class UploadProcessor:
                         os.path.join(relative_path, filename))
         return self.orderFilenames(changes_files)
 
-    def processChangesFile(self, upload_path, changes_file, logger=None):
+    def processChangesFile(self, upload_path, changes_file, logger=None,
+                           buildid=None):
         """Process a single changes file.
 
         This is done by obtaining the appropriate upload policy (according
@@ -433,6 +434,8 @@ class UploadProcessor:
                          "and update your configuration.")))
         logger.debug("Finding fresh policy")
         policy = self._getPolicyForDistro(distribution)
+        if buildid is not None:
+            policy.options.buildid = buildid
         policy.archive = archive
 
         # DistroSeries overriding respect the following precedence:
