@@ -231,11 +231,12 @@ class LPForkingService(object):
         trace._bzr_log_start_time = time.time()
         trace.mutter('%d starting %r'
                      % (os.getpid(), command_argv,))
+        self._create_child_file_descriptors(path)
         # Now that we've set everything up, send the response to the client,
         # and close everything out. we create them first, so the client can
         # start trying to connect to them, while we do the same.
         # Child process, close the connections
-        conn.sendall(path + '\n')
+        conn.sendall('ok\n%d\n%s\n' % (os.getpid(), path))
         conn.close()
         self.host = None
         self.port = None
@@ -261,7 +262,6 @@ class LPForkingService(object):
     def fork_one_request(self, conn, client_addr, command_argv):
         """Fork myself and serve a request."""
         temp_name = tempfile.mkdtemp(prefix='lp-forking-service-child-')
-        self._create_child_file_descriptors(temp_name)
         self._children_spawned += 1
         pid = self._fork_function()
         if pid == 0:
@@ -387,11 +387,11 @@ class LPForkingService(object):
         request = request.strip()
         if request == 'hello':
             self.log(client_addr, 'hello heartbeat')
-            conn.sendall('yep, still alive\n')
+            conn.sendall('ok\nyep, still alive\n')
             self.log_information()
         elif request == 'quit':
             self._should_terminate.set()
-            conn.sendall('quit command requested... exiting\n')
+            conn.sendall('ok\nquit command requested... exiting\n')
             self.log(client_addr, 'quit requested')
         elif request.startswith('fork '):
             command = request[5:]
@@ -401,7 +401,7 @@ class LPForkingService(object):
                 # TODO: Log the traceback?
                 self.log(client_addr, 'command parsing failed: %r'
                                       % (str(e),))
-                conn.sendall('FAILURE: command parsing failed: %r'
+                conn.sendall('FAILURE\ncommand parsing failed: %r'
                              % (str(e),))
             else:
                 self.log(client_addr, 'fork requested for %r' % (command,))
@@ -414,7 +414,7 @@ class LPForkingService(object):
             # TODO: Do we want to be friendly here? Or do we want to just
             #       ignore the request? This is meant to be a local-only
             #       process, so we probably want to be helpful
-            conn.sendall('FAILURE: unknown request: %r\n' % (request,))
+            conn.sendall('FAILURE\nunknown request: %r\n' % (request,))
         conn.close()
 
 

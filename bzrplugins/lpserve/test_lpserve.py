@@ -155,7 +155,7 @@ class TestLPForkingService(TestCaseWithLPForkingService):
 
     def test_send_quit_message(self):
         response = self.send_message_to_service('quit\n')
-        self.assertEqual('quit command requested... exiting\n', response)
+        self.assertEqual('ok\nquit command requested... exiting\n', response)
         self.service.service_stopped.wait(10.0)
         self.assertTrue(self.service.service_stopped.isSet())
 
@@ -165,7 +165,7 @@ class TestLPForkingService(TestCaseWithLPForkingService):
 
     def test_send_hello_heartbeat(self):
         response = self.send_message_to_service('hello\n')
-        self.assertEqual('yep, still alive\n', response)
+        self.assertEqual('ok\nyep, still alive\n', response)
 
 
 class TestCaseWithSubprocess(tests.TestCaseWithTransport):
@@ -261,6 +261,17 @@ class TestCaseWithLPForkingServiceSubprocess(TestCaseWithSubprocess):
             raise RuntimeError('Failed to send message: %r' % (response,))
         return response
 
+    def send_fork_request(self, command):
+        response = self.send_message_to_service('fork %s\n' % (command,))
+        ok, pid, path, tail = response.split('\n')
+        self.assertEqual('ok', ok)
+        self.assertEqual('', tail)
+        # Don't really care what it is, but should be an integer
+        pid = int(pid)
+        path = path.strip()
+        self.assertContainsRe(path, '/lp-forking-service-child-')
+        return path
+
     def start_service_subprocess(self):
         # Make sure this plugin is exposed to the subprocess
         # SLOOWWW (~2.4 seconds, which is why we are doing the work anyway)
@@ -305,7 +316,7 @@ class TestCaseWithLPForkingServiceSubprocess(TestCaseWithSubprocess):
                     send_signal=signal.SIGINT, retcode=3)
                 self.fail('Failed to quit gracefully after 10.0 seconds')
             time.sleep(0.1)
-        self.assertEqual('quit command requested... exiting\n', response)
+        self.assertEqual('ok\nquit command requested... exiting\n', response)
 
     def _get_fork_handles(self, path):
         trace.mutter('getting handles for: %s' % (path,))
@@ -330,17 +341,14 @@ class TestCaseWithLPForkingServiceSubprocess(TestCaseWithSubprocess):
         return stdout_content, stderr_content
 
     def test_fork_lp_serve_hello(self):
-        response = self.send_message_to_service('fork lp-serve --inet 2\n')
-        self.assertContainsRe(response, '/lp-forking-service-child-')
-        path = response.strip()
+        path = self.send_fork_request('lp-serve --inet 2')
         stdout_content, stderr_content = self.communicate_with_fork(path,
             'hello\n')
         self.assertEqual('ok\x012\n', stdout_content)
         self.assertEqual('', stderr_content)
 
     def test_fork_replay(self):
-        response = self.send_message_to_service('fork launchpad-replay\n')
-        path = response.strip()
+        path = self.send_fork_request('launchpad-replay')
         stdout_content, stderr_content = self.communicate_with_fork(path,
             '1 hello\n2 goodbye\n1 maybe\n')
         self.assertEqualDiff('hello\nmaybe\n', stdout_content)
@@ -353,9 +361,7 @@ class TestCaseWithLPForkingServiceSubprocess(TestCaseWithSubprocess):
     def test_fork_multiple_children(self):
         paths = []
         for idx in range(4):
-            path = self.send_message_to_service('fork launchpad-replay\n')
-            path = path.strip()
-            paths.append(path)
+            paths.append(self.send_fork_request('launchpad-replay'))
         for idx in [3, 2, 0, 1]:
             p = paths[idx]
             stdout_msg = 'hello %d\n' % (idx,)
