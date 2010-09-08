@@ -53,9 +53,6 @@
             name="+mdz-specs.csv"
             attribute="mdzCsv"/>
         <browser:page
-            name="+specs"
-            template="../templates/hasspecifications-specs.pt"/>
-        <browser:page
             name="+portlet-latestspecs"
             template="../templates/specificationtarget-portlet-latestspecs.pt"/>
     </browser:pages>
@@ -499,9 +496,6 @@
             for="lp.blueprints.interfaces.specificationtarget.ISpecificationGoal"
             class="lp.blueprints.browser.specificationtarget.HasSpecificationsView"
             permission="zope.Public">
-            <browser:page
-                name="+specs"
-                template="../templates/hasspecifications-specs.pt"/>
         </browser:pages>
         <browser:page
             for="lp.blueprints.interfaces.specificationtarget.ISpecificationGoal"
@@ -531,9 +525,6 @@
             for="lp.blueprints.interfaces.specificationtarget.IHasSpecifications"
             class="lp.blueprints.browser.specificationtarget.HasSpecificationsView"
             permission="zope.Public">
-            <browser:page
-                name="+specs"
-                template="../templates/hasspecifications-specs.pt"/>
             <browser:page
                 name="+portlet-latestspecs"
                 template="../templates/specificationtarget-portlet-latestspecs.pt"/>
@@ -582,9 +573,6 @@
         class="lp.blueprints.browser.specificationtarget.HasSpecificationsView"
         facet="specifications"
         permission="zope.Public">
-        <browser:page
-            name="+specs"
-            template="../templates/hasspecifications-specs.pt"/>
         <browser:page
             name="+portlet-latestspecs"
             template="../templates/specificationtarget-portlet-latestspecs.pt"/>

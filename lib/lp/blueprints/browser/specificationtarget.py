@@ -133,6 +133,27 @@ class HasSpecificationsView(LaunchpadView):
     is_sprint = False
     has_drivers = False
 
+    # Templates for the various conditions of blueprints:
+    # * On Launchpad
+    # * External
+    # * Disabled
+    # * Unknown
+    default_template = ViewPageTemplateFile(
+        '../templates/hasspecifications-specs.pt')
+    external_template = ViewPageTemplateFile(
+        '../templates/hasspecifications-specs.pt')
+    disabled_template = ViewPageTemplateFile(
+        '../templates/hasspecifications-specs.pt')
+    unknown_template = ViewPageTemplateFile(
+        '../templates/hasspecifications-specs.pt')
+
+    @property
+    def template(self):
+        return self.default_template
+
+    def render(self):
+        return self.template
+
     # XXX: jsk: 2007-07-12 bug=173972: This method might be improved by
     # replacing the conditional execution with polymorphism.
     def initialize(self):
