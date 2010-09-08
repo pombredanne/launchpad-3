@@ -75,17 +75,18 @@
   </div>
 
   <div class="yui-g">
-      &nbsp;
-      <div tal:condition="view/has_bug_or_spec">
-        <div id="related-bugs-and-blueprints"
-          tal:define="branch context/source_branch">
-          <h2>Linked bug reports and blueprints</h2>
-          <div class="actions">
+      <div class="first">
+        <div tal:condition="view/has_bug_or_spec">
+          <div id="related-bugs-and-blueprints"
+            tal:define="branch context/source_branch">
+            <h2>Linked bug reports and blueprints</h2>
+            <div class="actions">
 
-            <metal:bug-branch-links use-macro="branch/@@+macros/bug-branch-links"/>
-          </div>
-          <div class="actions">
-            <metal:spec-branch-links use-macro="branch/@@+macros/spec-branch-links"/>
+              <metal:bug-branch-links use-macro="branch/@@+macros/bug-branch-links"/>
+            </div>
+            <div class="actions">
+              <metal:spec-branch-links use-macro="branch/@@+macros/spec-branch-links"/>
+            </div>
           </div>
         </div>
       </div>
