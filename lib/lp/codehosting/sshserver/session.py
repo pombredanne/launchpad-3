@@ -13,7 +13,7 @@ import socket
 import urlparse
 
 from zope.event import notify
-from zope.interfaces import implements
+from zope.interface import implements
 
 from twisted.internet import error, interfaces, process
 from twisted.python import log
@@ -88,6 +88,8 @@ class ForkedProcessTransport(process.BaseProcess):
     def _spawn(self, executable, args):
         assert executable == 'bzr' # Maybe .endswith()
         assert args[0] == 'bzr'
+        # XXX: We must send BZR_EMAIL to the process, or we get failures to
+        #      run because of no 'whoami' information.
         response = self._sendMessageToService('fork %s\n' % ' '.join(args[1:]))
         ok, pid, path, tail = response.split('\n')
         assert ok == 'ok'
