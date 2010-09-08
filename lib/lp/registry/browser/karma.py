@@ -13,7 +13,6 @@ from operator import attrgetter
 
 from zope.component import getUtility
 
-from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.webapp import (
     action,
@@ -29,6 +28,7 @@ from lp.registry.interfaces.karma import (
     )
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.services.propertycache import cachedproperty
 
 
 TOP_CONTRIBUTORS_LIMIT = 20

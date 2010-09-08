@@ -42,7 +42,6 @@ from zope.session.interfaces import (
     ISession,
     )
 
-from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.account import AccountSuspendedError
@@ -65,6 +64,7 @@ from lp.registry.interfaces.person import (
     IPersonSet,
     PersonCreationRationale,
     )
+from lp.services.propertycache import cachedproperty
 
 
 class UnauthorizedView(SystemErrorView):

@@ -21,7 +21,6 @@ from zope.interface import Interface
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.schema import TextLine
 
-from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp import (
     action,
@@ -39,6 +38,7 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.tales import LanguageFormatterAPI
 from canonical.widgets import LabeledMultiCheckBoxWidget
+from lp.services.propertycache import cachedproperty
 from lp.services.worlddata.interfaces.language import (
     ILanguage,
     ILanguageSet,

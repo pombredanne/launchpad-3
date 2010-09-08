@@ -1,4 +1,5 @@
-= Sending the Bug Notifications =
+Sending the Bug Notifications
+=============================
 
 As explained in bugnotifications.txt, a change to a bug causes a bug
 notification to be added. These notifications should be assembled into
@@ -29,6 +30,21 @@ easier.
     ...     print email_notification.get_payload(decode=True)
     ...     print "-" * 70
 
+We'll also define some helper functions to help us with database users.
+
+    >>> from canonical.config import config
+    >>> from canonical.database.sqlbase import commit
+    >>> from canonical.testing import LaunchpadZopelessLayer
+
+    >>> def switch_db_to_launchpad():
+    ...     commit()
+    ...     LaunchpadZopelessLayer.switchDbUser('launchpad')
+
+    >>> def switch_db_to_bugnotification():
+    ...     commit()
+    ...     LaunchpadZopelessLayer.switchDbUser(
+    ...         config.malone.bugnotification_dbuser)
+
 You'll note that we are printing out an X-Launchpad-Message-Rationale
 header. This header is a simple string that allows people to filter
 bugmail according to the reason they are getting emailed. For instance,
@@ -46,7 +62,8 @@ Anyway, let's start our demonstration by adding a comment to a bug:
     ...     datecreated=ten_minutes_ago)
     >>> bug_one.addCommentNotification(comment)
 
-    >>> notifications = getUtility(IBugNotificationSet).getNotificationsToSend()
+    >>> notifications = getUtility(
+    ...     IBugNotificationSet).getNotificationsToSend()
     >>> len(notifications)
     1
 
@@ -323,6 +340,7 @@ notification will be sent to all members individually.
     ...     print member.preferredemail.email
     marilize@hbd.com
 
+    >>> switch_db_to_launchpad()
     >>> bug_one.subscribe(shipit_admins, shipit_admins)
     <...>
 
@@ -330,6 +348,8 @@ notification will be sent to all members individually.
     ...     'subject', 'a comment.', sample_person,
     ...     datecreated=ten_minutes_ago)
     >>> bug_one.addCommentNotification(comment)
+
+    >>> switch_db_to_bugnotification()
     >>> pending_notifications = getUtility(
     ...     IBugNotificationSet).getNotificationsToSend()
     >>> len(pending_notifications)
@@ -348,22 +368,8 @@ notification will be sent to all members individually.
     >>> flush_notifications()
 
 
-== Duplicates ==
-
-We will need some helper functions.
-
-    >>> from canonical.config import config
-    >>> from canonical.database.sqlbase import commit
-    >>> from canonical.testing import LaunchpadZopelessLayer
-
-    >>> def switch_db_to_launchpad():
-    ...     commit()
-    ...     LaunchpadZopelessLayer.switchDbUser('launchpad')
-
-    >>> def switch_db_to_bugnotification():
-    ...     commit()
-    ...     LaunchpadZopelessLayer.switchDbUser(
-    ...         config.malone.bugnotification_dbuser)
+Duplicates
+----------
 
 We will also need a fresh new bug.
 
@@ -391,11 +397,13 @@ top of the email:
     ...     'subject', 'a comment.', sample_person,
     ...     datecreated=ten_minutes_ago)
     >>> new_bug.addCommentNotification(comment)
-    >>> notifications = getUtility(IBugNotificationSet).getNotificationsToSend()
+    >>> notifications = getUtility(
+    ...     IBugNotificationSet).getNotificationsToSend()
     >>> len(notifications)
     1
 
-    >>> for bug_notifications, messages in get_email_notifications(notifications):
+    >>> for bug_notifications, messages in (
+    ...     get_email_notifications(notifications)):
     ...     for message in messages:
     ...         print_notification(message)
     To: support@ubuntu.com
@@ -436,7 +444,8 @@ top of the email:
     >>> flush_notifications()
 
 
-== Security Vulnerabilities ==
+Security Vulnerabilities
+------------------------
 
 When a new security related bug is filed, a small notification is
 inserted at the top of the message body.
@@ -499,7 +508,8 @@ The message is only inserted for new bugs, not for modified bugs:
     >>> flush_notifications()
 
 
-== The cronscript ==
+The cronscript
+--------------
 
 There's a cronsript which does the sending of the email. Let's add a
 few notifications to show that it works.
@@ -528,7 +538,8 @@ few notifications to show that it works.
     ...     '** Summary changed to: New summary.', sample_person,
     ...     when=ten_minutes_ago)
 
-    >>> notifications = getUtility(IBugNotificationSet).getNotificationsToSend()
+    >>> notifications = getUtility(
+    ...     IBugNotificationSet).getNotificationsToSend()
     >>> len(notifications)
     6
 
@@ -620,7 +631,8 @@ makes it write out the emails it sends.
     >>> flush_notifications()
 
 
-== The X-Launchpad-Bug header ==
+The X-Launchpad-Bug header
+--------------------------
 
 When a notification is sent out about a bug, the X-Launchpad-Bug header is
 filled with data about that bug:
@@ -658,7 +670,8 @@ specified:
     False
 
 
-== The X-Launchpad-Bug-Tags header ==
+The X-Launchpad-Bug-Tags header
+-------------------------------
 
 First, a helper function that triggers notifications by adding a
 comment to a given bug, another that returns a sorted list of new
@@ -723,7 +736,8 @@ won't be included.
     ...     message.get_all('X-Launchpad-Bug-Tags')
 
 
-== The X-Launchpad-Bug-Private header ==
+The X-Launchpad-Bug-Private header
+----------------------------------
 
 When a notification is sent out about a bug, the
 X-Launchpad-Bug-Private header shows if the bug is marked as
@@ -748,7 +762,8 @@ Predictably, private bugs are sent with a slightly different header:
     mark@example.com ['yes']
 
 
-== The X-Launchpad-Bug-Security-Vulnerability header ==
+The X-Launchpad-Bug-Security-Vulnerability header
+-------------------------------------------------
 
 When a notification is sent out about a bug, the
 X-Launchpad-Bug-Security-Vulnerability header records if the bug is a
@@ -776,7 +791,8 @@ simple "yes":
     mark@example.com ['yes']
 
 
-== The X-Launchpad-Bug-Commenters header ==
+The X-Launchpad-Bug-Commenters header
+-------------------------------------
 
 The X-Launchpad-Bug-Recipient-Commented header lists all user IDs of
 people who have ever commented on the bug. It's a space-separated
@@ -809,7 +825,8 @@ made.
     name12 name16
 
 
-== The X-Launchpad-Bug-Reporter header ==
+The X-Launchpad-Bug-Reporter header
+-----------------------------------
 
 The X-Launchpad-Bug-Reporter header contains information about the Launchpad
 user who originally reported the bug and opened the bug's first bug task.
@@ -819,7 +836,8 @@ user who originally reported the bug and opened the bug's first bug task.
     Foo Bar (name16)
 
 
-== Verbose bug notifications ==
+Verbose bug notifications
+-------------------------
 
 It is possible for users to have all the bug notifications which they
 receive include the bug description and status. This helps in those
@@ -1016,7 +1034,8 @@ And Concise Team Person does too, even though his team doesn't want them:
     ----------------------------------------------------------------------
 
 
-== Notification Recipients ==
+Notification Recipients
+-----------------------
 
 Bug notifications are sent to direct subscribers of a bug as well as to
 structural subscribers. Structural subcribers can select the
