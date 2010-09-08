@@ -362,13 +362,18 @@
                 permission="zope.Public"
                 attributes="
                     active
+                    addRemoteComponent
+                    addRemoteComponentGroup
                     aliases
                     baseurl
                     bugtrackertype
+                    componentForDistroSourcePackage
                     contactdetails
+                    getAllRemoteComponentGroups
                     getBugFilingAndSearchLinks
                     getBugsWatching
                     getLinkedPersonByName
+                    getRemoteComponentGroup
                     has_lp_plugin
                     id
                     imported_bug_messages

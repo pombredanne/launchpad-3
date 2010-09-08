@@ -31,6 +31,7 @@ from lazr.restful.declarations import (
     export_as_webservice_entry,
     export_factory_operation,
     export_read_operation,
+    export_write_operation,
     exported,
     operation_parameters,
     operation_returns_entry,
@@ -355,6 +356,28 @@ class IBugTracker(Interface):
             point between now and 24 hours hence.
         """
 
+    def addRemoteComponent(group_name, component_name):
+        """Adds a local component for the bug tracker
+
+        This is used to add a component that is valid in a remote
+        bug tracker but for some reason is not importing automatically.
+
+        :param group_name: The name of the remote component group (known
+        as 'product' in some bug trackers such as Bugzilla).
+
+        :param: component_name: The exact text name as should be specified
+        in the remote bug tracker's component field.
+        """
+
+    def getRemoteComponentGroup(group_name):
+        """Retrieve a given component group registered with the bug tracker.
+
+        :param group_name: Name of the component group to retrieve.
+        """
+
+    def getAllRemoteComponentGroups():
+        """Retrieve all of the registered component groups for bug tracker.
+        """
 
 class IBugTrackerSet(Interface):
     """A set of IBugTracker's.
@@ -476,7 +499,7 @@ class IBugTrackerComponent(Interface):
                                    "Launchpad?  If it was, we must retain "
                                    "it across updates of bugtracker data."),
                      readonly=True)
-    
+  
     name = exported(
         BugTrackerNameField(
             title=_('Name'),
@@ -528,7 +551,7 @@ class IBugTrackerComponentGroup(Interface):
 
     @export_write_operation()
     def addComponent(component_name):
-        """Adds a component to be tracked as part of this component group"""
+       """Adds a component to be tracked as part of this component group"""
 
 
 class IRemoteBug(Interface):

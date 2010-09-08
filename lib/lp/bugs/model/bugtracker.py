@@ -8,10 +8,10 @@ __all__ = [
     'BugTracker',
     'BugTrackerAlias',
     'BugTrackerAliasSet',
+    'BugTrackerSet',
     'BugTrackerComponent',
     'BugTrackerComponentGroup',
-    'BugTrackerSet']
-
+    ]
 
 from datetime import datetime
 from itertools import chain
@@ -519,6 +519,19 @@ class BugTracker(SQLBase):
             next_check=new_next_check, lastchecked=None,
             last_error_type=None)
 
+    def addRemoteComponentGroup(self, component_group_name):
+        """See `IBugTracker`."""
+        return None
+
+    def getAllRemoteComponentGroups(self):
+        """See `IBugTracker`."""
+        return []
+
+    def getRemoteComponentGroup(self, group_name):
+        """See `IBugTracker`."""
+        #TODO
+        return None
+
 
 class BugTrackerSet:
     """Implements IBugTrackerSet for a container or set of BugTrackers,
@@ -671,14 +684,28 @@ class BugTrackerComponent(SQLBase):
     to the corresponding source package in the distro.
     """
     implements(IBugTrackerComponent)
-
     _table = 'BugTrackerComponent'
 
     name = StringCol(notNull=True)
+    valid_name = StringCol(notNull=True)
 
-    source_package = ForeignKey(
-        dbName='distrosourcepackage', foreignKey='id',
-        storm_validator=TODO, notNull=False)
+    is_visible = BoolCol(notNull=True, default=True)
+    is_custom = BoolCol(notNull=True, default=False)
+
+    distro_source_package = ForeignKey(
+        dbName='distrosourcepackage', foreignKey='DistributionSourcePackage',
+        notNull=False)
+    # TODO: storm_validator=TODO ?
+
+    def show(self):
+        if not self.is_visible:
+            self.is_visible = True
+            self.sync()
+
+    def hide(self):
+        if self.is_visible:
+            self.is_visible = False
+            self.sync()
 
 
 class BugTrackerComponentGroup(SQLBase):
@@ -688,14 +715,20 @@ class BugTrackerComponentGroup(SQLBase):
     such as Bugzilla's 'product'.
     """
     implements(IBugTrackerComponentGroup)
-
     _table = 'BugTrackerComponentGroup'
 
     name = StringCol(notNull=True)
 
     bugtracker = ForeignKey(
-        dbName='bugtracker', foreignKey='id',
-        storm_validator=TODO, notNull=True)
+        dbName='bugtracker', foreignKey='BugTracker', notNull=True)
 
     components = SQLMultipleJoin(
-        'BugTrackerComponent', joinColumn='componentgroup', orderBy='name')
+        'BugTrackerComponent', joinColumn='component_group', orderBy='name')
+
+    def addComponent(self, component_name):
+        # TODO: Verify we don't already have the component
+
+        component = BugTrackerComponent()
+        component.name = component_name
+        
+        # TODO: Insert into components
