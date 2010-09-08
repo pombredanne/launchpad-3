@@ -10,6 +10,7 @@ import re
 from BeautifulSoup import BeautifulSoup
 from lazr.lifecycle.interfaces import IDoNotSnapshot
 from simplejson import dumps
+from storm.store import Store
 from testtools.matchers import (
     Equals,
     LessThan,
@@ -147,33 +148,40 @@ class TestBugAttachments(TestCaseWithFactory):
     layer = LaunchpadFunctionalLayer
 
     def test_attachments_query_counts_constant(self):
+        # XXX j.c.sackett 2010-09-02 bug=619017
+        # This test was being thrown off by the reference bug. To get around
+        # the problem, flush and reset are called on the bug storm cache
+        # before each call to the webservice. When lp's storm is updated
+        # to release the committed fix for this bug, please see about
+        # updating this test.
         login(USER_EMAIL)
         self.bug = self.factory.makeBug()
+        store = Store.of(self.bug)
         self.factory.makeBugAttachment(self.bug)
         self.factory.makeBugAttachment(self.bug)
+        person = self.factory.makePerson()
         webservice = LaunchpadWebServiceCaller(
             'launchpad-library', 'salgado-change-anything')
         collector = QueryCollector()
         collector.register()
         self.addCleanup(collector.unregister)
         url = '/bugs/%d/attachments' % self.bug.id
+        #First request
+        store.flush()
+        store.reset()
         response = webservice.get(url)
         self.assertThat(collector, HasQueryCount(LessThan(24)))
         with_2_count = collector.count
         self.failUnlessEqual(response.status, 200)
         login(USER_EMAIL)
-        self.factory.makeBugAttachment(self.bug)
+        for i in range(5):
+            self.factory.makeBugAttachment(self.bug)
         logout()
+        #Second request
+        store.flush()
+        store.reset()
         response = webservice.get(url)
-        # XXX: Permit the second call to be == or less, because storm
-        # caching bugs (such as) https://bugs.launchpad.net/storm/+bug/619017
-        # which can cause spurious queries. There was an EC2 failure landing
-        # with this set to strictly equal which I could not reproduce locally,
-        # and the ec2 test did not report the storm egg used, so could not 
-        # confidently rule out some form of skew.
-        self.assertThat(collector, HasQueryCount(MatchesAny(
-            Equals(with_2_count),
-            LessThan(with_2_count))))
+        self.assertThat(collector, HasQueryCount(Equals(with_2_count+1)))
 
 
 class TestBugMessages(TestCaseWithFactory):

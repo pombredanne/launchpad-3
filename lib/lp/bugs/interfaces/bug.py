@@ -489,6 +489,14 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
     def getSubscribersFromDuplicates():
         """Return IPersons subscribed from dupes of this bug."""
 
+    def getSubscribersForPerson(person):
+        """Find the persons or teams by which person is subscribed.
+        
+        This call should be quite cheap to make and performs a single query.
+        
+        :return: An IResultSet.
+        """
+
     def getBugNotificationRecipients(duplicateof=None, old_bug=None,
                                      include_master_dupe_subscribers=False):
         """Return a complete INotificationRecipientSet instance.

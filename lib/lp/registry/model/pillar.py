@@ -17,11 +17,7 @@ from sqlobject import (
     ForeignKey,
     StringCol,
     )
-from storm.expr import (
-    LeftJoin,
-    NamedFunc,
-    Select,
-    )
+from storm.expr import LeftJoin
 from storm.info import ClassAlias
 from storm.locals import SQL
 from storm.store import Store
@@ -51,11 +47,9 @@ from lp.registry.interfaces.pillar import (
 from lp.registry.interfaces.product import (
     IProduct,
     IProductSet,
-    License,
     )
 from lp.registry.interfaces.projectgroup import IProjectGroupSet
 from lp.registry.model.featuredproject import FeaturedProject
-from lp.registry.model.productlicense import ProductLicense
 
 
 __all__ = [
@@ -197,23 +191,15 @@ class PillarNameSet:
 
     def search(self, text, limit):
         """See `IPillarSet`."""
-        # These classes are imported in this method to prevent an import loop.
-        from lp.registry.model.product import (
-            Product, ProductWithLicenses)
+        # Avoid circular import.
+        from lp.registry.model.product import ProductWithLicenses
         if limit is None:
             limit = config.launchpad.default_batch_size
-
-        class Array(NamedFunc):
-            """Storm representation of the array() PostgreSQL function."""
-            name = 'array'
 
         # Pull out the licenses as a subselect which is converted
         # into a PostgreSQL array so that multiple licenses per product
         # can be retrieved in a single row for each product.
-        extra_column = Array(
-            Select(columns=[ProductLicense.license],
-                   where=(ProductLicense.product == Product.id),
-                   tables=[ProductLicense]))
+        extra_column = ProductWithLicenses.composeLicensesColumn()
         result = self.build_search_query(text, [extra_column])
 
         # If the search text matches the name or title of the
@@ -244,18 +230,12 @@ class PillarNameSet:
                 stacklevel=2)
         pillars = []
         # Prefill pillar.product.licenses.
-        for pillar_name, other, product, project, distro, license_ids in (
+        for pillar_name, other, product, project, distro, licenses in (
             result[:limit]):
             pillar = pillar_name.pillar
             if IProduct.providedBy(pillar):
-                licenses = [
-                    License.items[license_id]
-                    for license_id in license_ids]
-                product_with_licenses = ProductWithLicenses(
-                    pillar, tuple(sorted(licenses)))
-                pillars.append(product_with_licenses)
-            else:
-                pillars.append(pillar)
+                pillar = ProductWithLicenses(pillar, licenses)
+            pillars.append(pillar)
         return pillars
 
     def add_featured_project(self, project):
