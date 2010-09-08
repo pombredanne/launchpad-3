@@ -1145,13 +1145,31 @@ class POTMsgSet(SQLBase):
             template.awardKarma(translator, 'translationsuggestionapproved')
             template.awardKarma(reviewer, 'translationreview')
 
+    def _cloneAndDiverge(self, original_message, pofile):
+        """Create a diverged clone of a `TranslationMessage`.
+
+        The message is not made current; the caller must do so in order
+        to keep the message in a consistent state.
+        """
+        potranslations = self._findPOTranslations(
+            dict(enumerate(original_message.translations)))
+        message = self._makeTranslationMessage(
+            pofile, original_message.submitter, potranslations,
+            original_message.origin, diverged=True)
+        return message
+
     def approveAsDiverged(self, pofile, suggestion, reviewer,
                           lock_timestamp=None):
         """Approve a suggestion to become a diverged translation."""
         template = pofile.potemplate
         traits = getUtility(ITranslationSideTraitsSet).getTraits(
             template.translation_side)
-        if suggestion.potemplate == template and traits.getFlag(suggestion):
+
+        diverged = suggestion.is_diverged
+        used_here = traits.getFlag(suggestion)
+        used_on_other_side = traits.other_side_traits.getFlag(suggestion)
+
+        if used_here and suggestion.potemplate == template:
             # The suggestion is already current and diverged for the
             # right template.
             return suggestion
@@ -1162,42 +1180,29 @@ class POTMsgSet(SQLBase):
             if incumbent.is_diverged:
                 # The incumbent is in the way.  Disable it.
                 traits.setFlag(incumbent, False)
+                incumbent.markReviewed(reviewer)
                 incumbent.shareIfPossible()
-            else:
-                # This incumbent isn't really in the way.
-                incumbent = None
+                pofile.markChanged()
 
-        if traits.other_side_traits.getFlag(suggestion):
-            # The suggestion is already current on the other side.  Can't
-            # reuse it as a diverged message here, so clone it.
-            message = None
-        elif not traits.getFlag(suggestion):
-            # No obstacles.  Diverge & activate.
-            suggestion.potemplate = template
-            traits.setFlag(suggestion, True)
-            message = reviewed_message = suggestion
-        elif suggestion.is_diverged:
-            # The suggestion is already current in another template.
-            # Can't reuse it as a diverged message here, so clone it.
-            message = None
-        else:
+        if used_here and not diverged and not used_on_other_side:
             # This message is already the shared current message.  If it
             # was previously masked by a diverged message, it no longer
             # is.  This is probably the behaviour the user would expect.
+            return suggestion
+
+        if used_here or used_on_other_side:
+            # The suggestion is already current somewhere else.  Can't
+            # reuse it as a diverged message in this template, so clone
+            # it.
+            message = self._cloneAndDiverge(suggestion, pofile)
+        else:
+            # No obstacles.  Diverge.
             message = suggestion
-            reviewed_message = incumbent
+            message.potemplate = template
 
-        if message is None:
-            potranslations = self._findPOTranslations(
-                dict(enumerate(suggestion.translations)))
-            message = reviewed_message = self._makeTranslationMessage(
-                pofile, suggestion.submitter, potranslations,
-                suggestion.origin, diverged=True)
-            traits.setFlag(message, True)
-
+        traits.setFlag(message, True)
+        message.markReviewed(reviewer)
         pofile.markChanged()
-        if reviewed_message is not None:
-            reviewed_message.markReviewed(reviewer)
         return message
 
     def setCurrentTranslation(self, pofile, submitter, translations, origin,
