@@ -33,9 +33,10 @@
           <table class="listing">
           <thead>
             <tr>
-              <th><tal:replace replace="parent_name" /> package</th>
+              <th>Source</th>
+              <th><tal:replace replace="parent_name" /> version</th>
               <th><tal:replace replace="series_name" /> version</th>
-              <th>Last uploaded by</th>
+              <th>Last uploaded</th>
               <th>Latest comment</th>
             </tr>
           </thead>
@@ -43,27 +44,33 @@
             <tal:difference repeat="difference differences/batch">
             <tr tal:define="parent_source_pub difference/parent_source_pub;
                             source_pub difference/source_pub;
-                            signer source_pub/sourcepackagerelease/uploader/fmt:link|string:no signer;">
+                            signer source_pub/sourcepackagerelease/uploader/fmt:link|nothing;">
+              <td><span
+                      tal:replace="parent_source_pub/source_package_name">Foo</span>
+              </td>
               <td><a tal:attributes="href parent_source_pub/sourcepackagerelease/fmt:url">
                     <tal:replace
-                    replace="parent_source_pub/sourcepackagerelease/title"/></a>
+                    replace="parent_source_pub/sourcepackagerelease/version"/></a>
               </td>
               <td><a tal:attributes="href source_pub/sourcepackagerelease/fmt:url">
                     <tal:replace
                     replace="source_pub/sourcepackagerelease/version"/></a>
               </td>
-              <td><a tal:replace="structure signer">Steph Smith</a>
+              <td>
                   <span tal:attributes="title difference/source_pub/datepublished/fmt:datetime"
                         tal:content="difference/source_pub/datepublished/fmt:approximatedate">2005-09-16</span>
+                  <tal:signer condition="signer">
+                   by <a tal:replace="structure signer">Steph Smith</a>
+                  </tal:signer>
               </td>
               <td>
                 <tal:comment tal:define="comment python:difference.getComments().first();"
                              tal:condition="comment">
-                  <span tal:replace="structure
-                      comment/message/owner/name">joesmith</span>:
                   <span tal:replace="comment/comment/fmt:shorten/50">I'm on this.</span>
-                  (<span
-                      tal:replace="comment/message/datecreated/fmt:approximatedate">2005-09-16</span>)
+                  <br /><span class="greyed-out greylink"><span
+                      tal:replace="comment/message/datecreated/fmt:approximatedate">2005-09-16</span>
+                  by <a tal:replace="structure
+                      comment/message/owner/fmt:link">joesmith</a></span>
                 </tal:comment>
               </td>
             </tr>
