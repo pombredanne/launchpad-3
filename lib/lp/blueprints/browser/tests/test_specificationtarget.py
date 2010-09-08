@@ -1,15 +1,18 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
 import unittest
 
+from zope.security.proxy import removeSecurityProxy
+
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.blueprints.interfaces.specificationtarget import (
     IHasSpecifications,
     ISpecificationTarget,
     )
+from lp.app.enums import ServiceUsage
 from lp.blueprints.publisher import BlueprintsLayer
 from lp.testing import (
     login_person,
@@ -50,7 +53,7 @@ class TestRegisterABlueprintButtonView(TestCaseWithFactory):
         self.verify_view(context, 'sprints/%s' % context.name)
 
 
-class TestHasSpecificationsView(TestCaseWithFactory):
+class TestHasSpecificationsViewInvolvement(TestCaseWithFactory):
     """Test specification menus links."""
     layer = DatabaseFunctionalLayer
 
@@ -85,6 +88,63 @@ class TestHasSpecificationsView(TestCaseWithFactory):
             context, '+specs', layer=BlueprintsLayer, principal=self.user)
         self.assertFalse(
             '<div id="involvement" class="portlet involvement">' in view())
+
+
+class TestHasSpecificationsTemplates(TestCaseWithFactory):
+    """Tests the selection of templates based on blueprints usage."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestHasSpecificationsTemplates, self).setUp()
+        self.user = self.factory.makePerson()
+        self.product = self.factory.makeProduct()
+        self.naked_product = removeSecurityProxy(self.product)
+        login_person(self.user)
+
+    def test_not_configured(self):
+        self.naked_product.blueprints_usage = ServiceUsage.UNKNOWN
+        view = create_view(
+            self.product,
+            '+specs',
+            layer=BlueprintsLayer,
+            principal=self.user)
+        self.assertEqual(
+            view.not_launchpad_template.filename,
+            view.template.filename)
+
+    def test_external(self):
+        self.naked_product.blueprints_usage = ServiceUsage.EXTERNAL
+        view = create_view(
+            self.product,
+            '+specs',
+            layer=BlueprintsLayer,
+            principal=self.user)
+        self.assertEqual(
+            view.not_launchpad_template.filename,
+            view.template.filename)
+
+    def test_not_applicable(self):
+        self.naked_product.blueprints_usage = ServiceUsage.NOT_APPLICABLE
+        view = create_view(
+            self.product,
+            '+specs',
+            layer=BlueprintsLayer,
+            principal=self.user)
+        self.assertEqual(
+            view.not_launchpad_template.filename,
+            view.template.filename)
+
+    def test_on_launchpad(self):
+        self.naked_product.blueprints_usage = ServiceUsage.LAUNCHPAD
+        view = create_view(
+            self.product,
+            '+specs',
+            layer=BlueprintsLayer,
+            principal=self.user)
+        self.assertEqual(
+            view.uses_launchpad_template.filename,
+            view.template.filename)
 
 
 def test_suite():

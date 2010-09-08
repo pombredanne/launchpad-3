@@ -15,6 +15,7 @@ __all__ = [
 
 from operator import itemgetter
 
+from z3c.ptcompat import ViewPageTemplateFile
 from zope.component import queryMultiAdapter
 
 from canonical.config import config
@@ -32,6 +33,8 @@ from canonical.launchpad.webapp.menu import (
     Link,
     )
 from canonical.lazr.utils import smartquote
+from lp.app.enums import service_uses_launchpad
+from lp.app.interfaces.launchpad import IServiceUsage
 from lp.blueprints.interfaces.specification import (
     SpecificationFilter,
     SpecificationSort,
@@ -138,18 +141,22 @@ class HasSpecificationsView(LaunchpadView):
     # * External
     # * Disabled
     # * Unknown
-    default_template = ViewPageTemplateFile(
+    uses_launchpad_template = ViewPageTemplateFile(
         '../templates/hasspecifications-specs.pt')
-    external_template = ViewPageTemplateFile(
-        '../templates/hasspecifications-specs.pt')
-    disabled_template = ViewPageTemplateFile(
-        '../templates/hasspecifications-specs.pt')
-    unknown_template = ViewPageTemplateFile(
-        '../templates/hasspecifications-specs.pt')
+    not_launchpad_template = ViewPageTemplateFile(
+        '../templates/unknown-specs.pt')
 
     @property
     def template(self):
-        return self.default_template
+        # If specifications exist, ignore the usage enum.
+        if self.has_any_specifications:
+            return self.uses_launchpad_template
+        # Otherwise, determine usage and provide the correct template.
+        service_usage = IServiceUsage(self.context)
+        if service_uses_launchpad(service_usage.blueprints_usage):
+            return self.uses_launchpad_template
+        else:
+            return self.not_launchpad_template
 
     def render(self):
         return self.template
