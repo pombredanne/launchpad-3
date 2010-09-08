@@ -58,7 +58,7 @@ class TestSourcePackageRecipeBuildUploads(TestUploadProcessorBase):
         result = self.uploadprocessor.processChangesFile(
             os.path.join(self.queue_folder, "incoming", 'bar_1.0-1'),
             '%d/ubuntu/bar_1.0-1_source.changes' % self.build.archive.id,
-            build_id=self.build.id)
+            build=self.build)
         self.layer.txn.commit()
 
         self.assertEquals(UploadStatusEnum.ACCEPTED, result,

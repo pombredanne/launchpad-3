@@ -74,15 +74,14 @@ queue:
   ...      dapper_amd64, PackagePublishingPocket.RELEASE, dapper.main_archive)
 
   >>> buildd_policy = getPolicy(
-  ...     name='buildd', distro='ubuntu', distroseries='dapper',
-  ...     buildid=build.id)
+  ...     name='buildd', distro='ubuntu', distroseries='dapper')
 
   >>> pmount_upload = NascentUpload.from_changesfile_path(
   ...     datadir('pmount_0.9.7-2ubuntu2_amd64.changes'),
   ...     buildd_policy, mock_logger)
   DEBUG: Changes file can be unsigned.
 
-  >>> pmount_upload.process()
+  >>> pmount_upload.process(build=build)
   DEBUG: Beginning processing.
   DEBUG: Verifying the changes file.
   DEBUG: Verifying files in upload.
@@ -105,7 +104,7 @@ package.
   >>> print len(dapper_pmount.getLatestTranslationsUploads())
   0
 
-  >>> success = pmount_upload.do_accept()
+  >>> success = pmount_upload.do_accept(build=build)
   DEBUG: Creating queue entry
   DEBUG: Build ... found
   ...

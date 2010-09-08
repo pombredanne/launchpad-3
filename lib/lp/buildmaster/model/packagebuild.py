@@ -342,8 +342,6 @@ class PackageBuildDerived:
                 self.__class__.__name__, self.id, upload_leaf))
             target_dir = os.path.join(root, "incoming")
             self.status = BuildStatus.UPLOADING
-            self.buildqueue_record.builder = None
-            self.builder = None
         else:
             logger.warning(
                 "Copy from slave for build %s was unsuccessful.", self.id)
@@ -361,6 +359,9 @@ class PackageBuildDerived:
 
         # Release the builder for another job.
         self.buildqueue_record.builder.cleanSlave()
+
+        self.buildqueue_record.builder = None
+        self.builder = None
 
     def _handleStatus_PACKAGEFAIL(self, librarian, slave_status, logger):
         """Handle a package that had failed to build.
