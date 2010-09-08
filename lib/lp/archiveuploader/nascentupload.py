@@ -137,7 +137,7 @@ class NascentUpload:
             raise FatalUploadError(str(e))
         return cls(changesfile, policy, logger)
 
-    def process(self):
+    def process(self, build=None):
         """Process this upload, checking it against policy, loading it into
         the database if it seems okay.
 
@@ -200,7 +200,7 @@ class NascentUpload:
         self.overrideArchive()
 
         # Check upload rights for the signer of the upload.
-        self.verify_acl()
+        self.verify_acl(build)
 
         # Perform policy checks.
         policy.checkUpload(self)
@@ -483,7 +483,7 @@ class NascentUpload:
     #
     # Signature and ACL stuff
     #
-    def verify_acl(self):
+    def verify_acl(self, build=None):
         """Check the signer's upload rights.
 
         The signer must have permission to upload to either the component
@@ -499,8 +499,7 @@ class NascentUpload:
             return
 
         # Set up some convenient shortcut variables.
-
-        uploader = self.policy.getUploader(self.changes)
+        uploader = self.policy.getUploader(self.changes, build)
         archive = self.policy.archive
 
         # If we have no signer, there's no ACL we can apply.
@@ -824,7 +823,7 @@ class NascentUpload:
     #
     # Actually processing accepted or rejected uploads -- and mailing people
     #
-    def do_accept(self, notify=True, build_id=None):
+    def do_accept(self, notify=True, build=None):
         """Accept the upload into the queue.
 
         This *MAY* in extreme cases cause a database error and thus
@@ -834,14 +833,14 @@ class NascentUpload:
         constraint.
 
         :param notify: True to send an email, False to not send one.
-        :param build_id: Id of build associated with this upload.
+        :param build: The build associated with this upload.
         """
         if self.is_rejected:
             self.reject("Alas, someone called do_accept when we're rejected")
             self.do_reject(notify)
             return False
         try:
-            self.storeObjectsInDatabase(build_id=build_id)
+            self.storeObjectsInDatabase(build=build)
 
             # Send the email.
             # There is also a small corner case here where the DB transaction
@@ -924,7 +923,7 @@ class NascentUpload:
     #
     # Inserting stuff in the database
     #
-    def storeObjectsInDatabase(self, build_id=None):
+    def storeObjectsInDatabase(self, build=None):
         """Insert this nascent upload into the database."""
 
         # Queue entries are created in the NEW state by default; at the
@@ -940,10 +939,8 @@ class NascentUpload:
         sourcepackagerelease = None
         if self.sourceful:
             assert self.changes.dsc, "Sourceful upload lacks DSC."
-            if build_id is None:
-                build = None
-            else:
-                build = self.changes.dsc.findBuild(build_id)
+            if build:
+                self.changes.dsc.checkBuild(build)
             sourcepackagerelease = self.changes.dsc.storeInDatabase(build)
             package_upload_source = self.queue_root.addSource(
                 sourcepackagerelease)
@@ -970,6 +967,7 @@ class NascentUpload:
             bpfs_to_create = sorted(
                 self.changes.binary_package_files,
                 key=lambda file: file.ddeb_file is not None)
+            assert build is None or len(bpfs_to_create) == 1
             for binary_package_file in bpfs_to_create:
                 if self.sourceful:
                     # The reason we need to do this verification
@@ -984,12 +982,15 @@ class NascentUpload:
                     sourcepackagerelease = (
                         binary_package_file.findSourcePackageRelease())
 
-                build = binary_package_file.findBuild(
-                    sourcepackagerelease, build_id)
+                if build is None:
+                    build = binary_package_file.findBuild(
+                        sourcepackagerelease)
+                binary_package_file.checkBuild(build, sourcepackagerelease)
                 assert self.queue_root.pocket == build.pocket, (
                     "Binary was not build for the claimed pocket.")
                 binary_package_file.storeInDatabase(build)
                 processed_builds.append(build)
+                build = None
 
             # Store the related builds after verifying they were built
             # from the same source.

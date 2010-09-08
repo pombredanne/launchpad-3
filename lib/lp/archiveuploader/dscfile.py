@@ -618,14 +618,12 @@ class DSCFile(SourceUploadFile, SignableTagFile):
             cleanup_unpacked_dir(unpacked_dir)
         self.logger.debug("Done")
 
-    def findBuild(self, build_id):
-        """Find and return the SourcePackageRecipeBuild, if one is specified.
+    def checkBuild(self, build):
+        """Check the specified SourcePackageRecipeBuild.
 
-        If by any chance an inconsistent build was found this method will
+        If the build was inconsistent this method will
         raise UploadError resulting in a upload rejection.
         """
-        build = getUtility(ISourcePackageRecipeBuildSource).getById(build_id)
-
         # The master verifies the status to confirm successful upload.
         build.status = BuildStatus.FULLYBUILT
         # If this upload is successful, any existing log is wrong and
@@ -640,8 +638,6 @@ class DSCFile(SourceUploadFile, SignableTagFile):
             raise UploadError(
                 "Attempt to upload source specifying "
                 "recipe build %s, where it doesn't fit." % build.id)
-
-        return build
 
     def storeInDatabase(self, build):
         """Store DSC information as a SourcePackageRelease record.

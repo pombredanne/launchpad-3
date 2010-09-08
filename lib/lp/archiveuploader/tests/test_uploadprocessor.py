@@ -288,7 +288,7 @@ class TestUploadProcessorBase(TestCaseWithFactory):
         shutil.copytree(upload_dir, target_path)
         return os.path.join(self.incoming_folder, queue_entry)
 
-    def processUpload(self, processor, upload_dir, build_id=None):
+    def processUpload(self, processor, upload_dir, build=None):
         """Process an upload queue entry directory.
 
         There is some duplication here with logic in UploadProcessor,
@@ -299,7 +299,7 @@ class TestUploadProcessorBase(TestCaseWithFactory):
         changes_files = processor.locateChangesFiles(upload_dir)
         for changes_file in changes_files:
             result = processor.processChangesFile(
-                upload_dir, changes_file, build_id=build_id)
+                upload_dir, changes_file, build=build)
             results.append(result)
         return results
 
@@ -697,7 +697,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         self.layer.txn.commit()
         upload_dir = self.queueUpload("bar_1.0-1_binary")
         self.processUpload(uploadprocessor, upload_dir,
-            build_id=bar_original_build.id)
+            build=bar_original_build)
         self.assertEqual(
             uploadprocessor.last_processed_upload.is_rejected, False)
         bar_bin_pubs = self.publishPackage('bar', '1.0-1', source=False)
@@ -728,7 +728,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         upload_dir = self.queueUpload(
             "bar_1.0-1_binary", "%s/ubuntu" % copy_archive.id)
         self.processUpload(uploadprocessor, upload_dir,
-             build_id=bar_copied_build.id)
+             build=bar_copied_build)
 
         # Make sure the upload succeeded.
         self.assertEqual(
@@ -799,7 +799,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         self.options.context = 'buildd'
         upload_dir = self.queueUpload("bar_1.0-1_binary")
         self.processUpload(
-            uploadprocessor, upload_dir, build_id=bar_original_build.id)
+            uploadprocessor, upload_dir, build=bar_original_build)
         [bar_binary_pub] = self.publishPackage("bar", "1.0-1", source=False)
 
         # Prepare ubuntu/breezy-autotest to build sources in i386.
@@ -822,7 +822,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         self.options.distroseries = breezy_autotest.name
         upload_dir = self.queueUpload("bar_1.0-1_binary")
         self.processUpload(uploadprocessor, upload_dir,
-            build_id=bar_copied_build.id)
+            build=bar_copied_build)
         [duplicated_binary_upload] = breezy_autotest.getQueueItems(
             status=PackageUploadStatus.NEW, name='bar',
             version='1.0-1', exact_match=True)
@@ -862,7 +862,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         self.options.context = 'buildd'
         upload_dir = self.queueUpload("bar_1.0-2_binary")
         self.processUpload(uploadprocessor, upload_dir,
-            build_id=bar_original_build.id)
+            build=bar_original_build)
         [bar_binary_pub] = self.publishPackage("bar", "1.0-2", source=False)
 
         # Create a COPY archive for building in non-virtual builds.
@@ -882,7 +882,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         upload_dir = self.queueUpload(
             "bar_1.0-1_binary", "%s/ubuntu" % copy_archive.id)
         self.processUpload(uploadprocessor, upload_dir,
-            build_id=bar_copied_build.id)
+            build=bar_copied_build)
 
         # The binary just uploaded is accepted because it's destined for a
         # copy archive and the PRIMARY and the COPY archives are isolated
@@ -1037,7 +1037,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         self.layer.txn.commit()
         upload_dir = self.queueUpload("foocomm_1.0-1_binary")
         self.processUpload(
-            uploadprocessor, upload_dir, build_id=foocomm_build.id)
+            uploadprocessor, upload_dir, build=foocomm_build)
 
         contents = [
             "Subject: foocomm_1.0-1_i386.changes rejected",

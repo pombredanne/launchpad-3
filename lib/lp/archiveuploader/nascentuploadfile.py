@@ -51,7 +51,6 @@ from lp.soyuz.enums import (
     PackageUploadCustomFormat,
     PackageUploadStatus,
     )
-from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.section import ISectionSet
@@ -797,7 +796,7 @@ class BaseBinaryUploadFile(PackageUploadFile):
                 "control file" % (sourcepackagerelease.name, self.filename,
                                   self.source_name))
 
-    def findBuild(self, sourcepackagerelease, build_id):
+    def findBuild(self, sourcepackagerelease):
         """Find and return a build for the given archtag, cached on policy.
 
         To find the right build, we try these steps, in order, until we have
@@ -812,32 +811,32 @@ class BaseBinaryUploadFile(PackageUploadFile):
         """
         dar = self.policy.distroseries[self.archtag]
 
-        if build_id is None:
-            # Check if there's a suitable existing build.
-            build = sourcepackagerelease.getBuildByArch(
-                dar, self.policy.archive)
-            if build is not None:
-                build.status = BuildStatus.FULLYBUILT
-                self.logger.debug("Updating build for %s: %s" % (
-                    dar.architecturetag, build.id))
-            else:
-                # No luck. Make one.
-                # Usually happen for security binary uploads.
-                build = sourcepackagerelease.createBuild(
-                    dar, self.policy.pocket, self.policy.archive,
-                    status=BuildStatus.FULLYBUILT)
-                self.logger.debug("Build %s created" % build.id)
-        else:
-            build = getUtility(IBinaryPackageBuildSet).getByBuildID(build_id)
-            self.logger.debug("Build %s found" % build.id)
-            # Ensure gathered binary is related to a FULLYBUILT build
-            # record. It will be check in slave-scanner procedure to
-            # certify that the build was processed correctly.
+        # Check if there's a suitable existing build.
+        build = sourcepackagerelease.getBuildByArch(
+            dar, self.policy.archive)
+        if build is not None:
             build.status = BuildStatus.FULLYBUILT
-            # Also purge any previous failed upload_log stored, so its
-            # content can be garbage-collected since it's not useful
-            # anymore.
-            build.upload_log = None
+            self.logger.debug("Updating build for %s: %s" % (
+                dar.architecturetag, build.id))
+        else:
+            # No luck. Make one.
+            # Usually happen for security binary uploads.
+            build = sourcepackagerelease.createBuild(
+                dar, self.policy.pocket, self.policy.archive,
+                status=BuildStatus.FULLYBUILT)
+            self.logger.debug("Build %s created" % build.id)
+        return build
+
+    def checkBuild(self, build, sourcepackagerelease):
+        dar = self.policy.distroseries[self.archtag]
+        # Ensure gathered binary is related to a FULLYBUILT build
+        # record. It will be check in slave-scanner procedure to
+        # certify that the build was processed correctly.
+        build.status = BuildStatus.FULLYBUILT
+        # Also purge any previous failed upload_log stored, so its
+        # content can be garbage-collected since it's not useful
+        # anymore.
+        build.upload_log = None
 
         # Sanity check; raise an error if the build we've been
         # told to link to makes no sense (ie. is not for the right
@@ -849,8 +848,6 @@ class BaseBinaryUploadFile(PackageUploadFile):
             raise UploadError(
                 "Attempt to upload binaries specifying "
                 "build %s, where they don't fit." % build.id)
-
-        return build
 
     def storeInDatabase(self, build):
         """Insert this binary release and build into the database."""

@@ -83,11 +83,9 @@ class SourcePackageRecipeUploadPolicy(BuildDaemonUploadPolicy):
     name = SOURCE_PACKAGE_RECIPE_UPLOAD_POLICY_NAME
     accepted_type = ArchiveUploadType.SOURCE_ONLY
 
-    def getUploader(self, changes):
+    def getUploader(self, changes, build):
         """Return the person doing the upload."""
-        build_id = int(getattr(self.options, 'buildid'))
-        sprb = getUtility(ISourcePackageRecipeBuildSource).getById(build_id)
-        return sprb.requester
+        return build.requester
 
 
 class SourcePackageRecipeBuild(PackageBuildDerived, Storm):

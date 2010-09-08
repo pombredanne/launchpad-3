@@ -61,11 +61,6 @@ class ProcessUpload(LaunchpadCronScript):
             help="Distro series to give back from.")
 
         self.parser.add_option(
-            "-b", "--buildid", action="store", type="int", dest="buildid",
-            metavar="BUILD",
-            help="The build ID to which to attach this upload.")
-
-        self.parser.add_option(
             "-a", "--announce", action="store", dest="announcelist",
             metavar="ANNOUNCELIST", help="Override the announcement list")
 
@@ -90,8 +85,7 @@ class ProcessUpload(LaunchpadCronScript):
         processor = UploadProcessor(self.options.base_fsroot,
             self.options.dryrun, self.options.nomails, self.options.builds,
             self.options.keep, getPolicy, self.txn, self.logger)
-        processor.processUploadQueue(
-            self.options.leafname, build_id=self.options.buildid)
+        processor.processUploadQueue(self.options.leafname)
 
     @property
     def lockfilename(self):
