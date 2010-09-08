@@ -1175,13 +1175,17 @@ class POTMsgSet(SQLBase):
 
         incumbent = traits.getCurrentMessage(self, template, pofile.language)
         if incumbent is not None:
+            # Ensure that the current message hasn't changed from the
+            # state the reviewer inspected before making this change.
             self._checkForConflict(incumbent, lock_timestamp)
-            if incumbent.is_diverged:
-                # The incumbent is in the way.  Disable it.
-                traits.setFlag(incumbent, False)
-                incumbent.markReviewed(reviewer)
-                incumbent.shareIfPossible()
-                pofile.markChanged()
+
+        if incumbent is not None and incumbent.is_diverged:
+            # The incumbent is also diverged, so it's in the way of the
+            # suggestion we're trying to diverge.  Disable it.
+            traits.setFlag(incumbent, False)
+            incumbent.markReviewed(reviewer)
+            incumbent.shareIfPossible()
+            pofile.markChanged()
 
         if used_here and not diverged and not used_on_other_side:
             # This message is already the shared current message.  If it
