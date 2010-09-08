@@ -93,8 +93,6 @@ class ISourcePackageRecipeView(Interface):
             required=True, readonly=True,
             vocabulary='ValidPersonOrTeam'))
 
-    is_stale = Bool(title=_('Recipe is stale.'))
-
     recipe_text = exported(Text())
 
     def isOverQuota(requester, distroseries):
@@ -182,6 +180,8 @@ class ISourcePackageRecipeEditableAttributes(IHasOwner):
         description=_('A short description of the recipe.'))
 
     date_last_modified = Datetime(required=True, readonly=True)
+
+    is_stale = Bool(title=_('Recipe is stale.'))
 
 
 class ISourcePackageRecipe(ISourcePackageRecipeData,
