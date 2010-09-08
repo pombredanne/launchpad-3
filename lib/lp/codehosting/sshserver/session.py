@@ -15,8 +15,7 @@ import urlparse
 from zope.event import notify
 from zope.interfaces import implements
 
-from twisted.internet.interfaces import IProcessTransport
-from twisted.internet.process import ProcessExitedAlready
+from twisted.internet import error, interfaces, process
 from twisted.python import log
 
 from canonical.config import config
@@ -39,13 +38,33 @@ class ForbiddenCommand(Exception):
     """Raised when a session is asked to execute a forbidden command."""
 
 
-class ForkedProcessTransport(object):
-    # I assume we don't need to do 'implements(IProcessProtocol)' since the
-    # base class already does this.
+class ForkedProcessTransport(process.BaseProcess):
+    """Wrap the forked process in a ProcessTransport so we can talk to it.
+
+    Note that instantiating the class creates the fork and sets it up in the
+    reactor.
+    """
 
     implements(IProcessTransport)
 
-    def sendMessageToService(self, message):
+    # TODO: process._BaseProcess implements 'reapProcess' as an ability. Which
+    #       then tries to 'os.waitpid()' on the given file handle. Testing
+    #       shows that calling waitpid() on a pid that isn't a *direct* child
+    #       fails. (Even if it is a grandchild). So we intentionally do not
+    #       implement it. However the forking service reaps its own zombie
+    #       children, so we should be ok.
+    # TODO: It looks like we want to be able to pass along at least BZR_EMAIL
+    #       to the fork request
+    def __init__(self, reactor, executable, args, proto):
+        process.BaseProcess.__init__(proto)
+        pid, path = self._spawn(executable, args)
+        self.pid = pid
+        self._fifo_path = path
+        self._connectSpawnToReactor()
+        if self.proto is not None:
+            self.proto.makeConnection(self)
+
+    def _sendMessageToService(self, message):
         """Send a message to the Forking service and get the response"""
         # TODO: Config entries for what port this will be found in?
         DEFAULT_SERVICE_PORT = 4156
@@ -66,16 +85,81 @@ class ForkedProcessTransport(object):
             raise RuntimeError('Failed to send message: %r' % (response,))
         return response
 
-    @classmethod
-    def requestFork(cls, command):
-        """Request that the Forking service fork and run this command."""
-        response = self.sendMessageToService('fork %s' % (command,))
-        # The response is the path to the file handles, and we've explicitly
-        # checked for FAILURE already.
-        path = response.strip()
-        stdin_path = os.path.join(path, 'stdin')
-        stdout_path = os.path.join(path, 'stdout')
-        stderr_path = os.path.join(path, 'stderr')
+    def _spawn(self, executable, args):
+        assert executable == 'bzr' # Maybe .endswith()
+        assert args[0] == 'bzr'
+        response = self._sendMessageToService('fork %s\n' % ' '.join(args[1:]))
+        ok, pid, path, tail = response.split('\n')
+        assert ok == 'ok'
+        assert tail == ''
+        pid = int(pid)
+        # TODO: Log this information
+        return pid, path
+
+    def _connectSpawnToReactor(self):
+        stdin_path = os.path.join(self._fifo_path, 'stdin')
+        stdout_path = os.path.join(self._fifo_path, 'stdout')
+        stderr_path = os.path.join(self._fifo_path, 'stderr')
+        child_stdin_fd = os.open(stdin_path, os.O_WRONLY)
+        self.pipes[0] = process.ProcessWriter(reactor, self, 0, child_stdin_fd)
+        child_stdout_fd = os.open(stdout_path, os.O_RDONLY)
+        # TODO: forceReadHack=True ? Used in process.py
+        self.pipes[1] = process.ProcessReader(reactor, self, 1, child_stdout_fd)
+        child_stderr_fd = os.open(stderr_path, os.O_RDONLY)
+        self.pipes[2] = process.ProcessReader(reactor, self, 2, child_stderr_fd)
+
+    def _getReason(self, status):
+        # Copied from twisted.internet.process._BaseProcess
+        exitCode = sig = None
+        if os.WIFEXITED(status):
+            exitCode = os.WEXITSTATUS(status)
+        else:
+            sig = os.WTERMSIG(status)
+        if exitCode or sig:
+            return error.ProcessTerminated(exitCode, sig, status)
+        return error.ProcessDone(status)
+
+    def signalProcess(self, signalID):
+        """
+        Send the given signal C{signalID} to the process. It'll translate a
+        few signals ('HUP', 'STOP', 'INT', 'KILL', 'TERM') from a string
+        representation to its int value, otherwise it'll pass directly the
+        value provided
+
+        @type signalID: C{str} or C{int}
+        """
+        # Copied from twisted.internet.process._BaseProcess
+        if signalID in ('HUP', 'STOP', 'INT', 'KILL', 'TERM'):
+            signalID = getattr(signal, 'SIG%s' % (signalID,))
+        if self.pid is None:
+            raise ProcessExitedAlready()
+        os.kill(self.pid, signalID)
+
+    def writeToChild(self, childFD, data):
+        # Copied from twisted.internet.process.Process
+        self.pipes[childFD].write(data)
+
+    def closeChildFD(self, childFD):
+        if childFD in self.pipes:
+            self.pipes[childFD].loseConnection()
+
+    def closeStdin():
+        self.closeChildFD(0)
+
+    def closeStdout():
+        self.closeChildFD(1)
+
+    def closeStderr():
+        self.closeChildFD(2)
+
+    def loseConnection(self):
+        self.closeStdin()
+        self.closeStdout()
+        self.closeStderr()
+
+    # pauseProducing, present in process.py, not a IProcessTransport interface
+    # childDataReceived, childConnectionLost, etc, etc.
+
 
 class ExecOnlySession(DoNothingSession):
     """Conch session that only allows executing commands."""
@@ -100,7 +184,7 @@ class ExecOnlySession(DoNothingSession):
             notify(BazaarSSHClosed(self.avatar))
             try:
                 self._transport.signalProcess('HUP')
-            except (OSError, ProcessExitedAlready):
+            except (OSError, process.ProcessExitedAlready):
                 pass
             self._transport.loseConnection()
 
@@ -138,8 +222,8 @@ class ExecOnlySession(DoNothingSession):
         # violation. Apart from this line and its twin, this class knows
         # nothing about Bazaar.
         notify(BazaarSSHStarted(self.avatar))
-        self._transport = self.reactor.spawnProcess(
-            protocol, executable, arguments, env=self.environment)
+        self._transport = ForkedProcessTransport(self.reactor, executable,
+                                                 args, protocol)
 
     def getCommandToRun(self, command):
         """Return the command that will actually be run given `command`.
@@ -195,7 +279,7 @@ def launch_smart_server(avatar):
     from twisted.internet import reactor
 
     command = (
-        "lp-serve --inet %(user_id)s"
+        "bzr lp-serve --inet %(user_id)s"
         )
 
     environment = dict(os.environ)

@@ -194,9 +194,9 @@ def _connect_to_fifos(path, tstart):
     stderr_path = os.path.join(path, 'stderr')
     forwarder = TrivialForwarder()
     forwarder.start_time = tstart
+    forwarder.add_fid_to_fifo(sys.stdin.fileno(), stdin_path)
     forwarder.add_fifo_to_fid(stdout_path, sys.stdout.fileno())
     forwarder.add_fifo_to_fid(stderr_path, sys.stderr.fileno())
-    forwarder.add_fid_to_fifo(sys.stdin.fileno(), stdin_path)
     forwarder.run()
 
 if __name__ == '__main__':

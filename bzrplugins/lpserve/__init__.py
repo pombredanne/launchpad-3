@@ -321,10 +321,19 @@ class LPForkingService(object):
 
         This includes stuff like number of children, and ... ?
         """
+        self._poll_children()
         self.log(None, 'Running for %.3fs' % (time.time() - self._start_time))
         self.log(None, '%d children currently running (spawned %d total)'
                        % (len(self._child_processes), self._children_spawned))
         # Read the current information about memory consumption, etc.
+        self.log(None, 'Self: %s'
+                       % (resource.getrusage(resource.RUSAGE_SELF),))
+        # This seems to be the sum of all rusage for all children that have
+        # been collected (not for currently running children, or ones we
+        # haven't "wait"ed on.) We may want to read /proc/PID/status, since
+        # 'live' information is probably more useful.
+        self.log(None, 'Finished children: %s'
+                       % (resource.getrusage(resource.RUSAGE_CHILDREN),))
 
     def _poll_children(self):
         """See if children are still running, etc.
