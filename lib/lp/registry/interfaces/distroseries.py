@@ -20,6 +20,7 @@ from lazr.restful.declarations import (
     export_as_webservice_entry,
     export_factory_operation,
     export_read_operation,
+    export_write_operation,
     exported,
     LAZR_WEBSERVICE_EXPORTED,
     operation_parameters,
@@ -41,6 +42,7 @@ from zope.schema import (
     Bool,
     Choice,
     Datetime,
+    List,
     Object,
     TextLine,
     )
@@ -674,8 +676,8 @@ class IDistroSeriesPublic(
         If sourcename is passed, only packages that are built from
         source packages by that name will be returned.
         If archive is passed, restricted the results to the given archive,
-        if it is suppressed the results will be restricted to the distribtion
-        'main_archive'.
+        if it is suppressed the results will be restricted to the
+        distribution 'main_archive'.
         """
 
     def getSourcePackagePublishing(status, pocket, component=None,
@@ -684,8 +686,8 @@ class IDistroSeriesPublic(
 
         According status and pocket.
         If archive is passed, restricted the results to the given archive,
-        if it is suppressed the results will be restricted to the distribtion
-        'main_archive'.
+        if it is suppressed the results will be restricted to the
+        distribution 'main_archive'.
         """
 
     def getBinaryPackageCaches(archive=None):
@@ -788,6 +790,66 @@ class IDistroSeriesPublic(
         """Check if the specified source format is allowed in this series.
 
         :param format: The SourcePackageFormat to check.
+        """
+    
+    # XXX API fluff goes here
+    @operation_parameters(
+        name=TextLine(
+            title=_("The name of the distroseries to derive."),
+            required=True),
+        displayname=TextLine(
+            title=_("The displayname of the distroseries to derive."),
+            required=False),
+        summary=TextLine(
+            title=_("The summary of the distroseries to derive."),
+            required=False),
+        description=TextLine(
+            title=_("The description of the distroseries to derive."),
+            required=False),
+        version=TextLine(
+            title=_("The version of the distroseries to derive."),
+            required=False),
+        distribution=TextLine(
+            title=_(""),
+            required=False),
+        state=TextLine(
+            title=_(""),
+            required=False),
+        arches=TextLine( # should be List
+            title=_(""),
+            required=False),
+        packagesets=TextLine( # should be List
+            title=_(""),
+            required=False),
+        )
+    @export_write_operation()
+    def deriveDistroSeries(
+        name, displayname, summary, description, version, distribution,
+        state, arches, packagesets):
+        """Derive a distroseries from this one. This method creates a job
+        to populate the new distroseries.
+
+        :param name: The name of the new distroseries we will create if it
+        doesn't exist, or the name of the distroseries we will look up, and
+        then initialise.
+        :param displayname: The Display Name for the new distroseries. If the
+        distroseries already exists this parameter is ignored.
+        :param summary: The Summary for the new distroseries. If the
+        distroseries already exists this parameter is ignored.
+        :param description: The Description for the new distroseries. If the
+        distroseries already exists this parameter is ignored.
+        :param version: The version for the new distroseries. If the
+        distroseries already exists this parameter is ignored.
+        :param distribution: The distribution the derived series will belong
+        to. If it isn't specified this distroseries' distribution is used.
+        :param state: The state the new distroseries will be created in.
+        If the distroseries isn't specified, this parameter will be ignored.
+        Defaults to FROZEN.
+        :param arches: The architectures to copy to the derived series. If not
+        specified, all of the arches are copied.
+        :param packagesets: The packagesets to copy to the derived series. If
+        not specified, all of the packagesets are copied.
+        :return: The ID of the job created.
         """
 
 

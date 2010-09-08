@@ -84,6 +84,7 @@ from lp.bugs.model.bugtarget import (
     HasBugHeatMixin,
     )
 from lp.bugs.model.bugtask import BugTask
+from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.distroseries import (
     IDistroSeries,
     IDistroSeriesSet,
@@ -160,6 +161,10 @@ from lp.soyuz.model.queue import (
     )
 from lp.soyuz.model.section import Section
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
+from lp.soyuz.scripts.initialise_distroseries import (
+    InitialiseDistroSeries,
+    InitialisationError,
+    )
 from lp.translations.interfaces.languagepack import LanguagePackType
 from lp.translations.model.distroseries_translations_copy import (
     copy_active_translations,
@@ -1796,6 +1801,30 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return getUtility(
             ISourcePackageFormatSelectionSet).getBySeriesAndFormat(
                 self, format) is not None
+
+    def deriveDistroSeries(
+        self, name, displayname, summary, description, version,
+        distribution, state, arches, packagesets):
+        """See `IDistroSeries`."""
+        child = getUtility(IDistroSeriesSet).findByName(
+            distro_series_name_or_version)
+        child_distribution = getUtility(IDistributionSet).findByName(
+            distribution)
+        if child_distribution is None:
+            child_distribution = self.distribution
+        if child is None:
+            print "Create distroseries"
+            child = getUtility(IDistroSeriesSet).new(
+                name=distro_series_name_or_version,
+                distribution=child_distribution,
+                parent=self)
+        ids = InitialiseDistroSeries(self)
+        try:
+            ids.check()
+        except InitialisationError, e:
+            print e
+        job = getUtility(IInitialiseDistroSeriesJobSource).create(child)
+        return job.id
 
 
 class DistroSeriesSet:

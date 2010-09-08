@@ -16,7 +16,6 @@ from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.registry.model.distroseries import DistroSeries
 from lp.soyuz.adapters.packagelocation import PackageLocation
 from lp.soyuz.enums import (
     ArchivePurpose,
@@ -60,6 +59,8 @@ class InitialiseDistroSeries:
     """
 
     def __init__(self, distroseries, arches=()):
+        # Avoid circular imports
+        from lp.registry.model.distroseries import DistroSeries
         self.distroseries = distroseries
         self.parent = self.distroseries.parent_series
         self.arches = arches
