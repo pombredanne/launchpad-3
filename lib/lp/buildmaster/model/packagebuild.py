@@ -342,6 +342,8 @@ class PackageBuildDerived:
                 self.__class__.__name__, self.id, upload_leaf))
             target_dir = os.path.join(root, "incoming")
             self.status = BuildStatus.UPLOADING
+            self.buildqueue_record.builder = None
+            self.builder = None
         else:
             logger.warning(
                 "Copy from slave for build %s was unsuccessful.", self.id)
