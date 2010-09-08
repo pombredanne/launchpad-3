@@ -12,7 +12,6 @@ __all__ = [
 
 from urllib import urlencode
 
-from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.webapp import (
     action,
@@ -34,6 +33,7 @@ from lp.answers.interfaces.questioncollection import (
     )
 from lp.answers.interfaces.questionenums import QuestionSort
 from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.services.propertycache import cachedproperty
 
 
 class FAQCollectionMenu(NavigationMenu):

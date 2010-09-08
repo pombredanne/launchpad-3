@@ -233,5 +233,5 @@ class MercurialServer(Server):
                 f.write(contents)
             finally:
                 f.close()
-            repo.add([filename])
+            repo[None].add([filename])
         repo.commit(text='<The commit message>', user='jane Foo <joe@foo.com>')
