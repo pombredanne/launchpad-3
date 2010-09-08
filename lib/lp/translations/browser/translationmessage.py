@@ -926,7 +926,7 @@ class CurrentTranslationMessageView(LaunchpadView):
         self.force_suggestion = force_suggestion
         self.force_diverge = force_diverge
         self.user_is_official_translator = (
-            current_translation_message.pofile.canEditTranslations(self.user))
+            self.pofile.canEditTranslations(self.user))
         self.form_is_writeable = form_is_writeable
         if self.context.is_imported:
             # The imported translation matches the current one.
@@ -1033,28 +1033,41 @@ class CurrentTranslationMessageView(LaunchpadView):
                 # Imported one matches the current one.
                 imported_submission = None
             elif self.imported_translationmessage is not None:
-                imported_submission = (
-                    convert_translationmessage_to_submission(
-                        message=self.imported_translationmessage,
-                        current_message=self.context,
-                        plural_form=index,
-                        pofile=self.imported_translationmessage.pofile,
-                        legal_warning_needed=False,
-                        is_empty=False,
-                        packaged=True))
+                pofile = (
+                    self.imported_translationmessage.ensureBrowserPOFile())
+                if pofile is None:
+                    imported_submission = None
+                else:
+                    imported_submission = (
+                        convert_translationmessage_to_submission(
+                            message=self.imported_translationmessage,
+                            current_message=self.context,
+                            plural_form=index,
+                            pofile=pofile,
+                            legal_warning_needed=False,
+                            is_empty=False,
+                            packaged=True,
+                            local_to_pofile=True))
             else:
                 imported_submission = None
 
-            if (self.context.potemplate is not None and
-                self.shared_translationmessage is not None):
-                shared_submission = (
-                    convert_translationmessage_to_submission(
-                        message=self.shared_translationmessage,
-                        current_message=self.context,
-                        plural_form=index,
-                        pofile=self.shared_translationmessage.pofile,
-                        legal_warning_needed=False,
-                        is_empty=False))
+            diverged_and_have_shared = (
+                self.context.potemplate is not None and
+                self.shared_translationmessage is not None) 
+            if diverged_and_have_shared:
+                pofile = self.shared_translationmessage.ensureBrowserPOFile()
+                if pofile is None:
+                    shared_submission = None
+                else:
+                    shared_submission = (
+                        convert_translationmessage_to_submission(
+                            message=self.shared_translationmessage,
+                            current_message=self.context,
+                            plural_form=index,
+                            pofile=pofile,
+                            legal_warning_needed=False,
+                            is_empty=False,
+                            local_to_pofile=True))
             else:
                 shared_submission = None
 
@@ -1137,6 +1150,24 @@ class CurrentTranslationMessageView(LaunchpadView):
             else:
                 self.can_confirm_and_dismiss = True
 
+    def _setOnePOFile(self, messages):
+        """Return a list of messages that all have a browser_pofile set.
+        
+        If a pofile cannot be found for a message, it is not included in
+        the resulting list.
+        """ 
+        result = []
+        for message in messages:
+            if message.browser_pofile is None:
+                pofile = message.getOnePOFile()
+                if pofile is None:
+                    # Do not include in result.
+                    continue
+                else:
+                    message.setPOFile(pofile)
+            result.append(message)
+        return result
+    
     def _buildAllSuggestions(self):
         """Builds all suggestions and puts them into suggestions_block.
 
@@ -1193,26 +1224,18 @@ class CurrentTranslationMessageView(LaunchpadView):
 
             # Get a list of translations which are _used_ as translations
             # for this same message in a different translation template.
-            externally_used = sorted(
+            externally_used = self._setOnePOFile(sorted(
                 potmsgset.getExternallyUsedTranslationMessages(language),
                 key=operator.attrgetter("date_created"),
-                reverse=True)
-            for suggestion in externally_used:
-                pofile = suggestion.getOnePOFile()
-                if suggestion.browser_pofile is None:
-                    suggestion.setPOFile(pofile)
+                reverse=True))
 
             # Get a list of translations which are suggested as
             # translations for this same message in a different translation
             # template, but are not used.
-            externally_suggested = sorted(
+            externally_suggested = self._setOnePOFile(sorted(
                 potmsgset.getExternallySuggestedTranslationMessages(language),
                 key=operator.attrgetter("date_created"),
-                reverse=True)
-            for suggestion in externally_suggested:
-                pofile = suggestion.getOnePOFile()
-                if suggestion.browser_pofile is None:
-                    suggestion.setPOFile(pofile)
+                reverse=True))
         else:
             # Don't show suggestions for anonymous users.
             local = externally_used = externally_suggested = []
@@ -1249,7 +1272,7 @@ class CurrentTranslationMessageView(LaunchpadView):
                 self.seen_translations.add(imported.translations[index])
             local_suggestions = (
                 self._buildTranslationMessageSuggestions(
-                    'Suggestions', local, index))
+                    'Suggestions', local, index, local_to_pofile=True))
             externally_used_suggestions = (
                 self._buildTranslationMessageSuggestions(
                     'Used in', externally_used, index, legal_warning=True))
@@ -1272,7 +1295,8 @@ class CurrentTranslationMessageView(LaunchpadView):
                 len(alternate_language_suggestions.submissions))
 
     def _buildTranslationMessageSuggestions(self, title, suggestions, index,
-                                            legal_warning=False):
+                                            legal_warning=False,
+                                            local_to_pofile=False):
         """Build filtered list of submissions to be shown in the view.
 
         `title` is the title for the suggestion type, `suggestions` is
@@ -1282,7 +1306,8 @@ class CurrentTranslationMessageView(LaunchpadView):
             title, self.context,
             suggestions[:self.max_entries],
             self.user_is_official_translator, self.form_is_writeable,
-            index, self.seen_translations, legal_warning=legal_warning)
+            index, self.seen_translations, legal_warning=legal_warning,
+            local_to_pofile=local_to_pofile)
         self.seen_translations = iterable_submissions.seen_translations
         return iterable_submissions
 
@@ -1524,10 +1549,11 @@ class TranslationMessageSuggestions:
 
     def __init__(self, title, translation, submissions,
                  user_is_official_translator, form_is_writeable,
-                 plural_form, seen_translations=None, legal_warning=False):
+                 plural_form, seen_translations=None, legal_warning=False,
+                 local_to_pofile=False):
         self.title = title
         self.potmsgset = translation.potmsgset
-        self.pofile = translation.pofile
+        self.pofile = translation.browser_pofile
         self.user_is_official_translator = user_is_official_translator
         self.form_is_writeable = form_is_writeable
         self.submissions = []
@@ -1557,7 +1583,8 @@ class TranslationMessageSuggestions:
                     plural_form,
                     self.pofile,
                     legal_warning,
-                    is_empty=False))
+                    is_empty=False,
+                    local_to_pofile=local_to_pofile))
         self.seen_translations = seen_translations
 
 
@@ -1566,7 +1593,7 @@ class Submission:
 
 def convert_translationmessage_to_submission(
     message, current_message, plural_form, pofile, legal_warning_needed,
-    is_empty=False, packaged=False):
+    is_empty=False, packaged=False, local_to_pofile=False):
     """Turn a TranslationMessage to an object used for rendering a submission.
 
     :param message: A TranslationMessage.
@@ -1578,10 +1605,10 @@ def convert_translationmessage_to_submission(
 
     submission = Submission()
     submission.translationmessage = message
-    for attribute in ['id', 'language', 'potmsgset', 'pofile',
-                      'date_created']:
+    for attribute in ['id', 'language', 'potmsgset', 'date_created']:
         setattr(submission, attribute, getattr(message, attribute))
 
+    submission.pofile = message.browser_pofile
     submission.person = message.submitter
 
     submission.is_empty = is_empty
@@ -1589,7 +1616,7 @@ def convert_translationmessage_to_submission(
     submission.suggestion_text = text_to_html(
         message.translations[plural_form],
         message.potmsgset.flags)
-    submission.is_local_to_pofile = (message.pofile == pofile)
+    submission.is_local_to_pofile = local_to_pofile
     submission.legal_warning = legal_warning_needed and (
         message.origin == RosettaTranslationOrigin.SCM)
     submission.suggestion_html_id = (

@@ -11,7 +11,10 @@ import transaction
 from transaction.interfaces import ISynchronizer
 from zope.component import getUtility
 
-from canonical.launchpad.database.librarian import LibraryFileAliasSet
+from canonical.launchpad.database.librarian import (
+    LibraryFileAlias,
+    LibraryFileAliasSet,
+    )
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.librarian.client import LibrarianClient
@@ -90,12 +93,17 @@ class LibraryAccessScenarioMixin:
             getUtility(ILibrarianClient).addFile,
             name, wrong_length, StringIO(text), 'text/plain')
 
+    def test_create_returns_alias(self):
+        alias = getUtility(ILibraryFileAliasSet).create(
+            'foo.txt', 3, StringIO('foo'), 'text/plain', debugID='txt')
+        self.assertIsInstance(alias, LibraryFileAlias)
+
     def test_debugID_is_harmless(self):
         # addFile takes an argument debugID that doesn't do anything
         # observable.  We get a LibraryFileAlias regardless.
-        alias_id = getUtility(ILibraryFileAliasSet).create(
+        alias = getUtility(ILibraryFileAliasSet).create(
             'txt.txt', 3, StringIO('txt'), 'text/plain', debugID='txt')
-        self.assertNotEqual(None, alias_id)
+        self.assertNotEqual(None, alias)
 
 
 class TestFakeLibrarian(LibraryAccessScenarioMixin, TestCaseWithFactory):
