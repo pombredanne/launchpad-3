@@ -7,6 +7,7 @@ __metaclass__ = type
 
 __all__ = [
     'get_status_counts',
+    'MapMixin',
     'MilestoneOverlayMixin',
     'RegistryEditFormView',
     'RegistryDeleteViewMixin',
@@ -31,6 +32,7 @@ from lp.bugs.interfaces.bugtask import (
     )
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.propertycache import cachedproperty
 
 
 class StatusCount:
@@ -80,7 +82,7 @@ class MilestoneOverlayMixin:
     @property
     def milestone_table_class(self):
         """The milestone table will be unseen if there are no milestones."""
-        if len(self.context.all_milestones) > 0:
+        if self.context.has_milestones:
             return 'listing'
         else:
             # The page can remove the 'unseen' class to make the table
@@ -256,3 +258,19 @@ class RegistryEditFormView(LaunchpadEditFormView):
     @action("Change", name='change')
     def change_action(self, action, data):
         self.updateContextFromData(data)
+
+
+class MapMixin:
+
+    @cachedproperty
+    def gmap2_enabled(self):
+        # XXX sinzui 2010-08-27 bug=625556: This is a hack to use
+        # feature flags, which are not ready for general use in the production
+        # code, but has just enough to support this use case:
+        # Do not enable gmap2 if Google's service is not operational.
+        from lp.services.features.flags import FeatureController
+
+        def in_scope(value):
+            return True
+
+        return FeatureController(in_scope).getFlag('gmap2') == 'on'

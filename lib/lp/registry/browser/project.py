@@ -42,7 +42,6 @@ from zope.interface import (
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.schema import Choice
 
-from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.browser.feeds import FeedsMixin
 from canonical.launchpad.webapp import (
@@ -61,6 +60,7 @@ from canonical.launchpad.webapp import (
     stepthrough,
     structured,
     )
+from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.menu import NavigationMenu
 from lp.answers.browser.question import QuestionAddView
@@ -97,6 +97,7 @@ from lp.services.fields import (
     PillarAliases,
     PublicPersonChoice,
     )
+from lp.services.propertycache import cachedproperty
 
 
 class ProjectNavigation(Navigation,
@@ -355,7 +356,6 @@ class ProjectEditView(LaunchpadEditFormView):
         'homepageurl', 'bugtracker', 'sourceforgeproject',
         'freshmeatproject', 'wikiurl']
 
-
     @action('Change Details', name='change')
     def edit(self, action, data):
         self.updateContextFromData(data)
@@ -373,7 +373,7 @@ class ProjectEditView(LaunchpadEditFormView):
 class ProjectReviewView(ProjectEditView):
 
     label = "Review upstream project group details"
-    field_names = ['name', 'owner', 'active', 'reviewed']
+    default_field_names = ['name', 'owner', 'active', 'reviewed']
 
     def setUpFields(self):
         """Setup the normal fields from the schema plus adds 'Registrant'.
@@ -382,9 +382,16 @@ class ProjectReviewView(ProjectEditView):
         proper widget created by default.  Even though it is read-only, admins
         need the ability to change it.
         """
+        self.field_names = self.default_field_names[:]
+        admin = check_permission('launchpad.Admin', self.context)
+        if not admin:
+            self.field_names.remove('name')
+            self.field_names.remove('owner')
         super(ProjectReviewView, self).setUpFields()
-        self.form_fields = (self._createAliasesField() + self.form_fields
-                            + self._createRegistrantField())
+        self.form_fields = self._createAliasesField() + self.form_fields
+        if admin:
+            self.form_fields = (
+                self.form_fields + self._createRegistrantField())
 
     def _createAliasesField(self):
         """Return a PillarAliases field for IProjectGroup.aliases."""

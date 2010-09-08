@@ -1277,9 +1277,12 @@ class IBranchCloud(Interface):
     """
 
     def getProductsWithInfo(num_products=None):
-        """Get products with their branch activity information.
+        """Get products with their recent activity information.
 
-        :return: a `ResultSet` of (product, num_branches, last_revision_date).
+        The counts are for the last 30 days.
+
+        :return: a `ResultSet` of (product, num_commits, num_authors,
+            last_revision_date).
         """
 
 
@@ -1300,9 +1303,7 @@ class BzrIdentityMixin:
     def branchIdentities(self):
         """See `IBranch`."""
         lp_prefix = config.codehosting.bzr_lp_prefix
-        if self.private or not self.target.supports_short_identites:
-            # XXX: thumper 2010-04-08, bug 261609
-            # We have to get around to fixing this
+        if not self.target.supports_short_identites:
             identities = []
         else:
             identities = [

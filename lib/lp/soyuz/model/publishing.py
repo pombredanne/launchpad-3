@@ -63,19 +63,22 @@ from canonical.launchpad.webapp.interfaces import (
     MAIN_STORE,
     )
 from lp.app.errors import NotFoundError
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.packagebuild import PackageBuild
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.worlddata.model.country import Country
-from lp.soyuz.interfaces.archive import ArchivePurpose
-from lp.soyuz.interfaces.archivearch import IArchiveArchSet
+from lp.soyuz.enums import (
+    BinaryPackageFormat,
+    PackagePublishingPriority,
+    PackagePublishingStatus,
+    PackageUploadStatus,
+    )
 from lp.soyuz.interfaces.binarypackagebuild import (
     BuildSetStatus,
     IBinaryPackageBuildSet,
     )
-from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFormat
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.publishing import (
     active_publishing_status,
@@ -84,11 +87,8 @@ from lp.soyuz.interfaces.publishing import (
     IPublishingSet,
     ISourcePackageFilePublishing,
     ISourcePackagePublishingHistory,
-    PackagePublishingPriority,
-    PackagePublishingStatus,
     PoolFileOverwriteError,
     )
-from lp.soyuz.interfaces.queue import PackageUploadStatus
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import (
     BinaryPackageRelease,
@@ -562,7 +562,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
     def createMissingBuilds(self, architectures_available=None,
                             pas_verify=None, logger=None):
         """See `ISourcePackagePublishingHistory`."""
-        if self.archive.purpose == ArchivePurpose.PPA:
+        if self.archive.is_ppa:
             pas_verify = None
 
         if architectures_available is None:
@@ -1727,7 +1727,7 @@ class PublishingSet:
         augmented_summary = summary
         if (source_publication.status in active_publishing_status and
                 summary['status'] == BuildSetStatus.FULLYBUILT and
-                source_publication.archive.purpose != ArchivePurpose.COPY):
+                not source_publication.archive.is_copy):
 
             unpublished_builds = list(
                 source_publication.getUnpublishedBuilds())

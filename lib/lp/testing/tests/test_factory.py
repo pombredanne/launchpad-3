@@ -16,7 +16,7 @@ from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
     )
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.buildmaster.enums import BuildStatus
 from lp.code.enums import (
     BranchType,
     CodeImportReviewStatus,
@@ -28,9 +28,14 @@ from lp.registry.interfaces.suitesourcepackage import ISuiteSourcePackage
 from lp.services.worlddata.interfaces.language import ILanguage
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuild
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageName
-from lp.soyuz.interfaces.binarypackagerelease import (
+from lp.soyuz.enums import (
     BinaryPackageFileType,
     BinaryPackageFormat,
+    PackagePublishingPriority,
+    PackagePublishingStatus,
+    PackageUploadStatus,
+    )
+from lp.soyuz.interfaces.binarypackagerelease import (
     IBinaryPackageRelease,
     )
 from lp.soyuz.interfaces.files import (
@@ -41,12 +46,9 @@ from lp.soyuz.interfaces.publishing import (
     IBinaryPackagePublishingHistory,
     ISourcePackagePublishingHistory,
     PackagePublishingPocket,
-    PackagePublishingPriority,
-    PackagePublishingStatus,
     )
 from lp.soyuz.interfaces.queue import (
     IPackageUpload,
-    PackageUploadStatus,
     )
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
 from lp.testing import TestCaseWithFactory

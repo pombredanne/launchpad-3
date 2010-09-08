@@ -179,10 +179,13 @@ buildonce_eggs: $(PY)
 # The download-cache dependency comes *before* eggs so that developers get the
 # warning before the eggs directory is made.  The target for the eggs directory
 # is only there for deployment convenience.
+# Note that the buildout version must be maintained here and in versions.cfg
+# to make sure that the build does not go over the network.
 bin/buildout: download-cache eggs
 	$(SHHH) PYTHONPATH= $(PYTHON) bootstrap.py\
 		--setup-source=ez_setup.py \
-		--download-base=download-cache/dist --eggs=eggs
+		--download-base=download-cache/dist --eggs=eggs \
+		--version=1.5.1
 
 # This target is used by LOSAs to prepare a build to be pushed out to
 # destination machines.  We only want eggs: they are the expensive bits,

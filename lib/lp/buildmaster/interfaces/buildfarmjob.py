@@ -14,12 +14,10 @@ __all__ = [
     'IBuildFarmJobSource',
     'InconsistentBuildFarmJobError',
     'ISpecificBuildFarmJob',
-    'BuildFarmJobType',
     ]
 
 from lazr.enum import (
     DBEnumeratedType,
-    DBItem,
     )
 from lazr.restful.declarations import exported
 from lazr.restful.fields import Reference
@@ -31,12 +29,14 @@ from zope.schema import (
     Bool,
     Choice,
     Datetime,
+    Int,
     TextLine,
     Timedelta,
     )
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
+from lp.buildmaster.enums import BuildFarmJobType
 from lp.buildmaster.interfaces.builder import IBuilder
 from lp.soyuz.interfaces.processor import IProcessor
 
@@ -48,38 +48,6 @@ class InconsistentBuildFarmJobError(Exception):
     is yet implemented. Or when adapting the BuildFarmJob to a specific
     type of build job (such as a BinaryPackageBuild) fails.
     """
-
-
-class BuildFarmJobType(DBEnumeratedType):
-    """Soyuz build farm job type.
-
-    An enumeration with the types of jobs that may be run on the Soyuz build
-    farm.
-    """
-
-    PACKAGEBUILD = DBItem(1, """
-        Binary package build
-
-        Build a source package.
-        """)
-
-    BRANCHBUILD = DBItem(2, """
-        Branch build
-
-        Build a package from a bazaar branch.
-        """)
-
-    RECIPEBRANCHBUILD = DBItem(3, """
-        Recipe branch build
-
-        Build a package from a bazaar branch and a recipe.
-        """)
-
-    TRANSLATIONTEMPLATESBUILD = DBItem(4, """
-        Translation template build
-
-        Generate translation templates from a bazaar branch.
-        """)
 
 
 class IBuildFarmJobOld(Interface):
@@ -269,12 +237,20 @@ class IBuildFarmJob(IBuildFarmJobOld):
         vocabulary=BuildFarmJobType,
         description=_("The specific type of job."))
 
+    failure_count = Int(
+        title=_("Failure Count"), required=False, readonly=True,
+        default=0,
+        description=_("Number of consecutive failures for this job."))
+
     def getSpecificJob():
         """Return the specific build job associated with this record.
 
         :raises InconsistentBuildFarmJobError: if a specific job could not be
             returned.
         """
+
+    def gotFailure():
+        """Increment the failure_count for this job."""
 
     title = exported(TextLine(title=_("Title"), required=False))
 

@@ -36,7 +36,7 @@ from canonical.launchpad.validators.version import valid_debian_version
 from lp.archivepublisher.diskpool import poolify
 from lp.registry.interfaces.gpg import GPGKeyAlgorithm
 from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
-from lp.soyuz.interfaces.publishing import PackagePublishingPriority
+from lp.soyuz.enums import PackagePublishingPriority
 from lp.soyuz.scripts.gina import call
 from lp.soyuz.scripts.gina.changelog import parse_changelog
 
