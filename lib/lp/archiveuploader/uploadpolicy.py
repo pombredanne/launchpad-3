@@ -134,7 +134,6 @@ class AbstractUploadPolicy:
 
     def setOptions(self, options):
         """Store the options for later."""
-        self.options = options
         # Extract and locate the distribution though...
         self.distro = getUtility(IDistributionSet)[options.distro]
         if options.distroseries is not None:

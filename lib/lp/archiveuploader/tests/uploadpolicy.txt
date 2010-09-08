@@ -59,8 +59,6 @@ The policies require certain values to be present in the options at times...
   >>> bd_opts = MockOptions()
 
   >>> insecure_policy.setOptions(ab_opts)
-  >>> insecure_policy.options is ab_opts
-  True
   >>> insecure_policy.distro.name
   u'ubuntu'
   >>> buildd_policy.setOptions(ab_opts)
@@ -68,8 +66,6 @@ The policies require certain values to be present in the options at times...
   ...
   UploadPolicyError: BuildID required for buildd context
   >>> buildd_policy.setOptions(bd_opts)
-  >>> buildd_policy.options is bd_opts
-  True
   >>> buildd_policy.distro.name
   u'ubuntu'
 

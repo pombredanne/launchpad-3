@@ -90,7 +90,8 @@ class ProcessUpload(LaunchpadCronScript):
         processor = UploadProcessor(self.options.base_fsroot,
             self.options.dryrun, self.options.nomails, self.options.builds,
             self.options.keep, getPolicy, self.txn, self.logger)
-        processor.processUploadQueue(self.options.leafname)
+        processor.processUploadQueue(
+            self.options.leafname, build_id=self.options.buildid)
 
     @property
     def lockfilename(self):

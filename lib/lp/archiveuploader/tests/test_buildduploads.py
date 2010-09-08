@@ -112,7 +112,7 @@ class TestStagedBinaryUploadBase(TestUploadProcessorBase):
         # Store source queue item for future use.
         self.source_queue = queue_item
 
-    def _uploadBinary(self, archtag):
+    def _uploadBinary(self, archtag, build_id):
         """Upload the base binary.
 
         Ensure it got processed and has a respective queue record.
@@ -121,7 +121,7 @@ class TestStagedBinaryUploadBase(TestUploadProcessorBase):
         self._prepareUpload(self.binary_dir)
         self.uploadprocessor.processChangesFile(
             os.path.join(self.queue_folder, "incoming", self.binary_dir),
-            self.getBinaryChangesfileFor(archtag))
+            self.getBinaryChangesfileFor(archtag), build_id=build_id)
         queue_item = self.uploadprocessor.last_processed_upload.queue_root
         self.assertTrue(
             queue_item is not None,
@@ -205,10 +205,9 @@ class TestBuilddUploads(TestStagedBinaryUploadBase):
         pubrec.datepublished = UTC_NOW
         queue_item.setDone()
 
-    def _setupUploadProcessorForBuild(self, build_candidate):
+    def _setupUploadProcessorForBuild(self):
         """Setup an UploadProcessor instance for a given buildd context."""
         self.options.context = self.policy
-        self.options.buildid = str(build_candidate.id)
         self.uploadprocessor = self.getUploadProcessor(
             self.layer.txn)
 
@@ -223,8 +222,8 @@ class TestBuilddUploads(TestStagedBinaryUploadBase):
         """
         # Upload i386 binary.
         build_candidate = self._createBuild('i386')
-        self._setupUploadProcessorForBuild(build_candidate)
-        build_used = self._uploadBinary('i386')
+        self._setupUploadProcessorForBuild()
+        build_used = self._uploadBinary('i386', build_candidate.id)
 
         self.assertEqual(build_used.id, build_candidate.id)
         self.assertBuildsCreated(1)
@@ -239,8 +238,8 @@ class TestBuilddUploads(TestStagedBinaryUploadBase):
 
         # Upload powerpc binary
         build_candidate = self._createBuild('powerpc')
-        self._setupUploadProcessorForBuild(build_candidate)
-        build_used = self._uploadBinary('powerpc')
+        self._setupUploadProcessorForBuild()
+        build_used = self._uploadBinary('powerpc', build_candidate.id)
 
         self.assertEqual(build_used.id, build_candidate.id)
         self.assertBuildsCreated(2)

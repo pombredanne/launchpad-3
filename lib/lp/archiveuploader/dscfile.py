@@ -618,7 +618,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
             cleanup_unpacked_dir(unpacked_dir)
         self.logger.debug("Done")
 
-    def findBuild(self):
+    def findBuild(self, build_id):
         """Find and return the SourcePackageRecipeBuild, if one is specified.
 
         If by any chance an inconsistent build was found this method will

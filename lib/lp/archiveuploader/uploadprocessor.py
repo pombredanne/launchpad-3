@@ -163,7 +163,7 @@ class UploadProcessor:
         self._getPolicyForDistro = policy_for_distro
         self.ztm = ztm
 
-    def processUploadQueue(self, leaf_name=None):
+    def processUploadQueue(self, leaf_name=None, build_id=None):
         """Search for uploads, and process them.
 
         Uploads are searched for in the 'incoming' directory inside the
@@ -196,7 +196,7 @@ class UploadProcessor:
                     # directories are named after job ids.
                     self.processBuildUpload(fsroot, upload)
                 else:
-                    self.processUpload(fsroot, upload)
+                    self.processUpload(fsroot, upload, build_id)
         finally:
             self.log.debug("Rolling back any remaining transactions.")
             self.ztm.abort()
@@ -233,7 +233,7 @@ class UploadProcessor:
             [changes_file] = self.locateChangesFiles(upload_path)
             logger.debug("Considering changefile %s" % changes_file)
             result = self.processChangesFile(
-                upload_path, changes_file, logger, buildid=build.id)
+                upload_path, changes_file, logger, build_id=build.id)
         except (KeyboardInterrupt, SystemExit):
             raise
         except:
@@ -262,7 +262,7 @@ class UploadProcessor:
         # Remove BuildQueue record.
         build.buildqueue_record.destroySelf()
 
-    def processUpload(self, fsroot, upload):
+    def processUpload(self, fsroot, upload, build_id=None):
         """Process an upload's changes files, and move it to a new directory.
 
         The destination directory depends on the result of the processing
@@ -283,7 +283,7 @@ class UploadProcessor:
             self.log.debug("Considering changefile %s" % changes_file)
             try:
                 result = self.processChangesFile(
-                    upload_path, changes_file, self.log)
+                    upload_path, changes_file, self.log, build_id=build_id)
                 if result == UploadStatusEnum.FAILED:
                     some_failed = True
                 elif result == UploadStatusEnum.REJECTED:
@@ -377,7 +377,7 @@ class UploadProcessor:
         return self.orderFilenames(changes_files)
 
     def processChangesFile(self, upload_path, changes_file, logger=None,
-                           buildid=None):
+                           build_id=None):
         """Process a single changes file.
 
         This is done by obtaining the appropriate upload policy (according
@@ -434,8 +434,6 @@ class UploadProcessor:
                          "and update your configuration.")))
         logger.debug("Finding fresh policy")
         policy = self._getPolicyForDistro(distribution)
-        if buildid is not None:
-            policy.options.buildid = buildid
         policy.archive = archive
 
         # DistroSeries overriding respect the following precedence:
@@ -516,7 +514,8 @@ class UploadProcessor:
                 upload.do_reject(notify)
                 self.ztm.abort()
             else:
-                successful = upload.do_accept(notify=notify)
+                successful = upload.do_accept(
+                    notify=notify, build_id=build_id)
                 if not successful:
                     result = UploadStatusEnum.REJECTED
                     logger.info(

@@ -824,7 +824,7 @@ class NascentUpload:
     #
     # Actually processing accepted or rejected uploads -- and mailing people
     #
-    def do_accept(self, notify=True):
+    def do_accept(self, notify=True, build_id=None):
         """Accept the upload into the queue.
 
         This *MAY* in extreme cases cause a database error and thus
@@ -834,13 +834,14 @@ class NascentUpload:
         constraint.
 
         :param notify: True to send an email, False to not send one.
+        :param build_id: Id of build associated with this upload.
         """
         if self.is_rejected:
             self.reject("Alas, someone called do_accept when we're rejected")
             self.do_reject(notify)
             return False
         try:
-            self.storeObjectsInDatabase()
+            self.storeObjectsInDatabase(build_id=build_id)
 
             # Send the email.
             # There is also a small corner case here where the DB transaction
@@ -923,7 +924,7 @@ class NascentUpload:
     #
     # Inserting stuff in the database
     #
-    def storeObjectsInDatabase(self):
+    def storeObjectsInDatabase(self, build_id=None):
         """Insert this nascent upload into the database."""
 
         # Queue entries are created in the NEW state by default; at the
@@ -939,7 +940,6 @@ class NascentUpload:
         sourcepackagerelease = None
         if self.sourceful:
             assert self.changes.dsc, "Sourceful upload lacks DSC."
-            build_id = getattr(self.policy.options, 'buildid', None)
             if build_id is None:
                 build = None
             else:
@@ -984,7 +984,6 @@ class NascentUpload:
                     sourcepackagerelease = (
                         binary_package_file.findSourcePackageRelease())
 
-                build_id = getattr(self.policy.options, 'buildid', None)
                 build = binary_package_file.findBuild(
                     sourcepackagerelease, build_id)
                 assert self.queue_root.pocket == build.pocket, (
