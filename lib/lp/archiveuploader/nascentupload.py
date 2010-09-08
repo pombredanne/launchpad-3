@@ -939,7 +939,11 @@ class NascentUpload:
         sourcepackagerelease = None
         if self.sourceful:
             assert self.changes.dsc, "Sourceful upload lacks DSC."
-            build = self.changes.dsc.findBuild()
+            build_id = getattr(self.policy.options, 'buildid', None)
+            if build_id is None:
+                build = None
+            else:
+                build = self.changes.dsc.findBuild(build_id)
             sourcepackagerelease = self.changes.dsc.storeInDatabase(build)
             package_upload_source = self.queue_root.addSource(
                 sourcepackagerelease)
@@ -980,7 +984,9 @@ class NascentUpload:
                     sourcepackagerelease = (
                         binary_package_file.findSourcePackageRelease())
 
-                build = binary_package_file.findBuild(sourcepackagerelease)
+                build_id = getattr(self.policy.options, 'buildid', None)
+                build = binary_package_file.findBuild(
+                    sourcepackagerelease, build_id)
                 assert self.queue_root.pocket == build.pocket, (
                     "Binary was not build for the claimed pocket.")
                 binary_package_file.storeInDatabase(build)

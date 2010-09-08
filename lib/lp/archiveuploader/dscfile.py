@@ -624,10 +624,6 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         If by any chance an inconsistent build was found this method will
         raise UploadError resulting in a upload rejection.
         """
-        build_id = getattr(self.policy.options, 'buildid', None)
-        if build_id is None:
-            return None
-
         build = getUtility(ISourcePackageRecipeBuildSource).getById(build_id)
 
         # The master verifies the status to confirm successful upload.

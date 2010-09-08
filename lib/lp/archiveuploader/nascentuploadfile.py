@@ -797,7 +797,7 @@ class BaseBinaryUploadFile(PackageUploadFile):
                 "control file" % (sourcepackagerelease.name, self.filename,
                                   self.source_name))
 
-    def findBuild(self, sourcepackagerelease):
+    def findBuild(self, sourcepackagerelease, build_id):
         """Find and return a build for the given archtag, cached on policy.
 
         To find the right build, we try these steps, in order, until we have
@@ -810,7 +810,6 @@ class BaseBinaryUploadFile(PackageUploadFile):
         If by any chance an inconsistent build was found this method will
         raise UploadError resulting in a upload rejection.
         """
-        build_id = getattr(self.policy.options, 'buildid', None)
         dar = self.policy.distroseries[self.archtag]
 
         if build_id is None:
