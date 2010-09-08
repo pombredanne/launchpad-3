@@ -362,7 +362,6 @@
                 permission="zope.Public"
                 attributes="
                     active
-                    addRemoteComponent
                     addRemoteComponentGroup
                     aliases
                     baseurl
@@ -418,6 +417,35 @@
             for="lp.bugs.interfaces.bugtracker.IBugTracker"
             factory="canonical.launchpad.webapp.breadcrumb.TitleBreadcrumb"
             permission="zope.Public"/>
+
+        <!--BugTrackerComponent -->
+
+        <class
+            class="canonical.launchpad.database.BugTrackerComponent">
+            <allow
+                attributes="
+                    is_visible
+                    is_custom
+                    "/>
+            <require
+                permission="launchpad.Edit"
+                attributes="
+                    show
+                    hide
+                    "/>
+            <implements
+                interface="lp.bugs.interfaces.bugtracker.IBugTrackerComponent"/>
+        </class>
+
+        <!--BugTrackerComponentGroup -->
+
+        <class
+            class="canonical.launchpad.database.BugTrackerComponentGroup">
+            <allow
+                attributes="addComponent"/>
+            <implements
+                interface="lp.bugs.interfaces.bugtracker.IBugTrackerComponentGroup"/>
+        </class>
 
         <!-- BugTrackerSet -->
 

@@ -9,6 +9,9 @@ __all__ = []
 
 import unittest
 
+from zope.component import getUtility
+from zope.security.interfaces import Unauthorized
+
 from canonical.launchpad.ftests import (
     login,
     login_person,
@@ -30,6 +33,30 @@ class TestBugTrackerComponent(TestCaseWithFactory):
     def setUp(self):
         login(ANONYMOUS)
         super(TestBugTrackerComponent, self).setUp()
+
+        self.component = self.factory.makeBugTrackerComponent("Alpha")
+
+    def test_component_creation(self):
+        self.assertTrue(self.component != None)
+
+    def test_set_visibility(self):
+        self.assertEqual(self.component.is_visible, True)
+
+        self.assertRaises(Unauthorized, getattr, self.component, 'hide')
+
+#        unprivileged_user = self.factory.makePerson()
+#        login_person(unprivileged_user)
+#        self.component.show()
+#        self.assertEqual(self.component.is_visible, True)
+
+#        self.component.hide()
+#        self.assertEqual(self.component.is_visible, False)
+        
+    def test_custom(self):
+        pass
+ #       self.assertEqual(self.component.is_custom, False)
+ #       self.component.is_visible = True
+ #       self.assertEqual(self.component.is_custom, True)
 
 
 class TestBugTrackerWithComponents(TestCaseWithFactory):

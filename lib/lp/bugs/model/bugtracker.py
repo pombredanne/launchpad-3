@@ -202,6 +202,9 @@ class BugTracker(SQLBase):
         'BugWatch', joinColumn='bugtracker', orderBy='-datecreated',
         prejoins=['bug'])
 
+    component_groups = []
+    #component_groups = SQLMultipleJoin(...)  #TODO
+
     _filing_url_patterns = {
         BugTrackerType.BUGZILLA: (
             "%(base_url)s/enter_bug.cgi?product=%(remote_product)s"
@@ -521,7 +524,10 @@ class BugTracker(SQLBase):
 
     def addRemoteComponentGroup(self, component_group_name):
         """See `IBugTracker`."""
-        return None
+
+        # TODO: Persist
+        component_group = BugTrackerComponentGroup(component_group_name)
+        return component_group
 
     def getAllRemoteComponentGroups(self):
         """See `IBugTracker`."""
@@ -722,8 +728,10 @@ class BugTrackerComponentGroup(SQLBase):
     bugtracker = ForeignKey(
         dbName='bugtracker', foreignKey='BugTracker', notNull=True)
 
-    components = SQLMultipleJoin(
-        'BugTrackerComponent', joinColumn='component_group', orderBy='name')
+    #TODO
+    #components = SQLMultipleJoin(
+    #    'BugTrackerComponent', joinColumn='component_group', orderBy='name')
+    components = []
 
     def addComponent(self, component_name):
         # TODO: Verify we don't already have the component
@@ -731,4 +739,5 @@ class BugTrackerComponentGroup(SQLBase):
         component = BugTrackerComponent()
         component.name = component_name
         
-        # TODO: Insert into components
+        self.components.append(component)
+        return component

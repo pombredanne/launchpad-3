@@ -369,6 +369,9 @@ class IBugTracker(Interface):
         in the remote bug tracker's component field.
         """
 
+    def addRemoteComponentGroup(group_name):
+        """Adds a new component group to the bug tracker"""
+
     def getRemoteComponentGroup(group_name):
         """Retrieve a given component group registered with the bug tracker.
 
