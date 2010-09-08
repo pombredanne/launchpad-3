@@ -1240,6 +1240,11 @@ class Person(
         if isinstance(team, (str, unicode)):
             team = PersonSet().getByName(team)
 
+        if not team.is_team:
+            # It is possible that this team is really a user since teams
+            # are users are often interchangable.
+            return False
+
         if self._inTeam_cache is None: # Initialize cache
             self._inTeam_cache = {}
         else:

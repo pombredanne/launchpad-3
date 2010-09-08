@@ -116,7 +116,7 @@ class TestPersonTeams(TestCaseWithFactory):
             in memberships]
         self.assertEqual(expected_memberships, memberships)
 
-    def test_getPathsToTeamsComplicated(self):
+    def test_getPathsToTeams_complicated(self):
         d_team = self.factory.makeTeam(name='d', owner=self.b_team)
         e_team = self.factory.makeTeam(name='e')
         f_team = self.factory.makeTeam(name='f', owner=e_team)
@@ -146,7 +146,7 @@ class TestPersonTeams(TestCaseWithFactory):
             in memberships]
         self.assertEqual(expected_memberships, memberships)
 
-    def test_getPathsToTeamsMultiplePaths(self):
+    def test_getPathsToTeams_multiple_paths(self):
         d_team = self.factory.makeTeam(name='d', owner=self.b_team)
         login_person(self.a_team.teamowner)
         self.c_team.addMember(d_team, self.c_team.teamowner)
@@ -167,6 +167,19 @@ class TestPersonTeams(TestCaseWithFactory):
             (membership.team, membership.person) for membership
             in memberships]
         self.assertEqual(expected_memberships, memberships)
+
+    def test_inTeam_direct_team(self):
+        self.assertTrue(self.user.inTeam(self.a_team))
+
+    def test_inTeam_indirect_team(self):
+        self.assertTrue(self.user.inTeam(self.b_team))
+
+    def test_inTeam_person(self):
+        # Verify a user cannot be a member of another user and the and
+        # DB call to TeamParticipation was not made to learn this.
+        other_user = self.factory.makePerson()
+        self.assertFalse(self.user.inTeam(other_user))
+        self.assertEqual({}, removeSecurityProxy(self.user)._inTeam_cache)
 
 
 class TestPerson(TestCaseWithFactory):
