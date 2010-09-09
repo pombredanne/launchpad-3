@@ -26,7 +26,6 @@ from storm.expr import (
     And,
     Count,
     Desc,
-    Max,
     NamedFunc,
     Not,
     Or,
@@ -58,12 +57,8 @@ from canonical.launchpad.interfaces.launchpad import (
     ILaunchpadCelebrities,
     IPrivacy,
     )
+from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.launchpad.webapp import urlappend
-from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector,
-    MAIN_STORE,
-    SLAVE_FLAVOR,
-    )
 from lp.app.errors import UserCannotUnsubscribePerson
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.code.bzr import (
@@ -804,6 +799,17 @@ class Branch(SQLBase, BzrIdentityMixin):
             BranchRevision.branch == self,
             query).one()
 
+    def removeBranchRevisions(self, revision_ids):
+        """See `IBranch`."""
+        if isinstance(revision_ids, basestring):
+            revision_ids = [revision_ids]
+        IMasterStore(BranchRevision).find(
+            BranchRevision,
+            BranchRevision.branch == self,
+            BranchRevision.revision_id.is_in(
+                Select(Revision.id,
+                       Revision.revision_id.is_in(revision_ids)))).remove()
+
     def createBranchRevision(self, sequence, revision):
         """See `IBranch`."""
         branch_revision = BranchRevision(
@@ -921,13 +927,11 @@ class Branch(SQLBase, BzrIdentityMixin):
         rows = rows.order_by(BranchRevision.sequence)
         ancestry = set()
         history = []
-        branch_revision_map = {}
         for branch_revision_id, sequence, revision_id in rows:
             ancestry.add(revision_id)
-            branch_revision_map[revision_id] = branch_revision_id
             if sequence is not None:
                 history.append(revision_id)
-        return ancestry, history, branch_revision_map
+        return ancestry, history
 
     def getPullURL(self):
         """See `IBranch`."""

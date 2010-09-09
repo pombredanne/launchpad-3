@@ -202,11 +202,14 @@ $(BUILDOUT_BIN): bin/buildout versions.cfg $(BUILDOUT_CFG) setup.py
 	$(SHHH) PYTHONPATH= ./bin/buildout \
                 configuration:instance_name=${LPCONFIG} -c $(BUILDOUT_CFG)
 
+# bin/compile_templates is responsible for building all chameleon templates,
+# of which there is currently one, but of which many more are coming.
 compile: $(PY) $(BZR_VERSION_INFO)
 	mkdir -p /var/tmp/vostok-archive
 	${SHHH} $(MAKE) -C sourcecode build PYTHON=${PYTHON} \
 	    LPCONFIG=${LPCONFIG}
 	${SHHH} LPCONFIG=${LPCONFIG} ${PY} -t buildmailman.py
+	bin/compile_templates
 
 test_build: build
 	bin/test $(TESTFLAGS) $(TESTOPTS)
@@ -337,7 +340,8 @@ clean: clean_js clean_buildout
 	fi
 	find . -path ./eggs -prune -false -o \
 		-type f \( -name '*.o' -o -name '*.so' -o -name '*.la' -o \
-	    -name '*.lo' -o -name '*.py[co]' -o -name '*.dll' \) \
+	    -name '*.lo' -o -name '*.py[co]' -o -name '*.dll' -o \
+	    -name '*.pt.py' \) \
 	    -print0 | xargs -r0 $(RM)
 	$(RM) thread*.request
 	$(RM) -r lib/mailman
