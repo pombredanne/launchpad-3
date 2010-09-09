@@ -303,11 +303,13 @@ class FileDownloadClient:
     #         raise DownloadFailed, 'Incomplete response'
     #     return paths
 
-    def _getAlias(self, aliasID):
+    def _getAlias(self, aliasID, secure=False):
         """Retrieve the `LibraryFileAlias` with the given id.
 
         :param aliasID: A unique ID for the alias.
-
+        :param secure: Controls the behaviour when looking up restricted
+            files.  If False restricted files are only permitted when
+            self.restricted is True. See getURLForAlias.
         :returns: A `LibraryFileAlias`.
         :raises: `DownloadFailed` if the alias is invalid or
             inaccessible.
