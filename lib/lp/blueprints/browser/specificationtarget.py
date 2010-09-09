@@ -148,6 +148,11 @@ class HasSpecificationsView(LaunchpadView):
 
     @property
     def template(self):
+        # If the template has been defined in the zcml, use that, as this
+        # isn't the base service page for blueprints.
+        if hasattr(self, 'index'):
+            return super(HasSpecificationsView, self).template
+
         # If specifications exist, ignore the usage enum.
         if self.has_any_specifications:
             return self.uses_launchpad_template
