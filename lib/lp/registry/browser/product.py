@@ -50,6 +50,8 @@ from datetime import (
     )
 from operator import attrgetter
 
+from lazr.delegates import delegates
+from lazr.restful.interface import copy_field
 import pytz
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form import CustomWidgetFactory
@@ -76,10 +78,7 @@ from zope.schema.vocabulary import (
     )
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.cachedproperty import cachedproperty
 from canonical.config import config
-from lazr.delegates import delegates
-from lazr.restful.interface import copy_field
 from canonical.launchpad import (
     _,
     helpers,
@@ -191,6 +190,7 @@ from lp.services.fields import (
     PillarAliases,
     PublicPersonChoice,
     )
+from lp.services.propertycache import cachedproperty
 from lp.services.worlddata.interfaces.country import ICountry
 from lp.translations.browser.customlanguagecode import (
     HasCustomLanguageCodesTraversalMixin,
@@ -2001,7 +2001,7 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
     """Step 2 (of 2) in the +new project add wizard."""
 
     _field_names = ['displayname', 'name', 'title', 'summary',
-                    'description', 'licenses', 'license_info',
+                    'description', 'homepageurl', 'licenses', 'license_info',
                     ]
     schema = IProduct
     step_name = 'projectaddstep2'
@@ -2012,6 +2012,7 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
 
     custom_widget('displayname', TextWidget, displayWidth=50, label='Name')
     custom_widget('name', ProductNameWidget, label='URL')
+    custom_widget('homepageurl', TextWidget, displayWidth=30)
     custom_widget('licenses', LicenseWidget)
     custom_widget('license_info', GhostWidget)
 
@@ -2169,6 +2170,7 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
             title=data['title'],
             summary=data['summary'],
             description=description,
+            homepageurl=data.get('homepageurl'),
             licenses=data['licenses'],
             license_info=data['license_info'],
             project=project)

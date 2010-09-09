@@ -122,7 +122,6 @@ from zope.security.interfaces import Unauthorized
 from zope.security.proxy import isinstance as zope_isinstance
 from zope.traversing.interfaces import IPathAdapter
 
-from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad import (
     _,
@@ -257,6 +256,7 @@ from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.vocabularies import MilestoneVocabulary
 from lp.services.fields import PersonChoice
+from lp.services.propertycache import cachedproperty
 
 
 @component.adapter(IBugTask, IReferenceChoice, IWebServiceClientRequest)

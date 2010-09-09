@@ -130,7 +130,7 @@ The view accepts most of the distribution fields.
     >>> print distribution.bug_reporting_guidelines
     guidelines
 
-    >>> distribution.official_malone
+    >>> distribution.bug_tracking_usage
     <DBItem ServiceUsage.LAUNCHPAD, (20) Launchpad>
 
 Only admins and owners can access the view.

@@ -34,10 +34,8 @@ from operator import attrgetter
 import random
 import re
 import subprocess
-import time
 import weakref
 
-from bzrlib.plugins.builder.recipe import RecipeParser
 import pytz
 from sqlobject import (
     BoolCol,
@@ -91,11 +89,6 @@ from zope.security.proxy import (
     removeSecurityProxy,
     )
 
-from canonical.cachedproperty import (
-    cache_property,
-    cachedproperty,
-    clear_property,
-    )
 from canonical.config import config
 from canonical.database import postgresql
 from canonical.database.constants import UTC_NOW
@@ -266,6 +259,11 @@ from lp.registry.model.teammembership import (
     TeamMembershipSet,
     TeamParticipation,
     )
+from lp.services.openid.model.openididentifier import OpenIdIdentifier
+from lp.services.propertycache import (
+    cachedproperty,
+    IPropertyCache,
+    )
 from lp.services.salesforce.interfaces import (
     ISalesforceVoucherProxy,
     REDEEMABLE_VOUCHER_STATUSES,
@@ -273,9 +271,7 @@ from lp.services.salesforce.interfaces import (
     )
 from lp.services.worlddata.model.language import Language
 from lp.soyuz.enums import ArchivePurpose
-from lp.soyuz.interfaces.archive import (
-    IArchiveSet,
-    )
+from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
 from lp.soyuz.model.archive import Archive
@@ -499,7 +495,7 @@ class Person(
 
     personal_standing_reason = StringCol(default=None)
 
-    @cachedproperty('_languages_cache')
+    @cachedproperty
     def languages(self):
         """See `IPerson`."""
         results = Store.of(self).find(
@@ -513,19 +509,19 @@ class Person(
 
         :raises AttributeError: If the cache doesn't exist.
         """
-        return self._languages_cache
+        return IPropertyCache(self).languages
 
     def setLanguagesCache(self, languages):
         """Set this person's cached languages.
 
         Order them by name if necessary.
         """
-        cache_property(self, '_languages_cache', sorted(
-            languages, key=attrgetter('englishname')))
+        IPropertyCache(self).languages = sorted(
+            languages, key=attrgetter('englishname'))
 
     def deleteLanguagesCache(self):
         """Delete this person's cached languages, if it exists."""
-        clear_property(self, '_languages_cache')
+        del IPropertyCache(self).languages
 
     def addLanguage(self, language):
         """See `IPerson`."""
@@ -592,7 +588,7 @@ class Person(
             Or(OAuthRequestToken.date_expires == None,
                OAuthRequestToken.date_expires > UTC_NOW))
 
-    @cachedproperty('_location')
+    @cachedproperty
     def location(self):
         """See `IObjectWithLocation`."""
         return PersonLocation.selectOneBy(person=self)
@@ -628,7 +624,8 @@ class Person(
         """See `ISetLocation`."""
         assert not self.is_team, 'Cannot edit team location.'
         if self.location is None:
-            self._location = PersonLocation(person=self, visible=visible)
+            IPropertyCache(self).location = PersonLocation(
+                person=self, visible=visible)
         else:
             self.location.visible = visible
 
@@ -646,7 +643,7 @@ class Person(
             self.location.last_modified_by = user
             self.location.date_last_modified = UTC_NOW
         else:
-            self._location = PersonLocation(
+            IPropertyCache(self).location = PersonLocation(
                 person=self, time_zone=time_zone, latitude=latitude,
                 longitude=longitude, last_modified_by=user)
 
@@ -1148,7 +1145,7 @@ class Person(
         result = result.order_by(KarmaCategory.title)
         return [karma_cache for (karma_cache, category) in result]
 
-    @cachedproperty('_karma_cached')
+    @cachedproperty
     def karma(self):
         """See `IPerson`."""
         # May also be loaded from _all_members
@@ -1169,7 +1166,7 @@ class Person(
 
         return self.is_valid_person
 
-    @cachedproperty('_is_valid_person_cached')
+    @cachedproperty
     def is_valid_person(self):
         """See `IPerson`."""
         # This is prepopulated by various queries in and out of person.py.
@@ -1620,7 +1617,7 @@ class Person(
             if not person:
                 return
             email = column
-            cache_property(person, '_preferredemail_cached', email)
+            IPropertyCache(person).preferredemail = email
         decorators.append(handleemail)
         def handleaccount(person, column):
             #-- validity caching
@@ -1632,7 +1629,7 @@ class Person(
                 column is not None
                 # -- preferred email found
                 and person.preferredemail is not None)
-            cache_property(person, '_is_valid_person_cached', valid)
+            IPropertyCache(person).is_valid_person = valid
         decorators.append(handleaccount)
         return dict(
             joins=origins,
@@ -1722,6 +1719,7 @@ class Person(
 
         def prepopulate_person(row):
             result = row[0]
+            cache = IPropertyCache(result)
             index = 1
             #-- karma caching
             if need_karma:
@@ -1731,27 +1729,27 @@ class Person(
                     karma_total = 0
                 else:
                     karma_total = karma.karma_total
-                cache_property(result, '_karma_cached', karma_total)
+                cache.karma = karma_total
             #-- ubuntu code of conduct signer status caching.
             if need_ubuntu_coc:
                 signed = row[index]
                 index += 1
-                cache_property(result, '_is_ubuntu_coc_signer_cached', signed)
+                cache.is_ubuntu_coc_signer = signed
             #-- location caching
             if need_location:
                 location = row[index]
                 index += 1
-                cache_property(result, '_location', location)
+                cache.location = location
             #-- archive caching
             if need_archive:
                 archive = row[index]
                 index += 1
-                cache_property(result, '_archive_cached', archive)
+                cache.archive = archive
             #-- preferred email caching
             if need_preferred_email and not need_validity:
                 email = row[index]
                 index += 1
-                cache_property(result, '_preferredemail_cached', email)
+                cache.preferredemail = email
             for decorator in decorators:
                 column = row[index]
                 index += 1
@@ -1783,7 +1781,7 @@ class Person(
         result = self._getMembersWithPreferredEmails()
         person_list = []
         for person, email in result:
-            cache_property(person, '_preferredemail_cached', email)
+            IPropertyCache(person).preferredemail = email
             person_list.append(person)
         return person_list
 
@@ -1918,7 +1916,7 @@ class Person(
         # fetches the rows when they're needed.
         locations = self._getMappedParticipantsLocations(limit=limit)
         for location in locations:
-            location.person._location = location
+            IPropertyCache(location.person).location = location
         participants = set(location.person for location in locations)
         # Cache the ValidPersonCache query for all mapped participants.
         if len(participants) > 0:
@@ -2060,7 +2058,7 @@ class Person(
         self.account_status = AccountStatus.DEACTIVATED
         self.account_status_comment = comment
         IMasterObject(self.preferredemail).status = EmailAddressStatus.NEW
-        clear_property(self, '_preferredemail_cached')
+        del IPropertyCache(self).preferredemail
         base_new_name = self.name + '-deactivatedaccount'
         self.name = self._ensureNewName(base_new_name)
 
@@ -2450,7 +2448,7 @@ class Person(
         if email_address is not None:
             email_address.status = EmailAddressStatus.VALIDATED
             email_address.syncUpdate()
-        clear_property(self, '_preferredemail_cached')
+        del IPropertyCache(self).preferredemail
 
     def setPreferredEmail(self, email):
         """See `IPerson`."""
@@ -2487,9 +2485,9 @@ class Person(
         IMasterObject(email).syncUpdate()
 
         # Now we update our cache of the preferredemail.
-        cache_property(self, '_preferredemail_cached', email)
+        IPropertyCache(self).preferredemail = email
 
-    @cachedproperty('_preferredemail_cached')
+    @cachedproperty
     def preferredemail(self):
         """See `IPerson`."""
         emails = self._getEmailsByStatus(EmailAddressStatus.PREFERRED)
@@ -2635,9 +2633,8 @@ class Person(
                      registrant, daily_build_archive=None, build_daily=False):
         """See `IPerson`."""
         from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
-        builder_recipe = RecipeParser(recipe_text).parse()
         recipe = SourcePackageRecipe.new(
-            registrant, self, name, builder_recipe, description, distroseries,
+            registrant, self, name, recipe_text, description, distroseries,
             daily_build_archive, build_daily)
         Store.of(recipe).flush()
         return recipe
@@ -2654,7 +2651,7 @@ class Person(
             distribution.main_archive, self)
         return permissions.count() > 0
 
-    @cachedproperty('_is_ubuntu_coc_signer_cached')
+    @cachedproperty
     def is_ubuntu_coc_signer(self):
         """See `IPerson`."""
         # Also assigned to by self._all_members.
@@ -2684,7 +2681,7 @@ class Person(
         sCoC_util = getUtility(ISignedCodeOfConductSet)
         return sCoC_util.searchByUser(self.id, active=False)
 
-    @cachedproperty('_archive_cached')
+    @cachedproperty
     def archive(self):
         """See `IPerson`."""
         return getUtility(IArchiveSet).getPPAOwnedByPerson(self)
@@ -2831,50 +2828,104 @@ class PersonSet:
                 "Both email address and full name are required to "
                 "create an account.")
         db_updated = False
+
+        assert isinstance(openid_identifier, unicode)
+
+        # Load the EmailAddress, Account and OpenIdIdentifier records
+        # from the master (if they exist). We use the master to avoid
+        # possible replication lag issues but this might actually be
+        # unnecessary.
         with MasterDatabasePolicy():
-            account_set = getUtility(IAccountSet)
-            email_set = getUtility(IEmailAddressSet)
-            email = email_set.getByEmail(email_address)
-            try:
-                account = account_set.getByOpenIDIdentifier(
-                    openid_identifier)
-            except LookupError:
-                if email is None:
-                    # There is no account associated with the identifier
-                    # nor an email associated with the email address.
-                    # We'll create one.
-                    account, email = account_set.createAccountAndEmail(
-                            email_address, creation_rationale, full_name,
-                            password=None,
-                            openid_identifier=openid_identifier)
-                else:
-                    account = email.account
-                    assert account is not None, (
-                        "This email address should have an associated "
-                        "account.")
-                    removeSecurityProxy(account).openid_identifier = (
-                        openid_identifier)
+            store = IMasterStore(EmailAddress)
+            join = store.using(
+                EmailAddress,
+                LeftJoin(Account, EmailAddress.accountID == Account.id))
+            email, account = (
+                join.find(
+                    (EmailAddress, Account),
+                    Lower(EmailAddress.email) == Lower(email_address)).one()
+                or (None, None))
+            identifier = store.find(
+                OpenIdIdentifier, identifier=openid_identifier).one()
+
+            if email is None and identifier is None:
+                # Neither the Email Address not the OpenId Identifier
+                # exist in the database. Create the email address,
+                # account, and associated info. OpenIdIdentifier is
+                # created later.
+                account_set = getUtility(IAccountSet)
+                account, email = account_set.createAccountAndEmail(
+                    email_address, creation_rationale, full_name,
+                    password=None)
                 db_updated = True
+
+            elif email is None:
+                # The Email Address does not exist in the database,
+                # but the OpenId Identifier does. Create the Email
+                # Address and link it to the account.
+                assert account is None, 'Retrieved an account but not email?'
+                account = identifier.account
+                emailaddress_set = getUtility(IEmailAddressSet)
+                email = emailaddress_set.new(
+                    email_address, account=account)
+                db_updated = True
+
+            elif account is None:
+                # Email address exists, but there is no Account linked
+                # to it. Create the Account and link it to the
+                # EmailAddress.
+                account_set = getUtility(IAccountSet)
+                account = account_set.new(
+                    AccountCreationRationale.OWNER_CREATED_LAUNCHPAD,
+                    full_name)
+                email.account = account
+                db_updated = True
+
+            if identifier is None:
+                # This is the first time we have seen that
+                # OpenIdIdentifier. Link it.
+                identifier = OpenIdIdentifier()
+                identifier.account = account
+                identifier.identifier = openid_identifier
+                store.add(identifier)
+                db_updated = True
+
+            elif identifier.account != account:
+                # The ISD OpenId server may have linked this OpenId
+                # identifier to a new email address, or the user may
+                # have transfered their email address to a different
+                # Launchpad Account. If that happened, repair the
+                # link - we trust the ISD OpenId server.
+                identifier.account = account
+                db_updated = True
+
+            # We now have an account, email address, and openid identifier.
 
             if account.status == AccountStatus.SUSPENDED:
                 raise AccountSuspendedError(
                     "The account matching the identifier is suspended.")
+
             elif account.status in [AccountStatus.DEACTIVATED,
                                     AccountStatus.NOACCOUNT]:
                 password = '' # Needed just to please reactivate() below.
-                if email is None:
-                    email = email_set.new(email_address, account=account)
                 removeSecurityProxy(account).reactivate(
                     comment, password, removeSecurityProxy(email))
+                db_updated = True
             else:
                 # Account is active, so nothing to do.
                 pass
+
             if IPerson(account, None) is None:
                 removeSecurityProxy(account).createPerson(
                     creation_rationale, comment=comment)
                 db_updated = True
 
-            return IPerson(account), db_updated
+            person = IPerson(account)
+            if email.personID != person.id:
+                removeSecurityProxy(email).person = person
+                db_updated = True
+
+            return person, db_updated
 
     def newTeam(self, teamowner, name, displayname, teamdescription=None,
                 subscriptionpolicy=TeamSubscriptionPolicy.MODERATED,
@@ -3008,8 +3059,8 @@ class PersonSet:
                 # Populate the previously empty 'preferredemail' cached
                 # property, so the Person record is up-to-date.
                 if master_email.status == EmailAddressStatus.PREFERRED:
-                    cache_property(account_person, '_preferredemail_cached',
-                        master_email)
+                    cache = IPropertyCache(account_person)
+                    cache.preferredemail = master_email
                 return account_person
             # There is no associated `Person` to the email `Account`.
             # This is probably because the account was created externally
@@ -3951,19 +4002,12 @@ class PersonSet:
         # flush its caches.
         store.invalidate()
 
-        # Change the merged Account's OpenID identifier so that it cannot be
-        # used to lookup the merged Person; Launchpad will instead select the
-        # remaining Person based on the email address. The rename uses a
-        # dash, which does not occur in SSO identifiers. The epoch from
-        # the account date_created is used to ensure it is unique if the
-        # original identifier is reused and merged.
-        if from_person.account is not None:
-            account = IMasterObject(from_person.account)
-            naked_account = removeSecurityProxy(account)
-            unique_part = time.mktime(naked_account.date_created.timetuple())
-            merge_identifier = 'merged-%s-%s' % (
-                naked_account.openid_identifier, unique_part)
-            naked_account.openid_identifier = merge_identifier
+        # Move OpenId Identifiers from the merged account to the new
+        # account.
+        if from_person.account is not None and to_person.account is not None:
+            store.execute("""
+                UPDATE OpenIdIdentifier SET account=%s WHERE account=%s
+                """ % sqlvalues(to_person.accountID, from_person.accountID))
 
         # Inform the user of the merge changes.
         if not to_person.isTeam():

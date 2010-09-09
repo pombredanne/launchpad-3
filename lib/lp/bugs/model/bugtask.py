@@ -59,7 +59,6 @@ from zope.security.proxy import (
     removeSecurityProxy,
     )
 
-from canonical.cachedproperty import cache_property
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -155,6 +154,7 @@ from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.model.pillar import pillar_sort_key
 from lp.registry.model.sourcepackagename import SourcePackageName
+from lp.services.propertycache import IPropertyCache
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
@@ -1342,7 +1342,7 @@ def _make_cache_user_can_view_bug(user):
     """
     userid = user.id
     def cache_user_can_view_bug(bugtask):
-        cache_property(bugtask.bug, '_cached_viewers', set([userid]))
+        IPropertyCache(bugtask.bug)._known_viewers = set([userid])
         return bugtask
     return cache_user_can_view_bug
 

@@ -44,7 +44,6 @@ from zope.interface import implements
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.security.interfaces import Unauthorized
 
-from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.browser.feeds import FeedsMixin
 from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet,
@@ -80,6 +79,7 @@ from lp.answers.browser.questiontarget import (
     QuestionTargetFacetMixin,
     QuestionTargetTraversalMixin,
     )
+from lp.app.enums import ServiceUsage
 from lp.app.errors import NotFoundError
 from lp.blueprints.browser.specificationtarget import (
     HasSpecificationsMenuMixin,
@@ -108,11 +108,10 @@ from lp.registry.interfaces.distributionmirror import (
     )
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.propertycache import cachedproperty
 from lp.soyuz.browser.packagesearch import PackageSearchViewBase
 from lp.soyuz.enums import ArchivePurpose
-from lp.soyuz.interfaces.archive import (
-    IArchiveSet,
-    )
+from lp.soyuz.interfaces.archive import IArchiveSet
 
 
 class UsesLaunchpadMixin:
@@ -133,7 +132,7 @@ class UsesLaunchpadMixin:
             url = canonical_url(self.context, rootsite='bugs')
             uses.append(href_template % (url, 'Bug Tracking'))
         if IProduct.providedBy(self.context):
-            if self.context.official_codehosting:
+            if self.context.codehosting_usage == ServiceUsage.LAUNCHPAD:
                 url = canonical_url(self.context, rootsite='code')
                 uses.append(href_template % (url, 'Branches'))
         if self.context.official_rosetta:

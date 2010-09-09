@@ -3,6 +3,8 @@
 
 """Test questiontarget views."""
 
+from __future__ import with_statement
+
 __metaclass__ = type
 
 import os

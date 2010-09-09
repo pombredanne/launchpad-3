@@ -382,10 +382,10 @@ class TestQueueTool(TestQueueBase):
         queue_action = self.execute_command('accept bar', no_mail=False)
 
         # The upload wants to close bug 6:
-        bugs_fixed_header = bar2_src.changes._dict['launchpad-bugs-fixed']
+        bugs_fixed_header = bar2_src.changes._dict['Launchpad-bugs-fixed']
         self.assertEqual(
             bugs_fixed_header, str(the_bug_id),
-            'Expected bug %s in launchpad-bugs-fixed, got %s'
+            'Expected bug %s in Launchpad-bugs-fixed, got %s'
                 % (the_bug_id, bugs_fixed_header))
 
         # The upload should be in the DONE state:
