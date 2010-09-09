@@ -167,7 +167,7 @@ branch. If the bzr branch now has fewer revisions than Launchpad's view
 of the branch, then some of BranchRevision records will need to be
 removed.
 
-BranchRevision records are deleted using the `BranchRevisionSet.delete`
+BranchRevision records are deleted using the `Branch.removeBranchRevision`
 method.
 
 
@@ -184,14 +184,14 @@ The last commit on this branch has the revision number 6.
     6
     >>> revno_6.branch == branch
     True
-    >>> print revno_6.revision.revision_id
+    >>> rev_id = revno_6.revision.revision_id
+    >>> print rev_id
     foo@localhost-20051031170357-1301ad6d387feb23
 
 We remove the last revision from the branch. This is similar to what
 "bzr uncommit" does.
 
-    >>> from lp.code.interfaces.branchrevision import IBranchRevisionSet
-    >>> getUtility(IBranchRevisionSet).delete(revno_6.id)
+    >>> branch.removeBranchRevision(rev_id)
 
 Afterwards, the last commit on the branch has revision number 5.
 
