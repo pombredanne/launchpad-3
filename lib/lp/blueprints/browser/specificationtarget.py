@@ -159,7 +159,7 @@ class HasSpecificationsView(LaunchpadView):
             return self.not_launchpad_template
 
     def render(self):
-        return self.template
+        return self.template()
 
     # XXX: jsk: 2007-07-12 bug=173972: This method might be improved by
     # replacing the conditional execution with polymorphism.
