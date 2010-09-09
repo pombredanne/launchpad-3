@@ -75,24 +75,6 @@
   </div>
 
   <div class="yui-g">
-      <div class="first">
-        <div tal:condition="view/has_bug_or_spec">
-          <div id="related-bugs-and-blueprints"
-            tal:define="branch context/source_branch">
-            <h2>Linked bug reports and blueprints</h2>
-            <div class="actions">
-
-              <metal:bug-branch-links use-macro="branch/@@+macros/bug-branch-links"/>
-            </div>
-            <div class="actions">
-              <metal:spec-branch-links use-macro="branch/@@+macros/spec-branch-links"/>
-            </div>
-          </div>
-        </div>
-      </div>
-  </div>
-
-  <div class="yui-g">
     <div id="votes-target"
          tal:content="structure context/@@+votes" />
   </div>
@@ -154,6 +136,24 @@
     <div id="edit-description" class="lazr-multiline-edit"
          tal:content="structure view/description_html"/>
   </tal:has-description>
+  </div>
+
+  <div class="yui-g">
+      <div class="first">
+        <div tal:condition="view/has_bug_or_spec">
+          <div id="related-bugs-and-blueprints"
+            tal:define="branch context/source_branch">
+            <h2>Linked bug reports and blueprints</h2>
+            <div class="actions">
+
+              <metal:bug-branch-links use-macro="branch/@@+macros/bug-branch-links"/>
+            </div>
+            <div class="actions">
+              <metal:spec-branch-links use-macro="branch/@@+macros/spec-branch-links"/>
+            </div>
+          </div>
+        </div>
+      </div>
   </div>
 
   <div class="yui-g">
