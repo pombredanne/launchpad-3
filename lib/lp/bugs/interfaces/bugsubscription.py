@@ -47,6 +47,7 @@ class IBugSubscription(Interface):
         "e-mail address.")))
     bug = exported(Reference(
         IBug, title=_("Bug"), required=True, readonly=True))
+    bugID = Int(title=u"The bug id.", readonly=True)
     bug_notification_level = Choice(
         title=_("Bug notification level"), required=True,
         vocabulary=BugNotificationLevel,

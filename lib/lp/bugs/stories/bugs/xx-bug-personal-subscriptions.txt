@@ -41,7 +41,7 @@ in the context of the bug page.
   >>> browser.open(
   ...     'http://bugs.launchpad.dev/bugs/1/+bug-portlet-subscribers-content')
   >>> print_direct_subscribers(browser.contents)
-  Foo Bar (Subscribed themselves) (Unsubscribe Foo Bar)
+  Foo Bar (Self-subscribed) (Unsubscribe Foo Bar)
   Sample Person (Subscribed by Launchpad Janitor)
   Steve Alexander (Subscribed by Launchpad Janitor)
 
