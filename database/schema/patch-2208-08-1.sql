@@ -6,4 +6,4 @@ SET client_min_messages=ERROR;
 ALTER TABLE distroarchseries
     ADD COLUMN enabled bool NOT NULL DEFAULT TRUE;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 09, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 08, 1);
