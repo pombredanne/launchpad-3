@@ -209,7 +209,6 @@ from canonical.launchpad.webapp.tales import (
     PersonFormatterAPI,
     )
 from canonical.lazr.utils import (
-    safe_hasattr,
     smartquote,
     )
 from canonical.widgets import (
