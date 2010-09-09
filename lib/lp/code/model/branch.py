@@ -130,6 +130,9 @@ from lp.services.database.prejoin import prejoin
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from lp.services.mail.notificationrecipientset import NotificationRecipientSet
+from lp.translations.model.translationtemplatesbuild import (
+    TranslationTemplatesBuild,
+    )
 
 
 class Branch(SQLBase, BzrIdentityMixin):
@@ -1023,7 +1026,8 @@ class Branch(SQLBase, BzrIdentityMixin):
         """Delete jobs for this branch prior to deleting branch.
 
         This deletion includes `BranchJob`s associated with the branch,
-        as well as `BuildQueue` entries for `TranslationTemplateBuildJob`s.
+        as well as `BuildQueue` entries for `TranslationTemplateBuildJob`s
+        and `TranslationTemplateBuild`s.
         """
         # Avoid circular imports.
         from lp.code.model.branchjob import BranchJob
@@ -1039,6 +1043,10 @@ class Branch(SQLBase, BzrIdentityMixin):
 
         # Delete Jobs.  Their BranchJobs cascade along in the database.
         store.find(Job, Job.id.is_in(affected_jobs)).remove()
+
+        store.find(
+            TranslationTemplatesBuild,
+            TranslationTemplatesBuild.branch == self).remove()
 
     def destroySelf(self, break_references=False):
         """See `IBranch`."""
