@@ -15,7 +15,7 @@
       fails to update, Launchpad records what went wrong.
     </p>
     <a name="UNKNOWN"></a>
-    <h2>Unknown error</h2>
+    <h2>Unknown error (Launchpad couldn't import bug)</h2>
     <h3>What went wrong?</h3>
     <p>
       Launchpad encountered an unexpected error when trying to retrieve

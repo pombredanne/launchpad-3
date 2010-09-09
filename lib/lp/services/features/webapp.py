@@ -19,6 +19,14 @@ class ScopesFromRequest(object):
         self._request = request
 
     def lookup(self, scope_name):
+        """Determine if scope_name applies to this request.
+
+        Currently supports the following scopes:
+         - default
+         - is_edge/is_lpnet etc (thunks through to the config)
+        """
+        if scope_name == 'default':
+            return True
         parts = scope_name.split('.')
         if len(parts) == 2:
             if parts[0] == 'server':

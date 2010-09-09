@@ -23,7 +23,11 @@ import urllib2
 
 from select import select
 from socket import SOCK_STREAM, AF_INET
-from urlparse import urljoin
+from urlparse import (
+    urlparse,
+    urljoin,
+    urlunparse,
+    )
 
 from storm.store import Store
 from zope.interface import implements
@@ -291,16 +295,17 @@ class FileDownloadClient:
     #         raise DownloadFailed, 'Incomplete response'
     #     return paths
 
-    def _getPathForAlias(self, aliasID):
+    def _getPathForAlias(self, aliasID, secure=False):
         """Returns the path inside the librarian to talk about the given
         alias.
 
         :param aliasID: A unique ID for the alias
-
+        :param secure: Controls the behaviour when looking up restricted
+            files.  If False restricted files are only permitted when
+            self.restricted is True. See getURLForAlias.
         :returns: String path, url-escaped.  Unicode is UTF-8 encoded before
             url-escaping, as described in section 2.2.5 of RFC 2718.
             None if the file has been deleted.
-
         :raises: DownloadFailed if the alias is invalid
         """
         from canonical.launchpad.database import LibraryFileAlias
@@ -311,7 +316,7 @@ class FileDownloadClient:
             lfa = LibraryFileAlias.get(aliasID)
         except SQLObjectNotFound:
             raise DownloadFailed('Alias %d not found' % aliasID)
-        if self.restricted != lfa.restricted:
+        if not secure and self.restricted != lfa.restricted:
             raise DownloadFailed(
                 'Alias %d cannot be downloaded from this client.' % aliasID)
         if lfa.deleted:
@@ -319,18 +324,41 @@ class FileDownloadClient:
         return get_libraryfilealias_download_path(
             aliasID, lfa.filename.encode('utf-8'))
 
-    def getURLForAlias(self, aliasID):
+    def getURLForAlias(self, aliasID, secure=False):
         """Returns the url for talking to the librarian about the given
         alias.
 
         :param aliasID: A unique ID for the alias
-
+        :param secure: If true generate https urls on unique domains for 
+            security.
         :returns: String URL, or None if the file has expired and been deleted.
         """
-        path = self._getPathForAlias(aliasID)
+        # Note that the path is the same for both secure and insecure URLs - 
+        # this is deliberate: the server doesn't need to know about the original
+        # Host the client provides, testing is easier as we don't need wildcard
+        # https environments on dev machines.
+        path = self._getPathForAlias(aliasID, secure=secure)
         if path is None:
             return None
-        base = self.download_url
+        if not secure:
+            base = self.download_url
+        else:
+            # Secure url generation is the same for both restricted and
+            # unrestricted files aliases : it is used to give web clients (not
+            # appservers) a url to use to access a file which is either
+            # restricted (and so they will also need a TimeLimitedToken) or
+            # is suspected hostile (and so it should be isolated on its own
+            # domain). Note that only the former is currently used in LP.
+            # The algorithm is: 
+            # parse the url 
+            download_url = config.librarian.download_url
+            parsed = list(urlparse(download_url))
+            # Force the scheme to https
+            parsed[0] = 'https'
+            # Insert the alias id (which is a unique key, thus unique) in the
+            # netloc
+            parsed[1] = ('i%d.restricted.' % aliasID) + parsed[1]
+            base = urlunparse(parsed)
         return urljoin(base, path)
 
     def _getURLForDownload(self, aliasID):
