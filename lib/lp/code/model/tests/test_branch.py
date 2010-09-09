@@ -28,13 +28,6 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad import _
-from canonical.launchpad.ftests import (
-    ANONYMOUS,
-    login,
-    login_person,
-    logout,
-    syncUpdate,
-    )
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
 from canonical.testing import (
@@ -120,6 +113,11 @@ from lp.registry.model.product import ProductSet
 from lp.registry.model.sourcepackage import SourcePackage
 from lp.services.osutils import override_environ
 from lp.testing import (
+    ANONYMOUS,
+    celebrity_logged_in,
+    login,
+    login_person,
+    logout,
     person_logged_in,
     run_with_login,
     TestCase,
@@ -904,16 +902,12 @@ class TestBzrIdentity(TestCaseWithFactory):
         self.assertBzrIdentity(branch, linked_branch.bzr_path)
 
     def test_private_linked_to_product(self):
-        # If a branch is private, then the bzr identity is the unique name,
-        # even if it's linked to a product. Of course, you have to be able to
-        # see the branch at all.
+        # Private branches also have a short lp:url.
         branch = self.factory.makeProductBranch(private=True)
-        owner = removeSecurityProxy(branch).owner
-        login_person(owner)
-        self.addCleanup(logout)
-        product = removeSecurityProxy(branch.product)
-        ICanHasLinkedBranch(product).setBranch(branch)
-        self.assertBzrIdentity(branch, branch.unique_name)
+        with celebrity_logged_in('admin'):
+            product = branch.product
+            ICanHasLinkedBranch(product).setBranch(branch)
+            self.assertBzrIdentity(branch, product.name)
 
     def test_linked_to_series_and_dev_focus(self):
         # If a branch is the development focus branch for a product and the
@@ -1048,7 +1042,6 @@ class TestBranchDeletion(TestCaseWithFactory):
         deleted.
         """
         self.product.development_focus.branch = self.branch
-        syncUpdate(self.product.development_focus)
         self.assertEqual(self.branch.canBeDeleted(), False,
                          "A branch that is a user branch for a product series"
                          " is not deletable.")
@@ -1056,7 +1049,6 @@ class TestBranchDeletion(TestCaseWithFactory):
 
     def test_productSeriesTranslationsBranchDisablesDeletion(self):
         self.product.development_focus.translations_branch = self.branch
-        syncUpdate(self.product.development_focus)
         self.assertEqual(self.branch.canBeDeleted(), False,
                          "A branch that is a translations branch for a "
                          "product series is not deletable.")
@@ -1219,7 +1211,6 @@ class TestBranchDeletionConsequences(TestCase):
         # Disable this merge proposal, to allow creating a new identical one
         lp_admins = getUtility(ILaunchpadCelebrities).admin
         merge_proposal1.rejectBranch(lp_admins, 'null:')
-        syncUpdate(merge_proposal1)
         merge_proposal2 = self.branch.addLandingTarget(
             self.branch.owner, target_branch, prerequisite_branch)
         return merge_proposal1, merge_proposal2
@@ -1603,7 +1594,6 @@ class BranchAddLandingTarget(TestCaseWithFactory):
         proposal = self.source.addLandingTarget(
             self.user, self.target, self.prerequisite)
         proposal.rejectBranch(self.user, 'some_revision')
-        syncUpdate(proposal)
         self.source.addLandingTarget(
             self.user, self.target, self.prerequisite)
 

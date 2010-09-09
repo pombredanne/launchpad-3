@@ -36,7 +36,6 @@ from storm.store import (
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.cachedproperty import cachedproperty
 from canonical.database.constants import (
     DEFAULT,
     UTC_NOW,
@@ -115,15 +114,14 @@ from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.registry.model.structuralsubscription import (
     StructuralSubscriptionTargetMixin,
     )
+from lp.services.propertycache import cachedproperty
 from lp.services.worlddata.model.language import Language
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackagePublishingStatus,
     PackageUploadStatus,
     )
-from lp.soyuz.interfaces.archive import (
-    ALLOW_RELEASE_BUILDS,
-    )
+from lp.soyuz.interfaces.archive import ALLOW_RELEASE_BUILDS
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageName
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
@@ -556,7 +554,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             orderBy=["Language.englishname"])
         return result
 
-    @cachedproperty('_previous_series_cached')
+    @cachedproperty
     def previous_series(self):
         """See `IDistroSeries`."""
         # This property is cached because it is used intensely inside

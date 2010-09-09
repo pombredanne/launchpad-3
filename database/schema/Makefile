@@ -48,13 +48,13 @@ HEADER="-- Copyright 2010 Canonical Ltd.  This software is licensed under \
 
 # The command used (in conjunction with $(call)) to dump the contents of the
 # given database ($1) into an SQL file ($2).
-build_new_sampledata=$(PYTHON) fti.py --null -d ${1} -q; \
-	echo $(HEADER) > $(2); \
-    echo -n "-- Created using " >> $(2); \
-    pg_dump --version >> $(2); \
+build_new_sampledata=$(PYTHON) fti.py --null -d ${1} -q && \
+	echo $(HEADER) > $(2) && \
+    echo -n "-- Created using " >> $(2) && \
+    pg_dump --version >> $(2) && \
     pg_dump --schema=public --disable-triggers -a --column-inserts -O ${1} \
     | grep -v "\( TOC \|INSERT INTO launchpaddatabaserevision \|sessiondata\|sessionpkgdata\|SELECT pg_catalog\.setval\|^--\| fticache \|'fticache'\|ALTER TABLE secret\|INSERT INTO secret\)" \
-    | $(PYTHON) sort_sql.py >> $(2); \
+    | $(PYTHON) sort_sql.py >> $(2) && \
     $(PYTHON) fti.py --force -d ${1} -q
 
 
