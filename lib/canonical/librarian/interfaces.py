@@ -92,6 +92,15 @@ class IFileDownloadClient(Interface):
     def getURLForAlias(aliasID):
         """Returns the URL to the given file"""
 
+    def getURLForAliasObject(alias):
+        """Returns the URL to a given `LibraryFileAlias` object.
+
+        Use this with care.  Do not pass the `LibraryFileAlias` object
+        across process or thread boundaries.  If you need to pass a
+        `LibraryFileAlias` across a boundary, pass alias.id and use
+        `getURLForAlias` instead.
+        """
+
     def getFileByAlias(aliasID, timeout=LIBRARIAN_SERVER_DEFAULT_TIMEOUT):
         """Returns a file-like object to read the file contents from.
 

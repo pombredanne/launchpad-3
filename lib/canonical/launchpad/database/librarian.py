@@ -117,7 +117,7 @@ class LibraryFileAlias(SQLBase):
     @property
     def http_url(self):
         """See ILibraryFileAlias.http_url"""
-        return self.client.getURLForAlias(self.id)
+        return self.client.getURLForAliasObject(self)
 
     @property
     def https_url(self):

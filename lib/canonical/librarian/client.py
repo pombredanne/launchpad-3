@@ -49,6 +49,14 @@ def get_libraryfilealias_download_path(aliasID, filename):
     return '/%d/%s' % (int(aliasID), url_path_quote(filename))
 
 
+def compose_url(base_url, alias_path):
+    """Compose a URL for a library file alias."""
+    if alias_path is None:
+        return None
+    else:
+        return urljoin(base_url, alias_path)
+
+
 class FileUploadClient:
     """Simple blocking client for uploading to the librarian."""
 
@@ -291,6 +299,30 @@ class FileDownloadClient:
     #         raise DownloadFailed, 'Incomplete response'
     #     return paths
 
+    def _getAlias(self, aliasID):
+        """Retrieve the `LibraryFileAlias` with the given id.
+
+        :param aliasID: A unique ID for the alias.
+
+        :returns: A `LibraryFileAlias`.
+        :raises: `DownloadFailed` if the alias is invalid or
+            inaccessible.
+        """
+        from canonical.launchpad.database import LibraryFileAlias
+        from sqlobject import SQLObjectNotFound
+        try:
+            lfa = LibraryFileAlias.get(aliasID)
+        except SQLObjectNotFound:
+            lfa = None
+
+        if lfa is None:
+            raise DownloadFailed('Alias %d not found' % aliasID)
+        if self.restricted != lfa.restricted:
+            raise DownloadFailed(
+                'Alias %d cannot be downloaded from this client.' % aliasID)
+
+        return lfa
+
     def _getPathForAlias(self, aliasID):
         """Returns the path inside the librarian to talk about the given
         alias.
@@ -303,21 +335,14 @@ class FileDownloadClient:
 
         :raises: DownloadFailed if the alias is invalid
         """
-        from canonical.launchpad.database import LibraryFileAlias
-        from sqlobject import SQLObjectNotFound
-        aliasID = int(aliasID)
-        try:
-            # Use SQLObjects to maximize caching benefits
-            lfa = LibraryFileAlias.get(aliasID)
-        except SQLObjectNotFound:
-            raise DownloadFailed('Alias %d not found' % aliasID)
-        if self.restricted != lfa.restricted:
-            raise DownloadFailed(
-                'Alias %d cannot be downloaded from this client.' % aliasID)
-        if lfa.deleted:
+        return self._getPathForAliasObject(self._getAlias(int(aliasID)))
+
+    def _getPathForAliasObject(self, alias):
+        """Returns the Librarian path for a `LibraryFileAlias`."""
+        if alias.deleted:
             return None
         return get_libraryfilealias_download_path(
-            aliasID, lfa.filename.encode('utf-8'))
+            alias.id, alias.filename.encode('utf-8'))
 
     def getURLForAlias(self, aliasID):
         """Returns the url for talking to the librarian about the given
@@ -327,11 +352,17 @@ class FileDownloadClient:
 
         :returns: String URL, or None if the file has expired and been deleted.
         """
-        path = self._getPathForAlias(aliasID)
-        if path is None:
-            return None
-        base = self.download_url
-        return urljoin(base, path)
+        return compose_url(self.download_url, self._getPathForAlias(aliasID))
+
+    def getURLForAliasObject(self, alias):
+        """Return the download URL for a `LibraryFileAlias`.
+
+        There is a separate `getURLForAlias` that takes an alias ID.  If
+        you're not sure whether it's safe for the client to access your
+        `alias`, use `getURLForAlias` which will retrieve its own copy.
+        """
+        return compose_url(
+            self.download_url, self._getPathForAliasObject(alias))
 
     def _getURLForDownload(self, aliasID):
         """Returns the internal librarian URL for the alias.
@@ -340,11 +371,8 @@ class FileDownloadClient:
 
         :returns: String URL, or None if the file has expired and been deleted.
         """
-        path = self._getPathForAlias(aliasID)
-        if path is None:
-            return None
-        base = self._internal_download_url
-        return urljoin(base, path)
+        return compose_url(
+            self._internal_download_url, self._getPathForAlias(aliasID))
 
     def getFileByAlias(
         self, aliasID, timeout=LIBRARIAN_SERVER_DEFAULT_TIMEOUT):

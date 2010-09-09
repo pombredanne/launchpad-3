@@ -282,6 +282,20 @@ class LibrarianZopelessWebTestCase(LibrarianWebTestCase):
 
         self.failUnless(access_time_1 < access_time_2)
 
+    def test_getURLForAliasObject(self):
+        # getURLForAliasObject returns the same URL as getURLForAlias.
+        client = LibrarianClient()
+        content = "Test content"
+        alias_id = client.addFile(
+            'test.txt', len(content), StringIO(content),
+            contentType='text/plain')
+        self.commit()
+
+        alias = getUtility(ILibraryFileAliasSet)[alias_id]
+        self.assertEqual(
+            client.getURLForAlias(alias_id),
+            client.getURLForAliasObject(alias))
+
 
 class DeletedContentTestCase(unittest.TestCase):
 
@@ -333,7 +347,3 @@ class DeletedContentTestCase(unittest.TestCase):
             self.fail('404 not raised')
         except HTTPError, x:
             self.failUnlessEqual(x.code, 404)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
