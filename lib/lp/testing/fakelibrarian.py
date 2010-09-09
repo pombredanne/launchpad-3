@@ -150,7 +150,7 @@ class FakeLibrarian(object):
         """See `IFileUploadClient`."""
         return NotImplementedError()
 
-    def getURLForAlias(self, aliasID):
+    def getURLForAlias(self, aliasID, secure=False):
         """See `IFileDownloadClient`."""
         return self.getURLForAliasObject(self.aliases.get(int(aliasID)))
 

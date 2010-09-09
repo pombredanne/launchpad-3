@@ -23,7 +23,11 @@ import urllib2
 
 from select import select
 from socket import SOCK_STREAM, AF_INET
-from urlparse import urljoin
+from urlparse import (
+    urlparse,
+    urljoin,
+    urlunparse,
+    )
 
 from storm.store import Store
 from zope.interface import implements
@@ -317,7 +321,7 @@ class FileDownloadClient:
 
         if lfa is None:
             raise DownloadFailed('Alias %d not found' % aliasID)
-        if self.restricted != lfa.restricted:
+        if not secure and self.restricted != lfa.restricted:
             raise DownloadFailed(
                 'Alias %d cannot be downloaded from this client.' % aliasID)
 
@@ -328,7 +332,9 @@ class FileDownloadClient:
         alias.
 
         :param aliasID: A unique ID for the alias
-
+        :param secure: Controls the behaviour when looking up restricted
+            files.  If False restricted files are only permitted when
+            self.restricted is True. See getURLForAlias.
         :returns: String path, url-escaped.  Unicode is UTF-8 encoded before
             url-escaping, as described in section 2.2.5 of RFC 2718.
             None if the file has been deleted.
@@ -344,25 +350,59 @@ class FileDownloadClient:
         return get_libraryfilealias_download_path(
             alias.id, alias.filename.encode('utf-8'))
 
-    def getURLForAlias(self, aliasID):
+    def getURLForAlias(self, aliasID, secure=False):
         """Returns the url for talking to the librarian about the given
         alias.
 
         :param aliasID: A unique ID for the alias
-
+        :param secure: If true generate https urls on unique domains for 
+            security.
         :returns: String URL, or None if the file has expired and been deleted.
         """
-        return compose_url(self.download_url, self._getPathForAlias(aliasID))
+        return compose_url(
+            self.download_url, self._getPathForAlias(aliasID, secure=secure))
 
-    def getURLForAliasObject(self, alias):
+    def _getBaseURL(self, alias, secure=False):
+        """Get the base URL to use for `alias`.
+
+        :param secure: If true generate https urls on unique domains for 
+            security.
+        """
+        if not secure:
+            return self.download_url
+
+        # Secure url generation is the same for both restricted and
+        # unrestricted files aliases : it is used to give web clients (not
+        # appservers) a url to use to access a file which is either
+        # restricted (and so they will also need a TimeLimitedToken) or
+        # is suspected hostile (and so it should be isolated on its own
+        # domain). Note that only the former is currently used in LP.
+        # The algorithm is: 
+        # parse the url
+        download_url = config.librarian.download_url
+        parsed = list(urlparse(download_url))
+        # Force the scheme to https
+        parsed[0] = 'https'
+        # Insert the alias id (which is a unique key, thus unique) in the
+        # netloc
+        parsed[1] = ('i%d.restricted.' % alias.id) + parsed[1]
+        base = urlunparse(parsed)
+
+    def getURLForAliasObject(self, alias, secure=False):
         """Return the download URL for a `LibraryFileAlias`.
 
         There is a separate `getURLForAlias` that takes an alias ID.  If
         you're not sure whether it's safe for the client to access your
         `alias`, use `getURLForAlias` which will retrieve its own copy.
         """
-        return compose_url(
-            self.download_url, self._getPathForAliasObject(alias))
+        # Note that the path is the same for both secure and insecure
+        # URLs.  This is deliberate: the server doesn't need to know
+        # about the original Host the client provides, and testing is
+        # easier as we don't need wildcard https environments on dev
+        # machines.
+        base = self._getBaseURL(alias, secure=secure)
+        path = self._getPathForAliasObject(alias, secure=secure)
+        return compose_url(base, path)
 
     def _getURLForDownload(self, aliasID):
         """Returns the internal librarian URL for the alias.

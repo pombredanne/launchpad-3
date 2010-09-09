@@ -1661,6 +1661,13 @@
     </browser:pages>
     <browser:page
         for="lp.registry.interfaces.productseries.IProductSeries"
+        class="lp.registry.browser.productseries.ProductSeriesDetailedDisplayView"
+        template="../templates/productseries-detailed-display.pt"
+        facet="overview"
+        permission="zope.Public"
+        name="+detailed-display"/>
+    <browser:page
+        for="lp.registry.interfaces.productseries.IProductSeries"
         class="lp.registry.browser.productseries.ProductSeriesRdfView"
         facet="overview"
         permission="zope.Public"

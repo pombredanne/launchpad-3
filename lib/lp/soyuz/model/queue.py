@@ -801,16 +801,16 @@ class PackageUpload(SQLBase):
         :changes: A dictionary with the changes file content.
         """
         # Add the date field.
-        message.DATE = 'Date: %s' % changes['date']
+        message.DATE = 'Date: %s' % changes['Date']
 
         # Add the debian 'Changed-By:' field.
-        changed_by = changes.get('changed-by')
+        changed_by = changes.get('Changed-By')
         if changed_by is not None:
             changed_by = sanitize_string(changed_by)
             message.CHANGEDBY = '\nChanged-By: %s' % changed_by
 
         # Add maintainer if present and different from changed-by.
-        maintainer = changes.get('maintainer')
+        maintainer = changes.get('Maintainer')
         if maintainer is not None:
             maintainer = sanitize_string(maintainer)
             if maintainer != changed_by:
@@ -831,8 +831,8 @@ class PackageUpload(SQLBase):
                 message.SIGNER = '\nSigned-By: %s' % signer_signature
 
         # Add the debian 'Origin:' field if present.
-        if changes.get('origin') is not None:
-            message.ORIGIN = '\nOrigin: %s' % changes['origin']
+        if changes.get('Origin') is not None:
+            message.ORIGIN = '\nOrigin: %s' % changes['Origin']
 
         if self.sources or self.builds:
             message.SPR_URL = canonical_url(self.my_source_package_release)
@@ -855,7 +855,7 @@ class PackageUpload(SQLBase):
             template = get_email_template('upload-rejection.txt')
             SUMMARY = sanitize_string(summary_text)
             CHANGESFILE = sanitize_string(
-                ChangesFile.formatChangesComment(changes['changes']))
+                ChangesFile.formatChangesComment(changes['Changes']))
             CHANGEDBY = ''
             ORIGIN = ''
             SIGNER = ''
@@ -933,7 +933,7 @@ class PackageUpload(SQLBase):
             STATUS = "New"
             SUMMARY = summarystring
             CHANGESFILE = sanitize_string(
-                ChangesFile.formatChangesComment(changes['changes']))
+                ChangesFile.formatChangesComment(changes['Changes']))
             DISTRO = self.distroseries.distribution.title
             if announce_list:
                 ANNOUNCE = 'Announcing to %s' % announce_list
@@ -948,7 +948,7 @@ class PackageUpload(SQLBase):
             SUMMARY = summarystring + (
                     "\nThis upload awaits approval by a distro manager\n")
             CHANGESFILE = sanitize_string(
-                ChangesFile.formatChangesComment(changes['changes']))
+                ChangesFile.formatChangesComment(changes['Changes']))
             DISTRO = self.distroseries.distribution.title
             if announce_list:
                 ANNOUNCE = 'Announcing to %s' % announce_list
@@ -967,7 +967,7 @@ class PackageUpload(SQLBase):
             STATUS = "Accepted"
             SUMMARY = summarystring
             CHANGESFILE = sanitize_string(
-                ChangesFile.formatChangesComment(changes['changes']))
+                ChangesFile.formatChangesComment(changes['Changes']))
             DISTRO = self.distroseries.distribution.title
             if announce_list:
                 ANNOUNCE = 'Announcing to %s' % announce_list
@@ -994,7 +994,7 @@ class PackageUpload(SQLBase):
             STATUS = "Accepted"
             SUMMARY = summarystring
             CHANGESFILE = sanitize_string(
-                ChangesFile.formatChangesComment(changes['changes']))
+                ChangesFile.formatChangesComment(changes['Changes']))
             CHANGEDBY = ''
             ORIGIN = ''
             SIGNER = ''
@@ -1045,14 +1045,14 @@ class PackageUpload(SQLBase):
         do_sendmail(AcceptedMessage)
 
         # Don't send announcements for Debian auto sync uploads.
-        if self.isAutoSyncUpload(changed_by_email=changes['changed-by']):
+        if self.isAutoSyncUpload(changed_by_email=changes['Changed-By']):
             return
 
         if announce_list:
             if not self.signing_key:
                 from_addr = None
             else:
-                from_addr = guess_encoding(changes['changed-by'])
+                from_addr = guess_encoding(changes['Changed-By'])
 
             do_sendmail(
                 AnnouncementMessage,
@@ -1135,7 +1135,7 @@ class PackageUpload(SQLBase):
         """Return a list of recipients for notification emails."""
         candidate_recipients = []
         debug(self.logger, "Building recipients list.")
-        changer = self._emailToPerson(changes['changed-by'])
+        changer = self._emailToPerson(changes['Changed-By'])
 
         if self.signing_key:
             # This is a signed upload.
@@ -1157,7 +1157,7 @@ class PackageUpload(SQLBase):
 
         # If this is not a PPA, we also consider maintainer and changed-by.
         if self.signing_key and not self.isPPA():
-            maintainer = self._emailToPerson(changes['maintainer'])
+            maintainer = self._emailToPerson(changes['Maintainer'])
             if (maintainer and maintainer != signer and
                     maintainer.isUploader(self.distroseries.distribution)):
                 debug(self.logger, "Adding maintainer to recipients")
