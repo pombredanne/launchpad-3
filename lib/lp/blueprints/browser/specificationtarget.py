@@ -141,7 +141,7 @@ class HasSpecificationsView(LaunchpadView):
     # * External
     # * Disabled
     # * Unknown
-    uses_launchpad_template = ViewPageTemplateFile(
+    default_template = ViewPageTemplateFile(
         '../templates/hasspecifications-specs.pt')
     not_launchpad_template = ViewPageTemplateFile(
         '../templates/unknown-specs.pt')
@@ -153,19 +153,27 @@ class HasSpecificationsView(LaunchpadView):
         if hasattr(self, 'index'):
             return super(HasSpecificationsView, self).template
 
-        # Sprints don't have a usage enum for blueprints, so we have to
-        # fallback to the default.
-        if ISprint.providedBy(self.context):
-            return self.uses_launchpad_template
+        # Sprints and Persons don't have a usage enum for blueprints, so we
+        # have to fallback to the default.
+        if (ISprint.providedBy(self.context)
+            or IPerson.providedBy(self.context)):
+            return self.default_template
+
+        # ProjectGroups are a special case, as their products may be a
+        # combination of usage settings. Use the default, since it handles
+        # fetching anything that's set for ProjectGroups, and it's not correct
+        # to say anything about the ProjectGroup's usage.
+        if IProjectGroup.providedBy(self.context):
+            return self.default_template
 
         # If specifications exist, ignore the usage enum.
         if self.has_any_specifications:
-            return self.uses_launchpad_template
+            return self.default_template
 
         # Otherwise, determine usage and provide the correct template.
         service_usage = IServiceUsage(self.context)
         if service_uses_launchpad(service_usage.blueprints_usage):
-            return self.uses_launchpad_template
+            return self.default_template
         else:
             return self.not_launchpad_template
 

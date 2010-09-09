@@ -71,6 +71,8 @@ class TestHasSpecificationsViewInvolvement(TestCaseWithFactory):
 
     def test_specificationtarget(self):
         context = self.factory.makeProduct(name='almond')
+        naked_product = removeSecurityProxy(context)
+        naked_product.blueprints_usage = ServiceUsage.LAUNCHPAD
         self.verify_involvment(context)
 
     def test_adaptable_to_specificationtarget(self):
@@ -143,7 +145,7 @@ class TestHasSpecificationsTemplates(TestCaseWithFactory):
             layer=BlueprintsLayer,
             principal=self.user)
         self.assertEqual(
-            view.uses_launchpad_template.filename,
+            view.default_template.filename,
             view.template.filename)
 
 
