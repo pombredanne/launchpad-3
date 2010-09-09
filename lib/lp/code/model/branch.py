@@ -26,7 +26,6 @@ from storm.expr import (
     And,
     Count,
     Desc,
-    Max,
     NamedFunc,
     Not,
     Or,
@@ -59,11 +58,6 @@ from canonical.launchpad.interfaces.launchpad import (
     IPrivacy,
     )
 from canonical.launchpad.webapp import urlappend
-from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector,
-    MAIN_STORE,
-    SLAVE_FLAVOR,
-    )
 from lp.app.errors import UserCannotUnsubscribePerson
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.code.bzr import (
@@ -1023,10 +1017,14 @@ class Branch(SQLBase, BzrIdentityMixin):
         """Delete jobs for this branch prior to deleting branch.
 
         This deletion includes `BranchJob`s associated with the branch,
-        as well as `BuildQueue` entries for `TranslationTemplateBuildJob`s.
+        as well as `BuildQueue` entries for `TranslationTemplateBuildJob`s
+        and `TranslationTemplateBuild`s.
         """
         # Avoid circular imports.
         from lp.code.model.branchjob import BranchJob
+        from lp.translations.model.translationtemplatesbuild import (
+            TranslationTemplatesBuild,
+            )
 
         store = Store.of(self)
         affected_jobs = Select(
@@ -1039,6 +1037,10 @@ class Branch(SQLBase, BzrIdentityMixin):
 
         # Delete Jobs.  Their BranchJobs cascade along in the database.
         store.find(Job, Job.id.is_in(affected_jobs)).remove()
+
+        store.find(
+            TranslationTemplatesBuild,
+            TranslationTemplatesBuild.branch == self).remove()
 
     def destroySelf(self, break_references=False):
         """See `IBranch`."""

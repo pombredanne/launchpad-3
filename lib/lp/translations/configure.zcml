@@ -619,7 +619,6 @@
     <!-- TranslationTemplatesBuild -->
     <class
         class="lp.translations.model.translationtemplatesbuild.TranslationTemplatesBuild">
-        <allow interface="lp.buildmaster.interfaces.buildfarmjob.IBuildFarmJob"/>
         <allow interface="lp.translations.interfaces.translationtemplatesbuild.ITranslationTemplatesBuild"/>
     </class>
     <securedutility
