@@ -836,7 +836,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             project=project,
             registrant=registrant)
         if official_malone is not None:
-            product.official_malone = official_malone
+            removeSecurityProxy(product).official_malone = official_malone
         if official_rosetta is not None:
             removeSecurityProxy(product).official_rosetta = official_rosetta
         if bug_supervisor is not None:

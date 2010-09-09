@@ -33,6 +33,8 @@ from canonical.database.sqlbase import cursor
 from canonical.librarian.interfaces import (
     DownloadFailed, ILibrarianClient, IRestrictedLibrarianClient,
     LIBRARIAN_SERVER_DEFAULT_TIMEOUT, LibrarianServerError, UploadFailed)
+from canonical.lazr.utils import get_current_browser_request
+from lp.services.timeline.requesttimeline import get_request_timeline
 
 
 def url_path_quote(filename):
@@ -246,16 +248,23 @@ class FileUploadClient:
 
 
 class _File:
-    """A wrapper around a file like object that has security assertions"""
+    """A File wrapper which uses the timeline and has security assertions."""
 
-    def __init__(self, file):
+    def __init__(self, file, url):
         self.file = file
+        self.url = url
 
     def read(self, chunksize=None):
-        if chunksize is None:
-            return self.file.read()
-        else:
-            return self.file.read(chunksize)
+        request = get_current_browser_request()
+        timeline = get_request_timeline(request)
+        action = timeline.start("librarian-read", self.url)
+        try:
+            if chunksize is None:
+                return self.file.read()
+            else:
+                return self.file.read(chunksize)
+        finally:
+            action.finish()
 
     def close(self):
         return self.file.close()
@@ -345,9 +354,19 @@ class FileDownloadClient:
             # File has been deleted
             return None
         try_until = time.time() + timeout
+        request = get_current_browser_request()
+        timeline = get_request_timeline(request)
+        action = timeline.start("librarian-connection", url)
+        try:
+            return self._connect_read(url, try_until, aliasID)
+        finally:
+            action.finish()
+
+    def _connect_read(self, url, try_until, aliasID):
+        """Helper for getFileByAlias."""
         while 1:
             try:
-                return _File(urllib2.urlopen(url))
+                return _File(urllib2.urlopen(url), url)
             except urllib2.URLError, error:
                 # 404 errors indicate a data inconsistency: more than one
                 # attempt to open the file is pointless.
