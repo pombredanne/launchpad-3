@@ -13,10 +13,7 @@ __all__ = [
     ]
 
 from itertools import groupby
-from operator import (
-    attrgetter,
-    itemgetter,
-    )
+from operator import itemgetter
 
 import transaction
 from zope.component import getUtility
@@ -196,10 +193,14 @@ def notification_comment_batches(notifications):
         yield comment_count or 1, notification
 
 
+def get_bug_and_owner(notification):
+    """Retrieve `notification`'s `bug` and `message.owner` attributes."""
+    return notification.bug, notification.message.owner
+
+
 def notification_batches(notifications):
     """Batch notifications for `get_email_notifications`."""
-    notifications_grouped = groupby(
-        notifications, attrgetter("bug", "message.owner"))
+    notifications_grouped = groupby(notifications, get_bug_and_owner)
     for (bug, person), notification_group in notifications_grouped:
         batches = notification_comment_batches(notification_group)
         for comment_group, batch in groupby(batches, itemgetter(0)):

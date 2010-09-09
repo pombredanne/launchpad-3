@@ -53,7 +53,6 @@ from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
 from zope.security.interfaces import Unauthorized
 
-from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad.helpers import intOrZero
 from canonical.launchpad.interfaces.account import AccountStatus
@@ -142,6 +141,7 @@ from lp.registry.interfaces.product import (
     )
 from lp.registry.interfaces.projectgroup import IProjectGroupSet
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.services.propertycache import cachedproperty
 from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet

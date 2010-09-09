@@ -134,7 +134,7 @@ The page includes a comment after the document with diagnostic information.
       Has global search: False
       Has application tabs: False
       Has side portlets: False
-      At least ... queries issued in ... seconds
+      At least ... queries... issued in ... seconds
       Features: {}
       in scopes {}
       r...
