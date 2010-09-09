@@ -803,6 +803,9 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
     def createBranchRevision(sequence, revision):
         """Create a new `BranchRevision` for this branch."""
 
+    def removeBranchRevision(revision_id):
+        """Remove the specified revision_id from this Branch's revisions."""
+
     def createBranchRevisionFromIDs(revision_id_sequence_pairs):
         """Create a batch of BranchRevision objects.
 
