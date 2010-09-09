@@ -5,8 +5,8 @@ SET client_min_messages=ERROR;
 
 CREATE TABLE TranslationTemplatesBuild (
     id SERIAL PRIMARY KEY,
-    build_farm_job integer REFERENCES BuildFarmJob(id),
-    branch integer REFERENCES Branch(id));
+    build_farm_job integer NOT NULL REFERENCES BuildFarmJob(id),
+    branch integer NOT NULL REFERENCES Branch(id));
 
 CREATE INDEX translationtemplatesbuild__build_farm_job__idx ON
     TranslationTemplatesBuild(build_farm_job);
