@@ -149,6 +149,7 @@ from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.interfaces.teammembership import ITeamMembership
 from lp.registry.interfaces.wikiname import IWikiName
+from lp.services.openid.interfaces.openididentifier import IOpenIdIdentifier
 from lp.services.worlddata.interfaces.country import ICountry
 from lp.services.worlddata.interfaces.language import (
     ILanguage,
@@ -355,6 +356,18 @@ class EditAccountBySelfOrAdmin(AuthorizationBase):
 
 class ViewAccount(EditAccountBySelfOrAdmin):
     permission = 'launchpad.View'
+
+
+class ViewOpenIdIdentifierBySelfOrAdmin(AuthorizationBase):
+    permission = 'launchpad.View'
+    usedfor = IOpenIdIdentifier
+
+    def checkAccountAuthenticated(self, account):
+        if account == self.obj.account:
+            return True
+        return super(
+            ViewOpenIdIdentifierBySelfOrAdmin,
+            self).checkAccountAuthenticated(account)
 
 
 class SpecialAccount(EditAccountBySelfOrAdmin):

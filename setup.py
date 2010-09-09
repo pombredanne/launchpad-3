@@ -149,6 +149,8 @@ setup(
             'start_librarian '
                 '= canonical.launchpad.scripts.runlaunchpad:start_librarian',
             'ec2 = devscripts.ec2test.entrypoint:main',
+            'compile_templates '
+                '= canonical.launchpad.scripts:execute_zcml_for_scripts',
         ]
     ),
 )

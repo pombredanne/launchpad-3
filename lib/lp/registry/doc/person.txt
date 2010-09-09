@@ -238,7 +238,7 @@ A Person may be linked to an Account.
 
     >>> login('no-priv@canonical.com')
     >>> person = personset.getByEmail('no-priv@canonical.com')
-    >>> person.account.openid_identifier
+    >>> person.account.openid_identifiers.any().identifier
     u'no-priv_oid'
 
 
