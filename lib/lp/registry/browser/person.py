@@ -4168,12 +4168,12 @@ class PersonEditView(BasePersonEditView):
     @action(_("Save Changes"), name="save")
     def action_save(self, action, data):
         # Users should be able to change their name, but the permission
-        # setting is launchpad.Moderate, which only allows admins and
-        # registry.
+        # setting for the attribute is launchpad.Moderate, which only allows
+        # admins and registry.  A user must have launchpad.Edit to access this
+        # page.
         if 'name' in data:
             new_name = data['name']
-            naked_person = removeSecurityProxy(self.context)
-            naked_person.name = new_name
+            removeSecurityProxy(self.context).name = new_name
             del data['name']
         self.updateContextFromData(data)
 
