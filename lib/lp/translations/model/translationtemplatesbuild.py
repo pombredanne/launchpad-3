@@ -13,10 +13,12 @@ from storm.locals import (
     Reference,
     Storm,
     )
+from storm.store import Store
 from zope.interface import (
     classProvides,
     implements,
     )
+from zope.security.proxy import ProxyFactory
 
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from lp.buildmaster.model.buildfarmjob import BuildFarmJobDerived
@@ -69,3 +71,11 @@ class TranslationTemplatesBuild(BuildFarmJobDerived, Storm):
             self.branch, BranchJobType.TRANSLATION_TEMPLATES_BUILD, metadata)
         store.add(branch_job)
         return TranslationTemplatesBuildJob(branch_job)
+
+
+def get_translation_templates_build_for_build_farm_job(build_farm_job):
+    """Return a `TranslationTemplatesBuild` from its `BuildFarmJob`."""
+    build = Store.of(build_farm_job).find(
+        TranslationTemplatesBuild,
+        TranslationTemplatesBuild.build_farm_job == build_farm_job).one()
+    return ProxyFactory(build)

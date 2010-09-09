@@ -14,6 +14,7 @@ from lp.buildmaster.enums import BuildFarmJobType
 from lp.buildmaster.interfaces.buildfarmjob import (
     IBuildFarmJob,
     IBuildFarmJobSource,
+    ISpecificBuildFarmJob,
     )
 from lp.testing import TestCaseWithFactory
 from lp.translations.interfaces.translationtemplatesbuild import (
@@ -52,6 +53,7 @@ class TestTranslationTemplatesBuild(TestCaseWithFactory):
 
         self.assertTrue(verifyObject(ITranslationTemplatesBuild, build))
         self.assertTrue(verifyObject(IBuildFarmJob, build))
+        self.assertTrue(verifyObject(ISpecificBuildFarmJob, build))
         self.assertEqual(build_farm_job, build.build_farm_job)
         self.assertEqual(branch, build.branch)
 
@@ -64,3 +66,11 @@ class TestTranslationTemplatesBuild(TestCaseWithFactory):
 
         translationtemplatesbuildjob = jobset.create(branch)
         self.assertNotEqual(None, self._findBuildForBranch(branch))
+
+    def test_getSpecificJob(self):
+        source = getUtility(ITranslationTemplatesBuildSource)
+        build_farm_job = self._makeBuildFarmJob()
+        branch = self.factory.makeBranch()
+        build = source.create(build_farm_job, branch)
+
+        self.assertEqual(build, build_farm_job.getSpecificJob())
