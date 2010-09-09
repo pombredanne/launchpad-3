@@ -11,7 +11,10 @@ from zope.interface.verify import verifyObject
 
 from canonical.testing import DatabaseFunctionalLayer
 from lp.buildmaster.enums import BuildFarmJobType
-from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSource
+from lp.buildmaster.interfaces.buildfarmjob import (
+    IBuildFarmJob,
+    IBuildFarmJobSource,
+    )
 from lp.testing import TestCaseWithFactory
 from lp.translations.interfaces.translationtemplatesbuild import (
     ITranslationTemplatesBuild,
@@ -48,6 +51,7 @@ class TestTranslationTemplatesBuild(TestCaseWithFactory):
         build = source.create(build_farm_job, branch)
 
         self.assertTrue(verifyObject(ITranslationTemplatesBuild, build))
+        self.assertTrue(verifyObject(IBuildFarmJob, build))
         self.assertEqual(build_farm_job, build.build_farm_job)
         self.assertEqual(branch, build.branch)
 
