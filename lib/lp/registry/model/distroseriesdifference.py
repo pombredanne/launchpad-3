@@ -65,6 +65,11 @@ class DistroSeriesDifference(Storm):
     package_diff = Reference(
         package_diff_id, 'PackageDiff.id')
 
+    parent_package_diff_id = Int(
+        name='parent_package_diff', allow_none=True)
+    parent_package_diff = Reference(
+        parent_package_diff_id, 'PackageDiff.id')
+
     status = DBEnum(name='status', allow_none=False,
                     enum=DistroSeriesDifferenceStatus)
     difference_type = DBEnum(name='difference_type', allow_none=False,
