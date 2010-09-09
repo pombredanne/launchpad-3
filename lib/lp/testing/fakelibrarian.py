@@ -123,6 +123,15 @@ class FakeLibrarian(object):
         """Fixture API: uninstall."""
         self.uninstall()
 
+    def __enter__(self):
+        """ContextManager API: install."""
+        self.installAsLibrarian()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """ContextManager API: uninstall."""
+        self.uninstall()
+
     def __init__(self):
         self.aliases = {}
         self.download_url = config.librarian.download_url
