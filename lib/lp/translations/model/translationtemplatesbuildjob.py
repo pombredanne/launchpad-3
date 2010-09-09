@@ -25,6 +25,7 @@ from canonical.launchpad.interfaces.lpstorm import (
     )
 from lp.buildmaster.enums import BuildFarmJobType
 from lp.buildmaster.interfaces.buildfarmbranchjob import IBuildFarmBranchJob
+from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSource
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.buildmaster.model.buildfarmjob import (
     BuildFarmJobOld,
@@ -36,6 +37,9 @@ from lp.code.model.branchjob import (
     BranchJob,
     BranchJobDerived,
     BranchJobType,
+    )
+from lp.translations.interfaces.translationtemplatesbuild import (
+    ITranslationTemplatesBuildSource,
     )
 from lp.translations.interfaces.translationtemplatesbuildjob import (
     ITranslationTemplatesBuildJobSource,
@@ -141,12 +145,19 @@ class TranslationTemplatesBuildJob(BuildFarmJobOldDerived, BranchJobDerived):
         # XXX Danilo Segan bug=580429: we hard-code processor to the Ubuntu
         # default processor architecture.  This stops the buildfarm from
         # accidentally dispatching the jobs to private builders.
+        processor = cls._getBuildArch()
+
         build_queue_entry = BuildQueue(
             estimated_duration=duration_estimate,
             job_type=BuildFarmJobType.TRANSLATIONTEMPLATESBUILD,
-            job=specific_job.job.id,
-            processor=cls._getBuildArch())
+            job=specific_job.job.id, processor=processor)
         store.add(build_queue_entry)
+
+        build_farm_job = getUtility(IBuildFarmJobSource).new(
+            BuildFarmJobType.TRANSLATIONTEMPLATESBUILD, processor=processor)
+
+        getUtility(ITranslationTemplatesBuildSource).create(
+            build_farm_job, branch)
 
         return specific_job
 
