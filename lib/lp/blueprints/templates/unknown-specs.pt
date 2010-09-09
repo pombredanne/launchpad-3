@@ -17,7 +17,7 @@
         <strong><tal:project replace="view/context/displayname" /> does not use Launchpad
         for specification tracking.</strong>
     </div>
-    
+
     <div tal:condition="view/context/blueprints_usage/enumvalue:NOT_APPLICABLE">
         <strong><tal:project replace="view/context/displayname" /> does not track
         specifications.</strong>
@@ -39,7 +39,7 @@
         <tal:project replace="view/context/displayname" /> wiki 
         </a>
       </p>
-      
+
     </div>
     <ul class="horizontal">
       <li>
