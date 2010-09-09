@@ -81,13 +81,11 @@ class BzrSync:
         # written to by the branch-scanner, so they are not subject to
         # write-lock contention. Update them all in a single transaction to
         # improve the performance and allow garbage collection in the future.
-        db_ancestry, db_history, db_branch_revision_map = (
-            self.retrieveDatabaseAncestry())
+        db_ancestry, db_history = self.retrieveDatabaseAncestry()
 
         (added_ancestry, branchrevisions_to_delete,
             revids_to_insert) = self.planDatabaseChanges(
-            bzr_branch, bzr_ancestry, bzr_history, db_ancestry, db_history,
-            db_branch_revision_map)
+            bzr_branch, bzr_ancestry, bzr_history, db_ancestry, db_history)
         added_ancestry.difference_update(
             getUtility(IRevisionSet).onlyPresent(added_ancestry))
         self.logger.info("Adding %s new revisions.", len(added_ancestry))
@@ -130,7 +128,7 @@ class BzrSync:
         self.logger.info("Retrieving ancestry from database.")
         db_ancestry, db_history, db_branch_revision_map = (
             self.db_branch.getScannerData())
-        return db_ancestry, db_history, db_branch_revision_map
+        return db_ancestry, db_history
 
     def retrieveBranchDetails(self, bzr_branch):
         """Retrieve ancestry from the the bzr branch on disk."""
@@ -146,7 +144,7 @@ class BzrSync:
         return bzr_ancestry, bzr_history
 
     def planDatabaseChanges(self, bzr_branch, bzr_ancestry, bzr_history,
-                            db_ancestry, db_history, db_branch_revision_map):
+                            db_ancestry, db_history):
         """Plan database changes to synchronize with bzrlib data.
 
         Use the data retrieved by `retrieveDatabaseAncestry` and
