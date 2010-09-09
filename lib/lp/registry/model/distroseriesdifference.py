@@ -15,6 +15,7 @@ from storm.locals import (
     Int,
     Reference,
     Storm,
+    Unicode,
     )
 from zope.component import getUtility
 from zope.interface import (
@@ -74,6 +75,9 @@ class DistroSeriesDifference(Storm):
                     enum=DistroSeriesDifferenceStatus)
     difference_type = DBEnum(name='difference_type', allow_none=False,
                              enum=DistroSeriesDifferenceType)
+    source_version = Unicode(name='source_version', allow_none=True)
+    parent_source_version = Unicode(name='parent_source_version',
+                                    allow_none=True)
 
     @staticmethod
     def new(derived_series, source_package_name, difference_type,
@@ -88,6 +92,14 @@ class DistroSeriesDifference(Storm):
         diff.source_package_name = source_package_name
         diff.status = status
         diff.difference_type = difference_type
+
+        source_pub = diff.source_pub
+        if source_pub is not None:
+            diff.source_version = source_pub.source_package_version
+        parent_source_pub = diff.parent_source_pub
+        if parent_source_pub is not None:
+            diff.parent_source_version = (
+                parent_source_pub.source_package_version)
 
         return store.add(diff)
 
@@ -154,25 +166,13 @@ class DistroSeriesDifference(Storm):
         else:
             return None
 
-    @property
-    def source_version(self):
-        """See `IDistroSeriesDifference`."""
-        if self.source_pub:
-            return self.source_pub.source_package_version
-        return None
-
-    @property
-    def parent_source_version(self):
-        """See `IDistroSeriesDifference`."""
-        if self.parent_source_pub:
-            return self.parent_source_pub.source_package_version
-        return None
-
     def updateStatusAndType(self):
         """See `IDistroSeriesDifference`."""
-        if self.source_pub is None:
+        source_pub = self.source_pub
+        parent_source_pub = self.parent_source_pub
+        if source_pub is None:
             new_type = DistroSeriesDifferenceType.MISSING_FROM_DERIVED_SERIES
-        elif self.parent_source_pub is None:
+        elif parent_source_pub is None:
             new_type = DistroSeriesDifferenceType.UNIQUE_TO_DERIVED_SERIES
         else:
             new_type = DistroSeriesDifferenceType.DIFFERENT_VERSIONS
@@ -182,14 +182,15 @@ class DistroSeriesDifference(Storm):
             updated = True
             self.difference_type = new_type
 
-        version = self.source_version
-        parent_version = self.parent_source_version
+        # Check if its changed first and un-blacklist.
+        self.source_version = source_pub.source_package_version
+        self.parent_source_version = parent_source_pub.source_package_version
         if self.status == DistroSeriesDifferenceStatus.RESOLVED:
-            if version != parent_version:
+            if self.source_version != self.parent_source_version:
                 updated = True
                 self.status = DistroSeriesDifferenceStatus.NEEDS_ATTENTION
         else:
-            if version == parent_version:
+            if self.source_version == self.parent_source_version:
                 updated = True
                 self.status = DistroSeriesDifferenceStatus.RESOLVED
 

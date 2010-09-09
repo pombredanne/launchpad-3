@@ -225,6 +225,12 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             DistroSeriesDifferenceType.DIFFERENT_VERSIONS,
             ds_diff.difference_type)
 
+    def test_update_updates_versions(self):
+        self.fail()
+
+    def test_update_removes_version_blacklist(self):
+        self.fail()
+
     def test_title(self):
         # The title is a friendly description of the difference.
         parent_series = self.factory.makeDistroSeries(name="lucid")
@@ -286,6 +292,9 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             self.assertTrue(check_permission('launchpad.Edit', ds_diff))
             diff_comment = ds_diff.addComment(
                 ds_diff.derived_series.owner, "Boo")
+
+    def test_source_package_name_unique_for_derived_series(self):
+        self.fail()
 
 
 class DistroSeriesDifferenceSourceTestCase(TestCaseWithFactory):
