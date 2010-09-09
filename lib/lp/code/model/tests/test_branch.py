@@ -268,6 +268,7 @@ class TestBranchRevisionMethods(TestCaseWithFactory):
         return resultset.one()
 
     def test_createBranchRevision(self):
+        # createBranchRevision adds the link for the revision to the branch.
         branch = self.factory.makeBranch()
         rev = self.factory.makeRevision()
         # Nothing there to start with.
@@ -279,6 +280,7 @@ class TestBranchRevisionMethods(TestCaseWithFactory):
         self.assertEqual(rev, br.revision)
 
     def test_removeBranchRevisions(self):
+        # removeBranchRevisions can remove a single linked revision.
         branch = self.factory.makeBranch()
         rev = self.factory.makeRevision()
         branch.createBranchRevision(1, rev)
@@ -286,6 +288,22 @@ class TestBranchRevisionMethods(TestCaseWithFactory):
         branch.removeBranchRevisions(rev.revision_id)
         # Revision not there now.
         self.assertIs(None, self._getBranchRevision(branch, rev.revision_id))
+
+    def test_removeBranchRevisions_multiple(self):
+        # removeBranchRevisions can remove multiple revision links at once.
+        branch = self.factory.makeBranch()
+        rev1 = self.factory.makeRevision()
+        rev2 = self.factory.makeRevision()
+        rev3 = self.factory.makeRevision()
+        branch.createBranchRevision(1, rev1)
+        branch.createBranchRevision(2, rev2)
+        branch.createBranchRevision(3, rev3)
+        # Now remove the branch revision.
+        branch.removeBranchRevisions(
+            [rev1.revision_id, rev2.revision_id, rev3.revision_id])
+        # No mainline revisions there now.
+        # The revision_history attribute is tested above.
+        self.assertEqual([], list(branch.revision_history))
 
 
 class TestBranchGetRevision(TestCaseWithFactory):
