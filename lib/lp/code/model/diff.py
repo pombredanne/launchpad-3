@@ -264,6 +264,17 @@ class Diff(SQLBase):
             file_stats[path] = tuple(patch.stats_values()[:2])
         return file_stats
 
+    @classmethod
+    def generateIncrementalDiff(
+        cls, old_revision, new_revision, source_branch, ignore_branches):
+        diff_content = StringIO()
+        read_locks = [read_locked(branch) for branch in [source_branch] +
+                ignore_branches]
+        with nested(*read_locks):
+            diff_ignore_branches(source_branch, ignore_branches, old_revision,
+                new_revision, diff_content)
+        return cls.fromFileAtEnd(diff_content)
+
 
 class StaticDiff(SQLBase):
     """A diff from one revision to another."""
@@ -320,22 +331,6 @@ class IncrementalDiff:
     def __init__(self, diff, merge_proposal):
         self.diff = diff
         self.merge_proposal = merge_proposal
-
-    @classmethod
-    def fromMergeProposal(cls, merge_proposal, old_revision, new_revision):
-        source_branch = merge_proposal.source_branch.getBzrBranch()
-        ignore_branches = [merge_proposal.target_branch.getBzrBranch()]
-        if merge_proposal.prerequisite_branch is not None:
-            ignore_branches.append(
-                merge_proposal.prerequisite_branch.getBzrBranch())
-        diff_content = StringIO()
-        read_locks = [read_locked(branch) for branch in [source_branch] +
-                ignore_branches]
-        with nested(*read_locks):
-            diff_ignore_branches(source_branch, ignore_branches, old_revision,
-                new_revision, diff_content)
-        diff = Diff.fromFileAtEnd(diff_content)
-        return cls(diff, merge_proposal)
 
 
 class PreviewDiff(Storm):

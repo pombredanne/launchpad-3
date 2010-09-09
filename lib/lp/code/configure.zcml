@@ -243,7 +243,8 @@
                     isValidTransition
                     getUnlandedSourceBranchRevisions
                     root_message_id
-                    getUsersVoteReference"/>
+                    getUsersVoteReference
+                    generateIncrementalDiff"/>
     <allow interface="lp.code.interfaces.branchtarget.IHasBranchTarget"/>
     <require
         permission="launchpad.Edit"
@@ -905,6 +906,10 @@
   <!-- Diffs -->
   <class class="lp.code.model.diff.Diff">
     <allow interface="lp.code.interfaces.diff.IDiff" />
+  </class>
+  <class class="lp.code.model.diff.IncrementalDiff">
+    <allow interface="lp.code.interfaces.diff.IDiff" />
+    <allow interface="lp.code.interfaces.diff.IIncrementalDiff" />
   </class>
   <class class="lp.code.model.diff.StaticDiff">
     <allow interface="lp.code.interfaces.diff.IStaticDiff" />
