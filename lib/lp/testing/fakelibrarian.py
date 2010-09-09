@@ -129,6 +129,11 @@ class FakeLibrarian(object):
 
     def addFile(self, name, size, file, contentType, expires=None):
         """See `IFileUploadClient`."""
+        return self._storeFile(
+            name, size, file, contentType, expires=expires).id
+
+    def _storeFile(self, name, size, file, contentType, expires=None):
+        """Like `addFile`, but returns the `LibraryFileAlias`."""
         content = file.read()
         real_size = len(content)
         if real_size != size:
@@ -139,8 +144,7 @@ class FakeLibrarian(object):
         file_ref = self._makeLibraryFileContent(content)
         alias = self._makeAlias(file_ref.id, name, content, contentType)
         self.aliases[alias.id] = alias
-
-        return alias.id
+        return alias
 
     def remoteAddFile(self, name, size, file, contentType, expires=None):
         """See `IFileUploadClient`."""
@@ -191,7 +195,7 @@ class FakeLibrarian(object):
     def create(self, name, size, file, contentType, expires=None,
                debugID=None, restricted=False):
         "See `ILibraryFileAliasSet`."""
-        return self.addFile(name, size, file, contentType, expires=expires)
+        return self._storeFile(name, size, file, contentType, expires=expires)
 
     def __getitem__(self, key):
         "See `ILibraryFileAliasSet`."""

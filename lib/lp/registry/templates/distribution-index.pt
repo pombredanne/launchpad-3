@@ -55,7 +55,7 @@
             tal:condition="context/official_answers" />
 
           <div tal:replace="structure context/@@+portlet-latestbugs"
-            tal:condition="context/official_malone" />
+            tal:condition="context/bug_tracking_usage/enumvalue:LAUNCHPAD" />
 
           <div tal:replace="structure context/@@+portlet-top-contributors" />
         </div>

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 # pylint: disable-msg=E0611,W0212
 
@@ -25,11 +25,13 @@ from sqlobject import (
     SQLObjectNotFound,
     StringCol,
     )
+from storm.expr import NamedFunc
 from storm.locals import (
     And,
     Desc,
     Int,
     Join,
+    Select,
     SQL,
     Store,
     Unicode,
@@ -38,7 +40,6 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.cachedproperty import cachedproperty
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
@@ -86,7 +87,6 @@ from lp.blueprints.interfaces.specification import (
     SpecificationDefinitionStatus,
     SpecificationFilter,
     SpecificationImplementationStatus,
-    SpecificationSort,
     )
 from lp.blueprints.model.specification import (
     HasSpecificationsMixin,
@@ -150,6 +150,10 @@ from lp.registry.model.structuralsubscription import (
     StructuralSubscriptionTargetMixin,
     )
 from lp.services.database.prejoin import prejoin
+from lp.services.propertycache import (
+    cachedproperty,
+    IPropertyCache,
+    )
 from lp.translations.interfaces.customlanguagecode import (
     IHasCustomLanguageCodes,
     )
@@ -198,14 +202,25 @@ def get_license_status(license_approved, license_reviewed, licenses):
         return LicenseStatus.OPEN_SOURCE
 
 
+class Array(NamedFunc):
+    """Implements the postgres "array" function in Storm."""
+    name = 'array'
+
+
 class ProductWithLicenses:
     """Caches `Product.licenses`."""
 
     delegates(IProduct, 'product')
 
-    def __init__(self, product, licenses):
+    def __init__(self, product, license_ids):
+        """Initialize a `ProductWithLicenses`.
+
+        :param product: the `Product` to wrap.
+        :param license_ids: a sequence of numeric `License` ids.
+        """
         self.product = product
-        self._licenses = licenses
+        self._licenses = tuple([
+            License.items[id] for id in sorted(license_ids)])
 
     @property
     def licenses(self):
@@ -220,8 +235,40 @@ class ProductWithLicenses:
         `Product.licenses`, which is not cached, instead of
         `ProductWithLicenses.licenses`, which is cached.
         """
+        naked_product = removeSecurityProxy(self.product)
         return get_license_status(
-            self.license_approved, self.license_reviewed, self.licenses)
+            naked_product.license_approved, naked_product.license_reviewed,
+            self.licenses)
+
+    @classmethod
+    def composeLicensesColumn(cls, for_class=None):
+        """Compose a Storm column specification for licenses.
+
+        Use this to render a list of `Product` linkes without querying
+        licenses for each one individually.
+
+        It lets you prefetch the licensing information in the same
+        query that fetches a `Product`.  Just add the column spec
+        returned by this function to the query, and pass it to the
+        `ProductWithLicenses` constructor:
+
+        license_column = ProductWithLicenses.composeLicensesColumn()
+        products_with_licenses = [
+            ProductWithLicenses(product, licenses)
+            for product, licenses in store.find(Product, license_column)
+            ]
+
+        :param for_class: Class to find licenses for.  Defaults to
+            `Product`, but could also be a Storm `ClassAlias`.
+        """
+        if for_class is None:
+            for_class = Product
+
+        return Array(
+            Select(
+                columns=[ProductLicense.license],
+                where=(ProductLicense.product == for_class.id),
+                tables=[ProductLicense]))
 
 
 class Product(SQLBase, BugTargetBase, MakesAnnouncements,
@@ -428,7 +475,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
                                notNull=True, default=False,
                                storm_validator=_validate_license_approved)
 
-    @cachedproperty('_commercial_subscription_cached')
+    @cachedproperty
     def commercial_subscription(self):
         return CommercialSubscription.selectOneBy(product=self)
 
@@ -475,7 +522,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
                 purchaser=purchaser,
                 sales_system_id=voucher,
                 whiteboard=whiteboard)
-            self._commercial_subscription_cached = subscription
+            IPropertyCache(self).commercial_subscription = subscription
         else:
             if current_datetime <= self.commercial_subscription.date_expires:
                 # Extend current subscription.

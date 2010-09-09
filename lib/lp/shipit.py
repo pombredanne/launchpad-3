@@ -106,6 +106,10 @@ from lp.registry.model.karma import Karma
 from lp.registry.model.person import Person
 from lp.services.mail import stub
 from lp.services.mail.sendmail import simple_sendmail
+from lp.services.propertycache import (
+    cachedproperty,
+    IPropertyCache,
+    )
 from lp.services.scripts.base import (
     LaunchpadCronScript,
     LaunchpadScript,
