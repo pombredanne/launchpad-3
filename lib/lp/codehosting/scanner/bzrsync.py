@@ -21,6 +21,8 @@ import transaction
 from zope.component import getUtility
 from zope.event import notify
 
+from canonical.config import config
+
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource
 from lp.code.interfaces.revision import IRevisionSet
 from lp.codehosting import iter_list_chunks
@@ -186,7 +188,8 @@ class BzrSync:
 
         # We must delete BranchRevision rows for all revisions which where
         # removed from the ancestry or whose sequence value has changed.
-        branchrevisions_to_delete = removed_merged.union(removed_history)
+        branchrevisions_to_delete = list(
+            removed_merged.union(removed_history))
 
         # We must insert BranchRevision rows for all revisions which were
         # added to the ancestry or whose sequence value has changed.
@@ -242,8 +245,15 @@ class BzrSync:
         """Delete a batch of BranchRevision rows."""
         self.logger.info("Deleting %d branchrevision records.",
             len(revision_ids_to_delete))
-        for revision_id in revision_ids_to_delete:
-            self.db_branch.removeBranchRevisions(revision_id)
+        # Use a config value to work out how many to delete at a time.
+        # Deleting more than one at a time is significantly more efficient
+        # than doing one at a time, but the actual optimal count is a bit up
+        # in the air.
+        batch_size = config.branchscanner.branch_revision_delete_count
+        while revision_ids_to_delete:
+            batch = revision_ids_to_delete[:batch_size]
+            revision_ids_to_delete[:batch_size] = []
+            self.db_branch.removeBranchRevisions(batch)
 
     def insertBranchRevisions(self, bzr_branch, revids_to_insert):
         """Insert a batch of BranchRevision rows."""
