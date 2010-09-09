@@ -2035,7 +2035,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                                 distroseries=None, name=None,
                                 description=None, branches=(),
                                 build_daily=False, daily_build_archive=None,
-                                is_stale=None):
+                                is_stale=None, recipe=None):
         """Make a `SourcePackageRecipe`."""
         if registrant is None:
             registrant = self.makePerson()
@@ -2051,7 +2051,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if daily_build_archive is None:
             daily_build_archive = self.makeArchive(
                 distribution=distroseries.distribution, owner=owner)
-        recipe = self.makeRecipe(*branches)
+        if recipe is None:
+            recipe = self.makeRecipeText(*branches)
+        else:
+            assert branches == ()
         source_package_recipe = getUtility(ISourcePackageRecipeSource).new(
             registrant, owner, name, recipe, description, [distroseries],
             daily_build_archive, build_daily)
