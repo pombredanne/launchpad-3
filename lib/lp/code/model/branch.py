@@ -26,7 +26,6 @@ from storm.expr import (
     And,
     Count,
     Desc,
-    Max,
     NamedFunc,
     Not,
     Or,
@@ -58,12 +57,8 @@ from canonical.launchpad.interfaces.launchpad import (
     ILaunchpadCelebrities,
     IPrivacy,
     )
+from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.launchpad.webapp import urlappend
-from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector,
-    MAIN_STORE,
-    SLAVE_FLAVOR,
-    )
 from lp.app.errors import UserCannotUnsubscribePerson
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.code.bzr import (
@@ -803,6 +798,15 @@ class Branch(SQLBase, BzrIdentityMixin):
             BranchRevision,
             BranchRevision.branch == self,
             query).one()
+
+    def removeBranchRevision(self, revision_id):
+        """See `IBranch`."""
+        IMasterStore(BranchRevision).find(
+            BranchRevision,
+            BranchRevision.branch == self,
+            BranchRevision.revision_id.is_in(
+                Select(Revision.id,
+                       Revision.revision_id == revision_id))).remove()
 
     def createBranchRevision(self, sequence, revision):
         """See `IBranch`."""
