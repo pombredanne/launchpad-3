@@ -239,6 +239,7 @@ class HasSpecificationsView(LaunchpadView):
             'direction_approved',
             'man_days',
             'delivery',
+            ]
         def dbschema(item):
             """Format a dbschema sortably for a spreadsheet."""
             return '%s-%s' % (item.value, item.title)
