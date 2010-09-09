@@ -563,8 +563,9 @@ class TestIncrementalDiff(DiffTestCase):
             bmp = self.factory.makeBranchMergeProposal(
                 prerequisite_branch=prerequisite_branch)
             target_branch = self.createBzrBranch(bmp.target_branch)
-            old_revision = self.commitFile(
+            old_revision_id = self.commitFile(
                 bmp.target_branch, 'foo', 'a\nb\ne\n')
+            old_revision = self.factory.makeRevision(rev_id=old_revision_id)
             source_branch = self.createBzrBranch(
                 bmp.source_branch, target_branch)
             self.commitFile(
@@ -577,13 +578,14 @@ class TestIncrementalDiff(DiffTestCase):
                 'a\nb\ne\nf\n')
             source_branch.repository.fetch(target_branch.repository,
                 revision_id=merge_parent)
-            new_revision = self.commitFile(
+            self.commitFile(
                 bmp.source_branch, 'foo', 'a\nc\ne\nf\n', [merge_parent])
             source_branch.repository.fetch(prerequisite.repository,
                 revision_id=prerequisite_revision)
-            new_revision = self.commitFile(
+            new_revision_id = self.commitFile(
                 bmp.source_branch, 'foo', 'd\na\nc\ne\nf\n',
                 [prerequisite_revision])
+            new_revision = self.factory.makeRevision(rev_id=new_revision_id)
             incremental_diff = bmp.generateIncrementalDiff(
                 old_revision, new_revision)
             librarian.pretendCommit()
