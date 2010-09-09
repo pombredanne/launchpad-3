@@ -190,9 +190,7 @@ class BzrSync:
 
         # We must delete BranchRevision rows for all revisions which where
         # removed from the ancestry or whose sequence value has changed.
-        branchrevisions_to_delete = set(
-            db_branch_revision_map[revid]
-            for revid in removed_merged.union(removed_history))
+        branchrevisions_to_delete = removed_merged.union(removed_history)
 
         # We must insert BranchRevision rows for all revisions which were
         # added to the ancestry or whose sequence value has changed.
@@ -244,13 +242,12 @@ class BzrSync:
         for revision_id in revision_subset.difference(set(bzr_history)):
             yield revision_id, None
 
-    def deleteBranchRevisions(self, branchrevisions_to_delete):
+    def deleteBranchRevisions(self, revision_ids_to_delete):
         """Delete a batch of BranchRevision rows."""
         self.logger.info("Deleting %d branchrevision records.",
-            len(branchrevisions_to_delete))
-        branch_revision_set = getUtility(IBranchRevisionSet)
-        for branchrevision in sorted(branchrevisions_to_delete):
-            branch_revision_set.delete(branchrevision)
+            len(revision_ids_to_delete))
+        for revision_id in revision_ids_to_delete:
+            self.db_branch.removeBranchRevision(revision_id)
 
     def insertBranchRevisions(self, bzr_branch, revids_to_insert):
         """Insert a batch of BranchRevision rows."""
