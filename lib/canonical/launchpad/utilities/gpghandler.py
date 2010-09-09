@@ -16,25 +16,35 @@ import os
 import re
 import shutil
 import socket
+from StringIO import StringIO
 import subprocess
 import tempfile
 import urllib
 import urllib2
-from StringIO import StringIO
 
 import gpgme
 from gpgme import editutil as gpgme_editutil
-
 from zope.interface import implements
 
 from canonical.config import config
-from lp.registry.interfaces.gpg import (
-    GPGKeyAlgorithm, valid_fingerprint)
 from canonical.launchpad.interfaces.gpghandler import (
-    GPGKeyExpired, GPGKeyRevoked, GPGKeyNotFoundError, GPGUploadFailure,
-    GPGVerificationError, IGPGHandler, IPymeKey, IPymeSignature, IPymeUserId,
-    MoreThanOneGPGKeyFound, SecretGPGKeyImportDetected)
+    GPGKeyExpired,
+    GPGKeyNotFoundError,
+    GPGKeyRevoked,
+    GPGUploadFailure,
+    GPGVerificationError,
+    IGPGHandler,
+    IPymeKey,
+    IPymeSignature,
+    IPymeUserId,
+    MoreThanOneGPGKeyFound,
+    SecretGPGKeyImportDetected,
+    )
 from canonical.launchpad.validators.email import valid_email
+from lp.registry.interfaces.gpg import (
+    GPGKeyAlgorithm,
+    valid_fingerprint,
+    )
 
 
 signing_only_param = """
@@ -208,8 +218,10 @@ class GPGHandler:
                 "Unable to map subkey: %s" % signature.fpr)
 
         # return the signature container
-        return PymeSignature(fingerprint=key.fingerprint,
-                             plain_data=plain.getvalue())
+        return PymeSignature(
+            fingerprint=key.fingerprint,
+            plain_data=plain.getvalue(),
+            timestamp=signature.timestamp)
 
     def importPublicKey(self, content):
         """See IGPGHandler."""
@@ -540,10 +552,11 @@ class PymeSignature(object):
     """See IPymeSignature."""
     implements(IPymeSignature)
 
-    def __init__(self, fingerprint=None, plain_data=None):
+    def __init__(self, fingerprint=None, plain_data=None, timestamp=None):
         """Initialized a signature container."""
         self.fingerprint = fingerprint
         self.plain_data = plain_data
+        self.timestamp = timestamp
 
 
 class PymeKey:

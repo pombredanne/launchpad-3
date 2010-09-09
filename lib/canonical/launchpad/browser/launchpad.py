@@ -24,99 +24,133 @@ __all__ = [
 
 
 import cgi
+from datetime import (
+    datetime,
+    timedelta,
+    )
 import operator
 import os
 import re
 import time
 import urllib
-from datetime import timedelta, datetime
 
+from lazr.uri import URI
 from zope import i18n
 from zope.app import zapi
-from zope.datetime import parseDatetimetz, tzinfo, DateTimeError
-from zope.component import getUtility, queryAdapter
-from zope.interface import implements
+from zope.component import (
+    getUtility,
+    queryAdapter,
+    )
+from zope.datetime import (
+    DateTimeError,
+    parseDatetimetz,
+    tzinfo,
+    )
 from zope.i18nmessageid import Message
+from zope.interface import implements
 from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
 from zope.security.interfaces import Unauthorized
 
-from canonical.cachedproperty import cachedproperty
 from canonical.config import config
-from canonical.lazr import ExportedFolder, ExportedImageFolder
 from canonical.launchpad.helpers import intOrZero
-from canonical.launchpad.layers import WebServiceLayer
 from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.interfaces.launchpad import (
-    IAppFrontPageSearchForm, IBazaarApplication, ILaunchpadCelebrities,
-    IRosettaApplication)
+    IAppFrontPageSearchForm,
+    IBazaarApplication,
+    ILaunchpadCelebrities,
+    IRosettaApplication,
+    )
 from canonical.launchpad.interfaces.launchpadstatistic import (
-    ILaunchpadStatisticSet)
+    ILaunchpadStatisticSet,
+    )
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
 from canonical.launchpad.interfaces.temporaryblobstorage import (
-    ITemporaryStorageManager)
+    ITemporaryStorageManager,
+    )
+from canonical.launchpad.layers import WebServiceLayer
 from canonical.launchpad.webapp import (
-    LaunchpadFormView, LaunchpadView, Link, Navigation,
-    StandardLaunchpadFacets, canonical_name, canonical_url, custom_widget,
-    stepto)
+    canonical_name,
+    canonical_url,
+    custom_widget,
+    LaunchpadFormView,
+    LaunchpadView,
+    Link,
+    Navigation,
+    StandardLaunchpadFacets,
+    stepto,
+    )
+from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import (
-    IBreadcrumb, ILaunchBag, ILaunchpadRoot, INavigationMenu)
+    IBreadcrumb,
+    ILaunchBag,
+    ILaunchpadRoot,
+    INavigationMenu,
+    )
 from canonical.launchpad.webapp.publisher import RedirectionView
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.tales import PageTemplateContextsAPI
+# XXX SteveAlexander 2005-09-22: this is imported here because there is no
+#     general timedelta to duration format adapter available.  This should
+#     be factored out into a generally available adapter for both this
+#     code and for TALES namespace code to use.
+#     Same for MenuAPI.
+from canonical.launchpad.webapp.tales import (
+    DurationFormatterAPI,
+    MenuAPI,
+    PageTemplateContextsAPI,
+    )
 from canonical.launchpad.webapp.url import urlappend
 from canonical.launchpad.webapp.vhosts import allvhosts
+from canonical.lazr import (
+    ExportedFolder,
+    ExportedImageFolder,
+    )
 from canonical.widgets.project import ProjectScopeWidget
-
-from lazr.uri import URI
-
-from lp.app.errors import GoneError, NotFoundError, POSTToNonCanonicalURL
+from lp.answers.interfaces.questioncollection import IQuestionSet
+from lp.app.errors import (
+    GoneError,
+    NotFoundError,
+    POSTToNonCanonicalURL,
+    )
 from lp.app.interfaces.headings import IMajorHeadingView
-from lp.registry.interfaces.announcement import IAnnouncementSet
-from lp.soyuz.interfaces.binarypackagename import (
-    IBinaryPackageNameSet)
+from lp.blueprints.interfaces.specification import ISpecificationSet
+from lp.blueprints.interfaces.sprint import ISprintSet
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.malone import IMaloneApplication
 from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.code.errors import (
-    CannotHaveLinkedBranch, InvalidNamespace, NoLinkedBranch)
+    CannotHaveLinkedBranch,
+    InvalidNamespace,
+    NoLinkedBranch,
+    )
 from lp.code.interfaces.branch import IBranchSet
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.codeimport import ICodeImportSet
 from lp.hardwaredb.interfaces.hwdb import IHWDBApplication
+from lp.registry.interfaces.announcement import IAnnouncementSet
 from lp.registry.interfaces.codeofconduct import ICodeOfConductSet
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.karma import IKarmaActionSet
 from lp.registry.interfaces.mentoringoffer import IMentoringOfferSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pillar import IPillarNameSet
-from lp.services.worlddata.interfaces.language import ILanguageSet
-from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.registry.interfaces.product import (
-    InvalidProductName, IProductSet)
+    InvalidProductName,
+    IProductSet,
+    )
 from lp.registry.interfaces.projectgroup import IProjectGroupSet
-from lp.registry.interfaces.sourcepackagename import (
-    ISourcePackageNameSet)
-from lp.blueprints.interfaces.specification import ISpecificationSet
-from lp.blueprints.interfaces.sprint import ISprintSet
+from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.services.propertycache import cachedproperty
 from lp.services.worlddata.interfaces.country import ICountrySet
-from lp.translations.interfaces.translationgroup import (
-    ITranslationGroupSet)
-from lp.translations.interfaces.translationimportqueue import (
-    ITranslationImportQueue)
+from lp.services.worlddata.interfaces.language import ILanguageSet
+from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
+from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.testopenid.interfaces.server import ITestOpenIDApplication
-
-
-# XXX SteveAlexander 2005-09-22: this is imported here because there is no
-#     general timedelta to duration format adapter available.  This should
-#     be factored out into a generally available adapter for both this
-#     code and for TALES namespace code to use.
-#     Same for MenuAPI.
-from canonical.launchpad.webapp.tales import DurationFormatterAPI, MenuAPI
-
-from lp.answers.interfaces.questioncollection import IQuestionSet
+from lp.translations.interfaces.translationgroup import ITranslationGroupSet
+from lp.translations.interfaces.translationimportqueue import (
+    ITranslationImportQueue,
+    )
 
 
 class NavigationMenuTabs(LaunchpadView):

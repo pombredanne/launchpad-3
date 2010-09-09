@@ -258,8 +258,8 @@ Firefox uses Malone as it's bug tracker, so it can't have an external
 one.
 
     >>> firefox = getUtility(IProductSet).getByName('firefox')
-    >>> firefox.official_malone
-    True
+    >>> firefox.bug_tracking_usage
+    <DBItem ServiceUsage.LAUNCHPAD, (20) Launchpad>
     >>> print firefox.bug_tracking_usage.name
     LAUNCHPAD
     >>> firefox.getExternalBugTracker() is None
@@ -501,15 +501,11 @@ series.
     False
     >>> print firefox.codehosting_usage.name
     UNKNOWN
-    >>> print firefox.uses_launchpad
-    False
     >>> firefox.development_focus.branch = factory.makeBranch(product=firefox)
     >>> print firefox.official_codehosting
     True
     >>> print firefox.codehosting_usage.name
     LAUNCHPAD
-    >>> print firefox.uses_launchpad
-    True
 
 We can also find all the products that have branches.
 

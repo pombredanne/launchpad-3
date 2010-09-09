@@ -12,20 +12,50 @@ __all__ = [
     'PackageUploadSet',
     ]
 
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 import os
 import shutil
 import StringIO
 import tempfile
 
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
-
-from storm.locals import Desc, In, Join
+from sqlobject import (
+    ForeignKey,
+    SQLMultipleJoin,
+    SQLObjectNotFound,
+    )
+from storm.locals import (
+    Desc,
+    In,
+    Join,
+    )
 from storm.store import Store
-from sqlobject import ForeignKey, SQLMultipleJoin, SQLObjectNotFound
 from zope.component import getUtility
 from zope.interface import implements
 
+from canonical.config import config
+from canonical.database.constants import UTC_NOW
+from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.database.enumcol import EnumCol
+from canonical.database.sqlbase import (
+    SQLBase,
+    sqlvalues,
+    )
+from canonical.encoding import (
+    ascii_smash,
+    guess as guess_encoding,
+    )
+from canonical.launchpad.helpers import get_email_template
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.lpstorm import IMasterStore
+from canonical.launchpad.mail import (
+    format_address,
+    sendmail,
+    signed_message_from_string,
+    )
+from canonical.launchpad.webapp import canonical_url
+from canonical.librarian.interfaces import DownloadFailed
+from canonical.librarian.utils import copy_and_close
 from lp.app.errors import NotFoundError
 # XXX 2009-05-10 julian
 # This should not import from archivepublisher, but to avoid
@@ -36,42 +66,38 @@ from lp.archivepublisher.utils import get_ppa_reference
 from lp.archiveuploader.changesfile import ChangesFile
 from lp.archiveuploader.tagfiles import parse_tagfile_lines
 from lp.archiveuploader.utils import safe_fix_maintainer
-from canonical.cachedproperty import cachedproperty
-from canonical.config import config
-from canonical.database.constants import UTC_NOW
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import SQLBase, sqlvalues
-from canonical.encoding import guess as guess_encoding, ascii_smash
-from canonical.launchpad.helpers import get_email_template
-from lp.soyuz.interfaces.archive import MAIN_ARCHIVE_PURPOSES
-from lp.soyuz.interfaces.binarypackagerelease import (
-    BinaryPackageFormat)
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from lp.soyuz.interfaces.queue import (
-    PackageUploadStatus, PackageUploadCustomFormat)
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import (
-    PackagePublishingPocket, pocketsuffix)
+    PackagePublishingPocket,
+    pocketsuffix,
+    )
+from lp.services.propertycache import cachedproperty
+from lp.soyuz.enums import (
+    BinaryPackageFormat,
+    PackageUploadCustomFormat,
+    PackageUploadStatus,
+    )
+from lp.soyuz.interfaces.archive import MAIN_ARCHIVE_PURPOSES
 from lp.soyuz.interfaces.publishing import (
-    IPublishingSet, ISourcePackagePublishingHistory)
+    IPublishingSet,
+    ISourcePackagePublishingHistory,
+    )
 from lp.soyuz.interfaces.queue import (
-    IPackageUpload, IPackageUploadBuild, IPackageUploadCustom,
-    IPackageUploadQueue, IPackageUploadSource, IPackageUploadSet,
-    NonBuildableSourceUploadError, QueueBuildAcceptError,
-    QueueInconsistentStateError, QueueSourceAcceptError,
-    QueueStateWriteProtectedError)
+    IPackageUpload,
+    IPackageUploadBuild,
+    IPackageUploadCustom,
+    IPackageUploadQueue,
+    IPackageUploadSet,
+    IPackageUploadSource,
+    NonBuildableSourceUploadError,
+    QueueBuildAcceptError,
+    QueueInconsistentStateError,
+    QueueSourceAcceptError,
+    QueueStateWriteProtectedError,
+    )
 from lp.soyuz.pas import BuildDaemonPackagesArchSpecific
-from canonical.launchpad.mail import (
-    format_address, signed_message_from_string, sendmail)
-from lp.soyuz.scripts.processaccepted import (
-    close_bugs_for_queue_item)
 from lp.soyuz.scripts.packagecopier import update_files_privacy
-from canonical.librarian.interfaces import DownloadFailed
-from canonical.librarian.utils import copy_and_close
-from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.interfaces.lpstorm import IMasterStore
-
+from lp.soyuz.scripts.processaccepted import close_bugs_for_queue_item
 
 # There are imports below in PackageUploadCustom for various bits
 # of the archivepublisher which cause circular import errors if they

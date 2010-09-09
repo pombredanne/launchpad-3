@@ -10,13 +10,17 @@ import time
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
-    IDistroBugTask, IDistroSeriesBugTask, IUpstreamBugTask)
+    IDistroBugTask,
+    IDistroSeriesBugTask,
+    IUpstreamBugTask,
+    )
 from canonical.launchpad.interfaces.mail import (
-    EmailProcessingError, IWeaklyAuthenticatedPrincipal)
+    EmailProcessingError,
+    IWeaklyAuthenticatedPrincipal,
+    )
 from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.interaction import get_current_principal
-
+from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.registry.enum import BugNotificationLevel
 from lp.registry.vocabularies import ValidPersonOrTeamVocabulary
 
@@ -226,7 +230,7 @@ def ensure_not_weakly_authenticated(signed_msg, context,
         raise IncomingEmailError(error_message)
 
 
-def ensure_sane_signature_timestamp(signature, context,
+def ensure_sane_signature_timestamp(timestamp, context,
                                     error_template='old-signature.txt'):
     """Ensure the signature was generated recently but not in the future."""
     fourty_eight_hours = 48 * 60 * 60
@@ -235,7 +239,7 @@ def ensure_sane_signature_timestamp(signature, context,
     fourty_eight_hours_ago = now - fourty_eight_hours
     ten_minutes_in_the_future = now + ten_minutes
 
-    if (signature.timestamp < fourty_eight_hours_ago
-            or signature.timestamp > ten_minutes_in_the_future):
+    if (timestamp < fourty_eight_hours_ago
+            or timestamp > ten_minutes_in_the_future):
         error_message = get_error_message(error_template, context=context)
         raise IncomingEmailError(error_message)

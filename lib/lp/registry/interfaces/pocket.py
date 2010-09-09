@@ -14,7 +14,10 @@ __all__ = [
     'pocketsuffix',
     ]
 
-from lazr.enum import DBEnumeratedType, DBItem
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    )
 
 
 class PackagePublishingPocket(DBEnumeratedType):

@@ -17,42 +17,65 @@ import urllib
 
 from bzrlib.branch import Branch
 from bzrlib.tests import TestCase as BzrTestCase
-
-from twisted.internet import defer, error, protocol, reactor
+import transaction
+from twisted.internet import (
+    defer,
+    error,
+    protocol,
+    reactor,
+    )
 from twisted.python import log
 from twisted.trial.unittest import TestCase as TrialTestCase
 from twisted.web import xmlrpc
-
-import transaction
-
 from zope.component import getUtility
 
 from canonical.config import config
 from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.launchpad.xmlrpc.faults import NoSuchCodeImportJob
 from canonical.testing.layers import (
-    TwistedAppServerLayer, TwistedLaunchpadZopelessLayer, TwistedLayer)
-
+    TwistedAppServerLayer,
+    TwistedLaunchpadZopelessLayer,
+    TwistedLayer,
+    )
 from lp.code.enums import (
-    CodeImportResultStatus, CodeImportReviewStatus, RevisionControlSystems)
+    CodeImportResultStatus,
+    CodeImportReviewStatus,
+    RevisionControlSystems,
+    )
 from lp.code.interfaces.codeimport import ICodeImportSet
 from lp.code.interfaces.codeimportjob import ICodeImportJobSet
 from lp.code.model.codeimport import CodeImport
 from lp.code.model.codeimportjob import CodeImportJob
 from lp.codehosting import load_optional_plugin
-from lp.codehosting.codeimport.worker import (
-    CodeImportSourceDetails, CodeImportWorkerExitCode,
-    get_default_bazaar_branch_store)
-from lp.codehosting.codeimport.workermonitor import (
-    CodeImportWorkerMonitor, CodeImportWorkerMonitorProtocol, ExitQuietly)
 from lp.codehosting.codeimport.tests.servers import (
-    CVSServer, GitServer, MercurialServer, SubversionServer)
+    CVSServer,
+    GitServer,
+    MercurialServer,
+    SubversionServer,
+    )
 from lp.codehosting.codeimport.tests.test_worker import (
-    clean_up_default_stores_for_import)
+    clean_up_default_stores_for_import,
+    )
+from lp.codehosting.codeimport.worker import (
+    CodeImportSourceDetails,
+    CodeImportWorkerExitCode,
+    get_default_bazaar_branch_store,
+    )
+from lp.codehosting.codeimport.workermonitor import (
+    CodeImportWorkerMonitor,
+    CodeImportWorkerMonitorProtocol,
+    ExitQuietly,
+    )
 from lp.services.twistedsupport import suppress_stderr
 from lp.services.twistedsupport.tests.test_processmonitor import (
-    makeFailure, ProcessTestsMixin)
-from lp.testing import login, logout, TestCase
+    makeFailure,
+    ProcessTestsMixin,
+    )
+from lp.testing import (
+    login,
+    logout,
+    TestCase,
+    )
 from lp.testing.factory import LaunchpadObjectFactory
 
 

@@ -10,16 +10,22 @@ __all__ = [
 
 
 from email.Utils import parseaddr
+
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.interfaces.emailaddress import (
-    EmailAddressStatus, IEmailAddressSet)
+    EmailAddressStatus,
+    IEmailAddressSet,
+    )
+from canonical.launchpad.scripts import QuietFakeLogger
 from lp.registry.interfaces.mailinglist import (
-    CannotSubscribe, IMailingListSet, MailingListStatus)
+    CannotSubscribe,
+    IMailingListSet,
+    MailingListStatus,
+    )
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.teammembership import TeamMembershipStatus
-from canonical.launchpad.scripts import QuietFakeLogger
 
 
 class Importer:

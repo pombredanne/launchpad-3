@@ -12,15 +12,27 @@ __all__ = [
     'IBuildQueueSet',
     ]
 
-from zope.interface import Interface, Attribute
-from zope.schema import Bool, Choice, Datetime, Field, Int, Text, Timedelta
-
 from lazr.restful.fields import Reference
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Bool,
+    Choice,
+    Datetime,
+    Field,
+    Int,
+    Text,
+    Timedelta,
+    )
 
 from canonical.launchpad import _
+from lp.buildmaster.enums import BuildFarmJobType
 from lp.buildmaster.interfaces.builder import IBuilder
 from lp.buildmaster.interfaces.buildfarmjob import (
-    IBuildFarmJob, BuildFarmJobType)
+    IBuildFarmJob,
+    )
 from lp.services.job.interfaces.job import IJob
 from lp.soyuz.interfaces.processor import IProcessor
 

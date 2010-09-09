@@ -13,44 +13,64 @@ __all__ = [
 import datetime
 import sys
 
-from pytz import utc
-
-from canonical.database.constants import UTC_NOW
-from canonical.launchpad.browser.librarian import (
-    ProxiedLibraryFileAlias)
-from canonical.launchpad.interfaces.lpstorm import IMasterStore, IStore
-
 from psycopg2 import ProgrammingError
-from storm.locals import Int, Reference, Storm
+from pytz import utc
+from storm.locals import (
+    Int,
+    Reference,
+    Storm,
+    )
 from storm.store import Store
-
-from zope.component import getGlobalSiteManager, getUtility
-from zope.interface import classProvides, implements
+from zope.component import (
+    getGlobalSiteManager,
+    getUtility,
+    )
+from zope.interface import (
+    classProvides,
+    implements,
+    )
 from zope.security.proxy import ProxyFactory
 
+from canonical.database.constants import UTC_NOW
+from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
+from canonical.launchpad.interfaces.lpstorm import (
+    IMasterStore,
+    IStore,
+    )
 from canonical.launchpad.webapp import errorlog
 from lp.app.errors import NotFoundError
 from lp.archiveuploader.uploadpolicy import (
-    BuildDaemonUploadPolicy, IArchiveUploadPolicy,
-    SOURCE_PACKAGE_RECIPE_UPLOAD_POLICY_NAME)
-from lp.buildmaster.model.packagebuild import (
-    PackageBuild, PackageBuildDerived)
-from lp.buildmaster.interfaces.buildbase import BuildStatus
-from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
-from lp.buildmaster.model.buildbase import BuildBase
-from lp.buildmaster.model.buildqueue import BuildQueue
+    ArchiveUploadType,
+    BuildDaemonUploadPolicy,
+    IArchiveUploadPolicy,
+    SOURCE_PACKAGE_RECIPE_UPLOAD_POLICY_NAME,
+    )
+from lp.buildmaster.enums import (
+    BuildFarmJobType,
+    BuildStatus,
+    )
 from lp.buildmaster.model.buildfarmjob import BuildFarmJobOldDerived
+from lp.buildmaster.model.buildqueue import BuildQueue
+from lp.buildmaster.model.packagebuild import (
+    PackageBuild,
+    PackageBuildDerived,
+    )
 from lp.code.errors import BuildAlreadyPending
 from lp.code.interfaces.sourcepackagerecipebuild import (
-    ISourcePackageRecipeBuildJob, ISourcePackageRecipeBuildJobSource,
-    ISourcePackageRecipeBuild, ISourcePackageRecipeBuildSource)
+    ISourcePackageRecipeBuild,
+    ISourcePackageRecipeBuildJob,
+    ISourcePackageRecipeBuildJobSource,
+    ISourcePackageRecipeBuildSource,
+    )
 from lp.code.mail.sourcepackagerecipebuild import (
-    SourcePackageRecipeBuildMailer)
+    SourcePackageRecipeBuildMailer,
+    )
 from lp.code.model.sourcepackagerecipedata import SourcePackageRecipeData
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.job.model.job import Job
 from lp.soyuz.adapters.archivedependencies import (
-    default_component_dependency_name,)
+    default_component_dependency_name,
+    )
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.buildfarmbuildjob import BuildFarmBuildJob
@@ -61,11 +81,7 @@ class SourcePackageRecipeUploadPolicy(BuildDaemonUploadPolicy):
     """Policy for uploading the results of a source package recipe build."""
 
     name = SOURCE_PACKAGE_RECIPE_UPLOAD_POLICY_NAME
-
-    def __init__(self):
-        super(SourcePackageRecipeUploadPolicy, self).__init__()
-        self.can_upload_source = True
-        self.can_upload_binaries = False
+    accepted_type = ArchiveUploadType.SOURCE_ONLY
 
     def getUploader(self, changes):
         """Return the person doing the upload."""
@@ -110,7 +126,7 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
 
     @property
     def distribution(self):
-        """See `IBuildBase`."""
+        """See `IPackageBuild`."""
         return self.distroseries.distribution
 
     is_virtualized = True
@@ -142,7 +158,7 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
 
     @property
     def buildqueue_record(self):
-        """See `IBuildBase`."""
+        """See `IBuildFarmJob`."""
         store = Store.of(self)
         results = store.find(
             BuildQueue,
@@ -260,7 +276,7 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
         return specific_job
 
     def estimateDuration(self):
-        """See `IBuildBase`."""
+        """See `IPackageBuild`."""
         median = self.recipe.getMedianBuildDuration()
         if median is not None:
             return median
@@ -270,7 +286,7 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
         return self.source_package_release is not None
 
     def notify(self, extra_info=None):
-        """See `IBuildBase`."""
+        """See `IPackageBuild`."""
         mailer = SourcePackageRecipeBuildMailer.forStatus(self)
         mailer.sendAll()
 
@@ -309,13 +325,13 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
         except KeyError:
             raise NotFoundError(filename)
 
-    @staticmethod
-    def _handleStatus_OK(build, librarian, slave_status, logger):
-        """See `IBuildBase`."""
-        BuildBase._handleStatus_OK(build, librarian, slave_status, logger)
+    def _handleStatus_OK(self, librarian, slave_status, logger):
+        """See `IPackageBuild`."""
+        super(SourcePackageRecipeBuild, self)._handleStatus_OK(
+            librarian, slave_status, logger)
         # base implementation doesn't notify on success.
-        if build.status == BuildStatus.FULLYBUILT:
-            build.notify()
+        if self.status == BuildStatus.FULLYBUILT:
+            self.notify()
 
 
 class SourcePackageRecipeBuildJob(BuildFarmJobOldDerived, Storm):
@@ -365,7 +381,7 @@ class SourcePackageRecipeBuildJob(BuildFarmJobOldDerived, Storm):
         return "%s-%s" % (self.id, self.build_id)
 
     def score(self):
-        return 2405 + self.build.archive.relative_build_score
+        return 2505 + self.build.archive.relative_build_score
 
 
 def register_archive_upload_policy_adapter():

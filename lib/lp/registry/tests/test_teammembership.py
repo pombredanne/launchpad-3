@@ -3,27 +3,45 @@
 
 __metaclass__ = type
 
+from datetime import (
+    datetime,
+    timedelta,
+    )
 import re
 import subprocess
 import unittest
-from datetime import datetime, timedelta
 
 import pytz
-
 from zope.component import getUtility
 
 from canonical.database.sqlbase import (
-    cursor, flush_database_caches, flush_database_updates, sqlvalues)
-from lp.registry.model.teammembership import TeamMembership
-from canonical.launchpad.ftests import login, login_person
-from lp.registry.interfaces.person import (
-    IPersonSet, TeamSubscriptionPolicy)
-from lp.registry.interfaces.teammembership import (
-    CyclicalTeamMembershipError, ITeamMembershipSet, TeamMembershipStatus)
-from lp.testing.factory import LaunchpadObjectFactory
+    cursor,
+    flush_database_caches,
+    flush_database_updates,
+    sqlvalues,
+    )
+from canonical.launchpad.ftests import (
+    login,
+    login_person,
+    )
 from canonical.launchpad.testing.systemdocs import (
-    default_optionflags, LayeredDocFileSuite, setUp, tearDown)
+    default_optionflags,
+    LayeredDocFileSuite,
+    setUp,
+    tearDown,
+    )
 from canonical.testing import LaunchpadFunctionalLayer
+from lp.registry.interfaces.person import (
+    IPersonSet,
+    TeamSubscriptionPolicy,
+    )
+from lp.registry.interfaces.teammembership import (
+    CyclicalTeamMembershipError,
+    ITeamMembershipSet,
+    TeamMembershipStatus,
+    )
+from lp.registry.model.teammembership import TeamMembership
+from lp.testing.factory import LaunchpadObjectFactory
 
 
 class TestTeamMembershipSet(unittest.TestCase):

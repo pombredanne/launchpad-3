@@ -12,36 +12,76 @@ __all__ = [
     'RevisionProperty',
     'RevisionSet']
 
-from datetime import datetime, timedelta
+from datetime import (
+    datetime,
+    timedelta,
+    )
 import email
 
 import pytz
-from storm.expr import And, Asc, Desc, Exists, Join, Not, Or, Select
-from storm.locals import Bool, DateTime, Int, Min, Reference, Storm
+from sqlobject import (
+    BoolCol,
+    ForeignKey,
+    IntCol,
+    SQLMultipleJoin,
+    SQLObjectNotFound,
+    StringCol,
+    )
+from storm.expr import (
+    And,
+    Asc,
+    Desc,
+    Exists,
+    Join,
+    Not,
+    Or,
+    Select,
+    )
+from storm.locals import (
+    Bool,
+    DateTime,
+    Int,
+    Min,
+    Reference,
+    Storm,
+    )
 from storm.store import Store
 from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
-from sqlobject import (
-    BoolCol, ForeignKey, IntCol, StringCol, SQLObjectNotFound,
-    SQLMultipleJoin)
 
-from canonical.database.constants import DEFAULT, UTC_NOW
+from canonical.database.constants import (
+    DEFAULT,
+    UTC_NOW,
+    )
 from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.sqlbase import quote, SQLBase, sqlvalues
-
+from canonical.database.sqlbase import (
+    quote,
+    SQLBase,
+    sqlvalues,
+    )
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
-    EmailAddressStatus, IEmailAddressSet, IMasterStore)
+    EmailAddressStatus,
+    IEmailAddressSet,
+    IMasterStore,
+    )
 from canonical.launchpad.webapp.interfaces import (
-        IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 from lp.code.interfaces.branch import DEFAULT_BRANCH_STATUS_IN_LISTING
 from lp.code.interfaces.revision import (
-    IRevision, IRevisionAuthor, IRevisionParent, IRevisionProperty,
-    IRevisionSet)
+    IRevision,
+    IRevisionAuthor,
+    IRevisionParent,
+    IRevisionProperty,
+    IRevisionSet,
+    )
+from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
-from lp.registry.interfaces.person import validate_public_person
 
 
 class Revision(SQLBase):
@@ -569,8 +609,7 @@ class RevisionCache(Storm):
     revision_author_id = Int(name='revision_author', allow_none=False)
     revision_author = Reference(revision_author_id, 'RevisionAuthor.id')
 
-    revision_date = DateTime(
-        name='revision_date', allow_none=False, tzinfo=pytz.UTC)
+    revision_date = UtcDateTimeCol(notNull=True)
 
     product_id = Int(name='product', allow_none=True)
     product = Reference(product_id, 'Product.id')

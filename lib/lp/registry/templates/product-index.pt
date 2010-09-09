@@ -160,7 +160,7 @@
             </p>
 
             <div id="project-admin-whiteboard" class="whiteboard"
-              tal:condition="context/required:launchpad.ProjectReview">
+              tal:condition="context/required:launchpad.Moderate">
               <div>
                 <strong>Whiteboard</strong>
                 <a tal:replace="structure overview_menu/review_license/fmt:icon"/>
@@ -218,7 +218,7 @@
             tal:condition="context/official_answers" />
 
           <div tal:content="structure context/@@+portlet-latestbugs"
-            tal:condition="context/official_malone" />
+            tal:condition="context/bug_tracking_usage/enumvalue:LAUNCHPAD" />
 
           <div tal:content="structure context/@@+portlet-top-contributors" />
 
@@ -258,8 +258,8 @@
             tal:attributes="href link/fmt:url;
                             title link/summary">All downloads</a>
            <tal:no-files condition="not: release">
-             <tal:name replace="context/displayname" /> does not have any
-              download files.
+             <tal:name replace="context/displayname" />
+             does not have any download files registered with Launchpad.
            </tal:no-files>
         </p>
       </div>

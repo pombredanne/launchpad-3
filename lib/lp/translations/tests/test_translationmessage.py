@@ -5,14 +5,32 @@
 
 __metaclass__ = type
 
+
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.testing import ZopelessDatabaseLayer
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing import TestCaseWithFactory
-from lp.translations.model.potranslation import POTranslation
 from lp.translations.interfaces.translations import TranslationConstants
-from canonical.testing import ZopelessDatabaseLayer
+from lp.translations.model.potranslation import POTranslation
+
+
+class TestPOFileStillInitialized(TestCaseWithFactory):
+    """Until the 10.09 rollout, TranslationMessage.pofile is still needed.
+
+    This is a fix for just a few days.  We still need to initialize this
+    on edge while production still relies on it.
+
+    Remove this test, as well as the initialization of pofile in
+    POTMsgSet.updateTranslation, after 10.09 rollout.
+    """
+    layer = ZopelessDatabaseLayer
+
+    def test_pofile_still_initialized(self):
+        pofile = self.factory.makePOFile('sux')
+        tm = self.factory.makeTranslationMessage(pofile=pofile)
+        self.assertEqual(pofile, tm.pofile)
 
 
 class TestTranslationMessageFindIdenticalMessage(TestCaseWithFactory):

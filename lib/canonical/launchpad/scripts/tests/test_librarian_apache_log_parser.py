@@ -9,14 +9,24 @@ import unittest
 
 from zope.component import getUtility
 
+from canonical.launchpad.ftests import (
+    ANONYMOUS,
+    login,
+    )
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.scripts.librarian_apache_log_parser import (
-    get_library_file_id)
-from lp.services.apachelogparser.base import parse_file, get_method_and_path
+    get_library_file_id,
+    )
 from canonical.launchpad.scripts.logger import BufferLogger
-from canonical.launchpad.ftests import ANONYMOUS, login
+from canonical.testing import (
+    DatabaseFunctionalLayer,
+    ZopelessLayer,
+    )
+from lp.services.apachelogparser.base import (
+    get_method_and_path,
+    parse_file,
+    )
 from lp.testing import TestCase
-from canonical.testing import DatabaseFunctionalLayer, ZopelessLayer
 
 
 here = os.path.dirname(__file__)
@@ -92,7 +102,7 @@ class TestLibrarianLogFileParsing(TestCase):
             '69.233.136.42 - - [13/Jun/2008:14:55:22 +0100] "GET '
             '/15018215/ul_logo_64x64.png HTTP/1.1" 200 2261 '
             '"https://launchpad.net/~ubuntulite/+archive" "Mozilla"')
-        downloads, parsed_bytes = parse_file(
+        downloads, parsed_bytes, ignored = parse_file(
             fd, start_position=0, logger=self.logger,
             get_download_key=get_library_file_id)
         self.assertEqual(
@@ -111,7 +121,7 @@ class TestLibrarianLogFileParsing(TestCase):
         fd = StringIO(
             '69.233.136.42 - - [13/Jun/2008:14:55:22 +0100] "GET / HTTP/1.1" '
             '200 2261 "https://launchpad.net/~ubuntulite/+archive" "Mozilla"')
-        downloads, parsed_bytes = parse_file(
+        downloads, parsed_bytes, ignored = parse_file(
             fd, start_position=0, logger=self.logger,
             get_download_key=get_library_file_id)
         self.assertEqual(

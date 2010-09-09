@@ -7,7 +7,7 @@ from __future__ import with_statement
 
 """Testing infrastructure for the Launchpad application.
 
-This module should not have any actual tests.
+This module should not contain tests (but it should be tested).
 """
 
 __metaclass__ = type
@@ -20,15 +20,21 @@ __all__ = [
     ]
 
 from contextlib import nested
-from datetime import datetime, timedelta
+from datetime import (
+    datetime,
+    timedelta,
+    )
 from email.encoders import encode_base64
-from email.utils import make_msgid, formatdate
 from email.message import Message as EmailMessage
-from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.utils import (
+    formatdate,
+    make_msgid,
+    )
 from itertools import count
 from operator import isSequenceType
-import os.path
+import os
 from random import randint
 from StringIO import StringIO
 from textwrap import dedent
@@ -36,63 +42,90 @@ from threading import local
 from types import InstanceType
 import warnings
 
+from bzrlib.merge_directive import MergeDirective2
 from bzrlib.plugins.builder.recipe import BaseRecipeBranch
 import pytz
-
 from twisted.python.util import mergeFunctionMetadata
-
-from zope.component import ComponentLookupError, getUtility
+from zope.component import (
+    ComponentLookupError,
+    getUtility,
+    )
 from zope.security.proxy import (
-    builtin_isinstance, Proxy, ProxyFactory, removeSecurityProxy)
-
-from bzrlib.merge_directive import MergeDirective2
+    builtin_isinstance,
+    Proxy,
+    ProxyFactory,
+    removeSecurityProxy,
+    )
 
 from canonical.autodecorate import AutoDecorate
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import flush_database_updates
-
 from canonical.launchpad.database.account import Account
-from canonical.launchpad.database.message import Message, MessageChunk
-from canonical.launchpad.interfaces import IMasterStore, IStore
+from canonical.launchpad.database.message import (
+    Message,
+    MessageChunk,
+    )
+from canonical.launchpad.ftests._sqlobject import syncUpdate
+from canonical.launchpad.interfaces import (
+    IMasterStore,
+    IStore,
+    )
 from canonical.launchpad.interfaces.account import (
-    AccountCreationRationale, AccountStatus, IAccountSet)
+    AccountCreationRationale,
+    AccountStatus,
+    IAccountSet,
+    )
 from canonical.launchpad.interfaces.emailaddress import (
-    EmailAddressStatus, IEmailAddressSet)
+    EmailAddressStatus,
+    IEmailAddressSet,
+    )
 from canonical.launchpad.interfaces.gpghandler import IGPGHandler
-from lp.hardwaredb.interfaces.hwdb import (
-    HWSubmissionFormat, IHWDeviceDriverLinkSet, IHWSubmissionDeviceSet,
-    IHWSubmissionSet)
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.temporaryblobstorage import (
-    ITemporaryStorageManager)
-from canonical.launchpad.ftests._sqlobject import syncUpdate
+    ITemporaryStorageManager,
+    )
 from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
-
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 from lp.archiveuploader.dscfile import DSCFile
 from lp.archiveuploader.uploadpolicy import BuildDaemonUploadPolicy
 from lp.blueprints.interfaces.specification import (
-    ISpecificationSet, SpecificationDefinitionStatus)
+    ISpecificationSet,
+    SpecificationDefinitionStatus,
+    )
 from lp.blueprints.interfaces.sprint import ISprintSet
-
-from lp.bugs.interfaces.bug import CreateBugParams, IBugSet
+from lp.bugs.interfaces.bug import (
+    CreateBugParams,
+    IBugSet,
+    )
 from lp.bugs.interfaces.bugtask import BugTaskStatus
-from lp.bugs.interfaces.bugtracker import BugTrackerType, IBugTrackerSet
+from lp.bugs.interfaces.bugtracker import (
+    BugTrackerType,
+    IBugTrackerSet,
+    )
 from lp.bugs.interfaces.bugwatch import IBugWatchSet
+from lp.buildmaster.enums import (
+    BuildFarmJobType,
+    BuildStatus,
+    )
 from lp.buildmaster.interfaces.builder import IBuilderSet
-from lp.buildmaster.interfaces.buildbase import BuildStatus
-from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
 from lp.buildmaster.model.buildqueue import BuildQueue
-
 from lp.code.enums import (
-    BranchMergeProposalStatus, BranchSubscriptionNotificationLevel,
-    BranchType, CodeImportMachineState, CodeImportReviewStatus,
-    CodeImportResultStatus, CodeReviewNotificationLevel,
-    RevisionControlSystems)
+    BranchMergeProposalStatus,
+    BranchSubscriptionNotificationLevel,
+    BranchType,
+    CodeImportMachineState,
+    CodeImportResultStatus,
+    CodeImportReviewStatus,
+    CodeReviewNotificationLevel,
+    RevisionControlSystems,
+    )
 from lp.code.errors import UnknownBranchTypeError
 from lp.code.interfaces.branchmergequeue import IBranchMergeQueueSet
 from lp.code.interfaces.branchnamespace import get_branch_namespace
@@ -103,57 +136,98 @@ from lp.code.interfaces.codeimportmachine import ICodeImportMachineSet
 from lp.code.interfaces.codeimportresult import ICodeImportResultSet
 from lp.code.interfaces.revision import IRevisionSet
 from lp.code.interfaces.sourcepackagerecipe import (
-    ISourcePackageRecipeSource, MINIMAL_RECIPE_TEXT)
+    ISourcePackageRecipeSource,
+    MINIMAL_RECIPE_TEXT,
+    )
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildSource,
     )
-from lp.code.model.diff import Diff, PreviewDiff, StaticDiff
+from lp.code.model.diff import (
+    Diff,
+    PreviewDiff,
+    StaticDiff,
+    )
 from lp.codehosting.codeimport.worker import CodeImportSourceDetails
-
+from lp.hardwaredb.interfaces.hwdb import (
+    HWSubmissionFormat,
+    IHWDeviceDriverLinkSet,
+    IHWSubmissionDeviceSet,
+    IHWSubmissionSet,
+    )
 from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.distributionmirror import (
+    MirrorContent,
+    MirrorSpeed,
+    )
 from lp.registry.interfaces.distroseries import IDistroSeries
-from lp.registry.interfaces.gpg import GPGKeyAlgorithm, IGPGKeySet
+from lp.registry.interfaces.gpg import (
+    GPGKeyAlgorithm,
+    IGPGKeySet,
+    )
 from lp.registry.interfaces.mailinglist import (
-    IMailingListSet, MailingListStatus)
+    IMailingListSet,
+    MailingListStatus,
+    )
 from lp.registry.interfaces.mailinglistsubscription import (
-    MailingListAutoSubscribePolicy)
+    MailingListAutoSubscribePolicy,
+    )
 from lp.registry.interfaces.person import (
-    IPerson, IPersonSet, PersonCreationRationale, TeamSubscriptionPolicy)
-from lp.registry.interfaces.poll import IPollSet, PollAlgorithm, PollSecrecy
-from lp.registry.interfaces.product import IProductSet, License
+    IPerson,
+    IPersonSet,
+    PersonCreationRationale,
+    TeamSubscriptionPolicy,
+    )
+from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.interfaces.poll import (
+    IPollSet,
+    PollAlgorithm,
+    PollSecrecy,
+    )
+from lp.registry.interfaces.product import (
+    IProductSet,
+    License,
+    )
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import IProjectGroupSet
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackage import (
-    ISourcePackage, SourcePackageFileType, SourcePackageUrgency)
-from lp.registry.interfaces.sourcepackagename import (
-    ISourcePackageNameSet)
+    ISourcePackage,
+    SourcePackageFileType,
+    SourcePackageUrgency,
+    )
+from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.interfaces.ssh import ISSHKeySet
-from lp.registry.interfaces.distributionmirror import (
-    MirrorContent, MirrorSpeed)
-from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.milestone import Milestone
 from lp.registry.model.suitesourcepackage import SuiteSourcePackage
-
 from lp.services.mail.signedmessage import SignedMessage
 from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.services.worlddata.interfaces.language import ILanguageSet
-
 from lp.soyuz.adapters.packagelocation import PackageLocation
+from lp.soyuz.enums import (
+    ArchivePurpose,
+    BinaryPackageFileType,
+    BinaryPackageFormat,
+    PackagePublishingPriority,
+    PackagePublishingStatus,
+    PackageUploadStatus,
+    )
 from lp.soyuz.interfaces.archive import (
-    default_name_by_purpose, IArchiveSet, ArchivePurpose)
+    default_name_by_purpose,
+    IArchiveSet,
+    )
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
-from lp.soyuz.interfaces.binarypackagerelease import (
-    BinaryPackageFileType, BinaryPackageFormat)
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.interfaces.publishing import (
-    IPublishingSet, PackagePublishingPriority, PackagePublishingStatus)
-from lp.soyuz.interfaces.queue import PackageUploadStatus
+    IPublishingSet,
+    )
 from lp.soyuz.interfaces.section import ISectionSet
-from lp.soyuz.model.files import BinaryPackageFile, SourcePackageReleaseFile
+from lp.soyuz.model.files import (
+    BinaryPackageFile,
+    SourcePackageReleaseFile,
+    )
 from lp.soyuz.model.processor import ProcessorFamilySet
 from lp.testing import (
     ANONYMOUS,
@@ -165,17 +239,21 @@ from lp.testing import (
     time_counter,
     )
 from lp.translations.interfaces.potemplate import IPOTemplateSet
-from lp.translations.interfaces.translationimportqueue import (
-    RosettaImportStatus)
 from lp.translations.interfaces.translationfileformat import (
-    TranslationFileFormat)
+    TranslationFileFormat,
+    )
 from lp.translations.interfaces.translationgroup import ITranslationGroupSet
+from lp.translations.interfaces.translationimportqueue import (
+    RosettaImportStatus,
+    )
 from lp.translations.interfaces.translationsperson import ITranslationsPerson
 from lp.translations.interfaces.translationtemplatesbuildjob import (
-    ITranslationTemplatesBuildJobSource)
+    ITranslationTemplatesBuildJobSource,
+    )
 from lp.translations.interfaces.translator import ITranslatorSet
 from lp.translations.model.translationimportqueue import (
-    TranslationImportQueueEntry)
+    TranslationImportQueueEntry,
+    )
 
 
 SPACE = ' '
@@ -351,6 +429,17 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         person = self.makePerson()
         login_as(person)
         return person
+
+    def makeRegistryExpert(self, name=None, email='expert@example.com',
+                           password='test'):
+        from lp.testing.sampledata import ADMIN_EMAIL
+        login(ADMIN_EMAIL)
+        user = self.makePerson(name=name,
+                               email=email,
+                               password=password)
+        registry_team = getUtility(ILaunchpadCelebrities).registry_experts
+        registry_team.addMember(user, registry_team.teamowner)
+        return user
 
     def makeCopyArchiveLocation(self, distribution=None, owner=None,
         name=None, enabled=True):
@@ -747,7 +836,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             project=project,
             registrant=registrant)
         if official_malone is not None:
-            product.official_malone = official_malone
+            removeSecurityProxy(product).official_malone = official_malone
         if official_rosetta is not None:
             removeSecurityProxy(product).official_rosetta = official_rosetta
         if bug_supervisor is not None:
@@ -1222,7 +1311,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
         return removeSecurityProxy(bug).addTask(owner, target)
 
-    def makeBugTracker(self, base_url=None, bugtrackertype=None):
+    def makeBugTracker(self, base_url=None, bugtrackertype=None, title=None,
+                       name=None):
         """Make a new bug tracker."""
         owner = self.makePerson()
 
@@ -1232,7 +1322,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             bugtrackertype = BugTrackerType.BUGZILLA
 
         return getUtility(IBugTrackerSet).ensureBugTracker(
-            base_url, owner, bugtrackertype)
+            base_url, owner, bugtrackertype, title=title, name=name)
 
     def makeBugWatch(self, remote_bug=None, bugtracker=None, bug=None,
                      owner=None, bug_task=None):
@@ -1407,7 +1497,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         mail.parsed_string = mail.as_string()
         return mail
 
-    def makeSpecification(self, product=None, title=None, distribution=None):
+    def makeSpecification(self, product=None, title=None, distribution=None,
+                          name=None, summary=None, owner=None,
+                          status=SpecificationDefinitionStatus.NEW):
         """Create and return a new, arbitrary Blueprint.
 
         :param product: The product to make the blueprint on.  If one is
@@ -1415,15 +1507,21 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         """
         if distribution is None and product is None:
             product = self.makeProduct()
+        if name is None:
+            name = self.getUniqueString('name')
+        if summary is None:
+            summary = self.getUniqueString('summary')
         if title is None:
             title = self.getUniqueString('title')
+        if owner is None:
+            owner = self.makePerson()
         return getUtility(ISpecificationSet).new(
-            name=self.getUniqueString('name'),
+            name=name,
             title=title,
             specurl=None,
-            summary=self.getUniqueString('summary'),
-            definition_status=SpecificationDefinitionStatus.NEW,
-            owner=self.makePerson(),
+            summary=summary,
+            definition_status=status,
+            owner=owner,
             product=product,
             distribution=distribution)
 

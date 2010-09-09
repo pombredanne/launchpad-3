@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 # pylint: disable-msg=E0611,W0212
 
@@ -12,103 +12,163 @@ __all__ = [
     ]
 
 
-import operator
-import datetime
 import calendar
+import datetime
+import operator
+
+from lazr.delegates import delegates
 import pytz
 from sqlobject import (
-    BoolCol, ForeignKey, SQLMultipleJoin, SQLObjectNotFound, StringCol)
-from storm.locals import And, Desc, Int, Join, SQL, Store, Unicode
-from zope.interface import implements
+    BoolCol,
+    ForeignKey,
+    SQLMultipleJoin,
+    SQLObjectNotFound,
+    StringCol,
+    )
+from storm.expr import NamedFunc
+from storm.locals import (
+    And,
+    Desc,
+    Int,
+    Join,
+    Select,
+    SQL,
+    Store,
+    Unicode,
+    )
 from zope.component import getUtility
+from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.cachedproperty import cachedproperty
-from lazr.delegates import delegates
-from canonical.lazr.utils import safe_hasattr
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import quote, SQLBase, sqlvalues
+from canonical.database.sqlbase import (
+    quote,
+    SQLBase,
+    sqlvalues,
+    )
+from canonical.launchpad.interfaces.launchpad import (
+    IHasIcon,
+    IHasLogo,
+    IHasMugshot,
+    ILaunchpadCelebrities,
+    )
+from canonical.launchpad.interfaces.launchpadstatistic import (
+    ILaunchpadStatisticSet,
+    )
 from canonical.launchpad.interfaces.lpstorm import IStore
-from lp.app.errors import NotFoundError
-from lp.app.interfaces.launchpad import ILaunchpadUsage, IServiceUsage
+from canonical.launchpad.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
+from canonical.launchpad.webapp.sorting import sorted_version_numbers
+from lp.answers.interfaces.faqtarget import IFAQTarget
+from lp.answers.interfaces.questioncollection import (
+    QUESTION_STATUS_DEFAULT_SEARCH,
+    )
+from lp.answers.interfaces.questiontarget import IQuestionTarget
+from lp.answers.model.faq import (
+    FAQ,
+    FAQSearch,
+    )
+from lp.answers.model.question import (
+    QuestionTargetMixin,
+    QuestionTargetSearch,
+    )
 from lp.app.enums import ServiceUsage
-from lp.code.enums import BranchType
-from lp.code.model.branchvisibilitypolicy import (
-    BranchVisibilityPolicyMixin)
-from lp.code.model.hasbranches import (
-    HasBranchesMixin, HasCodeImportsMixin, HasMergeProposalsMixin)
-from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
-from lp.code.model.sourcepackagerecipedata import SourcePackageRecipeData
+from lp.app.errors import NotFoundError
+from lp.app.interfaces.launchpad import (
+    ILaunchpadUsage,
+    IServiceUsage,
+    )
+from lp.blueprints.interfaces.specification import (
+    SpecificationDefinitionStatus,
+    SpecificationFilter,
+    SpecificationImplementationStatus,
+    )
+from lp.blueprints.model.specification import (
+    HasSpecificationsMixin,
+    Specification,
+    )
+from lp.blueprints.model.sprint import HasSprintsMixin
+from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
 from lp.bugs.interfaces.bugtarget import IHasBugHeat
 from lp.bugs.model.bug import (
-    BugSet, get_bug_tags, get_bug_tags_open_count)
+    BugSet,
+    get_bug_tags,
+    get_bug_tags_open_count,
+    )
 from lp.bugs.model.bugtarget import (
-    BugTargetBase, HasBugHeatMixin, OfficialBugTagTargetMixin)
+    BugTargetBase,
+    HasBugHeatMixin,
+    OfficialBugTagTargetMixin,
+    )
 from lp.bugs.model.bugtask import BugTask
 from lp.bugs.model.bugtracker import BugTracker
 from lp.bugs.model.bugwatch import BugWatch
-from lp.registry.model.commercialsubscription import (
-    CommercialSubscription)
-from lp.translations.model.customlanguagecode import (
-    CustomLanguageCode, HasCustomLanguageCodesMixin)
-from lp.translations.model.potemplate import POTemplate
-from lp.registry.model.distroseries import DistroSeries
+from lp.code.enums import BranchType
+from lp.code.interfaces.branch import DEFAULT_BRANCH_STATUS_IN_LISTING
+from lp.code.model.branchvisibilitypolicy import BranchVisibilityPolicyMixin
+from lp.code.model.hasbranches import (
+    HasBranchesMixin,
+    HasCodeImportsMixin,
+    HasMergeProposalsMixin,
+    )
+from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
+from lp.code.model.sourcepackagerecipedata import SourcePackageRecipeData
+from lp.registry.interfaces.person import (
+    IPersonSet,
+    validate_person,
+    validate_public_person,
+    )
+from lp.registry.interfaces.pillar import IPillarNameSet
+from lp.registry.interfaces.product import (
+    IProduct,
+    IProductSet,
+    License,
+    LicenseStatus,
+    )
+from lp.registry.model.announcement import MakesAnnouncements
+from lp.registry.model.commercialsubscription import CommercialSubscription
 from lp.registry.model.distribution import Distribution
+from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.karma import KarmaContextMixin
-from lp.answers.model.faq import FAQ, FAQSearch
 from lp.registry.model.mentoringoffer import MentoringOffer
 from lp.registry.model.milestone import (
-    HasMilestonesMixin, Milestone)
-from lp.registry.interfaces.person import (
-    validate_person, validate_public_person)
-from lp.registry.model.announcement import MakesAnnouncements
+    HasMilestonesMixin,
+    Milestone,
+    )
 from lp.registry.model.packaging import Packaging
-from lp.registry.model.pillar import HasAliasMixin
 from lp.registry.model.person import Person
+from lp.registry.model.pillar import HasAliasMixin
 from lp.registry.model.productlicense import ProductLicense
 from lp.registry.model.productrelease import ProductRelease
 from lp.registry.model.productseries import ProductSeries
-from lp.services.database.prejoin import prejoin
-from lp.answers.model.question import (
-    QuestionTargetSearch, QuestionTargetMixin)
-from lp.blueprints.model.specification import (
-    HasSpecificationsMixin, Specification)
-from lp.blueprints.model.sprint import HasSprintsMixin
-from lp.translations.interfaces.translationimportqueue import (
-    ITranslationImportQueue)
-from lp.translations.model.translationimportqueue import (
-    HasTranslationImportsMixin)
 from lp.registry.model.structuralsubscription import (
-    StructuralSubscriptionTargetMixin)
-
-from lp.code.interfaces.branch import DEFAULT_BRANCH_STATUS_IN_LISTING
-from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
-from canonical.launchpad.interfaces.launchpad import (
-    IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities)
+    StructuralSubscriptionTargetMixin,
+    )
+from lp.services.database.prejoin import prejoin
+from lp.services.propertycache import (
+    cachedproperty,
+    IPropertyCache,
+    )
 from lp.translations.interfaces.customlanguagecode import (
-    IHasCustomLanguageCodes)
-from canonical.launchpad.interfaces.launchpadstatistic import (
-    ILaunchpadStatisticSet)
-from lp.registry.interfaces.person import IPersonSet
-from lp.registry.interfaces.pillar import IPillarNameSet
-from lp.registry.interfaces.product import (
-    IProduct, IProductSet, License, LicenseStatus)
-from lp.blueprints.interfaces.specification import (
-    SpecificationDefinitionStatus, SpecificationFilter,
-    SpecificationImplementationStatus, SpecificationSort)
-from lp.translations.interfaces.translationgroup import (
-    TranslationPermission)
-from canonical.launchpad.webapp.sorting import sorted_version_numbers
-from canonical.launchpad.webapp.interfaces import (
-        IStoreSelector, DEFAULT_FLAVOR, MAIN_STORE)
-
-
-from lp.answers.interfaces.faqtarget import IFAQTarget
-from lp.answers.interfaces.questioncollection import (
-    QUESTION_STATUS_DEFAULT_SEARCH)
-from lp.answers.interfaces.questiontarget import IQuestionTarget
+    IHasCustomLanguageCodes,
+    )
+from lp.translations.interfaces.translationgroup import TranslationPermission
+from lp.translations.interfaces.translationimportqueue import (
+    ITranslationImportQueue,
+    )
+from lp.translations.model.customlanguagecode import (
+    CustomLanguageCode,
+    HasCustomLanguageCodesMixin,
+    )
+from lp.translations.model.potemplate import POTemplate
+from lp.translations.model.translationimportqueue import (
+    HasTranslationImportsMixin,
+    )
 
 
 def get_license_status(license_approved, license_reviewed, licenses):
@@ -142,14 +202,25 @@ def get_license_status(license_approved, license_reviewed, licenses):
         return LicenseStatus.OPEN_SOURCE
 
 
+class Array(NamedFunc):
+    """Implements the postgres "array" function in Storm."""
+    name = 'array'
+
+
 class ProductWithLicenses:
     """Caches `Product.licenses`."""
 
     delegates(IProduct, 'product')
 
-    def __init__(self, product, licenses):
+    def __init__(self, product, license_ids):
+        """Initialize a `ProductWithLicenses`.
+
+        :param product: the `Product` to wrap.
+        :param license_ids: a sequence of numeric `License` ids.
+        """
         self.product = product
-        self._licenses = licenses
+        self._licenses = tuple([
+            License.items[id] for id in sorted(license_ids)])
 
     @property
     def licenses(self):
@@ -164,8 +235,40 @@ class ProductWithLicenses:
         `Product.licenses`, which is not cached, instead of
         `ProductWithLicenses.licenses`, which is cached.
         """
+        naked_product = removeSecurityProxy(self.product)
         return get_license_status(
-            self.license_approved, self.license_reviewed, self.licenses)
+            naked_product.license_approved, naked_product.license_reviewed,
+            self.licenses)
+
+    @classmethod
+    def composeLicensesColumn(cls, for_class=None):
+        """Compose a Storm column specification for licenses.
+
+        Use this to render a list of `Product` linkes without querying
+        licenses for each one individually.
+
+        It lets you prefetch the licensing information in the same
+        query that fetches a `Product`.  Just add the column spec
+        returned by this function to the query, and pass it to the
+        `ProductWithLicenses` constructor:
+
+        license_column = ProductWithLicenses.composeLicensesColumn()
+        products_with_licenses = [
+            ProductWithLicenses(product, licenses)
+            for product, licenses in store.find(Product, license_column)
+            ]
+
+        :param for_class: Class to find licenses for.  Defaults to
+            `Product`, but could also be a Storm `ClassAlias`.
+        """
+        if for_class is None:
+            for_class = Product
+
+        return Array(
+            Select(
+                columns=[ProductLicense.license],
+                where=(ProductLicense.product == for_class.id),
+                tables=[ProductLicense]))
 
 
 class Product(SQLBase, BugTargetBase, MakesAnnouncements,
@@ -262,24 +365,26 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         # XXX Need to remove official_codehosting column from Product
         # table.
         return self.development_focus.branch is not None
+
     @property
     def official_anything(self):
         return True in (self.official_malone, self.official_rosetta,
                         self.official_blueprints, self.official_answers,
                         self.official_codehosting)
 
-    answers_usage = EnumCol(
+    _answers_usage = EnumCol(
         dbName="answers_usage", notNull=True,
         schema=ServiceUsage,
         default=ServiceUsage.UNKNOWN)
-    blueprints_usage = EnumCol(
+    _blueprints_usage = EnumCol(
         dbName="blueprints_usage", notNull=True,
         schema=ServiceUsage,
         default=ServiceUsage.UNKNOWN)
-    translations_usage = EnumCol(
+    _translations_usage = EnumCol(
         dbName="translations_usage", notNull=True,
         schema=ServiceUsage,
         default=ServiceUsage.UNKNOWN)
+
     @property
     def codehosting_usage(self):
         if self.development_focus.branch is None:
@@ -289,6 +394,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         elif self.development_focus.branch.branch_type == BranchType.MIRRORED:
             return ServiceUsage.EXTERNAL
         return ServiceUsage.NOT_APPLICABLE
+
     @property
     def bug_tracking_usage(self):
         if self.official_malone:
@@ -297,6 +403,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             return ServiceUsage.UNKNOWN
         else:
             return ServiceUsage.EXTERNAL
+
     @property
     def uses_launchpad(self):
         """Does this distribution actually use Launchpad?"""
@@ -368,7 +475,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
                                notNull=True, default=False,
                                storm_validator=_validate_license_approved)
 
-    @cachedproperty('_commercial_subscription_cached')
+    @cachedproperty
     def commercial_subscription(self):
         return CommercialSubscription.selectOneBy(product=self)
 
@@ -415,7 +522,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
                 purchaser=purchaser,
                 sales_system_id=voucher,
                 whiteboard=whiteboard)
-            self._commercial_subscription_cached = subscription
+            IPropertyCache(self).commercial_subscription = subscription
         else:
             if current_datetime <= self.commercial_subscription.date_expires:
                 # Extend current subscription.
@@ -511,6 +618,66 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         """Clear cached non-storm attributes when the transaction ends."""
         super(Product, self).__storm_invalidated__()
         self._cached_licenses = None
+
+    def _get_answers_usage(self):
+        if self._answers_usage != ServiceUsage.UNKNOWN:
+            # If someone has set something with the enum, use it.
+            return self._answers_usage
+        elif self.official_answers:
+            return ServiceUsage.LAUNCHPAD
+        return self._answers_usage
+
+    def _set_answers_usage(self, val):
+        self._answers_usage = val
+        if val == ServiceUsage.LAUNCHPAD:
+            self.official_answers = True
+        else:
+            self.official_answers = False
+
+    answers_usage = property(
+        _get_answers_usage,
+        _set_answers_usage,
+        doc="Indicates if the product uses the answers service.")
+
+    def _get_blueprints_usage(self):
+        if self._blueprints_usage != ServiceUsage.UNKNOWN:
+            # If someone has set something with the enum, use it.
+            return self._blueprints_usage
+        elif self.official_blueprints:
+            return ServiceUsage.LAUNCHPAD
+        return self._blueprints_usage
+
+    def _set_blueprints_usage(self, val):
+        self._blueprints_usage = val
+        if val == ServiceUsage.LAUNCHPAD:
+            self.official_blueprints = True
+        else:
+            self.official_blueprints = False
+
+    blueprints_usage = property(
+        _get_blueprints_usage,
+        _set_blueprints_usage,
+        doc="Indicates if the product uses the blueprints service.")
+
+    def _get_translations_usage(self):
+        if self._translations_usage != ServiceUsage.UNKNOWN:
+            # If someone has set something with the enum, use it.
+            return self._translations_usage
+        elif self.official_rosetta:
+            return ServiceUsage.LAUNCHPAD
+        return self._translations_usage
+
+    def _set_translations_usage(self, val):
+        self._translations_usage = val
+        if val == ServiceUsage.LAUNCHPAD:
+            self.official_rosetta = True
+        else:
+            self.official_rosetta = False
+
+    translations_usage = property(
+        _get_translations_usage,
+        _set_translations_usage,
+        doc="Indicates if the product uses the translations service.")
 
     def _getLicenses(self):
         """Get the licenses as a tuple."""
@@ -913,13 +1080,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         # defaults for informationalness: we don't have to do anything
         # because the default if nothing is said is ANY
 
-        # sort by priority descending, by default
-        if sort is None or sort == SpecificationSort.PRIORITY:
-            order = (
-                ['-priority', 'Specification.definition_status',
-                 'Specification.name'])
-        elif sort == SpecificationSort.DATE:
-            order = ['-Specification.datecreated', 'Specification.id']
+        order = self._specification_sort(sort)
 
         # figure out what set of specifications we are interested in. for
         # products, we need to be able to filter on the basis of:
@@ -962,9 +1123,15 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
                 query += ' AND Specification.fti @@ ftq(%s) ' % quote(
                     constraint)
 
-        results = Specification.select(query, orderBy=order, limit=quantity)
         if prejoin_people:
-            results = results.prejoin(['assignee', 'approver', 'drafter'])
+            results = self._preload_specifications_people(query)
+        else:
+            results = Store.of(self).find(
+                Specification,
+                SQL(query))
+        results.order_by(order)
+        if quantity is not None:
+            results = results[:quantity]
         return results
 
     def getSpecification(self, name):
@@ -1002,6 +1169,11 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             And(Milestone.product == self,
                 Milestone.name == version)).one()
 
+    # XXX: jcsackett 2010-08-23 bug=620494
+    # The second clause in the order_by in this method is a bandaid
+    # on a sorting issue caused by date vs datetime conflicts in the
+    # database. A fix is coming out, but this deals with the edge
+    # case responsible for the referenced bug.
     def getMilestonesAndReleases(self):
         """See `IProduct`."""
         store = Store.of(self)
@@ -1010,7 +1182,9 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             And(ProductRelease.milestone == Milestone.id,
                 Milestone.productseries == ProductSeries.id,
                 ProductSeries.product == self))
-        return result.order_by(Desc(ProductRelease.datereleased))
+        return result.order_by(
+            Desc(ProductRelease.datereleased),
+            Desc(Milestone.name))
 
     def packagedInDistros(self):
         return IStore(Distribution).find(

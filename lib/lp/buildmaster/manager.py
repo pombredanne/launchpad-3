@@ -8,6 +8,7 @@ __metaclass__ = type
 __all__ = [
     'BaseDispatchResult',
     'BuilddManager',
+    'BUILDD_MANAGER_LOG_NAME',
     'FailDispatchResult',
     'RecordingSlave',
     'ResetDispatchResult',
@@ -16,22 +17,26 @@ __all__ = [
 
 import logging
 import os
-import transaction
 
+import transaction
 from twisted.application import service
-from twisted.internet import defer, reactor
+from twisted.internet import (
+    defer,
+    reactor,
+    )
 from twisted.protocols.policies import TimeoutMixin
 from twisted.python import log
 from twisted.python.failure import Failure
 from twisted.web import xmlrpc
-
 from zope.component import getUtility
 
 from canonical.config import config
 from canonical.launchpad.webapp import urlappend
 from canonical.librarian.db import write_transaction
-from lp.buildmaster.interfaces.buildbase import BUILDD_MANAGER_LOG_NAME
 from lp.services.twistedsupport.processmonitor import ProcessWithTimeout
+
+
+BUILDD_MANAGER_LOG_NAME = "slave-scanner"
 
 
 buildd_success_result_map = {

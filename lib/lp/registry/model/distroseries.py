@@ -12,112 +12,171 @@ __all__ = [
     'DistroSeriesSet',
     ]
 
-import logging
 from cStringIO import StringIO
+import logging
 
 from sqlobject import (
-    BoolCol, StringCol, ForeignKey, SQLMultipleJoin, IntCol,
-    SQLObjectNotFound, SQLRelatedJoin)
-
-from storm.locals import Desc, Join, SQL
-from storm.store import Store
-
+    BoolCol,
+    ForeignKey,
+    IntCol,
+    SQLMultipleJoin,
+    SQLObjectNotFound,
+    SQLRelatedJoin,
+    StringCol,
+    )
+from storm.locals import (
+    Desc,
+    Join,
+    SQL,
+    )
+from storm.store import (
+    EmptyResultSet,
+    Store,
+    )
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.cachedproperty import cachedproperty
-
-from canonical.database.constants import DEFAULT, UTC_NOW
+from canonical.database.constants import (
+    DEFAULT,
+    UTC_NOW,
+    )
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
-    flush_database_caches, flush_database_updates, quote_like,
-    quote, SQLBase, sqlvalues)
+    flush_database_caches,
+    flush_database_updates,
+    quote,
+    quote_like,
+    SQLBase,
+    sqlvalues,
+    )
 from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet)
-from lp.app.errors import NotFoundError
-from lp.translations.model.pofiletranslator import (
-    POFileTranslator)
-from lp.translations.model.pofile import POFile
+    DecoratedResultSet,
+    )
+from canonical.launchpad.database.librarian import LibraryFileAlias
+from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.lpstorm import IStore
-from lp.soyuz.model.binarypackagename import BinaryPackageName
-from lp.soyuz.model.binarypackagerelease import (
-        BinaryPackageRelease)
-from lp.bugs.model.bug import (
-    get_bug_tags, get_bug_tags_open_count)
-from lp.bugs.model.bugtarget import BugTargetBase, HasBugHeatMixin
-from lp.bugs.model.bugtask import BugTask
+from canonical.launchpad.mail import signed_message_from_string
+from canonical.launchpad.webapp.interfaces import (
+    IStoreSelector,
+    MAIN_STORE,
+    SLAVE_FLAVOR,
+    )
+from lp.app.errors import NotFoundError
+from lp.blueprints.interfaces.specification import (
+    SpecificationFilter,
+    SpecificationGoalStatus,
+    SpecificationImplementationStatus,
+    SpecificationSort,
+    )
+from lp.blueprints.model.specification import (
+    HasSpecificationsMixin,
+    Specification,
+    )
 from lp.bugs.interfaces.bugtarget import IHasBugHeat
-from lp.soyuz.model.component import Component
-from lp.soyuz.model.distroarchseries import (
-    DistroArchSeries, DistroArchSeriesSet, PocketChroot)
-from lp.soyuz.model.distroseriesbinarypackage import (
-    DistroSeriesBinaryPackage)
-from lp.translations.model.distroserieslanguage import (
-    DistroSeriesLanguage, DummyDistroSeriesLanguage)
-from lp.soyuz.model.distroseriespackagecache import (
-    DistroSeriesPackageCache)
-from lp.soyuz.model.distroseriessourcepackagerelease import (
-    DistroSeriesSourcePackageRelease)
-from lp.translations.model.distroseries_translations_copy import (
-    copy_active_translations)
-from lp.services.worlddata.model.language import Language
-from lp.translations.model.languagepack import LanguagePack
+from lp.bugs.model.bug import (
+    get_bug_tags,
+    get_bug_tags_open_count,
+    )
+from lp.bugs.model.bugtarget import (
+    BugTargetBase,
+    HasBugHeatMixin,
+    )
+from lp.bugs.model.bugtask import BugTask
+from lp.registry.interfaces.distroseries import (
+    IDistroSeries,
+    IDistroSeriesSet,
+    )
+from lp.registry.interfaces.person import validate_public_person
+from lp.registry.interfaces.pocket import (
+    PackagePublishingPocket,
+    pocketsuffix,
+    )
+from lp.registry.interfaces.series import SeriesStatus
+from lp.registry.interfaces.sourcepackage import (
+    ISourcePackage,
+    ISourcePackageFactory,
+    )
+from lp.registry.interfaces.sourcepackagename import (
+    ISourcePackageName,
+    ISourcePackageNameSet,
+    )
 from lp.registry.model.milestone import (
-    HasMilestonesMixin, Milestone)
+    HasMilestonesMixin,
+    Milestone,
+    )
 from lp.registry.model.packaging import Packaging
 from lp.registry.model.person import Person
-from canonical.launchpad.database.librarian import LibraryFileAlias
+from lp.registry.model.series import SeriesMixin
+from lp.registry.model.sourcepackage import SourcePackage
+from lp.registry.model.sourcepackagename import SourcePackageName
+from lp.registry.model.structuralsubscription import (
+    StructuralSubscriptionTargetMixin,
+    )
+from lp.services.propertycache import cachedproperty
+from lp.services.worlddata.model.language import Language
+from lp.soyuz.enums import (
+    ArchivePurpose,
+    PackagePublishingStatus,
+    PackageUploadStatus,
+    )
+from lp.soyuz.interfaces.archive import ALLOW_RELEASE_BUILDS
+from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
+from lp.soyuz.interfaces.binarypackagename import IBinaryPackageName
+from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
+from lp.soyuz.interfaces.publishing import (
+    active_publishing_status,
+    ICanPublishPackages,
+    )
+from lp.soyuz.interfaces.queue import (
+    IHasQueueItems,
+    IPackageUploadSet,
+    )
+from lp.soyuz.interfaces.sourcepackageformat import (
+    ISourcePackageFormatSelectionSet,
+    )
+from lp.soyuz.model.binarypackagename import BinaryPackageName
+from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
+from lp.soyuz.model.component import Component
+from lp.soyuz.model.distroarchseries import (
+    DistroArchSeries,
+    DistroArchSeriesSet,
+    PocketChroot,
+    )
+from lp.soyuz.model.distroseriesbinarypackage import DistroSeriesBinaryPackage
+from lp.soyuz.model.distroseriespackagecache import DistroSeriesPackageCache
+from lp.soyuz.model.distroseriessourcepackagerelease import (
+    DistroSeriesSourcePackageRelease,
+    )
+from lp.soyuz.model.publishing import (
+    BinaryPackagePublishingHistory,
+    SourcePackagePublishingHistory,
+    )
+from lp.soyuz.model.queue import (
+    PackageUpload,
+    PackageUploadQueue,
+    )
+from lp.soyuz.model.section import Section
+from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
+from lp.translations.interfaces.languagepack import LanguagePackType
+from lp.translations.model.distroseries_translations_copy import (
+    copy_active_translations,
+    )
+from lp.translations.model.distroserieslanguage import (
+    DistroSeriesLanguage,
+    DummyDistroSeriesLanguage,
+    )
+from lp.translations.model.languagepack import LanguagePack
+from lp.translations.model.pofile import POFile
+from lp.translations.model.pofiletranslator import POFileTranslator
 from lp.translations.model.potemplate import (
     HasTranslationTemplatesMixin,
     POTemplate,
-    TranslationTemplatesCollection)
-from lp.soyuz.model.publishing import (
-    BinaryPackagePublishingHistory, SourcePackagePublishingHistory)
-from lp.soyuz.model.queue import PackageUpload, PackageUploadQueue
-from lp.soyuz.model.section import Section
-from lp.registry.interfaces.pocket import (
-    PackagePublishingPocket, pocketsuffix)
-from lp.registry.model.sourcepackage import SourcePackage
-from lp.registry.model.sourcepackagename import SourcePackageName
-from lp.soyuz.model.sourcepackagerelease import (
-    SourcePackageRelease)
-from lp.blueprints.model.specification import (
-    HasSpecificationsMixin, Specification)
+    TranslationTemplatesCollection,
+    )
 from lp.translations.model.translationimportqueue import (
-    HasTranslationImportsMixin)
-from canonical.launchpad.helpers import shortlist
-from lp.soyuz.interfaces.archive import (
-    ALLOW_RELEASE_BUILDS, ArchivePurpose)
-from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
-from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
-from lp.soyuz.interfaces.binarypackagename import (
-    IBinaryPackageName)
-from lp.registry.interfaces.series import SeriesStatus
-from lp.registry.interfaces.distroseries import (
-    IDistroSeries, IDistroSeriesSet)
-from lp.registry.model.series import SeriesMixin
-from lp.registry.model.structuralsubscription import (
-    StructuralSubscriptionTargetMixin)
-from lp.translations.interfaces.languagepack import LanguagePackType
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from lp.soyuz.interfaces.queue import PackageUploadStatus
-from lp.soyuz.interfaces.publishing import (
-    active_publishing_status, ICanPublishPackages, PackagePublishingStatus)
-from lp.soyuz.interfaces.queue import IHasQueueItems, IPackageUploadSet
-from lp.registry.interfaces.sourcepackage import (
-    ISourcePackage, ISourcePackageFactory)
-from lp.registry.interfaces.sourcepackagename import (
-    ISourcePackageName, ISourcePackageNameSet)
-from lp.blueprints.interfaces.specification import (
-    SpecificationFilter, SpecificationGoalStatus,
-    SpecificationImplementationStatus, SpecificationSort)
-from canonical.launchpad.mail import signed_message_from_string
-from lp.registry.interfaces.person import validate_public_person
-from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, SLAVE_FLAVOR)
-from lp.soyuz.interfaces.sourcepackageformat import (
-    ISourcePackageFormatSelectionSet)
+    HasTranslationImportsMixin,
+    )
 
 
 class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
@@ -213,6 +272,9 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See `IDistroSeries`."""
         return self.getDistroArchSeries(archtag)
 
+    def __repr__(self):
+        return '<%s %r>' % (self.__class__.__name__, self.name)
+
     def __str__(self):
         return '%s %s' % (self.distribution.name, self.name)
 
@@ -283,7 +345,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     @cachedproperty
     def _all_packagings(self):
         """Get an unordered list of all packagings.
-        
+
         :return: A ResultSet which can be decorated or tuned further. Use
             DistroSeries._packaging_row_to_packaging to extract the
             packaging objects out.
@@ -293,7 +355,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         # Packaging object.
         # NB: precaching objects like this method tries to do has a very poor
         # hit rate with storm - many queries will still be executed; consider
-        # ripping this out and instead allowing explicit inclusion of things 
+        # ripping this out and instead allowing explicit inclusion of things
         # like Person._all_members does - returning a cached object graph.
         # -- RBC 20100810
         # Avoid circular import failures.
@@ -487,7 +549,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             orderBy=["Language.englishname"])
         return result
 
-    @cachedproperty('_previous_series_cached')
+    @cachedproperty
     def previous_series(self):
         """See `IDistroSeries`."""
         # This property is cached because it is used intensely inside
@@ -903,7 +965,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return [SourcePackage(sourcepackagename=spn, distroseries=self) for
             spn in result]
 
-    def getPublishedReleases(self, sourcepackage_or_name, version=None,
+    def getPublishedSources(self, sourcepackage_or_name, version=None,
                              pocket=None, include_pending=False,
                              exclude_pocket=None, archive=None):
         """See `IDistroSeries`."""
@@ -919,7 +981,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             spns = getUtility(ISourcePackageNameSet)
             spn = spns.queryByName(sourcepackage_or_name)
             if spn is None:
-                return []
+                return EmptyResultSet()
 
         queries = ["""
         sourcepackagerelease=sourcepackagerelease.id AND
@@ -951,7 +1013,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             " AND ".join(queries), clauseTables = ['SourcePackageRelease'],
             orderBy=['-id'])
 
-        return shortlist(published)
+        return published
 
     def isUnstable(self):
         """See `IDistroSeries`."""
@@ -1749,11 +1811,7 @@ class DistroSeriesSet:
             DistroSeries.hide_all_translations == False,
             DistroSeries.id == POTemplate.distroseriesID)
         result_set = result_set.config(distinct=True)
-        # XXX: henninge 2009-02-11 bug=217644: Convert to sequence right here
-        # because ResultSet reports a wrong count() when using DISTINCT. Also
-        # ResultSet does not implement __len__(), which would make it more
-        # like a sequence.
-        return list(result_set)
+        return result_set
 
     def findByName(self, name):
         """See `IDistroSeriesSet`."""

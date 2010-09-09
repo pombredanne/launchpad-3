@@ -22,28 +22,23 @@ __all__ = [
     'urgencymap',
     ]
 
-import re
-import os
 import glob
-import tempfile
-import shutil
+import os
+import re
 import rfc822
+import shutil
+import tempfile
 
 from canonical import encoding
-
-from lp.archivepublisher.diskpool import poolify
-from lp.soyuz.scripts.gina.changelog import parse_changelog
-
 from canonical.database.constants import UTC_NOW
-
+from canonical.launchpad.scripts import log
+from canonical.launchpad.validators.version import valid_debian_version
+from lp.archivepublisher.diskpool import poolify
 from lp.registry.interfaces.gpg import GPGKeyAlgorithm
 from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
-from lp.soyuz.interfaces.publishing import PackagePublishingPriority
-from canonical.launchpad.scripts import log
+from lp.soyuz.enums import PackagePublishingPriority
 from lp.soyuz.scripts.gina import call
-
-from canonical.launchpad.validators.version import valid_debian_version
-
+from lp.soyuz.scripts.gina.changelog import parse_changelog
 
 #
 # Data setup

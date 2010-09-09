@@ -7,12 +7,13 @@ from __future__ import with_statement
 
 from unittest import TestLoader
 
-from canonical.testing import LaunchpadZopelessLayer
-
 from canonical.config import config
+from canonical.testing import LaunchpadZopelessLayer
 from lp.code.enums import (
-    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
-    CodeReviewNotificationLevel)
+    BranchSubscriptionDiffSize,
+    BranchSubscriptionNotificationLevel,
+    CodeReviewNotificationLevel,
+    )
 from lp.code.model.branchjob import RevisionMailJob
 from lp.code.model.diff import StaticDiff
 from lp.services.job.runner import JobRunner

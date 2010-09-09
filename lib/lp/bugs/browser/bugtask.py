@@ -43,128 +43,220 @@ __all__ = [
     'get_visible_comments',
     ]
 
-from datetime import datetime, timedelta
 import cgi
-import pytz
+from datetime import (
+    datetime,
+    timedelta,
+    )
+from math import (
+    floor,
+    log,
+    )
+from operator import (
+    attrgetter,
+    itemgetter,
+    )
 import re
-from simplejson import dumps
 import urllib
-from operator import attrgetter, itemgetter
-from math import floor, log
 
-from zope import component
-from zope.app.form import CustomWidgetFactory
-from zope.app.form.browser.itemswidgets import RadioWidget
-from zope.app.form.interfaces import (
-    IInputWidget, IDisplayWidget, InputErrors, WidgetsError)
-from zope.app.form.utility import setUpWidget, setUpWidgets
-from zope.component import (
-    ComponentLookupError, getAdapter, getMultiAdapter, getUtility,
-    queryMultiAdapter)
-from zope.event import notify
-from zope import formlib
-from zope.interface import implementer, implements, Interface, providedBy
-from zope.schema import Choice
-from zope.schema.interfaces import IContextSourceBinder, IList
-from zope.schema.vocabulary import (
-    getVocabularyRegistry, SimpleVocabulary, SimpleTerm)
-from zope.security.interfaces import Unauthorized
-from zope.security.proxy import (
-    isinstance as zope_isinstance, removeSecurityProxy)
-from zope.traversing.interfaces import IPathAdapter
-
-from z3c.ptcompat import ViewPageTemplateFile
 from lazr.delegates import delegates
-from lazr.enum import EnumeratedType, Item
-
+from lazr.enum import (
+    EnumeratedType,
+    Item,
+    )
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
 from lazr.restful.interface import copy_field
 from lazr.restful.interfaces import (
-    IFieldHTMLRenderer, IReference, IReferenceChoice,
-    IWebServiceClientRequest)
+    IFieldHTMLRenderer,
+    IJSONRequestCache,
+    IReference,
+    IReferenceChoice,
+    IWebServiceClientRequest,
+    )
+from lazr.uri import URI
+import pytz
+from simplejson import dumps
+from z3c.ptcompat import ViewPageTemplateFile
+from zope import (
+    component,
+    formlib,
+    )
+from zope.app.form import CustomWidgetFactory
+from zope.app.form.browser.itemswidgets import RadioWidget
+from zope.app.form.interfaces import (
+    IDisplayWidget,
+    IInputWidget,
+    InputErrors,
+    WidgetsError,
+    )
+from zope.app.form.utility import (
+    setUpWidget,
+    setUpWidgets,
+    )
+from zope.component import (
+    ComponentLookupError,
+    getAdapter,
+    getMultiAdapter,
+    getUtility,
+    queryMultiAdapter,
+    )
+from zope.event import notify
+from zope.interface import (
+    implementer,
+    implements,
+    Interface,
+    providedBy,
+    )
+from zope.schema import Choice
+from zope.schema.interfaces import (
+    IContextSourceBinder,
+    IList,
+    )
+from zope.schema.vocabulary import (
+    getVocabularyRegistry,
+    SimpleTerm,
+    SimpleVocabulary,
+    )
+from zope.security.interfaces import Unauthorized
+from zope.security.proxy import isinstance as zope_isinstance
+from zope.traversing.interfaces import IPathAdapter
 
 from canonical.config import config
-from canonical.database.sqlbase import cursor
-from canonical.launchpad import _
-from canonical.cachedproperty import cachedproperty
-from lp.services.fields import PersonChoice 
+from canonical.launchpad import (
+    _,
+    helpers,
+    )
+from canonical.launchpad.browser.feeds import (
+    BugTargetLatestBugsFeedLink,
+    FeedsMixin,
+    )
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.validation import (
+    valid_upstreamtask,
+    validate_distrotask,
+    )
 from canonical.launchpad.mailnotification import get_unified_diff
+from canonical.launchpad.searchbuilder import (
+    all,
+    any,
+    NULL,
+    )
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp import (
-    action, custom_widget, canonical_url, enabled_with_permission,
-    GetitemNavigation, LaunchpadEditFormView, LaunchpadFormView,
-    LaunchpadView, Link, Navigation, NavigationMenu, redirection, stepthrough)
+    action,
+    canonical_url,
+    custom_widget,
+    enabled_with_permission,
+    GetitemNavigation,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    LaunchpadView,
+    Link,
+    Navigation,
+    NavigationMenu,
+    redirection,
+    stepthrough,
+    )
+from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.batching import TableBatchNavigator
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
+from canonical.launchpad.webapp.interfaces import ILaunchBag
+from canonical.launchpad.webapp.menu import structured
+from canonical.launchpad.webapp.tales import (
+    FormattersAPI,
+    ObjectImageDisplayAPI,
+    PersonFormatterAPI,
+    )
+from canonical.lazr.interfaces import IObjectPrivacy
 from canonical.lazr.utils import smartquote
-from lazr.uri import URI
+from canonical.widgets.bug import BugTagsWidget
+from canonical.widgets.bugtask import (
+    AssigneeDisplayWidget,
+    BugTaskAssigneeWidget,
+    BugTaskBugWatchWidget,
+    BugTaskSourcePackageNameWidget,
+    DBItemDisplayWidget,
+    NewLineToSpacesWidget,
+    NominationReviewActionWidget,
+    )
+from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
+from canonical.widgets.lazrjs import (
+    TextAreaEditorWidget,
+    TextLineEditorWidget,
+    vocabulary_to_choice_edit_items,
+    )
+from canonical.widgets.project import ProjectScopeWidget
 from lp.answers.interfaces.questiontarget import IQuestionTarget
-from lp.bugs.interfaces.bugattachment import (
-    BugAttachmentType, IBugAttachmentSet)
+from lp.app.enums import ServiceUsage
+from lp.app.errors import (
+    NotFoundError,
+    UnexpectedFormData,
+    )
+from lp.bugs.browser.bug import (
+    BugContextMenu,
+    BugTextView,
+    BugViewMixin,
+    )
+from lp.bugs.browser.bugcomment import build_comments_from_chunks
+from lp.bugs.interfaces.bug import (
+    IBug,
+    IBugSet,
+    )
 from lp.bugs.interfaces.bugactivity import IBugActivity
+from lp.bugs.interfaces.bugattachment import (
+    BugAttachmentType,
+    IBugAttachmentSet,
+    )
 from lp.bugs.interfaces.bugnomination import (
-    BugNominationStatus, IBugNominationSet)
-from lp.bugs.interfaces.bug import IBug, IBugSet
+    BugNominationStatus,
+    IBugNominationSet,
+    )
 from lp.bugs.interfaces.bugtask import (
-    BugBranchSearch, BugTagsSearchCombinator, BugTaskImportance,
-    BugTaskSearchParams, BugTaskStatus, BugTaskStatusSearchDisplay,
-    DEFAULT_SEARCH_BUGTASK_STATUSES_FOR_DISPLAY, IBugTask, IBugTaskSearch,
-    IBugTaskSet, ICreateQuestionFromBugTaskForm, IDistroBugTask,
-    IDistroSeriesBugTask, IFrontPageBugTaskSearch,
-    INominationsReviewTableBatchNavigator, INullBugTask, IPersonBugTaskSearch,
-    IProductSeriesBugTask, IRemoveQuestionFromBugTaskForm, IUpstreamBugTask,
-    IUpstreamProductBugTaskSearch, UNRESOLVED_BUGTASK_STATUSES)
+    BugBranchSearch,
+    BugTagsSearchCombinator,
+    BugTaskImportance,
+    BugTaskSearchParams,
+    BugTaskStatus,
+    BugTaskStatusSearchDisplay,
+    DEFAULT_SEARCH_BUGTASK_STATUSES_FOR_DISPLAY,
+    IBugTask,
+    IBugTaskSearch,
+    IBugTaskSet,
+    ICreateQuestionFromBugTaskForm,
+    IDistroBugTask,
+    IDistroSeriesBugTask,
+    IFrontPageBugTaskSearch,
+    INominationsReviewTableBatchNavigator,
+    INullBugTask,
+    IPersonBugTaskSearch,
+    IProductSeriesBugTask,
+    IRemoveQuestionFromBugTaskForm,
+    IUpstreamBugTask,
+    IUpstreamProductBugTaskSearch,
+    UNRESOLVED_BUGTASK_STATUSES,
+    )
 from lp.bugs.interfaces.bugtracker import BugTrackerType
 from lp.bugs.interfaces.bugwatch import BugWatchActivityStatus
 from lp.bugs.interfaces.cve import ICveSet
 from lp.bugs.interfaces.malone import IMaloneApplication
+from lp.registry.browser.mentoringoffer import CanBeMentoredView
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
-    IDistributionSourcePackage)
+    IDistributionSourcePackage,
+    )
 from lp.registry.interfaces.distroseries import IDistroSeries
-from canonical.launchpad.interfaces.launchpad import (
-    ILaunchpadCelebrities)
-from lp.registry.interfaces.person import IPerson, IPersonSet
+from lp.registry.interfaces.person import (
+    IPerson,
+    IPersonSet,
+    )
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
-from canonical.launchpad.interfaces.validation import (
-    valid_upstreamtask, validate_distrotask)
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from lp.app.errors import NotFoundError, UnexpectedFormData
-
-from canonical.launchpad.searchbuilder import all, any, NULL
-
-from canonical.launchpad import helpers
-
-from lp.bugs.browser.bug import BugContextMenu, BugViewMixin, BugTextView
-from lp.bugs.browser.bugcomment import build_comments_from_chunks
-from canonical.launchpad.browser.feeds import (
-    BugTargetLatestBugsFeedLink, FeedsMixin)
-from lp.registry.browser.mentoringoffer import CanBeMentoredView
-
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.batching import TableBatchNavigator
-from canonical.launchpad.webapp.menu import structured
-from canonical.launchpad.webapp.tales import (
-    FormattersAPI, ObjectImageDisplayAPI, PersonFormatterAPI)
-
-from canonical.lazr.interfaces import IObjectPrivacy
-from lazr.restful.interfaces import IJSONRequestCache
-
-from canonical.widgets.bug import BugTagsWidget
-from canonical.widgets.bugtask import (
-    AssigneeDisplayWidget, BugTaskAssigneeWidget, BugTaskBugWatchWidget,
-    BugTaskSourcePackageNameWidget, DBItemDisplayWidget,
-    NewLineToSpacesWidget, NominationReviewActionWidget)
-from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
-from canonical.widgets.lazrjs import (
-    TextAreaEditorWidget, TextLineEditorWidget,
-    vocabulary_to_choice_edit_items)
-from canonical.widgets.project import ProjectScopeWidget
-
 from lp.registry.vocabularies import MilestoneVocabulary
+from lp.services.fields import PersonChoice
+from lp.services.propertycache import cachedproperty
 
 
 @component.adapter(IBugTask, IReferenceChoice, IWebServiceClientRequest)
@@ -180,6 +272,7 @@ def assignee_renderer(context, field, request):
                 PersonFormatterAPI(context.assignee).link(None))
     return render
 
+
 @component.adapter(IBugTask, IReference, IWebServiceClientRequest)
 @implementer(IFieldHTMLRenderer)
 def bugtarget_renderer(context, field, request):
@@ -193,6 +286,7 @@ def bugtarget_renderer(context, field, request):
             'displayname': cgi.escape(context.bugtargetdisplayname)}
         return html
     return render
+
 
 def unique_title(title):
     """Canonicalise a message title to help identify messages with new
@@ -215,7 +309,7 @@ def get_comments_for_bugtask(bugtask, truncate=False):
     """
     chunks = bugtask.bug.getMessageChunks()
     comments = build_comments_from_chunks(chunks, bugtask, truncate=truncate)
-    for attachment in bugtask.bug.attachments:
+    for attachment in bugtask.bug.attachments_unpopulated:
         message_id = attachment.message.id
         # All attachments are related to a message, so we can be
         # sure that the BugComment is already created.
@@ -573,23 +667,26 @@ class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView, FeedsMixin):
             return
 
         # Set up widgets in order to handle subscription requests.
-        if bug.isSubscribed(self.user) or bug.isSubscribedToDupes(self.user):
-            subscription_terms = [
-                SimpleTerm(
-                    self.user, self.user.name,
-                    'Unsubscribe me from this bug')]
-        else:
-            subscription_terms = [
-                SimpleTerm(
-                    self.user, self.user.name, 'Subscribe me to this bug')]
-        for team in self.user.teams_participated_in:
-            if (bug.isSubscribed(team) or bug.isSubscribedToDupes(team)):
+        subscription_terms = []
+        self_subscribed = False
+        for person in bug.getSubscribersForPerson(self.user):
+            if person.id == self.user.id:
                 subscription_terms.append(
                     SimpleTerm(
-                        team, team.name,
+                        person, person.name,
+                        'Unsubscribe me from this bug'))
+                self_subscribed = True
+            else:
+                subscription_terms.append(
+                    SimpleTerm(
+                        person, person.name,
                         'Unsubscribe <a href="%s">%s</a> from this bug' % (
-                            canonical_url(team),
-                            cgi.escape(team.displayname))))
+                            canonical_url(person),
+                            cgi.escape(person.displayname))))
+        if not self_subscribed:
+            subscription_terms.insert(0,
+                SimpleTerm(
+                    self.user, self.user.name, 'Subscribe me to this bug'))
         subscription_vocabulary = SimpleVocabulary(subscription_terms)
         person_field = Choice(
             __name__='subscription',
@@ -987,7 +1084,7 @@ class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView, FeedsMixin):
             activity_and_comments.append({
                 'activity': activity_dict,
                 'date': date,
-                'person': activity_dict[0]['activity'][0].person
+                'person': activity_dict[0]['activity'][0].person,
                 })
 
         activity_and_comments.sort(key=itemgetter('date'))
@@ -1573,7 +1670,7 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
 
         new_product = data.get('product')
         if (old_product is None or old_product == new_product or
-            not bugtask.pillar.official_malone):
+            bugtask.pillar.bug_tracking_usage != ServiceUsage.LAUNCHPAD):
             # Either the product wasn't changed, we're dealing with a #
             # distro task, or the bugtask's product doesn't use Launchpad,
             # which means the product can't be changed.
@@ -1728,9 +1825,11 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
                 #     Launchpad status, but it's not trivial to do at the
                 #     moment. I will fix this later.
                 bugtask.transitionToStatus(
-                    BugTaskStatus.UNKNOWN, bug_importer)
+                    BugTaskStatus.UNKNOWN,
+                    bug_importer)
                 bugtask.transitionToImportance(
-                    BugTaskImportance.UNKNOWN,  bug_importer)
+                    BugTaskImportance.UNKNOWN,
+                    bug_importer)
                 bugtask.transitionToAssignee(None)
 
         if changed:
@@ -1899,7 +1998,7 @@ class BugsInfoMixin:
         """
         if not IProduct.providedBy(self.context):
             return None
-        if self.context.official_malone:
+        if self.context.bug_tracking_usage == ServiceUsage.LAUNCHPAD:
             return None
         return "%s?field.status_upstream=pending_bugwatch" % (
             canonical_url(self.context, view_name='+bugs'))
@@ -1986,7 +2085,7 @@ class BugsStatsMixin(BugsInfoMixin):
         """
         if not IProduct.providedBy(self.context):
             return None
-        if self.context.official_malone:
+        if self.context.bug_tracking_usage == ServiceUsage.LAUNCHPAD:
             return None
         params = get_default_search_params(self.user)
         params.pending_bugwatch_elsewhere = True
@@ -2264,9 +2363,12 @@ class NominatedBugListingBatchNavigator(BugListingBatchNavigator):
         bugtask_listing_item.review_action_widget = CustomWidgetFactory(
             NominationReviewActionWidget)
         setUpWidget(
-            bugtask_listing_item, 'review_action',
-            review_action_field, IInputWidget,
-            value=NominatedBugReviewAction.NO_CHANGE, context=bug_nomination)
+            bugtask_listing_item,
+            'review_action',
+            review_action_field,
+            IInputWidget,
+            value=NominatedBugReviewAction.NO_CHANGE,
+            context=bug_nomination)
 
         return bugtask_listing_item
 
@@ -2818,7 +2920,7 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
 
             if fieldname != "orderby":
                 sortlink += "%s&" % urllib.urlencode(
-                    {fieldname : fieldvalue}, doseq=True)
+                    {fieldname: fieldvalue}, doseq=True)
 
         sorted, ascending = self._getSortStatus(colname)
         if sorted and ascending:
@@ -2902,7 +3004,7 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
         """Is the context a Product that does not use Malone?"""
         return (
             IProduct.providedBy(self.context)
-            and not self.context.official_malone)
+            and self.context.bug_tracking_usage != ServiceUsage.LAUNCHPAD)
 
     def _upstreamContext(self):
         """Is this page being viewed in an upstream context?
@@ -2970,7 +3072,6 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
             return None
 
 
-
 class BugNominationsView(BugTaskSearchListingView):
     """View for accepting/declining bug nominations."""
 
@@ -3034,8 +3135,7 @@ class NominationsReviewTableBatchNavigatorView(LaunchpadFormView):
                 declined += 1
             else:
                 raise AssertionError(
-                    'Unknown NominatedBugReviewAction: %r' % (
-                        review_action,))
+                    'Unknown NominatedBugReviewAction: %r' % review_action)
 
         if accepted > 0:
             self.request.response.addInfoNotification(
@@ -3102,25 +3202,8 @@ class TextualBugTaskSearchListingView(BugTaskSearchListingView):
         else:
             raise AssertionError('Uknown context type: %s' % self.context)
 
-        # XXX flacoste 2008/04/25 bug=221947 This should be moved to an
-        # IBugTaskSet.findBugIds(search_params) method.
-        # buildQuery() is part of the internal API.
-        taskset = removeSecurityProxy(getUtility(IBugTaskSet))
-        query, clauseTables, orderBy = taskset.buildQuery(search_params)
-
-        # Convert list of SQLObject order by spec into SQL.
-        order_by_clause = []
-        for field in orderBy:
-            if field[0] == '-':
-                field = "%s DESC" % field[1:]
-            order_by_clause.append(field)
-
-        sql = 'SELECT BugTask.bug FROM %s WHERE %s ORDER BY %s' % (
-            ', '.join(clauseTables), query, ', '.join(order_by_clause))
-
-        cur = cursor()
-        cur.execute(sql)
-        return u"".join("%d\n" % row[0] for row in cur.fetchall())
+        return u"".join("%d\n" % bug_id for bug_id in
+            getUtility(IBugTaskSet).searchBugIds(search_params))
 
 
 def _by_targetname(bugtask):
@@ -3292,8 +3375,7 @@ class BugTasksAndNominationsView(LaunchpadView):
                 self._getTableRowView(
                     nomination, is_converted_to_question, False)
                 for nomination in target_nominations
-                if nomination.status != BugNominationStatus.APPROVED
-                )
+                if nomination.status != BugNominationStatus.APPROVED)
 
         # Fill the ValidPersonOrTeamCache cache (using getValidPersons()),
         # so that checking person.is_valid_person, when rendering the
@@ -3771,6 +3853,7 @@ class BugTaskRemoveQuestionView(LaunchpadFormView):
 
 class BugTaskExpirableListingView(LaunchpadView):
     """View for listing Incomplete bugs that can expire."""
+
     @property
     def can_show_expirable_bugs(self):
         """Return True or False if expirable bug listing can be shown."""

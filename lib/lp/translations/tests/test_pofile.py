@@ -5,24 +5,36 @@
 
 __metaclass__ = type
 
-from datetime import datetime, timedelta
-import pytz
+from datetime import (
+    datetime,
+    timedelta,
+    )
 from textwrap import dedent
 
-from zope.component import getAdapter, getUtility
+import pytz
+from zope.component import (
+    getAdapter,
+    getUtility,
+    )
 from zope.interface.verify import verifyObject
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.launchpad.webapp.publisher import canonical_url
+from canonical.testing import (
+    LaunchpadZopelessLayer,
+    ZopelessDatabaseLayer,
+    )
+from lp.testing import TestCaseWithFactory
 from lp.translations.interfaces.pofile import IPOFileSet
 from lp.translations.interfaces.translatablemessage import (
-    ITranslatableMessage)
-from lp.translations.interfaces.translationmessage import (
-    TranslationValidationStatus)
+    ITranslatableMessage,
+    )
 from lp.translations.interfaces.translationcommonformat import (
-    ITranslationFileData)
-from lp.testing import TestCaseWithFactory
-from canonical.testing import LaunchpadZopelessLayer, ZopelessDatabaseLayer
-from canonical.launchpad.webapp.publisher import canonical_url
+    ITranslationFileData,
+    )
+from lp.translations.interfaces.translationmessage import (
+    TranslationValidationStatus,
+    )
 
 
 class TestTranslationSharedPOFile(TestCaseWithFactory):
@@ -34,7 +46,7 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
         # Create a product with two series and a shared POTemplate
         # in different series ('devel' and 'stable').
         super(TestTranslationSharedPOFile, self).setUp()
-        self.foo = self.factory.makeProduct()
+        self.foo = self.factory.makeProduct(name='foo')
         self.foo_devel = self.factory.makeProductSeries(
             name='devel', product=self.foo)
         self.foo_stable = self.factory.makeProductSeries(
@@ -57,6 +69,15 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
         # and add it to only one of the POTemplates.
         self.potmsgset = self.factory.makePOTMsgSet(self.devel_potemplate)
         self.potmsgset.setSequence(self.devel_potemplate, 1)
+
+    def test_POFile_canonical_url(self):
+        # Test the canonical_url of the POFile.
+        self.assertEqual(
+            'http://translations.launchpad.dev/foo/devel/+pots/messages/sr',
+            canonical_url(self.devel_sr_pofile))
+        self.assertEqual(
+            'http://translations.launchpad.dev/foo/devel/+pots/messages/sr/+details',
+            canonical_url(self.devel_sr_pofile, view_name="+details"))
 
     def test_findPOTMsgSetsContaining(self):
         # Test that search works correctly.
@@ -1708,8 +1729,7 @@ class TestPOFile(TestCaseWithFactory):
 
     def test_makeTranslatableMessage(self):
         # TranslatableMessages can be created from the PO file
-        potmsgset = self.factory.makePOTMsgSet(self.potemplate,
-                                                    sequence=1)
+        potmsgset = self.factory.makePOTMsgSet(self.potemplate, sequence=1)
         message = self.pofile.makeTranslatableMessage(potmsgset)
         verifyObject(ITranslatableMessage, message)
 
@@ -1732,6 +1752,113 @@ class TestPOFile(TestCaseWithFactory):
                 "getTranslationRows does not sort obsolete messages "
                 "(sequence=0) to the end of the file.")
 
+
+class TestPOFileTranslationMessages(TestCaseWithFactory):
+    """Test PO file getTranslationMessages method."""
+
+    layer = ZopelessDatabaseLayer
+
+    def setUp(self):
+        super(TestPOFileTranslationMessages, self).setUp()
+        self.pofile = self.factory.makePOFile('eo')
+        self.potemplate = self.pofile.potemplate
+        self.potmsgset = self.factory.makePOTMsgSet(
+            self.potemplate, sequence=1)
+
+    def test_getTranslationMessages_current_shared(self):
+        # A shared message is included in this POFile's messages.
+        message = self.factory.makeTranslationMessage(
+            potmsgset=self.potmsgset, pofile=self.pofile, force_shared=True)
+        
+        self.assertEqual(
+            [message], list(self.pofile.getTranslationMessages()))
+        
+    def test_getTranslationMessages_current_diverged(self):
+        # A diverged message is included in this POFile's messages.
+        message = self.factory.makeTranslationMessage(
+            potmsgset=self.potmsgset, pofile=self.pofile, force_diverged=True)
+        
+        self.assertEqual(
+            [message], list(self.pofile.getTranslationMessages()))
+        
+    def test_getTranslationMessages_suggestion(self):
+        # A suggestion is included in this POFile's messages.
+        message = self.factory.makeTranslationMessage(
+            potmsgset=self.potmsgset, pofile=self.pofile)
+        
+        self.assertEqual(
+            [message], list(self.pofile.getTranslationMessages()))
+        
+    def test_getTranslationMessages_obsolete(self):
+        # A message on an obsolete POTMsgSEt is included in this
+        # POFile's messages.
+        potmsgset = self.factory.makePOTMsgSet(self.potemplate, sequence=0)
+        message = self.factory.makeTranslationMessage(
+            potmsgset=potmsgset, pofile=self.pofile, force_shared=True)
+        
+        self.assertEqual(
+            [message], list(self.pofile.getTranslationMessages()))
+        
+    def test_getTranslationMessages_other_pofile(self):
+        # A message from another POFiles is not included.
+        other_pofile = self.factory.makePOFile('de')
+        self.factory.makeTranslationMessage(
+            potmsgset=self.potmsgset, pofile=other_pofile)
+        
+        self.assertEqual([], list(self.pofile.getTranslationMessages()))
+        
+    def test_getTranslationMessages_condition_matches(self):
+        # A message matching the given condition is included.
+        # Diverged messages are linked to a specific POTemplate.
+        message = self.factory.makeTranslationMessage(
+            potmsgset=self.potmsgset, pofile=self.pofile, force_diverged=True)
+        
+        self.assertContentEqual(
+            [message],
+            self.pofile.getTranslationMessages(
+                "TranslationMessage.potemplate IS NOT NULL"))
+       
+    def test_getTranslationMessages_condition_matches_not(self):
+        # A message not matching the given condition is excluded.
+        # Shared messages are not linked to a POTemplate.
+        self.factory.makeTranslationMessage(
+            potmsgset=self.potmsgset, pofile=self.pofile, force_shared=True)
+        
+        self.assertContentEqual(
+            [],
+            self.pofile.getTranslationMessages(
+                "TranslationMessage.potemplate IS NOT NULL"))
+       
+    def test_getTranslationMessages_condition_matches_in_other_pofile(self):
+        # A message matching given condition but located in another POFile
+        # is not included.
+        other_pofile = self.factory.makePOFile('de')
+        self.factory.makeTranslationMessage(
+            potmsgset=self.potmsgset, pofile=other_pofile,
+            force_diverged=True)
+        
+        self.assertContentEqual(
+            [],
+            self.pofile.getTranslationMessages(
+                "TranslationMessage.potemplate IS NOT NULL"))
+       
+    def test_getTranslationMessages_diverged_elsewhere(self):
+        # Diverged messages from sharing POTemplates are not included.
+        # Create a sharing potemplate in another product series and share
+        # potmsgset in both templates.
+        other_series = self.factory.makeProductSeries(
+            product=self.potemplate.productseries.product)
+        other_template = self.factory.makePOTemplate(
+            productseries=other_series, name=self.potemplate.name)
+        other_pofile = other_template.getPOFileByLang(
+            self.pofile.language.code)
+        self.potmsgset.setSequence(other_template, 1)
+        self.factory.makeTranslationMessage(
+            potmsgset=self.potmsgset, pofile=other_pofile,
+            force_diverged=True)
+        
+        self.assertEqual([], list(self.pofile.getTranslationMessages()))
+       
 
 class TestPOFileToTranslationFileDataAdapter(TestCaseWithFactory):
     """Test POFile being adapted to IPOFileToTranslationFileData."""

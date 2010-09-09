@@ -12,6 +12,7 @@
 
 import sys
 
+
 def can_import(mlist):
     try:
         import canonical.launchpad.mailman

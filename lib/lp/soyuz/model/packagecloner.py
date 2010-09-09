@@ -12,18 +12,23 @@ __all__ = [
 
 
 import transaction
-
 from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.constants import UTC_NOW
-from canonical.database.sqlbase import quote, sqlvalues
-from lp.soyuz.interfaces.archivearch import IArchiveArchSet
-from lp.soyuz.interfaces.publishing import PackagePublishingStatus
-from lp.soyuz.interfaces.packagecloner import IPackageCloner
+from canonical.database.sqlbase import (
+    quote,
+    sqlvalues,
+    )
 from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE)
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
+from lp.soyuz.enums import PackagePublishingStatus
+from lp.soyuz.interfaces.archivearch import IArchiveArchSet
+from lp.soyuz.interfaces.packagecloner import IPackageCloner
 
 
 def clone_packages(origin, destination, distroarchseries_list=None):

@@ -7,14 +7,13 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.testing.layers import ZopelessDatabaseLayer
-from lp.testing import TestCaseWithFactory
-from lp.testing.fakemethod import FakeMethod
-
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.builder import CorruptBuildCookie
 from lp.buildmaster.model.buildfarmjobbehavior import BuildFarmJobBehaviorBase
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
+from lp.testing import TestCaseWithFactory
+from lp.testing.fakemethod import FakeMethod
 
 
 class FakeBuildFarmJob:

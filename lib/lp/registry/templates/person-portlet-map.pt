@@ -14,8 +14,11 @@
     <div tal:condition="context/time_zone">
       <strong>Time zone:</strong>
       <span tal:replace="context/time_zone">UTC</span>
+      <a tal:replace="structure overview_menu/editlocation/fmt:icon" />
     </div>
 
+
+    <tal:gmap2 condition="view/gmap2_enabled">
     <div style="width: 400px;" tal:condition="context/latitude">
       <div id="person_map_actions"
         style="position:relative; z-index: 9999;
@@ -28,6 +31,7 @@
         <a tal:replace="structure overview_menu/editlocation/fmt:link-icon" />
       </div>
     </div>
+    </tal:gmap2>
 
     <tal:comment condition="nothing">
       Only the user can see the editlocation image and link.
