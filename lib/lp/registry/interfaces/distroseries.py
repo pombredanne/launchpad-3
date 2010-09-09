@@ -17,6 +17,7 @@ __all__ = [
 
 from lazr.enum import DBEnumeratedType
 from lazr.restful.declarations import (
+    call_with,
     export_as_webservice_entry,
     export_factory_operation,
     export_read_operation,
@@ -27,6 +28,7 @@ from lazr.restful.declarations import (
     operation_returns_collection_of,
     operation_returns_entry,
     rename_parameters_as,
+    REQUEST_USER,
     webservice_error,
     )
 from lazr.restful.fields import (
@@ -822,33 +824,38 @@ class IDistroSeriesPublic(
             title=_(""),
             required=False),
         )
+    @call_with(user=REQUEST_USER)
     @export_write_operation()
     def deriveDistroSeries(
-        name, displayname, summary, description, version, distribution,
-        state, arches, packagesets):
-        """Derive a distroseries from this one. This method creates a job
-        to populate the new distroseries.
+        user, name, displayname, summary, description, version,
+        distribution, state, arches, packagesets):
+        """Derive a distroseries from this one.
+        
+        This method performs checks, can create the new distroseries if
+        necessary, and then creates a job to populate the new
+        distroseries.
 
         :param name: The name of the new distroseries we will create if it
-        doesn't exist, or the name of the distroseries we will look up, and
-        then initialise.
-        :param displayname: The Display Name for the new distroseries. If the
-        distroseries already exists this parameter is ignored.
+            doesn't exist, or the name of the distroseries we will look
+            up, and then initialise.
+        :param displayname: The Display Name for the new distroseries.
+            If the distroseries already exists this parameter is ignored.
         :param summary: The Summary for the new distroseries. If the
-        distroseries already exists this parameter is ignored.
+            distroseries already exists this parameter is ignored.
         :param description: The Description for the new distroseries. If the
-        distroseries already exists this parameter is ignored.
+            distroseries already exists this parameter is ignored.
         :param version: The version for the new distroseries. If the
-        distroseries already exists this parameter is ignored.
-        :param distribution: The distribution the derived series will belong
-        to. If it isn't specified this distroseries' distribution is used.
+            distroseries already exists this parameter is ignored.
+        :param distribution: The distribution the derived series will
+            belong to. If it isn't specified this distroseries'
+            distribution is used.
         :param state: The state the new distroseries will be created in.
-        If the distroseries isn't specified, this parameter will be ignored.
-        Defaults to FROZEN.
-        :param arches: The architectures to copy to the derived series. If not
-        specified, all of the arches are copied.
-        :param packagesets: The packagesets to copy to the derived series. If
-        not specified, all of the packagesets are copied.
+            If the distroseries isn't specified, this parameter will be
+            ignored. Defaults to FROZEN.
+        :param arches: The architectures to copy to the derived series.
+            If not specified, all of the arches are copied.
+        :param packagesets: The packagesets to copy to the derived series.
+            If not specified, all of the packagesets are copied.
         :return: The ID of the job created.
         """
 

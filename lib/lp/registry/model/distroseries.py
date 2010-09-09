@@ -1801,9 +1801,10 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 self, format) is not None
 
     def deriveDistroSeries(
-        self, name, displayname, summary, description, version,
+        self, user, name, displayname, summary, description, version,
         distribution, state, arches, packagesets):
         """See `IDistroSeries`."""
+        # Check the user
         child = getUtility(IDistroSeriesSet).findByName(
             distro_series_name_or_version)
         child_distribution = getUtility(IDistributionSet).findByName(
