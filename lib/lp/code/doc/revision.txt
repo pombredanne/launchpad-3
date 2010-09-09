@@ -167,7 +167,7 @@ branch. If the bzr branch now has fewer revisions than Launchpad's view
 of the branch, then some of BranchRevision records will need to be
 removed.
 
-BranchRevision records are deleted using the `Branch.removeBranchRevision`
+BranchRevision records are deleted using the `Branch.removeBranchRevisions`
 method.
 
 
@@ -191,7 +191,7 @@ The last commit on this branch has the revision number 6.
 We remove the last revision from the branch. This is similar to what
 "bzr uncommit" does.
 
-    >>> branch.removeBranchRevision(rev_id)
+    >>> branch.removeBranchRevisions(rev_id)
 
 Afterwards, the last commit on the branch has revision number 5.
 

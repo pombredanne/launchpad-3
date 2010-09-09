@@ -243,7 +243,7 @@ class BzrSync:
         self.logger.info("Deleting %d branchrevision records.",
             len(revision_ids_to_delete))
         for revision_id in revision_ids_to_delete:
-            self.db_branch.removeBranchRevision(revision_id)
+            self.db_branch.removeBranchRevisions(revision_id)
 
     def insertBranchRevisions(self, bzr_branch, revids_to_insert):
         """Insert a batch of BranchRevision rows."""

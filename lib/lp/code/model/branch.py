@@ -799,14 +799,16 @@ class Branch(SQLBase, BzrIdentityMixin):
             BranchRevision.branch == self,
             query).one()
 
-    def removeBranchRevision(self, revision_id):
+    def removeBranchRevisions(self, revision_ids):
         """See `IBranch`."""
+        if isinstance(revision_ids, basestring):
+            revision_ids = [revision_ids]
         IMasterStore(BranchRevision).find(
             BranchRevision,
             BranchRevision.branch == self,
             BranchRevision.revision_id.is_in(
                 Select(Revision.id,
-                       Revision.revision_id == revision_id))).remove()
+                       Revision.revision_id.is_in(revision_ids)))).remove()
 
     def createBranchRevision(self, sequence, revision):
         """See `IBranch`."""

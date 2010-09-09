@@ -278,12 +278,12 @@ class TestBranchRevisionMethods(TestCaseWithFactory):
         self.assertEqual(branch, br.branch)
         self.assertEqual(rev, br.revision)
 
-    def test_removeBranchRevision(self):
+    def test_removeBranchRevisions(self):
         branch = self.factory.makeBranch()
         rev = self.factory.makeRevision()
         branch.createBranchRevision(1, rev)
         # Now remove the branch revision.
-        branch.removeBranchRevision(rev.revision_id)
+        branch.removeBranchRevisions(rev.revision_id)
         # Revision not there now.
         self.assertIs(None, self._getBranchRevision(branch, rev.revision_id))
 
