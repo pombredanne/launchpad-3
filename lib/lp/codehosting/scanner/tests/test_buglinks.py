@@ -120,6 +120,11 @@ class TestBugLinking(BzrSyncTestCase):
     def makeFixtures(self):
         super(TestBugLinking, self).makeFixtures()
         self.bug1 = self.factory.makeBug()
+        self.bug1.addTask(self.bug1.owner, self.factory.makeSourcePackage())
+        self.bug1.addTask(
+            self.bug1.owner, self.factory.makeDistributionSourcePackage())
+        self.bug1.addTask(
+            self.bug1.owner, self.factory.makeDistribution())
         self.bug2 = self.factory.makeBug()
         self.new_db_branch = self.factory.makeAnyBranch()
         self.layer.txn.commit()
