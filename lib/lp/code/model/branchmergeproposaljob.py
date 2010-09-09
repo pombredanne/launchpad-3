@@ -86,8 +86,6 @@ from lp.code.interfaces.branchmergeproposal import (
     ICodeReviewCommentEmailJobSource,
     ICreateMergeProposalJob,
     ICreateMergeProposalJobSource,
-    IGenerateIncrementalDiffJob,
-    IGenerateIncrementalDiffJobSource,
     IMergeProposalCreatedJob,
     IMergeProposalCreatedJobSource,
     IMergeProposalUpdatedEmailJob,
@@ -101,7 +99,7 @@ from lp.code.mail.branch import RecipientReason
 from lp.code.mail.branchmergeproposal import BMPMailer
 from lp.code.mail.codereviewcomment import CodeReviewCommentMailer
 from lp.code.model.branchmergeproposal import BranchMergeProposal
-from lp.code.model.diff import IncrementalDiff, PreviewDiff
+from lp.code.model.diff import PreviewDiff
 from lp.codehosting.vfs import (
     get_ro_server,
     get_rw_server,
@@ -149,11 +147,6 @@ class BranchMergeProposalJobType(DBEnumeratedType):
         This job sends an email to the subscribers informing them of fields
         that have been changed on the merge proposal itself.
         """)
-
-    GENERATE_INCREMENTAL_DIFF = DBItem(5, """
-        Generate incremental diff
-
-        This job generates an incremental diff for a merge proposal.""")
 
 
 class BranchMergeProposalJob(Storm):
@@ -649,79 +642,6 @@ class MergeProposalUpdatedEmailJob(BranchMergeProposalJobDerived):
         return 'emailing subscribers about merge proposal changes'
 
 
-class GenerateIncrementalDiffJob(BranchMergeProposalJobDerived):
-    """A job to generate an incremental diff for a branch merge proposal.
-
-    Provides class methods to create and retrieve such jobs.
-    """
-
-    implements(IGenerateIncrementalDiffJob)
-
-    classProvides(IGenerateIncrementalDiffJobSource)
-
-    class_job_type = BranchMergeProposalJobType.GENERATE_INCREMENTAL_DIFF
-
-    def run(self):
-        diff = IncrementalDiff.fromBranchMergeProposal(
-            self.branch_merge_proposal, old_revision_id, new_revision_id)
-        self.branch_merge_proposal._incremental_diffs = [diff]
-
-
-    @classmethod
-    def create(cls, merge_proposal, old_revision_id, new_revision_id):
-        metadata = cls.getMetadata(old_revision_id, new_revision_id)
-        job = BranchMergeProposalJob(
-            merge_proposal, cls.class_job_type, metadata)
-        return cls(job)
-
-    @staticmethod
-    def getMetadata(old_revision_id, new_revision_id):
-        return {
-            'old_revision_id': old_revision_id,
-            'new_revision_id': new_revision_id,
-        }
-
-    @property
-    def old_revision_id(self):
-        """The old revision id for the diff."""
-        return self.metadata['old_revision_id']
-
-    @property
-    def new_revision_id(self):
-        """The new revision id for the diff."""
-        return self.metadata['new_revision_id']
-
-    def getOopsVars(self):
-        """See `IRunnableJob`."""
-        vars =  BranchMergeProposalJobDerived.getOopsVars(self)
-        vars.extend([
-            ('old_revision_id', self.metadata['old_revision_id']),
-            ('new_revision_id', self.metadata['new_revision_id']),
-            ])
-        return vars
-
-    def getOperationDescription(self):
-        return ('generating an incremental diff for a merge proposal')
-
-    def getErrorRecipients(self):
-        """Return a list of email-ids to notify about user errors."""
-        registrant = self.branch_merge_proposal.registrant
-        return format_address_for_person(registrant)
-
-    def checkReady(self):
-        """Is this job ready to run?"""
-        bmp = self.branch_merge_proposal
-        if bmp.source_branch.last_scanned_id is None:
-            raise UpdatePreviewDiffNotReady(
-                'The source branch has no revisions.')
-        if bmp.target_branch.last_scanned_id is None:
-            raise UpdatePreviewDiffNotReady(
-                'The target branch has no revisions.')
-        if bmp.source_branch.pending_writes:
-            raise UpdatePreviewDiffNotReady(
-                'The source branch has pending writes.')
-
-
 class BranchMergeProposalJobFactory:
     """Construct a derived merge proposal job for a BranchMergeProposalJob."""
 
@@ -736,8 +656,6 @@ class BranchMergeProposalJobFactory:
             ReviewRequestedEmailJob,
         BranchMergeProposalJobType.MERGE_PROPOSAL_UPDATED:
             MergeProposalUpdatedEmailJob,
-        BranchMergeProposalJobType.GENERATE_INCREMENTAL_DIFF:
-            GenerateIncrementalDiffJob,
         }
 
     @classmethod

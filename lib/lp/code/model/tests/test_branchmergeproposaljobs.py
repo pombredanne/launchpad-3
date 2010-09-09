@@ -33,8 +33,6 @@ from lp.code.interfaces.branchmergeproposal import (
     IBranchMergeProposalJobSource,
     ICodeReviewCommentEmailJob,
     ICodeReviewCommentEmailJobSource,
-    IGenerateIncrementalDiffJob,
-    IGenerateIncrementalDiffJobSource,
     IMergeProposalCreatedJob,
     IMergeProposalUpdatedEmailJob,
     IMergeProposalUpdatedEmailJobSource,
@@ -48,7 +46,6 @@ from lp.code.model.branchmergeproposaljob import (
     BranchMergeProposalJobDerived,
     BranchMergeProposalJobType,
     CodeReviewCommentEmailJob,
-    GenerateIncrementalDiffJob,
     MergeProposalCreatedJob,
     MergeProposalUpdatedEmailJob,
     ReviewRequestedEmailJob,
@@ -236,69 +233,6 @@ class TestUpdatePreviewDiffJob(DiffTestCase):
         expiry_delta = job.lease_expires - datetime.now(pytz.UTC)
         self.assertTrue(500 <= expiry_delta.seconds, expiry_delta)
 
-
-class TestGenerateIncrementalDiffJob(DiffTestCase):
-
-    layer = LaunchpadZopelessLayer
-
-    def test_implement_interface(self):
-        """GenerateIncrementalDiffJob implements IGenerateIncrementalDiffJobSource."""
-        verifyObject(
-            IGenerateIncrementalDiffJobSource, GenerateIncrementalDiffJob)
-
-    def test_providesInterface(self):
-        """MergeProposalCreatedJob provides the expected interfaces."""
-        bmp = self.factory.makeBranchMergeProposal()
-        job = GenerateIncrementalDiffJob.create(bmp, 'old', 'new')
-        verifyObject(IGenerateIncrementalDiffJob, job)
-        verifyObject(IBranchMergeProposalJob, job)
-
-    def test_getOperationDescription(self):
-        bmp = self.factory.makeBranchMergeProposal()
-        job = GenerateIncrementalDiffJob.create(bmp, 'old', 'new')
-        self.assertEqual(
-            'generating an incremental diff for a merge proposal',
-            job.getOperationDescription())
-
-    def test_run(self):
-        self.useBzrBranches(direct_database=True)
-        bmp = self.createExampleMerge()[0]
-        job = GenerateIncrementalDiffJob.create(bmp, 'old', 'new')
-        transaction.commit()
-        self.layer.switchDbUser(config.merge_proposal_jobs.dbuser)
-        JobRunner([job]).runAll()
-        transaction.commit()
-        self.checkExampleMerge(bmp.incremental_diffs[-1])
-
-    def test_run_branches_not_ready(self):
-        # If the job has been waiting for a significant period of time (15
-        # minutes for now), we run the job anyway.  The checkReady method
-        # then raises and this is caught as a user error by the job system,
-        # and as such sends an email to the error recipients, which for this
-        # job is the merge proposal registrant.
-        eric = self.factory.makePerson(name='eric', email='eric@example.com')
-        bmp = self.factory.makeBranchMergeProposal(registrant=eric)
-        job = UpdatePreviewDiffJob.create(bmp)
-        pop_notifications()
-        JobRunner([job]).runAll()
-        [email] = pop_notifications()
-        self.assertEqual('Eric <eric@example.com>', email['to'])
-        self.assertEqual(
-            'Launchpad error while generating the diff for a merge proposal',
-            email['subject'])
-        self.assertEqual(
-            'Launchpad encountered an error during the following operation: '
-            'generating the diff for a merge proposal.  '
-            'The source branch has no revisions.',
-            email.get_payload(decode=True))
-
-    def test_10_minute_lease(self):
-        self.useBzrBranches(direct_database=True)
-        bmp = self.createExampleMerge()[0]
-        job = UpdatePreviewDiffJob.create(bmp)
-        job.acquireLease()
-        expiry_delta = job.lease_expires - datetime.now(pytz.UTC)
-        self.assertTrue(500 <= expiry_delta.seconds, expiry_delta)
 
 class TestBranchMergeProposalJobSource(TestCaseWithFactory):
 
