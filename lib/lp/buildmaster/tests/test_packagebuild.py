@@ -197,9 +197,10 @@ class TestPackageBuild(TestPackageBuildBase):
     def test_getBuildCookie(self):
         # A build cookie is made up of the package build id and record id.
         # The uploadprocessor relies on this format.
-        cookie = self.build.getBuildCookie()
+        Store.of(self.package_build).flush()
+        cookie = self.package_build.getBuildCookie()
         expected_cookie = "%d-PACKAGEBUILD-%d" % (
-            self.build.id, self.build.build_farm_job.id)
+            self.package_build.id, self.package_build.build_farm_job.id)
         self.assertEquals(expected_cookie, cookie)
 
 

@@ -207,6 +207,7 @@ class UploadProcessor:
         The name of the leaf is the build id of the build.
         Build uploads always contain a single package per leaf.
         """
+        upload_path = os.path.join(fsroot, upload)
         try:
             job_id = parse_build_upload_leaf_name(upload)
         except ValueError:
@@ -220,15 +221,15 @@ class UploadProcessor:
                 "Unable to find package build job with id %d. Skipping." %
                 job_id)
             return
+        logger = BufferLogger()
         build = buildfarm_job.getSpecificJob()
         if build.status != BuildStatus.UPLOADING:
             self.log.warn(
-                "Expected build status to be 'UPLOADING', was %s. Skipping.",
-                build.status.name)
+                "Expected build status to be 'UPLOADING', was %s. "
+                "Moving to failed.", build.status.name)
+            self.moveProcessedUpload(upload_path, "failed", logger)
             return
         self.log.debug("Build %s found" % build.id)
-        logger = BufferLogger()
-        upload_path = os.path.join(fsroot, upload)
         try:
             [changes_file] = self.locateChangesFiles(upload_path)
             logger.debug("Considering changefile %s" % changes_file)
