@@ -1807,7 +1807,8 @@ pre.changelog, table.diff,
 /* Inline description editing.
  * Override the lazr-js style for all uses.
  */
-div#edit-description {
+div#edit-description,
+div#edit-commit_message {
     font-family: 'UbuntuBeta Mono', 'Ubuntu Mono', monospace;
     font-size: 93%;
     margin: 1em 0;
