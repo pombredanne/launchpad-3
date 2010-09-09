@@ -13,6 +13,7 @@ import threading
 import xmlrpclib
 
 from lazr.restful.interfaces import (
+    ICollectionResource,
     IWebServiceConfiguration,
     IWebServiceVersion,
     )
@@ -61,7 +62,6 @@ from zope.server.http.commonaccesslogger import CommonAccessLogger
 from zope.server.http.wsgihttpserver import PMDBWSGIHTTPServer
 from zope.session.interfaces import ISession
 
-from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad.interfaces.launchpad import (
     IFeedsApplication,
@@ -116,6 +116,7 @@ from canonical.lazr.interfaces.feed import IFeed
 from canonical.lazr.timeout import set_default_timeout_function
 from lp.app.errors import UnexpectedFormData
 from lp.services.features.flags import NullFeatureController
+from lp.services.propertycache import cachedproperty
 from lp.testopenid.interfaces.server import ITestOpenIDApplication
 
 
@@ -976,7 +977,7 @@ class LaunchpadAccessLogger(CommonAccessLogger):
         request string  (1st line of request)
         response status
         response bytes written
-        number of sql statements
+        number of nonpython statements (sql, email, memcache, rabbit etc)
         request duration
         number of ticks during traversal
         number of ticks during publication
@@ -997,7 +998,7 @@ class LaunchpadAccessLogger(CommonAccessLogger):
         bytes_written = task.bytes_written
         userid = cgi_env.get('launchpad.userid', '')
         pageid = cgi_env.get('launchpad.pageid', '')
-        sql_statements = cgi_env.get('launchpad.sqlstatements', 0)
+        nonpython_actions = cgi_env.get('launchpad.nonpythonactions', 0)
         request_duration = cgi_env.get('launchpad.requestduration', 0)
         traversal_ticks = cgi_env.get('launchpad.traversalticks', 0)
         publication_ticks = cgi_env.get('launchpad.publicationticks', 0)
@@ -1015,7 +1016,7 @@ class LaunchpadAccessLogger(CommonAccessLogger):
                 first_line,
                 status,
                 bytes_written,
-                sql_statements,
+                nonpython_actions,
                 request_duration,
                 traversal_ticks,
                 publication_ticks,
@@ -1151,9 +1152,25 @@ class WebServicePublication(WebServicePublicationMixin,
     root_object_interface = IWebServiceApplication
 
     def constructPageID(self, view, context):
-        """Add the web service named operation (if any) to the page ID."""
+        """Add the web service named operation (if any) to the page ID.
+
+        See https://dev.launchpad.net/Foundations/Webservice for more
+        information about WebService page IDs.
+        """
         pageid = super(WebServicePublication, self).constructPageID(
             view, context)
+        if ICollectionResource.providedBy(view):
+            # collection_identifier is a way to differentiate between
+            # CollectionResource objects. CollectionResource objects are
+            # objects that serve a list of Entry resources through the
+            # WebService, so by querying the CollectionResource.type_url
+            # attribute we're able to find out the resource type the
+            # collection holds. See lazr.restful._resource.py to see how
+            # the type_url is constructed.
+            # We don't need the full URL, just the type of the resource.
+            collection_identifier = view.type_url.split('/')[-1]
+            if collection_identifier:
+                pageid += ':' + collection_identifier
         op = (view.request.get('ws.op')
             or view.request.query_string_params.get('ws.op'))
         if op:
@@ -1283,10 +1300,19 @@ class WebServicePublication(WebServicePublicationMixin,
         return principal
 
 
-class WebServiceClientRequest(WebServiceRequestTraversal,
+class LaunchpadWebServiceRequestTraversal(WebServiceRequestTraversal):
+    implements(canonical.launchpad.layers.WebServiceLayer)
+
+    def getRootURL(self, rootsite):
+        """See IBasicLaunchpadRequest."""
+        # When browsing the web service, we want URLs to point back at the web
+        # service, so we basically ignore rootsite.
+        return self.getApplicationURL() + '/'
+
+
+class WebServiceClientRequest(LaunchpadWebServiceRequestTraversal,
                               LaunchpadBrowserRequest):
     """Request type for a resource published through the web service."""
-    implements(canonical.launchpad.layers.WebServiceLayer)
 
     def __init__(self, body_instream, environ, response=None):
         super(WebServiceClientRequest, self).__init__(
@@ -1312,20 +1338,14 @@ class WebServiceClientRequest(WebServiceRequestTraversal,
         # than ETag, we may have to revisit this.
         self.response.setHeader('Vary', 'Accept')
 
-    def getRootURL(self, rootsite):
-        """See IBasicLaunchpadRequest."""
-        # When browsing the web service, we want URLs to point back at the web
-        # service, so we basically ignore rootsite.
-        return self.getApplicationURL() + '/'
 
-
-class WebServiceTestRequest(WebServiceRequestTraversal, LaunchpadTestRequest):
+class WebServiceTestRequest(LaunchpadWebServiceRequestTraversal,
+                            LaunchpadTestRequest):
     """Test request for the webservice.
 
     It provides the WebServiceLayer and supports the getResource()
     web publication hook.
     """
-    implements(canonical.launchpad.layers.WebServiceLayer)
 
     def __init__(self, body_instream=None, environ=None, version=None, **kw):
         test_environ = {

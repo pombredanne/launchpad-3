@@ -17,6 +17,7 @@ from canonical.launchpad.ftests import (
     )
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.testing import DatabaseFunctionalLayer
+from lp.app.enums import ServiceUsage
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
@@ -73,7 +74,9 @@ class BugTaskSearchBugsElsewhereTest(unittest.TestCase):
         # Mark an upstream task on bug #1 "Fix Released"
         bug_one = bugset.get(1)
         firefox_upstream = self._getBugTaskByTarget(bug_one, firefox)
-        self.assert_(firefox_upstream.product.official_malone)
+        self.assertEqual(
+            ServiceUsage.LAUNCHPAD,
+            firefox_upstream.product.bug_tracking_usage)
         self.old_firefox_status = firefox_upstream.status
         firefox_upstream.transitionToStatus(
             BugTaskStatus.FIXRELEASED, getUtility(ILaunchBag).user)
@@ -127,12 +130,10 @@ class BugTaskSearchBugsElsewhereTest(unittest.TestCase):
         """
         non_malone_using_bugtasks = [
             related_task for related_task in bugtask.related_tasks
-            if not related_task.target_uses_malone
-            ]
+            if not related_task.target_uses_malone]
         pending_bugwatch_bugtasks = [
             related_bugtask for related_bugtask in non_malone_using_bugtasks
-            if related_bugtask.bugwatch is None
-            ]
+            if related_bugtask.bugwatch is None]
         self.assert_(
             len(pending_bugwatch_bugtasks) > 0,
             'Bugtask %s on %s has no related bug watches elsewhere.' % (
@@ -166,8 +167,7 @@ class BugTaskSearchBugsElsewhereTest(unittest.TestCase):
         resolved_related_tasks = [
             related_task for related_task in bugtask.related_tasks
             if (_is_resolved_upstream_task(related_task) or
-                _is_resolved_bugwatch_task(related_task))
-            ]
+                _is_resolved_bugwatch_task(related_task))]
 
         self.assert_(len(resolved_related_tasks) > 0)
         self.assert_(
@@ -203,8 +203,7 @@ class BugTaskSearchBugsElsewhereTest(unittest.TestCase):
         open_related_tasks = [
             related_task for related_task in bugtask.related_tasks
             if (_is_open_upstream_task(related_task) or
-                _is_open_bugwatch_task(related_task))
-            ]
+                _is_open_bugwatch_task(related_task))]
 
         self.assert_(
             len(open_related_tasks) > 0,

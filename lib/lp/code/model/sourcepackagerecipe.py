@@ -35,7 +35,7 @@ from canonical.launchpad.interfaces.lpstorm import (
     IMasterStore,
     IStore,
     )
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.packagebuild import PackageBuild
 from lp.code.errors import (
@@ -56,7 +56,6 @@ from lp.code.model.sourcepackagerecipedata import SourcePackageRecipeData
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.model.distroseries import DistroSeries
 from lp.soyuz.interfaces.archive import (
-    ArchivePurpose,
     IArchiveSet,
     )
 from lp.soyuz.interfaces.component import IComponentSet
@@ -221,7 +220,7 @@ class SourcePackageRecipe(Storm):
         """See `ISourcePackageRecipe`."""
         if not config.build_from_branch.enabled:
             raise ValueError('Source package recipe builds disabled.')
-        if archive.purpose != ArchivePurpose.PPA:
+        if not archive.is_ppa:
             raise NonPPABuildRequest
         component = getUtility(IComponentSet)["multiverse"]
 

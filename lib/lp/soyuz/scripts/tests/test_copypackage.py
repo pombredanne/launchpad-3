@@ -28,14 +28,20 @@ from lp.bugs.interfaces.bug import (
     IBugSet,
     )
 from lp.bugs.interfaces.bugtask import BugTaskStatus
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.soyuz.adapters.packagelocation import PackageLocationError
-from lp.soyuz.interfaces.archive import (
+from lp.soyuz.enums import (
     ArchivePurpose,
+    PackagePublishingStatus,
+    PackageUploadCustomFormat,
+    PackageUploadStatus,
+    SourcePackageFormat,
+    )
+from lp.soyuz.interfaces.archive import (
     CannotCopy,
     )
 from lp.soyuz.interfaces.binarypackagebuild import BuildSetStatus
@@ -44,16 +50,12 @@ from lp.soyuz.interfaces.publishing import (
     active_publishing_status,
     IBinaryPackagePublishingHistory,
     ISourcePackagePublishingHistory,
-    PackagePublishingStatus,
     )
 from lp.soyuz.interfaces.queue import (
-    PackageUploadCustomFormat,
-    PackageUploadStatus,
     QueueInconsistentStateError,
     )
 from lp.soyuz.interfaces.sourcepackageformat import (
     ISourcePackageFormatSelectionSet,
-    SourcePackageFormat,
     )
 from lp.soyuz.model.processor import ProcessorFamily
 from lp.soyuz.model.publishing import (

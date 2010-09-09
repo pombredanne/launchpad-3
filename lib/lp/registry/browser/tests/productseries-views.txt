@@ -39,8 +39,8 @@ rendering links:
     True
     >>> print view.official_rosetta
     True
-    >>> print view.official_codehosting
-    False
+    >>> print view.codehosting_usage.name
+    UNKNOWN
     >>> for link in view.enabled_links:
     ...     print link.url
     http://bugs.launchpad.dev/app/simple/+filebug
@@ -54,8 +54,8 @@ Setting a branch for the series should enable the +addbranch link.
 
     >>> series.branch = factory.makeBranch()
     >>> view = create_view(series, '+get-involved')
-    >>> print view.official_codehosting
-    True
+    >>> print view.codehosting_usage.name
+    LAUNCHPAD
     >>> for link in view.enabled_links:
     ...     print link.url
     http://bugs.launchpad.dev/app/simple/+filebug
@@ -158,7 +158,7 @@ The view provides access to the latest release if it has one.
 The view also provides a link to register a new code import.
 
     >>> print view.request_import_link
-    http://launchpad.dev/firefox/+new-import
+    http://code.launchpad.dev/firefox/+new-import
 
 
 Edit ProductSeries

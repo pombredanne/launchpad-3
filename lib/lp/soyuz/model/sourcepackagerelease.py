@@ -30,7 +30,6 @@ from storm.store import Store
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.cachedproperty import cachedproperty
 from canonical.database.constants import (
     DEFAULT,
     UTC_NOW,
@@ -53,22 +52,23 @@ from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.errors import NotFoundError
 from lp.archiveuploader.utils import determine_source_file_type
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.sourcepackage import (
     SourcePackageType,
     SourcePackageUrgency,
+    )
+from lp.services.propertycache import cachedproperty
+from lp.soyuz.enums import (
+    PackageDiffStatus,
+    PackagePublishingStatus,
     )
 from lp.soyuz.interfaces.archive import (
     IArchiveSet,
     MAIN_ARCHIVE_PURPOSES,
     )
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
-from lp.soyuz.interfaces.packagediff import (
-    PackageDiffAlreadyRequested,
-    PackageDiffStatus,
-    )
-from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+from lp.soyuz.interfaces.packagediff import PackageDiffAlreadyRequested
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.files import SourcePackageReleaseFile

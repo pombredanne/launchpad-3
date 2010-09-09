@@ -22,7 +22,6 @@ from zope.schema.vocabulary import (
     SimpleVocabulary,
     )
 
-from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.webapp import (
     action,
@@ -42,6 +41,7 @@ from lp.code.enums import (
 from lp.code.interfaces.branchvisibilitypolicy import (
     IBranchVisibilityTeamPolicy,
     )
+from lp.services.propertycache import cachedproperty
 
 
 class BaseBranchVisibilityTeamPolicyView(LaunchpadFormView):
@@ -55,7 +55,7 @@ class BaseBranchVisibilityTeamPolicyView(LaunchpadFormView):
 
     @property
     def next_url(self):
-        return canonical_url(self.context) + '/+branchvisibility'
+        return canonical_url(self.context, view_name='+branchvisibility')
 
     cancel_url = next_url
 

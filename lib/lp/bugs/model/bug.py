@@ -70,10 +70,6 @@ from zope.interface import (
     providedBy,
     )
 
-from canonical.cachedproperty import (
-    cachedproperty,
-    clear_property,
-    )
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -81,6 +77,9 @@ from canonical.database.sqlbase import (
     cursor,
     SQLBase,
     sqlvalues,
+    )
+from canonical.launchpad.components.decoratedresultset import (
+    DecoratedResultSet,
     )
 from canonical.launchpad.database.librarian import LibraryFileAlias
 from canonical.launchpad.database.message import (
@@ -106,6 +105,7 @@ from canonical.launchpad.webapp.interfaces import (
     MAIN_STORE,
     )
 from lp.answers.interfaces.questiontarget import IQuestionTarget
+from lp.app.enums import ServiceUsage
 from lp.app.errors import (
     NotFoundError,
     UserCannotUnsubscribePerson,
@@ -185,7 +185,12 @@ from lp.registry.model.person import (
     ValidPersonCache,
     )
 from lp.registry.model.pillar import pillar_sort_key
+from lp.registry.model.teammembership import TeamParticipation
 from lp.services.fields import DuplicateBug
+from lp.services.propertycache import (
+    cachedproperty,
+    IPropertyCache,
+    )
 
 
 _bug_tag_query_template = """
@@ -633,7 +638,7 @@ class Bug(SQLBase):
                 # disabled see the change.
                 store.flush()
                 self.updateHeat()
-                clear_property(self, '_cached_viewers')
+                del IPropertyCache(self)._known_viewers
                 return
 
     def unsubscribeFromDupes(self, person, unsubscribed_by):
@@ -778,6 +783,33 @@ class Bug(SQLBase):
 
         return sorted(
             dupe_subscribers, key=operator.attrgetter("displayname"))
+
+    def getSubscribersForPerson(self, person):
+        """See `IBug."""
+        assert person is not None
+        return Store.of(self).find(
+            # return people
+            Person,
+            # For this bug or its duplicates
+            Or(
+                Bug.id == self.id,
+                Bug.duplicateof == self.id),
+            # Get subscriptions for these bugs
+            BugSubscription.bug == Bug.id,
+            # Filter by subscriptions to any team person is in.
+            # Note that teamparticipation includes self-participation entries
+            # (person X is in the team X)
+            TeamParticipation.person == person.id,
+            # XXX: Storm fails to compile this, so manually done.
+            # bug=https://bugs.edge.launchpad.net/storm/+bug/627137
+            # RBC 20100831
+            SQL("""TeamParticipation.team = BugSubscription.person"""),
+            # Join in the Person rows we want
+            # XXX: Storm fails to compile this, so manually done.
+            # bug=https://bugs.edge.launchpad.net/storm/+bug/627137
+            # RBC 20100831
+            SQL("""Person.id = TeamParticipation.team"""),
+            ).order_by(Person.name).config(distinct=True)
 
     def getAlsoNotifiedSubscribers(self, recipients=None, level=None):
         """See `IBug`.
@@ -1168,7 +1200,7 @@ class Bug(SQLBase):
         if len(non_invalid_bugtasks) != 1:
             return None
         [valid_bugtask] = non_invalid_bugtasks
-        if valid_bugtask.pillar.official_malone:
+        if valid_bugtask.pillar.bug_tracking_usage == ServiceUsage.LAUNCHPAD:
             return valid_bugtask
         else:
             return None
@@ -1476,7 +1508,9 @@ class Bug(SQLBase):
                 self.who_made_private = None
                 self.date_made_private = None
 
-            for attachment in self.attachments:
+            # XXX: This should be a bulk update. RBC 20100827
+            # bug=https://bugs.edge.launchpad.net/storm/+bug/625071
+            for attachment in self.attachments_unpopulated:
                 attachment.libraryfile.restricted = private
 
             # Correct the heat for the bug immediately, so that we don't have
@@ -1626,14 +1660,14 @@ class Bug(SQLBase):
             self, self.messages[comment_number])
         bug_message.visible = visible
 
-    @cachedproperty('_cached_viewers')
+    @cachedproperty
     def _known_viewers(self):
         """A dict of of known persons able to view this bug."""
         return set()
 
     def userCanView(self, user):
         """See `IBug`.
-        
+
         Note that Editing is also controlled by this check,
         because we permit editing of any bug one can see.
         """
@@ -1724,20 +1758,59 @@ class Bug(SQLBase):
 
         self.heat = SQL("calculate_bug_heat(%s)" % sqlvalues(self))
         self.heat_last_updated = UTC_NOW
+        for task in self.bugtasks:
+            task.target.recalculateBugHeatCache()
         store.flush()
+
+    def _attachments_query(self):
+        """Helper for the attachments* properties."""
+        # bug attachments with no LibraryFileContent have been deleted - the
+        # garbo_daily run will remove the LibraryFileAlias asynchronously.
+        # See bug 542274 for more details.
+        store = Store.of(self)
+        return store.find(
+            (BugAttachment, LibraryFileAlias),
+            BugAttachment.bug == self,
+            BugAttachment.libraryfile == LibraryFileAlias.id,
+            LibraryFileAlias.content != None).order_by(BugAttachment.id)
 
     @property
     def attachments(self):
-        """See `IBug`."""
-        # We omit those bug attachments that do not have a
-        # LibraryFileContent record in order to avoid OOPSes as
-        # mentioned in bug 542274. These bug attachments will be
-        # deleted anyway during the next garbo_daily run.
-        store = Store.of(self)
-        return store.find(
-            BugAttachment, BugAttachment.bug == self,
-            BugAttachment.libraryfile == LibraryFileAlias.id,
-            LibraryFileAlias.content != None).order_by(BugAttachment.id)
+        """See `IBug`.
+
+        This property does eager loading of the index_messages so that the API
+        which wants the message_link for the attachment can answer that without
+        O(N^2) overhead. As such it is moderately expensive to call (it
+        currently retrieves all messages before any attachments, and does this
+        when attachments is evaluated, not when the resultset is processed).
+        """
+        message_to_indexed = {}
+        for message in self.indexed_messages:
+            message_to_indexed[message.id] = message
+        def set_indexed_message(row):
+            attachment = row[0]
+            # row[1] - the LibraryFileAlias is now in the storm cache and
+            # will be found without a query when dereferenced.
+            indexed_message = message_to_indexed.get(attachment._messageID)
+            if indexed_message is not None:
+                IPropertyCache(attachment).message = indexed_message
+            return attachment
+        rawresults = self._attachments_query()
+        return DecoratedResultSet(rawresults, set_indexed_message)
+
+    @property
+    def attachments_unpopulated(self):
+        """See `IBug`.
+
+        This version does not pre-lookup messages and LibraryFileAliases.
+
+        The regular 'attachments' property does prepopulation because it is
+        exposed in the API.
+        """
+        # Grab the attachment only; the LibraryFileAlias will be eager loaded.
+        return DecoratedResultSet(
+            self._attachments_query(),
+            operator.itemgetter(0))
 
 
 class BugSet:

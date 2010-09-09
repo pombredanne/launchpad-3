@@ -32,6 +32,7 @@ from canonical.launchpad.interfaces import (
     ISpecificationSet,
     QuestionStatus,
     )
+from canonical.launchpad.interfaces.gpghandler import IGPGHandler
 from canonical.launchpad.mail.commands import (
     BugEmailCommands,
     get_error_message,
@@ -58,6 +59,16 @@ from lp.services.mail.sendmail import (
     )
 
 
+def extract_signature_timestamp(signed_msg):
+    # break import cycle
+    from canonical.launchpad.mail.incoming import (
+        canonicalise_line_endings)
+    signature = getUtility(IGPGHandler).getVerifiedSignature(
+        canonicalise_line_endings(signed_msg.signedContent),
+        signed_msg.signature)
+    return signature.timestamp
+
+
 class MaloneHandler:
     """Handles emails sent to Malone.
 
@@ -77,7 +88,8 @@ class MaloneHandler:
                 name, args in parse_commands(content,
                                              BugEmailCommands.names())]
 
-    def process(self, signed_msg, to_addr, filealias=None, log=None):
+    def process(self, signed_msg, to_addr, filealias=None, log=None,
+                extract_signature_timestamp=extract_signature_timestamp):
         """See IMailHandler."""
         commands = self.getCommands(signed_msg)
         user, host = to_addr.split('@')
@@ -89,7 +101,8 @@ class MaloneHandler:
                 CONTEXT = 'bug report'
                 ensure_not_weakly_authenticated(signed_msg, CONTEXT)
                 if signature is not None:
-                    ensure_sane_signature_timestamp(signature, CONTEXT)
+                    ensure_sane_signature_timestamp(
+                        extract_signature_timestamp(signed_msg), CONTEXT)
 
             if user.lower() == 'new':
                 # A submit request.

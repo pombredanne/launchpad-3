@@ -38,7 +38,6 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.buildd.slave import BuilderStatus
-from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.database.sqlbase import (
     SQLBase,
@@ -80,6 +79,7 @@ from lp.registry.interfaces.person import validate_public_person
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from lp.services.osutils import until_no_eintr
+from lp.services.propertycache import cachedproperty
 # XXX Michael Nelson 2010-01-13 bug=491330
 # These dependencies on soyuz will be removed when getBuildRecords()
 # is moved.
@@ -206,6 +206,20 @@ def rescueBuilderIfLost(builder, logger=None):
     # IBuilder.slaveStatusSentence().
     status = status_sentence[0]
 
+    # If the cookie test below fails, it will request an abort of the
+    # builder.  This will leave the builder in the aborted state and
+    # with no assigned job, and we should now "clean" the slave which
+    # will reset its state back to IDLE, ready to accept new builds.
+    # This situation is usually caused by a temporary loss of
+    # communications with the slave and the build manager had to reset
+    # the job.
+    if status == 'BuilderStatus.ABORTED' and builder.currentjob is None:
+        builder.cleanSlave()
+        if logger is not None:
+            logger.info(
+                "Builder '%s' cleaned up from ABORTED" % builder.name)
+        return
+
     # If slave is not building nor waiting, it's not in need of rescuing.
     if status not in ident_position.keys():
         return
@@ -220,7 +234,7 @@ def rescueBuilderIfLost(builder, logger=None):
         else:
             builder.requestAbort()
         if logger:
-            logger.warn(
+            logger.info(
                 "Builder '%s' rescued from '%s': '%s'" %
                 (builder.name, slave_build_id, reason))
 

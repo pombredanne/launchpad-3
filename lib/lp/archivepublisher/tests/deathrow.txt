@@ -36,7 +36,7 @@ Setup `SoyuzTestPublisher` for creating publications for Ubuntu/hoary.
     >>> from lp.soyuz.tests.test_publishing import (
     ...     SoyuzTestPublisher)
     >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
-    >>> from lp.soyuz.interfaces.publishing import (
+    >>> from lp.soyuz.enums import (
     ...     PackagePublishingStatus)
 
     >>> hoary = ubuntu.getSeries('hoary')

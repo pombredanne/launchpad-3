@@ -88,15 +88,11 @@ from zope.security.proxy import (
     removeSecurityProxy,
     )
 
-from canonical.cachedproperty import cachedproperty
 from canonical.database.sqlbase import (
     quote,
     quote_like,
     SQLBase,
     sqlvalues,
-    )
-from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet,
     )
 from canonical.launchpad.database.account import Account
 from canonical.launchpad.database.emailaddress import EmailAddress
@@ -172,6 +168,7 @@ from lp.registry.model.productseries import ProductSeries
 from lp.registry.model.projectgroup import ProjectGroup
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.registry.model.teammembership import TeamParticipation
+from lp.services.propertycache import cachedproperty
 
 
 class BasePersonVocabulary:
@@ -648,10 +645,7 @@ class ValidPersonOrTeamVocabulary(
         else:
             result.order_by(Person.displayname, Person.name)
         result.config(limit=self.LIMIT)
-        # XXX: BradCrittenden 2009-04-24 bug=217644: Wrap the results to
-        # ensure the .count() method works until the Storm bug is fixed and
-        # integrated.
-        return DecoratedResultSet(result)
+        return result
 
     def search(self, text):
         """Return people/teams whose fti or email address match :text:."""
@@ -727,10 +721,7 @@ class ValidTeamVocabulary(ValidPersonOrTeamVocabulary):
         result.config(distinct=True)
         result.order_by(Person.displayname, Person.name)
         result.config(limit=self.LIMIT)
-        # XXX: BradCrittenden 2009-04-24 bug=217644: Wrap the results to
-        # ensure the .count() method works until the Storm bug is fixed and
-        # integrated.
-        return DecoratedResultSet(result)
+        return result
 
 
 class ValidPersonVocabulary(ValidPersonOrTeamVocabulary):

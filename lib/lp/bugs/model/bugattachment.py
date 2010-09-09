@@ -27,6 +27,7 @@ from lp.bugs.interfaces.bugattachment import (
     IBugAttachment,
     IBugAttachmentSet,
     )
+from lp.services.propertycache import cachedproperty
 
 
 class BugAttachment(SQLBase):
@@ -46,8 +47,18 @@ class BugAttachment(SQLBase):
         foreignKey='LibraryFileAlias', dbName='libraryfile', notNull=True)
     data = ForeignKey(
         foreignKey='LibraryFileAlias', dbName='libraryfile', notNull=True)
-    message = ForeignKey(
+    _message = ForeignKey(
         foreignKey='Message', dbName='message', notNull=True)
+
+    @cachedproperty
+    def message(self):
+        """This is a cachedproperty to allow message to be an IIndexedMessage.
+
+        This is needed for the bug/attachments API call which needs to index
+        an IIndexedMessage rather than a simple DB model IMessage. See
+        Bug.attachments where the injection occurs.
+        """
+        return self._message
 
     @property
     def is_patch(self):
@@ -99,7 +110,7 @@ class BugAttachmentSet:
             attach_type = IBugAttachment['type'].default
         attachment = BugAttachment(
             bug=bug, libraryfile=filealias, type=attach_type, title=title,
-            message=message)
+            _message=message)
         # canonial_url(attachment) (called by notification subscribers
         # to generate the download URL of the attachments) blows up if
         # attachment.id is not (yet) set.

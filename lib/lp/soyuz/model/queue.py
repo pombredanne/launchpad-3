@@ -33,7 +33,6 @@ from storm.store import Store
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -72,8 +71,13 @@ from lp.registry.interfaces.pocket import (
     PackagePublishingPocket,
     pocketsuffix,
     )
+from lp.services.propertycache import cachedproperty
+from lp.soyuz.enums import (
+    BinaryPackageFormat,
+    PackageUploadCustomFormat,
+    PackageUploadStatus,
+    )
 from lp.soyuz.interfaces.archive import MAIN_ARCHIVE_PURPOSES
-from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFormat
 from lp.soyuz.interfaces.publishing import (
     IPublishingSet,
     ISourcePackagePublishingHistory,
@@ -86,8 +90,6 @@ from lp.soyuz.interfaces.queue import (
     IPackageUploadSet,
     IPackageUploadSource,
     NonBuildableSourceUploadError,
-    PackageUploadCustomFormat,
-    PackageUploadStatus,
     QueueBuildAcceptError,
     QueueInconsistentStateError,
     QueueSourceAcceptError,

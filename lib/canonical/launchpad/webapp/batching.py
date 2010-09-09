@@ -4,7 +4,6 @@
 __metaclass__ = type
 
 import lazr.batchnavigator
-# and ISQLObjectResultSet
 from storm.zope.interfaces import IResultSet
 from zope.component import adapts
 from zope.interface import implements

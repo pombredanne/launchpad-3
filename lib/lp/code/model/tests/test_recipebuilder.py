@@ -16,8 +16,8 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.scripts.logger import BufferLogger
 from canonical.testing import LaunchpadFunctionalLayer
+from lp.buildmaster.enums import BuildFarmJobType
 from lp.buildmaster.interfaces.builder import CannotBuild
-from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior,
     )
