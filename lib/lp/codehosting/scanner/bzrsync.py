@@ -22,7 +22,6 @@ from zope.component import getUtility
 from zope.event import notify
 
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource
-from lp.code.interfaces.branchrevision import IBranchRevisionSet
 from lp.code.interfaces.revision import IRevisionSet
 from lp.codehosting import iter_list_chunks
 from lp.codehosting.scanner import events
