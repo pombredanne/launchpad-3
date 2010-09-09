@@ -89,7 +89,10 @@ from lp.registry.interfaces.person import (
     TeamContactMethod,
     TeamSubscriptionPolicy,
     )
-from lp.registry.interfaces.teammembership import TeamMembershipStatus
+from lp.registry.interfaces.teammembership import (
+    CyclicalTeamMembershipError,
+    TeamMembershipStatus,
+    )
 from lp.services.fields import PublicPersonChoice
 from lp.services.propertycache import cachedproperty
 
@@ -934,31 +937,60 @@ class ProposedTeamMembersEditView(LaunchpadFormView):
     @action('Save changes', name='save')
     def action_save(self, action, data):
         expires = self.context.defaultexpirationdate
-        for person in self.context.proposedmembers:
+        statuses = dict(
+            approve=TeamMembershipStatus.APPROVED,
+            decline=TeamMembershipStatus.DECLINED,
+            )
+        target_team = self.context
+        failed_joins = []
+        for person in target_team.proposedmembers:
             action = self.request.form.get('action_%d' % person.id)
-            if action == "approve":
-                status = TeamMembershipStatus.APPROVED
-            elif action == "decline":
-                status = TeamMembershipStatus.DECLINED
-            else:
+            status = statuses.get(action)
+            if status is None:
                 # The action is "hold" or no action was specified for this
                 # person, which could happen if the set of proposed members
                 # changed while the form was being processed.
                 continue
+            try:
+                target_team.setMembershipData(
+                    person, status, reviewer=self.user, expires=expires,
+                    comment=self.request.form.get('comment'))
+            except CyclicalTeamMembershipError:
+                failed_joins.append(person)
 
-            self.context.setMembershipData(
-                person, status, reviewer=self.user, expires=expires,
-                comment=self.request.form.get('comment'))
+        if len(failed_joins) > 0:
+            failed_names = [person.displayname for person in failed_joins]
+            failed_list = ", ".join(failed_names)
+
+            mapping=dict(
+                this_team=target_team.displayname,
+                failed_list=failed_list)
+
+            if len(failed_joins) == 1:
+                self.request.response.addInfoNotification(
+                    _('${this_team} is a member of the following team, so it '
+                      'could not be accepted:  '
+                      '${failed_list}.  You need to "Decline" that team.',
+                      mapping=mapping))
+            else:
+                self.request.response.addInfoNotification(
+                    _('${this_team} is a member of the following teams, so '
+                      'they could not be accepted:  '
+                      '${failed_list}.  You need to "Decline" those teams.',
+                      mapping=mapping))
+            self.next_url = ''
+        else:
+            self.next_url = self._next_url
 
     @property
     def page_title(self):
         return 'Proposed members of %s' % self.context.displayname
 
     @property
-    def next_url(self):
+    def _next_url(self):
         return '%s/+members' % canonical_url(self.context)
 
-    cancel_url = next_url
+    cancel_url = _next_url
 
 
 class TeamBrandingView(BrandingChangeView):
