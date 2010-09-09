@@ -9,6 +9,7 @@ __all__ = [
     ]
 
 import os
+import signal
 import socket
 import urlparse
 
@@ -59,8 +60,10 @@ class ForkedProcessTransport(process.BaseProcess):
         process.BaseProcess.__init__(self, proto)
         pid, path = self._spawn(executable, args)
         self.pid = pid
+        # Map from standard file descriptor to the associated pipe
+        self.pipes = {}
         self._fifo_path = path
-        self._connectSpawnToReactor()
+        self._connectSpawnToReactor(reactor)
         if self.proto is not None:
             self.proto.makeConnection(self)
 
@@ -101,7 +104,7 @@ class ForkedProcessTransport(process.BaseProcess):
         # TODO: Log this information
         return pid, path
 
-    def _connectSpawnToReactor(self):
+    def _connectSpawnToReactor(self, reactor):
         stdin_path = os.path.join(self._fifo_path, 'stdin')
         stdout_path = os.path.join(self._fifo_path, 'stdout')
         stderr_path = os.path.join(self._fifo_path, 'stderr')
@@ -161,6 +164,30 @@ class ForkedProcessTransport(process.BaseProcess):
         self.closeStdin()
         self.closeStdout()
         self.closeStderr()
+
+    # Implemented because ProcessWriter/ProcessReader want to call it
+    # Copied from twisted.internet.Process
+    def childConnectionLost(self, childFD, reason):
+        os.close(self.pipes[childFD].fileno())
+        del self.pipes[childFD]
+        try:
+            self.proto.childConnectionLost(childFD)
+        except:
+            log.err()
+        self.maybeCallProcessEnded()
+
+    # Implemented because of childConnectionLost
+    # Adapted from twisted.internet.Process
+    # Note: Process.maybeCallProcessEnded() tries to reapProcess() at this
+    #       point, but the daemon will be doing the reaping for us (we can't
+    #       because the process isn't a direct child.)
+    def maybeCallProcessEnded(self):
+        if self.pipes:
+            # Not done if we still have open pipes
+            return
+        if not self.lostProcess:
+            return
+        process.BaseProcess.maybeCallProcessEnded(self)
 
     # pauseProducing, present in process.py, not a IProcessTransport interface
     # childDataReceived, childConnectionLost, etc, etc.
