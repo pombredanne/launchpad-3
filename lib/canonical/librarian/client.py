@@ -309,7 +309,7 @@ class FileDownloadClient:
         :param aliasID: A unique ID for the alias.
         :param secure: Controls the behaviour when looking up restricted
             files.  If False restricted files are only permitted when
-            self.restricted is True. See getURLForAlias.
+            self.restricted is True.  See `getURLForAlias`.
         :returns: A `LibraryFileAlias`.
         :raises: `DownloadFailed` if the alias is invalid or
             inaccessible.
@@ -336,7 +336,7 @@ class FileDownloadClient:
         :param aliasID: A unique ID for the alias
         :param secure: Controls the behaviour when looking up restricted
             files.  If False restricted files are only permitted when
-            self.restricted is True. See getURLForAlias.
+            self.restricted is True.  See `getURLForAlias`.
         :returns: String path, url-escaped.  Unicode is UTF-8 encoded before
             url-escaping, as described in section 2.2.5 of RFC 2718.
             None if the file has been deleted.
@@ -359,7 +359,8 @@ class FileDownloadClient:
         :param aliasID: A unique ID for the alias
         :param secure: If true generate https urls on unique domains for 
             security.
-        :returns: String URL, or None if the file has expired and been deleted.
+        :returns: String URL, or None if the file has expired and been
+            deleted.
         """
         return compose_url(
             self.download_url, self._getPathForAlias(aliasID, secure=secure))
@@ -396,6 +397,12 @@ class FileDownloadClient:
         There is a separate `getURLForAlias` that takes an alias ID.  If
         you're not sure whether it's safe for the client to access your
         `alias`, use `getURLForAlias` which will retrieve its own copy.
+
+        :param alias: A `LibraryFileAlias` whose URL you want.
+        :param secure: If true generate https urls on unique domains for 
+            security.
+        :returns: String URL, or None if the file has expired and been
+            deleted.
         """
         # Note that the path is the same for both secure and insecure
         # URLs.  This is deliberate: the server doesn't need to know
