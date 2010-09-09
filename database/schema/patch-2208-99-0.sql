@@ -24,7 +24,7 @@ ALTER TABLE BranchRevision
 ADD CONSTRAINT revisionnumber_pkey PRIMARY KEY (branch, revision);
 
 -- What was this used for?  Not used now.
-DROP VIEW BranchRevision;
+DROP VIEW RevisionNumber;
 
 -- Kill the old id.
 ALTER TABLE BranchRevision
