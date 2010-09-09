@@ -123,7 +123,7 @@ class DummyTranslationMessage(TranslationMessageMixIn):
                 'This translation message already exists in the database.')
 
         self.id = None
-        self.pofile = pofile
+        self.pofile = None
         self.browser_pofile = pofile
         self.potemplate = pofile.potemplate
         self.language = pofile.language
@@ -159,6 +159,10 @@ class DummyTranslationMessage(TranslationMessageMixIn):
     def getOnePOFile(self):
         """See `ITranslationMessage`."""
         return None
+
+    def ensureBrowserPOFile(self):
+        """See `ITranslationMessage`."""
+        return self.browser_pofile
 
     @property
     def all_msgstrs(self):
@@ -379,6 +383,12 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
             return pofile[0]
         else:
             return None
+
+    def ensureBrowserPOFile(self):
+        """See `ITranslationMessage`."""
+        if self.browser_pofile is None:
+            self.browser_pofile = self.getOnePOFile()
+        return self.browser_pofile
 
     def _getSharedEquivalent(self):
         """Get shared message that otherwise exactly matches this one.
