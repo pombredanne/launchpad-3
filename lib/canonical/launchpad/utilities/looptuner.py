@@ -314,6 +314,10 @@ class TunableLoop:
         self.log = log
         self.abort_time = abort_time
 
+    def isDone(self):
+        """Return True when the TunableLoop is complete."""
+        raise NotImplementedError(self.isDone)
+
     def run(self):
         assert self.maximum_chunk_size is not None, (
             "Did not override maximum_chunk_size.")
