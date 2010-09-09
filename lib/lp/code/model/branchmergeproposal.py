@@ -77,7 +77,7 @@ from lp.code.mail.branch import RecipientReason
 from lp.code.model.branchrevision import BranchRevision
 from lp.code.model.codereviewcomment import CodeReviewComment
 from lp.code.model.codereviewvote import CodeReviewVoteReference
-from lp.code.model.diff import PreviewDiff
+from lp.code.model.diff import Diff, IncrementalDiff, PreviewDiff
 from lp.registry.interfaces.person import (
     IPerson,
     validate_public_person,
@@ -780,6 +780,15 @@ class BranchMergeProposal(SQLBase):
         # the storm store.
         Store.of(self).flush()
         return self.preview_diff
+
+    def generateIncrementalDiff(self, old_revision, new_revision):
+        source_branch = self.source_branch.getBzrBranch()
+        ignore_branches = [self.target_branch.getBzrBranch()]
+        if self.prerequisite_branch is not None:
+            ignore_branches.append(self.prerequisite_branch.getBzrBranch())
+        diff = Diff.generateIncrementalDiff(
+            old_revision, new_revision, source_branch, ignore_branches)
+        return IncrementalDiff(diff=diff, merge_proposal=self)
 
 
 class BranchMergeProposalGetter:

@@ -551,8 +551,8 @@ class TestIncrementalDiff(DiffTestCase):
                         removed.append(line.contents)
         return inserted, removed
 
-    def test_fromBranchMergeProposal(self):
-        """FromBranchMergeProposal works.
+    def test_generateIncrementalDiff(self):
+        """generateIncrementalDiff works.
 
         Changes merged from the prerequisite and target are ignored in the
         diff.
@@ -584,8 +584,8 @@ class TestIncrementalDiff(DiffTestCase):
             new_revision = self.commitFile(
                 bmp.source_branch, 'foo', 'd\na\nc\ne\nf\n',
                 [prerequisite_revision])
-            incremental_diff = IncrementalDiff.fromMergeProposal(
-                bmp, old_revision, new_revision)
+            incremental_diff = bmp.generateIncrementalDiff(
+                old_revision, new_revision)
             librarian.pretendCommit()
             inserted, removed = self.diff_changes(incremental_diff.text)
             self.assertEqual(['c\n'], inserted)
