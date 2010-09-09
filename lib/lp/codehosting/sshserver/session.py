@@ -143,6 +143,11 @@ class ForkedProcessTransport(process.BaseProcess):
             raise ProcessExitedAlready()
         os.kill(self.pid, signalID)
 
+    # Implemented because conch.ssh.session uses it, the Process implementation
+    # ignores writes if channel '0' is not available
+    def write(self, data):
+        self.pipes[0].write(data)
+
     def writeToChild(self, childFD, data):
         # Copied from twisted.internet.process.Process
         self.pipes[childFD].write(data)
@@ -151,19 +156,25 @@ class ForkedProcessTransport(process.BaseProcess):
         if childFD in self.pipes:
             self.pipes[childFD].loseConnection()
 
-    def closeStdin():
+    def closeStdin(self):
         self.closeChildFD(0)
 
-    def closeStdout():
+    def closeStdout(self):
         self.closeChildFD(1)
 
-    def closeStderr():
+    def closeStderr(self):
         self.closeChildFD(2)
 
     def loseConnection(self):
         self.closeStdin()
         self.closeStdout()
         self.closeStderr()
+
+
+    # Implemented because ProcessWriter/ProcessReader want to call it
+    # Copied from twisted.internet.Process
+    def childDataReceived(self, name, data):
+        self.proto.childDataReceived(name, data)
 
     # Implemented because ProcessWriter/ProcessReader want to call it
     # Copied from twisted.internet.Process
