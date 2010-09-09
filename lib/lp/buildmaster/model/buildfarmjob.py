@@ -272,7 +272,7 @@ class BuildFarmJob(BuildFarmJobOld, Storm):
         return self.date_finished - self.date_started
 
     def makeJob(self):
-        """See `IBuildFarmJob`."""
+        """See `IBuildFarmJobOld`."""
         raise NotImplementedError
 
     def jobStarted(self):

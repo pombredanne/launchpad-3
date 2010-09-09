@@ -20,9 +20,16 @@ from zope.interface import (
 
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from lp.buildmaster.model.buildfarmjob import BuildFarmJobDerived
+from lp.code.model.branchjob import (
+    BranchJob,
+    BranchJobType,
+    )
 from lp.translations.interfaces.translationtemplatesbuild import (
     ITranslationTemplatesBuild,
     ITranslationTemplatesBuildSource,
+    )
+from lp.translations.model.translationtemplatesbuildjob import (
+    TranslationTemplatesBuildJob,
     )
 
 
@@ -51,3 +58,14 @@ class TranslationTemplatesBuild(BuildFarmJobDerived, Storm):
         build = TranslationTemplatesBuild(build_farm_job, branch)
         IMasterStore(TranslationTemplatesBuild).add(build)
         return build
+
+    def makeJob(self):
+        """See `IBuildFarmJobOld`."""
+        store = IMasterStore(BranchJob)
+
+        # Pass public HTTP URL for the branch.
+        metadata = {'branch_url': self.branch.composePublicURL()}
+        branch_job = BranchJob(
+            self.branch, BranchJobType.TRANSLATION_TEMPLATES_BUILD, metadata)
+        store.add(branch_job)
+        return TranslationTemplatesBuildJob(branch_job)
