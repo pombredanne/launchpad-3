@@ -925,13 +925,11 @@ class Branch(SQLBase, BzrIdentityMixin):
         rows = rows.order_by(BranchRevision.sequence)
         ancestry = set()
         history = []
-        branch_revision_map = {}
         for branch_revision_id, sequence, revision_id in rows:
             ancestry.add(revision_id)
-            branch_revision_map[revision_id] = branch_revision_id
             if sequence is not None:
                 history.append(revision_id)
-        return ancestry, history, branch_revision_map
+        return ancestry, history
 
     def getPullURL(self):
         """See `IBranch`."""

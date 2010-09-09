@@ -126,8 +126,7 @@ class BzrSync:
     def retrieveDatabaseAncestry(self):
         """Efficiently retrieve ancestry from the database."""
         self.logger.info("Retrieving ancestry from database.")
-        db_ancestry, db_history, db_branch_revision_map = (
-            self.db_branch.getScannerData())
+        db_ancestry, db_history = self.db_branch.getScannerData()
         return db_ancestry, db_history
 
     def retrieveBranchDetails(self, bzr_branch):
