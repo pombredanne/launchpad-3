@@ -50,7 +50,7 @@ class TestTranslationTemplatesBuild(TestCaseWithFactory):
         self.assertTrue(verifyObject(ITranslationTemplatesBuild, build))
         self.assertEqual(build_farm_job, build.build_farm_job)
         self.assertEqual(branch, build.branch)
-        
+
     def test_created_by_buildjobsource(self):
         # ITranslationTemplatesBuildJobSource.create also creates a
         # TranslationTemplatesBuild.  This utility will become obsolete

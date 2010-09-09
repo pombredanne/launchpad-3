@@ -31,6 +31,7 @@ class ITranslationTemplatesBuild(Interface):
 
 class ITranslationTemplatesBuildSource(Interface):
     """Utility for `ITranslationTemplatesBuild`."""
+
     def create(build_farm_job, branch):
         """Create a new `ITranslationTemplatesBuild`."""
 
