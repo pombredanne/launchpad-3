@@ -71,10 +71,6 @@ class IPackageBuild(IBuildFarmJob):
         title=_('Build farm job'), schema=IBuildFarmJob, required=True,
         readonly=True, description=_('The base build farm job.'))
 
-    policy_name = TextLine(
-        title=_("Policy name"), required=True,
-        description=_("The upload policy to use for handling these builds."))
-
     current_component = Attribute(
         'Component where the source related to this build was last '
         'published.')

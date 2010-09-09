@@ -39,12 +39,6 @@ from canonical.launchpad.interfaces.lpstorm import (
     )
 from canonical.launchpad.webapp import errorlog
 from lp.app.errors import NotFoundError
-from lp.archiveuploader.uploadpolicy import (
-    ArchiveUploadType,
-    BuildDaemonUploadPolicy,
-    IArchiveUploadPolicy,
-    SOURCE_PACKAGE_RECIPE_UPLOAD_POLICY_NAME,
-    )
 from lp.buildmaster.enums import (
     BuildFarmJobType,
     BuildStatus,
@@ -77,22 +71,9 @@ from lp.soyuz.model.buildfarmbuildjob import BuildFarmBuildJob
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
 
-class SourcePackageRecipeUploadPolicy(BuildDaemonUploadPolicy):
-    """Policy for uploading the results of a source package recipe build."""
-
-    name = SOURCE_PACKAGE_RECIPE_UPLOAD_POLICY_NAME
-    accepted_type = ArchiveUploadType.SOURCE_ONLY
-
-    def getUploader(self, changes, build):
-        """Return the person doing the upload."""
-        return build.requester
-
-
 class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
 
     __storm_table__ = 'SourcePackageRecipeBuild'
-
-    policy_name = SourcePackageRecipeUploadPolicy.name
 
     implements(ISourcePackageRecipeBuild)
     classProvides(ISourcePackageRecipeBuildSource)
@@ -380,13 +361,6 @@ class SourcePackageRecipeBuildJob(BuildFarmJobOldDerived, Storm):
 
     def score(self):
         return 2505 + self.build.archive.relative_build_score
-
-
-def register_archive_upload_policy_adapter():
-    getGlobalSiteManager().registerUtility(
-        component=SourcePackageRecipeUploadPolicy,
-        provided=IArchiveUploadPolicy,
-        name=SourcePackageRecipeUploadPolicy.name)
 
 
 def get_recipe_build_for_build_farm_job(build_farm_job):

@@ -94,8 +94,6 @@ class PackageBuild(BuildFarmJobDerived, Storm):
     build_farm_job_id = Int(name='build_farm_job', allow_none=False)
     build_farm_job = Reference(build_farm_job_id, 'BuildFarmJob.id')
 
-    policy_name = 'buildd'
-
     # The following two properties are part of the IPackageBuild
     # interface, but need to be provided by derived classes.
     distribution = None

@@ -38,7 +38,7 @@ cases where it does this and a rejection would have been more useful
 Each upload directory is saved after processing, in case it is needed for
 debugging purposes. This is done by moving it to a directory inside the queue
 directory, beside incoming, named after the result - 'failed', 'rejected' or
-'accepted'. Where there are no changes files, the upload is considered failed,
+
 and where there is more than one changes file, the upload is assigned the
 worst of the results from the various changes files found (in the order
 above, failed being worst).
@@ -71,7 +71,6 @@ from lp.archiveuploader.nascentupload import (
     )
 from lp.archiveuploader.uploadpolicy import (
     BuildDaemonUploadPolicy,
-    SOURCE_PACKAGE_RECIPE_UPLOAD_POLICY_NAME,
     UploadPolicyError,
     )
 from lp.buildmaster.enums import (
@@ -452,10 +451,8 @@ class UploadProcessor:
 
         # Reject source upload to buildd upload paths.
         first_path = relative_path.split(os.path.sep)[0]
-        is_not_buildd_nor_recipe_policy = policy.name not in [
-            SOURCE_PACKAGE_RECIPE_UPLOAD_POLICY_NAME,
-            BuildDaemonUploadPolicy.name]
-        if first_path.isdigit() and is_not_buildd_nor_recipe_policy:
+        if (first_path.isdigit() and
+            policy.name != BuildDaemonUploadPolicy.name):
             error_message = (
                 "Invalid upload path (%s) for this policy (%s)" %
                 (relative_path, policy.name))

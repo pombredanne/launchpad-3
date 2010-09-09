@@ -105,7 +105,6 @@ class TestPackageBuild(TestPackageBuildBase):
 
     def test_default_values(self):
         # PackageBuild has a number of default values.
-        self.failUnlessEqual('buildd', self.package_build.policy_name)
         self.failUnlessEqual(
             'multiverse', self.package_build.current_component.name)
         self.failUnlessEqual(None, self.package_build.distribution)
