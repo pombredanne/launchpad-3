@@ -153,9 +153,15 @@ class HasSpecificationsView(LaunchpadView):
         if hasattr(self, 'index'):
             return super(HasSpecificationsView, self).template
 
+        # Sprints don't have a usage enum for blueprints, so we have to
+        # fallback to the default.
+        if ISprint.providedBy(self.context):
+            return self.uses_launchpad_template
+
         # If specifications exist, ignore the usage enum.
         if self.has_any_specifications:
             return self.uses_launchpad_template
+
         # Otherwise, determine usage and provide the correct template.
         service_usage = IServiceUsage(self.context)
         if service_uses_launchpad(service_usage.blueprints_usage):
