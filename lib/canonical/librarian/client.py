@@ -323,13 +323,24 @@ class FileDownloadClient:
 
         if lfa is None:
             raise DownloadFailed('Alias %d not found' % aliasID)
-        if not secure and self.restricted != lfa.restricted:
-            raise DownloadFailed(
-                'Alias %d cannot be downloaded from this client.' % aliasID)
+        self._checkAliasAccess(lfa, secure=secure)
 
         return lfa
 
-    def _getPathForAlias(self, aliasID):
+    def _checkAliasAccess(self, alias, secure=False):
+        """Verify that `alias` can be accessed.
+
+        :param alias: A `LibraryFileAlias`.
+        :param secure: Controls the behaviour when looking up restricted
+            files.  If False restricted files are only permitted when
+            self.restricted is True.  See `getURLForAlias`.
+        :raises: `DownloadFailed` if access is not allowed.
+        """
+        if not secure and alias.restricted != self.restricted:
+            raise DownloadFailed(
+                'Alias %d cannot be downloaded from this client.' % alias.id)
+
+    def _getPathForAlias(self, aliasID, secure=False):
         """Returns the path inside the librarian to talk about the given
         alias.
 
@@ -343,7 +354,8 @@ class FileDownloadClient:
 
         :raises: DownloadFailed if the alias is invalid
         """
-        return self._getPathForAliasObject(self._getAlias(int(aliasID)))
+        return self._getPathForAliasObject(
+            self._getAlias(int(aliasID), secure=secure))
 
     def _getPathForAliasObject(self, alias):
         """Returns the Librarian path for a `LibraryFileAlias`."""
@@ -389,7 +401,7 @@ class FileDownloadClient:
         # Insert the alias id (which is a unique key, thus unique) in the
         # netloc
         parsed[1] = ('i%d.restricted.' % alias.id) + parsed[1]
-        base = urlunparse(parsed)
+        return urlunparse(parsed)
 
     def getURLForAliasObject(self, alias, secure=False):
         """Return the download URL for a `LibraryFileAlias`.
@@ -409,8 +421,9 @@ class FileDownloadClient:
         # about the original Host the client provides, and testing is
         # easier as we don't need wildcard https environments on dev
         # machines.
+        self._checkAliasAccess(alias, secure=secure)
         base = self._getBaseURL(alias, secure=secure)
-        path = self._getPathForAliasObject(alias, secure=secure)
+        path = self._getPathForAliasObject(alias)
         return compose_url(base, path)
 
     def _getURLForDownload(self, aliasID):
