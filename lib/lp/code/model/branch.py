@@ -26,7 +26,6 @@ from storm.expr import (
     And,
     Count,
     Desc,
-    Max,
     NamedFunc,
     Not,
     Or,
@@ -59,11 +58,6 @@ from canonical.launchpad.interfaces.launchpad import (
     IPrivacy,
     )
 from canonical.launchpad.webapp import urlappend
-from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector,
-    MAIN_STORE,
-    SLAVE_FLAVOR,
-    )
 from lp.app.errors import UserCannotUnsubscribePerson
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.code.bzr import (
@@ -130,9 +124,6 @@ from lp.services.database.prejoin import prejoin
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from lp.services.mail.notificationrecipientset import NotificationRecipientSet
-from lp.translations.model.translationtemplatesbuild import (
-    TranslationTemplatesBuild,
-    )
 
 
 class Branch(SQLBase, BzrIdentityMixin):
@@ -1031,6 +1022,9 @@ class Branch(SQLBase, BzrIdentityMixin):
         """
         # Avoid circular imports.
         from lp.code.model.branchjob import BranchJob
+        from lp.translations.model.translationtemplatesbuild import (
+            TranslationTemplatesBuild,
+            )
 
         store = Store.of(self)
         affected_jobs = Select(
