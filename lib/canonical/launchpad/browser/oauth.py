@@ -16,6 +16,7 @@ from zope.formlib.form import (
     Action,
     Actions,
     )
+from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad.interfaces.oauth import (
     IOAuthConsumerSet,
@@ -31,7 +32,10 @@ from canonical.launchpad.webapp.authentication import (
     check_oauth_signature,
     get_oauth_authorization,
     )
-from canonical.launchpad.webapp.interfaces import OAuthPermission
+from canonical.launchpad.webapp.interfaces import (
+    ILaunchBag,
+    OAuthPermission,
+    )
 from lp.app.errors import UnexpectedFormData
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pillar import IPillarNameSet
@@ -98,6 +102,7 @@ class OAuthRequestTokenView(LaunchpadView, JSONTokenMixin):
         return u'oauth_token=%s&oauth_token_secret=%s' % (
             token.key, token.secret)
 
+
 def token_exists_and_is_not_reviewed(form, action):
     return form.token is not None and not form.token.is_reviewed
 
@@ -106,8 +111,10 @@ def create_oauth_permission_actions():
     """Return a list of `Action`s for each possible `OAuthPermission`."""
     actions = Actions()
     actions_excluding_grant_permissions = Actions()
+
     def success(form, action, data):
         form.reviewToken(action.permission)
+
     for permission in OAuthPermission.items:
         action = Action(
             permission.title, name=permission.name, success=success,
@@ -117,6 +124,7 @@ def create_oauth_permission_actions():
         if permission != OAuthPermission.GRANT_PERMISSIONS:
             actions_excluding_grant_permissions.append(action)
     return actions, actions_excluding_grant_permissions
+
 
 class OAuthAuthorizeTokenView(LaunchpadFormView, JSONTokenMixin):
     """Where users authorize consumers to access Launchpad on their behalf."""
@@ -184,6 +192,16 @@ class OAuthAuthorizeTokenView(LaunchpadFormView, JSONTokenMixin):
         return actions
 
     def initialize(self):
+        user = getUtility(ILaunchBag).user
+        if user is None:
+            # The normal Launchpad code was not able to identify any
+            # user, but we're going to try a little harder before
+            # concluding that no one's logged in. If the incoming
+            # request is signed by an OAuth access token with the
+            # GRANT_PERMISSIONS access level, we will force a
+            # temporary login with the user whose access token this
+            # is.
+            raise Unauthorized()
         self.storeTokenContext()
         form = get_oauth_authorization(self.request)
         key = form.get('oauth_token')

@@ -1,4 +1,6 @@
-= Authorizing a request token =
+***************************
+Authorizing a request token
+***************************
 
 Once the consumer gets a request token, it must send the user to
 Launchpad's +authorize-token page in order for the user to authenticate
@@ -19,9 +21,12 @@ use the HTTP GET method and may include the oauth_callback parameter.
 The oauth_token parameter, on the other hand, is required in the
 Launchpad implementation.
 
-The +authorize-token page is restricted to logged in users, so users will
-first be asked to log in. (We won't show the actual login process because
-it involves OpenID, which would complicate this test quite a bit.)
+Access to the page
+==================
+
+The +authorize-token page is restricted to authenticated users, but
+the actual details of the authentication are different than from any
+other part of Launchpad.
 
     >>> from urllib import urlencode
     >>> params = dict(
@@ -31,6 +36,8 @@ it involves OpenID, which would complicate this test quite a bit.)
     Traceback (most recent call last):
     ...
     Unauthorized:...
+
+A user who is logged in through Basic Auth can see the page.
 
     >>> browser = setupBrowser(auth='Basic no-priv@canonical.com:test')
     >>> browser.open(url)
@@ -43,6 +50,17 @@ it involves OpenID, which would complicate this test quite a bit.)
     your behalf. What level of access do you want to grant?
     ...
     See all applications authorized to access Launchpad on your behalf.
+
+But a user can also see the page by signing an outgoing request with
+an _existing_ OAuth token. This makes it possible for a desktop client
+to retrieve this page without navigating the arbitrarily complex
+OpenID login procedure.
+
+The OAuth token must have the GRANT_PERMISSIONS access level; no other
+access level will work.
+
+Using the page
+==============
 
 This page contains one submit button for each item of OAuthPermission,
 except for 'Grant Permissions', which must be specifically requested.
