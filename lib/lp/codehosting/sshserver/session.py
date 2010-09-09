@@ -45,7 +45,7 @@ class ForkedProcessTransport(process.BaseProcess):
     reactor.
     """
 
-    implements(IProcessTransport)
+    implements(interfaces.IProcessTransport)
 
     # TODO: process._BaseProcess implements 'reapProcess' as an ability. Which
     #       then tries to 'os.waitpid()' on the given file handle. Testing
@@ -56,7 +56,7 @@ class ForkedProcessTransport(process.BaseProcess):
     # TODO: It looks like we want to be able to pass along at least BZR_EMAIL
     #       to the fork request
     def __init__(self, reactor, executable, args, proto):
-        process.BaseProcess.__init__(proto)
+        process.BaseProcess.__init__(self, proto)
         pid, path = self._spawn(executable, args)
         self.pid = pid
         self._fifo_path = path
@@ -72,22 +72,25 @@ class ForkedProcessTransport(process.BaseProcess):
             socket.AF_UNSPEC, socket.SOCK_STREAM, 0, socket.AI_PASSIVE)
         (family, socktype, proto, canonname, sockaddr) = addrs[0]
         client_sock = socket.socket(family, socktype, proto)
+        log.msg('Connecting to Forking Service @ port: %d for %r'
+                % (DEFAULT_SERVICE_PORT, message))
         # TODO: How do we do logging in this codebase?
         try:
             client_sock.connect(sockaddr)
-            client_sock.sendall(msg)
+            client_sock.sendall(message)
             # We define the requests to be no bigger than 1kB. (For now)
             response = client_sock.recv(1024)
         except socket.error, e:
             # TODO: What exceptions should be raised?
-            raise RuntimeError('Failed to connect: %s' % (e,))
+            log.err('Connection failed: %s' % (e,))
+            raise
         if response.startswith("FAILURE"):
             raise RuntimeError('Failed to send message: %r' % (response,))
         return response
 
     def _spawn(self, executable, args):
-        assert executable == 'bzr' # Maybe .endswith()
-        assert args[0] == 'bzr'
+        assert executable == 'bzr', executable # Maybe .endswith()
+        assert args[0] == 'bzr', args[0]
         # XXX: We must send BZR_EMAIL to the process, or we get failures to
         #      run because of no 'whoami' information.
         response = self._sendMessageToService('fork %s\n' % ' '.join(args[1:]))
@@ -224,8 +227,12 @@ class ExecOnlySession(DoNothingSession):
         # violation. Apart from this line and its twin, this class knows
         # nothing about Bazaar.
         notify(BazaarSSHStarted(self.avatar))
-        self._transport = ForkedProcessTransport(self.reactor, executable,
-                                                 args, protocol)
+        if executable == 'bzr': # Endswith?
+            self._transport = ForkedProcessTransport(self.reactor, executable,
+                                                     arguments, protocol)
+        else:
+            self._transport = self.reactor.spawnProcess(
+                protocol, executable, arguments, env=self.environment)
 
     def getCommandToRun(self, command):
         """Return the command that will actually be run given `command`.
@@ -293,5 +300,5 @@ def launch_smart_server(avatar):
         avatar,
         reactor,
         'bzr serve --inet --directory=/ --allow-writes',
-        command + ' %(user_id)s',
+        command,
         environment=environment)
