@@ -1366,7 +1366,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         component_group = bug_tracker.addRemoteComponentGroup(name)
         return component_group
 
-    def makeBugTrackerComponent(self, name=None, component_group=None):
+    def makeBugTrackerComponent(self, name=None, component_group=None,
+                                custom=None):
         """Make a new bug tracker component."""
 
         if name is None:
@@ -1375,7 +1376,14 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if component_group is None:
             component_group = self.makeBugTrackerComponentGroup()
 
-        component = component_group.addComponent(name)
+        if custom is None:
+            custom = False
+
+        if custom:
+            component = component_group.addCustomComponent(name)
+        else:
+            component = component_group.addComponent(name)
+
         return component
 
     def makeBugWatch(self, remote_bug=None, bugtracker=None, bug=None,

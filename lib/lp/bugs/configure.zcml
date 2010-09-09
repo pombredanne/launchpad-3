@@ -428,10 +428,11 @@
                     is_custom
                     "/>
             <require
-                permission="launchpad.Edit"
+                permission="zope.Public"
                 attributes="
                     show
                     hide
+                    setCustom
                     "/>
             <implements
                 interface="lp.bugs.interfaces.bugtracker.IBugTrackerComponent"/>
@@ -442,7 +443,10 @@
         <class
             class="canonical.launchpad.database.BugTrackerComponentGroup">
             <allow
-                attributes="addComponent"/>
+                attributes="
+                    addComponent
+                    addCustomComponent
+                    "/>
             <implements
                 interface="lp.bugs.interfaces.bugtracker.IBugTrackerComponentGroup"/>
         </class>

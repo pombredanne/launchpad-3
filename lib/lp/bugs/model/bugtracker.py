@@ -706,13 +706,16 @@ class BugTrackerComponent(SQLBase):
     def show(self):
         if not self.is_visible:
             self.is_visible = True
-            self.sync()
+            # self.sync()
 
     def hide(self):
         if self.is_visible:
             self.is_visible = False
-            self.sync()
+            # self.sync()
 
+    def setCustom(self):
+        if not self.is_custom:
+            self.is_custom = True
 
 class BugTrackerComponentGroup(SQLBase):
     """A collection of components in a remote bug tracker.
@@ -734,10 +737,20 @@ class BugTrackerComponentGroup(SQLBase):
     components = []
 
     def addComponent(self, component_name):
+        """Adds a component that is synced from a remote bug tracker"""
+        component = BugTrackerComponent()
+        component.name = component_name
+        
+        self.components.append(component)
+        return component
+
+    def addCustomComponent(self, component_name):
+        """Adds a component locally that isn't synced from a remote tracker"""
         # TODO: Verify we don't already have the component
 
         component = BugTrackerComponent()
         component.name = component_name
+        component.setCustom()
         
         self.components.append(component)
         return component

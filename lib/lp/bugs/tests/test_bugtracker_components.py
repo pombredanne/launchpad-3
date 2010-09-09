@@ -34,29 +34,41 @@ class TestBugTrackerComponent(TestCaseWithFactory):
         login(ANONYMOUS)
         super(TestBugTrackerComponent, self).setUp()
 
-        self.component = self.factory.makeBugTrackerComponent("Alpha")
-
     def test_component_creation(self):
-        self.assertTrue(self.component != None)
+        component = self.factory.makeBugTrackerComponent("Foobar")
+        self.assertTrue(component != None)
 
     def test_set_visibility(self):
-        self.assertEqual(self.component.is_visible, True)
+        component = self.factory.makeBugTrackerComponent("Foobar")
+        self.assertEqual(component.is_visible, True)
 
-        self.assertRaises(Unauthorized, getattr, self.component, 'hide')
+        #TODO - only logged in users should be able to show/hide components
+        # self.assertRaises(Unauthorized, getattr, self.component, 'hide')
+        # regular_user = self.factory.makePerson()
+        # login_person(regular_user)
 
-#        unprivileged_user = self.factory.makePerson()
-#        login_person(unprivileged_user)
-#        self.component.show()
-#        self.assertEqual(self.component.is_visible, True)
+        component.hide()
+        self.assertEqual(component.is_visible, False)
 
-#        self.component.hide()
-#        self.assertEqual(self.component.is_visible, False)
+        component.show()
+        self.assertEqual(component.is_visible, True)
         
-    def test_custom(self):
-        pass
- #       self.assertEqual(self.component.is_custom, False)
- #       self.component.is_visible = True
- #       self.assertEqual(self.component.is_custom, True)
+    def test_custom_component(self):
+        custom_component = self.factory.makeBugTrackerComponent(
+            "CustomComponent", custom=True)
+        self.assertTrue(custom_component != None)
+        self.assertEqual(custom_component.is_custom, True)
+
+    def test_multiple_components(self):
+        comp_group = self.factory.makeBugTrackerComponentGroup()
+        
+        comp_a = self.factory.makeBugTrackerComponent("a", comp_group)
+        comp_b = self.factory.makeBugTrackerComponent("b", comp_group)
+        comp_c = self.factory.makeBugTrackerComponent("c", comp_group, True)
+
+        self.assertTrue(comp_a != None)
+        self.assertTrue(comp_b != None)
+        self.assertTrue(comp_c != None)
 
 
 class TestBugTrackerWithComponents(TestCaseWithFactory):
