@@ -309,7 +309,7 @@ series, the most important of which are milestones. Bugtasks and
 specifications that will be unassigned, and release files that will be
 deleted are available.
 
-    >>> view.milestones
+    >>> list(view.milestones)
     []
     >>> view.bugtasks
     []

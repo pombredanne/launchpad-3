@@ -7,15 +7,12 @@ __metaclass__ = type
 __all__ = [
     'Branch',
     'BranchSet',
-    'compose_public_url',
     ]
 
 from datetime import datetime
-import os.path
 
 from bzrlib import urlutils
 from bzrlib.revision import NULL_REVISION
-from lazr.uri import URI
 import pytz
 from sqlobject import (
     BoolCol,
@@ -108,6 +105,7 @@ from lp.code.interfaces.branchmergeproposal import (
 from lp.code.interfaces.branchnamespace import IBranchNamespacePolicy
 from lp.code.interfaces.branchpuller import IBranchPuller
 from lp.code.interfaces.branchtarget import IBranchTarget
+from lp.code.interfaces.codehosting import compose_public_url
 from lp.code.interfaces.seriessourcepackagebranch import (
     IFindOfficialBranchLinks,
     )
@@ -1324,18 +1322,3 @@ def branch_modified_subscriber(branch, event):
     """
     update_trigger_modified_fields(branch)
     send_branch_modified_notifications(branch, event)
-
-
-def compose_public_url(scheme, unique_name, suffix=None):
-    # Avoid circular imports.
-    from lp.code.xmlrpc.branch import PublicCodehostingAPI
-
-    # Accept sftp as a legacy protocol.
-    accepted_schemes = set(PublicCodehostingAPI.supported_schemes)
-    accepted_schemes.add('sftp')
-    assert scheme in accepted_schemes, "Unknown scheme: %s" % scheme
-    host = URI(config.codehosting.supermirror_root).host
-    path = '/' + urlutils.escape(unique_name)
-    if suffix:
-        path = os.path.join(path, suffix)
-    return str(URI(scheme=scheme, host=host, path=path))
