@@ -250,7 +250,6 @@ from lp.testing import (
     time_counter,
     )
 from lp.translations.interfaces.potemplate import IPOTemplateSet
-from lp.translations.interfaces.side import ITranslationSideTraitsSet
 from lp.translations.interfaces.translationfileformat import (
     TranslationFileFormat,
     )
@@ -2393,18 +2392,13 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         """Create a diverged, current `TranslationMessage`."""
         if pofile is None:
             pofile = self.makePOFile('lt')
+        if reviewer is None:
+            reviewer = self.makePerson()
 
-        # This creates a suggestion, then diverges it, then activates it.
-        # Once we have a method for diverging messages, do this in a more
-        # proper way.
-        message = self.makeSharedTranslationMessage(
+        message = self.makeSuggestion(
             pofile=pofile, potmsgset=potmsgset, translator=translator,
-            reviewer=reviewer, translations=translations, suggestion=True)
-        traits = getUtility(ITranslationSideTraitsSet).getTraits(
-            pofile.potemplate.translation_side)
-        removeSecurityProxy(message).potemplate = pofile.potemplate
-        traits.setFlag(message, True)
-        return message
+            translations=translations)
+        return message.approveAsDiverged(pofile, reviewer)
 
     def makeTranslation(self, pofile, sequence,
                         english=None, translated=None,

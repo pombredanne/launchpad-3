@@ -175,6 +175,10 @@ class DummyTranslationMessage(TranslationMessageMixIn):
         """See `ITranslationMessage`."""
         raise NotImplementedError()
 
+    def approveAsDiverged(self, *args, **kwargs):
+        """See `ITranslationMessage`."""
+        raise NotImplementedError()
+
     def getOnePOFile(self):
         """See `ITranslationMessage`."""
         return None
@@ -351,6 +355,11 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
             pofile, self, reviewer,
             share_with_other_side=share_with_other_side,
             lock_timestamp=lock_timestamp)
+
+    def approveAsDiverged(self, pofile, reviewer, lock_timestamp=None):
+        """See `ITranslationMessage`."""
+        return self.potmsgset.approveAsDiverged(
+            pofile, self, reviewer, lock_timestamp=lock_timestamp)
 
     def getOnePOFile(self):
         """See `ITranslationMessage`."""

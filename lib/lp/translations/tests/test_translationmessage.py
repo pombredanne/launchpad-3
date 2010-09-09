@@ -269,6 +269,213 @@ class TestApprove(TestCaseWithFactory):
             pofile, self.factory.makePerson(), lock_timestamp=old)
 
 
+class TestApproveAsDiverged(TestCaseWithFactory):
+    """Tests for `TranslationMessage.approveAsDiverged`."""
+
+    layer = ZopelessDatabaseLayer
+
+    def _makeCounterpartPOFile(self, pofile):
+        """Make a `POFile` on the opposite translation side.
+
+        :param pofile: A `POFile` to match.  Assumed to be on the
+            "upstream" translation side.
+        """
+        assert pofile.potemplate.productseries is not None, (
+            "This test needs a product template; got a package template.""")
+        other_template = self.factory.makePOTemplate(
+            distroseries=self.factory.makeDistroSeries(),
+            sourcepackagename=self.factory.makeSourcePackageName())
+
+        return self.factory.makePOFile(
+            pofile.language.code, potemplate=other_template)
+
+    def test_makeCounterpartPOFile(self):
+        # self.factory.makePOFile makes POFiles on the upstream side by
+        # default.  self._makeCounterpartPOFile makes POFiles on the
+        # Ubuntu side.
+        pofile = self.factory.makePOFile('es')
+        other_pofile = self._makeCounterpartPOFile(pofile)
+
+        self.assertEqual(pofile.language, other_pofile.language)
+        self.assertNotEqual(
+            pofile.potemplate.translation_side,
+            other_pofile.potemplate.translation_side)
+
+    def test_no_change(self):
+        # Approving and diverging a message that's already active and
+        # diverged for this POFile does nothing.  Even the reviewer
+        # stays unchanged.
+        translator = self.factory.makePerson()
+        original_reviewer = self.factory.makePerson()
+        later_reviewer = self.factory.makePerson()
+        pofile = self.factory.makePOFile('es_AR')
+        message = self.factory.makeDivergedTranslationMessage(
+            pofile=pofile, translator=translator, reviewer=original_reviewer)
+
+        resulting_message = message.approveAsDiverged(pofile, later_reviewer)
+
+        self.assertEqual(message, resulting_message)
+        self.assertEqual(translator, message.submitter)
+        self.assertEqual(original_reviewer, message.reviewer)
+        self.assertEqual(pofile.potemplate, message.potemplate)
+
+    def test_activates_and_diverges(self):
+        # Approving a simple suggestion activates and diverges it.
+        pofile = self.factory.makePOFile('es_BO')
+        suggestion = self.factory.makeSuggestion(pofile=pofile)
+
+        resulting_message = suggestion.approveAsDiverged(
+            pofile, self.factory.makePerson())
+
+        self.assertEqual(suggestion, resulting_message)
+        self.assertTrue(suggestion.is_current_upstream)
+        self.assertTrue(suggestion.is_diverged)
+        self.assertEqual(pofile.potemplate, suggestion.potemplate)
+
+    def test_activating_reviews(self):
+        # Activating a message marks it as reviewed.
+        pofile = self.factory.makePOFile('es_BO')
+        reviewer = self.factory.makePerson()
+        suggestion = self.factory.makeSuggestion(pofile=pofile)
+
+        resulting_message = suggestion.approveAsDiverged(pofile, reviewer)
+
+        self.assertEqual(reviewer, resulting_message.reviewer)
+
+    def test_diverge_current_shared_leaves_message_intact(self):
+        # Calling approveAsDiverged on the current shared translation
+        # leaves it untouched.
+        original_reviewer = self.factory.makePerson()
+        later_reviewer = self.factory.makePerson()
+        pofile = self.factory.makePOFile('es_CL')
+        message = self.factory.makeCurrentTranslationMessage(
+            pofile=pofile, reviewer=original_reviewer)
+
+        resulting_message = message.approveAsDiverged(pofile, later_reviewer)
+
+        self.assertEqual(message, resulting_message)
+        self.assertEqual(original_reviewer, message.reviewer)
+        self.assertFalse(message.is_diverged)
+
+    def test_diverge_current_shared_message_unmasks_it(self):
+        # Calling approveAsDiverged on the current shared translation
+        # deactivates any diverged message that may be masking it.
+        pofile = self.factory.makePOFile('es_CO')
+        reviewer = self.factory.makePerson()
+        shared = self.factory.makeCurrentTranslationMessage(pofile=pofile)
+        diverged = self.factory.makeDivergedTranslationMessage(
+            pofile=pofile, potmsgset=shared.potmsgset)
+
+        self.assertTrue(shared.is_current_upstream)
+        self.assertTrue(diverged.is_current_upstream)
+        self.assertFalse(shared.is_diverged)
+        self.assertTrue(diverged.is_diverged)
+
+        shared.approveAsDiverged(pofile, reviewer)
+
+        self.assertTrue(shared.is_current_upstream)
+        self.assertFalse(diverged.is_current_upstream)
+        self.assertFalse(shared.is_diverged)
+
+    def test_does_not_affect_other_side(self):
+        # Approving a message that's current on the other side clones
+        # it, so that the other side remains unaffected by this local
+        # change.
+        reviewer = self.factory.makePerson()
+        pofile = self.factory.makePOFile('es_CR')
+        other_pofile = self._makeCounterpartPOFile(pofile)
+        suggestion = self.factory.makeCurrentTranslationMessage(
+            pofile=other_pofile)
+        self.assertEqual(
+            (False, True),
+            (suggestion.is_current_upstream, suggestion.is_current_ubuntu))
+
+        resulting_message = suggestion.approveAsDiverged(pofile, reviewer)
+
+        self.assertNotEqual(suggestion, resulting_message)
+        self.assertEqual(pofile.potemplate, resulting_message.potemplate)
+        self.assertFalse(suggestion.is_diverged)
+        self.assertTrue(resulting_message.is_current_upstream)
+        self.assertEqual(
+            (False, True),
+            (suggestion.is_current_upstream, suggestion.is_current_ubuntu))
+
+    def test_does_not_affect_diverged_elsewhere(self):
+        # Approving a message that's current and diverged to another
+        # template clones it, so that the other template remains
+        # unaffected by this local change.
+        reviewer = self.factory.makePerson()
+        pofile = self.factory.makePOFile('es_DO')
+        elsewhere = self.factory.makePOFile('es_DO')
+
+        suggestion = self.factory.makeDivergedTranslationMessage(
+            pofile=elsewhere)
+
+        resulting_message = suggestion.approveAsDiverged(pofile, reviewer)
+
+        self.assertNotEqual(suggestion, resulting_message)
+        self.assertEqual(pofile.potemplate, resulting_message.potemplate)
+        self.assertEqual(elsewhere.potemplate, suggestion.potemplate)
+        self.assertTrue(resulting_message.is_current_upstream)
+        self.assertTrue(suggestion.is_current_upstream)
+
+    def test_detects_conflict(self):
+        # Trying to approve and diverge a message based on outdated
+        # information raises TranslationConflict.
+        reviewer = self.factory.makePerson()
+        pofile = self.factory.makePOFile('es_EC')
+        suggestion = self.factory.makeSuggestion(pofile=pofile)
+        current = self.factory.makeDivergedTranslationMessage(
+            pofile=pofile, potmsgset=suggestion.potmsgset)
+        earlier = current.date_reviewed - timedelta(1)
+
+        self.assertRaises(
+            TranslationConflict,
+            suggestion.approveAsDiverged,
+            pofile, reviewer, lock_timestamp=earlier)
+
+    def test_passes_conflict_check_if_no_conflict(self):
+        # Trying to approve and diverge a message based on up-to-date
+        # works without raising a conflict.
+        reviewer = self.factory.makePerson()
+        pofile = self.factory.makePOFile('es_GT')
+        suggestion = self.factory.makeSuggestion(pofile=pofile)
+        current = self.factory.makeDivergedTranslationMessage(
+            pofile=pofile, potmsgset=suggestion.potmsgset)
+        later = current.date_reviewed + timedelta(1)
+
+        suggestion.approveAsDiverged(pofile, reviewer, lock_timestamp=later)
+
+        self.assertTrue(suggestion.is_current_upstream)
+
+    def test_passes_conflict_check_if_same_translations(self):
+        # Trying to approve and diverge a message based on outdated
+        # information works just fine if in the meantime the suggestion
+        # has become the diverged current translation.
+        reviewer = self.factory.makePerson()
+        pofile = self.factory.makePOFile('es_HN')
+        current = self.factory.makeDivergedTranslationMessage(pofile=pofile)
+        earlier = current.date_reviewed - timedelta(1)
+
+        current.approveAsDiverged(pofile, reviewer, lock_timestamp=earlier)
+
+        self.assertTrue(current.is_current_upstream)
+
+    def test_updates_pofile(self):
+        # Approving a message as a diverged translation marks the POFile
+        # as updated.
+        reviewer = self.factory.makePerson()
+        pofile = self.factory.makePOFile('es_MX')
+        suggestion = self.factory.makeSuggestion(pofile=pofile)
+        earlier = pofile.date_changed - timedelta(1)
+        pofile.markChanged(timestamp=earlier)
+
+        self.assertEqual(earlier, pofile.date_changed)
+        suggestion.approveAsDiverged(pofile, reviewer)
+        self.assertNotEqual(earlier, pofile.date_changed)
+        self.assertEqual(suggestion.date_reviewed, pofile.date_changed)
+
+
 class TestTranslationMessageFindIdenticalMessage(TestCaseWithFactory):
     """Tests for `TranslationMessage.findIdenticalMessage`."""
 

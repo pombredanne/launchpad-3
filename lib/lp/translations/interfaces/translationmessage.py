@@ -265,6 +265,9 @@ class ITranslationMessage(Interface):
                 lock_timestamp=None):
         """Approve this suggestion, making it a current translation."""
 
+    def approveAsDiverged(pofile, reviewer, lock_timestamp=None):
+        """Approve this suggestion, as a diverged translation."""
+
     # XXX CarlosPerelloMarin 20071022: We should move this into browser code.
     def makeHTMLID(description):
         """Unique identifier for self, suitable for use in HTML element ids.

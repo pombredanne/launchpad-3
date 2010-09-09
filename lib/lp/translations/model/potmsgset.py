@@ -1144,6 +1144,70 @@ class POTMsgSet(SQLBase):
             template.awardKarma(translator, 'translationsuggestionapproved')
             template.awardKarma(reviewer, 'translationreview')
 
+    def _cloneAndDiverge(self, original_message, pofile):
+        """Create a diverged clone of a `TranslationMessage`.
+
+        The message is not made current; the caller must do so in order
+        to keep the message in a consistent state.
+        """
+        potranslations = self._findPOTranslations(
+            dict(enumerate(original_message.translations)))
+        message = self._makeTranslationMessage(
+            pofile, original_message.submitter, potranslations,
+            original_message.origin, diverged=True)
+        return message
+
+    def approveAsDiverged(self, pofile, suggestion, reviewer,
+                          lock_timestamp=None):
+        """Approve a suggestion to become a diverged translation."""
+        template = pofile.potemplate
+        traits = getUtility(ITranslationSideTraitsSet).getTraits(
+            template.translation_side)
+
+        diverged = suggestion.is_diverged
+        used_here = traits.getFlag(suggestion)
+        used_on_other_side = traits.other_side_traits.getFlag(suggestion)
+
+        if used_here and suggestion.potemplate == template:
+            # The suggestion is already current and diverged for the
+            # right template.
+            return suggestion
+
+        incumbent = traits.getCurrentMessage(self, template, pofile.language)
+        if incumbent is not None:
+            # Ensure that the current message hasn't changed from the
+            # state the reviewer inspected before making this change.
+            self._checkForConflict(incumbent, lock_timestamp)
+
+        if incumbent is not None and incumbent.is_diverged:
+            # The incumbent is also diverged, so it's in the way of the
+            # suggestion we're trying to diverge.  Disable it.
+            traits.setFlag(incumbent, False)
+            incumbent.markReviewed(reviewer)
+            incumbent.shareIfPossible()
+            pofile.markChanged()
+
+        if used_here and not diverged and not used_on_other_side:
+            # This message is already the shared current message.  If it
+            # was previously masked by a diverged message, it no longer
+            # is.  This is probably the behaviour the user would expect.
+            return suggestion
+
+        if used_here or used_on_other_side:
+            # The suggestion is already current somewhere else.  Can't
+            # reuse it as a diverged message in this template, so clone
+            # it.
+            message = self._cloneAndDiverge(suggestion, pofile)
+        else:
+            # No obstacles.  Diverge.
+            message = suggestion
+            message.potemplate = template
+
+        traits.setFlag(message, True)
+        message.markReviewed(reviewer)
+        pofile.markChanged()
+        return message
+
     def setCurrentTranslation(self, pofile, submitter, translations, origin,
                               share_with_other_side=False,
                               lock_timestamp=None):
