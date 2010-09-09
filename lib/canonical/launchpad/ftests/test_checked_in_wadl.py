@@ -21,7 +21,7 @@ class TestCheckedInWadlAndDocs(unittest.TestCase):
     """As an optimization and safety net we check in some web service files
 
     The optimization is that it takes less time to build because the non-devel
-    WADL files and HTML documentaiton don't have to be regenerated.  It is a
+    WADL files and HTML documentation don't have to be regenerated.  It is a
     safety net because it is our policy (as of the time of this writing) that
     the non-devel APIs should not change (even in backward-compatible ways),
     therefore the WADL files describing the APIs -- and generated from
