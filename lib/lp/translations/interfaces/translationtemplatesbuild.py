@@ -17,7 +17,7 @@ from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
 from lp.code.interfaces.branch import IBranch
 
 
-class ITranslationTemplatesBuild(Interface):
+class ITranslationTemplatesBuild(IBuildFarmJob):
     """The build information for translation templates builds."""
 
     build_farm_job = Reference(
