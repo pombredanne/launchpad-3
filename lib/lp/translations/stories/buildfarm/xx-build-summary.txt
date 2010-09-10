@@ -1,9 +1,11 @@
-= TranslationTemplatesBuildJob Build Summary =
+TranslationTemplatesBuildJob Build Summary
+==========================================
 
 The builders UI can show TranslationTemplateBuildJobs, although they
 look a little different from Soyuz-style jobs.
 
-== Setup ==
+Setup
+-----
 
 Create a builder working on a TranslationTemplatesBuildJob for a branch.
 
@@ -13,6 +15,7 @@ Create a builder working on a TranslationTemplatesBuildJob for a branch.
     >>> from canonical.launchpad.interfaces.librarian import (
     ...     ILibraryFileAliasSet)
     >>> from canonical.launchpad.scripts.logger import QuietFakeLogger
+    >>> from lp.app.enums import ServiceUsage
     >>> from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
     >>> from lp.testing.factory import (
     ...     remove_security_proxy_and_shout_at_engineer)
@@ -32,7 +35,7 @@ Create a builder working on a TranslationTemplatesBuildJob for a branch.
     >>> productseries = factory.makeProductSeries(owner=owner)
     >>> product = productseries.product
     >>> naked_product = remove_security_proxy_and_shout_at_engineer(product)
-    >>> naked_product.official_rosetta = True
+    >>> naked_product.translations_usage = ServiceUsage.LAUNCHPAD
     >>> branch = factory.makeProductBranch(product=product, owner=owner)
     >>> branch_url = branch.unique_name
 
@@ -62,7 +65,8 @@ Helper: find the current build's summary on a browser's current page.
     ...     return find_tag_by_id(browser.contents, 'current-build-summary')
 
 
-== Show summary ==
+Show summary
+------------
 
 The job's summary shows that what type of job this is.  It also links
 to the branch.
