@@ -204,7 +204,7 @@ class DistroSeriesDifference(Storm):
                 updated = True
                 # If the derived version has change and the previous version
                 # was blacklisted, then we remove the blacklist now.
-                if self.status == DistroSeriesDifferenceStatus.IGNORED:
+                if self.status == DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT:
                     self.status = DistroSeriesDifferenceStatus.NEEDS_ATTENTION
         if self.parent_source_pub:
             new_parent_source_version = (
@@ -225,7 +225,7 @@ class DistroSeriesDifference(Storm):
         # versions.
         elif self.status in (
             DistroSeriesDifferenceStatus.NEEDS_ATTENTION,
-            DistroSeriesDifferenceStatus.IGNORED):
+            DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT):
             if self.source_version == self.parent_source_version:
                 updated = True
                 self.status = DistroSeriesDifferenceStatus.RESOLVED

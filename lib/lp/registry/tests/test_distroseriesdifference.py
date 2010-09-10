@@ -235,7 +235,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
                 },
             difference_type=(
                 DistroSeriesDifferenceType.UNIQUE_TO_DERIVED_SERIES),
-            status=DistroSeriesDifferenceStatus.IGNORED)
+            status=DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT)
         new_derived_pub = self.factory.makeSourcePackagePublishingHistory(
             sourcepackagename=ds_diff.source_package_name,
             distroseries=ds_diff.derived_series,
@@ -260,7 +260,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
                 'derived': '0.9',
                 'parent': '1.0',
                 },
-            status=DistroSeriesDifferenceStatus.IGNORED_ALWAYS)
+            status=DistroSeriesDifferenceStatus.BLACKLISTED_ALWAYS)
         new_derived_pub = self.factory.makeSourcePackagePublishingHistory(
             sourcepackagename=ds_diff.source_package_name,
             distroseries=ds_diff.derived_series,
@@ -271,7 +271,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
 
         self.assertTrue(was_updated)
         self.assertEqual(
-            DistroSeriesDifferenceStatus.IGNORED_ALWAYS,
+            DistroSeriesDifferenceStatus.BLACKLISTED_ALWAYS,
             ds_diff.status)
 
     def test_title(self):
@@ -376,7 +376,7 @@ class DistroSeriesDifferenceSourceTestCase(TestCaseWithFactory):
         diffs['ignored'].append(
             self.factory.makeDistroSeriesDifference(
                 derived_series=derived_series,
-                status=DistroSeriesDifferenceStatus.IGNORED))
+                status=DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT))
         return diffs
 
     def makeDerivedSeries(self):
@@ -423,7 +423,7 @@ class DistroSeriesDifferenceSourceTestCase(TestCaseWithFactory):
 
         result = getUtility(IDistroSeriesDifferenceSource).getForDistroSeries(
             derived_series,
-            status=DistroSeriesDifferenceStatus.IGNORED)
+            status=DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT)
 
         self.assertContentEqual(diffs['ignored'], result)
 
@@ -435,7 +435,7 @@ class DistroSeriesDifferenceSourceTestCase(TestCaseWithFactory):
         result = getUtility(IDistroSeriesDifferenceSource).getForDistroSeries(
             derived_series,
             status=(
-                DistroSeriesDifferenceStatus.IGNORED,
+                DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT,
                 DistroSeriesDifferenceStatus.NEEDS_ATTENTION,
                 ))
 
