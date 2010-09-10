@@ -266,7 +266,7 @@ class StructuralSubscriptionTargetMixin:
                          min_blueprint_notification_level=
                          BlueprintNotificationLevel.NOTHING):
         """See `IStructuralSubscriptionTarget`."""
-        target_clause_parts = [
+        clauses = [
             "StructuralSubscription.subscriber = Person.id",
             "StructuralSubscription.bug_notification_level "
             ">= %s" % quote(min_bug_notification_level),
@@ -275,12 +275,12 @@ class StructuralSubscriptionTargetMixin:
             ]
         for key, value in self._target_args.iteritems():
             if value is None:
-                target_clause_parts.append(
-                    "StructuralSubscription.%s IS NULL " % (key, ))
+                clauses.append(
+                    "StructuralSubscription.%s IS NULL" % (key,))
             else:
-                target_clause_parts.append(
-                    "StructuralSubscription.%s = %s " % (key, quote(value)))
-        query = " AND ".join(target_clause_parts)
+                clauses.append(
+                    "StructuralSubscription.%s = %s" % (key, quote(value)))
+        query = " AND ".join(clauses)
         return StructuralSubscription.select(
             query, orderBy='Person.displayname', clauseTables=['Person'])
 
