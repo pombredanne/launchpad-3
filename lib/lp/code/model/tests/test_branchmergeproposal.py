@@ -82,6 +82,7 @@ from lp.testing.factory import (
     GPGSigningContext,
     LaunchpadObjectFactory,
     )
+from lp.testing.fakelibrarian import FakeLibrarian
 
 
 class TestBranchMergeProposalInterface(TestCaseWithFactory):
@@ -1797,6 +1798,48 @@ class TestNextPreviewDiffJob(TestCaseWithFactory):
         bmp.next_preview_diff_job.complete()
         self.factory.makeBranchMergeProposal()
         self.assertIs(None, bmp.next_preview_diff_job)
+
+
+class TestBranchMergeProposalGetIncrementalDiffs(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_getIncrementalDiffs(self):
+        """getIncrementalDiffs returns the requested values or None.
+
+        None is returned if there is no IncrementalDiff for the requested
+        revision pair and branch_merge_proposal."""
+        bmp = self.factory.makeBranchMergeProposal()
+        with FakeLibrarian() as librarian:
+            diff1 = self.factory.makeIncrementalDiff(merge_proposal=bmp)
+            diff2 = self.factory.makeIncrementalDiff(merge_proposal=bmp)
+            diff3 = self.factory.makeIncrementalDiff()
+        result = bmp.getIncrementalDiffs([
+            (diff1.old_revision, diff1.new_revision),
+            (diff2.old_revision, diff2.new_revision),
+            # Wrong merge proposal
+            (diff3.old_revision, diff3.new_revision),
+            # Mismatched revisions
+            (diff1.old_revision, diff2.new_revision),
+        ])
+        self.assertEqual([diff1, diff2, None, None], result)
+
+    def test_getIncrementalDiffs_respects_input_order(self):
+        """The order of the output follows the input order."""
+        bmp = self.factory.makeBranchMergeProposal()
+        with FakeLibrarian() as librarian:
+            diff1 = self.factory.makeIncrementalDiff(merge_proposal=bmp)
+            diff2 = self.factory.makeIncrementalDiff(merge_proposal=bmp)
+        result = bmp.getIncrementalDiffs([
+            (diff1.old_revision, diff1.new_revision),
+            (diff2.old_revision, diff2.new_revision),
+        ])
+        self.assertEqual([diff1, diff2], result)
+        result = bmp.getIncrementalDiffs([
+            (diff2.old_revision, diff2.new_revision),
+            (diff1.old_revision, diff1.new_revision),
+        ])
+        self.assertEqual([diff2, diff1], result)
 
 
 def test_suite():

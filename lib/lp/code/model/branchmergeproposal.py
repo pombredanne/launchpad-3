@@ -153,10 +153,6 @@ class BranchMergeProposal(SQLBase):
     _table = 'BranchMergeProposal'
     _defaultOrder = ['-date_created', 'id']
 
-    @property
-    def incremental_diffs(self):
-        return getattr(self, '_incremental_diffs', [])
-
     registrant = ForeignKey(
         dbName='registrant', foreignKey='Person',
         storm_validator=validate_public_person, notNull=True)
@@ -797,6 +793,14 @@ class BranchMergeProposal(SQLBase):
         incremental_diff.new_revision = new_revision
         IMasterStore(IncrementalDiff).add(incremental_diff)
         return incremental_diff
+
+    def getIncrementalDiffs(self, revision_list):
+        diffs = Store.of(self).find(IncrementalDiff,
+            IncrementalDiff.branch_merge_proposal_id == self.id)
+        diff_dict = dict(
+            ((diff.old_revision, diff.new_revision), diff)
+            for diff in diffs)
+        return [diff_dict.get(revisions) for revisions in revision_list]
 
 
 class BranchMergeProposalGetter:
