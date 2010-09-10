@@ -11,6 +11,7 @@ from lazr.lifecycle.snapshot import Snapshot
 import pytz
 from testtools.matchers import LessThan
 import transaction
+from storm.store import Store
 from zope.component import getUtility
 from zope.interface import providedBy
 from zope.security.proxy import removeSecurityProxy
@@ -198,11 +199,18 @@ class TestPersonTeams(TestCaseWithFactory):
             {},
             removeSecurityProxy(self.user)._inTeam_cache)
 
-    def test_inTeam_person(self):
-        # Verify a user cannot be a member of another user and the and
-        # DB call to TeamParticipation was not made to learn this.
+    def test_inTeam_person_is_false(self):
+        # Verify a user cannot be a member of another user.
         other_user = self.factory.makePerson()
         self.assertFalse(self.user.inTeam(other_user))
+
+    def test_inTeam_person_does_not_build_TeamParticipation_cache(self):
+        # Verify when a user is the argument, a DB call to TeamParticipation
+        # was not made to learn this.
+        other_user = self.factory.makePerson()
+        Store.of(self.user).invalidate()
+        self.assertFalse(
+            self.assertStatementCount(1, self.user.inTeam, other_user))
         self.assertEqual(
             {},
             removeSecurityProxy(self.user)._inTeam_cache)
