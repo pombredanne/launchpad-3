@@ -1995,6 +1995,7 @@ class TestBuildUploadProcessor(TestUploadProcessorBase):
             self.incoming_folder, leaf_name)
         self.layer.txn.commit()
 
+        import pdb; pdb.set_trace()
         self.assertEquals(BuildStatus.FULLYBUILT, build.status)
         self.assertEquals(None, build.builder)
         self.assertIsNot(None, build.date_finished)

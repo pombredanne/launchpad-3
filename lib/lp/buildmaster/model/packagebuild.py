@@ -358,8 +358,8 @@ class PackageBuildDerived:
         # Release the builder for another job.
         self.buildqueue_record.builder.cleanSlave()
 
-        self.buildqueue_record.builder = None
-        self.builder = None
+        # Remove BuildQueue record.
+        self.buildqueue_record.destroySelf()
 
     def _handleStatus_PACKAGEFAIL(self, librarian, slave_status, logger):
         """Handle a package that had failed to build.

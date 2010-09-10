@@ -129,7 +129,8 @@ class AbstractUploadPolicy:
     def getUploader(self, changes, build):
         """Get the person who is doing the uploading."""
         if (build is not None and
-            build.build_farm_job_type == BuildFarmJobType.RECIPEBRANCHBUILD):
+            build.package_build.build_farm_job_type ==
+                BuildFarmJobType.RECIPEBRANCHBUILD):
             return build.requester
         else:
             return changes.signer
@@ -338,7 +339,9 @@ class BuildDaemonUploadPolicy(AbstractUploadPolicy):
         options.builds = True
 
     def policySpecificChecks(self, upload):
-        pass
+        """The buildd policy should enforce that the buildid matches."""
+        # XXX: dsilvers 2005-10-14 bug=3135:
+        # Implement this to check the buildid etc.
 
     def rejectPPAUploads(self, upload):
         """Buildd policy allows PPA upload."""

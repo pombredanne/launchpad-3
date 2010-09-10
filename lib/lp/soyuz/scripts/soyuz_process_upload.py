@@ -77,10 +77,15 @@ class ProcessUpload(LaunchpadCronScript):
                 "%s is not a directory" % self.options.base_fsroot)
 
         self.logger.debug("Initialising connection.")
-        def getPolicy(distro):
+        def getPolicy(distro, build):
             self.options.distro = distro.name
             policy = findPolicyByName(self.options.context)
             policy.setOptions(self.options)
+            if self.options.builds:
+                assert build, "--builds specified but no build"
+                policy.distroseries = build.distro_series
+                policy.pocket = build.pocket
+                policy.archive = build.archive
             return policy
         processor = UploadProcessor(self.options.base_fsroot,
             self.options.dryrun, self.options.nomails, self.options.builds,

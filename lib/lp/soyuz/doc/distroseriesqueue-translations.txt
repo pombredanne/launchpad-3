@@ -106,7 +106,6 @@ package.
 
   >>> success = pmount_upload.do_accept(build=build)
   DEBUG: Creating queue entry
-  DEBUG: Build ... found
   ...
 
   # And all things worked.

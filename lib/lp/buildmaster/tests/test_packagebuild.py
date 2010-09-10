@@ -316,8 +316,6 @@ class TestHandleStatusMixin:
                 })
 
         self.assertEqual(BuildStatus.UPLOADING, self.build.status)
-        self.assertEquals(None, self.build.buildqueue_record.builder)
-        self.assertEquals(None, self.build.builder)
         self.assertResultCount(1, "incoming")
 
     def test_handleStatus_OK_absolute_filepath(self):
