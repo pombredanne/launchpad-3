@@ -152,8 +152,13 @@ class FakeLibrarian(object):
 
     def getURLForAlias(self, aliasID, secure=False):
         """See `IFileDownloadClient`."""
-        alias = self.aliases.get(aliasID)
-        path = get_libraryfilealias_download_path(aliasID, alias.filename)
+        return self.getURLForAliasObject(self.aliases.get(int(aliasID)))
+
+    def getURLForAliasObject(self, alias):
+        """See `IFileDownloadClient`."""
+        if alias.deleted:
+            return None
+        path = get_libraryfilealias_download_path(alias.id, alias.filename)
         return urljoin(self.download_url, path)
 
     def getFileByAlias(self, aliasID,

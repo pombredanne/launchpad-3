@@ -53,6 +53,14 @@ def get_libraryfilealias_download_path(aliasID, filename):
     return '/%d/%s' % (int(aliasID), url_path_quote(filename))
 
 
+def compose_url(base_url, alias_path):
+    """Compose a URL for a library file alias."""
+    if alias_path is None:
+        return None
+    else:
+        return urljoin(base_url, alias_path)
+
+
 class FileUploadClient:
     """Simple blocking client for uploading to the librarian."""
 
@@ -83,7 +91,7 @@ class FileUploadClient:
     def _checkError(self):
         if select([self.state.s], [], [], 0)[0]:
             response = self.state.f.readline().strip()
-            raise UploadFailed, 'Server said: ' + response
+            raise UploadFailed('Server said: ' + response)
 
     def _sendLine(self, line):
         self.state.f.write(line + '\r\n')
@@ -172,7 +180,7 @@ class FileUploadClient:
             # Read response
             response = self.state.f.readline().strip()
             if response != '200':
-                raise UploadFailed, 'Server said: ' + response
+                raise UploadFailed('Server said: ' + response)
 
             # Add rows to DB
             content = LibraryFileContent(
@@ -187,7 +195,7 @@ class FileUploadClient:
             Store.of(content).flush()
 
             assert isinstance(aliasID, (int, long)), \
-                    "aliasID %r not an integer" % (aliasID,)
+                    "aliasID %r not an integer" % (aliasID, )
             return aliasID
         finally:
             self._close()
@@ -240,7 +248,7 @@ class FileUploadClient:
             # Read response
             response = self.state.f.readline().strip()
             if not response.startswith('200'):
-                raise UploadFailed, 'Server said: ' + response
+                raise UploadFailed('Server said: ' + response)
 
             status, ids = response.split()
             contentID, aliasID = ids.split('/', 1)
@@ -295,6 +303,43 @@ class FileDownloadClient:
     #         raise DownloadFailed, 'Incomplete response'
     #     return paths
 
+    def _getAlias(self, aliasID, secure=False):
+        """Retrieve the `LibraryFileAlias` with the given id.
+
+        :param aliasID: A unique ID for the alias.
+        :param secure: Controls the behaviour when looking up restricted
+            files.  If False restricted files are only permitted when
+            self.restricted is True.  See `getURLForAlias`.
+        :returns: A `LibraryFileAlias`.
+        :raises: `DownloadFailed` if the alias is invalid or
+            inaccessible.
+        """
+        from canonical.launchpad.database import LibraryFileAlias
+        from sqlobject import SQLObjectNotFound
+        try:
+            lfa = LibraryFileAlias.get(aliasID)
+        except SQLObjectNotFound:
+            lfa = None
+
+        if lfa is None:
+            raise DownloadFailed('Alias %d not found' % aliasID)
+        self._checkAliasAccess(lfa, secure=secure)
+
+        return lfa
+
+    def _checkAliasAccess(self, alias, secure=False):
+        """Verify that `alias` can be accessed.
+
+        :param alias: A `LibraryFileAlias`.
+        :param secure: Controls the behaviour when looking up restricted
+            files.  If False restricted files are only permitted when
+            self.restricted is True.  See `getURLForAlias`.
+        :raises: `DownloadFailed` if access is not allowed.
+        """
+        if not secure and alias.restricted != self.restricted:
+            raise DownloadFailed(
+                'Alias %d cannot be downloaded from this client.' % alias.id)
+
     def _getPathForAlias(self, aliasID, secure=False):
         """Returns the path inside the librarian to talk about the given
         alias.
@@ -302,77 +347,95 @@ class FileDownloadClient:
         :param aliasID: A unique ID for the alias
         :param secure: Controls the behaviour when looking up restricted
             files.  If False restricted files are only permitted when
-            self.restricted is True. See getURLForAlias.
+            self.restricted is True.  See `getURLForAlias`.
         :returns: String path, url-escaped.  Unicode is UTF-8 encoded before
             url-escaping, as described in section 2.2.5 of RFC 2718.
             None if the file has been deleted.
+
         :raises: DownloadFailed if the alias is invalid
         """
-        from canonical.launchpad.database import LibraryFileAlias
-        from sqlobject import SQLObjectNotFound
-        aliasID = int(aliasID)
-        try:
-            # Use SQLObjects to maximize caching benefits
-            lfa = LibraryFileAlias.get(aliasID)
-        except SQLObjectNotFound:
-            raise DownloadFailed('Alias %d not found' % aliasID)
-        if not secure and self.restricted != lfa.restricted:
-            raise DownloadFailed(
-                'Alias %d cannot be downloaded from this client.' % aliasID)
-        if lfa.deleted:
+        return self._getPathForAliasObject(
+            self._getAlias(int(aliasID), secure=secure))
+
+    def _getPathForAliasObject(self, alias):
+        """Returns the Librarian path for a `LibraryFileAlias`."""
+        if alias.deleted:
             return None
         return get_libraryfilealias_download_path(
-            aliasID, lfa.filename.encode('utf-8'))
+            alias.id, alias.filename.encode('utf-8'))
+
+    def _getBaseURL(self, alias, secure=False):
+        """Get the base URL to use for `alias`.
+
+        :param secure: If true generate https urls on unique domains for
+            security.
+        """
+        if not secure:
+            return self.download_url
+
+        # Secure url generation is the same for both restricted and
+        # unrestricted files aliases : it is used to give web clients (not
+        # appservers) a url to use to access a file which is either
+        # restricted (and so they will also need a TimeLimitedToken) or
+        # is suspected hostile (and so it should be isolated on its own
+        # domain). Note that only the former is currently used in LP.
+        # The algorithm is:
+        # parse the url
+        download_url = config.librarian.download_url
+        parsed = list(urlparse(download_url))
+        # Force the scheme to https
+        parsed[0] = 'https'
+        # Insert the alias id (which is a unique key, thus unique) in the
+        # netloc
+        parsed[1] = ('i%d.restricted.' % alias.id) + parsed[1]
+        return urlunparse(parsed)
 
     def getURLForAlias(self, aliasID, secure=False):
         """Returns the url for talking to the librarian about the given
         alias.
 
         :param aliasID: A unique ID for the alias
-        :param secure: If true generate https urls on unique domains for 
+        :param secure: If true generate https urls on unique domains for
             security.
-        :returns: String URL, or None if the file has expired and been deleted.
+        :returns: String URL, or None if the file has expired and been
+            deleted.
         """
-        # Note that the path is the same for both secure and insecure URLs - 
-        # this is deliberate: the server doesn't need to know about the original
-        # Host the client provides, testing is easier as we don't need wildcard
-        # https environments on dev machines.
-        path = self._getPathForAlias(aliasID, secure=secure)
-        if path is None:
-            return None
-        if not secure:
-            base = self.download_url
-        else:
-            # Secure url generation is the same for both restricted and
-            # unrestricted files aliases : it is used to give web clients (not
-            # appservers) a url to use to access a file which is either
-            # restricted (and so they will also need a TimeLimitedToken) or
-            # is suspected hostile (and so it should be isolated on its own
-            # domain). Note that only the former is currently used in LP.
-            # The algorithm is: 
-            # parse the url 
-            download_url = config.librarian.download_url
-            parsed = list(urlparse(download_url))
-            # Force the scheme to https
-            parsed[0] = 'https'
-            # Insert the alias id (which is a unique key, thus unique) in the
-            # netloc
-            parsed[1] = ('i%d.restricted.' % aliasID) + parsed[1]
-            base = urlunparse(parsed)
-        return urljoin(base, path)
+        alias = self._getAlias(aliasID, secure=secure)
+        return self.getURLForAliasObject(alias, secure=secure)
+
+    def getURLForAliasObject(self, alias, secure=False):
+        """Return the download URL for a `LibraryFileAlias`.
+
+        There is a separate `getURLForAlias` that takes an alias ID.  If
+        you're not sure whether it's safe for the client to access your
+        `alias`, use `getURLForAlias` which will retrieve its own copy.
+
+        :param alias: A `LibraryFileAlias` whose URL you want.
+        :param secure: If true generate https urls on unique domains for
+            security.
+        :returns: String URL, or None if the file has expired and been
+            deleted.
+        """
+        # Note that the path is the same for both secure and insecure
+        # URLs.  This is deliberate: the server doesn't need to know
+        # about the original Host the client provides, and testing is
+        # easier as we don't need wildcard https environments on dev
+        # machines.
+        self._checkAliasAccess(alias, secure=secure)
+        base = self._getBaseURL(alias, secure=secure)
+        path = self._getPathForAliasObject(alias)
+        return compose_url(base, path)
 
     def _getURLForDownload(self, aliasID):
         """Returns the internal librarian URL for the alias.
 
         :param aliasID: A unique ID for the alias
 
-        :returns: String URL, or None if the file has expired and been deleted.
+        :returns: String URL, or None if the file has expired and been
+            deleted.
         """
-        path = self._getPathForAlias(aliasID)
-        if path is None:
-            return None
-        base = self._internal_download_url
-        return urljoin(base, path)
+        return compose_url(
+            self._internal_download_url, self._getPathForAlias(aliasID))
 
     def getFileByAlias(
         self, aliasID, timeout=LIBRARIAN_SERVER_DEFAULT_TIMEOUT):
@@ -401,7 +464,7 @@ class FileDownloadClient:
                 #
                 # Note that URLError is a base class of HTTPError.
                 if isinstance(error, urllib2.HTTPError) and error.code == 404:
-                    raise LookupError, aliasID
+                    raise LookupError(aliasID)
                 # HTTPErrors with a 5xx error code ("server problem")
                 # are a reason to retry the access again, as well as
                 # generic, non-HTTP, URLErrors like "connection refused".
@@ -413,7 +476,7 @@ class FileDownloadClient:
                         time.sleep(1)
                     else:
                         # There's a test (in
-                        # lib/c/l/browser/tests/test_librarian.py) which 
+                        # lib/c/l/browser/tests/test_librarian.py) which
                         # simulates a librarian server error by raising this
                         # exception, so if you change the exception raised
                         # here, make sure you update the test.
@@ -444,7 +507,6 @@ class LibrarianClient(FileUploadClient, FileDownloadClient):
     def _internal_download_url(self): # used by _getURLForDownload
         return 'http://%s:%s/' % (config.librarian.download_host,
                                   config.librarian.download_port)
-
 
 
 class RestrictedLibrarianClient(LibrarianClient):
