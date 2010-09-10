@@ -42,6 +42,7 @@ from lp.registry.interfaces.distroseriesdifferencecomment import (
     )
 from lp.registry.model.distroseriesdifferencecomment import (
     DistroSeriesDifferenceComment)
+from lp.services.propertycache import cachedproperty
 
 
 class DistroSeriesDifference(Storm):
@@ -79,6 +80,7 @@ class DistroSeriesDifference(Storm):
     parent_source_version = Unicode(name='parent_source_version',
                                     allow_none=True)
 
+    # XXX remove difference type and call update.
     @staticmethod
     def new(derived_series, source_package_name, difference_type,
             status=DistroSeriesDifferenceStatus.NEEDS_ATTENTION):
@@ -122,12 +124,12 @@ class DistroSeriesDifference(Storm):
             DistroSeriesDifference.difference_type == difference_type,
             DistroSeriesDifference.status.is_in(status))
 
-    @property
+    @cachedproperty
     def source_pub(self):
         """See `IDistroSeriesDifference`."""
         return self._getLatestSourcePub()
 
-    @property
+    @cachedproperty
     def parent_source_pub(self):
         """See `IDistroSeriesDifference`."""
         return self._getLatestSourcePub(for_parent=True)

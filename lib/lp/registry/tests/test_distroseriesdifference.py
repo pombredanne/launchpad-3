@@ -17,10 +17,6 @@ from zope.security.interfaces import Unauthorized
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing import DatabaseFunctionalLayer
-from lp.testing import (
-    person_logged_in,
-    TestCaseWithFactory,
-    )
 from lp.registry.enum import (
     DistroSeriesDifferenceStatus,
     DistroSeriesDifferenceType,
@@ -30,7 +26,12 @@ from lp.registry.interfaces.distroseriesdifference import (
     IDistroSeriesDifference,
     IDistroSeriesDifferenceSource,
     )
+from lp.services.propertycache import IPropertyCacheManager
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+from lp.testing import (
+    person_logged_in,
+    TestCaseWithFactory,
+    )
 
 
 class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
@@ -83,6 +84,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             sourcepackagename=ds_diff.source_package_name,
             distroseries=ds_diff.derived_series,
             status=PackagePublishingStatus.PENDING)
+        IPropertyCacheManager(ds_diff).clear()
 
         self.assertEqual(pending_pub, ds_diff.source_pub)
 
@@ -113,6 +115,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             sourcepackagename=ds_diff.source_package_name,
             distroseries=ds_diff.derived_series.parent_series,
             status=PackagePublishingStatus.PENDING)
+        IPropertyCacheManager(ds_diff).clear()
 
         self.assertEqual(pending_pub, ds_diff.parent_source_pub)
 
@@ -146,6 +149,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             distroseries=ds_diff.derived_series,
             status=PackagePublishingStatus.PENDING,
             version='1.0')
+        IPropertyCacheManager(ds_diff).clear()
 
         was_updated = ds_diff.update()
 
@@ -169,6 +173,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             distroseries=ds_diff.derived_series,
             status=PackagePublishingStatus.PENDING,
             version='1.1')
+        IPropertyCacheManager(ds_diff).clear()
 
         was_updated = ds_diff.update()
 
@@ -191,6 +196,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             distroseries=ds_diff.derived_series,
             status=PackagePublishingStatus.PENDING,
             version='1.1')
+        IPropertyCacheManager(ds_diff).clear()
 
         was_updated = ds_diff.update()
 
@@ -217,6 +223,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             distroseries=ds_diff.derived_series.parent_series,
             status=PackagePublishingStatus.PENDING,
             version='1.1')
+        IPropertyCacheManager(ds_diff).clear()
 
         was_updated = ds_diff.update()
 
@@ -241,6 +248,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             distroseries=ds_diff.derived_series,
             status=PackagePublishingStatus.PENDING,
             version='1.1')
+        IPropertyCacheManager(ds_diff).clear()
 
         was_updated = ds_diff.update()
 
@@ -266,6 +274,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             distroseries=ds_diff.derived_series,
             status=PackagePublishingStatus.PENDING,
             version='1.0')
+        IPropertyCacheManager(ds_diff).clear()
 
         was_updated = ds_diff.update()
 
@@ -345,6 +354,16 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             IntegrityError, self.factory.makeDistroSeriesDifference,
             derived_series=ds_diff.derived_series,
             source_package_name_str="foo")
+
+    def test_cached_properties(self):
+        # The source and parent publication properties are cached on the
+        # model.
+        ds_diff = self.factory.makeDistroSeriesDifference()
+
+        cache = IPropertyCacheManager(ds_diff).cache
+
+        self.assertContentEqual(
+            ['source_pub', 'parent_source_pub'], cache)
 
 
 class DistroSeriesDifferenceSourceTestCase(TestCaseWithFactory):
