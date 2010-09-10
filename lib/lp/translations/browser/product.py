@@ -19,6 +19,7 @@ from canonical.launchpad.webapp import (
     )
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.menu import NavigationMenu
+from lp.app.enums import service_uses_launchpad
 from lp.registry.browser.product import ProductEditView
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
@@ -51,12 +52,14 @@ class ProductTranslationsMenu(NavigationMenu):
     def translationdownload(self):
         text = 'Download'
         preferred_series = self.context.primary_translatable
-        enabled = (self.context.official_rosetta and
-            preferred_series is not None)
+        enabled = (service_uses_launchpad(self.context.translations_usage)
+            and preferred_series is not None)
         link = ''
         if enabled:
             link = canonical_url(
-                preferred_series, rootsite='translations', view_name='+export')
+                preferred_series,
+                rootsite='translations',
+                view_name='+export')
             text = 'Download "%s"' % preferred_series.name
 
         return Link(link, text, icon='download', enabled=enabled)
@@ -90,19 +93,19 @@ class ProductView(LaunchpadView):
     @cachedproperty
     def uses_translations(self):
         """Whether this product has translatable templates."""
-        return (self.context.official_rosetta and
-                self.primary_translatable is not None)
+        return (service_uses_launchpad(self.context.translations_usage)
+                and self.primary_translatable is not None)
 
     @cachedproperty
     def no_translations_available(self):
         """Has no translation templates but does support translations."""
-        return (self.context.official_rosetta and
-                self.primary_translatable is None)
+        return (service_uses_launchpad(self.context.translations_usage)
+                and self.primary_translatable is None)
 
     @cachedproperty
     def show_page_content(self):
         """Whether the main content of the page should be shown."""
-        return (self.context.official_rosetta or
+        return (service_uses_launchpad(self.context.translations_usage) or
                 check_permission("launchpad.TranslationsAdmin", self.context))
 
     @cachedproperty

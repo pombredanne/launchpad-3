@@ -58,9 +58,7 @@ from lp.soyuz.model.publishing import (
     SourcePackagePublishingHistory,
     )
 from lp.testing import TestCaseWithFactory
-from lp.testing.factory import (
-    LaunchpadObjectFactory,
-    )
+from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.fakemethod import FakeMethod
 
 
@@ -184,7 +182,7 @@ class SoyuzTestPublisher:
                      build_conflicts_indep=None,
                      dsc_maintainer_rfc822='Foo Bar <foo@bar.com>',
                      maintainer=None, creator=None, date_uploaded=UTC_NOW,
-                     spr_only=False):
+                     spr_only=False, user_defined_fields=None):
         """Return a mock source publishing record.
 
         if spr_only is specified, the source is not published and the
@@ -228,7 +226,8 @@ class SoyuzTestPublisher:
             dsc_standards_version=dsc_standards_version,
             dsc_format=dsc_format,
             dsc_binaries=dsc_binaries,
-            archive=archive, dateuploaded=date_uploaded)
+            archive=archive, dateuploaded=date_uploaded,
+            user_defined_fields=user_defined_fields)
 
         changes_file_name = "%s_%s_source.changes" % (sourcename, version)
         if spr_only:
@@ -291,7 +290,7 @@ class SoyuzTestPublisher:
                        architecturespecific=False,
                        builder=None,
                        component='main',
-                       with_debug=False):
+                       with_debug=False, user_defined_fields=None):
         """Return a list of binary publishing records."""
         if distroseries is None:
             distroseries = self.distroseries
@@ -335,7 +334,8 @@ class SoyuzTestPublisher:
                 build, binaryname, filecontent, summary, description,
                 shlibdep, depends, recommends, suggests, conflicts, replaces,
                 provides, pre_depends, enhances, breaks, format,
-                binarypackagerelease_ddeb)
+                binarypackagerelease_ddeb,
+                user_defined_fields=user_defined_fields)
             pub_binaries += self.publishBinaryInArchive(
                 binarypackagerelease, archive, status, pocket,
                 scheduleddeletiondate, dateremoved)
@@ -356,7 +356,8 @@ class SoyuzTestPublisher:
         summary="summary", description="description", shlibdep=None,
         depends=None, recommends=None, suggests=None, conflicts=None,
         replaces=None, provides=None, pre_depends=None, enhances=None,
-        breaks=None, format=BinaryPackageFormat.DEB, debug_package=None):
+        breaks=None, format=BinaryPackageFormat.DEB, debug_package=None,
+        user_defined_fields=None, homepage=None):
         """Return the corresponding `BinaryPackageRelease`."""
         sourcepackagerelease = build.source_package_release
         distroarchseries = build.distro_arch_series
@@ -388,7 +389,8 @@ class SoyuzTestPublisher:
             architecturespecific=architecturespecific,
             binpackageformat=format,
             priority=PackagePublishingPriority.STANDARD,
-            debug_package=debug_package)
+            debug_package=debug_package,
+            user_defined_fields=user_defined_fields, homepage=homepage)
 
         # Create the corresponding binary file.
         if architecturespecific:

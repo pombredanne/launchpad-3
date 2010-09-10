@@ -42,7 +42,7 @@ hidden from the UI.
     ...     print extract_text(tr)
     Created: 2005-06-06
     Creation reason: Created by the owner himself, coming from Launchpad.
-    OpenID Identifier: salgado_oid
+    OpenID Identifiers: salgado_oid
     Email Addresses: guilherme.salgado@canonical.com
 
 The page also contains a link back to the +review page.

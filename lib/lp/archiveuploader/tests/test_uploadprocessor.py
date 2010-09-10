@@ -1202,7 +1202,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         error_report.write(fp)
         error_text = fp.getvalue()
         self.assertTrue(
-            "Unable to find mandatory field 'files' in the changes file" in error_text)
+            "Unable to find mandatory field 'Files' in the changes file" in error_text)
 
         # Housekeeping so the next test won't fail.
         shutil.rmtree(upload_dir)
@@ -1369,7 +1369,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
             % error_text)
 
         expected_explanation = (
-            "Unable to find mandatory field 'files' in the changes file.")
+            "Unable to find mandatory field 'Files' in the changes file.")
         self.failUnless(
             error_text.find(expected_explanation) >= 0,
             'Expected Exception text not found in OOPS report:\n%s'
