@@ -57,13 +57,14 @@ class RecordLister(logging.Handler):
 class DiffTestCase(TestCaseWithFactory):
 
     @staticmethod
-    def commitFile(branch, path, contents):
+    def commitFile(branch, path, contents, merge_parents=None):
         """Create a commit that updates a file to specified contents.
 
         This will create or modify the file, as needed.
         """
         committer = DirectBranchCommit(
-            removeSecurityProxy(branch), no_race_check=True)
+            removeSecurityProxy(branch), no_race_check=True,
+            merge_parents=merge_parents)
         committer.writeFile(path, contents)
         try:
             return committer.commit('committing')

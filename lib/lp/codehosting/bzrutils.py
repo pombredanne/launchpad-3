@@ -18,11 +18,13 @@ __all__ = [
     'identical_formats',
     'install_oops_handler',
     'is_branch_stackable',
+    'read_locked',
     'remove_exception_logging_hook',
     'safe_open',
     'UnsafeUrlSeen',
     ]
 
+from contextlib import contextmanager
 import os
 import sys
 import threading
@@ -363,3 +365,11 @@ def get_stacked_on_url(branch):
         return branch.get_stacked_on_url()
     except (NotStacked, UnstackableBranchFormat):
         return None
+
+@contextmanager
+def read_locked(branch):
+    branch.lock_read()
+    try:
+        yield
+    finally:
+        branch.unlock()
