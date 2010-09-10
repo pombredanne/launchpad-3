@@ -136,7 +136,7 @@ class UsesLaunchpadMixin:
             if self.context.codehosting_usage == ServiceUsage.LAUNCHPAD:
                 url = canonical_url(self.context, rootsite='code')
                 uses.append(href_template % (url, 'Branches'))
-        if self.context.official_rosetta:
+        if service_uses_launchpad(self.context.translations_usage):
             url = canonical_url(self.context, rootsite='translations')
             uses.append(href_template % (url, 'Translations'))
 
