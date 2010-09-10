@@ -82,6 +82,7 @@ class DistroArchSeries(SQLBase):
         storm_validator=validate_public_person, notNull=True)
     package_count = IntCol(notNull=True, default=DEFAULT)
     supports_virtualized = BoolCol(notNull=False, default=False)
+    enabled = BoolCol(notNull=False, default=True)
 
     packages = SQLRelatedJoin('BinaryPackageRelease',
         joinColumn='distroarchseries',
