@@ -32,7 +32,10 @@ from canonical.launchpad.webapp.menu import (
     enabled_with_permission,
     Link,
     )
-from canonical.lazr.utils import smartquote
+from canonical.lazr.utils import (
+    smartquote,
+    safe_hasattr,
+    )
 from lp.app.enums import service_uses_launchpad
 from lp.app.interfaces.launchpad import IServiceUsage
 from lp.blueprints.interfaces.specification import (
@@ -148,9 +151,12 @@ class HasSpecificationsView(LaunchpadView):
 
     @property
     def template(self):
-        # If the template has been defined in the zcml, use that, as this
-        # isn't the base service page for blueprints.
-        if hasattr(self, 'index'):
+        # Check for the magical "index" added by the browser:page template
+        # machinery. If it exists this is actually the 
+        # zope.app.pagetemplate.simpleviewclass.simple class that is magically
+        # mixed in by the browser:page zcml directive the template defined in 
+        # the directive should be used.
+        if safe_hasattr(self, 'index'):
             return super(HasSpecificationsView, self).template
 
         # Sprints and Persons don't have a usage enum for blueprints, so we
