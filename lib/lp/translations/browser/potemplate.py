@@ -61,6 +61,7 @@ from canonical.launchpad.webapp.interfaces import (
 from canonical.launchpad.webapp.launchpadform import ReturnToReferrerMixin
 from canonical.launchpad.webapp.menu import structured
 from canonical.lazr.utils import smartquote
+from lp.app.enums import service_uses_launchpad
 from lp.app.errors import NotFoundError
 from lp.registry.browser.productseries import ProductSeriesFacets
 from lp.registry.browser.sourcepackage import SourcePackageFacets
@@ -794,9 +795,10 @@ class POTemplateSubsetNavigation(Navigation):
             product_or_distro = potemplate.productseries.product
         else:
             product_or_distro = potemplate.distroseries.distribution
-        official_rosetta = product_or_distro.official_rosetta
+        translations_usage = product_or_distro.translations_usage
 
-        if official_rosetta and potemplate.iscurrent:
+        if (service_uses_launchpad(translations_usage) and
+           potemplate.iscurrent):
             # This template is available for translation.
             return potemplate
         elif check_permission('launchpad.Edit', potemplate):

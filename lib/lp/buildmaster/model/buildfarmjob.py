@@ -235,6 +235,8 @@ class BuildFarmJob(BuildFarmJobOld, Storm):
     job_type = DBEnum(
         name='job_type', allow_none=False, enum=BuildFarmJobType)
 
+    failure_count = Int(name='failure_count', allow_none=False)
+
     def __init__(self, job_type, status=BuildStatus.NEEDSBUILD,
                  processor=None, virtualized=None, date_created=None):
         super(BuildFarmJob, self).__init__()
@@ -368,6 +370,10 @@ class BuildFarmJob(BuildFarmJobOld, Storm):
             "Unproxied result returned from ISpecificBuildFarmJob adapter.")
 
         return build_without_outer_proxy
+
+    def gotFailure(self):
+        """See `IBuildFarmJob`."""
+        self.failure_count += 1
 
 
 class BuildFarmJobDerived:

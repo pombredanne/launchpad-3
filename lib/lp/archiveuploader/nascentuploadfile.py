@@ -19,14 +19,15 @@ __all__ = [
     'splitComponentAndSection',
     ]
 
+import apt_inst
+import apt_pkg
+from debian.deb822 import Deb822Dict
 import hashlib
 import os
 import subprocess
 import sys
 import time
 
-import apt_inst
-import apt_pkg
 from zope.component import getUtility
 
 from canonical.encoding import guess as guess_encoding
@@ -59,8 +60,10 @@ from lp.soyuz.model.files import SourceFileMixin
 
 apt_pkg.InitSystem()
 
+
 class UploadError(Exception):
     """All upload errors are returned in this form."""
+
 
 class UploadWarning(Warning):
     """All upload warnings are returned in this form."""
@@ -71,6 +74,7 @@ class TarFileDateChecker:
 
     This was taken from jennifer in the DAK suite.
     """
+
     def __init__(self, future_cutoff, past_cutoff):
         """Setup timestamp limits """
         self.reset()
@@ -125,7 +129,7 @@ class NascentUploadFile:
         ".deb": "application/x-debian-package",
         ".udeb": "application/x-micro-debian-package",
         ".diff.gz": "application/gzipped-patch",
-        ".tar.gz": "application/gzipped-tar"
+        ".tar.gz": "application/gzipped-tar",
         }
 
     def __init__(self, filepath, digest, size, component_and_section,
@@ -145,7 +149,6 @@ class NascentUploadFile:
     #
     # Helpers used quen inserting into queue
     #
-
     @property
     def content_type(self):
         """The content type for this file.
@@ -171,7 +174,6 @@ class NascentUploadFile:
         """Return the NascentUpload filename."""
         return os.path.dirname(self.filepath)
 
-
     @property
     def exists_on_disk(self):
         """Whether or not the file is present on disk."""
@@ -180,7 +182,6 @@ class NascentUploadFile:
     #
     # DB storage helpers
     #
-
     def storeInDatabase(self):
         """Implement this to store this representation in the database."""
         raise NotImplementedError
@@ -188,7 +189,6 @@ class NascentUploadFile:
     #
     # Verification
     #
-
     def verify(self):
         """Implemented locally.
 
@@ -266,7 +266,7 @@ class CustomUploadFile(NascentUploadFile):
         'raw-ddtp-tarball': PackageUploadCustomFormat.DDTP_TARBALL,
         'raw-translations-static':
             PackageUploadCustomFormat.STATIC_TRANSLATIONS,
-        'raw-meta-data' :
+        'raw-meta-data':
             PackageUploadCustomFormat.META_DATA,
         }
 
@@ -344,6 +344,14 @@ class PackageUploadFile(NascentUploadFile):
         """
         raise NotImplementedError(self.checkBuild)
 
+    def extractUserDefinedFields(self, control):
+        """Extract the user defined fields out of a control file list.
+        """
+        return [
+            (field, contents)
+            for (field, contents) in
+            control if field not in self.known_fields]
+
 
 class SourceUploadFile(SourceFileMixin, PackageUploadFile):
     """Files mentioned in changesfile as source (orig, diff, tar).
@@ -406,6 +414,26 @@ class BaseBinaryUploadFile(PackageUploadFile):
     # Capitalised because we extract these directly from the control file.
     mandatory_fields = set(["Package", "Architecture", "Version"])
 
+    known_fields = mandatory_fields.union(set([
+        "Depends",
+        "Conflicts",
+        "Breaks",
+        "Recommends",
+        "Suggests",
+        "Replaces",
+        "Provides",
+        "Pre-Depends",
+        "Enhances",
+        "Essential",
+        "Description",
+        "Installed-Size",
+        "Priority",
+        "Section",
+        "Maintainer",
+        "Source",
+        "Homepage",
+        ]))
+
     # Map priorities to their dbschema valuesa
     # We treat a priority of '-' as EXTRA since some packages in some distros
     # are broken and we can't fix the world.
@@ -415,7 +443,7 @@ class BaseBinaryUploadFile(PackageUploadFile):
         "standard": PackagePublishingPriority.STANDARD,
         "optional": PackagePublishingPriority.OPTIONAL,
         "extra": PackagePublishingPriority.EXTRA,
-        "-": PackagePublishingPriority.EXTRA
+        "-": PackagePublishingPriority.EXTRA,
         }
 
     # These are divined when parsing the package file in verify(), and
@@ -448,7 +476,6 @@ class BaseBinaryUploadFile(PackageUploadFile):
     #
     # Useful properties.
     #
-
     @property
     def is_archindep(self):
         """Check if the binary is targeted to architecture 'all'.
@@ -749,15 +776,15 @@ class BaseBinaryUploadFile(PackageUploadFile):
                  % (self.filename, error))
 
 
-#
-#   Database relationship methods
-#
-
+    #
+    #   Database relationship methods
+    #
     def findSourcePackageRelease(self):
         """Return the respective ISourcePackagRelease for this binary upload.
 
         It inspect publication in the targeted DistroSeries and also the
-        ACCEPTED queue for sources matching stored (source_name, source_version).
+        ACCEPTED queue for sources matching stored
+        (source_name, source_version).
 
         It raises UploadError if the source was not found.
 
@@ -876,7 +903,7 @@ class BaseBinaryUploadFile(PackageUploadFile):
         """Insert this binary release and build into the database."""
         # Reencode everything we are supplying, because old packages
         # contain latin-1 text and that sucks.
-        encoded = {}
+        encoded = Deb822Dict()
         for key, value in self.control.items():
             encoded[key] = guess_encoding(value)
 
@@ -889,7 +916,7 @@ class BaseBinaryUploadFile(PackageUploadFile):
 
         is_essential = encoded.get('Essential', '').lower() == 'yes'
         architecturespecific = not self.is_archindep
-        installedsize = int(self.control.get('Installed-Size','0'))
+        installedsize = int(self.control.get('Installed-Size', '0'))
         binary_name = getUtility(
             IBinaryPackageNameSet).getOrCreateByName(self.package)
 
@@ -898,6 +925,9 @@ class BaseBinaryUploadFile(PackageUploadFile):
                 self.ddeb_file.filename).binarypackagerelease
         else:
             debug_package = None
+
+        user_defined_fields = self.extractUserDefinedFields(
+            [(field, encoded[field]) for field in self.control.iterkeys()])
 
         binary = build.createBinaryPackageRelease(
             binarypackagename=binary_name,
@@ -918,9 +948,11 @@ class BaseBinaryUploadFile(PackageUploadFile):
             pre_depends=encoded.get('Pre-Depends', ''),
             enhances=encoded.get('Enhances', ''),
             breaks=encoded.get('Breaks', ''),
+            homepage=encoded.get('Homepage'),
             essential=is_essential,
             installedsize=installedsize,
             architecturespecific=architecturespecific,
+            user_defined_fields=user_defined_fields,
             debug_package=debug_package)
 
         library_file = self.librarian.create(self.filename,

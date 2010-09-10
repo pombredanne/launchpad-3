@@ -199,14 +199,6 @@ merged persons from lists etc.
     >>> results.get_one()[0] is None
     True
 
-The openid_identifier of the merged account is changed so that if the user
-logs in using that SSO account, Launchpad will select the Person by email
-instead of OpenID. Launchpad will update the OpenID of the remaining account
-if needed.
-
-    >>> print marilize.account.openid_identifier
-    merged-marilize_oid-1118028591.0
-
 An email is sent to the user informing him that he should review his email
 and mailing list subscription settings.
 
