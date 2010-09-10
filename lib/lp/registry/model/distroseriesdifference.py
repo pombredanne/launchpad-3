@@ -81,7 +81,7 @@ class DistroSeriesDifference(Storm):
                                     allow_none=True)
 
     @staticmethod
-    def new(derived_series, source_package_name,
+    def new(derived_series, source_package_name, difference_type,
             status=DistroSeriesDifferenceStatus.NEEDS_ATTENTION):
         """See `IDistroSeriesDifferenceSource`."""
         if derived_series.parent_series is None:
@@ -92,6 +92,7 @@ class DistroSeriesDifference(Storm):
         diff.derived_series = derived_series
         diff.source_package_name = source_package_name
         diff.status = status
+        diff.difference_type = difference_type
 
         source_pub = diff.source_pub
         if source_pub is not None:
