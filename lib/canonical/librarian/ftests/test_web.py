@@ -23,7 +23,6 @@ from canonical.launchpad.database.librarian import TimeLimitedToken
 from canonical.librarian.client import (
     get_libraryfilealias_download_path,
     LibrarianClient,
-    RestrictedLibrarianClient,
     )
 from canonical.librarian.interfaces import DownloadFailed
 from canonical.launchpad.database import LibraryFileAlias
@@ -42,6 +41,7 @@ class LibrarianWebTestCase(unittest.TestCase):
     # 500-error issue).
 
     def commit(self):
+        """Synchronize database state."""
         flush_database_updates()
         transaction.commit()
 
@@ -144,23 +144,20 @@ class LibrarianWebTestCase(unittest.TestCase):
         old_url = 'http://%s:%d/42/%d/%s' % (
                 config.librarian.download_host,
                 config.librarian.download_port,
-                aid, filename
-                )
+                aid, filename)
         self.assertEqual(urlopen(old_url).read(), 'sample')
 
         # If the content id is not an integer, a 404 is raised
         old_url = 'http://%s:%d/foo/%d/%s' % (
                 config.librarian.download_host,
                 config.librarian.download_port,
-                aid, filename
-                )
+                aid, filename)
         self.require404(self._makeURL(aid, 'different.txt'))
 
     def _makeURL(self, aliasID, filename):
         host = config.librarian.download_host
         port = config.librarian.download_port
-        return 'http://%s:%d/%d/%s' % (
-                host, port, aliasID, filename)
+        return 'http://%s:%d/%d/%s' % (host, port, aliasID, filename)
 
     def test_404(self):
         client = LibrarianClient()
