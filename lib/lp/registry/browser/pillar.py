@@ -75,7 +75,7 @@ class InvolvedMenu(NavigationMenu):
     def help_translate(self):
         return Link(
             '', 'Help translate', site='translations', icon='translations',
-            enabled=self.pillar.official_rosetta)
+            enabled=service_uses_launchpad(self.pillar.translations_usage))
 
     def submit_code(self):
         if self.pillar.codehosting_usage in [
@@ -110,7 +110,7 @@ class PillarView(LaunchpadView):
         self.official_malone = False
         self.answers_usage = ServiceUsage.UNKNOWN
         self.blueprints_usage = ServiceUsage.UNKNOWN
-        self.official_rosetta = False
+        self.translations_usage = ServiceUsage.UNKNOWN
         self.codehosting_usage = ServiceUsage.UNKNOWN
         pillar = nearest(self.context, IPillar)
         if IProjectGroup.providedBy(pillar):
@@ -127,7 +127,7 @@ class PillarView(LaunchpadView):
                 self.answers_usage = ServiceUsage.NOT_APPLICABLE
             elif IDistributionSourcePackage.providedBy(self.context):
                 self.blueprints_usage = ServiceUsage.UNKNOWN
-                self.official_rosetta = False
+                self.translations_usage = ServiceUsage.UNKNOWN
             else:
                 # The context is used by all apps.
                 pass
@@ -142,16 +142,18 @@ class PillarView(LaunchpadView):
             self.answers_usage = ServiceUsage.LAUNCHPAD
         if service_uses_launchpad(IServiceUsage(pillar).blueprints_usage):
             self.blueprints_usage = ServiceUsage.LAUNCHPAD
-        if pillar.official_rosetta:
-            self.official_rosetta = True
+        if service_uses_launchpad(pillar.translations_usage):
+            self.translations_usage = ServiceUsage.LAUNCHPAD
         if service_uses_launchpad(IServiceUsage(pillar).codehosting_usage):
             self.codehosting_usage = ServiceUsage.LAUNCHPAD
+
     @property
     def has_involvement(self):
         """This `IPillar` uses Launchpad."""
-        return (self.official_malone or self.official_rosetta
+        return (self.official_malone
             or service_uses_launchpad(self.answers_usage)
             or service_uses_launchpad(self.blueprints_usage)
+            or service_uses_launchpad(self.translations_usage)
             or service_uses_launchpad(self.codehosting_usage))
 
     @property

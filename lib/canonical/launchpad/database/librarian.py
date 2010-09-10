@@ -125,7 +125,7 @@ class LibraryFileAlias(SQLBase):
     @property
     def http_url(self):
         """See ILibraryFileAlias.http_url"""
-        return self.client.getURLForAlias(self.id)
+        return self.client.getURLForAliasObject(self)
 
     @property
     def https_url(self):
@@ -236,7 +236,7 @@ class LibraryFileAlias(SQLBase):
 
     @property
     def deleted(self):
-        return self.content is None
+        return self.contentID is None
 
     def __storm_invalidated__(self):
         """Make sure that the file is closed across transaction boundary."""
