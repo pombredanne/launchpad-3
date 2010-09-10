@@ -33,6 +33,7 @@ __all__ = [
     ]
 
 from collections import defaultdict
+from itertools import groupby
 import operator
 
 from lazr.delegates import delegates
@@ -627,13 +628,13 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
         source = DecoratedBranch(self.context.source_branch)
         resultset = source.getMainlineBranchRevisions(
             start_date, self.revision_end_date, oldest_first=True)
+        branch_revisions = (
+            branch_revision for branch_revision, revision, revision_author
+            in resultset)
         # Now group by date created.
-        groups = defaultdict(list)
-        for branch_revision, revision, revision_author in resultset:
-            groups[revision.date_created].append(branch_revision)
-        return [
-            CodeReviewNewRevisions(revisions, date, source)
-            for date, revisions in groups.iteritems()]
+        groups = groupby(branch_revisions, lambda r:r.revision.date_created)
+        return [CodeReviewNewRevisions(list(revisions), date, source)
+            for date, revisions in groups]
 
     @cachedproperty
     def conversation(self):
