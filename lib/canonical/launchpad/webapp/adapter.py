@@ -260,10 +260,7 @@ def get_request_duration(now=None):
 def get_request_remaining_seconds(no_exception=False, now=None, timeout=None):
     """Return how many seconds are remaining in the current request budget.
 
-    If no timouts are enabled, this returns None.
-
-    If timeouts are enabled, this returns 0 if the budget is exhausted, or
-    remaining time in seconds.
+    If timouts are disabled, None is returned. 
 
     :param no_exception: If True, do not raise an error if the request
         is out of time. Instead return a float e.g. -2.0 for 2 seconds over
@@ -290,7 +287,7 @@ def get_request_remaining_seconds(no_exception=False, now=None, timeout=None):
 
 
 def set_launchpad_default_timeout(event):
-    """Set the LAZR default timeout function."""
+    """Set the LAZR default timeout function on IProcessStartingEvent."""
     set_default_timeout_function(get_request_remaining_seconds)
 
 
