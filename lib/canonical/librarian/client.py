@@ -364,23 +364,10 @@ class FileDownloadClient:
         return get_libraryfilealias_download_path(
             alias.id, alias.filename.encode('utf-8'))
 
-    def getURLForAlias(self, aliasID, secure=False):
-        """Returns the url for talking to the librarian about the given
-        alias.
-
-        :param aliasID: A unique ID for the alias
-        :param secure: If true generate https urls on unique domains for 
-            security.
-        :returns: String URL, or None if the file has expired and been
-            deleted.
-        """
-        return compose_url(
-            self.download_url, self._getPathForAlias(aliasID, secure=secure))
-
     def _getBaseURL(self, alias, secure=False):
         """Get the base URL to use for `alias`.
 
-        :param secure: If true generate https urls on unique domains for 
+        :param secure: If true generate https urls on unique domains for
             security.
         """
         if not secure:
@@ -403,6 +390,19 @@ class FileDownloadClient:
         parsed[1] = ('i%d.restricted.' % alias.id) + parsed[1]
         return urlunparse(parsed)
 
+    def getURLForAlias(self, aliasID, secure=False):
+        """Returns the url for talking to the librarian about the given
+        alias.
+
+        :param aliasID: A unique ID for the alias
+        :param secure: If true generate https urls on unique domains for
+            security.
+        :returns: String URL, or None if the file has expired and been
+            deleted.
+        """
+        alias = self._getAlias(aliasID, secure=secure)
+        return self.getURLForAliasObject(alias, secure=secure)
+
     def getURLForAliasObject(self, alias, secure=False):
         """Return the download URL for a `LibraryFileAlias`.
 
@@ -411,7 +411,7 @@ class FileDownloadClient:
         `alias`, use `getURLForAlias` which will retrieve its own copy.
 
         :param alias: A `LibraryFileAlias` whose URL you want.
-        :param secure: If true generate https urls on unique domains for 
+        :param secure: If true generate https urls on unique domains for
             security.
         :returns: String URL, or None if the file has expired and been
             deleted.
