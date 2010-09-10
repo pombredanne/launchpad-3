@@ -1166,10 +1166,15 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         preview_diff.target_revision_id = self.getUniqueUnicode()
         return preview_diff
 
-    def makeIncrementalDiff(self):
+    def makeIncrementalDiff(self, merge_proposal=None):
         diff = self.makeDiff()
-        bmp = self.makeBranchMergeProposal()
-        return IncrementalDiff()
+        if merge_proposal is None:
+            merge_proposal = self.makeBranchMergeProposal()
+        old_revision = self.makeRevision()
+        new_revision = self.makeRevision()
+        diff = self.makeDiff()
+        return merge_proposal.generateIncrementalDiff(
+            old_revision, new_revision, diff)
 
     def makeStaticDiff(self):
         return StaticDiff.acquireFromText(
