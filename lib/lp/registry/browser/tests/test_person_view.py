@@ -13,6 +13,8 @@ from canonical.launchpad.ftests import (
     )
 from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp.interfaces import NoCanonicalUrl
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import (
     DatabaseFunctionalLayer,
@@ -29,7 +31,10 @@ from lp.registry.browser.person import (
     )
 
 from lp.registry.interfaces.karma import IKarmaCacheManager
-from lp.registry.interfaces.person import PersonVisibility
+from lp.registry.interfaces.person import (
+    PersonVisibility,
+    IPersonSet,
+    )
 from lp.registry.interfaces.teammembership import (
     ITeamMembershipSet,
     TeamMembershipStatus,
@@ -256,6 +261,28 @@ class TestPersonEditView(TestCaseWithFactory):
         self.view.initialize()
         self.assertFalse(self.view.form_fields['name'].for_display)
 
+class TestTeamCreationView(TestCaseWithFactory):
+    
+    layer = DatabaseFunctionalLayer
+
+    def test_taken_emails_dont_cause_oops(self):
+        account = self.factory.makeAccount(
+            displayname='libertylandaccount',
+            status=AccountStatus.NOACCOUNT)
+        form = {
+            'field.contactemail': account.preferredemail,
+            'field.displayname':'liberty-land',
+            'field.name':'libertyland',
+            'field.renewal_policy':'NONE',
+            'field.renewal_policy-empty-marker': 1,
+            'field.subscriptionpolicy': 'RESTRICTED',
+            'field.subscriptionpolicy-empty-marker': 1,
+            }
+        person_set = getUtility(IPersonSet)
+        view = create_initialized_view(
+            person_set, '+newteam', form=form) 
+        team = person_set.getByName('libertyland')
+        self.assertRaises(NoCanonicalUrl, canonical_url, team)
 
 class TestPersonParticipationView(TestCaseWithFactory):
 
