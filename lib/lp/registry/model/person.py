@@ -36,7 +36,6 @@ import re
 import subprocess
 import weakref
 
-from bzrlib.plugins.builder.recipe import RecipeParser
 import pytz
 from sqlobject import (
     BoolCol,
@@ -2634,9 +2633,8 @@ class Person(
                      registrant, daily_build_archive=None, build_daily=False):
         """See `IPerson`."""
         from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
-        builder_recipe = RecipeParser(recipe_text).parse()
         recipe = SourcePackageRecipe.new(
-            registrant, self, name, builder_recipe, description, distroseries,
+            registrant, self, name, recipe_text, description, distroseries,
             daily_build_archive, build_daily)
         Store.of(recipe).flush()
         return recipe
