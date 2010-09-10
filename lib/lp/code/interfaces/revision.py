@@ -73,6 +73,9 @@ class IRevision(Interface):
         :return: A `Branch` or None if an appropriate branch cannot be found.
         """
 
+    def getLefthandParent():
+        """Return lefthand parent of revision, or None if not in database."""
+
 
 class IRevisionAuthor(Interface):
     """Committer of a Bazaar revision."""
