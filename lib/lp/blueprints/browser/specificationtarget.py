@@ -33,8 +33,8 @@ from canonical.launchpad.webapp.menu import (
     Link,
     )
 from canonical.lazr.utils import (
-    smartquote,
     safe_hasattr,
+    smartquote,
     )
 from lp.app.enums import service_uses_launchpad
 from lp.app.interfaces.launchpad import IServiceUsage
