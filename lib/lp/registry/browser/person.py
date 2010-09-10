@@ -2416,7 +2416,7 @@ class PersonSubscriptionsView(BugTaskSearchListingView):
                         BugTaskStatus.TRIAGED,
                         BugTaskStatus.INPROGRESS,
                         BugTaskStatus.FIXCOMMITTED,
-                        BugTaskStatus.FIXRELEASED))
+                        BugTaskStatus.INVALID))
 
         sub_bugtasks = []
         sub_bugs = []
