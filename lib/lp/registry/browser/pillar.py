@@ -30,7 +30,10 @@ from canonical.launchpad.webapp.publisher import (
     nearest,
     )
 from canonical.launchpad.webapp.tales import MenuAPI
-from lp.app.enums import ServiceUsage
+from lp.app.enums import (
+    ServiceUsage,
+    service_uses_launchpad,
+    )
 from lp.app.interfaces.launchpad import IServiceUsage
 from lp.registry.browser.structuralsubscription import (
     StructuralSubscriptionMenuMixin,
@@ -72,7 +75,7 @@ class InvolvedMenu(NavigationMenu):
     def help_translate(self):
         return Link(
             '', 'Help translate', site='translations', icon='translations',
-            enabled=self.pillar.official_rosetta)
+            enabled=service_uses_launchpad(self.pillar.translations_usage))
 
     def submit_code(self):
         if self.pillar.codehosting_usage in [
@@ -104,7 +107,7 @@ class PillarView(LaunchpadView):
         self.official_malone = False
         self.official_answers = False
         self.official_blueprints = False
-        self.official_rosetta = False
+        self.translations_usage = ServiceUsage.UNKNOWN
         self.codehosting_usage = ServiceUsage.UNKNOWN
         pillar = nearest(self.context, IPillar)
         if IProjectGroup.providedBy(pillar):
@@ -121,7 +124,7 @@ class PillarView(LaunchpadView):
                 self.codehosting_usage = distribution.codehosting_usage
             elif IDistributionSourcePackage.providedBy(self.context):
                 self.official_blueprints = False
-                self.official_rosetta = False
+                self.translations_usage = ServiceUsage.UNKNOWN
             else:
                 # The context is used by all apps.
                 pass
@@ -136,8 +139,7 @@ class PillarView(LaunchpadView):
             self.official_answers = True
         if pillar.official_blueprints:
             self.official_blueprints = True
-        if pillar.official_rosetta:
-            self.official_rosetta = True
+        self.translations_usage = IServiceUsage(pillar).translations_usage
         self.codehosting_usage = IServiceUsage(pillar).codehosting_usage
 
     @property
@@ -145,8 +147,9 @@ class PillarView(LaunchpadView):
         """This `IPillar` uses Launchpad."""
         return (
             self.official_malone or self.official_answers
-            or self.official_blueprints or self.official_rosetta
-            or self.codehosting_usage == ServiceUsage.LAUNCHPAD)
+            or self.official_blueprints
+            or service_uses_launchpad(self.translations_usage)
+            or service_uses_launchpad(self.codehosting_usage))
 
     @property
     def enabled_links(self):

@@ -202,6 +202,9 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     def translatables(self):
         """See `IProjectGroup`."""
+        # XXX j.c.sackett 2010-08-30 bug=627631 Once data migration has
+        # happened for the usage enums, this sql needs to be updated to
+        # check for the translations_usage, not official_rosetta.
         return Product.select('''
             Product.project = %s AND
             Product.official_rosetta = TRUE AND
@@ -271,7 +274,7 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
         # filter based on completion. see the implementation of
         # Specification.is_complete() for more details
-        completeness =  Specification.completeness_clause
+        completeness = Specification.completeness_clause
 
         if SpecificationFilter.COMPLETE in filter:
             query += ' AND ( %s ) ' % completeness
