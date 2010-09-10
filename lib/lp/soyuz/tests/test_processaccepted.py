@@ -48,7 +48,7 @@ class TestProcessAccepted(TestCaseWithFactory):
         return script
 
     def createWaitingAcceptancePackage(self, distroseries, archive=None,
-            sourcename=None):
+                                       sourcename=None):
         """Create some pending publications."""
         if archive is None:
             archive = self.distro.main_archive
