@@ -169,9 +169,9 @@ class DistroSeriesDifference(Storm):
 
     def update(self):
         """See `IDistroSeriesDifference`."""
-        type_updated = self._updateType()
-        status_updated = self._updateStatus()
-        return type_updated or status_updated
+        self._updateType()
+        updated = self._updateVersionsAndStatus()
+        return updated
 
     def _updateType(self):
         """Helper for update() interface method.
@@ -186,12 +186,10 @@ class DistroSeriesDifference(Storm):
         else:
             new_type = DistroSeriesDifferenceType.DIFFERENT_VERSIONS
 
-        updated = False
         if new_type != self.difference_type:
-            updated = True
             self.difference_type = new_type
 
-    def _updateStatus(self):
+    def _updateVersionsAndStatus(self):
         """Helper for the update() interface method.
 
         Check whether the status of this difference should be updated.
@@ -205,7 +203,8 @@ class DistroSeriesDifference(Storm):
                 updated = True
                 # If the derived version has change and the previous version
                 # was blacklisted, then we remove the blacklist now.
-                if self.status == DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT:
+                if self.status == (
+                    DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT):
                     self.status = DistroSeriesDifferenceStatus.NEEDS_ATTENTION
         if self.parent_source_pub:
             new_parent_source_version = (
