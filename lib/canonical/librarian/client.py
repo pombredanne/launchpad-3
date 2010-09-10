@@ -91,7 +91,7 @@ class FileUploadClient:
     def _checkError(self):
         if select([self.state.s], [], [], 0)[0]:
             response = self.state.f.readline().strip()
-            raise UploadFailed, 'Server said: ' + response
+            raise UploadFailed('Server said: ' + response)
 
     def _sendLine(self, line):
         self.state.f.write(line + '\r\n')
@@ -180,7 +180,7 @@ class FileUploadClient:
             # Read response
             response = self.state.f.readline().strip()
             if response != '200':
-                raise UploadFailed, 'Server said: ' + response
+                raise UploadFailed('Server said: ' + response)
 
             # Add rows to DB
             content = LibraryFileContent(
@@ -195,7 +195,7 @@ class FileUploadClient:
             Store.of(content).flush()
 
             assert isinstance(aliasID, (int, long)), \
-                    "aliasID %r not an integer" % (aliasID,)
+                    "aliasID %r not an integer" % (aliasID, )
             return aliasID
         finally:
             self._close()
@@ -248,7 +248,7 @@ class FileUploadClient:
             # Read response
             response = self.state.f.readline().strip()
             if not response.startswith('200'):
-                raise UploadFailed, 'Server said: ' + response
+                raise UploadFailed('Server said: ' + response)
 
             status, ids = response.split()
             contentID, aliasID = ids.split('/', 1)
@@ -379,7 +379,7 @@ class FileDownloadClient:
         # restricted (and so they will also need a TimeLimitedToken) or
         # is suspected hostile (and so it should be isolated on its own
         # domain). Note that only the former is currently used in LP.
-        # The algorithm is: 
+        # The algorithm is:
         # parse the url
         download_url = config.librarian.download_url
         parsed = list(urlparse(download_url))
@@ -431,7 +431,8 @@ class FileDownloadClient:
 
         :param aliasID: A unique ID for the alias
 
-        :returns: String URL, or None if the file has expired and been deleted.
+        :returns: String URL, or None if the file has expired and been
+            deleted.
         """
         return compose_url(
             self._internal_download_url, self._getPathForAlias(aliasID))
@@ -463,7 +464,7 @@ class FileDownloadClient:
                 #
                 # Note that URLError is a base class of HTTPError.
                 if isinstance(error, urllib2.HTTPError) and error.code == 404:
-                    raise LookupError, aliasID
+                    raise LookupError(aliasID)
                 # HTTPErrors with a 5xx error code ("server problem")
                 # are a reason to retry the access again, as well as
                 # generic, non-HTTP, URLErrors like "connection refused".
@@ -475,7 +476,7 @@ class FileDownloadClient:
                         time.sleep(1)
                     else:
                         # There's a test (in
-                        # lib/c/l/browser/tests/test_librarian.py) which 
+                        # lib/c/l/browser/tests/test_librarian.py) which
                         # simulates a librarian server error by raising this
                         # exception, so if you change the exception raised
                         # here, make sure you update the test.
@@ -506,7 +507,6 @@ class LibrarianClient(FileUploadClient, FileDownloadClient):
     def _internal_download_url(self): # used by _getURLForDownload
         return 'http://%s:%s/' % (config.librarian.download_host,
                                   config.librarian.download_port)
-
 
 
 class RestrictedLibrarianClient(LibrarianClient):
