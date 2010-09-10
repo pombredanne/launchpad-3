@@ -10,6 +10,7 @@ __all__ = [
     ]
 
 from lazr.enum import DBItem
+from storm.expr import Desc
 from storm.locals import (
     Int,
     Reference,
@@ -200,4 +201,4 @@ class DistroSeriesDifference(Storm):
         comments = IStore(DSDComment).find(
             DistroSeriesDifferenceComment,
             DSDComment.distro_series_difference == self)
-        return comments.order_by(DSDComment.id)
+        return comments.order_by(Desc(DSDComment.id))
