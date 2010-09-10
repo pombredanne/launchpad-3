@@ -166,13 +166,21 @@ class DistroSeriesDifference(Storm):
         else:
             return None
 
-    def updateStatusAndType(self):
+    def update(self):
         """See `IDistroSeriesDifference`."""
-        source_pub = self.source_pub
-        parent_source_pub = self.parent_source_pub
-        if source_pub is None:
+        type_updated = self._updateType()
+        status_updated = self._updateStatus()
+        return type_updated or status_updated
+
+    def _updateType(self):
+        """Helper for update() interface method.
+
+        Check whether the presence of a source in the derived or parent
+        series has changed (which changes the type of difference).
+        """
+        if self.source_pub is None:
             new_type = DistroSeriesDifferenceType.MISSING_FROM_DERIVED_SERIES
-        elif parent_source_pub is None:
+        elif self.parent_source_pub is None:
             new_type = DistroSeriesDifferenceType.UNIQUE_TO_DERIVED_SERIES
         else:
             new_type = DistroSeriesDifferenceType.DIFFERENT_VERSIONS
@@ -182,14 +190,42 @@ class DistroSeriesDifference(Storm):
             updated = True
             self.difference_type = new_type
 
-        # Check if its changed first and un-blacklist.
-        self.source_version = source_pub.source_package_version
-        self.parent_source_version = parent_source_pub.source_package_version
+    def _updateStatus(self):
+        """Helper for the update() interface method.
+
+        Check whether the status of this difference should be updated.
+        """
+        updated = False
+        new_source_version = new_parent_source_version = None
+        if self.source_pub:
+            new_source_version = self.source_pub.source_package_version
+            if self.source_version != new_source_version:
+                self.source_version = new_source_version
+                updated = True
+                # If the derived version has change and the previous version
+                # was blacklisted, then we remove the blacklist now.
+                if self.status == DistroSeriesDifferenceStatus.IGNORED:
+                    self.status = DistroSeriesDifferenceStatus.NEEDS_ATTENTION
+        if self.parent_source_pub:
+            new_parent_source_version = (
+                self.parent_source_pub.source_package_version)
+            if self.parent_source_version != new_parent_source_version:
+                self.parent_source_version = new_parent_source_version
+                updated = True
+
+        # If this difference was resolved but now the versions don't match
+        # then we re-open the difference.
         if self.status == DistroSeriesDifferenceStatus.RESOLVED:
             if self.source_version != self.parent_source_version:
                 updated = True
                 self.status = DistroSeriesDifferenceStatus.NEEDS_ATTENTION
-        else:
+        # If this difference was needing attention, or the current version
+        # was blacklisted and the versions now match we resolve it. Note:
+        # we don't resolve it if this difference was blacklisted for all
+        # versions.
+        elif self.status in (
+            DistroSeriesDifferenceStatus.NEEDS_ATTENTION,
+            DistroSeriesDifferenceStatus.IGNORED):
             if self.source_version == self.parent_source_version:
                 updated = True
                 self.status = DistroSeriesDifferenceStatus.RESOLVED

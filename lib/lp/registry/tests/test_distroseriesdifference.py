@@ -9,6 +9,7 @@ __metaclass__ = type
 
 import unittest
 
+from storm.exceptions import IntegrityError
 from storm.store import Store
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
@@ -132,7 +133,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
 
         self.assertEqual(None, ds_diff.source_version)
 
-    def test_updateStatusAndType_resolves_difference(self):
+    def test_update_resolves_difference(self):
         # Status is set to resolved when versions match.
         ds_diff = self.factory.makeDistroSeriesDifference(
             source_package_name_str="foonew",
@@ -146,14 +147,14 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             status=PackagePublishingStatus.PENDING,
             version='1.0')
 
-        was_updated = ds_diff.updateStatusAndType()
+        was_updated = ds_diff.update()
 
         self.assertTrue(was_updated)
         self.assertEqual(
             DistroSeriesDifferenceStatus.RESOLVED,
             ds_diff.status)
 
-    def test_updateStatusAndType_re_opens_difference(self):
+    def test_update_re_opens_difference(self):
         # The status of a resolved difference will updated with new
         # uploads.
         ds_diff = self.factory.makeDistroSeriesDifference(
@@ -169,18 +170,16 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             status=PackagePublishingStatus.PENDING,
             version='1.1')
 
-        was_updated = ds_diff.updateStatusAndType()
+        was_updated = ds_diff.update()
 
         self.assertTrue(was_updated)
         self.assertEqual(
             DistroSeriesDifferenceStatus.NEEDS_ATTENTION,
             ds_diff.status)
 
-    def test_updateStatusAndType_new_version_no_change(self):
-        # Uploading a new (different) version does not necessarily
-        # update the record.
-        # In this case, a new version is uploaded, but there is still a
-        # difference needing attention.
+    def test_update_new_version_doesnt_change_status(self):
+        # Uploading a new (different) version does not update the
+        # status of the record, but the version is updated.
         ds_diff = self.factory.makeDistroSeriesDifference(
             source_package_name_str="foonew",
             versions={
@@ -193,14 +192,15 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             status=PackagePublishingStatus.PENDING,
             version='1.1')
 
-        was_updated = ds_diff.updateStatusAndType()
+        was_updated = ds_diff.update()
 
-        self.assertFalse(was_updated)
+        self.assertTrue(was_updated)
         self.assertEqual(
             DistroSeriesDifferenceStatus.NEEDS_ATTENTION,
             ds_diff.status)
+        self.assertEqual('1.1', ds_diff.source_version)
 
-    def test_updateStatusAndType_changes_type(self):
+    def test_update_changes_type(self):
         # The type of difference is updated when appropriate.
         # In this case, a package that was previously only in the
         # derived series (UNIQUE_TO_DERIVED_SERIES), is uploaded
@@ -218,18 +218,61 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             status=PackagePublishingStatus.PENDING,
             version='1.1')
 
-        was_updated = ds_diff.updateStatusAndType()
+        was_updated = ds_diff.update()
 
         self.assertTrue(was_updated)
         self.assertEqual(
             DistroSeriesDifferenceType.DIFFERENT_VERSIONS,
             ds_diff.difference_type)
 
-    def test_update_updates_versions(self):
-        self.fail()
-
     def test_update_removes_version_blacklist(self):
-        self.fail()
+        # A blacklist on a version of a package is removed when a new
+        # version is uploaded to the derived series.
+        ds_diff = self.factory.makeDistroSeriesDifference(
+            source_package_name_str="foonew",
+            versions={
+                'derived': '0.9',
+                },
+            difference_type=(
+                DistroSeriesDifferenceType.UNIQUE_TO_DERIVED_SERIES),
+            status=DistroSeriesDifferenceStatus.IGNORED)
+        new_derived_pub = self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagename=ds_diff.source_package_name,
+            distroseries=ds_diff.derived_series,
+            status=PackagePublishingStatus.PENDING,
+            version='1.1')
+
+        was_updated = ds_diff.update()
+
+        self.assertTrue(was_updated)
+        self.assertEqual(
+            DistroSeriesDifferenceStatus.NEEDS_ATTENTION,
+            ds_diff.status)
+
+    def test_update_does_not_remove_permanent_blacklist(self):
+        # A permanent blacklist is not removed when a new version
+        # is uploaded, even if it resolves the difference (as later
+        # uploads could re-create a difference, and we want to keep
+        # the blacklist).
+        ds_diff = self.factory.makeDistroSeriesDifference(
+            source_package_name_str="foonew",
+            versions={
+                'derived': '0.9',
+                'parent': '1.0',
+                },
+            status=DistroSeriesDifferenceStatus.IGNORED_ALWAYS)
+        new_derived_pub = self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagename=ds_diff.source_package_name,
+            distroseries=ds_diff.derived_series,
+            status=PackagePublishingStatus.PENDING,
+            version='1.0')
+
+        was_updated = ds_diff.update()
+
+        self.assertTrue(was_updated)
+        self.assertEqual(
+            DistroSeriesDifferenceStatus.IGNORED_ALWAYS,
+            ds_diff.status)
 
     def test_title(self):
         # The title is a friendly description of the difference.
@@ -294,7 +337,14 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
                 ds_diff.derived_series.owner, "Boo")
 
     def test_source_package_name_unique_for_derived_series(self):
-        self.fail()
+        # We cannot create two differences for the same derived series
+        # for the same package.
+        ds_diff = self.factory.makeDistroSeriesDifference(
+            source_package_name_str="foo")
+        self.assertRaises(
+            IntegrityError, self.factory.makeDistroSeriesDifference,
+            derived_series=ds_diff.derived_series,
+            source_package_name_str="foo")
 
 
 class DistroSeriesDifferenceSourceTestCase(TestCaseWithFactory):

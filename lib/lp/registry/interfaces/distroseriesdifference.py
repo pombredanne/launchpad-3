@@ -109,7 +109,7 @@ class IDistroSeriesDifferencePublic(IHasOwner, Interface):
         title=_("Title"), readonly=True, required=False, description=_(
             "A human-readable name describing this difference."))
 
-    def updateStatusAndType():
+    def update():
         """Checks that difference type and status matches current publishings.
 
         If the record is updated, a relevant comment is added.
