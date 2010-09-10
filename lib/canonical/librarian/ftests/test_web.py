@@ -23,7 +23,6 @@ from canonical.launchpad.database.librarian import TimeLimitedToken
 from canonical.librarian.client import (
     get_libraryfilealias_download_path,
     LibrarianClient,
-    RestrictedLibrarianClient,
     )
 from canonical.librarian.interfaces import DownloadFailed
 from canonical.launchpad.database import LibraryFileAlias
@@ -42,6 +41,7 @@ class LibrarianWebTestCase(unittest.TestCase):
     # 500-error issue).
 
     def commit(self):
+        """Synchronize database state."""
         flush_database_updates()
         transaction.commit()
 
@@ -144,23 +144,20 @@ class LibrarianWebTestCase(unittest.TestCase):
         old_url = 'http://%s:%d/42/%d/%s' % (
                 config.librarian.download_host,
                 config.librarian.download_port,
-                aid, filename
-                )
+                aid, filename)
         self.assertEqual(urlopen(old_url).read(), 'sample')
 
         # If the content id is not an integer, a 404 is raised
         old_url = 'http://%s:%d/foo/%d/%s' % (
                 config.librarian.download_host,
                 config.librarian.download_port,
-                aid, filename
-                )
+                aid, filename)
         self.require404(self._makeURL(aid, 'different.txt'))
 
     def _makeURL(self, aliasID, filename):
         host = config.librarian.download_host
         port = config.librarian.download_port
-        return 'http://%s:%d/%d/%s' % (
-                host, port, aliasID, filename)
+        return 'http://%s:%d/%d/%s' % (host, port, aliasID, filename)
 
     def test_404(self):
         client = LibrarianClient()
@@ -231,18 +228,18 @@ class LibrarianWebTestCase(unittest.TestCase):
             last_modified_header, 'Tue, 30 Jan 2001 13:45:59 GMT')
 
     def get_restricted_file_and_public_url(self):
-        # Use a regular LibrarianClient to ensure we speak to the nonrestricted
-        # port on the librarian which is where secured restricted files are
-        # served from.
+        # Use a regular LibrarianClient to ensure we speak to the
+        # nonrestricted port on the librarian which is where secured
+        # restricted files are served from.
         client = LibrarianClient()
-        fileAlias = client.addFile('sample', 12, StringIO('a'*12),
-            contentType='text/plain')
+        fileAlias = client.addFile(
+            'sample', 12, StringIO('a'*12), contentType='text/plain')
         # Note: We're deliberately using the wrong url here: we should be
-        # passing secure=True to getURLForAlias, but to use the returned URL we
-        # would need a wildcard DNS facility patched into urlopen; instead
-        # we use the *deliberate* choice of having the path of secure and insecure
-        # urls be the same, so that we can test it: the server code doesn't need
-        # to know about the fancy wildcard domains.
+        # passing secure=True to getURLForAlias, but to use the returned URL
+        # we would need a wildcard DNS facility patched into urlopen; instead
+        # we use the *deliberate* choice of having the path of secure and
+        # insecure urls be the same, so that we can test it: the server code
+        # doesn't need to know about the fancy wildcard domains.
         url = client.getURLForAlias(fileAlias)
         # Now that we have a url which talks to the public librarian, make the
         # file restricted.
@@ -315,7 +312,7 @@ class LibrarianWebTestCase(unittest.TestCase):
 
     def test_restricted_with_token(self):
         fileAlias, url = self.get_restricted_file_and_public_url()
-        # We have the base url for a restricted file; grant access to it 
+        # We have the base url for a restricted file; grant access to it
         # for a short time.
         token = TimeLimitedToken.allocate(url)
         url = url + "?token=%s" % token
@@ -328,10 +325,10 @@ class LibrarianWebTestCase(unittest.TestCase):
 
     def test_restricted_with_expired_token(self):
         fileAlias, url = self.get_restricted_file_and_public_url()
-        # We have the base url for a restricted file; grant access to it 
+        # We have the base url for a restricted file; grant access to it
         # for a short time.
         token = TimeLimitedToken.allocate(url)
-        # But time has passed 
+        # But time has passed
         store = session_store()
         tokens = store.find(TimeLimitedToken, TimeLimitedToken.token==token)
         tokens.set(
@@ -363,6 +360,7 @@ class LibrarianWebTestCase(unittest.TestCase):
         # Perhaps we should also set Expires to the Last-Modified.
 
     def require404(self, url):
+        """Assert that opening `url` raises a 404."""
         try:
             urlopen(url)
             self.fail('404 not raised')
@@ -400,7 +398,7 @@ class LibrarianZopelessWebTestCase(LibrarianWebTestCase):
         # (otherwise, depending on the resolution of clocks and things,
         # an immediate access might not look any newer).
         LibraryFileAlias.get(id1).last_accessed = datetime(
-            2004,1,1,12,0,0, tzinfo=pytz.timezone('Australia/Sydney'))
+            2004, 1, 1, 12, 0, 0, tzinfo=pytz.timezone('Australia/Sydney'))
         self.commit()
 
         # Check that last_accessed is updated when the file is accessed
@@ -413,6 +411,20 @@ class LibrarianZopelessWebTestCase(LibrarianWebTestCase):
         access_time_2 = LibraryFileAlias.get(id1).last_accessed
 
         self.failUnless(access_time_1 < access_time_2)
+
+    def test_getURLForAliasObject(self):
+        # getURLForAliasObject returns the same URL as getURLForAlias.
+        client = LibrarianClient()
+        content = "Test content"
+        alias_id = client.addFile(
+            'test.txt', len(content), StringIO(content),
+            contentType='text/plain')
+        self.commit()
+
+        alias = getUtility(ILibraryFileAliasSet)[alias_id]
+        self.assertEqual(
+            client.getURLForAlias(alias_id),
+            client.getURLForAliasObject(alias))
 
 
 class DeletedContentTestCase(unittest.TestCase):
@@ -428,8 +440,7 @@ class DeletedContentTestCase(unittest.TestCase):
         LaunchpadZopelessLayer.switchDbUser('testadmin')
 
         alias = getUtility(ILibraryFileAliasSet).create(
-                'whatever', 8, StringIO('xxx\nxxx\n'), 'text/plain'
-                )
+                'whatever', 8, StringIO('xxx\nxxx\n'), 'text/plain')
         alias_id = alias.id
         transaction.commit()
 
@@ -451,8 +462,7 @@ class DeletedContentTestCase(unittest.TestCase):
         cur = cursor()
         cur.execute("""
             UPDATE LibraryFileAlias SET content=NULL WHERE id=%s
-            """, (alias.id,)
-            )
+            """, (alias.id, ))
         transaction.commit()
 
         # Things become not found
@@ -465,7 +475,3 @@ class DeletedContentTestCase(unittest.TestCase):
             self.fail('404 not raised')
         except HTTPError, x:
             self.failUnlessEqual(x.code, 404)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
