@@ -64,9 +64,14 @@ def add_revision_to_branch(factory, branch, revision_date, date_created=None,
     """
     if date_created is None:
         date_created = revision_date
+    parent = branch.revision_history.last()
+    if parent is None:
+        parent_ids = []
+    else:
+        parent_ids = [parent.revision.revision_id]
     revision = factory.makeRevision(
         revision_date=revision_date, date_created=date_created,
-        log_body=commit_msg)
+        log_body=commit_msg, parent_ids=parent_ids)
     if mainline:
         sequence = branch.revision_count + 1
         branch_revision = branch.createBranchRevision(sequence, revision)
