@@ -10,7 +10,7 @@ functions wrapped with the @with_timeout decorator) that computes the
 time remaining before the request should time out.
 
     >>> from canonical.lazr.timeout import get_default_timeout_function
-    >>> from canonical.launchpad.webapp.servers import (
+    >>> from canonical.launchpad.webapp.adapter import (
     ...     set_launchpad_default_timeout)
     >>> old_func = get_default_timeout_function()
 
