@@ -208,10 +208,7 @@ from canonical.launchpad.webapp.tales import (
     DateTimeFormatterAPI,
     PersonFormatterAPI,
     )
-from canonical.lazr.utils import (
-    safe_hasattr,
-    smartquote,
-    )
+from canonical.lazr.utils import smartquote
 from canonical.widgets import (
     LaunchpadDropdownWidget,
     LaunchpadRadioWidget,
@@ -4435,7 +4432,7 @@ class TeamAddMyTeamsView(LaunchpadFormView):
                 verb = 'have been'
                 team_string= (
                     ', '.join(team_names[:-1]) + ' and ' + team_names[-1])
-            full_message += '%s %s %s ' % (team_string, verb, message)
+            full_message += '%s %s %s' % (team_string, verb, message)
         self.request.response.addInfoNotification(full_message)
 
 
