@@ -1,11 +1,13 @@
-= TranslationTemplatesBuildJob Build Summary =
+TranslationTemplatesBuild Build Summary
+=======================================
 
-The builders UI can show TranslationTemplateBuildJobs, although they
+The builders UI can show TranslationTemplateBuild records, although they
 look a little different from Soyuz-style jobs.
 
-== Setup ==
+Setup
+-----
 
-Create a builder working on a TranslationTemplatesBuildJob for a branch.
+Create a builder working on a TranslationTemplatesBuild for a branch.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces.launchpad import (
@@ -62,7 +64,8 @@ Helper: find the current build's summary on a browser's current page.
     ...     return find_tag_by_id(browser.contents, 'current-build-summary')
 
 
-== Show summary ==
+Show summary
+------------
 
 The job's summary shows that what type of job this is.  It also links
 to the branch.
@@ -72,3 +75,18 @@ to the branch.
     Working on TranslationTemplatesBuildJob for branch ...
 
     >>> user_browser.getLink(branch_url).click()
+
+
+Show build record
+-----------------
+
+    >>> login(ANONYMOUS)
+    >>> from lp.translations.interfaces.translationtemplatesbuild import (
+    ...     ITranslationTemplatesBuildSource,
+    ...     )
+    >>> build = getUtility(ITranslationTemplatesBuildSource).findByBranch(
+    ...     branch).one()
+    >>> build_url = canonical_url(build)
+    >>> logout()
+
+    >>> user_browser.open(build_url)

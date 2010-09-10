@@ -35,5 +35,15 @@ class ITranslationTemplatesBuildSource(Interface):
     def create(build_farm_job, branch):
         """Create a new `ITranslationTemplatesBuild`."""
 
-    def findByBranch(branch):
+    def findByBranch(branch, store=None):
         """Find `ITranslationTemplatesBuild`s for `branch`."""
+
+    def get(build_id, store=None):
+        """Find `ITranslationTemplatesBuild`s by id.
+
+        :param build_id: Numerical id to look for.
+        :param store: Optional database store to look in.
+        """
+
+    def getByBuildFarmJob(buildfarmjob_id, store=None):
+        """Find `ITranslationTemplatesBuild`s by `BuildFarmJob` id."""

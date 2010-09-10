@@ -5,7 +5,6 @@
 
 __metaclass__ = type
 
-from storm.store import Store
 from zope.component import getUtility
 from zope.interface.verify import verifyObject
 
@@ -14,7 +13,6 @@ from lp.buildmaster.enums import BuildFarmJobType
 from lp.buildmaster.interfaces.buildfarmjob import (
     IBuildFarmJob,
     IBuildFarmJobSource,
-    ISpecificBuildFarmJob,
     )
 from lp.testing import TestCaseWithFactory
 from lp.translations.interfaces.translationtemplatesbuild import (
@@ -33,12 +31,6 @@ class TestTranslationTemplatesBuild(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def _findBuildForBranch(self, branch):
-        """Find the `TranslationTemplatesBuild` for `branch`, if any."""
-        return Store.of(branch).find(
-            TranslationTemplatesBuild,
-            TranslationTemplatesBuild.branch == branch).one()
-
     def _makeBuildFarmJob(self):
         """Create a `BuildFarmJob` for testing."""
         source = getUtility(IBuildFarmJobSource)
@@ -53,7 +45,6 @@ class TestTranslationTemplatesBuild(TestCaseWithFactory):
 
         self.assertTrue(verifyObject(ITranslationTemplatesBuild, build))
         self.assertTrue(verifyObject(IBuildFarmJob, build))
-        self.assertTrue(verifyObject(ISpecificBuildFarmJob, build))
         self.assertEqual(build_farm_job, build.build_farm_job)
         self.assertEqual(branch, build.branch)
 
@@ -62,10 +53,14 @@ class TestTranslationTemplatesBuild(TestCaseWithFactory):
         # TranslationTemplatesBuild.  This utility will become obsolete
         # later.
         jobset = getUtility(ITranslationTemplatesBuildJobSource)
+        source = getUtility(ITranslationTemplatesBuildSource)
         branch = self.factory.makeBranch()
 
         translationtemplatesbuildjob = jobset.create(branch)
-        self.assertNotEqual(None, self._findBuildForBranch(branch))
+
+        builds = list(source.findByBranch(branch))
+        self.assertEqual(1, len(builds))
+        self.assertIsInstance(builds[0], TranslationTemplatesBuild)
 
     def test_getSpecificJob(self):
         source = getUtility(ITranslationTemplatesBuildSource)
@@ -74,3 +69,49 @@ class TestTranslationTemplatesBuild(TestCaseWithFactory):
         build = source.create(build_farm_job, branch)
 
         self.assertEqual(build, build_farm_job.getSpecificJob())
+
+    def test_findByBranch(self):
+        source = getUtility(ITranslationTemplatesBuildSource)
+        build_farm_job = self._makeBuildFarmJob()
+        branch = self.factory.makeBranch()
+
+        self.assertContentEqual([], source.findByBranch(branch))
+
+        build = source.create(build_farm_job, branch)
+
+        by_branch = list(source.findByBranch(branch))
+        self.assertEqual([build], by_branch)
+
+    def test_get(self):
+        source = getUtility(ITranslationTemplatesBuildSource)
+        build_farm_job = self._makeBuildFarmJob()
+        branch = self.factory.makeBranch()
+        build = source.create(build_farm_job, branch)
+
+        self.assertEqual(build, source.get(build.id))
+
+    def test_get_returns_none_if_not_found(self):
+        source = getUtility(ITranslationTemplatesBuildSource)
+        build_farm_job = self._makeBuildFarmJob()
+        branch = self.factory.makeBranch()
+        build = source.create(build_farm_job, branch)
+
+        self.assertIs(None, source.get(build.id + 999))
+
+    def test_getByBuildFarmJob(self):
+        source = getUtility(ITranslationTemplatesBuildSource)
+        build_farm_job = self._makeBuildFarmJob()
+        branch = self.factory.makeBranch()
+        build = source.create(build_farm_job, branch)
+
+        self.assertEqual(build, source.getByBuildFarmJob(build_farm_job.id))
+
+    def test_getByBuildFarmJob_returns_none_if_not_found(self):
+        source = getUtility(ITranslationTemplatesBuildSource)
+        build_farm_job = self._makeBuildFarmJob()
+        branch = self.factory.makeBranch()
+        build = source.create(build_farm_job, branch)
+
+        self.assertIs(
+            None,
+            source.getByBuildFarmJob(build_farm_job.id + 999))
