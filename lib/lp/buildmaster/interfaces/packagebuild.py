@@ -145,6 +145,14 @@ class IPackageBuild(IBuildFarmJob):
             created in a suspended state.
         """
 
+    def getUploader(changes):
+        """Return the person responsible for the upload.
+
+        This is used to when checking permissions.
+
+        :param changes: Changes file from the upload.
+        """
+
 
 class IPackageBuildSource(Interface):
     """A utility of this interface used to create _things_."""

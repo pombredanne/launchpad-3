@@ -337,6 +337,13 @@ class PackageUploadFile(NascentUploadFile):
         """Return an ISection for self.section_name."""
         return getUtility(ISectionSet)[self.section_name]
 
+    def checkBuild(self, build):
+        """Check the status of the build this file is part of.
+
+        :param build: an `IPackageBuild` instance
+        """
+        raise NotImplementedError(self.checkBuild)
+
 
 class SourceUploadFile(SourceFileMixin, PackageUploadFile):
     """Files mentioned in changesfile as source (orig, diff, tar).
@@ -371,6 +378,23 @@ class SourceUploadFile(SourceFileMixin, PackageUploadFile):
         if filename_version != version_chopped:
             yield UploadError("%s: should be %s according to changes file."
                 % (filename_version, version_chopped))
+
+    def checkBuild(self, build):
+        """See PackageUploadFile."""
+        # The master verifies the status to confirm successful upload.
+        build.status = BuildStatus.FULLYBUILT
+        # If this upload is successful, any existing log is wrong and
+        # unuseful.
+        build.upload_log = None
+
+        # Sanity check; raise an error if the build we've been
+        # told to link to makes no sense.
+        if (build.pocket != self.policy.pocket or
+            build.distroseries != self.policy.distroseries or
+            build.archive != self.policy.archive):
+            raise UploadError(
+                "Attempt to upload source specifying "
+                "recipe build %s, where it doesn't fit." % build.id)
 
 
 class BaseBinaryUploadFile(PackageUploadFile):
@@ -827,7 +851,8 @@ class BaseBinaryUploadFile(PackageUploadFile):
             self.logger.debug("Build %s created" % build.id)
         return build
 
-    def checkBuild(self, build, sourcepackagerelease):
+    def checkBuild(self, build):
+        """See PackageUploadFile."""
         dar = self.policy.distroseries[self.archtag]
         # Ensure gathered binary is related to a FULLYBUILT build
         # record. It will be check in slave-scanner procedure to
@@ -839,10 +864,8 @@ class BaseBinaryUploadFile(PackageUploadFile):
         build.upload_log = None
 
         # Sanity check; raise an error if the build we've been
-        # told to link to makes no sense (ie. is not for the right
-        # source package).
-        if (build.source_package_release != sourcepackagerelease or
-            build.pocket != self.policy.pocket or
+        # told to link to makes no sense.
+        if (build.pocket != self.policy.pocket or
             build.distro_arch_series != dar or
             build.archive != self.policy.archive):
             raise UploadError(

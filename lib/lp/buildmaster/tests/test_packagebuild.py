@@ -321,11 +321,14 @@ class TestHandleStatusMixin:
     def test_handleStatus_OK_absolute_filepath(self):
         # A filemap that tries to write to files outside of
         # the upload directory will result in a failed upload.
+        builder = self.build.builder
         self.build.handleStatus('OK', None, {
             'filemap': {'/tmp/myfile.py': 'test_file_hash'},
             })
         self.assertEqual(BuildStatus.FAILEDTOUPLOAD, self.build.status)
         self.assertResultCount(0, "failed")
+        self.assertIs(None, self.build.buildqueue_record)
+        self.assertIs(None, builder.currentjob)
 
     def test_handleStatus_OK_relative_filepath(self):
         # A filemap that tries to write to files outside of

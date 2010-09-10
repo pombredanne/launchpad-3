@@ -498,9 +498,13 @@ class NascentUpload:
         if self.binaryful:
             return
 
-        # Set up some convenient shortcut variables.
-        uploader = self.policy.getUploader(self.changes, build)
-        archive = self.policy.archive
+        # The build can have an explicit uploader, which may be different
+        # from the changes file signer. (i.e in case of daily source package
+        # builds)
+        if build is not None:
+            uploader = build.getUploader(self.changes)
+        else:
+            uploader = self.changes.signer
 
         # If we have no signer, there's no ACL we can apply.
         if uploader is None:
@@ -510,7 +514,7 @@ class NascentUpload:
         source_name = getUtility(
             ISourcePackageNameSet).queryByName(self.changes.dsc.package)
 
-        rejection_reason = archive.checkUpload(
+        rejection_reason = self.policy.archive.checkUpload(
             uploader, self.policy.distroseries, source_name,
             self.changes.dsc.component, self.policy.pocket, not self.is_new)
 
@@ -939,7 +943,7 @@ class NascentUpload:
         sourcepackagerelease = None
         if self.sourceful:
             assert self.changes.dsc, "Sourceful upload lacks DSC."
-            if build:
+            if build is not None:
                 self.changes.dsc.checkBuild(build)
             sourcepackagerelease = self.changes.dsc.storeInDatabase(build)
             package_upload_source = self.queue_root.addSource(
@@ -985,7 +989,11 @@ class NascentUpload:
                 if build is None:
                     build = binary_package_file.findBuild(
                         sourcepackagerelease)
-                binary_package_file.checkBuild(build, sourcepackagerelease)
+                if build.source_package_release != sourcepackagerelease:
+                    raise AssertionError(
+                        "Attempt to upload binaries specifying build %s, "
+                        "where they don't fit." % build.id)
+                binary_package_file.checkBuild(build)
                 assert self.queue_root.pocket == build.pocket, (
                     "Binary was not build for the claimed pocket.")
                 binary_package_file.storeInDatabase(build)

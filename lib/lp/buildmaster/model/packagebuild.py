@@ -237,6 +237,10 @@ class PackageBuild(BuildFarmJobDerived, Storm):
         """See `IPackageBuild`."""
         raise NotImplementedError
 
+    def getUploader(self, changes):
+        """See `IPackageBuild`."""
+        return changes.signer
+
 
 class PackageBuildDerived:
     """Setup the delegation for package build.

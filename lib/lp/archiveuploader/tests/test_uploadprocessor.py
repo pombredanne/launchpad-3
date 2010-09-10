@@ -153,7 +153,7 @@ class TestUploadProcessorBase(TestCaseWithFactory):
 
         self.options = MockOptions()
         self.options.base_fsroot = self.queue_folder
-        self.options.builds = True
+        self.options.builds = False
         self.options.leafname = None
         self.options.distro = "ubuntu"
         self.options.distroseries = None
@@ -172,9 +172,13 @@ class TestUploadProcessorBase(TestCaseWithFactory):
         super(TestUploadProcessorBase, self).tearDown()
 
     def getUploadProcessor(self, txn):
-        def getPolicy(distro):
+        def getPolicy(distro, build):
             self.options.distro = distro.name
             policy = findPolicyByName(self.options.context)
+            if self.options.builds:
+                policy.distroseries = build.distro_series
+                policy.pocket = build.pocket
+                policy.archive = build.archive
             policy.setOptions(self.options)
             return policy
         return UploadProcessor(

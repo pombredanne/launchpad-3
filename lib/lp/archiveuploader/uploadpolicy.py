@@ -26,7 +26,6 @@ from zope.interface import (
     )
 
 from canonical.launchpad.interfaces import ILaunchpadCelebrities
-from lp.buildmaster.enums import BuildFarmJobType
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
@@ -125,15 +124,6 @@ class AbstractUploadPolicy:
         else:
             raise AssertionError(
                 "Upload is not sourceful, binaryful or mixed.")
-
-    def getUploader(self, changes, build):
-        """Get the person who is doing the uploading."""
-        if (build is not None and
-            build.package_build.build_farm_job_type ==
-                BuildFarmJobType.RECIPEBRANCHBUILD):
-            return build.requester
-        else:
-            return changes.signer
 
     def setOptions(self, options):
         """Store the options for later."""

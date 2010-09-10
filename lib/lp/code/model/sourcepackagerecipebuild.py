@@ -22,7 +22,6 @@ from storm.locals import (
     )
 from storm.store import Store
 from zope.component import (
-    getGlobalSiteManager,
     getUtility,
     )
 from zope.interface import (
@@ -311,6 +310,10 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
         # base implementation doesn't notify on success.
         if self.status == BuildStatus.FULLYBUILT:
             self.notify()
+
+    def getUploader(self, changes):
+        """See `IPackageBuild`."""
+        return self.requester
 
 
 class SourcePackageRecipeBuildJob(BuildFarmJobOldDerived, Storm):
