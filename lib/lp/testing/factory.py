@@ -211,6 +211,7 @@ from lp.registry.model.milestone import Milestone
 from lp.registry.model.suitesourcepackage import SuiteSourcePackage
 from lp.services.mail.signedmessage import SignedMessage
 from lp.services.openid.model.openididentifier import OpenIdIdentifier
+from lp.services.propertycache import IPropertyCacheManager
 from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.soyuz.adapters.packagelocation import PackageLocation
@@ -1891,7 +1892,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
         # We clear the cache on the diff, returning the object as if it
         # was just loaded from the store.
-        from lp.services.propertycache import IPropertyCacheManager
         IPropertyCacheManager(diff).clear()
         return diff
 
