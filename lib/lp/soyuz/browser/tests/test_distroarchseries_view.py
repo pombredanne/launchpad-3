@@ -26,7 +26,7 @@ class TestDistroArchSeriesView(TestCaseWithFactory):
         # Initialize the admin view with the supplied params.
         method = 'POST'
         form = {
-            'field.actions.save': 'Save',
+            'field.actions.update': 'update',
             }
 
         if enabled:
