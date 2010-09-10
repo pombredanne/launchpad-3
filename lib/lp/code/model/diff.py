@@ -271,8 +271,9 @@ class Diff(SQLBase):
         read_locks = [read_locked(branch) for branch in [source_branch] +
                 ignore_branches]
         with nested(*read_locks):
-            diff_ignore_branches(source_branch, ignore_branches, old_revision,
-                new_revision, diff_content)
+            diff_ignore_branches(
+                source_branch, ignore_branches, old_revision.revision_id,
+                new_revision.revision_id, diff_content)
         return cls.fromFileAtEnd(diff_content)
 
 
@@ -323,14 +324,32 @@ class StaticDiff(SQLBase):
         diff.destroySelf()
 
 
-class IncrementalDiff:
+class IncrementalDiff(Storm):
 
     implements(IIncrementalDiff)
+
     delegates(IDiff, context='diff')
 
-    def __init__(self, diff, merge_proposal):
-        self.diff = diff
-        self.merge_proposal = merge_proposal
+    __storm_table__ = 'IncrementalDiff'
+
+    id = Int(primary=True, allow_none=False)
+
+    diff_id = Int(name='diff', allow_none=False)
+
+    diff = Reference(diff_id, 'Diff.id')
+
+    branch_merge_proposal_id = Int(name='branch_merge_proposal', allow_none=False)
+
+    branch_merge_proposal = Reference(
+        branch_merge_proposal_id, "BranchMergeProposal.id",)
+
+    old_revision_id = Int(name='old_revision', allow_none=False)
+
+    old_revision = Reference(old_revision_id, 'Revision.id')
+
+    new_revision_id = Int(name='new_revision', allow_none=False)
+
+    new_revision = Reference(new_revision_id, 'Revision.id')
 
 
 class PreviewDiff(Storm):

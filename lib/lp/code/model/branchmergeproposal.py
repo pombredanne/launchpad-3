@@ -50,6 +50,7 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
+from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from lp.code.enums import (
     BranchMergeProposalStatus,
     CodeReviewVote,
@@ -781,14 +782,21 @@ class BranchMergeProposal(SQLBase):
         Store.of(self).flush()
         return self.preview_diff
 
-    def generateIncrementalDiff(self, old_revision, new_revision):
-        source_branch = self.source_branch.getBzrBranch()
-        ignore_branches = [self.target_branch.getBzrBranch()]
-        if self.prerequisite_branch is not None:
-            ignore_branches.append(self.prerequisite_branch.getBzrBranch())
-        diff = Diff.generateIncrementalDiff(
-            old_revision, new_revision, source_branch, ignore_branches)
-        return IncrementalDiff(diff=diff, merge_proposal=self)
+    def generateIncrementalDiff(self, old_revision, new_revision, diff=None):
+        if diff is None:
+            source_branch = self.source_branch.getBzrBranch()
+            ignore_branches = [self.target_branch.getBzrBranch()]
+            if self.prerequisite_branch is not None:
+                ignore_branches.append(self.prerequisite_branch.getBzrBranch())
+            diff = Diff.generateIncrementalDiff(
+                old_revision, new_revision, source_branch, ignore_branches)
+        incremental_diff = IncrementalDiff()
+        incremental_diff.diff = diff
+        incremental_diff.branch_merge_proposal = self
+        incremental_diff.old_revision = old_revision
+        incremental_diff.new_revision = new_revision
+        IMasterStore(IncrementalDiff).add(incremental_diff)
+        return incremental_diff
 
 
 class BranchMergeProposalGetter:

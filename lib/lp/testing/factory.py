@@ -1169,7 +1169,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
     def makeIncrementalDiff(self):
         diff = self.makeDiff()
         bmp = self.makeBranchMergeProposal()
-        return IncrementalDiff(diff, bmp)
+        return IncrementalDiff()
 
     def makeStaticDiff(self):
         return StaticDiff.acquireFromText(
