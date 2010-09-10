@@ -918,11 +918,11 @@ class Person(
     @property
     def is_team(self):
         """See `IPerson`."""
-        return self.teamowner is not None
+        return self.teamownerID is not None
 
     def isTeam(self):
         """Deprecated. Use is_team instead."""
-        return self.teamowner is not None
+        return self.is_team
 
     @property
     def mailing_list(self):
@@ -1240,23 +1240,29 @@ class Person(
         if isinstance(team, (str, unicode)):
             team = PersonSet().getByName(team)
 
+        if self.id == team.id:
+            # A team is always a member of itself.
+            return True
+
         if not team.is_team:
             # It is possible that this team is really a user since teams
             # are users are often interchangable.
             return False
 
-        if self._inTeam_cache is None: # Initialize cache
+        if self._inTeam_cache is None:
+            # Initialize cache
             self._inTeam_cache = {}
         else:
+            # Retun from cache or fall through.
             try:
-                return self._inTeam_cache[team.id] # Return from cache
+                return self._inTeam_cache[team.id]
             except KeyError:
-                pass # Or fall through
+                pass 
 
         tp = TeamParticipation.selectOneBy(team=team, person=self)
         if tp is not None or self.id == team.teamownerID:
             in_team = True
-        elif team.is_team and not team.teamowner.inTeam(team):
+        elif not team.teamowner.inTeam(team):
             # The owner is not a member but must retain his rights over
             # this team. This person may be a member of the owner, and in this
             # case it'll also have rights over this team.
