@@ -53,6 +53,7 @@ __all__ = [
     'PersonSpecWorkloadView',
     'PersonSpecsMenu',
     'PersonSubscribedBugTaskSearchListingView',
+    'PersonSubscriptionsView',
     'PersonView',
     'PersonVouchersView',
     'RedirectToEditLanguagesView',
@@ -2245,7 +2246,7 @@ class PersonAssignedBugTaskSearchListingView(RelevantMilestonesMixin,
         return "Search bugs assigned to %s" % self.context.displayname
 
     def getSimpleSearchURL(self):
-        """Return a URL that can be usedas an href to the simple search."""
+        """Return a URL that can be used as an href to the simple search."""
         return canonical_url(self.context, view_name="+assignedbugs")
 
     @property
@@ -2397,6 +2398,42 @@ class PersonSubscribedBugTaskSearchListingView(RelevantMilestonesMixin,
     @property
     def label(self):
         return self.getSearchPageHeading()
+
+
+class PersonSubscriptionsView(BugTaskSearchListingView):
+    """All the subscriptions for a person."""
+
+    page_title = 'Subscriptions'
+
+    def subscribedBugTasks(self):
+        """Return a BatchNavigator for distinct bug tasks to which the
+        person is subscribed."""
+        bugtasks = self.context.searchTasks(None, user=self.user,
+                order_by='-date_last_updated',
+                status=(BugTaskStatus.NEW,
+                        BugTaskStatus.INCOMPLETE,
+                        BugTaskStatus.CONFIRMED,
+                        BugTaskStatus.TRIAGED,
+                        BugTaskStatus.INPROGRESS,
+                        BugTaskStatus.FIXCOMMITTED,
+                        BugTaskStatus.FIXRELEASED))
+
+        sub_bugtasks = []
+        sub_bugs = []
+
+        for task in bugtasks:
+            if task.bug not in sub_bugs:
+                sub_bugtasks.append(task)
+                sub_bugs.append(task.bug)
+        return BatchNavigator(sub_bugtasks, self.request)
+
+    def getSubscriptionsPageHeading(self):
+        """The header for the subscriptions page."""
+        return "Subscriptions for %s" % self.context.displayname
+
+    @property
+    def label(self):
+        return self.getSubscriptionsPageHeading()
 
 
 class PersonVouchersView(LaunchpadFormView):

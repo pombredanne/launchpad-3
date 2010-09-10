@@ -1,0 +1,56 @@
+Subscriptions View
+==================
+
+Direct bug subscriptions
+
+Each person and team has a subscriptions page that lists things to which they
+are directly subscribed.
+
+    >>> anon_browser.open('http://launchpad.dev/~ubuntu-team/+subscriptions')
+    >>> print anon_browser.title
+    Subscriptions : “Ubuntu Team” team
+
+The bug subscriptions table does not appear for people without any direct bug
+subscriptions.
+
+    >>> page_text = extract_text(find_main_content(anon_browser.contents))
+    >>> "does not have any direct bug subscriptions" in page_text
+    True
+
+The bug subscriptions table does appear for someone with direct bug
+subscriptions and includes the bug number, title and location.
+
+    >>> anon_browser.open('http://launchpad.dev/~name12/+subscriptions')
+    >>> bug_sub_table = find_tag_by_id(
+    ...     anon_browser.contents, 'bug_subscriptions')
+    >>> for tr in bug_sub_table.findAll('tr'):
+    ...     print extract_text(tr)
+    Summary
+    In
+    13
+    Launchpad CSS and JS is not testible
+    Launchpad
+    5
+    Firefox install instructions should be complete
+    mozilla-firefox (Ubuntu Warty)
+    4
+    Reflow problems with complex page layouts
+    Mozilla Firefox
+    2
+    Blackhole Trash folder
+    mozilla-firefox (Debian Woody)
+    9
+    Thunderbird crashes
+    thunderbird (Ubuntu)
+
+
+The bug subscriptions table also includes an unsubscribe link for bugs to
+which the person or team is subscribed.
+
+    >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
+    >>> browser.open('http://launchpad.dev/~name12/+subscriptions')
+    >>> unsub_link = browser.getLink(
+    ...     id='unsubscribe-subscriber-12')
+    >>> unsub_link.click()
+    >>> print browser.url
+    http://bugs.launchpad.dev/launchpad/+bug/13/+subscribe
