@@ -1176,6 +1176,7 @@ COMMENT ON COLUMN DistroArchSeries.official IS 'Whether or not this architecture
 COMMENT ON COLUMN DistroArchSeries.package_count IS 'A cache of the number of binary packages published in this distro arch release. The count only includes packages published in the release pocket.';
 COMMENT ON COLUMN DistroArchSeries.supports_virtualized IS 'Whether or not
 virtualized build support should be provided by this specific distroarchseries';
+COMMENT ON COLUMN DistroArchSeries.enabled IS 'Whether to allow build creation and publishing for this DistroArchSeries.';
 
 -- LauncpadDatabaseRevision
 COMMENT ON TABLE LaunchpadDatabaseRevision IS 'This table contains a list of the database patches that have been successfully applied to this database.';

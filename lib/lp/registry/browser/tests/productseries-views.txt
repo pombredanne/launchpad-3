@@ -23,11 +23,12 @@ ProductSeries Involvement links
 The ProductSeries involvement view uses the ProductSeriesInvolvedMenu when
 rendering links:
 
+    >>> from lp.app.enums import ServiceUsage
     >>> login_person(product.owner)
     >>> product.official_answers = True
     >>> product.official_blueprints = True
     >>> product.official_malone = True
-    >>> product.official_rosetta = True
+    >>> product.translations_usage = ServiceUsage.LAUNCHPAD
     >>> view = create_view(series, '+get-involved')
 
     # official_answers is always false for product series.
@@ -37,10 +38,11 @@ rendering links:
     True
     >>> print view.official_malone
     True
-    >>> print view.official_rosetta
-    True
+    >>> print view.translations_usage.name
+    LAUNCHPAD
     >>> print view.codehosting_usage.name
     UNKNOWN
+
     >>> for link in view.enabled_links:
     ...     print link.url
     http://bugs.launchpad.dev/app/simple/+filebug
@@ -476,7 +478,7 @@ The series status is set to obsolete and the releasefileglob was set to None.
 A series cannot be deleted if it is has translation templates.
 
     >>> translated_series = factory.makeProductSeries(product=product)
-    >>> product.official_rosetta = True
+    >>> product.translations_usage = ServiceUsage.LAUNCHPAD
     >>> po_template = factory.makePOTemplate(
     ...     name='gibberish', productseries=translated_series)
     >>> translated_view = create_initialized_view(
