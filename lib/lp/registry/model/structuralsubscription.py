@@ -292,21 +292,16 @@ class StructuralSubscriptionTargetMixin:
 
     def getBugNotificationsRecipients(self, recipients=None, level=None):
         """See `IStructuralSubscriptionTarget`."""
-        subscribers = set()
         if level is None:
             subscriptions = self.bug_subscriptions
         else:
             subscriptions = self.getSubscriptions(
                 min_bug_notification_level=level)
-        for subscription in subscriptions:
-            if (level is not None and
-                subscription.bug_notification_level < level):
-                continue
-            subscriber = subscription.subscriber
-            subscribers.add(subscriber)
-            if recipients is not None:
-                recipients.addStructuralSubscriber(
-                    subscriber, self)
+        subscribers = set(
+            subscription.subscriber for subscription in subscriptions)
+        if recipients is not None:
+            for subscriber in subscribers:
+                recipients.addStructuralSubscriber(subscriber, self)
         parent = self.parent_subscription_target
         if parent is not None:
             subscribers.update(
