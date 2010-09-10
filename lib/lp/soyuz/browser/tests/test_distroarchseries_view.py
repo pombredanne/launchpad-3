@@ -8,6 +8,7 @@ from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import LaunchpadFunctionalLayer
 from lp.soyuz.browser.distroarchseries import DistroArchSeriesAdminView
 from lp.testing import TestCaseWithFactory
+from lp.testing.sampledata import LAUNCHPAD_ADMIN
 
 
 class TestDistroArchSeriesView(TestCaseWithFactory):
@@ -20,7 +21,7 @@ class TestDistroArchSeriesView(TestCaseWithFactory):
         self.das = self.factory.makeDistroArchSeries()
         # Login as an admin to ensure access to the view's context
         # object.
-        login('admin@canonical.com')
+        login(LAUNCHPAD_ADMIN)
 
     def initialize_admin_view(self, enabled=True):
         # Initialize the admin view with the supplied params.
