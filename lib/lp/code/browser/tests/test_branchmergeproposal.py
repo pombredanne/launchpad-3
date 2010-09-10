@@ -46,6 +46,7 @@ from lp.code.model.diff import (
     PreviewDiff,
     StaticDiff,
     )
+from lp.code.model.revision import RevisionSet
 from lp.code.tests.helpers import add_revision_to_branch
 from lp.testing import (
     login_person,
@@ -610,12 +611,13 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
         # review, the method returns an empty list.
         self.assertRevisionGroups(self.bmp, [])
 
-    def test_getRevisionsSinceReviewStart_groups(self):
-        # Revisions that were scanned at the same time have the same
-        # date_created.  These revisions are grouped together.
+    def makeRevisionGroups(self):
         review_date = datetime(2009, 9, 10, tzinfo=pytz.UTC)
         bmp = self.factory.makeBranchMergeProposal(
             date_created=review_date)
+        first_commit = datetime(2009, 9, 9, tzinfo=pytz.UTC)
+        add_revision_to_branch(
+            self.factory, bmp.source_branch, first_commit)
         login_person(bmp.registrant)
         bmp.requestReview(review_date)
         revision_date = review_date + timedelta(days=1)
@@ -628,10 +630,29 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
                 add_revision_to_branch(
                     self.factory, bmp.source_branch, revision_date))
             revision_date += timedelta(days=1)
+        return bmp, revisions
+
+    def test_getRevisionsSinceReviewStart_groups(self):
+        # Revisions that were scanned at the same time have the same
+        # date_created.  These revisions are grouped together.
+        bmp, revisions = self.makeRevisionGroups()
         expected_groups = [
             [revisions[0], revisions[1]],
             [revisions[2], revisions[3]]]
         self.assertRevisionGroups(bmp, expected_groups)
+
+    def test_getRevisionsIncludesIncrementalDiffs(self):
+        bmp, revisions = self.makeRevisionGroups()
+        diff1 = self.factory.makeIncrementalDiff(merge_proposal=bmp,
+                old_revision=revisions[0].revision.getLefthandParent(),
+                new_revision=revisions[1].revision)
+        diff2 = self.factory.makeIncrementalDiff(merge_proposal=bmp,
+                old_revision=revisions[2].revision.getLefthandParent(),
+                new_revision=revisions[3].revision)
+        view = create_initialized_view(bmp, '+index')
+        groups = view._getRevisionsSinceReviewStart()
+        self.assertEqual([diff1, diff2], [group.incremental_diff for group in
+            groups])
 
     def test_include_superseded_comments(self):
         for x, time in zip(range(3), time_counter()):

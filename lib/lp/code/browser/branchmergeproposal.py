@@ -560,9 +560,10 @@ class CodeReviewNewRevisions:
     """
     implements(IComment, ICodeReviewNewRevisions)
 
-    def __init__(self, revisions, date, branch):
+    def __init__(self, revisions, date, branch, incremental_diff):
         self.revisions = revisions
         self.branch = branch
+        self.incremental_diff = incremental_diff
         self.has_body = False
         self.has_footer = True
         # The date attribute is used to sort the comments in the conversation.
@@ -633,8 +634,14 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
             in resultset)
         # Now group by date created.
         groups = groupby(branch_revisions, lambda r:r.revision.date_created)
-        return [CodeReviewNewRevisions(list(revisions), date, source)
+        results = [CodeReviewNewRevisions(list(revisions), date, source, None)
             for date, revisions in groups]
+        incremental_diffs = self.context.getIncrementalDiffs([
+            (result.revisions[0].revision.getLefthandParent(),
+             result.revisions[-1].revision) for result in results])
+        for result, incremental_diff in zip(results, incremental_diffs):
+            result.incremental_diff = incremental_diff
+        return results
 
     @cachedproperty
     def conversation(self):
