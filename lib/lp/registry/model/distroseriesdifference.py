@@ -42,7 +42,10 @@ from lp.registry.interfaces.distroseriesdifferencecomment import (
     )
 from lp.registry.model.distroseriesdifferencecomment import (
     DistroSeriesDifferenceComment)
-from lp.services.propertycache import cachedproperty
+from lp.services.propertycache import (
+    cachedproperty,
+    IPropertyCacheManager,
+    )
 
 
 class DistroSeriesDifference(Storm):
@@ -169,6 +172,13 @@ class DistroSeriesDifference(Storm):
 
     def update(self):
         """See `IDistroSeriesDifference`."""
+        # Updating is expected to be a heavy operation (not called during
+        # requests). We clear the cache beforehand - even though
+        # it is not currently be necessary so that in the future it
+        # won't cause a hard-to find bug if a script ever creates a difference,
+        # copies/publishes a new version and then calls update() (like the
+        # tests for this method do).
+        IPropertyCacheManager(self).clear()
         self._updateType()
         updated = self._updateVersionsAndStatus()
         return updated

@@ -1885,9 +1885,15 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 sourcepackagename=source_package_name,
                 status = PackagePublishingStatus.PUBLISHED)
 
-        return getUtility(IDistroSeriesDifferenceSource).new(
+        diff = getUtility(IDistroSeriesDifferenceSource).new(
             derived_series, source_package_name, difference_type,
             status=status)
+
+        # We clear the cache on the diff, returning the object as if it
+        # was just loaded from the store.
+        from lp.services.propertycache import IPropertyCacheManager
+        IPropertyCacheManager(diff).clear()
+        return diff
 
     def makeDistroSeriesDifferenceComment(
         self, distro_series_difference=None, owner=None, comment=None):

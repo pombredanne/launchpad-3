@@ -84,7 +84,6 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             sourcepackagename=ds_diff.source_package_name,
             distroseries=ds_diff.derived_series,
             status=PackagePublishingStatus.PENDING)
-        IPropertyCacheManager(ds_diff).clear()
 
         self.assertEqual(pending_pub, ds_diff.source_pub)
 
@@ -115,7 +114,6 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             sourcepackagename=ds_diff.source_package_name,
             distroseries=ds_diff.derived_series.parent_series,
             status=PackagePublishingStatus.PENDING)
-        IPropertyCacheManager(ds_diff).clear()
 
         self.assertEqual(pending_pub, ds_diff.parent_source_pub)
 
@@ -149,7 +147,6 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             distroseries=ds_diff.derived_series,
             status=PackagePublishingStatus.PENDING,
             version='1.0')
-        IPropertyCacheManager(ds_diff).clear()
 
         was_updated = ds_diff.update()
 
@@ -173,7 +170,6 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             distroseries=ds_diff.derived_series,
             status=PackagePublishingStatus.PENDING,
             version='1.1')
-        IPropertyCacheManager(ds_diff).clear()
 
         was_updated = ds_diff.update()
 
@@ -196,7 +192,6 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             distroseries=ds_diff.derived_series,
             status=PackagePublishingStatus.PENDING,
             version='1.1')
-        IPropertyCacheManager(ds_diff).clear()
 
         was_updated = ds_diff.update()
 
@@ -223,7 +218,6 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             distroseries=ds_diff.derived_series.parent_series,
             status=PackagePublishingStatus.PENDING,
             version='1.1')
-        IPropertyCacheManager(ds_diff).clear()
 
         was_updated = ds_diff.update()
 
@@ -248,7 +242,6 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             distroseries=ds_diff.derived_series,
             status=PackagePublishingStatus.PENDING,
             version='1.1')
-        IPropertyCacheManager(ds_diff).clear()
 
         was_updated = ds_diff.update()
 
@@ -274,7 +267,6 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             distroseries=ds_diff.derived_series,
             status=PackagePublishingStatus.PENDING,
             version='1.0')
-        IPropertyCacheManager(ds_diff).clear()
 
         was_updated = ds_diff.update()
 
@@ -359,6 +351,8 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         # The source and parent publication properties are cached on the
         # model.
         ds_diff = self.factory.makeDistroSeriesDifference()
+        ds_diff.source_pub
+        ds_diff.parent_source_pub
 
         cache = IPropertyCacheManager(ds_diff).cache
 
