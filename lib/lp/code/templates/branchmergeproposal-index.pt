@@ -18,9 +18,6 @@
     #code-review-votes {
       margin: 1em 0;
     }
-    #description {
-      margin: 1em 0;
-    }
     #add-comment-form {
       max-width: 60em;
       padding-bottom: 3em;
@@ -46,7 +43,6 @@
     #proposal-summary td {
       padding-left: 0.5em;
     }
-    #edit-commit_message .yui-ieditor-input { top: 0; }
   </style>
 </metal:block>
 

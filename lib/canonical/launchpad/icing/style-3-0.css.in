@@ -1813,7 +1813,8 @@ div#edit-commit_message {
     font-size: 93%;
     margin: 1em 0;
     }
-div#edit-description .yui-ieditor-input {
+div#edit-description .yui-ieditor-input,
+div#edit-commit_message .yui-ieditor-input {
     top: 0;
     }
 
