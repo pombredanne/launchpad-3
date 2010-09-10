@@ -579,9 +579,11 @@ We can get only valid specs (those that are not obsolete or superseded):
     ...     # raised.
     ...     owner = spec.owner
     ...     if spec.name in ['cluster-installation', 'revu']:
-    ...         spec.definition_status = SpecificationDefinitionStatus.OBSOLETE
+    ...         obsolete_status = SpecificationDefinitionStatus.OBSOLETE
+    ...         spec.definition_status = obsolete_status
     ...     if spec.name in ['krunch-desktop-plan']:
-    ...         spec.definition_status = SpecificationDefinitionStatus.SUPERSEDED
+    ...         superseded_status = SpecificationDefinitionStatus.SUPERSEDED
+    ...         spec.definition_status = supserseded_status
     ...     shim = spec.updateLifecycleStatus(owner)
     >>> for spec in kubuntu.valid_specifications:
     ...     print spec.name
