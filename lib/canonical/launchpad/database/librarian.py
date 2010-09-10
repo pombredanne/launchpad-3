@@ -236,7 +236,7 @@ class LibraryFileAlias(SQLBase):
 
     @property
     def deleted(self):
-        return self.content is None
+        return self.contentID is None
 
     def __storm_invalidated__(self):
         """Make sure that the file is closed across transaction boundary."""
