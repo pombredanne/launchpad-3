@@ -834,7 +834,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             (x.sourcepackagename.name, x.distroseries.name,
              x.distroseries.distribution.name))
 
-    @property
+    @cachedproperty
     def distrosourcepackages(self):
         from lp.registry.model.distributionsourcepackage import (
             DistributionSourcePackage,
@@ -854,15 +854,13 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         result = result.order_by(SourcePackageName.name, Distribution.name)
         result.config(distinct=True)
 
-        def decorate(row):
-            sourcepackagename, distro = row
-            return DistributionSourcePackage(
+        return [
+            DistributionSourcePackage(
                 sourcepackagename=sourcepackagename,
                 distribution=distro)
+            for sourcepackagename, distro in result]
 
-        return DecoratedResultSet(result, decorate)
-
-    @property
+    @cachedproperty
     def ubuntu_packages(self):
         """The Ubuntu `IDistributionSourcePackage`s linked to the `IProduct`.
         """
