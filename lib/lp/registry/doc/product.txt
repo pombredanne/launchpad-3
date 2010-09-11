@@ -714,71 +714,21 @@ still shows up in the list.
     ...     print series.name
     trunk
 
+
 Changing ownership
 ==================
 
-If the owner of a project changes, all series and productreleases
-owned by the old owner are transfered to the new owner.
+A product owner can be changed by the current owner.
 
     >>> print firefox.owner.name
     name12
 
-    >>> for series in firefox.series:
-    ...     print series.owner.name, series.name
-    name12 1.0
-    name12 trunk
-
-    >>> for release in firefox.releases:
-    ...     print release.owner.name, release.title
-    name16 Mozilla Firefox 0.9 "One Tree Hill"
-    name16 Mozilla Firefox 0.9.1 "One Tree Hill (v2)"
-    name16 Mozilla Firefox 0.9.2 "One (secure) Tree Hill"
-    name12 Mozilla Firefox 1.0.0 "First Stable Release"
-
-    >>> from lp.translations.interfaces.translationimportqueue import (
-    ...     ITranslationImportQueue)
-    >>> import_queue = getUtility(ITranslationImportQueue)
-    >>> entry = import_queue.addOrUpdateEntry(
-    ...     u'po/sr.po', 'foo', True, firefox.owner,
-    ...      productseries=firefox.series[0])
-    >>> foobar = getUtility(IPersonSet).getByEmail("foo.bar@canonical.com")
-    >>> entry = import_queue.addOrUpdateEntry(
-    ...     u'po/sr.po', 'foo', True, foobar,
-    ...      productseries=firefox.series[1])
-    >>> for entry in import_queue.getAllEntries(target=firefox):
-    ...     print entry.importer.name
-    name12
-    name16
-
-The owner of firefox can be changed.
-
-    >>> login("foo.bar@canonical.com")
     >>> mark = getUtility(IPersonSet).getByEmail('mark@example.com')
     >>> print mark.name
     mark
 
+    >>> login_person(firefox.owner)
     >>> firefox.owner = mark
-
-Now that the owner for firefox has changed the series and product
-releases previously owned by name12 are now owned by mark.  Those not
-owned by name12 are unchanged.
 
     >>> print firefox.owner.name
     mark
-
-    >>> for series in firefox.series:
-    ...     print series.owner.name, series.name
-    mark 1.0
-    mark trunk
-
-    >>> for release in firefox.releases:
-    ...     print release.owner.name, release.title
-    name16 Mozilla Firefox 0.9 "One Tree Hill"
-    name16 Mozilla Firefox 0.9.1 "One Tree Hill (v2)"
-    name16 Mozilla Firefox 0.9.2 "One (secure) Tree Hill"
-    mark   Mozilla Firefox 1.0.0 "First Stable Release"
-
-    >>> for entry in import_queue.getAllEntries(target=firefox):
-    ...     print entry.importer.name
-    mark
-    name16

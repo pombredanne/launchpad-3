@@ -158,9 +158,6 @@ from lp.translations.interfaces.customlanguagecode import (
     IHasCustomLanguageCodes,
     )
 from lp.translations.interfaces.translationgroup import TranslationPermission
-from lp.translations.interfaces.translationimportqueue import (
-    ITranslationImportQueue,
-    )
 from lp.translations.model.customlanguagecode import (
     CustomLanguageCode,
     HasCustomLanguageCodesMixin,
@@ -1261,7 +1258,7 @@ class ProductSet:
         results = Product.selectBy(
             active=True, orderBy="-Product.datecreated")
         # The main product listings include owner, so we prejoin it.
-        return results.prejoin(["_owner"])
+        return results.prejoin(["owner"])
 
     def get(self, productid):
         """See `IProductSet`."""
@@ -1504,7 +1501,7 @@ class ProductSet:
             queries.append('Product.active IS TRUE')
         query = " AND ".join(queries)
         return Product.select(query, distinct=True,
-                              prejoins=["_owner"],
+                              prejoins=["owner"],
                               clauseTables=clauseTables)
 
     def getTranslatables(self):
@@ -1515,7 +1512,7 @@ class ProductSet:
             Product.id == ProductSeries.productID,
             POTemplate.productseriesID == ProductSeries.id,
             Product.official_rosetta == True,
-            Person.id == Product._ownerID,
+            Person.id == Product.ownerID,
             ).config(distinct=True).order_by(Product.title)
 
         # We only want Product - the other tables are just to populate
