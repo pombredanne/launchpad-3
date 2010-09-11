@@ -54,7 +54,7 @@ class SeriesTemplatesViewScenario:
         view = self.view_class(self._getSeries(template), request)
         view.initialize()
         return view
-    
+
     def _findTagClasses(self, html, tag):
         """Find the CSS classes for all instances of `tag`s in `html`.
 
@@ -128,7 +128,6 @@ class SeriesTemplatesViewScenario:
         self.assertEqual(
             ['Edit', 'Upload', 'Download'],
             self._findActions(view._renderActionsColumn(template, url)))
-
 
     def test_constructs_correct_urls(self):
         # The view classes can override constructTemplateURL with
@@ -244,7 +243,6 @@ class SeriesTemplatesViewScenario:
             self._findTagClasses(row, 'tr'))
 
         self.assertEqual(self.columns, self._findTagClasses(row, 'td'))
-
 
 
 class TestDistroSeriesTemplatesView(SeriesTemplatesViewScenario,
