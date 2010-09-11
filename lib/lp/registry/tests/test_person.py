@@ -11,6 +11,7 @@ from lazr.lifecycle.snapshot import Snapshot
 import pytz
 from testtools.matchers import LessThan
 import transaction
+from storm.store import Store
 from zope.component import getUtility
 from zope.interface import providedBy
 from zope.security.proxy import removeSecurityProxy
@@ -123,7 +124,7 @@ class TestPersonTeams(TestCaseWithFactory):
             in memberships]
         self.assertEqual(expected_memberships, memberships)
 
-    def test_getPathsToTeamsComplicated(self):
+    def test_getPathsToTeams_complicated(self):
         d_team = self.factory.makeTeam(name='d', owner=self.b_team)
         e_team = self.factory.makeTeam(name='e')
         f_team = self.factory.makeTeam(name='f', owner=e_team)
@@ -153,7 +154,7 @@ class TestPersonTeams(TestCaseWithFactory):
             in memberships]
         self.assertEqual(expected_memberships, memberships)
 
-    def test_getPathsToTeamsMultiplePaths(self):
+    def test_getPathsToTeams_multiple_paths(self):
         d_team = self.factory.makeTeam(name='d', owner=self.b_team)
         login_person(self.a_team.teamowner)
         self.c_team.addMember(d_team, self.c_team.teamowner)
@@ -174,6 +175,45 @@ class TestPersonTeams(TestCaseWithFactory):
             (membership.team, membership.person) for membership
             in memberships]
         self.assertEqual(expected_memberships, memberships)
+
+    def test_inTeam_direct_team(self):
+        # Verify direct membeship is True and the cache is populated.
+        self.assertTrue(self.user.inTeam(self.a_team))
+        self.assertEqual(
+            {self.a_team.id: True},
+            removeSecurityProxy(self.user)._inTeam_cache)
+
+    def test_inTeam_indirect_team(self):
+        # Verify indirect membeship is True and the cache is populated.
+        self.assertTrue(self.user.inTeam(self.b_team))
+        self.assertEqual(
+            {self.b_team.id: True},
+            removeSecurityProxy(self.user)._inTeam_cache)
+
+    def test_inTeam_cache_cleared_by_membership_change(self):
+        # Verify a change in membership clears the team cache.
+        self.user.inTeam(self.a_team)
+        with person_logged_in(self.b_team.teamowner):
+            self.b_team.addMember(self.user, self.b_team.teamowner)
+        self.assertEqual(
+            {},
+            removeSecurityProxy(self.user)._inTeam_cache)
+
+    def test_inTeam_person_is_false(self):
+        # Verify a user cannot be a member of another user.
+        other_user = self.factory.makePerson()
+        self.assertFalse(self.user.inTeam(other_user))
+
+    def test_inTeam_person_does_not_build_TeamParticipation_cache(self):
+        # Verify when a user is the argument, a DB call to TeamParticipation
+        # was not made to learn this.
+        other_user = self.factory.makePerson()
+        Store.of(self.user).invalidate()
+        self.assertFalse(
+            self.assertStatementCount(1, self.user.inTeam, other_user))
+        self.assertEqual(
+            {},
+            removeSecurityProxy(self.user)._inTeam_cache)
 
 
 class TestPerson(TestCaseWithFactory):
