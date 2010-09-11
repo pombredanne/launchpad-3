@@ -35,7 +35,7 @@ class PrejoinTestCase(TestCase):
         # to hide this from callsites.
         self.unwrapped_result = self.store.find(
             (Product, Person),
-            Product._ownerID == Person.id).order_by(Product.name)
+            Product.ownerID == Person.id).order_by(Product.name)
         self.prejoin_result = prejoin(self.unwrapped_result)
 
     def verify(self, prejoined, normal):
@@ -89,7 +89,7 @@ class PrejoinTestCase(TestCase):
         standard_result = self.store.find(Product, Product.name == 'firefox')
         prejoin_result = prejoin(self.store.find(
             (Product, Person),
-            Person.id == Product._ownerID,
+            Person.id == Product.ownerID,
             Product.name == 'firefox'))
         self.assertEqual(standard_result.one(), prejoin_result.one())
 
@@ -98,7 +98,7 @@ class PrejoinTestCase(TestCase):
         name = "none-existent-name"
         prejoin_result = prejoin(self.store.find(
             (Product, Person),
-            Person.id == Product._ownerID,
+            Person.id == Product.ownerID,
             Product.name == name))
         self.assertIs(None, prejoin_result.one())
 
