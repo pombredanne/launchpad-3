@@ -1,10 +1,11 @@
-= GeoIP =
+GeoIP
+=====
 
 GeoIP allows us to guess the location of a user based on his IP address.
 Our IGeoIP utility provides a couple methods to get location information
 from a given IP address.
 
-    >>> from canonical.launchpad.interfaces.geoip import IGeoIP
+    >>> from lp.services.geoip.interfaces import IGeoIP
     >>> geoip = getUtility(IGeoIP)
 
 The getCountryByAddr() method will return the country of the given IP
@@ -80,7 +81,7 @@ IGeoIPRecord, providing the latitude, longitude and time zone of the
 request's originating IP address.
 
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-    >>> from canonical.launchpad.interfaces.geoip import IGeoIPRecord
+    >>> from lp.services.geoip.interfaces import IGeoIPRecord
     >>> request = LaunchpadTestRequest()
 
 Since our request won't have an originating IP address, we'll use that

@@ -19,7 +19,7 @@ from canonical.config import config
 from canonical.launchpad.components.request_country import (
     ipaddress_from_request,
     )
-from canonical.launchpad.interfaces.geoip import (
+from lp.services.geoip.interfaces import (
     IGeoIP,
     IGeoIPRecord,
     IRequestLocalLanguages,

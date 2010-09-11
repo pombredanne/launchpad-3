@@ -3,8 +3,7 @@ based on the Accept-language header. If we can't encode the language code
 in ASCII we just skip them.
 
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-    >>> from canonical.launchpad.utilities.geoip import (
-    ...     RequestPreferredLanguages)
+    >>> from lp.services.geoip.model import RequestPreferredLanguages
 
     >>> langs = {'HTTP_ACCEPT_LANGUAGE': 'pt_BR, Espa\xf1ol'}
     >>> request = LaunchpadTestRequest(**langs)
