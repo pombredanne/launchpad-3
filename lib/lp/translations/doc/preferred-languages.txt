@@ -11,9 +11,20 @@ in ASCII we just skip them.
     >>> [l.code
     ...  for l in RequestPreferredLanguages(request).getPreferredLanguages()]
     [u'pt_BR']
-  
+
     >>> langs = {'HTTP_ACCEPT_LANGUAGE': u'pt_BR, Espa\xf1ol'}
     >>> request = LaunchpadTestRequest(**langs)
     >>> [l.code
     ...  for l in RequestPreferredLanguages(request).getPreferredLanguages()]
     [u'pt_BR']
+
+The getPreferredLanguages() method returns unique codes.
+
+    >>> langs = {
+    ...     'HTTP_ACCEPT_LANGUAGE': 'en-US,en;q=0.9,de-CH;q=0.8,de;q=0.6,'
+    ...                             'en-GB;q=0.4,en-us;q=0.3,en;q=0.1'
+    ...     }
+    >>> request = LaunchpadTestRequest(**langs)
+    >>> [l.code
+    ...  for l in RequestPreferredLanguages(request).getPreferredLanguages()]
+    [u'en', u'en_GB', u'de']
