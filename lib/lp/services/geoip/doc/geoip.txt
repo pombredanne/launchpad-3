@@ -87,8 +87,7 @@ request's originating IP address.
 Since our request won't have an originating IP address, we'll use that
 same South African IP address.
 
-    >>> from canonical.launchpad.components.request_country import (
-    ...     ipaddress_from_request)
+    >>> from lp.services.geoip.helpers import ipaddress_from_request
     >>> print ipaddress_from_request(request)
     None
     >>> geoip_request = IGeoIPRecord(request)

@@ -10,10 +10,9 @@ import unittest
 
 
 def test_suite():
-    import canonical.launchpad.components.request_country
-    return DocTestSuite(canonical.launchpad.components.request_country)
+    import lp.services.geoip.helpers.request_country
+    return DocTestSuite(lp.services.geoip.helpers.request_country)
 
 if __name__ == '__main__':
     DEFAULT = test_suite()
     unittest.main(defaultTest='DEFAULT')
-

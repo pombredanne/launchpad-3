@@ -31,7 +31,7 @@
 
     <adapter
         for="zope.publisher.interfaces.browser.IBrowserRequest"
-        factory="canonical.launchpad.components.request_country.request_country"
+        factory="lp.services.geoip.helpers.request_country"
         provides="lp.services.worlddata.interfaces.country.ICountry" />
 
     <adapter
