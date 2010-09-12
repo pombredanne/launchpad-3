@@ -25,6 +25,14 @@ class ScopesFromRequest(object):
         Currently supports the following scopes:
          - default
          - is_edge/is_lpnet etc (thunks through to the config)
+         - pageid:
+           This scope works on a namespace model: for a page
+           with pageid SomeType:+view#subselector
+           The following page ids scopes will match:
+             - pageid:   (but use 'default' as it is simpler)
+             - pageid:SomeType
+             - pageid:SomeType:+view
+             - pageid:SomeType:+view#subselector
         """
         if scope_name == 'default':
             return True
