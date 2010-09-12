@@ -792,6 +792,21 @@ SET search_path = public, pg_catalog;
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 SET SESSION AUTHORIZATION DEFAULT;
 
 ALTER TABLE account DISABLE TRIGGER ALL;
@@ -2238,8 +2253,8 @@ ALTER TABLE processor ENABLE TRIGGER ALL;
 
 ALTER TABLE builder DISABLE TRIGGER ALL;
 
-INSERT INTO builder (id, processor, name, title, description, owner, speedindex, builderok, failnotes, virtualized, url, manual, date_created, vm_host, active) VALUES (1, 1, 'bob', 'Bob The Builder', 'The default build-slave', 61, NULL, true, NULL, false, 'http://localhost:8221/', false, '2006-10-16 18:31:43.226724', NULL, true);
-INSERT INTO builder (id, processor, name, title, description, owner, speedindex, builderok, failnotes, virtualized, url, manual, date_created, vm_host, active) VALUES (2, 1, 'frog', 'The frog builder', 'The untrusted build-slave', 61, NULL, false, NULL, true, 'http://localhost:9221/', false, '2006-10-31 18:31:43.226724', 'localhost-host.ppa', true);
+INSERT INTO builder (id, processor, name, title, description, owner, speedindex, builderok, failnotes, virtualized, url, manual, date_created, vm_host, active, failure_count) VALUES (1, 1, 'bob', 'Bob The Builder', 'The default build-slave', 61, NULL, true, NULL, false, 'http://localhost:8221/', false, '2006-10-16 18:31:43.226724', NULL, true, 0);
+INSERT INTO builder (id, processor, name, title, description, owner, speedindex, builderok, failnotes, virtualized, url, manual, date_created, vm_host, active, failure_count) VALUES (2, 1, 'frog', 'The frog builder', 'The untrusted build-slave', 61, NULL, false, NULL, true, 'http://localhost:9221/', false, '2006-10-31 18:31:43.226724', 'localhost-host.ppa', true, 0);
 
 
 ALTER TABLE builder ENABLE TRIGGER ALL;
@@ -2247,30 +2262,30 @@ ALTER TABLE builder ENABLE TRIGGER ALL;
 
 ALTER TABLE buildfarmjob DISABLE TRIGGER ALL;
 
-INSERT INTO buildfarmjob (id, processor, virtualized, date_created, date_started, date_finished, date_first_dispatched, builder, status, log, job_type) VALUES (2, 1, false, '2004-09-27 11:57:13', '2004-09-27 11:55:13', '2004-09-27 11:57:14', NULL, 1, 1, 1, 1);
-INSERT INTO buildfarmjob (id, processor, virtualized, date_created, date_started, date_finished, date_first_dispatched, builder, status, log, job_type) VALUES (6, 1, false, '2006-12-01 00:00:00', '2006-12-01 00:00:00', '2006-12-01 00:00:01', NULL, 1, 2, 1, 1);
-INSERT INTO buildfarmjob (id, processor, virtualized, date_created, date_started, date_finished, date_first_dispatched, builder, status, log, job_type) VALUES (7, 1, false, '2005-03-24 00:00:00', '2005-03-24 23:58:43', '2005-03-25 00:00:03', NULL, 1, 1, 1, 1);
-INSERT INTO buildfarmjob (id, processor, virtualized, date_created, date_started, date_finished, date_first_dispatched, builder, status, log, job_type) VALUES (8, 1, false, '2005-09-30 00:00:00', NULL, NULL, NULL, NULL, 6, NULL, 1);
-INSERT INTO buildfarmjob (id, processor, virtualized, date_created, date_started, date_finished, date_first_dispatched, builder, status, log, job_type) VALUES (9, 1, false, '2005-10-01 00:00:00', '2005-10-01 23:56:41', '2005-10-02 00:00:01', NULL, 1, 2, 1, 1);
-INSERT INTO buildfarmjob (id, processor, virtualized, date_created, date_started, date_finished, date_first_dispatched, builder, status, log, job_type) VALUES (10, 1, false, '2006-01-27 00:00:00', NULL, NULL, NULL, NULL, 1, NULL, 1);
-INSERT INTO buildfarmjob (id, processor, virtualized, date_created, date_started, date_finished, date_first_dispatched, builder, status, log, job_type) VALUES (11, 1, false, '2006-02-14 00:00:00', NULL, NULL, NULL, NULL, 0, NULL, 1);
-INSERT INTO buildfarmjob (id, processor, virtualized, date_created, date_started, date_finished, date_first_dispatched, builder, status, log, job_type) VALUES (12, 1, false, '2006-02-28 00:00:00', '2006-02-27 23:53:59', '2006-02-28 00:00:01', NULL, 1, 3, 1, 1);
-INSERT INTO buildfarmjob (id, processor, virtualized, date_created, date_started, date_finished, date_first_dispatched, builder, status, log, job_type) VALUES (13, 1, false, '2006-03-21 00:00:00', '2006-03-21 00:58:33', '2006-03-21 01:00:03', NULL, 1, 5, 1, 1);
-INSERT INTO buildfarmjob (id, processor, virtualized, date_created, date_started, date_finished, date_first_dispatched, builder, status, log, job_type) VALUES (14, 1, false, '2006-03-22 00:00:00', '2006-03-21 00:58:32', '2006-03-21 01:00:02', NULL, 1, 5, 1, 1);
-INSERT INTO buildfarmjob (id, processor, virtualized, date_created, date_started, date_finished, date_first_dispatched, builder, status, log, job_type) VALUES (15, 1, false, '2006-03-22 00:00:01', '2006-03-21 00:58:30', '2006-03-21 01:00:00', NULL, 1, 5, 1, 1);
-INSERT INTO buildfarmjob (id, processor, virtualized, date_created, date_started, date_finished, date_first_dispatched, builder, status, log, job_type) VALUES (16, 1, false, '2005-03-24 00:00:01', '2005-03-24 23:58:42', '2005-03-25 00:00:02', NULL, 1, 1, 1, 1);
-INSERT INTO buildfarmjob (id, processor, virtualized, date_created, date_started, date_finished, date_first_dispatched, builder, status, log, job_type) VALUES (18, 1, false, '2004-09-27 11:57:14', '2004-09-27 11:55:12', '2004-09-27 11:57:13', NULL, 1, 1, 1, 1);
-INSERT INTO buildfarmjob (id, processor, virtualized, date_created, date_started, date_finished, date_first_dispatched, builder, status, log, job_type) VALUES (19, 1, false, '2005-03-24 00:00:02', '2005-03-24 23:58:41', '2005-03-25 00:00:01', NULL, 1, 1, 1, 1);
-INSERT INTO buildfarmjob (id, processor, virtualized, date_created, date_started, date_finished, date_first_dispatched, builder, status, log, job_type) VALUES (21, 1, false, '2006-12-01 00:00:01', NULL, NULL, NULL, NULL, 2, NULL, 1);
-INSERT INTO buildfarmjob (id, processor, virtualized, date_created, date_started, date_finished, date_first_dispatched, builder, status, log, job_type) VALUES (22, 1, false, '2007-04-20 00:00:00', '2007-04-19 23:58:41', '2007-04-20 00:00:01', NULL, 1, 7, 1, 1);
-INSERT INTO buildfarmjob (id, processor, virtualized, date_created, date_started, date_finished, date_first_dispatched, builder, status, log, job_type) VALUES (23, 1, false, '2006-04-11 12:00:00', NULL, NULL, NULL, NULL, 1, NULL, 1);
-INSERT INTO buildfarmjob (id, processor, virtualized, date_created, date_started, date_finished, date_first_dispatched, builder, status, log, job_type) VALUES (24, 1, true, '2007-05-30 00:00:00', '2007-05-29 23:58:41', '2007-05-30 00:00:01', NULL, 1, 2, 1, 1);
-INSERT INTO buildfarmjob (id, processor, virtualized, date_created, date_started, date_finished, date_first_dispatched, builder, status, log, job_type) VALUES (25, 1, true, '2007-07-08 12:00:00', NULL, NULL, NULL, NULL, 1, NULL, 1);
-INSERT INTO buildfarmjob (id, processor, virtualized, date_created, date_started, date_finished, date_first_dispatched, builder, status, log, job_type) VALUES (26, 1, true, '2007-07-08 00:00:00', '2007-07-07 23:58:41', '2007-07-08 00:00:01', NULL, 1, 2, 1, 1);
-INSERT INTO buildfarmjob (id, processor, virtualized, date_created, date_started, date_finished, date_first_dispatched, builder, status, log, job_type) VALUES (27, 1, true, '2007-07-24 00:00:00', '2007-07-23 23:58:41', '2007-07-24 00:00:01', NULL, 1, 1, 1, 1);
-INSERT INTO buildfarmjob (id, processor, virtualized, date_created, date_started, date_finished, date_first_dispatched, builder, status, log, job_type) VALUES (28, 3, true, '2007-08-10 00:00:00', '2007-08-10 00:00:00', '2007-08-10 00:00:13', NULL, 1, 1, 1, 1);
-INSERT INTO buildfarmjob (id, processor, virtualized, date_created, date_started, date_finished, date_first_dispatched, builder, status, log, job_type) VALUES (29, 1, false, '2007-08-09 21:54:18.553132', '2007-08-09 23:49:59', '2007-08-09 23:59:59', NULL, NULL, 1, NULL, 1);
-INSERT INTO buildfarmjob (id, processor, virtualized, date_created, date_started, date_finished, date_first_dispatched, builder, status, log, job_type) VALUES (30, 3, false, '2007-08-10 00:00:01', '2007-08-10 00:00:01', '2007-08-10 00:00:14', NULL, 1, 1, 1, 1);
+INSERT INTO buildfarmjob (id, processor, virtualized, date_created, date_started, date_finished, date_first_dispatched, builder, status, log, job_type, failure_count) VALUES (2, 1, false, '2004-09-27 11:57:13', '2004-09-27 11:55:13', '2004-09-27 11:57:14', NULL, 1, 1, 1, 1, 0);
+INSERT INTO buildfarmjob (id, processor, virtualized, date_created, date_started, date_finished, date_first_dispatched, builder, status, log, job_type, failure_count) VALUES (6, 1, false, '2006-12-01 00:00:00', '2006-12-01 00:00:00', '2006-12-01 00:00:01', NULL, 1, 2, 1, 1, 0);
+INSERT INTO buildfarmjob (id, processor, virtualized, date_created, date_started, date_finished, date_first_dispatched, builder, status, log, job_type, failure_count) VALUES (7, 1, false, '2005-03-24 00:00:00', '2005-03-24 23:58:43', '2005-03-25 00:00:03', NULL, 1, 1, 1, 1, 0);
+INSERT INTO buildfarmjob (id, processor, virtualized, date_created, date_started, date_finished, date_first_dispatched, builder, status, log, job_type, failure_count) VALUES (8, 1, false, '2005-09-30 00:00:00', NULL, NULL, NULL, NULL, 6, NULL, 1, 0);
+INSERT INTO buildfarmjob (id, processor, virtualized, date_created, date_started, date_finished, date_first_dispatched, builder, status, log, job_type, failure_count) VALUES (9, 1, false, '2005-10-01 00:00:00', '2005-10-01 23:56:41', '2005-10-02 00:00:01', NULL, 1, 2, 1, 1, 0);
+INSERT INTO buildfarmjob (id, processor, virtualized, date_created, date_started, date_finished, date_first_dispatched, builder, status, log, job_type, failure_count) VALUES (10, 1, false, '2006-01-27 00:00:00', NULL, NULL, NULL, NULL, 1, NULL, 1, 0);
+INSERT INTO buildfarmjob (id, processor, virtualized, date_created, date_started, date_finished, date_first_dispatched, builder, status, log, job_type, failure_count) VALUES (11, 1, false, '2006-02-14 00:00:00', NULL, NULL, NULL, NULL, 0, NULL, 1, 0);
+INSERT INTO buildfarmjob (id, processor, virtualized, date_created, date_started, date_finished, date_first_dispatched, builder, status, log, job_type, failure_count) VALUES (12, 1, false, '2006-02-28 00:00:00', '2006-02-27 23:53:59', '2006-02-28 00:00:01', NULL, 1, 3, 1, 1, 0);
+INSERT INTO buildfarmjob (id, processor, virtualized, date_created, date_started, date_finished, date_first_dispatched, builder, status, log, job_type, failure_count) VALUES (13, 1, false, '2006-03-21 00:00:00', '2006-03-21 00:58:33', '2006-03-21 01:00:03', NULL, 1, 5, 1, 1, 0);
+INSERT INTO buildfarmjob (id, processor, virtualized, date_created, date_started, date_finished, date_first_dispatched, builder, status, log, job_type, failure_count) VALUES (14, 1, false, '2006-03-22 00:00:00', '2006-03-21 00:58:32', '2006-03-21 01:00:02', NULL, 1, 5, 1, 1, 0);
+INSERT INTO buildfarmjob (id, processor, virtualized, date_created, date_started, date_finished, date_first_dispatched, builder, status, log, job_type, failure_count) VALUES (15, 1, false, '2006-03-22 00:00:01', '2006-03-21 00:58:30', '2006-03-21 01:00:00', NULL, 1, 5, 1, 1, 0);
+INSERT INTO buildfarmjob (id, processor, virtualized, date_created, date_started, date_finished, date_first_dispatched, builder, status, log, job_type, failure_count) VALUES (16, 1, false, '2005-03-24 00:00:01', '2005-03-24 23:58:42', '2005-03-25 00:00:02', NULL, 1, 1, 1, 1, 0);
+INSERT INTO buildfarmjob (id, processor, virtualized, date_created, date_started, date_finished, date_first_dispatched, builder, status, log, job_type, failure_count) VALUES (18, 1, false, '2004-09-27 11:57:14', '2004-09-27 11:55:12', '2004-09-27 11:57:13', NULL, 1, 1, 1, 1, 0);
+INSERT INTO buildfarmjob (id, processor, virtualized, date_created, date_started, date_finished, date_first_dispatched, builder, status, log, job_type, failure_count) VALUES (19, 1, false, '2005-03-24 00:00:02', '2005-03-24 23:58:41', '2005-03-25 00:00:01', NULL, 1, 1, 1, 1, 0);
+INSERT INTO buildfarmjob (id, processor, virtualized, date_created, date_started, date_finished, date_first_dispatched, builder, status, log, job_type, failure_count) VALUES (21, 1, false, '2006-12-01 00:00:01', NULL, NULL, NULL, NULL, 2, NULL, 1, 0);
+INSERT INTO buildfarmjob (id, processor, virtualized, date_created, date_started, date_finished, date_first_dispatched, builder, status, log, job_type, failure_count) VALUES (22, 1, false, '2007-04-20 00:00:00', '2007-04-19 23:58:41', '2007-04-20 00:00:01', NULL, 1, 7, 1, 1, 0);
+INSERT INTO buildfarmjob (id, processor, virtualized, date_created, date_started, date_finished, date_first_dispatched, builder, status, log, job_type, failure_count) VALUES (23, 1, false, '2006-04-11 12:00:00', NULL, NULL, NULL, NULL, 1, NULL, 1, 0);
+INSERT INTO buildfarmjob (id, processor, virtualized, date_created, date_started, date_finished, date_first_dispatched, builder, status, log, job_type, failure_count) VALUES (24, 1, true, '2007-05-30 00:00:00', '2007-05-29 23:58:41', '2007-05-30 00:00:01', NULL, 1, 2, 1, 1, 0);
+INSERT INTO buildfarmjob (id, processor, virtualized, date_created, date_started, date_finished, date_first_dispatched, builder, status, log, job_type, failure_count) VALUES (25, 1, true, '2007-07-08 12:00:00', NULL, NULL, NULL, NULL, 1, NULL, 1, 0);
+INSERT INTO buildfarmjob (id, processor, virtualized, date_created, date_started, date_finished, date_first_dispatched, builder, status, log, job_type, failure_count) VALUES (26, 1, true, '2007-07-08 00:00:00', '2007-07-07 23:58:41', '2007-07-08 00:00:01', NULL, 1, 2, 1, 1, 0);
+INSERT INTO buildfarmjob (id, processor, virtualized, date_created, date_started, date_finished, date_first_dispatched, builder, status, log, job_type, failure_count) VALUES (27, 1, true, '2007-07-24 00:00:00', '2007-07-23 23:58:41', '2007-07-24 00:00:01', NULL, 1, 1, 1, 1, 0);
+INSERT INTO buildfarmjob (id, processor, virtualized, date_created, date_started, date_finished, date_first_dispatched, builder, status, log, job_type, failure_count) VALUES (28, 3, true, '2007-08-10 00:00:00', '2007-08-10 00:00:00', '2007-08-10 00:00:13', NULL, 1, 1, 1, 1, 0);
+INSERT INTO buildfarmjob (id, processor, virtualized, date_created, date_started, date_finished, date_first_dispatched, builder, status, log, job_type, failure_count) VALUES (29, 1, false, '2007-08-09 21:54:18.553132', '2007-08-09 23:49:59', '2007-08-09 23:59:59', NULL, NULL, 1, NULL, 1, 0);
+INSERT INTO buildfarmjob (id, processor, virtualized, date_created, date_started, date_finished, date_first_dispatched, builder, status, log, job_type, failure_count) VALUES (30, 3, false, '2007-08-10 00:00:01', '2007-08-10 00:00:01', '2007-08-10 00:00:14', NULL, 1, 1, 1, 1, 0);
 
 
 ALTER TABLE buildfarmjob ENABLE TRIGGER ALL;
@@ -2365,29 +2380,29 @@ ALTER TABLE sourcepackagerecipebuild ENABLE TRIGGER ALL;
 
 ALTER TABLE sourcepackagerelease DISABLE TRIGGER ALL;
 
-INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build, changelog, user_defined_fields) VALUES (14, 1, '0.9', '2004-09-27 11:57:13', 1, NULL, 1, 'Mozilla dummy Changelog......', 'gcc-3.4-base, libc6 (>= 2.3.2.ds1-4), gcc-3.4 (>= 3.4.1-4sarge1), gcc-3.4 (<< 3.4.2), libstdc++6-dev (>= 3.4.1-4sarge1), pmount', 'bacula-common (= 1.34.6-2), bacula-director-common (= 1.34.6-2), postgresql-client (>= 7.4), pmount', 'any', NULL, 1, 1, 1, 1, 1, 'Mark Shuttleworth <mark@canonical.com>', '3.6.2', '1.0', 'mozilla-firefox', 1, NULL, 'gcc-4.0, pmount', 'gcc-4.0-base, pmount', NULL, NULL, NULL);
-INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build, changelog, user_defined_fields) VALUES (15, 1, '1.0', '2004-09-27 11:57:13', 1, NULL, 1, NULL, NULL, NULL, 'all', NULL, 2, 1, 9, 3, 1, NULL, NULL, '1.0', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL);
-INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build, changelog, user_defined_fields) VALUES (16, 1, '1.0-1', '2005-03-10 16:30:00', 1, NULL, 1, NULL, NULL, NULL, 'any', NULL, 3, 1, 10, 3, 1, NULL, NULL, '1.0', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL);
-INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build, changelog, user_defined_fields) VALUES (17, 1, '0.99.6-1', '2005-03-14 18:00:00', 1, NULL, 1, NULL, NULL, NULL, 'i386', NULL, 2, 1, 10, 1, 1, NULL, NULL, '1.0', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL);
-INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build, changelog, user_defined_fields) VALUES (20, 1, '0.1-1', '2005-03-24 20:59:31.439579', 1, NULL, 1, 'pmount (0.1-1) hoary; urgency=low
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build, changelog, user_defined_fields, homepage) VALUES (14, 1, '0.9', '2004-09-27 11:57:13', 1, NULL, 1, 'Mozilla dummy Changelog......', 'gcc-3.4-base, libc6 (>= 2.3.2.ds1-4), gcc-3.4 (>= 3.4.1-4sarge1), gcc-3.4 (<< 3.4.2), libstdc++6-dev (>= 3.4.1-4sarge1), pmount', 'bacula-common (= 1.34.6-2), bacula-director-common (= 1.34.6-2), postgresql-client (>= 7.4), pmount', 'any', NULL, 1, 1, 1, 1, 1, 'Mark Shuttleworth <mark@canonical.com>', '3.6.2', '1.0', 'mozilla-firefox', 1, NULL, 'gcc-4.0, pmount', 'gcc-4.0-base, pmount', NULL, NULL, NULL, NULL);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build, changelog, user_defined_fields, homepage) VALUES (15, 1, '1.0', '2004-09-27 11:57:13', 1, NULL, 1, NULL, NULL, NULL, 'all', NULL, 2, 1, 9, 3, 1, NULL, NULL, '1.0', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build, changelog, user_defined_fields, homepage) VALUES (16, 1, '1.0-1', '2005-03-10 16:30:00', 1, NULL, 1, NULL, NULL, NULL, 'any', NULL, 3, 1, 10, 3, 1, NULL, NULL, '1.0', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build, changelog, user_defined_fields, homepage) VALUES (17, 1, '0.99.6-1', '2005-03-14 18:00:00', 1, NULL, 1, NULL, NULL, NULL, 'i386', NULL, 2, 1, 10, 1, 1, NULL, NULL, '1.0', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build, changelog, user_defined_fields, homepage) VALUES (20, 1, '0.1-1', '2005-03-24 20:59:31.439579', 1, NULL, 1, 'pmount (0.1-1) hoary; urgency=low
 
  * Fix description (Malone #1)
  * Fix debian (Debian #2000)
  * Fix warty (Warty Ubuntu #1)
 
- -- Sample Person <test@canonical.com> Tue, 7 Feb 2006 12:10:08 +0300', NULL, NULL, 'all', NULL, 2, 1, 14, 3, 1, NULL, NULL, '1.0', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL);
-INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build, changelog, user_defined_fields) VALUES (21, 1, '0.1-2', '2005-06-24 20:59:31.439579', 1, NULL, 1, 'This is a placeholder changelog for pmount 0.1-2', NULL, NULL, 'powerpc', NULL, 1, 1, 14, 3, 1, NULL, NULL, '1.0', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL);
-INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build, changelog, user_defined_fields) VALUES (23, 1, '1.0.8-1ubuntu1', '2005-02-03 08:50:00', 1, NULL, 1, 'alsa-utils (1.0.8-1ubuntu1) warty; urgency=low
+ -- Sample Person <test@canonical.com> Tue, 7 Feb 2006 12:10:08 +0300', NULL, NULL, 'all', NULL, 2, 1, 14, 3, 1, NULL, NULL, '1.0', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build, changelog, user_defined_fields, homepage) VALUES (21, 1, '0.1-2', '2005-06-24 20:59:31.439579', 1, NULL, 1, 'This is a placeholder changelog for pmount 0.1-2', NULL, NULL, 'powerpc', NULL, 1, 1, 14, 3, 1, NULL, NULL, '1.0', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build, changelog, user_defined_fields, homepage) VALUES (23, 1, '1.0.8-1ubuntu1', '2005-02-03 08:50:00', 1, NULL, 1, 'alsa-utils (1.0.8-1ubuntu1) warty; urgency=low
 
  * Placeholder
 
-     -- Sample Person <test@canonical.com> Tue, 7 Feb 2006 12:10:08 +0300', NULL, NULL, 'all', NULL, 1, 1, 19, 1, 1, 'Mark Shuttleworth <mark@example.com>', '3.6.2', '1.0', 'alsa-mixer', 1, NULL, NULL, NULL, NULL, NULL, NULL);
-INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build, changelog, user_defined_fields) VALUES (24, 1, '1.0.9a-4', '2005-07-01 22:47:00', 1, NULL, 1, 'alsa-utils (1.0.9a-4) warty; urgency=low
+     -- Sample Person <test@canonical.com> Tue, 7 Feb 2006 12:10:08 +0300', NULL, NULL, 'all', NULL, 1, 1, 19, 1, 1, 'Mark Shuttleworth <mark@example.com>', '3.6.2', '1.0', 'alsa-mixer', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build, changelog, user_defined_fields, homepage) VALUES (24, 1, '1.0.9a-4', '2005-07-01 22:47:00', 1, NULL, 1, 'alsa-utils (1.0.9a-4) warty; urgency=low
 
  * Placeholder
 
-     -- Sample Person <test@canonical.com> Tue, 7 Feb 2006 12:10:08 +0300', NULL, NULL, 'any', NULL, 2, 1, 19, 8, 1, NULL, NULL, '1.0', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL);
-INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build, changelog, user_defined_fields) VALUES (25, 1, '1.0.9a-4ubuntu1', '2005-08-01 14:10:00', 1, NULL, 1, 'alsa-utils (1.0.9a-4ubuntu1) hoary; urgency=low
+     -- Sample Person <test@canonical.com> Tue, 7 Feb 2006 12:10:08 +0300', NULL, NULL, 'any', NULL, 2, 1, 19, 8, 1, NULL, NULL, '1.0', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build, changelog, user_defined_fields, homepage) VALUES (25, 1, '1.0.9a-4ubuntu1', '2005-08-01 14:10:00', 1, NULL, 1, 'alsa-utils (1.0.9a-4ubuntu1) hoary; urgency=low
 
  * Placeholder
  LP: #10
@@ -2396,22 +2411,22 @@ INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, d
  LP: #7, #8,
    #11
 
-     -- Sample Person <test@canonical.com> Tue, 7 Feb 2006 12:10:08 +0300', NULL, NULL, 'all', NULL, 1, 16, 19, 3, 1, NULL, NULL, '1.0', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL);
-INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build, changelog, user_defined_fields) VALUES (26, 1, 'cr.g7-37', '2005-12-22 18:19:00', 1, NULL, 1, NULL, NULL, NULL, 'i386', NULL, 1, 16, 20, 3, 1, NULL, NULL, '1.0', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL);
-INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build, changelog, user_defined_fields) VALUES (27, 1, 'b8p', '2006-02-10 11:19:00', 1, NULL, 1, 'libstdc++ (9.9-1) hoary; urgency=high
+     -- Sample Person <test@canonical.com> Tue, 7 Feb 2006 12:10:08 +0300', NULL, NULL, 'all', NULL, 1, 16, 19, 3, 1, NULL, NULL, '1.0', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build, changelog, user_defined_fields, homepage) VALUES (26, 1, 'cr.g7-37', '2005-12-22 18:19:00', 1, NULL, 1, NULL, NULL, NULL, 'i386', NULL, 1, 16, 20, 3, 1, NULL, NULL, '1.0', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build, changelog, user_defined_fields, homepage) VALUES (27, 1, 'b8p', '2006-02-10 11:19:00', 1, NULL, 1, 'libstdc++ (9.9-1) hoary; urgency=high
 
  * Placeholder
 
- -- Sample Person <test@canonical.com> Tue, 10 Feb 2006 10:10:08 +0300', NULL, NULL, 'powerpc i386', NULL, 1, 16, 21, 3, 1, NULL, NULL, '1.0', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL);
-INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build, changelog, user_defined_fields) VALUES (28, 1, '2.6.15.3', '2005-12-22 18:19:00', 1, NULL, 1, NULL, NULL, NULL, 'any', NULL, 1, 16, 22, 3, 1, NULL, NULL, '1.0', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL);
-INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build, changelog, user_defined_fields) VALUES (29, 1, '0.00', '2005-12-22 18:19:00', 1, NULL, 1, NULL, NULL, NULL, 'all', NULL, 1, 16, 17, 3, 1, NULL, NULL, '1.0', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL);
-INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build, changelog, user_defined_fields) VALUES (30, 1, '1.0', '2006-09-28 18:19:00', 1, NULL, 1, NULL, NULL, NULL, 'all', NULL, 1, 16, 20, 10, 1, NULL, NULL, '1.0', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL);
-INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build, changelog, user_defined_fields) VALUES (31, 1, '1.0', '2006-09-28 18:19:01', 1, NULL, 1, NULL, NULL, NULL, 'all', NULL, 1, 16, 20, 10, 1, NULL, NULL, '1.0', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL);
-INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build, changelog, user_defined_fields) VALUES (32, 1, '1.0', '2006-12-01 13:19:01', 1, NULL, 1, NULL, NULL, NULL, 'all', NULL, 1, 16, 23, 10, 1, NULL, NULL, '1.0', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL);
-INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build, changelog, user_defined_fields) VALUES (33, 1, '1.0', '2006-12-01 13:19:01', 1, NULL, 1, NULL, NULL, NULL, 'all', NULL, 1, 16, 24, 10, 1, NULL, NULL, '1.0', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL);
-INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build, changelog, user_defined_fields) VALUES (34, 1, '1.0', '2007-02-15 14:19:01', 1, NULL, 1, NULL, NULL, NULL, 'i386', NULL, 29, 16, 25, 10, 1, NULL, NULL, '1.0', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL);
-INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build, changelog, user_defined_fields) VALUES (35, 1, '1.0', '2006-04-11 11:19:01', 1, NULL, 1, NULL, NULL, NULL, 'any', NULL, 1, 16, 26, 1, 1, NULL, NULL, '1.0', NULL, 10, NULL, NULL, NULL, NULL, NULL, NULL);
-INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build, changelog, user_defined_fields) VALUES (36, 243606, '1.0-1', '2007-08-09 21:25:37.832976', 1, NULL, 5, 'commercialpackage (1.0-1) breezy; urgency=low
+ -- Sample Person <test@canonical.com> Tue, 10 Feb 2006 10:10:08 +0300', NULL, NULL, 'powerpc i386', NULL, 1, 16, 21, 3, 1, NULL, NULL, '1.0', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build, changelog, user_defined_fields, homepage) VALUES (28, 1, '2.6.15.3', '2005-12-22 18:19:00', 1, NULL, 1, NULL, NULL, NULL, 'any', NULL, 1, 16, 22, 3, 1, NULL, NULL, '1.0', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build, changelog, user_defined_fields, homepage) VALUES (29, 1, '0.00', '2005-12-22 18:19:00', 1, NULL, 1, NULL, NULL, NULL, 'all', NULL, 1, 16, 17, 3, 1, NULL, NULL, '1.0', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build, changelog, user_defined_fields, homepage) VALUES (30, 1, '1.0', '2006-09-28 18:19:00', 1, NULL, 1, NULL, NULL, NULL, 'all', NULL, 1, 16, 20, 10, 1, NULL, NULL, '1.0', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build, changelog, user_defined_fields, homepage) VALUES (31, 1, '1.0', '2006-09-28 18:19:01', 1, NULL, 1, NULL, NULL, NULL, 'all', NULL, 1, 16, 20, 10, 1, NULL, NULL, '1.0', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build, changelog, user_defined_fields, homepage) VALUES (32, 1, '1.0', '2006-12-01 13:19:01', 1, NULL, 1, NULL, NULL, NULL, 'all', NULL, 1, 16, 23, 10, 1, NULL, NULL, '1.0', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build, changelog, user_defined_fields, homepage) VALUES (33, 1, '1.0', '2006-12-01 13:19:01', 1, NULL, 1, NULL, NULL, NULL, 'all', NULL, 1, 16, 24, 10, 1, NULL, NULL, '1.0', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build, changelog, user_defined_fields, homepage) VALUES (34, 1, '1.0', '2007-02-15 14:19:01', 1, NULL, 1, NULL, NULL, NULL, 'i386', NULL, 29, 16, 25, 10, 1, NULL, NULL, '1.0', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build, changelog, user_defined_fields, homepage) VALUES (35, 1, '1.0', '2006-04-11 11:19:01', 1, NULL, 1, NULL, NULL, NULL, 'any', NULL, 1, 16, 26, 1, 1, NULL, NULL, '1.0', NULL, 10, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build, changelog, user_defined_fields, homepage) VALUES (36, 243606, '1.0-1', '2007-08-09 21:25:37.832976', 1, NULL, 5, 'commercialpackage (1.0-1) breezy; urgency=low
 
   * Initial version
       Address for testing linkification: Foo Bar <foo.bar@canonical.com>
@@ -2435,8 +2450,8 @@ Version: GnuPG v1.4.6 (GNU/Linux)
 iD8DBQFGtzTjWhGlTF8G/HcRAtFsAJ4hHyKhOnsUOQDI+SAk000DmFAnUgCcC84J
 3F4bEPeRcnUjCFI/hjR0kxg=
 =Tjln
-', 7, 243606, 27, 10, 1, 'Julian Edwards <launchpad@julian-edwards.com>', '3.6.2', '1.0', 'commercialpackage', 12, NULL, NULL, NULL, NULL, NULL, NULL);
-INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build, changelog, user_defined_fields) VALUES (37, 1, '1.0', '2006-04-11 11:19:01', 1, NULL, 1, NULL, NULL, NULL, 'i386', NULL, 1, 16, 26, 1, 1, NULL, NULL, '1.0', NULL, 11, NULL, NULL, NULL, NULL, NULL, NULL);
+', 7, 243606, 27, 10, 1, 'Julian Edwards <launchpad@julian-edwards.com>', '3.6.2', '1.0', 'commercialpackage', 12, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build, changelog, user_defined_fields, homepage) VALUES (37, 1, '1.0', '2006-04-11 11:19:01', 1, NULL, 1, NULL, NULL, NULL, 'i386', NULL, 1, 16, 26, 1, 1, NULL, NULL, '1.0', NULL, 11, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 
 
 ALTER TABLE sourcepackagerelease ENABLE TRIGGER ALL;
@@ -2490,21 +2505,21 @@ ALTER TABLE binarypackagename ENABLE TRIGGER ALL;
 
 ALTER TABLE binarypackagerelease DISABLE TRIGGER ALL;
 
-INSERT INTO binarypackagerelease (id, binarypackagename, version, summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, architecturespecific, fti, datecreated, pre_depends, enhances, breaks, debug_package, user_defined_fields) VALUES (6, 6, '1.0', 'foobar is bad', 'foobar should be removed', 6, 1, 1, 1, 40, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, false, NULL, '2006-12-01 17:50:10.878712', NULL, NULL, NULL, NULL, NULL);
-INSERT INTO binarypackagerelease (id, binarypackagename, version, summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, architecturespecific, fti, datecreated, pre_depends, enhances, breaks, debug_package, user_defined_fields) VALUES (12, 8, '0.9', 'Mozilla Firefox Web Browser', 'Mozilla Firefox Web Browser is .....', 2, 1, 1, 1, 10, NULL, 'gcc-3.4-base, libc6 (>= 2.3.2.ds1-4), gcc-3.4 (>= 3.4.1-4sarge1), gcc-3.4 (<< 3.4.2), libstdc++6-dev (>= 3.4.1-4sarge1)', 'gcc-3.4-base, libc6 (>= 2.3.2.ds1-4), gcc-3.4 (>= 3.4.1-4sarge1), gcc-3.4 (<< 3.4.2), libstdc++6-dev (>= 3.4.1-4sarge1)', 'firefox-gnome-support (= 1.0.7-0ubuntu20), latex-xft-fonts, xprint', 'firefox, mozilla-web-browser', 'gnome-mozilla-browser', 'mozilla-firefox', false, NULL, true, NULL, '2005-10-19 17:50:10.874189', 'pmount, foo', 'pmount, bar', 'pmount, baz', NULL, NULL);
-INSERT INTO binarypackagerelease (id, binarypackagename, version, summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, architecturespecific, fti, datecreated, pre_depends, enhances, breaks, debug_package, user_defined_fields) VALUES (15, 13, '0.1-1', 'pmount shortdesc', 'pmount description', 7, 1, 1, 1, 40, NULL, 'at (>= 3.14156), linux-2.6.12, tramp-package', NULL, NULL, NULL, NULL, NULL, false, NULL, false, NULL, '2005-10-19 17:50:10.878712', NULL, NULL, NULL, NULL, NULL);
-INSERT INTO binarypackagerelease (id, binarypackagename, version, summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, architecturespecific, fti, datecreated, pre_depends, enhances, breaks, debug_package, user_defined_fields) VALUES (16, 14, '2.6.12.20', 'the kernel of boom', 'this kernel is like the crystal method: a temple of boom', 14, 1, 1, 1, 40, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, false, NULL, '2005-10-19 17:50:10.878712', NULL, NULL, NULL, NULL, NULL);
-INSERT INTO binarypackagerelease (id, binarypackagename, version, summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, architecturespecific, fti, datecreated, pre_depends, enhances, breaks, debug_package, user_defined_fields) VALUES (17, 15, '3.14156', 'at the mountains of madness', 'lovecraft long before enunciated that the mountains were not safe, but you did not believe him', 15, 1, 1, 1, 40, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, false, NULL, '2005-10-19 17:50:10.878712', NULL, NULL, NULL, NULL, NULL);
-INSERT INTO binarypackagerelease (id, binarypackagename, version, summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, architecturespecific, fti, datecreated, pre_depends, enhances, breaks, debug_package, user_defined_fields) VALUES (18, 13, '2:1.9-1', 'pmount shortdesc', 'pmount description', 16, 1, 1, 1, 40, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, true, NULL, '2005-10-19 17:50:10.878712', NULL, NULL, NULL, NULL, NULL);
-INSERT INTO binarypackagerelease (id, binarypackagename, version, summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, architecturespecific, fti, datecreated, pre_depends, enhances, breaks, debug_package, user_defined_fields) VALUES (19, 8, '0.9', 'Mozilla Firefox Web Browser', 'Mozilla Firefox Web Browser is .....', 18, 1, 1, 1, 10, NULL, 'gcc-3.4-base, libc6 (>= 2.3.2.ds1-4), gcc-3.4 (>= 3.4.1-4sarge1), gcc-3.4 (<< 3.4.2), libstdc++6-dev (>= 3.4.1-4sarge1)', 'gcc-3.4-base, libc6 (>= 2.3.2.ds1-4), gcc-3.4 (>= 3.4.1-4sarge1), gcc-3.4 (<< 3.4.2), libstdc++6-dev (>= 3.4.1-4sarge1)', 'firefox-gnome-support (= 1.0.7-0ubuntu20), latex-xft-fonts, xprint', 'firefox, mozilla-web-browser', 'gnome-mozilla-browser', 'mozilla-firefox', false, NULL, true, NULL, '2005-10-19 17:50:10.874189', NULL, NULL, NULL, NULL, NULL);
-INSERT INTO binarypackagerelease (id, binarypackagename, version, summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, architecturespecific, fti, datecreated, pre_depends, enhances, breaks, debug_package, user_defined_fields) VALUES (20, 13, '0.1-1', 'pmount shortdesc', 'pmount description', 19, 1, 1, 1, 40, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, false, NULL, '2005-10-19 17:50:10.878712', NULL, NULL, NULL, NULL, NULL);
-INSERT INTO binarypackagerelease (id, binarypackagename, version, summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, architecturespecific, fti, datecreated, pre_depends, enhances, breaks, debug_package, user_defined_fields) VALUES (21, 16, '1.0', 'cdrkit is nice', 'cdrkit should be kept', 21, 1, 1, 1, 40, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, false, NULL, '2006-12-01 17:50:10.878712', NULL, NULL, NULL, NULL, NULL);
-INSERT INTO binarypackagerelease (id, binarypackagename, version, summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, architecturespecific, fti, datecreated, pre_depends, enhances, breaks, debug_package, user_defined_fields) VALUES (22, 8, '1.0', 'ff from iceweasel', 'iceweasel huh ?', 23, 1, 1, 1, 40, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, true, NULL, '2006-04-11 12:50:10.878712', NULL, NULL, NULL, NULL, NULL);
-INSERT INTO binarypackagerelease (id, binarypackagename, version, summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, architecturespecific, fti, datecreated, pre_depends, enhances, breaks, debug_package, user_defined_fields) VALUES (23, 13, '0.1-1', 'pmount shortdesc', 'pmount description', 27, 1, 1, 1, 40, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, false, NULL, '2007-07-24 17:50:10.878712', NULL, NULL, NULL, NULL, NULL);
-INSERT INTO binarypackagerelease (id, binarypackagename, version, summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, architecturespecific, fti, datecreated, pre_depends, enhances, breaks, debug_package, user_defined_fields) VALUES (24, 8, '1.0', 'ff from iceweasel', 'iceweasel huh ?', 28, 1, 1, 1, 40, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, true, NULL, '2006-08-10 12:50:10.878712', NULL, NULL, NULL, NULL, NULL);
-INSERT INTO binarypackagerelease (id, binarypackagename, version, summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, architecturespecific, fti, datecreated, pre_depends, enhances, breaks, debug_package, user_defined_fields) VALUES (25, 17, '1.0-1', 'Stuff for testing', ' This package is simply used for testing soyuz', 29, 1, 5, 7, 20, '', '', '', '', '', '', '', false, 8, true, NULL, '2007-08-09 21:54:18.456616', NULL, NULL, NULL, NULL, NULL);
-INSERT INTO binarypackagerelease (id, binarypackagename, version, summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, architecturespecific, fti, datecreated, pre_depends, enhances, breaks, debug_package, user_defined_fields) VALUES (26, 8, '0.9', 'Mozilla Firefox Web Browser', 'Mozilla Firefox Web Browser is .....', 30, 1, 1, 1, 10, '', '', '', '', '', '', '', false, NULL, true, NULL, '2005-10-19 17:50:10.874189', NULL, NULL, NULL, NULL, NULL);
-INSERT INTO binarypackagerelease (id, binarypackagename, version, summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, architecturespecific, fti, datecreated, pre_depends, enhances, breaks, debug_package, user_defined_fields) VALUES (27, 18, '0.9', 'Mozilla Firefox Data', 'Mozilla Firefox Data is .....', 2, 1, 1, 1, 10, '', '', '', '', '', '', '', false, NULL, false, NULL, '2005-10-19 17:50:10.874189', NULL, NULL, NULL, NULL, NULL);
+INSERT INTO binarypackagerelease (id, binarypackagename, version, summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, architecturespecific, fti, datecreated, pre_depends, enhances, breaks, debug_package, user_defined_fields, homepage) VALUES (6, 6, '1.0', 'foobar is bad', 'foobar should be removed', 6, 1, 1, 1, 40, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, false, NULL, '2006-12-01 17:50:10.878712', NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO binarypackagerelease (id, binarypackagename, version, summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, architecturespecific, fti, datecreated, pre_depends, enhances, breaks, debug_package, user_defined_fields, homepage) VALUES (12, 8, '0.9', 'Mozilla Firefox Web Browser', 'Mozilla Firefox Web Browser is .....', 2, 1, 1, 1, 10, NULL, 'gcc-3.4-base, libc6 (>= 2.3.2.ds1-4), gcc-3.4 (>= 3.4.1-4sarge1), gcc-3.4 (<< 3.4.2), libstdc++6-dev (>= 3.4.1-4sarge1)', 'gcc-3.4-base, libc6 (>= 2.3.2.ds1-4), gcc-3.4 (>= 3.4.1-4sarge1), gcc-3.4 (<< 3.4.2), libstdc++6-dev (>= 3.4.1-4sarge1)', 'firefox-gnome-support (= 1.0.7-0ubuntu20), latex-xft-fonts, xprint', 'firefox, mozilla-web-browser', 'gnome-mozilla-browser', 'mozilla-firefox', false, NULL, true, NULL, '2005-10-19 17:50:10.874189', 'pmount, foo', 'pmount, bar', 'pmount, baz', NULL, NULL, NULL);
+INSERT INTO binarypackagerelease (id, binarypackagename, version, summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, architecturespecific, fti, datecreated, pre_depends, enhances, breaks, debug_package, user_defined_fields, homepage) VALUES (15, 13, '0.1-1', 'pmount shortdesc', 'pmount description', 7, 1, 1, 1, 40, NULL, 'at (>= 3.14156), linux-2.6.12, tramp-package', NULL, NULL, NULL, NULL, NULL, false, NULL, false, NULL, '2005-10-19 17:50:10.878712', NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO binarypackagerelease (id, binarypackagename, version, summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, architecturespecific, fti, datecreated, pre_depends, enhances, breaks, debug_package, user_defined_fields, homepage) VALUES (16, 14, '2.6.12.20', 'the kernel of boom', 'this kernel is like the crystal method: a temple of boom', 14, 1, 1, 1, 40, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, false, NULL, '2005-10-19 17:50:10.878712', NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO binarypackagerelease (id, binarypackagename, version, summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, architecturespecific, fti, datecreated, pre_depends, enhances, breaks, debug_package, user_defined_fields, homepage) VALUES (17, 15, '3.14156', 'at the mountains of madness', 'lovecraft long before enunciated that the mountains were not safe, but you did not believe him', 15, 1, 1, 1, 40, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, false, NULL, '2005-10-19 17:50:10.878712', NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO binarypackagerelease (id, binarypackagename, version, summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, architecturespecific, fti, datecreated, pre_depends, enhances, breaks, debug_package, user_defined_fields, homepage) VALUES (18, 13, '2:1.9-1', 'pmount shortdesc', 'pmount description', 16, 1, 1, 1, 40, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, true, NULL, '2005-10-19 17:50:10.878712', NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO binarypackagerelease (id, binarypackagename, version, summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, architecturespecific, fti, datecreated, pre_depends, enhances, breaks, debug_package, user_defined_fields, homepage) VALUES (19, 8, '0.9', 'Mozilla Firefox Web Browser', 'Mozilla Firefox Web Browser is .....', 18, 1, 1, 1, 10, NULL, 'gcc-3.4-base, libc6 (>= 2.3.2.ds1-4), gcc-3.4 (>= 3.4.1-4sarge1), gcc-3.4 (<< 3.4.2), libstdc++6-dev (>= 3.4.1-4sarge1)', 'gcc-3.4-base, libc6 (>= 2.3.2.ds1-4), gcc-3.4 (>= 3.4.1-4sarge1), gcc-3.4 (<< 3.4.2), libstdc++6-dev (>= 3.4.1-4sarge1)', 'firefox-gnome-support (= 1.0.7-0ubuntu20), latex-xft-fonts, xprint', 'firefox, mozilla-web-browser', 'gnome-mozilla-browser', 'mozilla-firefox', false, NULL, true, NULL, '2005-10-19 17:50:10.874189', NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO binarypackagerelease (id, binarypackagename, version, summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, architecturespecific, fti, datecreated, pre_depends, enhances, breaks, debug_package, user_defined_fields, homepage) VALUES (20, 13, '0.1-1', 'pmount shortdesc', 'pmount description', 19, 1, 1, 1, 40, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, false, NULL, '2005-10-19 17:50:10.878712', NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO binarypackagerelease (id, binarypackagename, version, summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, architecturespecific, fti, datecreated, pre_depends, enhances, breaks, debug_package, user_defined_fields, homepage) VALUES (21, 16, '1.0', 'cdrkit is nice', 'cdrkit should be kept', 21, 1, 1, 1, 40, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, false, NULL, '2006-12-01 17:50:10.878712', NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO binarypackagerelease (id, binarypackagename, version, summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, architecturespecific, fti, datecreated, pre_depends, enhances, breaks, debug_package, user_defined_fields, homepage) VALUES (22, 8, '1.0', 'ff from iceweasel', 'iceweasel huh ?', 23, 1, 1, 1, 40, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, true, NULL, '2006-04-11 12:50:10.878712', NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO binarypackagerelease (id, binarypackagename, version, summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, architecturespecific, fti, datecreated, pre_depends, enhances, breaks, debug_package, user_defined_fields, homepage) VALUES (23, 13, '0.1-1', 'pmount shortdesc', 'pmount description', 27, 1, 1, 1, 40, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, false, NULL, '2007-07-24 17:50:10.878712', NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO binarypackagerelease (id, binarypackagename, version, summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, architecturespecific, fti, datecreated, pre_depends, enhances, breaks, debug_package, user_defined_fields, homepage) VALUES (24, 8, '1.0', 'ff from iceweasel', 'iceweasel huh ?', 28, 1, 1, 1, 40, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, true, NULL, '2006-08-10 12:50:10.878712', NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO binarypackagerelease (id, binarypackagename, version, summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, architecturespecific, fti, datecreated, pre_depends, enhances, breaks, debug_package, user_defined_fields, homepage) VALUES (25, 17, '1.0-1', 'Stuff for testing', ' This package is simply used for testing soyuz', 29, 1, 5, 7, 20, '', '', '', '', '', '', '', false, 8, true, NULL, '2007-08-09 21:54:18.456616', NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO binarypackagerelease (id, binarypackagename, version, summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, architecturespecific, fti, datecreated, pre_depends, enhances, breaks, debug_package, user_defined_fields, homepage) VALUES (26, 8, '0.9', 'Mozilla Firefox Web Browser', 'Mozilla Firefox Web Browser is .....', 30, 1, 1, 1, 10, '', '', '', '', '', '', '', false, NULL, true, NULL, '2005-10-19 17:50:10.874189', NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO binarypackagerelease (id, binarypackagename, version, summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, architecturespecific, fti, datecreated, pre_depends, enhances, breaks, debug_package, user_defined_fields, homepage) VALUES (27, 18, '0.9', 'Mozilla Firefox Data', 'Mozilla Firefox Data is .....', 2, 1, 1, 1, 10, '', '', '', '', '', '', '', false, NULL, false, NULL, '2005-10-19 17:50:10.874189', NULL, NULL, NULL, NULL, NULL, NULL);
 
 
 ALTER TABLE binarypackagerelease ENABLE TRIGGER ALL;
@@ -3074,25 +3089,25 @@ ALTER TABLE revision ENABLE TRIGGER ALL;
 
 ALTER TABLE branchrevision DISABLE TRIGGER ALL;
 
-INSERT INTO branchrevision (id, sequence, branch, revision) VALUES (1, 1, 10, 1);
-INSERT INTO branchrevision (id, sequence, branch, revision) VALUES (2, 1, 11, 2);
-INSERT INTO branchrevision (id, sequence, branch, revision) VALUES (3, 1, 12, 3);
-INSERT INTO branchrevision (id, sequence, branch, revision) VALUES (4, 1, 20, 4);
-INSERT INTO branchrevision (id, sequence, branch, revision) VALUES (5, 2, 20, 5);
-INSERT INTO branchrevision (id, sequence, branch, revision) VALUES (6, 3, 20, 6);
-INSERT INTO branchrevision (id, sequence, branch, revision) VALUES (7, 4, 20, 7);
-INSERT INTO branchrevision (id, sequence, branch, revision) VALUES (8, 5, 20, 8);
-INSERT INTO branchrevision (id, sequence, branch, revision) VALUES (9, 6, 20, 9);
-INSERT INTO branchrevision (id, sequence, branch, revision) VALUES (10, 1, 21, 4);
-INSERT INTO branchrevision (id, sequence, branch, revision) VALUES (11, 2, 21, 5);
-INSERT INTO branchrevision (id, sequence, branch, revision) VALUES (12, 3, 21, 10);
-INSERT INTO branchrevision (id, sequence, branch, revision) VALUES (13, 4, 21, 11);
-INSERT INTO branchrevision (id, sequence, branch, revision) VALUES (14, 5, 21, 8);
-INSERT INTO branchrevision (id, sequence, branch, revision) VALUES (15, 6, 21, 9);
-INSERT INTO branchrevision (id, sequence, branch, revision) VALUES (16, NULL, 20, 10);
-INSERT INTO branchrevision (id, sequence, branch, revision) VALUES (17, NULL, 20, 11);
-INSERT INTO branchrevision (id, sequence, branch, revision) VALUES (18, NULL, 21, 6);
-INSERT INTO branchrevision (id, sequence, branch, revision) VALUES (19, NULL, 21, 7);
+INSERT INTO branchrevision (sequence, branch, revision) VALUES (1, 10, 1);
+INSERT INTO branchrevision (sequence, branch, revision) VALUES (1, 11, 2);
+INSERT INTO branchrevision (sequence, branch, revision) VALUES (1, 12, 3);
+INSERT INTO branchrevision (sequence, branch, revision) VALUES (1, 20, 4);
+INSERT INTO branchrevision (sequence, branch, revision) VALUES (1, 21, 4);
+INSERT INTO branchrevision (sequence, branch, revision) VALUES (2, 20, 5);
+INSERT INTO branchrevision (sequence, branch, revision) VALUES (2, 21, 5);
+INSERT INTO branchrevision (sequence, branch, revision) VALUES (3, 20, 6);
+INSERT INTO branchrevision (sequence, branch, revision) VALUES (3, 21, 10);
+INSERT INTO branchrevision (sequence, branch, revision) VALUES (4, 20, 7);
+INSERT INTO branchrevision (sequence, branch, revision) VALUES (4, 21, 11);
+INSERT INTO branchrevision (sequence, branch, revision) VALUES (5, 20, 8);
+INSERT INTO branchrevision (sequence, branch, revision) VALUES (5, 21, 8);
+INSERT INTO branchrevision (sequence, branch, revision) VALUES (6, 20, 9);
+INSERT INTO branchrevision (sequence, branch, revision) VALUES (6, 21, 9);
+INSERT INTO branchrevision (sequence, branch, revision) VALUES (NULL, 20, 10);
+INSERT INTO branchrevision (sequence, branch, revision) VALUES (NULL, 20, 11);
+INSERT INTO branchrevision (sequence, branch, revision) VALUES (NULL, 21, 6);
+INSERT INTO branchrevision (sequence, branch, revision) VALUES (NULL, 21, 7);
 
 
 ALTER TABLE branchrevision ENABLE TRIGGER ALL;
@@ -3674,6 +3689,45 @@ INSERT INTO bugsubscription (id, person, bug, date_created, subscribed_by, bug_n
 ALTER TABLE bugsubscription ENABLE TRIGGER ALL;
 
 
+ALTER TABLE structuralsubscription DISABLE TRIGGER ALL;
+
+INSERT INTO structuralsubscription (id, product, productseries, project, milestone, distribution, distroseries, sourcepackagename, subscriber, subscribed_by, bug_notification_level, blueprint_notification_level, date_created, date_last_updated) VALUES (1, NULL, NULL, NULL, NULL, 1, NULL, 1, 16, 16, 40, 10, '2008-01-29 15:12:34.581468', '2008-01-29 15:12:34.581468');
+INSERT INTO structuralsubscription (id, product, productseries, project, milestone, distribution, distroseries, sourcepackagename, subscriber, subscribed_by, bug_notification_level, blueprint_notification_level, date_created, date_last_updated) VALUES (2, NULL, NULL, NULL, NULL, 1, NULL, 14, 16, 16, 40, 10, '2008-01-29 15:12:34.581468', '2008-01-29 15:12:34.581468');
+INSERT INTO structuralsubscription (id, product, productseries, project, milestone, distribution, distroseries, sourcepackagename, subscriber, subscribed_by, bug_notification_level, blueprint_notification_level, date_created, date_last_updated) VALUES (3, 22, NULL, NULL, NULL, NULL, NULL, NULL, 64, 64, 40, 10, '2008-02-06 12:17:13.030376', '2008-02-06 12:17:13.030376');
+INSERT INTO structuralsubscription (id, product, productseries, project, milestone, distribution, distroseries, sourcepackagename, subscriber, subscribed_by, bug_notification_level, blueprint_notification_level, date_created, date_last_updated) VALUES (4, 16, NULL, NULL, NULL, NULL, NULL, NULL, 64, 64, 40, 10, '2008-02-06 12:17:13.030376', '2008-02-06 12:17:13.030376');
+
+
+ALTER TABLE structuralsubscription ENABLE TRIGGER ALL;
+
+
+ALTER TABLE bugsubscriptionfilter DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE bugsubscriptionfilter ENABLE TRIGGER ALL;
+
+
+ALTER TABLE bugsubscriptionfilterimportance DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE bugsubscriptionfilterimportance ENABLE TRIGGER ALL;
+
+
+ALTER TABLE bugsubscriptionfilterstatus DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE bugsubscriptionfilterstatus ENABLE TRIGGER ALL;
+
+
+ALTER TABLE bugsubscriptionfiltertag DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE bugsubscriptionfiltertag ENABLE TRIGGER ALL;
+
+
 ALTER TABLE bugtag DISABLE TRIGGER ALL;
 
 INSERT INTO bugtag (id, bug, tag) VALUES (1, 9, 'crash');
@@ -3998,6 +4052,27 @@ INSERT INTO distrocomponentuploader (id, distribution, component, uploader, date
 
 
 ALTER TABLE distrocomponentuploader ENABLE TRIGGER ALL;
+
+
+ALTER TABLE packagediff DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE packagediff ENABLE TRIGGER ALL;
+
+
+ALTER TABLE distroseriesdifference DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE distroseriesdifference ENABLE TRIGGER ALL;
+
+
+ALTER TABLE distroseriesdifferencemessage DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE distroseriesdifferencemessage ENABLE TRIGGER ALL;
 
 
 ALTER TABLE distroserieslanguage DISABLE TRIGGER ALL;
@@ -5984,13 +6059,6 @@ ALTER TABLE packagecopyrequest DISABLE TRIGGER ALL;
 
 
 ALTER TABLE packagecopyrequest ENABLE TRIGGER ALL;
-
-
-ALTER TABLE packagediff DISABLE TRIGGER ALL;
-
-
-
-ALTER TABLE packagediff ENABLE TRIGGER ALL;
 
 
 ALTER TABLE packageselection DISABLE TRIGGER ALL;
@@ -10460,17 +10528,6 @@ INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, 
 
 
 ALTER TABLE standardshipitrequest ENABLE TRIGGER ALL;
-
-
-ALTER TABLE structuralsubscription DISABLE TRIGGER ALL;
-
-INSERT INTO structuralsubscription (id, product, productseries, project, milestone, distribution, distroseries, sourcepackagename, subscriber, subscribed_by, bug_notification_level, blueprint_notification_level, date_created, date_last_updated) VALUES (1, NULL, NULL, NULL, NULL, 1, NULL, 1, 16, 16, 40, 10, '2008-01-29 15:12:34.581468', '2008-01-29 15:12:34.581468');
-INSERT INTO structuralsubscription (id, product, productseries, project, milestone, distribution, distroseries, sourcepackagename, subscriber, subscribed_by, bug_notification_level, blueprint_notification_level, date_created, date_last_updated) VALUES (2, NULL, NULL, NULL, NULL, 1, NULL, 14, 16, 16, 40, 10, '2008-01-29 15:12:34.581468', '2008-01-29 15:12:34.581468');
-INSERT INTO structuralsubscription (id, product, productseries, project, milestone, distribution, distroseries, sourcepackagename, subscriber, subscribed_by, bug_notification_level, blueprint_notification_level, date_created, date_last_updated) VALUES (3, 22, NULL, NULL, NULL, NULL, NULL, NULL, 64, 64, 40, 10, '2008-02-06 12:17:13.030376', '2008-02-06 12:17:13.030376');
-INSERT INTO structuralsubscription (id, product, productseries, project, milestone, distribution, distroseries, sourcepackagename, subscriber, subscribed_by, bug_notification_level, blueprint_notification_level, date_created, date_last_updated) VALUES (4, 16, NULL, NULL, NULL, NULL, NULL, NULL, 64, 64, 40, 10, '2008-02-06 12:17:13.030376', '2008-02-06 12:17:13.030376');
-
-
-ALTER TABLE structuralsubscription ENABLE TRIGGER ALL;
 
 
 ALTER TABLE suggestivepotemplate DISABLE TRIGGER ALL;
