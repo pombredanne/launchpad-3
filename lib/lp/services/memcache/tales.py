@@ -148,7 +148,9 @@ class MemcacheExpr:
         + ''.join(chr(i) for i in range(ord(':')+1, 127)) + '_' * 129)
 
     # We strip digits from our LPCONFIG when generating the key
-    # to ensure that edge1 and edge4 share cache.
+    # to ensure that multiple appserver instances sharing a memcache instance
+    # can get hits from each other. For instance edge1 and edge4 are in this
+    # situation.
     _lpconfig = config.instance_name.rstrip('0123456789')
 
     def getKey(self, econtext):
