@@ -298,7 +298,8 @@ def _check_expired(timeout=None):
 def soft_timeout_expired():
     """Returns True if the soft request timeout been reached."""
     try:
-        get_request_remaining_seconds(timeout=timeout)
+        get_request_remaining_seconds(
+            timeout=config.database.soft_request_timeout)
         return False
     except RequestExpired:
         return True
