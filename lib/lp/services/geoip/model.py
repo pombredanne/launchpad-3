@@ -142,7 +142,7 @@ class RequestPreferredLanguages(object):
 
         codes = IUserPreferredLanguages(self.request).getPreferredLanguages()
         languageset = getUtility(ILanguageSet)
-        languages = set()
+        languages = []
 
         for code in codes:
             # We need to ensure that the code received contains only ASCII
@@ -162,7 +162,7 @@ class RequestPreferredLanguages(object):
                     continue
             code = languageset.canonicalise_language_code(code)
             try:
-                languages.add(languageset[code])
+                languages.append(languageset[code])
             except KeyError:
                 pass
 
