@@ -2,6 +2,7 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for traversal from the root branch object.."""
+from canonical.launchpad.webapp.interfaces import BrowserNotificationLevel
 
 __metaclass__ = type
 
@@ -23,7 +24,9 @@ from lp.registry.interfaces.person import (
     PersonVisibility,
     )
 from lp.testing import (
+    anonymous_logged_in,
     login_person,
+    person_logged_in,
     TestCaseWithFactory,
     )
 from lp.testing.views import create_view
@@ -31,12 +34,52 @@ from lp.testing.views import create_view
 
 class TraversalMixin:
 
+    def _validateNotificationContext(
+        self, request, notification=None,
+        level=BrowserNotificationLevel.INFO):
+
+        notifications = request.notifications
+        if notification is None:
+            self.assertEquals(len(notifications), 0)
+            return
+
+        self.assertEqual(len(notifications), 1)
+        self.assertEquals(notifications[0].level, level)
+
+        self.assertEqual(notification, notifications[0].message.rstrip(' '))
+
+    def assertDisplaysNotification(
+        self, path, notification=None,
+        level=BrowserNotificationLevel.INFO):
+        """Assert that an invalid path redirects back to referrer.
+
+        The request object is expected to have a notification message to
+        display to the user to explain the reason for the error.
+
+        :param path: The path to check
+        :param notification: The exact notification text to validate. If None
+            then we don't care what the notification text is, so long as there
+            is some.
+        : param level: the required notification level
+        """
+
+        redirection = self.traverse(path)
+        self.assertIs(redirection.target, None)
+        self._validateNotificationContext(
+            redirection.request, notification, level)
+
     def assertNotFound(self, path):
         self.assertRaises(NotFound, self.traverse, path)
 
-    def assertRedirects(self, segments, url):
+    def assertRedirects(
+        self, segments, url, notification=None,
+        level=BrowserNotificationLevel.INFO):
+
         redirection = self.traverse(segments)
         self.assertEqual(url, redirection.target)
+        self._validateNotificationContext(
+            redirection.request, notification=notification,
+            level=level)
 
     def traverse(self, path, first_segment):
         """Traverse to 'segments' using a 'LaunchpadRootNavigation' object.
@@ -58,8 +101,9 @@ class TraversalMixin:
 class TestBranchTraversal(TestCaseWithFactory, TraversalMixin):
     """Branches are traversed to from IPersons. Test we can reach them.
 
-    This class tests the `PersonNavigation` class to see that we can traverse
-    to branches from such objects.
+    This class tests the `LaunchpadRootNavigation` class to see that we can
+    traverse to branches from different objects such as product, product
+    series etc.
     """
 
     layer = DatabaseFunctionalLayer
@@ -75,9 +119,14 @@ class TestBranchTraversal(TestCaseWithFactory, TraversalMixin):
 
     def test_no_such_unique_name(self):
         # Traversing to /+branch/<unique_name> where 'unique_name' is for a
-        # branch that doesn't exist will generate a 404.
+        # branch that doesn't exist will display an error message.
         branch = self.factory.makeAnyBranch()
-        self.assertNotFound(branch.unique_name + 'wibble')
+        bad_name = branch.unique_name + 'wibble'
+        requiredMessage = "Invalid branch lp:%s. No such branch: '%s'." \
+            % (bad_name, branch.name+"wibble")
+        self.assertDisplaysNotification(
+            bad_name, requiredMessage,
+            BrowserNotificationLevel.ERROR)
 
     def test_product_alias(self):
         # Traversing to /+branch/<product> redirects to the page for the
@@ -88,13 +137,25 @@ class TestBranchTraversal(TestCaseWithFactory, TraversalMixin):
         self.assertRedirects(product.name, canonical_url(branch))
 
     def test_nonexistent_product(self):
-        # Traversing to /+branch/<no-such-product> generates a 404.
-        self.assertNotFound('non-existent')
+        # Traversing to /+branch/<no-such-product> displays an error message.
+        non_existent = 'non-existent'
+        requiredMessage =  u"Invalid branch lp:%s. No such product: '%s'." \
+            % (non_existent, non_existent)
+        self.assertDisplaysNotification(
+            non_existent, requiredMessage,
+            BrowserNotificationLevel.ERROR)
 
     def test_product_without_dev_focus(self):
-        # Traversing to a product without a development focus generates a 404.
+        # Traversing to a product without a development focus displays an
+        # error message on the same page.
         product = self.factory.makeProduct()
-        self.assertNotFound(product.name)
+        requiredMessage =  u"The requested branch does not exist. " + \
+            "You have landed at lp:%s instead." % product.name
+
+        self.assertRedirects(
+            product.name, canonical_url(product),
+            requiredMessage,
+            BrowserNotificationLevel.NOTICE)
 
     def test_trailing_path_redirect(self):
         # If there are any trailing path segments after the branch identifier,
@@ -114,26 +175,69 @@ class TestBranchTraversal(TestCaseWithFactory, TraversalMixin):
             '%s/%s' % (product.name, series.name), canonical_url(branch))
 
     def test_nonexistent_product_series(self):
-        # /+branch/<product>/<series> generates a 404 if there is no such
-        # series.
+        # /+branch/<product>/<series> displays an error message if there is 
+        # no such series.
         product = self.factory.makeProduct()
-        self.assertNotFound('%s/nonexistent' % product.name)
+        non_existent = 'nonexistent'
+        requiredMessage =  u"Invalid branch lp:%s/%s. " + \
+         "No such product series: '%s'."
+        requiredMessage = requiredMessage \
+            % (product.name, non_existent, non_existent)
+        self.assertDisplaysNotification(
+            '%s/%s' % (product.name, non_existent), 
+            requiredMessage,
+            BrowserNotificationLevel.ERROR)
 
     def test_no_branch_for_series(self):
-        # If there's no branch for a product series, generate a 404.
+        # If there's no branch for a product series, navigate to the
+        # product series instead.
         series = self.factory.makeProductSeries()
-        self.assertNotFound('%s/%s' % (series.product.name, series.name))
+        requiredMessage = \
+            "The requested branch does not exist. " + \
+            "You have landed at lp:%s/%s instead." \
+            % (series.product.name, series.name)
+
+        self.assertRedirects(
+            '%s/%s' % (series.product.name, series.name),
+            canonical_url(series),
+            requiredMessage,
+            BrowserNotificationLevel.NOTICE)
+
+    def test_no_branch_for_series_bad_permission(self):
+        # If there's no branch for a product series, and the current logged
+        # in user doesn't have permission to access the product series,
+        # check that an error message is displayed.
+
+        #XXX: fix this test
+        owner = self.factory.makePerson()
+        with person_logged_in(owner):
+            product = self.factory.makeProduct(owner=owner)
+        errorMessage = \
+            "The requested branch does not exist. " + \
+            "The requested product series does not exist."
+
+        with anonymous_logged_in():
+            self.assertRedirects(
+                '%s' % (product.name),
+                canonical_url(product),
+                errorMessage,
+                BrowserNotificationLevel.NOTICE)
 
     def test_too_short_branch_name(self):
-        # 404 if the thing following +branch is a unique name that's too short
-        # to be a real unique name.
+        # error notification if the thing following +branch is a unique name
+        # that's too short to be a real unique name.
         owner = self.factory.makePerson()
-        self.assertNotFound('~%s' % owner.name)
+        self.assertDisplaysNotification(
+            '~%s' % owner.name,
+            u"Invalid branch lp:~%s." % owner.name,
+            BrowserNotificationLevel.ERROR)
 
     def test_invalid_product_name(self):
-        # 404 if the thing following +branch has an invalid product name.
-        self.assertNotFound('a')
-
+        # error notification if the thing following +branch has an invalid
+        # product name.
+        self.assertDisplaysNotification(
+            'a', u"Invalid branch lp:%s." % 'a',
+            BrowserNotificationLevel.ERROR)
 
 class TestPersonTraversal(TestCaseWithFactory, TraversalMixin):
 
