@@ -31,6 +31,7 @@ from canonical.base import base
 from canonical.config import config
 from canonical.launchpad import versioninfo
 from canonical.launchpad.webapp.interfaces import ILaunchBag
+from lp.services import features
 from lp.services.memcache.interfaces import IMemcacheClient
 
 # Request annotation key.
@@ -238,8 +239,9 @@ class MemcacheExpr:
         # If we have an 'anonymous' visibility chunk and are logged in,
         # we don't cache. Return the 'default' magic token to interpret
         # the contents.
-        if (self.visibility == 'anonymous'
-            and getUtility(ILaunchBag).user is not None):
+        if (features.getFeatureFlag('memcache') == 'disabled' or
+            (self.visibility == 'anonymous'
+            and getUtility(ILaunchBag).user is not None)):
             return econtext.getDefault()
 
         # Calculate a unique key so we serve the right cached information.
