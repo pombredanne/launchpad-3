@@ -1228,6 +1228,13 @@ can delete files.
     >>> print_self_link_of_entries(ff_100_files)
     http://.../firefox/1.0/1.0.0/+file/filename2.txt
 
+Anonymous users can access project release files.
+
+    >>> release_files = anon_webservice.get(
+    ...     '/firefox/1.0/1.0.0/files').jsonBody()
+    >>> print_self_link_of_entries(release_files)
+    http://.../firefox/1.0/1.0.0/+file/filename2.txt
+
 
 Commercial subscriptions
 ------------------------
