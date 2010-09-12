@@ -568,7 +568,9 @@ It's possible to search the list and get a subset of the project groups.
 
     >>> project_collection = webservice.named_get(
     ...     "/projects", "search", text="Apache").jsonBody()
-    >>> projects = [project['display_name'] for project in project_collection['entries']]
+    >>> projects = [
+    ...     project['display_name']
+    ...     for project in project_collection['entries']]
     >>> for project_name in sorted(projects):
     ...     print project_name
     Derby
@@ -1259,7 +1261,6 @@ through the API.
 
     >>> logout()
 
-    >>> from lazr.restful.interfaces import IRepresentationCache
     >>> ws_uncache(mmm)
     >>> mmm = webservice.get("/mega-money-maker").jsonBody()
     >>> print mmm['display_name']
