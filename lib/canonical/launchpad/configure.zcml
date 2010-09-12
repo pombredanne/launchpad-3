@@ -31,9 +31,6 @@
   <include package="lp.translations" />
   <include package="lp.testopenid" />
   <include package="lp.blueprints" />
-  <include package="lp.services.comments" />
-  <include package="lp.services.fields" />
-  <include package="lp.services.geoip" />
   <include package="lp.vostok" />
 
   <browser:url

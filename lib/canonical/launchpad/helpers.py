@@ -25,11 +25,12 @@ from zope.component import getUtility
 from zope.security.interfaces import ForbiddenAttribute
 
 import canonical
-from canonical.launchpad.interfaces import (
-    ILaunchBag,
+from canonical.launchpad.interfaces import ILaunchBag
+from lp.services.geoip.interfaces import (
     IRequestLocalLanguages,
     IRequestPreferredLanguages,
     )
+
 
 # pylint: disable-msg=W0102
 def text_replaced(text, replacements, _cache={}):
