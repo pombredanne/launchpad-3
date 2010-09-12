@@ -31,7 +31,6 @@ from canonical.base import base
 from canonical.config import config
 from canonical.launchpad import versioninfo
 from canonical.launchpad.webapp.interfaces import ILaunchBag
-from lp.services import features
 from lp.services.memcache.interfaces import IMemcacheClient
 
 # Request annotation key.
@@ -239,9 +238,8 @@ class MemcacheExpr:
         # If we have an 'anonymous' visibility chunk and are logged in,
         # we don't cache. Return the 'default' magic token to interpret
         # the contents.
-        if (features.getFeatureFlag('memcache') == 'disabled' or
-            (self.visibility == 'anonymous'
-            and getUtility(ILaunchBag).user is not None)):
+        if (self.visibility == 'anonymous'
+            and getUtility(ILaunchBag).user is not None):
             return econtext.getDefault()
 
         # Calculate a unique key so we serve the right cached information.
@@ -282,11 +280,7 @@ class MemcacheMiss:
             rule = '%s [%s seconds]' % (self._memcache_expr, self._max_age)
             value = "<!-- Cache hit: %s -->%s<!-- End cache hit: %s -->" % (
                 rule, value, rule)
-        if getUtility(IMemcacheClient).set(
-            self._key, value, self._max_age):
-            logging.debug("Memcache set succeeded for %s", self._key)
-        else:
-            logging.warn("Memcache set failed for %s", self._key)
+        getUtility(IMemcacheClient).set(self._key, value, self._max_age)
 
     def __repr__(self):
         return "<MemcacheCallback %s %d>" % (self._key, self._max_age)
