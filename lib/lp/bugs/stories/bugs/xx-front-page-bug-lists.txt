@@ -41,11 +41,11 @@ indication of the importance assigned to the bug.
     </span>
 
 The list of recently reported bugs contains up to the last 5 bugs reported
-across Launchpad. The text for each bigs contains links to the bug itself,
+across Launchpad. The text for each bug contains links to the bug itself,
 to the bug target and to the bug reporter's page.
 
-    >>> for tr in reported_bugs('tr'):
-    ...     icon_td, summary_td, = tr('td')
+    >>> def print_bugs_links(bug_row):
+    ...     icon_td, summary_td, = bug_row('td')
     ...     print "%s: %s" % (
     ...         summary_td.b.a.renderContents().strip(),
     ...         summary_td.a.renderContents())
@@ -53,6 +53,8 @@ to the bug target and to the bug reporter's page.
     ...     print bug_link['href']
     ...     print bug_target_link['href']
     ...     print bug_reporter_link['href']
+    >>> for tr in reported_bugs('tr'):
+    ...     print_bugs_links(tr)
     Bigfixer:
              Summary for new bug ...
     <BLANKLINE>
@@ -104,14 +106,7 @@ The list of recently fixed bugs contains up to the last 5 bugs fixed
 across Launchpad.
 
     >>> for tr in fixed_bugs('tr'):
-    ...     icon_td, summary_td, = tr('td')
-    ...     print "%s: %s" % (
-    ...         summary_td.b.a.renderContents().strip(),
-    ...         summary_td.a.renderContents())
-    ...     bug_link, bug_target_link, bug_reporter_link = summary_td('a')
-    ...     print bug_link['href']
-    ...     print bug_target_link['href']
-    ...     print bug_reporter_link['href']
+    ...     print_bugs_links(tr)
     Bigfixer:
              Summary for new bug 10
     <BLANKLINE>
