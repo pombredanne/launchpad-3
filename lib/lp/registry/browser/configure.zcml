@@ -158,7 +158,7 @@
         name="+listing-distroseries-extra"
         for="lp.registry.interfaces.distroseriesdifference.IDistroSeriesDifference"
         class="lp.registry.browser.distroseriesdifference.DistroSeriesDifferenceView"
-        template="../templates/distroseriesdifference-index.pt"
+        template="../templates/distroseriesdifference-listing-extra.pt"
         permission="zope.Public"/>
     <browser:menus
         classes="
