@@ -19,7 +19,6 @@ from zope.interface import (
     Interface,
     )
 
-from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.webapp.menu import (
     ApplicationMenu,
     enabled_with_permission,
@@ -31,6 +30,11 @@ from canonical.launchpad.webapp.publisher import (
     nearest,
     )
 from canonical.launchpad.webapp.tales import MenuAPI
+from lp.app.enums import (
+    ServiceUsage,
+    service_uses_launchpad,
+    )
+from lp.app.interfaces.launchpad import IServiceUsage
 from lp.registry.browser.structuralsubscription import (
     StructuralSubscriptionMenuMixin,
     )
@@ -40,6 +44,7 @@ from lp.registry.interfaces.distributionsourcepackage import (
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.pillar import IPillar
 from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.services.propertycache import cachedproperty
 
 
 class IInvolved(Interface):
@@ -65,22 +70,32 @@ class InvolvedMenu(NavigationMenu):
     def ask_question(self):
         return Link(
             '+addquestion', 'Ask a question', site='answers', icon='answers',
-            enabled=self.pillar.official_answers)
+            enabled=service_uses_launchpad(self.pillar.answers_usage))
 
     def help_translate(self):
         return Link(
             '', 'Help translate', site='translations', icon='translations',
-            enabled=self.pillar.official_rosetta)
+            enabled=service_uses_launchpad(self.pillar.translations_usage))
 
     def submit_code(self):
+        if self.pillar.codehosting_usage in [
+                ServiceUsage.LAUNCHPAD, 
+                ServiceUsage.EXTERNAL,
+                ]:
+            enabled = True
+        else:
+            enabled = False
         return Link(
             '+addbranch', 'Submit code', site='code', icon='code',
-            enabled=self.pillar.official_codehosting)
+            enabled=enabled)
 
     def register_blueprint(self):
         return Link(
-            '+addspec', 'Register a blueprint', site='blueprints',
-            icon='blueprints', enabled=self.pillar.official_blueprints)
+            '+addspec',
+            'Register a blueprint',
+            site='blueprints',
+            icon='blueprints',
+            enabled=service_uses_launchpad(self.pillar.blueprints_usage))
 
 
 class PillarView(LaunchpadView):
@@ -93,25 +108,26 @@ class PillarView(LaunchpadView):
     def __init__(self, context, request):
         super(PillarView, self).__init__(context, request)
         self.official_malone = False
-        self.official_answers = False
-        self.official_blueprints = False
-        self.official_rosetta = False
-        self.official_codehosting = False
+        self.answers_usage = ServiceUsage.UNKNOWN
+        self.blueprints_usage = ServiceUsage.UNKNOWN
+        self.translations_usage = ServiceUsage.UNKNOWN
+        self.codehosting_usage = ServiceUsage.UNKNOWN
         pillar = nearest(self.context, IPillar)
         if IProjectGroup.providedBy(pillar):
             for product in pillar.products:
                 self._set_official_launchpad(product)
             # Project groups do not support submit code, override the
             # default.
-            self.official_codehosting = False
+            self.codehosting_usage = ServiceUsage.NOT_APPLICABLE
         else:
             self._set_official_launchpad(pillar)
             if IDistroSeries.providedBy(self.context):
-                self.official_answers = False
-                self.official_codehosting = False
+                distribution = self.context.distribution
+                self.codehosting_usage = distribution.codehosting_usage
+                self.answers_usage = ServiceUsage.NOT_APPLICABLE
             elif IDistributionSourcePackage.providedBy(self.context):
-                self.official_blueprints = False
-                self.official_rosetta = False
+                self.blueprints_usage = ServiceUsage.UNKNOWN
+                self.translations_usage = ServiceUsage.UNKNOWN
             else:
                 # The context is used by all apps.
                 pass
@@ -122,22 +138,23 @@ class PillarView(LaunchpadView):
         # times to build the complete set of official applications.
         if pillar.official_malone:
             self.official_malone = True
-        if pillar.official_answers:
-            self.official_answers = True
-        if pillar.official_blueprints:
-            self.official_blueprints = True
-        if pillar.official_rosetta:
-            self.official_rosetta = True
-        if pillar.official_codehosting:
-            self.official_codehosting = True
+        if service_uses_launchpad(IServiceUsage(pillar).answers_usage):
+            self.answers_usage = ServiceUsage.LAUNCHPAD
+        if service_uses_launchpad(IServiceUsage(pillar).blueprints_usage):
+            self.blueprints_usage = ServiceUsage.LAUNCHPAD
+        if service_uses_launchpad(pillar.translations_usage):
+            self.translations_usage = ServiceUsage.LAUNCHPAD
+        if service_uses_launchpad(IServiceUsage(pillar).codehosting_usage):
+            self.codehosting_usage = ServiceUsage.LAUNCHPAD
 
     @property
     def has_involvement(self):
         """This `IPillar` uses Launchpad."""
-        return (
-            self.official_malone or self.official_answers
-            or self.official_blueprints or self.official_rosetta
-            or self.official_codehosting)
+        return (self.official_malone
+            or service_uses_launchpad(self.answers_usage)
+            or service_uses_launchpad(self.blueprints_usage)
+            or service_uses_launchpad(self.translations_usage)
+            or service_uses_launchpad(self.codehosting_usage))
 
     @property
     def enabled_links(self):

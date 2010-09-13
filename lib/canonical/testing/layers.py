@@ -96,7 +96,11 @@ from canonical.lazr import pidfile
 from canonical.config import CanonicalConfig, config, dbconfig
 from canonical.database.revision import (
     confirm_dbrevision, confirm_dbrevision_on_startup)
-from canonical.database.sqlbase import cursor, ZopelessTransactionManager
+from canonical.database.sqlbase import (
+    cursor,
+    session_store,
+    ZopelessTransactionManager,
+    )
 from canonical.launchpad.interfaces import IMailBox, IOpenLaunchBag
 from lp.testing import ANONYMOUS, login, logout, is_logged_in
 import lp.services.mail.stub
@@ -193,9 +197,7 @@ def reconnect_stores(database_config_section='launchpad'):
     # as soon as SQLBase._connection is accessed
     r = main_store.execute('SELECT count(*) FROM LaunchpadDatabaseRevision')
     assert r.get_one()[0] > 0, 'Storm is not talking to the database'
-
-    session_store = getUtility(IZStorm).get('session', 'launchpad-session:')
-    assert session_store is not None, 'Failed to reconnect'
+    assert session_store() is not None, 'Failed to reconnect'
 
 
 def wait_children(seconds=120):
@@ -411,11 +413,10 @@ class BaseLayer:
         """
         test_result = BaseLayer.getCurrentTestResult()
         if test_result.wasSuccessful():
-            # pylint: disable-msg=W0702
             test_case = BaseLayer.getCurrentTestCase()
             try:
                 raise LayerIsolationError(message)
-            except:
+            except LayerIsolationError:
                 test_result.addError(test_case, sys.exc_info())
 
     @classmethod

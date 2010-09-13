@@ -77,6 +77,10 @@ class TranslationsPerson:
         entries = Store.of(self.person).find(POFileTranslator, conditions)
         return entries.order_by(Desc(POFileTranslator.date_last_touched))
 
+    def hasTranslated(self):
+        """See `ITranslationsPerson`."""
+        return self.getTranslationHistory().any() is not None
+
     @property
     def translation_history(self):
         """See `ITranslationsPerson`."""
@@ -258,6 +262,10 @@ class TranslationsPerson:
         The added joins may make the overall query non-distinct, so be
         sure to enforce distinctness.
         """
+        # XXX j.c.sackett 2010-08-30 bug=627631 Once data migration has
+        # happened for the usage enums, this query needs to be updated
+        # to check for the translations_usage, not official_rosetta.
+
         POTemplateJoin = Join(POTemplate, And(
             POTemplate.id == POFile.potemplateID,
             POTemplate.iscurrent == True))

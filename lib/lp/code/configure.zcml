@@ -568,7 +568,7 @@
     <allow interface="lp.code.interfaces.branch.IBranchDelta"/>
   </class>
   <securedutility
-      class="lp.code.model.branch.BranchCloud"
+      class="lp.code.model.branchcloud.BranchCloud"
       provides="lp.code.interfaces.branch.IBranchCloud">
     <allow interface="lp.code.interfaces.branch.IBranchCloud"/>
   </securedutility>
@@ -641,17 +641,6 @@
   <class class="lp.code.model.branchrevision.BranchRevision">
     <allow interface="lp.code.interfaces.branchrevision.IBranchRevision"/>
   </class>
-
-  <!-- BranchRevisionSet -->
-
-  <class class="lp.code.model.branchrevision.BranchRevisionSet">
-    <allow interface="lp.code.interfaces.branchrevision.IBranchRevisionSet"/>
-  </class>
-  <securedutility
-      class="lp.code.model.branchrevision.BranchRevisionSet"
-      provides="lp.code.interfaces.branchrevision.IBranchRevisionSet">
-    <allow interface="lp.code.interfaces.branchrevision.IBranchRevisionSet"/>
-  </securedutility>
 
   <!-- CodeReviewComment -->
 
@@ -960,28 +949,23 @@
   <!-- SourcePackageRecipeData -->
   <class
      class="lp.code.model.sourcepackagerecipedata.SourcePackageRecipeData">
-    <allow
+    <require permission="launchpad.View"
     interface="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipeData"/>
   </class>
   <!-- SourcePackageRecipe -->
   <class
      class="lp.code.model.sourcepackagerecipe.SourcePackageRecipe">
     <require permission="launchpad.View"
-      interface="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipe"
+      interface="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipeView
+                 lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipeEditableAttributes
+                 lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipeData"
       />
     <require
        permission="launchpad.Edit"
-       set_attributes="
-           build_daily
-           builder_recipe
-           daily_build_archive
-           date_last_modified
-           description
-           distroseries
-           name
-           owner
-           sourcepackagename
-           is_stale"/>
+       interface="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipeEdit"
+       set_schema="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipeEditableAttributes"
+       set_attributes="builder_recipe date_last_modified"
+        />
   </class>
   <class
      class="bzrlib.plugins.builder.recipe.BaseRecipeBranch">

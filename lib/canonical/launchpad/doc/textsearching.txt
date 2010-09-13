@@ -128,7 +128,7 @@ The following examples show the text version of the query using
     ...     try:
     ...         cur.execute("SELECT _ftq(%s), ftq(%s)", (query, query))
     ...         uncompiled, compiled = cur.fetchone()
-    ...     except:
+    ...     except Exception:
     ...         SQLBase._connection._connection.rollback()
     ...         raise
     ...     if uncompiled is not None:

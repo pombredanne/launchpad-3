@@ -13,10 +13,7 @@ __all__ = [
     ]
 
 from itertools import groupby
-from operator import (
-    attrgetter,
-    itemgetter,
-    )
+from operator import itemgetter
 
 import transaction
 from zope.component import getUtility
@@ -27,10 +24,6 @@ from canonical.launchpad.helpers import (
     get_email_template,
     )
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.mailnotification import (
-    generate_bug_add_email,
-    MailWrapper,
-    )
 from canonical.launchpad.scripts.logger import log
 from canonical.launchpad.webapp import canonical_url
 from lp.bugs.interfaces.bugmessage import IBugMessageSet
@@ -38,7 +31,9 @@ from lp.bugs.mail.bugnotificationbuilder import (
     BugNotificationBuilder,
     get_bugmail_from_address,
     )
+from lp.bugs.mail.newbug import generate_bug_add_email
 from lp.registry.interfaces.person import IPersonSet
+from lp.services.mail.mailwrapper import MailWrapper
 
 
 def construct_email_notifications(bug_notifications):
@@ -198,10 +193,14 @@ def notification_comment_batches(notifications):
         yield comment_count or 1, notification
 
 
+def get_bug_and_owner(notification):
+    """Retrieve `notification`'s `bug` and `message.owner` attributes."""
+    return notification.bug, notification.message.owner
+
+
 def notification_batches(notifications):
     """Batch notifications for `get_email_notifications`."""
-    notifications_grouped = groupby(
-        notifications, attrgetter("bug", "message.owner"))
+    notifications_grouped = groupby(notifications, get_bug_and_owner)
     for (bug, person), notification_group in notifications_grouped:
         batches = notification_comment_batches(notification_group)
         for comment_group, batch in groupby(batches, itemgetter(0)):

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 # pylint: disable-msg=F0401
 
@@ -61,6 +61,7 @@ from canonical.launchpad.webapp.interfaces import (
 from canonical.launchpad.webapp.launchpadform import ReturnToReferrerMixin
 from canonical.launchpad.webapp.menu import structured
 from canonical.lazr.utils import smartquote
+from lp.app.enums import service_uses_launchpad
 from lp.app.errors import NotFoundError
 from lp.registry.browser.productseries import ProductSeriesFacets
 from lp.registry.browser.sourcepackage import SourcePackageFacets
@@ -109,8 +110,10 @@ class POTemplateNavigation(Navigation):
             # It's just a query, get a fake one so we don't create new
             # POFiles just because someone is browsing the web.
             language = getUtility(ILanguageSet).getLanguageByCode(name)
-            return self.context.getDummyPOFile(language, requester=user,
-                                               check_for_existing=False)
+            if language is None:
+                raise NotFoundError(name)
+            return self.context.getDummyPOFile(
+                language, requester=user, check_for_existing=False)
         else:
             # It's a POST.
             # XXX CarlosPerelloMarin 2006-04-20 bug=40275: We should
@@ -792,9 +795,10 @@ class POTemplateSubsetNavigation(Navigation):
             product_or_distro = potemplate.productseries.product
         else:
             product_or_distro = potemplate.distroseries.distribution
-        official_rosetta = product_or_distro.official_rosetta
+        translations_usage = product_or_distro.translations_usage
 
-        if official_rosetta and potemplate.iscurrent:
+        if (service_uses_launchpad(translations_usage) and
+           potemplate.iscurrent):
             # This template is available for translation.
             return potemplate
         elif check_permission('launchpad.Edit', potemplate):

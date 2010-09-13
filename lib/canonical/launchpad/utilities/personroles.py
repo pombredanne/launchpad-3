@@ -41,6 +41,10 @@ class PersonRoles:
         except AttributeError:
             raise AttributeError(errortext)
 
+    @property
+    def id(self):
+        return self.person.id
+
     def isOwner(self, obj):
         """See IPersonRoles."""
         return self.person.inTeam(obj.owner)

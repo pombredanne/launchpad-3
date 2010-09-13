@@ -30,8 +30,9 @@ informing them of their new list.  We can ignore these.
     >>> logout()
 
     >>> from canonical.launchpad.testing.pages import setupBrowser
+    >>> from lp.services.propertycache import IPropertyCache
     >>> browser = setupBrowser('Basic %s:%s' %
-    ...     (owner._preferredemail_cached.email,
+    ...     (IPropertyCache(owner).preferredemail.email,
     ...      owner._password_cleartext_cached))
 
     >>> from lp.services.mailman.testing import helpers

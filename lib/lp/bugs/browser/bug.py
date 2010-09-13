@@ -63,7 +63,6 @@ from zope.schema import (
 from zope.schema.interfaces import IText
 from zope.security.interfaces import Unauthorized
 
-from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
 from canonical.launchpad.mailnotification import MailWrapper
@@ -115,6 +114,7 @@ from lp.bugs.interfaces.bugwatch import IBugWatchSet
 from lp.bugs.interfaces.cve import ICveSet
 from lp.bugs.mail.bugnotificationbuilder import format_rfc2822_date
 from lp.services.fields import DuplicateBug
+from lp.services.propertycache import cachedproperty
 
 
 class BugNavigation(Navigation):
@@ -519,7 +519,7 @@ class BugViewMixin:
                 'file': ProxiedLibraryFileAlias(
                     attachment.libraryfile, attachment),
                 }
-            for attachment in self.context.attachments
+            for attachment in self.context.attachments_unpopulated
             if attachment.type != BugAttachmentType.PATCH]
 
     @property
@@ -531,7 +531,7 @@ class BugViewMixin:
                 'file': ProxiedLibraryFileAlias(
                     attachment.libraryfile, attachment),
                 }
-            for attachment in self.context.attachments
+            for attachment in self.context.attachments_unpopulated
             if attachment.type == BugAttachmentType.PATCH]
 
 
@@ -877,15 +877,17 @@ class BugTextView(LaunchpadView):
         if bug.security_related:
             text.append('security: yes')
 
+        patches = []
         text.append('attachments: ')
-        for attachment in bug.attachments:
+        for attachment in bug.attachments_unpopulated:
             if attachment.type != BugAttachmentType.PATCH:
                 text.append(' %s' % self.attachment_text(attachment))
+            else:
+                patches.append(attachment)
 
         text.append('patches: ')
-        for attachment in bug.attachments:
-            if attachment.type == BugAttachmentType.PATCH:
-                text.append(' %s' % self.attachment_text(attachment))
+        for attachment in patches:
+            text.append(' %s' % self.attachment_text(attachment))
 
         text.append('tags: %s' % ' '.join(bug.tags))
 

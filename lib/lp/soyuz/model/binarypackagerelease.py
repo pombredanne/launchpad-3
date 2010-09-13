@@ -11,6 +11,7 @@ __all__ = [
     ]
 
 
+import simplejson
 from sqlobject import (
     BoolCol,
     ForeignKey,
@@ -35,16 +36,16 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from lp.soyuz.interfaces.binarypackagerelease import (
+from lp.soyuz.enums import (
     BinaryPackageFileType,
     BinaryPackageFormat,
+    PackagePublishingPriority,
+    PackagePublishingStatus,
+    )
+from lp.soyuz.interfaces.binarypackagerelease import (
     IBinaryPackageRelease,
     IBinaryPackageReleaseDownloadCount,
     IBinaryPackageReleaseSet,
-    )
-from lp.soyuz.interfaces.publishing import (
-    PackagePublishingPriority,
-    PackagePublishingStatus,
     )
 from lp.soyuz.model.files import BinaryPackageFile
 
@@ -80,12 +81,29 @@ class BinaryPackageRelease(SQLBase):
     installedsize = IntCol(dbName='installedsize')
     architecturespecific = BoolCol(dbName='architecturespecific',
                                    notNull=True)
+    homepage = StringCol(dbName='homepage')
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     debug_package = ForeignKey(dbName='debug_package',
                               foreignKey='BinaryPackageRelease')
 
     files = SQLMultipleJoin('BinaryPackageFile',
         joinColumn='binarypackagerelease', orderBy="libraryfile")
+
+    _user_defined_fields = StringCol(dbName='user_defined_fields')
+
+    def __init__(self, *args, **kwargs):
+        if 'user_defined_fields' in kwargs:
+            kwargs['_user_defined_fields'] = simplejson.dumps(
+                kwargs['user_defined_fields'])
+            del kwargs['user_defined_fields']
+        super(BinaryPackageRelease, self).__init__(*args, **kwargs)
+
+    @property
+    def user_defined_fields(self):
+        """See `IBinaryPackageRelease`."""
+        if self._user_defined_fields is None:
+            return []
+        return simplejson.loads(self._user_defined_fields)
 
     @property
     def title(self):

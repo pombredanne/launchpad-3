@@ -47,7 +47,7 @@ from lp.bugs.interfaces.bugtarget import (
 from lp.bugs.interfaces.bugtask import IBugTask
 from lp.bugs.interfaces.bugtracker import IBugTracker
 from lp.bugs.interfaces.bugwatch import IBugWatch
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
 from lp.code.interfaces.branch import IBranch
@@ -89,6 +89,11 @@ from lp.registry.interfaces.structuralsubscription import (
     IStructuralSubscription,
     IStructuralSubscriptionTarget,
     )
+from lp.soyuz.enums import (
+    PackagePublishingStatus,
+    PackageUploadCustomFormat,
+    PackageUploadStatus,
+    )
 from lp.soyuz.interfaces.archive import IArchive
 from lp.soyuz.interfaces.archivedependency import IArchiveDependency
 from lp.soyuz.interfaces.archivepermission import IArchivePermission
@@ -101,12 +106,9 @@ from lp.soyuz.interfaces.publishing import (
     IBinaryPackagePublishingHistory,
     ISourcePackagePublishingHistory,
     ISourcePackagePublishingHistoryPublic,
-    PackagePublishingStatus,
     )
 from lp.soyuz.interfaces.queue import (
     IPackageUpload,
-    PackageUploadCustomFormat,
-    PackageUploadStatus,
     )
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
 from lp.translations.interfaces.pofile import IPOFile

@@ -7,9 +7,14 @@ from __future__ import with_statement
 
 __metaclass__ = type
 
-__all__ = ['datadir', 'getPolicy', 'insertFakeChangesFile',
-           'insertFakeChangesFileForAllPackageUploads', 'mock_options',
-           'mock_logger', 'mock_logger_quiet']
+__all__ = [
+    'datadir',
+    'getPolicy',
+    'insertFakeChangesFile',
+    'insertFakeChangesFileForAllPackageUploads',
+    'mock_logger',
+    'mock_logger_quiet',
+    ]
 
 import os
 import sys
@@ -117,6 +122,10 @@ class AnythingGoesUploadPolicy(AbstractUploadPolicy):
         # We require the changes to be signed but not the dsc
         self.unsigned_dsc_ok = True
 
+    def validateUploadType(self, upload):
+        """We accept uploads of any type."""
+        pass
+
     def policySpecificChecks(self, upload):
         """Nothing, let it go."""
         pass
@@ -153,6 +162,5 @@ def register_archive_upload_policy_adapters():
             component=policy, provided=IArchiveUploadPolicy, name=policy.name)
 
 
-mock_options = MockUploadOptions()
 mock_logger = MockUploadLogger()
 mock_logger_quiet = MockUploadLogger(verbose=False)
