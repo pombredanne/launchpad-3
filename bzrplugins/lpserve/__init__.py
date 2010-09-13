@@ -254,7 +254,9 @@ class LPForkingService(object):
         self._close_child_file_descriptons()
         trace.mutter('%d finished %r'
                      % (os.getpid(), command_argv,))
-        sys.exit(retcode)
+        # We force os._exit() here, because we don't want to unwind the stack,
+        # which has complex results.
+        os._exit(retcode)
 
     @staticmethod
     def command_to_argv(command_str):
