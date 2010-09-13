@@ -36,7 +36,7 @@ def validate_translation(original_singular, original_plural,
         msg.set_msgid_plural(original_plural)
         for form, translation in translations.items():
             msg.set_msgstr_plural(form, translation)
-    elif len(translation) > 0:
+    elif 0 in translations:
         msg.set_msgstr(translations[0])
     else:
         pass
