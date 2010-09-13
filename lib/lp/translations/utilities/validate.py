@@ -15,23 +15,25 @@ class GettextValidationError(ValueError):
     """Gettext validation failed."""
 
 
-def validate_translation(original, translation, flags):
+def validate_translation(original_singular, original_plural,
+                         translation, flags):
     """Check with gettext if a translation is correct or not.
 
     If the translation has a problem, raise `GettextValidationError`.
 
-    :param msgids: A list of one or two msgids, depending on whether the
-        message has a plural.
+    :param original_singular: The English msgid.
+    :param original_plural: The English plural msgid, if the message has a
+        plural or None otherwise.
     :param translation: A dictionary of translations, indexed with the plural
         form number.
     :param flags: This message's flags as a list of strings.
     """
     msg = gettextpo.PoMessage()
-    msg.set_msgid(original[0])
+    msg.set_msgid(original_singular)
 
-    if len(original) > 1:
+    if original_plural is not None:
         # It has plural forms.
-        msg.set_msgid_plural(original[1])
+        msg.set_msgid_plural(original_plural)
         for form in range(len(translation)):
             msg.set_msgstr_plural(form, translation[form])
     elif len(translation) > 0:
