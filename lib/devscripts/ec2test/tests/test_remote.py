@@ -75,7 +75,8 @@ class RequestHelpers:
         """Make a request to test, specifying only things we care about.
 
         Note that the returned request object will not ever send email, but
-        will instead log "sent" emails to `request.emails_sent`.
+        will instead append "sent" emails to the list provided here as
+        'emails_sent'.
         """
         if trunk is None:
             trunk = self.make_trunk()
@@ -109,8 +110,6 @@ class RequestHelpers:
     def make_tester(self, logger=None, test_directory=None, test_options=()):
         if not logger:
             logger = self.make_logger()
-        if not test_directory:
-            test_directory = 'unspecified-test-directory'
         return LaunchpadTester(logger, test_directory, test_options)
 
     def make_logger(self, request=None, echo_to_stdout=False):
@@ -672,11 +671,13 @@ class TestEC2Runner(TestCaseWithTransport, RequestHelpers):
             False, "who-cares.pid", False, smtp_connection, emails=emails)
 
     def test_run(self):
+        # EC2Runner.run() runs the given function, passing through whatever
+        # arguments and keyword arguments it has been given.
         calls = []
         runner = self.make_ec2runner()
-        runner.run(
-            "boring test method",
-            lambda *a, **kw: calls.append((a, kw)), "foo", "bar", baz="qux")
+        def function(*args, **kwargs):
+            calls.append(args, kwargs)
+        runner.run("boring test method", function, "foo", "bar", baz="qux")
         self.assertEqual([(("foo", "bar"), {'baz': 'qux'})], calls)
 
     def test_email_on_failure_no_emails(self):
@@ -688,7 +689,7 @@ class TestEC2Runner(TestCaseWithTransport, RequestHelpers):
         self.assertEqual([], log)
 
     def test_email_on_failure_some_emails(self):
-        # If no emails are specified, then no email is sent on failure.
+        # If emails *are* specified, then an email is sent on failure.
         log = []
         runner = self.make_ec2runner(
             email_log=log, emails=["foo@example.com"])
@@ -701,6 +702,7 @@ class TestEC2Runner(TestCaseWithTransport, RequestHelpers):
         self.assertIn('ZeroDivisionError', str(message))
 
     def test_email_with_launchpad_tester_failure(self):
+        # LaunchpadTester sends email on catastrophic failure.
         email_log = []
         to_emails = ['foo@example.com']
         request = self.make_request(emails=to_emails, emails_sent=email_log)
