@@ -194,7 +194,8 @@ class TestLPForkingService(TestCaseWithLPForkingService):
         self.assertEqualDiff('ok\n12345 unknown\n', response)
 
     def test_active_child(self):
-        # We cheat and fake an active child
+        # We cheat and fake an active child, note that this can cause problems
+        # with then calling os.wait*() since there aren't any active children
         self.service._child_processes[12345] = None
         try:
             response = self.send_message_to_service('status 12345\n')
@@ -279,7 +280,8 @@ class TestCaseWithLPForkingServiceSubprocess(TestCaseWithSubprocess):
         self.service_process, self.service_port = self.start_service_subprocess()
         self.addCleanup(self.stop_service)
 
-    def send_message_to_service(self, message):
+    def start_conversation(self, message):
+        """Start talking to the service, and get the initial response."""
         addrs = socket.getaddrinfo('127.0.0.1', self.service_port,
             socket.AF_UNSPEC, socket.SOCK_STREAM, 0, socket.AI_PASSIVE)
         (family, socktype, proto, canonname, sockaddr) = addrs[0]
@@ -294,10 +296,15 @@ class TestCaseWithLPForkingServiceSubprocess(TestCaseWithSubprocess):
         trace.mutter('response: %r' % (response,))
         if response.startswith("FAILURE"):
             raise RuntimeError('Failed to send message: %r' % (response,))
+        return response, client_sock
+
+    def send_message_to_service(self, message):
+        response, client_sock = self.start_conversation(message)
+        client_sock.close()
         return response
 
     def send_fork_request(self, command):
-        response = self.send_message_to_service('fork %s\n' % (command,))
+        response, sock = self.start_conversation('fork %s\n' % (command,))
         ok, pid, path, tail = response.split('\n')
         self.assertEqual('ok', ok)
         self.assertEqual('', tail)
@@ -305,7 +312,7 @@ class TestCaseWithLPForkingServiceSubprocess(TestCaseWithSubprocess):
         pid = int(pid)
         path = path.strip()
         self.assertContainsRe(path, '/lp-forking-service-child-')
-        return path, pid
+        return path, pid, sock
 
     def start_service_subprocess(self):
         # Make sure this plugin is exposed to the subprocess
@@ -375,19 +382,28 @@ class TestCaseWithLPForkingServiceSubprocess(TestCaseWithSubprocess):
         stderr_content = child_stderr.read()
         return stdout_content, stderr_content
 
+    def assertReturnCode(self, expected_code, sock):
+        """Assert that we get the expected return code as a message."""
+        response = sock.recv(1024)
+        self.assertStartsWith(response, 'retcode ')
+        code = int(response.split(' ', 1)[1])
+        self.assertEqual(expected_code, code)
+
     def test_fork_lp_serve_hello(self):
-        path, _ = self.send_fork_request('lp-serve --inet 2')
+        path, _, sock = self.send_fork_request('lp-serve --inet 2')
         stdout_content, stderr_content = self.communicate_with_fork(path,
             'hello\n')
         self.assertEqual('ok\x012\n', stdout_content)
         self.assertEqual('', stderr_content)
+        self.assertReturnCode(0, sock)
 
     def test_fork_replay(self):
-        path, _ = self.send_fork_request('launchpad-replay')
+        path, _, sock = self.send_fork_request('launchpad-replay')
         stdout_content, stderr_content = self.communicate_with_fork(path,
             '1 hello\n2 goodbye\n1 maybe\n')
         self.assertEqualDiff('hello\nmaybe\n', stdout_content)
         self.assertEqualDiff('goodbye\n', stderr_content)
+        self.assertReturnCode(0, sock)
 
     def test_just_run_service(self):
         # Start and stop are defined in setUp()
@@ -396,18 +412,19 @@ class TestCaseWithLPForkingServiceSubprocess(TestCaseWithSubprocess):
     def test_fork_multiple_children(self):
         paths = []
         for idx in range(4):
-            paths.append(self.send_fork_request('launchpad-replay')[0])
+            paths.append(self.send_fork_request('launchpad-replay'))
         for idx in [3, 2, 0, 1]:
-            p = paths[idx]
+            p, pid, sock = paths[idx]
             stdout_msg = 'hello %d\n' % (idx,)
             stderr_msg = 'goodbye %d\n' % (idx+1,)
             stdout, stderr = self.communicate_with_fork(p,
                 '1 %s2 %s' % (stdout_msg, stderr_msg))
             self.assertEqualDiff(stdout_msg, stdout)
             self.assertEqualDiff(stderr_msg, stderr)
+            self.assertReturnCode(0, sock)
 
     def test_fork_status(self):
-        path, pid = self.send_fork_request('launchpad-replay')
+        path, pid, sock = self.send_fork_request('launchpad-replay')
         # Don't connect yet, ask for the status, and you should get nothing yet
         response = self.send_message_to_service('status %d\n' % (pid,))
         active_response = 'ok\n%d active\n' % (pid,)
@@ -428,3 +445,4 @@ class TestCaseWithLPForkingServiceSubprocess(TestCaseWithSubprocess):
         else:
             self.fail('timeout waiting for process to be stopped')
         self.assertEqualDiff('ok\n%d stopped 0\n' % (pid,), response)
+        self.assertReturnCode(0, sock)

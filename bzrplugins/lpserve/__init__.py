@@ -156,6 +156,10 @@ class LPForkingService(object):
         self._children_spawned = 0
         # Children whose exit we have observed, but who have not been queried
         # for. (similar to a zombie process before you wait() on it)
+        # TODO: If we are having the child report the status on the socket,
+        #       then the client won't ever need to call 'status PID' and this
+        #       dict grows without bound. However, what about processes that
+        #       exit abnormally? Needs reworking.
         self._exit_statuses = {}
 
     def _create_master_socket(self):
@@ -362,7 +366,18 @@ class LPForkingService(object):
         # status) = os.wait() if c_pid == 0: break. But that needs some
         # testing.
         while self._child_processes:
-            c_id, exit_code, rusage = os.wait3(os.WNOHANG)
+            try:
+                c_id, exit_code, rusage = os.wait3(os.WNOHANG)
+            except OSError, e:
+                if e.errno == errno.ECHILD:
+                    # TODO: We handle this right now because the test suite
+                    #       fakes a child, since we wanted to test some code
+                    #       without actually forking anything
+                    trace.mutter('_poll_children() called, and'
+                        ' self._child_processes indicates there are'
+                        ' children, but os.wait3() says there are not.'
+                        ' current_children: %s' % (self._child_processes,))
+                    return
             if c_id == 0:
                 # No more children stopped right now
                 return
