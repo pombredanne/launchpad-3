@@ -14,17 +14,20 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.browser.launchpad import LaunchpadRootNavigation
 from canonical.launchpad.interfaces.account import AccountStatus
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.launchpad.webapp.url import urlappend
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.errors import GoneError
+from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from lp.registry.interfaces.person import (
     IPersonSet,
     PersonVisibility,
     )
 from lp.testing import (
     login_person,
+    run_with_login,
     TestCaseWithFactory,
     )
 from lp.testing.views import create_view
@@ -100,8 +103,7 @@ class TestBranchTraversal(TestCaseWithFactory, TraversalMixin):
     """Branches are traversed to from IPersons. Test we can reach them.
 
     This class tests the `LaunchpadRootNavigation` class to see that we can
-    traverse to branches from different objects such as product, product
-    series etc.
+    traverse to branches from URLs of the form +branch/xxxx.
     """
 
     layer = DatabaseFunctionalLayer
@@ -126,7 +128,7 @@ class TestBranchTraversal(TestCaseWithFactory, TraversalMixin):
             bad_name, requiredMessage,
             BrowserNotificationLevel.ERROR)
 
-    def test_private_branch_traversal(self):
+    def test_private_branch(self):
         # If an attempt is made to access a private branch, display an error.
         branch = self.factory.makeProductBranch()
         branch_unique_name = branch.unique_name
@@ -185,7 +187,52 @@ class TestBranchTraversal(TestCaseWithFactory, TraversalMixin):
             "You have landed at lp:%s instead." % product.name)
 
         self.assertRedirects(
-            product.name, canonical_url(product),
+            product.name,
+            canonical_url(product),
+            requiredMessage,
+            BrowserNotificationLevel.NOTICE)
+
+    def test_distro_package_alias(self):
+        # Traversing to /+branch/<distro>/<sourcepackage package> redirects
+        # to the page for the branch that is the development focus branch
+        # for that package.
+        sourcepackage = self.factory.makeSourcePackage()
+        branch = self.factory.makePackageBranch(sourcepackage=sourcepackage)
+        distro_package = sourcepackage.distribution_sourcepackage
+        ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
+        registrant = ubuntu_branches.teamowner
+        run_with_login(
+            registrant,
+            ICanHasLinkedBranch(distro_package).setBranch, branch, registrant)
+
+        self.assertRedirects(
+            "%s/%s" % (distro_package.distribution.name,
+                distro_package.sourcepackagename.name),
+                canonical_url(branch))
+
+    def test_private_branch_for_distro_package(self):
+        # If the development focus of a distro package is private, navigate
+        # to the distro package instead.
+        sourcepackage = self.factory.makeSourcePackage()
+        branch = self.factory.makePackageBranch(
+            sourcepackage=sourcepackage, private=True)
+        distro_package = sourcepackage.distribution_sourcepackage
+        ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
+        registrant = ubuntu_branches.teamowner
+        run_with_login(
+            registrant,
+            ICanHasLinkedBranch(distro_package).setBranch, branch, registrant)
+
+        any_user = self.factory.makePerson()
+        login_person(any_user)
+        requiredMessage = (u"The requested branch does not exist. "
+            "You have landed at lp:%s/%s instead."
+            % (distro_package.distribution.name,
+               distro_package.sourcepackagename.name))
+        self.assertRedirects(
+            "%s/%s" % (distro_package.distribution.name,
+                       distro_package.sourcepackagename.name),
+            canonical_url(distro_package),
             requiredMessage,
             BrowserNotificationLevel.NOTICE)
 
@@ -207,7 +254,7 @@ class TestBranchTraversal(TestCaseWithFactory, TraversalMixin):
             '%s/%s' % (product.name, series.name), canonical_url(branch))
 
     def test_nonexistent_product_series(self):
-        # /+branch/<product>/<series> displays an error message if there is 
+        # /+branch/<product>/<series> displays an error message if there is
         # no such series.
         product = self.factory.makeProduct()
         non_existent = 'nonexistent'
@@ -215,7 +262,7 @@ class TestBranchTraversal(TestCaseWithFactory, TraversalMixin):
             "No such product series: '%s'."
             % (product.name, non_existent, non_existent))
         self.assertDisplaysNotification(
-            '%s/%s' % (product.name, non_existent), 
+            '%s/%s' % (product.name, non_existent),
             requiredMessage,
             BrowserNotificationLevel.ERROR)
 
@@ -229,6 +276,26 @@ class TestBranchTraversal(TestCaseWithFactory, TraversalMixin):
 
         self.assertRedirects(
             '%s/%s' % (series.product.name, series.name),
+            canonical_url(series),
+            requiredMessage,
+            BrowserNotificationLevel.NOTICE)
+
+    def test_private_branch_for_series(self):
+        # If the development focus of a product series is private, navigate
+        # to the product series instead.
+        branch = self.factory.makeProductBranch()
+        product = branch.product
+        series = self.factory.makeProductSeries(product=product)
+        removeSecurityProxy(series).branch = branch
+        removeSecurityProxy(branch).private = True
+
+        any_user = self.factory.makePerson()
+        login_person(any_user)
+        requiredMessage = (u"The requested branch does not exist. "
+            "You have landed at lp:%s/%s instead."
+            % (product.name, series.name))
+        self.assertRedirects(
+            "%s/%s" % (product.name, series.name),
             canonical_url(series),
             requiredMessage,
             BrowserNotificationLevel.NOTICE)
@@ -250,6 +317,7 @@ class TestBranchTraversal(TestCaseWithFactory, TraversalMixin):
         self.assertDisplaysNotification(
             'a', u"Invalid branch lp:%s." % 'a',
             BrowserNotificationLevel.ERROR)
+
 
 class TestPersonTraversal(TestCaseWithFactory, TraversalMixin):
 
