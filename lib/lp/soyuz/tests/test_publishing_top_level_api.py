@@ -419,3 +419,16 @@ class TestICanPublishPackagesAPI(TestNativePublishingBase):
         self.checkBinaryLookupForPocket(
             PackagePublishingPocket.RELEASE, is_careful=True,
             expected_result=[pub_published_release, pub_pending_release])
+
+    def test_publishing_disabled_distroarchseries(self):
+        # Disabled DASes will be skipped even if there are pending
+        # publications for them.
+        binaries = self.getPubBinaries(architecturespecific=True)
+        # Just use the first binary.
+        binary = binaries[0]
+        self.assertEqual(PackagePublishingStatus.PENDING, binary.status)
+
+        binary.distroarchseries.enabled = False
+        self._publish(pocket=binary.pocket)
+
+        self.assertEqual(PackagePublishingStatus.PENDING, binary.status)
