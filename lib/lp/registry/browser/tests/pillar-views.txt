@@ -42,8 +42,6 @@ Pillars that do use launchpad applications have an involvement menu.
     UNKNOWN
     >>> print view.codehosting_usage.name
     UNKNOWN
-    >>> print view.codehosting_usage.name
-    NOT_APPLICABLE
 
 The view provides a list of enabled links that is rendered by the template.
 

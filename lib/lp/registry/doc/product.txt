@@ -324,7 +324,6 @@ Alsa does not use Launchpad to track answers.
     >>> print alsa.answers_usage.name
     UNKNOWN
 
-
 Product Creation
 ----------------
 

@@ -495,6 +495,7 @@ But others can't.
     Traceback (most recent call last):
     Unauthorized: (..., 'translations_usage', 'launchpad.Edit')
 
+
 Specification Listings
 ......................
 
@@ -518,6 +519,7 @@ complete so it will not show up unless we explicitly ask for complete specs:
     ...           SpecificationFilter.COMPLETE]
     >>> kubuntu.specifications(filter=filter).count()
     1
+
 
 There are 2 completed specs for Kubuntu:
 
@@ -579,11 +581,9 @@ We can get only valid specs (those that are not obsolete or superseded):
     ...     # raised.
     ...     owner = spec.owner
     ...     if spec.name in ['cluster-installation', 'revu']:
-    ...         obsolete_status = SpecificationDefinitionStatus.OBSOLETE
-    ...         spec.definition_status = obsolete_status
+    ...         spec.definition_status = SpecificationDefinitionStatus.OBSOLETE
     ...     if spec.name in ['krunch-desktop-plan']:
-    ...         superseded_status = SpecificationDefinitionStatus.SUPERSEDED
-    ...         spec.definition_status = supserseded_status
+    ...         spec.definition_status = SpecificationDefinitionStatus.SUPERSEDED
     ...     shim = spec.updateLifecycleStatus(owner)
     >>> for spec in kubuntu.valid_specifications:
     ...     print spec.name
