@@ -6,27 +6,34 @@ from __future__ import with_statement
 __metaclass__ = type
 
 from datetime import datetime
-import time
 
 from lazr.lifecycle.snapshot import Snapshot
 import pytz
 from testtools.matchers import LessThan
 import transaction
+from storm.store import Store
 from zope.component import getUtility
 from zope.interface import providedBy
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.sqlbase import cursor
 from canonical.launchpad.database import Bug
+from canonical.launchpad.database.account import Account
+from canonical.launchpad.database.emailaddress import EmailAddress
 from canonical.launchpad.ftests import (
     ANONYMOUS,
     login,
+    )
+from canonical.launchpad.interfaces.account import (
+    AccountCreationRationale,
+    AccountStatus,
     )
 from canonical.launchpad.interfaces.emailaddress import (
     EmailAddressAlreadyTaken,
     EmailAddressStatus,
     InvalidEmailAddress,
     )
+from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.launchpad.testing.pages import LaunchpadWebServiceCaller
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
@@ -50,6 +57,7 @@ from lp.registry.interfaces.product import IProductSet
 from lp.registry.model.karma import KarmaCategory
 from lp.registry.model.person import Person
 from lp.registry.model.structuralsubscription import StructuralSubscription
+from lp.services.openid.model.openididentifier import OpenIdIdentifier
 from lp.testing import (
     celebrity_logged_in,
     login_person,
@@ -116,7 +124,7 @@ class TestPersonTeams(TestCaseWithFactory):
             in memberships]
         self.assertEqual(expected_memberships, memberships)
 
-    def test_getPathsToTeamsComplicated(self):
+    def test_getPathsToTeams_complicated(self):
         d_team = self.factory.makeTeam(name='d', owner=self.b_team)
         e_team = self.factory.makeTeam(name='e')
         f_team = self.factory.makeTeam(name='f', owner=e_team)
@@ -146,7 +154,7 @@ class TestPersonTeams(TestCaseWithFactory):
             in memberships]
         self.assertEqual(expected_memberships, memberships)
 
-    def test_getPathsToTeamsMultiplePaths(self):
+    def test_getPathsToTeams_multiple_paths(self):
         d_team = self.factory.makeTeam(name='d', owner=self.b_team)
         login_person(self.a_team.teamowner)
         self.c_team.addMember(d_team, self.c_team.teamowner)
@@ -167,6 +175,45 @@ class TestPersonTeams(TestCaseWithFactory):
             (membership.team, membership.person) for membership
             in memberships]
         self.assertEqual(expected_memberships, memberships)
+
+    def test_inTeam_direct_team(self):
+        # Verify direct membeship is True and the cache is populated.
+        self.assertTrue(self.user.inTeam(self.a_team))
+        self.assertEqual(
+            {self.a_team.id: True},
+            removeSecurityProxy(self.user)._inTeam_cache)
+
+    def test_inTeam_indirect_team(self):
+        # Verify indirect membeship is True and the cache is populated.
+        self.assertTrue(self.user.inTeam(self.b_team))
+        self.assertEqual(
+            {self.b_team.id: True},
+            removeSecurityProxy(self.user)._inTeam_cache)
+
+    def test_inTeam_cache_cleared_by_membership_change(self):
+        # Verify a change in membership clears the team cache.
+        self.user.inTeam(self.a_team)
+        with person_logged_in(self.b_team.teamowner):
+            self.b_team.addMember(self.user, self.b_team.teamowner)
+        self.assertEqual(
+            {},
+            removeSecurityProxy(self.user)._inTeam_cache)
+
+    def test_inTeam_person_is_false(self):
+        # Verify a user cannot be a member of another user.
+        other_user = self.factory.makePerson()
+        self.assertFalse(self.user.inTeam(other_user))
+
+    def test_inTeam_person_does_not_build_TeamParticipation_cache(self):
+        # Verify when a user is the argument, a DB call to TeamParticipation
+        # was not made to learn this.
+        other_user = self.factory.makePerson()
+        Store.of(self.user).invalidate()
+        self.assertFalse(
+            self.assertStatementCount(1, self.user.inTeam, other_user))
+        self.assertEqual(
+            {},
+            removeSecurityProxy(self.user)._inTeam_cache)
 
 
 class TestPerson(TestCaseWithFactory):
@@ -402,35 +449,238 @@ class TestPersonSetMerge(TestCaseWithFactory):
         account.openid_identifier = openid_identifier
         return account
 
-    def test_reused_openid_identifier(self):
-        # Verify that an account can be merged when it has a reused OpenID
-        # identifier. eg. The identifier was freed by a previous merge.
-        test_identifier = 'Z1Y2X3W4'
-        test_date = datetime(
-            2010, 04, 01, 0, 0, 0, 0, tzinfo=pytz.timezone('UTC'))
-        # Free an OpenID identifier using merge.
-        first_duplicate = self.factory.makePerson()
-        first_account = self._get_testable_account(
-            first_duplicate, test_date, test_identifier)
-        first_person = self.factory.makePerson()
-        self._do_premerge(first_duplicate, first_person)
-        login_person(first_person)
-        self.person_set.merge(first_duplicate, first_person)
-        expected = 'merged-%s-%s' % (
-            test_identifier, time.mktime(test_date.timetuple()))
-        self.assertEqual(expected, first_account.openid_identifier)
-        # Create an account that reuses the freed OpenID_identifier.
-        test_date = test_date.replace(2010, 05)
-        second_duplicate = self.factory.makePerson()
-        second_account = self._get_testable_account(
-            second_duplicate, test_date, test_identifier)
-        second_person = self.factory.makePerson()
-        self._do_premerge(second_duplicate, second_person)
-        login_person(second_person)
-        self.person_set.merge(second_duplicate, second_person)
-        expected = 'merged-%s-%s' % (
-            test_identifier, time.mktime(test_date.timetuple()))
-        self.assertEqual(expected, second_account.openid_identifier)
+    def test_openid_identifiers(self):
+        # Verify that OpenId Identifiers are merged.
+        duplicate = self.factory.makePerson()
+        duplicate_identifier = removeSecurityProxy(
+            duplicate.account).openid_identifiers.any().identifier
+        person = self.factory.makePerson()
+        person_identifier = removeSecurityProxy(
+            person.account).openid_identifiers.any().identifier
+        self._do_premerge(duplicate, person)
+        login_person(person)
+        self.person_set.merge(duplicate, person)
+        self.assertEqual(
+            0,
+            removeSecurityProxy(duplicate.account).openid_identifiers.count())
+
+        merged_identifiers = [
+            identifier.identifier for identifier in
+                removeSecurityProxy(person.account).openid_identifiers]
+
+        self.assertIn(duplicate_identifier, merged_identifiers)
+        self.assertIn(person_identifier, merged_identifiers)
+
+
+class TestPersonSetCreateByOpenId(TestCaseWithFactory):
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestPersonSetCreateByOpenId, self).setUp()
+        self.person_set = getUtility(IPersonSet)
+        self.store = IMasterStore(Account)
+
+        # Generate some valid test data.
+        self.account = self.makeAccount()
+        self.identifier = self.makeOpenIdIdentifier(self.account, u'whatever')
+        self.person = self.makePerson(self.account)
+        self.email = self.makeEmailAddress(
+            email='whatever@example.com',
+            account=self.account, person=self.person)
+
+    def makeAccount(self):
+        return self.store.add(Account(
+            displayname='Displayname',
+            creation_rationale=AccountCreationRationale.UNKNOWN,
+            status=AccountStatus.ACTIVE))
+
+    def makeOpenIdIdentifier(self, account, identifier):
+        openid_identifier = OpenIdIdentifier()
+        openid_identifier.identifier = identifier
+        openid_identifier.account = account
+        return self.store.add(openid_identifier)
+
+    def makePerson(self, account):
+        return self.store.add(Person(
+            name='acc%d' % account.id, account=account,
+            displayname='Displayname',
+            creation_rationale=PersonCreationRationale.UNKNOWN))
+
+    def makeEmailAddress(self, email, account, person):
+            return self.store.add(EmailAddress(
+                email=email,
+                account=account,
+                person=person,
+                status=EmailAddressStatus.PREFERRED))
+
+    def testAllValid(self):
+        found, updated = self.person_set.getOrCreateByOpenIDIdentifier(
+            self.identifier.identifier, self.email.email, 'Ignored Name',
+            PersonCreationRationale.UNKNOWN, 'No Comment')
+        found = removeSecurityProxy(found)
+
+        self.assertIs(False, updated)
+        self.assertIs(self.person, found)
+        self.assertIs(self.account, found.account)
+        self.assertIs(self.email, found.preferredemail)
+        self.assertIs(self.email.account, self.account)
+        self.assertIs(self.email.person, self.person)
+        self.assertEqual(
+            [self.identifier], list(self.account.openid_identifiers))
+
+    def testEmailAddressCaseInsensitive(self):
+        # As per testAllValid, but the email address used for the lookup
+        # is all upper case.
+        found, updated = self.person_set.getOrCreateByOpenIDIdentifier(
+            self.identifier.identifier, self.email.email.upper(),
+            'Ignored Name', PersonCreationRationale.UNKNOWN, 'No Comment')
+        found = removeSecurityProxy(found)
+
+        self.assertIs(False, updated)
+        self.assertIs(self.person, found)
+        self.assertIs(self.account, found.account)
+        self.assertIs(self.email, found.preferredemail)
+        self.assertIs(self.email.account, self.account)
+        self.assertIs(self.email.person, self.person)
+        self.assertEqual(
+            [self.identifier], list(self.account.openid_identifiers))
+
+    def testNewOpenId(self):
+        # Account looked up by email and the new OpenId identifier
+        # attached. We can do this because we trust our OpenId Provider.
+        new_identifier = u'newident'
+        found, updated = self.person_set.getOrCreateByOpenIDIdentifier(
+            new_identifier, self.email.email, 'Ignored Name',
+            PersonCreationRationale.UNKNOWN, 'No Comment')
+        found = removeSecurityProxy(found)
+
+        self.assertIs(True, updated)
+        self.assertIs(self.person, found)
+        self.assertIs(self.account, found.account)
+        self.assertIs(self.email, found.preferredemail)
+        self.assertIs(self.email.account, self.account)
+        self.assertIs(self.email.person, self.person)
+
+        # Old OpenId Identifier still attached.
+        self.assertIn(self.identifier, list(self.account.openid_identifiers))
+
+        # So is our new one.
+        identifiers = [
+            identifier.identifier for identifier
+                in self.account.openid_identifiers]
+        self.assertIn(new_identifier, identifiers)
+
+    def testNewEmailAddress(self):
+        # Account looked up by OpenId identifier and new EmailAddress
+        # attached. We can do this because we trust our OpenId Provider.
+        new_email = u'new_email@example.com'
+        found, updated = self.person_set.getOrCreateByOpenIDIdentifier(
+            self.identifier.identifier, new_email, 'Ignored Name',
+            PersonCreationRationale.UNKNOWN, 'No Comment')
+        found = removeSecurityProxy(found)
+
+        self.assertIs(True, updated)
+        self.assertIs(self.person, found)
+        self.assertIs(self.account, found.account)
+        self.assertEqual(
+            [self.identifier], list(self.account.openid_identifiers))
+
+        # The old email address is still there and correctly linked.
+        self.assertIs(self.email, found.preferredemail)
+        self.assertIs(self.email.account, self.account)
+        self.assertIs(self.email.person, self.person)
+
+        # The new email address is there too and correctly linked.
+        new_email = self.store.find(EmailAddress, email=new_email).one()
+        self.assertIs(new_email.account, self.account)
+        self.assertIs(new_email.person, self.person)
+        self.assertEqual(EmailAddressStatus.NEW, new_email.status)
+
+    def testNewAccountAndIdentifier(self):
+        # If neither the OpenId Identifier nor the email address are
+        # found, we create everything.
+        new_email = u'new_email@example.com'
+        new_identifier = u'new_identifier'
+        found, updated = self.person_set.getOrCreateByOpenIDIdentifier(
+            new_identifier, new_email, 'New Name',
+            PersonCreationRationale.UNKNOWN, 'No Comment')
+        found = removeSecurityProxy(found)
+
+        # We have a new Person
+        self.assertIs(True, updated)
+        self.assertIsNot(None, found)
+
+        # It is correctly linked to an account, emailaddress and
+        # identifier.
+        self.assertIs(found, found.preferredemail.person)
+        self.assertIs(found.account, found.preferredemail.account)
+        self.assertEqual(
+            new_identifier, found.account.openid_identifiers.any().identifier)
+
+    def testNoPerson(self):
+        # If the account is not linked to a Person, create one. ShipIt
+        # users fall into this category the first time they log into
+        # Launchpad.
+        self.email.person = None
+        self.person.account = None
+
+        found, updated = self.person_set.getOrCreateByOpenIDIdentifier(
+            self.identifier.identifier, self.email.email, 'New Name',
+            PersonCreationRationale.UNKNOWN, 'No Comment')
+        found = removeSecurityProxy(found)
+
+        # We have a new Person
+        self.assertIs(True, updated)
+        self.assertIsNot(self.person, found)
+
+        # It is correctly linked to an account, emailaddress and
+        # identifier.
+        self.assertIs(found, found.preferredemail.person)
+        self.assertIs(found.account, found.preferredemail.account)
+        self.assertIn(self.identifier, list(found.account.openid_identifiers))
+
+    def testNoAccount(self):
+        # EmailAddress is linked to a Person, but there is no Account.
+        # Convert this stub into something valid.
+        self.email.account = None
+        self.email.status = EmailAddressStatus.NEW
+        self.person.account = None
+        new_identifier = u'new_identifier'
+        found, updated = self.person_set.getOrCreateByOpenIDIdentifier(
+            new_identifier, self.email.email, 'Ignored',
+            PersonCreationRationale.UNKNOWN, 'No Comment')
+        found = removeSecurityProxy(found)
+
+        self.assertIs(True, updated)
+
+        self.assertIsNot(None, found.account)
+        self.assertEqual(
+            new_identifier, found.account.openid_identifiers.any().identifier)
+        self.assertIs(self.email.person, found)
+        self.assertIs(self.email.account, found.account)
+        self.assertEqual(EmailAddressStatus.PREFERRED, self.email.status)
+
+    def testMovedEmailAddress(self):
+        # The EmailAddress and OpenId Identifier are both in the
+        # database, but they are not linked to the same account. The
+        # identifier needs to be relinked to the correct account - the
+        # user able to log into the trusted SSO with that email address
+        # should be able to log into Launchpad with that email address.
+        # This lets us cope with the SSO migrating email addresses
+        # between SSO accounts.
+        self.identifier.account = self.store.find(
+            Account, displayname='Foo Bar').one()
+
+        found, updated = self.person_set.getOrCreateByOpenIDIdentifier(
+            self.identifier.identifier, self.email.email, 'New Name',
+            PersonCreationRationale.UNKNOWN, 'No Comment')
+        found = removeSecurityProxy(found)
+
+        self.assertIs(True, updated)
+        self.assertIs(self.person, found)
+
+        self.assertIs(found.account, self.identifier.account)
+        self.assertIn(self.identifier, list(found.account.openid_identifiers))
 
 
 class TestCreatePersonAndEmail(TestCase):

@@ -244,14 +244,14 @@ are shown.
 
     >>> print extract_text(
     ...     find_tag_by_id(admin_browser.contents, 'branch-details'))
-    lp://dev/~landscape-developers/landscape/trunk - Landscape Developers ...
+    lp://dev/landscape - Landscape Developers ...
 
 Landscape developers can see it.
 
     >>> landscape_dev_browser.open('http://launchpad.dev/landscape/trunk')
     >>> print extract_text(find_tag_by_id(
     ...     landscape_dev_browser.contents, 'branch-details'))
-    lp://dev/~landscape-developers/landscape/trunk - Landscape Developers ...
+    lp://dev/landscape - Landscape Developers ...
 
 But normal people can't.
 
