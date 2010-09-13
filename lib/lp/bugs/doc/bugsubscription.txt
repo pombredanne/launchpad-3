@@ -49,7 +49,7 @@ subscriptions work.
     >>> personset = getUtility(IPersonSet)
 
     >>> linux_source = ubuntu.getSourcePackage("linux-source-2.6.15")
-    >>> linux_source.bug_subscriptions
+    >>> list(linux_source.bug_subscriptions)
     []
     >>> print linux_source.distribution.bug_supervisor
     None
@@ -78,7 +78,7 @@ IBug.getDirectSubscribers().
     >>> mark = personset.getByName("mark")
 
     >>> linux_source_bug.subscribe(mark, mark)
-    <BugSubscription ...>
+    <lp.bugs.model.bugsubscription.BugSubscription ...>
 
     >>> print_displayname(linux_source_bug.getDirectSubscribers())
     Foo Bar
@@ -527,7 +527,7 @@ be unsubscribed from dupes.
     False
 
     >>> bug_six.subscribe(sample_person, sample_person)
-    <BugSubscription...>
+    <lp.bugs.model.bugsubscription.BugSubscription...>
 
     >>> bug_five.isSubscribedToDupes(sample_person)
     True
@@ -781,7 +781,7 @@ Now let's create a bug on a specific package, which has no package bug
 contacts:
 
     >>> evolution = ubuntu.getSourcePackage("evolution")
-    >>> evolution.bug_subscriptions
+    >>> list(evolution.bug_subscriptions)
     []
 
     >>> params = CreateBugParams(
@@ -858,7 +858,7 @@ subscriptions themselves, rather than the subscribers.
     ...     owner=mark)
     >>> ff_bug = firefox.createBug(params)
     >>> ff_bug.subscribe(lifeless, mark)
-    <BugSubscription at ...>
+    <lp.bugs.model.bugsubscription.BugSubscription ...>
     >>> for subscription in ff_bug.getDirectSubscriptions():
     ...     print '%s (%s)' % (
     ...         subscription.person.displayname,
@@ -873,7 +873,7 @@ subscriptions themselves, rather than the subscribers.
     >>> dupe_ff_bug.markAsDuplicate(ff_bug)
     >>> dupe_ff_bug.syncUpdate()
     >>> dupe_ff_bug.subscribe(foobar, lifeless)
-    <BugSubscription at ...>
+    <lp.bugs.model.bugsubscription.BugSubscription ...>
     >>> for subscription in ff_bug.getSubscriptionsFromDuplicates():
     ...     print '%s (%s)' % (
     ...         subscription.person.displayname,

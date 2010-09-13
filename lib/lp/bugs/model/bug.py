@@ -58,6 +58,7 @@ from storm.expr import (
     SQLRaw,
     Union,
     )
+from storm.references import ReferenceSet
 from storm.store import (
     EmptyResultSet,
     Store,
@@ -325,9 +326,10 @@ class Bug(SQLBase):
     mentoring_offers = SQLMultipleJoin(
             'MentoringOffer', joinColumn='bug', orderBy='id')
     # XXX: kiko 2006-09-23: Why is subscriptions ordered by ID?
-    subscriptions = SQLMultipleJoin(
-            'BugSubscription', joinColumn='bug', orderBy='id',
-            prejoins=["person"])
+    # subscriptions = SQLMultipleJoin(
+    #         'BugSubscription', joinColumn='bug_id', orderBy='id',
+    #         prejoins=["person"])
+    subscriptions = ReferenceSet("Bug.id", "BugSubscription.bug_id")
     duplicates = SQLMultipleJoin(
         'Bug', joinColumn='duplicateof', orderBy='id')
     specifications = SQLRelatedJoin('Specification', joinColumn='bug',
@@ -658,19 +660,19 @@ class Bug(SQLBase):
         """See `IBug`."""
         if person is None:
             return False
-
-        bs = BugSubscription.selectBy(bug=self, person=person)
-        return bool(bs)
+        return not IStore(BugSubscription).find(
+            BugSubscription, bug=self, person=person).is_empty()
 
     def isSubscribedToDupes(self, person):
         """See `IBug`."""
         if person is None:
             return False
-
-        return bool(
-            BugSubscription.select("""
-                bug IN (SELECT id FROM Bug WHERE duplicateof = %d) AND
-                person = %d""" % (self.id, person.id)))
+        duplicates = Select(
+            columns=[Bug.id], where=(Bug.duplicateof == self.id),
+            tables=[Bug])
+        return not IStore(BugSubscription).find(
+            BugSubscription, In(BugSubscription.bug_id, duplicates),
+            BugSubscription.person == person).is_empty()
 
     def getDirectSubscriptions(self):
         """See `IBug`."""
@@ -682,14 +684,14 @@ class Bug(SQLBase):
         valid_persons = Store.of(self).find(
             (Person, ValidPersonCache),
             Person.id == ValidPersonCache.id,
-            ValidPersonCache.id == BugSubscription.personID,
+            ValidPersonCache.id == BugSubscription.person_id,
             BugSubscription.bug == self)
         # Suck in all the records so that they're actually cached.
         list(valid_persons)
         # Do the main query.
         return Store.of(self).find(
             BugSubscription,
-            BugSubscription.personID == Person.id,
+            BugSubscription.person_id == Person.id,
             BugSubscription.bug == self).order_by(
             Func('person_sort_key', Person.displayname, Person.name))
 
@@ -731,26 +733,16 @@ class Bug(SQLBase):
         if self.private:
             return []
 
-        duplicate_subscriptions = set(
-            BugSubscription.select("""
-                BugSubscription.bug = Bug.id AND
-                Bug.duplicateof = %d""" % self.id,
-                prejoins=["person"], clauseTables=["Bug"]))
-
-        # Only add a subscriber once to the list.
-        duplicate_subscribers = set(
-            sub.person for sub in duplicate_subscriptions)
-        subscriptions = []
-        for duplicate_subscriber in duplicate_subscribers:
-            for duplicate_subscription in duplicate_subscriptions:
-                if duplicate_subscription.person == duplicate_subscriber:
-                    subscriptions.append(duplicate_subscription)
-                    break
+        results = IStore(BugSubscription).find(
+            (Person, BugSubscription),
+            Person.id == BugSubscription.person_id,
+            BugSubscription.bug_id == Bug.id,
+            Bug.duplicateof == self)
 
         def get_person_displayname(subscription):
             return subscription.person.displayname
 
-        return sorted(subscriptions, key=get_person_displayname)
+        return sorted(dict(results).itervalues(), key=get_person_displayname)
 
     def getSubscribersFromDuplicates(self, recipients=None, level=None):
         """See `IBug`.
@@ -765,7 +757,7 @@ class Bug(SQLBase):
             Store.of(self).find(
                 (Person, Bug),
                 BugSubscription.person == Person.id,
-                BugSubscription.bug == Bug.id,
+                BugSubscription.bug_id == Bug.id,
                 Bug.duplicateof == self.id))
 
         dupe_subscribers = set([person for person in dupe_details.keys()])
@@ -795,7 +787,7 @@ class Bug(SQLBase):
                 Bug.id == self.id,
                 Bug.duplicateof == self.id),
             # Get subscriptions for these bugs
-            BugSubscription.bug == Bug.id,
+            BugSubscription.bug_id == Bug.id,
             # Filter by subscriptions to any team person is in.
             # Note that teamparticipation includes self-participation entries
             # (person X is in the team X)
@@ -1726,7 +1718,7 @@ class Bug(SQLBase):
         subscriptions_from_dupes = store.find(
             BugSubscription,
             Bug.duplicateof == self,
-            BugSubscription.bugID == Bug.id,
+            BugSubscription.bug_id == Bug.id,
             BugSubscription.person == person)
 
         return not subscriptions_from_dupes.is_empty()
