@@ -209,7 +209,6 @@ from canonical.launchpad.webapp.tales import (
     PersonFormatterAPI,
     )
 from canonical.lazr.utils import (
-    safe_hasattr,
     smartquote,
     )
 from canonical.widgets import (
@@ -4167,6 +4166,15 @@ class PersonEditView(BasePersonEditView):
 
     @action(_("Save Changes"), name="save")
     def action_save(self, action, data):
+        # XXX: BradCrittenden 2010-09-10 bug=634878: Find a cleaner solution
+        # to the permissions problem for 'name'.  Users should be able to
+        # change their name, but the permission setting for the attribute is
+        # launchpad.Moderate, which only allows admins and registry.  A user
+        # must have launchpad.Edit to access this page.
+        if 'name' in data:
+            new_name = data['name']
+            removeSecurityProxy(self.context).name = new_name
+            del data['name']
         self.updateContextFromData(data)
 
 
