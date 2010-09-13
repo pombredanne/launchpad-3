@@ -8,9 +8,11 @@ __all__ = [
     'close_bugs',
     'close_bugs_for_queue_item',
     'close_bugs_for_sourcepublication',
+    'get_bugs_from_changes_file',
     'ProcessAccepted',
     ]
 
+from debian.deb822 import Deb822Dict
 import sys
 
 from zope.component import getUtility
@@ -47,7 +49,7 @@ def get_bugs_from_changes_file(changes_file):
     """
     contents = changes_file.read()
     changes_lines = contents.splitlines(True)
-    tags = parse_tagfile_lines(changes_lines, allow_unsigned=True)
+    tags = Deb822Dict(parse_tagfile_lines(changes_lines, allow_unsigned=True))
     bugs_fixed_line = tags.get('Launchpad-bugs-fixed', '')
     bugs = []
     for bug_id in bugs_fixed_line.split():
@@ -105,7 +107,8 @@ def close_bugs_for_queue_item(queue_item, changesfile_object=None):
     the upload is processed and committed.
 
     In practice, 'changesfile_object' is only set when we are closing bugs
-    in upload-time (see archiveuploader/ftests/nascentupload-closing-bugs.txt).
+    in upload-time (see
+    archiveuploader/ftests/nascentupload-closing-bugs.txt).
 
     Skip bug-closing if the upload is target to pocket PROPOSED or if
     the upload is for a PPA.
@@ -172,7 +175,7 @@ def close_bugs_for_sourcepackagerelease(source_release, changesfile_object):
             content = (
                 "This bug was fixed in the package %s"
                 "\n\n---------------\n%s" % (
-                source_release.title, source_release.changelog_entry,))
+                source_release.title, source_release.changelog_entry))
             bug.newMessage(
                 owner=janitor,
                 subject=bug.followup_subject(),
@@ -286,4 +289,3 @@ class ProcessAccepted(LaunchpadScript):
             self.txn.abort()
 
         return 0
-
