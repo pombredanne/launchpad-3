@@ -528,14 +528,12 @@ class POTMsgSet(SQLBase):
         # By default all translations are correct.
         validation_status = TranslationValidationStatus.OK
 
-        # Cache the list of singular_text and plural_text
-        original_texts = self._list_of_msgids()
-
         # Validate the translation we got from the translation form
         # to know if gettext is unhappy with the input.
         try:
             validate_translation(
-                original_texts, translations, self.flags)
+                self.singular_text, self.plural_text, 
+                translations, self.flags)
         except GettextValidationError:
             if ignore_errors:
                 # The translations are stored anyway, but we set them as
@@ -543,13 +541,7 @@ class POTMsgSet(SQLBase):
                 validation_status = TranslationValidationStatus.UNKNOWNERROR
             else:
                 # Check to know if there is any translation.
-                has_translations = False
-                for key in translations.keys():
-                    if translations[key] is not None:
-                        has_translations = True
-                        break
-
-                if has_translations:
+                if any(translations.values()):
                     # Partial translations cannot be stored, the
                     # exception is raised again and handled outside
                     # this method.

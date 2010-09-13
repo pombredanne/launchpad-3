@@ -95,11 +95,12 @@ class GettextCheckMessages(LaunchpadScript):
         :return: Error message string if there is an error, or None otherwise.
         """
         potmsgset = translationmessage.potmsgset
-        msgids = potmsgset._list_of_msgids()
         msgstrs = translationmessage.translations
 
         try:
-            validate_translation(msgids, msgstrs, potmsgset.flags)
+            validate_translation(
+                potmsgset.singular_text, potmsgset.plural_text,
+                msgstrs, potmsgset.flags)
         except GettextValidationError, error:
             self._error_count += 1
             return unicode(error)
