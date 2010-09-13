@@ -145,6 +145,21 @@ class EmailAddressSet:
             personID=personID,
             account=account)
 
+    def getEmailAssociation(self, email):
+        """See IEmailAddressSet`."""
+        # First check if the email address is in use.
+        email_address = self.getByEmail(email)
+        if email_address is None:
+            # If the email address doesn't exist in the system, it is
+            # available.
+            return
+
+        # The email already exists; determine what has it.
+        if email_address.person is not None:
+            return email_address.person
+        if email_address.account is not None:
+            return email_address.account
+        return email_address
 
 class UndeletableEmailAddress(Exception):
     """User attempted to delete an email address which can't be deleted."""

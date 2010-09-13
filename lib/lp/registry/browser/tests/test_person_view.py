@@ -5,6 +5,7 @@ __metaclass__ = type
 
 import transaction
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.launchpad.ftests import (
@@ -265,12 +266,15 @@ class TestTeamCreationView(TestCaseWithFactory):
     
     layer = DatabaseFunctionalLayer
 
-    def test_taken_emails_dont_cause_oops(self):
-        account = self.factory.makeAccount(
-            displayname='libertylandaccount',
-            status=AccountStatus.NOACCOUNT)
+    def setUp(self):
+        super(TestTeamCreationView, self).setUp()
+        person = self.factory.makePerson()
+        login_person(person)
+
+    def test_team_creation_good_data(self):
         form = {
-            'field.contactemail': account.preferredemail,
+            'field.actions.create': 'Create Team',
+            'field.contactemail': 'contactemail@example.com',
             'field.displayname':'liberty-land',
             'field.name':'libertyland',
             'field.renewal_policy':'NONE',
@@ -282,7 +286,34 @@ class TestTeamCreationView(TestCaseWithFactory):
         view = create_initialized_view(
             person_set, '+newteam', form=form) 
         team = person_set.getByName('libertyland')
-        self.assertRaises(NoCanonicalUrl, canonical_url, team)
+        self.assertTrue(team is not None)
+        self.assertEqual(
+            'libertyland',
+            team.name)
+
+    def test_validate_email_catches_taken_emails(self):
+        account = self.factory.makeAccount(
+            displayname='libertylandaccount',
+            status=AccountStatus.NOACCOUNT)
+        email_address = removeSecurityProxy(account.guessed_emails[0]).email
+        form = {
+            'field.actions.create': 'Create Team',
+            'field.contactemail': email_address,
+            'field.displayname':'liberty-land',
+            'field.name':'libertyland',
+            'field.renewal_policy':'NONE',
+            'field.renewal_policy-empty-marker': 1,
+            'field.subscriptionpolicy': 'RESTRICTED',
+            'field.subscriptionpolicy-empty-marker': 1,
+            }
+        person_set = getUtility(IPersonSet)
+        view = create_initialized_view(
+            person_set, '+newteam', form=form) 
+        expected_msg = ('%s is already registered in Launchpad and is '
+                        'associated with the libertylandaccount '
+                        'account.' % email_address)
+        error_msg = view.errors[0].errors[0]
+        self.assertEqual(expected_msg, error_msg)
 
 class TestPersonParticipationView(TestCaseWithFactory):
 
