@@ -172,10 +172,6 @@ class HasSpecificationsView(LaunchpadView):
         if IProjectGroup.providedBy(self.context):
             return self.default_template
 
-        # If specifications exist, ignore the usage enum.
-        if self.has_any_specifications:
-            return self.default_template
-
         # Otherwise, determine usage and provide the correct template.
         service_usage = IServiceUsage(self.context)
         if service_uses_launchpad(service_usage.blueprints_usage):
