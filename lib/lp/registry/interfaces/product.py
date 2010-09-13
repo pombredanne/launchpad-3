@@ -236,9 +236,10 @@ class License(DBEnumeratedType):
         'ACADEMIC', 'APACHE', 'ARTISTIC', 'ARTISTIC_2_0',
         'BSD', 'COMMON_PUBLIC',
         'CC_BY', 'CC_BY_SA', 'CC_0', 'ECLIPSE',
-        'EDUCATIONAL_COMMUNITY', 'AFFERO', 'GNU_GPL_V2', 'GNU_GPL_V3',
-        'GNU_LGPL_V2_1', 'GNU_LGPL_V3', 'MIT', 'MPL', 'OPEN_SOFTWARE', 'PERL',
-        'PHP', 'PUBLIC_DOMAIN', 'PYTHON', 'ZPL',
+        'EDUCATIONAL_COMMUNITY', 'AFFERO', 'GNU_GFDL_NO_OPTIONS',
+        'GNU_GPL_V2', 'GNU_GPL_V3', 'GNU_LGPL_V2_1', 'GNU_LGPL_V3', 'MIT',
+        'MPL', 'OFL', 'OPEN_SOFTWARE', 'PERL', 'PHP', 'PUBLIC_DOMAIN',
+        'PYTHON', 'ZPL',
         'DONT_KNOW', 'OTHER_PROPRIETARY', 'OTHER_OPEN_SOURCE')
 
     ACADEMIC = DBItem(
@@ -316,6 +317,12 @@ class License(DBEnumeratedType):
     CC_0 = DBItem(
         320, 'Creative Commons - No Rights Reserved',
         url='http://creativecommons.org/about/cc0')
+    GNU_GFDL_NO_OPTIONS = DBItem(
+        330, "GNU GFDL no options",
+        url='http://www.gnu.org/copyleft/fdl.html')
+    OFL = DBItem(
+        340, "Open Font License v1.1",
+        url='http://scripts.sil.org/OFL')
     # This is a placeholder "license" for users who know they want something
     # open source but haven't yet chosen a license for their project.  We do
     # not want to block them from registering their project, but this choice
@@ -779,7 +786,10 @@ class IProductPublic(
     @export_read_operation()
     @export_operation_as('get_timeline')
     def getTimeline(include_inactive):
-        """Return basic timeline data useful for creating a diagram."""
+        """Return basic timeline data useful for creating a diagram.
+
+        The number of milestones returned per series is limited.
+        """
 
 
 class IProduct(

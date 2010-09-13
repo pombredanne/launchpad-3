@@ -20,6 +20,7 @@ from bzrlib.revision import (
 from bzrlib.tests import TestCaseWithTransport
 from bzrlib.uncommit import uncommit
 import pytz
+from storm.locals import Store
 import transaction
 from twisted.python.util import mergeFunctionMetadata
 from zope.component import getUtility
@@ -79,6 +80,8 @@ class BzrSyncTestCase(TestCaseWithTransport, TestCaseWithFactory):
         self.lp_db_user = config.launchpad.dbuser
         self.makeFixtures()
         LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
+        # Catch both constraints and permissions for the db user.
+        self.addCleanup(Store.of(self.db_branch).flush)
 
     def tearDown(self):
         super(BzrSyncTestCase, self).tearDown()
@@ -490,18 +493,14 @@ class TestBzrSync(BzrSyncTestCase):
         expected_history = [branch_revision.revision.revision_id
             for branch_revision in sampledata
             if branch_revision.sequence is not None]
-        expected_mapping = dict(
-            (branch_revision.revision.revision_id, branch_revision.id)
-            for branch_revision in sampledata)
 
         self.create_branch_and_tree(db_branch=branch)
 
         bzrsync = self.makeBzrSync(branch)
-        db_ancestry, db_history, db_branch_revision_map = (
+        db_ancestry, db_history = (
             bzrsync.retrieveDatabaseAncestry())
         self.assertEqual(expected_ancestry, set(db_ancestry))
         self.assertEqual(expected_history, list(db_history))
-        self.assertEqual(expected_mapping, db_branch_revision_map)
 
 
 class TestBzrSyncOneRevision(BzrSyncTestCase):
