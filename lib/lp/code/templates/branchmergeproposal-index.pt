@@ -46,6 +46,10 @@
     #proposal-summary td {
       padding-left: 0.5em;
     }
+    .related-bugs-list {
+      padding-left: 20px;
+      padding-bottom: 10px;
+    }
     /* A page-specific fix for inline text are editing to line up box. */
     #edit-description .yui-ieditor-input { top: 0; }
     #edit-commit_message .yui-ieditor-input { top: 0; }
@@ -138,20 +142,14 @@
   </tal:has-description>
   </div>
 
-  <div class="yui-g">
-      <div class="first">
-        <div tal:condition="view/has_bug_or_spec">
-          <div id="related-bugs-and-blueprints"
-            tal:define="branch context/source_branch">
-            <h2>Linked bug reports and blueprints</h2>
-            <div class="actions">
-
-              <metal:bug-branch-links use-macro="branch/@@+macros/bug-branch-links"/>
-            </div>
-            <div class="actions">
-              <metal:spec-branch-links use-macro="branch/@@+macros/spec-branch-links"/>
-            </div>
-          </div>
+  <div class="yui-g" tal:condition="view/has_bug_or_spec">
+      <div id="related-bugs-and-blueprints" class="related-bugs-list"
+        tal:define="branch context/source_branch">
+        <div class="actions">
+          <metal:bug-branch-links use-macro="branch/@@+macros/bug-branch-links"/>
+        </div>
+        <div class="actions">
+          <metal:spec-branch-links use-macro="branch/@@+macros/spec-branch-links"/>
         </div>
       </div>
   </div>
@@ -203,7 +201,6 @@
         <h2>Unmerged revisions</h2>
         <metal:landing-target use-macro="branch/@@+macros/branch-revisions"/>
       </tal:history-available>
-
       <tal:remote-branch condition="context/source_branch/branch_type/enumvalue:REMOTE">
         <h2>Unmerged revisions</h2>
         <p>Recent revisions are not available due to the source branch being remote.</p>
