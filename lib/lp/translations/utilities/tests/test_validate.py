@@ -33,7 +33,7 @@ class TestTranslationValidation(TestCase):
             validate_translation, english, None, translations, flags)
 
     def test_validate_translation_no_flag(self):
-        # Mismateched format specifiers don't matter if no format has been
+        # Mismatched format specifiers don't matter if no format has been
         # specified.
         english = "English %s number %d"
         flags = []
