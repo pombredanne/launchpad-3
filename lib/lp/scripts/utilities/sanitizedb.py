@@ -89,11 +89,10 @@ class SanitizeDb(LaunchpadScript):
             'oauthnonce',
             'oauthrequesttoken',
             'openidassociation',
-            'openidauthorization',
             'openidconsumerassociation',
             'openidconsumernonce',
-            'openidnonce',
             'openidrpsummary',
+            'openididentifier',
             'requestedcds',
             'scriptactivity',
             'shipitreport',
@@ -131,7 +130,6 @@ class SanitizeDb(LaunchpadScript):
         self.removeInvalidEmailAddresses()
         self.removePPAArchivePermissions()
         self.scrambleHiddenEmailAddresses()
-        self.scrambleOpenIDIdentifiers()
 
         self.removeDeactivatedPeopleAndAccounts()
 
@@ -419,17 +417,6 @@ class SanitizeDb(LaunchpadScript):
             """).rowcount
         self.logger.info(
             "Replaced %d hidden email addresses with @example.com", count)
-
-    def scrambleOpenIDIdentifiers(self):
-        """Replace OpenIDIdentifiers with random strings"""
-        count = self.store.execute("""
-            UPDATE Account SET
-                openid_identifier =
-                    'rnd' || text(id) || 'x' || text(round(random()*10000)),
-                old_openid_identifier =
-                    'rnd' || text(id) || 'x' || text(round(random()*10000))
-            """).rowcount
-        self.logger.info("Randomized %d openid identifiers.", count)
 
     def removeUnlinkedEmailAddresses(self):
         """Remove EmailAddresses not linked to a Person.
