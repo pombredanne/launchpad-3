@@ -1174,6 +1174,7 @@ COMMENT ON COLUMN DistroArchSeries.official IS 'Whether or not this architecture
 COMMENT ON COLUMN DistroArchSeries.package_count IS 'A cache of the number of binary packages published in this distro arch release. The count only includes packages published in the release pocket.';
 COMMENT ON COLUMN DistroArchSeries.supports_virtualized IS 'Whether or not
 virtualized build support should be provided by this specific distroarchseries';
+COMMENT ON COLUMN DistroArchSeries.enabled IS 'Whether to allow build creation and publishing for this DistroArchSeries.';
 
 -- LauncpadDatabaseRevision
 COMMENT ON TABLE LaunchpadDatabaseRevision IS 'This table contains a list of the database patches that have been successfully applied to this database.';
@@ -1934,6 +1935,14 @@ COMMENT ON COLUMN ShipItReport.csvfile IS 'A csv file with the report';
 COMMENT ON TABLE Continent IS 'A continent in this huge world.';
 COMMENT ON COLUMN Continent.code IS 'A two-letter code for a continent.';
 COMMENT ON COLUMN Continent.name IS 'The name of the continent.';
+
+-- DistributionJob
+
+COMMENT ON TABLE DistributionJob IS 'Contains references to jobs to be run on distributions.';
+COMMENT ON COLUMN DistributionJob.distribution IS 'The distribution to be acted on.';
+COMMENT ON COLUMN DistributionJob.distroseries IS 'The distroseries to be acted on.';
+COMMENT ON COLUMN DistributionJob.job_type IS 'The type of job';
+COMMENT ON COLUMN DistributionJob.json_data IS 'A JSON struct containing data for the job.';
 
 -- DistributionMirror
 COMMENT ON TABLE DistributionMirror IS 'A mirror of a given distribution.';
