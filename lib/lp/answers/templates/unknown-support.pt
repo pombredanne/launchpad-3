@@ -31,10 +31,9 @@
 
         <p id="configure-support"
           tal:condition="view/can_configure_answers">
-          Launchpad allows your project to track questions and create FAQs.
-          <br /><a class="sprite maybe"
+          <a class="sprite maybe"
             href="https://help.launchpad.net/Answers">Getting started
-          with support tracking in Launchpad</a>.
+          tracking questions and FAQs in Launchpad</a>.
           <br /><a tal:replace="structure context/menu:overview/configure_answers/fmt:link" />
         </p>
       </div>

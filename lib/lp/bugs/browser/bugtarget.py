@@ -1252,6 +1252,11 @@ class BugTargetBugsView(BugTaskSearchListingView, FeedsMixin):
             bug_statuses_to_show.append(BugTaskStatus.FIXRELEASED)
 
     @property
+    def can_have_external_bugtracker(self):
+        return (IProduct.providedBy(self.context)
+                or IProductSeries.providedBy(self.context))
+
+    @property
     def bug_tracking_usage(self):
         """Whether the context tracks bugs in launchpad.
 

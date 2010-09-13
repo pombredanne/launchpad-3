@@ -162,7 +162,7 @@
       <tal:no_hot_bugs condition="not: view/hot_bugs_info/bugtasks">
         <p id="no-bugs-filed"><strong>There are currently no
           <span tal:condition="context/has_bugtasks">open</span> bugs filed
-          against <tal:project_title replace="context/title" />.</strong></p>
+          against <tal:displayname replace="context/displayname" />.</strong></p>
 
         <p id="no-bugs-report"><a href="+filebug">Report a bug.</a></p>
       </tal:no_hot_bugs>
@@ -170,9 +170,14 @@
 
     <p id="no-malone"
        tal:condition="view/bug_tracking_usage/enumvalue:UNKNOWN">
-      <strong>
-        Launchpad does not know where to forward bug reports to contact the
-        developers of <tal:project_title replace="context/title" />.
+      <strong tal:condition="view/can_have_external_bugtracker">
+        <tal:displayname replace="context/displayname" />
+        must be configured in order for Launchpad to forward bugs to
+        the project's developers.
+      </strong>
+      <strong tal:condition="not: view/can_have_external_bugtracker">
+        <tal:displayname replace="context/displayname" />
+        does not use Launchpad for bug tracking.
       </strong>
     </p>
 
@@ -188,9 +193,9 @@
       <p tal:define="packages context/ubuntu_packages | nothing"
          tal:condition="packages"
          id="also-in-ubuntu">
-        Launchpad
+        Ubuntu
         <tal:also condition="view/external_bugtracker">also</tal:also>
-        keeps track of bug reports for
+        tracks bugs for packages derived from this project:
         <tal:packages repeat="package packages">
           <span style="white-space: nowrap"
                 tal:content="structure package/fmt:link" /><tal:comma
@@ -210,7 +215,8 @@
           >
         <a tal:condition="configure_bugtracker"
           tal:replace="structure configure_bugtracker/fmt:link"/>
-        <a tal:condition="not: configure_bugtracker"
+        <a class="sprite edit"
+          tal:condition="not: configure_bugtracker"
           tal:attributes="href string:${context/fmt:url/+edit}">
           Enable bug tracking.</a>
       </p>
