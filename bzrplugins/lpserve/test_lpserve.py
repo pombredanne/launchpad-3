@@ -385,8 +385,8 @@ class TestCaseWithLPForkingServiceSubprocess(TestCaseWithSubprocess):
     def assertReturnCode(self, expected_code, sock):
         """Assert that we get the expected return code as a message."""
         response = sock.recv(1024)
-        self.assertStartsWith(response, 'retcode ')
-        code = int(response.split(' ', 1)[1])
+        self.assertStartsWith(response, 'exited\n')
+        code = int(response.split('\n', 1)[1])
         self.assertEqual(expected_code, code)
 
     def test_fork_lp_serve_hello(self):

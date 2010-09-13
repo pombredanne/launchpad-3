@@ -232,25 +232,19 @@ class LPForkingService(object):
         sys.stderr.close()
         sys.stdout.close()
 
-    def become_child(self, command_argv, path, conn):
+    def become_child(self, command_argv, path):
         """We are in the spawned child code, do our magic voodoo."""
         # Reset the start time
         trace._bzr_log_start_time = time.time()
         trace.mutter('%d starting %r'
                      % (os.getpid(), command_argv,))
-        self._create_child_file_descriptors(path)
-        # Now that we've set everything up, send the response to the client,
-        # and close everything out. we create them first, so the client can
-        # start trying to connect to them, while we do the same.
-        # Child process, close the connections
-        conn.sendall('ok\n%d\n%s\n' % (os.getpid(), path))
         self.host = None
         self.port = None
         self._sockname = None
         self._bind_child_file_descriptors(path)
-        self._run_child_command(command_argv, conn)
+        self._run_child_command(command_argv)
 
-    def _run_child_command(self, command_argv, conn):
+    def _run_child_command(self, command_argv):
         # This is the point where we would actually want to do something with
         # our life
         retcode = commands.run_bzr_catch_errors(command_argv)
@@ -262,12 +256,6 @@ class LPForkingService(object):
         # cmd_launchpad_forking_service code, and even back to main() reporting
         # thereturn code, but after that, suddenly the return code changes from
         # a '0' to a '1', with no logging of info.
-        try:
-            conn.sendall('retcode %s\n' % (retcode or 0,))
-        except (self._socket_timeout, self._socket_error), e:
-            trace.mutter('failed to report the return code: %s' % (e,))
-        else:
-            conn.close()
         # TODO: Should we call sys.exitfunc() here? it allows atexit functions
         #       to fire, however, some of those may be still around from the
         #       parent process, which we don't really want.
@@ -283,16 +271,22 @@ class LPForkingService(object):
     def fork_one_request(self, conn, client_addr, command_argv):
         """Fork myself and serve a request."""
         temp_name = tempfile.mkdtemp(prefix='lp-forking-service-child-')
+        self._create_child_file_descriptors(temp_name)
+        # Now that we've set everything up, send the response to the client we
+        # create them first, so the client can start trying to connect to them,
+        # while we fork and have the child do the same.
         self._children_spawned += 1
         pid = self._fork_function()
         if pid == 0:
             trace.mutter('%d spawned' % (os.getpid(),))
             self._server_socket.close()
-            self.become_child(command_argv, temp_name, conn)
+            conn.close()
+            self.become_child(command_argv, temp_name)
             trace.warning('become_child returned!!!')
             sys.exit(1)
         else:
-            self._child_processes[pid] = temp_name
+            conn.sendall('ok\n%d\n%s\n' % (pid, temp_name))
+            self._child_processes[pid] = (temp_name, conn)
             self.log(client_addr, 'Spawned process %s for %r: %s'
                             % (pid, command_argv, temp_name))
 
@@ -382,9 +376,17 @@ class LPForkingService(object):
                 # No more children stopped right now
                 return
             self._exit_statuses[c_id] = exit_code
-            c_path = self._child_processes.pop(c_id)
+            c_path, sock = self._child_processes.pop(c_id)
             trace.mutter('%s exited %s and usage: %s'
                          % (c_id, exit_code, rusage))
+            try:
+                sock.sendall('exited\n%s\n' % (exit_code,))
+            except (self._socket_timeout, self._socket_error), e:
+                # The client disconnected before we wanted them to,
+                # no big deal
+                trace.mutter('%s\'s socket already closed: %s' % (c_id, e))
+            else:
+                sock.close()
             if os.path.exists(c_path):
                 # The child failed to cleanup after itself, do the work here
                 trace.warning('Had to clean up after child %d: %s\n'
@@ -405,20 +407,25 @@ class LPForkingService(object):
         if self._child_processes:
             trace.warning('Failed to stop children: %s'
                 % ', '.join(map(str, self._child_processes)))
-            for c_id, c_path in self._child_processes.iteritems():
+            for c_id in self._child_processes:
                 trace.warning('sending SIGINT to %d' % (c_id,))
                 os.kill(c_id, signal.SIGINT)
             # We sent the SIGINT signal, see if they exited
             self._wait_for_children(1.0)
         if self._child_processes:
             # No? Then maybe something more powerful
-            for c_id, c_path in self._child_processes.iteritems():
+            for c_id in self._child_processes:
                 trace.warning('sending SIGKILL to %d' % (c_id,))
                 os.kill(c_id, signal.SIGKILL)
             # We sent the SIGKILL signal, see if they exited
             self._wait_for_children(1.0)
         if self._child_processes:
-            for c_id, c_path in self._child_processes.iteritems():
+            for c_id, (c_path, sock) in self._child_processes.iteritems():
+                # TODO: We should probably put something into this message?
+                #       However, the likelyhood is very small that this isn't
+                #       already closed because of SIGKILL + _wait_for_children
+                #       And I don't really know what to say...
+                sock.close()
                 if os.path.exists(c_path):
                     trace.warning('Cleaning up after immortal child %d: %s\n'
                                   % (c_id, c_path))
@@ -450,6 +457,9 @@ class LPForkingService(object):
                 #       prefork additional instances? (the design will need to
                 #       change if we prefork and run arbitrary commands.)
                 self.fork_one_request(conn, client_addr, command_argv)
+                # We don't close the conn normally, since we will report the
+                # exit status later
+                return
         elif request.startswith('status'):
             # Someone is asking about children statuses, go check on them real
             # quick
