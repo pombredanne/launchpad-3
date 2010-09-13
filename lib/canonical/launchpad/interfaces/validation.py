@@ -19,7 +19,7 @@ __all__ = [
     'validate_new_distrotask',
     'valid_upstreamtask',
     'valid_password',
-    'validate_date_interval'
+    'validate_date_interval',
     ]
 
 from cgi import escape
@@ -40,6 +40,7 @@ from canonical.launchpad.validators.url import valid_absolute_url
 from canonical.launchpad.webapp.menu import structured
 
 from lp.app.errors import NotFoundError
+
 
 def can_be_nominated_for_series(series):
     """Can the bug be nominated for these series?"""
@@ -126,6 +127,7 @@ def valid_webref(web_ref):
             scheme (for instance, http:// for a web URL), and ensure the
             URL uses either http, https or ftp.""")))
 
+
 def valid_branch_url(branch_url):
     """Returns True if web_ref is a valid download URL, or raises a
     LaunchpadValidationError.
@@ -200,7 +202,7 @@ def validate_new_team_email(email):
     _validate_email(email)
     emailaddress_set = getUtility(IEmailAddressSet)
     email_association = emailaddress_set.getEmailAssociation(email)
-    
+
     # Since an associaiton exists, find out what it is to get the best error
     # message. Ideally, this would check if it's a person, then an account,
     # and then assume email, but importing IPerson in this file causes a
@@ -223,7 +225,7 @@ def validate_new_team_email(email):
                         mapping={'email': escape(email),
                                 'url': canonical_url(email_association),
                                 'team': escape(team_name)})
-                        
+
         raise LaunchpadValidationError(structured(message))
     return True
 

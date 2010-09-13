@@ -14,8 +14,6 @@ from canonical.launchpad.ftests import (
     )
 from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.interfaces import NoCanonicalUrl
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import (
     DatabaseFunctionalLayer,
@@ -262,8 +260,9 @@ class TestPersonEditView(TestCaseWithFactory):
         self.view.initialize()
         self.assertFalse(self.view.form_fields['name'].for_display)
 
+
 class TestTeamCreationView(TestCaseWithFactory):
-    
+
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
@@ -275,16 +274,16 @@ class TestTeamCreationView(TestCaseWithFactory):
         form = {
             'field.actions.create': 'Create Team',
             'field.contactemail': 'contactemail@example.com',
-            'field.displayname':'liberty-land',
-            'field.name':'libertyland',
-            'field.renewal_policy':'NONE',
+            'field.displayname': 'liberty-land',
+            'field.name': 'libertyland',
+            'field.renewal_policy': 'NONE',
             'field.renewal_policy-empty-marker': 1,
             'field.subscriptionpolicy': 'RESTRICTED',
             'field.subscriptionpolicy-empty-marker': 1,
             }
         person_set = getUtility(IPersonSet)
         view = create_initialized_view(
-            person_set, '+newteam', form=form) 
+            person_set, '+newteam', form=form)
         team = person_set.getByName('libertyland')
         self.assertTrue(team is not None)
         self.assertEqual(
@@ -299,21 +298,22 @@ class TestTeamCreationView(TestCaseWithFactory):
         form = {
             'field.actions.create': 'Create Team',
             'field.contactemail': email_address,
-            'field.displayname':'liberty-land',
-            'field.name':'libertyland',
-            'field.renewal_policy':'NONE',
+            'field.displayname': 'liberty-land',
+            'field.name': 'libertyland',
+            'field.renewal_policy': 'NONE',
             'field.renewal_policy-empty-marker': 1,
             'field.subscriptionpolicy': 'RESTRICTED',
             'field.subscriptionpolicy-empty-marker': 1,
             }
         person_set = getUtility(IPersonSet)
         view = create_initialized_view(
-            person_set, '+newteam', form=form) 
+            person_set, '+newteam', form=form)
         expected_msg = ('%s is already registered in Launchpad and is '
                         'associated with the libertylandaccount '
                         'account.' % email_address)
         error_msg = view.errors[0].errors[0]
         self.assertEqual(expected_msg, error_msg)
+
 
 class TestPersonParticipationView(TestCaseWithFactory):
 
@@ -659,6 +659,7 @@ class TestPersonDeactivateAccountView(TestCaseWithFactory):
         self.assertEqual(1, len(view.errors))
         self.assertEqual(
             'This account is already deactivated.', view.errors[0])
+
 
 class TestTeamInvitationView(TestCaseWithFactory):
     """Tests for TeamInvitationView."""

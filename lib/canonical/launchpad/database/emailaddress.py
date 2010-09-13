@@ -161,5 +161,6 @@ class EmailAddressSet:
             return email_address.account
         return email_address
 
+
 class UndeletableEmailAddress(Exception):
     """User attempted to delete an email address which can't be deleted."""

@@ -115,7 +115,7 @@ class IEmailAddress(IHasOwner):
 
     def destroySelf():
         """Destroy this email address and any associated subscriptions.
-        
+
         :raises UndeletableEmailAddress: When the email address is a person's
             preferred one or a hosted mailing list's address.
         """
@@ -156,7 +156,7 @@ class IEmailAddressSet(Interface):
 
     def getEmailAssociation(email):
         """Return the entity associated with the email.
-        
+
         Returns the person or team with the email, if one exists. If not,
         returns the account with the email, if it exists. If it doesn't,
         return the email model instance, if it exists. If it doesn't, return
