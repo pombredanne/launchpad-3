@@ -240,14 +240,13 @@ class LPForkingService(object):
         # start trying to connect to them, while we do the same.
         # Child process, close the connections
         conn.sendall('ok\n%d\n%s\n' % (os.getpid(), path))
-        conn.close()
         self.host = None
         self.port = None
         self._sockname = None
         self._bind_child_file_descriptors(path)
-        self._run_child_command(command_argv)
+        self._run_child_command(command_argv, conn)
 
-    def _run_child_command(self, command_argv):
+    def _run_child_command(self, command_argv, conn):
         # This is the point where we would actually want to do something with
         # our life
         retcode = commands.run_bzr_catch_errors(command_argv)
@@ -255,7 +254,20 @@ class LPForkingService(object):
         trace.mutter('%d finished %r'
                      % (os.getpid(), command_argv,))
         # We force os._exit() here, because we don't want to unwind the stack,
-        # which has complex results.
+        # which has complex results. (We can get it to unwind back to the
+        # cmd_launchpad_forking_service code, and even back to main() reporting
+        # thereturn code, but after that, suddenly the return code changes from
+        # a '0' to a '1', with no logging of info.
+        try:
+            conn.sendall('retcode %s\n' % (retcode or 0,))
+        except (self._socket_timeout, self._socket_error), e:
+            trace.mutter('failed to report the return code: %s' % (e,))
+        else:
+            conn.close()
+        # TODO: Should we call sys.exitfunc() here? it allows atexit functions
+        #       to fire, however, some of those may be still around from the
+        #       parent process, which we don't really want.
+        ## sys.exitfunc()
         os._exit(retcode)
 
     @staticmethod
