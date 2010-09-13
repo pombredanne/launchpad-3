@@ -55,7 +55,14 @@ class IDistroSeriesDifferencePublic(IHasOwner, Interface):
     package_diff = Reference(
         IPackageDiff, title=_("Package diff"), required=False,
         readonly=True, description=_(
-            "The most recently generated package diff for this difference."))
+            "The most recently generated package diff from the base to the "
+            "derived version."))
+
+    parent_package_diff = Reference(
+        IPackageDiff, title=_("Parent package diff"), required=False,
+        readonly=True, description=_(
+            "The most recently generated package diff from the base to the "
+            "parent version."))
 
     status = Choice(
         title=_('Distro series difference status.'),
@@ -102,7 +109,7 @@ class IDistroSeriesDifferencePublic(IHasOwner, Interface):
         title=_("Title"), readonly=True, required=False, description=_(
             "A human-readable name describing this difference."))
 
-    def updateStatusAndType():
+    def update():
         """Checks that difference type and status matches current publishings.
 
         If the record is updated, a relevant comment is added.
