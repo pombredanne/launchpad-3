@@ -291,10 +291,6 @@ def set_launchpad_default_timeout(event):
     set_default_timeout_function(get_request_remaining_seconds)
 
 
-def _check_expired(timeout=None):
-    """Checks whether the current request has passed the given timeout."""
-
-
 def soft_timeout_expired():
     """Returns True if the soft request timeout been reached."""
     try:
@@ -507,15 +503,17 @@ class LaunchpadTimeoutTracer(PostgresTimeoutTracer):
         if not isinstance(connection._database, LaunchpadDatabase):
             return
         # If we are outside of a request, don't do timeout adjustment.
-        if self.get_remaining_time() is None:
-            return
         try:
+            if self.get_remaining_time() is None:
+                return
             super(LaunchpadTimeoutTracer, self).connection_raw_execute(
                 connection, raw_cursor, statement, params)
-        except TimeoutError:
+        except (RequestExpired, TimeoutError):
+            # XXX: This code does not belong here - see bug=636804.
+            # Robert Collins 20100913.
+            OpStats.stats['timeouts'] += 1
             info = sys.exc_info()
             transaction.doom()
-            OpStats.stats['timeouts'] += 1
             try:
                 raise info[0], info[1], info[2]
             finally:

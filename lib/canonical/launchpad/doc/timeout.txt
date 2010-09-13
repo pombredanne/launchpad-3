@@ -21,7 +21,7 @@ time remaining before the request should time out.
     >>> set_launchpad_default_timeout(ProcessStarting())
 
     >>> get_default_timeout_function()
-    <function launchpad_default_timeout...>
+    <function get_request_remaining_seconds...>
 
 The timeout to use is the number of seconds remaining before
 db_statement_timeout is expired.
@@ -30,7 +30,7 @@ db_statement_timeout is expired.
     >>> from canonical.config import config
     >>> config.push('timeout', dedent('''\
     ... [database]
-    ... db_statement_timeout = 10'''))
+    ... db_statement_timeout = 10000'''))
 
     >>> timeout_func = get_default_timeout_function()
 
