@@ -78,6 +78,7 @@ from lp.answers.interfaces.questiontarget import (
     IQuestionTarget,
     ISearchQuestionsForm,
     )
+from lp.app.enums import service_uses_launchpad
 from lp.app.errors import NotFoundError
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.product import IProduct
@@ -204,7 +205,7 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
             return self.default_template
         involvement = getMultiAdapter(
             (self.context, self.request), name='+get-involved')
-        if involvement.official_answers:
+        if service_uses_launchpad(involvement.answers_usage):
             # Primary contexts that officially use answers have a
             # search and listing presentation.
             return self.default_template
