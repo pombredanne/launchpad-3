@@ -17,7 +17,10 @@ from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.productseries import ProductSeries
 from lp.translations.browser.distroseries import DistroSeriesTemplatesView
 from lp.translations.browser.productseries import ProductSeriesTemplatesView
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    login_person,
+    TestCaseWithFactory,
+    )
 from lp.testing.sampledata import ADMIN_EMAIL
 
 
@@ -44,12 +47,10 @@ class SeriesTemplatesViewScenario:
         """Get `template`'s distro- or productseries."""
         return template.distroseries or template.productseries
 
-    def _makeView(self, template=None, user_email=None):
+    def _makeView(self, template=None):
         """Create a `BaseTemplatesView` containing `template`."""
         if template is None:
             template = self._makeTemplate()
-        if user_email is not None:
-            login(user_email)
         request = LaunchpadTestRequest()
         view = self.view_class(self._getSeries(template), request)
         view.initialize()
@@ -68,12 +69,6 @@ class SeriesTemplatesViewScenario:
             sorted(css_class.split())
             for css_class in re.findall(regex, html)]
 
-    def _makeUserAndEmail(self):
-        """Create a `Person` and email."""
-        email = '%s@example.com' % self.factory.getUniqueString()
-        user = self.factory.makePerson(email=email)
-        return user, email
-
     def _findActions(self, html):
         """Find the available actions in an HTML actions column."""
         return re.findall('<[^>]*>([^<]*)</[^>]*', html)
@@ -87,8 +82,8 @@ class SeriesTemplatesViewScenario:
     def test_logging_in_adds_actions_column(self):
         # A logged-in user gets to see an extra "actions" column.
         template = self._makeTemplate()
-        user, email = self._makeUserAndEmail()
-        view = self._makeView(template, user_email=email)
+        login_person(self.factory.makePerson())
+        view = self._makeView(template)
         columns = self.columns + [['actions_column']]
         header = view.renderTemplatesHeader()
         self.assertEqual(columns, self._findTagClasses(header, 'th'))
@@ -99,8 +94,8 @@ class SeriesTemplatesViewScenario:
         # The only action offered to regular users is Download.
         template = self._makeTemplate()
         url = canonical_url(template)
-        user, email = self._makeUserAndEmail()
-        view = self._makeView(template, user_email=email)
+        login_person(self.factory.makePerson())
+        view = self._makeView(template)
 
         self.assertEqual(
             ['Download'],
@@ -110,7 +105,8 @@ class SeriesTemplatesViewScenario:
         # An administrator gets to see all actions on a template.
         template = self._makeTemplate()
         url = canonical_url(template)
-        view = self._makeView(template, user_email=ADMIN_EMAIL)
+        login(ADMIN_EMAIL)
+        view = self._makeView(template)
 
         self.assertEqual(
             ['Edit', 'Upload', 'Download', 'Administer'],
@@ -121,8 +117,8 @@ class SeriesTemplatesViewScenario:
         # Download actions.
         template = self._makeTemplate()
         url = canonical_url(template)
-        user, email = self._makeUserAndEmail()
-        view = self._makeView(template, user_email=email)
+        login_person(self.factory.makePerson())
+        view = self._makeView(template)
         view.can_edit = True
 
         self.assertEqual(
