@@ -4,8 +4,7 @@ Changing personal details
 A user wants to check if his personal information is up to date in
 Launchpad.
 
-    >>> from lp.testing.sampledata import ADMIN_EMAIL
-    >>> login(ADMIN_EMAIL)
+    >>> login(ANONYMOUS)
     >>> user = factory.makePerson(name='ray', displayname='Ray Ray',
     ...                           email='ray@example.com',
     ...                           password='test')
