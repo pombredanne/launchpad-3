@@ -167,6 +167,41 @@ class TestLPForkingService(TestCaseWithLPForkingService):
         response = self.send_message_to_service('hello\n')
         self.assertEqual('ok\nyep, still alive\n', response)
 
+    def test_null_status(self):
+        response = self.send_message_to_service('status \n')
+        self.assertEqual('ok\n', response)
+
+    def test_unknown_status(self):
+        response = self.send_message_to_service('status 12345\n')
+        self.assertEqual('ok\n12345 unknown\n', response)
+
+    def test_multiple_statuses(self):
+        response = self.send_message_to_service('status 12345 23456\n')
+        self.assertEqualDiff('ok\n12345 unknown\n23456 unknown\n', response)
+
+    def test_invalid_pid(self):
+        response = self.send_message_to_service('status abcd\n')
+        self.assertStartsWith(response, 'FAILURE')
+
+    def test_stopped_child(self):
+        # We cheat and fake a recently exited child
+        self.service._exit_statuses[12345] = 256
+        # Entries in _exit_status get cleared after being queried
+        response = self.send_message_to_service('status 12345\n')
+        self.assertEqualDiff('ok\n12345 stopped 256\n', response)
+        # Now the entry should be cleared, and it will be treated as unknown
+        response = self.send_message_to_service('status 12345\n')
+        self.assertEqualDiff('ok\n12345 unknown\n', response)
+
+    def test_active_child(self):
+        # We cheat and fake an active child
+        self.service._child_processes[12345] = None
+        try:
+            response = self.send_message_to_service('status 12345\n')
+            self.assertEqualDiff('ok\n12345 active\n', response)
+        finally:
+            del self.service._child_processes[12345]
+
 
 class TestCaseWithSubprocess(tests.TestCaseWithTransport):
     """Override the bzr start_bzr_subprocess command.
@@ -270,7 +305,7 @@ class TestCaseWithLPForkingServiceSubprocess(TestCaseWithSubprocess):
         pid = int(pid)
         path = path.strip()
         self.assertContainsRe(path, '/lp-forking-service-child-')
-        return path
+        return path, pid
 
     def start_service_subprocess(self):
         # Make sure this plugin is exposed to the subprocess
@@ -341,14 +376,14 @@ class TestCaseWithLPForkingServiceSubprocess(TestCaseWithSubprocess):
         return stdout_content, stderr_content
 
     def test_fork_lp_serve_hello(self):
-        path = self.send_fork_request('lp-serve --inet 2')
+        path, _ = self.send_fork_request('lp-serve --inet 2')
         stdout_content, stderr_content = self.communicate_with_fork(path,
             'hello\n')
         self.assertEqual('ok\x012\n', stdout_content)
         self.assertEqual('', stderr_content)
 
     def test_fork_replay(self):
-        path = self.send_fork_request('launchpad-replay')
+        path, _ = self.send_fork_request('launchpad-replay')
         stdout_content, stderr_content = self.communicate_with_fork(path,
             '1 hello\n2 goodbye\n1 maybe\n')
         self.assertEqualDiff('hello\nmaybe\n', stdout_content)
@@ -361,7 +396,7 @@ class TestCaseWithLPForkingServiceSubprocess(TestCaseWithSubprocess):
     def test_fork_multiple_children(self):
         paths = []
         for idx in range(4):
-            paths.append(self.send_fork_request('launchpad-replay'))
+            paths.append(self.send_fork_request('launchpad-replay')[0])
         for idx in [3, 2, 0, 1]:
             p = paths[idx]
             stdout_msg = 'hello %d\n' % (idx,)
@@ -370,3 +405,26 @@ class TestCaseWithLPForkingServiceSubprocess(TestCaseWithSubprocess):
                 '1 %s2 %s' % (stdout_msg, stderr_msg))
             self.assertEqualDiff(stdout_msg, stdout)
             self.assertEqualDiff(stderr_msg, stderr)
+
+    def test_fork_status(self):
+        path, pid = self.send_fork_request('launchpad-replay')
+        # Don't connect yet, ask for the status, and you should get nothing yet
+        response = self.send_message_to_service('status %d\n' % (pid,))
+        active_response = 'ok\n%d active\n' % (pid,)
+        self.assertEqualDiff(active_response, response)
+        stdout, stderr = self.communicate_with_fork(path,
+            '1 hello\n2 goodbye\n')
+        self.assertEqual('hello\n', stdout)
+        self.assertEqual('goodbye\n', stderr)
+        # Now spin for a bit, and wait for the process to be 'finished'
+        tmax = time.time() + 2.0
+        while time.time() < tmax:
+            response = self.send_message_to_service('status %d\n' % (pid,))
+            if response == active_response:
+                time.sleep(0.05)
+                continue
+            else:
+                break
+        else:
+            self.fail('timeout waiting for process to be stopped')
+        self.assertEqualDiff('ok\n%d stopped 0\n' % (pid,), response)

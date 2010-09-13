@@ -154,6 +154,9 @@ class LPForkingService(object):
         # Map from pid => information
         self._child_processes = {}
         self._children_spawned = 0
+        # Children whose exit we have observed, but who have not been queried
+        # for. (similar to a zombie process before you wait() on it)
+        self._exit_statuses = {}
 
     def _create_master_socket(self):
         addrs = socket.getaddrinfo(self.host, self.port, socket.AF_UNSPEC,
@@ -347,8 +350,9 @@ class LPForkingService(object):
         while self._child_processes:
             c_id, exit_code, rusage = os.wait3(os.WNOHANG)
             if c_id == 0:
-                # No children stopped right now
+                # No more children stopped right now
                 return
+            self._exit_statuses[c_id] = exit_code
             c_path = self._child_processes.pop(c_id)
             trace.mutter('%s exited %s and usage: %s'
                          % (c_id, exit_code, rusage))
@@ -394,14 +398,13 @@ class LPForkingService(object):
     def serve_one_connection(self, conn, client_addr):
         request = conn.recv(1024);
         request = request.strip()
+        self.log(client_addr, 'request: %r' % (request,))
         if request == 'hello':
-            self.log(client_addr, 'hello heartbeat')
             conn.sendall('ok\nyep, still alive\n')
             self.log_information()
         elif request == 'quit':
             self._should_terminate.set()
             conn.sendall('ok\nquit command requested... exiting\n')
-            self.log(client_addr, 'quit requested')
         elif request.startswith('fork '):
             command = request[5:]
             try:
@@ -418,6 +421,25 @@ class LPForkingService(object):
                 #       prefork additional instances? (the design will need to
                 #       change if we prefork and run arbitrary commands.)
                 self.fork_one_request(conn, client_addr, command_argv)
+        elif request.startswith('status'):
+            # Someone is asking about children statuses, go check on them real
+            # quick
+            self._poll_children()
+            try:
+                pids = map(int, request[len('status '):].split())
+            except ValueError:
+                conn.sendall('FAILURE\nbad integer pid request: %r'
+                             % (request,))
+            else:
+                response = ['ok\n']
+                for pid in pids:
+                    status = 'unknown'
+                    if pid in self._exit_statuses:
+                        status = 'stopped %s' % (self._exit_statuses.pop(pid),)
+                    elif pid in self._child_processes:
+                        status = 'active'
+                    response.append('%d %s\n' % (pid, status))
+                conn.sendall(''.join(response))
         else:
             self.log(client_addr, 'FAILURE: unknown request: %r' % (request,))
             # TODO: Do we want to be friendly here? Or do we want to just
