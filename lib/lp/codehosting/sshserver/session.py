@@ -58,8 +58,20 @@ class ForkedProcessTransport(process.BaseProcess):
     #       to the fork request
     def __init__(self, reactor, executable, args, proto):
         process.BaseProcess.__init__(self, proto)
-        pid, path = self._spawn(executable, args)
+        pid, path, sock = self._spawn(executable, args)
         self.pid = pid
+        # TODO: We nee to set up a Reader on this socket, so that we know when
+        #       the process has actually closed. The possible actions are:
+        #       a) sock closes (say master process has exited), in which case
+        #          we probably treat this as a 'process has exited' flag
+        #       b) we get data, which if it conforms to our expectations means
+        #          the process *has* exited. We probably need to be aware of
+        #          whether we get the expected 'fifo has closed' on the other
+        #          file descriptors
+        #       Either way, when stuff happens on the socket, we should be
+        #       prepared to call self.processEnded(), though I'm a bit confused
+        #       with processEnded, maybeCallProcessEnded and processExited...
+        self.process_sock = sock
         # Map from standard file descriptor to the associated pipe
         self.pipes = {}
         self._fifo_path = path
@@ -89,20 +101,21 @@ class ForkedProcessTransport(process.BaseProcess):
             raise
         if response.startswith("FAILURE"):
             raise RuntimeError('Failed to send message: %r' % (response,))
-        return response
+        return response, client_sock
 
     def _spawn(self, executable, args):
         assert executable == 'bzr', executable # Maybe .endswith()
         assert args[0] == 'bzr', args[0]
         # XXX: We must send BZR_EMAIL to the process, or we get failures to
         #      run because of no 'whoami' information.
-        response = self._sendMessageToService('fork %s\n' % ' '.join(args[1:]))
+        response, sock = self._sendMessageToService('fork %s\n'
+                                                    % ' '.join(args[1:]))
         ok, pid, path, tail = response.split('\n')
         assert ok == 'ok'
         assert tail == ''
         pid = int(pid)
         # TODO: Log this information
-        return pid, path
+        return pid, path, sock
 
     def _connectSpawnToReactor(self, reactor):
         stdin_path = os.path.join(self._fifo_path, 'stdin')
