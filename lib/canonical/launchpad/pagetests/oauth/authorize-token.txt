@@ -35,9 +35,67 @@ other part of Launchpad.
     >>> browser.open(url)
     Traceback (most recent call last):
     ...
-    Unauthorized:...
+    Unauthorized: Anonymous access is not allowed.
 
-A user who is logged in through Basic Auth can see the page.
+Unlike other pages, a user can see the page by signing an outgoing
+request with an _existing_ OAuth token. This makes it possible for a
+desktop client to retrieve this page without knowing the end-user's
+username and password, or making them navigate the arbitrarily complex
+OpenID login procedure.
+
+    >>> from zope.component import getUtility
+    >>> from oauth.oauth import OAuthConsumer
+    >>> from lp.testing import oauth_access_token_for
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> manager_consumer = OAuthConsumer("Launchpad Credentials Manager", "")
+    >>> login(ANONYMOUS)
+    >>> no_priv = getUtility(IPersonSet).getByEmail('no-priv@canonical.com')
+    >>> grant_permissions_token = oauth_access_token_for(
+    ...     manager_consumer.key, no_priv, "GRANT_PERMISSIONS")
+    >>> logout()
+
+    >>> from oauth.oauth import OAuthRequest, OAuthSignatureMethod_PLAINTEXT
+    >>> from canonical.launchpad.interfaces import OAUTH_REALM
+    >>> def oauth_signing_browser(consumer, token):
+    ...     request = OAuthRequest.from_consumer_and_token(consumer, token)
+    ...     request.sign_request(
+    ...         OAuthSignatureMethod_PLAINTEXT(), consumer, token)
+    ...     auth_header = request.to_header(OAUTH_REALM)['Authorization']
+    ...     browser = setupBrowser(auth=auth_header)
+    ...     return browser
+
+    >>> browser = oauth_signing_browser(
+    ...     manager_consumer, grant_permissions_token)
+    >>> browser.open(url)
+    >>> print browser.title
+    Authorize application to access Launchpad on your behalf
+
+The OAuth token must have the GRANT_PERMISSIONS access level; no other
+access level will work.
+
+    >>> login(ANONYMOUS)
+    >>> insufficient_token = oauth_access_token_for(
+    ...     manager_consumer.key, no_priv, "WRITE_PRIVATE")
+    >>> logout()
+
+    >>> browser = oauth_signing_browser(manager_consumer, insufficient_token)
+    >>> browser.open(url)
+    Traceback (most recent call last):
+    ...
+    Unauthorized: OAuth token has insufficient access level.
+
+Signing with an anonymous token will also not work.
+
+    >>> from oauth.oauth import OAuthToken
+    >>> anonymous_token = OAuthToken(key="", secret="")
+    >>> browser = oauth_signing_browser(manager_consumer, anonymous_token)
+    >>> browser.open(url)
+    Traceback (most recent call last):
+    ...
+    Unauthorized: Anonymous access is not allowed.
+
+Finally, as usual, a user who is logged in through Basic Auth can see
+the page. We'll use this session for the rest of the test.
 
     >>> browser = setupBrowser(auth='Basic no-priv@canonical.com:test')
     >>> browser.open(url)
@@ -51,13 +109,6 @@ A user who is logged in through Basic Auth can see the page.
     ...
     See all applications authorized to access Launchpad on your behalf.
 
-But a user can also see the page by signing an outgoing request with
-an _existing_ OAuth token. This makes it possible for a desktop client
-to retrieve this page without navigating the arbitrarily complex
-OpenID login procedure.
-
-The OAuth token must have the GRANT_PERMISSIONS access level; no other
-access level will work.
 
 Using the page
 ==============

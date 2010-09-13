@@ -11,6 +11,7 @@ __all__ = [
 
 from lazr.restful import HTTPResource
 import simplejson
+from zope.authentication.interfaces import IUnauthenticatedPrincipal
 from zope.component import getUtility
 from zope.formlib.form import (
     Action,
@@ -33,6 +34,7 @@ from canonical.launchpad.webapp.authentication import (
     get_oauth_authorization,
     )
 from canonical.launchpad.webapp.interfaces import (
+    AccessLevel,
     ILaunchBag,
     OAuthPermission,
     )
@@ -201,7 +203,26 @@ class OAuthAuthorizeTokenView(LaunchpadFormView, JSONTokenMixin):
             # GRANT_PERMISSIONS access level, we will force a
             # temporary login with the user whose access token this
             # is.
-            raise Unauthorized()
+            from canonical.launchpad.webapp.authentication import (
+                extract_oauth_access_token,
+                get_oauth_principal
+                )
+            token = extract_oauth_access_token(self.request)
+            if token is None:
+                # The request is not OAuth-signed. The normal
+                # Launchpad code had it right: no one is
+                # authenticated.
+                raise Unauthorized("Anonymous access is not allowed.")
+            principal = get_oauth_principal(self.request)
+            if IUnauthenticatedPrincipal.providedBy(principal):
+                # The request is OAuth-signed, but as the anonymous
+                # user.
+                raise Unauthorized("Anonymous access is not allowed.")
+            if token.permission != AccessLevel.GRANT_PERMISSIONS:
+                # The request is OAuth-signed, but the token has
+                # the wrong access level.
+                raise Unauthorized("OAuth token has insufficient access level.")
+
         self.storeTokenContext()
         form = get_oauth_authorization(self.request)
         key = form.get('oauth_token')
