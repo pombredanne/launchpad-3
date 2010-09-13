@@ -129,6 +129,12 @@ class TestFeatureFlags(TestCase):
         finally:
             per_thread.features = None
 
+    def test_threadGetFlagNoContext(self):
+        # If there is no context, please don't crash. workaround for the root
+        # cause in bug 631884.
+        per_thread.features = None
+        self.assertEqual(None, getFeatureFlag('ui.icing'))
+
     def testLazyScopeLookup(self):
         # feature scopes may be a bit expensive to look up, so we do it only
         # when it will make a difference to the result.
