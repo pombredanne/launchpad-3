@@ -24,13 +24,13 @@ class TestScopesFromRequest(TestCase):
 
     def test_pageid_scope_collection(self):
         request = LaunchpadTestRequest()
-        request.setInWSGIEnvironment('launchpad.pageid', 'scoped:thing#type')
+        request.setInWSGIEnvironment('launchpad.pageid', 'scoped:thing:#type')
         scopes = webapp.ScopesFromRequest(request)
         self.assertTrue(scopes.lookup('pageid:'))
         self.assertTrue(scopes.lookup('pageid:scoped'))
         self.assertTrue(scopes.lookup('pageid:scoped:thing'))
-        self.assertTrue(scopes.lookup('pageid:scoped:thing#type'))
-        self.assertFalse(scopes.lookup('pageid:scoped:thing#type:other'))
+        self.assertTrue(scopes.lookup('pageid:scoped:thing:#type'))
+        self.assertFalse(scopes.lookup('pageid:scoped:thing:#type:other'))
 
     def test_pageid_scope_empty(self):
         request = LaunchpadTestRequest()
