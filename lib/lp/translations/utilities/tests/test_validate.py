@@ -32,6 +32,15 @@ class TestTranslationValidation(TestCase):
             GettextValidationError,
             validate_translation, english, None, translations, flags)
 
+    def test_validate_translation_no_flag(self):
+        # Mismateched format specifiers don't matter if no format has been
+        # specified.
+        english = "English %s number %d"
+        flags = []
+        translations = {0: "Translation number %d"}
+        # This should not raise GettextValidationError.
+        validate_translation(english, None, translations, flags)
+
     def test_validate_translation_c_format_plural(self):
         # Correct c-format translations will be validated on plurals.
         english_singular = "English %s number %d"
