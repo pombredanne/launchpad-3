@@ -209,8 +209,12 @@ class TestPersonTeams(TestCaseWithFactory):
         # was not made to learn this.
         other_user = self.factory.makePerson()
         Store.of(self.user).invalidate()
+        # Load the two person objects only by reading a non-id attribute
+        # unrelated to team/person or teamparticipation.
+        other_user.name
+        self.user.name
         self.assertFalse(
-            self.assertStatementCount(1, self.user.inTeam, other_user))
+            self.assertStatementCount(0, self.user.inTeam, other_user))
         self.assertEqual(
             {},
             removeSecurityProxy(self.user)._inTeam_cache)
