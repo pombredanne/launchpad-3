@@ -1,13 +1,16 @@
-<html
-  xmlns="http://www.w3.org/1999/xhtml"
+<tal:root
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  metal:use-macro="view/macro:page/main_only"
   i18n:domain="launchpad">
-  <body>
-    <tal:heading metal:fill-slot="heading">
-      <h1>Testing page</h1>
-    </tal:heading>
-  </body>
-</html>
+  <dl>
+    <dt>Description:</dt>
+    <dd><tal:description replace="context/source_pub/meta_sourcepackage/summary" /></dd>
+    <dt>Last common version:</dt>
+    <dd>Do last common version.</dd>
+    <dt>Package differences:</dt>
+    <dd>Do package differences.</dd>
+  </dl>
+  <h2>Comments:</h2>
+
+</tal:root>
