@@ -520,9 +520,6 @@ class LaunchpadRootNavigation(Navigation):
         If 'foo' resolves to an ICanHasLinkedBranch instance but the linked
         branch is not yet set, then redirect to the ICanHasLinkedBranch
         instance instead.
-        We will attempt to be quite forgiving when resolving 'foo'.
-        eg if 'foo' resolves to a project and the owner is incorrectly
-        specified, try resolving just the project.
         If 'foo' is completely invalid, redirect back to the referring page
         with a suitable error message.
         """
@@ -551,7 +548,6 @@ class LaunchpadRootNavigation(Navigation):
             url = canonical_url(branch)
         elif target is not None:
             url = canonical_url(target, rootsite='mainsite')
-            trailing = None
         else:
             url = self.request.getHeader('referer')
 
