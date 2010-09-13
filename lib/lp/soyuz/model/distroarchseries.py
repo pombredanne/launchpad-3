@@ -338,6 +338,11 @@ class DistroArchSeries(SQLBase):
 
     def publish(self, diskpool, log, archive, pocket, is_careful=False):
         """See `ICanPublishPackages`."""
+        if not self.enabled:
+            log.debug(
+                "Skipping disabled architecture %s" % self.architecturetag)
+            return set()
+
         log.debug("Attempting to publish pending binaries for %s"
               % self.architecturetag)
 
