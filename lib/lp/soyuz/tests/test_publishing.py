@@ -494,7 +494,7 @@ class SoyuzTestPublisher:
 
         return source
 
-    def makeSourcePackageWithBinaryPackageRelease(self, source_pub=None):
+    def makeSourcePackageSummaryData(self, source_pub=None):
         """Make test data for SourcePackage.summary.
 
         The distroseries that is returned from this method needs to be

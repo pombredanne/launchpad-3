@@ -37,7 +37,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         else:
             source_pub = distro_series_difference.source_pub
 
-        stp.makeSourcePackageWithBinaryPackageRelease(source_pub)
+        stp.makeSourcePackageSummaryData(source_pub)
         stp.updateDistroSeriesPackageCache(source_pub.distroseries)
 
         # updateDistroSeriesPackageCache reconnects the db, so the
