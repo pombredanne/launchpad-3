@@ -153,12 +153,3 @@ class IEmailAddressSet(Interface):
 
         Return None if there is no such email address.
         """
-
-    def getEmailAssociation(email):
-        """Return the entity associated with the email.
-
-        Returns the person or team with the email, if one exists. If not,
-        returns the account with the email, if it exists. If it doesn't,
-        return the email model instance, if it exists. If it doesn't, return
-        None.
-        """

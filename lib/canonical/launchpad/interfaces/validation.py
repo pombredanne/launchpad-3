@@ -32,13 +32,15 @@ from zope.component import getUtility
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.launchpad import ILaunchBag
 from canonical.launchpad.interfaces.account import IAccount
-from canonical.launchpad.interfaces.emailaddress import IEmailAddress
+from canonical.launchpad.interfaces.emailaddress import (
+    IEmailAddress,
+    IEmailAddressSet,
+    )
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.cve import valid_cve
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.validators.url import valid_absolute_url
 from canonical.launchpad.webapp.menu import structured
-
 from lp.app.errors import NotFoundError
 
 
@@ -192,6 +194,28 @@ def _validate_email(email):
             "${email} isn't a valid email address.",
             mapping={'email': email}))
 
+def _check_email_availability(email):
+    email_address = getUtility(IEmailAddressSet).getByEmail(email)
+    if email_address is not None:
+        # The email already exists; determine what has it.
+        if email_address.person is not None:
+            person = email_address.person
+            message = _('${email} is already registered in Launchpad and is '
+                        'associated with <a href="${url}">${person}</a>.',
+                        mapping={'email': escape(email),
+                                'url': canonical_url(person),
+                                'person': escape(person.displayname)})
+        if email_address.account is not None:
+            account = email_address.account
+            message = _('${email} is already registered in Launchpad and is '
+                        'associated with the ${account} account.',
+                        mapping={'email': escape(email),
+                                'account': escape(account.displayname)})
+        else:
+            message = _('${email} is already registered in Launchpad.',
+                        mapping={'email': escape(email)})
+        raise LaunchpadValidationError(structured(message))
+
 
 def validate_new_team_email(email):
     """Check that the given email is valid and not registered to
@@ -199,34 +223,9 @@ def validate_new_team_email(email):
     """
     from canonical.launchpad.webapp import canonical_url
     from canonical.launchpad.interfaces import IEmailAddressSet
+
     _validate_email(email)
-    emailaddress_set = getUtility(IEmailAddressSet)
-    email_association = emailaddress_set.getEmailAssociation(email)
-
-    # Since an associaiton exists, find out what it is to get the best error
-    # message. Ideally, this would check if it's a person, then an account,
-    # and then assume email, but importing IPerson in this file causes a
-    # circular import, so assume person if the association is neither Account
-    # nor EmailAddress.
-    if email_association is not None:
-        if IEmailAddress.providedBy(email_association):
-            message = _('${email} is already registered in Launchpad.',
-                        mapping={'email': escape(email)})
-        elif IAccount.providedBy(email_association):
-            account_name = email_association.displayname
-            message = _('${email} is already registered in Launchpad and is '
-                        'associated with the ${account} account.',
-                        mapping={'email': escape(email),
-                                'account': escape(account_name)})
-        else:
-            team_name = email_association.displayname
-            message = _('${email} is already registered in Launchpad and is '
-                        'associated with <a href="${url}">${team}</a>.',
-                        mapping={'email': escape(email),
-                                'url': canonical_url(email_association),
-                                'team': escape(team_name)})
-
-        raise LaunchpadValidationError(structured(message))
+    _check_email_availability(email)
     return True
 
 

@@ -286,15 +286,14 @@ class TestTeamCreationView(TestCaseWithFactory):
             person_set, '+newteam', form=form)
         team = person_set.getByName('libertyland')
         self.assertTrue(team is not None)
-        self.assertEqual(
-            'libertyland',
-            team.name)
+        self.assertEqual('libertyland', team.name)
 
     def test_validate_email_catches_taken_emails(self):
+        email_address = self.factory.getUniqueEmailAddress()
         account = self.factory.makeAccount(
             displayname='libertylandaccount',
+            email=email_address,
             status=AccountStatus.NOACCOUNT)
-        email_address = removeSecurityProxy(account.guessed_emails[0]).email
         form = {
             'field.actions.create': 'Create Team',
             'field.contactemail': email_address,
@@ -306,8 +305,7 @@ class TestTeamCreationView(TestCaseWithFactory):
             'field.subscriptionpolicy-empty-marker': 1,
             }
         person_set = getUtility(IPersonSet)
-        view = create_initialized_view(
-            person_set, '+newteam', form=form)
+        view = create_initialized_view(person_set, '+newteam', form=form)
         expected_msg = ('%s is already registered in Launchpad and is '
                         'associated with the libertylandaccount '
                         'account.' % email_address)
