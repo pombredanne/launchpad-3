@@ -537,24 +537,9 @@ class LaunchpadRootNavigation(Navigation):
                 # a valid ICanHasLinkedBranch target exists but there's no
                 # branch or it's not visible, so get the target instead
                 target = getUtility(ILinkedBranchTraverser).traverse(path)
-                userMessage = \
-                    "The requested branch does not exist. " + \
-                    "You have landed at lp:%s instead." % path
-                self.request.response.addNotification(userMessage)
-
-            except (InvalidNamespace):
-                # ok so the link may be for a project but the owner is wrong
-                # eg lp:~owner/project
-                # so let's try again without the owner ie lp:project
-                # this doesn't cover every case of how the url may be wrong
-                # but handles one of the more common potential error cases
-                new_path = path.split("/")
-                new_path = "/".join(new_path[1:])
-                target = getUtility(ILinkedBranchTraverser).traverse(new_path)
-                userMessage = \
-                    "The requested branch URL lp:%s is not valid. " + \
-                    "You have landed at the most likely parent entity " + \
-                    "instead." % path
+                userMessage = (
+                    "The requested branch does not exist. "
+                    "You have landed at lp:%s instead." % path)
                 self.request.response.addNotification(userMessage)
 
         except (CannotHaveLinkedBranch, InvalidNamespace,

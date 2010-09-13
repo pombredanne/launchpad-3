@@ -24,9 +24,7 @@ from lp.registry.interfaces.person import (
     PersonVisibility,
     )
 from lp.testing import (
-    anonymous_logged_in,
     login_person,
-    person_logged_in,
     TestCaseWithFactory,
     )
 from lp.testing.views import create_view
@@ -122,10 +120,26 @@ class TestBranchTraversal(TestCaseWithFactory, TraversalMixin):
         # branch that doesn't exist will display an error message.
         branch = self.factory.makeAnyBranch()
         bad_name = branch.unique_name + 'wibble'
-        requiredMessage = "Invalid branch lp:%s. No such branch: '%s'." \
-            % (bad_name, branch.name+"wibble")
+        requiredMessage = ("Invalid branch lp:%s. No such branch: '%s'."
+            % (bad_name, branch.name+"wibble"))
         self.assertDisplaysNotification(
             bad_name, requiredMessage,
+            BrowserNotificationLevel.ERROR)
+
+    def test_private_branch_traversal(self):
+        # If an attempt is made to access a private branch, display an error.
+        branch = self.factory.makeProductBranch()
+        branch_unique_name = branch.unique_name
+        removeSecurityProxy(branch.product).development_focus.branch = branch
+        removeSecurityProxy(branch).private = True
+
+        any_user = self.factory.makePerson()
+        login_person(any_user)
+        requiredMessage = ("Invalid branch lp:%s. No such branch: '%s'."
+            % (branch_unique_name, branch_unique_name))
+        self.assertDisplaysNotification(
+            branch_unique_name,
+            requiredMessage,
             BrowserNotificationLevel.ERROR)
 
     def test_product_alias(self):
@@ -136,21 +150,39 @@ class TestBranchTraversal(TestCaseWithFactory, TraversalMixin):
         product.development_focus.branch = branch
         self.assertRedirects(product.name, canonical_url(branch))
 
+    def test_private_branch_for_product(self):
+        # If the development focus of a product is private, navigate to the
+        # product instead.
+        branch = self.factory.makeProductBranch()
+        product = removeSecurityProxy(branch.product)
+        product.development_focus.branch = branch
+        removeSecurityProxy(branch).private = True
+
+        any_user = self.factory.makePerson()
+        login_person(any_user)
+        requiredMessage = (u"The requested branch does not exist. "
+            "You have landed at lp:%s instead." % product.name)
+        self.assertRedirects(
+            product.name,
+            canonical_url(product),
+            requiredMessage,
+            BrowserNotificationLevel.NOTICE)
+
     def test_nonexistent_product(self):
         # Traversing to /+branch/<no-such-product> displays an error message.
         non_existent = 'non-existent'
-        requiredMessage =  u"Invalid branch lp:%s. No such product: '%s'." \
-            % (non_existent, non_existent)
+        requiredMessage = (u"Invalid branch lp:%s. No such product: '%s'."
+            % (non_existent, non_existent))
         self.assertDisplaysNotification(
             non_existent, requiredMessage,
             BrowserNotificationLevel.ERROR)
 
     def test_product_without_dev_focus(self):
-        # Traversing to a product without a development focus displays an
-        # error message on the same page.
+        # Traversing to a product without a development focus displays a
+        # user message on the same page.
         product = self.factory.makeProduct()
-        requiredMessage =  u"The requested branch does not exist. " + \
-            "You have landed at lp:%s instead." % product.name
+        requiredMessage = (u"The requested branch does not exist. "
+            "You have landed at lp:%s instead." % product.name)
 
         self.assertRedirects(
             product.name, canonical_url(product),
@@ -179,10 +211,9 @@ class TestBranchTraversal(TestCaseWithFactory, TraversalMixin):
         # no such series.
         product = self.factory.makeProduct()
         non_existent = 'nonexistent'
-        requiredMessage =  u"Invalid branch lp:%s/%s. " + \
-         "No such product series: '%s'."
-        requiredMessage = requiredMessage \
-            % (product.name, non_existent, non_existent)
+        requiredMessage = (u"Invalid branch lp:%s/%s. "
+            "No such product series: '%s'."
+            % (product.name, non_existent, non_existent))
         self.assertDisplaysNotification(
             '%s/%s' % (product.name, non_existent), 
             requiredMessage,
@@ -192,10 +223,9 @@ class TestBranchTraversal(TestCaseWithFactory, TraversalMixin):
         # If there's no branch for a product series, navigate to the
         # product series instead.
         series = self.factory.makeProductSeries()
-        requiredMessage = \
-            "The requested branch does not exist. " + \
-            "You have landed at lp:%s/%s instead." \
-            % (series.product.name, series.name)
+        requiredMessage = ("The requested branch does not exist. "
+            "You have landed at lp:%s/%s instead."
+            % (series.product.name, series.name))
 
         self.assertRedirects(
             '%s/%s' % (series.product.name, series.name),
@@ -203,33 +233,15 @@ class TestBranchTraversal(TestCaseWithFactory, TraversalMixin):
             requiredMessage,
             BrowserNotificationLevel.NOTICE)
 
-    def test_no_branch_for_series_bad_permission(self):
-        # If there's no branch for a product series, and the current logged
-        # in user doesn't have permission to access the product series,
-        # check that an error message is displayed.
-
-        #XXX: fix this test
-        owner = self.factory.makePerson()
-        with person_logged_in(owner):
-            product = self.factory.makeProduct(owner=owner)
-        errorMessage = \
-            "The requested branch does not exist. " + \
-            "The requested product series does not exist."
-
-        with anonymous_logged_in():
-            self.assertRedirects(
-                '%s' % (product.name),
-                canonical_url(product),
-                errorMessage,
-                BrowserNotificationLevel.NOTICE)
-
     def test_too_short_branch_name(self):
         # error notification if the thing following +branch is a unique name
         # that's too short to be a real unique name.
         owner = self.factory.makePerson()
+        requiredMessage = (u"Invalid branch lp:~%s. Cannot understand "
+            "namespace name: '%s'" % (owner.name, owner.name))
         self.assertDisplaysNotification(
             '~%s' % owner.name,
-            u"Invalid branch lp:~%s." % owner.name,
+            requiredMessage,
             BrowserNotificationLevel.ERROR)
 
     def test_invalid_product_name(self):
