@@ -38,6 +38,16 @@ class TraversalMixin:
     def _validateNotificationContext(
         self, request, notification=None,
         level=BrowserNotificationLevel.INFO):
+        """Check the browser notifications associated with the request.
+
+        Ensure that the notification instances attached to the request match
+        the expected values for text and type.
+
+        :param notification: The exact notification text to validate. If None
+            then we don't care what the notification text is, so long as there
+            is some.
+        : param level: the required notification level
+        """
 
         notifications = request.notifications
         if notification is None:
