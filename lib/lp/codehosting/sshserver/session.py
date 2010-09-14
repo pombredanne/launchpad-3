@@ -343,6 +343,16 @@ class ExecOnlySession(DoNothingSession):
         notify(BazaarSSHStarted(self.avatar))
         # XXX: This is the point where we should have a feature-flag to decide
         #       whether to use the new code or not.
+        #       The feature code is in lib/lp/services/features/* Something
+        #       like:
+        #           lp.services.features.getFeatureFlag('ssh.forking.enabled')
+        #       However, you need a FeatureController which defines the scope,
+        #       which is arguably a per-request scope. So we need to figure out
+        #       how to enable that. (The app servers define a per-thread
+        #       (per-request) controller.)
+        #       If we had a different controller per request, we could arguably
+        #       have different functionally per-user. Which would be a neat way
+        #       of enabling this for some developers,but-not-all.
         if executable == 'bzr': # Endswith?
             self._transport = ForkedProcessTransport(self.reactor, executable,
                                                      arguments, protocol)
