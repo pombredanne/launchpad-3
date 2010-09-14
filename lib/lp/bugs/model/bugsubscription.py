@@ -7,6 +7,13 @@ __metaclass__ = type
 __all__ = ['BugSubscription']
 
 from sqlobject import ForeignKey
+from storm.base import Storm
+from storm.locals import (
+    Bool,
+    Int,
+    Reference,
+    Unicode,
+    )
 from zope.interface import implements
 
 from canonical.database.constants import UTC_NOW
@@ -66,3 +73,25 @@ class BugSubscription(SQLBase):
         if self.person.is_team:
             return user.inTeam(self.person)
         return user == self.person
+
+
+class BugSubscriptionFilter(Storm):
+
+    __storm_table__ = "BugSubscriptionFilter"
+
+    id = Int(primary=True)
+
+    structural_subscription_id = Int("structuralsubscription", allow_none=False)
+    structural_subscription = Reference(
+        structural_subscription_id, "StructuralSubscription.id")
+
+    find_all_tags = Bool(
+        "find_all_tags", allow_none=False, default=False)
+    include_any_tags = Bool(
+        "include_any_tags", allow_none=False, default=False)
+    exclude_any_tags = Bool(
+        "exclude_any_tags", allow_none=False, default=False)
+
+    other_parameters = Unicode("other_parameters")
+
+    description = Unicode("description")
