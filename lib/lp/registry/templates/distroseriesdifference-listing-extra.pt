@@ -5,7 +5,7 @@
   i18n:domain="launchpad">
   <dl>
     <dt>Description:</dt>
-    <dd><tal:description replace="context/source_pub/meta_sourcepackage/summary" /></dd>
+    <dd><tal:description replace="view/summary" /></dd>
     <dt>Last common version:</dt>
     <dd>Not implemented.</dd>
     <dt>Package differences:</dt>

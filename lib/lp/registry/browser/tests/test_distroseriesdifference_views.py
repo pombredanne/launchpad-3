@@ -111,7 +111,17 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
 
         view = create_initialized_view(ds_diff, '+listing-distroseries-extra')
         soup = BeautifulSoup(view())
-        import pdb;pdb.set_trace()
         self.assertEqual(
             1, len(soup.findAll(
                 'a', href=ds_diff.package_diff.diff_content.http_url)))
+
+    def test_source_diff_rendering_no_source(self):
+        # If there is no source pub for this difference, then we don't
+        # display even the request for a diff.
+        ds_diff = self.factory.makeDistroSeriesDifference(
+            difference_type=
+                (DistroSeriesDifferenceType.MISSING_FROM_DERIVED_SERIES))
+
+        view = create_initialized_view(ds_diff, '+listing-distroseries-extra')
+        soup = BeautifulSoup(view())
+        self.assertEqual(0, len(soup.findAll('dd', 'request-derived-diff')))
