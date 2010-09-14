@@ -304,8 +304,7 @@ class ExecOnlySession(DoNothingSession):
         except ForbiddenCommand, e:
             self.errorWithMessage(protocol, str(e) + '\r\n')
             return
-        log.msg('Running: %r, %r, %r'
-                % (executable, arguments, self.environment))
+        log.msg('Running: %r, %r' % (executable, arguments))
         if self._transport is not None:
             log.err(
                 "ERROR: %r already running a command on transport %r"
