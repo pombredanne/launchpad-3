@@ -143,7 +143,7 @@ class TestHasSpecificationsTemplates(TestCaseWithFactory):
         self._test_templates_for_configuration(
             target=product,
             context=product_series)
-        
+
     def test_distribution(self):
         distribution = self.factory.makeDistribution()
         self._test_templates_for_configuration(distribution)
@@ -162,8 +162,8 @@ class TestHasSpecificationsTemplates(TestCaseWithFactory):
         product2 = self.factory.makeProduct(project=project)
         self._test_templates_for_configuration(
             target=product1,
-            context=project
-        )
+            context=project)
+
 
 class TestHasSpecificationsConfiguration(TestCaseWithFactory):
 
@@ -180,7 +180,7 @@ class TestHasSpecificationsConfiguration(TestCaseWithFactory):
         view = create_initialized_view(product, '+specs')
         self.assertEqual(True, view.can_configure_blueprints)
 
-    def test_cannot_configure_blueprints_distribution_no_edit_permission(self):
+    def test_cant_configure_blueprints_distribution_no_edit_permission(self):
         distribution = self.factory.makeDistribution()
         view = create_initialized_view(distribution, '+specs')
         self.assertEqual(False, view.can_configure_blueprints)
@@ -191,7 +191,7 @@ class TestHasSpecificationsConfiguration(TestCaseWithFactory):
         view = create_initialized_view(distribution, '+specs')
         self.assertEqual(True, view.can_configure_blueprints)
 
-    def test_cannot_configure_blueprints_projectgroup_with_edit_permission(self):
+    def test_cannot_configure_blueprints_projectgroup(self):
         project_group = self.factory.makeProject()
         login_person(project_group.owner)
         view = create_initialized_view(project_group, '+specs')
