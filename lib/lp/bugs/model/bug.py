@@ -671,13 +671,13 @@ class Bug(SQLBase):
 
     @property
     def subscriptions(self):
-        """A list of `BugSubscriptions` for this bug."""
+        """The set of `BugSubscriptions` for this bug."""
         # XXX: kiko 2006-09-23: Why is subscriptions ordered by ID?
         results = Store.of(self).find(
             (Person, BugSubscription),
             BugSubscription.person_id == Person.id,
             BugSubscription.bug_id == self.id).order_by(BugSubscription.id)
-        return [subscription for subscriber, subscription in results]
+        return DecoratedResultSet(results, operator.itemgetter(1))
 
     def getDirectSubscriptions(self):
         """See `IBug`."""
