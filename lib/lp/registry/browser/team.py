@@ -807,21 +807,29 @@ class TeamMailingListModerationView(MailingListTeamBaseView):
         assert(self.mailing_list is not None), (
             'No mailing list: %s' % self.context.name)
 
-    @property
+    @cachedproperty
     def hold_count(self):
         """The number of message being held for moderator approval.
 
         :return: Number of message being held for moderator approval.
         """
-        return self.mailing_list.getReviewableMessages().count()
+        ## return self.mailing_list.getReviewableMessages().count()
+        # This looks like it would be more efficient, but it raises
+        # LocationError.
+        return self.held_messages.currentBatch().listlength
 
-    @property
+    @cachedproperty
     def held_messages(self):
         """All the messages being held for moderator approval.
 
         :return: Sequence of held messages.
         """
-        return self.mailing_list.getReviewableMessages()
+        results = self.mailing_list.getReviewableMessages()
+        navigator = BatchNavigator(results, self.request)
+        # Subclasses often set the singular and plural headings,
+        # but we can use the generic class too.
+        navigator.setHeadings('message', 'messages')
+        return navigator
 
     @action('Moderate', name='moderate')
     def moderate_action(self, action, data):
@@ -830,7 +838,7 @@ class TeamMailingListModerationView(MailingListTeamBaseView):
         # won't be in data.  Instead, get it out of the request.
         reviewable = self.hold_count
         disposed_count = 0
-        for message in self.held_messages:
+        for message in self.held_messages.currentBatch():
             action_name = self.request.form_ng.getOne(
                 'field.' + quote(message.message_id))
             # This essentially acts like a switch statement or if/elifs.  It

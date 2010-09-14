@@ -159,7 +159,6 @@ from canonical.launchpad.interfaces.emailaddress import (
     IEmailAddress,
     IEmailAddressSet,
     )
-from canonical.launchpad.interfaces.geoip import IRequestPreferredLanguages
 from canonical.launchpad.interfaces.gpghandler import (
     GPGKeyNotFoundError,
     IGPGHandler,
@@ -300,6 +299,7 @@ from lp.registry.interfaces.wikiname import (
     IWikiNameSet,
     )
 from lp.services.fields import LocationField
+from lp.services.geoip.interfaces import IRequestPreferredLanguages
 from lp.services.openid.adapters.openid import CurrentOpenIDEndPoint
 from lp.services.openid.browser.openiddiscovery import (
     XRDSContentNegotiationMixin,
