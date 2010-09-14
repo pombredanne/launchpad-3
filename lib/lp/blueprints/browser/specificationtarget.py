@@ -327,7 +327,7 @@ class HasSpecificationsView(LaunchpadView):
 
     @cachedproperty
     def specs_batched(self):
-        navigator = BatchNavigator(self.specs, self.request)
+        navigator = BatchNavigator(self.specs, self.request, size=500)
         navigator.setHeadings('specification', 'specifications')
         return navigator
 

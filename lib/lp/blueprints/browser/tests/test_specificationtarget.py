@@ -102,3 +102,11 @@ class TestHasSpecificationsView(TestCaseWithFactory):
         navigator = view.specs_batched
         self.assertEqual('specification', navigator._singular_heading)
         self.assertEqual('specifications', navigator._plural_heading)
+
+    def test_batch_size(self):
+        # Because +assignments is meant to provide an overview, we default to
+        # 500 as the default batch size.
+        person = self.factory.makePerson()
+        view = create_initialized_view(person, name='+assignments')
+        navigator = view.specs_batched
+        self.assertEqual(500, view.specs_batched.default_size)
