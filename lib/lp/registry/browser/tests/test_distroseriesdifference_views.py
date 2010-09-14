@@ -10,7 +10,10 @@ __metaclass__ = type
 from BeautifulSoup import BeautifulSoup
 from zope.component import getUtility
 
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
 from lp.registry.enum import DistroSeriesDifferenceType
 from lp.registry.interfaces.distroseriesdifference import IDistroSeriesDifferenceSource
 from lp.soyuz.enums import PackagePublishingStatus
@@ -25,7 +28,7 @@ from lp.testing.views import create_initialized_view
 
 class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def addSummaryToDifference(self, distro_series_difference):
         """Helper that adds binaries with summary info to the source pubs."""
@@ -92,14 +95,30 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         self.assertIs(None, ds_diff.source_pub)
         self.assertIs(None, view.summary)
 
-    def test_source_diff_rendering_no_diff(self):
+
+class DistroSeriesDifferenceTemplateTestCase(TestCaseWithFactory):
+
+    layer = LaunchpadFunctionalLayer
+
+    def number_of_request_diff_texts(self, html):
+        """Check that the html doesn't include the request diff text."""
+        soup = BeautifulSoup(html)
+        return len(soup.findAll('dd', 'request-derived-diff'))
+
+    def contains_one_link_to_diff(self, html, package_diff):
+        """Return whether the html contains a link to the diff content."""
+        soup = BeautifulSoup(html)
+        return 1 == len(soup.findAll(
+            'a', href=package_diff.diff_content.http_url))
+
+    def test_both_request_diff_texts_rendered(self):
         # An unlinked description of a potential diff is displayed when
         # no diff is present.
         ds_diff = self.factory.makeDistroSeriesDifference()
 
         view = create_initialized_view(ds_diff, '+listing-distroseries-extra')
-        soup = BeautifulSoup(view())
-        self.assertEqual(1, len(soup.findAll('dd', 'request-derived-diff')))
+        # Both diffs present simple text repr. of proposed diff.
+        self.assertEqual(2, self.number_of_request_diff_texts(view()))
 
     def test_source_diff_rendering_diff(self):
         # A linked description of the diff is displayed when
@@ -110,10 +129,11 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             ds_diff.package_diff = self.factory.makePackageDiff()
 
         view = create_initialized_view(ds_diff, '+listing-distroseries-extra')
-        soup = BeautifulSoup(view())
-        self.assertEqual(
-            1, len(soup.findAll(
-                'a', href=ds_diff.package_diff.diff_content.http_url)))
+        # The text for the parent diff remains, but the source package
+        # diff is now a link.
+        self.assertEqual(1, self.number_of_request_diff_texts(view()))
+        self.assertTrue(
+            self.contains_one_link_to_diff(view(), ds_diff.package_diff))
 
     def test_source_diff_rendering_no_source(self):
         # If there is no source pub for this difference, then we don't
@@ -123,5 +143,30 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
                 (DistroSeriesDifferenceType.MISSING_FROM_DERIVED_SERIES))
 
         view = create_initialized_view(ds_diff, '+listing-distroseries-extra')
-        soup = BeautifulSoup(view())
-        self.assertEqual(0, len(soup.findAll('dd', 'request-derived-diff')))
+        self.assertEqual(1, self.number_of_request_diff_texts(view()))
+
+    def test_parent_source_diff_rendering_diff(self):
+        # A linked description of the diff is displayed when
+        # it is present.
+        ds_diff = self.factory.makeDistroSeriesDifference()
+
+        with person_logged_in(ds_diff.derived_series.owner):
+            ds_diff.parent_package_diff = self.factory.makePackageDiff()
+
+        view = create_initialized_view(ds_diff, '+listing-distroseries-extra')
+        # The text for the source diff remains, but the parent package
+        # diff is now a link.
+        self.assertEqual(1, self.number_of_request_diff_texts(view()))
+        self.assertTrue(
+            self.contains_one_link_to_diff(
+                view(), ds_diff.parent_package_diff))
+
+    def test_parent_source_diff_rendering_no_source(self):
+        # If there is no source pub for this difference, then we don't
+        # display even the request for a diff.
+        ds_diff = self.factory.makeDistroSeriesDifference(
+            difference_type=
+                (DistroSeriesDifferenceType.UNIQUE_TO_DERIVED_SERIES))
+
+        view = create_initialized_view(ds_diff, '+listing-distroseries-extra')
+        self.assertEqual(1, self.number_of_request_diff_texts(view()))

@@ -23,7 +23,7 @@
     <dd tal:condition="context/parent_package_diff"
         tal:content="structure context/parent_package_diff/fmt:link">
       <a>link to a diff</a></dd>
-    <dd tal:condition="not: context/parent_package_diff">
+    <dd tal:condition="not: context/parent_package_diff" class="request-derived-diff">
       Base version to parent <span
           tal:replace="context/parent_source_version">1.2.3</span>
     </dd>
