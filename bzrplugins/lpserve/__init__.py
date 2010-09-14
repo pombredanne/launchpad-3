@@ -170,7 +170,7 @@ class LPForkingService(object):
         self._sockname = self._server_socket.getsockname()
         # self.host = self._sockname[0]
         self.port = self._sockname[1]
-        self._server_socket.listen(1)
+        self._server_socket.listen(5)
         self._server_socket.settimeout(self.SOCKET_TIMEOUT)
         trace.mutter('set socket timeout to: %s' % (self.SOCKET_TIMEOUT,))
 
@@ -184,7 +184,6 @@ class LPForkingService(object):
                 # self._prev_sigchld_handler may be 0 or 1, etc if the previous
                 # handling was IGNORE or DEFAULT, etc.
                 self._prev_sigchld_handler(signum, frm)
-            self._poll_children()
         finally:
             signal.signal(signal.SIGCHLD, self._handle_sigchld)
 
@@ -328,17 +327,24 @@ class LPForkingService(object):
             try:
                 conn, client_addr = self._server_socket.accept()
             except self._socket_timeout:
-                # Check on the children, and see if we think we should quit
-                # anyway
-                self._poll_children()
+                # Check on the children, etc.
+                pass
             except self._socket_error, e:
-                # we might get a EBADF here, any other socket errors
-                # should get logged.
-                if e.args[0] != errno.EBADF:
+                if e.args[0] == errno.EINTR:
+                    # EINTR just means we got a signal like SIGCHLD, poll and
+                    # try again
+                    pass
+                elif e.args[0] != errno.EBADF:
+                    # We can get EBADF here while we are shutting down
+                    # So we just ignore it for now
+                    pass
+                else:
+                    # Log any other failure mode
                     trace.warning("listening socket error: %s", e)
             else:
                 self.log(client_addr, 'connected')
                 self.serve_one_connection(conn, client_addr)
+            self._poll_children()
         trace.note('Shutting down. Waiting up to %.0fs for %d child processes'
                    % (self.WAIT_FOR_CHILDREN_TIMEOUT,
                       len(self._child_processes),))
@@ -577,13 +583,20 @@ register_command(cmd_launchpad_replay)
 
 libraries_to_preload = [
     'bzrlib.errors',
-    'bzrlib.smart',
-    'bzrlib.smart.server',
+    'bzrlib.repofmt.groupcompress_repo',
     'bzrlib.repository',
+    'bzrlib.smart',
+    'bzrlib.smart.protocol',
+    'bzrlib.smart.request',
+    'bzrlib.smart.server',
+    'bzrlib.smart.vfs',
+    'bzrlib.transport.local',
+    'bzrlib.transport.readonly',
     'lp.codehosting.bzrutils',
     'lp.codehosting.vfs',
     'lp.codehosting.vfs.branchfs',
     'lp.codehosting.vfs.branchfsclient',
+    'lp.codehosting.vfs.hooks',
     'lp.codehosting.vfs.transport',
     ]
 
