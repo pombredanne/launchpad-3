@@ -92,16 +92,13 @@ class BugSubscriptionFilter(Storm):
     structural_subscription = Reference(
         structural_subscription_id, "StructuralSubscription.id")
 
-    find_all_tags = Bool(
-        "find_all_tags", allow_none=False, default=False)
-    include_any_tags = Bool(
-        "include_any_tags", allow_none=False, default=False)
-    exclude_any_tags = Bool(
-        "exclude_any_tags", allow_none=False, default=False)
+    find_all_tags = Bool(allow_none=False, default=False)
+    include_any_tags = Bool(allow_none=False, default=False)
+    exclude_any_tags = Bool(allow_none=False, default=False)
 
-    other_parameters = Unicode("other_parameters")
+    other_parameters = Unicode()
 
-    description = Unicode("description")
+    description = Unicode()
 
 
 class BugSubscriptionFilterStatus(Storm):
