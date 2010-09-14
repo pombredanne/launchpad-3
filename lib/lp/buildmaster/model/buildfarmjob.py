@@ -420,7 +420,8 @@ class BuildFarmJobSet:
             # specific private builds to which they have access.
             origin.extend(left_join_archive)
             origin.append(LeftJoin(
-                TeamParticipation, TeamParticipation.teamID == Archive.ownerID))
+                TeamParticipation,
+                TeamParticipation.teamID == Archive.ownerID))
             extra_clauses.append(
                 Or(Coalesce(Archive.private, False) == False,
                    TeamParticipation.person == user))

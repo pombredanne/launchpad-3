@@ -21,13 +21,13 @@
       <div class="yui-g">
 
         <div id="status" class="yui-u first">
-	  <div class="portlet">
+          <div class="portlet">
             <div metal:use-macro="template/macros/status" />
           </div>
         </div>
 
         <div id="details" class="yui-u">
-	  <div class="portlet">
+          <div class="portlet">
             <div metal:use-macro="template/macros/details" />
           </div>
         </div>
@@ -50,17 +50,17 @@
     </tal:comment>
     <h2>Build details</h2>
     <p>Branch:
-	<tal:branch replace="structure context/branch/fmt:link">
-	  lp:foo/trunk
-	</tal:branch>
+     <tal:branch replace="structure context/branch/fmt:link">
+       lp:foo/trunk
+     </tal:branch>
     </p>
     <tal:targets tal:define="targets view/getTargets">
       <div tal:condition="targets">
         For import into:
         <ul>
-	  <li tal:repeat="target targets">
-	    <a tal:replace="structure target/fmt:link">gawk trunk series</a>
-	  </li>
+          <li tal:repeat="target targets">
+            <a tal:replace="structure target/fmt:link">gawk trunk series</a>
+          </li>
         </ul>
       </div>
       <div tal:condition="not:targets">
