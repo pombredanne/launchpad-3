@@ -13,6 +13,7 @@ from lp.blueprints.interfaces.specificationtarget import (
     ISpecificationTarget,
     )
 from lp.app.enums import ServiceUsage
+from lp.blueprints.browser.specificationtarget import HasSpecificationsView
 from lp.blueprints.publisher import BlueprintsLayer
 from lp.testing import (
     login_person,
@@ -103,54 +104,66 @@ class TestHasSpecificationsTemplates(TestCaseWithFactory):
     def setUp(self):
         super(TestHasSpecificationsTemplates, self).setUp()
         self.user = self.factory.makePerson()
-        self.product = self.factory.makeProduct()
-        self.naked_product = removeSecurityProxy(self.product)
         login_person(self.user)
 
-    def test_not_configured(self):
-        self.naked_product.blueprints_usage = ServiceUsage.UNKNOWN
-        view = create_view(
-            self.product,
-            '+specs',
-            layer=BlueprintsLayer,
-            principal=self.user)
-        self.assertEqual(
-            view.not_launchpad_template.filename,
-            view.template.filename)
+    def _test_templates_for_configuration(self, target, context=None):
+        if context is None:
+            context = target
+        naked_target = removeSecurityProxy(target)
+        test_configurations = [
+            ServiceUsage.UNKNOWN,
+            ServiceUsage.EXTERNAL,
+            ServiceUsage.NOT_APPLICABLE,
+            ServiceUsage.LAUNCHPAD,
+            ]
+        correct_templates = [
+            HasSpecificationsView.not_launchpad_template.filename,
+            HasSpecificationsView.not_launchpad_template.filename,
+            HasSpecificationsView.not_launchpad_template.filename,
+            HasSpecificationsView.default_template.filename,
+            ]
+        used_templates = list()
+        for config in test_configurations:
+            naked_target.blueprints_usage = config
+            view = create_view(
+                context,
+                '+specs',
+                layer=BlueprintsLayer,
+                principal=self.user)
+            used_templates.append(view.template.filename)
+        self.assertEqual(correct_templates, used_templates)
 
-    def test_external(self):
-        self.naked_product.blueprints_usage = ServiceUsage.EXTERNAL
-        view = create_view(
-            self.product,
-            '+specs',
-            layer=BlueprintsLayer,
-            principal=self.user)
-        self.assertEqual(
-            view.not_launchpad_template.filename,
-            view.template.filename)
+    def test_product(self):
+        product = self.factory.makeProduct()
+        self._test_templates_for_configuration(product)
 
-    def test_not_applicable(self):
-        self.naked_product.blueprints_usage = ServiceUsage.NOT_APPLICABLE
-        view = create_view(
-            self.product,
-            '+specs',
-            layer=BlueprintsLayer,
-            principal=self.user)
-        self.assertEqual(
-            view.not_launchpad_template.filename,
-            view.template.filename)
+    def test_product_series(self):
+        product = self.factory.makeProduct()
+        product_series = self.factory.makeProductSeries(product=product)
+        self._test_templates_for_configuration(
+            target=product,
+            context=product_series)
+        
+    def test_distribution(self):
+        distribution = self.factory.makeDistribution()
+        self._test_templates_for_configuration(distribution)
 
-    def test_on_launchpad(self):
-        self.naked_product.blueprints_usage = ServiceUsage.LAUNCHPAD
-        view = create_view(
-            self.product,
-            '+specs',
-            layer=BlueprintsLayer,
-            principal=self.user)
-        self.assertEqual(
-            view.default_template.filename,
-            view.template.filename)
+    def test_distroseries(self):
+        distribution = self.factory.makeDistribution()
+        distro_series = self.factory.makeDistroSeries(
+            distribution=distribution)
+        self._test_templates_for_configuration(
+            target=distribution,
+            context=distro_series)
 
+    def test_projectgroup(self):
+        project = self.factory.makeProject()
+        product1 = self.factory.makeProduct(project=project)
+        product2 = self.factory.makeProduct(project=project)
+        self._test_templates_for_configuration(
+            target=product1,
+            context=project
+        )
 
 class TestHasSpecificationsConfiguration(TestCaseWithFactory):
 

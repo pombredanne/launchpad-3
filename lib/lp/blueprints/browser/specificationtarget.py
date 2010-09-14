@@ -138,6 +138,7 @@ class HasSpecificationsView(LaunchpadView):
     is_project = False
     is_series = False
     is_sprint = False
+    has_wiki = False
     has_drivers = False
 
     # Templates for the various conditions of blueprints:
@@ -167,11 +168,15 @@ class HasSpecificationsView(LaunchpadView):
             return self.default_template
 
         # ProjectGroups are a special case, as their products may be a
-        # combination of usage settings. Use the default, since it handles
-        # fetching anything that's set for ProjectGroups, and it's not correct
-        # to say anything about the ProjectGroup's usage.
+        # combination of usage settings. To deal with this, check all
+        # products, and if a product has LAUNCHPAD for the enum, the
+        # group does; if not, assume external.
         if IProjectGroup.providedBy(self.context):
-            return self.default_template
+            for product in self.context.products:
+                if service_uses_launchpad(product.blueprints_usage):
+                    return self.default_template
+            else:
+                return self.not_launchpad_template
 
         # Otherwise, determine usage and provide the correct template.
         service_usage = IServiceUsage(self.context)
@@ -188,14 +193,19 @@ class HasSpecificationsView(LaunchpadView):
     def initialize(self):
         if IPerson.providedBy(self.context):
             self.is_person = True
-        elif (IDistribution.providedBy(self.context) or
-              IProduct.providedBy(self.context)):
+        elif IDistribution.providedBy(self.context):
             self.is_target = True
             self.is_pillar = True
+            self.show_series = True
+        elif IProduct.providedBy(self.context):
+            self.is_target = True
+            self.is_pillar = True
+            self.has_wiki = True
             self.show_series = True
         elif IProjectGroup.providedBy(self.context):
             self.is_project = True
             self.is_pillar = True
+            self.has_wiki = True
             self.show_target = True
             self.show_series = True
         elif IProjectGroupSeries.providedBy(self.context):
