@@ -256,6 +256,14 @@ class IBuildFarmJob(IBuildFarmJobOld):
 
     was_built = Attribute("Whether or not modified by the builddfarm.")
 
+    # This doesn't belong here.  It really belongs in IPackageBuild, but
+    # the TAL assumes it can read this directly.
+    dependencies = exported(
+        TextLine(
+            title=_('Dependencies'), required=False,
+            description=_('Debian-like dependency line that must be satisfied'
+                          ' before attempting to build this request.')))
+
 
 class ISpecificBuildFarmJob(IBuildFarmJob):
     """A marker interface with which to define adapters for IBuildFarmJob.

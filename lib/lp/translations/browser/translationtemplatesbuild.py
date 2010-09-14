@@ -14,59 +14,50 @@ from zope.component import getUtility
 
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.tales import DateTimeFormatterAPI
-from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.productseries import IProductSeriesSet
-from lp.services.propertycache import cachedproperty
+from lp.translations.model.translationtemplatesbuildjob import (
+    HARDCODED_TRANSLATIONTEMPLATESBUILD_SCORE,
+    )
 
 
 class TranslationTemplatesBuildView(LaunchpadView):
+    """View for `TranslationTemplatesBuild`."""
 
     def getTargets(self):
+        """`ProducSeries` that will consume the generated templates."""
         utility = getUtility(IProductSeriesSet)
-        return utility.findByTranslationsImportBranch(self.context.branch)
+        return list(
+            utility.findByTranslationsImportBranch(self.context.branch))
 
-    @property
-    def status(self):
-        return self.context.status
-
-    def isBuilding(self):
-        return self.status == BuildStatus.BUILDING
-
-    @cachedproperty
-    def current_builder(self):
-        if self.isBuilding():
-            return self.context.buildqueue.builder
-        else:
-            return self.context.builder
-
-    def getDispatchTime(self):
-        if self.context.was_built:
-            return self.context.buildqueue_record.job.date_started
-        elif self.context.date_started is not None:
-            return self.context.date_started
-        elif self.context.buildqueue_record is not None:
-            return self.context.buildqueue_record.getEstimatedJobStartTime()
-        else:
-            return None
-
-    def _composeTimeText(self, time, preamble=''):
-        if time is None:
-            return None
+    def _renderTime(self, time):
+        """Represent `time` as HTML."""
         formatter = DateTimeFormatterAPI(time)
-        return '%s <span title="%s">%s</span>' % (
-            preamble, formatter.datetime(), formatter.approximatedate())
+        return """<span title="%s">%s</span>""" % (
+            formatter.datetime(), formatter.approximatedate())
 
-    def composeDispatchTimeText(self):
+    def initalize(self):
+        """See `LaunchpadView`."""
+        self.last_score = HARDCODED_TRANSLATIONTEMPLATESBUILD_SCORE
+
+    def renderDispatchTime(self):
+        """Give start-time information for this build, as HTML."""
+        # Once we do away with BuildQueue, and the relevant information
+        # is moved into the new model, we'll be able to give estimated
+        # start times as well.
         if self.context.date_started is None:
-            preamble = "Start"
+            return "Not started yet."
         else:
-            preamble = "Started"
+            return "Started " + self._renderTime(self.context.date_started)
 
-        return self._composeTimeText(self.getDispatchTime(), preamble)
-
-    def composeFinishTimeText(self):
-        return self._composeTimeText(self.context.date_finished, "Finished")
-
-    @cachedproperty
-    def last_score(self):
-        return self.context.buildqueue.lastscore
+    def renderFinishTime(self):
+        """Give completion time information for this build, as HTML."""
+        # Once we do away with BuildQueue, and the relevant information
+        # is moved into the new model, we'll be able to give estimated
+        # completion times as well.
+        if self.context.date_finished is None:
+            if self.context.date_started is None:
+                return ''
+            else:
+                return "Not finished yet."
+        else:
+            return "Finished " + self._renderTime(self.context.date_finished)

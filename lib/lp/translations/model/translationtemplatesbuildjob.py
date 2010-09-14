@@ -3,6 +3,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'HARDCODED_TRANSLATIONTEMPLATESBUILD_SCORE',
     'TranslationTemplatesBuildJob',
     ]
 
@@ -47,6 +48,9 @@ from lp.translations.interfaces.translationtemplatesbuildjob import (
 from lp.translations.pottery.detect_intltool import is_intltool_structure
 
 
+HARDCODED_TRANSLATIONTEMPLATESBUILD_SCORE = 2510
+
+
 class TranslationTemplatesBuildJob(BuildFarmJobOldDerived, BranchJobDerived):
     """An `IBuildFarmJob` implementation that generates templates.
 
@@ -76,7 +80,7 @@ class TranslationTemplatesBuildJob(BuildFarmJobOldDerived, BranchJobDerived):
         # Hard-code score for now.  Most PPA jobs start out at 2505;
         # TranslationTemplateBuildJobs are fast so we want them at a
         # higher priority.
-        return 2510
+        return HARDCODED_TRANSLATIONTEMPLATESBUILD_SCORE
 
     def getLogFileName(self):
         """See `IBuildFarmJob`."""

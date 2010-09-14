@@ -378,6 +378,8 @@ class BuildFarmJobDerived:
     implements(IBuildFarmJob)
     delegates(IBuildFarmJob, context='build_farm_job')
 
+    dependencies = None
+
 
 class BuildFarmJobSet:
     implements(IBuildFarmJobSet)

@@ -59,7 +59,7 @@
         For import into:
         <ul>
 	  <li tal:repeat="target targets">
-	    <a tal:replace="target/fmt:link">gawk trunk series</a>
+	    <a tal:replace="structure target/fmt:link">gawk trunk series</a>
 	  </li>
         </ul>
       </div>
@@ -78,8 +78,8 @@
       <span tal:replace="structure context/image:icon" />
       <span tal:attributes="
             class string:buildstatus${context/status/name};"
-            tal:content="view/status/title">Fully built</span>
-      <tal:building define="builder view/current_builder"
+            tal:content="context/status/title">Fully built</span>
+      <tal:building define="builder context/builder"
                     condition="builder">
         on <a tal:content="builder/title"
               tal:attributes="href builder/fmt:url"/>
@@ -87,12 +87,12 @@
     </p>
 
     <ul>
-      <li tal:define="time view/composeDispatchTimeText"
+      <li tal:define="time view/renderDispatchTime"
           tal:condition="time"
           tal:content="structure time">
           Started 5 minutes ago
       </li>
-      <li tal:define="time view/composeFinishTimeText"
+      <li tal:define="time view/renderFinishTime"
           tal:condition="time"
           tal:content="structure time">
         Finished 30 seconds ago
@@ -100,7 +100,7 @@
           (took <span tal:replace="duration/fmt:exactduration" />)
         </tal:duration>
       </li>
-      
+
       <li tal:define="file context/log"
           tal:condition="file">
         <a class="sprite download"
