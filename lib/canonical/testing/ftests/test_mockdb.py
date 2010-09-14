@@ -42,7 +42,7 @@ class MockDbTestCase(unittest.TestCase):
         for con in self.connections:
             try:
                 con.close()
-            except:
+            except Exception:
                 pass
         self.connections = []
 

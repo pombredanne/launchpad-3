@@ -164,7 +164,8 @@ def determineArchitecturesToBuild(pubrec, legal_archseries,
         if not legal_archseries:
             return []
 
-    legal_arch_tags = set(arch.architecturetag for arch in legal_archseries)
+    legal_arch_tags = set(
+        arch.architecturetag for arch in legal_archseries if arch.enabled)
 
     # We need to support arch tags like any-foo and linux-foo, so remove
     # supported kernel prefixes, Also allow linux-any but not any-any.

@@ -532,9 +532,12 @@ COMMENT ON COLUMN DistributionSourcePackageCache.archive IS 'The archive where t
 COMMENT ON TABLE DistroSeriesDifference IS 'A difference of versions for a package in a derived distroseries and its parent distroseries.';
 COMMENT ON COLUMN DistroSeriesDifference.derived_series IS 'The derived distroseries with the difference from its parent.';
 COMMENT ON COLUMN DistroSeriesDifference.source_package_name IS 'The name of the source package which is different in the two series.';
-COMMENT ON COLUMN DistroSeriesDifference.package_diff IS 'The most recent package diff that was created for this difference.';
+COMMENT ON COLUMN DistroSeriesDifference.package_diff IS 'The most recent package diff that was created for the base version to derived version.';
+COMMENT ON COLUMN DistroSeriesDifference.parent_package_diff IS 'The most recent package diff that was created for the base version to the parent version.';
 COMMENT ON COLUMN DistroSeriesDifference.status IS 'A distroseries difference can be needing attention, ignored or resolved.';
 COMMENT ON COLUMN DistroSeriesDifference.difference_type IS 'The type of difference that this record represents - a package unique to the derived series, or missing, or in both.';
+COMMENT ON COLUMN DistroSeriesDifference.source_version IS 'The version of the package in the derived series.';
+COMMENT ON COLUMN DistroSeriesDifference.parent_source_version IS 'The version of the package in the parent series.';
 
 -- DistroSeriesDifferenceMessage
 COMMENT ON TABLE DistroSeriesDifferenceMessage IS 'A message/comment on a distro series difference.';
@@ -1171,6 +1174,7 @@ COMMENT ON COLUMN DistroArchSeries.official IS 'Whether or not this architecture
 COMMENT ON COLUMN DistroArchSeries.package_count IS 'A cache of the number of binary packages published in this distro arch release. The count only includes packages published in the release pocket.';
 COMMENT ON COLUMN DistroArchSeries.supports_virtualized IS 'Whether or not
 virtualized build support should be provided by this specific distroarchseries';
+COMMENT ON COLUMN DistroArchSeries.enabled IS 'Whether to allow build creation and publishing for this DistroArchSeries.';
 
 -- LauncpadDatabaseRevision
 COMMENT ON TABLE LaunchpadDatabaseRevision IS 'This table contains a list of the database patches that have been successfully applied to this database.';
@@ -1268,6 +1272,14 @@ COMMENT ON COLUMN PersonNotification.body IS 'The textual body of the notificati
 COMMENT ON COLUMN PersonNotification.subject IS 'The subject of the mail to be sent.';
 COMMENT ON COLUMN PersonNotification.date_emailed IS 'When this notification was emailed to the relevant people.';
 
+-- PersonTransferJob
+
+COMMENT ON TABLE PersonTransferJob IS 'Contains references to jobs for adding team members or merging person entries.';
+COMMENT ON COLUMN PersonTransferJob.job IS 'A reference to a row in the Job table that has all the common job details.';
+COMMENT ON COLUMN PersonTransferJob.job_type IS 'The type of job, like add-member notification or merge persons.';
+COMMENT ON COLUMN PersonTransferJob.json_data IS 'Data that is specific to the type of job, normally stores text to append to email notifications.';
+COMMENT ON COLUMN PersonTransferJob.minor_person IS 'The person that is being added is a new member or being merged into another person.';
+COMMENT ON COLUMN PersonTransferJob.major_person IS 'The team receiving a new member or the person that another person is merged into.';
 
 -- Bounty
 COMMENT ON TABLE Bounty IS 'A set of bounties for work to be done by the open source community. These bounties will initially be offered only by Canonical, but later we will create the ability for people to offer the bounties themselves, using us as a clearing house.';
@@ -1931,6 +1943,14 @@ COMMENT ON COLUMN ShipItReport.csvfile IS 'A csv file with the report';
 COMMENT ON TABLE Continent IS 'A continent in this huge world.';
 COMMENT ON COLUMN Continent.code IS 'A two-letter code for a continent.';
 COMMENT ON COLUMN Continent.name IS 'The name of the continent.';
+
+-- DistributionJob
+
+COMMENT ON TABLE DistributionJob IS 'Contains references to jobs to be run on distributions.';
+COMMENT ON COLUMN DistributionJob.distribution IS 'The distribution to be acted on.';
+COMMENT ON COLUMN DistributionJob.distroseries IS 'The distroseries to be acted on.';
+COMMENT ON COLUMN DistributionJob.job_type IS 'The type of job';
+COMMENT ON COLUMN DistributionJob.json_data IS 'A JSON struct containing data for the job.';
 
 -- DistributionMirror
 COMMENT ON TABLE DistributionMirror IS 'A mirror of a given distribution.';
