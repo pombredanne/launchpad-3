@@ -518,41 +518,39 @@ class LaunchpadRootNavigation(Navigation):
         'foo' can be the unique name of the branch, or any of the aliases for
         the branch.
         If 'foo' resolves to an ICanHasLinkedBranch instance but the linked
-        branch is not yet set, then redirect to the ICanHasLinkedBranch
-        instance instead.
+        branch is not yet set, redirect back to the referring page with a
+        suitable notification message.
         If 'foo' is completely invalid, redirect back to the referring page
         with a suitable error message.
         """
+
+        # The default url to go to will be back to the referring page (in
+        # the case that there is an error resolving the branch url)
+        url = self.request.getHeader('referer')
         path = '/'.join(self.request.stepstogo)
-        target = branch = trailing = None
         try:
             # first check for a valid branch url
             try:
                 branch_data = getUtility(IBranchLookup).getByLPPath(path)
                 branch, trailing = branch_data
+                url = canonical_url(branch)
+                if trailing is not None:
+                    url = urlappend(url, trailing)
+
             except (NoLinkedBranch):
                 # a valid ICanHasLinkedBranch target exists but there's no
-                # branch or it's not visible, so get the target instead
-                target = getUtility(ILinkedBranchTraverser).traverse(path)
-                userMessage = (
-                    "The requested branch does not exist. "
-                    "You have landed at lp:%s instead." % path)
-                self.request.response.addNotification(userMessage)
+                # branch or it's not visible
+                self.request.response.addNotification(
+                    "The target %s does not have a linked branch." % path)
 
         except (CannotHaveLinkedBranch, InvalidNamespace,
                 InvalidProductName, NotFoundError) as e:
-            self.request.response.addErrorNotification(
-                    "Invalid branch lp:%s. %s" % (path, e.message))
+            msg = "Invalid branch lp:%s." % path
+            exception_msg = str(e)
+            if len(exception_msg)>0:
+                msg += " %s" % exception_msg
+            self.request.response.addErrorNotification(msg)
 
-        if branch is not None:
-            url = canonical_url(branch)
-        elif target is not None:
-            url = canonical_url(target, rootsite='mainsite')
-        else:
-            url = self.request.getHeader('referer')
-
-        if trailing is not None:
-            url = urlappend(url, trailing)
         return self.redirectSubTree(url)
 
     @stepto('+builds')

@@ -71,7 +71,7 @@ class LibrarianStorageDBTests(unittest.TestCase):
         fileid, aliasid = newfile.store()
 
         # Check that its alias has the right mimetype
-        fa = self.storage.getFileAlias(aliasid)
+        fa = self.storage.getFileAlias(aliasid, None, '/')
         self.assertEqual('text/unknown', fa.mimetype)
 
         # Re-add the same file, with the same name and mimetype...
@@ -81,7 +81,8 @@ class LibrarianStorageDBTests(unittest.TestCase):
         fileid2, aliasid2 = newfile2.store()
 
         # Verify that we didn't get back the same alias ID
-        self.assertNotEqual(fa.id, self.storage.getFileAlias(aliasid2).id)
+        self.assertNotEqual(fa.id,
+            self.storage.getFileAlias(aliasid2, None, '/').id)
 
     def test_clientProvidedDuplicateIDs(self):
         # This test checks the new behaviour specified by LibrarianTransactions

@@ -1,8 +1,7 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Tests for traversal from the root branch object.."""
-from canonical.launchpad.webapp.interfaces import BrowserNotificationLevel
+"""Tests for traversal from the root branch object."""
 
 __metaclass__ = type
 
@@ -16,6 +15,7 @@ from canonical.launchpad.browser.launchpad import LaunchpadRootNavigation
 from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp.interfaces import BrowserNotificationLevel
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.launchpad.webapp.url import urlappend
 from canonical.testing.layers import DatabaseFunctionalLayer
@@ -57,7 +57,7 @@ class TraversalMixin:
         self.assertEqual(len(notifications), 1)
         self.assertEquals(notifications[0].level, level)
 
-        self.assertEqual(notification, notifications[0].message.rstrip(' '))
+        self.assertEqual(notification, notifications[0].message)
 
     def assertDisplaysNotification(
         self, path, notification=None,
@@ -82,15 +82,9 @@ class TraversalMixin:
     def assertNotFound(self, path):
         self.assertRaises(NotFound, self.traverse, path)
 
-    def assertRedirects(
-        self, segments, url, notification=None,
-        level=BrowserNotificationLevel.INFO):
-
+    def assertRedirects(self, segments, url):
         redirection = self.traverse(segments)
         self.assertEqual(url, redirection.target)
-        self._validateNotificationContext(
-            redirection.request, notification=notification,
-            level=level)
 
     def traverse(self, path, first_segment):
         """Traverse to 'segments' using a 'LaunchpadRootNavigation' object.
@@ -172,11 +166,10 @@ class TestBranchTraversal(TestCaseWithFactory, TraversalMixin):
 
         any_user = self.factory.makePerson()
         login_person(any_user)
-        requiredMessage = (u"The requested branch does not exist. "
-            "You have landed at lp:%s instead." % product.name)
-        self.assertRedirects(
+        requiredMessage = (u"The target %s does not have a linked branch."
+            % product.name)
+        self.assertDisplaysNotification(
             product.name,
-            canonical_url(product),
             requiredMessage,
             BrowserNotificationLevel.NOTICE)
 
@@ -193,12 +186,11 @@ class TestBranchTraversal(TestCaseWithFactory, TraversalMixin):
         # Traversing to a product without a development focus displays a
         # user message on the same page.
         product = self.factory.makeProduct()
-        requiredMessage = (u"The requested branch does not exist. "
-            "You have landed at lp:%s instead." % product.name)
+        requiredMessage = (u"The target %s does not have a linked branch."
+            % product.name)
 
-        self.assertRedirects(
+        self.assertDisplaysNotification(
             product.name,
-            canonical_url(product),
             requiredMessage,
             BrowserNotificationLevel.NOTICE)
 
@@ -235,14 +227,12 @@ class TestBranchTraversal(TestCaseWithFactory, TraversalMixin):
 
         any_user = self.factory.makePerson()
         login_person(any_user)
-        requiredMessage = (u"The requested branch does not exist. "
-            "You have landed at lp:%s/%s instead."
+        requiredMessage = (u"The target %s/%s does not have a linked branch."
             % (distro_package.distribution.name,
-               distro_package.sourcepackagename.name))
-        self.assertRedirects(
+            distro_package.sourcepackagename.name))
+        self.assertDisplaysNotification(
             "%s/%s" % (distro_package.distribution.name,
                        distro_package.sourcepackagename.name),
-            canonical_url(distro_package),
             requiredMessage,
             BrowserNotificationLevel.NOTICE)
 
@@ -280,13 +270,11 @@ class TestBranchTraversal(TestCaseWithFactory, TraversalMixin):
         # If there's no branch for a product series, navigate to the
         # product series instead.
         series = self.factory.makeProductSeries()
-        requiredMessage = ("The requested branch does not exist. "
-            "You have landed at lp:%s/%s instead."
+        requiredMessage = ("The target %s/%s does not have a linked branch."
             % (series.product.name, series.name))
 
-        self.assertRedirects(
+        self.assertDisplaysNotification(
             '%s/%s' % (series.product.name, series.name),
-            canonical_url(series),
             requiredMessage,
             BrowserNotificationLevel.NOTICE)
 
@@ -301,12 +289,10 @@ class TestBranchTraversal(TestCaseWithFactory, TraversalMixin):
 
         any_user = self.factory.makePerson()
         login_person(any_user)
-        requiredMessage = (u"The requested branch does not exist. "
-            "You have landed at lp:%s/%s instead."
+        requiredMessage = (u"The target %s/%s does not have a linked branch."
             % (product.name, series.name))
-        self.assertRedirects(
+        self.assertDisplaysNotification(
             "%s/%s" % (product.name, series.name),
-            canonical_url(series),
             requiredMessage,
             BrowserNotificationLevel.NOTICE)
 
@@ -325,7 +311,7 @@ class TestBranchTraversal(TestCaseWithFactory, TraversalMixin):
         # error notification if the thing following +branch has an invalid
         # product name.
         self.assertDisplaysNotification(
-            'a', u"Invalid branch lp:%s." % 'a',
+            'a', u"Invalid branch lp:a. Invalid name for product: a.",
             BrowserNotificationLevel.ERROR)
 
 

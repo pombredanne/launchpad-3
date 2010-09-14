@@ -8,7 +8,6 @@ __all__ = []
 
 import transaction
 from zope.component import getUtility
-from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.windmill.testing import lpuser
@@ -18,6 +17,7 @@ from canonical.launchpad.windmill.testing.constants import (
     SLEEP,
     )
 from canonical.launchpad.windmill.testing.lpuser import login_person
+from lp.app.enums import ServiceUsage
 from lp.testing import WindmillTestCase
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue,
@@ -41,8 +41,8 @@ class ImportQueueEntryTest(WindmillTestCase):
             'field.potemplate',
             'field.potemplate_name',
             'field.language',
-            ]
-    }
+            ],
+        }
     SELECT_FIELDS = [
         'field.potemplate',
         'field.language',
@@ -55,8 +55,7 @@ class ImportQueueEntryTest(WindmillTestCase):
             input_tag = 'input'
         return (
             u"//tr[contains(@class,'unseen')]"
-            u"//%s[@id='%s']" % (input_tag, field_id)
-                )
+            u"//%s[@id='%s']" % (input_tag, field_id))
 
     def _assertAllFieldsVisible(self, client, fields):
         """Assert that all given fields are visible.
@@ -279,8 +278,9 @@ class ImportQueueStatusTest(WindmillTestCase):
             name="hubert", displayname="Hubert Hunt", password="test",
             email="hubert@example.com")
         # Create a project and an import entry with it.
-        product = self.factory.makeProduct(owner=hubert)
-        removeSecurityProxy(product).official_rosetta = True
+        product = self.factory.makeProduct(
+            owner=hubert,
+            translations_usage=ServiceUsage.LAUNCHPAD)
         productseries = product.getSeries('trunk')
         queue = getUtility(ITranslationImportQueue)
         potemplate = self.factory.makePOTemplate(productseries=productseries)
