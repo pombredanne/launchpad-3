@@ -6,6 +6,7 @@
 __metaclass__ = type
 __all__ = ['BugSubscription']
 
+import pytz
 from storm.base import Storm
 from storm.locals import (
     DateTime,
@@ -42,7 +43,8 @@ class BugSubscription(Storm):
         default=BugNotificationLevel.COMMENTS,
         allow_none=False)
 
-    date_created = DateTime(allow_none=False, default=UTC_NOW)
+    date_created = DateTime(
+        allow_none=False, default=UTC_NOW, tzinfo=pytz.UTC)
 
     subscribed_by_id = Int(
         "subscribed_by", allow_none=False, validator=validate_person)
