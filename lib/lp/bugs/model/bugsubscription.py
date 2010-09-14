@@ -126,3 +126,16 @@ class BugSubscriptionFilterImportance(Storm):
     filter = Reference(filter_id, "BugSubscriptionFilter.id")
 
     importance = DBEnum(enum=BugTaskImportance, allow_none=False)
+
+
+class BugSubscriptionFilterTag(Storm):
+
+    __storm_table__ = "BugSubscriptionFilterTag"
+
+    id = Int(primary=True)
+
+    filter_id = Int("filter", allow_none=False)
+    filter = Reference(filter_id, "BugSubscriptionFilter.id")
+
+    include = Bool(allow_none=False)
+    tag = Unicode(allow_none=False)
