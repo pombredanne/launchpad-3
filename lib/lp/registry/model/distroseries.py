@@ -1801,28 +1801,38 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 self, format) is not None
 
     def deriveDistroSeries(
-        self, user, name, displayname, summary, description, version,
-        distribution, state, arches, packagesets):
+        self, user, name, distribution=None, displayname=None,
+        summary=None, description=None, version=None,
+        status=SeriesStatus.FROZEN, arches=(), packagesets=()):
         """See `IDistroSeries`."""
-        # Check the user
-        child = getUtility(IDistroSeriesSet).findByName(
-            distro_series_name_or_version)
-        child_distribution = getUtility(IDistributionSet).findByName(
-            distribution)
-        if child_distribution is None:
-            child_distribution = self.distribution
+        if not user.inTeam('soyuz-team'):
+            raise Unauthorized
+        #if self.distribution is ubuntu and not user.in_tech_board
+        #elsif not user a driver
+        child = IStore(self).find(DistroSeries, name=name).one()
         if child is None:
             print "Create distroseries"
+            if distribution is None:
+                distribution = self.distribution
+            # Check specified here
             child = getUtility(IDistroSeriesSet).new(
-                name=distro_series_name_or_version,
+                name=name, displayname=displayname, summary=summary,
+                description=description, version=version,
                 distribution=child_distribution,
+                status=status,
                 parent=self)
+        else:
+            if child.parent_series is not self:
+                raise InitialisationError, (
+                    "DistroSeries %s parent series isn't %s" % (
+                        child.name, self.name))
         ids = InitialiseDistroSeries(self)
         try:
             ids.check()
         except InitialisationError, e:
             print e
-        job = getUtility(IInitialiseDistroSeriesJobSource).create(child)
+        job = getUtility(IInitialiseDistroSeriesJobSource).create(
+            child, arches, packagesets)
         return job.id
 
 

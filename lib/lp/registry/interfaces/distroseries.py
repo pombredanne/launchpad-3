@@ -814,7 +814,7 @@ class IDistroSeriesPublic(
         distribution=TextLine(
             title=_(""),
             required=False),
-        state=TextLine(
+        status=TextLine(
             title=_(""),
             required=False),
         arches=TextLine( # should be List
@@ -828,7 +828,7 @@ class IDistroSeriesPublic(
     @export_write_operation()
     def deriveDistroSeries(
         user, name, displayname, summary, description, version,
-        distribution, state, arches, packagesets):
+        distribution, status, arches, packagesets):
         """Derive a distroseries from this one.
         
         This method performs checks, can create the new distroseries if
@@ -849,9 +849,9 @@ class IDistroSeriesPublic(
         :param distribution: The distribution the derived series will
             belong to. If it isn't specified this distroseries'
             distribution is used.
-        :param state: The state the new distroseries will be created in.
-            If the distroseries isn't specified, this parameter will be
-            ignored. Defaults to FROZEN.
+        :param status: The status the new distroseries will be created
+            in. If the distroseries isn't specified, this parameter will
+            be ignored. Defaults to FROZEN.
         :param arches: The architectures to copy to the derived series.
             If not specified, all of the arches are copied.
         :param packagesets: The packagesets to copy to the derived series.
