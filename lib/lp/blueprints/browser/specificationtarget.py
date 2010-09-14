@@ -16,7 +16,10 @@ __all__ = [
 from operator import itemgetter
 
 from z3c.ptcompat import ViewPageTemplateFile
-from zope.component import queryMultiAdapter
+from zope.component import (
+    getMultiAdapter,
+    queryMultiAdapter,
+    )
 
 from canonical.config import config
 from canonical.launchpad import _
@@ -171,12 +174,13 @@ class HasSpecificationsView(LaunchpadView):
         # combination of usage settings. To deal with this, check all
         # products, and if a product has LAUNCHPAD for the enum, the
         # group does; if not, assume external.
-        if IProjectGroup.providedBy(self.context):
-            for product in self.context.products:
-                if service_uses_launchpad(product.blueprints_usage):
-                    return self.default_template
-            else:
-                return self.not_launchpad_template
+        involvement = getMultiAdapter(
+            (self.context, self.request),
+            name='+get-involved')
+        if service_uses_launchpad(involvement.blueprints_usage):
+            return self.default_template
+        else:
+            return self.not_launchpad_template
 
         # Otherwise, determine usage and provide the correct template.
         service_usage = IServiceUsage(self.context)
