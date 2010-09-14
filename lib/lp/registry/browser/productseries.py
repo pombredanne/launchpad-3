@@ -298,7 +298,8 @@ class ProductSeriesOverviewMenu(
         text = 'Configure bug tracker'
         summary = 'Specify where bugs are tracked for this project'
         return Link(
-            canonical_url(self.context.product) + '/+configure-bugtracker',
+            canonical_url(self.context.product,
+                          view_name='+configure-bugtracker'),
             text, summary, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')

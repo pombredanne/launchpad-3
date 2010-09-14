@@ -19,8 +19,8 @@ not use Launchpad for bug tracking.
     >>> anon_browser.open('http://bugs.launchpad.dev/test-project')
     >>> uses_malone_p = find_tag_by_id(anon_browser.contents, 'no-malone')
     >>> print extract_text(uses_malone_p)
-    Launchpad does not know where to forward bug reports to contact the
-    developers of Simple Test Project.
+    Test-project must be configured in order for Launchpad to forward bugs to
+    the project's developers.
 
 Only users who have permission to do so can enable bug tracking
 for a project.
@@ -54,7 +54,7 @@ bugs have been filed.
     >>> bug_list = find_tag_by_id(
     ...     anon_browser.contents, 'no-bugs-filed')
     >>> print extract_text(bug_list)
-    There are currently no bugs filed against Project Uses Malone.
+    There are currently no bugs filed against Uses-malone.
 
 Since there are no bugs at all filed for the project, no search box is
 shown.
@@ -101,7 +101,7 @@ and we see a message "no hot bugs" instead of the bug listing.
     >>> bug_list = find_tag_by_id(
     ...     anon_browser.contents, 'no-bugs-filed')
     >>> print extract_text(bug_list)
-    There are currently no open bugs filed against Project Uses Malone.
+    There are currently no open bugs filed against Uses-malone.
 
 But since the project has a bug, the search box is still visible.
 
@@ -138,5 +138,5 @@ be reported on the project's source packages.
     >>> anon_browser.open('http://bugs.launchpad.dev/test-project')
     >>> print extract_text(
     ...     find_tag_by_id(anon_browser.contents, 'also-in-ubuntu'))
-    Launchpad also keeps track of bug reports for
+    Ubuntu also tracks bugs for packages derived from this project:
     test-project-package in ubuntu.
