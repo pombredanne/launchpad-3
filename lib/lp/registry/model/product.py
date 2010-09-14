@@ -17,6 +17,7 @@ import datetime
 import operator
 
 from lazr.delegates import delegates
+from lazr.restful.error import expose
 import pytz
 from sqlobject import (
     BoolCol,
@@ -276,6 +277,13 @@ class ProductWithLicenses:
                 tables=[ProductLicense]))
 
 
+class UnDeactivateable(Exception):
+    """Raised when a project is requested to deactivate but can not."""
+
+    def __init__(self, msg):
+        super(UnDeactivateable, self).__init__(msg)
+
+
 class Product(SQLBase, BugTargetBase, MakesAnnouncements,
               HasSpecificationsMixin, HasSprintsMixin,
               KarmaContextMixin, BranchVisibilityPolicyMixin,
@@ -445,9 +453,9 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         # Validate deactivation.
         if self.active == True and value == False:
             if len(self.sourcepackages) > 0:
-                raise AssertionError(
+                raise expose(UnDeactivateable(
                     'This project cannot be deactivated since it is '
-                    'linked to source packages.')
+                    'linked to source packages.'))
         return value
 
     active = BoolCol(dbName='active', notNull=True, default=True,
