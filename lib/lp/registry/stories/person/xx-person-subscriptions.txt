@@ -32,13 +32,13 @@ subscriptions and includes the bug number, title and location.
     Launchpad
     5
     Firefox install instructions should be complete
-    mozilla-firefox (Ubuntu Warty)
+    ...
     4
     Reflow problems with complex page layouts
     Mozilla Firefox
     2
     Blackhole Trash folder
-    mozilla-firefox (Debian Woody)
+    ...
     9
     Thunderbird crashes
     thunderbird (Ubuntu)
@@ -47,10 +47,9 @@ subscriptions and includes the bug number, title and location.
 The bug subscriptions table also includes an unsubscribe link for bugs to
 which the person or team is subscribed.
 
-    >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
-    >>> browser.open('http://launchpad.dev/~name12/+subscriptions')
-    >>> unsub_link = browser.getLink(
+    >>> user_browser.open('http://launchpad.dev/~name12/+subscriptions')
+    >>> unsub_link = user_browser.getLink(
     ...     id='unsubscribe-subscriber-12')
     >>> unsub_link.click()
-    >>> print browser.url
+    >>> print user_browser.url
     http://bugs.launchpad.dev/launchpad/+bug/13/+subscribe

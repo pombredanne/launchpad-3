@@ -209,10 +209,7 @@ from canonical.launchpad.webapp.tales import (
     DateTimeFormatterAPI,
     PersonFormatterAPI,
     )
-from canonical.lazr.utils import (
-    safe_hasattr,
-    smartquote,
-    )
+from canonical.lazr.utils import smartquote
 from canonical.widgets import (
     LaunchpadDropdownWidget,
     LaunchpadRadioWidget,
@@ -2408,24 +2405,24 @@ class PersonSubscriptionsView(BugTaskSearchListingView):
     def subscribedBugTasks(self):
         """Return a BatchNavigator for distinct bug tasks to which the
         person is subscribed."""
-        bugtasks = self.context.searchTasks(None, user=self.user,
-                order_by='-date_last_updated',
-                status=(BugTaskStatus.NEW,
-                        BugTaskStatus.INCOMPLETE,
-                        BugTaskStatus.CONFIRMED,
-                        BugTaskStatus.TRIAGED,
-                        BugTaskStatus.INPROGRESS,
-                        BugTaskStatus.FIXCOMMITTED,
-                        BugTaskStatus.INVALID))
+        bug_tasks = self.context.searchTasks(None, user=self.user,
+            order_by='-date_last_updated',
+            status=(BugTaskStatus.NEW,
+                    BugTaskStatus.INCOMPLETE,
+                    BugTaskStatus.CONFIRMED,
+                    BugTaskStatus.TRIAGED,
+                    BugTaskStatus.INPROGRESS,
+                    BugTaskStatus.FIXCOMMITTED,
+                    BugTaskStatus.INVALID))
 
-        sub_bugtasks = []
+        sub_bug_tasks = []
         sub_bugs = []
 
-        for task in bugtasks:
+        for task in bug_tasks:
             if task.bug not in sub_bugs:
-                sub_bugtasks.append(task)
+                sub_bug_tasks.append(task)
                 sub_bugs.append(task.bug)
-        return BatchNavigator(sub_bugtasks, self.request)
+        return BatchNavigator(sub_bug_tasks, self.request)
 
     def getSubscriptionsPageHeading(self):
         """The header for the subscriptions page."""
