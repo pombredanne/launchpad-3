@@ -484,6 +484,14 @@ class LaunchpadTimeoutTracer(PostgresTimeoutTracer):
             super(LaunchpadTimeoutTracer, self).connection_raw_execute(
                 connection, raw_cursor, statement, params)
         except TimeoutError:
+            # XXX bug=636801 Robert Colins 20100914 This is duplicated from the
+            # statement tracer, because the tracers are not arranged in a stack
+            # rather a queue: the done-code in the statement tracer never runs.
+            action = getattr(connection, '_lp_statement_action', None)
+            if action is not None:
+                # action may be None if the tracer was installed after the
+                # statement was submitted.
+                action.finish()
             info = sys.exc_info()
             transaction.doom()
             OpStats.stats['timeouts'] += 1
@@ -545,8 +553,8 @@ class LaunchpadStatementTracer:
                                        statement, params):
         action = getattr(connection, '_lp_statement_action', None)
         if action is not None:
-            # action may be None if the tracer was installed  the statement was
-            # submitted.
+            # action may be None if the tracer was installed after the
+            # statement was submitted.
             action.finish()
 
     def connection_raw_execute_error(self, connection, raw_cursor,
