@@ -737,7 +737,8 @@ class Bug(SQLBase):
             (Person, BugSubscription),
             Person.id == BugSubscription.person_id,
             BugSubscription.bug_id == Bug.id,
-            Bug.duplicateof == self)
+            Bug.duplicateof == self,
+            order_by=(Person.id, BugSubscription.id))
 
         def get_person_displayname(subscription):
             return subscription.person.displayname

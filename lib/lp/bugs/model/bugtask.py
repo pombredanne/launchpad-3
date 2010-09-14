@@ -2154,8 +2154,8 @@ class BugTaskSet:
             tables.append(BugAffectsPerson)
         if params.hardware_owner_is_subscribed_to_bug:
             bug_link_clauses.append(
-                And(BugSubscription.personID == HWSubmission.ownerID,
-                    BugSubscription.bugID == Bug.id))
+                And(BugSubscription.person_id == HWSubmission.ownerID,
+                    BugSubscription.bug_id == Bug.id))
             tables.append(BugSubscription)
         if params.hardware_is_linked_to_bug:
             bug_link_clauses.append(

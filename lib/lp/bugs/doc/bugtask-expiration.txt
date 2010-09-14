@@ -398,7 +398,7 @@ No Privileges Person can't see the bug either...
 ... unless he's subscribed to the bug.
 
     >>> private_bug.subscribe(no_priv, sample_person)
-    <BugSubscription at ...>
+    <lp.bugs.model.bugsubscription.BugSubscription ...>
     >>> expirable_bugtasks = bugtaskset.findExpirableBugTasks(
     ...     0, user=no_priv, target=ubuntu)
     >>> visible_bugs = set(bugtask.bug for bugtask in expirable_bugtasks)

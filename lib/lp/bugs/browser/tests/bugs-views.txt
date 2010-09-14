@@ -98,7 +98,7 @@ If Sample Person get subscribed to bug #2, he can see it in the list.
     >>> bug_two.subscribe(
     ...     person_set.getByEmail('test@canonical.com'),
     ...     person_set.getByEmail('foo.bar@canonical.com'))
-    <BugSubscription...>
+    <lp.bugs.model.bugsubscription.BugSubscription ...>
     >>> login('test@canonical.com')
     >>> bugs_view = MaloneView(MaloneApplication(), LaunchpadTestRequest())
     >>> bugs_view.initialize()

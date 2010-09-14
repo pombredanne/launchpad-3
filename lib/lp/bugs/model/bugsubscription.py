@@ -15,7 +15,7 @@ from storm.locals import (
 from zope.interface import implements
 
 from canonical.database.constants import UTC_NOW
-from canonical.database.enumcol import EnumCol
+from canonical.database.enumcol import DBEnum
 from lp.bugs.interfaces.bugsubscription import IBugSubscription
 from lp.registry.enum import BugNotificationLevel
 from lp.registry.interfaces.person import validate_person
@@ -37,10 +37,10 @@ class BugSubscription(Storm):
     bug_id = Int("bug", allow_none=False)
     bug = Reference(bug_id, "Bug.id")
 
-    bug_notification_level = EnumCol(
+    bug_notification_level = DBEnum(
         enum=BugNotificationLevel,
         default=BugNotificationLevel.COMMENTS,
-        notNull=True)
+        allow_none=False)
 
     date_created = DateTime(allow_none=False, default=UTC_NOW)
 

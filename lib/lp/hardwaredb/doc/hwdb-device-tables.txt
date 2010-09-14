@@ -2310,7 +2310,7 @@ By setting the parameter subscribed_to_bug to True, we can also look
 for bug subscribers who own a given device.
 
     >>> bug_one.subscribe(foo_bar, subscribed_by=foo_bar)
-    <BugSubscription at ...
+    <lp.bugs.model.bugsubscription.BugSubscription ...>
     >>> for person in submission_set.deviceDriverOwnersAffectedByBugs(
     ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
     ...     bug_ids=[1], subscribed_to_bug=True):
@@ -2420,7 +2420,7 @@ Owners of private submissions are only included if the optional parameter
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
     >>> no_priv = getUtility(IPersonSet).getByEmail('no-priv@canonical.com')
     >>> bug_one.subscribe(no_priv, subscribed_by=no_priv)
-    <BugSubscription at ...
+    <lp.bugs.model.bugsubscription.BugSubscription ...>
     >>> for person in submission_set.deviceDriverOwnersAffectedByBugs(
     ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
     ...     bug_ids=[1], subscribed_to_bug=True, user=no_priv):
@@ -2474,7 +2474,7 @@ He is also listed, if he subscribes to bug 1.
 
     >>> bug_one.markUserAffected(foo_bar, False)
     >>> bug_one.subscribe(foo_bar, subscribed_by=foo_bar)
-    <BugSubscription at ...
+    <lp.bugs.model.bugsubscription.BugSubscription ...>
     >>> for person in submission_set.deviceDriverOwnersAffectedByBugs(
     ...     driver_name='sd', bug_ids=[1], subscribed_to_bug=True):
     ...     print person.displayname
@@ -2664,7 +2664,7 @@ device owner is affected by the bug.
 We can also check for when the user is subscribed to the bug.
 
     >>> bug_one.subscribe(foo_bar, subscribed_by=foo_bar)
-    <BugSubscription ...
+    <lp.bugs.model.bugsubscription.BugSubscription ...>
 
     >>> for entry in submission_set.hwInfoByBugRelatedUsers(
     ...     bug_ids=[1], subscribed_to_bug=True):
@@ -2688,7 +2688,7 @@ Data from private submissions is not included by default.
 The owner of a private submission can see his or her submission.
 
     >>> bug_one.subscribe(no_priv, subscribed_by=no_priv)
-    <BugSubscription ...
+    <lp.bugs.model.bugsubscription.BugSubscription ...>
 
     >>> for entry in submission_set.hwInfoByBugRelatedUsers(
     ...     bug_ids=[1], subscribed_to_bug=True, user=no_priv):

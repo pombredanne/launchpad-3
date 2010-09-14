@@ -772,7 +772,7 @@ demonstrate, let's first make no_privs an indirect subscriber from bug
     [u'Sample Person', u'Ubuntu Team']
 
     >>> bug_six.subscribe(no_priv, no_priv)
-    <BugSubscription...>
+    <lp.bugs.model.bugsubscription.BugSubscription ...>
 
     >>> sorted([subscriber.displayname
     ...  for subscriber in bug_five.getIndirectSubscribers()])

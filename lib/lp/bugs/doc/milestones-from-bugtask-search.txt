@@ -17,7 +17,7 @@ or IBugTaskSet.search().
     >>> bugtask = factory.makeBugTask(target=milestone.product)
     >>> bugtask.milestone = milestone
     >>> bugtask.subscribe(person, person)
-    <BugSubscription ...>
+    <lp.bugs.model.bugsubscription.BugSubscription ...>
     >>> transaction.commit()
 
 The results of a search for all bug tasks related to a person can be
