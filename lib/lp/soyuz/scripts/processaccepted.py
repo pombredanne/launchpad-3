@@ -17,6 +17,7 @@ from debian.deb822 import Deb822Dict
 import sys
 
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.errorlog import (
@@ -166,6 +167,11 @@ def close_bugs_for_sourcepackagerelease(source_release, changesfile_object):
 
     janitor = getUtility(ILaunchpadCelebrities).janitor
     for bug in bugs_to_close:
+        # We need to remove the security proxy here because the bug
+        # might be private and if this code is called via someone using
+        # the +queue page they will get an OOPS.  Ideally, we should
+        # migrate this code to the Job system though.
+        bug = removeSecurityProxy(bug)
         edited_task = bug.setStatus(
             target=source_release.sourcepackage,
             status=BugTaskStatus.FIXRELEASED,

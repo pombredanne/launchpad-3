@@ -952,8 +952,10 @@ class TestQueuePageClosingBugs(TestCaseWithFactory):
         # lp.soyuz.scripts.processaccepted.close_bugs_for_sourcepackagerelease
         # should work with private bugs where the person using the queue
         # page doesn't have access to it.
-        changes_file_template = "Format: 1.7\nLaunchpad-bugs-fixed: %s"
+        changes_file_template = "Format: 1.7\nLaunchpad-bugs-fixed: %s\n"
         spr = self.factory.makeSourcePackageRelease()
+        # Required for assertion inside the func. we're testing.
+        removeSecurityProxy(spr).changelog_entry = "blah"
         bug_reporter = self.factory.makePerson()
         archive_admin = self.factory.makePerson()
         bug = self.factory.makeBug(owner=bug_reporter, private=True)
@@ -962,7 +964,8 @@ class TestQueuePageClosingBugs(TestCaseWithFactory):
         changes = StringIO(changes_file_template % bug.id)
         with person_logged_in(archive_admin):
             close_bugs_for_sourcepackagerelease(spr, changes)
-        self.assertEqual(bug_task.status, BugTaskStatus.FIXRELEASED)
+        with person_logged_in(bug_reporter):
+            self.assertEqual(bug_task.status, BugTaskStatus.FIXRELEASED)
 
 
 class TestQueueToolInJail(TestQueueBase):
