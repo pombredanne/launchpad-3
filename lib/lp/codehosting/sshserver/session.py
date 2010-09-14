@@ -84,6 +84,13 @@ class ForkedProcessTransport(process.BaseProcess):
 
     implements(interfaces.IProcessTransport)
 
+    # Design decisions
+    # [Decision #a]
+    #   Inherit from process.BaseProcess
+    #       This seems slightly risky, as process.BaseProcess is actually
+    #       imported from twisted.internet._baseprocess.BaseProcess. The
+    #       real-world Process then actually inherits from process._BaseProcess
+
     # TODO: process._BaseProcess implements 'reapProcess' as an ability. Which
     #       then tries to 'os.waitpid()' on the given file handle. Testing
     #       shows that calling waitpid() on a pid that isn't a *direct* child
