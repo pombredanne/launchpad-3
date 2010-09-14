@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 
+import socket
 import unittest
 
 from twisted.conch.interfaces import ISession
@@ -16,7 +17,8 @@ from canonical.config import config
 from lp.codehosting import get_bzr_path, get_BZR_PLUGIN_PATH_for_subprocess
 from lp.codehosting.sshserver.daemon import CodehostingAvatar
 from lp.codehosting.sshserver.session import (
-    ExecOnlySession, ForbiddenCommand, RestrictedExecOnlySession)
+    ExecOnlySession, ForbiddenCommand, RestrictedExecOnlySession,
+    _WaitForExit)
 from lp.codehosting.tests.helpers import AvatarTestCase
 
 
@@ -33,6 +35,9 @@ class MockReactor:
         self.log.append((protocol, executable, args, env, path, uid, gid,
                          usePTY, childFDs))
         return MockProcessTransport(executable)
+
+    def addReader(self, reader):
+        self.log.append(('addReader', reader))
 
 
 class MockSSHSession:
@@ -54,6 +59,7 @@ class MockProcessTransport:
         self._executable = executable
         self.log = []
         self.session = MockSSHSession(self.log)
+        self.status = None
 
     def closeStdin(self):
         self.log.append(('closeStdin',))
@@ -70,6 +76,42 @@ class MockProcessTransport:
 
     def write(self, data):
         self.log.append(('write', data))
+
+    def processEnded(self, status):
+        self.log.append(('processEnded', status))
+
+
+# TODO: What base *should* I be using?
+class Test_WaitForExit(AvatarTestCase):
+
+    def setUp(self):
+        AvatarTestCase.setUp(self)
+        # self.avatar = CodehostingAvatar(self.aliceUserDict, None)
+        # The logging system will try to get the id of avatar.transport, so
+        # let's give it something to take the id of.
+        # self.avatar.transport = object()
+        self.reactor = MockReactor()
+        self.proc = MockProcessTransport('executable')
+        sock = socket.socket()
+        self.exiter = _WaitForExit(self.reactor, self.proc, sock)
+
+    def test__init__starts_reading(self):
+        self.assertEqual([('addReader', self.exiter)], self.reactor.log)
+
+    def test_dataReceived_ends_cleanly(self):
+        self.exiter.dataReceived('exited\n0\n')
+        self.assertEqual([('processEnded', 0)], self.proc.log)
+
+    def test_dataReceived_ends_with_errno(self):
+        self.exiter.dataReceived('exited\n256\n')
+        self.assertEqual([('processEnded', 256)], self.proc.log)
+
+    def test_dataReceived_bad_data(self):
+        # XXX: The dataReceived code calls 'log.err' which ends up getting
+        #      printed during the test run. How do I suppress that or even
+        #      better, check that it does so?
+        self.exiter.dataReceived('bogus\n')
+        self.assertEqual([('processEnded', (255 << 8))], self.proc.log)
 
 
 class TestExecOnlySession(AvatarTestCase):

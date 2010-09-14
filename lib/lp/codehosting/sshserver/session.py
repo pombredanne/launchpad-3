@@ -16,7 +16,13 @@ import urlparse
 from zope.event import notify
 from zope.interface import implements
 
-from twisted.internet import error, interfaces, process
+from twisted.internet import (
+    error,
+    fdesc,
+    interfaces,
+    main,
+    process,
+    )
 from twisted.python import log
 
 from canonical.config import config
@@ -37,6 +43,32 @@ class BazaarSSHClosed(AvatarEvent):
 
 class ForbiddenCommand(Exception):
     """Raised when a session is asked to execute a forbidden command."""
+
+
+class _WaitForExit(process.ProcessReader):
+    """Wait on a socket for the exit status."""
+
+    def __init__(self, reactor, proc, sock):
+        super(_WaitForExit, self).__init__(reactor, proc, 'returncode',
+                                           sock.fileno())
+        self._sock = sock
+
+    def dataReceived(self, data):
+        # This is the only thing we do differently from the standard
+        # ProcessReader. When we get data on this socket, we need to treat it
+        # as a return code, or a failure.
+        if not data.startswith('exited'):
+            # Bad data, we want to signal that we are closing the connection
+            # TODO: How?
+            # self.proc.?
+            self._sock.close()
+            # I don't know what to put here if we get bogus data, but I *do*
+            # want to say that the process is now considered dead to me
+            log.err('Got invalid exit information: %r' % (data,))
+            exit_status = (255 << 8)
+        else:
+            exit_status = int(data.split('\n')[1])
+        self.proc.processEnded(exit_status)
 
 
 class ForkedProcessTransport(process.BaseProcess):
