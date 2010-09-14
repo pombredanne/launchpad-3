@@ -131,6 +131,9 @@ class ForkedProcessTransport(process.BaseProcess):
             response = client_sock.recv(1024)
         except socket.error, e:
             # TODO: What exceptions should be raised?
+            #       Raising the raw exception seems to kill the twisted reactor
+            #       Note that if the connection is refused, we *could* just
+            #       fall back on a regular 'spawnProcess' call.
             log.err('Connection failed: %s' % (e,))
             raise
         if response.startswith("FAILURE"):

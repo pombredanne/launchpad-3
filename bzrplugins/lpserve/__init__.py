@@ -27,7 +27,14 @@ import time
 
 from bzrlib.commands import Command, register_command
 from bzrlib.option import Option
-from bzrlib import commands, errors, lockdir, ui, trace
+from bzrlib import (
+    commands,
+    errors,
+    lockdir,
+    osutils,
+    trace,
+    ui,
+    )
 
 from bzrlib.smart import medium, server
 from bzrlib.transport import get_transport
@@ -343,6 +350,9 @@ class LPForkingService(object):
                     trace.warning("listening socket error: %s", e)
             else:
                 self.log(client_addr, 'connected')
+                # TODO: We should probably trap exceptions coming out of this
+                #       and log them, so that we don't kill the service because
+                #       of an unhandled error
                 self.serve_one_connection(conn, client_addr)
             self._poll_children()
         trace.note('Shutting down. Waiting up to %.0fs for %d child processes'
@@ -465,7 +475,7 @@ class LPForkingService(object):
                     shutil.rmtree(c_path)
 
     def serve_one_connection(self, conn, client_addr):
-        request = conn.recv(1024);
+        request = osutils.read_bytes_from_socket(conn)
         request = request.strip()
         self.log(client_addr, 'request: %r' % (request,))
         if request == 'hello':
