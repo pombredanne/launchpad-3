@@ -356,23 +356,14 @@ class IBugTracker(Interface):
             point between now and 24 hours hence.
         """
 
-    def addRemoteComponent(group_name, component_name):
-        """Adds a local component for the bug tracker
-
-        This is used to add a component that is valid in a remote
-        bug tracker but for some reason is not importing automatically.
-
-        :param group_name: The name of the remote component group (known
-        as 'product' in some bug trackers such as Bugzilla).
-
-        :param: component_name: The exact text name as should be specified
-        in the remote bug tracker's component field.
-        """
-
-    def addRemoteComponentGroup(group_name):
+    @operation_parameters(
+        component_group_name=TextLine(
+            title=u"The name of the remote component group", required=True))
+    @export_write_operation()
+    def addRemoteComponentGroup(component_group_name):
         """Adds a new component group to the bug tracker"""
 
-    def getRemoteComponentGroup(group_name):
+    def getRemoteComponentGroup(component_group_name):
         """Retrieve a given component group registered with the bug tracker.
 
         :param group_name: Name of the component group to retrieve.

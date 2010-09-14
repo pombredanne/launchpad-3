@@ -202,8 +202,10 @@ class BugTracker(SQLBase):
         'BugWatch', joinColumn='bugtracker', orderBy='-datecreated',
         prejoins=['bug'])
 
-    component_groups = []
+    #component_groups = []
     #component_groups = SQLMultipleJoin(...)  #TODO
+    component_groups = SQLMultipleJoin(
+        'BugTrackerComponentGroup', joinColumn='bug_tracker', orderBy='name')
 
     _filing_url_patterns = {
         BugTrackerType.BUGZILLA: (
@@ -525,15 +527,24 @@ class BugTracker(SQLBase):
     def addRemoteComponentGroup(self, component_group_name):
         """See `IBugTracker`."""
 
-        # TODO: Persist
+        if not component_group_name:
+            # TODO: Probably should test that Default gets used
+            component_group_name = "Default"
         component_group = BugTrackerComponentGroup(component_group_name)
+
+        # TODO: Persist
+
         return component_group
 
     def getAllRemoteComponentGroups(self):
         """See `IBugTracker`."""
-        return []
+        component_groups = []
+# TODO: Implement
+#        component_groups = ComponentGroup.select(
+#                        "component_group in (%s)" % ",".join(blah), orderBy="name")
+        return component_groups
 
-    def getRemoteComponentGroup(self, group_name):
+    def getRemoteComponentGroup(self, component_group_name):
         """See `IBugTracker`."""
         #TODO
         return None
@@ -728,7 +739,7 @@ class BugTrackerComponentGroup(SQLBase):
 
     name = StringCol(notNull=True)
 
-    bugtracker = ForeignKey(
+    bug_tracker = ForeignKey(
         dbName='bugtracker', foreignKey='BugTracker', notNull=True)
 
     #TODO
@@ -739,9 +750,9 @@ class BugTrackerComponentGroup(SQLBase):
     def addComponent(self, component_name):
         """Adds a component that is synced from a remote bug tracker"""
         component = BugTrackerComponent()
-        component.name = component_name
-        
-        self.components.append(component)
+#        component.name = component_name
+
+#        self.components.append(component)
         return component
 
     def addCustomComponent(self, component_name):
