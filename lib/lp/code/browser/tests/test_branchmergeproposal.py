@@ -602,8 +602,7 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
         view = create_initialized_view(bmp, '+index')
         groups = view._getRevisionsSinceReviewStart()
         view_groups = [
-            obj.revisions for obj in sorted(
-                groups, key=operator.attrgetter('date'))]
+            obj.revisions for obj in groups]
         self.assertEqual(expected_groups, view_groups)
 
     def test_getRevisionsSinceReviewStart_no_revisions(self):
