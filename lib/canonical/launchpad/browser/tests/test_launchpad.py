@@ -126,8 +126,7 @@ class TestBranchTraversal(TestCaseWithFactory, TraversalMixin):
         # branch that doesn't exist will display an error message.
         branch = self.factory.makeAnyBranch()
         bad_name = branch.unique_name + 'wibble'
-        requiredMessage = ("Invalid branch lp:%s. No such branch: '%s'."
-            % (bad_name, branch.name+"wibble"))
+        requiredMessage = "No such branch: '%s'." % (branch.name+"wibble")
         self.assertDisplaysNotification(
             bad_name, requiredMessage,
             BrowserNotificationLevel.ERROR)
@@ -141,8 +140,7 @@ class TestBranchTraversal(TestCaseWithFactory, TraversalMixin):
 
         any_user = self.factory.makePerson()
         login_person(any_user)
-        requiredMessage = ("Invalid branch lp:%s. No such branch: '%s'."
-            % (branch_unique_name, branch_unique_name))
+        requiredMessage = "No such branch: '%s'." % branch_unique_name
         self.assertDisplaysNotification(
             branch_unique_name,
             requiredMessage,
@@ -176,8 +174,7 @@ class TestBranchTraversal(TestCaseWithFactory, TraversalMixin):
     def test_nonexistent_product(self):
         # Traversing to /+branch/<no-such-product> displays an error message.
         non_existent = 'non-existent'
-        requiredMessage = (u"Invalid branch lp:%s. No such product: '%s'."
-            % (non_existent, non_existent))
+        requiredMessage = u"No such product: '%s'." % non_existent
         self.assertDisplaysNotification(
             non_existent, requiredMessage,
             BrowserNotificationLevel.ERROR)
@@ -258,9 +255,7 @@ class TestBranchTraversal(TestCaseWithFactory, TraversalMixin):
         # no such series.
         product = self.factory.makeProduct()
         non_existent = 'nonexistent'
-        requiredMessage = (u"Invalid branch lp:%s/%s. "
-            "No such product series: '%s'."
-            % (product.name, non_existent, non_existent))
+        requiredMessage = u"No such product series: '%s'." % non_existent
         self.assertDisplaysNotification(
             '%s/%s' % (product.name, non_existent),
             requiredMessage,
@@ -300,8 +295,8 @@ class TestBranchTraversal(TestCaseWithFactory, TraversalMixin):
         # error notification if the thing following +branch is a unique name
         # that's too short to be a real unique name.
         owner = self.factory.makePerson()
-        requiredMessage = (u"Invalid branch lp:~%s. Cannot understand "
-            "namespace name: '%s'" % (owner.name, owner.name))
+        requiredMessage = (u"Cannot understand namespace name: '%s'"
+            % owner.name)
         self.assertDisplaysNotification(
             '~%s' % owner.name,
             requiredMessage,
@@ -311,7 +306,7 @@ class TestBranchTraversal(TestCaseWithFactory, TraversalMixin):
         # error notification if the thing following +branch has an invalid
         # product name.
         self.assertDisplaysNotification(
-            'a', u"Invalid branch lp:a. Invalid name for product: a.",
+            'a', u"Invalid name for product: a.",
             BrowserNotificationLevel.ERROR)
 
 

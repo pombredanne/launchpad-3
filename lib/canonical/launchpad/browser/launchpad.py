@@ -545,11 +545,10 @@ class LaunchpadRootNavigation(Navigation):
 
         except (CannotHaveLinkedBranch, InvalidNamespace,
                 InvalidProductName, NotFoundError) as e:
-            msg = "Invalid branch lp:%s." % path
-            exception_msg = str(e)
-            if len(exception_msg)>0:
-                msg += " %s" % exception_msg
-            self.request.response.addErrorNotification(msg)
+            error_msg = str(e)
+            if len(error_msg)==0:
+                error_msg = "Invalid branch lp:%s." % path
+            self.request.response.addErrorNotification(error_msg)
 
         return self.redirectSubTree(url)
 
