@@ -11,11 +11,14 @@
     <tal:no_permissions condition="not: view/userCanAlter|nothing">
     <p>
       You are unable to subscribe to bug reports about <span
-        tal:replace="context/title">this item</span> as it generates a
-      large volume of e-mail regarding bug activity.
+        tal:replace="context/title">this item</span> as it generates
+      a high amount of bug activity which results in more e-mails than
+      most users can handle.
     </p>
     <p>
-      Contact its bug supervisor if you need more information.
+      If you really want to subscribe to <span
+        tal:replace="context/title">this item</span> bug mail than
+      please contact its bug supervisor.
     </p>
     </tal:no_permissions>
     <tal:has_permissions condition="view/userCanAlter|nothing">
