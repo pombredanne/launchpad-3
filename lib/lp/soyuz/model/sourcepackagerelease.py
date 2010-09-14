@@ -16,6 +16,7 @@ import re
 from StringIO import StringIO
 
 import pytz
+import simplejson
 from sqlobject import (
     ForeignKey,
     SQLMultipleJoin,
@@ -145,6 +146,7 @@ class SourcePackageRelease(SQLBase):
     build_conflicts = StringCol(dbName='build_conflicts')
     build_conflicts_indep = StringCol(dbName='build_conflicts_indep')
     architecturehintlist = StringCol(dbName='architecturehintlist')
+    homepage = StringCol(dbName='homepage')
     format = EnumCol(dbName='format', schema=SourcePackageType,
         default=SourcePackageType.DPKG, notNull=True)
     upload_distroseries = ForeignKey(foreignKey='DistroSeries',
@@ -173,6 +175,22 @@ class SourcePackageRelease(SQLBase):
         joinColumn='sourcepackagerelease', orderBy="-datecreated")
     package_diffs = SQLMultipleJoin(
         'PackageDiff', joinColumn='to_source', orderBy="-date_requested")
+
+    _user_defined_fields = StringCol(dbName='user_defined_fields')
+
+    def __init__(self, *args, **kwargs):
+        if 'user_defined_fields' in kwargs:
+            kwargs['_user_defined_fields'] = simplejson.dumps(
+                kwargs['user_defined_fields'])
+            del kwargs['user_defined_fields']
+        super(SourcePackageRelease, self).__init__(*args, **kwargs)
+
+    @property
+    def user_defined_fields(self):
+        """See `IBinaryPackageRelease`."""
+        if self._user_defined_fields is None:
+            return []
+        return simplejson.loads(self._user_defined_fields)
 
     @property
     def builds(self):

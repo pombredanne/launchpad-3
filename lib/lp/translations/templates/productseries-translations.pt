@@ -30,7 +30,7 @@
           <a href="https://help.launchpad.net/Translations/YourProject">start
             translating your project</a>,
           <tal:uses-translations condition="not:
-                                            context/product/official_rosetta">
+                    context/product/translations_usage/enumvalue:LAUNCHPAD">
             you should enable translations in your project settings, and
           </tal:uses-translations>
           you can either

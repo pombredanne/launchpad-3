@@ -143,6 +143,12 @@
         for="lp.registry.interfaces.distroseries.IDistroSeries"
         class="canonical.launchpad.browser.AskAQuestionButtonView"
         permission="zope.Public"/>
+    <browser:page
+        name="+localpackagediffs"
+        for="lp.registry.interfaces.distroseries.IDistroSeries"
+        class="lp.registry.browser.distroseries.DistroSeriesLocalDifferences"
+        template="../templates/distroseries-localdifferences.pt"
+        permission="zope.Public"/>
     <browser:menus
         classes="
             DistroSeriesFacets
@@ -1659,6 +1665,13 @@
             name="+code-summary"
             template="../templates/productseries-codesummary.pt"/>
     </browser:pages>
+    <browser:page
+        for="lp.registry.interfaces.productseries.IProductSeries"
+        class="lp.registry.browser.productseries.ProductSeriesDetailedDisplayView"
+        template="../templates/productseries-detailed-display.pt"
+        facet="overview"
+        permission="zope.Public"
+        name="+detailed-display"/>
     <browser:page
         for="lp.registry.interfaces.productseries.IProductSeries"
         class="lp.registry.browser.productseries.ProductSeriesRdfView"

@@ -50,6 +50,9 @@
         <require
             permission="launchpad.Edit"
             set_attributes="status"/>
+        <require
+            permission="launchpad.Admin"
+            set_attributes="failure_count"/>
     </class>
     <securedutility
         component="lp.buildmaster.model.buildfarmjob.BuildFarmJob"
