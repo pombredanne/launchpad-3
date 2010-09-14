@@ -125,9 +125,7 @@ from lp.code.errors import (
     NoLinkedBranch,
     )
 from lp.code.interfaces.branch import IBranchSet
-from lp.code.interfaces.branchlookup import (
-    IBranchLookup,
-    )
+from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.codeimport import ICodeImportSet
 from lp.hardwaredb.interfaces.hwdb import IHWDBApplication
 from lp.registry.interfaces.announcement import IAnnouncementSet
