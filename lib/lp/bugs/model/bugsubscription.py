@@ -18,9 +18,13 @@ from zope.interface import implements
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.enumcol import EnumCol
+from canonical.database.enumcol import (
+    DBEnum,
+    EnumCol,
+    )
 from canonical.database.sqlbase import SQLBase
 from lp.bugs.interfaces.bugsubscription import IBugSubscription
+from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.registry.enum import BugNotificationLevel
 from lp.registry.interfaces.person import validate_person
 
@@ -95,3 +99,15 @@ class BugSubscriptionFilter(Storm):
     other_parameters = Unicode("other_parameters")
 
     description = Unicode("description")
+
+
+class BugSubscriptionFilterStatus(Storm):
+
+    __storm_table__ = "BugSubscriptionFilterStatus"
+
+    id = Int(primary=True)
+
+    filter_id = Int("filter", allow_none=False)
+    filter = Reference(filter_id, "BugSubscriptionFilter.id")
+
+    status = DBEnum(enum=BugTaskStatus, allow_none=False)
