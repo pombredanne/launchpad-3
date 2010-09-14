@@ -202,8 +202,6 @@ class BugTracker(SQLBase):
         'BugWatch', joinColumn='bugtracker', orderBy='-datecreated',
         prejoins=['bug'])
 
-    #component_groups = []
-    #component_groups = SQLMultipleJoin(...)  #TODO
     component_groups = SQLMultipleJoin(
         'BugTrackerComponentGroup', joinColumn='bug_tracker', orderBy='name')
 
@@ -531,8 +529,10 @@ class BugTracker(SQLBase):
             # TODO: Probably should test that Default gets used
             component_group_name = "Default"
         component_group = BugTrackerComponentGroup(component_group_name)
+        component_group.bug_tracker = self
 
-        # TODO: Persist
+        store = IStore(BugTrackerComponentGroup)
+        store.add(component_group)
 
         return component_group
 
@@ -742,17 +742,17 @@ class BugTrackerComponentGroup(SQLBase):
     bug_tracker = ForeignKey(
         dbName='bugtracker', foreignKey='BugTracker', notNull=True)
 
-    #TODO
-    #components = SQLMultipleJoin(
-    #    'BugTrackerComponent', joinColumn='component_group', orderBy='name')
-    components = []
+    components = SQLMultipleJoin(
+                'BugTrackerComponent', joinColumn='component_group', orderBy='name')
 
     def addComponent(self, component_name):
         """Adds a component that is synced from a remote bug tracker"""
         component = BugTrackerComponent()
-#        component.name = component_name
+        component.name = component_name
 
-#        self.components.append(component)
+        store = IStore(BugTrackerComponent)
+        store.add(component)
+
         return component
 
     def addCustomComponent(self, component_name):
@@ -763,5 +763,7 @@ class BugTrackerComponentGroup(SQLBase):
         component.name = component_name
         component.setCustom()
         
-        self.components.append(component)
+        store = IStore(BugTrackerComponent)
+        store.add(component)
+
         return component
