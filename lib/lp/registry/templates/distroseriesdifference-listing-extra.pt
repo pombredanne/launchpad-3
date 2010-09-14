@@ -7,9 +7,27 @@
     <dt>Description:</dt>
     <dd><tal:description replace="context/source_pub/meta_sourcepackage/summary" /></dd>
     <dt>Last common version:</dt>
-    <dd>Do last common version.</dd>
+    <dd>Not implemented.</dd>
     <dt>Package differences:</dt>
-    <dd>Do package differences.</dd>
+    <tal:source-diff-option condition="context/source_pub">
+    <dd tal:condition="context/package_diff"
+        tal:content="structure context/package_diff/fmt:link">
+      <a>link to a diff</a></dd>
+    <dd tal:condition="not: context/package_diff" class="request-derived-diff">
+      Base version to derived <span
+          tal:replace="context/source_version">1.2.3</span>
+    </dd>
+    </tal:source-diff-option>
+
+    <tal:parent-diff-option condition="context/parent_source_pub">
+    <dd tal:condition="context/parent_package_diff"
+        tal:content="structure context/parent_package_diff/fmt:link">
+      <a>link to a diff</a></dd>
+    <dd tal:condition="not: context/parent_package_diff">
+      Base version to parent <span
+          tal:replace="context/parent_source_version">1.2.3</span>
+    </dd>
+    </tal:parent-diff-option>
   </dl>
   <h2>Comments:</h2>
 

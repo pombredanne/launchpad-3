@@ -7,15 +7,17 @@ from __future__ import with_statement
 
 __metaclass__ = type
 
+from BeautifulSoup import BeautifulSoup
 from zope.component import getUtility
 
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing import LaunchpadFunctionalLayer
 from lp.registry.enum import DistroSeriesDifferenceType
 from lp.registry.interfaces.distroseriesdifference import IDistroSeriesDifferenceSource
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
     celebrity_logged_in,
+    person_logged_in,
     TestCaseWithFactory,
     )
 from lp.testing.views import create_initialized_view
@@ -23,7 +25,7 @@ from lp.testing.views import create_initialized_view
 
 class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
 
-    layer = DatabaseFunctionalLayer
+    layer = LaunchpadFunctionalLayer
 
     def addSummaryToDifference(self, distro_series_difference):
         """Helper that adds binaries with summary info to the source pubs."""
@@ -89,3 +91,27 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         self.assertIs(None, ds_diff.parent_source_pub)
         self.assertIs(None, ds_diff.source_pub)
         self.assertIs(None, view.summary)
+
+    def test_source_diff_rendering_no_diff(self):
+        # An unlinked description of a potential diff is displayed when
+        # no diff is present.
+        ds_diff = self.factory.makeDistroSeriesDifference()
+
+        view = create_initialized_view(ds_diff, '+listing-distroseries-extra')
+        soup = BeautifulSoup(view())
+        self.assertEqual(1, len(soup.findAll('dd', 'request-derived-diff')))
+
+    def test_source_diff_rendering_diff(self):
+        # A linked description of the diff is displayed when
+        # it is present.
+        ds_diff = self.factory.makeDistroSeriesDifference()
+
+        with person_logged_in(ds_diff.derived_series.owner):
+            ds_diff.package_diff = self.factory.makePackageDiff()
+
+        view = create_initialized_view(ds_diff, '+listing-distroseries-extra')
+        soup = BeautifulSoup(view())
+        import pdb;pdb.set_trace()
+        self.assertEqual(
+            1, len(soup.findAll(
+                'a', href=ds_diff.package_diff.diff_content.http_url)))
