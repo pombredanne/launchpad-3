@@ -49,7 +49,7 @@ class _WaitForExit(process.ProcessReader):
     """Wait on a socket for the exit status."""
 
     def __init__(self, reactor, proc, sock):
-        super(_WaitForExit, self).__init__(reactor, proc, 'returncode',
+        super(_WaitForExit, self).__init__(reactor, proc, 'exit',
                                            sock.fileno())
         self._sock = sock
 
@@ -90,7 +90,9 @@ class ForkedProcessTransport(process.BaseProcess):
     #       to the fork request
     def __init__(self, reactor, executable, args, proto):
         process.BaseProcess.__init__(self, proto)
+        self.pipes = {}
         pid, path, sock = self._spawn(executable, args)
+        self._fifo_path = path
         self.pid = pid
         # TODO: We nee to set up a Reader on this socket, so that we know when
         #       the process has actually closed. The possible actions are:
@@ -105,7 +107,6 @@ class ForkedProcessTransport(process.BaseProcess):
         #       with processEnded, maybeCallProcessEnded and processExited...
         self.process_sock = sock
         # Map from standard file descriptor to the associated pipe
-        self.pipes = {}
         self._fifo_path = path
         self._connectSpawnToReactor(reactor)
         if self.proto is not None:
@@ -160,6 +161,9 @@ class ForkedProcessTransport(process.BaseProcess):
         self.pipes[1] = process.ProcessReader(reactor, self, 1, child_stdout_fd)
         child_stderr_fd = os.open(stderr_path, os.O_RDONLY)
         self.pipes[2] = process.ProcessReader(reactor, self, 2, child_stderr_fd)
+        # TODO: gc cycle, _exiter points to self, and we point to _exiter
+        self._exiter = _WaitForExit(reactor, self, self.process_sock)
+        self.pipes['exit'] = self._exiter
 
     def _getReason(self, status):
         # Copied from twisted.internet.process._BaseProcess
@@ -185,7 +189,7 @@ class ForkedProcessTransport(process.BaseProcess):
         if signalID in ('HUP', 'STOP', 'INT', 'KILL', 'TERM'):
             signalID = getattr(signal, 'SIG%s' % (signalID,))
         if self.pid is None:
-            raise ProcessExitedAlready()
+            raise process.ProcessExitedAlready()
         os.kill(self.pid, signalID)
 
     # Implemented because conch.ssh.session uses it, the Process implementation
