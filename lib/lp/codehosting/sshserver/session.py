@@ -98,7 +98,8 @@ class ForkedProcessTransport(process.BaseProcess):
     #       __init__ if you don't want to do that exact work?)
     # [Decision #b]
     #   prefork vs max children vs ?
-    # 
+    # [Decision #c]
+    #   BZR_EMAIL
 
     # TODO: process._BaseProcess implements 'reapProcess' as an ability. Which
     #       then tries to 'os.waitpid()' on the given file handle. Testing
@@ -340,6 +341,8 @@ class ExecOnlySession(DoNothingSession):
         # violation. Apart from this line and its twin, this class knows
         # nothing about Bazaar.
         notify(BazaarSSHStarted(self.avatar))
+        # XXX: This is the point where we should have a feature-flag to decide
+        #       whether to use the new code or not.
         if executable == 'bzr': # Endswith?
             self._transport = ForkedProcessTransport(self.reactor, executable,
                                                      arguments, protocol)
