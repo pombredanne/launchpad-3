@@ -167,42 +167,6 @@ class TestLPForkingService(TestCaseWithLPForkingService):
         response = self.send_message_to_service('hello\n')
         self.assertEqual('ok\nyep, still alive\n', response)
 
-    def test_null_status(self):
-        response = self.send_message_to_service('status \n')
-        self.assertEqual('ok\n', response)
-
-    def test_unknown_status(self):
-        response = self.send_message_to_service('status 12345\n')
-        self.assertEqual('ok\n12345 unknown\n', response)
-
-    def test_multiple_statuses(self):
-        response = self.send_message_to_service('status 12345 23456\n')
-        self.assertEqualDiff('ok\n12345 unknown\n23456 unknown\n', response)
-
-    def test_invalid_pid(self):
-        response = self.send_message_to_service('status abcd\n')
-        self.assertStartsWith(response, 'FAILURE')
-
-    def test_stopped_child(self):
-        # We cheat and fake a recently exited child
-        self.service._exit_statuses[12345] = 256
-        # Entries in _exit_status get cleared after being queried
-        response = self.send_message_to_service('status 12345\n')
-        self.assertEqualDiff('ok\n12345 stopped 256\n', response)
-        # Now the entry should be cleared, and it will be treated as unknown
-        response = self.send_message_to_service('status 12345\n')
-        self.assertEqualDiff('ok\n12345 unknown\n', response)
-
-    def test_active_child(self):
-        # We cheat and fake an active child, note that this can cause problems
-        # with then calling os.wait*() since there aren't any active children
-        self.service._child_processes[12345] = None
-        try:
-            response = self.send_message_to_service('status 12345\n')
-            self.assertEqualDiff('ok\n12345 active\n', response)
-        finally:
-            del self.service._child_processes[12345]
-
 
 class TestCaseWithSubprocess(tests.TestCaseWithTransport):
     """Override the bzr start_bzr_subprocess command.
@@ -318,12 +282,14 @@ class TestCaseWithLPForkingServiceSubprocess(TestCaseWithSubprocess):
         # Make sure this plugin is exposed to the subprocess
         # SLOOWWW (~2.4 seconds, which is why we are doing the work anyway)
         fd, tempname = tempfile.mkstemp(prefix='tmp-log-bzr-lp-forking-')
+        # I'm not 100% sure about when cleanup runs versus addDetail, but I
+        # think this will work.
+        self.addCleanup(os.remove, tempname)
         def read_log():
             f = os.fdopen(fd)
             f.seek(0)
             content = f.read()
             f.close()
-            os.remove(tempname)
             return [content]
         self.addDetail('server-log', content.Content(
             content.ContentType('text', 'plain', {"charset": "utf8"}),
@@ -422,27 +388,3 @@ class TestCaseWithLPForkingServiceSubprocess(TestCaseWithSubprocess):
             self.assertEqualDiff(stdout_msg, stdout)
             self.assertEqualDiff(stderr_msg, stderr)
             self.assertReturnCode(0, sock)
-
-    def test_fork_status(self):
-        path, pid, sock = self.send_fork_request('launchpad-replay')
-        # Don't connect yet, ask for the status, and you should get nothing yet
-        response = self.send_message_to_service('status %d\n' % (pid,))
-        active_response = 'ok\n%d active\n' % (pid,)
-        self.assertEqualDiff(active_response, response)
-        stdout, stderr = self.communicate_with_fork(path,
-            '1 hello\n2 goodbye\n')
-        self.assertEqual('hello\n', stdout)
-        self.assertEqual('goodbye\n', stderr)
-        # Now spin for a bit, and wait for the process to be 'finished'
-        tmax = time.time() + 2.0
-        while time.time() < tmax:
-            response = self.send_message_to_service('status %d\n' % (pid,))
-            if response == active_response:
-                time.sleep(0.05)
-                continue
-            else:
-                break
-        else:
-            self.fail('timeout waiting for process to be stopped')
-        self.assertEqualDiff('ok\n%d stopped 0\n' % (pid,), response)
-        self.assertReturnCode(0, sock)

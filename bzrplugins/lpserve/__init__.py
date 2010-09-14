@@ -129,7 +129,7 @@ class LPForkingService(object):
     DEFAULT_HOST = '127.0.0.1'
     DEFAULT_PORT = 4156
     WAIT_FOR_CHILDREN_TIMEOUT = 5*60 # Wait no more than 5 min for children
-    SOCKET_TIMEOUT = 0.1
+    SOCKET_TIMEOUT = 1.0
     SLEEP_FOR_CHILDREN_TIMEOUT = 1.0
 
     _fork_function = os.fork
@@ -154,13 +154,6 @@ class LPForkingService(object):
         # Map from pid => information
         self._child_processes = {}
         self._children_spawned = 0
-        # Children whose exit we have observed, but who have not been queried
-        # for. (similar to a zombie process before you wait() on it)
-        # TODO: If we are having the child report the status on the socket,
-        #       then the client won't ever need to call 'status PID' and this
-        #       dict grows without bound. However, what about processes that
-        #       exit abnormally? Needs reworking.
-        self._exit_statuses = {}
 
     def _create_master_socket(self):
         addrs = socket.getaddrinfo(self.host, self.port, socket.AF_UNSPEC,
@@ -376,7 +369,6 @@ class LPForkingService(object):
             if c_id == 0:
                 # No more children stopped right now
                 return
-            self._exit_statuses[c_id] = exit_code
             c_path, sock = self._child_processes.pop(c_id)
             trace.mutter('%s exited %s and usage: %s'
                          % (c_id, exit_code, rusage))
@@ -412,14 +404,14 @@ class LPForkingService(object):
                 trace.warning('sending SIGINT to %d' % (c_id,))
                 os.kill(c_id, signal.SIGINT)
             # We sent the SIGINT signal, see if they exited
-            self._wait_for_children(1.0)
+            self._wait_for_children(self.SLEEP_FOR_CHILDREN_TIMEOUT)
         if self._child_processes:
             # No? Then maybe something more powerful
             for c_id in self._child_processes:
                 trace.warning('sending SIGKILL to %d' % (c_id,))
                 os.kill(c_id, signal.SIGKILL)
             # We sent the SIGKILL signal, see if they exited
-            self._wait_for_children(1.0)
+            self._wait_for_children(self.SLEEP_FOR_CHILDREN_TIMEOUT)
         if self._child_processes:
             for c_id, (c_path, sock) in self._child_processes.iteritems():
                 # TODO: We should probably put something into this message?
@@ -461,25 +453,6 @@ class LPForkingService(object):
                 # We don't close the conn normally, since we will report the
                 # exit status later
                 return
-        elif request.startswith('status'):
-            # Someone is asking about children statuses, go check on them real
-            # quick
-            self._poll_children()
-            try:
-                pids = map(int, request[len('status '):].split())
-            except ValueError:
-                conn.sendall('FAILURE\nbad integer pid request: %r'
-                             % (request,))
-            else:
-                response = ['ok\n']
-                for pid in pids:
-                    status = 'unknown'
-                    if pid in self._exit_statuses:
-                        status = 'stopped %s' % (self._exit_statuses.pop(pid),)
-                    elif pid in self._child_processes:
-                        status = 'active'
-                    response.append('%d %s\n' % (pid, status))
-                conn.sendall(''.join(response))
         else:
             self.log(client_addr, 'FAILURE: unknown request: %r' % (request,))
             # TODO: Do we want to be friendly here? Or do we want to just
