@@ -153,8 +153,7 @@ indicator showing whether it has been configured or not.
     <span class="sprite no">...
     </table>
 
-Until other supporting code lands, the progress bar is not going to be
-shown on lpnet.
+Originally the progress bar was not shown on lpnet.  Now it is.
 
     >>> # Pretend that we're on launchpad.net:
     >>> from canonical.config import config
@@ -165,17 +164,24 @@ shown on lpnet.
     ...     """)
     >>> config.push('test_data', test_data)
 
-The progress bar is not shown on lpnet.
+The progress bar is now shown on lpnet.
 
     >>> view = create_view(product, '+get-involved')
     >>> rendered = view.render()
     >>> print find_tag_by_id(rendered, 'progressbar')
-    None
+    <div ... id="progressbar">
+    ...
+    <img src="/@@/green-bar" ... width="25".../>
+    ...
 
-Neither are the indicator sprites.
+As are the configuration markers.
 
-    >>> 'sprite' in find_tag_by_id(rendered, 'configuration_links')
-    False
+    >>> for key in sorted(view.configuration_states.keys()):
+    ...     print key, view.configuration_states[key]
+    configure_answers False
+    configure_bugtracker False
+    configure_codehosting False
+    configure_translations True
 
     >>> # Restore the previous config:
     >>> config_data = config.pop('test_data')
