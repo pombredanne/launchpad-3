@@ -222,7 +222,7 @@ class LPForkingService(object):
         stderr_path = os.path.join(base_path, 'stderr')
         # Opening for writing blocks (or fails), so do those last
         # TODO: Consider buffering...
-        stdin_fid = os.open(stdin_path, os.O_RDONLY | os.O_NONBLOCK)
+        stdin_fid = os.open(stdin_path, os.O_RDONLY)
         stdout_fid = os.open(stdout_path, os.O_WRONLY)
         stderr_fid = os.open(stderr_path, os.O_WRONLY)
         # XXX: Cheap hack. by this point bzrlib has opened stderr for logging
