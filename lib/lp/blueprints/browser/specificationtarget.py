@@ -326,6 +326,12 @@ class HasSpecificationsView(LaunchpadView):
         return self.context.specifications(filter=filter)
 
     @cachedproperty
+    def specs_batched(self):
+        navigator = BatchNavigator(self.specs, self.request)
+        navigator.setHeadings('specification', 'specifications')
+        return navigator
+
+    @cachedproperty
     def spec_count(self):
         return self.specs.count()
 
