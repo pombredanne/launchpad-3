@@ -143,7 +143,10 @@ Create some translators and a merged account.
 
 Create a product, a template with one msgset and a pofile
 
-    >>> product = factory.makeProduct(official_rosetta=True)
+    >>> from lp.app.enums import ServiceUsage
+
+    >>> product = factory.makeProduct(
+    ...     translations_usage=ServiceUsage.LAUNCHPAD)
     >>> template = factory.makePOTemplate(
     ...     productseries=product.getSeries('trunk'))
     >>> potmsgset = factory.makePOTMsgSet(template)

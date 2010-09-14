@@ -6,6 +6,7 @@ __metaclass__ = type
 from zope.interface.verify import verifyObject
 
 from canonical.testing import ZopelessDatabaseLayer
+from lp.app.enums import ServiceUsage
 from lp.testing import TestCaseWithFactory
 from lp.translations.interfaces.potemplate import IHasTranslationTemplates
 from lp.translations.interfaces.translationfileformat import (
@@ -152,7 +153,7 @@ class HasTranslationTemplatesTestMixin:
 
         # A product or distribution that doesn't use Launchpad for
         # translations has no current templates.
-        self.product_or_distro.official_rosetta = False
+        self.product_or_distro.translations_usage = ServiceUsage.EXTERNAL
         self.assertFalse(self.container.has_current_translation_templates)
 
     def test_getTranslationTemplateFormats(self):
@@ -205,7 +206,7 @@ class TestProductSeriesHasTranslationTemplates(
         super(TestProductSeriesHasTranslationTemplates, self).setUp()
         self.container = self.factory.makeProductSeries()
         self.product_or_distro = self.container.product
-        self.product_or_distro.official_rosetta = True
+        self.product_or_distro.translations_usage = ServiceUsage.LAUNCHPAD
 
 
 class TestSourcePackageHasTranslationTemplates(
@@ -223,7 +224,7 @@ class TestSourcePackageHasTranslationTemplates(
         super(TestSourcePackageHasTranslationTemplates, self).setUp()
         self.container = self.factory.makeSourcePackage()
         self.product_or_distro = self.container.distroseries.distribution
-        self.product_or_distro.official_rosetta = True
+        self.product_or_distro.translations_usage = ServiceUsage.LAUNCHPAD
 
 
 class TestDistroSeriesHasTranslationTemplates(
@@ -243,4 +244,4 @@ class TestDistroSeriesHasTranslationTemplates(
         super(TestDistroSeriesHasTranslationTemplates, self).setUp()
         self.container = self.factory.makeDistroRelease()
         self.product_or_distro = self.container.distribution
-        self.product_or_distro.official_rosetta = True
+        self.product_or_distro.translations_usage = ServiceUsage.LAUNCHPAD

@@ -72,8 +72,8 @@ class LibrarianStorage:
     def startAddFile(self, filename, size):
         return LibraryFileUpload(self, filename, size)
 
-    def getFileAlias(self, aliasid):
-        return self.library.getAlias(aliasid)
+    def getFileAlias(self, aliasid, token, path):
+        return self.library.getAlias(aliasid, token, path)
 
 
 class LibraryFileUpload(object):

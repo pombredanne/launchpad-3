@@ -34,10 +34,8 @@ from operator import attrgetter
 import random
 import re
 import subprocess
-import time
 import weakref
 
-from bzrlib.plugins.builder.recipe import RecipeParser
 import pytz
 from sqlobject import (
     BoolCol,
@@ -261,6 +259,7 @@ from lp.registry.model.teammembership import (
     TeamMembershipSet,
     TeamParticipation,
     )
+from lp.services.openid.model.openididentifier import OpenIdIdentifier
 from lp.services.propertycache import (
     cachedproperty,
     IPropertyCache,
@@ -918,11 +917,11 @@ class Person(
     @property
     def is_team(self):
         """See `IPerson`."""
-        return self.teamowner is not None
+        return self.teamownerID is not None
 
     def isTeam(self):
         """Deprecated. Use is_team instead."""
-        return self.teamowner is not None
+        return self.is_team
 
     @property
     def mailing_list(self):
@@ -1240,18 +1239,29 @@ class Person(
         if isinstance(team, (str, unicode)):
             team = PersonSet().getByName(team)
 
-        if self._inTeam_cache is None: # Initialize cache
+        if self.id == team.id:
+            # A team is always a member of itself.
+            return True
+
+        if not team.is_team:
+            # It is possible that this team is really a user since teams
+            # are users are often interchangable.
+            return False
+
+        if self._inTeam_cache is None:
+            # Initialize cache
             self._inTeam_cache = {}
         else:
+            # Retun from cache or fall through.
             try:
-                return self._inTeam_cache[team.id] # Return from cache
+                return self._inTeam_cache[team.id]
             except KeyError:
-                pass # Or fall through
+                pass 
 
         tp = TeamParticipation.selectOneBy(team=team, person=self)
         if tp is not None or self.id == team.teamownerID:
             in_team = True
-        elif team.is_team and not team.teamowner.inTeam(team):
+        elif not team.teamowner.inTeam(team):
             # The owner is not a member but must retain his rights over
             # this team. This person may be a member of the owner, and in this
             # case it'll also have rights over this team.
@@ -1613,13 +1623,16 @@ class Person(
                 person_table.accountID == account_table.id,
                 account_table.status == AccountStatus.ACTIVE)))
         columns.append(account_table)
+
         def handleemail(person, column):
             #-- preferred email caching
             if not person:
                 return
             email = column
             IPropertyCache(person).preferredemail = email
+
         decorators.append(handleemail)
+
         def handleaccount(person, column):
             #-- validity caching
             if not person:
@@ -2634,9 +2647,8 @@ class Person(
                      registrant, daily_build_archive=None, build_daily=False):
         """See `IPerson`."""
         from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
-        builder_recipe = RecipeParser(recipe_text).parse()
         recipe = SourcePackageRecipe.new(
-            registrant, self, name, builder_recipe, description, distroseries,
+            registrant, self, name, recipe_text, description, distroseries,
             daily_build_archive, build_daily)
         Store.of(recipe).flush()
         return recipe
@@ -2830,50 +2842,104 @@ class PersonSet:
                 "Both email address and full name are required to "
                 "create an account.")
         db_updated = False
+
+        assert isinstance(openid_identifier, unicode)
+
+        # Load the EmailAddress, Account and OpenIdIdentifier records
+        # from the master (if they exist). We use the master to avoid
+        # possible replication lag issues but this might actually be
+        # unnecessary.
         with MasterDatabasePolicy():
-            account_set = getUtility(IAccountSet)
-            email_set = getUtility(IEmailAddressSet)
-            email = email_set.getByEmail(email_address)
-            try:
-                account = account_set.getByOpenIDIdentifier(
-                    openid_identifier)
-            except LookupError:
-                if email is None:
-                    # There is no account associated with the identifier
-                    # nor an email associated with the email address.
-                    # We'll create one.
-                    account, email = account_set.createAccountAndEmail(
-                            email_address, creation_rationale, full_name,
-                            password=None,
-                            openid_identifier=openid_identifier)
-                else:
-                    account = email.account
-                    assert account is not None, (
-                        "This email address should have an associated "
-                        "account.")
-                    removeSecurityProxy(account).openid_identifier = (
-                        openid_identifier)
+            store = IMasterStore(EmailAddress)
+            join = store.using(
+                EmailAddress,
+                LeftJoin(Account, EmailAddress.accountID == Account.id))
+            email, account = (
+                join.find(
+                    (EmailAddress, Account),
+                    Lower(EmailAddress.email) == Lower(email_address)).one()
+                or (None, None))
+            identifier = store.find(
+                OpenIdIdentifier, identifier=openid_identifier).one()
+
+            if email is None and identifier is None:
+                # Neither the Email Address not the OpenId Identifier
+                # exist in the database. Create the email address,
+                # account, and associated info. OpenIdIdentifier is
+                # created later.
+                account_set = getUtility(IAccountSet)
+                account, email = account_set.createAccountAndEmail(
+                    email_address, creation_rationale, full_name,
+                    password=None)
                 db_updated = True
+
+            elif email is None:
+                # The Email Address does not exist in the database,
+                # but the OpenId Identifier does. Create the Email
+                # Address and link it to the account.
+                assert account is None, 'Retrieved an account but not email?'
+                account = identifier.account
+                emailaddress_set = getUtility(IEmailAddressSet)
+                email = emailaddress_set.new(
+                    email_address, account=account)
+                db_updated = True
+
+            elif account is None:
+                # Email address exists, but there is no Account linked
+                # to it. Create the Account and link it to the
+                # EmailAddress.
+                account_set = getUtility(IAccountSet)
+                account = account_set.new(
+                    AccountCreationRationale.OWNER_CREATED_LAUNCHPAD,
+                    full_name)
+                email.account = account
+                db_updated = True
+
+            if identifier is None:
+                # This is the first time we have seen that
+                # OpenIdIdentifier. Link it.
+                identifier = OpenIdIdentifier()
+                identifier.account = account
+                identifier.identifier = openid_identifier
+                store.add(identifier)
+                db_updated = True
+
+            elif identifier.account != account:
+                # The ISD OpenId server may have linked this OpenId
+                # identifier to a new email address, or the user may
+                # have transfered their email address to a different
+                # Launchpad Account. If that happened, repair the
+                # link - we trust the ISD OpenId server.
+                identifier.account = account
+                db_updated = True
+
+            # We now have an account, email address, and openid identifier.
 
             if account.status == AccountStatus.SUSPENDED:
                 raise AccountSuspendedError(
                     "The account matching the identifier is suspended.")
+
             elif account.status in [AccountStatus.DEACTIVATED,
                                     AccountStatus.NOACCOUNT]:
                 password = '' # Needed just to please reactivate() below.
-                if email is None:
-                    email = email_set.new(email_address, account=account)
                 removeSecurityProxy(account).reactivate(
                     comment, password, removeSecurityProxy(email))
+                db_updated = True
             else:
                 # Account is active, so nothing to do.
                 pass
+
             if IPerson(account, None) is None:
                 removeSecurityProxy(account).createPerson(
                     creation_rationale, comment=comment)
                 db_updated = True
 
-            return IPerson(account), db_updated
+            person = IPerson(account)
+            if email.personID != person.id:
+                removeSecurityProxy(email).person = person
+                db_updated = True
+
+            return person, db_updated
 
     def newTeam(self, teamowner, name, displayname, teamdescription=None,
                 subscriptionpolicy=TeamSubscriptionPolicy.MODERATED,
@@ -3950,19 +4016,12 @@ class PersonSet:
         # flush its caches.
         store.invalidate()
 
-        # Change the merged Account's OpenID identifier so that it cannot be
-        # used to lookup the merged Person; Launchpad will instead select the
-        # remaining Person based on the email address. The rename uses a
-        # dash, which does not occur in SSO identifiers. The epoch from
-        # the account date_created is used to ensure it is unique if the
-        # original identifier is reused and merged.
-        if from_person.account is not None:
-            account = IMasterObject(from_person.account)
-            naked_account = removeSecurityProxy(account)
-            unique_part = time.mktime(naked_account.date_created.timetuple())
-            merge_identifier = 'merged-%s-%s' % (
-                naked_account.openid_identifier, unique_part)
-            naked_account.openid_identifier = merge_identifier
+        # Move OpenId Identifiers from the merged account to the new
+        # account.
+        if from_person.account is not None and to_person.account is not None:
+            store.execute("""
+                UPDATE OpenIdIdentifier SET account=%s WHERE account=%s
+                """ % sqlvalues(to_person.accountID, from_person.accountID))
 
         # Inform the user of the merge changes.
         if not to_person.isTeam():

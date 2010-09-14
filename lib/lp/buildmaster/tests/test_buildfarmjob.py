@@ -94,6 +94,8 @@ class TestBuildFarmJob(TestBuildFarmJobMixin, TestCaseWithFactory):
         # The job type is required to create a build farm job.
         self.assertEqual(
             BuildFarmJobType.PACKAGEBUILD, self.build_farm_job.job_type)
+        # Failure count defaults to zero.
+        self.assertEqual(0, self.build_farm_job.failure_count)
         # Other attributes are unset by default.
         self.assertEqual(None, self.build_farm_job.processor)
         self.assertEqual(None, self.build_farm_job.virtualized)
