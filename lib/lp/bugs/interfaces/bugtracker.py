@@ -363,14 +363,21 @@ class IBugTracker(Interface):
     def addRemoteComponentGroup(component_group_name):
         """Adds a new component group to the bug tracker"""
 
+    @export_read_operation()
+    def getAllRemoteComponentGroups():
+        """Retrieve all of the registered component groups for bug tracker.
+        """
+
+    @operation_parameters(
+        component_group_name=TextLine(
+            title=u"The name of the remote component group", required=True))
+# TODO: Why can't I specify this as the return type?
+#    @operation_returns_entry(IBugTrackerComponentGroup)
+    @export_read_operation()
     def getRemoteComponentGroup(component_group_name):
         """Retrieve a given component group registered with the bug tracker.
 
-        :param group_name: Name of the component group to retrieve.
-        """
-
-    def getAllRemoteComponentGroups():
-        """Retrieve all of the registered component groups for bug tracker.
+        :param component_group_name: Name of the component group to retrieve.
         """
 
 class IBugTrackerSet(Interface):
@@ -483,6 +490,9 @@ class IBugTrackerComponent(Interface):
     they affect.  This class provides a mapping of this upstream component
     to the corresponding source package in the distro.
     """
+    #TODO: Is this needed?
+    export_as_webservice_entry()
+
     id = Int(title=_('ID'), required=True, readonly=True)
     is_visible = Bool(title=_('Is Visible?'),
                       description=_("Should the component be shown in "
@@ -494,16 +504,18 @@ class IBugTrackerComponent(Interface):
                                    "it across updates of bugtracker data."),
                      readonly=True)
   
+    # TODO: Should this be BugTrackerNameField(??
     name = exported(
-        BugTrackerNameField(
+        Text(
             title=_('Name'),
             constraint=name_validator,
             description=_('The name of a software component'
                           'in a remote bug tracker')))
 
     distro_source_package = exported(
-        BugTrackerNameField(
+        Reference(
             title=_('Distribution Source Package'),
+            schema=Interface,
             description=_('The distribution source package for this '
                           'component, if one has been defined.')))
 
@@ -522,27 +534,33 @@ class IBugTrackerComponentGroup(Interface):
     Some bug trackers organize sets of components into higher level groups,
     such as Bugzilla's 'product'.
     """
+    #TODO: Is this needed?
+    #export_as_webservice_entry()
+
     id = Int(title=_('ID'))
 
     name = exported(
-        BugTrackerNameField(
+        Text(
             title=_('Name'),
-            constraint=name_validator,
+#            constraint=name_validator,
             description=_('The name of the bug tracker product.')))
 
-    components = exported(
-        List(
-            title=_('Components'),
-            description=_(
-                'A list of components in the remote bug tracker that '
-                'are grouped together in this product'),
-            value_type=BugTrackerURL(
-                allowed_schemes=LOCATION_SCHEMES_ALLOWED),  # What's this?
-            required=False))
+    # This probably should be a sql multi-join
+    #components = exported(
+    #    List(
+    #        title=_('Components'),
+    #        description=_(
+    #            'A list of components in the remote bug tracker that '
+    #            'are grouped together in this product'),
+    #        required=False))
 
-    bug_tracker = exported(
-        Reference(title=_('BugTracker'), schema=Interface))
+    #bug_tracker = exported(
+    #    Reference(title=_('BugTracker'), schema=Interface))
 
+    @operation_parameters(
+        component_name=TextLine(
+            title=u"The name of the remote software component to be added",
+            required=True))
     @export_write_operation()
     def addComponent(component_name):
        """Adds a component to be tracked as part of this component group"""

@@ -362,7 +362,6 @@
                 permission="zope.Public"
                 attributes="
                     active
-                    addRemoteComponentGroup
                     aliases
                     baseurl
                     bugtrackertype
@@ -395,6 +394,7 @@
                     destroySelf
                     ensurePersonForSelf
                     linkPersonToSelf
+                    addRemoteComponentGroup
                     "
                 set_attributes="
                     aliases
@@ -424,12 +424,14 @@
             class="canonical.launchpad.database.BugTrackerComponent">
             <allow
                 attributes="
+                    name
                     is_visible
                     is_custom
                     "/>
             <require
                 permission="zope.Public"
                 attributes="
+                    id
                     show
                     hide
                     setCustom
@@ -444,6 +446,13 @@
             class="canonical.launchpad.database.BugTrackerComponentGroup">
             <allow
                 attributes="
+                    name
+                    bug_tracker
+                    "/>
+            <require
+                permission="zope.Public"
+                attributes="
+                    id
                     addComponent
                     addCustomComponent
                     "/>

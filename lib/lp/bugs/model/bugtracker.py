@@ -533,21 +533,32 @@ class BugTracker(SQLBase):
 
         store = IStore(BugTrackerComponentGroup)
         store.add(component_group)
+        #TODO: ARGH! Why does it give me permission denied when I try to flush() or commit()?
+        #store.flush()
+        #store.commit()
 
         return component_group
 
     def getAllRemoteComponentGroups(self):
         """See `IBugTracker`."""
         component_groups = []
-# TODO: Implement
-#        component_groups = ComponentGroup.select(
-#                        "component_group in (%s)" % ",".join(blah), orderBy="name")
+        #TODO: This should work but also fails with permission denied
+#        component_groups = Store.of(self).find(
+#            BugTrackerComponentGroup,
+#            BugTrackerComponentGroup.bug_tracker == self.id)
+#        component_groups = component_groups.order_by(
+#            BugTrackerComponentGroup.name)
         return component_groups
 
     def getRemoteComponentGroup(self, component_group_name):
         """See `IBugTracker`."""
-        #TODO
-        return None
+        component_group = None
+#        store = IStore(BugTrackerComponentGroup)
+# TODO: ARGH! this should work however it gives a cryptic "ProgrammingError: permission denied for relation..."
+#        component_group = store.find(
+#            BugTrackerComponentGroup,
+#            name = component_group_name).one()
+        return component_group
 
 
 class BugTrackerSet:
@@ -740,10 +751,10 @@ class BugTrackerComponentGroup(SQLBase):
     name = StringCol(notNull=True)
 
     bug_tracker = ForeignKey(
-        dbName='bugtracker', foreignKey='BugTracker', notNull=True)
+        dbName='bug_tracker', foreignKey='BugTracker', notNull=True)
 
     components = SQLMultipleJoin(
-                'BugTrackerComponent', joinColumn='component_group', orderBy='name')
+        'BugTrackerComponentGroup', joinColumn='component_group', orderBy='name')
 
     def addComponent(self, component_name):
         """Adds a component that is synced from a remote bug tracker"""
