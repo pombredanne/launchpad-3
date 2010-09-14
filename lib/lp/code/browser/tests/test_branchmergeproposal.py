@@ -3,6 +3,8 @@
 
 # pylint: disable-msg=F0401
 
+from __future__ import with_statement
+
 """Unit tests for BranchMergeProposals."""
 
 __metaclass__ = type
@@ -49,10 +51,12 @@ from lp.code.model.diff import (
 from lp.code.model.revision import RevisionSet
 from lp.code.tests.helpers import add_revision_to_branch
 from lp.testing import (
+    BrowserTestCase,
     login_person,
     TestCaseWithFactory,
     time_counter,
     )
+from lp.testing.fakelibrarian import FakeLibrarian
 from lp.testing.views import create_initialized_view
 
 
@@ -842,6 +846,22 @@ class TestBranchMergeCandidateView(TestCaseWithFactory):
                 year=2008, month=9, day=10, tzinfo=pytz.UTC))
         view = create_initialized_view(bmp, '+link-summary')
         self.assertEqual('Eric on 2008-09-10', view.status_title)
+
+class TestBranchMergeProposal(BrowserTestCase):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_conversation(self):
+        bmp = self.factory.makeBranchMergeProposal()
+        parent = add_revision_to_branch(self.factory, bmp.source_branch,
+            self.factory.getUniqueDate()).revision
+        revision = add_revision_to_branch(self.factory, bmp.source_branch,
+            self.factory.getUniqueDate()).revision
+        with FakeLibrarian() as librarian:
+            diff = self.factory.makeDiff('Instrumental diff')
+            bmp.generateIncrementalDiff(parent, revision, diff)
+            browser = self.getViewBrowser(bmp)
+        assert 'Instrumental diff' in browser.contents
 
 
 class TestLatestProposalsForEachBranch(TestCaseWithFactory):
