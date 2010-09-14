@@ -131,9 +131,151 @@ register_command(cmd_launchpad_server)
 
 
 class LPForkingService(object):
-    """A class encapsulating the state of the LP Service."""
+    """A service that can be asked to start a new bzr subprocess via fork.
 
-    DEFAULT_HOST = '127.0.0.1'
+    The basic idea is that python startup is very expensive. For example, the
+    original 'lp-serve' command could take 2.5s just to start up, before any
+    actual actions could be performed.
+
+    This class provides a service sitting on a socket, which can then be
+    requested to fork and run a given bzr command.
+
+    Clients connect to the socket and make a simple request, which then
+    receives a response. The possible requests are:
+
+        "hello\n":  Trigger a heartbeat to report that the program is still
+                    running, and write status information to the log file.
+        "quit\n":   Stop the service, but do so 'nicely', waiting for children
+                    to exit, etc. Once this is received the service will stop
+                    taking new requests on the port.
+        "fork <command>\n": Request a new subprocess to be started.
+            <command> is the bzr command to be run, such as "rocks" or
+            "lp-serve --inet 12".
+            The immediate response will be the path-on-disk to a directory full
+            of named pipes (fifos) that will be the stdout/stderr/stdin of the
+            new process.
+            If a client holds the socket open, when the child process exits,
+            the exit status (as given by 'wait()') will be written to the
+            socket.
+
+            Note that one of the key bits is that the client will not be
+            started with exec*, we just call 'commands.run_bzr*()' directly.
+            This way, any modules that are already loaded will not need to be
+            loaded again. However, care must be taken with any global-state
+            that should be reset.
+    """
+
+    # Design decisions. These are bits where we could have chosen a different
+    # method/implementation and weren't sure what would be best. Documenting
+    # the current decision, and the alternatives.
+    #
+    # [Decision #1]
+    #   Serve on a socket on port 4156 on the loopback
+    #       1) It doesn't make sense to serve to arbitrary hosts, we only want
+    #          the local host to make requests. (Since the client needs to
+    #          access the named fifos on the current filesystem.)
+    #       2) 4156 was chosen as the bzr serve port (4155) + 1.
+    #       3) It would also be reasonable to just used a named AF_UNIX socket
+    #          in a known or configurable location. Arguably we can provide
+    #          better security that way (since you can set rwx on a named
+    #          socket, but can't really do so on a port.)
+    # [Decision #2]
+    #   SIGCHLD
+    #       We want to quickly detect that children have exited so that we can
+    #       inform the client process quickly. At the moment, we register a
+    #       SIGCHLD handler that doesn't do anything. However, it means that
+    #       when we get the signal, if we are currently blocked in something
+    #       like '.accept()', we will jump out temporarily. At that point the
+    #       main loop will check if any children have exited. We could have
+    #       done this work as part of the signal handler, but that felt 'racy'
+    #       doing any serious work in a signal handler.
+    #       If we just used socket.timeout as the indicator to go poll for
+    #       children exiting, it slows the disconnect by as much as the full
+    #       timeout. (So a timeout of 1.0s will cause the process to hang by
+    #       that long until it determines that a child has exited, and can
+    #       close the connection.)
+    #       The current flow means that we'll notice exited children whenever
+    #       we finish the current work.
+    # [Decision #3]
+    #   Child vs Parent actions.
+    #       There are several actions that are done when we get a new request.
+    #       We have to create the fifos on disk, fork a new child, connect the
+    #       child to those handles, and inform the client of the new path (not
+    #       necessarily in that order.) It makes sense to wait to send the path
+    #       message until after the fifos have been created. That way the
+    #       client can just try to open them immediately, and the
+    #       client-and-child will be synchronized by the open() calls.
+    #       However, should the client be the one doing the mkfifo, should the
+    #       server? Who should be sending the message? Should we fork after the
+    #       mkfifo or before.
+    #       The current thoughts:
+    #           1) Try to do work in the child when possible. This should allow
+    #              for 'scaling' because the server is single-threaded.
+    #           2) We create the directory itself in the server, because that
+    #              allows the server to monitor whether the client failed to
+    #              clean up after itself or not.
+    #           3) Otherwise we create the fifos in the client, and then send
+    #              the message back.
+    # [Decision #4]
+    #   Exit information
+    #       How do we inform the client process that the child has exited?
+    #       1) Arguably they could see that stdout and stderr have been closed,
+    #          and thus stop reading. In testing, I wrote a client which uses
+    #          select.poll() over stdin/stdout/stderr and used that to ferry
+    #          the content to the appropriate local handle. However for the
+    #          FIFOs, when the remote end closed, I wouldn't see any
+    #          corresponding information on the local end. There obviously
+    #          wasn't any data to be read, so they wouldn't show up as
+    #          'readable' (for me to try to read, and get 0 bytes, indicating
+    #          it was closed). I also wasn't seeing POLLHUP, which seemed to be
+    #          the correct indicator.  As such, we decided to inform the client
+    #          on the socket that they originally made the fork request, rather
+    #          than just closing the socket immediately.
+    #       2) Going further, we could have had the forking server close the
+    #          socket, and only the child hold the socket open. When the child
+    #          exits, then the OS naturally closes the socket. However, if we
+    #          want the returncode, then we should put that as bytes on the
+    #          socket before we exit. Having the client do the work means that
+    #          in error conditions, it could easily die before being able to
+    #          write anything (think SEGFAULT, etc). We already want the
+    #          forking server to be 'wait'() ing on its children. Both so that
+    #          we don't get zombies, and with wait3() we can get the rusage
+    #          (user time, memory consumption, etc.)
+    #          As such, it seems reasonable that the server can then also
+    #          report back when a child is seen as exiting.
+    # [Decision #5]
+    #   cleanup once connected
+    #       The child process blocks during 'open()' waiting for the client to
+    #       connect to its fifos. Once the client has connected, the child then
+    #       deletes the temporary directory and the fifos from disk. This means
+    #       that there isn't much left for diagnosis, but it also means that
+    #       the client won't leave garbage around if it crashes, etc.
+    #       Note that the forking service itself still monitors the paths
+    #       created, and will delete garbage if it sees that a child failed to
+    #       do so.
+    # [Decision #6]
+    #   os._exit(retcode) in the child
+    #       Calling sys.exit(retcode) raises an exception, which then bubbles
+    #       up the stack and runs exit functions (and finally statements). When
+    #       I tried using it originally, I would see the current child bubble
+    #       all the way up the stack (through the server code that it fork()
+    #       through), and then get to main() returning code 0. However, the
+    #       process would exit nonzero. My guess is that something in the
+    #       atexit functions was failing, but that it was happening after
+    #       logging, etc had been shut down.
+    #       Note that whatever global state has been set up by the client,
+    #       should have been flushed before run_bzr_* has exited (which we *do*
+    #       wait for), and any other global state is probably a remnant from
+    #       the service process. Which will be cleaned up by the service
+    #       itself, rather than the child.
+    #       There is some possibility that files won't get flushed, etc. So we
+    #       may want to be calling sys.exitfunc() first. Note that bzr itself
+    #       uses sys.exitfunc(); os._exit() in the 'bzr' main script, as the
+    #       teardown time of all the python state was quite noticeable in
+    #       real-world runtime. As such, bzrlib should be pretty safe, or it
+    #       would have been failing for people already.
+
+    DEFAULT_HOST = '127.0.0.1' # See [Decision #1]
     DEFAULT_PORT = 4156
     WAIT_FOR_CHILDREN_TIMEOUT = 5*60 # Wait no more than 5 min for children
     SOCKET_TIMEOUT = 1.0
@@ -254,6 +396,7 @@ class LPForkingService(object):
         # leave garbage around. Because the open() is done in blocking mode, we
         # know that someone has already connected to them, and we don't want
         # anyone else getting confused and connecting.
+        # See [Decision #5]
         os.remove(stderr_path)
         os.remove(stdout_path)
         os.remove(stdin_path)
@@ -281,6 +424,13 @@ class LPForkingService(object):
     def _run_child_command(self, command_argv):
         # This is the point where we would actually want to do something with
         # our life
+        # TODO: We may want to consider special-casing the 'lp-serve' command.
+        #       As that is the primary use-case for this service, it might be
+        #       interesting to have an already-instantiated instance, where we
+        #       can just pop on an extra argument and be ready to go. However,
+        #       that would probably only really be measurable if we prefork. As
+        #       it looks like ~200ms is 'fork()' time, but only 50ms is
+        #       run-the-command time.
         retcode = commands.run_bzr_catch_errors(command_argv)
         self._close_child_file_descriptons()
         trace.mutter('%d finished %r'
@@ -294,6 +444,7 @@ class LPForkingService(object):
         #       to fire, however, some of those may be still around from the
         #       parent process, which we don't really want.
         ## sys.exitfunc()
+        # See [Decision #6]
         os._exit(retcode)
 
     @staticmethod
@@ -305,7 +456,6 @@ class LPForkingService(object):
     def fork_one_request(self, conn, client_addr, command_argv):
         """Fork myself and serve a request."""
         temp_name = tempfile.mkdtemp(prefix='lp-forking-service-child-')
-        self._create_child_file_descriptors(temp_name)
         # Now that we've set everything up, send the response to the client we
         # create them first, so the client can start trying to connect to them,
         # while we fork and have the child do the same.
@@ -315,6 +465,8 @@ class LPForkingService(object):
             pid = os.getpid()
             trace.mutter('%d spawned' % (pid,))
             self._server_socket.close()
+            # See [Decision #3]
+            self._create_child_file_descriptors(temp_name)
             conn.sendall('ok\n%d\n%s\n' % (pid, temp_name))
             conn.close()
             self.become_child(command_argv, temp_name)
@@ -422,6 +574,7 @@ class LPForkingService(object):
             c_path, sock = self._child_processes.pop(c_id)
             trace.mutter('%s exited %s and usage: %s'
                          % (c_id, exit_code, rusage))
+            # See [Decision #4]
             try:
                 sock.sendall('exited\n%s\n' % (exit_code,))
             except (self._socket_timeout, self._socket_error), e:
