@@ -138,6 +138,10 @@ class OAuthAuthorizeTokenView(LaunchpadFormView, JSONTokenMixin):
     field_names = []
     token = None
 
+    # The browser's User-Agent must begin with this string for the
+    # GRANT_PERMISSIONS access level to be an option.
+    GRANT_PERMISSIONS_USER_AGENT_PREFIX = "Launchpad Credentials Manager"
+
     @property
     def visible_actions(self):
         """Restrict the actions to the subset the client can make use of.
@@ -175,6 +179,12 @@ class OAuthAuthorizeTokenView(LaunchpadFormView, JSONTokenMixin):
         # options, remove it from the list.
         if (OAuthPermission.GRANT_PERMISSIONS.name in allowed_permissions
             and len(allowed_permissions) > 1):
+            allowed_permissions.remove(OAuthPermission.GRANT_PERMISSIONS.name)
+
+        # GRANT_PERMISSIONS may only be requested by a specific User-Agent.
+        if (OAuthPermission.GRANT_PERMISSIONS.name in allowed_permissions
+            and not self.request.getHeader("User-Agent").startswith(
+                self.GRANT_PERMISSIONS_USER_AGENT_PREFIX)):
             allowed_permissions.remove(OAuthPermission.GRANT_PERMISSIONS.name)
 
         for action in self.actions:
@@ -222,10 +232,15 @@ class OAuthAuthorizeTokenView(LaunchpadFormView, JSONTokenMixin):
                 # The request is OAuth-signed, but the token has
                 # the wrong access level.
                 raise Unauthorized("OAuth token has insufficient access level.")
+            if not token.consumer.key.startswith(
+                "Launchpad Credentials Manager"):
+                raise Unauthorized(
+                    "Only the Launchpad Credentials Manager can access this "
+                    "page by signing requests with an OAuth token.")
 
         self.storeTokenContext()
-        form = get_oauth_authorization(self.request)
-        key = form.get('oauth_token')
+
+        key = self.request.form.get('oauth_token')
         if key:
             self.token = getUtility(IOAuthRequestTokenSet).getByKey(key)
         super(OAuthAuthorizeTokenView, self).initialize()

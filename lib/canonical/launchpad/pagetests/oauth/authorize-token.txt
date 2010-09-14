@@ -143,7 +143,34 @@ prevents annoying cases where the user grants a level of permission
 that isn't enough for the application. The user always has the option
 to deny permission altogether.
 
-    >>> def print_access_levels(allow_permission):
+    >>> def filter_user_agent(key, value, new_value):
+    ...     """A filter to replace the User-Agent header.
+    ...
+    ...     [XXX bug=638058] This is a hack to work around a bug in
+    ...     zope.testbrowser.
+    ...     """
+    ...
+    ...     if key.lower() == "user-agent":
+    ...         return (key, new_value)
+    ...     return (key, value)
+
+    >>> def print_access_levels(allow_permission, user_agent=None):
+    ...     if user_agent is not None:
+    ...         # [XXX bug=638058] This is a hack to work around a bug in
+    ...         # zope.testbrowser which prevents browser.addHeader
+    ...         # from working with User-Agent.
+    ...         mech_browser = browser.mech_browser
+    ...         # Store the original User-Agent for later.
+    ...         old_user_agent = [
+    ...             value for key, value in mech_browser.addheaders
+    ...             if key.lower() == "user-agent"][0]
+    ...         # Replace the User-Agent with the value passed into this
+    ...         # function.
+    ...         mech_browser.addheaders = [
+    ...             filter_user_agent(key, value, user_agent)
+    ...             for key, value in mech_browser.addheaders]
+    ...
+    ...     # Okay, now we can make the request.
     ...     browser.open(
     ...         "http://launchpad.dev/+authorize-token?%s&%s"
     ...         % (urlencode(params), allow_permission))
@@ -151,6 +178,13 @@ to deny permission altogether.
     ...     actions = main_content.findAll('input', attrs={'type': 'submit'})
     ...     for action in actions:
     ...         print action['value']
+    ...
+    ...     if user_agent is not None:
+    ...         # Finally, restore the old User-Agent.
+    ...         mech_browser.addheaders = [
+    ...             filter_user_agent(key, value, old_user_agent)
+    ...             for key, value in mech_browser.addheaders]
+
 
     >>> print_access_levels(
     ...     'allow_permission=WRITE_PUBLIC&allow_permission=WRITE_PRIVATE')
@@ -159,16 +193,19 @@ to deny permission altogether.
     Change Anything
 
 The only time the 'Grant Permissions' permission shows up in this list
-is if the client specifically requests it, and no other
-permission. (Also requesting UNAUTHORIZED is okay--it will show up
-anyway.)
+is if a client identifying itself as the Launchpad Credentials Manager
+specifically requests it, and no other permission. (Also requesting
+UNAUTHORIZED is okay--it will show up anyway.)
 
-    >>> print_access_levels('allow_permission=GRANT_PERMISSIONS')
+    >>> USER_AGENT = "Launchpad Credentials Manager v1.0"
+    >>> print_access_levels(
+    ...     'allow_permission=GRANT_PERMISSIONS', USER_AGENT)
     No Access
     Grant Permissions
 
     >>> print_access_levels(
-    ...     'allow_permission=GRANT_PERMISSIONS&allow_permission=UNAUTHORIZED')
+    ...     'allow_permission=GRANT_PERMISSIONS&allow_permission=UNAUTHORIZED',
+    ...     USER_AGENT)
     No Access
     Grant Permissions
 
@@ -176,6 +213,16 @@ anyway.)
     ...     'allow_permission=WRITE_PUBLIC&allow_permission=GRANT_PERMISSIONS')
     No Access
     Change Non-Private Data
+
+If a client asks for GRANT_PERMISSIONS but doesn't claim to be the
+Launchpad Credentials Manager, Launchpad will not show GRANT_PERMISSIONS.
+
+    >>> print_access_levels('allow_permission=GRANT_PERMISSIONS')
+    No Access
+    Read Non-Private Data
+    Change Non-Private Data
+    Read Anything
+    Change Anything
 
 If an application doesn't specify any valid access levels, or only
 specifies the UNAUTHORIZED access level, Launchpad will show all the
