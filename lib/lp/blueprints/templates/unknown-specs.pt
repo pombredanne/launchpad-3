@@ -11,49 +11,47 @@
 
 <div metal:fill-slot="main"
      tal:define="specs view/specs;
-                 has_any_specs view/has_any_specifications">
+                 has_any_specs view/has_any_specifications;
+                 blueprints_usage view/context/blueprints_usage">
+  <div class="top-portlet">
+    <div id="specs-unknown">
+      <strong>
+        <p tal:condition="blueprints_usage/enumvalue:EXTERNAL">
+          <tal:project replace="view/context/displayname" /> does not use Launchpad
+          for planning or documentation.
+        </p>
+        <p tal:condition="blueprints_usage/enumvalue:NOT_APPLICABLE">
+          <tal:project replace="view/context/displayname" /> does not track
+          use feature planning or documentation.
+        </p>
+        <p tal:condition="blueprints_usage/enumvalue:UNKNOWN">
+          Launchpad does not know how
+          <tal:project replace="view/context/displayname" /> tracks feature
+          planning or documentation.
+        </p>
+      </strong>
 
-    <div tal:condition="view/context/blueprints_usage/enumvalue:EXTERNAL">
-        <strong><tal:project replace="view/context/displayname" /> does not use Launchpad
-        for specification tracking.</strong>
-    </div>
-
-    <div tal:condition="view/context/blueprints_usage/enumvalue:NOT_APPLICABLE">
-        <strong><tal:project replace="view/context/displayname" /> does not track
-        specifications.</strong>
-    </div>
-
-    <div tal:condition="view/context/blueprints_usage/enumvalue:UNKNOWN">
-        <strong>
-        Launchpad does not know how
-        <tal:project replace="view/context/displayname" /> uses specifications.
-        </strong>
-    </div>
-
-    <div tal:condition="view/context/wikiurl">
-     <p><tal:project replace="view/context/displayname" /> has a wiki, which
-      may be used for specifications.</p>
-
-      <p>
+      <p id="wiki-fallback" 
+        tal:define="wiki view/context/wikiurl"
+        tal:condition="wiki">
+        <tal:project replace="view/context/displayname" /> has a wiki, which
+        may be used for feature plannning and documentation.<br />
         <a tal:attributes="href view/context/wikiurl">
-        <tal:project replace="view/context/displayname" /> wiki
+          <tal:project replace="view/context/displayname" /> wiki
         </a>
       </p>
-
     </div>
-    <ul class="horizontal">
-      <li>
-        <a class="info sprite"
-          href="https://help.launchpad.net/BlueprintDocumentation">
-          Read more about tracking blueprints
-        </a>
-      </li>
-      </ul>
-      <ul class="horiztonal">
-      <li>
-        <a tal:replace="structure context/menu:overview/configure_blueprints/fmt:link" />
-      </li>
-    </ul>
+    
+    <p id="configure-support"
+      tal:condition="view/can_configure_blueprints">
+      Launchpad Blueprints allow your project to track feature planning and
+      documentation.<br />
+      <a class="info sprite"
+        href="https://help.launchpad.net/BlueprintDocumentation">
+        Read more about tracking feature planning with blueprints</a><br />
+      <a tal:replace="structure context/menu:overview/configure_blueprints/fmt:link" /><br />
+    </p>
+  </div>
 </div>
 </body>
 </html>
