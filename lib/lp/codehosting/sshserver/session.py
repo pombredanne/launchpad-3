@@ -54,6 +54,9 @@ class _WaitForExit(process.ProcessReader):
         self._sock = sock
         self.connected = 1
 
+    def close(self):
+        self._sock.close()
+
     def dataReceived(self, data):
         # This is the only thing we do differently from the standard
         # ProcessReader. When we get data on this socket, we need to treat it
@@ -62,7 +65,7 @@ class _WaitForExit(process.ProcessReader):
             # Bad data, we want to signal that we are closing the connection
             # TODO: How?
             # self.proc.?
-            self._sock.close()
+            self.close()
             # I don't know what to put here if we get bogus data, but I *do*
             # want to say that the process is now considered dead to me
             log.err('Got invalid exit information: %r' % (data,))
@@ -232,7 +235,11 @@ class ForkedProcessTransport(process.BaseProcess):
     # Implemented because ProcessWriter/ProcessReader want to call it
     # Copied from twisted.internet.Process
     def childConnectionLost(self, childFD, reason):
-        os.close(self.pipes[childFD].fileno())
+        close = getattr(self.pipes[childFD], 'close', None)
+        if close is not None:
+            close()
+        else:
+            os.close(self.pipes[childFD].fileno())
         del self.pipes[childFD]
         try:
             self.proto.childConnectionLost(childFD)
