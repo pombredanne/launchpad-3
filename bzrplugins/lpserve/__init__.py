@@ -174,6 +174,39 @@ class LPForkingService(object):
         self._server_socket.settimeout(self.SOCKET_TIMEOUT)
         trace.mutter('set socket timeout to: %s' % (self.SOCKET_TIMEOUT,))
 
+    def _handle_sigchld(self, signum, frm):
+        # While we are running, disable this as a handler, so we don't
+        # re-enter
+        signal.signal(signal.SIGCHLD, self._prev_sigchld_handler)
+        try:
+            if (self._prev_sigchld_handler is not None
+                and callable(self._prev_sigchld_handler)):
+                # self._prev_sigchld_handler may be 0 or 1, etc if the previous
+                # handling was IGNORE or DEFAULT, etc.
+                self._prev_sigchld_handler(signum, frm)
+            self._poll_children()
+        finally:
+            signal.signal(signal.SIGCHLD, self._handle_sigchld)
+
+    def _register_sigchld(self):
+        """Register a SIGCHILD handler.
+
+        If we have a trigger for SIGCHILD then we can quickly respond to
+        clients when their process exits. The main risk is getting more EAGAIN
+        errors elsewhere.
+        """
+        # We register a dummy function, because all we really care about is
+        # interrupting the '.accept()' call.
+        self._prev_sigchld_handler = signal.signal(signal.SIGCHLD,
+                                                   self._handle_sigchld)
+
+    def _unregister_sigchld(self):
+        if self._prev_sigchld_handler is None:
+            signal.signal(signal.SIGCHLD, signal.SIG_DFL)
+        else:
+            signal.signal(signal.SIGCHLD, self._prev_sigchld_handler)
+        self._prev_sigchld_handler = None
+
     def _create_child_file_descriptors(self, base_path):
         stdin_path = os.path.join(base_path, 'stdin')
         stdout_path = os.path.join(base_path, 'stdout')
@@ -227,6 +260,8 @@ class LPForkingService(object):
 
     def become_child(self, command_argv, path):
         """We are in the spawned child code, do our magic voodoo."""
+        # Stop tracking SIGCHILD, we don't want it to confuse the child
+        self._unregister_sigchld()
         # Reset the start time
         trace._bzr_log_start_time = time.time()
         trace.mutter('%d starting %r'
@@ -287,6 +322,7 @@ class LPForkingService(object):
     def main_loop(self):
         self._should_terminate.clear()
         self._create_master_socket()
+        self._register_sigchld()
         trace.note('Listening on port: %s' % (self.port,))
         while not self._should_terminate.isSet():
             try:
@@ -303,8 +339,6 @@ class LPForkingService(object):
             else:
                 self.log(client_addr, 'connected')
                 self.serve_one_connection(conn, client_addr)
-                if self._should_terminate.isSet():
-                    break
         trace.note('Shutting down. Waiting up to %.0fs for %d child processes'
                    % (self.WAIT_FOR_CHILDREN_TIMEOUT,
                       len(self._child_processes),))

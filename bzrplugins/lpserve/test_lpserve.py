@@ -40,6 +40,12 @@ class TestingLPForkingServiceInAThread(lpserve.LPForkingService):
         super(TestingLPForkingServiceInAThread, self).__init__(host=host,
                                                                port=port)
 
+    def _register_sigchld(self):
+        pass # Don't register it for the test suite
+
+    def _unregister_sigchld(self):
+        pass # We don't fork, so we don't need to watch SIGCHLD
+
     def _create_master_socket(self):
         trace.mutter('creating master socket')
         super(TestingLPForkingServiceInAThread, self)._create_master_socket()
