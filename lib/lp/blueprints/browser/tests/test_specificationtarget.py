@@ -197,6 +197,7 @@ class TestHasSpecificationsConfiguration(TestCaseWithFactory):
         view = create_initialized_view(project_group, '+specs')
         self.assertEqual(False, view.can_configure_blueprints)
 
+
 def test_suite():
     suite = unittest.TestSuite()
     suite.addTest(unittest.TestLoader().loadTestsFromName(__name__))

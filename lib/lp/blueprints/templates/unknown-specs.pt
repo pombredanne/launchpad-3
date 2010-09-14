@@ -9,9 +9,7 @@
 
 <body>
 
-<div metal:fill-slot="main"
-     tal:define="specs view/specs;
-                 has_any_specs view/has_any_specifications">
+<div metal:fill-slot="main">
   <div class="top-portlet">
     <div id="specs-unknown">
       <strong>
@@ -42,7 +40,7 @@
       </strong>
 
       <div tal:omit-tag tal:condition="view/has_wiki">
-      <p id="wiki-fallback" 
+      <p id="wiki-fallback"
         tal:define="wiki view/context/wikiurl"
         tal:condition="wiki">
         <tal:project replace="view/context/displayname" /> has a wiki, which
@@ -53,7 +51,7 @@
       </p>
       </div>
     </div>
-    
+
     <p id="configure-support"
       tal:condition="view/can_configure_blueprints">
       Launchpad Blueprints allow your project to track feature planning and

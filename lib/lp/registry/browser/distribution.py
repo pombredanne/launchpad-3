@@ -460,6 +460,7 @@ class DistributionOverviewMenu(ApplicationMenu, DistributionLinksMixin):
         summary = 'Enable tracking of specifications and meetings'
         return Link('+edit', text, summary, icon='edit')
 
+
 class DerivativeDistributionOverviewMenu(DistributionOverviewMenu):
 
     usedfor = IDerivativeDistribution

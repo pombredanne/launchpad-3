@@ -154,9 +154,9 @@ class HasSpecificationsView(LaunchpadView):
     @property
     def template(self):
         # Check for the magical "index" added by the browser:page template
-        # machinery. If it exists this is actually the 
+        # machinery. If it exists this is actually the
         # zope.app.pagetemplate.simpleviewclass.simple class that is magically
-        # mixed in by the browser:page zcml directive the template defined in 
+        # mixed in by the browser:page zcml directive the template defined in
         # the directive should be used.
         if safe_hasattr(self, 'index'):
             return super(HasSpecificationsView, self).template
@@ -231,7 +231,8 @@ class HasSpecificationsView(LaunchpadView):
 
     @property
     def can_configure_blueprints(self):
-        """Can the user configure blueprints for the `ISpecificationTarget`."""
+        """Can the user configure blueprints for the `ISpecificationTarget`.
+        """
         target = self.context
         if IProduct.providedBy(target) or IDistribution.providedBy(target):
             return check_permission('launchpad.Edit', self.context)
