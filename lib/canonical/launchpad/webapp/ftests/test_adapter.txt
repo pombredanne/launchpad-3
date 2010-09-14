@@ -296,7 +296,7 @@ another query:
     >>> store.execute('SELECT 2', noresult=True)
     Traceback (most recent call last):
     ...
-    TimeoutError: ...SELECT 2...
+    RequestExpired: request expired.
 
 The statement about to be executed is not recorded in the statement log.
 The request time limit was exceeded before the statement was issued to
@@ -359,7 +359,7 @@ remove the timout:
     >>> store.execute('SELECT 1', noresult=True)
     Traceback (most recent call last):
     ...
-    TimeoutError: ...SELECT 1...
+    RequestExpired: request expired.
     >>> statement_issued.set()
     >>> thread.join()
     >>> clear_request_started()

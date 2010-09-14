@@ -343,3 +343,36 @@ demonstrate that the cached values are being correctly used in the loop.
 
     >>> ignore = config.pop('is_production')
 
+Disabling
+---------
+
+Memcache in templates can be disabled entirely by setting the memcache flag to
+'disabled'.
+
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.services.features.model import FeatureFlag, getFeatureStore
+    >>> from lp.services.features.webapp import ScopesFromRequest
+    >>> from lp.services.features.flags import FeatureController
+    >>> from lp.services.features import per_thread
+    >>> ignore = getFeatureStore().add(FeatureFlag(
+    ...     scope=u'default', flag=u'memcache', value=u'disabled',
+    ...     priority=1))
+    >>> empty_request = LaunchpadTestRequest()
+    >>> per_thread.features = FeatureController(
+    ...     ScopesFromRequest(empty_request).lookup)
+
+And now what cached before will not cache.
+
+    >>> template = TestPageTemplate(dedent("""\
+    ...     <div tal:content="cache:public">
+    ...         <span tal:content="param">placeholder</span>
+    ...     </div>"""))
+
+    >>> print template(param='first')
+    <div>
+        <span>first</span>
+    </div>
+    >>> print template(param='second')
+    <div>
+        <span>second</span>
+    </div>

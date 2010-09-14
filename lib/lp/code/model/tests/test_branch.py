@@ -29,6 +29,7 @@ from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
 from canonical.testing import (
     DatabaseFunctionalLayer,
@@ -100,16 +101,16 @@ from lp.code.model.branchjob import (
     ReclaimBranchSpaceJob,
     )
 from lp.code.model.branchmergeproposal import BranchMergeProposal
+from lp.code.model.branchrevision import BranchRevision
 from lp.code.model.codeimport import (
     CodeImport,
     CodeImportSet,
     )
 from lp.code.model.codereviewcomment import CodeReviewComment
+from lp.code.model.revision import Revision
 from lp.code.tests.helpers import add_revision_to_branch
 from lp.codehosting.bzrutils import UnsafeUrlSeen
-from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.registry.model.product import ProductSet
 from lp.registry.model.sourcepackage import SourcePackage
 from lp.services.osutils import override_environ
 from lp.testing import (
@@ -250,6 +251,59 @@ class TestBranchChanged(TestCaseWithFactory):
              RepositoryFormat.BZR_KNITPACK_1),
             (branch.control_format, branch.branch_format,
              branch.repository_format))
+
+
+class TestBranchRevisionMethods(TestCaseWithFactory):
+    """Test the branch methods for adding and removing branch revisions."""
+
+    layer = DatabaseFunctionalLayer
+
+    def _getBranchRevision(self, branch, rev_id):
+        """Get the branch revision for the specified branch and rev_id."""
+        resultset = IStore(BranchRevision).find(
+            BranchRevision,
+            BranchRevision.branch == branch,
+            BranchRevision.revision == Revision.id,
+            Revision.revision_id == rev_id)
+        return resultset.one()
+
+    def test_createBranchRevision(self):
+        # createBranchRevision adds the link for the revision to the branch.
+        branch = self.factory.makeBranch()
+        rev = self.factory.makeRevision()
+        # Nothing there to start with.
+        self.assertIs(None, self._getBranchRevision(branch, rev.revision_id))
+        branch.createBranchRevision(1, rev)
+        # Now there is one.
+        br = self._getBranchRevision(branch, rev.revision_id)
+        self.assertEqual(branch, br.branch)
+        self.assertEqual(rev, br.revision)
+
+    def test_removeBranchRevisions(self):
+        # removeBranchRevisions can remove a single linked revision.
+        branch = self.factory.makeBranch()
+        rev = self.factory.makeRevision()
+        branch.createBranchRevision(1, rev)
+        # Now remove the branch revision.
+        branch.removeBranchRevisions(rev.revision_id)
+        # Revision not there now.
+        self.assertIs(None, self._getBranchRevision(branch, rev.revision_id))
+
+    def test_removeBranchRevisions_multiple(self):
+        # removeBranchRevisions can remove multiple revision links at once.
+        branch = self.factory.makeBranch()
+        rev1 = self.factory.makeRevision()
+        rev2 = self.factory.makeRevision()
+        rev3 = self.factory.makeRevision()
+        branch.createBranchRevision(1, rev1)
+        branch.createBranchRevision(2, rev2)
+        branch.createBranchRevision(3, rev3)
+        # Now remove the branch revision.
+        branch.removeBranchRevisions(
+            [rev1.revision_id, rev2.revision_id, rev3.revision_id])
+        # No mainline revisions there now.
+        # The revision_history attribute is tested above.
+        self.assertEqual([], list(branch.revision_history))
 
 
 class TestBranchGetRevision(TestCaseWithFactory):

@@ -148,7 +148,9 @@ class MemcacheExpr:
         + ''.join(chr(i) for i in range(ord(':')+1, 127)) + '_' * 129)
 
     # We strip digits from our LPCONFIG when generating the key
-    # to ensure that edge1 and edge4 share cache.
+    # to ensure that multiple appserver instances sharing a memcache instance
+    # can get hits from each other. For instance edge1 and edge4 are in this
+    # situation.
     _lpconfig = config.instance_name.rstrip('0123456789')
 
     def getKey(self, econtext):
@@ -278,11 +280,7 @@ class MemcacheMiss:
             rule = '%s [%s seconds]' % (self._memcache_expr, self._max_age)
             value = "<!-- Cache hit: %s -->%s<!-- End cache hit: %s -->" % (
                 rule, value, rule)
-        if getUtility(IMemcacheClient).set(
-            self._key, value, self._max_age):
-            logging.debug("Memcache set succeeded for %s", self._key)
-        else:
-            logging.warn("Memcache set failed for %s", self._key)
+        getUtility(IMemcacheClient).set(self._key, value, self._max_age)
 
     def __repr__(self):
         return "<MemcacheCallback %s %d>" % (self._key, self._max_age)
