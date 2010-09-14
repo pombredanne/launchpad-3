@@ -127,7 +127,6 @@ from lp.code.errors import (
 from lp.code.interfaces.branch import IBranchSet
 from lp.code.interfaces.branchlookup import (
     IBranchLookup,
-    ILinkedBranchTraverser,
     )
 from lp.code.interfaces.codeimport import ICodeImportSet
 from lp.hardwaredb.interfaces.hwdb import IHWDBApplication
