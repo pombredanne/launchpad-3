@@ -34,7 +34,7 @@ class TestCronscriptEnabled(TestCase):
         # Ensure a reference is kept until the test is over.
         # tempfile will then clean itself up.
         self.addCleanup(lambda x: None, tempfile)
-        return 'file:' + tempfile.name
+        return 'file:' + os.path.abspath(tempfile.name)
 
     def test_noconfig(self):
         enabled = cronscript_enabled('file:/idontexist.ini', 'foo', self.log)
