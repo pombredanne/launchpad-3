@@ -26,6 +26,7 @@ from canonical.launchpad.webapp import (
     canonical_url,
     LaunchpadView,
     )
+from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.menu import (
@@ -217,6 +218,15 @@ class HasSpecificationsView(LaunchpadView):
         self.batchnav = BatchNavigator(
             self.specs, self.request,
             size=config.launchpad.default_batch_size)
+
+    @property
+    def can_configure_blueprints(self):
+        """Can the user configure blueprints for the `ISpecificationTarget`."""
+        target = self.context
+        if IProduct.providedBy(target) or IDistribution.providedBy(target):
+            return check_permission('launchpad.Edit', self.context)
+        else:
+            return False
 
     @property
     def label(self):

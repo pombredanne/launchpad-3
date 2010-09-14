@@ -18,7 +18,10 @@ from lp.testing import (
     login_person,
     TestCaseWithFactory,
     )
-from lp.testing.views import create_view
+from lp.testing.views import (
+    create_view,
+    create_initialized_view,
+    )
 
 
 class TestRegisterABlueprintButtonView(TestCaseWithFactory):
@@ -148,6 +151,38 @@ class TestHasSpecificationsTemplates(TestCaseWithFactory):
             view.default_template.filename,
             view.template.filename)
 
+
+class TestHasSpecificationsConfiguration(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_cannot_configure_blueprints_product_no_edit_permission(self):
+        product = self.factory.makeProduct()
+        view = create_initialized_view(product, '+specs')
+        self.assertEqual(False, view.can_configure_blueprints)
+
+    def test_can_configure_blueprints_product_with_edit_permission(self):
+        product = self.factory.makeProduct()
+        login_person(product.owner)
+        view = create_initialized_view(product, '+specs')
+        self.assertEqual(True, view.can_configure_blueprints)
+
+    def test_cannot_configure_blueprints_distribution_no_edit_permission(self):
+        distribution = self.factory.makeDistribution()
+        view = create_initialized_view(distribution, '+specs')
+        self.assertEqual(False, view.can_configure_blueprints)
+
+    def test_can_configure_blueprints_distribution_with_edit_permission(self):
+        distribution = self.factory.makeDistribution()
+        login_person(distribution.owner)
+        view = create_initialized_view(distribution, '+specs')
+        self.assertEqual(True, view.can_configure_blueprints)
+
+    def test_cannot_configure_blueprints_projectgroup_with_edit_permission(self):
+        project_group = self.factory.makeProject()
+        login_person(project_group.owner)
+        view = create_initialized_view(project_group, '+specs')
+        self.assertEqual(False, view.can_configure_blueprints)
 
 def test_suite():
     suite = unittest.TestSuite()
