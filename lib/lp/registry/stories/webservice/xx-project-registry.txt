@@ -568,7 +568,9 @@ It's possible to search the list and get a subset of the project groups.
 
     >>> project_collection = webservice.named_get(
     ...     "/projects", "search", text="Apache").jsonBody()
-    >>> projects = [project['display_name'] for project in project_collection['entries']]
+    >>> projects = [
+    ...     project['display_name']
+    ...     for project in project_collection['entries']]
     >>> for project_name in sorted(projects):
     ...     print project_name
     Derby
@@ -1228,6 +1230,13 @@ can delete files.
     >>> print_self_link_of_entries(ff_100_files)
     http://.../firefox/1.0/1.0.0/+file/filename2.txt
 
+Anonymous users can access project release files.
+
+    >>> release_files = anon_webservice.get(
+    ...     '/firefox/1.0/1.0.0/files').jsonBody()
+    >>> print_self_link_of_entries(release_files)
+    http://.../firefox/1.0/1.0.0/+file/filename2.txt
+
 
 Commercial subscriptions
 ------------------------
@@ -1252,7 +1261,6 @@ through the API.
 
     >>> logout()
 
-    >>> from lazr.restful.interfaces import IRepresentationCache
     >>> ws_uncache(mmm)
     >>> mmm = webservice.get("/mega-money-maker").jsonBody()
     >>> print mmm['display_name']
