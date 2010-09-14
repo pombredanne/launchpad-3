@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = [
     'close_bugs',
     'close_bugs_for_queue_item',
+    'close_bugs_for_sourcepackagerelease',
     'close_bugs_for_sourcepublication',
     'get_bugs_from_changes_file',
     'ProcessAccepted',

@@ -3,6 +3,8 @@
 
 """queue tool base class tests."""
 
+from __future__ import with_statement
+
 __metaclass__ = type
 __all__ = [
     'upload_bar_source',
@@ -12,6 +14,7 @@ __all__ = [
 import hashlib
 import os
 import shutil
+from StringIO import StringIO
 import tempfile
 from unittest import (
     TestCase,
@@ -33,7 +36,10 @@ from canonical.librarian.ftests.harness import (
     fillLibrarianFile,
     )
 from canonical.librarian.utils import filechunks
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing import (
+    LaunchpadFunctionalLayer, 
+    LaunchpadZopelessLayer,
+    )
 from lp.archiveuploader.nascentupload import NascentUpload
 from lp.archiveuploader.tests import (
     datadir,
@@ -42,7 +48,10 @@ from lp.archiveuploader.tests import (
     mock_logger_quiet,
     )
 from lp.bugs.interfaces.bug import IBugSet
-from lp.bugs.interfaces.bugtask import IBugTaskSet
+from lp.bugs.interfaces.bugtask import (
+    BugTaskStatus,
+    IBugTaskSet,
+    )
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -56,6 +65,9 @@ from lp.soyuz.enums import (
 from lp.soyuz.interfaces.archive import (
     IArchiveSet,
     )
+from lp.soyuz.scripts.processaccepted import (
+    close_bugs_for_sourcepackagerelease,
+    )
 from lp.soyuz.interfaces.queue import (
     IPackageUploadSet,
     )
@@ -63,6 +75,10 @@ from lp.soyuz.scripts.queue import (
     CommandRunner,
     CommandRunnerError,
     name_queue_map,
+    )
+from lp.testing import (
+    person_logged_in,
+    TestCaseWithFactory,
     )
 
 
@@ -924,6 +940,29 @@ class TestQueueTool(TestQueueBase):
         self.assertRaises(
             CommandRunnerError, self.execute_command,
             'override binary pmount', component_name='partner')
+
+
+class TestQueuePageClosingBugs(TestCaseWithFactory):
+    # The distroseries +queue page can close bug when accepting
+    # packages.  Unit tests for that belong here.
+
+    layer = LaunchpadFunctionalLayer
+
+    def test_close_bugs_for_sourcepackagerelease_with_private_bug(self):
+        # lp.soyuz.scripts.processaccepted.close_bugs_for_sourcepackagerelease
+        # should work with private bugs where the person using the queue
+        # page doesn't have access to it.
+        changes_file_template = "Format: 1.7\nLaunchpad-bugs-fixed: %s"
+        spr = self.factory.makeSourcePackageRelease()
+        bug_reporter = self.factory.makePerson()
+        archive_admin = self.factory.makePerson()
+        bug = self.factory.makeBug(owner=bug_reporter, private=True)
+        bug_task = self.factory.makeBugTask(
+            owner=bug_reporter, target=spr.sourcepackage, bug=bug)
+        changes = StringIO(changes_file_template % bug.id)
+        with person_logged_in(archive_admin):
+            close_bugs_for_sourcepackagerelease(spr, changes)
+        self.assertEqual(bug_task.status, BugTaskStatus.FIXRELEASED)
 
 
 class TestQueueToolInJail(TestQueueBase):
