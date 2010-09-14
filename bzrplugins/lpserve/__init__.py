@@ -129,7 +129,7 @@ class LPForkingService(object):
     DEFAULT_HOST = '127.0.0.1'
     DEFAULT_PORT = 4156
     WAIT_FOR_CHILDREN_TIMEOUT = 5*60 # Wait no more than 5 min for children
-    SOCKET_TIMEOUT = 1.0
+    SOCKET_TIMEOUT = 0.1
     SLEEP_FOR_CHILDREN_TIMEOUT = 1.0
 
     _fork_function = os.fork
@@ -278,14 +278,15 @@ class LPForkingService(object):
         self._children_spawned += 1
         pid = self._fork_function()
         if pid == 0:
-            trace.mutter('%d spawned' % (os.getpid(),))
+            pid = os.getpid()
+            trace.mutter('%d spawned' % (pid,))
             self._server_socket.close()
+            conn.sendall('ok\n%d\n%s\n' % (pid, temp_name))
             conn.close()
             self.become_child(command_argv, temp_name)
             trace.warning('become_child returned!!!')
             sys.exit(1)
         else:
-            conn.sendall('ok\n%d\n%s\n' % (pid, temp_name))
             self._child_processes[pid] = (temp_name, conn)
             self.log(client_addr, 'Spawned process %s for %r: %s'
                             % (pid, command_argv, temp_name))
