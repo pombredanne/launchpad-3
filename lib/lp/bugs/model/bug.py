@@ -25,6 +25,7 @@ from datetime import (
     timedelta,
     )
 from email.Utils import make_msgid
+from itertools import groupby
 import operator
 import re
 
@@ -58,7 +59,6 @@ from storm.expr import (
     SQLRaw,
     Union,
     )
-from storm.references import ReferenceSet
 from storm.store import (
     EmptyResultSet,
     Store,
@@ -325,11 +325,6 @@ class Bug(SQLBase):
     cve_links = SQLMultipleJoin('BugCve', joinColumn='bug', orderBy='id')
     mentoring_offers = SQLMultipleJoin(
             'MentoringOffer', joinColumn='bug', orderBy='id')
-    # XXX: kiko 2006-09-23: Why is subscriptions ordered by ID?
-    # subscriptions = SQLMultipleJoin(
-    #         'BugSubscription', joinColumn='bug_id', orderBy='id',
-    #         prejoins=["person"])
-    subscriptions = ReferenceSet("Bug.id", "BugSubscription.bug_id")
     duplicates = SQLMultipleJoin(
         'Bug', joinColumn='duplicateof', orderBy='id')
     specifications = SQLRelatedJoin('Specification', joinColumn='bug',
@@ -674,6 +669,16 @@ class Bug(SQLBase):
             BugSubscription, In(BugSubscription.bug_id, duplicates),
             BugSubscription.person == person).is_empty()
 
+    @property
+    def subscriptions(self):
+        """A list of `BugSubscriptions` for this bug."""
+        # XXX: kiko 2006-09-23: Why is subscriptions ordered by ID?
+        results = Store.of(self).find(
+            (Person, BugSubscription),
+            BugSubscription.person_id == Person.id,
+            BugSubscription.bug_id == self.id).order_by(BugSubscription.id)
+        return [subscription for subscriber, subscription in results]
+
     def getDirectSubscriptions(self):
         """See `IBug`."""
         # Cache valid persons so that <person>.is_valid_person can
@@ -732,18 +737,28 @@ class Bug(SQLBase):
         """See `IBug`."""
         if self.private:
             return []
-
-        results = IStore(BugSubscription).find(
-            (Person, BugSubscription),
-            Person.id == BugSubscription.person_id,
-            BugSubscription.bug_id == Bug.id,
-            Bug.duplicateof == self,
-            order_by=(Person.id, BugSubscription.id))
-
-        def get_person_displayname(subscription):
-            return subscription.person.displayname
-
-        return sorted(dict(results).itervalues(), key=get_person_displayname)
+        # Get bug subscribers and subscriptions for duplicates.
+        subscribers_and_subscriptions = (
+            IStore(BugSubscription).find(
+                (Person, BugSubscription),
+                BugSubscription.person_id == Person.id,
+                BugSubscription.bug_id == Bug.id,
+                Bug.duplicateof == self).order_by(
+                Person.id, BugSubscription.id))
+        # Generator for the subscription objects alone. The subscribers
+        # (Person objects) are loaded to warm up the cache only.
+        subscriptions = (
+            subscription for subscriber, subscription in (
+                subscribers_and_subscriptions))
+        # Group by the subscriber. The results are ordered by subscriber and
+        # subscription id, so we can grab the earliest subscription for a
+        # subscriber (and that the results of this method are stable).
+        subscriptions = (
+            list(subscriptions)[0] for person_id, subscriptions in groupby(
+                subscriptions, key=operator.attrgetter("person_id")))
+        # Sort by the subscriber's display name.
+        return sorted(
+            subscriptions, key=operator.attrgetter("person.displayname"))
 
     def getSubscribersFromDuplicates(self, recipients=None, level=None):
         """See `IBug`.
@@ -761,7 +776,7 @@ class Bug(SQLBase):
                 BugSubscription.bug_id == Bug.id,
                 Bug.duplicateof == self.id))
 
-        dupe_subscribers = set([person for person in dupe_details.keys()])
+        dupe_subscribers = set(person for person in dupe_details.keys())
 
         # Direct and "also notified" subscribers take precedence over
         # subscribers from dupes. Note that we don't supply recipients
