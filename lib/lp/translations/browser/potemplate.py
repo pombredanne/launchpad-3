@@ -968,7 +968,8 @@ class BaseSeriesTemplatesView(LaunchpadView):
             ('actions_column', actions_header),
             ]
         return '\n'.join([
-            self._renderField(*column, tag='th') for column in columns])
+            self._renderField(css, text, tag='th')
+            for (css, text) in columns])
 
     def renderTemplateRow(self, template):
         """Render HTML for an entire template row."""
