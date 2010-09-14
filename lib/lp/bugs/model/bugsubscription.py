@@ -83,6 +83,7 @@ class BugSubscription(SQLBase):
 
 
 class BugSubscriptionFilter(Storm):
+    """A filter to specialize a *structural* subscription."""
 
     __storm_table__ = "BugSubscriptionFilter"
 
@@ -102,6 +103,7 @@ class BugSubscriptionFilter(Storm):
 
 
 class BugSubscriptionFilterStatus(Storm):
+    """Statuses to filter."""
 
     __storm_table__ = "BugSubscriptionFilterStatus"
 
@@ -114,6 +116,7 @@ class BugSubscriptionFilterStatus(Storm):
 
 
 class BugSubscriptionFilterImportance(Storm):
+    """Importances to filter."""
 
     __storm_table__ = "BugSubscriptionFilterImportance"
 
@@ -126,6 +129,7 @@ class BugSubscriptionFilterImportance(Storm):
 
 
 class BugSubscriptionFilterTag(Storm):
+    """Tags to filter."""
 
     __storm_table__ = "BugSubscriptionFilterTag"
 
