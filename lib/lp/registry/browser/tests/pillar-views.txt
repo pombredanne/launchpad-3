@@ -153,41 +153,6 @@ indicator showing whether it has been configured or not.
     <span class="sprite no">...
     </table>
 
-Originally the progress bar was not shown on lpnet.  Now it is.
-
-    >>> # Pretend that we're on launchpad.net:
-    >>> from canonical.config import config
-    >>> from textwrap import dedent
-    >>> test_data = dedent("""
-    ...     [launchpad]
-    ...     is_lpnet: True
-    ...     """)
-    >>> config.push('test_data', test_data)
-
-The progress bar is now shown on lpnet.
-
-    >>> view = create_view(product, '+get-involved')
-    >>> rendered = view.render()
-    >>> print find_tag_by_id(rendered, 'progressbar')
-    <div ... id="progressbar">
-    ...
-    <img src="/@@/green-bar" ... width="25".../>
-    ...
-
-As are the configuration markers.
-
-    >>> for key in sorted(view.configuration_states.keys()):
-    ...     print key, view.configuration_states[key]
-    configure_answers False
-    configure_bugtracker False
-    configure_codehosting False
-    configure_translations True
-
-    >>> # Restore the previous config:
-    >>> config_data = config.pop('test_data')
-    >>> print config.launchpad.is_lpnet
-    False
-
 Project groups are supported too, but they only display the
 applications used by their products.
 
