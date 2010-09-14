@@ -24,7 +24,10 @@ from canonical.database.enumcol import (
     )
 from canonical.database.sqlbase import SQLBase
 from lp.bugs.interfaces.bugsubscription import IBugSubscription
-from lp.bugs.interfaces.bugtask import BugTaskStatus
+from lp.bugs.interfaces.bugtask import (
+    BugTaskImportance,
+    BugTaskStatus,
+    )
 from lp.registry.enum import BugNotificationLevel
 from lp.registry.interfaces.person import validate_person
 
@@ -111,3 +114,15 @@ class BugSubscriptionFilterStatus(Storm):
     filter = Reference(filter_id, "BugSubscriptionFilter.id")
 
     status = DBEnum(enum=BugTaskStatus, allow_none=False)
+
+
+class BugSubscriptionFilterImportance(Storm):
+
+    __storm_table__ = "BugSubscriptionFilterImportance"
+
+    id = Int(primary=True)
+
+    filter_id = Int("filter", allow_none=False)
+    filter = Reference(filter_id, "BugSubscriptionFilter.id")
+
+    importance = DBEnum(enum=BugTaskImportance, allow_none=False)
