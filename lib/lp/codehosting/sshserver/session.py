@@ -52,6 +52,7 @@ class _WaitForExit(process.ProcessReader):
         super(_WaitForExit, self).__init__(reactor, proc, 'exit',
                                            sock.fileno())
         self._sock = sock
+        self.connected = 1
 
     def dataReceived(self, data):
         # This is the only thing we do differently from the standard
