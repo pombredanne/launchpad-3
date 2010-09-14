@@ -1272,6 +1272,14 @@ COMMENT ON COLUMN PersonNotification.body IS 'The textual body of the notificati
 COMMENT ON COLUMN PersonNotification.subject IS 'The subject of the mail to be sent.';
 COMMENT ON COLUMN PersonNotification.date_emailed IS 'When this notification was emailed to the relevant people.';
 
+-- PersonTransferJob
+
+COMMENT ON TABLE PersonTransferJob IS 'Contains references to jobs for adding team members or merging person entries.';
+COMMENT ON COLUMN PersonTransferJob.job IS 'A reference to a row in the Job table that has all the common job details.';
+COMMENT ON COLUMN PersonTransferJob.job_type IS 'The type of job, like add-member notification or merge persons.';
+COMMENT ON COLUMN PersonTransferJob.json_data IS 'Data that is specific to the type of job, normally stores text to append to email notifications.';
+COMMENT ON COLUMN PersonTransferJob.minor_person IS 'The person that is being added is a new member or being merged into another person.';
+COMMENT ON COLUMN PersonTransferJob.major_person IS 'The team receiving a new member or the person that another person is merged into.';
 
 -- Bounty
 COMMENT ON TABLE Bounty IS 'A set of bounties for work to be done by the open source community. These bounties will initially be offered only by Canonical, but later we will create the ability for people to offer the bounties themselves, using us as a clearing house.';
