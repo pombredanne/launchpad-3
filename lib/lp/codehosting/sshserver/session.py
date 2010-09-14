@@ -90,6 +90,15 @@ class ForkedProcessTransport(process.BaseProcess):
     #       This seems slightly risky, as process.BaseProcess is actually
     #       imported from twisted.internet._baseprocess.BaseProcess. The
     #       real-world Process then actually inherits from process._BaseProcess
+    #       I've also had to copy a fair amount from the actual Process
+    #       command.
+    #       One option would be to inherit from process.Process, and just
+    #       override stuff like __init__ and reapProcess which I don't want to
+    #       do in the same way. (Is it ok not to call your Base classes
+    #       __init__ if you don't want to do that exact work?)
+    # [Decision #b]
+    #   prefork vs max children vs ?
+    # 
 
     # TODO: process._BaseProcess implements 'reapProcess' as an ability. Which
     #       then tries to 'os.waitpid()' on the given file handle. Testing
