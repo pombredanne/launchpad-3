@@ -141,10 +141,10 @@ class CredentialManagerAwareMixin:
     # User-Agent string.
     GRANT_PERMISSIONS_USER_AGENT_PREFIX = "Launchpad Credentials Manager"
 
-    def ensureAuthorization(self):
-        """Make sure the user is authorized.
+    def ensureRequestIsAuthorizedOrSigned(self):
+        """Find the user who initiated the request.
 
-        This method is called by a view that wants to reject access
+        This property is used by a view that wants to reject access
         unless the end-user is authenticated with cookie auth, HTTP
         Basic Auth, *or* a properly authorized OAuth token.
 
@@ -155,12 +155,19 @@ class CredentialManagerAwareMixin:
         Launchpad won't recognize that as an attempt to authorize the
         request.
 
-        This method does the OAuth work. It checks that the OAuth
-        token is valid, that it's got the correct access level, and
-        that the User-Agent is one that's allowed to sign requests
-        with OAuth tokens.
+        This method does the OAuth part of the work. It checks that
+        the OAuth token is valid, that it's got the correct access
+        level, and that the User-Agent is one that's allowed to sign
+        requests with OAuth tokens.
 
-        :return: The authenticated user.
+        :return: The user who Launchpad identifies as the principal.
+         Or, if Launchpad identifies no one as the principal, the user
+         whose valid GRANT_PERMISSIONS OAuth token was used to sign
+         the request.
+
+        :raise Unauthorized: If the request is unauthorized and
+         unsigned, improperly signed, anonymously signed, or signed
+         with a token that does not have the right access level.
         """
         user = getUtility(ILaunchBag).user
         if user is not None:
@@ -197,7 +204,7 @@ class CredentialManagerAwareMixin:
                 raise Unauthorized(
                     "Only the Launchpad Credentials Manager can access this "
                     "page by signing requests with an OAuth token.")
-        return principal
+        return principal.person
 
 
 class OAuthAuthorizeTokenView(
@@ -273,7 +280,7 @@ class OAuthAuthorizeTokenView(
         return actions
 
     def initialize(self):
-        self.ensureAuthorization()
+        self.oauth_authorized_user = self.ensureRequestIsAuthorizedOrSigned()
         self.storeTokenContext()
 
         key = self.request.form.get('oauth_token')
@@ -307,7 +314,8 @@ class OAuthAuthorizeTokenView(
         self.token_context = context
 
     def reviewToken(self, permission):
-        self.token.review(self.user, permission, self.token_context)
+        self.token.review(self.user or self.oauth_authorized_user,
+                          permission, self.token_context)
         callback = self.request.form.get('oauth_callback')
         if callback:
             self.next_url = callback
@@ -344,7 +352,7 @@ class OAuthTokenAuthorizedView(LaunchpadView, CredentialManagerAwareMixin):
     """
 
     def initialize(self):
-        self.ensureAuthorization()
+        authorized_user = self.ensureRequestIsAuthorizedOrSigned()
         key = self.request.form.get('oauth_token')
         self.token = getUtility(IOAuthRequestTokenSet).getByKey(key)
         assert self.token.is_reviewed, (

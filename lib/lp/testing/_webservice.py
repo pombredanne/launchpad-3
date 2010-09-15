@@ -52,13 +52,14 @@ class OAuthSigningHandler(BaseHandler):
     def __init__(self, consumer, token):
         self.consumer = consumer
         self.token = token
-        self.signer = OAuthRequest.from_consumer_and_token(consumer, token)
 
     def default_open(self, req):
         """Set the Authorization header for the next outgoing request."""
-        self.signer.sign_request(
+        signer = OAuthRequest.from_consumer_and_token(
+            self.consumer, self.token)
+        signer.sign_request(
             OAuthSignatureMethod_PLAINTEXT(), self.consumer, self.token)
-        auth_header = self.signer.to_header(OAUTH_REALM)['Authorization']
+        auth_header = signer.to_header(OAUTH_REALM)['Authorization']
         req.headers['Authorization'] = auth_header
 
 
