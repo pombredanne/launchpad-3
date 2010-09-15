@@ -969,7 +969,6 @@ class NascentUpload:
             bpfs_to_create = sorted(
                 self.changes.binary_package_files,
                 key=lambda file: file.ddeb_file is not None)
-            assert build is None or len(bpfs_to_create) == 1
             for binary_package_file in bpfs_to_create:
                 if self.sourceful:
                     # The reason we need to do this verification
