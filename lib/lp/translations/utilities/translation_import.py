@@ -445,6 +445,11 @@ class FileImporter(object):
                 context=message.context))
         return potmsgset
 
+    def shareWithOtherSide(self):
+        """Returns true if translations should be shared with the other side.
+        """
+        return False
+
     def storeTranslationsInDatabase(self, message, potmsgset):
         """Try to store translations in the database.
 

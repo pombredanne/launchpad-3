@@ -5,9 +5,12 @@
 
 __metaclass__ = type
 
+from textwrap import dedent
+import transaction
 from zope.component import getUtility
 from zope.interface.verify import verifyObject
 
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.testing import LaunchpadZopelessLayer
 from lp.registry.interfaces.product import IProductSet
 from lp.testing import TestCaseWithFactory
@@ -24,6 +27,7 @@ from lp.translations.utilities.translation_common_format import (
 from lp.translations.utilities.translation_import import (
     importers,
     is_identical_translation,
+    POTFileImporter,
     TranslationImporter,
     )
 
@@ -246,3 +250,57 @@ class TranslationImporterTestCase(TestCaseWithFactory):
         msg2._translations = ["le foo", "les foos", "beaucoup des foos", None]
         self.assertTrue(is_identical_translation(msg1, msg2),
             "Identical multi-form messages not accepted as identical.")
+
+
+class FileImporterTest(TestCaseWithFactory):
+    """Class test for the FileImporter base class."""
+    layer = LaunchpadZopelessLayer
+
+    UPSTREAM = 0
+    UBUNTU = 1
+
+    POTEMPLATE = dedent("""\
+        msgid ""
+        msgstr ""
+        "PO-Revision-Date: 2005-05-03 20:41+0100\\n"
+        "Last-Translator: FULL NAME <EMAIL@ADDRESS>\\n"
+        "Content-Type: text/plain; charset=UTF-8\\n"
+        
+        msgid "Thank You"
+        msgstr ""
+        """)
+
+    def setUp(self):
+        super(FileImporterTest, self).setUp()
+
+    def _makeImporter(self, side, from_upstream=False, uploader=None):
+        if side == self.UPSTREAM:
+            potemplate = self.factory.makePOTemplate(
+                productseries=self.factory.makeProductSeries())
+        else:
+            ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+            potemplate = self.factory.makePOTemplate(
+                distroseries=self.factory.makeDistroSeries(
+                    distribution=ubuntu),
+                sourcepackagename=self.factory.makeSourcePackageName())
+        entry = self.factory.makeTranslationImportQueueEntry(
+            potemplate=potemplate, from_upstream=from_upstream,
+            uploader=uploader, content=self.POTEMPLATE)
+        entry.potemplate = potemplate
+        transaction.commit()
+        return POTFileImporter(
+            entry, importers[TranslationFileFormat.PO], None)
+
+    def test_shareWithOtherSide_upstream(self):
+        # An upstream queue entry will be shared with ubuntu.
+        importer = self._makeImporter(self.UPSTREAM)
+        self.assertTrue(
+            importer.shareWithOtherSide(),
+            "Upstream import should share with Ubuntu.")
+
+    def test_shareWithOtherSide_ubuntu(self):
+        # An ubuntu queue entry will not be shared with upstream.
+        importer = self._makeImporter(self.UBUNTU)
+        self.assertFalse(
+            importer.shareWithOtherSide(),
+            "Ubuntu import should not share with upstream.")
