@@ -427,21 +427,22 @@ class Bug(SQLBase):
     @property
     def indexed_messages(self):
         """See `IMessageTarget`."""
-        return self._indexed_messages(content=True)
+        return self._indexed_messages(include_content=True)
 
-    def _indexed_messages(self, content=False, parents=True):
+    def _indexed_messages(self, include_content=False, include_parents=True):
         """Get the bugs messages, indexed.
 
-        :param content: If True retrieve the content for the messages too.
-        :param parents: If True retrieve the content foe parent messages too.
-            If False the parents attribute will be *forced* to None to reduce
-            database lookups.
+        :param include_content: If True retrieve the content for the messages
+            too.
+        :param include_parents: If True retrieve the object for parent messages
+            too. If False the parent attribute will be *forced* to None to
+            reduce database lookups.
         """
         # Make all messages be 'in' the main bugtask.
         inside = self.default_bugtask
         store = Store.of(self)
         message_by_id = {}
-        if parents:
+        if include_parents:
             def to_messages(rows):
                 return [row[0] for row in rows]
         else:
@@ -463,8 +464,8 @@ class Bug(SQLBase):
             # future we should do that), we do a single separate query
             # for the message content.
             message_ids = set(message.id for message in messages)
-            chunks = store.find(MessageChunk,
-                MessageChunk.messageID.is_in(message_ids))
+            chunks = store.find(
+                MessageChunk, MessageChunk.messageID.is_in(message_ids))
             chunks.order_by(MessageChunk.id)
             chunk_map = {}
             for chunk in chunks:
@@ -479,11 +480,11 @@ class Bug(SQLBase):
         def eager_load(rows, slice_info):
             messages = to_messages(rows)
             eager_load_owners(messages)
-            if content:
+            if include_content:
                 eager_load_content(messages)
         def index_message(row, index):
             # convert row to an IndexedMessage
-            if parents:
+            if include_parents:
                 message, parent = row
                 if parent is not None:
                     # If there is an IndexedMessage available as parent, use
@@ -499,12 +500,15 @@ class Bug(SQLBase):
             return result
         # There is possibly some nicer way to do this in storm, but
         # this is a lot easier to figure out.
-        if parents:
+        if include_parents:
             ParentMessage = ClassAlias(Message, name="parent_message")
-            tables = SQL("Message left outer join message as parent_message on ("
-                "message.parent=parent_message.id and parent_message.id in (select "
-                "bugmessage.message from bugmessage where bugmessage.bug=%s)), "
-                "BugMessage" % sqlvalues(self.id))
+            tables = SQL("""
+Message left outer join
+message as parent_message on (
+    message.parent=parent_message.id and
+    parent_message.id in (
+        select bugmessage.message from bugmessage where bugmessage.bug=%s)),
+BugMessage""" % sqlvalues(self.id))
             results = store.using(tables).find(
                 (Message, ParentMessage),
                 BugMessage.bugID == self.id,
@@ -1862,7 +1866,7 @@ class Bug(SQLBase):
         when attachments is evaluated, not when the resultset is processed).
         """
         message_to_indexed = {}
-        for message in self._indexed_messages(parents=False):
+        for message in self._indexed_messages(include_parents=False):
             message_to_indexed[message.id] = message
         def set_indexed_message(row):
             attachment = row[0]

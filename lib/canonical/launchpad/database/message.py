@@ -165,7 +165,7 @@ class Message(SQLBase):
         return Message.chunks_text(self.chunks)
 
     @classmethod
-    def chunks_text(klass, chunks):
+    def chunks_text(cls, chunks):
         bits = [unicode(chunk) for chunk in chunks if chunk.content]
         return '\n\n'.join(bits)
 
