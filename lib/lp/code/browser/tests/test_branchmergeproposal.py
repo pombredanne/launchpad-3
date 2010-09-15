@@ -14,14 +14,16 @@ from datetime import (
     timedelta,
     )
 from difflib import unified_diff
-import operator
 import unittest
 
 import pytz
 import transaction
 from zope.component import getMultiAdapter
 from zope.security.interfaces import Unauthorized
-from zope.security.proxy import removeSecurityProxy
+from zope.security.proxy import (
+    isinstance as zisinstance,
+    removeSecurityProxy,
+    )
 
 from canonical.launchpad.database.message import MessageSet
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
@@ -38,6 +40,7 @@ from lp.code.browser.branchmergeproposal import (
     BranchMergeProposalMergedView,
     BranchMergeProposalVoteView,
     DecoratedCodeReviewVoteReference,
+    IncrementalDiffComment,
     latest_proposals_for_each_branch,
     )
 from lp.code.enums import (
@@ -48,7 +51,6 @@ from lp.code.model.diff import (
     PreviewDiff,
     StaticDiff,
     )
-from lp.code.model.revision import RevisionSet
 from lp.code.tests.helpers import add_revision_to_branch
 from lp.testing import (
     BrowserTestCase,
@@ -654,9 +656,11 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
                 old_revision=revisions[2].revision.getLefthandParent(),
                 new_revision=revisions[3].revision)
         view = create_initialized_view(bmp, '+index')
-        groups = view._getRevisionsSinceReviewStart()
-        self.assertEqual([diff1, diff2], [group.incremental_diff for group in
-            groups])
+        comments = view.conversation
+        self.assertEqual(
+            [diff1, diff2],
+            [comment for comment in comments
+             if zisinstance(IncrementalDiffComment, comment)])
 
     def test_include_superseded_comments(self):
         for x, time in zip(range(3), time_counter()):
@@ -852,16 +856,17 @@ class TestBranchMergeProposal(BrowserTestCase):
     layer = DatabaseFunctionalLayer
 
     def test_conversation(self):
-        bmp = self.factory.makeBranchMergeProposal()
+        bmp = self.factory.makeBranchMergeProposal(registrant=self.user,
+            date_created = self.factory.getUniqueDate())
         parent = add_revision_to_branch(self.factory, bmp.source_branch,
             self.factory.getUniqueDate()).revision
         revision = add_revision_to_branch(self.factory, bmp.source_branch,
             self.factory.getUniqueDate()).revision
         with FakeLibrarian() as librarian:
-            diff = self.factory.makeDiff('Instrumental diff')
+            diff = self.factory.makeDiff()
             bmp.generateIncrementalDiff(parent, revision, diff)
             browser = self.getViewBrowser(bmp)
-        assert 'Instrumental diff' in browser.contents
+        assert 'unf_pbasyvpgf' in browser.contents
 
 
 class TestLatestProposalsForEachBranch(TestCaseWithFactory):

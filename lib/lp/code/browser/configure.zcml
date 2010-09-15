@@ -716,6 +716,19 @@
             name="+comment-footer"
             template="../templates/codereviewnewrevisions-footer.pt"/>
     </browser:pages>
+    <browser:pages
+        facet="branches"
+        for="lp.code.browser.branchmergeproposal.IIncrementalDiffComment"
+        layer="lp.code.publisher.CodeLayer"
+        class="lp.code.browser.branchmergeproposal.CodeReviewNewRevisionsView"
+        permission="zope.Public">
+        <browser:page
+            name="+comment-header"
+            template="../templates/incrementaldiffcomment-header.pt"/>
+        <browser:page
+            name="+comment-body"
+            template="../templates/incrementaldiffcomment-body.pt"/>
+    </browser:pages>
     <browser:page
         name="+reply"
         facet="branches"

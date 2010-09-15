@@ -290,6 +290,9 @@ class IBranchMergeProposal(IPrivacy):
     def getComment(id):
         """Return the CodeReviewComment with the specified ID."""
 
+    def getRevisionsSinceReviewStart(self):
+        """blah"""
+
     def getVoteReference(id):
         """Return the CodeReviewVoteReference with the specified ID."""
 

@@ -238,6 +238,8 @@
                     related_bugs
                     isMergable
                     getComment
+                    getRevisionsSinceReviewStart
+                    getCurrentIncrementalDiffs
                     getNotificationRecipients
                     getVoteReference
                     isValidTransition
