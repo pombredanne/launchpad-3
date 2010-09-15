@@ -785,7 +785,7 @@
     <!-- Set the default timeout function. -->
     <subscriber
         for="zope.app.appsetup.IProcessStartingEvent"
-        handler="canonical.launchpad.webapp.servers.set_launchpad_default_timeout"
+        handler="canonical.launchpad.webapp.adapter.set_launchpad_default_timeout"
         />
 
     <subscriber

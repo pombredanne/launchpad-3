@@ -48,10 +48,6 @@ from canonical.launchpad.browser.feeds import FeedsMixin
 from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet,
     )
-from canonical.launchpad.components.request_country import (
-    ipaddress_from_request,
-    request_country,
-    )
 from canonical.launchpad.helpers import english_list
 from canonical.launchpad.webapp import (
     action,
@@ -109,6 +105,10 @@ from lp.registry.interfaces.distributionmirror import (
     )
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.geoip.helpers import (
+    ipaddress_from_request,
+    request_country,
+    )
 from lp.services.propertycache import cachedproperty
 from lp.soyuz.browser.packagesearch import PackageSearchViewBase
 from lp.soyuz.enums import ArchivePurpose
