@@ -776,7 +776,7 @@ class Bug(SQLBase):
                 BugSubscription.bug_id == Bug.id,
                 Bug.duplicateof == self.id))
 
-        dupe_subscribers = set(person for person in dupe_details.keys())
+        dupe_subscribers = set(dupe_details)
 
         # Direct and "also notified" subscribers take precedence over
         # subscribers from dupes. Note that we don't supply recipients
