@@ -45,7 +45,7 @@
             <tr tal:define="parent_source_pub difference/parent_source_pub;
                             source_pub difference/source_pub;
                             signer source_pub/sourcepackagerelease/uploader/fmt:link|nothing;">
-              <td><a tal:attributes="href difference/fmt:url"
+              <td><a tal:attributes="href difference/fmt:url" class="toggle-extra"
                      tal:content="parent_source_pub/source_package_name">Foo</a>
               </td>
               <td><a tal:attributes="href parent_source_pub/sourcepackagerelease/fmt:url">
@@ -79,6 +79,14 @@
           </tbody>
         </table>
       </div>
+<script type="text/javascript">
+LPS.use('node', 'io-base', 'lazr.anim',
+        'lp.registry.distroseriesdifferences_details', function(Y) {
+  diff_module = Y.lp.registry.distroseriesdifferences_details
+
+  Y.on('domready', diff_module.setup_expandable_rows);
+});
+</script>
 
     </div>
 

@@ -183,6 +183,8 @@
     <script type="text/javascript"
             tal:attributes="src string:${lp_js}/bugs/bugtracker_overlay.js"></script>
     <script type="text/javascript"
+            tal:attributes="src string:${lp_js}/registry/distroseriesdifferences_details.js"></script>
+    <script type="text/javascript"
             tal:attributes="src string:${lp_js}/registry/milestoneoverlay.js"></script>
     <script type="text/javascript"
             tal:attributes="src string:${lp_js}/registry/milestonetable.js"></script>
