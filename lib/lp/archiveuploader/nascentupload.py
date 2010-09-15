@@ -971,7 +971,6 @@ class NascentUpload:
             bpfs_to_create = sorted(
                 self.changes.binary_package_files,
                 key=lambda file: file.ddeb_file is not None)
-            assert build is None or len(bpfs_to_create) == 1
             for binary_package_file in bpfs_to_create:
                 if self.sourceful:
                     # The reason we need to do this verification
@@ -986,19 +985,21 @@ class NascentUpload:
                     sourcepackagerelease = (
                         binary_package_file.findSourcePackageRelease())
 
+                # Find the build for this particular binary package file.
                 if build is None:
-                    build = binary_package_file.findBuild(
+                    bpf_build = binary_package_file.findBuild(
                         sourcepackagerelease)
-                if build.source_package_release != sourcepackagerelease:
+                else:
+                    bpf_build = build
+                if bpf_build.source_package_release != sourcepackagerelease:
                     raise AssertionError(
                         "Attempt to upload binaries specifying build %s, "
-                        "where they don't fit." % build.id)
-                binary_package_file.checkBuild(build)
-                assert self.queue_root.pocket == build.pocket, (
+                        "where they don't fit." % bpf_build.id)
+                binary_package_file.checkBuild(bpf_build)
+                assert self.queue_root.pocket == bpf_build.pocket, (
                     "Binary was not build for the claimed pocket.")
-                binary_package_file.storeInDatabase(build)
-                processed_builds.append(build)
-                build = None
+                binary_package_file.storeInDatabase(bpf_build)
+                processed_builds.append(bpf_build)
 
             # Store the related builds after verifying they were built
             # from the same source.
