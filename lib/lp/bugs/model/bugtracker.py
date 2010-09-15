@@ -525,17 +525,16 @@ class BugTracker(SQLBase):
     def addRemoteComponentGroup(self, component_group_name):
         """See `IBugTracker`."""
 
-        if not component_group_name:
+        if component_group_name is None:
             # TODO: Probably should test that Default gets used
-            component_group_name = "Default"
-        component_group = BugTrackerComponentGroup(component_group_name)
+            component_group_name = "default"
+        component_group = BugTrackerComponentGroup()
+        component_group.name = component_group_name
         component_group.bug_tracker = self
 
         store = IStore(BugTrackerComponentGroup)
         store.add(component_group)
-        #TODO: ARGH! Why does it give me permission denied when I try to flush() or commit()?
-        #store.flush()
-        #store.commit()
+        store.commit()
 
         return component_group
 
@@ -543,22 +542,22 @@ class BugTracker(SQLBase):
         """See `IBugTracker`."""
         component_groups = []
         #TODO: This should work but also fails with permission denied
-#        component_groups = Store.of(self).find(
-#            BugTrackerComponentGroup,
-#            BugTrackerComponentGroup.bug_tracker == self.id)
-#        component_groups = component_groups.order_by(
-#            BugTrackerComponentGroup.name)
+        component_groups = Store.of(self).find(
+            BugTrackerComponentGroup,
+            BugTrackerComponentGroup.bug_tracker == self.id)
+        component_groups = component_groups.order_by(
+            BugTrackerComponentGroup.name)
         return component_groups
 
     def getRemoteComponentGroup(self, component_group_name):
         """See `IBugTracker`."""
         component_group = None
-#        store = IStore(BugTrackerComponentGroup)
-# TODO: ARGH! this should work however it gives a cryptic "ProgrammingError: permission denied for relation..."
-#        component_group = store.find(
-#            BugTrackerComponentGroup,
-#            name = component_group_name).one()
+        store = IStore(BugTrackerComponentGroup)
+        component_group = store.find(
+            BugTrackerComponentGroup,
+            name = component_group_name).one()
         return component_group
+
 
 
 class BugTrackerSet:
@@ -715,13 +714,15 @@ class BugTrackerComponent(SQLBase):
     _table = 'BugTrackerComponent'
 
     name = StringCol(notNull=True)
-    valid_name = StringCol(notNull=True)
+
+    component_group = ForeignKey(
+        dbName='component_group', foreignKey='BugTrackerComponentGroup', notNull=True)
 
     is_visible = BoolCol(notNull=True, default=True)
     is_custom = BoolCol(notNull=True, default=False)
 
     distro_source_package = ForeignKey(
-        dbName='distrosourcepackage', foreignKey='DistributionSourcePackage',
+        dbName='distro_source_package', foreignKey='DistributionSourcePackage',
         notNull=False)
     # TODO: storm_validator=TODO ?
 
@@ -754,15 +755,19 @@ class BugTrackerComponentGroup(SQLBase):
         dbName='bug_tracker', foreignKey='BugTracker', notNull=True)
 
     components = SQLMultipleJoin(
-        'BugTrackerComponentGroup', joinColumn='component_group', orderBy='name')
+        'BugTrackerComponent', joinColumn='component_group', orderBy='name')
 
     def addComponent(self, component_name):
         """Adds a component that is synced from a remote bug tracker"""
+
+        # TODO: Do I need to use the Utility() stuff here?
         component = BugTrackerComponent()
         component.name = component_name
+        component.component_group = self
 
         store = IStore(BugTrackerComponent)
         store.add(component)
+        store.commit()
 
         return component
 
@@ -771,10 +776,12 @@ class BugTrackerComponentGroup(SQLBase):
         # TODO: Verify we don't already have the component
 
         component = BugTrackerComponent()
-        component.name = component_name
+        component.name = component_name 
+        component.component_group = self
         component.setCustom()
         
         store = IStore(BugTrackerComponent)
         store.add(component)
+        store.commit()
 
         return component
