@@ -28,7 +28,7 @@
           </p>
           <p tal:condition="blueprints_usage/enumvalue:NOT_APPLICABLE">
             <tal:project replace="view/context/displayname" /> does not track
-            use feature planning or documentation.
+            feature planning or documentation.
           </p>
           <p tal:condition="blueprints_usage/enumvalue:UNKNOWN">
             Launchpad does not know how
