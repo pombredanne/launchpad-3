@@ -489,15 +489,6 @@ class POTMsgSet(SQLBase):
             date_updated = current.date_reviewed
         return (date_updated is not None and date_updated > timestamp)
 
-    def _list_of_msgids(self):
-        """Return a list of [singular_text, plural_text] if the message
-        is using plural forms, or just [singular_text] if it's not.
-        """
-        original_texts = [self.singular_text]
-        if self.plural_text is not None:
-            original_texts.append(self.plural_text)
-        return original_texts
-
     def _sanitizeTranslations(self, translations, pluralforms):
         """Sanitize `translations` using self.applySanityFixes.
 
