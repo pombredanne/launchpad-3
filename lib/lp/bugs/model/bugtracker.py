@@ -23,6 +23,13 @@ from urllib import (
     splittype,
     )
 
+from storm.base import Storm
+from storm.expr import And
+from storm.locals import (
+        Int,
+        Reference,
+        Unicode,
+        )
 from zope.component import getUtility
 from zope.interface import implements
 from zope.security.interfaces import Unauthorized
@@ -703,7 +710,7 @@ class BugTrackerAliasSet:
         return self.table.selectBy(bugtracker=bugtracker.id)
 
 
-class BugTrackerComponent(SQLBase):
+class BugTrackerComponent(Storm):
     """The software component in the remote bug tracker.
 
     Most bug trackers organize bug reports by the software 'component'
@@ -711,19 +718,23 @@ class BugTrackerComponent(SQLBase):
     to the corresponding source package in the distro.
     """
     implements(IBugTrackerComponent)
-    _table = 'BugTrackerComponent'
+    __storm_table__ = 'BugTrackerComponent'
 
-    name = StringCol(notNull=True)
+    id = Int(primary=True)
+    name = Unicode(allow_none=False)
 
-    component_group = ForeignKey(
-        dbName='component_group', foreignKey='BugTrackerComponentGroup', notNull=True)
+    component_group_id = Int('component_group')
+    component_group = Reference(
+        component_group_id,
+        'BugTrackerComponentGroup.id')
 
-    is_visible = BoolCol(notNull=True, default=True)
-    is_custom = BoolCol(notNull=True, default=False)
+    is_visible = Bool()
+    is_custom = Bool()
 
-    distro_source_package = ForeignKey(
-        dbName='distro_source_package', foreignKey='DistributionSourcePackage',
-        notNull=False)
+    distro_source_package_id = Int('distro_source_package')
+    distro_source_package = Reference(
+        distro_source_package_id,
+        'DistributionSourcePackage.id')
     # TODO: storm_validator=TODO ?
 
     def show(self):
