@@ -958,7 +958,6 @@ class TestQueuePageClosingBugs(TestCaseWithFactory):
         # changelog_entry is required for an assertion inside the function
         # we're testing.
         spr = self.factory.makeSourcePackageRelease(changelog_entry="blah")
-        #bug_reporter = self.factory.makePerson()
         archive_admin = self.factory.makePerson()
         bug = self.factory.makeBug(private=True)
         bug_task = self.factory.makeBugTask(target=spr.sourcepackage, bug=bug)
