@@ -13,7 +13,7 @@ __all__ = [
     ]
 
 from email.Utils import make_msgid
-
+from itertools import groupby
 from sqlobject import (
     ForeignKey,
     IntCol,
@@ -776,6 +776,45 @@ class BranchMergeProposal(SQLBase):
         # the storm store.
         Store.of(self).flush()
         return self.preview_diff
+
+    @property
+    def revision_end_date(self):
+        """The cutoff date for showing revisions.
+
+        If the proposal has been merged, then we stop at the merged date. If
+        it is rejected, we stop at the reviewed date. For superseded
+        proposals, it should ideally use the non-existant date_last_modified,
+        but could use the last comment date.
+        """
+        status = self.queue_status
+        if status == BranchMergeProposalStatus.MERGED:
+            return self.date_merged
+        if status == BranchMergeProposalStatus.REJECTED:
+            return self.date_reviewed
+        # Otherwise return None representing an open end date.
+        return None
+
+    def _getNewerRevisions(self):
+        start_date = self.date_review_requested
+        if start_date is None:
+            start_date = self.date_created
+        return self.source_branch.getMainlineBranchRevisions(
+            start_date, self.revision_end_date, oldest_first=True)
+
+    def getRevisionsSinceReviewStart(self):
+        """Get the grouped revisions since the review started."""
+        resultset = self._getNewerRevisions()
+        # Work out the start of the review.
+        branch_revisions = (
+            branch_revision for branch_revision, revision, revision_author
+            in resultset)
+        # Now group by date created.
+        gby = groupby(branch_revisions, lambda r:r.revision.date_created)
+        # Use a generator expression to wrap the custom iterator so it doesn't
+        # get security-proxied.
+        return (
+            (date, (revision for revision in revisions))
+            for date, revisions in gby)
 
 
 class BranchMergeProposalGetter:
