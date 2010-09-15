@@ -153,13 +153,15 @@ UNAUTHORIZED is okay--it will show up anyway.)
     Grant Permissions
 
     >>> print_access_levels(
-    ...     'allow_permission=GRANT_PERMISSIONS&allow_permission=UNAUTHORIZED',
+    ...     ('allow_permission=GRANT_PERMISSIONS&'
+    ...      'allow_permission=UNAUTHORIZED'),
     ...     USER_AGENT)
     No Access
     Grant Permissions
 
     >>> print_access_levels(
-    ...     'allow_permission=WRITE_PUBLIC&allow_permission=GRANT_PERMISSIONS')
+    ...     ('allow_permission=WRITE_PUBLIC&'
+    ...      'allow_permission=GRANT_PERMISSIONS'))
     No Access
     Change Non-Private Data
 

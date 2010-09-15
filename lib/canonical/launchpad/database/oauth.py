@@ -60,14 +60,14 @@ from lp.registry.interfaces.projectgroup import IProjectGroup
 
 # How many hours should a request token be valid for?
 REQUEST_TOKEN_VALIDITY = 12
-# The OAuth Core 1.0 spec (http://oauth.net/core/1.0/#nonce) says that a
-# timestamp "MUST be equal or greater than the timestamp used in previous
-# requests," but this is likely to cause problems if the client does request
-# pipelining, so we use a time window (relative to the timestamp of the
-# existing OAuthNonce) to check if the timestamp can is acceptable. As
-# suggested by Robert, we use a window which is at least twice the size of our
-# hard time out. This is a safe bet since no requests should take more than
-# one hard time out.
+# The OAuth Core 1.0 spec (http://oauth.net/core/1.0/#nonce) says that
+# a timestamp "MUST be equal or greater than the timestamp used in
+# previous requests," but this is likely to cause problems if the
+# client does request pipelining, so we use a time window (relative to
+# the timestamp of the existing OAuthNonce) to check if the timestamp
+# can is acceptable. As suggested by Robert, we use a window which is
+# at least twice the size of our hard time out. This is a safe bet
+# since no requests should take more than one hard time out.
 TIMESTAMP_ACCEPTANCE_WINDOW = 60 # seconds
 # If the timestamp is far in the future because of a client's clock skew,
 # it will effectively invalidate the authentication tokens when the clock is
@@ -76,6 +76,7 @@ TIMESTAMP_ACCEPTANCE_WINDOW = 60 # seconds
 # concept of "now".  We also reject timestamps that are too old by the same
 # amount.
 TIMESTAMP_SKEW_WINDOW = 60*60 # seconds, +/-
+
 
 class OAuthBase(SQLBase):
     """Base class for all OAuth database classes."""
@@ -92,6 +93,7 @@ class OAuthBase(SQLBase):
         return getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
 
     getStore = _get_store
+
 
 class OAuthConsumer(OAuthBase):
     """See `IOAuthConsumer`."""
@@ -323,6 +325,7 @@ def create_token_key_and_secret(table):
     The key will have a length of 20 and we'll make sure it's not yet in the
     given table.  The secret will have a length of 80.
     """
+
     key_length = 20
     key = create_unique_token_for_table(key_length, getattr(table, "key"))
     secret_length = 80

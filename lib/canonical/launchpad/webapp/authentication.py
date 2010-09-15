@@ -299,7 +299,8 @@ class SSHADigestEncryptor:
         plaintext = str(plaintext)
         if salt is None:
             salt = self.generate_salt()
-        v = binascii.b2a_base64(hashlib.sha1(plaintext + salt).digest() + salt)
+        v = binascii.b2a_base64(
+            hashlib.sha1(plaintext + salt).digest() + salt)
         return v[:-1]
 
     def validate(self, plaintext, encrypted):
