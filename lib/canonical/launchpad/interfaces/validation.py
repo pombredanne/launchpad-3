@@ -206,7 +206,7 @@ def _check_email_availability(email):
                         mapping={'email': escape(email),
                                 'url': canonical_url(person),
                                 'person': escape(person.displayname)})
-        if email_address.account is not None:
+        elif email_address.account is not None:
             account = email_address.account
             message = _('${email} is already registered in Launchpad and is '
                         'associated with the ${account} account.',
