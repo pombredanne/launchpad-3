@@ -34,7 +34,6 @@ from lp.code.interfaces.diff import (
     )
 from lp.code.model.diff import (
     Diff,
-    IncrementalDiff,
     PreviewDiff,
     StaticDiff,
     )

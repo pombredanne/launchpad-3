@@ -783,7 +783,8 @@ class BranchMergeProposal(SQLBase):
             source_branch = self.source_branch.getBzrBranch()
             ignore_branches = [self.target_branch.getBzrBranch()]
             if self.prerequisite_branch is not None:
-                ignore_branches.append(self.prerequisite_branch.getBzrBranch())
+                ignore_branches.append(
+                    self.prerequisite_branch.getBzrBranch())
             diff = Diff.generateIncrementalDiff(
                 old_revision, new_revision, source_branch, ignore_branches)
         incremental_diff = IncrementalDiff()

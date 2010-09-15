@@ -338,10 +338,11 @@ class IncrementalDiff(Storm):
 
     diff = Reference(diff_id, 'Diff.id')
 
-    branch_merge_proposal_id = Int(name='branch_merge_proposal', allow_none=False)
+    branch_merge_proposal_id = Int(
+        name='branch_merge_proposal', allow_none=False)
 
     branch_merge_proposal = Reference(
-        branch_merge_proposal_id, "BranchMergeProposal.id",)
+        branch_merge_proposal_id, "BranchMergeProposal.id")
 
     old_revision_id = Int(name='old_revision', allow_none=False)
 
