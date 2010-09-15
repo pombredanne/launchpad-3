@@ -429,31 +429,40 @@ class Bug(SQLBase):
         """See `IMessageTarget`."""
         return self._indexed_messages(content=True)
 
-    def _indexed_messages(self, content=False):
+    def _indexed_messages(self, content=False, parents=True):
         """Get the bugs messages, indexed.
 
-        :param content: If True retrieve the content for the msssages too.
+        :param content: If True retrieve the content for the messages too.
+        :param parents: If True retrieve the content foe parent messages too.
+            If False the parents attribute will be *forced* to None to reduce
+            database lookups.
         """
         # Make all messages be 'in' the main bugtask.
         inside = self.default_bugtask
         store = Store.of(self)
         message_by_id = {}
-        def eager_load_owners(rows):
+        if parents:
+            def to_messages(rows):
+                return [row[0] for row in rows]
+        else:
+            def to_messages(rows):
+                return rows
+        def eager_load_owners(messages):
             # Because we may have multiple owners, we spend less time in storm
             # with very large bugs by not joining and instead querying a second
             # time. If this starts to show high db time, we can left outer join
             # instead.
-            owner_ids = set(row[0].ownerID for row in rows)
+            owner_ids = set(message.ownerID for message in messages)
             owner_ids.discard(None)
             if not owner_ids:
                 return
             list(store.find(Person, Person.id.is_in(owner_ids)))
-        def eager_load_content(rows):
+        def eager_load_content(messages):
             # To avoid the complexity of having multiple rows per
             # message, or joining in the database (though perhaps in
             # future we should do that), we do a single separate query
             # for the message content.
-            message_ids = set(row[0].id for row in rows)
+            message_ids = set(message.id for message in messages)
             chunks = store.find(MessageChunk,
                 MessageChunk.messageID.is_in(message_ids))
             chunks.order_by(MessageChunk.id)
@@ -461,24 +470,28 @@ class Bug(SQLBase):
             for chunk in chunks:
                 message_chunks = chunk_map.setdefault(chunk.messageID, [])
                 message_chunks.append(chunk)
-            for row in rows:
-                message = row[0]
+            for message in messages:
                 if message.id not in chunk_map:
                     continue
                 cache = IPropertyCache(message)
                 cache.text_contents = Message.chunks_text(
                     chunk_map[message.id])
         def eager_load(rows, slice_info):
-            eager_load_owners(rows)
+            messages = to_messages(rows)
+            eager_load_owners(messages)
             if content:
-                eager_load_content(rows)
+                eager_load_content(messages)
         def index_message(row, index):
             # convert row to an IndexedMessage
-            message, parent = row
-            if parent is not None:
-                # If there is an IndexedMessage available as parent, use that
-                # to reduce on-demand parent lookups.
-                parent = message_by_id.get(parent.id, parent)
+            if parents:
+                message, parent = row
+                if parent is not None:
+                    # If there is an IndexedMessage available as parent, use
+                    # that to reduce on-demand parent lookups.
+                    parent = message_by_id.get(parent.id, parent)
+            else:
+                message = row
+                parent = None # parent attribute is not going to be accessed.
             result = IndexedMessage(message, inside, index, parent)
             # This message may be the parent for another: stash it to permit
             # use.
@@ -486,17 +499,22 @@ class Bug(SQLBase):
             return result
         # There is possibly some nicer way to do this in storm, but
         # this is a lot easier to figure out.
-        # Remaining issue:
-        ParentMessage = ClassAlias(Message, name="parent_message")
-        tables = SQL("Message left outer join message as parent_message on ("
-            "message.parent=parent_message.id and parent_message.id in (select "
-            "bugmessage.message from bugmessage where bugmessage.bug=%s)), "
-            "BugMessage" % sqlvalues(self.id))
-        results = store.using(tables).find(
-            (Message, ParentMessage),
-            BugMessage.bugID == self.id,
-            BugMessage.messageID == Message.id,
-            )
+        if parents:
+            ParentMessage = ClassAlias(Message, name="parent_message")
+            tables = SQL("Message left outer join message as parent_message on ("
+                "message.parent=parent_message.id and parent_message.id in (select "
+                "bugmessage.message from bugmessage where bugmessage.bug=%s)), "
+                "BugMessage" % sqlvalues(self.id))
+            results = store.using(tables).find(
+                (Message, ParentMessage),
+                BugMessage.bugID == self.id,
+                BugMessage.messageID == Message.id,
+                )
+        else:
+            results = store.find(Message,
+                BugMessage.bugID == self.id,
+                BugMessage.messageID == Message.id,
+                )
         results.order_by(Message.datecreated, Message.id)
         return DecoratedResultSet(results, index_message,
             pre_iter_hook=eager_load, slice_info=True)
@@ -1844,7 +1862,7 @@ class Bug(SQLBase):
         when attachments is evaluated, not when the resultset is processed).
         """
         message_to_indexed = {}
-        for message in self._indexed_messages():
+        for message in self._indexed_messages(parents=False):
             message_to_indexed[message.id] = message
         def set_indexed_message(row):
             attachment = row[0]

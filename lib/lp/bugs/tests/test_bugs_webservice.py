@@ -170,7 +170,7 @@ class TestBugScaling(TestCaseWithFactory):
         store.flush()
         store.reset()
         response = webservice.get(url)
-        self.assertThat(collector, HasQueryCount(LessThan(24)))
+        self.assertThat(collector, HasQueryCount(LessThan(21)))
         with_2_count = collector.count
         self.failUnlessEqual(response.status, 200)
         login(USER_EMAIL)
@@ -181,7 +181,7 @@ class TestBugScaling(TestCaseWithFactory):
         store.flush()
         store.reset()
         response = webservice.get(url)
-        self.assertThat(collector, HasQueryCount(Equals(with_2_count+1)))
+        self.assertThat(collector, HasQueryCount(Equals(with_2_count)))
 
     def test_messages_query_counts_constant(self):
         # XXX Robert Collins 2010-09-15 bug=619017
