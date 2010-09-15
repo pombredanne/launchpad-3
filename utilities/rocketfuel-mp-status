@@ -13,6 +13,8 @@ projpath = commands.getoutput(
     '. ~/.rocketfuel-env.sh && echo $LP_PROJECT_PATH')
 os.chdir(projpath)
 branches = os.listdir('.')
+if sys.argv[1]:
+    branches = (sys.argv[1],)
 lp_branches = launchpad.branches
 
 for lb in branches:
