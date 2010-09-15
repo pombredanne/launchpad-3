@@ -1358,7 +1358,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         """Make a new bug tracker component group."""
 
         if name is None:
-            name = "Default"
+            name = u'default'
 
         if bug_tracker is None:
             bug_tracker = self.makeBugTracker()
@@ -1371,7 +1371,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         """Make a new bug tracker component."""
 
         if name is None:
-            name = "Default"
+            name = u'default'
 
         if component_group is None:
             component_group = self.makeBugTrackerComponentGroup()

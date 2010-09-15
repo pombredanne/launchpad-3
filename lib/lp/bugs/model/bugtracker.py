@@ -28,6 +28,7 @@ from storm.expr import And
 from storm.locals import (
         Int,
         Reference,
+        ReferenceSet,
         Unicode,
         )
 from zope.component import getUtility
@@ -751,22 +752,24 @@ class BugTrackerComponent(Storm):
         if not self.is_custom:
             self.is_custom = True
 
-class BugTrackerComponentGroup(SQLBase):
+class BugTrackerComponentGroup(Storm):
     """A collection of components in a remote bug tracker.
 
     Some bug trackers organize sets of components into higher level groups,
     such as Bugzilla's 'product'.
     """
     implements(IBugTrackerComponentGroup)
-    _table = 'BugTrackerComponentGroup'
+    __storm_table__ = 'BugTrackerComponentGroup'
 
-    name = StringCol(notNull=True)
+    id = Int(primary=True)
+    name = Unicode(allow_none=False)
+    bug_tracker_id = Int('bug_tracker')
+    bug_tracker = Reference(bug_tracker_id, 'BugTracker.id')
 
-    bug_tracker = ForeignKey(
-        dbName='bug_tracker', foreignKey='BugTracker', notNull=True)
-
-    components = SQLMultipleJoin(
-        'BugTrackerComponent', joinColumn='component_group', orderBy='name')
+    components = ReferenceSet(
+        id,
+        BugTrackerComponent.component_group_id,
+        order_by=BugTrackerComponent.name)
 
     def addComponent(self, component_name):
         """Adds a component that is synced from a remote bug tracker"""
