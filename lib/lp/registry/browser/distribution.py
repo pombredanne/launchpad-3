@@ -457,7 +457,7 @@ class DistributionOverviewMenu(ApplicationMenu, DistributionLinksMixin):
     @enabled_with_permission('launchpad.Edit')
     def configure_blueprints(self):
         text = 'Configure blueprints'
-        summary = 'Enable tracking of specifications and meetings'
+        summary = 'Enable tracking of feature planning.' 
         return Link('+edit', text, summary, icon='edit')
 
 
