@@ -291,7 +291,11 @@ class IBranchMergeProposal(IPrivacy):
         """Return the CodeReviewComment with the specified ID."""
 
     def getRevisionsSinceReviewStart():
-        """blah"""
+        """Return all the revisions added since the review began.
+
+        Revisions are grouped by creation (i.e. push) time.
+        :return: An iterator of (date, iterator of revision data)
+        """
 
     def getVoteReference(id):
         """Return the CodeReviewVoteReference with the specified ID."""

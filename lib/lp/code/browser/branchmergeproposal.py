@@ -626,8 +626,7 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
         """Return a conversation that is to be rendered."""
         # Sort the comments by date order.
         merge_proposal = self.context
-        groups = removeSecurityProxy(
-            merge_proposal.getRevisionsSinceReviewStart())
+        groups = merge_proposal.getRevisionsSinceReviewStart()
         source = DecoratedBranch(merge_proposal.source_branch)
         comments = [CodeReviewNewRevisions(list(revisions), date, source)
             for date, revisions in groups]

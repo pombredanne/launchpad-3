@@ -813,7 +813,12 @@ class BranchMergeProposal(SQLBase):
             branch_revision for branch_revision, revision, revision_author
             in resultset)
         # Now group by date created.
-        return groupby(branch_revisions, lambda r:r.revision.date_created)
+        gby = groupby(branch_revisions, lambda r:r.revision.date_created)
+        # Use a generator expression to wrap the custom iterator so it doesn't
+        # get security-proxied.
+        return (
+            (date, (revision for revision in revisions))
+            for date, revisions in gby)
 
     def getIncrementalDiffRanges(self):
         entries = list(self.all_comments)

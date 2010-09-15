@@ -584,39 +584,6 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
         view = create_initialized_view(self.bmp, '+index')
         self.assertEqual([], view.linked_bugs)
 
-    def test_revision_end_date_active(self):
-        # An active merge proposal will have None as an end date.
-        bmp = self.factory.makeBranchMergeProposal()
-        view = create_initialized_view(bmp, '+index')
-        self.assertIs(None, view.revision_end_date)
-
-    def test_revision_end_date_merged(self):
-        # An merged proposal will have the date merged as an end date.
-        bmp = self.factory.makeBranchMergeProposal(
-            set_state=BranchMergeProposalStatus.MERGED)
-        view = create_initialized_view(bmp, '+index')
-        self.assertEqual(bmp.date_merged, view.revision_end_date)
-
-    def test_revision_end_date_rejected(self):
-        # An rejected proposal will have the date reviewed as an end date.
-        bmp = self.factory.makeBranchMergeProposal(
-            set_state=BranchMergeProposalStatus.REJECTED)
-        view = create_initialized_view(bmp, '+index')
-        self.assertEqual(bmp.date_reviewed, view.revision_end_date)
-
-    def assertRevisionGroups(self, bmp, expected_groups):
-        """Get the groups for the merge proposal and check them."""
-        view = create_initialized_view(bmp, '+index')
-        groups = view._getRevisionsSinceReviewStart()
-        view_groups = [
-            obj.revisions for obj in groups]
-        self.assertEqual(expected_groups, view_groups)
-
-    def test_getRevisionsSinceReviewStart_no_revisions(self):
-        # If there have been no revisions pushed since the start of the
-        # review, the method returns an empty list.
-        self.assertRevisionGroups(self.bmp, [])
-
     def makeRevisionGroups(self):
         review_date = datetime(2009, 9, 10, tzinfo=pytz.UTC)
         bmp = self.factory.makeBranchMergeProposal(
@@ -638,29 +605,17 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
             revision_date += timedelta(days=1)
         return bmp, revisions
 
-    def test_getRevisionsSinceReviewStart_groups(self):
-        # Revisions that were scanned at the same time have the same
-        # date_created.  These revisions are grouped together.
-        bmp, revisions = self.makeRevisionGroups()
-        expected_groups = [
-            [revisions[0], revisions[1]],
-            [revisions[2], revisions[3]]]
-        self.assertRevisionGroups(bmp, expected_groups)
-
     def test_getRevisionsIncludesIncrementalDiffs(self):
         bmp, revisions = self.makeRevisionGroups()
-        diff1 = self.factory.makeIncrementalDiff(merge_proposal=bmp,
-                old_revision=revisions[0].revision.getLefthandParent(),
-                new_revision=revisions[1].revision)
-        diff2 = self.factory.makeIncrementalDiff(merge_proposal=bmp,
-                old_revision=revisions[2].revision.getLefthandParent(),
+        diff = self.factory.makeIncrementalDiff(merge_proposal=bmp,
+                old_revision=revisions[1].revision.getLefthandParent(),
                 new_revision=revisions[3].revision)
         view = create_initialized_view(bmp, '+index')
-        comments = view.conversation
+        comments = view.conversation.comments
         self.assertEqual(
-            [diff1, diff2],
-            [comment for comment in comments
-             if zisinstance(IncrementalDiffComment, comment)])
+            [diff],
+            [comment.incremental_diff for comment in comments
+             if zisinstance(comment, IncrementalDiffComment)])
 
     def test_include_superseded_comments(self):
         for x, time in zip(range(3), time_counter()):
