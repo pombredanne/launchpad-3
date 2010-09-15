@@ -22,6 +22,7 @@ from unittest import (
     )
 
 from zope.component import getUtility
+from zope.security.interfaces import ForbiddenAttribute
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
@@ -77,6 +78,7 @@ from lp.soyuz.scripts.queue import (
     name_queue_map,
     )
 from lp.testing import (
+    celebrity_logged_in,
     person_logged_in,
     TestCaseWithFactory,
     )
@@ -953,18 +955,23 @@ class TestQueuePageClosingBugs(TestCaseWithFactory):
         # should work with private bugs where the person using the queue
         # page doesn't have access to it.
         changes_file_template = "Format: 1.7\nLaunchpad-bugs-fixed: %s\n"
-        spr = self.factory.makeSourcePackageRelease()
-        # Required for assertion inside the func. we're testing.
-        removeSecurityProxy(spr).changelog_entry = "blah"
-        bug_reporter = self.factory.makePerson()
+        # changelog_entry is required for an assertion inside the function
+        # we're testing.
+        spr = self.factory.makeSourcePackageRelease(changelog_entry="blah")
+        #bug_reporter = self.factory.makePerson()
         archive_admin = self.factory.makePerson()
-        bug = self.factory.makeBug(owner=bug_reporter, private=True)
-        bug_task = self.factory.makeBugTask(
-            owner=bug_reporter, target=spr.sourcepackage, bug=bug)
+        bug = self.factory.makeBug(private=True)
+        bug_task = self.factory.makeBugTask(target=spr.sourcepackage, bug=bug)
         changes = StringIO(changes_file_template % bug.id)
+
         with person_logged_in(archive_admin):
+            # The archive admin user can't normally see this bug.
+            self.assertRaises(ForbiddenAttribute, bug, 'status')
+            # But the bug closure should work.
             close_bugs_for_sourcepackagerelease(spr, changes)
-        with person_logged_in(bug_reporter):
+
+        # Verify it was closed.
+        with celebrity_logged_in("admin"):
             self.assertEqual(bug_task.status, BugTaskStatus.FIXRELEASED)
 
 
