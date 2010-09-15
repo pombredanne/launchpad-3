@@ -53,7 +53,6 @@ from lp.soyuz.enums import (
     PackageUploadCustomFormat,
     PackageUploadStatus,
     )
-from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.section import ISectionSet
@@ -860,30 +859,22 @@ class BaseBinaryUploadFile(PackageUploadFile):
         - Create a new build in FULLYBUILT status.
 
         """
-        build_id = getattr(self.policy.options, 'buildid', None)
         dar = self.policy.distroseries[self.archtag]
 
-        if build_id is None:
-            # Check if there's a suitable existing build.
-            build = sourcepackagerelease.getBuildByArch(
-                dar, self.policy.archive)
-            if build is not None:
-                build.status = BuildStatus.FULLYBUILT
-                self.logger.debug("Updating build for %s: %s" % (
-                    dar.architecturetag, build.id))
-            else:
-                # No luck. Make one.
-                # Usually happen for security binary uploads.
-                build = sourcepackagerelease.createBuild(
-                    dar, self.policy.pocket, self.policy.archive,
-                    status=BuildStatus.FULLYBUILT)
-                self.logger.debug("Build %s created" % build.id)
+        # Check if there's a suitable existing build.
+        build = sourcepackagerelease.getBuildByArch(
+            dar, self.policy.archive)
+        if build is not None:
+            build.status = BuildStatus.FULLYBUILT
+            self.logger.debug("Updating build for %s: %s" % (
+                dar.architecturetag, build.id))
         else:
-            build = getUtility(IBinaryPackageBuildSet).getByBuildID(build_id)
-            self.logger.debug("Build %s found" % build.id)
-            # Ensure gathered binary is related to a FULLYBUILT build
-            # record. It will be check in slave-scanner procedure to
-            # certify that the build was processed correctly.
+            # No luck. Make one.
+            # Usually happen for security binary uploads.
+            build = sourcepackagerelease.createBuild(
+                dar, self.policy.pocket, self.policy.archive,
+                status=BuildStatus.FULLYBUILT)
+            self.logger.debug("Build %s created" % build.id)
         return build
 
     def checkBuild(self, build):

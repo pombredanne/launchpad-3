@@ -417,7 +417,7 @@ class UploadProcessor:
                          "https://help.launchpad.net/Packaging/PPA#Uploading "
                          "and update your configuration.")))
         logger.debug("Finding fresh policy")
-        policy = self._getPolicyForDistro(distribution)
+        policy = self._getPolicyForDistro(distribution, build)
         policy.archive = archive
 
         # DistroSeries overriding respect the following precedence:

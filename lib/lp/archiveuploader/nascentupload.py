@@ -500,7 +500,7 @@ class NascentUpload:
 
         # Set up some convenient shortcut variables.
 
-        uploader = self.policy.getUploader(self.changes)
+        uploader = self.policy.getUploader(self.changes, build)
         archive = self.policy.archive
 
         # If we have no signer, there's no ACL we can apply.
@@ -940,7 +940,6 @@ class NascentUpload:
         sourcepackagerelease = None
         if self.sourceful:
             assert self.changes.dsc, "Sourceful upload lacks DSC."
-            build = self.changes.dsc.findBuild()
             if build is not None:
                 self.changes.dsc.checkBuild(build)
             sourcepackagerelease = self.changes.dsc.storeInDatabase(build)
@@ -983,19 +982,21 @@ class NascentUpload:
                     sourcepackagerelease = (
                         binary_package_file.findSourcePackageRelease())
 
+                # Find the build for this particular binary package file.
                 if build is None:
-                    build = binary_package_file.findBuild(
+                    bpf_build = binary_package_file.findBuild(
                         sourcepackagerelease)
-                if build.source_package_release != sourcepackagerelease:
+                else:
+                    bpf_build = build
+                if bpf_build.source_package_release != sourcepackagerelease:
                     raise AssertionError(
                         "Attempt to upload binaries specifying build %s, "
-                        "where they don't fit." % build.id)
-                binary_package_file.checkBuild(build)
-                assert self.queue_root.pocket == build.pocket, (
+                        "where they don't fit." % bpf_build.id)
+                binary_package_file.checkBuild(bpf_build)
+                assert self.queue_root.pocket == bpf_build.pocket, (
                     "Binary was not build for the claimed pocket.")
-                binary_package_file.storeInDatabase(build)
-                processed_builds.append(build)
-                build = None
+                binary_package_file.storeInDatabase(bpf_build)
+                processed_builds.append(bpf_build)
 
             # Store the related builds after verifying they were built
             # from the same source.

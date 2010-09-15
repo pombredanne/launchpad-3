@@ -630,15 +630,6 @@ class DSCFile(SourceUploadFile, SignableTagFile):
             cleanup_unpacked_dir(unpacked_dir)
         self.logger.debug("Done")
 
-    def findBuild(self):
-        """Find and return the SourcePackageRecipeBuild, if one is specified.
-        """
-        build_id = getattr(self.policy.options, 'buildid', None)
-        if build_id is None:
-            return None
-
-        return getUtility(ISourcePackageRecipeBuildSource).getById(build_id)
-
     def storeInDatabase(self, build):
         """Store DSC information as a SourcePackageRelease record.
 

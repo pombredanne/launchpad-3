@@ -149,7 +149,7 @@ class TestUploadProcessorBase(TestCaseWithFactory):
 
         self.options = MockOptions()
         self.options.base_fsroot = self.queue_folder
-        self.options.builds = True
+        self.options.builds = False
         self.options.leafname = None
         self.options.distro = "ubuntu"
         self.options.distroseries = None
@@ -168,9 +168,13 @@ class TestUploadProcessorBase(TestCaseWithFactory):
         super(TestUploadProcessorBase, self).tearDown()
 
     def getUploadProcessor(self, txn):
-        def getPolicy(distro):
+        def getPolicy(distro, build):
             self.options.distro = distro.name
             policy = findPolicyByName(self.options.context)
+            if self.options.builds:
+                policy.distroseries = build.distro_series
+                policy.pocket = build.pocket
+                policy.archive = build.archive
             policy.setOptions(self.options)
             return policy
         return UploadProcessor(
@@ -284,7 +288,7 @@ class TestUploadProcessorBase(TestCaseWithFactory):
         shutil.copytree(upload_dir, target_path)
         return os.path.join(self.incoming_folder, queue_entry)
 
-    def processUpload(self, processor, upload_dir):
+    def processUpload(self, processor, upload_dir, build=None):
         """Process an upload queue entry directory.
 
         There is some duplication here with logic in UploadProcessor,
@@ -294,7 +298,8 @@ class TestUploadProcessorBase(TestCaseWithFactory):
         results = []
         changes_files = processor.locateChangesFiles(upload_dir)
         for changes_file in changes_files:
-            result = processor.processChangesFile(upload_dir, changes_file)
+            result = processor.processChangesFile(
+                upload_dir, changes_file, build=build)
             results.append(result)
         return results
 
@@ -689,10 +694,10 @@ class TestUploadProcessor(TestUploadProcessorBase):
         # Upload and accept a binary for the primary archive source.
         shutil.rmtree(upload_dir)
         self.options.context = 'buildd'
-        self.options.buildid = bar_original_build.id
         self.layer.txn.commit()
         upload_dir = self.queueUpload("bar_1.0-1_binary")
-        self.processUpload(uploadprocessor, upload_dir)
+        self.processUpload(uploadprocessor, upload_dir,
+            build=bar_original_build)
         self.assertEqual(
             uploadprocessor.last_processed_upload.is_rejected, False)
         bar_bin_pubs = self.publishPackage('bar', '1.0-1', source=False)
@@ -720,10 +725,10 @@ class TestUploadProcessor(TestUploadProcessorBase):
 
         shutil.rmtree(upload_dir)
         self.options.context = 'buildd'
-        self.options.buildid = bar_copied_build.id
         upload_dir = self.queueUpload(
             "bar_1.0-1_binary", "%s/ubuntu" % copy_archive.id)
-        self.processUpload(uploadprocessor, upload_dir)
+        self.processUpload(uploadprocessor, upload_dir,
+             build=bar_copied_build)
 
         # Make sure the upload succeeded.
         self.assertEqual(
@@ -792,9 +797,9 @@ class TestUploadProcessor(TestUploadProcessorBase):
         [bar_original_build] = bar_source_pub.createMissingBuilds()
 
         self.options.context = 'buildd'
-        self.options.buildid = bar_original_build.id
         upload_dir = self.queueUpload("bar_1.0-1_binary")
-        self.processUpload(uploadprocessor, upload_dir)
+        self.processUpload(
+            uploadprocessor, upload_dir, build=bar_original_build)
         [bar_binary_pub] = self.publishPackage("bar", "1.0-1", source=False)
 
         # Prepare ubuntu/breezy-autotest to build sources in i386.
@@ -814,10 +819,10 @@ class TestUploadProcessor(TestUploadProcessorBase):
         # Re-upload the same 'bar-1.0-1' binary as if it was rebuilt
         # in breezy-autotest context.
         shutil.rmtree(upload_dir)
-        self.options.buildid = bar_copied_build.id
         self.options.distroseries = breezy_autotest.name
         upload_dir = self.queueUpload("bar_1.0-1_binary")
-        self.processUpload(uploadprocessor, upload_dir)
+        self.processUpload(uploadprocessor, upload_dir,
+            build=bar_copied_build)
         [duplicated_binary_upload] = breezy_autotest.getQueueItems(
             status=PackageUploadStatus.NEW, name='bar',
             version='1.0-1', exact_match=True)
@@ -855,9 +860,9 @@ class TestUploadProcessor(TestUploadProcessorBase):
         [bar_original_build] = bar_source_pub.getBuilds()
 
         self.options.context = 'buildd'
-        self.options.buildid = bar_original_build.id
         upload_dir = self.queueUpload("bar_1.0-2_binary")
-        self.processUpload(uploadprocessor, upload_dir)
+        self.processUpload(uploadprocessor, upload_dir,
+            build=bar_original_build)
         [bar_binary_pub] = self.publishPackage("bar", "1.0-2", source=False)
 
         # Create a COPY archive for building in non-virtual builds.
@@ -874,10 +879,10 @@ class TestUploadProcessor(TestUploadProcessorBase):
         [bar_copied_build] = bar_copied_source.createMissingBuilds()
 
         shutil.rmtree(upload_dir)
-        self.options.buildid = bar_copied_build.id
         upload_dir = self.queueUpload(
             "bar_1.0-1_binary", "%s/ubuntu" % copy_archive.id)
-        self.processUpload(uploadprocessor, upload_dir)
+        self.processUpload(uploadprocessor, upload_dir,
+            build=bar_copied_build)
 
         # The binary just uploaded is accepted because it's destined for a
         # copy archive and the PRIMARY and the COPY archives are isolated
@@ -1030,9 +1035,9 @@ class TestUploadProcessor(TestUploadProcessorBase):
             self.breezy['i386'], PackagePublishingPocket.RELEASE,
             self.ubuntu.main_archive)
         self.layer.txn.commit()
-        self.options.buildid = foocomm_build.id
         upload_dir = self.queueUpload("foocomm_1.0-1_binary")
-        self.processUpload(uploadprocessor, upload_dir)
+        self.processUpload(
+            uploadprocessor, upload_dir, build=foocomm_build)
 
         contents = [
             "Subject: foocomm_1.0-1_i386.changes rejected",
@@ -1040,10 +1045,8 @@ class TestUploadProcessor(TestUploadProcessorBase):
             "where they don't fit."]
         self.assertEmail(contents)
 
-        # Reset upload queue directory for a new upload and the
-        # uploadprocessor buildid option.
+        # Reset upload queue directory for a new upload.
         shutil.rmtree(upload_dir)
-        self.options.buildid = None
 
         # Now upload a binary package of 'foocomm', letting a new build record
         # with appropriate data be created by the uploadprocessor.
