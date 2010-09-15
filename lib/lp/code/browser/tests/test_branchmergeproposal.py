@@ -3,6 +3,8 @@
 
 # pylint: disable-msg=F0401
 
+from __future__ import with_statement
+
 """Unit tests for BranchMergeProposals."""
 
 __metaclass__ = type
@@ -12,14 +14,16 @@ from datetime import (
     timedelta,
     )
 from difflib import unified_diff
-import operator
 import unittest
 
 import pytz
 import transaction
 from zope.component import getMultiAdapter
 from zope.security.interfaces import Unauthorized
-from zope.security.proxy import removeSecurityProxy
+from zope.security.proxy import (
+    isinstance as zisinstance,
+    removeSecurityProxy,
+    )
 
 from canonical.launchpad.database.message import MessageSet
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
@@ -36,6 +40,7 @@ from lp.code.browser.branchmergeproposal import (
     BranchMergeProposalMergedView,
     BranchMergeProposalVoteView,
     DecoratedCodeReviewVoteReference,
+    IncrementalDiffComment,
     latest_proposals_for_each_branch,
     )
 from lp.code.enums import (
@@ -48,10 +53,12 @@ from lp.code.model.diff import (
     )
 from lp.code.tests.helpers import add_revision_to_branch
 from lp.testing import (
+    BrowserTestCase,
     login_person,
     TestCaseWithFactory,
     time_counter,
     )
+from lp.testing.fakelibrarian import FakeLibrarian
 from lp.testing.views import create_initialized_view
 
 
@@ -577,45 +584,13 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
         view = create_initialized_view(self.bmp, '+index')
         self.assertEqual([], view.linked_bugs)
 
-    def test_revision_end_date_active(self):
-        # An active merge proposal will have None as an end date.
-        bmp = self.factory.makeBranchMergeProposal()
-        view = create_initialized_view(bmp, '+index')
-        self.assertIs(None, view.revision_end_date)
-
-    def test_revision_end_date_merged(self):
-        # An merged proposal will have the date merged as an end date.
-        bmp = self.factory.makeBranchMergeProposal(
-            set_state=BranchMergeProposalStatus.MERGED)
-        view = create_initialized_view(bmp, '+index')
-        self.assertEqual(bmp.date_merged, view.revision_end_date)
-
-    def test_revision_end_date_rejected(self):
-        # An rejected proposal will have the date reviewed as an end date.
-        bmp = self.factory.makeBranchMergeProposal(
-            set_state=BranchMergeProposalStatus.REJECTED)
-        view = create_initialized_view(bmp, '+index')
-        self.assertEqual(bmp.date_reviewed, view.revision_end_date)
-
-    def assertRevisionGroups(self, bmp, expected_groups):
-        """Get the groups for the merge proposal and check them."""
-        view = create_initialized_view(bmp, '+index')
-        groups = view._getRevisionsSinceReviewStart()
-        view_groups = [
-            obj.revisions for obj in groups]
-        self.assertEqual(expected_groups, view_groups)
-
-    def test_getRevisionsSinceReviewStart_no_revisions(self):
-        # If there have been no revisions pushed since the start of the
-        # review, the method returns an empty list.
-        self.assertRevisionGroups(self.bmp, [])
-
-    def test_getRevisionsSinceReviewStart_groups(self):
-        # Revisions that were scanned at the same time have the same
-        # date_created.  These revisions are grouped together.
+    def makeRevisionGroups(self):
         review_date = datetime(2009, 9, 10, tzinfo=pytz.UTC)
         bmp = self.factory.makeBranchMergeProposal(
             date_created=review_date)
+        first_commit = datetime(2009, 9, 9, tzinfo=pytz.UTC)
+        add_revision_to_branch(
+            self.factory, bmp.source_branch, first_commit)
         login_person(bmp.registrant)
         bmp.requestReview(review_date)
         revision_date = review_date + timedelta(days=1)
@@ -628,10 +603,19 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
                 add_revision_to_branch(
                     self.factory, bmp.source_branch, revision_date))
             revision_date += timedelta(days=1)
-        expected_groups = [
-            [revisions[0], revisions[1]],
-            [revisions[2], revisions[3]]]
-        self.assertRevisionGroups(bmp, expected_groups)
+        return bmp, revisions
+
+    def test_getRevisionsIncludesIncrementalDiffs(self):
+        bmp, revisions = self.makeRevisionGroups()
+        diff = self.factory.makeIncrementalDiff(merge_proposal=bmp,
+                old_revision=revisions[1].revision.getLefthandParent(),
+                new_revision=revisions[3].revision)
+        view = create_initialized_view(bmp, '+index')
+        comments = view.conversation.comments
+        self.assertEqual(
+            [diff],
+            [comment.incremental_diff for comment in comments
+             if zisinstance(comment, IncrementalDiffComment)])
 
     def test_include_superseded_comments(self):
         for x, time in zip(range(3), time_counter()):
@@ -756,7 +740,6 @@ class TestCommentAttachmentRendering(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
 
-
     def _makeCommentFromEmailWithAttachment(self, attachment_body):
         # Make an email message with an attachment, and create a code
         # review comment from it.
@@ -821,6 +804,23 @@ class TestBranchMergeCandidateView(TestCaseWithFactory):
                 year=2008, month=9, day=10, tzinfo=pytz.UTC))
         view = create_initialized_view(bmp, '+link-summary')
         self.assertEqual('Eric on 2008-09-10', view.status_title)
+
+class TestBranchMergeProposal(BrowserTestCase):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_conversation(self):
+        bmp = self.factory.makeBranchMergeProposal(registrant=self.user,
+            date_created = self.factory.getUniqueDate())
+        parent = add_revision_to_branch(self.factory, bmp.source_branch,
+            self.factory.getUniqueDate()).revision
+        revision = add_revision_to_branch(self.factory, bmp.source_branch,
+            self.factory.getUniqueDate()).revision
+        with FakeLibrarian() as librarian:
+            diff = self.factory.makeDiff()
+            bmp.generateIncrementalDiff(parent, revision, diff)
+            browser = self.getViewBrowser(bmp)
+        assert 'unf_pbasyvpgf' in browser.contents
 
 
 class TestLatestProposalsForEachBranch(TestCaseWithFactory):

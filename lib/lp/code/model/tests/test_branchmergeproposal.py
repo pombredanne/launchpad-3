@@ -7,7 +7,7 @@
 
 __metaclass__ = type
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from difflib import unified_diff
 from unittest import (
     TestCase,
@@ -72,6 +72,7 @@ from lp.code.model.branchmergeproposaljob import (
     MergeProposalCreatedJob,
     UpdatePreviewDiffJob,
     )
+from lp.code.tests.helpers import add_revision_to_branch
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
 from lp.testing import (
@@ -109,7 +110,8 @@ class TestBranchMergeProposalCanonicalUrl(TestCaseWithFactory):
         self.assertTrue(url.startswith(source_branch_url))
 
     def test_BranchMergeProposal_canonical_url_rest(self):
-        # The rest of the URL for a merge proposal is +merge followed by the db id.
+        # The rest of the URL for a merge proposal is +merge followed by the
+        # db id.
         bmp = self.factory.makeBranchMergeProposal()
         url = canonical_url(bmp)
         source_branch_url = canonical_url(bmp.source_branch)
@@ -238,7 +240,6 @@ class TestBranchMergeProposalTransitions(TestCaseWithFactory):
         self.assertRaises(BadStateTransition,
                           self._attemptTransition,
                           proposal, to_state)
-
 
     def assertGoodDupeTransition(self, from_state, to_state):
         """Trying to go from `from_state` to `to_state` succeeds."""
@@ -1050,6 +1051,7 @@ class TestBranchMergeProposalGetter(TestCaseWithFactory):
             else:
                 self.assertEqual([mp], list(active))
 
+
 class TestBranchMergeProposalGetterGetProposals(TestCaseWithFactory):
     """Test the getProposalsForContext method."""
 
@@ -1118,7 +1120,6 @@ class TestBranchMergeProposalGetterGetProposals(TestCaseWithFactory):
         beave_proposals = getter.getProposalsForParticipant(
             beaver, [BranchMergeProposalStatus.REJECTED], beaver)
         self.assertEqual(beave_proposals.count(), 1)
-
 
     def test_created_proposal_default_status(self):
         # When we create a merge proposal using the helper method, the default
@@ -1798,6 +1799,68 @@ class TestNextPreviewDiffJob(TestCaseWithFactory):
         bmp.next_preview_diff_job.complete()
         self.factory.makeBranchMergeProposal()
         self.assertIs(None, bmp.next_preview_diff_job)
+
+
+class TestRevisionEndDate(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_revision_end_date_active(self):
+        # An active merge proposal will have None as an end date.
+        bmp = self.factory.makeBranchMergeProposal()
+        self.assertIs(None, bmp.revision_end_date)
+
+    def test_revision_end_date_merged(self):
+        # An merged proposal will have the date merged as an end date.
+        bmp = self.factory.makeBranchMergeProposal(
+            set_state=BranchMergeProposalStatus.MERGED)
+        self.assertEqual(bmp.date_merged, bmp.revision_end_date)
+
+    def test_revision_end_date_rejected(self):
+        # An rejected proposal will have the date reviewed as an end date.
+        bmp = self.factory.makeBranchMergeProposal(
+            set_state=BranchMergeProposalStatus.REJECTED)
+        self.assertEqual(bmp.date_reviewed, bmp.revision_end_date)
+
+
+class TestGetRevisionsSinceReviewStart(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def assertRevisionGroups(self, bmp, expected_groups):
+        """Get the groups for the merge proposal and check them."""
+        groups = bmp.getRevisionsSinceReviewStart()
+        revision_groups = [list(revisions) for date, revisions in groups]
+        self.assertEqual(expected_groups, revision_groups)
+
+    def test_getRevisionsSinceReviewStart_no_revisions(self):
+        # If there have been no revisions pushed since the start of the
+        # review, the method returns an empty list.
+        bmp = self.factory.makeBranchMergeProposal()
+        self.assertRevisionGroups(bmp, [])
+
+    def test_getRevisionsSinceReviewStart_groups(self):
+        # Revisions that were scanned at the same time have the same
+        # date_created.  These revisions are grouped together.
+        review_date = datetime(2009, 9, 10, tzinfo=UTC)
+        bmp = self.factory.makeBranchMergeProposal(
+            date_created=review_date)
+        login_person(bmp.registrant)
+        bmp.requestReview(review_date)
+        revision_date = review_date + timedelta(days=1)
+        revisions = []
+        for date in range(2):
+            revisions.append(
+                add_revision_to_branch(
+                    self.factory, bmp.source_branch, revision_date))
+            revisions.append(
+                add_revision_to_branch(
+                    self.factory, bmp.source_branch, revision_date))
+            revision_date += timedelta(days=1)
+        expected_groups = [
+            [revisions[0], revisions[1]],
+            [revisions[2], revisions[3]]]
+        self.assertRevisionGroups(bmp, expected_groups)
 
 
 class TestBranchMergeProposalGetIncrementalDiffs(TestCaseWithFactory):

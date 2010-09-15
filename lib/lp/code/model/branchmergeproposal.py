@@ -13,6 +13,8 @@ __all__ = [
     ]
 
 from email.Utils import make_msgid
+from itertools import groupby
+from operator import attrgetter
 
 from sqlobject import (
     ForeignKey,
@@ -74,6 +76,7 @@ from lp.code.interfaces.branchmergeproposal import (
     IBranchMergeProposalGetter,
     )
 from lp.code.interfaces.branchtarget import IHasBranchTarget
+from lp.code.interfaces.revision import IRevision
 from lp.code.mail.branch import RecipientReason
 from lp.code.model.branchrevision import BranchRevision
 from lp.code.model.codereviewcomment import CodeReviewComment
@@ -778,6 +781,67 @@ class BranchMergeProposal(SQLBase):
         Store.of(self).flush()
         return self.preview_diff
 
+    @property
+    def revision_end_date(self):
+        """The cutoff date for showing revisions.
+
+        If the proposal has been merged, then we stop at the merged date. If
+        it is rejected, we stop at the reviewed date. For superseded
+        proposals, it should ideally use the non-existant date_last_modified,
+        but could use the last comment date.
+        """
+        status = self.queue_status
+        if status == BranchMergeProposalStatus.MERGED:
+            return self.date_merged
+        if status == BranchMergeProposalStatus.REJECTED:
+            return self.date_reviewed
+        # Otherwise return None representing an open end date.
+        return None
+
+    def _getNewerRevisions(self):
+        start_date = self.date_review_requested
+        if start_date is None:
+            start_date = self.date_created
+        return self.source_branch.getMainlineBranchRevisions(
+            start_date, self.revision_end_date, oldest_first=True)
+
+    def getRevisionsSinceReviewStart(self):
+        """Get the grouped revisions since the review started."""
+        resultset = self._getNewerRevisions()
+        # Work out the start of the review.
+        branch_revisions = (
+            branch_revision for branch_revision, revision, revision_author
+            in resultset)
+        # Now group by date created.
+        gby = groupby(branch_revisions, lambda r: r.revision.date_created)
+        # Use a generator expression to wrap the custom iterator so it doesn't
+        # get security-proxied.
+        return (
+            (date, (revision for revision in revisions))
+            for date, revisions in gby)
+
+    def getIncrementalDiffRanges(self):
+        entries = list(self.all_comments)
+        revisions = self._getNewerRevisions()
+        entries.extend(
+            revision for branch_revision, revision, revision_author
+            in revisions)
+        entries.sort(key=attrgetter('date_created'))
+        ranges = []
+        old_revision = None
+        for entry in entries:
+            if IRevision.providedBy(entry):
+                cur_revision = entry
+                if old_revision is None:
+                    old_revision = cur_revision.getLefthandParent()
+            else:
+                if cur_revision is not None:
+                    ranges.append(old_revision, cur_revision)
+                cur_revision, old_revision = None, None
+        if cur_revision is not None:
+            ranges.append((old_revision, cur_revision))
+        return ranges
+
     def generateIncrementalDiff(self, old_revision, new_revision, diff=None):
         if diff is None:
             source_branch = self.source_branch.getBzrBranch()
@@ -801,6 +865,10 @@ class BranchMergeProposal(SQLBase):
             ((diff.old_revision, diff.new_revision), diff)
             for diff in diffs)
         return [diff_dict.get(revisions) for revisions in revision_list]
+
+    def getCurrentIncrementalDiffs(self):
+        ranges = self.getIncrementalDiffs(self.getIncrementalDiffRanges())
+        return [diff for diff in ranges if diff is not None]
 
 
 class BranchMergeProposalGetter:
