@@ -19,6 +19,7 @@ from storm.locals import (
     Reference,
     Unicode,
     )
+from zope.component import getUtility
 from zope.interface import (
     classProvides,
     implements,
@@ -30,14 +31,22 @@ from canonical.launchpad.interfaces.lpstorm import (
     IMasterStore,
     IStore,
     )
+
+
 from lp.registry.enum import PersonTransferJobType
-from lp.registry.interfaces.membershipjob import (
+from lp.registry.interfaces.person import (
+    IPerson,
+    IPersonSet,
+    )
+from lp.registry.interfaces.persontransferjob import (
     IPersonTransferJob,
     IPersonTransferJobSource,
     IAddMemberNotificationJob,
     IAddMemberNotificationJobSource,
     )
+from lp.registry.interfaces.teammembership import TeamMembershipStatus
 from lp.registry.model.person import Person
+from lp.registry.model.teammembership import sendStatusChangeNotification
 from lp.services.job.model.job import Job
 from lp.services.job.runner import BaseRunnableJob
 
@@ -68,23 +77,24 @@ class PersonTransferJob(Storm):
     def metadata(self):
         return simplejson.loads(self._json_data)
 
-    def __init__(self, major_person, minor_person, job_type, metadata):
+    def __init__(self, minor_person, major_person, job_type, metadata):
         """Constructor.
 
-        :param major_person: The person or team that is receiving or losing
-                             the minor person.
         :param minor_person: The person or team being added to
                              the major_person.
+        :param major_person: The person or team that is receiving or losing
+                             the minor person.
         :param job_type: The specific membership action being performed.
         :param metadata: The type-specific variables, as a JSON-compatible
             dict.
         """
         super(PersonTransferJob, self).__init__()
-        json_data = simplejson.dumps(metadata)
         self.job = Job()
         self.job_type = job_type
         self.major_person = major_person
         self.minor_person = minor_person
+
+        json_data = simplejson.dumps(metadata)
         # XXX AaronBentley 2009-01-29 bug=322819: This should be a bytestring,
         # but the DB representation is unicode.
         self._json_data = json_data.decode('utf-8')
@@ -119,15 +129,18 @@ class PersonTransferJobDerived(BaseRunnableJob):
                 })
 
     @classmethod
-    def create(cls, major_person, minor_person, metadata):
+    def create(cls, minor_person, major_person, metadata):
         """See `IPersonTransferJob`."""
+        assert IPerson.providedBy(minor_person)
+        assert IPerson.providedBy(major_person)
         # If there's already a job for the membership, don't create a new one.
         job = IStore(PersonTransferJob).find(
             PersonTransferJob,
             And(PersonTransferJob.major_person == major_person,
-                PersonTransferJob.minor_person == minor_person))
+                PersonTransferJob.minor_person == minor_person,
+                PersonTransferJob.job_type == cls.class_job_type))
         job = PersonTransferJob(
-            major_person, minor_person, cls.class_job_type, {})
+            major_person, minor_person, cls.class_job_type, metadata)
         return cls(job)
 
     @classmethod
@@ -157,3 +170,50 @@ class AddMemberNotificationJob(PersonTransferJobDerived):
     classProvides(IAddMemberNotificationJobSource)
 
     class_job_type = PersonTransferJobType.ADD_MEMBER_NOTIFICATION
+
+    @classmethod
+    def create(cls, member, team, reviewer, old_status, new_status,
+               last_change_comment=None):
+        assert IPerson.providedBy(reviewer)
+        assert old_status in TeamMembershipStatus
+        assert new_status in TeamMembershipStatus
+        metadata = {
+            'reviewer': reviewer.id,
+            'old_status': old_status.name,
+            'new_status': new_status.name,
+            'last_change_comment': last_change_comment,
+            }
+        return super(AddMemberNotificationJob, cls).create(
+            minor_person=member, major_person=team, metadata=metadata)
+
+    @property
+    def member(self):
+        return self.minor_person
+
+    @property
+    def team(self):
+        return self.major_person
+
+    @property
+    def reviewer(self):
+        return getUtility(IPersonSet).getByID(self.metadata['reviewer'])
+
+    @property
+    def old_status(self):
+        return TeamMembershipStatus.items[self.metadata['old_status']]
+
+    @property
+    def new_status(self):
+        return TeamMembershipStatus.items[self.metadata['new_status']]
+
+    @property
+    def last_change_comment(self):
+        return self.metadata['last_change_comment']
+
+    def run(self):
+        """See `IBranchScanJob`."""
+        from canonical.launchpad.scripts import log
+        sendStatusChangeNotification(
+            self.member, self.team, self.reviewer, self.old_status,
+            self.new_status, self.last_change_comment)
+        log.debug('AddMemberNotificationJob sent email')

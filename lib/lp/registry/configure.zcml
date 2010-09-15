@@ -84,6 +84,21 @@
                 __call__"/>
     </class>
 
+    <!-- IPersonTransferJob -->
+    <securedutility
+        component="lp.registry.model.persontransferjob.AddMemberNotificationJob"
+        provides="lp.registry.interfaces.persontransferjob.IAddMemberNotificationJobSource">
+        <allow interface="lp.registry.interfaces.persontransferjob.IAddMemberNotificationJobSource"/>
+    </securedutility>
+
+    <class class="lp.registry.model.persontransferjob.PersonTransferJob">
+        <allow interface="lp.registry.interfaces.persontransferjob.IPersonTransferJob"/>
+    </class>
+
+    <class class="lp.registry.model.persontransferjob.AddMemberNotificationJob">
+        <allow interface="lp.registry.interfaces.persontransferjob.IAddMemberNotificationJob"/>
+    </class>
+
     <!-- Location -->
 
     <class

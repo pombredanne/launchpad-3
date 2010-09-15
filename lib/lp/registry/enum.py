@@ -112,5 +112,7 @@ class PersonTransferJobType(DBEnumeratedType):
     """Values that IPersonTransferJob.job_type can take."""
 
     ADD_MEMBER_NOTIFICATION = DBItem(0, """
+        Add-member notification
+
         Notify affected users of new team membership.
         """)

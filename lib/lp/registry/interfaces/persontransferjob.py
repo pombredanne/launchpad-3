@@ -5,6 +5,8 @@
 
 __metaclass__ = type
 __all__ = [
+    'IAddMemberNotificationJob',
+    'IAddMemberNotificationJobSource',
     'IPersonTransferJob',
     'IPersonTransferJobSource',
     ]
@@ -54,5 +56,17 @@ class IPersonTransferJob(Interface):
 class IPersonTransferJobSource(IJobSource):
     """An interface for acquiring IPersonTransferJobs."""
 
-    def create(minor_person, major_person):
+    def create(minor_person, major_person, metadata):
         """Create a new IPersonTransferJob."""
+
+
+class IAddMemberNotificationJob(IPersonTransferJob):
+    """A Job to notify new members of a team of that change."""
+
+
+class IAddMemberNotificationJobSource(IJobSource):
+    """An interface for acquiring IAddMemberNotificationJobs."""
+
+    def create(member, team, reviewer, old_status, new_status,
+               last_change_comment=None):
+        """Create a new IAddMemberNotificationJob."""

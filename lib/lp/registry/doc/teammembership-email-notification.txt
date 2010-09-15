@@ -229,6 +229,17 @@ member.
     >>> marilize = personset.getByName('marilize')
     >>> ignored = ubuntu_team.addMember(marilize, reviewer=cprov)
     >>> transaction.commit()
+
+addMember() has queued up a job to send out the emails. We'll run the
+job now.
+
+    >>> from lp.registry.interfaces.persontransferjob import (
+    ...     IPersonTransferJobSource)
+    >>> [job] = list(getUtility(IPersonTransferJobSource).iterReady())
+    >>> job.run()
+
+Now, the emails have been sent.
+
     >>> len(stub.test_emails)
     6
     >>> print_distinct_emails()

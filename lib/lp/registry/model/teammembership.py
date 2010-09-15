@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'sendStatusChangeNotification',
     'TeamMembership',
     'TeamMembershipSet',
     'TeamParticipation',
@@ -50,6 +51,9 @@ from lp.registry.interfaces.person import (
     IPersonSet,
     TeamMembershipRenewalPolicy,
     validate_public_person,
+    )
+from lp.registry.interfaces.persontransferjob import (
+    IAddMemberNotificationJobSource,
     )
 from lp.registry.interfaces.teammembership import (
     CyclicalTeamMembershipError,
@@ -400,96 +404,11 @@ class TeamMembership(SQLBase):
         """Send a status change notification to all team admins and the
         member whose membership's status changed.
         """
-        team = self.team
-        member = self.person
         reviewer = self.last_changed_by
-        from_addr = format_address(
-            team.displayname, config.canonical.noreply_from_address)
         new_status = self.status
-        admins_emails = team.getTeamAdminsEmailAddresses()
-        # self.person might be a team, so we can't rely on its preferredemail.
-        member_email = get_contact_email_addresses(member)
-        # Make sure we don't send the same notification twice to anybody.
-        for email in member_email:
-            if email in admins_emails:
-                admins_emails.remove(email)
-
-        if reviewer != member:
-            reviewer_name = reviewer.unique_displayname
-        else:
-            # The user himself changed his membership.
-            reviewer_name = 'the user himself'
-
-        if self.last_change_comment:
-            comment = ("\n%s said:\n %s\n" % (
-                reviewer.displayname, self.last_change_comment.strip()))
-        else:
-            comment = ""
-
-        replacements = {
-            'member_name': member.unique_displayname,
-            'recipient_name': member.displayname,
-            'team_name': team.unique_displayname,
-            'team_url': canonical_url(team),
-            'old_status': old_status.title,
-            'new_status': new_status.title,
-            'reviewer_name': reviewer_name,
-            'comment': comment}
-
-        template_name = 'membership-statuschange'
-        subject = ('Membership change: %(member)s in %(team)s'
-                   % {'member': member.name, 'team': team.name})
-        if new_status == TeamMembershipStatus.EXPIRED:
-            template_name = 'membership-expired'
-            subject = '%s expired from team' % member.name
-        elif (new_status == TeamMembershipStatus.APPROVED and
-              old_status != TeamMembershipStatus.ADMIN):
-            if old_status == TeamMembershipStatus.INVITED:
-                subject = ('Invitation to %s accepted by %s'
-                           % (member.name, reviewer.name))
-                template_name = 'membership-invitation-accepted'
-            elif old_status == TeamMembershipStatus.PROPOSED:
-                subject = '%s approved by %s' % (member.name, reviewer.name)
-            else:
-                subject = '%s added by %s' % (member.name, reviewer.name)
-        elif new_status == TeamMembershipStatus.INVITATION_DECLINED:
-            subject = ('Invitation to %s declined by %s'
-                       % (member.name, reviewer.name))
-            template_name = 'membership-invitation-declined'
-        elif new_status == TeamMembershipStatus.DEACTIVATED:
-            subject = '%s deactivated by %s' % (member.name, reviewer.name)
-        elif new_status == TeamMembershipStatus.ADMIN:
-            subject = '%s made admin by %s' % (member.name, reviewer.name)
-        elif new_status == TeamMembershipStatus.DECLINED:
-            subject = '%s declined by %s' % (member.name, reviewer.name)
-        else:
-            # Use the default template and subject.
-            pass
-
-        if admins_emails:
-            admins_template = get_email_template(
-                "%s-bulk.txt" % template_name)
-            for address in admins_emails:
-                recipient = getUtility(IPersonSet).getByEmail(address)
-                replacements['recipient_name'] = recipient.displayname
-                msg = MailWrapper().format(
-                    admins_template % replacements, force_wrap=True)
-                simple_sendmail(from_addr, address, subject, msg)
-
-        # The member can be a team without any members, and in this case we
-        # won't have a single email address to send this notification to.
-        if member_email and reviewer != member:
-            if member.isTeam():
-                template = '%s-bulk.txt' % template_name
-            else:
-                template = '%s-personal.txt' % template_name
-            member_template = get_email_template(template)
-            for address in member_email:
-                recipient = getUtility(IPersonSet).getByEmail(address)
-                replacements['recipient_name'] = recipient.displayname
-                msg = MailWrapper().format(
-                    member_template % replacements, force_wrap=True)
-                simple_sendmail(from_addr, address, subject, msg)
+        getUtility(IAddMemberNotificationJobSource).create(
+            self.person, self.team, reviewer, old_status, new_status,
+            self.last_change_comment)
 
 
 class TeamMembershipSet:
@@ -781,3 +700,98 @@ def _fillTeamParticipation(member, accepting_team):
 
     store = Store.of(member)
     store.execute(query)
+
+
+def sendStatusChangeNotification(
+    member, team, reviewer, old_status, new_status, last_change_comment=None):
+        from_addr = format_address(
+            team.displayname, config.canonical.noreply_from_address)
+        admins_emails = team.getTeamAdminsEmailAddresses()
+        # person might be a team, so we can't rely on its preferredemail.
+        member_email = get_contact_email_addresses(member)
+        # Make sure we don't send the same notification twice to anybody.
+        for email in member_email:
+            if email in admins_emails:
+                admins_emails.remove(email)
+
+        if reviewer != member:
+            reviewer_name = reviewer.unique_displayname
+        else:
+            # The user himself changed his membership.
+            reviewer_name = 'the user himself'
+
+        if last_change_comment:
+            comment = ("\n%s said:\n %s\n" % (
+                reviewer.displayname, last_change_comment.strip()))
+        else:
+            comment = ""
+
+        replacements = {
+            'member_name': member.unique_displayname,
+            'recipient_name': member.displayname,
+            'team_name': team.unique_displayname,
+            'team_url': canonical_url(team),
+            'old_status': old_status.title,
+            'new_status': new_status.title,
+            'reviewer_name': reviewer_name,
+            'comment': comment}
+
+        template_name = 'membership-statuschange'
+        subject = ('Membership change: %(member)s in %(team)s'
+                   % {'member': member.name, 'team': team.name})
+        if new_status == TeamMembershipStatus.EXPIRED:
+            template_name = 'membership-expired'
+            subject = '%s expired from team' % member.name
+        elif (new_status == TeamMembershipStatus.APPROVED and
+              old_status != TeamMembershipStatus.ADMIN):
+            if old_status == TeamMembershipStatus.INVITED:
+                subject = ('Invitation to %s accepted by %s'
+                           % (member.name, reviewer.name))
+                template_name = 'membership-invitation-accepted'
+            elif old_status == TeamMembershipStatus.PROPOSED:
+                subject = '%s approved by %s' % (
+                    member.name, reviewer.name)
+            else:
+                subject = '%s added by %s' % (
+                    member.name, reviewer.name)
+        elif new_status == TeamMembershipStatus.INVITATION_DECLINED:
+            subject = ('Invitation to %s declined by %s'
+                       % (member.name, reviewer.name))
+            template_name = 'membership-invitation-declined'
+        elif new_status == TeamMembershipStatus.DEACTIVATED:
+            subject = '%s deactivated by %s' % (
+                member.name, reviewer.name)
+        elif new_status == TeamMembershipStatus.ADMIN:
+            subject = '%s made admin by %s' % (
+                member.name, reviewer.name)
+        elif new_status == TeamMembershipStatus.DECLINED:
+            subject = '%s declined by %s' % (
+                member.name, reviewer.name)
+        else:
+            # Use the default template and subject.
+            pass
+
+        if admins_emails:
+            admins_template = get_email_template(
+                "%s-bulk.txt" % template_name)
+            for address in admins_emails:
+                recipient = getUtility(IPersonSet).getByEmail(address)
+                replacements['recipient_name'] = recipient.displayname
+                msg = MailWrapper().format(
+                    admins_template % replacements, force_wrap=True)
+                simple_sendmail(from_addr, address, subject, msg)
+
+        # The member can be a team without any members, and in this case we
+        # won't have a single email address to send this notification to.
+        if member_email and reviewer != member:
+            if member.isTeam():
+                template = '%s-bulk.txt' % template_name
+            else:
+                template = '%s-personal.txt' % template_name
+            member_template = get_email_template(template)
+            for address in member_email:
+                recipient = getUtility(IPersonSet).getByEmail(address)
+                replacements['recipient_name'] = recipient.displayname
+                msg = MailWrapper().format(
+                    member_template % replacements, force_wrap=True)
+                simple_sendmail(from_addr, address, subject, msg)
