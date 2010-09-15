@@ -46,7 +46,6 @@ from lp.code.model.diff import (
     PreviewDiff,
     StaticDiff,
     )
-from lp.code.tests.helpers import add_revision_to_branch
 from lp.testing import (
     login_person,
     TestCaseWithFactory,
@@ -576,62 +575,6 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
         self.bmp.target_branch.linkBug(bug, self.bmp.registrant)
         view = create_initialized_view(self.bmp, '+index')
         self.assertEqual([], view.linked_bugs)
-
-    def test_revision_end_date_active(self):
-        # An active merge proposal will have None as an end date.
-        bmp = self.factory.makeBranchMergeProposal()
-        view = create_initialized_view(bmp, '+index')
-        self.assertIs(None, view.revision_end_date)
-
-    def test_revision_end_date_merged(self):
-        # An merged proposal will have the date merged as an end date.
-        bmp = self.factory.makeBranchMergeProposal(
-            set_state=BranchMergeProposalStatus.MERGED)
-        view = create_initialized_view(bmp, '+index')
-        self.assertEqual(bmp.date_merged, view.revision_end_date)
-
-    def test_revision_end_date_rejected(self):
-        # An rejected proposal will have the date reviewed as an end date.
-        bmp = self.factory.makeBranchMergeProposal(
-            set_state=BranchMergeProposalStatus.REJECTED)
-        view = create_initialized_view(bmp, '+index')
-        self.assertEqual(bmp.date_reviewed, view.revision_end_date)
-
-    def assertRevisionGroups(self, bmp, expected_groups):
-        """Get the groups for the merge proposal and check them."""
-        view = create_initialized_view(bmp, '+index')
-        groups = view._getRevisionsSinceReviewStart()
-        view_groups = [
-            obj.revisions for obj in groups]
-        self.assertEqual(expected_groups, view_groups)
-
-    def test_getRevisionsSinceReviewStart_no_revisions(self):
-        # If there have been no revisions pushed since the start of the
-        # review, the method returns an empty list.
-        self.assertRevisionGroups(self.bmp, [])
-
-    def test_getRevisionsSinceReviewStart_groups(self):
-        # Revisions that were scanned at the same time have the same
-        # date_created.  These revisions are grouped together.
-        review_date = datetime(2009, 9, 10, tzinfo=pytz.UTC)
-        bmp = self.factory.makeBranchMergeProposal(
-            date_created=review_date)
-        login_person(bmp.registrant)
-        bmp.requestReview(review_date)
-        revision_date = review_date + timedelta(days=1)
-        revisions = []
-        for date in range(2):
-            revisions.append(
-                add_revision_to_branch(
-                    self.factory, bmp.source_branch, revision_date))
-            revisions.append(
-                add_revision_to_branch(
-                    self.factory, bmp.source_branch, revision_date))
-            revision_date += timedelta(days=1)
-        expected_groups = [
-            [revisions[0], revisions[1]],
-            [revisions[2], revisions[3]]]
-        self.assertRevisionGroups(bmp, expected_groups)
 
     def test_include_superseded_comments(self):
         for x, time in zip(range(3), time_counter()):
