@@ -543,7 +543,7 @@ class LaunchpadRootNavigation(Navigation):
         except (CannotHaveLinkedBranch, InvalidNamespace,
                 InvalidProductName, NotFoundError) as e:
             error_msg = str(e)
-            if len(error_msg)==0:
+            if error_msg == '':
                 error_msg = "Invalid branch lp:%s." % path
             self.request.response.addErrorNotification(error_msg)
 

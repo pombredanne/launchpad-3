@@ -53,10 +53,8 @@ class TraversalMixin:
         if notification is None:
             self.assertEquals(len(notifications), 0)
             return
-
         self.assertEqual(len(notifications), 1)
         self.assertEquals(notifications[0].level, level)
-
         self.assertEqual(notification, notifications[0].message)
 
     def assertDisplaysNotification(
@@ -135,7 +133,8 @@ class TestBranchTraversal(TestCaseWithFactory, TraversalMixin):
         # If an attempt is made to access a private branch, display an error.
         branch = self.factory.makeProductBranch()
         branch_unique_name = branch.unique_name
-        removeSecurityProxy(branch.product).development_focus.branch = branch
+        product = removeSecurityProxy(branch.product)
+        ICanHasLinkedBranch(product).setBranch(branch)
         removeSecurityProxy(branch).private = True
 
         any_user = self.factory.makePerson()
@@ -151,7 +150,7 @@ class TestBranchTraversal(TestCaseWithFactory, TraversalMixin):
         # branch that is the development focus branch for that product.
         branch = self.factory.makeProductBranch()
         product = removeSecurityProxy(branch.product)
-        product.development_focus.branch = branch
+        ICanHasLinkedBranch(product).setBranch(branch)
         self.assertRedirects(product.name, canonical_url(branch))
 
     def test_private_branch_for_product(self):
@@ -159,7 +158,7 @@ class TestBranchTraversal(TestCaseWithFactory, TraversalMixin):
         # message telling the user there is no linked branch.
         branch = self.factory.makeProductBranch()
         product = removeSecurityProxy(branch.product)
-        product.development_focus.branch = branch
+        ICanHasLinkedBranch(product).setBranch(branch)
         removeSecurityProxy(branch).private = True
 
         any_user = self.factory.makePerson()
