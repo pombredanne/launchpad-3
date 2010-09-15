@@ -293,7 +293,7 @@ class BranchMergeProposalJobDerived(BaseRunnableJob):
 
     def getOopsVars(self):
         """See `IRunnableJob`."""
-        vars =  BaseRunnableJob.getOopsVars(self)
+        vars = BaseRunnableJob.getOopsVars(self)
         bmp = self.context.branch_merge_proposal
         vars.extend([
             ('branchmergeproposal_job_id', self.context.id),
@@ -501,7 +501,7 @@ class CodeReviewCommentEmailJob(BranchMergeProposalJobDerived):
 
     def getOopsVars(self):
         """See `IRunnableJob`."""
-        vars =  BranchMergeProposalJobDerived.getOopsVars(self)
+        vars = BranchMergeProposalJobDerived.getOopsVars(self)
         vars.extend([
             ('code_review_comment', self.metadata['code_review_comment']),
             ])
@@ -563,7 +563,7 @@ class ReviewRequestedEmailJob(BranchMergeProposalJobDerived):
 
     def getOopsVars(self):
         """See `IRunnableJob`."""
-        vars =  BranchMergeProposalJobDerived.getOopsVars(self)
+        vars = BranchMergeProposalJobDerived.getOopsVars(self)
         vars.extend([
             ('reviewer', self.metadata['reviewer']),
             ('requester', self.metadata['requester']),
@@ -612,7 +612,7 @@ class MergeProposalUpdatedEmailJob(BranchMergeProposalJobDerived):
     def getMetadata(delta_text, editor):
         metadata = {'delta_text': delta_text}
         if editor is not None:
-            metadata['editor'] = editor.name;
+            metadata['editor'] = editor.name
         return metadata
 
     @property
@@ -631,7 +631,7 @@ class MergeProposalUpdatedEmailJob(BranchMergeProposalJobDerived):
 
     def getOopsVars(self):
         """See `IRunnableJob`."""
-        vars =  BranchMergeProposalJobDerived.getOopsVars(self)
+        vars = BranchMergeProposalJobDerived.getOopsVars(self)
         vars.extend([
             ('editor', self.metadata.get('editor', '(not set)')),
             ('delta_text', self.metadata['delta_text']),
@@ -663,9 +663,9 @@ class GenerateIncrementalDiffJob(BranchMergeProposalJobDerived):
 
     def run(self):
         diff = IncrementalDiff.fromBranchMergeProposal(
-            self.branch_merge_proposal, old_revision_id, new_revision_id)
+            self.branch_merge_proposal, self.old_revision_id,
+            self.new_revision_id)
         self.branch_merge_proposal._incremental_diffs = [diff]
-
 
     @classmethod
     def create(cls, merge_proposal, old_revision_id, new_revision_id):
@@ -693,7 +693,7 @@ class GenerateIncrementalDiffJob(BranchMergeProposalJobDerived):
 
     def getOopsVars(self):
         """See `IRunnableJob`."""
-        vars =  BranchMergeProposalJobDerived.getOopsVars(self)
+        vars = BranchMergeProposalJobDerived.getOopsVars(self)
         vars.extend([
             ('old_revision_id', self.metadata['old_revision_id']),
             ('new_revision_id', self.metadata['new_revision_id']),

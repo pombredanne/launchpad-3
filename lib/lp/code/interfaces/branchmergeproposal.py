@@ -556,8 +556,10 @@ class IBranchMergeProposalJob(Interface):
 class IBranchMergeProposalJobSource(IJobSource):
     """A job source that will get all supported merge proposal jobs."""
 
+
 class IBranchMergeProposalJobSource(IJobSource):
     """A job source that will get all supported merge proposal jobs."""
+
 
 class IBranchMergeProposalListingBatchNavigator(ITableBatchNavigator):
     """A marker interface for registering the appropriate listings."""
@@ -731,8 +733,6 @@ class IMergeProposalUpdatedEmailJobSource(Interface):
         """
 
 
-# XXX: JonathanLange 2010-01-06: This is only used in the scanner, perhaps it
-# should be moved there.
 def notify_modified(proposal, func, *args, **kwargs):
     """Call func, then notify about the changes it made.
 
@@ -742,6 +742,8 @@ def notify_modified(proposal, func, *args, **kwargs):
     :param kwargs: Keyword arguments for the method.
     :return: The return value of the method.
     """
+    # XXX: JonathanLange 2010-01-06: This is only used in the scanner, perhaps
+    # it should be moved there.
     from lp.code.adapters.branch import BranchMergeProposalDelta
     snapshot = BranchMergeProposalDelta.snapshot(proposal)
     result = func(*args, **kwargs)

@@ -242,7 +242,7 @@ class TestGenerateIncrementalDiffJob(DiffTestCase):
     layer = LaunchpadZopelessLayer
 
     def test_implement_interface(self):
-        """GenerateIncrementalDiffJob implements IGenerateIncrementalDiffJobSource."""
+        """GenerateIncrementalDiffJob implements its interface."""
         verifyObject(
             IGenerateIncrementalDiffJobSource, GenerateIncrementalDiffJob)
 
@@ -299,6 +299,7 @@ class TestGenerateIncrementalDiffJob(DiffTestCase):
         job.acquireLease()
         expiry_delta = job.lease_expires - datetime.now(pytz.UTC)
         self.assertTrue(500 <= expiry_delta.seconds, expiry_delta)
+
 
 class TestBranchMergeProposalJobSource(TestCaseWithFactory):
 
