@@ -35,7 +35,7 @@ class DecoratedResultSet(object):
     delegates(IResultSet, context='result_set')
 
     def __init__(self, result_set, result_decorator=None, pre_iter_hook=None,
-        slice_info=False):
+                 slice_info=False):
         """
         :param result_set: The original result set to be decorated.
         :param result_decorator: The method with which individual results
@@ -43,7 +43,7 @@ class DecoratedResultSet(object):
         :param pre_iter_hook: The method to be called (with the 'result_set')
             immediately before iteration starts.
         :param slice_info: If True pass information about the slice parameters
-            to the result_decoratora and pre_iter_hook. any() and similar
+            to the result_decorator and pre_iter_hook. any() and similar
             methods will cause None to be supplied.
         """
         self.result_set = result_set
@@ -94,14 +94,14 @@ class DecoratedResultSet(object):
             if start is Undef:
                 start = 0
             stop = start + len(results)
-            slice_info = slice(start, stop)
+            result_slice = slice(start, stop)
         if self.pre_iter_hook is not None:
             if self.slice_info:
-                self.pre_iter_hook(results, slice_info)
+                self.pre_iter_hook(results, result_slice)
             else:
                 self.pre_iter_hook(results)
         if self.slice_info:
-            start = slice_info.start
+            start = result_slice.start
             for offset, value in enumerate(results):
                 yield self.decorate_or_none(value, offset + start)
         else:

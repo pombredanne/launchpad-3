@@ -144,8 +144,8 @@ The pre_iter_hook() method is only called once when iteration begins.
 DecoratedResultSet can inform its hooks about slice data if slice_info=True is
 passed.
 
-    >>> def pre_iter(rows, slice_info):
-    ...     print "pre iter", len(rows), slice_info.start, slice_info.stop
+    >>> def pre_iter(rows, slice):
+    ...     print "pre iter", len(rows), slice.start, slice.stop
     >>> def decorate(row, row_index):
     ...     print "row", row.id, row_index
     >>> _ = result_set.order_by(Distribution.id)
