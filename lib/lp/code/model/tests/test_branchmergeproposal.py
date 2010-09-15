@@ -110,7 +110,8 @@ class TestBranchMergeProposalCanonicalUrl(TestCaseWithFactory):
         self.assertTrue(url.startswith(source_branch_url))
 
     def test_BranchMergeProposal_canonical_url_rest(self):
-        # The rest of the URL for a merge proposal is +merge followed by the db id.
+        # The rest of the URL for a merge proposal is +merge followed by the
+        # db id.
         bmp = self.factory.makeBranchMergeProposal()
         url = canonical_url(bmp)
         source_branch_url = canonical_url(bmp.source_branch)
@@ -239,7 +240,6 @@ class TestBranchMergeProposalTransitions(TestCaseWithFactory):
         self.assertRaises(BadStateTransition,
                           self._attemptTransition,
                           proposal, to_state)
-
 
     def assertGoodDupeTransition(self, from_state, to_state):
         """Trying to go from `from_state` to `to_state` succeeds."""
@@ -1051,6 +1051,7 @@ class TestBranchMergeProposalGetter(TestCaseWithFactory):
             else:
                 self.assertEqual([mp], list(active))
 
+
 class TestBranchMergeProposalGetterGetProposals(TestCaseWithFactory):
     """Test the getProposalsForContext method."""
 
@@ -1119,7 +1120,6 @@ class TestBranchMergeProposalGetterGetProposals(TestCaseWithFactory):
         beave_proposals = getter.getProposalsForParticipant(
             beaver, [BranchMergeProposalStatus.REJECTED], beaver)
         self.assertEqual(beave_proposals.count(), 1)
-
 
     def test_created_proposal_default_status(self):
         # When we create a merge proposal using the helper method, the default
@@ -1799,6 +1799,7 @@ class TestNextPreviewDiffJob(TestCaseWithFactory):
         bmp.next_preview_diff_job.complete()
         self.factory.makeBranchMergeProposal()
         self.assertIs(None, bmp.next_preview_diff_job)
+
 
 class TestRevisionEndDate(TestCaseWithFactory):
 

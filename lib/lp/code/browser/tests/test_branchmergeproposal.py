@@ -740,7 +740,6 @@ class TestCommentAttachmentRendering(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
 
-
     def _makeCommentFromEmailWithAttachment(self, attachment_body):
         # Make an email message with an attachment, and create a code
         # review comment from it.

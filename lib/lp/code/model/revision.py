@@ -40,7 +40,6 @@ from storm.expr import (
     )
 from storm.locals import (
     Bool,
-    DateTime,
     Int,
     Min,
     Reference,

@@ -813,7 +813,7 @@ class BranchMergeProposal(SQLBase):
             branch_revision for branch_revision, revision, revision_author
             in resultset)
         # Now group by date created.
-        gby = groupby(branch_revisions, lambda r:r.revision.date_created)
+        gby = groupby(branch_revisions, lambda r: r.revision.date_created)
         # Use a generator expression to wrap the custom iterator so it doesn't
         # get security-proxied.
         return (

@@ -127,7 +127,6 @@ class DiffTestCase(TestCaseWithFactory):
                 prerequisite)
 
 
-
 class TestDiff(DiffTestCase):
 
     layer = LaunchpadFunctionalLayer
@@ -191,19 +190,19 @@ class TestDiffInScripts(DiffTestCase):
         self.checkExampleMerge(diff.text)
 
     diff_bytes = (
-        "--- bar	2009-08-26 15:53:34.000000000 -0400\n"
-        "+++ bar	1969-12-31 19:00:00.000000000 -0500\n"
+        "--- bar\t2009-08-26 15:53:34.000000000 -0400\n"
+        "+++ bar\t1969-12-31 19:00:00.000000000 -0500\n"
         "@@ -1,3 +0,0 @@\n"
         "-a\n"
         "-b\n"
         "-c\n"
-        "--- baz	1969-12-31 19:00:00.000000000 -0500\n"
-        "+++ baz	2009-08-26 15:53:57.000000000 -0400\n"
+        "--- baz\t1969-12-31 19:00:00.000000000 -0500\n"
+        "+++ baz\t2009-08-26 15:53:57.000000000 -0400\n"
         "@@ -0,0 +1,2 @@\n"
         "+a\n"
         "+b\n"
-        "--- foo	2009-08-26 15:53:23.000000000 -0400\n"
-        "+++ foo	2009-08-26 15:56:43.000000000 -0400\n"
+        "--- foo\t2009-08-26 15:53:23.000000000 -0400\n"
+        "+++ foo\t2009-08-26 15:56:43.000000000 -0400\n"
         "@@ -1,3 +1,4 @@\n"
         " a\n"
         "-b\n"
@@ -212,19 +211,19 @@ class TestDiffInScripts(DiffTestCase):
         "+e\n")
 
     diff_bytes_2 = (
-        "--- bar	2009-08-26 15:53:34.000000000 -0400\n"
-        "+++ bar	1969-12-31 19:00:00.000000000 -0500\n"
+        "--- bar\t2009-08-26 15:53:34.000000000 -0400\n"
+        "+++ bar\t1969-12-31 19:00:00.000000000 -0500\n"
         "@@ -1,3 +0,0 @@\n"
         "-a\n"
         "-b\n"
         "-c\n"
-        "--- baz	1969-12-31 19:00:00.000000000 -0500\n"
-        "+++ baz	2009-08-26 15:53:57.000000000 -0400\n"
+        "--- baz\t1969-12-31 19:00:00.000000000 -0500\n"
+        "+++ baz\t2009-08-26 15:53:57.000000000 -0400\n"
         "@@ -0,0 +1,2 @@\n"
         "+a\n"
         "+b\n"
-        "--- foo	2009-08-26 15:53:23.000000000 -0400\n"
-        "+++ foo	2009-08-26 15:56:43.000000000 -0400\n"
+        "--- foo\t2009-08-26 15:53:23.000000000 -0400\n"
+        "+++ foo\t2009-08-26 15:56:43.000000000 -0400\n"
         "@@ -1,3 +1,5 @@\n"
         " a\n"
         "-b\n"
@@ -471,7 +470,6 @@ class TestPreviewDiff(DiffTestCase):
         diff = PreviewDiff.fromBranchMergeProposal(bmp)
         self.assertEqual('', diff.conflicts)
         self.assertFalse(diff.has_conflicts)
-
 
     def test_fromBranchMergeProposal(self):
         # Correctly generates a PreviewDiff from a BranchMergeProposal.

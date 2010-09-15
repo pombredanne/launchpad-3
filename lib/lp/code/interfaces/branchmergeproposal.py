@@ -525,8 +525,8 @@ class IBranchMergeProposal(IPrivacy):
             source branch.
         :param target_revision_id: The revision id that was used from the
             target branch.
-        :param prerequisite_revision_id: The revision id that was used from the
-            prerequisite branch.
+        :param prerequisite_revision_id: The revision id that was used from
+            the prerequisite branch.
         :param conflicts: Text describing the conflicts if any.
         """
 

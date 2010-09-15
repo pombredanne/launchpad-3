@@ -1463,8 +1463,8 @@ def text_xhtml_representation(context, field, request):
     """Render an `IText` as XHTML using the webservice."""
     formatter = FormattersAPI
     def renderer(value):
-        nomail  = formatter(value).obfuscate_email()
-        html    = formatter(nomail).text_to_html()
+        nomail = formatter(value).obfuscate_email()
+        html = formatter(nomail).text_to_html()
         return html.encode('utf-8')
     return renderer
 
