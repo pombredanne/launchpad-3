@@ -871,6 +871,11 @@ class BranchMergeProposal(SQLBase):
         ranges = self.getIncrementalDiffs(self.getIncrementalDiffRanges())
         return [diff for diff in ranges if diff is not None]
 
+    def getMissingIncrementalDiffs(self):
+        ranges = self.getIncrementalDiffRanges()
+        diffs = self.getIncrementalDiffRanges()
+        return [range_ for range_, diff in zip(ranges, diffs) if diff is None]
+
 
 class BranchMergeProposalGetter:
     """See `IBranchMergeProposalGetter`."""
