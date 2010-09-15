@@ -543,7 +543,6 @@ The section is shown if there are links.
 
     >>> nopriv_browser.open(bmp_url)
     >>> print_bugs_and_specs(nopriv_browser)
-    Linked bug reports and blueprints
     Bug #...: Bug for linking Undecided New
 
 
