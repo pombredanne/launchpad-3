@@ -28,6 +28,7 @@ __all__ = [
     'map_branch_contents',
     'normalize_whitespace',
     'oauth_access_token_for',
+    'OAuthSigningBrowser',
     'person_logged_in',
     'record_statements',
     'run_with_login',
@@ -144,6 +145,7 @@ from lp.testing._webservice import (
     launchpadlib_credentials_for,
     launchpadlib_for,
     oauth_access_token_for,
+    OAuthSigningBrowser,
     )
 from lp.testing.fixture import ZopeEventHandlerFixture
 from lp.testing.matchers import Provides

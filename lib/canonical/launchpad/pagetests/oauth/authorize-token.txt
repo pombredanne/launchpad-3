@@ -93,7 +93,7 @@ that isn't enough for the application. The user always has the option
 to deny permission altogether.
 
     >>> def filter_user_agent(key, value, new_value):
-    ...     """A filter to replace the User-Agent header.
+    ...     """A filter to replace the User-Agent header in a list of headers.
     ...
     ...     [XXX bug=638058] This is a hack to work around a bug in
     ...     zope.testbrowser.
@@ -348,25 +348,11 @@ the Launchpad Credentials Manager.
     ...     manager_consumer.key, no_priv, "GRANT_PERMISSIONS")
     >>> logout()
 
-    >>> from oauth.oauth import OAuthRequest, OAuthSignatureMethod_PLAINTEXT
-    >>> from canonical.launchpad.interfaces import OAUTH_REALM
-    >>> def oauth_signing_browser(consumer, token, user_agent=USER_AGENT):
-    ...     request = OAuthRequest.from_consumer_and_token(consumer, token)
-    ...     request.sign_request(
-    ...         OAuthSignatureMethod_PLAINTEXT(), consumer, token)
-    ...     auth_header = request.to_header(OAUTH_REALM)['Authorization']
-    ...     browser = setupBrowser(auth=auth_header)
-    ...     # [XXX bug=638058] A hack to work around a bug in
-    ...     # zope.testbrowser.
-    ...     browser.mech_browser.addheaders = [
-    ...             filter_user_agent(key, value, user_agent)
-    ...             for key, value in browser.mech_browser.addheaders]
-    ...     return browser
-
 Now we're ready to make an OAuth-signed request that works.
 
-    >>> browser = oauth_signing_browser(
-    ...     manager_consumer, grant_permissions_token)
+    >>> from lp.testing import OAuthSigningBrowser
+    >>> browser = OAuthSigningBrowser(
+    ...     manager_consumer, grant_permissions_token, USER_AGENT)
     >>> browser.open(url)
     >>> print browser.title
     Authorize application to access Launchpad on your behalf
@@ -374,7 +360,7 @@ Now we're ready to make an OAuth-signed request that works.
 The user agent sending the signed request must identify itself as the
 Launchpad Credentials Manager.
 
-    >>> browser = oauth_signing_browser(
+    >>> browser = OAuthSigningBrowser(
     ...     manager_consumer, grant_permissions_token,
     ...     "Not the Launchpad Credentials Manager")
     >>> browser.open(url)
@@ -391,7 +377,8 @@ access level will work.
     ...     manager_consumer.key, no_priv, "WRITE_PRIVATE")
     >>> logout()
 
-    >>> browser = oauth_signing_browser(manager_consumer, insufficient_token)
+    >>> browser = OAuthSigningBrowser(
+    ...     manager_consumer, insufficient_token, USER_AGENT)
     >>> browser.open(url)
     Traceback (most recent call last):
     ...
@@ -409,7 +396,7 @@ does, that token can't be used for this.)
     ...     wrong_consumer.key, no_priv, "GRANT_PERMISSIONS")
     >>> logout()
 
-    >>> browser = oauth_signing_browser(wrong_consumer, wrong_consumer_token)
+    >>> browser = OAuthSigningBrowser(wrong_consumer, wrong_consumer_token)
     >>> browser.open(url)
     Traceback (most recent call last):
     ...
@@ -420,7 +407,7 @@ Signing with an anonymous token will also not work.
 
     >>> from oauth.oauth import OAuthToken
     >>> anonymous_token = OAuthToken(key="", secret="")
-    >>> browser = oauth_signing_browser(manager_consumer, anonymous_token)
+    >>> browser = OAuthSigningBrowser(manager_consumer, anonymous_token)
     >>> browser.open(url)
     Traceback (most recent call last):
     ...
