@@ -419,6 +419,22 @@ class Branch(SQLBase, BzrIdentityMixin):
         if review_requests is None:
             review_requests = []
 
+        # The default reviewer is the code reviewer of the target branch.
+        # Ensure that if there is a default reviewer, the review_requests
+        # list is updated to replace any unspecified reviewers with the
+        # default.
+        # If the review_requests list is initially empty, insert a tuple
+        # containing the default reviewer and an empty review type.
+        default_reviewer = target_branch.code_reviewer
+        if default_reviewer is not None:
+            if len(review_requests) == 0:
+                review_requests = [(default_reviewer, None)]
+            else:
+                for i, reviewer_info in enumerate(review_requests):
+                    if reviewer_info[0] is None:
+                        review_requests[i] = (
+                            default_reviewer, reviewer_info[1])
+
         bmp = BranchMergeProposal(
             registrant=registrant, source_branch=self,
             target_branch=target_branch,

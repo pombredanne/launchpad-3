@@ -1285,18 +1285,17 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
 
     page_title = label = 'Propose branch for merging'
 
-    @property
-    def initial_values(self):
-        """The default reviewer is the code reviewer of the target."""
+    def setUpWidgets(self, context=None):
+        super(RegisterBranchMergeProposalView, self).setUpWidgets(context)
         # If there is a default merge branch for the target, then default
         # the reviewer to be the review team for that branch.
         reviewer = None
         default_target = self.context.target.default_merge_target
-        # Don't set the reviewer if the default branch is the same as the
-        # current context.
         if default_target is not None and default_target != self.context:
             reviewer = default_target.code_reviewer
-        return {'reviewer': reviewer}
+        if reviewer is not None:
+            self.widgets['reviewer'].hint += (u" The default reviewer will "
+                "be %s." % reviewer.name)
 
     @property
     def cancel_url(self):
@@ -1318,9 +1317,8 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
         prerequisite_branch = data.get('prerequisite_branch')
 
         review_requests = []
-        reviewer = data.get('reviewer')
-        if reviewer is not None:
-            review_requests.append((reviewer, data.get('review_type')))
+        review_requests.append(
+            (data.get('reviewer'), data.get('review_type')))
 
         try:
             proposal = source_branch.addLandingTarget(
