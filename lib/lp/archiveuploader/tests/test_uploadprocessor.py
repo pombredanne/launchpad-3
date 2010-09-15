@@ -1979,28 +1979,33 @@ class TestBuildUploadProcessor(TestUploadProcessorBase):
         # build status changing to FULLYBUILT.
 
         # Upload a source package
+        archive = self.factory.makeArchive()
+        archive.require_virtualized = False
         build = self.factory.makeSourcePackageRecipeBuild(sourcename=u"bar",
-            distroseries=self.breezy)
-        removeSecurityProxy(build).package_build.archive = self.ubuntu.main_archive
+            distroseries=self.breezy, archive=archive, requester=archive.owner)
+        self.assertEquals(archive.owner, build.requester)
         bq = self.factory.makeSourcePackageRecipeBuildJob(recipe_build=build)
         # Commit so the build cookie has the right ids.
         self.layer.txn.commit()
         leaf_name = build.getUploadDirLeaf(build.getBuildCookie())
+        relative_path = "~%s/%s/%s/%s" % (
+            archive.owner.name, archive.name, self.breezy.distribution.name,
+            self.breezy.name)
         upload_dir = self.queueUpload(
-           "bar_1.0-1", queue_entry=leaf_name)
+            "bar_1.0-1", queue_entry=leaf_name, relative_path=relative_path)
         self.options.context = 'buildd'
         self.options.builds = True
         build.jobStarted()
         # Commit so date_started is recorded and doesn't cause constraint
         # violations later.
-        self.layer.txn.commit()
         build.status = BuildStatus.UPLOADING
+        self.layer.txn.commit()
         self.uploadprocessor.processBuildUpload(
             self.incoming_folder, leaf_name)
         self.layer.txn.commit()
 
-        import pdb; pdb.set_trace()
-        self.assertEquals(BuildStatus.FULLYBUILT, build.status)
+        self.assertEquals(BuildStatus.FULLYBUILT, build.status,
+                          build.upload_log.read())
         self.assertEquals(None, build.builder)
         self.assertIsNot(None, build.date_finished)
         self.assertIsNot(None, build.duration)

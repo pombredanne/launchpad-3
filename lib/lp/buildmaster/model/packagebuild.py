@@ -239,7 +239,7 @@ class PackageBuild(BuildFarmJobDerived, Storm):
 
     def getUploader(self, changes):
         """See `IPackageBuild`."""
-        return changes.signer
+        raise NotImplementedError
 
 
 class PackageBuildDerived:
