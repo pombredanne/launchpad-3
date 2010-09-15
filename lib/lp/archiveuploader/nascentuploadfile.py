@@ -33,6 +33,7 @@ from zope.component import getUtility
 from canonical.encoding import guess as guess_encoding
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.librarian.utils import filechunks
+from lp.app.errors import NotFoundError
 from lp.archiveuploader.utils import (
     determine_source_file_type,
     prefix_multi_line_string,
@@ -857,8 +858,6 @@ class BaseBinaryUploadFile(PackageUploadFile):
         in this case, change this build to be FULLYBUILT.
         - Create a new build in FULLYBUILT status.
 
-        If by any chance an inconsistent build was found this method will
-        raise UploadError resulting in a upload rejection.
         """
         dar = self.policy.distroseries[self.archtag]
 
@@ -880,7 +879,13 @@ class BaseBinaryUploadFile(PackageUploadFile):
 
     def checkBuild(self, build):
         """See PackageUploadFile."""
-        dar = self.policy.distroseries[self.archtag]
+        try:
+            dar = self.policy.distroseries[self.archtag]
+        except NotFoundError:
+            raise UploadError(
+                "Upload to unknown architecture %s for distroseries %s" %
+                (self.archtag, self.policy.distroseries))
+
         # Ensure gathered binary is related to a FULLYBUILT build
         # record. It will be check in slave-scanner procedure to
         # certify that the build was processed correctly.

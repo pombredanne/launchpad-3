@@ -233,7 +233,7 @@ class UploadProcessor:
             [changes_file] = self.locateChangesFiles(upload_path)
             logger.debug("Considering changefile %s" % changes_file)
             result = self.processChangesFile(
-                upload_path, changes_file, logger, build=build)
+                upload_path, changes_file, logger, build)
         except (KeyboardInterrupt, SystemExit):
             raise
         except:
