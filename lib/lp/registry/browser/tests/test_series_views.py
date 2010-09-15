@@ -181,6 +181,25 @@ class DistroSeriesLocalPackageDiffsTestCase(TestCaseWithFactory):
         self.assertIn("Latest comment", unicode(rows[0]))
         self.assertNotIn("Earlier comment", unicode(rows[0]))
 
+    def test_diff_row_links_to_extra_details(self):
+        # The source package name links to the difference details.
+        derived_series = self.makeDerivedSeries(
+            parent_name='lucid', derived_name='derilucid')
+        difference = self.factory.makeDistroSeriesDifference(
+            derived_series=derived_series)
+
+        self.setDerivedSeriesUIFeatureFlag()
+        view = create_initialized_view(
+            derived_series, '+localpackagediffs')
+        soup = BeautifulSoup(view())
+        diff_table = soup.find('table', {'class': 'listing'})
+        row = diff_table.tbody.findAll('tr')[0]
+
+        href = canonical_url(difference).replace('http://launchpad.dev', '')
+        links = row.findAll('a', href=href)
+        self.assertEqual(1, len(links))
+        self.assertEqual(difference.source_package_name.name, links[0].string)
+
 
 class TestMilestoneBatchNavigatorAttribute(TestCaseWithFactory):
     """Test the series.milestone_batch_navigator attribute."""

@@ -33,7 +33,7 @@
           <table class="listing">
           <thead>
             <tr>
-              <th>Source</th>
+              <th>Package</th>
               <th><tal:replace replace="parent_name" /> version</th>
               <th><tal:replace replace="series_name" /> version</th>
               <th>Last uploaded</th>
@@ -45,8 +45,8 @@
             <tr tal:define="parent_source_pub difference/parent_source_pub;
                             source_pub difference/source_pub;
                             signer source_pub/sourcepackagerelease/uploader/fmt:link|nothing;">
-              <td><span
-                      tal:replace="parent_source_pub/source_package_name">Foo</span>
+              <td><a tal:attributes="href difference/fmt:url"
+                     tal:content="parent_source_pub/source_package_name">Foo</a>
               </td>
               <td><a tal:attributes="href parent_source_pub/sourcepackagerelease/fmt:url">
                     <tal:replace

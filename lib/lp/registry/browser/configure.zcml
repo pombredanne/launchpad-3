@@ -151,7 +151,7 @@
         permission="zope.Public"/>
     <browser:url
         for="lp.registry.interfaces.distroseriesdifference.IDistroSeriesDifference"
-        path_expression="string:+difference/${difference/source_package_name}"
+        path_expression="string:+difference/${source_package_name/name}"
         rootsite="mainsite"
         attribute_to_parent="derived_series"/>
     <browser:page
@@ -160,6 +160,9 @@
         class="lp.registry.browser.distroseriesdifference.DistroSeriesDifferenceView"
         template="../templates/distroseriesdifference-listing-extra.pt"
         permission="zope.Public"/>
+    <browser:defaultView
+        for="lp.registry.interfaces.distroseriesdifference.IDistroSeriesDifference"
+        name="+listing-distroseries-extra"/>
     <browser:menus
         classes="
             DistroSeriesFacets
