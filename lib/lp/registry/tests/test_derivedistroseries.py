@@ -7,7 +7,7 @@ IDistroSeries.deriveDistroSeries."""
 __metaclass__ = type
 
 from canonical.testing.layers import LaunchpadFunctionalLayer
-from lp.soyuz.scripts.initialise_distroseries import InitialisationError
+from lp.registry.interfaces.distroseries import DerivationError
 from lp.testing import (
     login,
     logout,
@@ -31,21 +31,23 @@ class TestDeriveDistroSeries(TestCaseWithFactory):
         """Test that calling deriveDistroSeries() when the distroseries
         doesn't exist, and not enough arguments are specified that the
         function errors."""
-        pass
-
-    def test_readable_errors(self):
-        pass
+        self.assertRaisesWithContent(
+            DerivationError,
+            'Display Name, Summary, Description and Version all need to '
+            'be set when creating a distroseries',
+            self.parent.deriveDistroSeries, self.owner, 'foobuntu')
 
     def test_parent_is_not_self(self):
         login('admin@canonical.com')
         other = self.factory.makeDistroSeries()
         logout()
         self.assertRaisesWithContent(
-            InitialisationError,
+            DerivationError,
             "DistroSeries %s parent series isn't %s" % (
                 self.child.name, other.name),
             other.deriveDistroSeries, self.owner, self.child.name)
 
     def test_create_new_distroseries(self):
-        self.parent.deriveDistroSeries(self.owner, self.child.name)
+        job = self.parent.deriveDistroSeries(self.owner, self.child.name)
+        print job
 

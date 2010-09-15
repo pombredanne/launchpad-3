@@ -85,6 +85,7 @@ from lp.bugs.model.bugtarget import (
 from lp.bugs.model.bugtask import BugTask
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.distroseries import (
+    DerivationError,
     IDistroSeries,
     IDistroSeriesSet,
     )
@@ -125,6 +126,9 @@ from lp.soyuz.interfaces.archive import ALLOW_RELEASE_BUILDS
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageName
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
+from lp.soyuz.interfaces.distributionjob import (
+    IInitialiseDistroSeriesJobSource,
+    )
 from lp.soyuz.interfaces.publishing import (
     active_publishing_status,
     ICanPublishPackages,
@@ -160,8 +164,8 @@ from lp.soyuz.model.queue import (
 from lp.soyuz.model.section import Section
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 from lp.soyuz.scripts.initialise_distroseries import (
-    InitialiseDistroSeries,
     InitialisationError,
+    InitialiseDistroSeries,
     )
 from lp.translations.interfaces.languagepack import LanguagePackType
 from lp.translations.model.distroseries_translations_copy import (
@@ -1811,29 +1815,33 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         #elsif not user a driver
         child = IStore(self).find(DistroSeries, name=name).one()
         if child is None:
-            print "Create distroseries"
             if distribution is None:
                 distribution = self.distribution
-            # Check specified here
+            for param in (displayname, summary, description, version):
+                if not param:
+                    raise DerivationError(
+                        "Display Name, Summary, Description and Version"
+                         " all need to be set when creating a"
+                         " distroseries")
             child = getUtility(IDistroSeriesSet).new(
                 name=name, displayname=displayname, summary=summary,
                 description=description, version=version,
                 distribution=child_distribution,
                 status=status,
                 parent=self)
+            IStore(self).add(child)
         else:
             if child.parent_series is not self:
-                raise InitialisationError, (
+                raise DerivationError(
                     "DistroSeries %s parent series isn't %s" % (
                         child.name, self.name))
-        ids = InitialiseDistroSeries(self)
+        ids = InitialiseDistroSeries(child)
         try:
             ids.check()
         except InitialisationError, e:
-            print e
-        job = getUtility(IInitialiseDistroSeriesJobSource).create(
-            child, arches, packagesets)
-        return job.id
+            raise DerivationError(e)
+        job = getUtility(IInitialiseDistroSeriesJobSource).create(child)
+        return job.job.id
 
 
 class DistroSeriesSet:

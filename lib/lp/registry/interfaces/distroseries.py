@@ -8,6 +8,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'DerivationError',
     'IDistroSeries',
     'IDistroSeriesEditRestricted',
     'IDistroSeriesPublic',
@@ -924,6 +925,11 @@ class IDistroSeriesSet(Interface):
 
         released == None will do no filtering on status.
         """
+
+class DerivationError(Exception):
+    """Raised when there is a problem deriving a distroseries."""
+    webservice_error(400) # Bad Request
+    _message_prefix = "Error deriving distro series"
 
 
 class NoSuchDistroSeries(NameLookupFailed):
