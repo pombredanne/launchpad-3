@@ -392,12 +392,12 @@ officially. Ubuntu uses all of them:
     >>> ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
     >>> ubuntu.official_malone
     True
-    >>> ubuntu.translations_usage.name
-    'LAUNCHPAD'
-    >>> ubuntu.official_answers
-    True
-    >>> ubuntu.official_blueprints
-    True
+    >>> print ubuntu.answers_usage.name
+    LAUNCHPAD
+    >>> print ubuntu.blueprints_usage.name
+    LAUNCHPAD
+    >>> print ubuntu.translations_usage.name
+    LAUNCHPAD
 
 The bug_tracking_usage property currently only tracks official_malone.
 
@@ -462,11 +462,12 @@ Gentoo only uses Malone
 
 Launchpad admins and the distro owner can set these fields.
 
+    >>> from lp.app.enums import ServiceUsage
     >>> login('mark@example.com')
     >>> debian = getUtility(ILaunchpadCelebrities).debian
-    >>> debian.official_blueprints = True
-    >>> debian.official_blueprints
-    True
+    >>> debian.blueprints_usage = ServiceUsage.LAUNCHPAD
+    >>> print debian.blueprints_usage.name
+    LAUNCHPAD
     >>> debian.official_malone = True
     >>> debian.official_malone
     True
@@ -477,16 +478,16 @@ Launchpad admins and the distro owner can set these fields.
     >>> debian_owner = factory.makePerson()
     >>> debian.owner = debian_owner
     >>> login_person(debian_owner)
-    >>> debian.official_blueprints = False
-    >>> debian.official_blueprints
-    False
+    >>> debian.blueprints_usage = ServiceUsage.NOT_APPLICABLE
+    >>> print debian.blueprints_usage.name
+    NOT_APPLICABLE
 
 But others can't.
 
     >>> login('no-priv@canonical.com')
-    >>> debian.official_blueprints = True
+    >>> debian.blueprints_usage = ServiceUsage.LAUNCHPAD
     Traceback (most recent call last):
-    Unauthorized: (..., 'official_blueprints', 'launchpad.Edit')
+    Unauthorized: (..., 'blueprints_usage', 'launchpad.Edit')
     >>> debian.official_malone = True
     Traceback (most recent call last):
     Unauthorized: (..., 'official_malone', 'launchpad.Edit')

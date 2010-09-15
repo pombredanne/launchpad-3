@@ -642,17 +642,6 @@
     <allow interface="lp.code.interfaces.branchrevision.IBranchRevision"/>
   </class>
 
-  <!-- BranchRevisionSet -->
-
-  <class class="lp.code.model.branchrevision.BranchRevisionSet">
-    <allow interface="lp.code.interfaces.branchrevision.IBranchRevisionSet"/>
-  </class>
-  <securedutility
-      class="lp.code.model.branchrevision.BranchRevisionSet"
-      provides="lp.code.interfaces.branchrevision.IBranchRevisionSet">
-    <allow interface="lp.code.interfaces.branchrevision.IBranchRevisionSet"/>
-  </securedutility>
-
   <!-- CodeReviewComment -->
 
   <class class="lp.code.model.codereviewcomment.CodeReviewComment">

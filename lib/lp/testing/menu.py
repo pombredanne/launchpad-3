@@ -22,6 +22,6 @@ def check_menu_links(menu):
             view_name = None
         try:
             canonical_url(context, view_name=view_name, rootsite=link.site)
-        except:
+        except Exception:
             return 'Bad link %s: %s' % (link.name, canonical_url(context))
     return True
