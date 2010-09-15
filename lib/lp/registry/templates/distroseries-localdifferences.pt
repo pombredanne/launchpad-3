@@ -80,8 +80,7 @@
         </table>
       </div>
 <script type="text/javascript">
-LPS.use('node', 'io-base', 'lazr.anim',
-        'lp.registry.distroseriesdifferences_details', function(Y) {
+LPS.use('lp.registry.distroseriesdifferences_details', function(Y) {
   diff_module = Y.lp.registry.distroseriesdifferences_details
 
   Y.on('domready', diff_module.setup_expandable_rows);
