@@ -805,6 +805,7 @@ class TestBranchMergeCandidateView(TestCaseWithFactory):
         view = create_initialized_view(bmp, '+link-summary')
         self.assertEqual('Eric on 2008-09-10', view.status_title)
 
+
 class TestBranchMergeProposal(BrowserTestCase):
 
     layer = DatabaseFunctionalLayer
