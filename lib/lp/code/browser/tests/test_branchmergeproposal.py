@@ -12,7 +12,6 @@ from datetime import (
     timedelta,
     )
 from difflib import unified_diff
-import operator
 import unittest
 
 import pytz
@@ -698,7 +697,6 @@ class TestCommentAttachmentRendering(TestCaseWithFactory):
     """Test diff attachments are rendered correctly."""
 
     layer = LaunchpadFunctionalLayer
-
 
     def _makeCommentFromEmailWithAttachment(self, attachment_body):
         # Make an email message with an attachment, and create a code

@@ -117,7 +117,7 @@ def make_erics_fooix_project(factory):
     preview.remvoed_lines_count = 13
     preview.diffstat = {'file1': (3, 8), 'file2': (4, 5)}
     return {
-        'eric': eric, 'fooix': fooix, 'trunk':trunk, 'feature': feature,
+        'eric': eric, 'fooix': fooix, 'trunk': trunk, 'feature': feature,
         'proposed': proposed, 'fred': fred}
 
 
