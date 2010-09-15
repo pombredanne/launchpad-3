@@ -17,6 +17,7 @@ import datetime
 import operator
 
 from lazr.delegates import delegates
+from lazr.restful.error import expose
 import pytz
 from sqlobject import (
     BoolCol,
@@ -48,6 +49,9 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
+from canonical.launchpad.components.decoratedresultset import (
+    DecoratedResultSet,
+    )
 from canonical.launchpad.interfaces.launchpad import (
     IHasIcon,
     IHasLogo,
@@ -64,6 +68,7 @@ from canonical.launchpad.webapp.interfaces import (
     MAIN_STORE,
     )
 from canonical.launchpad.webapp.sorting import sorted_version_numbers
+
 from lp.answers.interfaces.faqtarget import IFAQTarget
 from lp.answers.interfaces.questioncollection import (
     QUESTION_STATUS_DEFAULT_SEARCH,
@@ -146,6 +151,7 @@ from lp.registry.model.pillar import HasAliasMixin
 from lp.registry.model.productlicense import ProductLicense
 from lp.registry.model.productrelease import ProductRelease
 from lp.registry.model.productseries import ProductSeries
+from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.registry.model.structuralsubscription import (
     StructuralSubscriptionTargetMixin,
     )
@@ -266,6 +272,13 @@ class ProductWithLicenses:
                 columns=[ProductLicense.license],
                 where=(ProductLicense.product == for_class.id),
                 tables=[ProductLicense]))
+
+
+class UnDeactivateable(Exception):
+    """Raised when a project is requested to deactivate but can not."""
+
+    def __init__(self, msg):
+        super(UnDeactivateable, self).__init__(msg)
 
 
 class Product(SQLBase, BugTargetBase, MakesAnnouncements,
@@ -437,9 +450,9 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         # Validate deactivation.
         if self.active == True and value == False:
             if len(self.sourcepackages) > 0:
-                raise AssertionError(
+                raise expose(UnDeactivateable(
                     'This project cannot be deactivated since it is '
-                    'linked to source packages.')
+                    'linked to source packages.'))
         return value
 
     active = BoolCol(dbName='active', notNull=True, default=True,
@@ -800,28 +813,40 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             (x.sourcepackagename.name, x.distroseries.name,
              x.distroseries.distribution.name))
 
-    @property
+    @cachedproperty
     def distrosourcepackages(self):
-        from lp.registry.model.distributionsourcepackage \
-            import DistributionSourcePackage
-        clause = """ProductSeries.id=Packaging.productseries AND
-                    ProductSeries.product = %s
-                    """ % sqlvalues(self.id)
-        clauseTables = ['ProductSeries']
-        ret = Packaging.select(clause, clauseTables,
-            prejoins=["sourcepackagename", "distroseries.distribution"])
-        distros = set()
-        dsps = []
-        for packaging in ret:
-            distro = packaging.distroseries.distribution
-            if distro in distros:
-                continue
-            distros.add(distro)
-            dsps.append(DistributionSourcePackage(
-                sourcepackagename=packaging.sourcepackagename,
-                distribution=distro))
-        return sorted(dsps, key=lambda x:
-            (x.sourcepackagename.name, x.distribution.name))
+        from lp.registry.model.distributionsourcepackage import (
+            DistributionSourcePackage,
+            )
+        store = IStore(Packaging)
+        origin = [
+            Packaging,
+            Join(SourcePackageName,
+                 Packaging.sourcepackagename == SourcePackageName.id),
+            Join(ProductSeries, Packaging.productseries == ProductSeries.id),
+            Join(DistroSeries, Packaging.distroseries == DistroSeries.id),
+            Join(Distribution, DistroSeries.distribution == Distribution.id),
+            ]
+        result = store.using(*origin).find(
+            (SourcePackageName, Distribution),
+            ProductSeries.product == self)
+        result = result.order_by(SourcePackageName.name, Distribution.name)
+        result.config(distinct=True)
+
+        return [
+            DistributionSourcePackage(
+                sourcepackagename=sourcepackagename,
+                distribution=distro)
+            for sourcepackagename, distro in result]
+
+    @cachedproperty
+    def ubuntu_packages(self):
+        """The Ubuntu `IDistributionSourcePackage`s linked to the `IProduct`.
+        """
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        return [
+            package for package in self.distrosourcepackages
+            if package.distribution == ubuntu]
 
     @property
     def bugtargetdisplayname(self):
