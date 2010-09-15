@@ -428,11 +428,11 @@ class Bug(SQLBase):
         """See `IMessageTarget`."""
         inside = self.default_bugtask
         messages = list(self.messages)
-        message_set = set(messages)
+        message_ids = set(message.id for message in messages)
 
         indexed_messages = []
         for index, message in enumerate(messages):
-            if message.parent not in message_set:
+            if message.parentID not in message_ids:
                 parent = None
             else:
                 parent = message.parent

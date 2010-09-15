@@ -143,7 +143,7 @@ class TestBugCommentRepresentation(TestCaseWithFactory):
             rendered_comment, self.expected_comment_html)
 
 
-class TestBugAttachments(TestCaseWithFactory):
+class TestBugScaling(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
 
@@ -165,7 +165,7 @@ class TestBugAttachments(TestCaseWithFactory):
         collector = QueryCollector()
         collector.register()
         self.addCleanup(collector.unregister)
-        url = '/bugs/%d/attachments' % self.bug.id
+        url = '/bugs/%d/attachments?ws.size=75' % self.bug.id
         #First request
         store.flush()
         store.reset()
@@ -176,6 +176,43 @@ class TestBugAttachments(TestCaseWithFactory):
         login(USER_EMAIL)
         for i in range(5):
             self.factory.makeBugAttachment(self.bug)
+        logout()
+        #Second request
+        store.flush()
+        store.reset()
+        response = webservice.get(url)
+        self.assertThat(collector, HasQueryCount(Equals(with_2_count+1)))
+
+    def test_messages_query_counts_constant(self):
+        # XXX Robert Collins 2010-09-15 bug=619017
+        # This test may be thrown off by the reference bug. To get around the
+        # problem, flush and reset are called on the bug storm cache before
+        # each call to the webservice. When lp's storm is updated to release
+        # the committed fix for this bug, please see about updating this test.
+        login(USER_EMAIL)
+        bug = self.factory.makeBug()
+        store = Store.of(bug)
+        self.factory.makeBugComment(bug)
+        self.factory.makeBugComment(bug)
+        self.factory.makeBugComment(bug)
+        person = self.factory.makePerson()
+        webservice = LaunchpadWebServiceCaller(
+            'launchpad-library', 'salgado-change-anything')
+        collector = QueryCollector()
+        collector.register()
+        self.addCleanup(collector.unregister)
+        url = '/bugs/%d/messages?ws.size=75' % bug.id
+        #First request
+        store.flush()
+        store.reset()
+        response = webservice.get(url)
+        self.assertThat(collector, HasQueryCount(LessThan(24)))
+        with_2_count = collector.count
+        self.failUnlessEqual(response.status, 200)
+        login(USER_EMAIL)
+        for i in range(50):
+            self.factory.makeBugComment(bug)
+        self.factory.makeBugAttachment(bug)
         logout()
         #Second request
         store.flush()
