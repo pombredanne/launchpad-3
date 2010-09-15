@@ -144,7 +144,6 @@ from lp.code.interfaces.sourcepackagerecipebuild import (
     )
 from lp.code.model.diff import (
     Diff,
-    IncrementalDiff,
     PreviewDiff,
     StaticDiff,
     )
