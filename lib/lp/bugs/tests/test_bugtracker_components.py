@@ -40,17 +40,17 @@ class TestBugTrackerComponent(TestCaseWithFactory):
         self.bug_tracker = self.factory.makeBugTracker()
         
         self.comp_group = self.factory.makeBugTrackerComponentGroup(
-            "alpha",
+            u'alpha',
             self.bug_tracker)
 
     def test_component_creation(self):
         component = self.factory.makeBugTrackerComponent(
-            "foobar", self.comp_group)
+            u'foobar', self.comp_group)
         self.assertTrue(component is not None)
 
     def test_set_visibility(self):
         component = self.factory.makeBugTrackerComponent(
-            "foobar", self.comp_group)
+            u'foobar', self.comp_group)
         self.assertEqual(component.is_visible, True)
 
         #TODO - only logged in users should be able to show/hide components
@@ -66,17 +66,17 @@ class TestBugTrackerComponent(TestCaseWithFactory):
         
     def test_custom_component(self):
         custom_component = self.factory.makeBugTrackerComponent(
-            "custom-foobar", self.comp_group, custom=True)
+            u'custom-foobar', self.comp_group, custom=True)
         self.assertTrue(custom_component != None)
         self.assertEqual(custom_component.is_custom, True)
 
     def test_multiple_component_creation(self):
         comp_a = self.factory.makeBugTrackerComponent(
-            "a", self.comp_group)
+            u'a', self.comp_group)
         comp_b = self.factory.makeBugTrackerComponent(
-            "b", self.comp_group)
+            u'b', self.comp_group)
         comp_c = self.factory.makeBugTrackerComponent(
-            "c", self.comp_group, True)
+            u'c', self.comp_group, True)
 
         self.assertTrue(comp_a is not None)
         self.assertTrue(comp_b is not None)

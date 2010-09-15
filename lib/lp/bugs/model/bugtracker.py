@@ -728,8 +728,8 @@ class BugTrackerComponent(Storm):
         component_group_id,
         'BugTrackerComponentGroup.id')
 
-    is_visible = Bool()
-    is_custom = Bool()
+    is_visible = Bool(allow_none=False)
+    is_custom = Bool(allow_none=False)
 
     distro_source_package_id = Int('distro_source_package')
     distro_source_package = Reference(
