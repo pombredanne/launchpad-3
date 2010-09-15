@@ -162,7 +162,11 @@ class Message(SQLBase):
     @cachedproperty
     def text_contents(self):
         """See IMessage."""
-        bits = [unicode(chunk) for chunk in self if chunk.content]
+        return Message.chunks_text(self.chunks)
+
+    @classmethod
+    def chunks_text(klass, chunks):
+        bits = [unicode(chunk) for chunk in chunks if chunk.content]
         return '\n\n'.join(bits)
 
     # XXX flacoste 2006-09-08: Bogus attribute only present so that
