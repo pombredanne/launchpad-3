@@ -13,7 +13,6 @@ from canonical.launchpad.ftests import (
     )
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
 from canonical.launchpad.interfaces.account import AccountStatus
-from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
@@ -259,7 +258,7 @@ class TestPersonEditView(TestCaseWithFactory):
         self.ppa.status = ArchiveStatus.DELETED
         self.view.initialize()
         self.assertFalse(self.view.form_fields['name'].for_display)
-    
+
     def test_add_email_good_data(self):
         email_address = self.factory.getUniqueEmailAddress()
         form = {
@@ -268,12 +267,12 @@ class TestPersonEditView(TestCaseWithFactory):
             'field.actions.add_email': 'Add',
             'field.newemail': email_address,
             }
-        view = create_initialized_view(self.person, "+editemails", form=form) 
+        view = create_initialized_view(self.person, "+editemails", form=form)
 
         # If everything worked, there should now be a login token to validate
         # this email address for this user.
         token = getUtility(ILoginTokenSet).searchByEmailRequesterAndType(
-            email_address, 
+            email_address,
             self.person,
             LoginTokenType.VALIDATEEMAIL)
         self.assertTrue(token is not None)
@@ -290,11 +289,12 @@ class TestPersonEditView(TestCaseWithFactory):
             'field.actions.add_email': 'Add',
             'field.newemail': email_address,
             }
-        view = create_initialized_view(self.person, "+editemails", form=form) 
+        view = create_initialized_view(self.person, "+editemails", form=form)
         error_msg = view.errors[0]
         expected_msg = ("The email address '%s' is already registered to an "
                         "account, deadaccount." % email_address)
         self.assertEqual(expected_msg, error_msg)
+
 
 class TestPersonParticipationView(TestCaseWithFactory):
 
@@ -640,6 +640,7 @@ class TestPersonDeactivateAccountView(TestCaseWithFactory):
         self.assertEqual(1, len(view.errors))
         self.assertEqual(
             'This account is already deactivated.', view.errors[0])
+
 
 class TestTeamInvitationView(TestCaseWithFactory):
     """Tests for TeamInvitationView."""
