@@ -170,3 +170,23 @@ class DistroSeriesDifferenceTemplateTestCase(TestCaseWithFactory):
 
         view = create_initialized_view(ds_diff, '+listing-distroseries-extra')
         self.assertEqual(1, self.number_of_request_diff_texts(view()))
+
+    def test_comments_rendered(self):
+        # If there are comments on the difference, they are rendered.
+        ds_diff = self.factory.makeDistroSeriesDifference()
+        owner = ds_diff.derived_series.owner
+        with person_logged_in(owner):
+            ds_diff.addComment(owner, "I'm working on this.")
+            ds_diff.addComment(owner, "Here's a \n\ntwo-line comment "
+                                      "which should be in two paras.")
+
+        view = create_initialized_view(ds_diff, '+listing-distroseries-extra')
+        soup = BeautifulSoup(view())
+
+        self.assertEqual(
+            1, len(soup.findAll('p', text="I'm working on this.")))
+        self.assertEqual(
+            1, len(soup.findAll('p', text="Here's a")))
+        self.assertEqual(
+            1, len(soup.findAll('p',
+                text="two-line comment which should be in two paras.")))
