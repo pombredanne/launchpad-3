@@ -14,4 +14,4 @@ CREATE INDEX translationtemplatesbuild__build_farm_job__idx ON
 CREATE INDEX translationtemplatesbuild__branch__idx ON
     TranslationTemplatesBuild(branch);
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 13, 0);
