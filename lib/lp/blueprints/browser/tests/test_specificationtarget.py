@@ -4,6 +4,7 @@
 __metaclass__ = type
 
 from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.testing.pages import find_tag_by_id
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.blueprints.interfaces.specificationtarget import (
     IHasSpecifications,
@@ -110,3 +111,21 @@ class TestHasSpecificationsView(TestCaseWithFactory):
         view = create_initialized_view(person, name='+assignments')
         navigator = view.specs_batched
         self.assertEqual(500, view.specs_batched.default_size)
+
+
+class TestAssignments(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_assignments_are_batched(self):
+        product = self.factory.makeProduct()
+        spec1 = self.factory.makeSpecification(product=product)
+        spec2 = self.factory.makeSpecification(product=product)
+        view = create_initialized_view(product, name='+assignments',
+            query_string="batch=1")
+        content = view.render()
+        self.assertEqual('next',
+            find_tag_by_id(content, 'upper-batch-nav-batchnav-next')['class'])
+        self.assertEqual('next',
+            find_tag_by_id(content, 'lower-batch-nav-batchnav-next')['class'])
+        
