@@ -32,8 +32,6 @@ __all__ = [
     'latest_proposals_for_each_branch',
     ]
 
-from collections import defaultdict
-from itertools import groupby
 import operator
 
 from lazr.delegates import delegates
@@ -201,7 +199,7 @@ class BranchMergeCandidateView(LaunchpadView):
                 'Approved [Merge Failed]',
             BranchMergeProposalStatus.QUEUED : 'Queued',
             BranchMergeProposalStatus.SUPERSEDED : 'Superseded'
-            }
+        }
         return friendly_texts[self.context.queue_status]
 
     @property
@@ -213,8 +211,7 @@ class BranchMergeCandidateView(LaunchpadView):
         result = ''
         if self.context.queue_status in (
             BranchMergeProposalStatus.CODE_APPROVED,
-            BranchMergeProposalStatus.REJECTED
-            ):
+            BranchMergeProposalStatus.REJECTED):
             formatter = DateTimeFormatterAPI(self.context.date_reviewed)
             result = '%s %s' % (
                 self.context.reviewer.displayname,
@@ -916,7 +913,6 @@ class MergeProposalEditView(LaunchpadEditFormView,
         self.cancel_url = self.next_url
         super(MergeProposalEditView, self).initialize()
 
-
     def _getRevisionId(self, data):
         """Translate the revision number that was entered into a revision id.
 
@@ -1443,8 +1439,8 @@ def text_xhtml_representation(context, field, request):
     """Render an `IText` as XHTML using the webservice."""
     formatter = FormattersAPI
     def renderer(value):
-        nomail  = formatter(value).obfuscate_email()
-        html    = formatter(nomail).text_to_html()
+        nomail = formatter(value).obfuscate_email()
+        html = formatter(nomail).text_to_html()
         return html.encode('utf-8')
     return renderer
 
