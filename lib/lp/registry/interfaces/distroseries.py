@@ -794,8 +794,7 @@ class IDistroSeriesPublic(
 
         :param format: The SourcePackageFormat to check.
         """
-    
-    # XXX API fluff goes here
+
     @operation_parameters(
         name=TextLine(
             title=_("The name of the distroseries to derive."),
@@ -813,16 +812,18 @@ class IDistroSeriesPublic(
             title=_("The version of the distroseries to derive."),
             required=False),
         distribution=TextLine(
-            title=_(""),
+            title=_("The distribution the derived distroseries is part of."),
             required=False),
         status=TextLine(
-            title=_(""),
+            title=_("Status the derived distroseries to created is."),
             required=False),
-        arches=TextLine( # should be List
-            title=_(""),
+        arches=List(
+            title=_("The list of arches to copy to the derived "
+            "distroseries."),
             required=False),
-        packagesets=TextLine( # should be List
-            title=_(""),
+        packagesets=List(
+            title=_("The list of packagesets to copy to the derived "
+            "distroseries"),
             required=False),
         )
     @call_with(user=REQUEST_USER)
@@ -831,7 +832,7 @@ class IDistroSeriesPublic(
         user, name, displayname, summary, description, version,
         distribution, status, arches, packagesets):
         """Derive a distroseries from this one.
-        
+
         This method performs checks, can create the new distroseries if
         necessary, and then creates a job to populate the new
         distroseries.
@@ -857,7 +858,6 @@ class IDistroSeriesPublic(
             If not specified, all of the arches are copied.
         :param packagesets: The packagesets to copy to the derived series.
             If not specified, all of the packagesets are copied.
-        :return: The ID of the job created.
         """
 
 
@@ -925,6 +925,7 @@ class IDistroSeriesSet(Interface):
 
         released == None will do no filtering on status.
         """
+
 
 class DerivationError(Exception):
     """Raised when there is a problem deriving a distroseries."""

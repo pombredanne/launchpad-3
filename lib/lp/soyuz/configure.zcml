@@ -884,8 +884,12 @@
       provides="lp.soyuz.interfaces.distributionjob.IInitialiseDistroSeriesJobSource">
         <allow interface="lp.soyuz.interfaces.distributionjob.IInitialiseDistroSeriesJobSource"/>
     </securedutility>
+    <class class="lp.soyuz.model.distributionjob.DistributionJob">
+        <allow interface="lp.soyuz.interfaces.distributionjob.IDistributionJob" />
+    </class>
     <class class="lp.soyuz.model.initialisedistroseriesjob.InitialiseDistroSeriesJob">
-        <allow interface="lp.services.job.interfaces.job.IRunnableJob" />
+        <allow interface="lp.soyuz.interfaces.distributionjob.IInitialiseDistroSeriesJob" />
+        <allow interface="lp.soyuz.interfaces.distributionjob.IDistributionJob" />
     </class>
 
 </configure>

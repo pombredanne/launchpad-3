@@ -35,6 +35,7 @@ from storm.store import (
     )
 from zope.component import getUtility
 from zope.interface import implements
+from zope.security.interfaces import Unauthorized
 
 from canonical.database.constants import (
     DEFAULT,
@@ -83,7 +84,6 @@ from lp.bugs.model.bugtarget import (
     HasBugHeatMixin,
     )
 from lp.bugs.model.bugtask import BugTask
-from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.distroseries import (
     DerivationError,
     IDistroSeries,
@@ -1826,7 +1826,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             child = getUtility(IDistroSeriesSet).new(
                 name=name, displayname=displayname, summary=summary,
                 description=description, version=version,
-                distribution=child_distribution,
+                distribution=distribution,
                 status=status,
                 parent=self)
             IStore(self).add(child)
@@ -1840,8 +1840,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             ids.check()
         except InitialisationError, e:
             raise DerivationError(e)
-        job = getUtility(IInitialiseDistroSeriesJobSource).create(child)
-        return job.job.id
+        getUtility(IInitialiseDistroSeriesJobSource).create(child)
 
 
 class DistroSeriesSet:

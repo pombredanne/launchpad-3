@@ -8,11 +8,17 @@ __metaclass__ = type
 
 from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.registry.interfaces.distroseries import DerivationError
+from lp.soyuz.interfaces.distributionjob import (
+    IInitialiseDistroSeriesJobSource,
+    )
 from lp.testing import (
     login,
     logout,
     TestCaseWithFactory,
     )
+from zope.component import getUtility
+from zope.security.interfaces import Unauthorized
+
 
 class TestDeriveDistroSeries(TestCaseWithFactory):
 
@@ -20,13 +26,19 @@ class TestDeriveDistroSeries(TestCaseWithFactory):
 
     def setUp(self):
         super(TestDeriveDistroSeries, self).setUp()
-        self.owner = self.factory.makePerson()
-        self.soyuz = self.factory.makeTeam(
-            name='soyuz-team', owner=self.owner)
+        self.soyuz = self.factory.makeTeam(name='soyuz-team')
         self.parent = self.factory.makeDistroSeries()
         self.child = self.factory.makeDistroSeries(
             parent_series=self.parent)
-    
+
+    def test_no_permission_to_call(self):
+        login('admin@canonical.com')
+        person = self.factory.makePerson()
+        logout()
+        self.assertRaises(
+            Unauthorized, self.parent.deriveDistroSeries, person,
+            self.child.name)
+
     def test_no_distroseries_and_no_arguments(self):
         """Test that calling deriveDistroSeries() when the distroseries
         doesn't exist, and not enough arguments are specified that the
@@ -35,7 +47,8 @@ class TestDeriveDistroSeries(TestCaseWithFactory):
             DerivationError,
             'Display Name, Summary, Description and Version all need to '
             'be set when creating a distroseries',
-            self.parent.deriveDistroSeries, self.owner, 'foobuntu')
+            self.parent.deriveDistroSeries, self.soyuz.teamowner,
+            'foobuntu')
 
     def test_parent_is_not_self(self):
         login('admin@canonical.com')
@@ -45,9 +58,12 @@ class TestDeriveDistroSeries(TestCaseWithFactory):
             DerivationError,
             "DistroSeries %s parent series isn't %s" % (
                 self.child.name, other.name),
-            other.deriveDistroSeries, self.owner, self.child.name)
+            other.deriveDistroSeries, self.soyuz.teamowner,
+            self.child.name)
 
     def test_create_new_distroseries(self):
-        job = self.parent.deriveDistroSeries(self.owner, self.child.name)
-        print job
-
+        self.parent.deriveDistroSeries(
+            self.soyuz.teamowner, self.child.name)
+        [job] = list(
+            getUtility(IInitialiseDistroSeriesJobSource).iterReady())
+        self.assertEqual(job.distroseries, self.child)
