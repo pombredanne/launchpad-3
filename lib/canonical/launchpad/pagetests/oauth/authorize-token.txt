@@ -54,21 +54,52 @@ OpenID login procedure.
     ...     manager_consumer.key, no_priv, "GRANT_PERMISSIONS")
     >>> logout()
 
+    >>> def filter_user_agent(key, value, new_value):
+    ...     """A filter to replace the User-Agent header.
+    ...
+    ...     [XXX bug=638058] This is a hack to work around a bug in
+    ...     zope.testbrowser.
+    ...     """
+    ...
+    ...     if key.lower() == "user-agent":
+    ...         return (key, new_value)
+    ...     return (key, value)
+
     >>> from oauth.oauth import OAuthRequest, OAuthSignatureMethod_PLAINTEXT
     >>> from canonical.launchpad.interfaces import OAUTH_REALM
-    >>> def oauth_signing_browser(consumer, token):
+    >>> USER_AGENT = "Launchpad Credentials Manager v1.0"
+    >>> def oauth_signing_browser(consumer, token, user_agent=USER_AGENT):
     ...     request = OAuthRequest.from_consumer_and_token(consumer, token)
     ...     request.sign_request(
     ...         OAuthSignatureMethod_PLAINTEXT(), consumer, token)
     ...     auth_header = request.to_header(OAUTH_REALM)['Authorization']
     ...     browser = setupBrowser(auth=auth_header)
+    ...     # [XXX bug=638058] A hack to work around a bug in
+    ...     # zope.testbrowser.
+    ...     browser.mech_browser.addheaders = [
+    ...             filter_user_agent(key, value, user_agent)
+    ...             for key, value in browser.mech_browser.addheaders]
     ...     return browser
+
+Now we're ready to make an OAuth-signed request that works.
 
     >>> browser = oauth_signing_browser(
     ...     manager_consumer, grant_permissions_token)
     >>> browser.open(url)
     >>> print browser.title
     Authorize application to access Launchpad on your behalf
+
+The user agent sending the signed request must identify itself as the
+Launchpad Credentials Manager.
+
+    >>> browser = oauth_signing_browser(
+    ...     manager_consumer, grant_permissions_token,
+    ...     "Not the Launchpad Credentials Manager")
+    >>> browser.open(url)
+    Traceback (most recent call last):
+    ...
+    Unauthorized: Only the Launchpad Credentials Manager can access
+    this page by signing requests with an OAuth token.
 
 The OAuth token must have the GRANT_PERMISSIONS access level; no other
 access level will work.
@@ -83,6 +114,25 @@ access level will work.
     Traceback (most recent call last):
     ...
     Unauthorized: OAuth token has insufficient access level.
+
+The OAuth token must be for the Launchpad Credentials Manager, or it
+cannot be used. (Launchpad shouldn't be even _issue_ a
+GRANT_PERMISSIONS token for any other consumer, but even if it somehow
+does, that token can't be used for this.)
+
+    >>> login(ANONYMOUS)
+    >>> wrong_consumer = OAuthConsumer(
+    ...     "Not the Launchpad Credentials Manager", "")
+    >>> wrong_consumer_token = oauth_access_token_for(
+    ...     wrong_consumer.key, no_priv, "GRANT_PERMISSIONS")
+    >>> logout()
+
+    >>> browser = oauth_signing_browser(wrong_consumer, wrong_consumer_token)
+    >>> browser.open(url)
+    Traceback (most recent call last):
+    ...
+    Unauthorized: Only the Launchpad Credentials Manager can access
+    this page by signing requests with an OAuth token.
 
 Signing with an anonymous token will also not work.
 
@@ -143,17 +193,6 @@ prevents annoying cases where the user grants a level of permission
 that isn't enough for the application. The user always has the option
 to deny permission altogether.
 
-    >>> def filter_user_agent(key, value, new_value):
-    ...     """A filter to replace the User-Agent header.
-    ...
-    ...     [XXX bug=638058] This is a hack to work around a bug in
-    ...     zope.testbrowser.
-    ...     """
-    ...
-    ...     if key.lower() == "user-agent":
-    ...         return (key, new_value)
-    ...     return (key, value)
-
     >>> def print_access_levels(allow_permission, user_agent=None):
     ...     if user_agent is not None:
     ...         # [XXX bug=638058] This is a hack to work around a bug in
@@ -197,7 +236,6 @@ is if a client identifying itself as the Launchpad Credentials Manager
 specifically requests it, and no other permission. (Also requesting
 UNAUTHORIZED is okay--it will show up anyway.)
 
-    >>> USER_AGENT = "Launchpad Credentials Manager v1.0"
     >>> print_access_levels(
     ...     'allow_permission=GRANT_PERMISSIONS', USER_AGENT)
     No Access

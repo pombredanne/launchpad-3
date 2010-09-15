@@ -31,7 +31,9 @@ from canonical.launchpad.webapp import (
     )
 from canonical.launchpad.webapp.authentication import (
     check_oauth_signature,
+    extract_oauth_access_token,
     get_oauth_authorization,
+    get_oauth_principal
     )
 from canonical.launchpad.webapp.interfaces import (
     AccessLevel,
@@ -128,7 +130,78 @@ def create_oauth_permission_actions():
     return actions, actions_excluding_grant_permissions
 
 
-class OAuthAuthorizeTokenView(LaunchpadFormView, JSONTokenMixin):
+class CredentialManagerAwareMixin:
+    """A view for which a browser may authenticate with an OAuth token.
+
+    The OAuth token must be signed with a token that has the
+    GRANT_PERMISSIONS access level, and the browser must present
+    itself as the Launchpad Credentials Manager.
+    """
+    # A prefix identifying the Launchpad Credential Manager's
+    # User-Agent string.
+    GRANT_PERMISSIONS_USER_AGENT_PREFIX = "Launchpad Credentials Manager"
+
+    def ensureAuthorization(self):
+        """Make sure the user is authorized.
+
+        This method is called by a view that wants to reject access
+        unless the end-user is authenticated with cookie auth, HTTP
+        Basic Auth, *or* a properly authorized OAuth token.
+
+        If the user is logged in with cookie auth or HTTP Basic, then
+        other parts of Launchpad have taken care of the login and we
+        don't have to do anything. But if the user's browser has
+        signed the request with an OAuth token, other parts of
+        Launchpad won't recognize that as an attempt to authorize the
+        request.
+
+        This method does the OAuth work. It checks that the OAuth
+        token is valid, that it's got the correct access level, and
+        that the User-Agent is one that's allowed to sign requests
+        with OAuth tokens.
+
+        :return: The authenticated user.
+        """
+        user = getUtility(ILaunchBag).user
+        if user is not None:
+            return user
+        # The normal Launchpad code was not able to identify any
+        # user, but we're going to try a little harder before
+        # concluding that no one's logged in. If the incoming
+        # request is signed by an OAuth access token with the
+        # GRANT_PERMISSIONS access level, we will force a
+        # temporary login with the user whose access token this
+        # is.
+        token = extract_oauth_access_token(self.request)
+        if token is None:
+            # The request is not OAuth-signed. The normal Launchpad
+            # code had it right: no one is authenticated.
+            raise Unauthorized("Anonymous access is not allowed.")
+        principal = get_oauth_principal(self.request)
+        if IUnauthenticatedPrincipal.providedBy(principal):
+            # The request is OAuth-signed, but as the anonymous
+            # user.
+            raise Unauthorized("Anonymous access is not allowed.")
+        if token.permission != AccessLevel.GRANT_PERMISSIONS:
+            # The request is OAuth-signed, but the token has
+            # the wrong access level.
+            raise Unauthorized("OAuth token has insufficient access level.")
+
+        # Both the consumer key and the User-Agent must identify the
+        # Launchpad Credentials Manager.
+        must_start_with_prefix = [
+            token.consumer.key, self.request.getHeader("User-Agent")]
+        for string in must_start_with_prefix:
+            if not string.startswith(
+                self.GRANT_PERMISSIONS_USER_AGENT_PREFIX):
+                raise Unauthorized(
+                    "Only the Launchpad Credentials Manager can access this "
+                    "page by signing requests with an OAuth token.")
+        return principal
+
+
+class OAuthAuthorizeTokenView(
+    LaunchpadFormView, JSONTokenMixin, CredentialManagerAwareMixin):
     """Where users authorize consumers to access Launchpad on their behalf."""
 
     actions, actions_excluding_grant_permissions = (
@@ -137,10 +210,6 @@ class OAuthAuthorizeTokenView(LaunchpadFormView, JSONTokenMixin):
     schema = IOAuthRequestToken
     field_names = []
     token = None
-
-    # The browser's User-Agent must begin with this string for the
-    # GRANT_PERMISSIONS access level to be an option.
-    GRANT_PERMISSIONS_USER_AGENT_PREFIX = "Launchpad Credentials Manager"
 
     @property
     def visible_actions(self):
@@ -204,40 +273,7 @@ class OAuthAuthorizeTokenView(LaunchpadFormView, JSONTokenMixin):
         return actions
 
     def initialize(self):
-        user = getUtility(ILaunchBag).user
-        if user is None:
-            # The normal Launchpad code was not able to identify any
-            # user, but we're going to try a little harder before
-            # concluding that no one's logged in. If the incoming
-            # request is signed by an OAuth access token with the
-            # GRANT_PERMISSIONS access level, we will force a
-            # temporary login with the user whose access token this
-            # is.
-            from canonical.launchpad.webapp.authentication import (
-                extract_oauth_access_token,
-                get_oauth_principal
-                )
-            token = extract_oauth_access_token(self.request)
-            if token is None:
-                # The request is not OAuth-signed. The normal
-                # Launchpad code had it right: no one is
-                # authenticated.
-                raise Unauthorized("Anonymous access is not allowed.")
-            principal = get_oauth_principal(self.request)
-            if IUnauthenticatedPrincipal.providedBy(principal):
-                # The request is OAuth-signed, but as the anonymous
-                # user.
-                raise Unauthorized("Anonymous access is not allowed.")
-            if token.permission != AccessLevel.GRANT_PERMISSIONS:
-                # The request is OAuth-signed, but the token has
-                # the wrong access level.
-                raise Unauthorized("OAuth token has insufficient access level.")
-            if not token.consumer.key.startswith(
-                "Launchpad Credentials Manager"):
-                raise Unauthorized(
-                    "Only the Launchpad Credentials Manager can access this "
-                    "page by signing requests with an OAuth token.")
-
+        self.ensureAuthorization()
         self.storeTokenContext()
 
         key = self.request.form.get('oauth_token')
@@ -299,7 +335,7 @@ def lookup_oauth_context(context):
     return context
 
 
-class OAuthTokenAuthorizedView(LaunchpadView):
+class OAuthTokenAuthorizedView(LaunchpadView, CredentialManagerAwareMixin):
     """Where users who reviewed tokens may get redirected to.
 
     If the consumer didn't include an oauth_callback when sending the user to
@@ -308,6 +344,7 @@ class OAuthTokenAuthorizedView(LaunchpadView):
     """
 
     def initialize(self):
+        self.ensureAuthorization()
         key = self.request.form.get('oauth_token')
         self.token = getUtility(IOAuthRequestTokenSet).getByKey(key)
         assert self.token.is_reviewed, (
