@@ -155,8 +155,8 @@ class TestBranchTraversal(TestCaseWithFactory, TraversalMixin):
         self.assertRedirects(product.name, canonical_url(branch))
 
     def test_private_branch_for_product(self):
-        # If the development focus of a product is private, navigate to the
-        # product instead.
+        # If the development focus of a product is private, display a
+        # message telling the user there is no linked branch.
         branch = self.factory.makeProductBranch()
         product = removeSecurityProxy(branch.product)
         product.development_focus.branch = branch
@@ -185,7 +185,6 @@ class TestBranchTraversal(TestCaseWithFactory, TraversalMixin):
         product = self.factory.makeProduct()
         requiredMessage = (u"The target %s does not have a linked branch."
             % product.name)
-
         self.assertDisplaysNotification(
             product.name,
             requiredMessage,
@@ -200,18 +199,15 @@ class TestBranchTraversal(TestCaseWithFactory, TraversalMixin):
         distro_package = sourcepackage.distribution_sourcepackage
         ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
         registrant = ubuntu_branches.teamowner
+        target = ICanHasLinkedBranch(distro_package)
         run_with_login(
             registrant,
-            ICanHasLinkedBranch(distro_package).setBranch, branch, registrant)
-
-        self.assertRedirects(
-            "%s/%s" % (distro_package.distribution.name,
-                distro_package.sourcepackagename.name),
-                canonical_url(branch))
+            target.setBranch, branch, registrant)
+        self.assertRedirects("%s" % target.bzr_path, canonical_url(branch))
 
     def test_private_branch_for_distro_package(self):
-        # If the development focus of a distro package is private, navigate
-        # to the distro package instead.
+        # If the development focus of a distro package is private, display a
+        # message telling the user there is no linked branch.
         sourcepackage = self.factory.makeSourcePackage()
         branch = self.factory.makePackageBranch(
             sourcepackage=sourcepackage, private=True)
@@ -224,14 +220,11 @@ class TestBranchTraversal(TestCaseWithFactory, TraversalMixin):
 
         any_user = self.factory.makePerson()
         login_person(any_user)
-        requiredMessage = (u"The target %s/%s does not have a linked branch."
-            % (distro_package.distribution.name,
-            distro_package.sourcepackagename.name))
+        path = ICanHasLinkedBranch(distro_package).bzr_path
+        requiredMessage = (u"The target %s does not have a linked branch."
+            % path)
         self.assertDisplaysNotification(
-            "%s/%s" % (distro_package.distribution.name,
-                       distro_package.sourcepackagename.name),
-            requiredMessage,
-            BrowserNotificationLevel.NOTICE)
+            path, requiredMessage, BrowserNotificationLevel.NOTICE)
 
     def test_trailing_path_redirect(self):
         # If there are any trailing path segments after the branch identifier,
@@ -248,7 +241,7 @@ class TestBranchTraversal(TestCaseWithFactory, TraversalMixin):
         series = self.factory.makeProductSeries(product=product)
         removeSecurityProxy(series).branch = branch
         self.assertRedirects(
-            '%s/%s' % (product.name, series.name), canonical_url(branch))
+            ICanHasLinkedBranch(series).bzr_path, canonical_url(branch))
 
     def test_nonexistent_product_series(self):
         # /+branch/<product>/<series> displays an error message if there is
@@ -262,20 +255,18 @@ class TestBranchTraversal(TestCaseWithFactory, TraversalMixin):
             BrowserNotificationLevel.ERROR)
 
     def test_no_branch_for_series(self):
-        # If there's no branch for a product series, navigate to the
-        # product series instead.
+        # If there's no branch for a product series, display a
+        # message telling the user there is no linked branch.
         series = self.factory.makeProductSeries()
-        requiredMessage = ("The target %s/%s does not have a linked branch."
-            % (series.product.name, series.name))
-
+        path = ICanHasLinkedBranch(series).bzr_path
+        requiredMessage = ("The target %s does not have a linked branch."
+            % path)
         self.assertDisplaysNotification(
-            '%s/%s' % (series.product.name, series.name),
-            requiredMessage,
-            BrowserNotificationLevel.NOTICE)
+            path, requiredMessage, BrowserNotificationLevel.NOTICE)
 
     def test_private_branch_for_series(self):
-        # If the development focus of a product series is private, navigate
-        # to the product series instead.
+        # If the development focus of a product series is private, display a
+        # message telling the user there is no linked branch.
         branch = self.factory.makeProductBranch()
         product = branch.product
         series = self.factory.makeProductSeries(product=product)
@@ -284,12 +275,11 @@ class TestBranchTraversal(TestCaseWithFactory, TraversalMixin):
 
         any_user = self.factory.makePerson()
         login_person(any_user)
-        requiredMessage = (u"The target %s/%s does not have a linked branch."
-            % (product.name, series.name))
+        path = ICanHasLinkedBranch(series).bzr_path
+        requiredMessage = (u"The target %s does not have a linked branch."
+            % path)
         self.assertDisplaysNotification(
-            "%s/%s" % (product.name, series.name),
-            requiredMessage,
-            BrowserNotificationLevel.NOTICE)
+            path, requiredMessage, BrowserNotificationLevel.NOTICE)
 
     def test_too_short_branch_name(self):
         # error notification if the thing following +branch is a unique name
