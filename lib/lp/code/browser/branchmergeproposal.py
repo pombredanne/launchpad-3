@@ -602,46 +602,15 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
         """Location of page for commenting on this proposal."""
         return canonical_url(self.context, view_name='+comment')
 
-    @property
-    def revision_end_date(self):
-        """The cutoff date for showing revisions.
-
-        If the proposal has been merged, then we stop at the merged date. If
-        it is rejected, we stop at the reviewed date. For superseded
-        proposals, it should ideally use the non-existant date_last_modified,
-        but could use the last comment date.
-        """
-        status = self.context.queue_status
-        if status == BranchMergeProposalStatus.MERGED:
-            return self.context.date_merged
-        if status == BranchMergeProposalStatus.REJECTED:
-            return self.context.date_reviewed
-        # Otherwise return None representing an open end date.
-        return None
-
-    def _getRevisionsSinceReviewStart(self):
-        """Get the grouped revisions since the review started."""
-        # Work out the start of the review.
-        start_date = self.context.date_review_requested
-        if start_date is None:
-            start_date = self.context.date_created
-        source = DecoratedBranch(self.context.source_branch)
-        resultset = source.getMainlineBranchRevisions(
-            start_date, self.revision_end_date, oldest_first=True)
-        branch_revisions = (
-            branch_revision for branch_revision, revision, revision_author
-            in resultset)
-        # Now group by date created.
-        groups = groupby(branch_revisions, lambda r:r.revision.date_created)
-        return [CodeReviewNewRevisions(list(revisions), date, source)
-            for date, revisions in groups]
-
     @cachedproperty
     def conversation(self):
         """Return a conversation that is to be rendered."""
         # Sort the comments by date order.
-        comments = self._getRevisionsSinceReviewStart()
         merge_proposal = self.context
+        groups = merge_proposal.getRevisionsSinceReviewStart()
+        source = DecoratedBranch(merge_proposal.source_branch)
+        comments = [CodeReviewNewRevisions(list(revisions), date, source)
+            for date, revisions in groups]
         while merge_proposal is not None:
             from_superseded = merge_proposal != self.context
             comments.extend(
