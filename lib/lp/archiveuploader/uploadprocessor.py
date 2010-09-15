@@ -38,7 +38,7 @@ cases where it does this and a rejection would have been more useful
 Each upload directory is saved after processing, in case it is needed for
 debugging purposes. This is done by moving it to a directory inside the queue
 directory, beside incoming, named after the result - 'failed', 'rejected' or
-
+'accepted'. Where there are no changes files, the upload is considered failed,
 and where there is more than one changes file, the upload is assigned the
 worst of the results from the various changes files found (in the order
 above, failed being worst).
