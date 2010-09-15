@@ -1,12 +1,12 @@
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Interfaces for using the Jobs system for Memberships."""
+"""Interfaces for the Jobs system to change memberships or merge persons."""
 
 __metaclass__ = type
 __all__ = [
-    'IMembershipJob',
-    'IMembershipJobSource',
+    'IPersonTransferJob',
+    'IPersonTransferJobSource',
     ]
 
 from zope.interface import (
@@ -26,8 +26,8 @@ from lp.services.job.interfaces.job import (
     )
 
 
-class IMembershipJob(Interface):
-    """A Job related to a team membership."""
+class IPersonTransferJob(Interface):
+    """A Job related to team membership or a person merge."""
 
     id = Int(
         title=_('DB ID'), required=True, readonly=True,
@@ -38,21 +38,21 @@ class IMembershipJob(Interface):
         schema=IJob,
         required=True)
 
-    super_team = PublicPersonChoice(
-        title=_('The team that is getting a new member'),
-        vocabulary='ValidTeam',
+    minor_person = PublicPersonChoice(
+        title=_('The person being added to the major person/team'),
+        vocabulary='ValidPersonOrTeam',
         required=True)
 
-    new_member = PublicPersonChoice(
-        title=_('The person or team that is being added as a member'),
+    major_person = PublicPersonChoice(
+        title=_('The person or team receiving the minor person'),
         vocabulary='ValidPersonOrTeam',
         required=True)
 
     metadata = Attribute('A dict of data about the job.')
 
 
-class IMembershipJobSource(IJobSource):
-    """An interface for acquiring IMembershipJobs."""
+class IPersonTransferJobSource(IJobSource):
+    """An interface for acquiring IPersonTransferJobs."""
 
-    def create(super_team, new_member):
-        """Create a new IMembershipJob."""
+    def create(minor_person, major_person):
+        """Create a new IPersonTransferJob."""

@@ -5,7 +5,7 @@
 
 __metaclass__ = type
 __all__ = [
-    'MembershipJobType',
+    'PersonTransferJobType',
     'BugNotificationLevel',
     'DistroSeriesDifferenceStatus',
     'DistroSeriesDifferenceType',
@@ -83,6 +83,7 @@ class DistroSeriesDifferenceStatus(DBEnumeratedType):
         This difference has been resolved and versions are now equal.
         """)
 
+
 class DistroSeriesDifferenceType(DBEnumeratedType):
     """Distribution series difference type."""
 
@@ -107,8 +108,8 @@ class DistroSeriesDifferenceType(DBEnumeratedType):
         """)
 
 
-class MembershipJobType(DBEnumeratedType):
-    """Values that IMembershipJob.job_type can take."""
+class PersonTransferJobType(DBEnumeratedType):
+    """Values that IPersonTransferJob.job_type can take."""
 
     ADD_MEMBER_NOTIFICATION = DBItem(0, """
         Notify affected users of new team membership.

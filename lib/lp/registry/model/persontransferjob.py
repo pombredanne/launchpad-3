@@ -1,12 +1,12 @@
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Job classes related to MembershipJob are in here."""
+"""Job classes related to PersonTransferJob are in here."""
 
 __metaclass__ = type
 __all__ = [
     'AddMemberNotificationJob',
-    'MembershipJob',
+    'PersonTransferJob',
     ]
 
 from lazr.delegates import delegates
@@ -30,10 +30,10 @@ from canonical.launchpad.interfaces.lpstorm import (
     IMasterStore,
     IStore,
     )
-from lp.registry.enum import MembershipJobType
+from lp.registry.enum import PersonTransferJobType
 from lp.registry.interfaces.membershipjob import (
-    IMembershipJob,
-    IMembershipJobSource,
+    IPersonTransferJob,
+    IPersonTransferJobSource,
     IAddMemberNotificationJob,
     IAddMemberNotificationJobSource,
     )
@@ -42,25 +42,25 @@ from lp.services.job.model.job import Job
 from lp.services.job.runner import BaseRunnableJob
 
 
-class MembershipJob(Storm):
-    """Base class for jobs making team membership changes."""
+class PersonTransferJob(Storm):
+    """Base class for team membership and person merge jobs."""
 
-    implements(IMembershipJob)
+    implements(IPersonTransferJob)
 
-    __storm_table__ = 'MembershipJob'
+    __storm_table__ = 'PersonTransferJob'
 
     id = Int(primary=True)
 
     job_id = Int(name='job')
     job = Reference(job_id, Job.id)
 
-    super_team_id = Int(name='super_team')
-    super_team = Reference(super_team_id, Person.id)
+    major_person_id = Int(name='major_person')
+    major_person = Reference(major_person_id, Person.id)
 
-    new_member_id = Int(name='new_member')
-    new_member = Reference(new_member_id, Person.id)
+    minor_person_id = Int(name='minor_person')
+    minor_person = Reference(minor_person_id, Person.id)
 
-    job_type = EnumCol(enum=MembershipJobType, notNull=True)
+    job_type = EnumCol(enum=PersonTransferJobType, notNull=True)
 
     _json_data = Unicode('json_data')
 
@@ -68,21 +68,23 @@ class MembershipJob(Storm):
     def metadata(self):
         return simplejson.loads(self._json_data)
 
-    def __init__(self, super_team, new_member, job_type, metadata):
+    def __init__(self, major_person, minor_person, job_type, metadata):
         """Constructor.
 
-        :param super_team: The team that is getting a new member.
-        :param new_member: The person or team being added to the super_team.
+        :param major_person: The person or team that is receiving or losing
+                             the minor person.
+        :param minor_person: The person or team being added to
+                             the major_person.
         :param job_type: The specific membership action being performed.
         :param metadata: The type-specific variables, as a JSON-compatible
             dict.
         """
-        super(MembershipJob, self).__init__()
+        super(PersonTransferJob, self).__init__()
         json_data = simplejson.dumps(metadata)
         self.job = Job()
         self.job_type = job_type
-        self.super_team = super_team
-        self.new_member = new_member
+        self.major_person = major_person
+        self.minor_person = minor_person
         # XXX AaronBentley 2009-01-29 bug=322819: This should be a bytestring,
         # but the DB representation is unicode.
         self._json_data = json_data.decode('utf-8')
@@ -90,7 +92,7 @@ class MembershipJob(Storm):
     @classmethod
     def get(cls, key):
         """Return the instance of this class whose key is supplied."""
-        store = IMasterStore(MembershipJob)
+        store = IMasterStore(PersonTransferJob)
         instance = store.get(cls, key)
         if instance is None:
             raise SQLObjectNotFound(
@@ -98,59 +100,60 @@ class MembershipJob(Storm):
         return instance
 
 
-class MembershipJobDerived(BaseRunnableJob):
-    """Intermediate class for deriving from MembershipJob."""
-    delegates(IMembershipJob)
-    classProvides(IMembershipJobSource)
+class PersonTransferJobDerived(BaseRunnableJob):
+    """Intermediate class for deriving from PersonTransferJob."""
+    delegates(IPersonTransferJob)
+    classProvides(IPersonTransferJobSource)
 
     def __init__(self, job):
         self.context = job
 
     def __repr__(self):
         return (
-            '<%(job_type)s branch job (%(id)s) for %(new_member)s '
-            'as member of %(super_team)s>' % {
+            '<%(job_type)s branch job (%(id)s) for %(minor_person)s '
+            'as part of %(major_person)s>' % {
                 'job_type': self.context.job_type.name,
                 'id': self.context.id,
-                'new_member': self.new_member.name,
-                'super_team': self.new_member.name,
+                'minor_person': self.minor_person.name,
+                'major_person': self.major_person.name,
                 })
 
     @classmethod
-    def create(cls, super_team, new_member, metadata):
-        """See `IMembershipJob`."""
+    def create(cls, major_person, minor_person, metadata):
+        """See `IPersonTransferJob`."""
         # If there's already a job for the membership, don't create a new one.
-        job = IStore(MembershipJob).find(
-            MembershipJob,
-            And(MembershipJob.super_team == super_team,
-                MembershipJob.new_member == new_member))
-        job = MembershipJob(super_team, new_member, cls.class_job_type, {})
+        job = IStore(PersonTransferJob).find(
+            PersonTransferJob,
+            And(PersonTransferJob.major_person == major_person,
+                PersonTransferJob.minor_person == minor_person))
+        job = PersonTransferJob(
+            major_person, minor_person, cls.class_job_type, {})
         return cls(job)
 
     @classmethod
     def iterReady(cls):
-        """Iterate through all ready MembershipJobs."""
-        store = IMasterStore(MembershipJob)
+        """Iterate through all ready PersonTransferJobs."""
+        store = IMasterStore(PersonTransferJob)
         jobs = store.find(
-            MembershipJob,
-            And(MembershipJob.job_type == cls.class_job_type,
-                MembershipJob.job.is_in(Job.ready_jobs)))
+            PersonTransferJob,
+            And(PersonTransferJob.job_type == cls.class_job_type,
+                PersonTransferJob.job.is_in(Job.ready_jobs)))
         return (cls(job) for job in jobs)
 
     def getOopsVars(self):
         """See `IRunnableJob`."""
         vars = BaseRunnableJob.getOopsVars(self)
         vars.extend([
-            ('super_team_name', self.context.super_team.name),
-            ('new_member_name', self.context.new_member.name),
+            ('major_person_name', self.context.major_person.name),
+            ('minor_person_name', self.context.minor_person.name),
             ])
         return vars
 
 
-class AddMemberNotificationJob(MembershipJobDerived):
+class AddMemberNotificationJob(PersonTransferJobDerived):
     """A Job that sends email notifications about adding a team member."""
 
     implements(IAddMemberNotificationJob)
     classProvides(IAddMemberNotificationJobSource)
 
-    class_job_type = MembershipJobType.ADD_MEMBER_NOTIFICATION
+    class_job_type = PersonTransferJobType.ADD_MEMBER_NOTIFICATION
