@@ -4835,6 +4835,11 @@ class PersonEditEmailsView(LaunchpadFormView):
                 "'%s' doesn't seem to be a valid email address." % newemail)
             return self.errors
 
+        # XXX j.c.sackett 2010-09-15 bug=628247, 576757 There is a validation
+        # system set up for this that is almost identical in 
+        # canonical.launchpad.interfaces.validation, called
+        # _check_email_available or similar. It would be really nice if we
+        # could merge that code somehow with this.
         email = getUtility(IEmailAddressSet).getByEmail(newemail)
         person = self.context
         if email is not None:
@@ -4846,20 +4851,32 @@ class PersonEditEmailsView(LaunchpadFormView):
                     "detected it as being yours. If it was detected by our "
                     "system, it's probably shown on this page and is waiting "
                     "to be confirmed as yours." % newemail)
-            else:
+            elif email.person is not None:
                 owner = email.person
                 owner_name = urllib.quote(owner.name)
                 merge_url = (
                     '%s/+requestmerge?field.dupe_person=%s'
                     % (canonical_url(getUtility(IPersonSet)), owner_name))
-                self.addError(
-                    structured(
-                        "The email address '%s' is already registered to "
-                        '<a href="%s">%s</a>. If you think that is a '
-                        'duplicated account, you can <a href="%s">merge it'
-                        "</a> into your account.",
-                        newemail, canonical_url(owner), owner.displayname,
-                        merge_url))
+                self.addError(structured(
+                    "The email address '%s' is already registered to "
+                    '<a href="%s">%s</a>. If you think that is a '
+                    'duplicated account, you can <a href="%s">merge it'
+                    "</a> into your account.",
+                    newemail,
+                    canonical_url(owner),
+                    owner.displayname,
+                    merge_url))
+            elif email.account is not None:
+                account = email.account
+                self.addError(structured(
+                    "The email address '%s' is already registered to an "
+                    "account, %s.",
+                    newemail,
+                    account.displayname))
+            else:
+                self.addError(structured(
+                    "The email address '%s' is already registered.",
+                    newemail))
         return self.errors
 
     @action(_("Add"), name="add_email", validator=validate_action_add_email)
