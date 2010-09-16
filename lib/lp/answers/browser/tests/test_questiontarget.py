@@ -135,30 +135,6 @@ class TestSearchQuestionsViewTemplate(TestSearchQuestionsView):
         self.assertViewTemplate(question_set, 'question-listing.pt')
 
 
-class TestSearchQuestionsView_ubuntu_packages(TestSearchQuestionsView):
-    """Test the behaviour of SearchQuestionsView.ubuntu_packages."""
-
-    def test_nonproduct_ubuntu_packages(self):
-        distribution = self.factory.makeDistribution()
-        view = create_initialized_view(distribution, '+questions')
-        packages = view.ubuntu_packages
-        self.assertEqual(None, packages)
-
-    def test_product_ubuntu_packages_unlinked(self):
-        product = self.factory.makeProduct()
-        view = create_initialized_view(product, '+questions')
-        packages = view.ubuntu_packages
-        self.assertEqual(None, packages)
-
-    def test_product_ubuntu_packages_linked(self):
-        product = self.factory.makeProduct()
-        self.linkPackage(product, 'cow')
-        view = create_initialized_view(product, '+questions')
-        packages = view.ubuntu_packages
-        self.assertEqual(1, len(packages))
-        self.assertEqual('cow', packages[0].name)
-
-
 class TestSearchQuestionsViewUnknown(TestSearchQuestionsView):
     """Test the behaviour of SearchQuestionsView unknown support."""
 
