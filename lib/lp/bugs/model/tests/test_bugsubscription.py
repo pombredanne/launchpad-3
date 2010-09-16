@@ -69,7 +69,6 @@ class TestBugSubscriptionFilter(TestCaseWithFactory):
         bug_subscription_filter.structural_subscription = self.subscription
         # Check.
         self.assertIs(False, bug_subscription_filter.find_all_tags)
-        self.assertIs(False, bug_subscription_filter.find_all_tags)
         self.assertIs(False, bug_subscription_filter.include_any_tags)
         self.assertIs(False, bug_subscription_filter.exclude_any_tags)
         self.assertIs(None, bug_subscription_filter.other_parameters)
