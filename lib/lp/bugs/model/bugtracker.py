@@ -785,6 +785,21 @@ class BugTrackerComponentGroup(Storm):
 
         return component
 
+    def getComponent(self, component_name):
+        """Retrieves a component by the given name.
+
+        None is returned if there is no component by that name in the
+        group.
+        """
+
+        if component_name is None:
+            return None
+        else:
+            return Store.of(self).find(
+                BugTrackerComponent,
+                (BugTrackerComponent.name == component_name)).one()
+                                
+
     def addCustomComponent(self, component_name):
         """Adds a component locally that isn't synced from a remote tracker"""
         # TODO: Verify we don't already have the component

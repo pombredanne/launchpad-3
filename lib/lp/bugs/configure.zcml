@@ -453,8 +453,10 @@
                 permission="zope.Public"
                 attributes="
                     id
+                    components
                     addComponent
                     addCustomComponent
+                    getComponent
                     "/>
             <implements
                 interface="lp.bugs.interfaces.bugtracker.IBugTrackerComponentGroup"/>

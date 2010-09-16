@@ -113,16 +113,16 @@ class TestBugTrackerWithComponents(TestCaseWithFactory):
 
         default_comp_group = self.bug_tracker.addRemoteComponentGroup(u'single')
 
-#        default_comp_group.addComponent("alpha")
-#        default_comp_group.addComponent("beta")
-#        default_comp_group.addComponent("gamma")
+        default_comp_group.addComponent(u'alpha')
+        default_comp_group.addComponent(u'beta')
+        default_comp_group.addComponent(u'gamma')
 
-#        comp_group = self.bug_tracker.getRemoteComponentGroup('non-existant')
-#        self.assertEqual(comp_group, None)
+        comp_group = self.bug_tracker.getRemoteComponentGroup(u'non-existant')
+        self.assertEqual(comp_group, None)
 
-#        comp_group = self.bug_tracker.getRemoteComponentGroup(u'single')
-#        self.assertEqual(comp_group, default_comp_group)
-#        self.assertEqual(comp_group.name, u'single')
+        comp_group = self.bug_tracker.getRemoteComponentGroup(u'single')
+        self.assertEqual(comp_group, default_comp_group)
+        self.assertEqual(comp_group.name, u'single')
 
         comp_groups = self.bug_tracker.getAllRemoteComponentGroups()
         self.assertEqual(len(list(comp_groups)), 1)
@@ -131,44 +131,44 @@ class TestBugTrackerWithComponents(TestCaseWithFactory):
         """Bug tracker with multiple products and varying numbers of components"""
         comp_group_i = self.bug_tracker.addRemoteComponentGroup(u'product1')
 
-#        comp_group_ii = self.bugtracker.addRemoteComponentGroup(u'product2')
-#        comp_group_ii.addComponent(u'component2-alpha')
+        comp_group_ii = self.bug_tracker.addRemoteComponentGroup(u'product2')
+        comp_group_ii.addComponent(u'component2-alpha')
 
-#        comp_group_iii = self.bugtracker.addRemoteComponentGroup(u'product3')
-#        comp_group_iii.addComponent(u'component3-alpha')
-#        comp_group_iii.addComponent(u'component3-beta')
-#        comp_group_iii.addComponent(u'component3-gamma')
+        comp_group_iii = self.bug_tracker.addRemoteComponentGroup(u'product3')
+        comp_group_iii.addComponent(u'component3-alpha')
+        comp_group_iii.addComponent(u'component3-beta')
+        comp_group_iii.addComponent(u'component3-gamma')
 
-#        comp_group = self.bugtracker.getRemoteComponentGroup(u'non-existant')
-#        self.assertEqual(comp_group, None)
+        comp_group = self.bug_tracker.getRemoteComponentGroup(u'non-existant')
+        self.assertEqual(comp_group, None)
 
-#        comp_group = self.bugtracker.getRemoteComponentGroup(u'product2')
-#        self.assertEqual(comp_group, comp_group_ii)
+        comp_group = self.bug_tracker.getRemoteComponentGroup(u'product2')
+        self.assertEqual(comp_group, comp_group_ii)
 
-#        comp_groups = self.bugtracker.getAllRemoteComponentGroups()
-#        self.assertEqual(len(list(comp_groups)), 3)
+        comp_groups = self.bug_tracker.getAllRemoteComponentGroups()
+        self.assertEqual(len(list(comp_groups)), 3)
 
     def test_get_components_for_component_group(self):
         """Retrieve a set of components from a given product"""
 
-#        default_comp_group = self.bugtracker.addRemoteComponentGroup(u'default')
-#        default_comp_group.addComponent(u'alpha')
-#        default_comp_group.addComponent(u'beta')
-#        default_comp_group.addComponent(u'gamma')
+        default_comp_group = self.bug_tracker.addRemoteComponentGroup(u'default')
+        default_comp_group.addComponent(u'alpha')
+        default_comp_group.addComponent(u'beta')
+        default_comp_group.addComponent(u'gamma')
 
-#        comp_group = self.bugtracker.getRemoteComponentGroup(u'default')
-#        self.assertEqual(len(list(comp_group.components)), 3)
+        comp_group = self.bug_tracker.getRemoteComponentGroup(u'default')
+        self.assertEqual(len(list(comp_group.components)), 3)
 
-        #comp = comp_group.getComponent(u'beta')
-        #self.assertEqual(comp.name, u'beta')
+        comp = comp_group.getComponent(u'beta')
+        self.assertEqual(comp.name, u'beta')
 
     def test_link_source_package_to_component(self):
         """Verify a source package can be linked to an upstream component"""
 
-#        default_comp_group = self.bugtracker.addRemoteComponentGroup(u'default')
-#        default_comp_group.addComponent(u'alpha')
+        default_comp_group = self.bug_tracker.addRemoteComponentGroup(u'default')
+        default_comp_group.addComponent(u'alpha')
 
-#        comp_group = self.bugtracker.getRemoteComponentGroup(u'default')
+        #comp_group = self.bug_tracker.getRemoteComponentGroup(u'default')
         #comp = comp_group.getComponent(u'alpha')
         #self.assertEqual(comp.source_package, None)
 
