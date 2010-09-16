@@ -133,8 +133,8 @@ class TestBranchTraversal(TestCaseWithFactory, TraversalMixin):
         # If an attempt is made to access a private branch, display an error.
         branch = self.factory.makeProductBranch()
         branch_unique_name = branch.unique_name
-        product = removeSecurityProxy(branch.product)
-        ICanHasLinkedBranch(product).setBranch(branch)
+        naked_product = removeSecurityProxy(branch.product)
+        ICanHasLinkedBranch(naked_product).setBranch(branch)
         removeSecurityProxy(branch).private = True
 
         any_user = self.factory.makePerson()
@@ -149,24 +149,24 @@ class TestBranchTraversal(TestCaseWithFactory, TraversalMixin):
         # Traversing to /+branch/<product> redirects to the page for the
         # branch that is the development focus branch for that product.
         branch = self.factory.makeProductBranch()
-        product = removeSecurityProxy(branch.product)
-        ICanHasLinkedBranch(product).setBranch(branch)
-        self.assertRedirects(product.name, canonical_url(branch))
+        naked_product = removeSecurityProxy(branch.product)
+        ICanHasLinkedBranch(naked_product).setBranch(branch)
+        self.assertRedirects(naked_product.name, canonical_url(branch))
 
     def test_private_branch_for_product(self):
         # If the development focus of a product is private, display a
         # message telling the user there is no linked branch.
         branch = self.factory.makeProductBranch()
-        product = removeSecurityProxy(branch.product)
-        ICanHasLinkedBranch(product).setBranch(branch)
+        naked_product = removeSecurityProxy(branch.product)
+        ICanHasLinkedBranch(naked_product).setBranch(branch)
         removeSecurityProxy(branch).private = True
 
         any_user = self.factory.makePerson()
         login_person(any_user)
         requiredMessage = (u"The target %s does not have a linked branch."
-            % product.name)
+            % naked_product.name)
         self.assertDisplaysNotification(
-            product.name,
+            naked_product.name,
             requiredMessage,
             BrowserNotificationLevel.NOTICE)
 
