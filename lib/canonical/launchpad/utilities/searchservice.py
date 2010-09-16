@@ -20,6 +20,7 @@ except ImportError:
 import urllib
 from urlparse import urlunparse
 
+from lazr.restful.utils import get_current_browser_request
 from lazr.uri import URI
 from zope.interface import implements
 
@@ -32,6 +33,7 @@ from canonical.launchpad.interfaces.searchservice import (
     ISearchService,
     )
 from canonical.launchpad.webapp import urlparse
+from lp.services.timeline.requesttimeline import get_request_timeline
 
 
 class PageMatch:
@@ -193,8 +195,13 @@ class GoogleSearchService:
         """
         search_url = self.create_search_url(terms, start=start)
         from canonical.lazr.timeout import urlfetch
-        gsp_xml = urlfetch(search_url)
-
+        request = get_current_browser_request()
+        timeline = get_request_timeline(request)
+        action = timeline.start("google-search-api", search_url)
+        try:
+            gsp_xml = urlfetch(search_url)
+        finally:
+            action.finish()
         page_matches = self._parse_google_search_protocol(gsp_xml)
         return page_matches
 
@@ -250,7 +257,6 @@ class GoogleSearchService:
         :param value: The string value of the named attribute.
         """
         return self._getElementsByAttributeValue(doc, path, name, value)[0]
-
 
     def _parse_google_search_protocol(self, gsp_xml):
         """Return a `PageMatches` object.

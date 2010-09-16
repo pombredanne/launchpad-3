@@ -64,10 +64,6 @@ from canonical.launchpad.interfaces.launchpad import (
     IWebServiceApplication,
     )
 import canonical.launchpad.layers
-from canonical.launchpad.webapp.adapter import (
-    get_request_duration,
-    RequestExpired,
-    )
 from canonical.launchpad.webapp.authentication import (
     get_oauth_principal,
     )
@@ -98,7 +94,6 @@ from canonical.launchpad.webapp.publisher import (
     )
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.lazr.interfaces.feed import IFeed
-from canonical.lazr.timeout import set_default_timeout_function
 from lp.app.errors import UnexpectedFormData
 from lp.services.features.flags import NullFeatureController
 from lp.services.propertycache import cachedproperty
@@ -1396,22 +1391,6 @@ class ProtocolErrorException(Exception):
         """A protocol error can be well-represented by its HTTP status code.
         """
         return "Protocol error: %s" % self.status
-
-
-def launchpad_default_timeout():
-    """Return the time before the request should be expired."""
-    timeout = config.database.db_statement_timeout
-    if timeout is None:
-        return None
-    left = timeout - get_request_duration()
-    if left < 0:
-        raise RequestExpired('request expired.')
-    return left
-
-
-def set_launchpad_default_timeout(event):
-    """Set the LAZR default timeout function."""
-    set_default_timeout_function(launchpad_default_timeout)
 
 
 def register_launchpad_request_publication_factories():

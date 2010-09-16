@@ -876,7 +876,7 @@ class IWebBrowserOriginatingRequest(Interface):
 
 try:
     from zope.publisher.interfaces import StartRequestEvent
-except:
+except ImportError:
     class IStartRequestEvent(Interface):
         """An event that gets sent before the start of a request."""
 
