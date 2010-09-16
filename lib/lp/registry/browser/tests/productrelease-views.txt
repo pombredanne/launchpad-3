@@ -9,10 +9,11 @@ Adding a product release
 
 A new ProductRelease can be created using ProductReleaseAddView.
 
+    >>> from zope.security.proxy import removeSecurityProxy
     >>> owner = factory.makePerson(name='app-owner')
     >>> product = factory.makeProduct(name='app', owner=owner)
-    >>> series = factory.makeSeries(name='simple', product=product)
-    >>> milestone = series.newMilestone('0.1')
+    >>> series = factory.makeProductSeries(name='simple', product=product)
+    >>> milestone = removeSecurityProxy(series).newMilestone('0.1')
     >>> print milestone.active
     True
 

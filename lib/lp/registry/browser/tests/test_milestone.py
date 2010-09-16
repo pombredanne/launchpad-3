@@ -9,6 +9,7 @@ __metaclass__ = type
 
 from testtools.matchers import LessThan
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.webapp import canonical_url
 from canonical.testing.layers import DatabaseFunctionalLayer
@@ -18,7 +19,7 @@ from lp.testing import (
     login,
     login_person,
     logout,
-    person_logged_in, 
+    person_logged_in,
     TestCaseWithFactory,
     )
 from lp.testing.matchers import HasQueryCount
@@ -34,7 +35,8 @@ class TestMilestoneViews(TestCaseWithFactory):
     def setUp(self):
         TestCaseWithFactory.setUp(self)
         self.product = self.factory.makeProduct()
-        self.series = self.factory.makeSeries(product=self.product)
+        self.series = (
+            self.factory.makeProductSeries(product=self.product))
         owner = self.product.owner
         login_person(owner)
 
@@ -171,7 +173,7 @@ class TestMilestoneIndex(TestCaseWithFactory):
     def test_more_private_bugs_query_count_is_constant(self):
         # This test tests that as we add more private bugs to a milestone index
         # page, the number of queries issued by the page does not change.
-        # It also sets a cap on the queries for this page: if the baseline 
+        # It also sets a cap on the queries for this page: if the baseline
         # were to increase, the test would fail. As the baseline is very large
         # already, if the test fails due to such a change, please cut some more
         # of the existing fat out of it rather than increasing the cap.
@@ -206,7 +208,7 @@ class TestMilestoneIndex(TestCaseWithFactory):
         self.assertTrue(bug1_url in browser.contents)
         self.assertThat(collector, HasQueryCount(LessThan(page_query_limit)))
         with_1_private_bug = collector.count
-        with_1_queries = ["%s: %s" % (pos, stmt[3]) for (pos, stmt) in 
+        with_1_queries = ["%s: %s" % (pos, stmt[3]) for (pos, stmt) in
             enumerate(collector.queries)]
         login_person(product.owner)
         bug2 = self.factory.makeBug(product=product, private=True,
@@ -223,7 +225,7 @@ class TestMilestoneIndex(TestCaseWithFactory):
         self.assertTrue(bug2_url in browser.contents)
         self.assertThat(collector, HasQueryCount(LessThan(page_query_limit)))
         with_3_private_bugs = collector.count
-        with_3_queries = ["%s: %s" % (pos, stmt[3]) for (pos, stmt) in 
+        with_3_queries = ["%s: %s" % (pos, stmt[3]) for (pos, stmt) in
             enumerate(collector.queries)]
         self.assertEqual(with_1_private_bug, with_3_private_bugs,
             "different query count: \n%s\n******************\n%s\n" % (

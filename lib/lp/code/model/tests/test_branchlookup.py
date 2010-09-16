@@ -383,7 +383,7 @@ class TestLinkedBranchTraverser(TestCaseWithFactory):
     def test_product_series(self):
         # `traverse` resolves the path to a product series to the product
         # series itself.
-        series = self.factory.makeSeries()
+        series = self.factory.makeProductSeries()
         short_name = '%s/%s' % (series.product.name, series.name)
         self.assertTraverses(short_name, series)
 
@@ -556,7 +556,7 @@ class TestGetByLPPath(TestCaseWithFactory):
     def test_no_product_series_branch(self):
         # getByLPPath raises `NoLinkedBranch` if there's no branch registered
         # linked to the requested series.
-        series = self.factory.makeSeries()
+        series = self.factory.makeProductSeries()
         short_name = '%s/%s' % (series.product.name, series.name)
         exception = self.assertRaises(
             NoLinkedBranch, self.branch_lookup.getByLPPath, short_name)
@@ -640,9 +640,8 @@ class TestGetByLPPath(TestCaseWithFactory):
         # linked branch but is followed by extra path segments, then we return
         # the linked branch but chop off the extra segments. We might want to
         # change this behaviour in future.
-        series = self.factory.makeSeries()
-        branch = self.factory.makeProductBranch(series.product)
-        series.branch = branch
+        branch= self.factory.makeBranch()
+        series = self.factory.makeProductSeries(branch=branch)
         result = self.branch_lookup.getByLPPath(
             '%s/%s/other/bits' % (series.product.name, series.name))
         self.assertEqual((branch, u'other/bits'), result)
