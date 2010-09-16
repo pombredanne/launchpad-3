@@ -11,10 +11,6 @@ DROP CONSTRAINT revisionnumber_branch_id_unique;
 ALTER TABLE BranchRevision
 DROP CONSTRAINT revision__branch__revision__key ;
 
--- This constraint is useless given the previous constraint
-ALTER TABLE BranchRevision
-DROP CONSTRAINT revision__revision__branch__key ;
-
 -- Kill the old PK
 ALTER TABLE BranchRevision
 DROP CONSTRAINT revisionnumber_pkey ;
@@ -31,4 +27,4 @@ ALTER TABLE BranchRevision
 DROP COLUMN id;
 
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 11, 0);
