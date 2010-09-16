@@ -50,7 +50,9 @@ from lp.translations.interfaces.translationimporter import (
 from lp.translations.interfaces.translationimportqueue import (
     RosettaImportStatus,
     )
-from lp.translations.interfaces.translationmessage import TranslationConflict
+from lp.translations.interfaces.translationmessage import (
+    TranslationValidationStatus,
+    )
 from lp.translations.interfaces.translations import TranslationConstants
 from lp.translations.utilities.gettext_po_importer import GettextPOImporter
 from lp.translations.utilities.kde_po_importer import KdePOImporter
@@ -511,13 +513,13 @@ class FileImporter(object):
         # Get the current message and check for conflict.
         current = potmsgset.getCurrentTranslationMessage(
             self.potemplate, self.pofile.language)
-        lock_timestamp = self.lock_timestamp
-        if current is not None and current.date_created >= lock_timestamp:
-            self._addConflictError(message, potmsgset)
-            if self.logger is not None:
-                self.logger.info(
-                    "Conflicting updates on message %d." % potmsgset.id)
-            return None
+        if current is not None and self.lock_timestamp is not None:
+            if current.date_created >= self.lock_timestamp:
+                self._addConflictError(message, potmsgset)
+                if self.logger is not None:
+                    self.logger.info(
+                        "Conflicting updates on message %d." % potmsgset.id)
+                return None
         # Create the new message as a suggestion.
         sanitized_translations = sanitize_translations_from_import(
             potmsgset.singular_text, message.translations,
@@ -534,7 +536,10 @@ class FileImporter(object):
             # Add the pomsgset to the list of pomsgsets with errors.
             self._addUpdateError(message, potmsgset, unicode(e))
             # The translation remains only a suggestion.
+            new_message.validation_status = (
+                TranslationValidationStatus.UNKNOWNERROR)
         else:
+            new_message.validation_status = TranslationValidationStatus.OK
             # The translation is made current.
             if current is not None and current.is_diverged:
                 new_message.approveAsDiverged(self.pofile, uploader_person)
