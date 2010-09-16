@@ -165,36 +165,32 @@ class TestLPForkingServiceParseEnv(tests.TestCase):
     def assertEnv(self, env, env_str):
         self.assertEqual(env, lpserve.LPForkingService.parse_env(env_str))
 
-    def test_empty(self):
-        self.assertEnv({}, '')
+    def assertInvalid(self, env_str):
+        self.assertRaises(ValueError, lpserve.LPForkingService.parse_env,
+                                      env_str)
 
     def test_no_entries(self):
-        self.assertEnv({}, 'env\nend\n')
+        self.assertEnv({}, 'end\n')
 
     def test_one_entries(self):
         self.assertEnv({'BZR_EMAIL': 'joe@foo.com'},
-                       'env\n'
                        'BZR_EMAIL: joe@foo.com\n'
                        'end\n')
 
     def test_two_entries(self):
         self.assertEnv({'BZR_EMAIL': 'joe@foo.com', 'BAR': 'foo'},
-                       'env\n'
                        'BZR_EMAIL: joe@foo.com\n'
                        'BAR: foo\n'
                        'end\n')
 
-    def test_invalid_start(self):
-        self.assertRaises(ValueError, lpserve.LPForkingService.parse_env,
-            "BZR_EMAIL: joe@foo.com\nend\n")
+    def test_invalid_empty(self):
+        self.assertInvalid('')
 
     def test_invalid_end(self):
-        self.assertRaises(ValueError, lpserve.LPForkingService.parse_env,
-            "env\nBZR_EMAIL: joe@foo.com\n")
+        self.assertInvalid("BZR_EMAIL: joe@foo.com\n")
 
     def test_invalid_entry(self):
-        self.assertRaises(ValueError, lpserve.LPForkingService.parse_env,
-            "env\nBZR_EMAIL joe@foo.com\nend\n")
+        self.assertInvalid("BZR_EMAIL joe@foo.com\nend\n")
 
 
 class TestLPForkingService(TestCaseWithLPForkingService):
@@ -218,10 +214,16 @@ class TestLPForkingService(TestCaseWithLPForkingService):
         self.assertEqual('ok\nfake forking\n', response)
         self.assertEqual([(['rocks'], {})], self.service.fork_log)
 
+    def test_send_fork_with_empty_env(self):
+        response = self.send_message_to_service(
+            'fork-env rocks\n'
+            'end\n')
+        self.assertEqual('ok\nfake forking\n', response)
+        self.assertEqual([(['rocks'], {})], self.service.fork_log)
+
     def test_send_fork_with_env(self):
         response = self.send_message_to_service(
-            'fork rocks\n'
-            'env\n'
+            'fork-env rocks\n'
             'BZR_EMAIL: joe@example.com\n'
             'end\n')
         self.assertEqual('ok\nfake forking\n', response)

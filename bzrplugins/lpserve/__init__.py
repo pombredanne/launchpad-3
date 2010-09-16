@@ -481,22 +481,18 @@ class LPForkingService(object):
 
         :param env_str: A string full of environment variable declarations.
             Each key is simple ascii "key: value\n"
-            The string must start with "env\n" and end with "end\n".
+            The string must end with "end\n".
         :return: A dict of environment variables
         """
         # See [Decision #8]
         env = {}
-        if not env_str:
-            return env
-        if not (env_str.startswith('env\n') and env_str.endswith('\nend\n')):
+        if not env_str.endswith('end\n'):
             raise ValueError('Invalid env-str: %r' % (env_str,))
-        env_str = env_str[4:-5]
+        env_str = env_str[:-5]
         if not env_str:
             return env
         env_entries = env_str.split('\n')
         for entry in env_entries:
-            if not entry:
-                continue
             key, value = entry.split(': ', 1)
             env[key] = value
         return env
@@ -513,6 +509,8 @@ class LPForkingService(object):
             pid = os.getpid()
             trace.mutter('%d spawned' % (pid,))
             self._server_socket.close()
+            for env_var, value in env.iteritems():
+                osutils.set_or_unset_env(env_var, value)
             # See [Decision #3]
             self._create_child_file_descriptors(temp_name)
             conn.sendall('ok\n%d\n%s\n' % (pid, temp_name))
@@ -676,7 +674,11 @@ class LPForkingService(object):
                     shutil.rmtree(c_path)
 
     def _parse_fork_request(self, conn, client_addr, request):
-        command, env = request[5:].split('\n', 1)
+        if request.startswith('fork-env '):
+            command, env = request[9:].split('\n', 1)
+        else:
+            command = request[5:].strip()
+            env = 'end\n' # No env set
         try:
             command_argv = self.command_to_argv(command)
             env = self.parse_env(env)
@@ -705,7 +707,7 @@ class LPForkingService(object):
         elif request == 'quit\n':
             self._should_terminate.set()
             conn.sendall('ok\nquit command requested... exiting\n')
-        elif request.startswith('fork '):
+        elif request.startswith('fork ') or request.startswith('fork-env '):
             command_argv, env = self._parse_fork_request(conn, client_addr,
                                                          request)
             if command_argv is not None:
