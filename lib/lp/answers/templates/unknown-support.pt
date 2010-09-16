@@ -21,9 +21,9 @@
         </p>
 
         <p id="ubuntu-support"
-          tal:define="packages view/ubuntu_packages"
+          tal:define="packages context/ubuntu_packages | nothing"
           tal:condition="packages">
-          <tal:project replace="context/displayname" /> questions are also
+          <tal:project replace="context/displayname" /> questions are
           tracked in: <tal:packages repeat="package packages">
             <tal:package replace="structure package/fmt:link" /><tal:comma
             condition="not:repeat/package/end">, </tal:comma></tal:packages>.
@@ -31,10 +31,9 @@
 
         <p id="configure-support"
           tal:condition="view/can_configure_answers">
-          Launchpad allows your project to track questions and create FAQs.
-          <br /><a class="sprite maybe"
+          <a class="sprite maybe"
             href="https://help.launchpad.net/Answers">Getting started
-          with support tracking in Launchpad</a>.
+          tracking questions and FAQs in Launchpad</a>.
           <br /><a tal:replace="structure context/menu:overview/configure_answers/fmt:link" />
         </p>
       </div>
