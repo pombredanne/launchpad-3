@@ -518,8 +518,8 @@ class IBranchMergeProposal(IPrivacy):
             source branch.
         :param target_revision_id: The revision id that was used from the
             target branch.
-        :param prerequisite_revision_id: The revision id that was used from the
-            prerequisite branch.
+        :param prerequisite_revision_id: The revision id that was used from
+            the prerequisite branch.
         :param conflicts: Text describing the conflicts if any.
         """
 
@@ -669,7 +669,9 @@ class ICodeReviewCommentEmailJobSource(Interface):
 class IReviewRequestedEmailJob(IRunnableJob):
     """Interface for the job to sends review request emails."""
 
-    reviewer = Attribute('The person or team asked to do the review.')
+    reviewer = Attribute('The person or team asked to do the review. '
+                         'If left blank, then the default reviewer for the '
+                         'selected target branch will be used.')
     requester = Attribute('The person who has asked for the review.')
 
 

@@ -1285,18 +1285,6 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
 
     page_title = label = 'Propose branch for merging'
 
-    def setUpWidgets(self, context=None):
-        super(RegisterBranchMergeProposalView, self).setUpWidgets(context)
-        # If there is a default merge branch for the target, then default
-        # the reviewer to be the review team for that branch.
-        reviewer = None
-        default_target = self.context.target.default_merge_target
-        if default_target is not None and default_target != self.context:
-            reviewer = default_target.code_reviewer
-        if reviewer is not None:
-            self.widgets['reviewer'].hint += (u" The default reviewer will "
-                "be %s." % reviewer.name)
-
     @property
     def cancel_url(self):
         return canonical_url(self.context)
@@ -1317,8 +1305,10 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
         prerequisite_branch = data.get('prerequisite_branch')
 
         review_requests = []
-        review_requests.append(
-            (data.get('reviewer'), data.get('review_type')))
+        reviewer = data.get('reviewer')
+        review_type = data.get('review_type')
+        if reviewer is not None:
+            review_requests.append((reviewer, review_type))
 
         try:
             proposal = source_branch.addLandingTarget(
@@ -1327,7 +1317,8 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
                 needs_review=data['needs_review'],
                 description=data.get('comment'),
                 review_requests=review_requests,
-                commit_message=data.get('commit_message'))
+                commit_message=data.get('commit_message'),
+                default_review_type = review_type)
             self.next_url = canonical_url(proposal)
         except InvalidBranchMergeProposal, error:
             self.addError(str(error))
