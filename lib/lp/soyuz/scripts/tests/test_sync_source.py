@@ -516,8 +516,7 @@ class TestGenerateChanges(TestCase):
         changes = self.generateChanges(changelog=changelog)
         contents = changes.dump(encoding="utf-8").encode("utf-8")
         # Read contents back
-        read_changes = Changes(StringIO(
-            changes.dump(encoding="utf-8").encode("utf-8")))
+        read_changes = Changes(contents)
         self.assertEquals("\n%s" % changelog, changes['Changes'])
         self.assertContentEqual([
             'Architecture',
