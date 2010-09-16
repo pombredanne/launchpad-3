@@ -127,7 +127,7 @@ class TestCaseWithLPForkingService(tests.TestCaseWithTransport):
         super(TestCaseWithLPForkingService, self).setUp()
         self.service = TestingLPForkingServiceInAThread.start_service(self)
 
-    def send_message_to_service(self, message):
+    def send_message_to_service(self, message, one_byte_at_a_time=False):
         host, port = self.service._sockname
         addrs = socket.getaddrinfo(host, port, socket.AF_UNSPEC,
             socket.SOCK_STREAM, 0, socket.AI_PASSIVE)
@@ -135,7 +135,11 @@ class TestCaseWithLPForkingService(tests.TestCaseWithTransport):
         client_sock = socket.socket(family, socktype, proto)
         try:
             client_sock.connect(sockaddr)
-            client_sock.sendall(message)
+            if one_byte_at_a_time:
+                for byte in message:
+                    client_sock.send(byte)
+            else:
+                client_sock.sendall(message)
             response = client_sock.recv(1024)
         except socket.error, e:
             raise RuntimeError('Failed to connect: %s' % (e,))
@@ -214,18 +218,27 @@ class TestLPForkingService(TestCaseWithLPForkingService):
         self.assertEqual('ok\nfake forking\n', response)
         self.assertEqual([(['rocks'], {})], self.service.fork_log)
 
-    def test_send_fork_with_empty_env(self):
+    def test_send_fork_env_with_empty_env(self):
         response = self.send_message_to_service(
             'fork-env rocks\n'
             'end\n')
         self.assertEqual('ok\nfake forking\n', response)
         self.assertEqual([(['rocks'], {})], self.service.fork_log)
 
-    def test_send_fork_with_env(self):
+    def test_send_fork_env_with_env(self):
         response = self.send_message_to_service(
             'fork-env rocks\n'
             'BZR_EMAIL: joe@example.com\n'
             'end\n')
+        self.assertEqual('ok\nfake forking\n', response)
+        self.assertEqual([(['rocks'], {'BZR_EMAIL': 'joe@example.com'})],
+                         self.service.fork_log)
+
+    def test_send_fork_env_slowly(self):
+        response = self.send_message_to_service(
+            'fork-env rocks\n'
+            'BZR_EMAIL: joe@example.com\n'
+            'end\n', one_byte_at_a_time=True)
         self.assertEqual('ok\nfake forking\n', response)
         self.assertEqual([(['rocks'], {'BZR_EMAIL': 'joe@example.com'})],
                          self.service.fork_log)
@@ -307,7 +320,7 @@ class TestCaseWithLPForkingServiceSubprocess(TestCaseWithSubprocess):
         self.service_process, self.service_port = self.start_service_subprocess()
         self.addCleanup(self.stop_service)
 
-    def start_conversation(self, message):
+    def start_conversation(self, message, one_byte_at_a_time=False):
         """Start talking to the service, and get the initial response."""
         addrs = socket.getaddrinfo('127.0.0.1', self.service_port,
             socket.AF_UNSPEC, socket.SOCK_STREAM, 0, socket.AI_PASSIVE)
@@ -316,7 +329,11 @@ class TestCaseWithLPForkingServiceSubprocess(TestCaseWithSubprocess):
         trace.mutter('sending %r to port %s' % (message, self.service_port))
         try:
             client_sock.connect(sockaddr)
-            client_sock.sendall(message)
+            if one_byte_at_a_time:
+                for byte in message:
+                    client_sock.send(byte)
+            else:
+                client_sock.sendall(message)
             response = client_sock.recv(1024)
         except socket.error, e:
             raise RuntimeError('Failed to connect: %s' % (e,))
@@ -325,13 +342,22 @@ class TestCaseWithLPForkingServiceSubprocess(TestCaseWithSubprocess):
             raise RuntimeError('Failed to send message: %r' % (response,))
         return response, client_sock
 
-    def send_message_to_service(self, message):
-        response, client_sock = self.start_conversation(message)
+    def send_message_to_service(self, message, one_byte_at_a_time=False):
+        response, client_sock = self.start_conversation(message,
+            one_byte_at_a_time=one_byte_at_a_time)
         client_sock.close()
         return response
 
-    def send_fork_request(self, command):
-        response, sock = self.start_conversation('fork %s\n' % (command,))
+    def send_fork_request(self, command, env=None):
+        if env is not None:
+            request_lines = ['fork-env %s\n' % (command,)]
+            for key, value in env.iteritems():
+                request_lines.append('%s: %s\n' % (key, value))
+            request_lines.append('end\n')
+            request = ''.join(request_lines)
+        else:
+            request = 'fork %s\n' % (command,)
+        response, sock = self.start_conversation(request)
         ok, pid, path, tail = response.split('\n')
         self.assertEqual('ok', ok)
         self.assertEqual('', tail)
@@ -451,3 +477,10 @@ class TestCaseWithLPForkingServiceSubprocess(TestCaseWithSubprocess):
             self.assertEqualDiff(stdout_msg, stdout)
             self.assertEqualDiff(stderr_msg, stderr)
             self.assertReturnCode(0, sock)
+
+    def test_fork_respects_env_vars(self):
+        path, pid, sock = self.send_fork_request('whoami',
+            env={'BZR_EMAIL': 'this_test@example.com'})
+        stdout_content, stderr_content = self.communicate_with_fork(path)
+        self.assertEqual('', stderr_content)
+        self.assertEqual('this_test@example.com\n', stdout_content)

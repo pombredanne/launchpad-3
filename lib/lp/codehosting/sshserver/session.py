@@ -165,17 +165,17 @@ class ForkedProcessTransport(process.BaseProcess):
         assert executable == 'bzr', executable # Maybe .endswith()
         assert args[0] == 'bzr', args[0]
         command_str = ' '.join(args[1:])
-        env_strs = ['env\n']
+        message = ['fork %s\n' % (' '.join(args[1:]),)]
         for key, value in environment:
             # XXX: Currently we only pass BZR_EMAIL, should we be passing
             #      everything else? Note that many won't be handled properly,
             #      since the process is already running.
             if key != 'BZR_EMAIL':
                 continue
-            env_strs.append('%s: %s\n' % (key, value))
-        env_strs.append('end\n')
-        message = 'fork %s\n%s' % (' '.join(args[1:]), ''.join(env_strs))
-        response, sock = self._sendMessageToService()
+            message.append('%s: %s\n' % (key, value))
+        message.append('end\n')
+        message = ''.join(message)
+        response, sock = self._sendMessageToService(message)
         ok, pid, path, tail = response.split('\n')
         assert ok == 'ok'
         assert tail == ''

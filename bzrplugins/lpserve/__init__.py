@@ -551,6 +551,7 @@ class LPForkingService(object):
                 # TODO: We should probably trap exceptions coming out of this
                 #       and log them, so that we don't kill the service because
                 #       of an unhandled error
+                # TODO: Should we set a timeout on reading from the socket?
                 self.serve_one_connection(conn, client_addr)
             self._poll_children()
         trace.note('Shutting down. Waiting up to %.0fs for %d child processes'
@@ -675,6 +676,10 @@ class LPForkingService(object):
 
     def _parse_fork_request(self, conn, client_addr, request):
         if request.startswith('fork-env '):
+            # TODO: How do we make this not block indefinitely on a malformed
+            #       request?
+            while not request.endswith('end\n'):
+                request += osutils.read_bytes_from_socket(conn)
             command, env = request[9:].split('\n', 1)
         else:
             command = request[5:].strip()
@@ -699,7 +704,9 @@ class LPForkingService(object):
         #       One option is to always read at least to the first '\n'. Though
         #       for 'fork' we may want more content, but it may not be
         #       present...
-        request = osutils.read_bytes_from_socket(conn)
+        request = ''
+        while '\n' not in request:
+            request += osutils.read_bytes_from_socket(conn)
         self.log(client_addr, 'request: %r' % (request,))
         if request == 'hello\n':
             conn.sendall('ok\nyep, still alive\n')
