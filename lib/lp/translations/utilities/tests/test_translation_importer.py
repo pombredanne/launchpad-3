@@ -293,6 +293,7 @@ class FileImporterTest(TestCaseWithFactory):
             # package to the upstream series to enable sharing.
             ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
             distroseries = self.factory.makeDistroSeries(distribution=ubuntu)
+            ubuntu.translation_focus = distroseries
             sourcepackagename = self.factory.makeSourcePackageName()
             potemplate = self.factory.makePOTemplate(
                 distroseries=distroseries,
@@ -301,9 +302,11 @@ class FileImporterTest(TestCaseWithFactory):
             self.factory.makeSourcePackagePublishingHistory(
                 sourcepackagename=sourcepackagename,
                 distroseries=distroseries)
-            self.upstream_productseries.setPackaging(
-                distroseries, sourcepackagename, self.factory.makePerson())
-        pofile = self.factory.makePOFile(self.LANGCODE, potemplate=potemplate)
+            sourcepackage = distroseries.getSourcePackage(sourcepackagename)
+            sourcepackage.setPackaging(
+                self.upstream_productseries, self.factory.makePerson())
+        pofile = self.factory.makePOFile(
+            self.LANGCODE, potemplate=potemplate, create_sharing=True)
         entry = self.factory.makeTranslationImportQueueEntry(
             potemplate=potemplate, from_upstream=from_upstream,
             uploader=uploader, content=self.POFILE)
@@ -321,6 +324,16 @@ class FileImporterTest(TestCaseWithFactory):
             pofile.canEditTranslations(self.factory.makePerson()))
         self.assertTrue(
             pofile.canEditTranslations(self.translator.translator))
+
+    def test_templates_are_sharing(self):
+        # Sharing between upstream and Ubuntu was set up correctly.
+        entry = self._makeEntry(self.UBUNTU)
+        subset = getUtility(IPOTemplateSet).getSharingSubset(
+                distribution=entry.distroseries.distribution,
+                sourcepackagename=entry.sourcepackagename)
+        self.assertContentEqual(
+            [entry.potemplate, self.upstream_template],
+            list(subset.getSharingPOTemplates(entry.potemplate.name)))
 
     def test_shareWithOtherSide_upstream(self):
         # An upstream queue entry will be shared with ubuntu.
