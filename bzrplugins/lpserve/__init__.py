@@ -553,6 +553,12 @@ class LPForkingService(object):
                 # TODO: We should probably trap exceptions coming out of this
                 #       and log them, so that we don't kill the service because
                 #       of an unhandled error
+                # Note: settimeout is used so that a malformed request doesn't
+                #       cause us to hang forever. Note that the particular
+                #       implementation means that a malicious client could
+                #       probably send us one byte every Xms, and we would just
+                #       keep trying to read it. However, as a local service, we
+                #       aren't worrying about it.
                 conn.settimeout(self.WAIT_FOR_REQUEST_TIMEOUT)
                 try:
                     self.serve_one_connection(conn, client_addr)
