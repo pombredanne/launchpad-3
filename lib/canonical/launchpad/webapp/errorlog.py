@@ -324,7 +324,7 @@ class ErrorReportingUtility:
         # Check today
         oopsid, filename = self.log_namer._findHighestSerialFilename(time=now)
         if filename is None:
-            # Check yesterday
+            # Check yesterday, we may have just passed midnight.
             yesterday = now - datetime.timedelta(days=1)
             oopsid, filename = self.log_namer._findHighestSerialFilename(
                 time=yesterday)
@@ -484,6 +484,7 @@ class ErrorReportingUtility:
             info.
         :param now: The datetime to use as the current time.  Will be
             determined if not supplied.  Useful for testing.
+        :return: The ErrorReport created.
         """
         return self._raising(
             info, request=request, now=now, informational=True)
@@ -507,7 +508,7 @@ class ErrorReportingUtility:
             # We disable the pylint warning for the blank except.
             try:
                 raise info[0], info[1], traceback
-            except:
+            except info[0]:
                 logging.getLogger('SiteError').exception(
                     '%s (%s)' % (url, oopsid))
 

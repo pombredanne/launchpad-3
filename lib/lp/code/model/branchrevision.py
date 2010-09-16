@@ -4,7 +4,9 @@
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
-__all__ = ['BranchRevision', 'BranchRevisionSet']
+__all__ = [
+    'BranchRevision',
+    ]
 
 from storm.locals import (
     Int,
@@ -13,11 +15,7 @@ from storm.locals import (
     )
 from zope.interface import implements
 
-from canonical.launchpad.interfaces.lpstorm import IMasterStore
-from lp.code.interfaces.branchrevision import (
-    IBranchRevision,
-    IBranchRevisionSet,
-    )
+from lp.code.interfaces.branchrevision import IBranchRevision
 
 
 class BranchRevision(Storm):
@@ -40,15 +38,3 @@ class BranchRevision(Storm):
         self.branch = branch
         self.revision = revision
         self.sequence = sequence
-
-
-class BranchRevisionSet:
-    """See `IBranchRevisionSet`."""
-
-    implements(IBranchRevisionSet)
-
-    def delete(self, branch_revision_id):
-        """See `IBranchRevisionSet`."""
-        match = IMasterStore(BranchRevision).find(
-            BranchRevision, BranchRevision.id == branch_revision_id)
-        match.remove()
