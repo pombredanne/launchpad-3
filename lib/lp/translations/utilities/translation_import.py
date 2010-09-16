@@ -31,6 +31,10 @@ from lp.registry.interfaces.person import (
     PersonCreationRationale,
     )
 from lp.services.propertycache import cachedproperty
+from lp.translations.interfaces.side import (
+    ITranslationSideTraitsSet,
+    TranslationSide,
+    )
 from lp.translations.interfaces.translationexporter import (
     ITranslationExporter,
     )
@@ -446,8 +450,16 @@ class FileImporter(object):
         return potmsgset
 
     def shareWithOtherSide(self):
-        """Returns true if translations should be shared with the other side.
+        """Returns True if translations should be shared with the other side.
         """
+        traits = getUtility(
+            ITranslationSideTraitsSet).getForTemplate(self.potemplate)
+        if traits.side == TranslationSide.UPSTREAM:
+            return True
+        # Check permissions.
+        
+        # Check from_upstream.
+        # Deny the rest.
         return False
 
     def storeTranslationsInDatabase(self, message, potmsgset):
