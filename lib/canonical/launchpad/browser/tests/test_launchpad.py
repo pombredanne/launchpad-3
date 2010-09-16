@@ -235,10 +235,8 @@ class TestBranchTraversal(TestCaseWithFactory, TraversalMixin):
     def test_product_series_redirect(self):
         # Traversing to /+branch/<product>/<series> redirects to the branch
         # for that series, if there is one.
-        branch = self.factory.makeProductBranch()
-        product = branch.product
-        series = self.factory.makeProductSeries(product=product)
-        removeSecurityProxy(series).branch = branch
+        branch = self.factory.makeBranch()
+        series = self.factory.makeProductSeries(branch=branch)
         self.assertRedirects(
             ICanHasLinkedBranch(series).bzr_path, canonical_url(branch))
 
@@ -266,11 +264,8 @@ class TestBranchTraversal(TestCaseWithFactory, TraversalMixin):
     def test_private_branch_for_series(self):
         # If the development focus of a product series is private, display a
         # message telling the user there is no linked branch.
-        branch = self.factory.makeProductBranch()
-        product = branch.product
-        series = self.factory.makeProductSeries(product=product)
-        removeSecurityProxy(series).branch = branch
-        removeSecurityProxy(branch).private = True
+        branch = self.factory.makeBranch(private=True)
+        series = self.factory.makeProductSeries(branch=branch)
 
         any_user = self.factory.makePerson()
         login_person(any_user)
