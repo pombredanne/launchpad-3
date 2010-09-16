@@ -179,6 +179,10 @@ class MemcachedService(Service):
 class ForkingSessionService(Service):
     """A lp-forking-service for handling ssh access."""
 
+    # TODO: The SFTP (and bzr+ssh) server depends fairly heavily on this
+    #       service. It would seem reasonable to make one always start if the
+    #       other one is started.
+
     @property
     def should_launch(self):
         return config['codehosting'].launch
@@ -200,6 +204,7 @@ class ForkingSessionService(Service):
         # env['BZR_LOG'] = ? probably config.something
         process = subprocess.Popen(command, env=env, stdin=subprocess.PIPE)
         process.stdin.close()
+        # TODO: Allow for a cleaner shutdown than just sending SIGTERM
         stop_at_exit(process)
 
 
