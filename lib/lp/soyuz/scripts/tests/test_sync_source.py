@@ -1,10 +1,14 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """SyncSource facilities tests."""
 
 __metaclass__ = type
 
+from debian.deb822 import (
+    Deb822Dict,
+    Dsc,
+    )
 import os
 import shutil
 import subprocess
@@ -29,6 +33,7 @@ from lp.registry.interfaces.distribution import IDistributionSet
 from lp.soyuz.scripts.ftpmaster import (
     SyncSource,
     SyncSourceError,
+    generate_changes,
     )
 
 
@@ -414,6 +419,86 @@ class TestSyncSourceScript(TestCase):
             'Celso Providelo <celso.providelo@canonical.com>')
 
         os.unlink(expected_changesfile)
+
+
+class TestGenerateChanges(TestCase):
+    """Test generate_changes()."""
+
+    def getBaseDsc(self):
+        """Create a basic Dsc object for use with generate_changes()."""
+        dsc = Dsc()
+        dsc["source"] = "mysrcpkg"
+        dsc["binary"] = "mybinpkg"
+        dsc["version"] = "4.2"
+        dsc["maintainer"] = "Maintainer <maintainer@ubuntu.com>"
+        return dsc
+
+    def getBaseOrigin(self):
+        """Create a basic Origin dict for use with generate_changes()."""
+        origin = Deb822Dict()
+        origin["Name"] = "Debian"
+        origin["Suite"] = "sid"
+        return origin
+
+    def generateChanges(self, dsc=None, dsc_files=None, suite="maverick",
+                        changelog=None, urgency="low", closes=None,
+                        lp_closes=None, section="net", priority="extra",
+                        description=None, files_from_librarian=[],
+                        requested_by="Somebody <somebody@ubuntu.com>",
+                        origin=None):
+        if dsc is None:
+            dsc = self.getBaseDsc()
+        if dsc_files is None:
+            dsc_files = []
+        if origin is None:
+            origin = self.getBaseOrigin()
+        if changelog is None:
+            changelog = 'changelog entry'
+        return generate_changes(
+            dsc=dsc, dsc_files=dsc_files, suite=suite, changelog=changelog,
+            urgency=urgency, closes=closes, lp_closes=lp_closes,
+            section=section, priority=priority, description=description,
+            files_from_librarian=files_from_librarian,
+            requested_by=requested_by, origin=origin)
+
+    def test_minimum_fields(self):
+        # The right (minimum) set of fields are set by generate_changes().
+        changes = self.generateChanges()
+        self.assertEquals("1.7", changes["Format"])
+        self.assertEquals("mysrcpkg", changes["Source"])
+        self.assertEquals("mybinpkg", changes["Binary"])
+        self.assertEquals("source", changes["Architecture"])
+        self.assertEquals("4.2", changes["Version"])
+        self.assertEquals("maverick", changes["Distribution"])
+        self.assertEquals("low", changes["Urgency"])
+        self.assertEquals("\nchangelog entry", changes["Changes"])
+        self.assertEquals(
+            "Maintainer <maintainer@ubuntu.com>", changes["Maintainer"])
+        self.assertFalse("Description" in changes)
+        self.assertFalse("Closes" in changes)
+        self.assertFalse("Launchpad-bugs-fixed" in changes)
+        self.assertEquals([], changes["Files"])
+
+    def test_closes(self):
+        # Closes gets set if any Debian bugs to close were specified.
+        changes = self.generateChanges(closes=["1232", "4323"])
+        self.assertEquals("1232 4323", changes["Closes"])
+        self.assertFalse("Launchpad-bugs-fixed" in changes)
+
+    def test_lp_closes(self):
+        # Launchpad-Bugs-Fixed gets set if any Launchpad bugs to close were
+        # specified.
+        changes = self.generateChanges(lp_closes=["987987"])
+        self.assertEquals("987987", changes["Launchpad-Bugs-Fixed"])
+
+    def test_utf8_changelog(self):
+        # A changelog entry with non-ASCII UTF-8 characters is serialized in
+        # Changes properly.
+        changes = self.generateChanges(
+            changelog="* Updated French translation by J\xc3\xa9lmer.")
+        contents = changes.dump(encoding="utf-8").encode("utf-8")
+        self.assertTrue(
+            contents.find("Updated French translation by J\xc3\xa9lmer."))
 
 
 def test_suite():
