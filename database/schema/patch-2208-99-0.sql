@@ -12,5 +12,13 @@ CREATE TABLE PersonTransferJob (
     json_data    text
 );
 
+CREATE TABLE QuestionJob (
+    id        SERIAL PRIMARY KEY,
+    job       INTEGER NOT NULL UNIQUE REFERENCES Job(id),
+    job_type  INTEGER NOT NULL,
+    question  INTEGER NOT NULL REFERENCES Question(id),
+    json_data text
+);
+
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 99, 0);
