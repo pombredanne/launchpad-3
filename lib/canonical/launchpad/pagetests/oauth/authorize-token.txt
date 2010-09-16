@@ -340,10 +340,27 @@ token issued with the GRANT_PERMISSIONS access level, in the name of
 the Launchpad Credentials Manager.
 
 Let's go through the approval process again, without ever sending the
-no-priv user's username or password over HTTP. First we'll create a
-new request token to be approved.
+user's username or password over HTTP. First we'll create a new user,
+and a GRANT_PERMISSIONS access token that they can use to sign
+requests.
 
-    >>> login('no-priv@canonical.com')
+    >>> login(ANONYMOUS)
+    >>> user = factory.makePerson(name="test-user", password="never-used")
+    >>> logout()
+
+    >>> from oauth.oauth import OAuthConsumer
+    >>> manager_consumer = OAuthConsumer("Launchpad Credentials Manager", "")
+
+    >>> from lp.testing import oauth_access_token_for
+    >>> login_person(user)
+    >>> grant_permissions_token = oauth_access_token_for(
+    ...     manager_consumer.key, user, "GRANT_PERMISSIONS")
+    >>> logout()
+
+Next, we'll give the new user an OAuth request token that needs to be
+approved using a web browser.
+
+    >>> login_person(user)
     >>> consumer = getUtility(IOAuthConsumerSet).getByKey('foobar123451432')
     >>> request_token = consumer.newRequestToken()
     >>> logout()
@@ -351,22 +368,8 @@ new request token to be approved.
     >>> params = dict(oauth_token=request_token.key)
     >>> url = "http://launchpad.dev/+authorize-token?%s" % urlencode(params)
 
-Next, we'll create an access token to sign the requests that will
-approve the request token.
-
-    >>> from oauth.oauth import OAuthConsumer
-    >>> from canonical.launchpad.interfaces import IPersonSet
-    >>> from lp.testing import oauth_access_token_for
-
-    >>> manager_consumer = OAuthConsumer("Launchpad Credentials Manager", "")
-    >>> login(ANONYMOUS)
-    >>> no_priv = getUtility(IPersonSet).getByEmail('no-priv@canonical.com')
-    >>> grant_permissions_token = oauth_access_token_for(
-    ...     manager_consumer.key, no_priv, "GRANT_PERMISSIONS")
-    >>> logout()
-
-Next, we create a browser object that knows how to sign requests with
-the newly created access token.
+Next, we'll create a browser object that knows how to sign requests
+with the new user's existing access token.
 
     >>> from lp.testing import OAuthSigningBrowser
     >>> browser = OAuthSigningBrowser(
@@ -375,7 +378,8 @@ the newly created access token.
     >>> print browser.title
     Authorize application to access Launchpad on your behalf
 
-Now we can approve the request and see the appropriate messages.
+The browser object can approve the request and see the appropriate
+messages, even though we never gave it the user's password.
 
     >>> browser.getControl('Read Anything').click()
 
@@ -396,7 +400,7 @@ GRANT_PERMISSIONS access level; no other access level will work.
 
     >>> login(ANONYMOUS)
     >>> insufficient_token = oauth_access_token_for(
-    ...     manager_consumer.key, no_priv, "WRITE_PRIVATE")
+    ...     manager_consumer.key, user, "WRITE_PRIVATE")
     >>> logout()
 
     >>> browser = OAuthSigningBrowser(
@@ -415,7 +419,7 @@ can't be used for this.)
     >>> wrong_consumer = OAuthConsumer(
     ...     "Not the Launchpad Credentials Manager", "")
     >>> wrong_consumer_token = oauth_access_token_for(
-    ...     wrong_consumer.key, no_priv, "GRANT_PERMISSIONS")
+    ...     wrong_consumer.key, user, "GRANT_PERMISSIONS")
     >>> logout()
 
     >>> browser = OAuthSigningBrowser(wrong_consumer, wrong_consumer_token)
