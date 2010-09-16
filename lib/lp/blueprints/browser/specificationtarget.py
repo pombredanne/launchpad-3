@@ -172,15 +172,15 @@ class HasSpecificationsView(LaunchpadView):
 
         # ProjectGroups are a special case, as their products may be a
         # combination of usage settings. To deal with this, check all
-        # products, and if a product has LAUNCHPAD for the enum, the
-        # group does; if not, assume external.
-        involvement = getMultiAdapter(
-            (self.context, self.request),
-            name='+get-involved')
-        if service_uses_launchpad(involvement.blueprints_usage):
-            return self.default_template
-        else:
-            return self.not_launchpad_template
+        # products via the involvment menu.
+        if IProjectGroup.providedBy(self.context):
+            involvement = getMultiAdapter(
+                (self.context, self.request),
+                name='+get-involved')
+            if service_uses_launchpad(involvement.blueprints_usage):
+                return self.default_template
+            else:
+                return self.not_launchpad_template
 
         # Otherwise, determine usage and provide the correct template.
         service_usage = IServiceUsage(self.context)

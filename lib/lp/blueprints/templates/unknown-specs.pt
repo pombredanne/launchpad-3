@@ -20,10 +20,36 @@
             planning or documentation.
           </p>
         </div>
-        <div tal:omit-tag tal:condition="not:view/is_project">
+        
+        <div tal:omit-tag tal:condition="view/is_series">
+          <div
+            tal:omit-tag
+            tal:define="target python:view.context.product and view.context.product or view.context.distribution;
+                        blueprints_usage target/blueprints_usage"> 
+          <p tal:condition="blueprints_usage/enumvalue:EXTERNAL">
+            <tal:project replace="target/displayname" />'s
+            <tal:project replace="view/context/displayname" /> series does
+            not use Launchpap for planning or documentation.
+          </p>
+          <p tal:condition="blueprints_usage/enumvalue:NOT_APPLICABLE">
+            <tal:project replace="target/displayname" />'s
+            <tal:project replace="view/context/displayname" /> series does not track
+            feature planning or documentation.
+          </p>
+          <p tal:condition="blueprints_usage/enumvalue:UNKNOWN">
+            Launchpad does not know how
+            <tal:project replace="target/displayname" />'s
+            <tal:project replace="view/context/displayname" /> series tracks feature
+            planning or documentation.
+          </p>
+          </div>
+        </div>
+        
+        <div tal:omit-tag
+          tal:condition="python:not (view.is_project or view.is_series)">
           <div tal:omit-tag tal:define="blueprints_usage view/context/blueprints_usage">
           <p tal:condition="blueprints_usage/enumvalue:EXTERNAL">
-            <tal:project replace="view/context/displayname" /> does not use Launchpad
+            <tal:project replace="view/context/displayname" /> does not use launchpad
             for planning or documentation.
           </p>
           <p tal:condition="blueprints_usage/enumvalue:NOT_APPLICABLE">
@@ -31,7 +57,7 @@
             feature planning or documentation.
           </p>
           <p tal:condition="blueprints_usage/enumvalue:UNKNOWN">
-            Launchpad does not know how
+            launchpad does not know how
             <tal:project replace="view/context/displayname" /> tracks feature
             planning or documentation.
           </p>
