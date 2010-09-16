@@ -194,6 +194,15 @@ class TestPackageBuild(TestPackageBuildBase):
             '%s-%s' % (now.strftime("%Y%m%d-%H%M%S"), build_cookie),
             upload_leaf)
 
+    def test_getBuildCookie(self):
+        # A build cookie is made up of the package build id and record id.
+        # The uploadprocessor relies on this format.
+        Store.of(self.package_build).flush()
+        cookie = self.package_build.getBuildCookie()
+        expected_cookie = "%d-PACKAGEBUILD-%d" % (
+            self.package_build.id, self.package_build.build_farm_job.id)
+        self.assertEquals(expected_cookie, cookie)
+
 
 class TestPackageBuildSet(TestPackageBuildBase):
 
@@ -248,14 +257,6 @@ class TestGetUploadMethodsMixin:
     def setUp(self):
         super(TestGetUploadMethodsMixin, self).setUp()
         self.build = self.makeBuild()
-
-    def test_getBuildCookie(self):
-        # A build cookie is made up of the package build id and record id.
-        # The uploadprocessor relies on this format.
-        cookie = self.build.getBuildCookie()
-        expected_cookie = "%d-PACKAGEBUILD-%d" % (
-            self.build.package_build.id, self.build.build_farm_job.id)
-        self.assertEquals(expected_cookie, cookie)
 
     def test_getUploadDirLeafCookie_parseable(self):
         # getUploadDirLeaf should return a directory name
