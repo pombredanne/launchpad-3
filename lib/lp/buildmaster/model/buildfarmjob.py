@@ -236,6 +236,8 @@ class BuildFarmJob(BuildFarmJobOld, Storm):
 
     failure_count = Int(name='failure_count', allow_none=False)
 
+    dependencies = None
+
     def __init__(self, job_type, status=BuildStatus.NEEDSBUILD,
                  processor=None, virtualized=None, date_created=None):
         super(BuildFarmJob, self).__init__()
@@ -377,8 +379,6 @@ class BuildFarmJob(BuildFarmJobOld, Storm):
 class BuildFarmJobDerived:
     implements(IBuildFarmJob)
     delegates(IBuildFarmJob, context='build_farm_job')
-
-    dependencies = None
 
 
 class BuildFarmJobSet:
