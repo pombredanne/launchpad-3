@@ -27,7 +27,7 @@ from lp.registry.interfaces.person import (
     )
 from lp.testing import (
     login_person,
-    run_with_login,
+    person_logged_in,
     TestCaseWithFactory,
     )
 from lp.testing.views import create_view
@@ -199,9 +199,8 @@ class TestBranchTraversal(TestCaseWithFactory, TraversalMixin):
         ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
         registrant = ubuntu_branches.teamowner
         target = ICanHasLinkedBranch(distro_package)
-        run_with_login(
-            registrant,
-            target.setBranch, branch, registrant)
+        with person_logged_in(registrant):
+            target.setBranch(branch, registrant)
         self.assertRedirects("%s" % target.bzr_path, canonical_url(branch))
 
     def test_private_branch_for_distro_package(self):
@@ -213,9 +212,8 @@ class TestBranchTraversal(TestCaseWithFactory, TraversalMixin):
         distro_package = sourcepackage.distribution_sourcepackage
         ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
         registrant = ubuntu_branches.teamowner
-        run_with_login(
-            registrant,
-            ICanHasLinkedBranch(distro_package).setBranch, branch, registrant)
+        with person_logged_in(registrant):
+            ICanHasLinkedBranch(distro_package).setBranch(branch, registrant)
 
         any_user = self.factory.makePerson()
         login_person(any_user)
