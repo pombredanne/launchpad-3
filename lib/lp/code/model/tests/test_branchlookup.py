@@ -87,17 +87,20 @@ class TestGetIdAndTrailingPath(TestCaseWithFactory):
 
     def test_junk(self):
         branch = self.factory.makePersonalBranch()
-        result = self.branch_set.getIdAndTrailingPath('/' + branch.unique_name)
+        result = self.branch_set.getIdAndTrailingPath(
+            '/' + branch.unique_name)
         self.assertEqual((branch.id, ''), result)
 
     def test_product(self):
         branch = self.factory.makeProductBranch()
-        result = self.branch_set.getIdAndTrailingPath('/' + branch.unique_name)
+        result = self.branch_set.getIdAndTrailingPath(
+            '/' + branch.unique_name)
         self.assertEqual((branch.id, ''), result)
 
     def test_source_package(self):
         branch = self.factory.makePackageBranch()
-        result = self.branch_set.getIdAndTrailingPath('/' + branch.unique_name)
+        result = self.branch_set.getIdAndTrailingPath(
+            '/' + branch.unique_name)
         self.assertEqual((branch.id, ''), result)
 
     def test_trailing_slash(self):
@@ -504,7 +507,7 @@ class TestGetByLPPath(TestCaseWithFactory):
         # getByLPPath returns the branch and the trailing path (with no
         # series) if the given path is inside an existing branch.
         branch = self.factory.makeProductBranch()
-        path = '%s/foo/bar/baz' % (branch.unique_name,)
+        path = '%s/foo/bar/baz' % (branch.unique_name)
         self.assertEqual(
             (branch, 'foo/bar/baz'), self.branch_lookup.getByLPPath(path))
 
@@ -530,7 +533,7 @@ class TestGetByLPPath(TestCaseWithFactory):
         # getByLPPath returns the branch and the trailing path (with no
         # series) if the given path is inside an existing branch.
         branch = self.factory.makePersonalBranch()
-        path = '%s/foo/bar/baz' % (branch.unique_name,)
+        path = '%s/foo/bar/baz' % (branch.unique_name)
         self.assertEqual(
             (branch, 'foo/bar/baz'),
             self.branch_lookup.getByLPPath(path))

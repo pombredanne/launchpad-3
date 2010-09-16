@@ -66,7 +66,6 @@ from canonical.launchpad.database.message import (
     Message,
     MessageChunk,
     )
-from canonical.launchpad.ftests._sqlobject import syncUpdate
 from canonical.launchpad.interfaces import (
     IMasterStore,
     IStore,
