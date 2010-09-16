@@ -30,6 +30,7 @@ class TestingLPForkingServiceInAThread(lpserve.LPForkingService):
     WAIT_FOR_CHILDREN_TIMEOUT = 0.5
     SOCKET_TIMEOUT = 0.01
     SLEEP_FOR_CHILDREN_TIMEOUT = 0.01
+    WAIT_FOR_REQUEST_TIMEOUT = 0.1
 
     _fork_function = None
 
@@ -242,6 +243,22 @@ class TestLPForkingService(TestCaseWithLPForkingService):
         self.assertEqual('ok\nfake forking\n', response)
         self.assertEqual([(['rocks'], {'BZR_EMAIL': 'joe@example.com'})],
                          self.service.fork_log)
+
+    def test_send_incomplete_fork_env_timeout(self):
+        # We should get a failure message if we can't quickly read the whole
+        # content
+        response = self.send_message_to_service(
+            'fork-env rocks\n'
+            'BZR_EMAIL: joe@example.com\n',
+            one_byte_at_a_time=True)
+        # Note that we *don't* send a final 'end\n'
+        self.assertStartsWith(response, 'FAILURE\n')
+
+    def test_send_incomplete_request_timeout(self):
+        # Requests end with '\n', send one without it
+        response = self.send_message_to_service('hello',
+                                                one_byte_at_a_time=True)
+        self.assertStartsWith(response, 'FAILURE\n')
 
 
 class TestCaseWithSubprocess(tests.TestCaseWithTransport):

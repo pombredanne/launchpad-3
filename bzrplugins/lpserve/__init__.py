@@ -302,6 +302,8 @@ class LPForkingService(object):
     WAIT_FOR_CHILDREN_TIMEOUT = 5*60 # Wait no more than 5 min for children
     SOCKET_TIMEOUT = 1.0
     SLEEP_FOR_CHILDREN_TIMEOUT = 1.0
+    WAIT_FOR_REQUEST_TIMEOUT = 1.0 # No request should take longer than this to
+                                   # be read
 
     _fork_function = os.fork
 
@@ -551,8 +553,13 @@ class LPForkingService(object):
                 # TODO: We should probably trap exceptions coming out of this
                 #       and log them, so that we don't kill the service because
                 #       of an unhandled error
-                # TODO: Should we set a timeout on reading from the socket?
-                self.serve_one_connection(conn, client_addr)
+                conn.settimeout(self.WAIT_FOR_REQUEST_TIMEOUT)
+                try:
+                    self.serve_one_connection(conn, client_addr)
+                except self._socket_timeout, e:
+                    self.log(client_addr, 'request timeout failure: %s' % (e,))
+                    conn.sendall('FAILURE\nrequest timed out\n')
+                    conn.close()
             self._poll_children()
         trace.note('Shutting down. Waiting up to %.0fs for %d child processes'
                    % (self.WAIT_FOR_CHILDREN_TIMEOUT,
