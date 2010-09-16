@@ -31,6 +31,7 @@ from lp.registry.interfaces.person import (
     PersonCreationRationale,
     )
 from lp.services.propertycache import cachedproperty
+from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.interfaces.side import (
     ITranslationSideTraitsSet,
     TranslationSide,
@@ -456,9 +457,21 @@ class FileImporter(object):
             ITranslationSideTraitsSet).getForTemplate(self.potemplate)
         if traits.side == TranslationSide.UPSTREAM:
             return True
-        # Check permissions.
-        
         # Check from_upstream.
+        if self.translation_import_queue_entry.from_upstream:
+            return True
+        # Check permissions.
+        productseries = self.potemplate.distroseries.getSourcePackage(
+            self.potemplate.sourcepackagename).productseries
+        upstream_template = getUtility(IPOTemplateSet).getSubset(
+            productseries=productseries).getPOTemplateByName(
+                self.potemplate.name)
+        upstream_pofile = upstream_template.getPOFileByLang(
+            self.pofile.language.code)
+        if upstream_pofile is not None:
+            uploader_person = self.translation_import_queue_entry.importer
+            if upstream_pofile.canEditTranslations(uploader_person):
+                return True
         # Deny the rest.
         return False
 
