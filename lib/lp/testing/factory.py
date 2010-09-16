@@ -182,6 +182,10 @@ from lp.registry.interfaces.mailinglist import (
 from lp.registry.interfaces.mailinglistsubscription import (
     MailingListAutoSubscribePolicy,
     )
+from lp.registry.interfaces.packaging import (
+    IPackagingUtil,
+    PackagingType,
+    )
 from lp.registry.interfaces.person import (
     IPerson,
     IPersonSet,
@@ -994,6 +998,29 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if reviewer is not None:
             removeSecurityProxy(branch).reviewer = reviewer
         return branch
+
+    def makePackagingLink(self, productseries=None, sourcepackagename=None,
+                          distroseries=None, packaging_type=None, owner=None,
+                          in_ubuntu=False):
+        if productseries is None:
+            productseries = self.makeProduct().development_focus
+        if sourcepackagename is None or isinstance(sourcepackagename, str):
+            sourcepackagename = self.makeSourcePackageName(sourcepackagename)
+        if distroseries is None:
+            distribution = None
+            if in_ubuntu:
+                distribution = getUtility(ILaunchpadCelebrities).ubuntu
+            distroseries = self.makeDistroSeries(distribution=distribution)
+        if packaging_type is None:
+            packaging_type = PackagingType.PRIME
+        if owner is None:
+            owner = self.makePerson()
+        return getUtility(IPackagingUtil).createPackaging(
+            productseries=productseries,
+            sourcepackagename=sourcepackagename,
+            distroseries=distroseries,
+            packaging=packaging_type,
+            owner=owner)
 
     def makePackageBranch(self, sourcepackage=None, distroseries=None,
                           sourcepackagename=None, **kwargs):

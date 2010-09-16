@@ -418,6 +418,11 @@ class EditProductReleaseFile(AuthorizationBase):
             user)
 
 
+class ViewProductReleaseFile(AnonymousAuthorization):
+    """Anyone can view an IProductReleaseFile."""
+    usedfor = IProductReleaseFile
+
+
 class AdminDistributionMirrorByDistroOwnerOrMirrorAdminsOrAdmins(
         AuthorizationBase):
     permission = 'launchpad.Admin'

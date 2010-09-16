@@ -12,19 +12,21 @@ __all__ = [
     'BugAttachmentURL',
     ]
 
-from cStringIO import StringIO
-
-from zope.component import getUtility
+from zope.component import (
+    getMultiAdapter,
+    getUtility,
+    )
 from zope.contenttype import guess_content_type
 from zope.interface import implements
 
 from canonical.launchpad.browser.librarian import (
     FileNavigationMixin,
     ProxiedLibraryFileAlias,
-    StreamOrRedirectLibraryFileAliasView,
     SafeStreamOrRedirectLibraryFileAliasView,
     )
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from canonical.launchpad.interfaces.librarian import (
+    ILibraryFileAliasWithParent,
+    )
 from canonical.launchpad.webapp import (
     canonical_url,
     custom_widget,
@@ -163,7 +165,10 @@ class BugAttachmentEditView(LaunchpadFormView, BugAttachmentContentCheck):
             self.context.title = data['title']
 
         if self.context.libraryfile.mimetype != data['contenttype']:
-            self.updateContentType(data['contenttype'])
+            lfa_with_parent = getMultiAdapter(
+                (self.context.libraryfile, self.context),
+                ILibraryFileAliasWithParent)
+            lfa_with_parent.mimetype = data['contenttype']
 
     @action('Delete Attachment', name='delete')
     def delete_action(self, action, data):
@@ -173,20 +178,6 @@ class BugAttachmentEditView(LaunchpadFormView, BugAttachmentContentCheck):
             'Attachment "<a href="%(url)s">%(name)s</a>" has been deleted.',
             url=libraryfile_url, name=self.context.title))
         self.context.removeFromBug(user=self.user)
-
-    def updateContentType(self, new_content_type):
-        """Update the attachment content type."""
-        filealiasset = getUtility(ILibraryFileAliasSet)
-        old_filealias = self.context.libraryfile
-        # Download the file and upload it again with the new content
-        # type.
-        # XXX: Bjorn Tillenius 2005-06-30:
-        # It should be possible to simply create a new filealias
-        # with the same content as the old one.
-        old_content = old_filealias.read()
-        self.context.libraryfile = filealiasset.create(
-            name=old_filealias.filename, size=len(old_content),
-            file=StringIO(old_content), contentType=new_content_type)
 
     @property
     def label(self):
