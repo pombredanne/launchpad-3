@@ -1884,7 +1884,7 @@ class TestBuildUploadProcessor(TestUploadProcessorBase):
         self.assertLogContains(
             "Unable to find package build job with id 42. Skipping.")
 
-    def testNoFiles(self):
+    def testBinaryPackageBuild_fail(self):
         # If the upload directory is empty, the upload
         # will fail.
 
@@ -1908,6 +1908,8 @@ class TestBuildUploadProcessor(TestUploadProcessorBase):
 
         # Upload and accept a binary for the primary archive source.
         shutil.rmtree(upload_dir)
+
+        # Commit so the build cookie has the right ids.
         self.layer.txn.commit()
         leaf_name = build.getUploadDirLeaf(build.getBuildCookie())
         os.mkdir(os.path.join(self.incoming_folder, leaf_name))
@@ -1928,7 +1930,7 @@ class TestBuildUploadProcessor(TestUploadProcessorBase):
         self.assertTrue('DEBUG: Moving upload directory '
             in log_contents)
 
-    def testSuccess(self):
+    def testBinaryPackageBuilds(self):
         # Properly uploaded binaries should result in the
         # build status changing to FULLYBUILT.
         # Upload a source package
@@ -1949,6 +1951,8 @@ class TestBuildUploadProcessor(TestUploadProcessorBase):
 
         # Upload and accept a binary for the primary archive source.
         shutil.rmtree(upload_dir)
+
+        # Commit so the build cookie has the right ids.
         self.layer.txn.commit()
         leaf_name = build.getUploadDirLeaf(build.getBuildCookie())
         upload_dir = self.queueUpload("bar_1.0-1_binary",
@@ -1969,6 +1973,78 @@ class TestBuildUploadProcessor(TestUploadProcessorBase):
         self.assertTrue(
             'INFO: Committing the transaction and any mails associated with '
             'this upload.' in log_lines)
+
+    def testSourcePackageRecipeBuild(self):
+        # Properly uploaded source packages should result in the
+        # build status changing to FULLYBUILT.
+
+        # Upload a source package
+        archive = self.factory.makeArchive()
+        archive.require_virtualized = False
+        build = self.factory.makeSourcePackageRecipeBuild(sourcename=u"bar",
+            distroseries=self.breezy, archive=archive, requester=archive.owner)
+        self.assertEquals(archive.owner, build.requester)
+        bq = self.factory.makeSourcePackageRecipeBuildJob(recipe_build=build)
+        # Commit so the build cookie has the right ids.
+        self.layer.txn.commit()
+        leaf_name = build.getUploadDirLeaf(build.getBuildCookie())
+        relative_path = "~%s/%s/%s/%s" % (
+            archive.owner.name, archive.name, self.breezy.distribution.name,
+            self.breezy.name)
+        upload_dir = self.queueUpload(
+            "bar_1.0-1", queue_entry=leaf_name, relative_path=relative_path)
+        self.options.context = 'buildd'
+        self.options.builds = True
+        build.jobStarted()
+        # Commit so date_started is recorded and doesn't cause constraint
+        # violations later.
+        build.status = BuildStatus.UPLOADING
+        self.layer.txn.commit()
+        self.uploadprocessor.processBuildUpload(
+            self.incoming_folder, leaf_name)
+        self.layer.txn.commit()
+
+        self.assertEquals(BuildStatus.FULLYBUILT, build.status,
+                          build.upload_log.read())
+        self.assertEquals(None, build.builder)
+        self.assertIsNot(None, build.date_finished)
+        self.assertIsNot(None, build.duration)
+        log_contents = build.upload_log.read()
+        log_lines = log_contents.splitlines()
+        self.assertTrue(
+            'INFO: Processing upload bar_1.0-1_source.changes' in log_lines)
+        self.assertTrue(
+            'INFO: Committing the transaction and any mails associated with '
+            'this upload.' in log_lines)
+
+    def testSourcePackageRecipeBuild_fail(self):
+        # A source package recipe build will fail if no files are present.
+
+        # Upload a source package
+        archive = self.factory.makeArchive()
+        archive.require_virtualized = False
+        build = self.factory.makeSourcePackageRecipeBuild(sourcename=u"bar",
+            distroseries=self.breezy, archive=archive)
+        bq = self.factory.makeSourcePackageRecipeBuildJob(recipe_build=build)
+        # Commit so the build cookie has the right ids.
+        self.layer.txn.commit()
+        leaf_name = build.getUploadDirLeaf(build.getBuildCookie())
+        os.mkdir(os.path.join(self.incoming_folder, leaf_name))
+        self.options.context = 'buildd'
+        self.options.builds = True
+        build.jobStarted()
+        # Commit so date_started is recorded and doesn't cause constraint
+        # violations later.
+        self.layer.txn.commit()
+        build.status = BuildStatus.UPLOADING
+        self.uploadprocessor.processBuildUpload(
+            self.incoming_folder, leaf_name)
+        self.layer.txn.commit()
+
+        self.assertEquals(BuildStatus.FAILEDTOUPLOAD, build.status)
+        self.assertEquals(None, build.builder)
+        self.assertIsNot(None, build.date_finished)
+        self.assertIsNot(None, build.duration)
 
 
 class ParseBuildUploadLeafNameTests(TestCase):

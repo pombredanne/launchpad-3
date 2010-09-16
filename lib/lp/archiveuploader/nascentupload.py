@@ -498,10 +498,13 @@ class NascentUpload:
         if self.binaryful:
             return
 
-        # Set up some convenient shortcut variables.
-
-        uploader = self.policy.getUploader(self.changes, build)
-        archive = self.policy.archive
+        # The build can have an explicit uploader, which may be different
+        # from the changes file signer. (i.e in case of daily source package
+        # builds)
+        if build is not None:
+            uploader = build.getUploader(self.changes)
+        else:
+            uploader = self.changes.signer
 
         # If we have no signer, there's no ACL we can apply.
         if uploader is None:

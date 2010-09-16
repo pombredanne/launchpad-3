@@ -42,7 +42,7 @@ class TestSourcePackageRecipeBuildUploads(TestUploadProcessorBase):
             requester=self.recipe.owner)
 
         Store.of(self.build).flush()
-        self.options.context = 'recipe'
+        self.options.context = 'buildd'
 
         self.uploadprocessor = self.getUploadProcessor(
             self.layer.txn)

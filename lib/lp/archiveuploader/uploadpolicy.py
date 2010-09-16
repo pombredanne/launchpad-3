@@ -11,7 +11,6 @@ __all__ = [
     "BuildDaemonUploadPolicy",
     "findPolicyByName",
     "IArchiveUploadPolicy",
-    "SOURCE_PACKAGE_RECIPE_UPLOAD_POLICY_NAME",
     "UploadPolicyError",
     ]
 
@@ -34,8 +33,6 @@ from lp.registry.interfaces.series import SeriesStatus
 from lazr.enum import EnumeratedType, Item
 
 
-# Defined here so that uploadpolicy.py doesn't depend on lp.code.
-SOURCE_PACKAGE_RECIPE_UPLOAD_POLICY_NAME = 'recipe'
 # Number of seconds in an hour (used later)
 HOURS = 3600
 
@@ -128,13 +125,8 @@ class AbstractUploadPolicy:
             raise AssertionError(
                 "Upload is not sourceful, binaryful or mixed.")
 
-    def getUploader(self, changes, build):
-        """Get the person who is doing the uploading."""
-        return changes.signer
-
     def setOptions(self, options):
         """Store the options for later."""
-        self.options = options
         # Extract and locate the distribution though...
         self.distro = getUtility(IDistributionSet)[options.distro]
         if options.distroseries is not None:
@@ -324,7 +316,6 @@ class BuildDaemonUploadPolicy(AbstractUploadPolicy):
     """The build daemon upload policy is invoked by the slave scanner."""
 
     name = 'buildd'
-    accepted_type = ArchiveUploadType.BINARY_ONLY
 
     def __init__(self):
         super(BuildDaemonUploadPolicy, self).__init__()
@@ -333,18 +324,27 @@ class BuildDaemonUploadPolicy(AbstractUploadPolicy):
         self.unsigned_dsc_ok = True
 
     def setOptions(self, options):
-        AbstractUploadPolicy.setOptions(self, options)
-        self.builds = True
+        """Store the options for later."""
+        super(BuildDaemonUploadPolicy, self).setOptions(options)
+        options.builds = True
 
     def policySpecificChecks(self, upload):
         """The buildd policy should enforce that the buildid matches."""
         # XXX: dsilvers 2005-10-14 bug=3135:
         # Implement this to check the buildid etc.
-        pass
 
     def rejectPPAUploads(self, upload):
         """Buildd policy allows PPA upload."""
         return False
+
+    def validateUploadType(self, upload):
+        if upload.sourceful and upload.binaryful:
+            if self.accepted_type != ArchiveUploadType.MIXED_ONLY:
+                upload.reject(
+                    "Source/binary (i.e. mixed) uploads are not allowed.")
+        elif not upload.sourceful and not upload.binaryful:
+            raise AssertionError(
+                "Upload is not sourceful, binaryful or mixed.")
 
 
 class SyncUploadPolicy(AbstractUploadPolicy):

@@ -71,7 +71,6 @@ from lp.archiveuploader.nascentupload import (
     )
 from lp.archiveuploader.uploadpolicy import (
     BuildDaemonUploadPolicy,
-    SOURCE_PACKAGE_RECIPE_UPLOAD_POLICY_NAME,
     UploadPolicyError,
     )
 from lp.buildmaster.enums import (
@@ -207,6 +206,7 @@ class UploadProcessor:
         The name of the leaf is the build id of the build.
         Build uploads always contain a single package per leaf.
         """
+        upload_path = os.path.join(fsroot, upload)
         try:
             job_id = parse_build_upload_leaf_name(upload)
         except ValueError:
@@ -220,15 +220,15 @@ class UploadProcessor:
                 "Unable to find package build job with id %d. Skipping." %
                 job_id)
             return
+        logger = BufferLogger()
         build = buildfarm_job.getSpecificJob()
         if build.status != BuildStatus.UPLOADING:
             self.log.warn(
-                "Expected build status to be 'UPLOADING', was %s. Skipping.",
-                build.status.name)
+                "Expected build status to be 'UPLOADING', was %s. "
+                "Moving to failed.", build.status.name)
+            self.moveProcessedUpload(upload_path, "failed", logger)
             return
         self.log.debug("Build %s found" % build.id)
-        logger = BufferLogger()
-        upload_path = os.path.join(fsroot, upload)
         try:
             [changes_file] = self.locateChangesFiles(upload_path)
             logger.debug("Considering changefile %s" % changes_file)
@@ -251,16 +251,13 @@ class UploadProcessor:
             UploadStatusEnum.REJECTED: "rejected",
             UploadStatusEnum.ACCEPTED: "accepted"}[result]
         self.moveProcessedUpload(upload_path, destination, logger)
+        build.date_finished = datetime.datetime.now(pytz.UTC)
         if not (result == UploadStatusEnum.ACCEPTED and
                 build.verifySuccessfulUpload() and
                 build.status == BuildStatus.FULLYBUILT):
             build.status = BuildStatus.FAILEDTOUPLOAD
-            build.date_finished = datetime.datetime.now(pytz.UTC)
             build.notify(extra_info="Uploading build %s failed." % upload)
         build.storeUploadLog(logger.buffer.getvalue())
-
-        # Remove BuildQueue record.
-        build.buildqueue_record.destroySelf()
 
     def processUpload(self, fsroot, upload):
         """Process an upload's changes files, and move it to a new directory.
@@ -451,10 +448,8 @@ class UploadProcessor:
 
         # Reject source upload to buildd upload paths.
         first_path = relative_path.split(os.path.sep)[0]
-        is_not_buildd_nor_recipe_policy = policy.name not in [
-            SOURCE_PACKAGE_RECIPE_UPLOAD_POLICY_NAME,
-            BuildDaemonUploadPolicy.name]
-        if first_path.isdigit() and is_not_buildd_nor_recipe_policy:
+        if (first_path.isdigit() and
+            policy.name != BuildDaemonUploadPolicy.name):
             error_message = (
                 "Invalid upload path (%s) for this policy (%s)" %
                 (relative_path, policy.name))
