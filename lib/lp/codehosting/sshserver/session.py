@@ -58,6 +58,9 @@ class _WaitForExit(process.ProcessReader):
         self._sock.close()
 
     def dataReceived(self, data):
+        # TODO: how do we handle getting only *some* of the content?, Maybe we
+        #       need to read more bytes first...
+
         # This is the only thing we do differently from the standard
         # ProcessReader. When we get data on this socket, we need to treat it
         # as a return code, or a failure.
@@ -96,8 +99,6 @@ class ForkedProcessTransport(process.BaseProcess):
     #       override stuff like __init__ and reapProcess which I don't want to
     #       do in the same way. (Is it ok not to call your Base classes
     #       __init__ if you don't want to do that exact work?)
-    # [Decision #b]
-    #   prefork vs max children vs ?
     # [Decision #c]
     #   BZR_EMAIL
 
@@ -109,10 +110,10 @@ class ForkedProcessTransport(process.BaseProcess):
     #       children, so we should be ok.
     # TODO: It looks like we want to be able to pass along at least BZR_EMAIL
     #       to the fork request
-    def __init__(self, reactor, executable, args, proto):
+    def __init__(self, reactor, executable, args, environment, proto):
         process.BaseProcess.__init__(self, proto)
         self.pipes = {}
-        pid, path, sock = self._spawn(executable, args)
+        pid, path, sock = self._spawn(executable, args, environment)
         self._fifo_path = path
         self.pid = pid
         # TODO: We nee to set up a Reader on this socket, so that we know when
@@ -160,13 +161,21 @@ class ForkedProcessTransport(process.BaseProcess):
             raise RuntimeError('Failed to send message: %r' % (response,))
         return response, client_sock
 
-    def _spawn(self, executable, args):
+    def _spawn(self, executable, args, environment):
         assert executable == 'bzr', executable # Maybe .endswith()
         assert args[0] == 'bzr', args[0]
-        # XXX: We must send BZR_EMAIL to the process, or we get failures to
-        #      run because of no 'whoami' information.
-        response, sock = self._sendMessageToService('fork %s\n'
-                                                    % ' '.join(args[1:]))
+        command_str = ' '.join(args[1:])
+        env_strs = ['env\n']
+        for key, value in environment:
+            # XXX: Currently we only pass BZR_EMAIL, should we be passing
+            #      everything else? Note that many won't be handled properly,
+            #      since the process is already running.
+            if key != 'BZR_EMAIL':
+                continue
+            env_strs.append('%s: %s\n' % (key, value))
+        env_strs.append('end\n')
+        message = 'fork %s\n%s' % (' '.join(args[1:]), ''.join(env_strs))
+        response, sock = self._sendMessageToService()
         ok, pid, path, tail = response.split('\n')
         assert ok == 'ok'
         assert tail == ''
@@ -243,7 +252,6 @@ class ForkedProcessTransport(process.BaseProcess):
         self.closeStdout()
         self.closeStderr()
 
-
     # Implemented because ProcessWriter/ProcessReader want to call it
     # Copied from twisted.internet.Process
     def childDataReceived(self, name, data):
@@ -278,7 +286,6 @@ class ForkedProcessTransport(process.BaseProcess):
         process.BaseProcess.maybeCallProcessEnded(self)
 
     # pauseProducing, present in process.py, not a IProcessTransport interface
-    # childDataReceived, childConnectionLost, etc, etc.
 
 
 class ExecOnlySession(DoNothingSession):
@@ -354,8 +361,12 @@ class ExecOnlySession(DoNothingSession):
         #       have different functionally per-user. Which would be a neat way
         #       of enabling this for some developers,but-not-all.
         if executable == 'bzr': # Endswith?
+            env = {}
+            for env_var in ['BZR_EMAIL']:
+                if env_var in self.environment:
+                    env[env_var] = self.environment[env_var]
             self._transport = ForkedProcessTransport(self.reactor, executable,
-                                                     arguments, protocol)
+                arguments, env, protocol)
         else:
             self._transport = self.reactor.spawnProcess(
                 protocol, executable, arguments, env=self.environment)

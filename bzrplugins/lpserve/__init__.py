@@ -274,6 +274,28 @@ class LPForkingService(object):
     #       teardown time of all the python state was quite noticeable in
     #       real-world runtime. As such, bzrlib should be pretty safe, or it
     #       would have been failing for people already.
+    # [Decision #7]
+    #   prefork vs max children vs ?
+    #       For simplicity it seemed easiest to just fork when requested. Over
+    #       time, I realized it would be easy to allow running an arbitrary
+    #       command (no harder than just running one command), so it seemed
+    #       reasonable to switch over. If we go the prefork route, then we'll
+    #       need a way to tell the pre-forked children what command to run.
+    #       This could be as easy as just adding one more fifo that they wait
+    #       on in the same directory.
+    #       For now, I've chosen not to limit the number of forked children. I
+    #       don't know what a reasonable value is, and probably there are
+    #       already limitations at play. (If Conch limits connections, then it
+    #       will already be doing all the work, etc.)
+    # [Decision #8]
+    #   env vars
+    #       We could go with a much more structured definition for this data.
+    #       Or we could use bencode, or rio, or ...
+    #       I wanted something that would be easy enough to parse, sufficient
+    #       in complexity for what we want to convey, and gives us a good
+    #       way to know if we need to read more content from the socket.
+    #       Also, if we go for structured data, then we should structure all of
+    #       the requests.
 
     DEFAULT_HOST = '127.0.0.1' # See [Decision #1]
     DEFAULT_PORT = 4156
@@ -453,7 +475,33 @@ class LPForkingService(object):
         # command_str must be a utf-8 string
         return [s.decode('utf-8') for s in shlex.split(command_str)]
 
-    def fork_one_request(self, conn, client_addr, command_argv):
+    @staticmethod
+    def parse_env(env_str):
+        """Convert the environment information into a dict.
+
+        :param env_str: A string full of environment variable declarations.
+            Each key is simple ascii "key: value\n"
+            The string must start with "env\n" and end with "end\n".
+        :return: A dict of environment variables
+        """
+        # See [Decision #8]
+        env = {}
+        if not env_str:
+            return env
+        if not (env_str.startswith('env\n') and env_str.endswith('\nend\n')):
+            raise ValueError('Invalid env-str: %r' % (env_str,))
+        env_str = env_str[4:-5]
+        if not env_str:
+            return env
+        env_entries = env_str.split('\n')
+        for entry in env_entries:
+            if not entry:
+                continue
+            key, value = entry.split(': ', 1)
+            env[key] = value
+        return env
+
+    def fork_one_request(self, conn, client_addr, command_argv, env):
         """Fork myself and serve a request."""
         temp_name = tempfile.mkdtemp(prefix='lp-forking-service-child-')
         # Now that we've set everything up, send the response to the client we
@@ -627,34 +675,47 @@ class LPForkingService(object):
                                   % (c_id, c_path))
                     shutil.rmtree(c_path)
 
+    def _parse_fork_request(self, conn, client_addr, request):
+        command, env = request[5:].split('\n', 1)
+        try:
+            command_argv = self.command_to_argv(command)
+            env = self.parse_env(env)
+        except Exception, e:
+            # TODO: Log the traceback?
+            self.log(client_addr, 'command or env parsing failed: %r'
+                                  % (str(e),))
+            conn.sendall('FAILURE\ncommand or env parsing failed: %r'
+                         % (str(e),))
+        else:
+            return command_argv, env
+        return None, None
+
     def serve_one_connection(self, conn, client_addr):
+        # TODO: we should make this more robust about getting partial data.
+        #       though to do it "correctly" we probably should use structured
+        #       messages....
+        #       One option is to always read at least to the first '\n'. Though
+        #       for 'fork' we may want more content, but it may not be
+        #       present...
         request = osutils.read_bytes_from_socket(conn)
-        request = request.strip()
         self.log(client_addr, 'request: %r' % (request,))
-        if request == 'hello':
+        if request == 'hello\n':
             conn.sendall('ok\nyep, still alive\n')
             self.log_information()
-        elif request == 'quit':
+        elif request == 'quit\n':
             self._should_terminate.set()
             conn.sendall('ok\nquit command requested... exiting\n')
         elif request.startswith('fork '):
-            command = request[5:]
-            try:
-                command_argv = self.command_to_argv(command)
-            except Exception, e:
-                # TODO: Log the traceback?
-                self.log(client_addr, 'command parsing failed: %r'
-                                      % (str(e),))
-                conn.sendall('FAILURE\ncommand parsing failed: %r'
-                             % (str(e),))
-            else:
-                self.log(client_addr, 'fork requested for %r' % (command,))
+            command_argv, env = self._parse_fork_request(conn, client_addr,
+                                                         request)
+            if command_argv is not None:
+                # See [Decision #7]
                 # TODO: Do we want to limit the number of children? And/or
                 #       prefork additional instances? (the design will need to
                 #       change if we prefork and run arbitrary commands.)
-                self.fork_one_request(conn, client_addr, command_argv)
-                # We don't close the conn normally, since we will report the
-                # exit status later
+                self.fork_one_request(conn, client_addr, command_argv, env)
+                # We don't close the conn like other code paths, since we use
+                # it again later.
                 return
         else:
             self.log(client_addr, 'FAILURE: unknown request: %r' % (request,))

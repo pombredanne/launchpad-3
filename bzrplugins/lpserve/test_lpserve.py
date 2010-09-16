@@ -37,6 +37,7 @@ class TestingLPForkingServiceInAThread(lpserve.LPForkingService):
         self.service_started = threading.Event()
         self.service_stopped = threading.Event()
         self.this_thread = None
+        self.fork_log = []
         super(TestingLPForkingServiceInAThread, self).__init__(host=host,
                                                                port=port)
 
@@ -57,10 +58,12 @@ class TestingLPForkingServiceInAThread(lpserve.LPForkingService):
         super(TestingLPForkingServiceInAThread, self).main_loop()
         self.service_stopped.set()
 
-    def fork_one_request(self, conn, client_addr, command):
+    def fork_one_request(self, conn, client_addr, command, env):
         # We intentionally don't allow the test suite to request a fork, as
         # threads + forks and everything else don't exactly play well together
-        raise NotImplementedError(self.fork_one_request)
+        self.fork_log.append((command, env))
+        conn.sendall('ok\nfake forking\n')
+        conn.close()
 
     @staticmethod
     def start_service(test):
@@ -157,6 +160,43 @@ class TestLPForkingServiceCommandToArgv(tests.TestCase):
         self.assertAsArgv([u'command', u'\xe5'], 'command \xc3\xa5')
 
 
+class TestLPForkingServiceParseEnv(tests.TestCase):
+
+    def assertEnv(self, env, env_str):
+        self.assertEqual(env, lpserve.LPForkingService.parse_env(env_str))
+
+    def test_empty(self):
+        self.assertEnv({}, '')
+
+    def test_no_entries(self):
+        self.assertEnv({}, 'env\nend\n')
+
+    def test_one_entries(self):
+        self.assertEnv({'BZR_EMAIL': 'joe@foo.com'},
+                       'env\n'
+                       'BZR_EMAIL: joe@foo.com\n'
+                       'end\n')
+
+    def test_two_entries(self):
+        self.assertEnv({'BZR_EMAIL': 'joe@foo.com', 'BAR': 'foo'},
+                       'env\n'
+                       'BZR_EMAIL: joe@foo.com\n'
+                       'BAR: foo\n'
+                       'end\n')
+
+    def test_invalid_start(self):
+        self.assertRaises(ValueError, lpserve.LPForkingService.parse_env,
+            "BZR_EMAIL: joe@foo.com\nend\n")
+
+    def test_invalid_end(self):
+        self.assertRaises(ValueError, lpserve.LPForkingService.parse_env,
+            "env\nBZR_EMAIL: joe@foo.com\n")
+
+    def test_invalid_entry(self):
+        self.assertRaises(ValueError, lpserve.LPForkingService.parse_env,
+            "env\nBZR_EMAIL joe@foo.com\nend\n")
+
+
 class TestLPForkingService(TestCaseWithLPForkingService):
 
     def test_send_quit_message(self):
@@ -172,6 +212,21 @@ class TestLPForkingService(TestCaseWithLPForkingService):
     def test_send_hello_heartbeat(self):
         response = self.send_message_to_service('hello\n')
         self.assertEqual('ok\nyep, still alive\n', response)
+
+    def test_send_simple_fork(self):
+        response = self.send_message_to_service('fork rocks\n')
+        self.assertEqual('ok\nfake forking\n', response)
+        self.assertEqual([(['rocks'], {})], self.service.fork_log)
+
+    def test_send_fork_with_env(self):
+        response = self.send_message_to_service(
+            'fork rocks\n'
+            'env\n'
+            'BZR_EMAIL: joe@example.com\n'
+            'end\n')
+        self.assertEqual('ok\nfake forking\n', response)
+        self.assertEqual([(['rocks'], {'BZR_EMAIL': 'joe@example.com'})],
+                         self.service.fork_log)
 
 
 class TestCaseWithSubprocess(tests.TestCaseWithTransport):

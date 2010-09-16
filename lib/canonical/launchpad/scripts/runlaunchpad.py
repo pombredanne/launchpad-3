@@ -197,6 +197,9 @@ class ForkingSessionService(Service):
                    'launchpad-forking-service']
         env = dict(os.environ)
         env['BZR_PLUGIN_PATH'] = config.root + '/bzrplugins'
+        # XXX: This should be getting set by the Twisted process sending the
+        #      information to the lp-forking-service process. That way, it is
+        #      accurate for each user, rather than something bogus.
         env['BZR_EMAIL'] = 'bogus@example.com'
         # env['BZR_LOG'] = ? probably config.something
         process = subprocess.Popen(command, env=env, stdin=subprocess.PIPE)
