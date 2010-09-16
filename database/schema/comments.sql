@@ -1281,6 +1281,14 @@ COMMENT ON COLUMN PersonTransferJob.json_data IS 'Data that is specific to the t
 COMMENT ON COLUMN PersonTransferJob.minor_person IS 'The person that is being added is a new member or being merged into another person.';
 COMMENT ON COLUMN PersonTransferJob.major_person IS 'The team receiving a new member or the person that another person is merged into.';
 
+-- QuestionJob
+
+COMMENT ON TABLE QuestionJob IS 'Contains references to jobs regarding questions.';
+COMMENT ON COLUMN QuestionJob.job IS 'A reference to a row in the Job table that has all the common job details.';
+COMMENT ON COLUMN QuestionJob.job_type IS 'The type of job, such as new-answer-notification.';
+COMMENT ON COLUMN QuestionJob.json_data IS 'Data that is specific to the type of job, normally stores text to append to email notifications.';
+COMMENT ON COLUMN QuestionJob.question IS 'The newly added question message.';
+
 -- Bounty
 COMMENT ON TABLE Bounty IS 'A set of bounties for work to be done by the open source community. These bounties will initially be offered only by Canonical, but later we will create the ability for people to offer the bounties themselves, using us as a clearing house.';
 COMMENT ON COLUMN Bounty.usdvalue IS 'This is the ESTIMATED value in US Dollars of the bounty. We say "estimated" because the bounty might one day be offered in one of several currencies, or people might contribute different amounts in different currencies to each bounty. This field will reflect an estimate based on recent currency exchange rates of the value of this bounty in USD.';
