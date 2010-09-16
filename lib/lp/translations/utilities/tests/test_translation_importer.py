@@ -27,7 +27,7 @@ from lp.translations.utilities.translation_common_format import (
 from lp.translations.utilities.translation_import import (
     importers,
     is_identical_translation,
-    POTFileImporter,
+    POFileImporter,
     TranslationImporter,
     )
 
@@ -259,21 +259,22 @@ class FileImporterTest(TestCaseWithFactory):
     UPSTREAM = 0
     UBUNTU = 1
 
-    POTEMPLATE = dedent("""\
+    POFILE = dedent("""\
         msgid ""
         msgstr ""
         "PO-Revision-Date: 2005-05-03 20:41+0100\\n"
         "Last-Translator: FULL NAME <EMAIL@ADDRESS>\\n"
         "Content-Type: text/plain; charset=UTF-8\\n"
-        
+        "X-Launchpad-Export-Date: 2009-05-14 08:54+0000\\n"
+
         msgid "Thank You"
-        msgstr ""
+        msgstr "Dankon"
         """)
 
     def setUp(self):
         super(FileImporterTest, self).setUp()
 
-    def _makeImporter(self, side, from_upstream=False, uploader=None):
+    def _makeEntry(self, side, from_upstream=False, uploader=None):
         if side == self.UPSTREAM:
             potemplate = self.factory.makePOTemplate(
                 productseries=self.factory.makeProductSeries())
@@ -283,24 +284,50 @@ class FileImporterTest(TestCaseWithFactory):
                 distroseries=self.factory.makeDistroSeries(
                     distribution=ubuntu),
                 sourcepackagename=self.factory.makeSourcePackageName())
+        pofile = self.factory.makePOFile('eo', potemplate=potemplate)
         entry = self.factory.makeTranslationImportQueueEntry(
             potemplate=potemplate, from_upstream=from_upstream,
-            uploader=uploader, content=self.POTEMPLATE)
+            uploader=uploader, content=self.POFILE)
         entry.potemplate = potemplate
+        entry.pofile = pofile
         transaction.commit()
-        return POTFileImporter(
-            entry, importers[TranslationFileFormat.PO], None)
+        return entry
 
     def test_shareWithOtherSide_upstream(self):
         # An upstream queue entry will be shared with ubuntu.
-        importer = self._makeImporter(self.UPSTREAM)
+        entry = self._makeEntry(self.UPSTREAM)
+        importer = POFileImporter(
+            entry, importers[TranslationFileFormat.PO], None)
         self.assertTrue(
             importer.shareWithOtherSide(),
             "Upstream import should share with Ubuntu.")
 
     def test_shareWithOtherSide_ubuntu(self):
         # An ubuntu queue entry will not be shared with upstream.
-        importer = self._makeImporter(self.UBUNTU)
+        entry = self._makeEntry(self.UBUNTU)
+        importer = POFileImporter(
+            entry, importers[TranslationFileFormat.PO], None)
         self.assertFalse(
             importer.shareWithOtherSide(),
             "Ubuntu import should not share with upstream.")
+
+    def test_shareWithOtherSide_ubuntu_from_package(self):
+        # An ubuntu queue entry that is imported from an upstream package
+        # will be shared with upstream.
+        entry = self._makeEntry(self.UBUNTU, from_upstream=True)
+        importer = POFileImporter(
+            entry, importers[TranslationFileFormat.PO], None)
+        self.assertTrue(
+            importer.shareWithOtherSide(),
+            "Ubuntu import should share with upstream.")
+
+    def test_shareWithOtherSide_ubuntu_uploader_owner(self):
+        # If the uploader in ubuntu has rights on upstream as well, the
+        # translations are shared.
+        entry = self._makeEntry(self.UBUNTU)
+        importer = POFileImporter(
+            entry, importers[TranslationFileFormat.PO], None)
+        self.assertTrue(
+            importer.shareWithOtherSide(),
+            "Ubuntu import should share with upstream.")
+
