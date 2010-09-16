@@ -128,7 +128,7 @@ class AbstractUploadPolicy:
             raise AssertionError(
                 "Upload is not sourceful, binaryful or mixed.")
 
-    def getUploader(self, changes):
+    def getUploader(self, changes, build):
         """Get the person who is doing the uploading."""
         return changes.signer
 
@@ -334,10 +334,7 @@ class BuildDaemonUploadPolicy(AbstractUploadPolicy):
 
     def setOptions(self, options):
         AbstractUploadPolicy.setOptions(self, options)
-        # We require a buildid to be provided
-        if (getattr(options, 'buildid', None) is None and
-            not getattr(options, 'builds', False)):
-            raise UploadPolicyError("BuildID required for buildd context")
+        self.builds = True
 
     def policySpecificChecks(self, upload):
         """The buildd policy should enforce that the buildid matches."""

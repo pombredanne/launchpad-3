@@ -233,7 +233,7 @@ class UploadProcessor:
             [changes_file] = self.locateChangesFiles(upload_path)
             logger.debug("Considering changefile %s" % changes_file)
             result = self.processChangesFile(
-                upload_path, changes_file, logger)
+                upload_path, changes_file, logger, build)
         except (KeyboardInterrupt, SystemExit):
             raise
         except:
@@ -376,7 +376,8 @@ class UploadProcessor:
                         os.path.join(relative_path, filename))
         return self.orderFilenames(changes_files)
 
-    def processChangesFile(self, upload_path, changes_file, logger=None):
+    def processChangesFile(self, upload_path, changes_file, logger=None,
+                           build=None):
         """Process a single changes file.
 
         This is done by obtaining the appropriate upload policy (according
@@ -432,7 +433,7 @@ class UploadProcessor:
                          "https://help.launchpad.net/Packaging/PPA#Uploading "
                          "and update your configuration.")))
         logger.debug("Finding fresh policy")
-        policy = self._getPolicyForDistro(distribution)
+        policy = self._getPolicyForDistro(distribution, build)
         policy.archive = archive
 
         # DistroSeries overriding respect the following precedence:
@@ -472,7 +473,7 @@ class UploadProcessor:
             result = UploadStatusEnum.ACCEPTED
 
             try:
-                upload.process()
+                upload.process(build)
             except UploadPolicyError, e:
                 upload.reject("UploadPolicyError escaped upload.process: "
                               "%s " % e)
@@ -513,7 +514,8 @@ class UploadProcessor:
                 upload.do_reject(notify)
                 self.ztm.abort()
             else:
-                successful = upload.do_accept(notify=notify)
+                successful = upload.do_accept(
+                    notify=notify, build=build)
                 if not successful:
                     result = UploadStatusEnum.REJECTED
                     logger.info(
