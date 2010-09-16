@@ -234,9 +234,10 @@ addMember() has queued up a job to send out the emails. We'll run the
 job now.
 
     >>> from lp.registry.interfaces.persontransferjob import (
-    ...     IPersonTransferJobSource)
-    >>> [job] = list(getUtility(IPersonTransferJobSource).iterReady())
-    >>> job.run()
+    ...     IAddMemberNotificationJobSource)
+    >>> for job in getUtility(IAddMemberNotificationJobSource).iterReady():
+    ...     job.run()
+    asdf
 
 Now, the emails have been sent.
 

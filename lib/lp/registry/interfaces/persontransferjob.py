@@ -25,10 +25,11 @@ from lp.services.fields import PublicPersonChoice
 from lp.services.job.interfaces.job import (
     IJob,
     IJobSource,
+    IRunnableJob,
     )
 
 
-class IPersonTransferJob(Interface):
+class IPersonTransferJob(IRunnableJob):
     """A Job related to team membership or a person merge."""
 
     id = Int(

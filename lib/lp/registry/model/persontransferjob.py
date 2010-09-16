@@ -37,6 +37,7 @@ from lp.registry.enum import PersonTransferJobType
 from lp.registry.interfaces.person import (
     IPerson,
     IPersonSet,
+    ITeam,
     )
 from lp.registry.interfaces.persontransferjob import (
     IPersonTransferJob,
@@ -140,7 +141,10 @@ class PersonTransferJobDerived(BaseRunnableJob):
                 PersonTransferJob.minor_person == minor_person,
                 PersonTransferJob.job_type == cls.class_job_type))
         job = PersonTransferJob(
-            major_person, minor_person, cls.class_job_type, metadata)
+            minor_person=minor_person,
+            major_person=major_person,
+            job_type=cls.class_job_type,
+            metadata=metadata)
         return cls(job)
 
     @classmethod
@@ -150,7 +154,7 @@ class PersonTransferJobDerived(BaseRunnableJob):
         jobs = store.find(
             PersonTransferJob,
             And(PersonTransferJob.job_type == cls.class_job_type,
-                PersonTransferJob.job.is_in(Job.ready_jobs)))
+                PersonTransferJob.job_id.is_in(Job.ready_jobs)))
         return (cls(job) for job in jobs)
 
     def getOopsVars(self):
@@ -174,6 +178,7 @@ class AddMemberNotificationJob(PersonTransferJobDerived):
     @classmethod
     def create(cls, member, team, reviewer, old_status, new_status,
                last_change_comment=None):
+        assert ITeam.providedBy(team)
         assert IPerson.providedBy(reviewer)
         assert old_status in TeamMembershipStatus
         assert new_status in TeamMembershipStatus
@@ -196,7 +201,7 @@ class AddMemberNotificationJob(PersonTransferJobDerived):
 
     @property
     def reviewer(self):
-        return getUtility(IPersonSet).getByID(self.metadata['reviewer'])
+        return getUtility(IPersonSet).get(self.metadata['reviewer'])
 
     @property
     def old_status(self):
@@ -213,6 +218,7 @@ class AddMemberNotificationJob(PersonTransferJobDerived):
     def run(self):
         """See `IBranchScanJob`."""
         from canonical.launchpad.scripts import log
+        assert self.team.is_team, 'Not a team: %r' % self.team
         sendStatusChangeNotification(
             self.member, self.team, self.reviewer, self.old_status,
             self.new_status, self.last_change_comment)
