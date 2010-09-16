@@ -354,6 +354,10 @@ class PackageBuildDerived:
         if not os.path.exists(target_dir):
             os.mkdir(target_dir)
 
+        # Flush so there are no race conditions with archiveuploader about
+        # self.status.
+        Store.of(self).flush()
+
         # Move the directory used to grab the binaries into
         # the incoming directory so the upload processor never
         # sees half-finished uploads.

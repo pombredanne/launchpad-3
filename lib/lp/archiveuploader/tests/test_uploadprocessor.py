@@ -18,6 +18,7 @@ import sys
 import tempfile
 import traceback
 
+from storm.locals import Store
 from zope.component import (
     getGlobalSiteManager,
     getUtility,
@@ -1966,13 +1967,8 @@ class TestBuildUploadProcessor(TestUploadProcessorBase):
         # No emails are sent on success
         self.assertEquals(len(stub.test_emails), last_stub_mail_count)
         self.assertEquals(BuildStatus.FULLYBUILT, build.status)
-        log_contents = build.upload_log.read()
-        log_lines = log_contents.splitlines()
-        self.assertTrue(
-            'INFO: Processing upload bar_1.0-1_i386.changes' in log_lines)
-        self.assertTrue(
-            'INFO: Committing the transaction and any mails associated with '
-            'this upload.' in log_lines)
+        # Upon full build the upload log is unset.
+        self.assertIs(None, build.upload_log)
 
     def testSourcePackageRecipeBuild(self):
         # Properly uploaded source packages should result in the
@@ -1999,23 +1995,17 @@ class TestBuildUploadProcessor(TestUploadProcessorBase):
         # Commit so date_started is recorded and doesn't cause constraint
         # violations later.
         build.status = BuildStatus.UPLOADING
-        self.layer.txn.commit()
+        Store.of(build).flush()
         self.uploadprocessor.processBuildUpload(
             self.incoming_folder, leaf_name)
         self.layer.txn.commit()
 
-        self.assertEquals(BuildStatus.FULLYBUILT, build.status,
-                          build.upload_log.read())
+        self.assertEquals(BuildStatus.FULLYBUILT, build.status)
         self.assertEquals(None, build.builder)
         self.assertIsNot(None, build.date_finished)
         self.assertIsNot(None, build.duration)
-        log_contents = build.upload_log.read()
-        log_lines = log_contents.splitlines()
-        self.assertTrue(
-            'INFO: Processing upload bar_1.0-1_source.changes' in log_lines)
-        self.assertTrue(
-            'INFO: Committing the transaction and any mails associated with '
-            'this upload.' in log_lines)
+        # Upon full build the upload log is unset.
+        self.assertIs(None, build.upload_log)
 
     def testSourcePackageRecipeBuild_fail(self):
         # A source package recipe build will fail if no files are present.
@@ -2027,7 +2017,7 @@ class TestBuildUploadProcessor(TestUploadProcessorBase):
             distroseries=self.breezy, archive=archive)
         bq = self.factory.makeSourcePackageRecipeBuildJob(recipe_build=build)
         # Commit so the build cookie has the right ids.
-        self.layer.txn.commit()
+        Store.of(build).flush()
         leaf_name = build.getUploadDirLeaf(build.getBuildCookie())
         os.mkdir(os.path.join(self.incoming_folder, leaf_name))
         self.options.context = 'buildd'
@@ -2035,16 +2025,16 @@ class TestBuildUploadProcessor(TestUploadProcessorBase):
         build.jobStarted()
         # Commit so date_started is recorded and doesn't cause constraint
         # violations later.
-        self.layer.txn.commit()
+        Store.of(build).flush()
         build.status = BuildStatus.UPLOADING
         self.uploadprocessor.processBuildUpload(
             self.incoming_folder, leaf_name)
         self.layer.txn.commit()
-
         self.assertEquals(BuildStatus.FAILEDTOUPLOAD, build.status)
         self.assertEquals(None, build.builder)
         self.assertIsNot(None, build.date_finished)
         self.assertIsNot(None, build.duration)
+        self.assertIsNot(None, build.upload_log)
 
 
 class ParseBuildUploadLeafNameTests(TestCase):

@@ -257,7 +257,7 @@ class UploadProcessor:
                 build.status == BuildStatus.FULLYBUILT):
             build.status = BuildStatus.FAILEDTOUPLOAD
             build.notify(extra_info="Uploading build %s failed." % upload)
-        build.storeUploadLog(logger.buffer.getvalue())
+            build.storeUploadLog(logger.buffer.getvalue())
 
     def processUpload(self, fsroot, upload):
         """Process an upload's changes files, and move it to a new directory.
