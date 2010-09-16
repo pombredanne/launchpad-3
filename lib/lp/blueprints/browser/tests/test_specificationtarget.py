@@ -80,7 +80,12 @@ class TestHasSpecificationsViewInvolvement(TestCaseWithFactory):
         self.verify_involvment(context)
 
     def test_adaptable_to_specificationtarget(self):
+        # A project should adapt to the products within to determine
+        # involvment.
         context = self.factory.makeProject(name='hazelnut')
+        product = self.factory.makeProduct(project=context)
+        naked_product = removeSecurityProxy(product)
+        naked_product.blueprints_usage = ServiceUsage.LAUNCHPAD
         self.verify_involvment(context)
 
     def test_sprint(self):
