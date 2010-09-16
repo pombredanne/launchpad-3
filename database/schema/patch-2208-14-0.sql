@@ -8,4 +8,4 @@ ALTER TABLE BugMessage ADD COLUMN index integer;
 CREATE UNIQUE INDEX bugmessage__bug_index_unique ON BugMessage (bug, index);
 
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 14, 0);
