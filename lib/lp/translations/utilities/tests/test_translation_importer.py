@@ -312,6 +312,16 @@ class FileImporterTest(TestCaseWithFactory):
         transaction.commit()
         return entry
 
+    def test_translator_persmissions(self):
+        # Sanity check that the translator has the right permissions but
+        # others don't.
+        pofile = self.factory.makePOFile(
+            self.LANGCODE, potemplate=self.upstream_template)
+        self.assertFalse(
+            pofile.canEditTranslations(self.factory.makePerson()))
+        self.assertTrue(
+            pofile.canEditTranslations(self.translator.translator))
+
     def test_shareWithOtherSide_upstream(self):
         # An upstream queue entry will be shared with ubuntu.
         entry = self._makeEntry(self.UPSTREAM)
@@ -350,4 +360,3 @@ class FileImporterTest(TestCaseWithFactory):
         self.assertTrue(
             importer.shareWithOtherSide(),
             "Ubuntu import should share with upstream.")
-
