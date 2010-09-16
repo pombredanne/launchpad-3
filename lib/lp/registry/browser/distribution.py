@@ -48,10 +48,6 @@ from canonical.launchpad.browser.feeds import FeedsMixin
 from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet,
     )
-from canonical.launchpad.components.request_country import (
-    ipaddress_from_request,
-    request_country,
-    )
 from canonical.launchpad.helpers import english_list
 from canonical.launchpad.webapp import (
     action,
@@ -109,6 +105,10 @@ from lp.registry.interfaces.distributionmirror import (
     )
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.geoip.helpers import (
+    ipaddress_from_request,
+    request_country,
+    )
 from lp.services.propertycache import cachedproperty
 from lp.soyuz.browser.packagesearch import PackageSearchViewBase
 from lp.soyuz.enums import ArchivePurpose
@@ -123,10 +123,10 @@ class UsesLaunchpadMixin:
         """Return a string of LP apps (comma-separated) this distro uses."""
         uses = []
         href_template = """<a href="%s">%s</a>"""
-        if self.context.official_answers:
+        if service_uses_launchpad(self.context.answers_usage):
             url = canonical_url(self.context, rootsite='answers')
             uses.append(href_template % (url, 'Answers'))
-        if self.context.official_blueprints:
+        if service_uses_launchpad(self.context.blueprints_usage):
             url = canonical_url(self.context, rootsite='blueprints')
             uses.append(href_template % (url, 'Blueprints'))
         if self.context.official_malone:

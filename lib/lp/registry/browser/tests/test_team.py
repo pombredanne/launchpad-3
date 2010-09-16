@@ -3,10 +3,12 @@
 
 __metaclass__ = type
 
+from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.testing import DatabaseFunctionalLayer
 from lp.registry.browser.person import TeamOverviewMenu
 from lp.testing import TestCaseWithFactory
 from lp.testing.menu import check_menu_links
+from lp.testing.views import create_initialized_view
 
 
 class TestTeamMenu(TestCaseWithFactory):
@@ -35,3 +37,22 @@ class TestTeamMenu(TestCaseWithFactory):
         self.assertEqual(True, check_menu_links(menu))
         link = menu.configure_mailing_list()
         self.assertEqual('Configure mailing list', link.text)
+
+
+class TestModeration(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_held_messages_is_batch_navigator(self):
+        team = self.factory.makeTeam()
+        self.factory.makeMailingList(team, team.teamowner)
+        view = create_initialized_view(team, name='+mailinglist-moderate')
+        self.assertIsInstance(view.held_messages, BatchNavigator)
+
+    def test_held_message_headings(self):
+        team = self.factory.makeTeam()
+        self.factory.makeMailingList(team, team.teamowner)
+        view = create_initialized_view(team, name='+mailinglist-moderate')
+        navigator = view.held_messages
+        self.assertEqual('message', navigator._singular_heading)
+        self.assertEqual('messages', navigator._plural_heading)
