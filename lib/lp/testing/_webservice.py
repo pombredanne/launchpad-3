@@ -48,13 +48,19 @@ from canonical.launchpad.webapp.interfaces import OAuthPermission
 
 
 class OAuthSigningHandler(BaseHandler):
+    """A urllib2 handler that signs requests with an OAuth token."""
 
     def __init__(self, consumer, token):
+        """Constructor
+
+        :param consumer: An OAuth consumer.
+        :param token: An OAuth token.
+        """
         self.consumer = consumer
         self.token = token
 
     def default_open(self, req):
-        """Set the Authorization header for the next outgoing request."""
+        """Set the Authorization header for the outgoing request."""
         signer = OAuthRequest.from_consumer_and_token(
             self.consumer, self.token)
         signer.sign_request(
@@ -64,15 +70,17 @@ class OAuthSigningHandler(BaseHandler):
 
 
 class UserAgentFilteringHandler(BaseHandler):
-    """A browser that replaces the User-Agent header.
+    """A urllib2 handler that replaces the User-Agent header.
 
     [XXX bug=638058] This is a hack to work around a bug in
     zope.testbrowser.
     """
     def __init__(self, user_agent):
+        """Constructor."""
         self.user_agent = user_agent
 
     def default_open(self, req):
+        """Set the User-Agent header for the outgoing request."""
         req.headers['User-Agent'] = self.user_agent
 
 
@@ -83,6 +91,12 @@ class OAuthSigningBrowser(Browser):
     Manager.
     """
     def __init__(self, consumer, token, user_agent=None):
+        """Constructor.
+
+        :param consumer: An OAuth consumer.
+        :param token: An OAuth token.
+        :param user_agent: The User-Agent string to send.
+        """
         super(OAuthSigningBrowser, self).__init__()
         self.mech_browser.add_handler(
             OAuthSigningHandler(consumer, token))

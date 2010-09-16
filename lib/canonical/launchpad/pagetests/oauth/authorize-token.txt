@@ -407,9 +407,9 @@ GRANT_PERMISSIONS access level; no other access level will work.
     Unauthorized: OAuth token has insufficient access level.
 
 The OAuth token must be for the Launchpad Credentials Manager, or it
-cannot be used. (Launchpad shouldn't be even _issue_ a
-GRANT_PERMISSIONS token for any other consumer, but even if it somehow
-does, that token can't be used for this.)
+cannot be used. (Launchpad shouldn't even _issue_ a GRANT_PERMISSIONS
+token for any other consumer, but even if it somehow does, that token
+can't be used for this.)
 
     >>> login(ANONYMOUS)
     >>> wrong_consumer = OAuthConsumer(
@@ -435,9 +435,9 @@ Signing with an anonymous token will also not work.
     ...
     Unauthorized: Anonymous access is not allowed.
 
-And even if it presents the right token, the user agent sending the
-signed request must *also* identify itself as the Launchpad
-Credentials Manager.
+Even if it presents the right token, the user agent sending the signed
+request must *also* identify *itself* as the Launchpad Credentials
+Manager.
 
     >>> browser = OAuthSigningBrowser(
     ...     manager_consumer, grant_permissions_token,

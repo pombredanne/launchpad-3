@@ -70,6 +70,16 @@ from lp.registry.interfaces.person import (
 
 
 def extract_oauth_access_token(request):
+    """Find the OAuth access token that signed the given request.
+
+    :param request: An incoming request.
+
+    :return: an IOAuthAccessToken, or None if the request is not
+        signed at all.
+
+    :raise Unauthorized: If the token is invalid or the request is an
+        anonymously-signed request that doesn't meet our requirements.
+    """
     # Fetch OAuth authorization information from the request.
     form = get_oauth_authorization(request)
 
@@ -128,6 +138,11 @@ def extract_oauth_access_token(request):
 
 
 def get_oauth_principal(request):
+    """Find the principal to use for this OAuth-signed request.
+
+    :param request: An incoming request.
+    :return: An ILaunchpadPrincipal with the appropriate access level.
+    """
     token = extract_oauth_access_token(request)
 
     if token is None:
