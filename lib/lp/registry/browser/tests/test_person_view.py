@@ -12,7 +12,9 @@ from canonical.launchpad.ftests import (
     ANONYMOUS,
     login,
     )
+from canonical.launchpad.interfaces.authtoken import LoginTokenType
 from canonical.launchpad.interfaces.account import AccountStatus
+from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import (
@@ -211,7 +213,8 @@ class TestPersonEditView(TestCaseWithFactory):
 
     def setUp(self):
         TestCaseWithFactory.setUp(self)
-        self.person = self.factory.makePerson()
+        self.valid_email_address = self.factory.getUniqueEmailAddress()
+        self.person = self.factory.makePerson(email=self.valid_email_address)
         login_person(self.person)
         self.ppa = self.factory.makeArchive(owner=self.person)
         self.view = PersonEditView(
@@ -259,6 +262,42 @@ class TestPersonEditView(TestCaseWithFactory):
         self.ppa.status = ArchiveStatus.DELETED
         self.view.initialize()
         self.assertFalse(self.view.form_fields['name'].for_display)
+
+    def test_add_email_good_data(self):
+        email_address = self.factory.getUniqueEmailAddress()
+        form = {
+            'field.VALIDATED_SELECTED': self.valid_email_address,
+            'field.VALIDATED_SELECTED-empty-marker': 1,
+            'field.actions.add_email': 'Add',
+            'field.newemail': email_address,
+            }
+        view = create_initialized_view(self.person, "+editemails", form=form)
+
+        # If everything worked, there should now be a login token to validate
+        # this email address for this user.
+        token = getUtility(ILoginTokenSet).searchByEmailRequesterAndType(
+            email_address,
+            self.person,
+            LoginTokenType.VALIDATEEMAIL)
+        self.assertTrue(token is not None)
+
+    def test_add_email_address_taken(self):
+        email_address = self.factory.getUniqueEmailAddress()
+        account = self.factory.makeAccount(
+            displayname='deadaccount',
+            email=email_address,
+            status=AccountStatus.NOACCOUNT)
+        form = {
+            'field.VALIDATED_SELECTED': self.valid_email_address,
+            'field.VALIDATED_SELECTED-empty-marker': 1,
+            'field.actions.add_email': 'Add',
+            'field.newemail': email_address,
+            }
+        view = create_initialized_view(self.person, "+editemails", form=form)
+        error_msg = view.errors[0]
+        expected_msg = ("The email address '%s' is already registered to an "
+                        "account, deadaccount." % email_address)
+        self.assertEqual(expected_msg, error_msg)
 
 
 class TestTeamCreationView(TestCaseWithFactory):
