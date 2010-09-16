@@ -754,7 +754,7 @@ class Bug(SQLBase):
         # subscription id, so we can grab the earliest subscription for a
         # subscriber (and that the results of this method are stable).
         subscriptions = (
-            list(subscriptions)[0] for person_id, subscriptions in groupby(
+            subscriptions.next() for person_id, subscriptions in groupby(
                 subscriptions, key=operator.attrgetter("person_id")))
         # Sort by the subscriber's display name.
         return sorted(
