@@ -75,6 +75,7 @@ class ArchiveCruftCheckerError(Exception):
     Mostly used to describe errors in the initialisation of this object.
     """
 
+
 class TagFileNotFound(Exception):
     """Raised when an archive tag file could not be found."""
 
@@ -126,6 +127,7 @@ class ArchiveCruftChecker:
     def architectures(self):
         return dict([(a.architecturetag, a)
                      for a in self.distroseries.architectures])
+
     @property
     def components(self):
         return dict([(c.name, c) for c in self.distroseries.components])
@@ -223,7 +225,6 @@ class ArchiveCruftChecker:
             for architecture in self.architectures:
                 self.buildArchNBS(component, architecture)
 
-
     def buildArchNBS(self, component, architecture):
         """Build NBS per architecture.
 
@@ -257,7 +258,7 @@ class ArchiveCruftChecker:
                     source = m.group(1)
                     version = m.group(2)
 
-                if not self.bin_pkgs.has_key(package):
+                if package not in self.bin_pkgs:
                     self.nbs.setdefault(source, {})
                     self.nbs[source].setdefault(package, {})
                     self.nbs[source][package][version] = ""
@@ -265,7 +266,7 @@ class ArchiveCruftChecker:
                 if architecture != "all":
                     self.arch_any.setdefault(package, "0")
                     if apt_pkg.VersionCompare(
-                        version,self.arch_any[package]) < 1:
+                        version, self.arch_any[package]) < 1:
                         self.arch_any[package] = version
         finally:
             # close fd and remove temporary file used to store uncompressed
@@ -273,14 +274,12 @@ class ArchiveCruftChecker:
             temp_fd.close()
             os.unlink(temp_filename)
 
-
     def buildASBA(self):
         """Build the group of 'all superseded by any' binaries."""
         self.logger.debug("Building all superseded by any list (ASBA):")
         for component in self.components_and_di:
             for architecture in self.architectures:
                 self.buildArchASBA(component, architecture)
-
 
     def buildArchASBA(self, component, architecture):
         """Build ASBA per architecture.
@@ -315,7 +314,7 @@ class ArchiveCruftChecker:
                     version = m.group(2)
 
                 if architecture == "all":
-                    if (self.arch_any.has_key(package) and
+                    if (package in self.arch_any and
                         apt_pkg.VersionCompare(
                         version, self.arch_any[package]) > -1):
                         self.asba.setdefault(source, {})
@@ -472,7 +471,7 @@ class ArchiveCruftChecker:
                     pass
                 else:
                     version = bpph.binarypackagerelease.version
-                    self.logger.info ("Removed %s_%s from %s/%s ... "
+                    self.logger.info("Removed %s_%s from %s/%s ... "
                                       % (package, version,
                                          self.distroseries.name,
                                          distroarchseries.architecturetag))
@@ -483,6 +482,7 @@ class PubBinaryContent:
 
     Currently used for auxiliary storage in PubSourceChecker.
     """
+
     def __init__(self, name, version, arch, component, section, priority):
         self.name = name
         self.version = version
@@ -521,6 +521,7 @@ class PubBinaryContent:
 
         return "\n".join(report)
 
+
 class PubBinaryDetails:
     """Store the component, section and priority of binary packages and, for
     each binary package the most frequent component, section and priority.
@@ -537,6 +538,7 @@ class PubBinaryDetails:
     - correct_sections: same as correct_components, but for sections
     - correct_priorities: same as correct_components, but for priorities
     """
+
     def __init__(self):
         self.components = {}
         self.sections = {}
@@ -591,6 +593,7 @@ class PubSourceChecker:
     Receive the source publication data and its binaries and perform
     a group of heuristic consistency checks.
     """
+
     def __init__(self, name, version, component, section, urgency):
         self.name = name
         self.version = version
@@ -655,7 +658,8 @@ class PubSourceChecker:
     def renderReport(self):
         """Render a formatted report for the publication group.
 
-        Return None if no issue was annotated or an formatted string including:
+        Return None if no issue was annotated or an formatted string
+        including:
 
           SourceName_Version Component/Section/Urgency | # bin
           <BINREPORTS>
@@ -719,7 +723,7 @@ class ChrootManager:
         ftype = filenameToContentType(filename)
 
         try:
-            alias_id  = getUtility(ILibrarianClient).addFile(
+            alias_id = getUtility(ILibrarianClient).addFile(
                 filename, flen, fd, contentType=ftype)
         except UploadFailed, info:
             raise ChrootManagerError("Librarian upload failed: %s" % info)
@@ -845,7 +849,8 @@ class SyncSource:
         origin: a dictionary similar to 'files' but where the values
                 contain information for download files to be synchronized
         logger: a logger
-        downloader: a callable that fetchs URLs, 'downloader(url, destination)'
+        downloader: a callable that fetchs URLs,
+                    'downloader(url, destination)'
         todistro: target distribution object
         """
         self.files = files
@@ -1424,12 +1429,12 @@ def generate_changes(dsc, dsc_files, suite, changelog, urgency, closes,
                      lp_closes, section, priority, description,
                      files_from_librarian, requested_by, origin):
     """Generate a Changes object.
-    
+
     :param dsc: A `Dsc` instance for the related source package.
     :param suite: Distribution name
     :param changelog: Relevant changelog data
     :param urgency: Urgency string (low, medium, high, etc)
-    :param closes: Sequence of Debian bug numbers (as strings) fixed by 
+    :param closes: Sequence of Debian bug numbers (as strings) fixed by
         this upload.
     :param section: Debian section
     :param priority: Package priority
@@ -1472,5 +1477,4 @@ def generate_changes(dsc, dsc_files, suite, changelog, urgency, closes,
                      })
 
     changes["Files"] = files
-    # Strip trailing newline
     return changes

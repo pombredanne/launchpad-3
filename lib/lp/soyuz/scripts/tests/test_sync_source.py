@@ -15,7 +15,6 @@ import subprocess
 import sys
 import tempfile
 from unittest import (
-    TestCase,
     TestLoader,
     )
 
@@ -34,6 +33,9 @@ from lp.soyuz.scripts.ftpmaster import (
     SyncSource,
     SyncSourceError,
     generate_changes,
+    )
+from lp.testing import (
+    TestCase,
     )
 
 
@@ -118,7 +120,7 @@ class TestSyncSource(TestCase):
         on disk.
         """
         files = {
-            'foo': {'md5sum': 'dd21ab16f950f7ac4f9c78ef1498eee1', 'size': 15}
+            'foo': {'md5sum': 'dd21ab16f950f7ac4f9c78ef1498eee1', 'size': 15},
             }
         origin = {}
         sync_source = self._getSyncSource(files, origin)
@@ -132,7 +134,7 @@ class TestSyncSource(TestCase):
     def testCheckDownloadedFilesWrongMD5(self):
         """Expect SyncSourceError to be raised due the wrong MD5."""
         files = {
-            'foo': {'md5sum': 'duhhhhh', 'size': 15}
+            'foo': {'md5sum': 'duhhhhh', 'size': 15},
             }
         origin = {}
         sync_source = self._getSyncSource(files, origin)
@@ -148,7 +150,7 @@ class TestSyncSource(TestCase):
     def testCheckDownloadedFilesWrongSize(self):
         """Expect SyncSourceError to be raised due the wrong size."""
         files = {
-            'foo': {'md5sum': 'dd21ab16f950f7ac4f9c78ef1498eee1', 'size': 10}
+            'foo': {'md5sum': 'dd21ab16f950f7ac4f9c78ef1498eee1', 'size': 10},
             }
         origin = {}
         sync_source = self._getSyncSource(files, origin)
@@ -203,7 +205,8 @@ class TestSyncSource(TestCase):
     def testFetchLibrarianFilesOK(self):
         """Probe fetchLibrarianFiles.
 
-        Seek on files published from librarian and download matching filenames.
+        Seek on files published from librarian and download matching
+        filenames.
         """
         files = {
             'netapplet_1.0.0.orig.tar.gz': {},
@@ -351,7 +354,7 @@ class TestSyncSourceScript(TestCase):
         os.unlink(expected_changesfile)
 
     def testSyncSourceRunV3(self):
-        """Try a simple sync-source.py run with a version 3 source format 
+        """Try a simple sync-source.py run with a version 3 source format
         package.
 
         It will run in a special tree prepared to cope with sync-source
@@ -378,7 +381,7 @@ class TestSyncSourceScript(TestCase):
         self.assertEqual(
             err.splitlines(),
             ['W: Could not find blacklist file on '
-             '/srv/launchpad.net/dak/sync-blacklist.txt', 
+             '/srv/launchpad.net/dak/sync-blacklist.txt',
              'INFO      - <sample1_1.0.orig-component3.tar.gz: cached>',
              'INFO      - <sample1_1.0-1.dsc: cached>',
              'INFO      - <sample1_1.0-1.debian.tar.gz: cached>',
@@ -474,16 +477,16 @@ class TestGenerateChanges(TestCase):
         self.assertEquals("\nchangelog entry", changes["Changes"])
         self.assertEquals(
             "Maintainer <maintainer@ubuntu.com>", changes["Maintainer"])
-        self.assertFalse("Description" in changes)
-        self.assertFalse("Closes" in changes)
-        self.assertFalse("Launchpad-bugs-fixed" in changes)
+        self.assertNotIn("Description", changes)
+        self.assertNotIn("Closes", changes)
+        self.assertNotIn("Launchpad-bugs-fixed", changes)
         self.assertEquals([], changes["Files"])
 
     def test_closes(self):
         # Closes gets set if any Debian bugs to close were specified.
         changes = self.generateChanges(closes=["1232", "4323"])
         self.assertEquals("1232 4323", changes["Closes"])
-        self.assertFalse("Launchpad-bugs-fixed" in changes)
+        self.assertNotIn("Launchpad-bugs-fixed", changes)
 
     def test_lp_closes(self):
         # Launchpad-Bugs-Fixed gets set if any Launchpad bugs to close were
@@ -497,8 +500,8 @@ class TestGenerateChanges(TestCase):
         changes = self.generateChanges(
             changelog="* Updated French translation by J\xc3\xa9lmer.")
         contents = changes.dump(encoding="utf-8").encode("utf-8")
-        self.assertTrue(
-            contents.find("Updated French translation by J\xc3\xa9lmer."))
+        self.assertIn(
+            "Updated French translation by J\xc3\xa9lmer.", contents)
 
 
 def test_suite():
