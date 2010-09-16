@@ -335,35 +335,35 @@ class FileImporterTest(TestCaseWithFactory):
             [entry.potemplate, self.upstream_template],
             list(subset.getSharingPOTemplates(entry.potemplate.name)))
 
-    def test_shareWithOtherSide_upstream(self):
+    def test_share_with_other_side_upstream(self):
         # An upstream queue entry will be shared with ubuntu.
         entry = self._makeEntry(self.UPSTREAM)
         importer = POFileImporter(
             entry, importers[TranslationFileFormat.PO], None)
         self.assertTrue(
-            importer.shareWithOtherSide(),
+            importer.share_with_other_side,
             "Upstream import should share with Ubuntu.")
 
-    def test_shareWithOtherSide_ubuntu(self):
+    def test_share_with_other_side_ubuntu(self):
         # An ubuntu queue entry will not be shared with upstream.
         entry = self._makeEntry(self.UBUNTU)
         importer = POFileImporter(
             entry, importers[TranslationFileFormat.PO], None)
         self.assertFalse(
-            importer.shareWithOtherSide(),
+            importer.share_with_other_side,
             "Ubuntu import should not share with upstream.")
 
-    def test_shareWithOtherSide_ubuntu_from_package(self):
+    def test_share_with_other_side_ubuntu_from_package(self):
         # An ubuntu queue entry that is imported from an upstream package
         # will be shared with upstream.
         entry = self._makeEntry(self.UBUNTU, from_upstream=True)
         importer = POFileImporter(
             entry, importers[TranslationFileFormat.PO], None)
         self.assertTrue(
-            importer.shareWithOtherSide(),
+            importer.share_with_other_side,
             "Ubuntu import should share with upstream.")
 
-    def test_shareWithOtherSide_ubuntu_uploader_owner(self):
+    def test_share_with_other_side_ubuntu_uploader_upstream_translator(self):
         # If the uploader in ubuntu has rights on upstream as well, the
         # translations are shared.
         entry = self._makeEntry(
@@ -371,5 +371,5 @@ class FileImporterTest(TestCaseWithFactory):
         importer = POFileImporter(
             entry, importers[TranslationFileFormat.PO], None)
         self.assertTrue(
-            importer.shareWithOtherSide(),
+            importer.share_with_other_side,
             "Ubuntu import should share with upstream.")

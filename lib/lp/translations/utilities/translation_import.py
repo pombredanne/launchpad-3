@@ -450,7 +450,8 @@ class FileImporter(object):
                 context=message.context))
         return potmsgset
 
-    def shareWithOtherSide(self):
+    @cachedproperty
+    def share_with_other_side(self):
         """Returns True if translations should be shared with the other side.
         """
         traits = getUtility(
@@ -460,7 +461,7 @@ class FileImporter(object):
         # Check from_upstream.
         if self.translation_import_queue_entry.from_upstream:
             return True
-        # Check permissions.
+        # Find the sharing POFile and check permissions.
         productseries = self.potemplate.distroseries.getSourcePackage(
             self.potemplate.sourcepackagename).productseries
         upstream_template = getUtility(IPOTemplateSet).getSubset(
