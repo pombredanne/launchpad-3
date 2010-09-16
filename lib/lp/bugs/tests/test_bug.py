@@ -7,6 +7,7 @@ __metaclass__ = type
 
 from canonical.testing import DatabaseFunctionalLayer
 from lp.testing import (
+    login_person,
     person_logged_in,
     TestCaseWithFactory,
     )
@@ -65,3 +66,18 @@ class TestBug(TestCaseWithFactory):
             set([person, team1, team2]),
             set(real_bug.getSubscribersForPerson(person)))
 
+    def test_getSubscriptionsFromDuplicates(self):
+        # getSubscriptionsFromDuplicates() will return only the earliest
+        # subscription if a user is subscribed to a bug via more than one
+        # duplicate.
+        user = self.factory.makePerson()
+        login_person(user)
+        bug = self.factory.makeBug(owner=user)
+        dupe1 = self.factory.makeBug(owner=user)
+        dupe1.markAsDuplicate(bug)
+        subscription = dupe1.subscribe(user, user)
+        dupe2 = self.factory.makeBug(owner=user)
+        dupe2.markAsDuplicate(bug)
+        dupe2.subscribe(user, user)
+        self.assertEqual(
+            [subscription], list(bug.getSubscriptionsFromDuplicates()))

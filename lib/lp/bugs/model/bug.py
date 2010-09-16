@@ -25,7 +25,6 @@ from datetime import (
     timedelta,
     )
 from email.Utils import make_msgid
-from itertools import groupby
 import operator
 import re
 
@@ -52,6 +51,7 @@ from storm.expr import (
     In,
     LeftJoin,
     Max,
+    Min,
     Not,
     Or,
     Select,
@@ -737,28 +737,22 @@ class Bug(SQLBase):
         """See `IBug`."""
         if self.private:
             return []
-        # Get bug subscribers and subscriptions for duplicates.
-        subscribers_and_subscriptions = (
+        # For each subscription to each duplicate of this bug, find the
+        # earliest subscription for each subscriber.
+        first_subscriptions = Select(
+            Min(BugSubscription.id),
+            group_by=BugSubscription.person_id,
+            where=And(
+                BugSubscription.bug_id == Bug.id,
+                Bug.duplicateof == self))
+        # Fetch those subscriptions and eager load the subscribers.
+        return DecoratedResultSet(
             IStore(BugSubscription).find(
                 (Person, BugSubscription),
-                BugSubscription.person_id == Person.id,
-                BugSubscription.bug_id == Bug.id,
-                Bug.duplicateof == self).order_by(
-                Person.id, BugSubscription.id))
-        # Generator for the subscription objects alone. The subscribers
-        # (Person objects) are loaded to warm up the cache only.
-        subscriptions = (
-            subscription for subscriber, subscription in (
-                subscribers_and_subscriptions))
-        # Group by the subscriber. The results are ordered by subscriber and
-        # subscription id, so we can grab the earliest subscription for a
-        # subscriber (and that the results of this method are stable).
-        subscriptions = (
-            subscriptions.next() for person_id, subscriptions in groupby(
-                subscriptions, key=operator.attrgetter("person_id")))
-        # Sort by the subscriber's display name.
-        return sorted(
-            subscriptions, key=operator.attrgetter("person.displayname"))
+                BugSubscription.id.is_in(first_subscriptions),
+                BugSubscription.person_id == Person.id).order_by(
+                Person.displayname),
+            operator.itemgetter(1))
 
     def getSubscribersFromDuplicates(self, recipients=None, level=None):
         """See `IBug`.
