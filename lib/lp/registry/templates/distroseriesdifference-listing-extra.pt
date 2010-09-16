@@ -31,12 +31,15 @@
   </dl>
 
   <h2>Comments:</h2>
-  <div tal:repeat="comment context/getComments">
-    <p tal:replace="structure comment/comment/fmt:text-to-html">My comment</p>
-      <br /><span class="greyed-out greylink"><span
-          tal:replace="comment/message/datecreated/fmt:approximatedate">2005-09-16</span>
-      by <a tal:replace="structure
-          comment/message/owner/fmt:link">joesmith</a></span>
+  <div class="comment" tal:repeat="comment context/getComments">
+      <div class="logo">
+        <span tal:replace="structure comment/message/owner/image:logo"/>
+      </div>
+      <div class="comment-detail">
+        <span tal:replace="structure comment/comment/fmt:text-to-html">My comment</span>
+        <span class="greyed-out greylink"><span tal:replace="comment/message/datecreated/fmt:approximatedate">2005-09-16</span>
+        by <a tal:replace="structure comment/message/owner/fmt:link">joesmith</a></span>
+      </div>
   </div>
 
 </tal:root>

@@ -1804,6 +1804,19 @@ pre.changelog, table.diff,
     color: #b8b8ff;
     }
 
+/* =========================
+ * Universal presentation
+ * Comments
+ */
+div.comment {
+    margin-bottom: 2em;
+    }
+div.comment .logo {
+    float: left;
+    }
+div.comment .comment-detail {
+    margin-left: 70px;
+    }
 
 /* =========================
    Universal presentation
