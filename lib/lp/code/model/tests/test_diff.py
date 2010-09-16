@@ -57,6 +57,36 @@ class RecordLister(logging.Handler):
         self.records.append(record)
 
 
+def commit_file(branch, path, contents, merge_parents=None):
+    """Create a commit that updates a file to specified contents.
+
+    This will create or modify the file, as needed.
+    """
+    committer = DirectBranchCommit(
+        removeSecurityProxy(branch), no_race_check=True,
+        merge_parents=merge_parents)
+    committer.writeFile(path, contents)
+    try:
+        return committer.commit('committing')
+    finally:
+        committer.unlock()
+
+
+def create_example_merge(test_case):
+    """Create a merge proposal with conflicts and updates."""
+    bmp = test_case.factory.makeBranchMergeProposal()
+    # Make the branches of the merge proposal look good as far as the
+    # model is concerned.
+    test_case.factory.makeRevisionsForBranch(bmp.source_branch)
+    test_case.factory.makeRevisionsForBranch(bmp.target_branch)
+    bzr_target = test_case.createBzrBranch(bmp.target_branch)
+    commit_file(bmp.target_branch, 'foo', 'a\n')
+    test_case.createBzrBranch(bmp.source_branch, bzr_target)
+    source_rev_id = commit_file(bmp.source_branch, 'foo', 'd\na\nb\n')
+    target_rev_id = commit_file(bmp.target_branch, 'foo', 'c\na\n')
+    return bmp, source_rev_id, target_rev_id
+
+
 class DiffTestCase(TestCaseWithFactory):
 
     @staticmethod
@@ -65,29 +95,11 @@ class DiffTestCase(TestCaseWithFactory):
 
         This will create or modify the file, as needed.
         """
-        committer = DirectBranchCommit(
-            removeSecurityProxy(branch), no_race_check=True,
-            merge_parents=merge_parents)
-        committer.writeFile(path, contents)
-        try:
-            return committer.commit('committing')
-        finally:
-            committer.unlock()
+        return commit_file(branch, path, contents, merge_parents)
 
     def createExampleMerge(self):
-        """Create a merge proposal with conflicts and updates."""
         self.useBzrBranches(direct_database=True)
-        bmp = self.factory.makeBranchMergeProposal()
-        # Make the branches of the merge proposal look good as far as the
-        # model is concerned.
-        self.factory.makeRevisionsForBranch(bmp.source_branch)
-        self.factory.makeRevisionsForBranch(bmp.target_branch)
-        bzr_target = self.createBzrBranch(bmp.target_branch)
-        self.commitFile(bmp.target_branch, 'foo', 'a\n')
-        self.createBzrBranch(bmp.source_branch, bzr_target)
-        source_rev_id = self.commitFile(bmp.source_branch, 'foo', 'd\na\nb\n')
-        target_rev_id = self.commitFile(bmp.target_branch, 'foo', 'c\na\n')
-        return bmp, source_rev_id, target_rev_id
+        return create_example_merge(self)
 
     def checkExampleMerge(self, diff_text):
         """Ensure the diff text matches the values for ExampleMerge."""

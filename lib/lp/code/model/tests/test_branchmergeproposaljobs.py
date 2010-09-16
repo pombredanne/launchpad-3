@@ -54,7 +54,7 @@ from lp.code.model.branchmergeproposaljob import (
     ReviewRequestedEmailJob,
     UpdatePreviewDiffJob,
     )
-from lp.code.model.tests.test_diff import DiffTestCase
+from lp.code.model.tests.test_diff import DiffTestCase, create_example_merge
 from lp.code.subscribers.branchmergeproposal import merge_proposal_modified
 from lp.services.job.model.job import Job
 from lp.services.job.runner import JobRunner
@@ -237,6 +237,16 @@ class TestUpdatePreviewDiffJob(DiffTestCase):
         self.assertTrue(500 <= expiry_delta.seconds, expiry_delta)
 
 
+def make_runnable_incremental_diff_job(test_case):
+    test_case.useBzrBranches(direct_database=True)
+    bmp, source_rev_id, target_rev_id = create_example_merge(test_case)
+    repository = bmp.source_branch.getBzrBranch().repository
+    parent_id = repository.get_revision(source_rev_id).parent_ids[0]
+    test_case.factory.makeRevision(rev_id=source_rev_id)
+    test_case.factory.makeRevision(rev_id=parent_id)
+    return GenerateIncrementalDiffJob.create(bmp, parent_id, source_rev_id)
+
+
 class TestGenerateIncrementalDiffJob(DiffTestCase):
 
     layer = LaunchpadZopelessLayer
@@ -260,17 +270,8 @@ class TestGenerateIncrementalDiffJob(DiffTestCase):
             'generating an incremental diff for a merge proposal',
             job.getOperationDescription())
 
-    def makeRunnableJob(self):
-        self.useBzrBranches(direct_database=True)
-        bmp, source_rev_id, target_rev_id = self.createExampleMerge()
-        repository = bmp.source_branch.getBzrBranch().repository
-        parent_id = repository.get_revision(source_rev_id).parent_ids[0]
-        self.factory.makeRevision(rev_id=source_rev_id)
-        self.factory.makeRevision(rev_id=parent_id)
-        return GenerateIncrementalDiffJob.create(bmp, parent_id, source_rev_id)
-
     def test_run(self):
-        job = self.makeRunnableJob()
+        job = make_runnable_incremental_diff_job(self)
         transaction.commit()
         self.layer.switchDbUser(config.merge_proposal_jobs.dbuser)
         job.run()

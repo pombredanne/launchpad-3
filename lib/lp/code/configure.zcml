@@ -307,6 +307,11 @@
     <allow interface="lp.code.interfaces.branchmergeproposal.IBranchMergeProposalJobSource"/>
   </securedutility>
 
+  <class
+  class="lp.code.model.branchmergeproposaljob.GenerateIncrementalDiffJob">
+    <allow interface="lp.code.interfaces.branchmergeproposal.IGenerateIncrementalDiffJob"/>
+    <allow interface="lp.code.interfaces.branchmergeproposal.IBranchMergeProposalJob" />
+  </class>
   <class class="lp.code.model.branchmergeproposaljob.UpdatePreviewDiffJob">
     <allow interface="lp.code.interfaces.branchmergeproposal.IUpdatePreviewDiffJob" />
     <allow interface="lp.code.interfaces.branchmergeproposal.IBranchMergeProposalJob" />
