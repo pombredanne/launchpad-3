@@ -97,11 +97,12 @@ from lp.code.interfaces.branchmergeproposal import (
     IUpdatePreviewDiffJob,
     IUpdatePreviewDiffJobSource,
     )
+from lp.code.interfaces.revision import IRevisionSet
 from lp.code.mail.branch import RecipientReason
 from lp.code.mail.branchmergeproposal import BMPMailer
 from lp.code.mail.codereviewcomment import CodeReviewCommentMailer
 from lp.code.model.branchmergeproposal import BranchMergeProposal
-from lp.code.model.diff import IncrementalDiff, PreviewDiff
+from lp.code.model.diff import PreviewDiff
 from lp.codehosting.vfs import (
     get_ro_server,
     get_rw_server,
@@ -661,11 +662,15 @@ class GenerateIncrementalDiffJob(BranchMergeProposalJobDerived):
 
     class_job_type = BranchMergeProposalJobType.GENERATE_INCREMENTAL_DIFF
 
+    def acquireLease(self, duration=600):
+        return self.job.acquireLease(duration)
+
     def run(self):
-        diff = IncrementalDiff.fromBranchMergeProposal(
-            self.branch_merge_proposal, self.old_revision_id,
-            self.new_revision_id)
-        self.branch_merge_proposal._incremental_diffs = [diff]
+        revision_set = getUtility(IRevisionSet)
+        old_revision = revision_set.getByRevisionId(self.old_revision_id)
+        new_revision = revision_set.getByRevisionId(self.new_revision_id)
+        diff = self.branch_merge_proposal.generateIncrementalDiff(
+            old_revision, new_revision)
 
     @classmethod
     def create(cls, merge_proposal, old_revision_id, new_revision_id):
@@ -707,19 +712,6 @@ class GenerateIncrementalDiffJob(BranchMergeProposalJobDerived):
         """Return a list of email-ids to notify about user errors."""
         registrant = self.branch_merge_proposal.registrant
         return format_address_for_person(registrant)
-
-    def checkReady(self):
-        """Is this job ready to run?"""
-        bmp = self.branch_merge_proposal
-        if bmp.source_branch.last_scanned_id is None:
-            raise UpdatePreviewDiffNotReady(
-                'The source branch has no revisions.')
-        if bmp.target_branch.last_scanned_id is None:
-            raise UpdatePreviewDiffNotReady(
-                'The target branch has no revisions.')
-        if bmp.source_branch.pending_writes:
-            raise UpdatePreviewDiffNotReady(
-                'The source branch has pending writes.')
 
 
 class BranchMergeProposalJobFactory:

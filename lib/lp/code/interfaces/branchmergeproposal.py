@@ -669,9 +669,6 @@ class IUpdatePreviewDiffJobSource(Interface):
 class IGenerateIncrementalDiffJob(IRunnableJob):
     """Interface for the job to update the diff for a merge proposal."""
 
-    def checkReady():
-        """Check to see if this job is ready to run."""
-
 
 class IGenerateIncrementalDiffJobSource(Interface):
     """Create or retrieve jobs that update preview diffs."""

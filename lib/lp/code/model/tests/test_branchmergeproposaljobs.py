@@ -260,42 +260,36 @@ class TestGenerateIncrementalDiffJob(DiffTestCase):
             'generating an incremental diff for a merge proposal',
             job.getOperationDescription())
 
+    def makeRunnableJob(self):
+        self.useBzrBranches(direct_database=True)
+        bmp, source_rev_id, target_rev_id = self.createExampleMerge()
+        repository = bmp.source_branch.getBzrBranch().repository
+        parent_id = repository.get_revision(source_rev_id).parent_ids[0]
+        self.factory.makeRevision(rev_id=source_rev_id)
+        self.factory.makeRevision(rev_id=parent_id)
+        return GenerateIncrementalDiffJob.create(bmp, parent_id, source_rev_id)
+
     def test_run(self):
+        job = self.makeRunnableJob()
+        transaction.commit()
+        self.layer.switchDbUser(config.merge_proposal_jobs.dbuser)
+        job.run()
+        transaction.commit()
+
+    def test_run_all(self):
+        job = self.makeRunnableJob()
+        transaction.commit()
+        self.layer.switchDbUser(config.merge_proposal_jobs.dbuser)
+        runner = JobRunner([job])
+        runner.runAll()
+        self.assertEqual([job], runner.completed_jobs)
+
+    def test_10_minute_lease(self):
         self.useBzrBranches(direct_database=True)
         bmp = self.createExampleMerge()[0]
         job = GenerateIncrementalDiffJob.create(bmp, 'old', 'new')
         transaction.commit()
         self.layer.switchDbUser(config.merge_proposal_jobs.dbuser)
-        JobRunner([job]).runAll()
-        transaction.commit()
-        self.checkExampleMerge(bmp.incremental_diffs[-1])
-
-    def test_run_branches_not_ready(self):
-        # If the job has been waiting for a significant period of time (15
-        # minutes for now), we run the job anyway.  The checkReady method
-        # then raises and this is caught as a user error by the job system,
-        # and as such sends an email to the error recipients, which for this
-        # job is the merge proposal registrant.
-        eric = self.factory.makePerson(name='eric', email='eric@example.com')
-        bmp = self.factory.makeBranchMergeProposal(registrant=eric)
-        job = UpdatePreviewDiffJob.create(bmp)
-        pop_notifications()
-        JobRunner([job]).runAll()
-        [email] = pop_notifications()
-        self.assertEqual('Eric <eric@example.com>', email['to'])
-        self.assertEqual(
-            'Launchpad error while generating the diff for a merge proposal',
-            email['subject'])
-        self.assertEqual(
-            'Launchpad encountered an error during the following operation: '
-            'generating the diff for a merge proposal.  '
-            'The source branch has no revisions.',
-            email.get_payload(decode=True))
-
-    def test_10_minute_lease(self):
-        self.useBzrBranches(direct_database=True)
-        bmp = self.createExampleMerge()[0]
-        job = UpdatePreviewDiffJob.create(bmp)
         job.acquireLease()
         expiry_delta = job.lease_expires - datetime.now(pytz.UTC)
         self.assertTrue(500 <= expiry_delta.seconds, expiry_delta)
