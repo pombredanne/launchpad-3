@@ -49,6 +49,7 @@ class TestSyncSource(TestCase):
         Setup and chdir into a temp directory, a jail, where we can
         control the file creation properly
         """
+        super(TestSyncSource, self).setUp()
         fillLibrarianFile(1, content='one')
         fillLibrarianFile(2, content='two')
         fillLibrarianFile(54, content='fifty-four')
@@ -64,6 +65,7 @@ class TestSyncSource(TestCase):
         chdir back to the previous path (home) and remove the temp
         directory used as jail.
         """
+        super(TestSyncSource, self).tearDown()
         os.chdir(self._home)
         cleanupLibrarianFiles()
         shutil.rmtree(self._jail)
@@ -255,6 +257,7 @@ class TestSyncSourceScript(TestCase):
     dbuser = 'ro'
 
     def setUp(self):
+        super(TestSyncSourceScript, self).setUp()
         self._home = os.getcwd()
         self._jail = os.path.join(
             os.path.dirname(__file__), 'sync_source_home')
@@ -262,6 +265,7 @@ class TestSyncSourceScript(TestCase):
 
     def tearDown(self):
         """'chdir' back to the previous path (home)."""
+        super(TestSyncSourceScript, self).tearDown()
         os.chdir(self._home)
 
     def runSyncSource(self, extra_args=None):
