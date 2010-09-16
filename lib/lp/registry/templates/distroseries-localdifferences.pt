@@ -33,7 +33,7 @@
           <table class="listing">
           <thead>
             <tr>
-              <th>Package</th>
+              <th>Source</th>
               <th><tal:replace replace="parent_name" /> version</th>
               <th><tal:replace replace="series_name" /> version</th>
               <th>Last uploaded</th>
