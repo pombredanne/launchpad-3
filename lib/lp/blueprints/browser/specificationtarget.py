@@ -173,7 +173,8 @@ class HasSpecificationsView(LaunchpadView):
         # ProjectGroups are a special case, as their products may be a
         # combination of usage settings. To deal with this, check all
         # products via the involvment menu.
-        if IProjectGroup.providedBy(self.context):
+        if (IProjectGroup.providedBy(self.context)
+            or IProjectGroupSeries.providedBy(self.context)):
             involvement = getMultiAdapter(
                 (self.context, self.request),
                 name='+get-involved')
