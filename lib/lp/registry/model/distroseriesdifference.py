@@ -42,6 +42,7 @@ from lp.registry.interfaces.distroseriesdifferencecomment import (
     )
 from lp.registry.model.distroseriesdifferencecomment import (
     DistroSeriesDifferenceComment)
+from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.propertycache import (
     cachedproperty,
     IPropertyCacheManager,
@@ -125,6 +126,16 @@ class DistroSeriesDifference(Storm):
             DistroSeriesDifference.derived_series == distro_series,
             DistroSeriesDifference.difference_type == difference_type,
             DistroSeriesDifference.status.is_in(status))
+
+    @staticmethod
+    def getByDistroSeriesAndName(distro_series, source_package_name):
+        """See `IDistroSeriesDifferenceSource`."""
+        return IStore(DistroSeriesDifference).find(
+            DistroSeriesDifference,
+            DistroSeriesDifference.derived_series == distro_series,
+            DistroSeriesDifference.source_package_name == (
+                SourcePackageName.id),
+            SourcePackageName.name == source_package_name).one()
 
     @cachedproperty
     def source_pub(self):

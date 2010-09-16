@@ -6,7 +6,7 @@ Create test data.
     >>> from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
     >>> test_publisher = SoyuzTestPublisher()
     >>> login('admin@canonical.com')
-    >>> test_data = test_publisher.makeSourcePackageWithBinaryPackageRelease()
+    >>> test_data = test_publisher.makeSourcePackageSummaryData()
     >>> test_publisher.updateDistroSeriesPackageCache(
     ...     test_data['distroseries'])
     >>> logout()

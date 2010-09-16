@@ -494,45 +494,47 @@ class SoyuzTestPublisher:
 
         return source
 
-    def makeSourcePackageWithBinaryPackageRelease(self):
+    def makeSourcePackageSummaryData(self, source_pub=None):
         """Make test data for SourcePackage.summary.
 
         The distroseries that is returned from this method needs to be
         passed into updateDistroseriesPackageCache() so that
         SourcePackage.summary can be populated.
         """
-        distribution = self.factory.makeDistribution(
-            name='youbuntu', displayname='Youbuntu')
-        distroseries = self.factory.makeDistroRelease(name='busy',
-            distribution=distribution)
-        source_package_name = self.factory.makeSourcePackageName(
-            name='bonkers')
-        source_package = self.factory.makeSourcePackage(
-            sourcepackagename=source_package_name,
-            distroseries=distroseries)
-        component = self.factory.makeComponent('multiverse')
+        if source_pub is None:
+            distribution = self.factory.makeDistribution(
+                name='youbuntu', displayname='Youbuntu')
+            distroseries = self.factory.makeDistroRelease(name='busy',
+                distribution=distribution)
+            source_package_name = self.factory.makeSourcePackageName(
+                name='bonkers')
+            source_package = self.factory.makeSourcePackage(
+                sourcepackagename=source_package_name,
+                distroseries=distroseries)
+            component = self.factory.makeComponent('multiverse')
+            source_pub = self.factory.makeSourcePackagePublishingHistory(
+                sourcepackagename=source_package_name,
+                distroseries=distroseries,
+                component=component)
+
         das = self.factory.makeDistroArchSeries(
-            distroseries=distroseries)
-        spph = self.factory.makeSourcePackagePublishingHistory(
-            sourcepackagename=source_package_name,
-            distroseries=distroseries,
-            component=component)
+            distroseries=source_pub.distroseries)
 
         for name in ('flubber-bin', 'flubber-lib'):
             binary_package_name = self.factory.makeBinaryPackageName(name)
             build = self.factory.makeBinaryPackageBuild(
-                source_package_release=spph.sourcepackagerelease,
+                source_package_release=source_pub.sourcepackagerelease,
                 archive=self.factory.makeArchive(),
                 distroarchseries=das)
             bpr = self.factory.makeBinaryPackageRelease(
                 binarypackagename=binary_package_name,
                 summary='summary for %s' % name,
-                build=build, component=component)
+                build=build, component=source_pub.component)
             bpph = self.factory.makeBinaryPackagePublishingHistory(
                 binarypackagerelease=bpr, distroarchseries=das)
         return dict(
-            distroseries=distroseries,
-            source_package=source_package)
+            distroseries=source_pub.distroseries,
+            source_package=source_pub.meta_sourcepackage)
 
     def updateDistroSeriesPackageCache(
         self, distroseries, restore_db_connection='launchpad'):
