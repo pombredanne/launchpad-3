@@ -89,7 +89,8 @@ class BugSubscriptionFilter(Storm):
 
     id = Int(primary=True)
 
-    structural_subscription_id = Int("structuralsubscription", allow_none=False)
+    structural_subscription_id = Int(
+        "structuralsubscription", allow_none=False)
     structural_subscription = Reference(
         structural_subscription_id, "StructuralSubscription.id")
 
