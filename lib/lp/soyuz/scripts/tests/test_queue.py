@@ -38,7 +38,7 @@ from canonical.librarian.ftests.harness import (
     )
 from canonical.librarian.utils import filechunks
 from canonical.testing import (
-    LaunchpadFunctionalLayer, 
+    DatabaseFunctionalLayer, 
     LaunchpadZopelessLayer,
     )
 from lp.archiveuploader.nascentupload import NascentUpload
@@ -948,7 +948,7 @@ class TestQueuePageClosingBugs(TestCaseWithFactory):
     # The distroseries +queue page can close bug when accepting
     # packages.  Unit tests for that belong here.
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def test_close_bugs_for_sourcepackagerelease_with_private_bug(self):
         # lp.soyuz.scripts.processaccepted.close_bugs_for_sourcepackagerelease
