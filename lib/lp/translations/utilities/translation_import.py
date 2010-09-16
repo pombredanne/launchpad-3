@@ -55,10 +55,16 @@ from lp.translations.interfaces.translations import TranslationConstants
 from lp.translations.utilities.gettext_po_importer import GettextPOImporter
 from lp.translations.utilities.kde_po_importer import KdePOImporter
 from lp.translations.utilities.mozilla_xpi_importer import MozillaXpiImporter
+from lp.translations.utilities.sanitize import (
+    sanitize_translations_from_import,
+    )
 from lp.translations.utilities.translation_common_format import (
     TranslationMessageData,
     )
-from lp.translations.utilities.validate import GettextValidationError
+from lp.translations.utilities.validate import (
+    GettextValidationError,
+    validate_translation,
+    )
 
 
 importers = {
@@ -501,40 +507,40 @@ class FileImporter(object):
             # We don't have anything to import.
             return None
 
-        try:
-            # Do the actual import.
-            translation_message = potmsgset.updateTranslation(
-                self.pofile, self.last_translator, message.translations,
-                self.translation_import_queue_entry.from_upstream,
-                self.lock_timestamp, force_edition_rights=self.is_editor)
-        except TranslationConflict:
+
+        # Get the current message and check for conflict.
+        current = potmsgset.getCurrentTranslationMessage(
+            self.potemplate, self.pofile.language)
+        lock_timestamp = self.lock_timestamp
+        if current is not None and current.date_created >= lock_timestamp:
             self._addConflictError(message, potmsgset)
             if self.logger is not None:
                 self.logger.info(
                     "Conflicting updates on message %d." % potmsgset.id)
             return None
+        # Create the new message as a suggestion.
+        sanitized_translations = sanitize_translations_from_import(
+            potmsgset.singular_text, message.translations,
+            self.pofile.language.pluralforms)
+        uploader_person = self.translation_import_queue_entry.importer
+        new_message = potmsgset.submitSuggestion(
+            self.pofile, uploader_person, sanitized_translations)
+        # Try to validate the message.
+        try:
+            validate_translation(
+                potmsgset.singular_text, potmsgset.plural_text,
+                sanitized_translations, potmsgset.flags)
         except GettextValidationError, e:
-            # We got an error, so we submit the translation again but
-            # this time asking to store it as a translation with
-            # errors.
-
             # Add the pomsgset to the list of pomsgsets with errors.
             self._addUpdateError(message, potmsgset, unicode(e))
-
-            try:
-                translation_message = potmsgset.updateTranslation(
-                    self.pofile, self.last_translator, message.translations,
-                    self.translation_import_queue_entry.from_upstream,
-                    self.lock_timestamp, ignore_errors=True,
-                    force_edition_rights=self.is_editor)
-            except TranslationConflict:
-                # A conflict on top of a validation error?  Give up.
-                # This message is cursed.
-                if self.logger is not None:
-                    self.logger.info(
-                        "Conflicting updates; ignoring invalid message %d." %
-                            potmsgset.id)
-                return None
+            # The translation remains only a suggestion.
+        else:
+            # The translation is made current.
+            if current is not None and current.is_diverged:
+                new_message.approveAsDiverged(self.pofile, uploader_person)
+            else:
+                new_message.approve(
+                    self.pofile, uploader_person, self.share_with_other_side)
 
         just_replaced_msgid = (
             self.importer.uses_source_string_msgids and
@@ -542,7 +548,7 @@ class FileImporter(object):
         if just_replaced_msgid:
             potmsgset.clearCachedSingularText()
 
-        return translation_message
+        return new_message
 
     def importMessage(self, message):
         """Import a single message.

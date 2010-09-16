@@ -597,7 +597,7 @@ class FileImporterSharingTest(TestCaseWithFactory):
         """)
 
     def setUp(self):
-        super(FileImporterTest, self).setUp()
+        super(FileImporterSharingTest, self).setUp()
         # Create the upstream series and template with a translator.
         self.translator = self.factory.makeTranslator(self.LANGCODE)
         self.upstream_productseries = self.factory.makeProductSeries()
