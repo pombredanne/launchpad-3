@@ -18,6 +18,7 @@ from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.interfaces.translationfileformat import (
     TranslationFileFormat,
     )
+from lp.translations.interfaces.translationgroup import TranslationPermission
 from lp.translations.interfaces.translationimporter import (
     ITranslationImporter,
     )
@@ -258,6 +259,7 @@ class FileImporterTest(TestCaseWithFactory):
 
     UPSTREAM = 0
     UBUNTU = 1
+    LANGCODE = 'eo'
 
     POFILE = dedent("""\
         msgid ""
@@ -273,18 +275,35 @@ class FileImporterTest(TestCaseWithFactory):
 
     def setUp(self):
         super(FileImporterTest, self).setUp()
+        # Create the upstream series and template with a translator.
+        self.translator = self.factory.makeTranslator(self.LANGCODE)
+        self.upstream_productseries = self.factory.makeProductSeries()
+        self.upstream_productseries.product.translationgroup = (
+            self.translator.translationgroup)
+        self.upstream_productseries.product.translationpermission = (
+                TranslationPermission.RESTRICTED)
+        self.upstream_template = self.factory.makePOTemplate(
+                productseries=self.upstream_productseries)
 
     def _makeEntry(self, side, from_upstream=False, uploader=None):
         if side == self.UPSTREAM:
-            potemplate = self.factory.makePOTemplate(
-                productseries=self.factory.makeProductSeries())
+            potemplate = self.upstream_template
         else:
+            # Create a template in a source package and link the source
+            # package to the upstream series to enable sharing.
             ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+            distroseries = self.factory.makeDistroSeries(distribution=ubuntu)
+            sourcepackagename = self.factory.makeSourcePackageName()
             potemplate = self.factory.makePOTemplate(
-                distroseries=self.factory.makeDistroSeries(
-                    distribution=ubuntu),
-                sourcepackagename=self.factory.makeSourcePackageName())
-        pofile = self.factory.makePOFile('eo', potemplate=potemplate)
+                distroseries=distroseries,
+                sourcepackagename=sourcepackagename,
+                name=self.upstream_template.name)
+            self.factory.makeSourcePackagePublishingHistory(
+                sourcepackagename=sourcepackagename,
+                distroseries=distroseries)
+            self.upstream_productseries.setPackaging(
+                distroseries, sourcepackagename, self.factory.makePerson())
+        pofile = self.factory.makePOFile(self.LANGCODE, potemplate=potemplate)
         entry = self.factory.makeTranslationImportQueueEntry(
             potemplate=potemplate, from_upstream=from_upstream,
             uploader=uploader, content=self.POFILE)
@@ -324,7 +343,8 @@ class FileImporterTest(TestCaseWithFactory):
     def test_shareWithOtherSide_ubuntu_uploader_owner(self):
         # If the uploader in ubuntu has rights on upstream as well, the
         # translations are shared.
-        entry = self._makeEntry(self.UBUNTU)
+        entry = self._makeEntry(
+            self.UBUNTU, uploader=self.translator.translator)
         importer = POFileImporter(
             entry, importers[TranslationFileFormat.PO], None)
         self.assertTrue(
