@@ -332,6 +332,7 @@ class BuildDaemonUploadPolicy(AbstractUploadPolicy):
         """The buildd policy should enforce that the buildid matches."""
         # XXX: dsilvers 2005-10-14 bug=3135:
         # Implement this to check the buildid etc.
+        pass
 
     def rejectPPAUploads(self, upload):
         """Buildd policy allows PPA upload."""

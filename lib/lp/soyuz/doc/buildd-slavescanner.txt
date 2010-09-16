@@ -1060,7 +1060,6 @@ the restricted librarian.
     True
     >>> print lfa.filename
     buildlog_ubuntu-hoary-i386.mozilla-firefox_0.9_BUILDING.txt.gz
-    >>> candidate.destroySelf()
 
 The attempt to fetch the buildlog from the common librarian will fail
 since this is a build in a private archive and the buildlog was thus
