@@ -11,12 +11,14 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
     BugTaskStatus,
     )
-from lp.bugs.model.bugsubscription import (
-    BugSubscriptionFilter,
+from lp.bugs.model.bugsubscriptionfilter import BugSubscriptionFilter
+from lp.bugs.model.bugsubscriptionfilterimportance import (
     BugSubscriptionFilterImportance,
-    BugSubscriptionFilterStatus,
-    BugSubscriptionFilterTag,
     )
+from lp.bugs.model.bugsubscriptionfilterstatus import (
+    BugSubscriptionFilterStatus,
+    )
+from lp.bugs.model.bugsubscriptionfiltertag import BugSubscriptionFilterTag
 from lp.testing import (
     login_person,
     TestCaseWithFactory,
