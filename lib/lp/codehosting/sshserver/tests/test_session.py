@@ -17,8 +17,12 @@ from canonical.config import config
 from lp.codehosting import get_bzr_path, get_BZR_PLUGIN_PATH_for_subprocess
 from lp.codehosting.sshserver.daemon import CodehostingAvatar
 from lp.codehosting.sshserver.session import (
-    ExecOnlySession, ForbiddenCommand, RestrictedExecOnlySession,
-    _WaitForExit)
+    ExecOnlySession,
+    ForbiddenCommand,
+    ForkingRestrictedExecOnlySession,
+    RestrictedExecOnlySession,
+    _WaitForExit,
+    )
 from lp.codehosting.tests.helpers import AvatarTestCase
 
 
@@ -376,12 +380,34 @@ class TestSessionIntegration(AvatarTestCase):
         self.assertRaises(
             ForbiddenCommand, session.getCommandToRun, 'rm -rf /')
 
+    def test_avatarAdaptsToOnlyRestrictedSession(self):
+        config.push('codehosting-no-forking',
+            "[codehosting]\nuse_forking_daemon: False\n")
+        self.addCleanup(config.pop, 'codehosting-no-forking')
+        session = ISession(self.avatar)
+        self.failIf(isinstance(session, ForkingRestrictedExecOnlySession),
+            "ISession(avatar) shouldn't adapt to "
+            " ForkingRestrictedExecOnlySession when forking is disabled. ")
+
     def test_avatarAdaptsToForkingRestrictedExecOnlySession(self):
-        ## self.assertEqual('bzr', executable)
-        ## self.assertEqual(
-        ##     ['bzr', 'lp-serve',
-        ##      '--inet', str(self.avatar.user_id)],
-        ##     list(arguments))
+        # config.push('codehosting-forking',
+        #     "[codehosting]\nuse_forking_daemon: True\n")
+        # self.addCleanup(config.pop, 'codehosting-forking')
+        session = ISession(self.avatar)
+        self.failUnless(
+            isinstance(session, ForkingRestrictedExecOnlySession),
+            "ISession(avatar) doesn't adapt to "
+            " ForkingRestrictedExecOnlySession. "
+            "Got %r instead." % (session,))
+        executable, arguments = session.getCommandToRun(
+            'bzr serve --inet --directory=/ --allow-writes')
+        executable, arguments, env = session.getCommandToFork(
+            executable, arguments, session.environment)
+        self.assertEqual('bzr', executable)
+        self.assertEqual(
+             ['bzr', 'lp-serve',
+              '--inet', str(self.avatar.user_id)],
+             list(arguments))
 
 
 def test_suite():

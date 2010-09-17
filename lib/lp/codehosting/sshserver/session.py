@@ -450,7 +450,10 @@ def launch_smart_server(avatar):
     # Extract the hostname from the supermirror root config.
     hostname = urlparse.urlparse(config.codehosting.supermirror_root)[1]
     environment['BZR_EMAIL'] = '%s@%s' % (avatar.username, hostname)
-    return ForkingRestrictedExecOnlySession(
+    klass = RestrictedExecOnlySession
+    if config.codehosting.use_forking_daemon:
+        klass = ForkingRestrictedExecOnlySession
+    return klass(
         avatar,
         reactor,
         'bzr serve --inet --directory=/ --allow-writes',
