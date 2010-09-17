@@ -21,7 +21,7 @@ The view explains what that the user is creating a release, and lists
 the other releases for the series. There are no other releases yet.
 
     >>> login_person(owner)
-    >>> view = create_initialized_view(milestone, '+addrelease')
+    >>> view = create_initialized_view(naked_milestone, '+addrelease')
     >>> print view.label
     Create a new release for App
     >>> print view.page_title
@@ -44,14 +44,14 @@ milestone.
     ...     'field.actions.create': 'Create release',
     ...     'field.keep_milestone_active.used': '', # false
     ...     }
-    >>> view = create_initialized_view(milestone, '+addrelease', form=form)
+    >>> view = create_initialized_view(naked_milestone, '+addrelease', form=form)
     >>> print view.errors
     []
 
     >>> print view.widget_errors
     {}
 
-    >>> print milestone.active
+    >>> print naked_milestone.active
     False
 
     >>> for release in series.releases:
@@ -62,7 +62,7 @@ milestone.
 
 Only one release can be created for the milestone.
 
-    >>> view = create_initialized_view(milestone, '+addrelease', form=form)
+    >>> view = create_initialized_view(naked_milestone, '+addrelease', form=form)
     >>> for notice in view.request.response.notifications:
     ...     print notice.message
     A project release already exists for this milestone.
