@@ -16,7 +16,7 @@ import logging
 from optparse import OptionParser
 import os.path
 import sys
-from urllib2 import urlopen, HTTPError
+from urllib2 import urlopen, HTTPError, URLError
 
 from contrib.glock import (
     GlobalLock,
@@ -334,6 +334,12 @@ def cronscript_enabled(control_url, name, log):
             control_fp = urlopen(control_url)
     except HTTPError, error:
         if error.code == 404:
+            log.debug("Cronscript control file not found at %s", control_url)
+            return True
+        log.exception("Error loading %s" % control_url)
+        return True
+    except URLError, error:
+        if getattr(error.reason, 'errno', None) == 2:
             log.debug("Cronscript control file not found at %s", control_url)
             return True
         log.exception("Error loading %s" % control_url)
