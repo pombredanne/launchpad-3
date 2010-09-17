@@ -13,7 +13,7 @@ __all__ = [
 from lazr.enum import DBEnumeratedType, DBItem
 from zope.interface import Attribute, Interface
 from zope.schema import Int, Object
-                                                                              
+
 from canonical.launchpad import _
 
 from lp.services.job.interfaces.job import IJob, IJobSource, IRunnableJob
@@ -23,10 +23,10 @@ from lp.registry.interfaces.distroseries import IDistroSeries
 
 class IDistributionJob(Interface):
     """A Job that initialises acts on a distribution."""
-    
+
     id = Int(
-        title=_('DB ID'), required=True, readonly=True,                       
-        description=_("The tracking number for this job."))                   
+        title=_('DB ID'), required=True, readonly=True,
+        description=_("The tracking number for this job."))
 
     distribution = Object(
         title=_('The Distribution this job is about.'),
@@ -37,9 +37,9 @@ class IDistributionJob(Interface):
         schema=IDistroSeries, required=False)
 
     job = Object(
-        title=_('The common Job attributes'), schema=IJob, required=True)     
-                                                                              
-    metadata = Attribute('A dict of data about the job.')  
+        title=_('The common Job attributes'), schema=IJob, required=True)
+
+    metadata = Attribute('A dict of data about the job.')
 
     def destroySelf():
         """Destroy this object."""
@@ -64,4 +64,3 @@ class IInitialiseDistroSeriesJobSource(IJobSource):
 
 class IInitialiseDistroSeriesJob(IRunnableJob):
     """A Job that performs actions on a distribution."""
-   
