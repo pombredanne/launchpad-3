@@ -25,7 +25,10 @@ __all__ = [
 
 from datetime import datetime
 import math
-from urllib import quote, unquote
+from urllib import (
+    quote,
+    unquote,
+    )
 
 import pytz
 from zope.app.form.browser import TextAreaWidget
