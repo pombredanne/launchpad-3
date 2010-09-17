@@ -61,12 +61,6 @@ class IPackageBuild(IBuildFarmJob):
             description=_("A URL for failed upload logs."
                           "Will be None if there was no failure.")))
 
-    dependencies = exported(
-        TextLine(
-            title=_('Dependencies'), required=False,
-            description=_('Debian-like dependency line that must be satisfied'
-                          ' before attempting to build this request.')))
-
     build_farm_job = Reference(
         title=_('Build farm job'), schema=IBuildFarmJob, required=True,
         readonly=True, description=_('The base build farm job.'))

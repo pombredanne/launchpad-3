@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -255,6 +255,15 @@ class IBuildFarmJob(IBuildFarmJobOld):
     title = exported(TextLine(title=_("Title"), required=False))
 
     was_built = Attribute("Whether or not modified by the builddfarm.")
+
+    # This doesn't belong here.  It really belongs in IPackageBuild, but
+    # the TAL assumes it can read this directly.
+    dependencies = exported(
+        TextLine(
+            title=_('Dependencies'), required=False,
+            description=_(
+                'Debian-like dependency line that must be satisfied before '
+                'attempting to build this request.')))
 
 
 class ISpecificBuildFarmJob(IBuildFarmJob):

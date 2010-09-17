@@ -104,6 +104,7 @@ from canonical.lazr.utils import smartquote
 from canonical.widgets.branch import TargetBranchWidget
 from canonical.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
 from canonical.widgets.lazrjs import vocabulary_to_choice_edit_items
+from lp.app.errors import NotFoundError
 from lp.blueprints.interfaces.specificationbranch import ISpecificationBranch
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugbranch import IBugBranch
@@ -145,6 +146,9 @@ from lp.registry.interfaces.person import (
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.vocabularies import UserTeamsParticipationPlusSelfVocabulary
 from lp.services.propertycache import cachedproperty
+from lp.translations.interfaces.translationtemplatesbuild import (
+    ITranslationTemplatesBuildSource,
+    )
 
 
 def quote(text):
@@ -236,6 +240,16 @@ class BranchNavigation(Navigation):
     def traverse_code_import(self):
         """Traverses to the `ICodeImport` for the branch."""
         return self.context.code_import
+
+    @stepthrough("+translation-templates-build")
+    def traverse_translation_templates_build(self, id_string):
+        """Traverses to a `TranslationTemplatesBuild`."""
+        try:
+            buildfarmjob_id = int(id_string)
+        except ValueError:
+            raise NotFoundError(id_string)
+        source = getUtility(ITranslationTemplatesBuildSource)
+        return source.getByBuildFarmJob(buildfarmjob_id)
 
 
 class BranchEditMenu(NavigationMenu):
