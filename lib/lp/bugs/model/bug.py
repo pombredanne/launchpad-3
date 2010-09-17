@@ -738,21 +738,20 @@ class Bug(SQLBase):
         if self.private:
             return []
         # For each subscription to each duplicate of this bug, find the
-        # earliest subscription for each subscriber.
-        first_subscriptions = Select(
-            Min(BugSubscription.id),
-            group_by=BugSubscription.person_id,
-            where=And(
-                BugSubscription.bug_id == Bug.id,
-                Bug.duplicateof == self))
-        # Fetch those subscriptions and eager load the subscribers.
+        # earliest subscription for each subscriber. Eager load the
+        # subscribers.
         return DecoratedResultSet(
             IStore(BugSubscription).find(
-                (Person, BugSubscription),
-                BugSubscription.id.is_in(first_subscriptions),
+                # XXX: GavinPanella 2010-09-17 bug=374777: This SQL(...) is a
+                # hack; it does not seem to be possible to express DISTINCT ON
+                # with Storm.
+                (SQL("DISTINCT ON (BugSubscription.person) 0 AS ignore"),
+                 Person, BugSubscription),
+                Bug.duplicateof == self,
+                BugSubscription.bug_id == Bug.id,
                 BugSubscription.person_id == Person.id).order_by(
-                Person.displayname),
-            operator.itemgetter(1))
+                BugSubscription.person_id, Person.displayname),
+            operator.itemgetter(2))
 
     def getSubscribersFromDuplicates(self, recipients=None, level=None):
         """See `IBug`.
