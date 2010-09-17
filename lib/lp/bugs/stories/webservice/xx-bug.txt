@@ -18,6 +18,7 @@ At the top level we provide a collection of bugs.
   15
   >>> bug_entries = sorted(bugs['entries'], key=itemgetter('id'))
   >>> pprint_entry(bug_entries[0])
+  activity_collection_link: u'http://.../bugs/11/activity'
   attachments_collection_link: u'http://.../bugs/11/attachments'
   bug_tasks_collection_link: u'http://.../bugs/11/bug_tasks'
   bug_watches_collection_link: u'http://.../bugs/11/bug_watches'
@@ -2084,3 +2085,38 @@ can_expire is not exported in the development version of the API.
     Traceback (most recent call last):
     ...
     NameError: name 'can_expire' is not defined
+
+
+Bug activity
+------------
+
+Each bug has a collection of activities that have taken place with it.
+
+  >>> from lazr.restful.testing.webservice import (
+  ...     pprint_collection, pprint_entry)
+  >>> activity = webservice.get(
+  ...     bug_one['activity_collection_link']).jsonBody()
+  >>> pprint_collection(activity)
+  next_collection_link: u'http://.../bugs/1/activity?ws.start=5&ws.size=5'
+  resource_type_link: u'http://.../#bug_activity-page-resource'
+  start: 0
+  total_size: 26
+  ...
+
+  >>> bug_nine_activity = webservice.get(
+  ...   "/bugs/9/activity").jsonBody()
+  >>> pprint_entry(bug_nine_activity['entries'][1])
+  bug_link: u'http://.../bugs/9'
+  datechanged: u'2006-02-23T16:42:40.288553+00:00'
+  message: None
+  newvalue: u'Confirmed'
+  oldvalue: u'Unconfirmed'
+  person_link: u'http://.../~name12'
+  resource_type_link: u'http://.../#bug_activity'
+  self_link: u'http://.../bugs/9/activity'
+  whatchanged: u'thunderbird: status'
+
+The collection of bug tasks is not exposed as a resource:
+
+  >>> webservice.get("/activity").status
+  404

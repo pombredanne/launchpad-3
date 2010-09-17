@@ -70,6 +70,7 @@ from canonical.launchpad.validators.attachment import (
     )
 from canonical.launchpad.validators.name import name_validator
 from lp.app.errors import NotFoundError
+from lp.bugs.interfaces.bugactivity import IBugActivity
 from lp.bugs.interfaces.bugattachment import IBugAttachment
 from lp.bugs.interfaces.bugbranch import IBugBranch
 from lp.bugs.interfaces.bugtask import (
@@ -243,7 +244,11 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
              required=False, default=False, readonly=True))
     displayname = TextLine(title=_("Text of the form 'Bug #X"),
         readonly=True)
-    activity = Attribute('SQLObject.Multijoin of IBugActivity')
+    activity = exported(
+        CollectionField(
+            title=_('Log of activity that has occurred on this bug.'),
+            value_type=Reference(schema=IBugActivity),
+            readonly=True))
     initial_message = Attribute(
         "The message that was specified when creating the bug")
     bugtasks = exported(
