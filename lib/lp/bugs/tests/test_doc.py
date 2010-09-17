@@ -132,11 +132,6 @@ special = {
         tearDown=uploadQueueTearDown,
         layer=LaunchpadZopelessLayer
         ),
-    'bugnotification-comment-syncing-team.txt': LayeredDocFileSuite(
-        '../doc/bugnotification-comment-syncing-team.txt',
-        layer=LaunchpadZopelessLayer, setUp=bugNotificationSendingSetUp,
-        tearDown=bugNotificationSendingTearDown
-        ),
     'bugnotificationrecipients.txt-branchscanner': LayeredDocFileSuite(
         '../doc/bugnotificationrecipients.txt',
         setUp=branchscannerBugsSetUp,
