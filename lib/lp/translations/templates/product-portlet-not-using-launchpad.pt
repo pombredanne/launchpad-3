@@ -4,10 +4,24 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   omit-tag="">
 
-    <div id="not-translated-in-launchpad"
-         tal:condition="not: context/translations_usage/enumvalue:LAUNCHPAD">
+    <div id="not-translated-in-launchpad">
       <strong>
-        This project is not using Launchpad for translations.
+      <div tal:omit-tag
+        tal:condition="context/translations_usage/enumvalue:UNKNOWN">
+        Launchpad does not know what
+        <tal:project replace="context/displayname" /> uses for
+        translations.
+      </div>
+      <div tal:omit-tag
+        tal:condition="context/translations_usage/enumvalue:EXTERNAL">
+        <tal:project replace="context/displayname" /> is not using Launchpad 
+        for translations.
+      </div>
+      <div tal:omit-tag
+        tal:condition="context/translations_usage/enumvalue:NOT_APPLICABLE">
+        <tal:project replace="context/displayname" /> does not use
+        translansations. 
+      </div>
       </strong>
       <ul>
         <li>
@@ -18,6 +32,12 @@
             >Getting started with translating your project in Launchpad</a>
         </li>
       </ul>
+    </div>
+    <div id="ubuntu-translations" tal:condition="view/context/ubuntu-translations" />
+      <!-- Branches/ubuntu packages here. -->
+    </div>
+    <div id="automatic-imports" tal:condition="view/context/auto-imports" />
+      <!-- Auto imports here -->
     </div>
 
 </tal:root>

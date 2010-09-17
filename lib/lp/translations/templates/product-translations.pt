@@ -31,6 +31,7 @@
         </div>
       </div>
 
+      <!-- Not sure this should be shown at all if translations is off. -->
       <tal:page_content condition="view/show_page_content">
         <tal:translatable define="target view/primary_translatable">
 
