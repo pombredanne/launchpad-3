@@ -67,6 +67,31 @@ class SilentLaunchpadScriptFailure(Exception):
     exit_status = 1
 
 
+def log_unhandled_exceptions(func):
+    """Decorator that logs unhandled exceptions via the logging module.
+
+    Exceptions are reraised.
+
+    Only for methods of `LaunchpadScript` and subclasses. Not thread safe,
+    which is fine as the decorated LaunchpadScript methods are only
+    invoked from the main thread.
+    """
+
+    def log_unhandled_exceptions_func(self, *args, **kw):
+        try:
+            self._log_unhandled_exceptions_level += 1
+            return func(self, *args, **kw)
+        except:
+            if self._log_unhandled_exceptions_level == 1:
+                # self.logger is setup in LaunchpadScript.__init__() so
+                # we can use it.
+                self.logger.exception("Unhandled exception")
+            raise
+        finally:
+            self._log_unhandled_exceptions_level -= 1
+    return log_unhandled_exceptions_func
+
+
 class LaunchpadScript:
     """A base class for runnable scripts and cronscripts.
 
@@ -101,6 +126,9 @@ class LaunchpadScript:
     description = None
     lockfilepath = None
     loglevel = logging.INFO
+
+    # State for the log_unhandled_exceptions decorator.
+    _log_unhandled_exceptions_level = 0
 
     def __init__(self, name=None, dbuser=None, test_args=None):
         """Construct new LaunchpadScript.
@@ -170,6 +198,7 @@ class LaunchpadScript:
     #
     # Convenience or death
     #
+    @log_unhandled_exceptions
     def login(self, user):
         """Super-convenience method that avoids the import."""
         setupInteractionByEmail(user)
@@ -196,6 +225,7 @@ class LaunchpadScript:
         """
         self.lock = GlobalLock(self.lockfilepath, logger=self.logger)
 
+    @log_unhandled_exceptions
     def lock_or_die(self, blocking=False):
         """Attempt to lock, and sys.exit(1) if the lock's already taken.
 
@@ -209,6 +239,7 @@ class LaunchpadScript:
             self.logger.debug('Lockfile %s in use' % self.lockfilepath)
             sys.exit(1)
 
+    @log_unhandled_exceptions
     def lock_or_quit(self, blocking=False):
         """Attempt to lock, and sys.exit(0) if the lock's already taken.
 
@@ -223,6 +254,7 @@ class LaunchpadScript:
             self.logger.info('Lockfile %s in use' % self.lockfilepath)
             sys.exit(0)
 
+    @log_unhandled_exceptions
     def unlock(self, skip_delete=False):
         """Release the lock. Do this before going home.
 
@@ -232,6 +264,7 @@ class LaunchpadScript:
         """
         self.lock.release(skip_delete=skip_delete)
 
+    @log_unhandled_exceptions
     def run(self, use_web_security=False, implicit_begin=True,
             isolation=ISOLATION_LEVEL_DEFAULT):
         """Actually run the script, executing zcml and initZopeless."""
@@ -277,6 +310,7 @@ class LaunchpadScript:
     #
     # Make things happen
     #
+    @log_unhandled_exceptions
     def lock_and_run(self, blocking=False, skip_delete=False,
                      use_web_security=False, implicit_begin=True,
                      isolation=ISOLATION_LEVEL_DEFAULT):
@@ -311,6 +345,7 @@ class LaunchpadCronScript(LaunchpadScript):
         if not enabled:
             sys.exit(0)
 
+    @log_unhandled_exceptions
     def record_activity(self, date_started, date_completed):
         """Record the successful completion of the script."""
         self.txn.begin()
