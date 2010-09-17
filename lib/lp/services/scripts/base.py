@@ -67,10 +67,12 @@ class SilentLaunchpadScriptFailure(Exception):
     exit_status = 1
 
 
-def log_unhandled_exceptions(func):
+def log_unhandled_exception_and_exit(func):
     """Decorator that logs unhandled exceptions via the logging module.
 
-    Exceptions are reraised.
+    Exceptions are reraised except at the top level. ie. exceptions are
+    only propagated to the outermost decorated method. At the top level,
+    an exception causes the script to terminate.
 
     Only for methods of `LaunchpadScript` and subclasses. Not thread safe,
     which is fine as the decorated LaunchpadScript methods are only
@@ -86,7 +88,9 @@ def log_unhandled_exceptions(func):
                 # self.logger is setup in LaunchpadScript.__init__() so
                 # we can use it.
                 self.logger.exception("Unhandled exception")
-            raise
+                sys.exit(42)
+            else:
+                raise
         finally:
             self._log_unhandled_exceptions_level -= 1
     return log_unhandled_exceptions_func
@@ -198,7 +202,7 @@ class LaunchpadScript:
     #
     # Convenience or death
     #
-    @log_unhandled_exceptions
+    @log_unhandled_exception_and_exit
     def login(self, user):
         """Super-convenience method that avoids the import."""
         setupInteractionByEmail(user)
@@ -225,7 +229,7 @@ class LaunchpadScript:
         """
         self.lock = GlobalLock(self.lockfilepath, logger=self.logger)
 
-    @log_unhandled_exceptions
+    @log_unhandled_exception_and_exit
     def lock_or_die(self, blocking=False):
         """Attempt to lock, and sys.exit(1) if the lock's already taken.
 
@@ -239,7 +243,7 @@ class LaunchpadScript:
             self.logger.debug('Lockfile %s in use' % self.lockfilepath)
             sys.exit(1)
 
-    @log_unhandled_exceptions
+    @log_unhandled_exception_and_exit
     def lock_or_quit(self, blocking=False):
         """Attempt to lock, and sys.exit(0) if the lock's already taken.
 
@@ -254,7 +258,7 @@ class LaunchpadScript:
             self.logger.info('Lockfile %s in use' % self.lockfilepath)
             sys.exit(0)
 
-    @log_unhandled_exceptions
+    @log_unhandled_exception_and_exit
     def unlock(self, skip_delete=False):
         """Release the lock. Do this before going home.
 
@@ -264,7 +268,7 @@ class LaunchpadScript:
         """
         self.lock.release(skip_delete=skip_delete)
 
-    @log_unhandled_exceptions
+    @log_unhandled_exception_and_exit
     def run(self, use_web_security=False, implicit_begin=True,
             isolation=ISOLATION_LEVEL_DEFAULT):
         """Actually run the script, executing zcml and initZopeless."""
@@ -310,7 +314,7 @@ class LaunchpadScript:
     #
     # Make things happen
     #
-    @log_unhandled_exceptions
+    @log_unhandled_exception_and_exit
     def lock_and_run(self, blocking=False, skip_delete=False,
                      use_web_security=False, implicit_begin=True,
                      isolation=ISOLATION_LEVEL_DEFAULT):
@@ -345,7 +349,7 @@ class LaunchpadCronScript(LaunchpadScript):
         if not enabled:
             sys.exit(0)
 
-    @log_unhandled_exceptions
+    @log_unhandled_exception_and_exit
     def record_activity(self, date_started, date_completed):
         """Record the successful completion of the script."""
         self.txn.begin()
@@ -367,6 +371,7 @@ def cronscript_enabled(control_url, name, log):
             control_fp = urlopen(control_url, timeout=5)
         else:
             control_fp = urlopen(control_url)
+    # Yuck. API makes it hard to catch 'does not exist'.
     except HTTPError, error:
         if error.code == 404:
             log.debug("Cronscript control file not found at %s", control_url)
@@ -379,7 +384,7 @@ def cronscript_enabled(control_url, name, log):
             return True
         log.exception("Error loading %s" % control_url)
         return True
-    except:
+    except Exception:
         log.exception("Error loading %s" % control_url)
         return True
 
