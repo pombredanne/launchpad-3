@@ -41,7 +41,7 @@ in the context of the bug page.
   >>> browser.open(
   ...     'http://bugs.launchpad.dev/bugs/1/+bug-portlet-subscribers-content')
   >>> print_direct_subscribers(browser.contents)
-  Foo Bar (Subscribed themselves) (Unsubscribe Foo Bar)
+  Foo Bar (Self-subscribed) (Unsubscribe Foo Bar)
   Sample Person (Subscribed by Launchpad Janitor)
   Steve Alexander (Subscribed by Launchpad Janitor)
 
@@ -208,7 +208,7 @@ is presented with the Unsubscribe link instead.
   ...     "http://launchpad.dev/bugs/3/+bug-portlet-dupe-subscribers-content")
   >>> print_subscribers_from_duplicates(stevea_browser.contents)
   From duplicates:
-  Steve Alexander (Subscribed by Launchpad Janitor)
+  Steve Alexander (Subscribed to bug 2 by Launchpad Janitor)
                   (Unsubscribe Steve Alexander)
 
   >>> stevea_browser.getLink(id='unsubscribe-subscriber-11').mech_link.url
@@ -267,7 +267,7 @@ previous example.)
   From duplicates:
   Sample Person (Subscribed ...)
   Steve Alexander (Subscribed ...) (Unsubscribe Steve Alexander)
-  testing Spanish team (Subscribed by Foo Bar)
+  testing Spanish team (Subscribed to bug 1 by Foo Bar)
 
   >>> stevea_browser.open(
   ...     "http://launchpad.dev/bugs/3/+bug-portlet-subscribers-content")
@@ -309,7 +309,7 @@ include that team.
 
   >>> print_subscribers_from_duplicates(foobar_browser.contents)
   From duplicates:
-  Ubuntu Team (Subscribed by Foo Bar) (Unsubscribe Ubuntu Team)
+  Ubuntu Team (Subscribed to bug 2 by Foo Bar) (Unsubscribe Ubuntu Team)
 
   >>> foobar_browser.open(
   ...     "http://launchpad.dev/bugs/3/+bug-portlet-subscribers-content")
