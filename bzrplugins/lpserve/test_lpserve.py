@@ -503,13 +503,13 @@ class TestCaseWithLPForkingServiceSubprocess(TestCaseWithSubprocess):
         self.assertEqual('', stderr_content)
         self.assertEqual('this_test@example.com\n', stdout_content)
 
-    def test_sigterm_exits_nicely(self):
+    def _check_exits_nicely(self, sig_id):
         path, _, sock = self.send_fork_request('rocks')
         self.assertEqual(None, self.service_process.poll())
         # Now when we send SIGTERM, it should wait for the child to exit,
         # before it tries to exit itself.
         # In python2.6+ we could use self.service_process.terminate()
-        os.kill(self.service_process.pid, signal.SIGTERM)
+        os.kill(self.service_process.pid, sig_id)
         self.assertEqual(None, self.service_process.poll())
         # Now talk to the child, so the service can close
         stdout_content, stderr_content = self.communicate_with_fork(path)
@@ -518,3 +518,9 @@ class TestCaseWithLPForkingServiceSubprocess(TestCaseWithSubprocess):
         self.assertReturnCode(0, sock)
         # And the process should exit cleanly
         self.assertEqual(0, self.service_process.wait())
+
+    def test_sigterm_exits_nicely(self):
+        self._check_exits_nicely(signal.SIGTERM)
+
+    def test_sigint_exits_nicely(self):
+        self._check_exits_nicely(signal.SIGINT)

@@ -368,8 +368,6 @@ class LPForkingService(object):
 
         SIGTERM allows us to cleanup nicely before we exit.
         """
-        # We register a dummy function, because all we really care about is
-        # interrupting the '.accept()' call.
         signal.signal(signal.SIGCHLD, self._handle_sigchld)
         signal.signal(signal.SIGTERM, self._handle_sigterm)
 
@@ -525,9 +523,26 @@ class LPForkingService(object):
 
     def main_loop(self):
         self._should_terminate.clear()
-        self._create_master_socket()
         self._register_signals()
+        self._create_master_socket()
         trace.note('Listening on port: %s' % (self.port,))
+        try:
+            try:
+                self._do_loop()
+            finally:
+                # Stop talking to others, we are shutting down
+                self._server_socket.close()
+        except KeyboardInterrupt:
+            # From this point, we interpret a single ^C as a request to
+            # shutdown nicely.
+            pass
+        trace.note('Shutting down. Waiting up to %.0fs for %d child processes'
+                   % (self.WAIT_FOR_CHILDREN_TIMEOUT,
+                      len(self._child_processes),))
+        self._shutdown_children()
+        trace.note('Exiting')
+
+    def _do_loop(self):
         while not self._should_terminate.isSet():
             try:
                 conn, client_addr = self._server_socket.accept()
@@ -565,11 +580,6 @@ class LPForkingService(object):
                     conn.sendall('FAILURE\nrequest timed out\n')
                     conn.close()
             self._poll_children()
-        trace.note('Shutting down. Waiting up to %.0fs for %d child processes'
-                   % (self.WAIT_FOR_CHILDREN_TIMEOUT,
-                      len(self._child_processes),))
-        self._shutdown_children()
-        trace.note('Exiting')
 
     def log(self, client_addr, message):
         """Log a message to the trace log.
