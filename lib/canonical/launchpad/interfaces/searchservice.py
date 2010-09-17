@@ -16,7 +16,12 @@ __all__ = [
     ]
 
 from zope.interface import Interface
-from zope.schema import Int, Text, TextLine, URI
+from zope.schema import (
+    Int,
+    Text,
+    TextLine,
+    URI,
+    )
 
 from canonical.launchpad import _
 

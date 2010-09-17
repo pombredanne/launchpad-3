@@ -1,3 +1,28 @@
+launchpad-buildd (70) hardy-cat; urgency=low
+
+  [ LaMont Jones ]
+  * Restore the rest of version 68.
+
+  [ James Westby ]
+  * buildrecipe: Specify BZR_EMAIL via sudo so that the called command
+    sees the environment variable.
+  * buildrecipe: call sudo -i -u instead of sudo -iu so that it works with
+    older versions of sudo.
+  * buildrecipe: flush stdout before calling another command so that
+    the build log has the output correctly interleaved.
+
+  [ William Grant ]
+  * correct arch_tag arguments.
+
+ -- LaMont Jones <lamont@canonical.com>  Fri, 20 Aug 2010 13:27:55 -0600
+
+launchpad-buildd (69) hardy-cat; urgency=low
+
+  * REVERT all of version 68 except for BZR_EMAIL LP#617072
+    (Not reflected in bzr.)
+
+ -- LaMont Jones <lamont@canonical.com>  Tue, 17 Aug 2010 10:40:03 -0600
+
 launchpad-buildd (68) hardy-cat; urgency=low
 
   [ William Grant ]

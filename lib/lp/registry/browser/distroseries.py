@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """View classes related to `IDistroSeries`."""
@@ -11,52 +11,78 @@ __all__ = [
     'DistroSeriesBreadcrumb',
     'DistroSeriesEditView',
     'DistroSeriesFacets',
+    'DistroSeriesLocalDifferences',
     'DistroSeriesPackageSearchView',
     'DistroSeriesPackagesView',
     'DistroSeriesNavigation',
     'DistroSeriesView',
     ]
 
-from zope.lifecycleevent import ObjectCreatedEvent
 from zope.component import getUtility
 from zope.event import notify
 from zope.formlib import form
+from zope.lifecycleevent import ObjectCreatedEvent
 from zope.schema import Choice
-from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
+from zope.schema.vocabulary import (
+    SimpleTerm,
+    SimpleVocabulary,
+    )
 
-from canonical.cachedproperty import cachedproperty
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad import _
-from canonical.launchpad import helpers
-from lp.app.errors import NotFoundError
-from lp.blueprints.browser.specificationtarget import (
-    HasSpecificationsMenuMixin)
-from lp.bugs.browser.bugtask import BugTargetTraversalMixin
-from lp.soyuz.browser.packagesearch import PackageSearchViewBase
-from lp.services.worlddata.interfaces.country import ICountry
-from lp.registry.interfaces.series import SeriesStatus
-from lp.registry.interfaces.distroseries import IDistroSeries
-from lp.translations.browser.distroseries import (
-    check_distroseries_translations_viewable)
-from lp.services.worlddata.interfaces.language import ILanguageSet
-from lp.registry.browser.structuralsubscription import (
-    StructuralSubscriptionMenuMixin,
-    StructuralSubscriptionTargetTraversalMixin)
+from canonical.launchpad import (
+    _,
+    helpers,
+    )
 from canonical.launchpad.interfaces.launchpad import ILaunchBag
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, GetitemNavigation, action, custom_widget)
+    action,
+    custom_widget,
+    GetitemNavigation,
+    StandardLaunchpadFacets,
+    )
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.launchpadform import (
-    LaunchpadEditFormView, LaunchpadFormView)
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    )
 from canonical.launchpad.webapp.menu import (
-    ApplicationMenu, Link, NavigationMenu, enabled_with_permission)
+    ApplicationMenu,
+    enabled_with_permission,
+    Link,
+    NavigationMenu,
+    )
 from canonical.launchpad.webapp.publisher import (
-    canonical_url, LaunchpadView, stepthrough, stepto)
+    canonical_url,
+    LaunchpadView,
+    stepthrough,
+    stepto,
+    )
 from canonical.widgets.itemswidgets import LaunchpadDropdownWidget
-from lp.soyuz.interfaces.queue import IPackageUploadSet
+from lp.app.errors import NotFoundError
+from lp.blueprints.browser.specificationtarget import (
+    HasSpecificationsMenuMixin,
+    )
+from lp.bugs.browser.bugtask import BugTargetTraversalMixin
 from lp.registry.browser import MilestoneOverlayMixin
+from lp.registry.browser.structuralsubscription import (
+    StructuralSubscriptionMenuMixin,
+    StructuralSubscriptionTargetTraversalMixin,
+    )
+from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.distroseriesdifference import (
+    IDistroSeriesDifferenceSource)
+from lp.registry.interfaces.series import SeriesStatus
+from lp.services.features.flags import FeatureController
+from lp.services.propertycache import cachedproperty
+from lp.services.worlddata.interfaces.country import ICountry
+from lp.services.worlddata.interfaces.language import ILanguageSet
+from lp.soyuz.browser.packagesearch import PackageSearchViewBase
+from lp.soyuz.interfaces.queue import IPackageUploadSet
+from lp.translations.browser.distroseries import (
+    check_distroseries_translations_viewable,
+    )
 
 
 class DistroSeriesNavigation(GetitemNavigation, BugTargetTraversalMixin,
@@ -120,6 +146,11 @@ class DistroSeriesNavigation(GetitemNavigation, BugTargetTraversalMixin,
     @stepthrough('+upload')
     def traverse_queue(self, id):
         return getUtility(IPackageUploadSet).get(id)
+
+    @stepthrough('+difference')
+    def traverse_difference(self, name):
+        dsd_source = getUtility(IDistroSeriesDifferenceSource)
+        return dsd_source.getByDistroSeriesAndName(self.context, name)
 
 
 class DistroSeriesBreadcrumb(Breadcrumb):
@@ -190,7 +221,7 @@ class DistroSeriesOverviewMenu(
         text = 'Add architecture'
         return Link('+addport', text, icon='add')
 
-    @enabled_with_permission('launchpad.Admin')
+    @enabled_with_permission('launchpad.Moderate')
     def admin(self):
         text = 'Administer'
         return Link('+admin', text, icon='edit')
@@ -337,6 +368,10 @@ class DistroSeriesView(MilestoneOverlayMixin):
         return None
 
     milestone_can_release = False
+
+    @cachedproperty
+    def milestone_batch_navigator(self):
+        return BatchNavigator(self.context.all_milestones, self.request)
 
 
 class DistroSeriesEditView(LaunchpadEditFormView, SeriesStatusMixin):
@@ -499,3 +534,36 @@ class DistroSeriesNeedsPackagesView(LaunchpadView):
         navigator = BatchNavigator(packages, self.request, size=20)
         navigator.setHeadings('package', 'packages')
         return navigator
+
+
+class DistroSeriesLocalDifferences(LaunchpadView):
+    """Present differences between a derived series and its parent."""
+
+    page_title = 'Local package differences'
+
+    def initialize(self):
+        """Redirect to the derived series if the feature is not enabled."""
+        def in_scope(value):
+            return True
+
+        feature_controller = FeatureController(in_scope)
+        if feature_controller.getFlag('soyuz.derived-series-ui.enabled') != 'on':
+            self.request.response.redirect(canonical_url(self.context))
+            return
+        super(DistroSeriesLocalDifferences, self).initialize()
+
+    @property
+    def label(self):
+        return (
+            "Source package differences between '%s' and "
+            "parent series '%s'" % (
+                self.context.displayname,
+                self.context.parent_series.displayname,
+                ))
+
+    @cachedproperty
+    def cached_differences(self):
+        """Return a batch navigator of potentially filtered results."""
+        differences = getUtility(IDistroSeriesDifferenceSource).getForDistroSeries(
+            self.context)
+        return BatchNavigator(differences, self.request)

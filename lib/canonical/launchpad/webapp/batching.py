@@ -3,15 +3,15 @@
 
 __metaclass__ = type
 
+import lazr.batchnavigator
+from storm.zope.interfaces import IResultSet
 from zope.component import adapts
 from zope.interface import implements
-import lazr.batchnavigator
 from zope.interface.common.sequence import IFiniteSequence
-from storm.zope.interfaces import IResultSet # and ISQLObjectResultSet
 
 from canonical.config import config
-from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
+from canonical.launchpad.webapp.publisher import LaunchpadView
 
 
 class FiniteSequenceAdapter:

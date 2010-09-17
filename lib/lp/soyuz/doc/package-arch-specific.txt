@@ -121,6 +121,17 @@ each of these options:
     >>> print_build_architectures(pub_one)
     hppa
 
+If an architecture is disabled for some reason, then the results from
+determineArchitecturesToBuild() will not include it.
+
+    >>> hoary['hppa'].enabled = False
+
+    >>> print_build_architectures(pub_three)
+    i386
+
+Re-enable it before continuing:
+    >>> hoary['hppa'].enabled = True
+
 
 == Check support for kernel notation in architecture hint list ==
 
@@ -255,7 +266,7 @@ this aspect below.
 To check binary PAS listings we'll use a source publication for which
 produces a single binary.
 
-    >>> from lp.soyuz.interfaces.publishing import (
+    >>> from lp.soyuz.enums import (
     ...     PackagePublishingStatus)
 
     >>> LaunchpadZopelessLayer.switchDbUser("launchpad")

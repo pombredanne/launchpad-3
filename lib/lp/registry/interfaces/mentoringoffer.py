@@ -15,13 +15,20 @@ __all__ = [
     ]
 
 
-from zope.interface import Attribute, Interface
-
-from zope.schema import Datetime, Bool
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Bool,
+    Datetime,
+    )
 
 from canonical.launchpad import _
-from lp.services.fields import PublicPersonChoice
 from lp.registry.interfaces.role import IHasOwner
+from lp.services.fields import PublicPersonChoice
+
+
 class IMentoringOffer(IHasOwner):
     """An offer of mentoring help."""
 

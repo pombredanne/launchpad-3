@@ -5,9 +5,12 @@
 
 __metaclass__ = type
 
-from datetime import datetime, timedelta
-import pytz
+from datetime import (
+    datetime,
+    timedelta,
+    )
 
+import pytz
 from storm.store import Store
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
@@ -16,14 +19,24 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.testing.layers import (
-    DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
-
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
+from lp.buildmaster.enums import (
+    BuildFarmJobType,
+    BuildStatus,
+    )
 from lp.buildmaster.interfaces.buildfarmjob import (
-    BuildFarmJobType, IBuildFarmJob, IBuildFarmJobSet, IBuildFarmJobSource,
-    InconsistentBuildFarmJobError)
+    IBuildFarmJob,
+    IBuildFarmJobSet,
+    IBuildFarmJobSource,
+    InconsistentBuildFarmJobError,
+    )
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
-from lp.testing import login, TestCaseWithFactory
+from lp.testing import (
+    login,
+    TestCaseWithFactory,
+    )
 
 
 class TestBuildFarmJobMixin:
@@ -81,6 +94,8 @@ class TestBuildFarmJob(TestBuildFarmJobMixin, TestCaseWithFactory):
         # The job type is required to create a build farm job.
         self.assertEqual(
             BuildFarmJobType.PACKAGEBUILD, self.build_farm_job.job_type)
+        # Failure count defaults to zero.
+        self.assertEqual(0, self.build_farm_job.failure_count)
         # Other attributes are unset by default.
         self.assertEqual(None, self.build_farm_job.processor)
         self.assertEqual(None, self.build_farm_job.virtualized)

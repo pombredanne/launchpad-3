@@ -35,57 +35,93 @@ __all__ = [
 from collections import defaultdict
 import operator
 
+from lazr.delegates import delegates
+from lazr.lifecycle.event import ObjectModifiedEvent
+from lazr.restful.interface import copy_field
+from lazr.restful.interfaces import (
+    IFieldHTMLRenderer,
+    IWebServiceClientRequest,
+    )
 import simplejson
 from zope.app.form.browser import TextAreaWidget
-from zope.component import adapter, adapts, getMultiAdapter, getUtility
+from zope.component import (
+    adapter,
+    adapts,
+    getMultiAdapter,
+    getUtility,
+    )
 from zope.event import notify as zope_notify
 from zope.formlib import form
-from zope.interface import Interface, implementer, implements
-from zope.schema import Choice, Int, Text
+from zope.interface import (
+    implementer,
+    implements,
+    Interface,
+    )
+from zope.schema import (
+    Choice,
+    Int,
+    Text,
+    )
 from zope.schema.interfaces import IText
-from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
+from zope.schema.vocabulary import (
+    SimpleTerm,
+    SimpleVocabulary,
+    )
 
-from lazr.lifecycle.event import ObjectModifiedEvent
-from lazr.restful.interfaces import (
-    IFieldHTMLRenderer, IWebServiceClientRequest)
-
-from canonical.cachedproperty import cachedproperty
 from canonical.config import config
-
 from canonical.launchpad import _
-from lp.services.fields import Summary, Whiteboard
 from canonical.launchpad.interfaces.message import IMessageSet
 from canonical.launchpad.webapp import (
-    canonical_url, ContextMenu, custom_widget, Link, enabled_with_permission,
-    LaunchpadEditFormView, LaunchpadFormView, LaunchpadView, action,
-    stepthrough, stepto, Navigation)
+    action,
+    canonical_url,
+    ContextMenu,
+    custom_widget,
+    enabled_with_permission,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    LaunchpadView,
+    Link,
+    Navigation,
+    stepthrough,
+    stepto,
+    )
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
 from canonical.launchpad.webapp.menu import NavigationMenu
 from canonical.launchpad.webapp.tales import DateTimeFormatterAPI
 from canonical.widgets.lazrjs import (
-    TextAreaEditorWidget, vocabulary_to_choice_edit_items)
-
+    TextAreaEditorWidget,
+    vocabulary_to_choice_edit_items,
+    )
 from lp.app.browser.stringformatter import FormattersAPI
 from lp.code.adapters.branch import BranchMergeProposalDelta
 from lp.code.browser.codereviewcomment import CodeReviewDisplayComment
-from lp.code.browser.decorations import DecoratedBranch, DecoratedBug
+from lp.code.browser.decorations import (
+    DecoratedBranch,
+    DecoratedBug,
+    )
 from lp.code.enums import (
-    BranchMergeProposalStatus, BranchType, CodeReviewNotificationLevel,
-    CodeReviewVote)
+    BranchMergeProposalStatus,
+    BranchType,
+    CodeReviewNotificationLevel,
+    CodeReviewVote,
+    )
 from lp.code.errors import WrongBranchMergeProposal
 from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
 from lp.code.interfaces.codereviewcomment import ICodeReviewComment
-from lp.code.interfaces.codereviewvote import (
-    ICodeReviewVoteReference)
+from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
 from lp.code.interfaces.diff import IPreviewDiff
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.comments.interfaces.conversation import (
-    IComment, IConversation)
-
-from lazr.delegates import delegates
-from lazr.restful.interface import copy_field
+    IComment,
+    IConversation,
+    )
+from lp.services.fields import (
+    Summary,
+    Whiteboard,
+    )
+from lp.services.propertycache import cachedproperty
 
 
 def latest_proposals_for_each_branch(proposals):

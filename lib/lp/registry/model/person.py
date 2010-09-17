@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 from __future__ import with_statement
 
@@ -26,32 +26,68 @@ __all__ = [
     'WikiName',
     'WikiNameSet']
 
-from datetime import datetime, timedelta
+from datetime import (
+    datetime,
+    timedelta,
+    )
 from operator import attrgetter
-import pytz
 import random
 import re
 import subprocess
-import time
 import weakref
 
-from bzrlib.plugins.builder.recipe import RecipeParser
-from zope.lifecycleevent import ObjectCreatedEvent
-from zope.interface import alsoProvides, implementer, implements
-from zope.component import adapter, getUtility
-from zope.component.interfaces import ComponentLookupError
-from zope.event import notify
-from zope.publisher.interfaces import Unauthorized
-from zope.security.proxy import ProxyFactory, removeSecurityProxy
+import pytz
 from sqlobject import (
-    BoolCol, ForeignKey, IntCol, SQLMultipleJoin, SQLObjectNotFound,
-    StringCol)
-from sqlobject.sqlbuilder import AND, OR, SQLConstant
-from storm.store import EmptyResultSet, Store
+    BoolCol,
+    ForeignKey,
+    IntCol,
+    SQLMultipleJoin,
+    SQLObjectNotFound,
+    StringCol,
+    )
+from sqlobject.sqlbuilder import (
+    AND,
+    OR,
+    SQLConstant,
+    )
 from storm.expr import (
-    Alias, And, Exists, In, Join, LeftJoin, Lower, Min, Not, Or, Select, SQL,
+    Alias,
+    And,
+    Desc,
+    Exists,
+    In,
+    Join,
+    LeftJoin,
+    Lower,
+    Min,
+    Not,
+    Or,
+    Select,
+    SQL,
+    Upper,
     )
 from storm.info import ClassAlias
+from storm.store import (
+    EmptyResultSet,
+    Store,
+    )
+from zope.component import (
+    adapter,
+    getUtility,
+    )
+from zope.component.interfaces import ComponentLookupError
+from zope.event import notify
+from zope.interface import (
+    alsoProvides,
+    implementer,
+    implements,
+    )
+from zope.lifecycleevent import ObjectCreatedEvent
+from zope.publisher.interfaces import Unauthorized
+from zope.security.proxy import (
+    ProxyFactory,
+    removeSecurityProxy,
+    )
 
 from canonical.config import config
 from canonical.database import postgresql
@@ -59,111 +95,190 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
-    cursor, quote, quote_like, sqlvalues, SQLBase)
-
-from canonical.cachedproperty import (cachedproperty, cache_property,
-    clear_property)
-
-from canonical.lazr.utils import get_current_browser_request
-
+    cursor,
+    quote,
+    quote_like,
+    SQLBase,
+    sqlvalues,
+    )
 from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet)
-from canonical.launchpad.database.account import Account, AccountPassword
-from canonical.launchpad.interfaces.account import AccountSuspendedError
-from lp.bugs.model.bugtarget import HasBugsBase
-from canonical.launchpad.database.stormsugar import StartsWith
-from lp.registry.model.karma import KarmaCategory
-from lp.services.salesforce.interfaces import (
-    ISalesforceVoucherProxy, REDEEMABLE_VOUCHER_STATUSES,
-    VOUCHER_STATUSES)
-from lp.services.worlddata.model.language import Language
+    DecoratedResultSet,
+    )
+from canonical.launchpad.database.account import (
+    Account,
+    AccountPassword,
+    )
+from canonical.launchpad.database.emailaddress import (
+    EmailAddress,
+    HasOwnerMixin,
+    )
+from canonical.launchpad.database.logintoken import LoginToken
 from canonical.launchpad.database.oauth import (
-    OAuthAccessToken, OAuthRequestToken)
-from lp.registry.model.personlocation import PersonLocation
-from lp.registry.model.structuralsubscription import (
-    StructuralSubscription)
+    OAuthAccessToken,
+    OAuthRequestToken,
+    )
+from canonical.launchpad.database.stormsugar import StartsWith
 from canonical.launchpad.event.interfaces import (
-    IJoinTeamEvent, ITeamInvitationEvent)
+    IJoinTeamEvent,
+    ITeamInvitationEvent,
+    )
 from canonical.launchpad.helpers import (
-    get_contact_email_addresses, get_email_template, shortlist)
-
-from canonical.launchpad.interfaces.lpstorm import IMasterObject, IMasterStore
+    get_contact_email_addresses,
+    get_email_template,
+    shortlist,
+    )
 from canonical.launchpad.interfaces.account import (
-    AccountCreationRationale, AccountStatus, IAccount, IAccountSet,
-    INACTIVE_ACCOUNT_STATUSES)
-from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
-from lp.soyuz.interfaces.archivepermission import (
-    IArchivePermissionSet)
-from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
+    AccountCreationRationale,
+    AccountStatus,
+    AccountSuspendedError,
+    IAccount,
+    IAccountSet,
+    INACTIVE_ACCOUNT_STATUSES,
+    )
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
-from lp.code.model.hasbranches import (
-    HasBranchesMixin, HasMergeProposalsMixin, HasRequestedReviewsMixin)
-from lp.bugs.interfaces.bugtask import (
-    BugTaskSearchParams, IBugTaskSet, IllegalRelatedBugTasksParams)
-from lp.bugs.interfaces.bugtarget import IBugTarget
-from lp.registry.interfaces.codeofconduct import (
-    ISignedCodeOfConductSet)
-from lp.registry.interfaces.distribution import IDistribution
 from canonical.launchpad.interfaces.emailaddress import (
-    EmailAddressStatus, IEmailAddress, IEmailAddressSet, InvalidEmailAddress)
-from lp.registry.interfaces.gpg import IGPGKeySet
-from lp.registry.interfaces.irc import IIrcID, IIrcIDSet
-from lp.registry.interfaces.jabber import IJabberID, IJabberIDSet
+    EmailAddressStatus,
+    IEmailAddress,
+    IEmailAddressSet,
+    InvalidEmailAddress,
+    )
 from canonical.launchpad.interfaces.launchpad import (
-    IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities)
+    IHasIcon,
+    IHasLogo,
+    IHasMugshot,
+    ILaunchpadCelebrities,
+    )
 from canonical.launchpad.interfaces.launchpadstatistic import (
-    ILaunchpadStatisticSet)
+    ILaunchpadStatisticSet,
+    )
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
+from canonical.launchpad.interfaces.lpstorm import (
+    IMasterObject,
+    IMasterStore,
+    IStore,
+    )
+from canonical.launchpad.validators.email import valid_email
+from canonical.launchpad.validators.name import (
+    sanitize_name,
+    valid_name,
+    )
+from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
+from canonical.launchpad.webapp.interfaces import ILaunchBag
+from canonical.lazr.utils import get_current_browser_request
+from lp.blueprints.interfaces.specification import (
+    SpecificationDefinitionStatus,
+    SpecificationFilter,
+    SpecificationImplementationStatus,
+    SpecificationSort,
+    )
+from lp.blueprints.model.specification import (
+    HasSpecificationsMixin,
+    Specification,
+    )
+from lp.bugs.interfaces.bugtarget import IBugTarget
+from lp.bugs.interfaces.bugtask import (
+    BugTaskSearchParams,
+    IBugTaskSet,
+    IllegalRelatedBugTasksParams,
+    )
+from lp.bugs.model.bugtarget import HasBugsBase
+from lp.bugs.model.bugtask import (
+    BugTask,
+    get_related_bugtasks_search_params,
+    )
+from lp.code.model.hasbranches import (
+    HasBranchesMixin,
+    HasMergeProposalsMixin,
+    HasRequestedReviewsMixin,
+    )
+from lp.registry.interfaces.codeofconduct import ISignedCodeOfConductSet
+from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.gpg import IGPGKeySet
+from lp.registry.interfaces.irc import (
+    IIrcID,
+    IIrcIDSet,
+    )
+from lp.registry.interfaces.jabber import (
+    IJabberID,
+    IJabberIDSet,
+    )
 from lp.registry.interfaces.mailinglist import (
-    IMailingListSet, MailingListStatus, PostedMessageStatus)
+    IMailingListSet,
+    MailingListStatus,
+    PostedMessageStatus,
+    )
 from lp.registry.interfaces.mailinglistsubscription import (
-    MailingListAutoSubscribePolicy)
+    MailingListAutoSubscribePolicy,
+    )
 from lp.registry.interfaces.person import (
-    IPerson, IPersonSet, ITeam, ImmutableVisibilityError, InvalidName,
-    JoinNotAllowed, NameAlreadyTaken, PersonCreationRationale,
-    PersonVisibility, PersonalStanding, TeamMembershipRenewalPolicy,
-    TeamSubscriptionPolicy)
-from lp.registry.interfaces.personnotification import (
-    IPersonNotificationSet)
+    ImmutableVisibilityError,
+    InvalidName,
+    IPerson,
+    IPersonSet,
+    ITeam,
+    JoinNotAllowed,
+    NameAlreadyTaken,
+    PersonalStanding,
+    PersonCreationRationale,
+    PersonVisibility,
+    TeamMembershipRenewalPolicy,
+    TeamSubscriptionPolicy,
+    validate_public_person,
+    )
+from lp.registry.interfaces.personnotification import IPersonNotificationSet
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
-from lp.blueprints.interfaces.specification import (
-    SpecificationDefinitionStatus, SpecificationFilter,
-    SpecificationImplementationStatus, SpecificationSort)
-from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.registry.interfaces.ssh import (
-    ISSHKey, ISSHKeySet, SSHKeyAdditionError, SSHKeyCompromisedError,
-    SSHKeyType)
-from lp.registry.interfaces.teammembership import (
-    TeamMembershipStatus)
-from lp.registry.interfaces.wikiname import IWikiName, IWikiNameSet
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-
-from lp.soyuz.model.archive import Archive
+    ISSHKey,
+    ISSHKeySet,
+    SSHKeyAdditionError,
+    SSHKeyCompromisedError,
+    SSHKeyType,
+    )
+from lp.registry.interfaces.teammembership import TeamMembershipStatus
+from lp.registry.interfaces.wikiname import (
+    IWikiName,
+    IWikiNameSet,
+    )
 from lp.registry.model.codeofconduct import SignedCodeOfConduct
-from lp.bugs.model.bugtask import (
-    BugTask, get_related_bugtasks_search_params)
-from canonical.launchpad.database.emailaddress import (
-    EmailAddress, HasOwnerMixin)
-from lp.registry.model.karma import KarmaCache, KarmaTotalCache
-from canonical.launchpad.database.logintoken import LoginToken
-from lp.registry.model.pillar import PillarName
-from lp.registry.model.karma import KarmaAction, KarmaAssignedEvent, Karma
+from lp.registry.model.karma import (
+    Karma,
+    KarmaAction,
+    KarmaAssignedEvent,
+    KarmaCache,
+    KarmaCategory,
+    KarmaTotalCache,
+    )
 from lp.registry.model.mentoringoffer import MentoringOffer
-from lp.soyuz.model.sourcepackagerelease import (
-    SourcePackageRelease)
-from lp.blueprints.model.specification import (
-    HasSpecificationsMixin, Specification)
-from lp.translations.model.translationimportqueue import (
-    HasTranslationImportsMixin)
+from lp.registry.model.personlocation import PersonLocation
+from lp.registry.model.pillar import PillarName
+from lp.registry.model.structuralsubscription import StructuralSubscription
 from lp.registry.model.teammembership import (
-    TeamMembership, TeamMembershipSet, TeamParticipation)
-
-from canonical.launchpad.validators.email import valid_email
-from canonical.launchpad.validators.name import sanitize_name, valid_name
-from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
-from lp.registry.interfaces.person import validate_public_person
+    TeamMembership,
+    TeamMembershipSet,
+    TeamParticipation,
+    )
+from lp.services.openid.model.openididentifier import OpenIdIdentifier
+from lp.services.propertycache import (
+    cachedproperty,
+    IPropertyCache,
+    )
+from lp.services.salesforce.interfaces import (
+    ISalesforceVoucherProxy,
+    REDEEMABLE_VOUCHER_STATUSES,
+    VOUCHER_STATUSES,
+    )
+from lp.services.worlddata.model.language import Language
+from lp.soyuz.enums import ArchivePurpose
+from lp.soyuz.interfaces.archive import IArchiveSet
+from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
+from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
+from lp.soyuz.model.archive import Archive
+from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
+from lp.translations.model.translationimportqueue import (
+    HasTranslationImportsMixin,
+    )
 
 
 class JoinTeamEvent:
@@ -190,6 +305,12 @@ class ValidPersonCache(SQLBase):
     """Flags if a Person is active and usable in Launchpad.
 
     This is readonly, as this is a view in the database.
+
+    Note that it performs poorly at least some of the time, and if
+    EmailAddress and Person are already being queried, its probably better to
+    query Account directly. See bug
+    https://bugs.edge.launchpad.net/launchpad-registry/+bug/615237 for some
+    corroborating information.
     """
 
 
@@ -374,7 +495,7 @@ class Person(
 
     personal_standing_reason = StringCol(default=None)
 
-    @cachedproperty('_languages_cache')
+    @cachedproperty
     def languages(self):
         """See `IPerson`."""
         results = Store.of(self).find(
@@ -388,19 +509,19 @@ class Person(
 
         :raises AttributeError: If the cache doesn't exist.
         """
-        return self._languages_cache
+        return IPropertyCache(self).languages
 
     def setLanguagesCache(self, languages):
         """Set this person's cached languages.
 
         Order them by name if necessary.
         """
-        cache_property(self, '_languages_cache', sorted(
-            languages, key=attrgetter('englishname')))
+        IPropertyCache(self).languages = sorted(
+            languages, key=attrgetter('englishname'))
 
     def deleteLanguagesCache(self):
         """Delete this person's cached languages, if it exists."""
-        clear_property(self, '_languages_cache')
+        del IPropertyCache(self).languages
 
     def addLanguage(self, language):
         """See `IPerson`."""
@@ -467,7 +588,7 @@ class Person(
             Or(OAuthRequestToken.date_expires == None,
                OAuthRequestToken.date_expires > UTC_NOW))
 
-    @cachedproperty('_location')
+    @cachedproperty
     def location(self):
         """See `IObjectWithLocation`."""
         return PersonLocation.selectOneBy(person=self)
@@ -503,7 +624,8 @@ class Person(
         """See `ISetLocation`."""
         assert not self.is_team, 'Cannot edit team location.'
         if self.location is None:
-            self._location = PersonLocation(person=self, visible=visible)
+            IPropertyCache(self).location = PersonLocation(
+                person=self, visible=visible)
         else:
             self.location.visible = visible
 
@@ -521,7 +643,7 @@ class Person(
             self.location.last_modified_by = user
             self.location.date_last_modified = UTC_NOW
         else:
-            self._location = PersonLocation(
+            IPropertyCache(self).location = PersonLocation(
                 person=self, time_zone=time_zone, latitude=latitude,
                 longitude=longitude, last_modified_by=user)
 
@@ -795,11 +917,11 @@ class Person(
     @property
     def is_team(self):
         """See `IPerson`."""
-        return self.teamowner is not None
+        return self.teamownerID is not None
 
     def isTeam(self):
         """Deprecated. Use is_team instead."""
-        return self.teamowner is not None
+        return self.is_team
 
     @property
     def mailing_list(self):
@@ -1023,7 +1145,7 @@ class Person(
         result = result.order_by(KarmaCategory.title)
         return [karma_cache for (karma_cache, category) in result]
 
-    @cachedproperty('_karma_cached')
+    @cachedproperty
     def karma(self):
         """See `IPerson`."""
         # May also be loaded from _all_members
@@ -1044,9 +1166,10 @@ class Person(
 
         return self.is_valid_person
 
-    @cachedproperty('_is_valid_person_cached')
+    @cachedproperty
     def is_valid_person(self):
         """See `IPerson`."""
+        # This is prepopulated by various queries in and out of person.py.
         if self.is_team:
             return False
         try:
@@ -1116,18 +1239,29 @@ class Person(
         if isinstance(team, (str, unicode)):
             team = PersonSet().getByName(team)
 
-        if self._inTeam_cache is None: # Initialize cache
+        if self.id == team.id:
+            # A team is always a member of itself.
+            return True
+
+        if not team.is_team:
+            # It is possible that this team is really a user since teams
+            # are users are often interchangable.
+            return False
+
+        if self._inTeam_cache is None:
+            # Initialize cache
             self._inTeam_cache = {}
         else:
+            # Retun from cache or fall through.
             try:
-                return self._inTeam_cache[team.id] # Return from cache
+                return self._inTeam_cache[team.id]
             except KeyError:
-                pass # Or fall through
+                pass 
 
         tp = TeamParticipation.selectOneBy(team=team, person=self)
         if tp is not None or self.id == team.teamownerID:
             in_team = True
-        elif team.is_team and not team.teamowner.inTeam(team):
+        elif not team.teamowner.inTeam(team):
             # The owner is not a member but must retain his rights over
             # this team. This person may be a member of the owner, and in this
             # case it'll also have rights over this team.
@@ -1452,6 +1586,70 @@ class Person(
             need_location=True, need_archive=True, need_preferred_email=True,
             need_validity=True)
 
+    @staticmethod
+    def _validity_queries(person_table=None):
+        """Return storm expressions and a decorator function for validity.
+
+        Preloading validity implies preloading preferred email addresses.
+
+        :param person_table: The person table to join to. Only supply if
+            ClassAliases are in use.
+        :return: A dict with four keys joins, tables, conditions, decorators
+
+        * joins are additional joins to use. e.g. [LeftJoin,LeftJoin]
+        * tables are tables to use e.g. [EmailAddress, Account]
+        * decorators are callbacks to call for each row. Each decorator takes
+        (Person, column) where column is the column in the result set for that
+        decorators type.
+        """
+        if person_table is None:
+            person_table = Person
+            email_table = EmailAddress
+            account_table = Account
+        else:
+            email_table = ClassAlias(EmailAddress)
+            account_table = ClassAlias(Account)
+        origins = []
+        columns = []
+        decorators = []
+        # Teams don't have email, so a left join
+        origins.append(
+            LeftJoin(email_table, And(
+                email_table.personID == person_table.id,
+                email_table.status == EmailAddressStatus.PREFERRED)))
+        columns.append(email_table)
+        origins.append(
+            LeftJoin(account_table, And(
+                person_table.accountID == account_table.id,
+                account_table.status == AccountStatus.ACTIVE)))
+        columns.append(account_table)
+
+        def handleemail(person, column):
+            #-- preferred email caching
+            if not person:
+                return
+            email = column
+            IPropertyCache(person).preferredemail = email
+
+        decorators.append(handleemail)
+
+        def handleaccount(person, column):
+            #-- validity caching
+            if not person:
+                return
+            # valid if:
+            valid = (
+                # -- valid account found
+                column is not None
+                # -- preferred email found
+                and person.preferredemail is not None)
+            IPropertyCache(person).is_valid_person = valid
+        decorators.append(handleaccount)
+        return dict(
+            joins=origins,
+            tables=columns,
+            decorators=decorators)
+
     def _all_members(self, need_karma=False, need_ubuntu_coc=False,
         need_location=False, need_archive=False, need_preferred_email=False,
         need_validity=False):
@@ -1481,6 +1679,7 @@ class Person(
             # But not the team itself.
             TeamParticipation.person != self.id)
         columns = [Person]
+        decorators = []
         if need_karma:
             # New people have no karmatotalcache rows.
             origin.append(
@@ -1489,13 +1688,14 @@ class Person(
             columns.append(KarmaTotalCache)
         if need_ubuntu_coc:
             columns.append(Alias(Exists(Select(SignedCodeOfConduct,
-                AND(Person._is_ubuntu_coc_signer_condition(),
+                And(Person._is_ubuntu_coc_signer_condition(),
                     SignedCodeOfConduct.ownerID == Person.id))),
                 name='is_ubuntu_coc_signer'))
         if need_location:
             # New people have no location rows
             origin.append(
-                LeftJoin(PersonLocation, PersonLocation.person == Person.id))
+                LeftJoin(PersonLocation,
+                    PersonLocation.person == Person.id))
             columns.append(PersonLocation)
         if need_archive:
             # Not everyone has PPA's
@@ -1509,8 +1709,9 @@ class Person(
                 Archive.id == Select(Min(Archive.id),
                     Archive.owner == Person.id, Archive),
                 Archive.purpose == ArchivePurpose.PPA)))
-        if need_preferred_email:
-            # Teams don't have email.
+        # checking validity requires having a preferred email.
+        if need_preferred_email and not need_validity:
+            # Teams don't have email, so a left join
             origin.append(
                 LeftJoin(EmailAddress, EmailAddress.person == Person.id))
             columns.append(EmailAddress)
@@ -1518,10 +1719,10 @@ class Person(
                 Or(EmailAddress.status == None,
                     EmailAddress.status == EmailAddressStatus.PREFERRED))
         if need_validity:
-            # May find invalid persons
-            origin.append(
-                LeftJoin(ValidPersonCache, ValidPersonCache.id == Person.id))
-            columns.append(ValidPersonCache)
+            valid_stuff = Person._validity_queries()
+            origin.extend(valid_stuff["joins"])
+            columns.extend(valid_stuff["tables"])
+            decorators.extend(valid_stuff["decorators"])
         if len(columns) == 1:
             columns = columns[0]
             # Return a simple ResultSet
@@ -1532,6 +1733,7 @@ class Person(
 
         def prepopulate_person(row):
             result = row[0]
+            cache = IPropertyCache(result)
             index = 1
             #-- karma caching
             if need_karma:
@@ -1541,31 +1743,31 @@ class Person(
                     karma_total = 0
                 else:
                     karma_total = karma.karma_total
-                cache_property(result, '_karma_cached', karma_total)
+                cache.karma = karma_total
             #-- ubuntu code of conduct signer status caching.
             if need_ubuntu_coc:
                 signed = row[index]
                 index += 1
-                cache_property(result, '_is_ubuntu_coc_signer_cached', signed)
+                cache.is_ubuntu_coc_signer = signed
             #-- location caching
             if need_location:
                 location = row[index]
                 index += 1
-                cache_property(result, '_location', location)
+                cache.location = location
             #-- archive caching
             if need_archive:
                 archive = row[index]
                 index += 1
-                cache_property(result, '_archive_cached', archive)
+                cache.archive = archive
             #-- preferred email caching
-            if need_preferred_email:
+            if need_preferred_email and not need_validity:
                 email = row[index]
                 index += 1
-                cache_property(result, '_preferredemail_cached', email)
-            if need_validity:
-                valid = row[index] is not None
+                cache.preferredemail = email
+            for decorator in decorators:
+                column = row[index]
                 index += 1
-                cache_property(result, '_is_valid_person_cached', valid)
+                decorator(result, column)
             return result
         return DecoratedResultSet(raw_result,
             result_decorator=prepopulate_person)
@@ -1593,7 +1795,7 @@ class Person(
         result = self._getMembersWithPreferredEmails()
         person_list = []
         for person, email in result:
-            cache_property(person, '_preferredemail_cached', email)
+            IPropertyCache(person).preferredemail = email
             person_list.append(person)
         return person_list
 
@@ -1687,19 +1889,22 @@ class Person(
             self.invited_members,
             orderBy=self._sortingColumnsForSetOperations)
 
-    # XXX: kiko 2005-10-07:
-    # myactivememberships should be renamed to team_memberships and be
-    # described as the set of memberships for the object's teams.
     @property
-    def myactivememberships(self):
+    def team_memberships(self):
         """See `IPerson`."""
-        return TeamMembership.select("""
-            TeamMembership.person = %s AND status in %s AND
-            Person.id = TeamMembership.team
-            """ % sqlvalues(self.id, [TeamMembershipStatus.APPROVED,
-                                      TeamMembershipStatus.ADMIN]),
-            clauseTables=['Person'],
-            orderBy=Person.sortingColumns)
+        Team = ClassAlias(Person, "Team")
+        store = Store.of(self)
+        # Join on team to sort by team names. Upper is used in the sort so
+        # sorting works as is user expected, e.g. (A b C) not (A C b).
+        return store.find(TeamMembership,
+            And(TeamMembership.personID == self.id,
+                TeamMembership.teamID == Team.id,
+                TeamMembership.status.is_in([
+                    TeamMembershipStatus.APPROVED,
+                    TeamMembershipStatus.ADMIN,
+                    ]))).order_by(
+                        Upper(Team.displayname),
+                        Upper(Team.name))
 
     def _getMappedParticipantsLocations(self, limit=None):
         """See `IPersonViewRestricted`."""
@@ -1725,7 +1930,7 @@ class Person(
         # fetches the rows when they're needed.
         locations = self._getMappedParticipantsLocations(limit=limit)
         for location in locations:
-            location.person._location = location
+            IPropertyCache(location.person).location = location
         participants = set(location.person for location in locations)
         # Cache the ValidPersonCache query for all mapped participants.
         if len(participants) > 0:
@@ -1805,7 +2010,7 @@ class Person(
         assert self.is_valid_person, (
             "You can only deactivate an account of a valid person.")
 
-        for membership in self.myactivememberships:
+        for membership in self.team_memberships:
             self.leave(membership.team)
 
         # Deactivate CoC signatures, invalidate email addresses, unassign bug
@@ -1867,7 +2072,7 @@ class Person(
         self.account_status = AccountStatus.DEACTIVATED
         self.account_status_comment = comment
         IMasterObject(self.preferredemail).status = EmailAddressStatus.NEW
-        clear_property(self, '_preferredemail_cached')
+        del IPropertyCache(self).preferredemail
         base_new_name = self.name + '-deactivatedaccount'
         self.name = self._ensureNewName(base_new_name)
 
@@ -2052,9 +2257,65 @@ class Person(
 
     def getLatestApprovedMembershipsForPerson(self, limit=5):
         """See `IPerson`."""
-        result = self.myactivememberships
-        result = result.orderBy(['-date_joined', '-id'])
+        result = self.team_memberships
+        result = result.order_by(
+            Desc(TeamMembership.datejoined),
+            Desc(TeamMembership.id))
         return result[:limit]
+
+    def getPathsToTeams(self):
+        """See `Iperson`."""
+        # Get all of the teams this person participates in.
+        teams = list(self.teams_participated_in)
+
+        # For cases where self is a team, we don't need self as a team
+        # participated in.
+        teams = [team for team in teams if team is not self]
+
+        # Get all of the memberships for any of the teams this person is
+        # a participant of. This must be ordered by date and id because
+        # because the graph of the results will create needs to contain
+        # the oldest path information to be consistent with results from
+        # IPerson.findPathToTeam.
+        store = Store.of(self)
+        all_direct_memberships = store.find(TeamMembership,
+            And(
+                TeamMembership.personID.is_in(
+                    [team.id for team in teams] + [self.id]),
+                TeamMembership.teamID != self.id,
+                TeamMembership.status.is_in([
+                    TeamMembershipStatus.APPROVED,
+                    TeamMembershipStatus.ADMIN,
+                    ]))).order_by(
+                        Desc(TeamMembership.datejoined),
+                        Desc(TeamMembership.id))
+        # Cast the results to list now, because they will be iterated over
+        # several times.
+        all_direct_memberships = list(all_direct_memberships)
+
+        # Pull out the memberships directly used by this person.
+        user_memberships = [
+            membership for membership in
+            all_direct_memberships
+            if membership.person == self]
+
+        all_direct_memberships = [
+            (membership.team, membership.person) for membership in
+            all_direct_memberships]
+
+        # Create a graph from the edges provided by the other data sets.
+        graph = dict(all_direct_memberships)
+
+        # Build the teams paths from that graph.
+        paths = {}
+        for team in teams:
+            path = [team]
+            step = team
+            while path[-1] != self:
+                step = graph[step]
+                path.append(step)
+            paths[team] = path
+        return (paths, user_memberships)
 
     @property
     def teams_participated_in(self):
@@ -2179,7 +2440,8 @@ class Person(
         if self.mailing_list is not None:
             mailing_list_email = getUtility(IEmailAddressSet).getByEmail(
                 self.mailing_list.address)
-            mailing_list_email = IMasterObject(mailing_list_email)
+            if mailing_list_email is not None:
+                mailing_list_email = IMasterObject(mailing_list_email)
         else:
             mailing_list_email = None
         all_addresses = IMasterStore(self).find(
@@ -2200,7 +2462,7 @@ class Person(
         if email_address is not None:
             email_address.status = EmailAddressStatus.VALIDATED
             email_address.syncUpdate()
-        clear_property(self, '_preferredemail_cached')
+        del IPropertyCache(self).preferredemail
 
     def setPreferredEmail(self, email):
         """See `IPerson`."""
@@ -2237,9 +2499,9 @@ class Person(
         IMasterObject(email).syncUpdate()
 
         # Now we update our cache of the preferredemail.
-        cache_property(self, '_preferredemail_cached', email)
+        IPropertyCache(self).preferredemail = email
 
-    @cachedproperty('_preferredemail_cached')
+    @cachedproperty
     def preferredemail(self):
         """See `IPerson`."""
         emails = self._getEmailsByStatus(EmailAddressStatus.PREFERRED)
@@ -2385,9 +2647,8 @@ class Person(
                      registrant, daily_build_archive=None, build_daily=False):
         """See `IPerson`."""
         from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
-        builder_recipe = RecipeParser(recipe_text).parse()
         recipe = SourcePackageRecipe.new(
-            registrant, self, name, builder_recipe, description, distroseries,
+            registrant, self, name, recipe_text, description, distroseries,
             daily_build_archive, build_daily)
         Store.of(recipe).flush()
         return recipe
@@ -2404,12 +2665,12 @@ class Person(
             distribution.main_archive, self)
         return permissions.count() > 0
 
-    @cachedproperty('_is_ubuntu_coc_signer_cached')
+    @cachedproperty
     def is_ubuntu_coc_signer(self):
         """See `IPerson`."""
         # Also assigned to by self._all_members.
         store = Store.of(self)
-        query = AND(SignedCodeOfConduct.ownerID == self.id,
+        query = And(SignedCodeOfConduct.ownerID == self.id,
             Person._is_ubuntu_coc_signer_condition())
         # TODO: Using exists would be faster than count().
         return bool(store.find(SignedCodeOfConduct, query).count())
@@ -2419,7 +2680,7 @@ class Person(
         """Generate a Storm Expr for determing the coc signing status."""
         sigset = getUtility(ISignedCodeOfConductSet)
         lastdate = sigset.getLastAcceptedDate()
-        return AND(SignedCodeOfConduct.active == True,
+        return And(SignedCodeOfConduct.active == True,
             SignedCodeOfConduct.datecreated >= lastdate)
 
     @property
@@ -2434,7 +2695,7 @@ class Person(
         sCoC_util = getUtility(ISignedCodeOfConductSet)
         return sCoC_util.searchByUser(self.id, active=False)
 
-    @cachedproperty('_archive_cached')
+    @cachedproperty
     def archive(self):
         """See `IPerson`."""
         return getUtility(IArchiveSet).getPPAOwnedByPerson(self)
@@ -2581,50 +2842,104 @@ class PersonSet:
                 "Both email address and full name are required to "
                 "create an account.")
         db_updated = False
+
+        assert isinstance(openid_identifier, unicode)
+
+        # Load the EmailAddress, Account and OpenIdIdentifier records
+        # from the master (if they exist). We use the master to avoid
+        # possible replication lag issues but this might actually be
+        # unnecessary.
         with MasterDatabasePolicy():
-            account_set = getUtility(IAccountSet)
-            email_set = getUtility(IEmailAddressSet)
-            email = email_set.getByEmail(email_address)
-            try:
-                account = account_set.getByOpenIDIdentifier(
-                    openid_identifier)
-            except LookupError:
-                if email is None:
-                    # There is no account associated with the identifier
-                    # nor an email associated with the email address.
-                    # We'll create one.
-                    account, email = account_set.createAccountAndEmail(
-                            email_address, creation_rationale, full_name,
-                            password=None,
-                            openid_identifier=openid_identifier)
-                else:
-                    account = email.account
-                    assert account is not None, (
-                        "This email address should have an associated "
-                        "account.")
-                    removeSecurityProxy(account).openid_identifier = (
-                        openid_identifier)
+            store = IMasterStore(EmailAddress)
+            join = store.using(
+                EmailAddress,
+                LeftJoin(Account, EmailAddress.accountID == Account.id))
+            email, account = (
+                join.find(
+                    (EmailAddress, Account),
+                    Lower(EmailAddress.email) == Lower(email_address)).one()
+                or (None, None))
+            identifier = store.find(
+                OpenIdIdentifier, identifier=openid_identifier).one()
+
+            if email is None and identifier is None:
+                # Neither the Email Address not the OpenId Identifier
+                # exist in the database. Create the email address,
+                # account, and associated info. OpenIdIdentifier is
+                # created later.
+                account_set = getUtility(IAccountSet)
+                account, email = account_set.createAccountAndEmail(
+                    email_address, creation_rationale, full_name,
+                    password=None)
                 db_updated = True
+
+            elif email is None:
+                # The Email Address does not exist in the database,
+                # but the OpenId Identifier does. Create the Email
+                # Address and link it to the account.
+                assert account is None, 'Retrieved an account but not email?'
+                account = identifier.account
+                emailaddress_set = getUtility(IEmailAddressSet)
+                email = emailaddress_set.new(
+                    email_address, account=account)
+                db_updated = True
+
+            elif account is None:
+                # Email address exists, but there is no Account linked
+                # to it. Create the Account and link it to the
+                # EmailAddress.
+                account_set = getUtility(IAccountSet)
+                account = account_set.new(
+                    AccountCreationRationale.OWNER_CREATED_LAUNCHPAD,
+                    full_name)
+                email.account = account
+                db_updated = True
+
+            if identifier is None:
+                # This is the first time we have seen that
+                # OpenIdIdentifier. Link it.
+                identifier = OpenIdIdentifier()
+                identifier.account = account
+                identifier.identifier = openid_identifier
+                store.add(identifier)
+                db_updated = True
+
+            elif identifier.account != account:
+                # The ISD OpenId server may have linked this OpenId
+                # identifier to a new email address, or the user may
+                # have transfered their email address to a different
+                # Launchpad Account. If that happened, repair the
+                # link - we trust the ISD OpenId server.
+                identifier.account = account
+                db_updated = True
+
+            # We now have an account, email address, and openid identifier.
 
             if account.status == AccountStatus.SUSPENDED:
                 raise AccountSuspendedError(
                     "The account matching the identifier is suspended.")
+
             elif account.status in [AccountStatus.DEACTIVATED,
                                     AccountStatus.NOACCOUNT]:
                 password = '' # Needed just to please reactivate() below.
-                if email is None:
-                    email = email_set.new(email_address, account=account)
                 removeSecurityProxy(account).reactivate(
                     comment, password, removeSecurityProxy(email))
+                db_updated = True
             else:
                 # Account is active, so nothing to do.
                 pass
+
             if IPerson(account, None) is None:
                 removeSecurityProxy(account).createPerson(
                     creation_rationale, comment=comment)
                 db_updated = True
 
-            return IPerson(account), db_updated
+            person = IPerson(account)
+            if email.personID != person.id:
+                removeSecurityProxy(email).person = person
+                db_updated = True
+
+            return person, db_updated
 
     def newTeam(self, teamowner, name, displayname, teamdescription=None,
                 subscriptionpolicy=TeamSubscriptionPolicy.MODERATED,
@@ -2758,8 +3073,8 @@ class PersonSet:
                 # Populate the previously empty 'preferredemail' cached
                 # property, so the Person record is up-to-date.
                 if master_email.status == EmailAddressStatus.PREFERRED:
-                    cache_property(account_person, '_preferredemail_cached',
-                        master_email)
+                    cache = IPropertyCache(account_person)
+                    cache.preferredemail = master_email
                 return account_person
             # There is no associated `Person` to the email `Account`.
             # This is probably because the account was created externally
@@ -3701,19 +4016,12 @@ class PersonSet:
         # flush its caches.
         store.invalidate()
 
-        # Change the merged Account's OpenID identifier so that it cannot be
-        # used to lookup the merged Person; Launchpad will instead select the
-        # remaining Person based on the email address. The rename uses a
-        # dash, which does not occur in SSO identifiers. The epoch from
-        # the account date_created is used to ensure it is unique if the
-        # original identifier is reused and merged.
-        if from_person.account is not None:
-            account = IMasterObject(from_person.account)
-            naked_account = removeSecurityProxy(account)
-            unique_part = time.mktime(naked_account.date_created.timetuple())
-            merge_identifier = 'merged-%s-%s' % (
-                naked_account.openid_identifier, unique_part)
-            naked_account.openid_identifier = merge_identifier
+        # Move OpenId Identifiers from the merged account to the new
+        # account.
+        if from_person.account is not None and to_person.account is not None:
+            store.execute("""
+                UPDATE OpenIdIdentifier SET account=%s WHERE account=%s
+                """ % sqlvalues(to_person.accountID, from_person.accountID))
 
         # Inform the user of the merge changes.
         if not to_person.isTeam():

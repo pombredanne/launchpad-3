@@ -16,8 +16,11 @@ from canonical.launchpad.interfaces.account import AccountSuspendedError
 from canonical.launchpad.webapp import LaunchpadXMLRPCView
 from canonical.launchpad.xmlrpc import faults
 from lp.registry.interfaces.person import (
-    IPersonSet, ISoftwareCenterAgentAPI, ISoftwareCenterAgentApplication,
-    PersonCreationRationale)
+    IPersonSet,
+    ISoftwareCenterAgentAPI,
+    ISoftwareCenterAgentApplication,
+    PersonCreationRationale,
+    )
 
 
 class SoftwareCenterAgentAPI(LaunchpadXMLRPCView):
@@ -30,7 +33,7 @@ class SoftwareCenterAgentAPI(LaunchpadXMLRPCView):
         try:
             person, db_updated = getUtility(
                 IPersonSet).getOrCreateByOpenIDIdentifier(
-                    openid_identifier, email, full_name,
+                    openid_identifier.decode('ASCII'), email, full_name,
                     PersonCreationRationale.SOFTWARE_CENTER_PURCHASE,
                     "when purchasing an application via Software Center.")
         except AccountSuspendedError:

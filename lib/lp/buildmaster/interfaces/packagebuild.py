@@ -10,14 +10,21 @@ __all__ = [
     ]
 
 
-from zope.interface import Interface, Attribute
-from zope.schema import Choice, Object, TextLine
 from lazr.restful.declarations import exported
 from lazr.restful.fields import Reference
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Choice,
+    Object,
+    TextLine,
+    )
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
@@ -53,12 +60,6 @@ class IPackageBuild(IBuildFarmJob):
             title=_("Upload Log URL"), required=False,
             description=_("A URL for failed upload logs."
                           "Will be None if there was no failure.")))
-
-    dependencies = exported(
-        TextLine(
-            title=_('Dependencies'), required=False,
-            description=_('Debian-like dependency line that must be satisfied'
-                          ' before attempting to build this request.')))
 
     build_farm_job = Reference(
         title=_('Build farm job'), schema=IBuildFarmJob, required=True,

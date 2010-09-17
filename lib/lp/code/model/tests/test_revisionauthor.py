@@ -5,20 +5,23 @@
 
 __metaclass__ = type
 
-import transaction
 from unittest import TestLoader
 
+import transaction
 from zope.component import getUtility
 
 from canonical.config import config
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
 from canonical.launchpad.scripts.garbo import RevisionAuthorEmailLinker
+from canonical.testing import LaunchpadZopelessLayer
+from lp.code.model.revision import (
+    RevisionAuthor,
+    RevisionSet,
+    )
+from lp.registry.interfaces.person import IPersonSet
 from lp.testing import TestCase
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.logger import MockLogger
-from canonical.testing import LaunchpadZopelessLayer
-from lp.code.model.revision import RevisionAuthor, RevisionSet
-from lp.registry.interfaces.person import IPersonSet
 
 
 class TestRevisionEmailExtraction(TestCase):

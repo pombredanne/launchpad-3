@@ -11,9 +11,9 @@ __all__ = [
     'get_bugmail_from_address',
     ]
 
-import rfc822
 from email.MIMEText import MIMEText
 from email.Utils import formatdate
+import rfc822
 
 from zope.component import getUtility
 

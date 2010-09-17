@@ -14,20 +14,22 @@ __all__ = [
 
 from operator import attrgetter
 
+from lazr.delegates import delegates
 from zope.interface import implements
 
-from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
-from lp.soyuz.interfaces.binarypackagebuild import BuildSetStatus
-from lp.soyuz.interfaces.packagediff import IPackageDiff
-from lp.soyuz.interfaces.publishing import (
-    PackagePublishingStatus, IBinaryPackagePublishingHistory,
-    ISourcePackagePublishingHistory)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.launchpad.webapp.publisher import LaunchpadView
+from lp.services.propertycache import cachedproperty
+from lp.soyuz.enums import PackagePublishingStatus
+from lp.soyuz.interfaces.binarypackagebuild import BuildSetStatus
+from lp.soyuz.interfaces.packagediff import IPackageDiff
+from lp.soyuz.interfaces.publishing import (
+    IBinaryPackagePublishingHistory,
+    ISourcePackagePublishingHistory,
+    )
 
-from lazr.delegates import delegates
 
 class PublicationURLBase:
     """Dynamic URL declaration for `I*PackagePublishingHistory`"""

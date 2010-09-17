@@ -14,24 +14,39 @@ __metaclass__ = type
 __all__ = ['SourcePackageRecipeData']
 
 from bzrlib.plugins.builder.recipe import (
-    BaseRecipeBranch, MergeInstruction, NestInstruction, RecipeBranch)
-
-from lazr.enum import DBEnumeratedType, DBItem
-
+    BaseRecipeBranch,
+    MergeInstruction,
+    NestInstruction,
+    RecipeBranch,
+    RecipeParser,
+    SAFE_INSTRUCTIONS,
+    )
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    )
 from storm.expr import Union
 from storm.locals import (
-    And, Int, Reference, ReferenceSet, Select, Store, Storm, Unicode)
-
+    And,
+    Int,
+    Reference,
+    ReferenceSet,
+    Select,
+    Store,
+    Storm,
+    Unicode,
+    )
 from zope.component import getUtility
 
 from canonical.database.enumcol import EnumCol
 from canonical.launchpad.interfaces.lpstorm import IStore
-
 from lp.code.errors import (
-    ForbiddenInstruction, NoSuchBranch, PrivateBranchRecipe,
-    TooNewRecipeFormat)
-from lp.code.model.branch import Branch
+    NoSuchBranch,
+    PrivateBranchRecipe,
+    TooNewRecipeFormat,
+    )
 from lp.code.interfaces.branchlookup import IBranchLookup
+from lp.code.model.branch import Branch
 
 
 class InstructionType(DBEnumeratedType):
@@ -137,6 +152,11 @@ class SourcePackageRecipeData(Storm):
         sourcepackage_recipe_build_id, 'SourcePackageRecipeBuild.id')
 
     @staticmethod
+    def getParsedRecipe(recipe_text):
+        parser = RecipeParser(recipe_text)
+        return parser.parse(permitted_instructions=SAFE_INSTRUCTIONS)
+
+    @staticmethod
     def findRecipes(branch):
         from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
         store = Store.of(branch)
@@ -165,10 +185,9 @@ class SourcePackageRecipeData(Storm):
             with.
         :return: an instance of SourcePackageRecipeData.
         """
-        from bzrlib.plugins.builder.recipe import RecipeParser
-        parser = RecipeParser(text)
-        return cls(parser.parse(),
-                   sourcepackage_recipe_build=sourcepackage_recipe_build)
+        parsed = cls.getParsedRecipe(text)
+        return cls(
+            parsed, sourcepackage_recipe_build=sourcepackage_recipe_build)
 
     def getRecipe(self):
         """The BaseRecipeBranch version of the recipe."""
@@ -199,9 +218,6 @@ class SourcePackageRecipeData(Storm):
         """
         r = {}
         for instruction in recipe_branch.child_branches:
-            if not (isinstance(instruction, MergeInstruction) or
-                    isinstance(instruction, NestInstruction)):
-                raise ForbiddenInstruction(str(instruction))
             db_branch = getUtility(IBranchLookup).getByUrl(
                 instruction.recipe_branch.url)
             if db_branch is None:

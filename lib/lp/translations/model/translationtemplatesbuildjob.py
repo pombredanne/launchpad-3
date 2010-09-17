@@ -3,34 +3,52 @@
 
 __metaclass__ = type
 __all__ = [
+    'HARDCODED_TRANSLATIONTEMPLATESBUILD_SCORE',
     'TranslationTemplatesBuildJob',
     ]
 
-import re
 from datetime import timedelta
-
-from zope.component import getUtility
-from zope.interface import classProvides, implements
-from zope.security.proxy import removeSecurityProxy
+import re
 
 from storm.store import Store
+from zope.component import getUtility
+from zope.interface import (
+    classProvides,
+    implements,
+    )
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-
 from canonical.launchpad.interfaces import ILaunchpadCelebrities
-from canonical.launchpad.interfaces.lpstorm import IMasterStore, IStore
-
-from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
+from canonical.launchpad.interfaces.lpstorm import (
+    IMasterStore,
+    IStore,
+    )
+from lp.buildmaster.enums import BuildFarmJobType
+from lp.buildmaster.interfaces.buildfarmbranchjob import IBuildFarmBranchJob
+from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSource
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.buildmaster.model.buildfarmjob import (
-    BuildFarmJobOld, BuildFarmJobOldDerived)
+    BuildFarmJobOld,
+    BuildFarmJobOldDerived,
+    )
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource
-from lp.buildmaster.interfaces.buildfarmbranchjob import IBuildFarmBranchJob
-from lp.code.model.branchjob import BranchJob, BranchJobDerived, BranchJobType
+from lp.code.model.branchjob import (
+    BranchJob,
+    BranchJobDerived,
+    BranchJobType,
+    )
+from lp.translations.interfaces.translationtemplatesbuild import (
+    ITranslationTemplatesBuildSource,
+    )
 from lp.translations.interfaces.translationtemplatesbuildjob import (
-    ITranslationTemplatesBuildJobSource)
+    ITranslationTemplatesBuildJobSource,
+    )
 from lp.translations.pottery.detect_intltool import is_intltool_structure
+
+
+HARDCODED_TRANSLATIONTEMPLATESBUILD_SCORE = 2510
 
 
 class TranslationTemplatesBuildJob(BuildFarmJobOldDerived, BranchJobDerived):
@@ -59,9 +77,10 @@ class TranslationTemplatesBuildJob(BuildFarmJobOldDerived, BranchJobDerived):
 
     def score(self):
         """See `IBuildFarmJob`."""
-        # Hard-code score for now; anything other than 1000 is probably
-        # inappropriate.
-        return 1000
+        # Hard-code score for now.  Most PPA jobs start out at 2505;
+        # TranslationTemplateBuildJobs are fast so we want them at a
+        # higher priority.
+        return HARDCODED_TRANSLATIONTEMPLATESBUILD_SCORE
 
     def getLogFileName(self):
         """See `IBuildFarmJob`."""
@@ -117,25 +136,24 @@ class TranslationTemplatesBuildJob(BuildFarmJobOldDerived, BranchJobDerived):
     @classmethod
     def create(cls, branch):
         """See `ITranslationTemplatesBuildJobSource`."""
-        store = IMasterStore(BranchJob)
-
-        # Pass public HTTP URL for the branch.
-        metadata = {'branch_url': branch.composePublicURL()}
-        branch_job = BranchJob(
-            branch, BranchJobType.TRANSLATION_TEMPLATES_BUILD, metadata)
-        store.add(branch_job)
-        specific_job = TranslationTemplatesBuildJob(branch_job)
-        duration_estimate = cls.duration_estimate
-
         # XXX Danilo Segan bug=580429: we hard-code processor to the Ubuntu
         # default processor architecture.  This stops the buildfarm from
         # accidentally dispatching the jobs to private builders.
+        processor = cls._getBuildArch()
+
+        build_farm_job = getUtility(IBuildFarmJobSource).new(
+            BuildFarmJobType.TRANSLATIONTEMPLATESBUILD, processor=processor)
+        build = getUtility(ITranslationTemplatesBuildSource).create(
+            build_farm_job, branch)
+
+        specific_job = build.makeJob()
+        duration_estimate = cls.duration_estimate
+
         build_queue_entry = BuildQueue(
             estimated_duration=duration_estimate,
             job_type=BuildFarmJobType.TRANSLATIONTEMPLATESBUILD,
-            job=specific_job.job.id,
-            processor=cls._getBuildArch())
-        store.add(build_queue_entry)
+            job=specific_job.job, processor=processor)
+        IMasterStore(BuildQueue).add(build_queue_entry)
 
         return specific_job
 

@@ -24,6 +24,7 @@ from twisted.internet import (
     process,
     )
 from twisted.python import log
+from zope.event import notify
 
 from canonical.config import config
 from lp.codehosting import get_bzr_path

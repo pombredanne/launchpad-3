@@ -3,22 +3,26 @@
 
 __metaclass__ = type
 
-from datetime import datetime, timedelta
-from pytz import timezone
-import transaction
+from datetime import (
+    datetime,
+    timedelta,
+    )
 import unittest
 
 import gettextpo
-
+from pytz import timezone
+import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from lp.services.worlddata.interfaces.language import ILanguageSet
-from lp.translations.interfaces.translationmessage import (
-    TranslationValidationStatus)
-from lp.testing.factory import LaunchpadObjectFactory
 from canonical.testing import LaunchpadZopelessLayer
+from lp.app.enums import ServiceUsage
+from lp.services.worlddata.interfaces.language import ILanguageSet
+from lp.testing.factory import LaunchpadObjectFactory
+from lp.translations.interfaces.translationmessage import (
+    TranslationValidationStatus,
+    )
 
 
 class TestTranslationSuggestions(unittest.TestCase):
@@ -33,10 +37,14 @@ class TestTranslationSuggestions(unittest.TestCase):
         # suggestions for the other.
         factory = LaunchpadObjectFactory()
         self.factory = factory
-        self.foo_trunk = factory.makeProductSeries()
-        self.bar_trunk = factory.makeProductSeries()
-        self.foo_trunk.product.official_rosetta = True
-        self.bar_trunk.product.official_rosetta = True
+        foo_product = factory.makeProduct(
+            translations_usage=ServiceUsage.LAUNCHPAD)
+        bar_product = factory.makeProduct(
+            translations_usage=ServiceUsage.LAUNCHPAD)
+        self.foo_trunk = factory.makeProductSeries(
+            product=foo_product)
+        self.bar_trunk = factory.makeProductSeries(
+            product=bar_product)
         self.foo_template = factory.makePOTemplate(self.foo_trunk)
         self.bar_template = factory.makePOTemplate(self.bar_trunk)
         self.nl = getUtility(ILanguageSet).getLanguageByCode('nl')
@@ -218,6 +226,7 @@ class TestTranslationSuggestions(unittest.TestCase):
                           TranslationValidationStatus.UNKNOWNERROR,
                           "TranslationMessage with errors is not correctly"
                           "marked as such in the database.")
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

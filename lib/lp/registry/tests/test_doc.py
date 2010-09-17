@@ -7,16 +7,25 @@ Run the doctests and pagetests.
 
 import logging
 import os
+
 import transaction
 
 from canonical.launchpad.testing.systemdocs import (
-    LayeredDocFileSuite, setUp, tearDown)
+    LayeredDocFileSuite,
+    setUp,
+    tearDown,
+    )
 from canonical.testing import (
-    DatabaseLayer, DatabaseFunctionalLayer, LaunchpadFunctionalLayer,
-    LaunchpadZopelessLayer)
-
+    DatabaseFunctionalLayer,
+    DatabaseLayer,
+    LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
 from lp.registry.tests import mailinglists_helper
-from lp.services.testing import build_doctest_suite, build_test_suite
+from lp.services.testing import (
+    build_doctest_suite,
+    build_test_suite,
+    )
 
 
 here = os.path.dirname(os.path.realpath(__file__))

@@ -8,14 +8,27 @@ __all__ = ['BugMessage', 'BugMessageSet']
 
 from email.Utils import make_msgid
 
+from sqlobject import (
+    BoolCol,
+    ForeignKey,
+    StringCol,
+    )
+from storm.store import Store
 from zope.interface import implements
 
-from sqlobject import BoolCol, ForeignKey, StringCol
-from storm.store import Store
+from canonical.database.sqlbase import (
+    SQLBase,
+    sqlvalues,
+    )
+from canonical.launchpad.database.message import (
+    Message,
+    MessageChunk,
+    )
+from lp.bugs.interfaces.bugmessage import (
+    IBugMessage,
+    IBugMessageSet,
+    )
 
-from canonical.database.sqlbase import SQLBase, sqlvalues
-from lp.bugs.interfaces.bugmessage import IBugMessage, IBugMessageSet
-from canonical.launchpad.database.message import Message, MessageChunk
 
 class BugMessage(SQLBase):
     """A table linking bugs and messages."""
@@ -31,6 +44,8 @@ class BugMessage(SQLBase):
         notNull=False, default=None)
     remote_comment_id = StringCol(notNull=False, default=None)
     visible = BoolCol(notNull=True, default=True)
+    # -- Uncomment when deployed.
+    # index = IntCol()
 
 
 class BugMessageSet:

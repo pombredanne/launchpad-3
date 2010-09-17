@@ -14,29 +14,41 @@ __all__ = [
     'LanguageView',
     ]
 
-from zope.lifecycleevent import ObjectCreatedEvent
+from zope.app.form.browser import TextWidget
 from zope.component import getUtility
 from zope.event import notify
-from zope.app.form.browser import TextWidget
 from zope.interface import Interface
+from zope.lifecycleevent import ObjectCreatedEvent
 from zope.schema import TextLine
 
-from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp import (
-    action, canonical_url, ContextMenu, custom_widget,
-    enabled_with_permission, GetitemNavigation, LaunchpadEditFormView,
-    LaunchpadFormView, LaunchpadView, Link, NavigationMenu)
+    action,
+    canonical_url,
+    ContextMenu,
+    custom_widget,
+    enabled_with_permission,
+    GetitemNavigation,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    LaunchpadView,
+    Link,
+    NavigationMenu,
+    )
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.tales import LanguageFormatterAPI
-from lp.services.worlddata.interfaces.language import ILanguage, ILanguageSet
-from lp.translations.interfaces.translationsperson import (
-    ITranslationsPerson)
-from lp.translations.browser.translations import TranslationsMixin
-from lp.translations.utilities.pluralforms import (
-    BadPluralExpression, make_friendly_plural_forms)
-
 from canonical.widgets import LabeledMultiCheckBoxWidget
+from lp.services.propertycache import cachedproperty
+from lp.services.worlddata.interfaces.language import (
+    ILanguage,
+    ILanguageSet,
+    )
+from lp.translations.browser.translations import TranslationsMixin
+from lp.translations.interfaces.translationsperson import ITranslationsPerson
+from lp.translations.utilities.pluralforms import (
+    BadPluralExpression,
+    make_friendly_plural_forms,
+    )
 
 
 def describe_language(language):

@@ -17,30 +17,44 @@ __all__ = [
 import datetime
 
 import pytz
-
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser import TextWidget
 from zope.component import getUtility
 from zope.formlib import form
-from zope.interface import Interface, implements
-from zope.schema import Date, Text
+from zope.interface import (
+    implements,
+    Interface,
+    )
+from zope.schema import (
+    Date,
+    Text,
+    )
 
-from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
-from lp.services.fields import PersonChoice
-from lp.soyuz.browser.sourceslist import (
-    SourcesListEntries, SourcesListEntriesView)
-from lp.soyuz.interfaces.archive import IArchiveSet
-from lp.soyuz.interfaces.archiveauthtoken import (
-    IArchiveAuthTokenSet)
-from lp.soyuz.interfaces.archivesubscriber import (
-    IArchiveSubscriberSet, IPersonalArchiveSubscription)
 from canonical.launchpad.webapp.launchpadform import (
-    action, custom_widget, LaunchpadFormView, LaunchpadEditFormView)
+    action,
+    custom_widget,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    )
 from canonical.launchpad.webapp.publisher import (
-    canonical_url, LaunchpadView)
+    canonical_url,
+    LaunchpadView,
+    )
 from canonical.widgets import DateWidget
 from canonical.widgets.popup import PersonPickerWidget
+from lp.services.fields import PersonChoice
+from lp.services.propertycache import cachedproperty
+from lp.soyuz.browser.sourceslist import (
+    SourcesListEntries,
+    SourcesListEntriesView,
+    )
+from lp.soyuz.interfaces.archive import IArchiveSet
+from lp.soyuz.interfaces.archiveauthtoken import IArchiveAuthTokenSet
+from lp.soyuz.interfaces.archivesubscriber import (
+    IArchiveSubscriberSet,
+    IPersonalArchiveSubscription,
+    )
 
 
 def archive_subscription_ui_adapter(archive_subscription):

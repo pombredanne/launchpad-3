@@ -7,17 +7,21 @@ __metaclass__ = type
 __all__ = ['start_launchpad']
 
 
-import os
-import sys
 import atexit
+import os
 import signal
 import subprocess
+import sys
+
+from zope.app.server.main import main
 
 from canonical.config import config
-from canonical.lazr.pidfile import make_pidfile, pidfile_path
-from zope.app.server.main import main
 from canonical.launchpad.mailman import runmailman
 from canonical.launchpad.testing import googletestservice
+from canonical.lazr.pidfile import (
+    make_pidfile,
+    pidfile_path,
+    )
 
 
 def make_abspath(path):

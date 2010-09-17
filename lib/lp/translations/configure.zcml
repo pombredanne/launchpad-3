@@ -10,12 +10,16 @@
     xmlns:webservice="http://namespaces.canonical.com/webservice"
     xmlns:lp="http://namespaces.canonical.com/lp"
     i18n_domain="launchpad">
-    <include
-        package=".browser"/>
 
-    <publisher
-       name="translations"
-       factory="lp.translations.publisher.translations_request_publication_factory"/>
+  <include package=".browser"/>
+
+  <publisher
+      name="translations"
+      factory="lp.translations.publisher.translations_request_publication_factory"/>
+  <utility
+      component="lp.translations.publisher.TranslationsLayer"
+      provides="zope.publisher.interfaces.browser.IDefaultBrowserLayer"
+      name="translations" />
 
     <lp:help-folder
         folder="help" type="lp.translations.publisher.TranslationsLayer" />
@@ -605,6 +609,23 @@
         component="lp.translations.model.translationtemplatesbuildjob.TranslationTemplatesBuildJob"
         provides="lp.buildmaster.interfaces.buildfarmjob.IBuildFarmJob"
         name="TRANSLATIONTEMPLATESBUILD"/>
+    <adapter
+        provides="lp.buildmaster.interfaces.buildfarmjob.ISpecificBuildFarmJob"
+        for="lp.buildmaster.interfaces.buildfarmjob.IBuildFarmJob"
+        factory="lp.translations.model.translationtemplatesbuild.get_translation_templates_build_for_build_farm_job"
+        name="TRANSLATIONTEMPLATESBUILD"
+        permission="zope.Public"/>
+
+    <!-- TranslationTemplatesBuild -->
+    <class
+        class="lp.translations.model.translationtemplatesbuild.TranslationTemplatesBuild">
+        <allow interface="lp.translations.interfaces.translationtemplatesbuild.ITranslationTemplatesBuild"/>
+    </class>
+    <securedutility
+        component="lp.translations.model.translationtemplatesbuild.TranslationTemplatesBuild"
+        provides="lp.translations.interfaces.translationtemplatesbuild.ITranslationTemplatesBuildSource">
+        <allow interface="lp.translations.interfaces.translationtemplatesbuild.ITranslationTemplatesBuildSource"/>
+    </securedutility>
 
     <!-- TranslationTemplateBuildBehavior -->
     <class

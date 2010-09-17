@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009-2010 Canonical Ltd.  All rights reserved.
 from __future__ import with_statement
 
 # pylint: disable-msg=W0105
@@ -15,35 +15,60 @@ __all__ = [
     ]
 
 from contextlib import contextmanager
-from datetime import datetime, timedelta
+from datetime import (
+    datetime,
+    timedelta,
+    )
 import httplib
 import unittest
 
 import mechanize
-
-from openid.consumer.consumer import FAILURE, SUCCESS
+from openid.consumer.consumer import (
+    FAILURE,
+    SUCCESS,
+    )
 from openid.extensions import sreg
-
 from zope.component import getUtility
 from zope.security.management import newInteraction
 from zope.security.proxy import removeSecurityProxy
 from zope.session.interfaces import ISession
 
-from canonical.launchpad.interfaces.account import AccountStatus, IAccountSet
+from canonical.launchpad.interfaces.account import (
+    AccountStatus,
+    IAccountSet,
+    )
+from canonical.launchpad.interfaces.lpstorm import IStore
+from canonical.launchpad.testing.browser import (
+    Browser,
+    setUp,
+    tearDown,
+    )
 from canonical.launchpad.testing.pages import (
-    extract_text, find_main_content, find_tag_by_id, find_tags_by_class)
+    extract_text,
+    find_main_content,
+    find_tag_by_id,
+    find_tags_by_class,
+    )
 from canonical.launchpad.testing.systemdocs import LayeredDocFileSuite
-from canonical.launchpad.testing.browser import Browser, setUp, tearDown
 from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
-from canonical.launchpad.webapp.login import OpenIDCallbackView, OpenIDLogin
 from canonical.launchpad.webapp.interfaces import IStoreSelector
+from canonical.launchpad.webapp.login import (
+    OpenIDCallbackView,
+    OpenIDLogin,
+    )
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import (
-    AppServerLayer, DatabaseFunctionalLayer, FunctionalLayer)
-
+    AppServerLayer,
+    DatabaseFunctionalLayer,
+    FunctionalLayer,
+    )
 from lp.registry.interfaces.person import IPerson
+from lp.services.openid.model.openididentifier import OpenIdIdentifier
+from lp.testing import (
+    logout,
+    TestCaseWithFactory,
+    )
 from lp.testopenid.interfaces.server import ITestOpenIDPersistentIdentity
-from lp.testing import logout, TestCaseWithFactory
 
 
 class FakeOpenIDResponse:
@@ -70,7 +95,7 @@ class StubbedOpenIDCallbackView(OpenIDCallbackView):
 
 
 class FakeConsumer:
-    """An OpenID consumer that stashes away arguments for test instection."""
+    """An OpenID consumer that stashes away arguments for test inspection."""
 
     def complete(self, params, requested_url):
         self.params = params
@@ -87,6 +112,7 @@ class FakeConsumerOpenIDCallbackView(OpenIDCallbackView):
 
 @contextmanager
 def SRegResponse_fromSuccessResponse_stubbed():
+
     def sregFromFakeSuccessResponse(cls, success_response, signed_only=True):
         return {'email': success_response.sreg_email,
                 'fullname': success_response.sreg_fullname}
@@ -119,11 +145,11 @@ def IAccountSet_getByOpenIDIdentifier_monkey_patched():
                 "Not using the master store: %s" % current_policy)
         return orig_getByOpenIDIdentifier(identifier)
 
-    account_set.getByOpenIDIdentifier = fake_getByOpenIDIdentifier
-
-    yield
-
-    account_set.getByOpenIDIdentifier = orig_getByOpenIDIdentifier
+    try:
+        account_set.getByOpenIDIdentifier = fake_getByOpenIDIdentifier
+        yield
+    finally:
+        account_set.getByOpenIDIdentifier = orig_getByOpenIDIdentifier
 
 
 class TestOpenIDCallbackView(TestCaseWithFactory):
@@ -131,11 +157,12 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
 
     def _createViewWithResponse(
             self, account, response_status=SUCCESS, response_msg='',
-            view_class=StubbedOpenIDCallbackView):
+            view_class=StubbedOpenIDCallbackView,
+            email='non-existent@example.com'):
         openid_response = FakeOpenIDResponse(
             ITestOpenIDPersistentIdentity(account).openid_identity_url,
             status=response_status, message=response_msg,
-            email='non-existent@example.com', full_name='Foo User')
+            email=email, full_name='Foo User')
         return self._createAndRenderView(
             openid_response, view_class=view_class)
 
@@ -165,7 +192,8 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
         # in the 'starting_url' query arg.
         person = self.factory.makePerson()
         with SRegResponse_fromSuccessResponse_stubbed():
-            view, html = self._createViewWithResponse(person.account)
+            view, html = self._createViewWithResponse(
+                person.account, email=person.preferredemail.email)
         self.assertTrue(view.login_called)
         response = view.request.response
         self.assertEquals(httplib.TEMPORARY_REDIRECT, response.getStatus())
@@ -219,24 +247,6 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
         view = OpenIDCallbackView(context=None, request=None)
         self.assertRaises(ValueError, view._gather_params, request)
 
-    def test_csrfmiddlewaretoken_is_ignored(self):
-        # Show that the _gather_params filters out the errant
-        # csrfmiddlewaretoken form field.  See comment in _gather_params for
-        # more info.
-        request = LaunchpadTestRequest(
-            SERVER_URL='http://example.com',
-            QUERY_STRING='foo=bar',
-            form={'starting_url': 'http://launchpad.dev/after-login',
-                'csrfmiddlewaretoken': '12345'},
-            environ={'PATH_INFO': '/'})
-        view = OpenIDCallbackView(context=None, request=None)
-        params = view._gather_params(request)
-        expected_params = {
-            'starting_url': 'http://launchpad.dev/after-login',
-            'foo': 'bar',
-        }
-        self.assertEquals(params, expected_params)
-
     def test_get_requested_url(self):
         # The OpenIDCallbackView needs to pass the currently-being-requested
         # URL to the OpenID library.  OpenIDCallbackView._get_requested_url
@@ -268,7 +278,7 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
                 'foo': 'bar',
             })
         self.assertEquals(
-            view.fake_consumer.requested_url,'http://example.com?foo=bar')
+            view.fake_consumer.requested_url, 'http://example.com?foo=bar')
 
     def test_personless_account(self):
         # When there is no Person record associated with the account, we
@@ -294,7 +304,7 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
         # seen, we automatically register an account with that identity
         # because someone who registered on login.lp.net or login.u.c should
         # be able to login here without any further steps.
-        identifier = '4w7kmzU'
+        identifier = u'4w7kmzU'
         account_set = getUtility(IAccountSet)
         self.assertRaises(
             LookupError, account_set.getByOpenIDIdentifier, identifier)
@@ -322,7 +332,7 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
         # When we get a positive assertion about an identity URL we've never
         # seen but whose email address is already registered, we just change
         # the identity URL that's associated with the existing email address.
-        identifier = '4w7kmzU'
+        identifier = u'4w7kmzU'
         email = 'test@example.com'
         account = self.factory.makeAccount(
             'Test account', email=email, status=AccountStatus.DEACTIVATED)
@@ -336,10 +346,12 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
             view, html = self._createAndRenderView(openid_response)
         self.assertTrue(view.login_called)
 
-        # The existing account's openid_identifier was updated, the account
-        # was reactivated and its preferred email was set, but its display
-        # name was not changed.
-        self.assertEquals(identifier, account.openid_identifier)
+        # The existing accounts had a new openid_identifier added, the
+        # account was reactivated and its preferred email was set, but
+        # its display name was not changed.
+        identifiers = [i.identifier for i in account.openid_identifiers]
+        self.assertIn(identifier, identifiers)
+
         self.assertEquals(AccountStatus.ACTIVE, account.status)
         self.assertEquals(
             email, removeSecurityProxy(account.preferredemail).email)
@@ -359,7 +371,8 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
         account = self.factory.makeAccount(
             'Test account', email=email, status=AccountStatus.DEACTIVATED)
         self.assertIs(None, IPerson(account, None))
-        openid_identifier = removeSecurityProxy(account).openid_identifier
+        openid_identifier = removeSecurityProxy(
+            account).openid_identifiers.any().identifier
         openid_response = FakeOpenIDResponse(
             'http://testopenid.dev/+id/%s' % openid_identifier,
             status=SUCCESS, email=email, full_name=account.displayname)
@@ -385,7 +398,11 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
         account = self.factory.makeAccount(
             'Test account', email=email, status=AccountStatus.NOACCOUNT)
         self.assertIs(None, IPerson(account, None))
-        openid_identifier = removeSecurityProxy(account).openid_identifier
+        openid_identifier = IStore(OpenIdIdentifier).find(
+            OpenIdIdentifier.identifier,
+            OpenIdIdentifier.account_id == account.id).order_by(
+                OpenIdIdentifier.account_id).order_by(
+                    OpenIdIdentifier.account_id).first()
         openid_response = FakeOpenIDResponse(
             'http://testopenid.dev/+id/%s' % openid_identifier,
             status=SUCCESS, email=email, full_name=account.displayname)
@@ -450,7 +467,7 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
         with IAccountSet_getByOpenIDIdentifier_monkey_patched():
             self.assertRaises(
                 AssertionError,
-                getUtility(IAccountSet).getByOpenIDIdentifier, 'foo')
+                getUtility(IAccountSet).getByOpenIDIdentifier, u'foo')
 
     def assertLastWriteIsSet(self, request):
         last_write = ISession(request)['lp.dbpolicy']['last_write']

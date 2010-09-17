@@ -82,158 +82,248 @@ __all__ = [
 
 import cgi
 import copy
+from datetime import (
+    datetime,
+    timedelta,
+    )
 import itertools
-import pytz
+from itertools import chain
+from operator import (
+    attrgetter,
+    itemgetter,
+    )
+from textwrap import dedent
 import urllib
 
-from datetime import datetime, timedelta
-from itertools import chain
-from operator import attrgetter, itemgetter
-from textwrap import dedent
+from lazr.config import as_timedelta
+from lazr.delegates import delegates
+from lazr.restful.interface import copy_field
+from lazr.restful.interfaces import IWebServiceClientRequest
+from lazr.uri import (
+    InvalidURIError,
+    URI,
+    )
+import pytz
 from storm.zope.interfaces import IResultSet
-
+from z3c.ptcompat import ViewPageTemplateFile
+from zope.app.form.browser import (
+    TextAreaWidget,
+    TextWidget,
+    )
+from zope.component import (
+    adapts,
+    getUtility,
+    queryMultiAdapter,
+    )
 from zope.error.interfaces import IErrorReportingUtility
-from zope.app.form.browser import TextAreaWidget, TextWidget
 from zope.formlib.form import FormFields
-from zope.interface import classImplements, implements, Interface
+from zope.interface import (
+    classImplements,
+    implements,
+    Interface,
+    )
 from zope.interface.exceptions import Invalid
 from zope.interface.interface import invariant
-from zope.component import adapts, getUtility, queryMultiAdapter
 from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.browser import IBrowserPublisher
-from zope.schema import Bool, Choice, List, Text, TextLine
+from zope.schema import (
+    Bool,
+    Choice,
+    List,
+    Text,
+    TextLine,
+    )
 from zope.schema.vocabulary import (
-    SimpleTerm, SimpleVocabulary, getVocabularyRegistry)
+    getVocabularyRegistry,
+    SimpleTerm,
+    SimpleVocabulary,
+    )
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from z3c.ptcompat import ViewPageTemplateFile
-
 from canonical.config import config
-from lazr.delegates import delegates
-from lazr.config import as_timedelta
-from lazr.restful.interface import copy_field
-from lazr.restful.interfaces import IWebServiceClientRequest
-from canonical.lazr.utils import safe_hasattr
 from canonical.database.sqlbase import flush_database_updates
-
-from canonical.widgets import (
-    LaunchpadDropdownWidget, LaunchpadRadioWidget,
-    LaunchpadRadioWidgetWithDescription, LocationWidget, PasswordChangeWidget)
-from canonical.widgets.image import ImageChangeWidget
-from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
-
-from canonical.cachedproperty import cachedproperty
-
-from canonical.launchpad import helpers
-from lp.registry.browser.team import TeamEditView
-from lp.soyuz.browser.archivesubscription import (
-    traverse_archive_subscription_for_subscriber)
-from canonical.launchpad.browser.launchpad import get_launchpad_views
-from canonical.launchpad.interfaces.account import IAccount
-from canonical.launchpad.interfaces.account import AccountStatus
-from lp.soyuz.interfaces.archive import ArchiveStatus
-from lp.soyuz.interfaces.archivesubscriber import (
-    IArchiveSubscriberSet)
-from canonical.launchpad.interfaces.authtoken import LoginTokenType
-from lp.bugs.interfaces.bugtask import (
-    BugTaskSearchParams, BugTaskStatus, UNRESOLVED_BUGTASK_STATUSES)
-from lp.services.worlddata.interfaces.country import ICountry
-from canonical.launchpad.interfaces.emailaddress import (
-    EmailAddressStatus, IEmailAddress, IEmailAddressSet)
-from canonical.launchpad.interfaces.geoip import IRequestPreferredLanguages
-from canonical.launchpad.interfaces.gpghandler import (
-    GPGKeyNotFoundError, IGPGHandler)
-from lp.services.worlddata.interfaces.language import ILanguageSet
-from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
-from canonical.launchpad.interfaces.oauth import IOAuthConsumerSet
-from lp.blueprints.interfaces.specification import SpecificationFilter
-from canonical.launchpad.webapp.interfaces import (
-    ILaunchBag, IOpenLaunchBag)
-from lp.answers.interfaces.questionenums import QuestionParticipation
-from lp.app.errors import NotFoundError, UnexpectedFormData
-from lp.code.browser.sourcepackagerecipelisting import HasRecipesMenuMixin
-from lp.registry.interfaces.codeofconduct import ISignedCodeOfConductSet
-from lp.registry.interfaces.gpg import IGPGKeySet
-from lp.registry.interfaces.irc import IIrcIDSet
-from lp.registry.interfaces.jabber import IJabberID, IJabberIDSet
-from lp.registry.interfaces.mailinglist import (
-    CannotUnsubscribe, IMailingListSet)
-from lp.registry.interfaces.mailinglistsubscription import (
-    MailingListAutoSubscribePolicy)
-from lp.registry.interfaces.person import (
-    IPerson, IPersonClaim, IPersonSet, ITeam, ITeamReassignment,
-    PersonVisibility, TeamMembershipRenewalPolicy, TeamSubscriptionPolicy)
-from lp.registry.interfaces.poll import IPollSet, IPollSubset
-from lp.registry.interfaces.ssh import (
-    ISSHKeySet, SSHKeyAdditionError, SSHKeyCompromisedError, SSHKeyType)
-from lp.registry.interfaces.teammembership import (
-    DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT, ITeamMembership,
-    ITeamMembershipSet, TeamMembershipStatus)
-from lp.registry.interfaces.wikiname import IWikiNameSet
-from lp.code.errors import InvalidNamespace
-from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
-from lp.bugs.interfaces.bugtask import IBugTaskSet
-from lp.buildmaster.interfaces.buildbase import BuildStatus
-from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
-from canonical.launchpad.interfaces.launchpad import (
-    ILaunchpadCelebrities, INotificationRecipientSet, UnknownRecipientError)
-from canonical.launchpad.interfaces.message import (
-    IDirectEmailAuthorization, QuotaReachedError)
-from lp.registry.interfaces.pillar import IPillarNameSet
-from lp.registry.interfaces.personproduct import IPersonProductFactory
-from lp.registry.interfaces.product import IProduct
-from lp.services.openid.adapters.openid import CurrentOpenIDEndPoint
-from lp.services.openid.interfaces.openid import IOpenIDPersistentIdentity
-from lp.services.openid.interfaces.openidrpsummary import IOpenIDRPSummarySet
-from lp.services.salesforce.interfaces import (
-    ISalesforceVoucherProxy, SalesforceVoucherProxyException)
-from lp.soyuz.interfaces.sourcepackagerelease import (
-    ISourcePackageRelease)
-
-from lp.bugs.browser.bugtask import BugTaskSearchListingView
+from canonical.launchpad import (
+    _,
+    helpers,
+    )
 from canonical.launchpad.browser.feeds import FeedsMixin
-from lp.registry.browser.objectreassignment import (
-    ObjectReassignmentView)
-from lp.services.openid.browser.openiddiscovery import (
-    XRDSContentNegotiationMixin)
-from lp.blueprints.browser.specificationtarget import (
-    HasSpecificationsView)
-from lp.registry.browser.branding import BrandingChangeView
-from lp.registry.browser.mailinglists import (
-    enabled_with_active_mailing_list)
-from lp.registry.browser.menu import (
-    IRegistryCollectionNavigationMenu, RegistryCollectionActionMenuBase,
-    TopLevelMenuMixin)
-from lp.answers.browser.questiontarget import SearchQuestionsView
-
-from lp.services.fields import LocationField
-
+from canonical.launchpad.browser.launchpad import get_launchpad_views
+from canonical.launchpad.interfaces.account import (
+    AccountStatus,
+    IAccount,
+    )
+from canonical.launchpad.interfaces.authtoken import LoginTokenType
+from canonical.launchpad.interfaces.emailaddress import (
+    EmailAddressStatus,
+    IEmailAddress,
+    IEmailAddressSet,
+    )
+from canonical.launchpad.interfaces.gpghandler import (
+    GPGKeyNotFoundError,
+    IGPGHandler,
+    )
+from canonical.launchpad.interfaces.launchpad import (
+    ILaunchpadCelebrities,
+    INotificationRecipientSet,
+    UnknownRecipientError,
+    )
+from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
+from canonical.launchpad.interfaces.message import (
+    IDirectEmailAuthorization,
+    QuotaReachedError,
+    )
+from canonical.launchpad.interfaces.oauth import IOAuthConsumerSet
 from canonical.launchpad.mailnotification import send_direct_contact_email
 from canonical.launchpad.validators.email import valid_email
-
 from canonical.launchpad.webapp import (
-    ApplicationMenu, ContextMenu, LaunchpadEditFormView,
-    LaunchpadFormView, Link, Navigation, NavigationMenu, structured,
-    StandardLaunchpadFacets, action, canonical_url, custom_widget,
-    enabled_with_permission, stepthrough, stepto)
+    action,
+    ApplicationMenu,
+    canonical_url,
+    ContextMenu,
+    custom_widget,
+    enabled_with_permission,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    Link,
+    Navigation,
+    NavigationMenu,
+    StandardLaunchpadFacets,
+    stepthrough,
+    stepto,
+    structured,
+    )
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
+from canonical.launchpad.webapp.interfaces import (
+    ILaunchBag,
+    IOpenLaunchBag,
+    )
 from canonical.launchpad.webapp.login import logoutPerson
 from canonical.launchpad.webapp.menu import get_current_view
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.tales import (
-    DateTimeFormatterAPI, PersonFormatterAPI)
-from lazr.uri import URI, InvalidURIError
-
-from canonical.launchpad import _
-
+    DateTimeFormatterAPI,
+    PersonFormatterAPI,
+    )
 from canonical.lazr.utils import smartquote
-
-from lp.app.browser.stringformatter import FormattersAPI
+from canonical.widgets import (
+    LaunchpadDropdownWidget,
+    LaunchpadRadioWidget,
+    LaunchpadRadioWidgetWithDescription,
+    LocationWidget,
+    PasswordChangeWidget,
+    URIWidget,
+    )
+from canonical.widgets.image import ImageChangeWidget
+from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
+from lp.answers.browser.questiontarget import SearchQuestionsView
 from lp.answers.interfaces.questioncollection import IQuestionSet
+from lp.answers.interfaces.questionenums import QuestionParticipation
 from lp.answers.interfaces.questionsperson import IQuestionsPerson
+from lp.app.browser.stringformatter import FormattersAPI
+from lp.app.errors import (
+    NotFoundError,
+    UnexpectedFormData,
+    )
+from lp.blueprints.browser.specificationtarget import HasSpecificationsView
+from lp.blueprints.interfaces.specification import SpecificationFilter
+from lp.bugs.browser.bugtask import BugTaskSearchListingView
+from lp.bugs.interfaces.bugtask import (
+    BugTaskSearchParams,
+    BugTaskStatus,
+    IBugTaskSet,
+    UNRESOLVED_BUGTASK_STATUSES,
+    )
+from lp.buildmaster.enums import BuildStatus
+from lp.code.browser.sourcepackagerecipelisting import HasRecipesMenuMixin
+from lp.code.errors import InvalidNamespace
+from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
+from lp.registry.browser import MapMixin
+from lp.registry.browser.branding import BrandingChangeView
+from lp.registry.browser.mailinglists import enabled_with_active_mailing_list
+from lp.registry.browser.menu import (
+    IRegistryCollectionNavigationMenu,
+    RegistryCollectionActionMenuBase,
+    TopLevelMenuMixin,
+    )
+from lp.registry.browser.objectreassignment import ObjectReassignmentView
+from lp.registry.browser.team import TeamEditView
+from lp.registry.interfaces.codeofconduct import ISignedCodeOfConductSet
+from lp.registry.interfaces.gpg import IGPGKeySet
+from lp.registry.interfaces.irc import IIrcIDSet
+from lp.registry.interfaces.jabber import (
+    IJabberID,
+    IJabberIDSet,
+    )
+from lp.registry.interfaces.mailinglist import (
+    CannotUnsubscribe,
+    IMailingListSet,
+    )
+from lp.registry.interfaces.mailinglistsubscription import (
+    MailingListAutoSubscribePolicy,
+    )
+from lp.registry.interfaces.person import (
+    IPerson,
+    IPersonClaim,
+    IPersonSet,
+    ITeam,
+    ITeamReassignment,
+    PersonVisibility,
+    TeamMembershipRenewalPolicy,
+    TeamSubscriptionPolicy,
+    )
+from lp.registry.interfaces.personproduct import IPersonProductFactory
+from lp.registry.interfaces.pillar import IPillarNameSet
+from lp.registry.interfaces.poll import (
+    IPollSet,
+    IPollSubset,
+    )
+from lp.registry.interfaces.product import IProduct
+from lp.registry.interfaces.ssh import (
+    ISSHKeySet,
+    SSHKeyAdditionError,
+    SSHKeyCompromisedError,
+    SSHKeyType,
+    )
+from lp.registry.interfaces.teammembership import (
+    CyclicalTeamMembershipError,
+    DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT,
+    ITeamMembership,
+    ITeamMembershipSet,
+    TeamMembershipStatus,
+    )
+from lp.registry.interfaces.wikiname import (
+    IWikiName,
+    IWikiNameSet,
+    )
+from lp.services.fields import LocationField
+from lp.services.geoip.interfaces import IRequestPreferredLanguages
+from lp.services.openid.adapters.openid import CurrentOpenIDEndPoint
+from lp.services.openid.browser.openiddiscovery import (
+    XRDSContentNegotiationMixin,
+    )
+from lp.services.openid.interfaces.openid import IOpenIDPersistentIdentity
+from lp.services.openid.interfaces.openidrpsummary import IOpenIDRPSummarySet
+from lp.services.propertycache import (
+    cachedproperty,
+    IPropertyCache,
+    )
+from lp.services.salesforce.interfaces import (
+    ISalesforceVoucherProxy,
+    SalesforceVoucherProxyException,
+    )
+from lp.services.worlddata.interfaces.country import ICountry
+from lp.services.worlddata.interfaces.language import ILanguageSet
+from lp.soyuz.browser.archivesubscription import (
+    traverse_archive_subscription_for_subscriber,
+    )
+from lp.soyuz.enums import ArchiveStatus
+from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
+from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
+from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
+
 
 COMMASPACE = ', '
 
@@ -632,11 +722,20 @@ class TeamInvitationView(LaunchpadFormView):
                 _("This invitation has already been processed."))
             return
         member = self.context.person
-        member.acceptInvitationToBeMemberOf(
-            self.context.team, data['acknowledger_comment'])
-        self.request.response.addInfoNotification(
-            _("This team is now a member of ${team}", mapping=dict(
-                  team=self.context.team.displayname)))
+        try:
+            member.acceptInvitationToBeMemberOf(
+                self.context.team, data['acknowledger_comment'])
+        except CyclicalTeamMembershipError:
+            self.request.response.addInfoNotification(
+                _("This team may not be added to ${that_team} because it is "
+                  "a member of ${this_team}.",
+                  mapping=dict(
+                      that_team=self.context.team.displayname,
+                      this_team=member.displayname)))
+        else:
+            self.request.response.addInfoNotification(
+                _("This team is now a member of ${team}.", mapping=dict(
+                    team=self.context.team.displayname)))
 
     @action(_("Decline"), name="decline")
     def decline_action(self, action, data):
@@ -903,7 +1002,7 @@ class PersonMenuMixin(CommonMenuLinks):
         text = 'Change details'
         return Link(target, text, icon='edit')
 
-    @enabled_with_permission('launchpad.Admin')
+    @enabled_with_permission('launchpad.Moderate')
     def administer(self):
         target = '+review'
         text = 'Administer'
@@ -1608,11 +1707,22 @@ class PersonAdministerView(LaunchpadEditFormView):
     """Administer an `IPerson`."""
     schema = IPerson
     label = "Review person"
-    field_names = [
+    default_field_names = [
         'name', 'displayname',
         'personal_standing', 'personal_standing_reason']
     custom_widget(
         'personal_standing_reason', TextAreaWidget, height=5, width=60)
+
+    def setUpFields(self):
+        """Setup the normal fields from the schema, as appropriate.
+
+        If not an admin (e.g. registry expert), remove the displayname field.
+        """
+        self.field_names = self.default_field_names[:]
+        admin = check_permission('launchpad.Admin', self.context)
+        if not admin:
+            self.field_names.remove('displayname')
+        super(PersonAdministerView, self).setUpFields()
 
     @property
     def is_viewing_person(self):
@@ -3078,31 +3188,33 @@ class PersonParticipationView(LaunchpadView):
     def label(self):
         return 'Team participation for ' + self.context.displayname
 
-    def _asParticipation(self, membership=None, team=None, team_path=None):
+    def _asParticipation(self, membership=None, team=None, via=None):
         """Return a dict of participation information for the membership.
 
         Method requires membership or team, not both.
+        :param via: The team through which the membership in the indirect
+        team is established.
         """
         if ((membership is None and team is None) or
             (membership is not None and team is not None)):
             raise AssertionError(
                 "The membership or team argument must be provided, not both.")
 
-        if team_path is None:
-            via = None
-        else:
-            via = COMMASPACE.join(team.displayname for team in team_path)
+        if via is not None:
+            # When showing the path, it's unnecessary to show the team in
+            # question at the beginning of the path, or the user at the
+            # end of the path.
+            via = COMMASPACE.join(
+                [via_team.displayname for via_team in via[1:-1]])
 
         if membership is None:
-            #we have membership via an indirect team, and can use
-            #sane defaults
-
-            #the user can only be a member of this team
+            # Membership is via an indirect team so sane defaults exist.
+            # An indirect member cannot be an Owner or Admin of a team.
             role = 'Member'
-            #the user never joined, and can't have a join date
+            # The Person never joined, and can't have a join date.
             datejoined = None
         else:
-            #the member is a direct member, so we can use membership data
+            # The member is a direct member; use the membership data.
             team = membership.team
             datejoined = membership.datejoined
             if membership.person == team.teamowner:
@@ -3128,18 +3240,29 @@ class PersonParticipationView(LaunchpadView):
     @cachedproperty
     def active_participations(self):
         """Return the participation information for active memberships."""
-        participations = [self._asParticipation(membership=membership)
-                for membership in self.context.myactivememberships
-                if check_permission('launchpad.View', membership.team)]
-        membership_set = getUtility(ITeamMembershipSet)
-        for team in self.context.teams_indirectly_participated_in:
-            if not check_permission('launchpad.View', team):
+        paths, memberships = self.context.getPathsToTeams()
+        direct_teams = [membership.team for membership in memberships]
+        indirect_teams = [
+            team for team in paths.keys()
+            if team not in direct_teams]
+        participations = []
+
+        # First, create a participation for all direct memberships.
+        for membership in memberships:
+            # Add a participation record for the membership if allowed.
+            if check_permission('launchpad.View', membership.team):
+                participations.append(
+                    self._asParticipation(membership=membership))
+
+        # Second, create a participation for all indirect memberships,
+        # using the remaining paths.
+        for indirect_team in indirect_teams:
+            if not check_permission('launchpad.View', indirect_team):
                 continue
-            # The key points of the path for presentation are:
-            # [-?] indirect memberships, [-2] direct membership, [-1] team.
-            team_path = self.context.findPathToTeam(team)
             participations.append(
-                self._asParticipation(team_path=team_path[:-1], team=team))
+                self._asParticipation(
+                    via=paths[indirect_team],
+                    team=indirect_team))
         return sorted(participations, key=itemgetter('displayname'))
 
     @cachedproperty
@@ -3216,7 +3339,7 @@ class EmailAddressVisibleState:
         return self.state is EmailAddressVisibleState.ALLOWED
 
 
-class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
+class PersonIndexView(XRDSContentNegotiationMixin, MapMixin, PersonView):
     """View class for person +index and +xrds pages."""
 
     xrds_template = ViewPageTemplateFile(
@@ -3229,7 +3352,8 @@ class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
         # the location is set, visible, and the viewing user wants to see it.
         launchpad_views = get_launchpad_views(self.request.cookies)
         self._small_map = launchpad_views['small_maps']
-        if (self.has_visible_location and self._small_map):
+        if (self.gmap2_enabled
+            and self.has_visible_location and self._small_map):
             self.request.needs_gmap2 = True
         if self.request.method == "POST":
             self.processForm()
@@ -3388,35 +3512,76 @@ class PersonCodeOfConductEditView(LaunchpadView):
                 sCoC_util.modifySignature(sig_id, self.user, comment, False)
 
 
-class PersonEditWikiNamesView(LaunchpadView):
+class PersonEditWikiNamesView(LaunchpadFormView):
     """View for ~person/+editwikinames"""
+
+    schema = IWikiName
+    fields = ['wiki', 'wikiname']
+    # Use custom widgets solely to get the width correct.  The URIWidget has a
+    # CSS class that does not respect the displayWidth, thus the need to use a
+    # different cssClass.
+    custom_widget('wiki', URIWidget, displayWidth=40, cssClass="textType")
+    custom_widget('wikiname', TextWidget, displayWidth=40)
 
     @property
     def label(self):
         return smartquote("%s's wiki names" % self.context.displayname)
 
     @property
-    def cancel_url(self):
-        return canonical_url(self.context, view_name="+edit")
+    def next_url(self):
+        return canonical_url(self.context)
+
+    cancel_url = next_url
+
+    def setUpFields(self):
+        super(PersonEditWikiNamesView, self).setUpFields()
+        if self.context.wiki_names.count() > 0:
+            # Make the wiki and wiki_name entries optional on the edit page if
+            # one or more ids already exist, which allows the removal of ids
+            # without filling out the new wiki fields.
+            wiki_field = self.form_fields['wiki']
+            wikiname_field = self.form_fields['wikiname']
+            # Copy the fields so as not to modify the interface.
+            wiki_field.field = copy_field(wiki_field.field)
+            wiki_field.field.required = False
+            wikiname_field.field = copy_field(wikiname_field.field)
+            wikiname_field.field.required = False
 
     def _validateWikiURL(self, url):
         """Validate the URL.
 
         Make sure that the result is a valid URL with only the
-        appropriate schemes.
+        appropriate schemes.  The url is assumed to be a string.
         """
+        if url is None:
+            return
         try:
             uri = URI(url)
             if uri.scheme not in ('http', 'https'):
-                self.error_message = structured(
-                    'The URL scheme "%(scheme)s" is not allowed.  '
-                    'Only http or https URLs may be used.', scheme=uri.scheme)
-                return False
+                self.setFieldError(
+                    'wiki',
+                    structured(
+                        'The URL scheme "%(scheme)s" is not allowed.  '
+                        'Only http or https URLs may be used.',
+                        scheme=uri.scheme))
         except InvalidURIError:
-            self.error_message = structured(
-                '"%(url)s" is not a valid URL.', url=url)
-            return False
-        return True
+            self.setFieldError(
+                'wiki',
+                structured(
+                    '"%(url)s" is not a valid URL.', url=url))
+
+    def _validateWikiName(self, name):
+        """Ensure the wikiname is valid.
+
+        It must not be longer than 100 characters.  Name is assumed to be a
+        string.
+        """
+        max_len = 100
+        if len(name) > max_len:
+            self.setFieldError(
+                'wikiname',
+                structured(
+                    'The wiki name cannot exceed %d characters.' % max_len))
 
     def _sanitizeWikiURL(self, url):
         """Strip whitespaces and make sure :url ends in a single '/'."""
@@ -3424,72 +3589,82 @@ class PersonEditWikiNamesView(LaunchpadView):
             return url
         return '%s/' % url.strip().rstrip('/')
 
-    def initialize(self):
-        """Process the WikiNames form."""
-        self.error_message = None
-        if self.request.method != "POST":
-            # Nothing to do
+    def validate(self, data):
+        # If there are already form errors then just show them.
+        if self.errors:
+            return
+        wikiurl = self._sanitizeWikiURL(data.get('wiki'))
+        wikiname = data.get('wikiname')
+        if wikiurl or wikiname:
+            if not wikiurl:
+                self.setFieldError(
+                    'wiki',
+                    structured(
+                        'The Wiki URL must be specified.'))
+            if not wikiname:
+                self.setFieldError(
+                    'wikiname',
+                    structured(
+                        'The Wiki name must be specified.'))
+
+        if self.errors:
             return
 
-        form = self.request.form
-        context = self.context
+        if wikiurl is not None:
+            self._validateWikiURL(wikiurl)
+        if wikiname is not None:
+            self._validateWikiName(wikiname)
+
+        if self.errors:
+            return
+
         wikinameset = getUtility(IWikiNameSet)
-
-        for w in context.wiki_names:
-            # XXX: GuilhermeSalgado 2005-08-25:
-            # We're exposing WikiName IDs here because that's the only
-            # unique column we have. If we don't do this we'll have to
-            # generate the field names using the WikiName.wiki and
-            # WikiName.wikiname columns (because these two columns make
-            # another unique identifier for WikiNames), but that's tricky and
-            # not worth the extra work.
-            if form.get('remove_%d' % w.id):
-                w.destroySelf()
-            else:
-                wiki = self._sanitizeWikiURL(form.get('wiki_%d' % w.id))
-                wikiname = form.get('wikiname_%d' % w.id)
-                if not (wiki and wikiname):
-                    self.error_message = structured(
-                        "Neither Wiki nor WikiName can be empty.")
-                    return
-                if not self._validateWikiURL(wiki):
-                    return
-                w.wiki = wiki
-                w.wikiname = wikiname
-
-        wiki = self._sanitizeWikiURL(form.get('newwiki'))
-        wikiname = form.get('newwikiname')
-        if wiki or wikiname:
-            if wiki and wikiname:
-                existingwiki = wikinameset.getByWikiAndName(wiki, wikiname)
-                if existingwiki and existingwiki.person != context:
-                    owner_name = urllib.quote(existingwiki.person.name)
-                    merge_url = (
-                        '%s/+requestmerge?field.dupe_person=%s'
-                        % (canonical_url(getUtility(IPersonSet)), owner_name))
-                    self.error_message = structured(
+        existingwiki = wikinameset.getByWikiAndName(wikiurl, wikiname)
+        if existingwiki:
+            if existingwiki.person != self.context:
+                owner_name = urllib.quote(existingwiki.person.name)
+                merge_url = (
+                    '%s/+requestmerge?field.dupe_person=%s'
+                    % (canonical_url(getUtility(IPersonSet)), owner_name))
+                self.setFieldError(
+                    'wikiname',
+                    structured(
                         'The WikiName %s%s is already registered by '
                         '<a href="%s">%s</a>. If you think this is a '
                         'duplicated account, you can <a href="%s">merge it'
                         '</a> into your account.',
-                        wiki, wikiname, canonical_url(existingwiki.person),
-                        existingwiki.person.displayname, merge_url)
-                    return
-
-                elif existingwiki:
-                    self.error_message = structured(
-                        'The WikiName %s%s already belongs to you.',
-                        wiki, wikiname)
-                    return
-                if not self._validateWikiURL(wiki):
-                    return
-                wikinameset.new(context, wiki, wikiname)
+                        wikiurl, wikiname,
+                        canonical_url(existingwiki.person),
+                        existingwiki.person.displayname, merge_url))
             else:
-                self.newwiki = wiki
-                self.newwikiname = wikiname
-                self.error_message = structured(
-                    "Neither Wiki nor WikiName can be empty.")
-                return
+                # The person already has this wiki.
+                self.setFieldError(
+                    'wikiname',
+                    'The WikiName %s%s already belongs to you.' %
+                    (wikiurl, wikiname))
+
+    def _save(self, wikiurl, wikiname):
+        """Given a wikiurl and wikiname, attempt to save it.
+
+        Verify someone else doesn't have it already.
+        """
+
+    @action(_("Save Changes"), name="save")
+    def save(self, action, data):
+        """Process the wiki names form."""
+        form = self.request.form
+        for obj in self.context.wiki_names:
+            if form.get('remove_%s' % obj.id):
+                obj.destroySelf()
+
+        if not self.errors:
+            wikiurl = self._sanitizeWikiURL(data.get('wiki'))
+            wikiname = data.get('wikiname')
+            # If either url or name are present then they both must be
+            # entered.
+            if wikiurl and wikiname:
+                wikinameset = getUtility(IWikiNameSet)
+                wikinameset.new(self.context, wikiurl, wikiname)
 
 
 class PersonEditIRCNicknamesView(LaunchpadFormView):
@@ -3554,6 +3729,8 @@ class PersonEditJabberIDsView(LaunchpadFormView):
             # ids already exist, which allows the removal of ids without
             # filling out the new jabberid field.
             jabber_field = self.form_fields['jabberid']
+            # Copy the field so as not to modify the interface.
+            jabber_field.field = copy_field(jabber_field.field)
             jabber_field.field.required = False
 
     @property
@@ -3987,6 +4164,15 @@ class PersonEditView(BasePersonEditView):
 
     @action(_("Save Changes"), name="save")
     def action_save(self, action, data):
+        # XXX: BradCrittenden 2010-09-10 bug=634878: Find a cleaner solution
+        # to the permissions problem for 'name'.  Users should be able to
+        # change their name, but the permission setting for the attribute is
+        # launchpad.Moderate, which only allows admins and registry.  A user
+        # must have launchpad.Edit to access this page.
+        if 'name' in data:
+            new_name = data['name']
+            removeSecurityProxy(self.context).name = new_name
+            del data['name']
         self.updateContextFromData(data)
 
 
@@ -4255,7 +4441,7 @@ class TeamAddMyTeamsView(LaunchpadFormView):
                 verb = 'have been'
                 team_string= (
                     ', '.join(team_names[:-1]) + ' and ' + team_names[-1])
-            full_message += '%s %s %s ' % (team_string, verb, message)
+            full_message += '%s %s %s' % (team_string, verb, message)
         self.request.response.addInfoNotification(full_message)
 
 
@@ -4649,6 +4835,11 @@ class PersonEditEmailsView(LaunchpadFormView):
                 "'%s' doesn't seem to be a valid email address." % newemail)
             return self.errors
 
+        # XXX j.c.sackett 2010-09-15 bug=628247, 576757 There is a validation
+        # system set up for this that is almost identical in
+        # canonical.launchpad.interfaces.validation, called
+        # _check_email_available or similar. It would be really nice if we
+        # could merge that code somehow with this.
         email = getUtility(IEmailAddressSet).getByEmail(newemail)
         person = self.context
         if email is not None:
@@ -4660,20 +4851,32 @@ class PersonEditEmailsView(LaunchpadFormView):
                     "detected it as being yours. If it was detected by our "
                     "system, it's probably shown on this page and is waiting "
                     "to be confirmed as yours." % newemail)
-            else:
+            elif email.person is not None:
                 owner = email.person
                 owner_name = urllib.quote(owner.name)
                 merge_url = (
                     '%s/+requestmerge?field.dupe_person=%s'
                     % (canonical_url(getUtility(IPersonSet)), owner_name))
-                self.addError(
-                    structured(
-                        "The email address '%s' is already registered to "
-                        '<a href="%s">%s</a>. If you think that is a '
-                        'duplicated account, you can <a href="%s">merge it'
-                        "</a> into your account.",
-                        newemail, canonical_url(owner), owner.displayname,
-                        merge_url))
+                self.addError(structured(
+                    "The email address '%s' is already registered to "
+                    '<a href="%s">%s</a>. If you think that is a '
+                    'duplicated account, you can <a href="%s">merge it'
+                    "</a> into your account.",
+                    newemail,
+                    canonical_url(owner),
+                    owner.displayname,
+                    merge_url))
+            elif email.account is not None:
+                account = email.account
+                self.addError(structured(
+                    "The email address '%s' is already registered to an "
+                    "account, %s.",
+                    newemail,
+                    account.displayname))
+            else:
+                self.addError(structured(
+                    "The email address '%s' is already registered.",
+                    newemail))
         return self.errors
 
     @action(_("Add"), name="add_email", validator=validate_action_add_email)
@@ -4860,11 +5063,14 @@ class PersonLatestQuestionsView(LaunchpadFormView):
 
 
 class PersonSearchQuestionsView(SearchQuestionsView):
-    """View used to search and display questions in which an IPerson is
-    involved.
-    """
+    """View to search and display questions that involve an `IPerson`."""
 
     display_target_column = True
+
+    @property
+    def template(self):
+        # Persons always show the default template.
+        return self.default_template
 
     @property
     def pageheading(self):
@@ -4880,10 +5086,8 @@ class PersonSearchQuestionsView(SearchQuestionsView):
                  mapping=dict(name=self.context.displayname))
 
 
-class SearchAnsweredQuestionsView(SearchQuestionsView):
+class SearchAnsweredQuestionsView(PersonSearchQuestionsView):
     """View used to search and display questions answered by an IPerson."""
-
-    display_target_column = True
 
     def getDefaultFilter(self):
         """See `SearchQuestionsView`."""
@@ -4903,10 +5107,8 @@ class SearchAnsweredQuestionsView(SearchQuestionsView):
                  mapping=dict(name=self.context.displayname))
 
 
-class SearchAssignedQuestionsView(SearchQuestionsView):
+class SearchAssignedQuestionsView(PersonSearchQuestionsView):
     """View used to search and display questions assigned to an IPerson."""
-
-    display_target_column = True
 
     def getDefaultFilter(self):
         """See `SearchQuestionsView`."""
@@ -4926,10 +5128,8 @@ class SearchAssignedQuestionsView(SearchQuestionsView):
                  mapping=dict(name=self.context.displayname))
 
 
-class SearchCommentedQuestionsView(SearchQuestionsView):
+class SearchCommentedQuestionsView(PersonSearchQuestionsView):
     """View used to search and show questions commented on by an IPerson."""
-
-    display_target_column = True
 
     def getDefaultFilter(self):
         """See `SearchQuestionsView`."""
@@ -4949,10 +5149,8 @@ class SearchCommentedQuestionsView(SearchQuestionsView):
                  mapping=dict(name=self.context.displayname))
 
 
-class SearchCreatedQuestionsView(SearchQuestionsView):
+class SearchCreatedQuestionsView(PersonSearchQuestionsView):
     """View used to search and display questions created by an IPerson."""
-
-    display_target_column = True
 
     def getDefaultFilter(self):
         """See `SearchQuestionsView`."""
@@ -4972,10 +5170,8 @@ class SearchCreatedQuestionsView(SearchQuestionsView):
                  mapping=dict(name=self.context.displayname))
 
 
-class SearchNeedAttentionQuestionsView(SearchQuestionsView):
+class SearchNeedAttentionQuestionsView(PersonSearchQuestionsView):
     """View used to search and show questions needing an IPerson attention."""
-
-    display_target_column = True
 
     def getDefaultFilter(self):
         """See `SearchQuestionsView`."""
@@ -4994,10 +5190,8 @@ class SearchNeedAttentionQuestionsView(SearchQuestionsView):
                  mapping=dict(name=self.context.displayname))
 
 
-class SearchSubscribedQuestionsView(SearchQuestionsView):
+class SearchSubscribedQuestionsView(PersonSearchQuestionsView):
     """View used to search and show questions subscribed to by an IPerson."""
-
-    display_target_column = True
 
     def getDefaultFilter(self):
         """See `SearchQuestionsView`."""
@@ -5585,10 +5779,7 @@ class ContactViaWebNotificationRecipientSet:
     def _reset_state(self):
         """Reset the cache because the recipients changed."""
         self._count_recipients = None
-        if safe_hasattr(self, '_all_recipients_cached'):
-            # The clear the cache of _all_recipients. The caching will fail
-            # if this method creates the attribute before _all_recipients.
-            del self._all_recipients_cached
+        del IPropertyCache(self)._all_recipients
 
     def _getPrimaryReason(self, person_or_team):
         """Return the primary reason enumeration.
@@ -5635,24 +5826,32 @@ class ContactViaWebNotificationRecipientSet:
         :type person_or_team: `IPerson`.
         """
         if self._primary_reason is self.TO_USER:
-            reason = 'the "Contact this user" link on your profile page'
+            reason = (
+                'using the "Contact this user" link on your profile page\n'
+                '(%s)' % canonical_url(person_or_team))
             header = 'ContactViaWeb user'
         elif self._primary_reason is self.TO_OWNER:
             reason = (
-                'the "Contact this team" owner link on the '
-                '%s team page' % person_or_team.displayname)
+                'using the "Contact this team\'s owner" link on the '
+                '%s team page\n(%s)' % (
+                    person_or_team.displayname,
+                    canonical_url(person_or_team)))
             header = 'ContactViaWeb owner (%s team)' % person_or_team.name
         elif self._primary_reason is self.TO_TEAM:
             reason = (
-                'the "Contact this team" link on the '
-                '%s team page' % person_or_team.displayname)
+                'using the "Contact this team" link on the '
+                '%s team page\n(%s)' % (
+                    person_or_team.displayname,
+                    canonical_url(person_or_team)))
             header = 'ContactViaWeb member (%s team)' % person_or_team.name
         else:
             # self._primary_reason is self.TO_MEMBERS.
             reason = (
-                'the "Contact this team" link on the %s\n'
-                'team page to each member directly' %
-                person_or_team.displayname)
+                'to each member of the %s team using the '
+                '"Contact this team" link on the %s team page\n(%s)' % (
+                    person_or_team.displayname,
+                    person_or_team.displayname,
+                    canonical_url(person_or_team)))
             header = 'ContactViaWeb member (%s team)' % person_or_team.name
         return (reason, header)
 
@@ -5688,7 +5887,7 @@ class ContactViaWebNotificationRecipientSet:
                 'You are contacting %s of the %s (%s) team directly.'
                 % (text, person_or_team.displayname, person_or_team.name))
 
-    @cachedproperty('_all_recipients_cached')
+    @cachedproperty
     def _all_recipients(self):
         """Set the cache of all recipients."""
         all_recipients = {}

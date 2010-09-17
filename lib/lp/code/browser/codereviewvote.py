@@ -9,10 +9,16 @@ __metaclass__ = type
 from zope.interface import Interface
 
 from canonical.launchpad import _
-from lp.services.fields import PublicPersonChoice
 from canonical.launchpad.webapp import (
-    action, canonical_url, LaunchpadFormView)
-from lp.code.errors import ReviewNotPending, UserHasExistingReview
+    action,
+    canonical_url,
+    LaunchpadFormView,
+    )
+from lp.code.errors import (
+    ReviewNotPending,
+    UserHasExistingReview,
+    )
+from lp.services.fields import PublicPersonChoice
 
 
 class ReassignSchema(Interface):

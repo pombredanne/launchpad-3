@@ -14,32 +14,40 @@ __all__ = [
     ]
 
 from operator import itemgetter
+
 from zope.component import queryMultiAdapter
 
+from canonical.config import config
+from canonical.launchpad import _
+from canonical.launchpad.helpers import shortlist
+from canonical.launchpad.interfaces.launchpad import IHasDrivers
+from canonical.launchpad.webapp import (
+    canonical_url,
+    LaunchpadView,
+    )
+from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
+from canonical.launchpad.webapp.menu import (
+    enabled_with_permission,
+    Link,
+    )
+from canonical.lazr.utils import smartquote
+from lp.blueprints.interfaces.specification import (
+    SpecificationFilter,
+    SpecificationSort,
+    )
+from lp.blueprints.interfaces.specificationtarget import ISpecificationTarget
+from lp.blueprints.interfaces.sprint import ISprint
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
-from canonical.launchpad.interfaces.launchpad import IHasDrivers
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import (
-    IProjectGroup, IProjectGroupSeries)
-from lp.blueprints.interfaces.specification import (
-    SpecificationFilter, SpecificationSort)
-from lp.blueprints.interfaces.specificationtarget import (
-    ISpecificationTarget)
-from lp.blueprints.interfaces.sprint import ISprint
-
-from canonical.config import config
-from canonical.launchpad import _
-from canonical.launchpad.webapp import LaunchpadView
-from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.menu import enabled_with_permission, Link
-from canonical.launchpad.helpers import shortlist
-from canonical.cachedproperty import cachedproperty
-from canonical.launchpad.webapp import canonical_url
-from canonical.lazr.utils import smartquote
+    IProjectGroup,
+    IProjectGroupSeries,
+    )
+from lp.services.propertycache import cachedproperty
 
 
 class HasSpecificationsMenuMixin:
@@ -316,6 +324,12 @@ class HasSpecificationsView(LaunchpadView):
     def specs(self):
         filter = self.spec_filter
         return self.context.specifications(filter=filter)
+
+    @cachedproperty
+    def specs_batched(self):
+        navigator = BatchNavigator(self.specs, self.request, size=500)
+        navigator.setHeadings('specification', 'specifications')
+        return navigator
 
     @cachedproperty
     def spec_count(self):

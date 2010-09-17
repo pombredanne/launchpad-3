@@ -11,30 +11,39 @@ import datetime
 import os
 import random
 import time
-import transaction
 import unittest
 
-from bzrlib.revision import NULL_REVISION, Revision as BzrRevision
-from bzrlib.uncommit import uncommit
+from bzrlib.revision import (
+    NULL_REVISION,
+    Revision as BzrRevision,
+    )
 from bzrlib.tests import TestCaseWithTransport
+from bzrlib.uncommit import uncommit
 import pytz
+from storm.locals import Store
+import transaction
 from twisted.python.util import mergeFunctionMetadata
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.launchpad.interfaces.lpstorm import IStore
-from lp.translations.interfaces.translations import (
-    TranslationsBranchImportMode)
+from canonical.testing import LaunchpadZopelessLayer
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.revision import IRevisionSet
 from lp.code.model.branchrevision import BranchRevision
-from lp.code.model.revision import Revision, RevisionAuthor, RevisionParent
+from lp.code.model.revision import (
+    Revision,
+    RevisionAuthor,
+    RevisionParent,
+    )
 from lp.codehosting.scanner.bzrsync import BzrSync
-from lp.testing import TestCaseWithFactory
-from canonical.testing import LaunchpadZopelessLayer
 from lp.services.osutils import override_environ
+from lp.testing import TestCaseWithFactory
+from lp.translations.interfaces.translations import (
+    TranslationsBranchImportMode,
+    )
 
 
 def run_as_db_user(username):
@@ -71,6 +80,8 @@ class BzrSyncTestCase(TestCaseWithTransport, TestCaseWithFactory):
         self.lp_db_user = config.launchpad.dbuser
         self.makeFixtures()
         LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
+        # Catch both constraints and permissions for the db user.
+        self.addCleanup(Store.of(self.db_branch).flush)
 
     def tearDown(self):
         super(BzrSyncTestCase, self).tearDown()
@@ -482,18 +493,14 @@ class TestBzrSync(BzrSyncTestCase):
         expected_history = [branch_revision.revision.revision_id
             for branch_revision in sampledata
             if branch_revision.sequence is not None]
-        expected_mapping = dict(
-            (branch_revision.revision.revision_id, branch_revision.id)
-            for branch_revision in sampledata)
 
         self.create_branch_and_tree(db_branch=branch)
 
         bzrsync = self.makeBzrSync(branch)
-        db_ancestry, db_history, db_branch_revision_map = (
+        db_ancestry, db_history = (
             bzrsync.retrieveDatabaseAncestry())
         self.assertEqual(expected_ancestry, set(db_ancestry))
         self.assertEqual(expected_history, list(db_history))
-        self.assertEqual(expected_mapping, db_branch_revision_map)
 
 
 class TestBzrSyncOneRevision(BzrSyncTestCase):

@@ -11,14 +11,16 @@ from subprocess import PIPE
 import threading
 import unittest
 
-from bzrlib import errors, osutils
+from bzrlib import (
+    errors,
+    osutils,
+    )
 from bzrlib.smart import medium
 from bzrlib.tests import TestCaseWithTransport
 from bzrlib.transport import remote
 from bzrlib.plugins.lpserve.test_lpserve import TestCaseWithSubprocess
 
 from canonical.config import config
-
 from lp.codehosting.bzrutils import make_error_utility
 
 

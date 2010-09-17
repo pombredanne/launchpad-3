@@ -17,56 +17,42 @@ __all__ = [
     'UserCannotSubscribePerson',
     ]
 
-from zope.interface import Attribute, Interface
-from zope.schema import Bool, Choice, Datetime, Int
-from lazr.enum import DBEnumeratedType, DBItem
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    )
+from lazr.restful.declarations import (
+    call_with,
+    export_as_webservice_entry,
+    export_factory_operation,
+    export_read_operation,
+    export_write_operation,
+    exported,
+    operation_parameters,
+    operation_returns_collection_of,
+    operation_returns_entry,
+    REQUEST_USER,
+    webservice_error,
+    )
+from lazr.restful.fields import Reference
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Bool,
+    Choice,
+    Datetime,
+    Int,
+    )
 
 from canonical.launchpad import _
-from lp.services.fields import (
-    PersonChoice, PublicPersonChoice)
+from lp.registry.enum import BugNotificationLevel
 from lp.registry.interfaces.person import IPerson
-
-from lazr.restful.declarations import (
-    REQUEST_USER, call_with, exported, export_as_webservice_entry,
-    export_factory_operation, export_read_operation, export_write_operation,
-    operation_parameters, operation_returns_collection_of,
-    operation_returns_entry, webservice_error)
-from lazr.restful.fields import Reference
-
-
-class BugNotificationLevel(DBEnumeratedType):
-    """Bug Notification Level.
-
-    The type and volume of bug notification email sent to subscribers.
-    """
-
-    NOTHING = DBItem(10, """
-        Nothing
-
-        Don't send any notifications about bugs.
-        """)
-
-    LIFECYCLE = DBItem(20, """
-        Lifecycle
-
-        Only send a low volume of notifications about new bugs registered,
-        bugs removed or bug targetting.
-        """)
-
-    METADATA = DBItem(30, """
-        Details
-
-        Send bug lifecycle notifications, as well as notifications about
-        changes to the bug's details like status and description.
-        """)
-
-    COMMENTS = DBItem(40, """
-        Discussion
-
-        Send bug lifecycle notifications, detail change notifications and
-        notifications about new events in the bugs's discussion, like new
-        comments.
-        """)
+from lp.services.fields import (
+    PersonChoice,
+    PublicPersonChoice,
+    )
 
 
 class BlueprintNotificationLevel(DBEnumeratedType):
@@ -183,6 +169,9 @@ class IStructuralSubscriptionTarget(Interface):
         :subscribed_by: The IPerson creating the subscription.
         :return: The new subscription.
         """
+
+    def userCanAlterBugSubscription(subscriber, subscribed_by):
+        """Check if a user can change a bug subscription for a person."""
 
     @operation_parameters(
         subscriber=Reference(

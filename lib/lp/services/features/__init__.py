@@ -26,4 +26,9 @@ when starting a web request.
 
 def getFeatureFlag(flag):
     """Get the value of a flag for this thread's scopes."""
-    return per_thread.features.getFlag(flag)
+    # Workaround for bug 631884 - features have two homes, threads and
+    # requests.
+    features = getattr(per_thread, 'features', None)
+    if features is None:
+        return None
+    return features.getFlag(flag)

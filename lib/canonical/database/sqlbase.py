@@ -2,39 +2,6 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
-
-import warnings
-from datetime import datetime
-import re
-from textwrap import dedent
-import psycopg2
-from psycopg2.extensions import (
-    ISOLATION_LEVEL_AUTOCOMMIT, ISOLATION_LEVEL_READ_COMMITTED,
-    ISOLATION_LEVEL_SERIALIZABLE)
-import pytz
-import storm
-from storm.databases.postgres import compile as postgres_compile
-from storm.expr import State
-from storm.expr import compile as storm_compile
-from storm.locals import Storm, Store
-from storm.zope.interfaces import IZStorm
-
-from sqlobject.sqlbuilder import sqlrepr
-import transaction
-
-from twisted.python.util import mergeFunctionMetadata
-
-from zope.component import getUtility
-from zope.interface import implements
-from zope.security.proxy import removeSecurityProxy
-
-from lazr.restful.interfaces import IRepresentationCache
-
-from canonical.cachedproperty import clear_cachedproperties
-from canonical.config import config, dbconfig
-from canonical.database.interfaces import ISQLBase
-
-
 __all__ = [
     'alreadyInstalledMsg',
     'begin',
@@ -60,10 +27,51 @@ __all__ = [
     'RandomiseOrderDescriptor',
     'reset_store',
     'rollback',
+    'session_store',
     'SQLBase',
     'sqlvalues',
     'StupidCache',
-    'ZopelessTransactionManager',]
+    'ZopelessTransactionManager',
+    ]
+
+
+from datetime import datetime
+import re
+from textwrap import dedent
+import warnings
+
+from lazr.restful.interfaces import IRepresentationCache
+import psycopg2
+from psycopg2.extensions import (
+    ISOLATION_LEVEL_AUTOCOMMIT,
+    ISOLATION_LEVEL_READ_COMMITTED,
+    ISOLATION_LEVEL_SERIALIZABLE,
+    )
+import pytz
+from sqlobject.sqlbuilder import sqlrepr
+import storm
+from storm.databases.postgres import compile as postgres_compile
+from storm.expr import (
+    compile as storm_compile,
+    State,
+    )
+from storm.locals import (
+    Store,
+    Storm,
+    )
+from storm.zope.interfaces import IZStorm
+import transaction
+from twisted.python.util import mergeFunctionMetadata
+from zope.component import getUtility
+from zope.interface import implements
+from zope.security.proxy import removeSecurityProxy
+
+from canonical.config import (
+    config,
+    dbconfig,
+    )
+from canonical.database.interfaces import ISQLBase
+from lp.services.propertycache import IPropertyCacheManager
 
 # Default we want for scripts, and the PostgreSQL default. Note psycopg1 will
 # use SERIALIZABLE unless we override, but psycopg2 will not.
@@ -259,10 +267,10 @@ class SQLBase(storm.sqlobject.SQLObjectBase):
 
     def __storm_invalidated__(self):
         """Flush cached properties."""
-        # Note this is not directly tested; but the entire test suite blows up
-        # awesomely if its broken : its entirely unclear where tests for this
-        # should be -- RBC 20100816.
-        clear_cachedproperties(self)
+        # XXX: RobertCollins 2010-08-16 bug=622648: Note this is not directly
+        # tested, but the entire test suite blows up awesomely if it's broken.
+        # It's entirely unclear where tests for this should be.
+        IPropertyCacheManager(self).clear()
 
 
 alreadyInstalledMsg = ("A ZopelessTransactionManager with these settings is "
@@ -571,7 +579,7 @@ def quote_like(x):
 
     """
     if not isinstance(x, basestring):
-        raise TypeError, 'Not a string (%s)' % type(x)
+        raise TypeError('Not a string (%s)' % type(x))
     return quote(x).replace('%', r'\\%').replace('_', r'\\_')
 
 
@@ -685,6 +693,7 @@ def convert_storm_clause_to_string(storm_clause):
         parameters = [param.get(to_db=True) for param in state.parameters]
         clause = clause.replace('?', '%s') % sqlvalues(*parameters)
     return clause
+
 
 def flush_database_updates():
     """Flushes all pending database updates.
@@ -826,6 +835,7 @@ class cursor:
     DEPRECATED - use of this class is deprecated in favour of using
     Store.execute().
     """
+
     def __init__(self):
         self._connection = _get_sqlobject_store()._connection
         self._result = None
@@ -854,3 +864,8 @@ class cursor:
         if self._result is not None:
             self._result.close()
             self._result = None
+
+
+def session_store():
+    """Return a store connected to the session DB."""
+    return getUtility(IZStorm).get('session', 'launchpad-session:')

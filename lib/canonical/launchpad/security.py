@@ -6,132 +6,192 @@
 """Security policies for using content objects."""
 
 __metaclass__ = type
-__all__ = ['AuthorizationBase']
+__all__ = [
+    'AnonymousAuthorization',
+    'AuthorizationBase',
+    ]
 
-from zope.interface import implements, Interface
-from zope.component import getAdapter, getUtility
+from zope.component import (
+    getAdapter,
+    getUtility,
+    )
+from zope.interface import (
+    implements,
+    Interface,
+    )
 
 from canonical.config import config
 from canonical.launchpad.interfaces.account import IAccount
 from canonical.launchpad.interfaces.emailaddress import IEmailAddress
-from canonical.launchpad.interfaces.librarian import (
-    ILibraryFileAliasWithParent)
-from lp.registry.interfaces.announcement import IAnnouncement
-from lp.soyuz.interfaces.archive import IArchive
-from lp.soyuz.interfaces.archivepermission import (
-    IArchivePermissionSet)
-from lp.soyuz.interfaces.archiveauthtoken import IArchiveAuthToken
-from lp.soyuz.interfaces.archivesubscriber import (
-    IArchiveSubscriber, IArchiveSubscriberSet, IPersonalArchiveSubscription)
-from lp.code.interfaces.branch import (
-    IBranch, user_has_special_branch_access)
-from lp.code.interfaces.branchmergeproposal import (
-    IBranchMergeProposal)
-from lp.code.interfaces.sourcepackagerecipe import ISourcePackageRecipe
-from lp.code.interfaces.sourcepackagerecipebuild import (
-    ISourcePackageRecipeBuild)
-from lp.bugs.interfaces.bug import IBug
-from lp.bugs.interfaces.bugattachment import IBugAttachment
-from lp.bugs.interfaces.bugbranch import IBugBranch
-from lp.bugs.interfaces.bugnomination import IBugNomination
-from lp.bugs.interfaces.bugsubscription import IBugSubscription
-from lp.bugs.interfaces.bugtracker import IBugTracker
-from lp.buildmaster.interfaces.builder import IBuilder, IBuilderSet
-from lp.buildmaster.interfaces.buildfarmbranchjob import IBuildFarmBranchJob
-from lp.buildmaster.interfaces.buildfarmjob import (
-    IBuildFarmJob, IBuildFarmJobOld)
-from lp.buildmaster.interfaces.packagebuild import IPackageBuild
-from lp.code.interfaces.codeimport import ICodeImport
-from lp.code.interfaces.codeimportjob import (
-    ICodeImportJobSet, ICodeImportJobWorkflow)
-from lp.code.interfaces.codeimportmachine import (
-    ICodeImportMachine)
-from lp.code.interfaces.codereviewcomment import (
-    ICodeReviewComment, ICodeReviewCommentDeletion)
-from lp.code.interfaces.codereviewvote import (
-    ICodeReviewVoteReference)
-from lp.code.interfaces.diff import IPreviewDiff
-from lp.registry.interfaces.distribution import IDistribution
-from lp.registry.interfaces.distributionmirror import (
-    IDistributionMirror)
-from lp.registry.interfaces.distributionsourcepackage import (
-    IDistributionSourcePackage)
-from lp.registry.interfaces.distroseries import IDistroSeries
-from lp.registry.interfaces.entitlement import IEntitlement
-from lp.hardwaredb.interfaces.hwdb import (
-    IHWDBApplication, IHWDevice, IHWDeviceClass, IHWDriver, IHWDriverName,
-    IHWDriverPackageName, IHWSubmission, IHWSubmissionDevice, IHWVendorID)
-from lp.services.worlddata.interfaces.language import ILanguage, ILanguageSet
-from lp.translations.interfaces.languagepack import ILanguagePack
 from canonical.launchpad.interfaces.launchpad import (
-    IHasBug, IHasDrivers, ILaunchpadCelebrities, IPersonRoles)
-from lp.registry.interfaces.role import IHasOwner
-from lp.registry.interfaces.location import IPersonLocation
-from lp.registry.interfaces.mailinglist import IMailingListSet
-from lp.registry.interfaces.milestone import (
-    IMilestone, IProjectGroupMilestone)
-from canonical.launchpad.interfaces.message import IMessage
+    IHasDrivers,
+    ILaunchpadCelebrities,
+    IPersonRoles,
+    )
+from canonical.launchpad.interfaces.librarian import (
+    ILibraryFileAliasWithParent,
+    )
 from canonical.launchpad.interfaces.oauth import (
-    IOAuthAccessToken, IOAuthRequestToken)
-from lp.soyuz.interfaces.packageset import IPackageset, IPackagesetSet
-from lp.translations.interfaces.pofile import IPOFile
-from lp.translations.interfaces.potemplate import IPOTemplate
-from lp.soyuz.interfaces.binarypackagerelease import (
-    IBinaryPackageReleaseDownloadCount)
-from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuild
-from lp.soyuz.interfaces.buildfarmbuildjob import IBuildFarmBuildJob
-from lp.soyuz.interfaces.publishing import (
-    IBinaryPackagePublishingHistory, IPublishingEdit,
-    ISourcePackagePublishingHistory)
-from lp.soyuz.interfaces.queue import (
-    IPackageUpload, IPackageUploadQueue)
-from lp.registry.interfaces.packaging import IPackaging
-from lp.registry.interfaces.person import (
-    IPerson, IPersonSet, ITeam, PersonVisibility)
-from lp.registry.interfaces.pillar import IPillar
-from lp.registry.interfaces.poll import (
-    IPoll, IPollOption, IPollSubset)
-from lp.registry.interfaces.product import IProduct, IProductSet
-from lp.registry.interfaces.productrelease import (
-    IProductRelease, IProductReleaseFile)
-from lp.registry.interfaces.productseries import IProductSeries
-from lp.registry.interfaces.projectgroup import (
-    IProjectGroup, IProjectGroupSet)
-from lp.registry.interfaces.gpg import IGPGKey
-from lp.registry.interfaces.irc import IIrcID
-from lp.registry.interfaces.wikiname import IWikiName
-from lp.code.interfaces.seriessourcepackagebranch import (
-    IMakeOfficialBranchLinks, ISeriesSourcePackageBranch)
-from lp.registry.interfaces.sourcepackage import ISourcePackage
-from lp.soyuz.interfaces.sourcepackagerelease import (
-    ISourcePackageRelease)
-from lp.blueprints.interfaces.specification import ISpecification
-from lp.blueprints.interfaces.specificationbranch import (
-    ISpecificationBranch)
-from lp.blueprints.interfaces.specificationsubscription import (
-    ISpecificationSubscription)
-from lp.blueprints.interfaces.sprint import ISprint
-from lp.blueprints.interfaces.sprintspecification import (
-    ISprintSpecification)
-from lp.registry.interfaces.teammembership import ITeamMembership
-from lp.translations.interfaces.translationgroup import (
-    ITranslationGroup, ITranslationGroupSet)
-from lp.translations.interfaces.translationimportqueue import (
-    ITranslationImportQueue, ITranslationImportQueueEntry)
-from lp.translations.interfaces.translationsperson import (
-    ITranslationsPerson)
-from lp.translations.interfaces.translator import (
-    ITranslator, IEditTranslator)
-
+    IOAuthAccessToken,
+    IOAuthRequestToken,
+    )
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import (
-    IAuthorization, ILaunchpadRoot)
-
+    IAuthorization,
+    ILaunchpadRoot,
+    )
 from lp.answers.interfaces.faq import IFAQ
 from lp.answers.interfaces.faqtarget import IFAQTarget
 from lp.answers.interfaces.question import IQuestion
 from lp.answers.interfaces.questiontarget import IQuestionTarget
+from lp.blueprints.interfaces.specification import ISpecification
+from lp.blueprints.interfaces.specificationbranch import ISpecificationBranch
+from lp.blueprints.interfaces.specificationsubscription import (
+    ISpecificationSubscription,
+    )
+from lp.blueprints.interfaces.sprint import ISprint
+from lp.blueprints.interfaces.sprintspecification import ISprintSpecification
+from lp.buildmaster.interfaces.builder import (
+    IBuilder,
+    IBuilderSet,
+    )
+from lp.buildmaster.interfaces.buildfarmbranchjob import IBuildFarmBranchJob
+from lp.buildmaster.interfaces.buildfarmjob import (
+    IBuildFarmJob,
+    IBuildFarmJobOld,
+    )
+from lp.buildmaster.interfaces.packagebuild import IPackageBuild
+from lp.code.interfaces.branch import (
+    IBranch,
+    user_has_special_branch_access,
+    )
+from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
+from lp.code.interfaces.codeimport import ICodeImport
+from lp.code.interfaces.codeimportjob import (
+    ICodeImportJobSet,
+    ICodeImportJobWorkflow,
+    )
+from lp.code.interfaces.codeimportmachine import ICodeImportMachine
+from lp.code.interfaces.codereviewcomment import (
+    ICodeReviewComment,
+    ICodeReviewCommentDeletion,
+    )
+from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
+from lp.code.interfaces.diff import IPreviewDiff
+from lp.code.interfaces.seriessourcepackagebranch import (
+    IMakeOfficialBranchLinks,
+    ISeriesSourcePackageBranch,
+    )
+from lp.code.interfaces.sourcepackagerecipe import ISourcePackageRecipe
+from lp.code.interfaces.sourcepackagerecipebuild import (
+    ISourcePackageRecipeBuild,
+    )
+from lp.hardwaredb.interfaces.hwdb import (
+    IHWDBApplication,
+    IHWDevice,
+    IHWDeviceClass,
+    IHWDriver,
+    IHWDriverName,
+    IHWDriverPackageName,
+    IHWSubmission,
+    IHWSubmissionDevice,
+    IHWVendorID,
+    )
+from lp.registry.interfaces.announcement import IAnnouncement
+from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.distributionmirror import IDistributionMirror
+from lp.registry.interfaces.distributionsourcepackage import (
+    IDistributionSourcePackage,
+    )
+from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.entitlement import IEntitlement
+from lp.registry.interfaces.gpg import IGPGKey
+from lp.registry.interfaces.irc import IIrcID
+from lp.registry.interfaces.location import IPersonLocation
+from lp.registry.interfaces.mailinglist import IMailingListSet
+from lp.registry.interfaces.milestone import (
+    IMilestone,
+    IProjectGroupMilestone,
+    )
+from lp.registry.interfaces.packaging import IPackaging
+from lp.registry.interfaces.person import (
+    IPerson,
+    IPersonSet,
+    ITeam,
+    PersonVisibility,
+    )
+from lp.registry.interfaces.pillar import IPillar
+from lp.registry.interfaces.poll import (
+    IPoll,
+    IPollOption,
+    IPollSubset,
+    )
+from lp.registry.interfaces.product import (
+    IProduct,
+    IProductSet,
+    )
+from lp.registry.interfaces.productrelease import (
+    IProductRelease,
+    IProductReleaseFile,
+    )
+from lp.registry.interfaces.productseries import IProductSeries
+from lp.registry.interfaces.projectgroup import (
+    IProjectGroup,
+    IProjectGroupSet,
+    )
+from lp.registry.interfaces.role import IHasOwner
+from lp.registry.interfaces.sourcepackage import ISourcePackage
+from lp.registry.interfaces.teammembership import ITeamMembership
+from lp.registry.interfaces.wikiname import IWikiName
+from lp.services.openid.interfaces.openididentifier import IOpenIdIdentifier
 from lp.services.worlddata.interfaces.country import ICountry
+from lp.services.worlddata.interfaces.language import (
+    ILanguage,
+    ILanguageSet,
+    )
+from lp.soyuz.interfaces.archive import IArchive
+from lp.soyuz.interfaces.archiveauthtoken import IArchiveAuthToken
+from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
+from lp.soyuz.interfaces.archivesubscriber import (
+    IArchiveSubscriber,
+    IArchiveSubscriberSet,
+    IPersonalArchiveSubscription,
+    )
+from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuild
+from lp.soyuz.interfaces.binarypackagerelease import (
+    IBinaryPackageReleaseDownloadCount,
+    )
+from lp.soyuz.interfaces.buildfarmbuildjob import IBuildFarmBuildJob
+from lp.soyuz.interfaces.packageset import (
+    IPackageset,
+    IPackagesetSet,
+    )
+from lp.soyuz.interfaces.publishing import (
+    IBinaryPackagePublishingHistory,
+    IPublishingEdit,
+    ISourcePackagePublishingHistory,
+    )
+from lp.soyuz.interfaces.queue import (
+    IPackageUpload,
+    IPackageUploadQueue,
+    )
+from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
+from lp.translations.interfaces.languagepack import ILanguagePack
+from lp.translations.interfaces.pofile import IPOFile
+from lp.translations.interfaces.potemplate import IPOTemplate
+from lp.translations.interfaces.translationgroup import (
+    ITranslationGroup,
+    ITranslationGroupSet,
+    )
+from lp.translations.interfaces.translationimportqueue import (
+    ITranslationImportQueue,
+    ITranslationImportQueueEntry,
+    )
+from lp.translations.interfaces.translationsperson import ITranslationsPerson
+from lp.translations.interfaces.translator import (
+    IEditTranslator,
+    ITranslator,
+    )
 
 
 class AuthorizationBase:
@@ -224,31 +284,35 @@ class EditByRegistryExpertsOrAdmins(AuthorizationBase):
         return user.in_admin or user.in_registry_experts
 
 
-class ReviewByRegistryExpertsOrAdmins(AuthorizationBase):
-    permission = 'launchpad.ProjectReview'
+class ModerateByRegistryExpertsOrAdmins(AuthorizationBase):
+    permission = 'launchpad.Moderate'
     usedfor = None
 
     def checkAuthenticated(self, user):
         return user.in_admin or user.in_registry_experts
 
 
-class ReviewProduct(ReviewByRegistryExpertsOrAdmins):
+class ModerateDistroSeries(ModerateByRegistryExpertsOrAdmins):
+    usedfor = IDistroSeries
+
+
+class ModerateProduct(ModerateByRegistryExpertsOrAdmins):
     usedfor = IProduct
 
 
-class ReviewProductSet(ReviewByRegistryExpertsOrAdmins):
+class ModerateProductSet(ModerateByRegistryExpertsOrAdmins):
     usedfor = IProductSet
 
 
-class ReviewProject(ReviewByRegistryExpertsOrAdmins):
+class ModerateProject(ModerateByRegistryExpertsOrAdmins):
     usedfor = IProjectGroup
 
 
-class ReviewProjectGroupSet(ReviewByRegistryExpertsOrAdmins):
+class ModerateProjectGroupSet(ModerateByRegistryExpertsOrAdmins):
     usedfor = IProjectGroupSet
 
 
-class ModeratePerson(ReviewByRegistryExpertsOrAdmins):
+class ModeratePerson(ModerateByRegistryExpertsOrAdmins):
     permission = 'launchpad.Moderate'
     usedfor = IPerson
 
@@ -288,6 +352,18 @@ class ViewAccount(EditAccountBySelfOrAdmin):
     permission = 'launchpad.View'
 
 
+class ViewOpenIdIdentifierBySelfOrAdmin(AuthorizationBase):
+    permission = 'launchpad.View'
+    usedfor = IOpenIdIdentifier
+
+    def checkAccountAuthenticated(self, account):
+        if account == self.obj.account:
+            return True
+        return super(
+            ViewOpenIdIdentifierBySelfOrAdmin,
+            self).checkAccountAuthenticated(account)
+
+
 class SpecialAccount(EditAccountBySelfOrAdmin):
     permission = 'launchpad.Special'
 
@@ -317,14 +393,6 @@ class EditOAuthRequestToken(EditOAuthAccessToken):
     usedfor = IOAuthRequestToken
 
 
-class EditBugNominationStatus(AuthorizationBase):
-    permission = 'launchpad.Driver'
-    usedfor = IBugNomination
-
-    def checkAuthenticated(self, user):
-        return self.obj.canApprove(user.person)
-
-
 class EditByOwnersOrAdmins(AuthorizationBase):
     permission = 'launchpad.Edit'
     usedfor = IHasOwner
@@ -348,6 +416,11 @@ class EditProductReleaseFile(AuthorizationBase):
     def checkAuthenticated(self, user):
         return EditProductRelease(self.obj.productrelease).checkAuthenticated(
             user)
+
+
+class ViewProductReleaseFile(AnonymousAuthorization):
+    """Anyone can view an IProductReleaseFile."""
+    usedfor = IProductReleaseFile
 
 
 class AdminDistributionMirrorByDistroOwnerOrMirrorAdminsOrAdmins(
@@ -588,7 +661,7 @@ class AdminMilestoneByLaunchpadAdmins(AuthorizationBase):
         return user.in_admin
 
 
-class ModeratePersonSetByExpertsOrAdmins(ReviewByRegistryExpertsOrAdmins):
+class ModeratePersonSetByExpertsOrAdmins(ModerateByRegistryExpertsOrAdmins):
     permission = 'launchpad.Moderate'
     usedfor = IPersonSet
 
@@ -615,7 +688,7 @@ class EditTeamByTeamOwnerOrTeamAdminsOrAdmins(AuthorizationBase):
         return can_edit_team(self.obj, user)
 
 
-class ModerateTeam(ReviewByRegistryExpertsOrAdmins):
+class ModerateTeam(ModerateByRegistryExpertsOrAdmins):
     permission = 'launchpad.Moderate'
     usedfor = ITeam
 
@@ -796,13 +869,13 @@ class EditDistributionByDistroOwnersOrAdmins(AuthorizationBase):
         return user.isOwner(self.obj) or user.in_admin
 
 
-class AppendDistributionByDriversOrOwnersOrAdmins(AuthorizationBase):
+class ModerateDistributionByDriversOrOwnersOrAdmins(AuthorizationBase):
     """Distribution drivers, owners, and admins may plan releases.
 
     Drivers of `IDerivativeDistribution`s can create series. Owners and
     admins can create series for all `IDistribution`s.
     """
-    permission = 'launchpad.Append'
+    permission = 'launchpad.Moderate'
     usedfor = IDistribution
 
     def checkAuthenticated(self, user):
@@ -907,142 +980,6 @@ class EditProductSeries(EditByOwnersOrAdmins):
             user.in_rosetta_experts):
             return True
         return EditByOwnersOrAdmins.checkAuthenticated(self, user)
-
-
-class EditBugTask(AuthorizationBase):
-    """Permission checker for editing objects linked to a bug.
-
-    Allow any logged-in user to edit objects linked to public
-    bugs. Allow only explicit subscribers to edit objects linked to
-    private bugs.
-    """
-    permission = 'launchpad.Edit'
-    usedfor = IHasBug
-
-    def checkAuthenticated(self, user):
-
-        if user.in_admin:
-            # Admins can always edit bugtasks, whether they're reported on a
-            # private bug or not.
-            return True
-
-        if not self.obj.bug.private:
-            # This is a public bug, so anyone can edit it.
-            return True
-        else:
-            # This is a private bug, and we know the user isn't an admin, so
-            # we'll only allow editing if the user is explicitly subscribed to
-            # this bug.
-            for subscription in self.obj.bug.subscriptions:
-                if user.inTeam(subscription.person):
-                    return True
-
-            return False
-
-
-class PublicToAllOrPrivateToExplicitSubscribersForBugTask(AuthorizationBase):
-    permission = 'launchpad.View'
-    usedfor = IHasBug
-
-    def checkAuthenticated(self, user):
-        return self.obj.bug.userCanView(user.person)
-
-    def checkUnauthenticated(self):
-        """Allow anonymous users to see non-private bugs only."""
-        return not self.obj.bug.private
-
-
-class EditPublicByLoggedInUserAndPrivateByExplicitSubscribers(
-    AuthorizationBase):
-    permission = 'launchpad.Edit'
-    usedfor = IBug
-
-    def checkAuthenticated(self, user):
-        """Allow any logged in user to edit a public bug, and only
-        explicit subscribers to edit private bugs.
-        """
-        if not self.obj.private:
-            # This is a public bug.
-            return True
-        elif user.in_admin:
-            # Admins can edit all bugs.
-            return True
-        else:
-            # This is a private bug. Only explicit subscribers may edit it.
-            for subscription in self.obj.subscriptions:
-                if user.inTeam(subscription.person):
-                    return True
-
-        return False
-
-    def checkUnauthenticated(self):
-        """Never allow unauthenticated users to edit a bug."""
-        return False
-
-
-class PublicToAllOrPrivateToExplicitSubscribersForBug(AuthorizationBase):
-    permission = 'launchpad.View'
-    usedfor = IBug
-
-    def checkAuthenticated(self, user):
-        """Allow any user to see non-private bugs, but only explicit
-        subscribers to see private bugs.
-        """
-        return self.obj.userCanView(user.person)
-
-    def checkUnauthenticated(self):
-        """Allow anonymous users to see non-private bugs only."""
-        return not self.obj.private
-
-
-class EditBugBranch(EditPublicByLoggedInUserAndPrivateByExplicitSubscribers):
-    permission = 'launchpad.Edit'
-    usedfor = IBugBranch
-
-    def __init__(self, bug_branch):
-        # The same permissions as for the BugBranch's bug should apply
-        # to the BugBranch itself.
-        EditPublicByLoggedInUserAndPrivateByExplicitSubscribers.__init__(
-            self, bug_branch.bug)
-
-
-class ViewBugAttachment(PublicToAllOrPrivateToExplicitSubscribersForBug):
-    """Security adapter for viewing a bug attachment.
-
-    If the user is authorized to view the bug, he's allowed to view the
-    attachment.
-    """
-    permission = 'launchpad.View'
-    usedfor = IBugAttachment
-
-    def __init__(self, bugattachment):
-        PublicToAllOrPrivateToExplicitSubscribersForBug.__init__(
-            self, bugattachment.bug)
-
-
-class EditBugAttachment(
-    EditPublicByLoggedInUserAndPrivateByExplicitSubscribers):
-    """Security adapter for editing a bug attachment.
-
-    If the user is authorized to view the bug, he's allowed to edit the
-    attachment.
-    """
-    permission = 'launchpad.Edit'
-    usedfor = IBugAttachment
-
-    def __init__(self, bugattachment):
-        EditPublicByLoggedInUserAndPrivateByExplicitSubscribers.__init__(
-            self, bugattachment.bug)
-
-
-class ViewBugSubscription(AnonymousAuthorization):
-
-    usedfor = IBugSubscription
-
-
-class ViewBugMessage(AnonymousAuthorization):
-
-    usedfor = IMessage
 
 
 class ViewAnnouncement(AuthorizationBase):
@@ -1173,12 +1110,12 @@ class EditCodeImportMachine(OnlyBazaarExpertsAndAdmins):
     usedfor = ICodeImportMachine
 
 
-class EditSourcePackageRecipeBuilds(AuthorizationBase):
+class AdminSourcePackageRecipeBuilds(AuthorizationBase):
     """Control who can edit SourcePackageRecipeBuilds.
 
     Access is restricted to members of ~bazaar-experts and Buildd Admins.
     """
-    permission = 'launchpad.Edit'
+    permission = 'launchpad.Admin'
     usedfor = ISourcePackageRecipeBuild
 
     def checkAuthenticated(self, user):
@@ -1361,20 +1298,6 @@ class DownloadFullSourcePackageTranslations(OnlyRosettaExpertsAndAdmins):
             # User is owner of applicable translation group.
             (translation_group is not None and
              user.inTeam(translation_group.owner)))
-
-
-class ViewBugTracker(AnonymousAuthorization):
-    """Anyone can view a bug tracker."""
-    usedfor = IBugTracker
-
-
-class EditBugTracker(AuthorizationBase):
-    permission = 'launchpad.Edit'
-    usedfor = IBugTracker
-
-    def checkAuthenticated(self, user):
-        """Any logged-in user can edit a bug tracker."""
-        return True
 
 
 class EditProductRelease(EditByOwnersOrAdmins):
@@ -1604,14 +1527,14 @@ class ViewBuildFarmJobOld(AuthorizationBase):
             return None
 
     def _getBuild(self):
-        """Get `IBuildBase` associated with this job, if any."""
+        """Get `IPackageBuild` associated with this job, if any."""
         if IBuildFarmBuildJob.providedBy(self.obj):
             return self.obj.build
         else:
             return None
 
     def _checkBuildPermission(self, user=None):
-        """Check access to `IBuildBase` for this job."""
+        """Check access to `IPackageBuild` for this job."""
         permission = ViewBinaryPackageBuild(self.obj.build)
         if user is None:
             return permission.checkUnauthenticated()
@@ -1645,8 +1568,8 @@ class AdminQuestion(AdminByAdminsTeam):
                 user.inTeam(context.owner))
 
 
-class ModerateQuestion(AdminQuestion):
-    permission = 'launchpad.Moderate'
+class AppendQuestion(AdminQuestion):
+    permission = 'launchpad.Append'
     usedfor = IQuestion
 
     def checkAuthenticated(self, user):
@@ -1668,8 +1591,8 @@ class QuestionOwner(AuthorizationBase):
         return user.inTeam(self.obj.owner)
 
 
-class ModerateFAQTarget(EditByOwnersOrAdmins):
-    permission = 'launchpad.Moderate'
+class AppendFAQTarget(EditByOwnersOrAdmins):
+    permission = 'launchpad.Append'
     usedfor = IFAQTarget
 
     def checkAuthenticated(self, user):
@@ -1688,9 +1611,9 @@ class EditFAQ(AuthorizationBase):
     usedfor = IFAQ
 
     def checkAuthenticated(self, user):
-        """Everybody who has launchpad.Moderate on the FAQ target is allowed.
+        """Everybody who has launchpad.Append on the FAQ target is allowed.
         """
-        return ModerateFAQTarget(self.obj.target).checkAuthenticated(user)
+        return AppendFAQTarget(self.obj.target).checkAuthenticated(user)
 
 
 def can_edit_team(team, user):
@@ -2482,6 +2405,11 @@ class ChangeOfficialSourcePackageBranchLinks(AuthorizationBase):
 
     def checkAuthenticated(self, user):
         return user.in_ubuntu_branches or user.in_admin
+
+
+class ViewPackageset(AnonymousAuthorization):
+    """Anyone can view an IPackageset."""
+    usedfor = IPackageset
 
 
 class EditPackageset(AuthorizationBase):

@@ -10,45 +10,55 @@ import shutil
 from StringIO import StringIO
 import tempfile
 
-import transaction
 import pytz
+import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from canonical.launchpad.scripts import FakeLogger
 from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
-from canonical.testing.layers import reconnect_stores
 from canonical.testing import (
-    DatabaseFunctionalLayer, LaunchpadZopelessLayer)
-
+    DatabaseFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
+from canonical.testing.layers import reconnect_stores
 from lp.app.errors import NotFoundError
 from lp.archivepublisher.config import Config
 from lp.archivepublisher.diskpool import DiskPool
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
-from lp.soyuz.model.processor import ProcessorFamily
-from lp.soyuz.model.publishing import (
-    SourcePackagePublishingHistory, BinaryPackagePublishingHistory)
-from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
+from lp.soyuz.enums import (
+    ArchivePurpose,
+    BinaryPackageFormat,
+    PackageUploadStatus,
+    )
+from lp.soyuz.interfaces.archive import (
+    IArchiveSet,
+    )
 from lp.soyuz.interfaces.archivearch import IArchiveArchSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
-from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFormat
 from lp.soyuz.interfaces.component import IComponentSet
-from lp.soyuz.interfaces.section import ISectionSet
 from lp.soyuz.interfaces.publishing import (
-    IPublishingSet, PackagePublishingPriority, PackagePublishingStatus)
-from lp.soyuz.interfaces.queue import PackageUploadStatus
-from canonical.launchpad.scripts import FakeLogger
+    IPublishingSet,
+    PackagePublishingPriority,
+    PackagePublishingStatus,
+    )
+from lp.soyuz.interfaces.section import ISectionSet
+from lp.soyuz.model.processor import ProcessorFamily
+from lp.soyuz.model.publishing import (
+    BinaryPackagePublishingHistory,
+    SourcePackagePublishingHistory,
+    )
 from lp.testing import TestCaseWithFactory
-from lp.testing.factory import (
-    LaunchpadObjectFactory, remove_security_proxy_and_shout_at_engineer)
+from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.fakemethod import FakeMethod
 
 
@@ -172,7 +182,7 @@ class SoyuzTestPublisher:
                      build_conflicts_indep=None,
                      dsc_maintainer_rfc822='Foo Bar <foo@bar.com>',
                      maintainer=None, creator=None, date_uploaded=UTC_NOW,
-                     spr_only=False):
+                     spr_only=False, user_defined_fields=None):
         """Return a mock source publishing record.
 
         if spr_only is specified, the source is not published and the
@@ -216,7 +226,8 @@ class SoyuzTestPublisher:
             dsc_standards_version=dsc_standards_version,
             dsc_format=dsc_format,
             dsc_binaries=dsc_binaries,
-            archive=archive, dateuploaded=date_uploaded)
+            archive=archive, dateuploaded=date_uploaded,
+            user_defined_fields=user_defined_fields)
 
         changes_file_name = "%s_%s_source.changes" % (sourcename, version)
         if spr_only:
@@ -279,7 +290,7 @@ class SoyuzTestPublisher:
                        architecturespecific=False,
                        builder=None,
                        component='main',
-                       with_debug=False):
+                       with_debug=False, user_defined_fields=None):
         """Return a list of binary publishing records."""
         if distroseries is None:
             distroseries = self.distroseries
@@ -323,7 +334,8 @@ class SoyuzTestPublisher:
                 build, binaryname, filecontent, summary, description,
                 shlibdep, depends, recommends, suggests, conflicts, replaces,
                 provides, pre_depends, enhances, breaks, format,
-                binarypackagerelease_ddeb)
+                binarypackagerelease_ddeb,
+                user_defined_fields=user_defined_fields)
             pub_binaries += self.publishBinaryInArchive(
                 binarypackagerelease, archive, status, pocket,
                 scheduleddeletiondate, dateremoved)
@@ -344,7 +356,8 @@ class SoyuzTestPublisher:
         summary="summary", description="description", shlibdep=None,
         depends=None, recommends=None, suggests=None, conflicts=None,
         replaces=None, provides=None, pre_depends=None, enhances=None,
-        breaks=None, format=BinaryPackageFormat.DEB, debug_package=None):
+        breaks=None, format=BinaryPackageFormat.DEB, debug_package=None,
+        user_defined_fields=None, homepage=None):
         """Return the corresponding `BinaryPackageRelease`."""
         sourcepackagerelease = build.source_package_release
         distroarchseries = build.distro_arch_series
@@ -376,7 +389,8 @@ class SoyuzTestPublisher:
             architecturespecific=architecturespecific,
             binpackageformat=format,
             priority=PackagePublishingPriority.STANDARD,
-            debug_package=debug_package)
+            debug_package=debug_package,
+            user_defined_fields=user_defined_fields, homepage=homepage)
 
         # Create the corresponding binary file.
         if architecturespecific:
@@ -480,45 +494,47 @@ class SoyuzTestPublisher:
 
         return source
 
-    def makeSourcePackageWithBinaryPackageRelease(self):
+    def makeSourcePackageSummaryData(self, source_pub=None):
         """Make test data for SourcePackage.summary.
 
         The distroseries that is returned from this method needs to be
         passed into updateDistroseriesPackageCache() so that
         SourcePackage.summary can be populated.
         """
-        distribution = self.factory.makeDistribution(
-            name='youbuntu', displayname='Youbuntu')
-        distroseries = self.factory.makeDistroRelease(name='busy',
-            distribution=distribution)
-        source_package_name = self.factory.makeSourcePackageName(
-            name='bonkers')
-        source_package = self.factory.makeSourcePackage(
-            sourcepackagename=source_package_name,
-            distroseries=distroseries)
-        component = self.factory.makeComponent('multiverse')
+        if source_pub is None:
+            distribution = self.factory.makeDistribution(
+                name='youbuntu', displayname='Youbuntu')
+            distroseries = self.factory.makeDistroRelease(name='busy',
+                distribution=distribution)
+            source_package_name = self.factory.makeSourcePackageName(
+                name='bonkers')
+            source_package = self.factory.makeSourcePackage(
+                sourcepackagename=source_package_name,
+                distroseries=distroseries)
+            component = self.factory.makeComponent('multiverse')
+            source_pub = self.factory.makeSourcePackagePublishingHistory(
+                sourcepackagename=source_package_name,
+                distroseries=distroseries,
+                component=component)
+
         das = self.factory.makeDistroArchSeries(
-            distroseries=distroseries)
-        spph = self.factory.makeSourcePackagePublishingHistory(
-            sourcepackagename=source_package_name,
-            distroseries=distroseries,
-            component=component)
+            distroseries=source_pub.distroseries)
 
         for name in ('flubber-bin', 'flubber-lib'):
             binary_package_name = self.factory.makeBinaryPackageName(name)
             build = self.factory.makeBinaryPackageBuild(
-                source_package_release=spph.sourcepackagerelease,
+                source_package_release=source_pub.sourcepackagerelease,
                 archive=self.factory.makeArchive(),
                 distroarchseries=das)
             bpr = self.factory.makeBinaryPackageRelease(
                 binarypackagename=binary_package_name,
                 summary='summary for %s' % name,
-                build=build, component=component)
+                build=build, component=source_pub.component)
             bpph = self.factory.makeBinaryPackagePublishingHistory(
                 binarypackagerelease=bpr, distroarchseries=das)
         return dict(
-            distroseries=distroseries,
-            source_package=source_package)
+            distroseries=source_pub.distroseries,
+            source_package=source_pub.meta_sourcepackage)
 
     def updateDistroSeriesPackageCache(
         self, distroseries, restore_db_connection='launchpad'):

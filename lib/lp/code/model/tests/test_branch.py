@@ -10,81 +10,125 @@ from __future__ import with_statement
 
 __metaclass__ = type
 
-from datetime import datetime, timedelta
+from datetime import (
+    datetime,
+    timedelta,
+    )
 from unittest import TestLoader
 
 from bzrlib.bzrdir import BzrDir
 from bzrlib.revision import NULL_REVISION
-
 from pytz import UTC
-
-from storm.locals import Store
 from sqlobject import SQLObjectNotFound
-
+from storm.locals import Store
 import transaction
-
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad import _
-from canonical.launchpad.ftests import (
-    ANONYMOUS, login, login_person, logout, syncUpdate)
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
-from canonical.testing import DatabaseFunctionalLayer, LaunchpadZopelessLayer
-
-from lp.buildmaster.model.buildqueue import BuildQueue
+from canonical.testing import (
+    DatabaseFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
 from lp.blueprints.interfaces.specification import (
-    ISpecificationSet, SpecificationDefinitionStatus)
-from lp.blueprints.model.specificationbranch import (
-    SpecificationBranch)
-from lp.bugs.interfaces.bug import CreateBugParams, IBugSet
+    ISpecificationSet,
+    SpecificationDefinitionStatus,
+    )
+from lp.blueprints.model.specificationbranch import SpecificationBranch
+from lp.bugs.interfaces.bug import (
+    CreateBugParams,
+    IBugSet,
+    )
 from lp.bugs.model.bugbranch import BugBranch
-from lp.code.bzr import BranchFormat, ControlFormat, RepositoryFormat
+from lp.buildmaster.model.buildqueue import BuildQueue
+from lp.code.bzr import (
+    BranchFormat,
+    ControlFormat,
+    RepositoryFormat,
+    )
 from lp.code.enums import (
-    BranchLifecycleStatus, BranchSubscriptionNotificationLevel, BranchType,
-    BranchVisibilityRule, CodeReviewNotificationLevel)
+    BranchLifecycleStatus,
+    BranchSubscriptionNotificationLevel,
+    BranchType,
+    BranchVisibilityRule,
+    CodeReviewNotificationLevel,
+    )
 from lp.code.errors import (
-    BranchCannotBePrivate, BranchCannotBePublic,
-    BranchCreatorNotMemberOfOwnerTeam, BranchCreatorNotOwner,
-    BranchTargetError, CannotDeleteBranch, InvalidBranchMergeProposal)
+    BranchCannotBePrivate,
+    BranchCannotBePublic,
+    BranchCreatorNotMemberOfOwnerTeam,
+    BranchCreatorNotOwner,
+    BranchTargetError,
+    CannotDeleteBranch,
+    InvalidBranchMergeProposal,
+    )
 from lp.code.interfaces.branch import (
-    DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch)
+    DEFAULT_BRANCH_STATUS_IN_LISTING,
+    IBranch,
+    )
 from lp.code.interfaces.branchjob import (
-    IBranchUpgradeJobSource, IBranchScanJobSource)
+    IBranchScanJobSource,
+    IBranchUpgradeJobSource,
+    )
 from lp.code.interfaces.branchlookup import IBranchLookup
-from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
 from lp.code.interfaces.branchmergeproposal import (
-    BRANCH_MERGE_PROPOSAL_FINAL_STATES as FINAL_STATES)
+    BRANCH_MERGE_PROPOSAL_FINAL_STATES as FINAL_STATES,
+    )
+from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
 from lp.code.interfaces.branchrevision import IBranchRevision
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from lp.code.interfaces.seriessourcepackagebranch import (
-    IFindOfficialBranchLinks)
+    IFindOfficialBranchLinks,
+    )
 from lp.code.model.branch import (
-    ClearDependentBranch, ClearOfficialPackageBranch, ClearSeriesBranch,
-    DeleteCodeImport, DeletionCallable, DeletionOperation,
-    update_trigger_modified_fields)
+    ClearDependentBranch,
+    ClearOfficialPackageBranch,
+    ClearSeriesBranch,
+    DeleteCodeImport,
+    DeletionCallable,
+    DeletionOperation,
+    update_trigger_modified_fields,
+    )
 from lp.code.model.branchjob import (
-    BranchDiffJob, BranchJob, BranchJobType, ReclaimBranchSpaceJob)
-from lp.code.model.branchmergeproposal import (
-    BranchMergeProposal)
-from lp.code.model.codeimport import CodeImport, CodeImportSet
+    BranchDiffJob,
+    BranchJob,
+    BranchJobType,
+    ReclaimBranchSpaceJob,
+    )
+from lp.code.model.branchmergeproposal import BranchMergeProposal
+from lp.code.model.branchrevision import BranchRevision
+from lp.code.model.codeimport import (
+    CodeImport,
+    CodeImportSet,
+    )
 from lp.code.model.codereviewcomment import CodeReviewComment
+from lp.code.model.revision import Revision
 from lp.code.tests.helpers import add_revision_to_branch
 from lp.codehosting.bzrutils import UnsafeUrlSeen
-from lp.registry.interfaces.person import IPersonSet
-from lp.registry.model.product import ProductSet
-from lp.registry.model.sourcepackage import SourcePackage
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.model.sourcepackage import SourcePackage
+from lp.services.osutils import override_environ
 from lp.testing import (
-    person_logged_in, run_with_login, TestCase, TestCaseWithFactory,
-    time_counter)
+    ANONYMOUS,
+    celebrity_logged_in,
+    login,
+    login_person,
+    logout,
+    person_logged_in,
+    run_with_login,
+    TestCase,
+    TestCaseWithFactory,
+    time_counter,
+    )
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.translations.model.translationtemplatesbuildjob import (
-    ITranslationTemplatesBuildJobSource)
-from lp.services.osutils import override_environ
+    ITranslationTemplatesBuildJobSource,
+    )
 
 
 class TestCodeImport(TestCase):
@@ -207,6 +251,59 @@ class TestBranchChanged(TestCaseWithFactory):
              RepositoryFormat.BZR_KNITPACK_1),
             (branch.control_format, branch.branch_format,
              branch.repository_format))
+
+
+class TestBranchRevisionMethods(TestCaseWithFactory):
+    """Test the branch methods for adding and removing branch revisions."""
+
+    layer = DatabaseFunctionalLayer
+
+    def _getBranchRevision(self, branch, rev_id):
+        """Get the branch revision for the specified branch and rev_id."""
+        resultset = IStore(BranchRevision).find(
+            BranchRevision,
+            BranchRevision.branch == branch,
+            BranchRevision.revision == Revision.id,
+            Revision.revision_id == rev_id)
+        return resultset.one()
+
+    def test_createBranchRevision(self):
+        # createBranchRevision adds the link for the revision to the branch.
+        branch = self.factory.makeBranch()
+        rev = self.factory.makeRevision()
+        # Nothing there to start with.
+        self.assertIs(None, self._getBranchRevision(branch, rev.revision_id))
+        branch.createBranchRevision(1, rev)
+        # Now there is one.
+        br = self._getBranchRevision(branch, rev.revision_id)
+        self.assertEqual(branch, br.branch)
+        self.assertEqual(rev, br.revision)
+
+    def test_removeBranchRevisions(self):
+        # removeBranchRevisions can remove a single linked revision.
+        branch = self.factory.makeBranch()
+        rev = self.factory.makeRevision()
+        branch.createBranchRevision(1, rev)
+        # Now remove the branch revision.
+        branch.removeBranchRevisions(rev.revision_id)
+        # Revision not there now.
+        self.assertIs(None, self._getBranchRevision(branch, rev.revision_id))
+
+    def test_removeBranchRevisions_multiple(self):
+        # removeBranchRevisions can remove multiple revision links at once.
+        branch = self.factory.makeBranch()
+        rev1 = self.factory.makeRevision()
+        rev2 = self.factory.makeRevision()
+        rev3 = self.factory.makeRevision()
+        branch.createBranchRevision(1, rev1)
+        branch.createBranchRevision(2, rev2)
+        branch.createBranchRevision(3, rev3)
+        # Now remove the branch revision.
+        branch.removeBranchRevisions(
+            [rev1.revision_id, rev2.revision_id, rev3.revision_id])
+        # No mainline revisions there now.
+        # The revision_history attribute is tested above.
+        self.assertEqual([], list(branch.revision_history))
 
 
 class TestBranchGetRevision(TestCaseWithFactory):
@@ -859,16 +956,12 @@ class TestBzrIdentity(TestCaseWithFactory):
         self.assertBzrIdentity(branch, linked_branch.bzr_path)
 
     def test_private_linked_to_product(self):
-        # If a branch is private, then the bzr identity is the unique name,
-        # even if it's linked to a product. Of course, you have to be able to
-        # see the branch at all.
+        # Private branches also have a short lp:url.
         branch = self.factory.makeProductBranch(private=True)
-        owner = removeSecurityProxy(branch).owner
-        login_person(owner)
-        self.addCleanup(logout)
-        product = removeSecurityProxy(branch.product)
-        ICanHasLinkedBranch(product).setBranch(branch)
-        self.assertBzrIdentity(branch, branch.unique_name)
+        with celebrity_logged_in('admin'):
+            product = branch.product
+            ICanHasLinkedBranch(product).setBranch(branch)
+            self.assertBzrIdentity(branch, product.name)
 
     def test_linked_to_series_and_dev_focus(self):
         # If a branch is the development focus branch for a product and the
@@ -1003,7 +1096,6 @@ class TestBranchDeletion(TestCaseWithFactory):
         deleted.
         """
         self.product.development_focus.branch = self.branch
-        syncUpdate(self.product.development_focus)
         self.assertEqual(self.branch.canBeDeleted(), False,
                          "A branch that is a user branch for a product series"
                          " is not deletable.")
@@ -1011,7 +1103,6 @@ class TestBranchDeletion(TestCaseWithFactory):
 
     def test_productSeriesTranslationsBranchDisablesDeletion(self):
         self.product.development_focus.translations_branch = self.branch
-        syncUpdate(self.product.development_focus)
         self.assertEqual(self.branch.canBeDeleted(), False,
                          "A branch that is a translations branch for a "
                          "product series is not deletable.")
@@ -1174,7 +1265,6 @@ class TestBranchDeletionConsequences(TestCase):
         # Disable this merge proposal, to allow creating a new identical one
         lp_admins = getUtility(ILaunchpadCelebrities).admin
         merge_proposal1.rejectBranch(lp_admins, 'null:')
-        syncUpdate(merge_proposal1)
         merge_proposal2 = self.branch.addLandingTarget(
             self.branch.owner, target_branch, prerequisite_branch)
         return merge_proposal1, merge_proposal2
@@ -1558,7 +1648,6 @@ class BranchAddLandingTarget(TestCaseWithFactory):
         proposal = self.source.addLandingTarget(
             self.user, self.target, self.prerequisite)
         proposal.rejectBranch(self.user, 'some_revision')
-        syncUpdate(proposal)
         self.source.addLandingTarget(
             self.user, self.target, self.prerequisite)
 

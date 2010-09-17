@@ -11,24 +11,39 @@ __all__ = [
     ]
 
 from datetime import datetime
-import pytz
 
-from sqlobject import BoolCol, ForeignKey, SQLObjectNotFound, StringCol
+import pytz
+from sqlobject import (
+    BoolCol,
+    ForeignKey,
+    SQLObjectNotFound,
+    StringCol,
+    )
 from storm.expr import And
 from storm.locals import SQL
 from storm.store import Store
 from zope.interface import implements
 
-from canonical.cachedproperty import cachedproperty
-from canonical.database.constants import DEFAULT, UTC_NOW
+from canonical.database.constants import (
+    DEFAULT,
+    UTC_NOW,
+    )
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import quote, SQLBase, sqlvalues
-from lp.translations.interfaces.translationmessage import (
-    ITranslationMessage, ITranslationMessageSet, RosettaTranslationOrigin,
-    TranslationValidationStatus)
-from lp.translations.interfaces.translations import TranslationConstants
+from canonical.database.sqlbase import (
+    quote,
+    SQLBase,
+    sqlvalues,
+    )
 from lp.registry.interfaces.person import validate_public_person
+from lp.services.propertycache import cachedproperty
+from lp.translations.interfaces.translationmessage import (
+    ITranslationMessage,
+    ITranslationMessageSet,
+    RosettaTranslationOrigin,
+    TranslationValidationStatus,
+    )
+from lp.translations.interfaces.translations import TranslationConstants
 
 
 def make_plurals_fragment(fragment, separator):
@@ -108,7 +123,7 @@ class DummyTranslationMessage(TranslationMessageMixIn):
                 'This translation message already exists in the database.')
 
         self.id = None
-        self.pofile = pofile
+        self.pofile = None
         self.browser_pofile = pofile
         self.potemplate = pofile.potemplate
         self.language = pofile.language
@@ -144,6 +159,10 @@ class DummyTranslationMessage(TranslationMessageMixIn):
     def getOnePOFile(self):
         """See `ITranslationMessage`."""
         return None
+
+    def ensureBrowserPOFile(self):
+        """See `ITranslationMessage`."""
+        return self.browser_pofile
 
     @property
     def all_msgstrs(self):
@@ -364,6 +383,12 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
             return pofile[0]
         else:
             return None
+
+    def ensureBrowserPOFile(self):
+        """See `ITranslationMessage`."""
+        if self.browser_pofile is None:
+            self.browser_pofile = self.getOnePOFile()
+        return self.browser_pofile
 
     def _getSharedEquivalent(self):
         """Get shared message that otherwise exactly matches this one.
