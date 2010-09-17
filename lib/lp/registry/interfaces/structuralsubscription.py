@@ -129,9 +129,11 @@ class IStructuralSubscription(Interface):
         title=_("The structure to which this subscription belongs.")))
 
 
-class IStructuralSubscriptionTarget(Interface):
-    """A Launchpad Structure allowing users to subscribe to it."""
-    export_as_webservice_entry()
+class IStructuralSubscriptionTargetRead(Interface):
+    """A Launchpad Structure allowing users to subscribe to it.
+
+    Read-only parts.
+    """
 
     # We don't really want to expose the level details yet. Only
     # BugNotificationLevel.COMMENTS is used at this time.
@@ -158,6 +160,41 @@ class IStructuralSubscriptionTarget(Interface):
     def userCanAlterSubscription(subscriber, subscribed_by):
         """Check if a user can change a subscription for a person."""
 
+    def userCanAlterBugSubscription(subscriber, subscribed_by):
+        """Check if a user can change a bug subscription for a person."""
+
+    @operation_parameters(person=Reference(schema=IPerson))
+    @operation_returns_entry(IStructuralSubscription)
+    @export_read_operation()
+    def getSubscription(person):
+        """Return the subscription for `person`, if it exists."""
+
+    def getBugNotificationsRecipients(recipients=None, level=None):
+        """Return the set of bug subscribers to this target.
+
+        :param recipients: If recipients is not None, a rationale
+            is added for each subscriber.
+        :type recipients: `INotificationRecipientSet`
+        'param level: If level is not None, only strucutral
+            subscribers with a subscrition level greater or equal
+            to the given value are returned.
+        :type level: `BugNotificationLevel`
+        :return: An `INotificationRecipientSet` instance containing
+            the bug subscribers.
+        """
+
+    target_type_display = Attribute("The type of the target, for display.")
+
+    def userHasBugSubscriptions(user):
+        """Is `user` subscribed, directly or via a team, to bug mail?"""
+
+
+class IStructuralSubscriptionTargetWrite(Interface):
+    """A Launchpad Structure allowing users to subscribe to it.
+
+    Modify-only parts.
+    """
+
     def addSubscription(subscriber, subscribed_by):
         """Add a subscription for this structure.
 
@@ -169,9 +206,6 @@ class IStructuralSubscriptionTarget(Interface):
         :subscribed_by: The IPerson creating the subscription.
         :return: The new subscription.
         """
-
-    def userCanAlterBugSubscription(subscriber, subscribed_by):
-        """Check if a user can change a bug subscription for a person."""
 
     @operation_parameters(
         subscriber=Reference(
@@ -216,30 +250,11 @@ class IStructuralSubscriptionTarget(Interface):
         :unsubscribed_by: The IPerson removing the subscription.
         """
 
-    @operation_parameters(person=Reference(schema=IPerson))
-    @operation_returns_entry(IStructuralSubscription)
-    @export_read_operation()
-    def getSubscription(person):
-        """Return the subscription for `person`, if it exists."""
 
-    def getBugNotificationsRecipients(recipients=None, level=None):
-        """Return the set of bug subscribers to this target.
-
-        :param recipients: If recipients is not None, a rationale
-            is added for each subscriber.
-        :type recipients: `INotificationRecipientSet`
-        'param level: If level is not None, only strucutral
-            subscribers with a subscrition level greater or equal
-            to the given value are returned.
-        :type level: `BugNotificationLevel`
-        :return: An `INotificationRecipientSet` instance containing
-            the bug subscribers.
-        """
-
-    target_type_display = Attribute("The type of the target, for display.")
-
-    def userHasBugSubscriptions(user):
-        """Is `user` subscribed, directly or via a team, to bug mail?"""
+class IStructuralSubscriptionTarget(IStructuralSubscriptionTargetRead,
+                                    IStructuralSubscriptionTargetWrite):
+    """A Launchpad Structure allowing users to subscribe to it."""
+    export_as_webservice_entry()
 
 
 class IStructuralSubscriptionForm(Interface):
