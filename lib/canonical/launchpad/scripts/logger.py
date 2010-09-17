@@ -44,6 +44,7 @@ from zope.component import getUtility
 
 from canonical.base import base
 from canonical.config import config
+from canonical.launchpad.webapp.errorlog import globalErrorUtility
 from canonical.librarian.interfaces import (
     ILibrarianClient,
     UploadFailed,
@@ -145,12 +146,45 @@ class BufferLogger(FakeLogger):
                     self.log(line)
 
 
-class LibrarianFormatter(logging.Formatter):
+class OopsHandler(logging.Handler):
+    """Handler to log to the OOPS system."""
+
+    def emit(self, record):
+        """Emit a record as an OOPS."""
+        try:
+            msg = record.getMessage()
+            # Warnings and less are informational OOPS reports.
+            informational = (record.levelno <= logging.WARN)
+            with globalErrorUtility.oopsMessage(msg):
+                globalErrorUtility._raising(
+                    sys.exc_info(), informational=informational)
+        except Exception, error:
+            self.handleError(record)
+
+
+class LaunchpadFormatter(logging.Formatter):
+    """logging.Formatter encoding our preferred output format."""
+
+    def __init__(self):
+        if config.instance_name == 'testrunner':
+            # Don't output timestamps in the test environment
+            fmt = '%(levelname)-7s %(message)s'
+        else:
+            fmt = '%(asctime)s %(levelname)-7s %(message)s'
+        datefmt = "%Y-%m-%d %H:%M:%S"
+        logging.Formatter.__init__(self, fmt, datefmt)
+        self.converter = time.gmtime # Output should be UTC
+
+
+class LibrarianFormatter(LaunchpadFormatter):
     """A logging.Formatter that stores tracebacks in the Librarian and emits
     a URL rather than emitting the traceback directly.
 
     The traceback will be emitted as a fallback if the Librarian cannot be
     contacted.
+
+    XXX bug=641103 StuartBishop -- This class should die. Remove it and
+    replace with LaunchpadFormatter, fixing the test fallout.
     """
 
     def formatException(self, ei):
@@ -349,23 +383,16 @@ def _logger(level, out_stream, name=None):
     # both command line tools and cron jobs (command line tools often end
     # up being run from inside cron, so this is a good thing).
     hdlr = logging.StreamHandler(strm=out_stream)
-    if config.instance_name == 'testrunner':
-        # Don't output timestamps in the test environment
-        fmt = '%(levelname)-7s %(message)s'
-    else:
-        fmt = '%(asctime)s %(levelname)-7s %(message)s'
-    formatter = LibrarianFormatter(
-        fmt=fmt,
-        datefmt="%Y-%m-%d %H:%M:%S",
-        )
-    formatter.converter = time.gmtime # Output should be UTC
+    # We set the level on the handler rather than the logger, so other
+    # handlers with different levels can be added for things like debug
+    # logs.
+    hdlr.setLevel(level)
+    formatter = LaunchpadFormatter()
     hdlr.setFormatter(formatter)
     root_logger.addHandler(hdlr)
 
     # Create our logger
     logger = logging.getLogger(name)
-
-    logger.setLevel(level)
 
     # Set the global log
     log._log = logger

@@ -29,11 +29,15 @@ from canonical.config import config
 from canonical.database.sqlbase import ISOLATION_LEVEL_DEFAULT
 from canonical.launchpad import scripts
 from canonical.launchpad.interfaces import IScriptActivitySet
+from canonical.launchpad.scripts.logger import LaunchpadFormatter, OopsHandler
+from canonical.launchpad.webapp.errorlog import globalErrorUtility
 from canonical.launchpad.webapp.interaction import (
     ANONYMOUS,
     setupInteractionByEmail,
     )
 from canonical.lp import initZopeless
+
+from lp.services.log.uniquefileallocator import UniqueFileAllocator
 
 
 LOCK_PATH = "/var/lock/"
@@ -343,6 +347,19 @@ class LaunchpadCronScript(LaunchpadScript):
         config.canonical.cron_control_url.
         """
         super(LaunchpadCronScript, self).__init__(name, dbuser, test_args)
+
+        # Customize the globalErrorUtility for script OOPS reporting.
+        # Scripts might choose to override this by calling
+        # globalErrorUtility.configure().
+        globalErrorUtility.copy_to_zlog = False
+        globalErrorUtility.log_namer = UniqueFileAllocator(
+            output_root=config.error_reports.error_dir,
+            log_type="OOPS", log_subtype=self.name)
+
+        # WARN and higher log messages should generate OOPS reports.
+        oops_handler = OopsHandler(logging.WARN)
+        oops_handler.setFormatter(LaunchpadFormatter())
+        self.logger.addHandler(oops_handler)
 
         enabled = cronscript_enabled(
             config.canonical.cron_control_url, self.name, self.logger)
