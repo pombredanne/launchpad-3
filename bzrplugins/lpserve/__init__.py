@@ -348,36 +348,34 @@ class LPForkingService(object):
         trace.mutter('set socket timeout to: %s' % (self.SOCKET_TIMEOUT,))
 
     def _handle_sigchld(self, signum, frm):
-        # While we are running, disable this as a handler, so we don't
-        # re-enter
-        signal.signal(signal.SIGCHLD, self._prev_sigchld_handler)
-        try:
-            if (self._prev_sigchld_handler is not None
-                and callable(self._prev_sigchld_handler)):
-                # self._prev_sigchld_handler may be 0 or 1, etc if the previous
-                # handling was IGNORE or DEFAULT, etc.
-                self._prev_sigchld_handler(signum, frm)
-        finally:
-            signal.signal(signal.SIGCHLD, self._handle_sigchld)
+        # We don't actually do anything here, we just want an interrupt (EINTR)
+        # on socket.accept() when SIGCHLD occurs.
+        pass
 
-    def _register_sigchld(self):
-        """Register a SIGCHILD handler.
+    def _handle_sigterm(self, signum, frm):
+        # Unregister this as the default handler, 2 SIGTERMs will exit us.
+        signal.signal(signal.SIGTERM, signal.SIG_DFL)
+        # SIGTERM should also generate EINTR on our wait loop, so this should
+        # be enough
+        self._should_terminate.set()
+
+    def _register_signals(self):
+        """Register a SIGCHILD and SIGTERM handler.
 
         If we have a trigger for SIGCHILD then we can quickly respond to
         clients when their process exits. The main risk is getting more EAGAIN
         errors elsewhere.
+
+        SIGTERM allows us to cleanup nicely before we exit.
         """
         # We register a dummy function, because all we really care about is
         # interrupting the '.accept()' call.
-        self._prev_sigchld_handler = signal.signal(signal.SIGCHLD,
-                                                   self._handle_sigchld)
+        signal.signal(signal.SIGCHLD, self._handle_sigchld)
+        signal.signal(signal.SIGTERM, self._handle_sigterm)
 
-    def _unregister_sigchld(self):
-        if self._prev_sigchld_handler is None:
-            signal.signal(signal.SIGCHLD, signal.SIG_DFL)
-        else:
-            signal.signal(signal.SIGCHLD, self._prev_sigchld_handler)
-        self._prev_sigchld_handler = None
+    def _unregister_signals(self):
+        signal.signal(signal.SIGCHLD, signal.SIG_DFL)
+        signal.signal(signal.SIGTERM, signal.SIG_DFL)
 
     def _create_child_file_descriptors(self, base_path):
         stdin_path = os.path.join(base_path, 'stdin')
@@ -433,8 +431,8 @@ class LPForkingService(object):
 
     def become_child(self, command_argv, path):
         """We are in the spawned child code, do our magic voodoo."""
-        # Stop tracking SIGCHILD, we don't want it to confuse the child
-        self._unregister_sigchld()
+        # Stop tracking new signals
+        self._unregister_signals()
         # Reset the start time
         trace._bzr_log_start_time = time.time()
         trace.mutter('%d starting %r'
@@ -528,7 +526,7 @@ class LPForkingService(object):
     def main_loop(self):
         self._should_terminate.clear()
         self._create_master_socket()
-        self._register_sigchld()
+        self._register_signals()
         trace.note('Listening on port: %s' % (self.port,))
         while not self._should_terminate.isSet():
             try:

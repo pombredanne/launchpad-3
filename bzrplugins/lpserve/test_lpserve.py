@@ -42,11 +42,11 @@ class TestingLPForkingServiceInAThread(lpserve.LPForkingService):
         super(TestingLPForkingServiceInAThread, self).__init__(host=host,
                                                                port=port)
 
-    def _register_sigchld(self):
+    def _register_signals(self):
         pass # Don't register it for the test suite
 
-    def _unregister_sigchld(self):
-        pass # We don't fork, so we don't need to watch SIGCHLD
+    def _unregister_signals(self):
+        pass # We don't fork, and didn't register, so don't unregister
 
     def _create_master_socket(self):
         trace.mutter('creating master socket')
@@ -134,16 +134,13 @@ class TestCaseWithLPForkingService(tests.TestCaseWithTransport):
             socket.SOCK_STREAM, 0, socket.AI_PASSIVE)
         (family, socktype, proto, canonname, sockaddr) = addrs[0]
         client_sock = socket.socket(family, socktype, proto)
-        try:
-            client_sock.connect(sockaddr)
-            if one_byte_at_a_time:
-                for byte in message:
-                    client_sock.send(byte)
-            else:
-                client_sock.sendall(message)
-            response = client_sock.recv(1024)
-        except socket.error, e:
-            raise RuntimeError('Failed to connect: %s' % (e,))
+        client_sock.connect(sockaddr)
+        if one_byte_at_a_time:
+            for byte in message:
+                client_sock.send(byte)
+        else:
+            client_sock.sendall(message)
+        response = client_sock.recv(1024)
         return response
 
 
@@ -344,16 +341,13 @@ class TestCaseWithLPForkingServiceSubprocess(TestCaseWithSubprocess):
         (family, socktype, proto, canonname, sockaddr) = addrs[0]
         client_sock = socket.socket(family, socktype, proto)
         trace.mutter('sending %r to port %s' % (message, self.service_port))
-        try:
-            client_sock.connect(sockaddr)
-            if one_byte_at_a_time:
-                for byte in message:
-                    client_sock.send(byte)
-            else:
-                client_sock.sendall(message)
-            response = client_sock.recv(1024)
-        except socket.error, e:
-            raise RuntimeError('Failed to connect: %s' % (e,))
+        client_sock.connect(sockaddr)
+        if one_byte_at_a_time:
+            for byte in message:
+                client_sock.send(byte)
+        else:
+            client_sock.sendall(message)
+        response = client_sock.recv(1024)
         trace.mutter('response: %r' % (response,))
         if response.startswith("FAILURE"):
             raise RuntimeError('Failed to send message: %r' % (response,))
@@ -422,7 +416,12 @@ class TestCaseWithLPForkingServiceSubprocess(TestCaseWithSubprocess):
             return
         # First, try to stop the service gracefully, by sending a 'quit'
         # message
-        response = self.send_message_to_service('quit\n')
+        try:
+            response = self.send_message_to_service('quit\n')
+        except socket.error, e:
+            # Ignore a failure to connect, the service must be stopping/stopped
+            # already
+            response = None
         tend = time.time() + 10.0
         while self.service_process.poll() is None:
             if time.time() > tend:
@@ -430,7 +429,9 @@ class TestCaseWithLPForkingServiceSubprocess(TestCaseWithSubprocess):
                     send_signal=signal.SIGINT, retcode=3)
                 self.fail('Failed to quit gracefully after 10.0 seconds')
             time.sleep(0.1)
-        self.assertEqual('ok\nquit command requested... exiting\n', response)
+        if response is not None:
+            self.assertEqual('ok\nquit command requested... exiting\n',
+                             response)
 
     def _get_fork_handles(self, path):
         trace.mutter('getting handles for: %s' % (path,))
@@ -501,3 +502,19 @@ class TestCaseWithLPForkingServiceSubprocess(TestCaseWithSubprocess):
         stdout_content, stderr_content = self.communicate_with_fork(path)
         self.assertEqual('', stderr_content)
         self.assertEqual('this_test@example.com\n', stdout_content)
+
+    def test_sigterm_exits_nicely(self):
+        path, _, sock = self.send_fork_request('rocks')
+        self.assertEqual(None, self.service_process.poll())
+        # Now when we send SIGTERM, it should wait for the child to exit,
+        # before it tries to exit itself.
+        # In python2.6+ we could use self.service_process.terminate()
+        os.kill(self.service_process.pid, signal.SIGTERM)
+        self.assertEqual(None, self.service_process.poll())
+        # Now talk to the child, so the service can close
+        stdout_content, stderr_content = self.communicate_with_fork(path)
+        self.assertEqual('It sure does!\n', stdout_content)
+        self.assertEqual('', stderr_content)
+        self.assertReturnCode(0, sock)
+        # And the process should exit cleanly
+        self.assertEqual(0, self.service_process.wait())
