@@ -3,8 +3,8 @@
 
 __metaclass__ = type
 
-import unittest
-
+from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.testing.pages import find_tag_by_id
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.blueprints.interfaces.specificationtarget import (
     IHasSpecifications,
@@ -15,7 +15,10 @@ from lp.testing import (
     login_person,
     TestCaseWithFactory,
     )
-from lp.testing.views import create_view
+from lp.testing.views import (
+    create_view,
+    create_initialized_view,
+    )
 
 
 class TestRegisterABlueprintButtonView(TestCaseWithFactory):
@@ -86,12 +89,43 @@ class TestHasSpecificationsView(TestCaseWithFactory):
         self.assertFalse(
             '<div id="involvement" class="portlet involvement">' in view())
 
+    def test_specs_batch(self):
+        # Some pages turn up in very large contexts and patch. E.g.
+        # Distro:+assignments which uses SpecificationAssignmentsView, a
+        # subclass.
+        person = self.factory.makePerson()
+        view = create_initialized_view(person, name='+assignments')
+        self.assertIsInstance(view.specs_batched, BatchNavigator)
 
-def test_suite():
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.TestLoader().loadTestsFromName(__name__))
-    return suite
+    def test_batch_headings(self):
+        person = self.factory.makePerson()
+        view = create_initialized_view(person, name='+assignments')
+        navigator = view.specs_batched
+        self.assertEqual('specification', navigator._singular_heading)
+        self.assertEqual('specifications', navigator._plural_heading)
+
+    def test_batch_size(self):
+        # Because +assignments is meant to provide an overview, we default to
+        # 500 as the default batch size.
+        person = self.factory.makePerson()
+        view = create_initialized_view(person, name='+assignments')
+        navigator = view.specs_batched
+        self.assertEqual(500, view.specs_batched.default_size)
 
 
-if __name__ == '__main__':
-    unittest.TextTestRunner().run(test_suite())
+class TestAssignments(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_assignments_are_batched(self):
+        product = self.factory.makeProduct()
+        spec1 = self.factory.makeSpecification(product=product)
+        spec2 = self.factory.makeSpecification(product=product)
+        view = create_initialized_view(product, name='+assignments',
+            query_string="batch=1")
+        content = view.render()
+        self.assertEqual('next',
+            find_tag_by_id(content, 'upper-batch-nav-batchnav-next')['class'])
+        self.assertEqual('next',
+            find_tag_by_id(content, 'lower-batch-nav-batchnav-next')['class'])
+        
