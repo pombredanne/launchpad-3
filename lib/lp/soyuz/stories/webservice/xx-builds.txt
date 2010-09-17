@@ -44,6 +44,7 @@ of properties:
     archive_link: u'http://.../beta/~cprov/+archive/ppa'
     can_be_rescored: False
     can_be_retried: True
+    changesfile_url: None
     current_source_publication_link: u'http://.../beta/~cprov/+archive/ppa/+sourcepub/27'
     date_created: u'2007-07-08T00:00:00+00:00'
     date_finished: u'2007-07-08T00:00:01+00:00'
@@ -70,6 +71,7 @@ Whereas the 1.0 webservice for builds maintains the old property names
     buildstate: u'Failed to build'
     can_be_rescored: False
     can_be_retried: True
+    changesfile_url: None
     current_source_publication_link: u'http://.../~cprov/+archive/ppa/+sourcepub/27'
     date_first_dispatched: None
     datebuilt: u'2007-07-08T00:00:01+00:00'

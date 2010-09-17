@@ -90,6 +90,9 @@ about its process such as the time it was started and finished and its
     >>> print firefox_build.upload_changesfile.filename
     firefox_0.9_i386.changes
 
+    >>> print firefox_build.changesfile_url
+    http://launchpad.dev/ubuntutest/+source/mozilla-firefox/0.9/+build/.../+files/firefox_0.9_i386.changes
+
 The 'firefox_build' is already finished and requesting the estimated build
 start time makes no sense. Hence an exception is raised.
 

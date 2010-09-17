@@ -35,6 +35,7 @@ from zope.schema import (
     Bool,
     Int,
     Text,
+    TextLine,
     )
 
 from canonical.launchpad import _
@@ -117,6 +118,12 @@ class IBinaryPackageBuildView(IPackageBuild):
         "The `LibraryFileAlias` object containing the changes file which "
         "was originally uploaded with the results of this build. It's "
         "'None' if it is build imported by Gina.")
+
+    changesfile_url = exported(
+        TextLine(
+            title=_("Changes File URL"), required=False,
+            description=_("The URL for the changes file for this build. "
+                          "Will be None if the build was imported by Gina.")))
 
     package_upload = Attribute(
         "The `PackageUpload` record corresponding to the original upload "
