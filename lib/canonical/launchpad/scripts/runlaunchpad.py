@@ -208,7 +208,9 @@ class ForkingSessionService(Service):
         from lp.codehosting import get_bzr_path
         # TODO: Configs for the port to serve on, etc.
         command = [config.root + '/bin/py', get_bzr_path(),
-                   'launchpad-forking-service']
+                   'launchpad-forking-service',
+                   '--port', config.codehosting.forking_daemon_address,
+                  ]
         env = dict(os.environ)
         env['BZR_PLUGIN_PATH'] = config.root + '/bzrplugins'
         logfile = self.logfile

@@ -136,15 +136,19 @@ class ForkedProcessTransport(process.BaseProcess):
 
     def _sendMessageToService(self, message):
         """Send a message to the Forking service and get the response"""
-        # TODO: Config entries for what port this will be found in?
-        DEFAULT_SERVICE_PORT = 4156
-        addrs = socket.getaddrinfo('127.0.0.1', DEFAULT_SERVICE_PORT,
+        address = config.codehosting.forking_daemon_address
+        if ':' in address:
+            address, port = address.split(':', 1)
+        else:
+            port = address
+            address = '127.0.0.1'
+        port = int(port)
+        addrs = socket.getaddrinfo(address, port,
             socket.AF_UNSPEC, socket.SOCK_STREAM, 0, socket.AI_PASSIVE)
         (family, socktype, proto, canonname, sockaddr) = addrs[0]
         client_sock = socket.socket(family, socktype, proto)
-        log.msg('Connecting to Forking Service @ port: %d for %r'
-                % (DEFAULT_SERVICE_PORT, message))
-        # TODO: How do we do logging in this codebase?
+        log.msg('Connecting to Forking Service @ port: %s for %r'
+                % (sockaddr, message))
         try:
             client_sock.connect(sockaddr)
             client_sock.sendall(message)
@@ -165,8 +169,8 @@ class ForkedProcessTransport(process.BaseProcess):
         assert executable == 'bzr', executable # Maybe .endswith()
         assert args[0] == 'bzr', args[0]
         command_str = ' '.join(args[1:])
-        message = ['fork %s\n' % (' '.join(args[1:]),)]
-        for key, value in environment:
+        message = ['fork-env %s\n' % (' '.join(args[1:]),)]
+        for key, value in environment.iteritems():
             # XXX: Currently we only pass BZR_EMAIL, should we be passing
             #      everything else? Note that many won't be handled properly,
             #      since the process is already running.
@@ -451,6 +455,11 @@ def launch_smart_server(avatar):
     hostname = urlparse.urlparse(config.codehosting.supermirror_root)[1]
     environment['BZR_EMAIL'] = '%s@%s' % (avatar.username, hostname)
     klass = RestrictedExecOnlySession
+    # TODO: Use a FeatureFlag to enable this in a more fine-grained approach.
+    #       If the forking daemon has been spawned, then we can use it if the
+    #       feature is set to true for the given user, etc.
+    #       A global config is a good first step, but does require restarting
+    #       the service to change the flag. Or does 'config' support SIGHUP?
     if config.codehosting.use_forking_daemon:
         klass = ForkingRestrictedExecOnlySession
     return klass(
