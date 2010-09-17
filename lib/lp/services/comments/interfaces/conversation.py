@@ -23,7 +23,6 @@ from zope.schema import (
     )
 
 from canonical.launchpad import _
-from lp.registry.interfaces.person import IPerson
 
 
 class IComment(Interface):
@@ -45,7 +44,8 @@ class IComment(Interface):
         readonly=True)
 
     comment_author = Reference(
-        IPerson, title=_("The author of the comment."),
+        # Really IPerson.
+        Interface, title=_("The author of the comment."),
         readonly=True)
 
     comment_date = Datetime(

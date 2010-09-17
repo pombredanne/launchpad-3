@@ -89,6 +89,7 @@ from lp.registry.interfaces.structuralsubscription import (
     IStructuralSubscription,
     IStructuralSubscriptionTarget,
     )
+from lp.services.comments.interfaces.conversation import IComment
 from lp.soyuz.enums import (
     PackagePublishingStatus,
     PackageUploadCustomFormat,
@@ -320,6 +321,9 @@ patch_plain_parameter_type(
 # IBuildFarmJob
 IBuildFarmJob['status'].vocabulary = BuildStatus
 IBuildFarmJob['buildqueue_record'].schema = IBuildQueue
+
+# IComment
+IComment['comment_author'].schema = IPerson
 
 # IDistribution
 IDistribution['series'].value_type.schema = IDistroSeries
