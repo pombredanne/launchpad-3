@@ -719,12 +719,6 @@ class LPForkingService(object):
         return None, None
 
     def serve_one_connection(self, conn, client_addr):
-        # TODO: we should make this more robust about getting partial data.
-        #       though to do it "correctly" we probably should use structured
-        #       messages....
-        #       One option is to always read at least to the first '\n'. Though
-        #       for 'fork' we may want more content, but it may not be
-        #       present...
         request = ''
         while '\n' not in request:
             request += osutils.read_bytes_from_socket(conn)
