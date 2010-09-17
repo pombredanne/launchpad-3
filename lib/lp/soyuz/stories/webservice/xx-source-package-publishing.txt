@@ -356,6 +356,13 @@ and a list of all the relevant builds for the summary:
     Source ID 27: FAILEDTOBUILD ([u'i386'])
     Source ID 28: FULLYBUILT_PENDING ([u'i386'])
 
+
+Associated Files In The Librarian
+=================================
+
+sourceFileUrls() is a custom method to return the URLs of the source files
+for this package:
+
     >>> pubs = webservice.named_get(
     ...     cprov_archive['self_link'], 'getPublishedSources').jsonBody()
     >>> for pub_link in sorted(
@@ -368,6 +375,8 @@ and a list of all the relevant builds for the summary:
     []
     [u'http://launchpad.dev/~cprov/+archive/ppa/+files/testwebservice_666.dsc']
 
+binaryFileUrls() is similar:
+
     >>> for pub_link in sorted(
     ...     entry['self_link'] for entry in pubs['entries']):
     ...     binary_urls = webservice.named_get(
@@ -378,3 +387,35 @@ and a list of all the relevant builds for the summary:
     []
     []
 
+The debdiff to a particular version can also be retrieved using the
+packageDiffUrl() method.  It takes one parameter, 'to_version' which
+specifies the version of the package you want a diff against.  If there
+is no diff available for that version, None is returned, otherwise a
+librarian URL is returned.
+
+We need to create a fake package diff to show this:
+
+    >>> login("admin@canonical.com")
+    >>> from_pub = test_publisher.getPubSource(
+    ...     sourcename='difftest', version='1.0', archive=cprov.archive)
+    >>> to_pub = test_publisher.getPubSource(
+    ...     sourcename='difftest', version='1.1', archive=cprov.archive)
+    >>> new_diff = factory.makePackageDiff(
+    ...     from_source=from_pub.sourcepackagerelease,
+    ...     to_source=to_pub.sourcepackagerelease,
+    ...     diff_content="test diff")
+    >>> logout()
+
+Grab the new publishing record:
+
+    >>> pubs = webservice.named_get(
+    ...     cprov_archive['self_link'], 'getPublishedSources',
+    ...     source_name="difftest", version="1.0",
+    ...     exact_match=True).jsonBody()
+    >>> source_pub = pubs['entries'][0]
+
+    >>> diff_url = webservice.named_get(
+    ...     source_pub['self_link'], 'packageDiffUrl',
+    ...     to_version='1.1').jsonBody()
+
+    >>> print diff_url

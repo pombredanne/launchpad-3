@@ -596,6 +596,17 @@ class ISourcePackagePublishingHistoryPublic(IPublishingView):
         :return: A collection of URLs for this source.
         """
 
+    @export_read_operation()
+    @operation_parameters(
+        to_version=TextLine(title=_("To Version"), required=True))
+    def packageDiffUrl(to_version):
+        """URL of the debdiff file between this and the supplied version.
+
+        :param to_version: The version of the source package for which you
+            want to get the diff to.
+        :return: A URL to the librarian file containing the diff.
+        """
+
 
 class ISourcePackagePublishingHistory(ISourcePackagePublishingHistoryPublic,
                                       IPublishingEdit):

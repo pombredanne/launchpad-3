@@ -3103,6 +3103,12 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
         return getUtility(ITemporaryStorageManager).fetch(new_uuid)
 
+    def makePackageDiff(self, from_source=None, to_source=None,
+                        requester=None, status=None, date_fulfilled=None,
+                        diff_content=None):
+        """Create a new `PackageDiff`."""
+        # XXX stuff
+
 
 # Some factory methods return simple Python types. We don't add
 # security wrappers for them, as well as for objects created by
