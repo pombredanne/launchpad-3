@@ -90,6 +90,20 @@ class CodeReviewDisplayComment:
         """The date of the comment."""
         return self.comment.message.datecreated
 
+    @cachedproperty
+    def all_attachments(self):
+        return self.comment.getAttachments()
+
+    @cachedproperty
+    def display_attachments(self):
+        # Attachments to show.
+        return [DiffAttachment(alias) for alias in self.all_attachments[0]]
+
+    @cachedproperty
+    def other_attachments(self):
+        # Attachments to not show.
+        return self.all_attachments[1]
+
 
 class CodeReviewCommentPrimaryContext:
     """The primary context is the comment is that of the source branch."""
@@ -156,20 +170,6 @@ class CodeReviewCommentView(LaunchpadView):
     full_comment = True
     # Show comment expanders?
     show_expanders = False
-
-    @cachedproperty
-    def all_attachments(self):
-        return self.context.getAttachments()
-
-    @cachedproperty
-    def display_attachments(self):
-        # Attachments to show.
-        return [DiffAttachment(alias) for alias in self.all_attachments[0]]
-
-    @cachedproperty
-    def other_attachments(self):
-        # Attachments to not show.
-        return self.all_attachments[1]
 
 
 class CodeReviewCommentSummary(CodeReviewCommentView):
