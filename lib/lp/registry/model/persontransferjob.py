@@ -122,11 +122,12 @@ class PersonTransferJobDerived(BaseRunnableJob):
     def __repr__(self):
         return (
             '<%(job_type)s branch job (%(id)s) for %(minor_person)s '
-            'as part of %(major_person)s>' % {
+            'as part of %(major_person)s. status=%(status)s>' % {
                 'job_type': self.context.job_type.name,
                 'id': self.context.id,
                 'minor_person': self.minor_person.name,
                 'major_person': self.major_person.name,
+                'status': self.job.status,
                 })
 
     @classmethod
