@@ -20,11 +20,13 @@ __all__ = [
     ]
 
 import commands
+from debian.deb822 import Changes
 import hashlib
 import os
 import stat
 import sys
 import tempfile
+import time
 
 import apt_pkg
 from zope.component import getUtility
@@ -470,7 +472,7 @@ class ArchiveCruftChecker:
                     pass
                 else:
                     version = bpph.binarypackagerelease.version
-                    self.logger.info ("Removed %s_%s from %s/%s ... "
+                    self.logger.info("Removed %s_%s from %s/%s ... "
                                       % (package, version,
                                          self.distroseries.name,
                                          distroarchseries.architecturetag))
@@ -1416,3 +1418,58 @@ class ManageChrootScript(SoyuzScript):
             # Collect extra debug messages from chroot_manager.
             for debug_message in chroot_manager._messages:
                 self.logger.debug(debug_message)
+
+
+def generate_changes(dsc, dsc_files, suite, changelog, urgency, closes,
+                     lp_closes, section, priority, description,
+                     files_from_librarian, requested_by, origin):
+    """Generate a Changes object.
+
+    :param dsc: A `Dsc` instance for the related source package.
+    :param suite: Distribution name
+    :param changelog: Relevant changelog data
+    :param urgency: Urgency string (low, medium, high, etc)
+    :param closes: Sequence of Debian bug numbers (as strings) fixed by
+        this upload.
+    :param section: Debian section
+    :param priority: Package priority
+    """
+
+    # XXX cprov 2007-07-03:
+    # Changed-By can be extracted from most-recent changelog footer,
+    # but do we care?
+    # XXX James Troup 2006-01-30:
+    # 'Closes' but could be gotten from changelog, but we don't use them?
+
+    changes = Changes()
+    changes["Origin"] = "%s/%s" % (origin["name"], origin["suite"])
+    changes["Format"] = "1.7"
+    changes["Date"] = time.strftime("%a,  %d %b %Y %H:%M:%S %z")
+    changes["Source"] = dsc["source"]
+    changes["Binary"] = dsc["binary"]
+    changes["Architecture"] = "source"
+    changes["Version"] = dsc["version"]
+    changes["Distribution"] = suite
+    changes["Urgency"] = urgency
+    changes["Maintainer"] = dsc["maintainer"]
+    changes["Changed-By"] = requested_by
+    if description:
+        changes["Description"] = "\n %s" % description
+    if closes:
+        changes["Closes"] = " ".join(closes)
+    if lp_closes:
+        changes["Launchpad-bugs-fixed"] = " ".join(lp_closes)
+    files = []
+    for filename in dsc_files:
+        if filename in files_from_librarian:
+            continue
+        files.append({"md5sum": dsc_files[filename]["md5sum"],
+                      "size": dsc_files[filename]["size"],
+                      "section": section,
+                      "priority": priority,
+                      "name": filename,
+                     })
+
+    changes["Files"] = files
+    changes["Changes"] = "\n%s" % changelog
+    return changes
