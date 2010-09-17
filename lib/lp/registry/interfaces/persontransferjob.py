@@ -1,7 +1,7 @@
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Interfaces for the Jobs system to change memberships or merge persons."""
+"""Interface for the Jobs system to change memberships or merge persons."""
 
 __metaclass__ = type
 __all__ = [
@@ -11,10 +11,7 @@ __all__ = [
     'IPersonTransferJobSource',
     ]
 
-from zope.interface import (
-    Attribute,
-    Interface,
-    )
+from zope.interface import Attribute
 from zope.schema import (
     Int,
     Object,

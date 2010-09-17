@@ -38,10 +38,10 @@ class PersonTransferJobTestCase(TestCaseWithFactory):
             PersonTransferJobType.MEMBERSHIP_NOTIFICATION,
             person_transfer_job.job_type)
 
-        # When we actually access the PersonTransferJob's metadata it gets
-        # unserialized from JSON, so the representation returned by
-        # bug_heat.metadata will be different from what we originally
-        # passed in.
+        # When we actually access the PersonTransferJob's metadata it
+        # gets unserialized from JSON, so the representation returned by
+        # person_transfer_job.metadata will be different from what we
+        # originally passed in.
         metadata_expected = [u'some', u'arbitrary', u'metadata']
         self.assertEqual(metadata_expected, person_transfer_job.metadata)
 

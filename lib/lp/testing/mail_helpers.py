@@ -109,7 +109,9 @@ def print_distinct_emails(include_reply_to=False, include_rationale=True):
 def run_mail_jobs():
     """Process job queues that send out emails.
 
-    New job subclasses need to be added to this function.
+    If a new job type is added that sends emails, this function can be
+    extended to run those jobs, so that testing emails doesn't require a
+    bunch of different function calls to process different queues.
     """
     # Commit the transaction to make sure that the JobRunner can find
     # the queued jobs.

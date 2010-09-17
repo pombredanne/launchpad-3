@@ -1,7 +1,7 @@
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Job classes related to PersonTransferJob are in here."""
+"""Job classes related to PersonTransferJob."""
 
 __metaclass__ = type
 __all__ = [
@@ -25,25 +25,19 @@ from zope.interface import (
     implements,
     )
 
-
 from canonical.config import config
 from canonical.database.enumcol import EnumCol
 from canonical.launchpad.helpers import (
     get_contact_email_addresses,
     get_email_template,
     )
-from canonical.launchpad.interfaces.lpstorm import (
-    IMasterStore,
-    IStore,
-    )
+from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.launchpad.mail import (
     format_address,
     simple_sendmail,
     )
 from canonical.launchpad.mailnotification import MailWrapper
 from canonical.launchpad.webapp import canonical_url
-
-
 from lp.registry.enum import PersonTransferJobType
 from lp.registry.interfaces.person import (
     IPerson,
@@ -51,10 +45,10 @@ from lp.registry.interfaces.person import (
     ITeam,
     )
 from lp.registry.interfaces.persontransferjob import (
-    IPersonTransferJob,
-    IPersonTransferJobSource,
     IMembershipNotificationJob,
     IMembershipNotificationJobSource,
+    IPersonTransferJob,
+    IPersonTransferJobSource,
     )
 from lp.registry.interfaces.teammembership import TeamMembershipStatus
 from lp.registry.model.person import Person
@@ -97,7 +91,7 @@ class PersonTransferJob(Storm):
                              the minor person.
         :param job_type: The specific membership action being performed.
         :param metadata: The type-specific variables, as a JSON-compatible
-            dict.
+                         dict.
         """
         super(PersonTransferJob, self).__init__()
         self.job = Job()
@@ -122,7 +116,15 @@ class PersonTransferJob(Storm):
 
 
 class PersonTransferJobDerived(BaseRunnableJob):
-    """Intermediate class for deriving from PersonTransferJob."""
+    """Intermediate class for deriving from PersonTransferJob.
+
+    Storm classes can't simply be subclassed or you can end up with
+    multiple objects referencing the same row in the db. This class uses
+    lazr.delegates, which is a little bit simpler than storm's
+    infoheritance solution to the problem. Subclasses need to override
+    the run() method.
+    """
+
     delegates(IPersonTransferJob)
     classProvides(IPersonTransferJobSource)
 
@@ -143,8 +145,12 @@ class PersonTransferJobDerived(BaseRunnableJob):
     @classmethod
     def create(cls, minor_person, major_person, metadata):
         """See `IPersonTransferJob`."""
-        assert IPerson.providedBy(minor_person)
-        assert IPerson.providedBy(major_person)
+        if not IPerson.providedBy(minor_person):
+            raise TypeError("minor_person must be IPerson: %s"
+                            % repr(minor_person))
+        if not IPerson.providedBy(major_person):
+            raise TypeError("major_person must be IPerson: %s"
+                            % repr(major_person))
         job = PersonTransferJob(
             minor_person=minor_person,
             major_person=major_person,
@@ -183,10 +189,16 @@ class MembershipNotificationJob(PersonTransferJobDerived):
     @classmethod
     def create(cls, member, team, reviewer, old_status, new_status,
                last_change_comment=None):
-        assert ITeam.providedBy(team)
-        assert IPerson.providedBy(reviewer)
-        assert old_status in TeamMembershipStatus
-        assert new_status in TeamMembershipStatus
+        if not ITeam.providedBy(team):
+            raise TypeError('team must be ITeam: %s' % repr(team))
+        if not IPerson.providedBy(reviewer):
+            raise TypeError('reviewer must be IPerson: %s' % repr(reviewer))
+        if old_status not in TeamMembershipStatus:
+            raise TypeError("old_status must be TeamMembershipStatus: %s"
+                            % repr(old_status))
+        if new_status not in TeamMembershipStatus:
+            raise TypeError("new_status must be TeamMembershipStatus: %s"
+                            % repr(new_status))
         metadata = {
             'reviewer': reviewer.id,
             'old_status': old_status.name,
@@ -221,17 +233,17 @@ class MembershipNotificationJob(PersonTransferJobDerived):
         return self.metadata['last_change_comment']
 
     def run(self):
-        """See `IBranchScanJob`."""
+        """See `IMembershipNotificationJob`."""
         from canonical.launchpad.scripts import log
         from_addr = format_address(
             self.team.displayname, config.canonical.noreply_from_address)
-        admins_emails = self.team.getTeamAdminsEmailAddresses()
+        admin_emails = self.team.getTeamAdminsEmailAddresses()
         # person might be a self.team, so we can't rely on its preferredemail.
         self.member_email = get_contact_email_addresses(self.member)
         # Make sure we don't send the same notification twice to anybody.
         for email in self.member_email:
-            if email in admins_emails:
-                admins_emails.remove(email)
+            if email in admin_emails:
+                admin_emails.remove(email)
 
         if self.reviewer != self.member:
             self.reviewer_name = self.reviewer.unique_displayname
@@ -294,14 +306,14 @@ class MembershipNotificationJob(PersonTransferJobDerived):
             # Use the default template and subject.
             pass
 
-        if admins_emails:
-            admins_template = get_email_template(
+        if len(admin_emails) != 0:
+            admin_template = get_email_template(
                 "%s-bulk.txt" % template_name)
-            for address in admins_emails:
+            for address in admin_emails:
                 recipient = getUtility(IPersonSet).getByEmail(address)
                 replacements['recipient_name'] = recipient.displayname
                 msg = MailWrapper().format(
-                    admins_template % replacements, force_wrap=True)
+                    admin_template % replacements, force_wrap=True)
                 simple_sendmail(from_addr, address, subject, msg)
 
         # The self.member can be a self.self.team without any
