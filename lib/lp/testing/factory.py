@@ -2560,6 +2560,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                                  source_package_recipe_build=None,
                                  dscsigningkey=None,
                                  user_defined_fields=None,
+                                 changelog_entry=None,
                                  homepage=None):
         """Make a `SourcePackageRelease`."""
         if distroseries is None:
@@ -2617,7 +2618,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             build_conflicts_indep=build_conflicts_indep,
             architecturehintlist=architecturehintlist,
             changelog=None,
-            changelog_entry=None,
+            changelog_entry=changelog_entry,
             dsc=None,
             copyright=self.getUniqueString(),
             dscsigningkey=dscsigningkey,
