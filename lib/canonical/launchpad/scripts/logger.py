@@ -22,7 +22,7 @@ __all__ = [
     'FakeLogger',
     'QuietFakeLogger',
     'DEBUG2', 'DEBUG3', 'DEBUG4', 'DEBUG5',
-    'DEBUG6', 'DEBUG7', 'DEBUG8', 'DEBUG9'
+    'DEBUG6', 'DEBUG7', 'DEBUG8', 'DEBUG9',
     ]
 
 
@@ -72,6 +72,7 @@ logging.addLevelName(DEBUG9, 'DEBUG9')
 class FakeLogger:
     """Emulates a proper logger, just printing everything out the given file.
     """
+
     def __init__(self, output_file=None):
         """The default output_file is sys.stdout."""
         self.output_file = output_file
@@ -123,12 +124,14 @@ class QuietFakeLogger(FakeLogger):
     Does not print any message. Messages can be retrieved from
     logger.output_file, which is a StringIO instance.
     """
+
     def __init__(self):
         self.output_file = StringIO()
 
 
 class BufferLogger(FakeLogger):
     """A logger that logs to a StringIO object."""
+
     def __init__(self):
         self.buffer = StringIO()
 
@@ -149,6 +152,7 @@ class LibrarianFormatter(logging.Formatter):
     The traceback will be emitted as a fallback if the Librarian cannot be
     contacted.
     """
+
     def formatException(self, ei):
         """Format the exception and store it in the Librian.
 
@@ -174,14 +178,12 @@ class LibrarianFormatter(logging.Formatter):
 
         expiry = datetime.now().replace(tzinfo=utc) + timedelta(days=90)
         try:
-            filename = base(
-                    long(hashlib.sha1(traceback).hexdigest(),16), 62
-                    ) + '.txt'
+            filename = base(long(
+                hashlib.sha1(traceback).hexdigest(), 16), 62) + '.txt'
             url = librarian.remoteAddFile(
                     filename, len(traceback), StringIO(traceback),
                     'text/plain;charset=%s' % sys.getdefaultencoding(),
-                    expires=expiry
-                    )
+                    expires=expiry)
             return ' -> %s (%s)' % (url, exception_string)
         except UploadFailed:
             return traceback
@@ -191,8 +193,7 @@ class LibrarianFormatter(logging.Formatter):
             # information, we can stuff our own problems in there too.
             return '%s\n\nException raised in formatter:\n%s\n' % (
                     traceback,
-                    logging.Formatter.formatException(self, sys.exc_info())
-                    )
+                    logging.Formatter.formatException(self, sys.exc_info()))
 
 
 def logger_options(parser, default=logging.INFO):
@@ -271,16 +272,13 @@ def logger_options(parser, default=logging.INFO):
     parser.add_option(
             "-v", "--verbose", dest="loglevel", default=default,
             action="callback", callback=dec_loglevel,
-            help="Increase verbosity. May be specified multiple times."
-            )
+            help="Increase verbosity. May be specified multiple times.")
     parser.add_option(
             "-q", "--quiet", action="callback", callback=inc_loglevel,
-            help="Decrease verbosity. May be specified multiple times."
-            )
+            help="Decrease verbosity. May be specified multiple times.")
     parser.add_option(
             "--log-file", action="store", type="string",
-            help="Send log to the given file, rather than stderr."
-            )
+            help="Send log to the given file, rather than stderr.")
 
     # Set the global log
     log._log = _logger(default, out_stream=sys.stderr)
@@ -406,5 +404,3 @@ class _LogWrapper:
 
 
 log = _LogWrapper(logging.getLogger())
-
-
