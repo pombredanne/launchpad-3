@@ -44,7 +44,10 @@ from zope.component import getUtility
 
 from canonical.base import base
 from canonical.config import config
-from canonical.launchpad.webapp.errorlog import globalErrorUtility
+from canonical.launchpad.webapp.errorlog import (
+    globalErrorUtility,
+    ScriptRequest,
+    )
 from canonical.librarian.interfaces import (
     ILibrarianClient,
     UploadFailed,
@@ -149,6 +152,13 @@ class BufferLogger(FakeLogger):
 class OopsHandler(logging.Handler):
     """Handler to log to the OOPS system."""
 
+    def __init__(self, name, level=logging.WARN):
+        logging.Handler.__init__(self, level)
+        # Context for OOPS reports.
+        self.request = ScriptRequest(
+            [('name', name), ('path', sys.argv[0])])
+        self.setFormatter(LaunchpadFormatter())
+
     def emit(self, record):
         """Emit a record as an OOPS."""
         try:
@@ -157,7 +167,7 @@ class OopsHandler(logging.Handler):
             informational = (record.levelno <= logging.WARN)
             with globalErrorUtility.oopsMessage(msg):
                 globalErrorUtility._raising(
-                    sys.exc_info(), informational=informational)
+                    sys.exc_info(), self.request, informational=informational)
         except Exception, error:
             self.handleError(record)
 

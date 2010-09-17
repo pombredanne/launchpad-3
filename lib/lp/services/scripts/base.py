@@ -348,6 +348,8 @@ class LaunchpadCronScript(LaunchpadScript):
         """
         super(LaunchpadCronScript, self).__init__(name, dbuser, test_args)
 
+        name = self.name
+
         # Customize the globalErrorUtility for script OOPS reporting.
         # Scripts might choose to override this by calling
         # globalErrorUtility.configure().
@@ -357,12 +359,10 @@ class LaunchpadCronScript(LaunchpadScript):
             log_type="OOPS", log_subtype=self.name)
 
         # WARN and higher log messages should generate OOPS reports.
-        oops_handler = OopsHandler(logging.WARN)
-        oops_handler.setFormatter(LaunchpadFormatter())
-        self.logger.addHandler(oops_handler)
+        self.logger.addHandler(OopsHandler(name))
 
         enabled = cronscript_enabled(
-            config.canonical.cron_control_url, self.name, self.logger)
+            config.canonical.cron_control_url, name, self.logger)
         if not enabled:
             sys.exit(0)
 
