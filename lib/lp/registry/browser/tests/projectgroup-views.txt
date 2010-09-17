@@ -71,12 +71,14 @@ support any applications.
 The portlet are rendered when a child product officially uses the Launchpad
 Answers, Blueprints, and Bugs applications.
 
-    >>> product.official_answers = True
-    >>> product.official_blueprints = True
+    >>> from lp.app.enums import ServiceUsage
+    >>> product.answers_usage = ServiceUsage.LAUNCHPAD
+    >>> product.blueprints_usage = ServiceUsage.LAUNCHPAD
     >>> product.official_malone = True
 
     >>> view = create_view(projectgroup, name='+index', principal=owner)
     >>> content = find_tag_by_id(view.render(), 'maincontent')
+
     >>> print find_tag_by_id(content, 'portlet-latest-faqs')['id']
     portlet-latest-faqs
     >>> print find_tag_by_id(content, 'portlet-latest-questions')['id']

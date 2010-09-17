@@ -194,3 +194,33 @@ when there are existing subscriptions.
     >>> anon_browser.open('http://launchpad.dev/bzr')
     >>> print anon_browser.title
     Bazaar Version Control System in Launchpad
+
+== Distribution with a bug supervisor ==
+
+If a distribution has a bug supervisor only that team or members of it can
+subscribe to all of the distribution's bugs.
+
+First, check the page content for a distribution without a bug supervisor.
+
+    >>> browser.open('http://bugs.launchpad.dev/ubuntu/+subscribe')
+    >>> text_contents = extract_text(find_main_content(browser.contents))
+    >>> "You can choose to receive an e-mail every time" in text_contents
+    True
+
+Set a bug supervisor for Ubuntu.
+
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> login('foo.bar@canonical.com')
+    >>> ubuntu = removeSecurityProxy(getUtility(IDistributionSet).get(1))
+    >>> guadamen = getUtility(IPersonSet).getByName('guadamen')
+    >>> ubuntu.bug_supervisor = guadamen
+    >>> flush_database_updates()
+    >>> logout()
+
+Second, check that the page content for a distribution with a bug supervisor
+contains a message about not being able to subscribe.
+
+    >>> browser.open('http://bugs.launchpad.dev/ubuntu/+subscribe')
+    >>> text_contents = extract_text(find_main_content(browser.contents))
+    >>> "You are unable to subscribe to bug reports about" in text_contents
+    True
