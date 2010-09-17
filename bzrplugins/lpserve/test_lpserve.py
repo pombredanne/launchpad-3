@@ -211,6 +211,12 @@ class TestLPForkingService(TestCaseWithLPForkingService):
         response = self.send_message_to_service('hello\n')
         self.assertEqual('ok\nyep, still alive\n', response)
 
+    def test_hello_supports_crlf(self):
+        # telnet seems to always write in text mode. It is nice to be able to
+        # debug with simple telnet, so lets support it.
+        response = self.send_message_to_service('hello\r\n')
+        self.assertEqual('ok\nyep, still alive\n', response)
+
     def test_send_simple_fork(self):
         response = self.send_message_to_service('fork rocks\n')
         self.assertEqual('ok\nfake forking\n', response)
@@ -239,6 +245,15 @@ class TestLPForkingService(TestCaseWithLPForkingService):
             'end\n', one_byte_at_a_time=True)
         self.assertEqual('ok\nfake forking\n', response)
         self.assertEqual([(['rocks'], {'BZR_EMAIL': 'joe@example.com'})],
+                         self.service.fork_log)
+        # It should work with 'crlf' endings as well
+        response = self.send_message_to_service(
+            'fork-env rocks\r\n'
+            'BZR_EMAIL: joe@example.com\r\n'
+            'end\r\n', one_byte_at_a_time=True)
+        self.assertEqual('ok\nfake forking\n', response)
+        self.assertEqual([(['rocks'], {'BZR_EMAIL': 'joe@example.com'}),
+                          (['rocks'], {'BZR_EMAIL': 'joe@example.com'})],
                          self.service.fork_log)
 
     def test_send_incomplete_fork_env_timeout(self):

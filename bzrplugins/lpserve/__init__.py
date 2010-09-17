@@ -579,6 +579,7 @@ class LPForkingService(object):
                 try:
                     self.serve_one_connection(conn, client_addr)
                 except self._socket_timeout, e:
+                    trace.log_exception_quietly()
                     self.log(client_addr, 'request timeout failure: %s' % (e,))
                     conn.sendall('FAILURE\nrequest timed out\n')
                     conn.close()
@@ -699,6 +700,7 @@ class LPForkingService(object):
         if request.startswith('fork-env '):
             while not request.endswith('end\n'):
                 request += osutils.read_bytes_from_socket(conn)
+                request = request.replace('\r\n', '\n')
             command, env = request[9:].split('\n', 1)
         else:
             command = request[5:].strip()
@@ -726,6 +728,9 @@ class LPForkingService(object):
         request = ''
         while '\n' not in request:
             request += osutils.read_bytes_from_socket(conn)
+        # telnet likes to use '\r\n' rather than '\n', and it is nice to have
+        # an easy way to debug.
+        request = request.replace('\r\n', '\n')
         self.log(client_addr, 'request: %r' % (request,))
         if request == 'hello\n':
             conn.sendall('ok\nyep, still alive\n')
