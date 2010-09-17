@@ -883,7 +883,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return product
 
     def makeProductSeries(self, product=None, name=None, owner=None,
-                          summary=None, date_created=None):
+                          summary=None, date_created=None, branch=None):
         """Create and return a new ProductSeries."""
         if product is None:
             product = self.makeProduct()
@@ -897,7 +897,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         # so we remove the security proxy before creating the series.
         naked_product = removeSecurityProxy(product)
         series = naked_product.newSeries(
-            owner=owner, name=name, summary=summary)
+            owner=owner, name=name, summary=summary, branch=branch)
         if date_created is not None:
             series.datecreated = date_created
         return ProxyFactory(series)
