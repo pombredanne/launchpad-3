@@ -29,13 +29,13 @@ class PersonTransferJobTestCase(TestCaseWithFactory):
         person_transfer_job = PersonTransferJob(
             person,
             team,
-            PersonTransferJobType.ADD_MEMBER_NOTIFICATION,
+            PersonTransferJobType.MEMBERSHIP_NOTIFICATION,
             metadata)
 
         self.assertEqual(person, person_transfer_job.minor_person)
         self.assertEqual(team, person_transfer_job.major_person)
         self.assertEqual(
-            PersonTransferJobType.ADD_MEMBER_NOTIFICATION,
+            PersonTransferJobType.MEMBERSHIP_NOTIFICATION,
             person_transfer_job.job_type)
 
         # When we actually access the PersonTransferJob's metadata it gets

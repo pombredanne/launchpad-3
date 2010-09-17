@@ -91,8 +91,8 @@ class PersonTransferJob(Storm):
     def __init__(self, minor_person, major_person, job_type, metadata):
         """Constructor.
 
-        :param minor_person: The person or team being added to
-                             the major_person.
+        :param minor_person: The person or team being added to or removed
+                             from the major_person.
         :param major_person: The person or team that is receiving or losing
                              the minor person.
         :param job_type: The specific membership action being performed.
@@ -145,12 +145,6 @@ class PersonTransferJobDerived(BaseRunnableJob):
         """See `IPersonTransferJob`."""
         assert IPerson.providedBy(minor_person)
         assert IPerson.providedBy(major_person)
-        # If there's already a job for the membership, don't create a new one.
-        job = IStore(PersonTransferJob).find(
-            PersonTransferJob,
-            And(PersonTransferJob.major_person == major_person,
-                PersonTransferJob.minor_person == minor_person,
-                PersonTransferJob.job_type == cls.class_job_type))
         job = PersonTransferJob(
             minor_person=minor_person,
             major_person=major_person,
@@ -179,12 +173,12 @@ class PersonTransferJobDerived(BaseRunnableJob):
 
 
 class MembershipNotificationJob(PersonTransferJobDerived):
-    """A Job that sends email notifications about adding a team member."""
+    """A Job that sends notifications about team membership changes."""
 
     implements(IMembershipNotificationJob)
     classProvides(IMembershipNotificationJobSource)
 
-    class_job_type = PersonTransferJobType.ADD_MEMBER_NOTIFICATION
+    class_job_type = PersonTransferJobType.MEMBERSHIP_NOTIFICATION
 
     @classmethod
     def create(cls, member, team, reviewer, old_status, new_status,
