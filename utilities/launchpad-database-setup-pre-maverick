@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 if [ -n "$1" ]; then
@@ -20,8 +20,8 @@ fi
 
 for pgversion in 8.4 8.3 8.2
 do
-  sudo grep -q "^auto" /etc/postgresql/$pgversion/main/start.conf
-  if [ $? -eq 0 ]; then
+  if [ -e /etc/init.d/postgresql-$pgversion ]
+  then
     break
   fi
 done
@@ -41,7 +41,7 @@ if [ $? -ne 0 ]; then
   echo "ensure postgres is running on port 5432."
 fi;
 
-sudo /etc/init.d/postgresql stop $pgversion
+sudo /etc/init.d/postgresql-$pgversion stop
 
 echo Purging postgresql data...
 sudo pg_dropcluster $pgversion main --stop-server
@@ -99,7 +99,7 @@ max_fsm_relations=2000
 EOF
 fi
 
-sudo /etc/init.d/postgresql start $pgversion
+sudo /etc/init.d/postgresql-$pgversion start
 
 echo Waiting 10 seconds for postgresql to come up...
 sleep 10
