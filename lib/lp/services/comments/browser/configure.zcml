@@ -17,7 +17,6 @@
 
   <browser:pages
       for="lp.services.comments.interfaces.conversation.IComment"
-      class="lp.services.comments.browser.comment.CommentView"
       permission="zope.Public">
       <browser:page
           name="+render"
