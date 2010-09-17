@@ -93,6 +93,7 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector,
     MAIN_STORE,
     )
+from lp.app.enums import ServiceUsage
 from lp.archiveuploader.dscfile import DSCFile
 from lp.archiveuploader.uploadpolicy import BuildDaemonUploadPolicy
 from lp.blueprints.interfaces.specification import (
@@ -181,6 +182,10 @@ from lp.registry.interfaces.mailinglist import (
 from lp.registry.interfaces.mailinglistsubscription import (
     MailingListAutoSubscribePolicy,
     )
+from lp.registry.interfaces.packaging import (
+    IPackagingUtil,
+    PackagingType,
+    )
 from lp.registry.interfaces.person import (
     IPerson,
     IPersonSet,
@@ -211,6 +216,7 @@ from lp.registry.model.milestone import Milestone
 from lp.registry.model.suitesourcepackage import SuiteSourcePackage
 from lp.services.mail.signedmessage import SignedMessage
 from lp.services.openid.model.openididentifier import OpenIdIdentifier
+from lp.services.propertycache import IPropertyCacheManager
 from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.soyuz.adapters.packagelocation import PackageLocation
@@ -218,6 +224,7 @@ from lp.soyuz.enums import (
     ArchivePurpose,
     BinaryPackageFileType,
     BinaryPackageFormat,
+    PackageDiffStatus,
     PackagePublishingPriority,
     PackagePublishingStatus,
     PackageUploadStatus,
@@ -838,7 +845,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         self, name=None, project=None, displayname=None,
         licenses=None, owner=None, registrant=None,
         title=None, summary=None, official_malone=None,
-        official_rosetta=None, bug_supervisor=None):
+        translations_usage=None, bug_supervisor=None):
         """Create and return a new, arbitrary Product."""
         if owner is None:
             owner = self.makePerson()
@@ -867,8 +874,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             registrant=registrant)
         if official_malone is not None:
             removeSecurityProxy(product).official_malone = official_malone
-        if official_rosetta is not None:
-            removeSecurityProxy(product).official_rosetta = official_rosetta
+        if translations_usage is not None:
+            naked_product = removeSecurityProxy(product)
+            naked_product.translations_usage = translations_usage
         if bug_supervisor is not None:
             naked_product = removeSecurityProxy(product)
             naked_product.bug_supervisor = bug_supervisor
@@ -990,6 +998,29 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if reviewer is not None:
             removeSecurityProxy(branch).reviewer = reviewer
         return branch
+
+    def makePackagingLink(self, productseries=None, sourcepackagename=None,
+                          distroseries=None, packaging_type=None, owner=None,
+                          in_ubuntu=False):
+        if productseries is None:
+            productseries = self.makeProduct().development_focus
+        if sourcepackagename is None or isinstance(sourcepackagename, str):
+            sourcepackagename = self.makeSourcePackageName(sourcepackagename)
+        if distroseries is None:
+            distribution = None
+            if in_ubuntu:
+                distribution = getUtility(ILaunchpadCelebrities).ubuntu
+            distroseries = self.makeDistroSeries(distribution=distribution)
+        if packaging_type is None:
+            packaging_type = PackagingType.PRIME
+        if owner is None:
+            owner = self.makePerson()
+        return getUtility(IPackagingUtil).createPackaging(
+            productseries=productseries,
+            sourcepackagename=sourcepackagename,
+            distroseries=distroseries,
+            packaging=packaging_type,
+            owner=owner)
 
     def makePackageBranch(self, sourcepackage=None, distroseries=None,
                           sourcepackagename=None, **kwargs):
@@ -1795,6 +1826,22 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             expires=expires, restricted=restricted)
         return library_file_alias
 
+    def makePackageDiff(self, from_spr=None, to_spr=None):
+        """Make a completed package diff."""
+        if from_spr is None:
+            from_spr = self.makeSourcePackageRelease()
+        if to_spr is None:
+            to_spr = self.makeSourcePackageRelease()
+
+        diff = from_spr.requestDiffTo(
+            from_spr.creator, to_spr)
+
+        naked_diff = removeSecurityProxy(diff)
+        naked_diff.status = PackageDiffStatus.COMPLETED
+        naked_diff.diff_content = self.makeLibraryFileAlias()
+        naked_diff.date_fulfilled = UTC_NOW
+        return diff
+
     def makeDistribution(self, name=None, displayname=None, owner=None,
                          members=None, title=None, aliases=None):
         """Make a new distribution."""
@@ -1873,7 +1920,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             source_pub = self.makeSourcePackagePublishingHistory(
                 distroseries=derived_series,
                 version=versions.get('derived'),
-                sourcepackagename=source_package_name)
+                sourcepackagename=source_package_name,
+                status = PackagePublishingStatus.PUBLISHED)
 
         if difference_type is not (
             DistroSeriesDifferenceType.UNIQUE_TO_DERIVED_SERIES):
@@ -1881,11 +1929,17 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             source_pub = self.makeSourcePackagePublishingHistory(
                 distroseries=derived_series.parent_series,
                 version=versions.get('parent'),
-                sourcepackagename=source_package_name)
+                sourcepackagename=source_package_name,
+                status = PackagePublishingStatus.PUBLISHED)
 
-        return getUtility(IDistroSeriesDifferenceSource).new(
+        diff = getUtility(IDistroSeriesDifferenceSource).new(
             derived_series, source_package_name, difference_type,
             status=status)
+
+        # We clear the cache on the diff, returning the object as if it
+        # was just loaded from the store.
+        IPropertyCacheManager(diff).clear()
+        return diff
 
     def makeDistroSeriesDifferenceComment(
         self, distro_series_difference=None, owner=None, comment=None):
@@ -2035,7 +2089,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                                 distroseries=None, name=None,
                                 description=None, branches=(),
                                 build_daily=False, daily_build_archive=None,
-                                is_stale=None):
+                                is_stale=None, recipe=None):
         """Make a `SourcePackageRecipe`."""
         if registrant is None:
             registrant = self.makePerson()
@@ -2051,7 +2105,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if daily_build_archive is None:
             daily_build_archive = self.makeArchive(
                 distribution=distroseries.distribution, owner=owner)
-        recipe = self.makeRecipe(*branches)
+        if recipe is None:
+            recipe = self.makeRecipeText(*branches)
+        else:
+            assert branches == ()
         source_package_recipe = getUtility(ISourcePackageRecipeSource).new(
             registrant, owner, name, recipe, description, [distroseries],
             daily_build_archive, build_daily)
@@ -2173,7 +2230,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             productseries = self.makeProductSeries(owner=owner)
             # Make it use Translations, otherwise there's little point
             # to us creating a template for it.
-            removeSecurityProxy(productseries).product.official_rosetta = True
+            naked_series = removeSecurityProxy(productseries)
+            naked_series.product.translations_usage = ServiceUsage.LAUNCHPAD
         templateset = getUtility(IPOTemplateSet)
         subset = templateset.getSubset(
             distroseries, sourcepackagename, productseries)

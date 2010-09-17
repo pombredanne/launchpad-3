@@ -20,6 +20,7 @@ from bzrlib.revision import (
 from bzrlib.tests import TestCaseWithTransport
 from bzrlib.uncommit import uncommit
 import pytz
+from storm.locals import Store
 import transaction
 from twisted.python.util import mergeFunctionMetadata
 from zope.component import getUtility
@@ -79,6 +80,8 @@ class BzrSyncTestCase(TestCaseWithTransport, TestCaseWithFactory):
         self.lp_db_user = config.launchpad.dbuser
         self.makeFixtures()
         LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
+        # Catch both constraints and permissions for the db user.
+        self.addCleanup(Store.of(self.db_branch).flush)
 
     def tearDown(self):
         super(BzrSyncTestCase, self).tearDown()

@@ -10,10 +10,12 @@ __all__ = [
     ]
 
 from lazr.enum import DBItem
+from storm.expr import Desc
 from storm.locals import (
     Int,
     Reference,
     Storm,
+    Unicode,
     )
 from zope.component import getUtility
 from zope.interface import (
@@ -40,6 +42,11 @@ from lp.registry.interfaces.distroseriesdifferencecomment import (
     )
 from lp.registry.model.distroseriesdifferencecomment import (
     DistroSeriesDifferenceComment)
+from lp.registry.model.sourcepackagename import SourcePackageName
+from lp.services.propertycache import (
+    cachedproperty,
+    IPropertyCacheManager,
+    )
 
 
 class DistroSeriesDifference(Storm):
@@ -64,10 +71,18 @@ class DistroSeriesDifference(Storm):
     package_diff = Reference(
         package_diff_id, 'PackageDiff.id')
 
+    parent_package_diff_id = Int(
+        name='parent_package_diff', allow_none=True)
+    parent_package_diff = Reference(
+        parent_package_diff_id, 'PackageDiff.id')
+
     status = DBEnum(name='status', allow_none=False,
                     enum=DistroSeriesDifferenceStatus)
     difference_type = DBEnum(name='difference_type', allow_none=False,
                              enum=DistroSeriesDifferenceType)
+    source_version = Unicode(name='source_version', allow_none=True)
+    parent_source_version = Unicode(name='parent_source_version',
+                                    allow_none=True)
 
     @staticmethod
     def new(derived_series, source_package_name, difference_type,
@@ -82,6 +97,14 @@ class DistroSeriesDifference(Storm):
         diff.source_package_name = source_package_name
         diff.status = status
         diff.difference_type = difference_type
+
+        source_pub = diff.source_pub
+        if source_pub is not None:
+            diff.source_version = source_pub.source_package_version
+        parent_source_pub = diff.parent_source_pub
+        if parent_source_pub is not None:
+            diff.parent_source_version = (
+                parent_source_pub.source_package_version)
 
         return store.add(diff)
 
@@ -104,12 +127,22 @@ class DistroSeriesDifference(Storm):
             DistroSeriesDifference.difference_type == difference_type,
             DistroSeriesDifference.status.is_in(status))
 
-    @property
+    @staticmethod
+    def getByDistroSeriesAndName(distro_series, source_package_name):
+        """See `IDistroSeriesDifferenceSource`."""
+        return IStore(DistroSeriesDifference).find(
+            DistroSeriesDifference,
+            DistroSeriesDifference.derived_series == distro_series,
+            DistroSeriesDifference.source_package_name == (
+                SourcePackageName.id),
+            SourcePackageName.name == source_package_name).one()
+
+    @cachedproperty
     def source_pub(self):
         """See `IDistroSeriesDifference`."""
         return self._getLatestSourcePub()
 
-    @property
+    @cachedproperty
     def parent_source_pub(self):
         """See `IDistroSeriesDifference`."""
         return self._getLatestSourcePub(for_parent=True)
@@ -148,22 +181,25 @@ class DistroSeriesDifference(Storm):
         else:
             return None
 
-    @property
-    def source_version(self):
+    def update(self):
         """See `IDistroSeriesDifference`."""
-        if self.source_pub:
-            return self.source_pub.source_package_version
-        return None
+        # Updating is expected to be a heavy operation (not called during
+        # requests). We clear the cache beforehand - even though
+        # it is not currently be necessary so that in the future it
+        # won't cause a hard-to find bug if a script ever creates a difference,
+        # copies/publishes a new version and then calls update() (like the
+        # tests for this method do).
+        IPropertyCacheManager(self).clear()
+        self._updateType()
+        updated = self._updateVersionsAndStatus()
+        return updated
 
-    @property
-    def parent_source_version(self):
-        """See `IDistroSeriesDifference`."""
-        if self.parent_source_pub:
-            return self.parent_source_pub.source_package_version
-        return None
+    def _updateType(self):
+        """Helper for update() interface method.
 
-    def updateStatusAndType(self):
-        """See `IDistroSeriesDifference`."""
+        Check whether the presence of a source in the derived or parent
+        series has changed (which changes the type of difference).
+        """
         if self.source_pub is None:
             new_type = DistroSeriesDifferenceType.MISSING_FROM_DERIVED_SERIES
         elif self.parent_source_pub is None:
@@ -171,19 +207,47 @@ class DistroSeriesDifference(Storm):
         else:
             new_type = DistroSeriesDifferenceType.DIFFERENT_VERSIONS
 
-        updated = False
         if new_type != self.difference_type:
-            updated = True
             self.difference_type = new_type
 
-        version = self.source_version
-        parent_version = self.parent_source_version
+    def _updateVersionsAndStatus(self):
+        """Helper for the update() interface method.
+
+        Check whether the status of this difference should be updated.
+        """
+        updated = False
+        new_source_version = new_parent_source_version = None
+        if self.source_pub:
+            new_source_version = self.source_pub.source_package_version
+            if self.source_version != new_source_version:
+                self.source_version = new_source_version
+                updated = True
+                # If the derived version has change and the previous version
+                # was blacklisted, then we remove the blacklist now.
+                if self.status == (
+                    DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT):
+                    self.status = DistroSeriesDifferenceStatus.NEEDS_ATTENTION
+        if self.parent_source_pub:
+            new_parent_source_version = (
+                self.parent_source_pub.source_package_version)
+            if self.parent_source_version != new_parent_source_version:
+                self.parent_source_version = new_parent_source_version
+                updated = True
+
+        # If this difference was resolved but now the versions don't match
+        # then we re-open the difference.
         if self.status == DistroSeriesDifferenceStatus.RESOLVED:
-            if version != parent_version:
+            if self.source_version != self.parent_source_version:
                 updated = True
                 self.status = DistroSeriesDifferenceStatus.NEEDS_ATTENTION
-        else:
-            if version == parent_version:
+        # If this difference was needing attention, or the current version
+        # was blacklisted and the versions now match we resolve it. Note:
+        # we don't resolve it if this difference was blacklisted for all
+        # versions.
+        elif self.status in (
+            DistroSeriesDifferenceStatus.NEEDS_ATTENTION,
+            DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT):
+            if self.source_version == self.parent_source_version:
                 updated = True
                 self.status = DistroSeriesDifferenceStatus.RESOLVED
 
@@ -200,4 +264,4 @@ class DistroSeriesDifference(Storm):
         comments = IStore(DSDComment).find(
             DistroSeriesDifferenceComment,
             DSDComment.distro_series_difference == self)
-        return comments.order_by(DSDComment.id)
+        return comments.order_by(Desc(DSDComment.id))

@@ -143,6 +143,23 @@
         for="lp.registry.interfaces.distroseries.IDistroSeries"
         class="canonical.launchpad.browser.AskAQuestionButtonView"
         permission="zope.Public"/>
+    <browser:page
+        name="+localpackagediffs"
+        for="lp.registry.interfaces.distroseries.IDistroSeries"
+        class="lp.registry.browser.distroseries.DistroSeriesLocalDifferences"
+        template="../templates/distroseries-localdifferences.pt"
+        permission="zope.Public"/>
+    <browser:url
+        for="lp.registry.interfaces.distroseriesdifference.IDistroSeriesDifference"
+        path_expression="string:+difference/${difference/source_package_name}"
+        rootsite="mainsite"
+        attribute_to_parent="derived_series"/>
+    <browser:page
+        name="+listing-distroseries-extra"
+        for="lp.registry.interfaces.distroseriesdifference.IDistroSeriesDifference"
+        class="lp.registry.browser.distroseriesdifference.DistroSeriesDifferenceView"
+        template="../templates/distroseriesdifference-listing-extra.pt"
+        permission="zope.Public"/>
     <browser:menus
         classes="
             DistroSeriesFacets

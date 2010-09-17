@@ -25,7 +25,6 @@ __all__ = [
     'CodeImportAlreadyRunning',
     'CodeImportNotInReviewedState',
     'ClaimReviewFailed',
-    'ForbiddenInstruction',
     'InvalidBranchMergeProposal',
     'InvalidNamespace',
     'NoLinkedBranch',
@@ -240,14 +239,6 @@ class CodeImportAlreadyRunning(Exception):
     """Raised when the user requests an import that is already running."""
 
     webservice_error(400)
-
-
-class ForbiddenInstruction(Exception):
-    """A forbidden instruction was found in the recipe."""
-
-    def __init__(self, instruction_name):
-        super(ForbiddenInstruction, self).__init__()
-        self.instruction_name = instruction_name
 
 
 class TooNewRecipeFormat(Exception):

@@ -61,7 +61,7 @@ class TestSourcePackageViewHelpers(TestCaseWithFactory):
 
     def test_get_register_upstream_url_summary(self):
         test_publisher = SoyuzTestPublisher()
-        test_data = test_publisher.makeSourcePackageWithBinaryPackageRelease()
+        test_data = test_publisher.makeSourcePackageSummaryData()
         source_package_name = (
             test_data['source_package'].sourcepackagename.name)
         distroseries_id = test_data['distroseries'].id
