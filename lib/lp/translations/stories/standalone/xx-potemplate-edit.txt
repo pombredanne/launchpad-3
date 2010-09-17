@@ -183,9 +183,7 @@ The edit page can be access from the templates list.
 
   >>> referrer = 'http://translations.launchpad.dev/evolution/trunk/+templates'
   >>> admin_browser.open(referrer)
-  >>> admin_browser.getLink(
-  ...   url='/evolution/trunk/+pots/'
-  ...       'evolution-2.2/+edit').click()
+  >>> admin_browser.getLink(url='+pots/evolution-2.2/+edit').click()
   >>> admin_browser.getControl('Change').click()
   >>> admin_browser.url == referrer
   True

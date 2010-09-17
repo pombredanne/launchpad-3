@@ -66,6 +66,7 @@ from canonical.launchpad.webapp.interfaces import (
     )
 from canonical.launchpad.webapp.opstats import OpStats
 from canonical.lazr.utils import get_current_browser_request, safe_hasattr
+from canonical.lazr.timeout import set_default_timeout_function
 from lp.services.timeline.timeline import Timeline
 from lp.services.timeline.requesttimeline import (
     get_request_timeline,
@@ -82,6 +83,7 @@ __all__ = [
     'get_request_duration',
     'get_store_name',
     'hard_timeout_expired',
+    'launchpad_default_timeout',
     'soft_timeout_expired',
     'StoreSelector',
     ]
@@ -104,10 +106,17 @@ class LaunchpadTimeoutError(TimeoutError):
         return ('Statement: %r\nParameters:%r\nOriginal error: %r'
                 % (self.statement, self.params, self.original_error))
 
+
+class RequestExpired(RuntimeError):
+    """Request has timed out."""
+    implements(IRequestExpired)
+
+
 def _get_dirty_commit_flags():
     """Return the current dirty commit status"""
     from canonical.ftests.pgsql import ConnectionWrapper
     return (ConnectionWrapper.committed, ConnectionWrapper.dirty)
+
 
 def _reset_dirty_commit_flags(previous_committed, previous_dirty):
     """Set the dirty commit status to False unless previous is True"""
@@ -248,32 +257,48 @@ def get_request_duration(now=None):
     return now - starttime
 
 
-def _check_expired(timeout):
-    """Checks whether the current request has passed the given timeout."""
-    if timeout is None or not getattr(_local, 'enable_timeout', True):
-        return False # no timeout configured or timeout disabled.
+def get_request_remaining_seconds(no_exception=False, now=None, timeout=None):
+    """Return how many seconds are remaining in the current request budget.
 
-    starttime = getattr(_local, 'request_start_time', None)
-    if starttime is None:
-        return False # no current request
+    If timouts are disabled, None is returned. 
 
-    requesttime = (time() - starttime) * 1000
-    return requesttime > timeout
+    :param no_exception: If True, do not raise an error if the request
+        is out of time. Instead return a float e.g. -2.0 for 2 seconds over
+        budget.
+    :param now: Override the result of time.time()
+    :param timeout: A custom timeout in ms.
+    :return: None or a float representing the remaining time budget.
+    """
+    if not getattr(_local, 'enable_timeout', True):
+        return None
+    if timeout is None:
+        timeout = config.database.db_statement_timeout
+    if not timeout:
+        return None
+    duration = get_request_duration(now)
+    if duration == -1:
+        return None
+    remaining = timeout / 1000.0 - duration
+    if remaining <= 0:
+        if no_exception:
+            return remaining
+        raise RequestExpired('request expired.')
+    return remaining
 
 
-def hard_timeout_expired():
-    """Returns True if the hard request timeout been reached."""
-    return _check_expired(config.database.db_statement_timeout)
+def set_launchpad_default_timeout(event):
+    """Set the LAZR default timeout function on IProcessStartingEvent."""
+    set_default_timeout_function(get_request_remaining_seconds)
 
 
 def soft_timeout_expired():
     """Returns True if the soft request timeout been reached."""
-    return _check_expired(config.database.soft_request_timeout)
-
-
-class RequestExpired(RuntimeError):
-    """Request has timed out."""
-    implements(IRequestExpired)
+    try:
+        get_request_remaining_seconds(
+            timeout=config.database.soft_request_timeout)
+        return False
+    except RequestExpired:
+        return True
 
 
 # ---- Prevent database access in the main thread of the app server
@@ -468,7 +493,7 @@ class LaunchpadTimeoutTracer(PostgresTimeoutTracer):
 
     @property
     def granularity(self):
-        return dbconfig.db_statement_timeout_precision / 1000.0
+        return config.database.db_statement_timeout_precision / 1000.0
 
     def connection_raw_execute(self, connection, raw_cursor,
                                statement, params):
@@ -478,12 +503,15 @@ class LaunchpadTimeoutTracer(PostgresTimeoutTracer):
         if not isinstance(connection._database, LaunchpadDatabase):
             return
         # If we are outside of a request, don't do timeout adjustment.
-        if self.get_remaining_time() is None:
-            return
         try:
+            if self.get_remaining_time() is None:
+                return
             super(LaunchpadTimeoutTracer, self).connection_raw_execute(
                 connection, raw_cursor, statement, params)
-        except TimeoutError:
+        except (RequestExpired, TimeoutError):
+            # XXX: This code does not belong here - see bug=636804.
+            # Robert Collins 20100913.
+            OpStats.stats['timeouts'] += 1
             # XXX bug=636801 Robert Colins 20100914 This is duplicated from the
             # statement tracer, because the tracers are not arranged in a stack
             # rather a queue: the done-code in the statement tracer never runs.
@@ -494,7 +522,6 @@ class LaunchpadTimeoutTracer(PostgresTimeoutTracer):
                 action.finish()
             info = sys.exc_info()
             transaction.doom()
-            OpStats.stats['timeouts'] += 1
             try:
                 raise info[0], info[1], info[2]
             finally:
@@ -513,15 +540,7 @@ class LaunchpadTimeoutTracer(PostgresTimeoutTracer):
 
     def get_remaining_time(self):
         """See `TimeoutTracer`"""
-        if (not dbconfig.db_statement_timeout or
-            not getattr(_local, 'enable_timeout', True)):
-            return None
-        start_time = getattr(_local, 'request_start_time', None)
-        if start_time is None:
-            return None
-        now = time()
-        ellapsed = now - start_time
-        return  dbconfig.db_statement_timeout / 1000.0 - ellapsed
+        return get_request_remaining_seconds()
 
 
 class LaunchpadStatementTracer:

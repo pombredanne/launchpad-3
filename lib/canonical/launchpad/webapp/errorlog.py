@@ -507,7 +507,7 @@ class ErrorReportingUtility:
             # We disable the pylint warning for the blank except.
             try:
                 raise info[0], info[1], traceback
-            except:
+            except info[0]:
                 logging.getLogger('SiteError').exception(
                     '%s (%s)' % (url, oopsid))
 
