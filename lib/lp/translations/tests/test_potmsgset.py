@@ -20,6 +20,7 @@ from zope.security.proxy import (
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.testing import ZopelessDatabaseLayer
+from lp.app.enums import ServiceUsage
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
 from lp.services.worlddata.interfaces.language import ILanguageSet
@@ -45,12 +46,12 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         # Create a product with two series and a shared POTemplate
         # in different series ('devel' and 'stable').
         super(TestTranslationSharedPOTMsgSets, self).setUp()
-        self.foo = self.factory.makeProduct()
+        self.foo = self.factory.makeProduct(
+            translations_usage=ServiceUsage.LAUNCHPAD)
         self.foo_devel = self.factory.makeProductSeries(
             name='devel', product=self.foo)
         self.foo_stable = self.factory.makeProductSeries(
             name='stable', product=self.foo)
-        self.foo.official_rosetta = True
 
         # POTemplate is 'shared' if it has the same name ('messages').
         self.devel_potemplate = self.factory.makePOTemplate(
@@ -324,7 +325,8 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         # Create an external POTemplate with a POTMsgSet using
         # the same English string as the one in self.potmsgset.
         external_template = self.factory.makePOTemplate()
-        external_template.productseries.product.official_rosetta = True
+        product = external_template.productseries.product
+        product.translations_usage = ServiceUsage.LAUNCHPAD
         external_potmsgset = self.factory.makePOTMsgSet(
             external_template,
             singular=self.potmsgset.singular_text)
@@ -383,7 +385,8 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         # Create an external POTemplate with a POTMsgSet using
         # the same English string as the one in self.potmsgset.
         external_template = self.factory.makePOTemplate()
-        external_template.productseries.product.official_rosetta = True
+        product = external_template.productseries.product
+        product.translations_usage = ServiceUsage.LAUNCHPAD
         external_potmsgset = self.factory.makePOTMsgSet(
             external_template,
             singular=self.potmsgset.singular_text)
@@ -738,10 +741,10 @@ class TestPOTMsgSetSuggestions(TestCaseWithFactory):
         # create TranslationMessage objects.
         super(TestPOTMsgSetSuggestions, self).setUp()
         self.now = self.gen_now().next
-        self.foo = self.factory.makeProduct()
+        self.foo = self.factory.makeProduct(
+            translations_usage=ServiceUsage.LAUNCHPAD)
         self.foo_main = self.factory.makeProductSeries(
             name='main', product=self.foo)
-        self.foo.official_rosetta = True
 
         self.potemplate = self.factory.makePOTemplate(
             productseries=self.foo_main, name="messages")
@@ -926,10 +929,10 @@ class TestPOTMsgSetResetTranslation(TestCaseWithFactory):
         # create TranslationMessage objects.
         super(TestPOTMsgSetResetTranslation, self).setUp()
         self.now = self.gen_now().next
-        self.foo = self.factory.makeProduct()
+        self.foo = self.factory.makeProduct(
+            translations_usage=ServiceUsage.LAUNCHPAD)
         self.foo_main = self.factory.makeProductSeries(
             name='main', product=self.foo)
-        self.foo.official_rosetta = True
 
         self.potemplate = self.factory.makePOTemplate(
             productseries=self.foo_main, name="messages")

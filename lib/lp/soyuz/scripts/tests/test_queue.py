@@ -3,6 +3,8 @@
 
 """queue tool base class tests."""
 
+from __future__ import with_statement
+
 __metaclass__ = type
 __all__ = [
     'upload_bar_source',
@@ -12,6 +14,7 @@ __all__ = [
 import hashlib
 import os
 import shutil
+from StringIO import StringIO
 import tempfile
 from unittest import (
     TestCase,
@@ -19,6 +22,7 @@ from unittest import (
     )
 
 from zope.component import getUtility
+from zope.security.interfaces import ForbiddenAttribute
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
@@ -33,7 +37,10 @@ from canonical.librarian.ftests.harness import (
     fillLibrarianFile,
     )
 from canonical.librarian.utils import filechunks
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing import (
+    DatabaseFunctionalLayer, 
+    LaunchpadZopelessLayer,
+    )
 from lp.archiveuploader.nascentupload import NascentUpload
 from lp.archiveuploader.tests import (
     datadir,
@@ -42,7 +49,10 @@ from lp.archiveuploader.tests import (
     mock_logger_quiet,
     )
 from lp.bugs.interfaces.bug import IBugSet
-from lp.bugs.interfaces.bugtask import IBugTaskSet
+from lp.bugs.interfaces.bugtask import (
+    BugTaskStatus,
+    IBugTaskSet,
+    )
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -56,6 +66,9 @@ from lp.soyuz.enums import (
 from lp.soyuz.interfaces.archive import (
     IArchiveSet,
     )
+from lp.soyuz.scripts.processaccepted import (
+    close_bugs_for_sourcepackagerelease,
+    )
 from lp.soyuz.interfaces.queue import (
     IPackageUploadSet,
     )
@@ -63,6 +76,11 @@ from lp.soyuz.scripts.queue import (
     CommandRunner,
     CommandRunnerError,
     name_queue_map,
+    )
+from lp.testing import (
+    celebrity_logged_in,
+    person_logged_in,
+    TestCaseWithFactory,
     )
 
 
@@ -382,10 +400,10 @@ class TestQueueTool(TestQueueBase):
         queue_action = self.execute_command('accept bar', no_mail=False)
 
         # The upload wants to close bug 6:
-        bugs_fixed_header = bar2_src.changes._dict['launchpad-bugs-fixed']
+        bugs_fixed_header = bar2_src.changes._dict['Launchpad-bugs-fixed']
         self.assertEqual(
             bugs_fixed_header, str(the_bug_id),
-            'Expected bug %s in launchpad-bugs-fixed, got %s'
+            'Expected bug %s in Launchpad-bugs-fixed, got %s'
                 % (the_bug_id, bugs_fixed_header))
 
         # The upload should be in the DONE state:
@@ -924,6 +942,36 @@ class TestQueueTool(TestQueueBase):
         self.assertRaises(
             CommandRunnerError, self.execute_command,
             'override binary pmount', component_name='partner')
+
+
+class TestQueuePageClosingBugs(TestCaseWithFactory):
+    # The distroseries +queue page can close bug when accepting
+    # packages.  Unit tests for that belong here.
+
+    layer = DatabaseFunctionalLayer
+
+    def test_close_bugs_for_sourcepackagerelease_with_private_bug(self):
+        # lp.soyuz.scripts.processaccepted.close_bugs_for_sourcepackagerelease
+        # should work with private bugs where the person using the queue
+        # page doesn't have access to it.
+        changes_file_template = "Format: 1.7\nLaunchpad-bugs-fixed: %s\n"
+        # changelog_entry is required for an assertion inside the function
+        # we're testing.
+        spr = self.factory.makeSourcePackageRelease(changelog_entry="blah")
+        archive_admin = self.factory.makePerson()
+        bug = self.factory.makeBug(private=True)
+        bug_task = self.factory.makeBugTask(target=spr.sourcepackage, bug=bug)
+        changes = StringIO(changes_file_template % bug.id)
+
+        with person_logged_in(archive_admin):
+            # The archive admin user can't normally see this bug.
+            self.assertRaises(ForbiddenAttribute, bug, 'status')
+            # But the bug closure should work.
+            close_bugs_for_sourcepackagerelease(spr, changes)
+
+        # Verify it was closed.
+        with celebrity_logged_in("admin"):
+            self.assertEqual(bug_task.status, BugTaskStatus.FIXRELEASED)
 
 
 class TestQueueToolInJail(TestQueueBase):

@@ -37,7 +37,6 @@
     <!-- Event configuration -->
 
     <!-- Special Utilities -->
-    <include file="geoip.zcml" />
     <include file="gpghandler.zcml" />
     <include file="searchservice.zcml" />
 

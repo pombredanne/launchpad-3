@@ -17,7 +17,9 @@ __all__ = [
     'find_copyright',
     ]
 
+import apt_pkg
 from cStringIO import StringIO
+from debian.deb822 import Deb822Dict
 import errno
 import glob
 import os
@@ -25,7 +27,6 @@ import shutil
 import subprocess
 import tempfile
 
-import apt_pkg
 from zope.component import getUtility
 
 from canonical.encoding import guess as guess_encoding
@@ -206,8 +207,8 @@ class SignableTagFile:
 
         person = getUtility(IPersonSet).getByEmail(email)
         if person is None and self.policy.create_people:
-            package = self._dict['source']
-            version = self._dict['version']
+            package = self._dict['Source']
+            version = self._dict['Version']
             if self.policy.distroseries and self.policy.pocket:
                 policy_suite = ('%s/%s' % (self.policy.distroseries.name,
                                            self.policy.pocket.name))
@@ -235,12 +236,23 @@ class DSCFile(SourceUploadFile, SignableTagFile):
     """Models a given DSC file and its content."""
 
     mandatory_fields = set([
-        "source",
-        "version",
-        "binary",
-        "maintainer",
-        "architecture",
-        "files"])
+        "Source",
+        "Version",
+        "Binary",
+        "Maintainer",
+        "Architecture",
+        "Files"])
+
+    known_fields = mandatory_fields.union(set([
+        "Build-Depends",
+        "Build-Depends-Indep",
+        "Build-Conflicts",
+        "Build-Conflicts-Indep",
+        "Format",
+        "Standards-Version",
+        "filecontents",
+        "homepage",
+        ]))
 
     # Note that files is actually only set inside verify().
     files = None
@@ -278,17 +290,17 @@ class DSCFile(SourceUploadFile, SignableTagFile):
                     "Unable to find mandatory field %s in %s" % (
                     mandatory_field, self.filename))
 
-        self.maintainer = self.parseAddress(self._dict['maintainer'])
+        self.maintainer = self.parseAddress(self._dict['Maintainer'])
 
         # If format is not present, assume 1.0. At least one tool in
         # the wild generates dsc files with format missing, and we need
         # to accept them.
-        if 'format' not in self._dict:
-            self._dict['format'] = "1.0"
+        if 'Format' not in self._dict:
+            self._dict['Format'] = "1.0"
 
         if self.format is None:
             raise EarlyReturnUploadError(
-                "Unsupported source format: %s" % self._dict['format'])
+                "Unsupported source format: %s" % self._dict['Format'])
 
         if self.policy.unsigned_dsc_ok:
             self.logger.debug("DSC file can be unsigned.")
@@ -301,31 +313,31 @@ class DSCFile(SourceUploadFile, SignableTagFile):
     @property
     def source(self):
         """Return the DSC source name."""
-        return self._dict['source']
+        return self._dict['Source']
 
     @property
     def dsc_version(self):
         """Return the DSC source version."""
-        return self._dict['version']
+        return self._dict['Version']
 
     @property
     def format(self):
         """Return the DSC format."""
         try:
             return SourcePackageFormat.getTermByToken(
-                self._dict['format']).value
+                self._dict['Format']).value
         except LookupError:
             return None
 
     @property
     def architecture(self):
         """Return the DSC source architecture."""
-        return self._dict['architecture']
+        return self._dict['Architecture']
 
     @property
     def binary(self):
         """Return the DSC claimed binary line."""
-        return self._dict['binary']
+        return self._dict['Binary']
 
 
     #
@@ -348,7 +360,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
             yield error
 
         files = []
-        for fileline in self._dict['files'].strip().split("\n"):
+        for fileline in self._dict['Files'].strip().split("\n"):
             # DSC lines are always of the form: CHECKSUM SIZE FILENAME
             digest, size, filename = fileline.strip().split()
             if not re_issource.match(filename):
@@ -382,7 +394,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
                 (self.filename, self.format, self.policy.distroseries.name))
 
         # Validate the build dependencies
-        for field_name in ['build-depends', 'build-depends-indep']:
+        for field_name in ['Build-Depends', 'Build-Depends-Indep']:
             field = self._dict.get(field_name, None)
             if field is not None:
                 if field.startswith("ARRAY"):
@@ -661,7 +673,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
 
         # We have no way of knowing what encoding the original copyright
         # file is in, unfortunately, and there is no standard, so guess.
-        encoded = {}
+        encoded = Deb822Dict()
         for key, value in pending.items():
             if value is not None:
                 encoded[key] = guess_encoding(value)
@@ -683,23 +695,27 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         source_name = getUtility(
             ISourcePackageNameSet).getOrCreateByName(self.source)
 
+        user_defined_fields = self.extractUserDefinedFields([
+            (field, encoded[field]) for field in self._dict.iterkeys()])
+
         release = self.policy.distroseries.createUploadedSourcePackageRelease(
             sourcepackagename=source_name,
             version=self.dsc_version,
             maintainer=self.maintainer['person'],
-            builddepends=encoded.get('build-depends', ''),
-            builddependsindep=encoded.get('build-depends-indep', ''),
-            build_conflicts=encoded.get('build-conflicts', ''),
-            build_conflicts_indep=encoded.get('build-conflicts-indep', ''),
-            architecturehintlist=encoded.get('architecture', ''),
+            builddepends=encoded.get('Build-Depends', ''),
+            builddependsindep=encoded.get('Build-Depends-Indep', ''),
+            build_conflicts=encoded.get('Build-Conflicts', ''),
+            build_conflicts_indep=encoded.get('Build-Conflicts-Indep', ''),
+            architecturehintlist=encoded.get('Architecture', ''),
             creator=self.changes.changed_by['person'],
             urgency=self.changes.converted_urgency,
+            homepage=encoded.get('homepage'),
             dsc=encoded['filecontents'],
             dscsigningkey=self.signingkey,
-            dsc_maintainer_rfc822=encoded['maintainer'],
-            dsc_format=encoded['format'],
-            dsc_binaries=encoded['binary'],
-            dsc_standards_version=encoded.get('standards-version'),
+            dsc_maintainer_rfc822=encoded['Maintainer'],
+            dsc_format=encoded['Format'],
+            dsc_binaries=encoded['Binary'],
+            dsc_standards_version=encoded.get('Standards-Version'),
             component=self.component,
             changelog=changelog_lfa,
             changelog_entry=encoded.get('simulated_changelog'),
@@ -708,6 +724,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
             source_package_recipe_build=build,
             copyright=encoded.get('copyright'),
             # dateuploaded by default is UTC:now in the database
+            user_defined_fields=user_defined_fields,
             )
 
         # SourcePackageFiles should contain also the DSC
@@ -814,6 +831,7 @@ def find_changelog(source_dir, logger):
     # Move the changelog file out of the package direcotry
     logger.debug("Found changelog")
     return open(changelog_file, 'r').read()
+
 
 
 def check_format_1_0_files(filename, file_type_counts, component_counts,
