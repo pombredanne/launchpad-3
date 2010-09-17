@@ -13,7 +13,7 @@ import transaction
 from zope.component import getUtility
 
 from lp.registry.interfaces.persontransferjob import (
-    IAddMemberNotificationJobSource,
+    IMembershipNotificationJobSource,
     )
 from lp.services.job.runner import JobRunner
 from lp.services.mail import stub
@@ -114,7 +114,7 @@ def run_mail_jobs():
     # Commit the transaction to make sure that the JobRunner can find
     # the queued jobs.
     transaction.commit()
-    job_source = getUtility(IAddMemberNotificationJobSource)
+    job_source = getUtility(IMembershipNotificationJobSource)
     logger = MockLogger()
     runner = JobRunner.fromReady(job_source, logger)
     runner.runAll()

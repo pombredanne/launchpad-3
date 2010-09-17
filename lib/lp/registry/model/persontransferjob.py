@@ -5,7 +5,7 @@
 
 __metaclass__ = type
 __all__ = [
-    'AddMemberNotificationJob',
+    'MembershipNotificationJob',
     'PersonTransferJob',
     ]
 
@@ -26,11 +26,22 @@ from zope.interface import (
     )
 
 
+from canonical.config import config
 from canonical.database.enumcol import EnumCol
+from canonical.launchpad.helpers import (
+    get_contact_email_addresses,
+    get_email_template,
+    )
 from canonical.launchpad.interfaces.lpstorm import (
     IMasterStore,
     IStore,
     )
+from canonical.launchpad.mail import (
+    format_address,
+    simple_sendmail,
+    )
+from canonical.launchpad.mailnotification import MailWrapper
+from canonical.launchpad.webapp import canonical_url
 
 
 from lp.registry.enum import PersonTransferJobType
@@ -42,12 +53,11 @@ from lp.registry.interfaces.person import (
 from lp.registry.interfaces.persontransferjob import (
     IPersonTransferJob,
     IPersonTransferJobSource,
-    IAddMemberNotificationJob,
-    IAddMemberNotificationJobSource,
+    IMembershipNotificationJob,
+    IMembershipNotificationJobSource,
     )
 from lp.registry.interfaces.teammembership import TeamMembershipStatus
 from lp.registry.model.person import Person
-from lp.registry.model.teammembership import sendStatusChangeNotification
 from lp.services.job.model.job import Job
 from lp.services.job.runner import BaseRunnableJob
 
@@ -168,11 +178,11 @@ class PersonTransferJobDerived(BaseRunnableJob):
         return vars
 
 
-class AddMemberNotificationJob(PersonTransferJobDerived):
+class MembershipNotificationJob(PersonTransferJobDerived):
     """A Job that sends email notifications about adding a team member."""
 
-    implements(IAddMemberNotificationJob)
-    classProvides(IAddMemberNotificationJobSource)
+    implements(IMembershipNotificationJob)
+    classProvides(IMembershipNotificationJobSource)
 
     class_job_type = PersonTransferJobType.ADD_MEMBER_NOTIFICATION
 
@@ -189,7 +199,7 @@ class AddMemberNotificationJob(PersonTransferJobDerived):
             'new_status': new_status.name,
             'last_change_comment': last_change_comment,
             }
-        return super(AddMemberNotificationJob, cls).create(
+        return super(MembershipNotificationJob, cls).create(
             minor_person=member, major_person=team, metadata=metadata)
 
     @property
@@ -219,8 +229,100 @@ class AddMemberNotificationJob(PersonTransferJobDerived):
     def run(self):
         """See `IBranchScanJob`."""
         from canonical.launchpad.scripts import log
-        assert self.team.is_team, 'Not a team: %r' % self.team
-        sendStatusChangeNotification(
-            self.member, self.team, self.reviewer, self.old_status,
-            self.new_status, self.last_change_comment)
-        log.debug('AddMemberNotificationJob sent email')
+        from_addr = format_address(
+            self.team.displayname, config.canonical.noreply_from_address)
+        admins_emails = self.team.getTeamAdminsEmailAddresses()
+        # person might be a self.team, so we can't rely on its preferredemail.
+        self.member_email = get_contact_email_addresses(self.member)
+        # Make sure we don't send the same notification twice to anybody.
+        for email in self.member_email:
+            if email in admins_emails:
+                admins_emails.remove(email)
+
+        if self.reviewer != self.member:
+            self.reviewer_name = self.reviewer.unique_displayname
+        else:
+            # The user himself changed his self.membership.
+            self.reviewer_name = 'the user himself'
+
+        if self.last_change_comment:
+            comment = ("\n%s said:\n %s\n" % (
+                self.reviewer.displayname, self.last_change_comment.strip()))
+        else:
+            comment = ""
+
+        replacements = {
+            'member_name': self.member.unique_displayname,
+            'recipient_name': self.member.displayname,
+            'team_name': self.team.unique_displayname,
+            'team_url': canonical_url(self.team),
+            'old_status': self.old_status.title,
+            'new_status': self.new_status.title,
+            'reviewer_name': self.reviewer_name,
+            'comment': comment}
+
+        template_name = 'membership-statuschange'
+        subject = (
+            'Membership change: %(member)s in %(team)s'
+            % {
+                'member': self.member.name,
+                'team': self.team.name,
+              })
+        if self.new_status == TeamMembershipStatus.EXPIRED:
+            template_name = 'membership-expired'
+            subject = '%s expired from team' % self.member.name
+        elif (self.new_status == TeamMembershipStatus.APPROVED and
+            self.old_status != TeamMembershipStatus.ADMIN):
+            if self.old_status == TeamMembershipStatus.INVITED:
+                subject = ('Invitation to %s accepted by %s'
+                        % (self.member.name, self.reviewer.name))
+                template_name = 'membership-invitation-accepted'
+            elif self.old_status == TeamMembershipStatus.PROPOSED:
+                subject = '%s approved by %s' % (
+                    self.member.name, self.reviewer.name)
+            else:
+                subject = '%s added by %s' % (
+                    self.member.name, self.reviewer.name)
+        elif self.new_status == TeamMembershipStatus.INVITATION_DECLINED:
+            subject = ('Invitation to %s declined by %s'
+                    % (self.member.name, self.reviewer.name))
+            template_name = 'membership-invitation-declined'
+        elif self.new_status == TeamMembershipStatus.DEACTIVATED:
+            subject = '%s deactivated by %s' % (
+                self.member.name, self.reviewer.name)
+        elif self.new_status == TeamMembershipStatus.ADMIN:
+            subject = '%s made admin by %s' % (
+                self.member.name, self.reviewer.name)
+        elif self.new_status == TeamMembershipStatus.DECLINED:
+            subject = '%s declined by %s' % (
+                self.member.name, self.reviewer.name)
+        else:
+            # Use the default template and subject.
+            pass
+
+        if admins_emails:
+            admins_template = get_email_template(
+                "%s-bulk.txt" % template_name)
+            for address in admins_emails:
+                recipient = getUtility(IPersonSet).getByEmail(address)
+                replacements['recipient_name'] = recipient.displayname
+                msg = MailWrapper().format(
+                    admins_template % replacements, force_wrap=True)
+                simple_sendmail(from_addr, address, subject, msg)
+
+        # The self.member can be a self.self.team without any
+        # self.members, and in this case we won't have a single email
+        # address to send this notification to.
+        if self.member_email and self.reviewer != self.member:
+            if self.member.isTeam():
+                template = '%s-bulk.txt' % template_name
+            else:
+                template = '%s-personal.txt' % template_name
+            self.member_template = get_email_template(template)
+            for address in self.member_email:
+                recipient = getUtility(IPersonSet).getByEmail(address)
+                replacements['recipient_name'] = recipient.displayname
+                msg = MailWrapper().format(
+                    self.member_template % replacements, force_wrap=True)
+                simple_sendmail(from_addr, address, subject, msg)
+        log.debug('MembershipNotificationJob sent email')

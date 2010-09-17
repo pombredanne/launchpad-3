@@ -86,17 +86,19 @@
 
     <!-- IPersonTransferJob -->
     <securedutility
-        component="lp.registry.model.persontransferjob.AddMemberNotificationJob"
-        provides="lp.registry.interfaces.persontransferjob.IAddMemberNotificationJobSource">
-        <allow interface="lp.registry.interfaces.persontransferjob.IAddMemberNotificationJobSource"/>
+        component="lp.registry.model.persontransferjob.MembershipNotificationJob"
+        provides="lp.registry.interfaces.persontransferjob.IMembershipNotificationJobSource">
+        <allow
+            interface="lp.registry.interfaces.persontransferjob.IMembershipNotificationJobSource"/>
     </securedutility>
 
     <class class="lp.registry.model.persontransferjob.PersonTransferJob">
         <allow interface="lp.registry.interfaces.persontransferjob.IPersonTransferJob"/>
     </class>
 
-    <class class="lp.registry.model.persontransferjob.AddMemberNotificationJob">
-        <allow interface="lp.registry.interfaces.persontransferjob.IAddMemberNotificationJob"/>
+    <class class="lp.registry.model.persontransferjob.MembershipNotificationJob">
+        <allow
+            interface="lp.registry.interfaces.persontransferjob.IMembershipNotificationJob"/>
     </class>
 
     <!-- Location -->
