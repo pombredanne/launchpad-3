@@ -25,7 +25,7 @@ __all__ = [
 
 from datetime import datetime
 import math
-from urllib import quote
+from urllib import quote, unquote
 
 import pytz
 from zope.app.form.browser import TextAreaWidget
@@ -838,9 +838,19 @@ class TeamMailingListModerationView(MailingListTeamBaseView):
         # won't be in data.  Instead, get it out of the request.
         reviewable = self.hold_count
         disposed_count = 0
-        for message in self.held_messages.currentBatch():
-            action_name = self.request.form_ng.getOne(
-                'field.' + quote(message.message_id))
+        actions = {}
+        form = self.request.form_ng
+        for field_name in form:
+            if (field_name.startswith('field.') and
+                field_name.endswith('')):
+                # A moderated message.
+                quoted_id = field_name[len('field.'):]
+                message_id = unquote(quoted_id)
+                actions[message_id] = form.getOne(field_name)
+        messages = self.mailing_list.getReviewableMessages(
+            message_id_filter=actions)
+        for message in messages:
+            action_name = actions[message.message_id]
             # This essentially acts like a switch statement or if/elifs.  It
             # looks the action up in a map of allowed actions, watching out
             # for bogus input.
