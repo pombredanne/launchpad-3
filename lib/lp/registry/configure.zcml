@@ -169,21 +169,11 @@
         <!-- IStructuralSubscriptionTarget -->
 
         <allow
-            attributes="
-                bug_subscriptions
-                getBugNotificationsRecipients
-                getSubscription
-                getSubscriptions
-                parent_subscription_target
-                target_type_display
-                userHasBugSubscriptions
-                userCanAlterBugSubscription"/>
+            interface="lp.registry.interfaces.structuralsubscription.IStructuralSubscriptionTargetRead" />
         <require
             permission="launchpad.AnyPerson"
-            attributes="
-                addBugSubscription
-                addSubscription
-                removeBugSubscription"/>
+            interface="lp.registry.interfaces.structuralsubscription.IStructuralSubscriptionTargetWrite" />
+
     </class>
     <securedutility
         class="lp.registry.model.distroseries.DistroSeriesSet"
@@ -316,21 +306,11 @@
         <!-- IStructuralSubscriptionTarget -->
 
         <allow
-            attributes="
-                bug_subscriptions
-                getSubscriptions
-                getSubscription
-                getBugNotificationsRecipients
-                parent_subscription_target
-                target_type_display
-                userHasBugSubscriptions
-                userCanAlterBugSubscription"/>
+            interface="lp.registry.interfaces.structuralsubscription.IStructuralSubscriptionTargetRead" />
         <require
             permission="launchpad.AnyPerson"
-            attributes="
-                addSubscription
-                addBugSubscription
-                removeBugSubscription"/>
+            interface="lp.registry.interfaces.structuralsubscription.IStructuralSubscriptionTargetWrite" />
+
         <require
             permission="launchpad.Admin"
             set_attributes="registrant"/>
@@ -442,27 +422,23 @@
                 getBugCounts
                 bug_count
                 total_bug_heat
-                bug_subscriptions
-                getSubscriptions
-                getSubscription
-                parent_subscription_target
-                getBugNotificationsRecipients
                 getPersonsByEmail
                 getReleasesAndPublishingHistory
                 upstream_product
-                target_type_display
                 official_bug_tags
                 findRelatedArchives
-                findRelatedArchivePublications
-                userHasBugSubscriptions
-                userCanAlterBugSubscription"/>
+                findRelatedArchivePublications"/>
         <require
             permission="launchpad.AnyPerson"
-            attributes="
-                addSubscription
-                addBugSubscription
-                removeBugSubscription
-                createBug"/>
+            attributes="createBug"/>
+
+        <!-- IStructuralSubscriptionTarget -->
+
+        <allow
+            interface="lp.registry.interfaces.structuralsubscription.IStructuralSubscriptionTargetRead" />
+        <require
+            permission="launchpad.AnyPerson"
+            interface="lp.registry.interfaces.structuralsubscription.IStructuralSubscriptionTargetWrite" />
 
         <!-- IQuestionTarget -->
 
@@ -959,21 +935,11 @@
         <!-- IStructuralSubscriptionTarget -->
 
         <allow
-            attributes="
-                bug_subscriptions
-                getSubscriptions
-                getSubscription
-                getBugNotificationsRecipients
-                parent_subscription_target
-                target_type_display
-                userHasBugSubscriptions
-                userCanAlterBugSubscription"/>
+            interface="lp.registry.interfaces.structuralsubscription.IStructuralSubscriptionTargetRead" />
         <require
             permission="launchpad.AnyPerson"
-            attributes="
-                addSubscription
-                addBugSubscription
-                removeBugSubscription"/>
+            interface="lp.registry.interfaces.structuralsubscription.IStructuralSubscriptionTargetWrite" />
+
     </class>
 
     <!-- IMilestoneSet -->
@@ -1235,22 +1201,10 @@
         <!-- IStructuralSubscriptionTarget -->
 
         <allow
-            attributes="
-                bug_subscriptions
-                getSubscriptions
-                getSubscription
-                getBugNotificationsRecipients
-                parent_subscription_target
-                target_type_display
-                userHasBugSubscriptions
-                userCanAlterBugSubscription"/>
+            interface="lp.registry.interfaces.structuralsubscription.IStructuralSubscriptionTargetRead" />
         <require
             permission="launchpad.AnyPerson"
-            attributes="
-                addSubscription
-                addBugSubscription
-                removeBugSubscription
-                userCanAlterSubscription"/>
+            interface="lp.registry.interfaces.structuralsubscription.IStructuralSubscriptionTargetWrite" />
 
         <!-- IHasBugSupervisor -->
 
@@ -1385,21 +1339,11 @@
         <!-- IStructuralSubscriptionTarget -->
 
         <allow
-            attributes="
-                bug_subscriptions
-                getBugNotificationsRecipients
-                getSubscription
-                getSubscriptions
-                parent_subscription_target
-                target_type_display
-                userHasBugSubscriptions
-                userCanAlterBugSubscription"/>
+            interface="lp.registry.interfaces.structuralsubscription.IStructuralSubscriptionTargetRead" />
         <require
             permission="launchpad.AnyPerson"
-            attributes="
-                addBugSubscription
-                addSubscription
-                removeBugSubscription"/>
+            interface="lp.registry.interfaces.structuralsubscription.IStructuralSubscriptionTargetWrite" />
+
     </class>
     <adapter
         provides="canonical.launchpad.interfaces.IHasExternalBugTracker"
@@ -1517,22 +1461,10 @@
         <!-- IStructuralSubscriptionTarget -->
 
         <allow
-            attributes="
-                bug_subscriptions
-                getSubscriptions
-                getSubscription
-                getBugNotificationsRecipients
-                parent_subscription_target
-                target_type_display
-                userHasBugSubscriptions
-                userCanAlterBugSubscription"/>
+            interface="lp.registry.interfaces.structuralsubscription.IStructuralSubscriptionTargetRead" />
         <require
             permission="launchpad.AnyPerson"
-            attributes="
-                addSubscription
-                addBugSubscription
-                removeBugSubscription
-                userCanAlterSubscription"/>
+            interface="lp.registry.interfaces.structuralsubscription.IStructuralSubscriptionTargetWrite" />
 
         <!-- IHasBugSupervisor -->
 
