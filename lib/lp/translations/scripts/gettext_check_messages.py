@@ -95,7 +95,8 @@ class GettextCheckMessages(LaunchpadScript):
         :return: Error message string if there is an error, or None otherwise.
         """
         potmsgset = translationmessage.potmsgset
-        msgstrs = translationmessage.translations
+        # validate_translation takes a dict but translations are a list.
+        msgstrs = dict(enumerate(translationmessage.translations))
 
         try:
             validate_translation(

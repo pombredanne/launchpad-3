@@ -541,11 +541,8 @@ class FileImporter(object):
         else:
             new_message.validation_status = TranslationValidationStatus.OK
             # The translation is made current.
-            if current is not None and current.is_diverged:
-                new_message.approveAsDiverged(self.pofile, uploader_person)
-            else:
-                new_message.approve(
-                    self.pofile, uploader_person, self.share_with_other_side)
+            new_message.approve(
+                self.pofile, uploader_person, self.share_with_other_side)
 
         just_replaced_msgid = (
             self.importer.uses_source_string_msgids and
