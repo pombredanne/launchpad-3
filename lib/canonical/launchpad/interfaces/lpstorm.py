@@ -32,4 +32,3 @@ class IDBObject(Interface):
 
 class IMasterObject(IDBObject):
     """A Storm database object associated with its master Store."""
-

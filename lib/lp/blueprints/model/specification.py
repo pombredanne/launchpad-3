@@ -713,50 +713,39 @@ class HasSpecificationsMixin:
         """
         # Circular import.
         from lp.registry.model.person import Person
-        assignee = ClassAlias(Person, "assignee")
-        approver = ClassAlias(Person, "approver")
-        drafter = ClassAlias(Person, "drafter")
-        origin = [Specification,
-            LeftJoin(assignee, Specification.assignee==assignee.id),
-            LeftJoin(approver, Specification.approver==approver.id),
-            LeftJoin(drafter, Specification.drafter==drafter.id),
-            ]
-        columns = [Specification, assignee, approver, drafter]
-        for alias in (assignee, approver, drafter):
-            validity_info = Person._validity_queries(person_table=alias)
+        def cache_people(rows):
+            # Find the people we need:
+            person_ids = set()
+            for spec in rows:
+                person_ids.add(spec.assigneeID)
+                person_ids.add(spec.approverID)
+                person_ids.add(spec.drafterID)
+            person_ids.discard(None)
+            if not person_ids:
+                return
+            # Query those people
+            origin = [Person]
+            columns = [Person]
+            validity_info = Person._validity_queries()
             origin.extend(validity_info["joins"])
             columns.extend(validity_info["tables"])
-            # We only need one decorators list: all the decorators will be
-            # bound the same, and having a single list lets us more easily call
-            # the right one.
             decorators = validity_info["decorators"]
-        columns = tuple(columns)
-        results = Store.of(self).using(*origin).find(
-            columns,
+            personset = Store.of(self).using(*origin).find(
+                tuple(columns),
+                Person.id.is_in(person_ids),
+                )
+            for row in personset:
+                person = row[0]
+                index = 1
+                for decorator in decorators:
+                    column = row[index]
+                    index += 1
+                    decorator(person, column)
+        results = Store.of(self).find(
+            Specification,
             SQL(query),
             )
-        def cache_person(person, row, start_index):
-            """apply caching decorators to person."""
-            index = start_index
-            for decorator in decorators:
-                column = row[index]
-                index += 1
-                decorator(person, column)
-            return index
-        def cache_validity(row):
-            # Assignee
-            person = row[1]
-            # After drafter
-            index = 4
-            index = cache_person(person, row, index)
-            # approver
-            person = row[2]
-            index = cache_person(person, row, index)
-            # drafter
-            person = row[3]
-            index = cache_person(person, row, index)
-            return row[0]
-        return DecoratedResultSet(results, cache_validity)
+        return DecoratedResultSet(results, pre_iter_hook=cache_people)
 
     @property
     def valid_specifications(self):

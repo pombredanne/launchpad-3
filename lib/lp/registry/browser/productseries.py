@@ -10,6 +10,7 @@ __all__ = [
     'ProductSeriesBreadcrumb',
     'ProductSeriesBugsMenu',
     'ProductSeriesDeleteView',
+    'ProductSeriesDetailedDisplayView',
     'ProductSeriesEditView',
     'ProductSeriesFacets',
     'ProductSeriesFileBugRedirect',
@@ -57,6 +58,7 @@ from zope.schema.vocabulary import (
 from canonical.launchpad import _
 from canonical.launchpad.helpers import browserLanguages
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp import (
     ApplicationMenu,
     canonical_url,
@@ -252,11 +254,11 @@ class ProductSeriesInvolvementView(PillarView):
 
     def __init__(self, context, request):
         super(ProductSeriesInvolvementView, self).__init__(context, request)
+        self.answers_usage = ServiceUsage.NOT_APPLICABLE
         if self.context.branch is not None:
             self.codehosting_usage = ServiceUsage.LAUNCHPAD
         else:
             self.codehosting_usage = ServiceUsage.UNKNOWN
-        self.official_answers = False
 
     @property
     def configuration_links(self):
@@ -278,10 +280,27 @@ class ProductSeriesOverviewMenu(
     usedfor = IProductSeries
     facet = 'overview'
     links = [
-        'edit', 'delete', 'driver', 'link_branch', 'ubuntupkg',
-        'create_milestone', 'create_release', 'rdf', 'subscribe',
+        'configure_bugtracker',
+        'create_milestone',
+        'create_release',
+        'delete',
+        'driver',
+        'edit',
+        'link_branch',
+        'rdf',
         'set_branch',
+        'subscribe',
+        'ubuntupkg',
         ]
+
+    @enabled_with_permission('launchpad.Edit')
+    def configure_bugtracker(self):
+        text = 'Configure bug tracker'
+        summary = 'Specify where bugs are tracked for this project'
+        return Link(
+            canonical_url(self.context.product,
+                          view_name='+configure-bugtracker'),
+            text, summary, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -482,12 +501,29 @@ class ProductSeriesView(LaunchpadView, MilestoneOverlayMixin):
                 for status in sorted(status_counts,
                                      key=attrgetter('sortkey'))]
 
-    @property
+    @cachedproperty
     def latest_release_with_download_files(self):
         for release in self.context.releases:
             if len(list(release.files)) > 0:
                 return release
         return None
+
+    @cachedproperty
+    def milestone_batch_navigator(self):
+        return BatchNavigator(self.context.all_milestones, self.request)
+
+
+class ProductSeriesDetailedDisplayView(ProductSeriesView):
+
+    @cachedproperty
+    def latest_milestones(self):
+        # Convert to list to avoid the query being run multiple times.
+        return list(self.context.milestones[:12])
+
+    @cachedproperty
+    def latest_releases(self):
+        # Convert to list to avoid the query being run multiple times.
+        return list(self.context.releases[:12])
 
 
 class ProductSeriesUbuntuPackagingView(LaunchpadFormView):

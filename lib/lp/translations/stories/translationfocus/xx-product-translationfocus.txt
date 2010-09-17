@@ -1,9 +1,10 @@
 The translation focus of a product can be explicitly set to a specific series.
 When not set, launchpad recommends the development focus to translate.
 
+    >>> from lp.app.enums import ServiceUsage
     >>> login('admin@canonical.com')
     >>> fooproject = factory.makeProduct(name="fooproject")
-    >>> fooproject.official_rosetta = True
+    >>> fooproject.translations_usage = ServiceUsage.LAUNCHPAD
     >>> fooproject_trunk = fooproject.getSeries("trunk")
     >>> fooproject_url = canonical_url(
     ...     fooproject, rootsite="translations")
@@ -25,7 +26,8 @@ but have no access to the 'Change permissions' menu.
     ...
     IndexError: list index out of range
 
-== Setting the translation focus ==
+Setting the translation focus
+=============================
 
     >>> login('admin@canonical.com')
     >>> from zope.security.proxy import removeSecurityProxy
@@ -35,7 +37,7 @@ but have no access to the 'Change permissions' menu.
     >>> pofile = factory.makePOFile("pt_BR", potemplate=pot_main)
     >>> logout()
 
-When the translation focus is not set, Launchpad suggests the 
+When the translation focus is not set, Launchpad suggests the
 development focus as the current series to be translated.
 It needs to be translatable.
 
