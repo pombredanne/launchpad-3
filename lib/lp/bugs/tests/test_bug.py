@@ -79,7 +79,4 @@ class TestBug(TestCaseWithFactory):
             product=product, subscriber=person, subscribed_by=person)
         StructuralSubscription(
             product=product, subscriber=team, subscribed_by=member)
-        self.assertEqual(
-            set([person, team]),
-            set(bug.getAlsoNotifiedSubscribers()))
-
+        self.assertTrue(team in bug.getAlsoNotifiedSubscribers())
