@@ -99,36 +99,15 @@ class ForkedProcessTransport(process.BaseProcess):
     #       override stuff like __init__ and reapProcess which I don't want to
     #       do in the same way. (Is it ok not to call your Base classes
     #       __init__ if you don't want to do that exact work?)
-    # [Decision #c]
-    #   BZR_EMAIL
 
-    # TODO: process._BaseProcess implements 'reapProcess' as an ability. Which
-    #       then tries to 'os.waitpid()' on the given file handle. Testing
-    #       shows that calling waitpid() on a pid that isn't a *direct* child
-    #       fails. (Even if it is a grandchild). So we intentionally do not
-    #       implement it. However the forking service reaps its own zombie
-    #       children, so we should be ok.
-    # TODO: It looks like we want to be able to pass along at least BZR_EMAIL
-    #       to the fork request
     def __init__(self, reactor, executable, args, environment, proto):
         process.BaseProcess.__init__(self, proto)
+        # Map from standard file descriptor to the associated pipe
         self.pipes = {}
         pid, path, sock = self._spawn(executable, args, environment)
         self._fifo_path = path
         self.pid = pid
-        # TODO: We nee to set up a Reader on this socket, so that we know when
-        #       the process has actually closed. The possible actions are:
-        #       a) sock closes (say master process has exited), in which case
-        #          we probably treat this as a 'process has exited' flag
-        #       b) we get data, which if it conforms to our expectations means
-        #          the process *has* exited. We probably need to be aware of
-        #          whether we get the expected 'fifo has closed' on the other
-        #          file descriptors
-        #       Either way, when stuff happens on the socket, we should be
-        #       prepared to call self.processEnded(), though I'm a bit confused
-        #       with processEnded, maybeCallProcessEnded and processExited...
         self.process_sock = sock
-        # Map from standard file descriptor to the associated pipe
         self._fifo_path = path
         self._connectSpawnToReactor(reactor)
         if self.proto is not None:
@@ -180,11 +159,16 @@ class ForkedProcessTransport(process.BaseProcess):
         message.append('end\n')
         message = ''.join(message)
         response, sock = self._sendMessageToService(message)
+        if response.startswith('FAILURE'):
+            # TODO: Is there a better error to raise?
+            raise RuntimeError("Failed while sending message to forking "
+                "service. message: %r, failure: %r"
+                % (message, response))
         ok, pid, path, tail = response.split('\n')
         assert ok == 'ok'
         assert tail == ''
         pid = int(pid)
-        # TODO: Log this information
+        log.msg('Forking returned pid: %d, path: %s' % (pid, path))
         return pid, path, sock
 
     def _connectSpawnToReactor(self, reactor):
@@ -194,11 +178,12 @@ class ForkedProcessTransport(process.BaseProcess):
         child_stdin_fd = os.open(stdin_path, os.O_WRONLY)
         self.pipes[0] = process.ProcessWriter(reactor, self, 0, child_stdin_fd)
         child_stdout_fd = os.open(stdout_path, os.O_RDONLY)
-        # TODO: forceReadHack=True ? Used in process.py
+        # forceReadHack=True ? Used in process.py doesn't seem to be needed here
         self.pipes[1] = process.ProcessReader(reactor, self, 1, child_stdout_fd)
         child_stderr_fd = os.open(stderr_path, os.O_RDONLY)
         self.pipes[2] = process.ProcessReader(reactor, self, 2, child_stderr_fd)
-        # TODO: gc cycle, _exiter points to self, and we point to _exiter
+        # Note: _exiter forms a GC cycle, since it points to us, and we hold a
+        #       reference to it
         self._exiter = _WaitForExit(reactor, self, self.process_sock)
         self.pipes['exit'] = self._exiter
 
@@ -333,11 +318,6 @@ class ExecOnlySession(DoNothingSession):
         :param command: A whitespace-separated command line. The first token is
         used as the name of the executable, the rest are used as arguments.
         """
-        # XXX: What do do with the protocol argument? It implements
-        #      IProcessProtocol, which is how the process gets spawned, but we
-        #      are intentionally overriding that. Are we supposed to be
-        #      implementing a custom IProcessProtocol, and
-        #      installing/registering that higher up?
         try:
             executable, arguments = self.getCommandToRun(command)
         except ForbiddenCommand, e:
