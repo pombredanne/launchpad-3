@@ -6,6 +6,8 @@ from __future__ import with_statement
 __metaclass__ = type
 
 from canonical.testing import DatabaseFunctionalLayer
+from lp.registry.interfaces.person import PersonVisibility
+from lp.registry.model.structuralsubscription import StructuralSubscription
 from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
@@ -64,4 +66,20 @@ class TestBug(TestCaseWithFactory):
         self.assertEqual(
             set([person, team1, team2]),
             set(real_bug.getSubscribersForPerson(person)))
+
+    def test_get_also_notified_subscribers_with_private_team(self):
+        # Getting subscribers should not OOPS with a private team.
+        product = self.factory.makeProduct()
+        bug = self.factory.makeBug(product=product)
+        person = self.factory.makePerson()
+        member = self.factory.makePerson()
+        team = self.factory.makeTeam(
+            owner=member, visibility=PersonVisibility.PRIVATE)
+        StructuralSubscription(
+            product=product, subscriber=person, subscribed_by=person)
+        StructuralSubscription(
+            product=product, subscriber=team, subscribed_by=member)
+        self.assertEqual(
+            set([person, team]),
+            set(bug.getAlsoNotifiedSubscribers()))
 
