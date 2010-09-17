@@ -829,6 +829,7 @@ class BranchMergeProposal(SQLBase):
         entries.sort(key=attrgetter('date_created'))
         ranges = []
         old_revision = None
+        cur_revision = None
         for entry in entries:
             if IRevision.providedBy(entry):
                 cur_revision = entry
