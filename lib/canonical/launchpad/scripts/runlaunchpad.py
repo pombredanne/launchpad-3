@@ -181,11 +181,23 @@ class ForkingSessionService(Service):
 
     # TODO: The SFTP (and bzr+ssh) server depends fairly heavily on this
     #       service. It would seem reasonable to make one always start if the
-    #       other one is started.
+    #       other one is started. Though this might be a way to "FeatureFlag"
+    #       whether this is active or not.
 
     @property
     def should_launch(self):
-        return config['codehosting'].launch
+        # We tie this directly into the SFTP service. If one should launch,
+        # then both of them should
+        return (config.codehosting.launch and
+                config.codehosting.use_forking_daemon)
+
+    @property
+    def logfile(self):
+        """Return the log file to use.
+
+        Default to the value of the configuration key logfile.
+        """
+        return config.codehosting.forker_logfile
 
     def launch(self):
         # Following the logic in TacFile. Specifically, if you configure sftp
@@ -193,18 +205,22 @@ class ForkingSessionService(Service):
         # service.
         if not self.should_launch:
             return
-        # What should we do for logfile? For now we just use the regular bzr
-        # log file... not optimal
         from lp.codehosting import get_bzr_path
         # TODO: Configs for the port to serve on, etc.
         command = [config.root + '/bin/py', get_bzr_path(),
                    'launchpad-forking-service']
         env = dict(os.environ)
         env['BZR_PLUGIN_PATH'] = config.root + '/bzrplugins'
-        # env['BZR_LOG'] = ? probably config.something
+        logfile = self.logfile
+        if logfile == '-':
+            # This process uses a different logging infrastructure from the
+            # rest of the Launchpad code. As such, it cannot trivially use '-'
+            # as the logfile. So we just ignore this setting.
+            pass
+        else:
+            env['BZR_LOG'] = logfile
         process = subprocess.Popen(command, env=env, stdin=subprocess.PIPE)
         process.stdin.close()
-        # TODO: Allow for a cleaner shutdown than just sending SIGTERM
         stop_at_exit(process)
 
 

@@ -348,28 +348,12 @@ class ExecOnlySession(DoNothingSession):
         # violation. Apart from this line and its twin, this class knows
         # nothing about Bazaar.
         notify(BazaarSSHStarted(self.avatar))
-        # XXX: This is the point where we should have a feature-flag to decide
-        #       whether to use the new code or not.
-        #       The feature code is in lib/lp/services/features/* Something
-        #       like:
-        #           lp.services.features.getFeatureFlag('ssh.forking.enabled')
-        #       However, you need a FeatureController which defines the scope,
-        #       which is arguably a per-request scope. So we need to figure out
-        #       how to enable that. (The app servers define a per-thread
-        #       (per-request) controller.)
-        #       If we had a different controller per request, we could arguably
-        #       have different functionally per-user. Which would be a neat way
-        #       of enabling this for some developers,but-not-all.
-        if executable == 'bzr': # Endswith?
-            env = {}
-            for env_var in ['BZR_EMAIL']:
-                if env_var in self.environment:
-                    env[env_var] = self.environment[env_var]
-            self._transport = ForkedProcessTransport(self.reactor, executable,
-                arguments, env, protocol)
-        else:
-            self._transport = self.reactor.spawnProcess(
-                protocol, executable, arguments, env=self.environment)
+        self._transport = self._spawn(protocol, executable, arguments,
+                                      env=self.environment)
+
+    def _spawn(self, protocol, executable, arguments, env):
+        return self.reactor.spawnProcess(protocol, executable, arguments,
+                                         env=env)
 
     def getCommandToRun(self, command):
         """Return the command that will actually be run given `command`.
@@ -421,19 +405,52 @@ class RestrictedExecOnlySession(ExecOnlySession):
             % {'user_id': self.avatar.user_id})
 
 
+class ForkingRestrictedExecOnlySession(RestrictedExecOnlySession):
+    """Use the Forking Service instead of spawnProcess."""
+
+    def _simplifyEnvironment(self, env):
+        """Pull out the bits of the environment we want to pass along."""
+        env = {}
+        for env_var in ['BZR_EMAIL']:
+            if env_var in self.environment:
+                env[env_var] = self.environment[env_var]
+        return env
+
+    def getCommandToFork(self, executable, arguments, env):
+        assert executable.endswith('/bin/py')
+        assert arguments[0] == executable
+        assert arguments[1].endswith('/bzr')
+        executable = 'bzr'
+        arguments = arguments[1:]
+        arguments[0] = 'bzr'
+        env = self._simplifyEnvironment(env)
+        return executable, arguments, env
+
+    def _spawn(self, protocol, executable, arguments, env):
+        # When spawning, adapt the idea of "bin/py .../bzr" to just using "bzr"
+        # and the executable
+        executable, arguments, env = self.getCommandToFork(executable,
+                                                           arguments, env)
+        return ForkedProcessTransport(self.reactor, executable,
+                                      arguments, env, protocol)
+
+
 def launch_smart_server(avatar):
     from twisted.internet import reactor
 
-    command = (
-        "bzr lp-serve --inet %(user_id)s"
-        )
+    python_command = "%(root)s/bin/py %(bzr)s" % {
+            'root': config.root, 'bzr': get_bzr_path()
+            }
+    args = " lp-serve --inet %(user_id)s"
+    command = python_command + args
+    forking_command = "bzr" + args
 
     environment = dict(os.environ)
 
     # Extract the hostname from the supermirror root config.
     hostname = urlparse.urlparse(config.codehosting.supermirror_root)[1]
     environment['BZR_EMAIL'] = '%s@%s' % (avatar.username, hostname)
-    return RestrictedExecOnlySession(
+    return ForkingRestrictedExecOnlySession(
         avatar,
         reactor,
         'bzr serve --inet --directory=/ --allow-writes',
