@@ -296,6 +296,12 @@ class LPForkingService(object):
     #       way to know if we need to read more content from the socket.
     #       Also, if we go for structured data, then we should structure all of
     #       the requests.
+    # [Decision #9]
+    #   nicer errors to clients
+    #       This service is meant to be run only on the local system. As such,
+    #       we don't try to be extra defensive about leaking information to
+    #       clients. Instead we try to be helpful, and tell them as much as we
+    #       know about what went wrong.
 
     DEFAULT_HOST = '127.0.0.1' # See [Decision #1]
     DEFAULT_PORT = 4156
@@ -390,7 +396,8 @@ class LPForkingService(object):
         stdout_path = os.path.join(base_path, 'stdout')
         stderr_path = os.path.join(base_path, 'stderr')
         # Opening for writing blocks (or fails), so do those last
-        # TODO: Consider buffering...
+        # TODO: Consider buffering, though that might interfere with reading
+        #       and writing the smart protocol
         stdin_fid = os.open(stdin_path, os.O_RDONLY)
         stdout_fid = os.open(stdout_path, os.O_WRONLY)
         stderr_fid = os.open(stderr_path, os.O_WRONLY)
@@ -533,8 +540,7 @@ class LPForkingService(object):
                 # Stop talking to others, we are shutting down
                 self._server_socket.close()
         except KeyboardInterrupt:
-            # From this point, we interpret a single ^C as a request to
-            # shutdown nicely.
+            # SIGINT received, try to shutdown cleanly
             pass
         trace.note('Shutting down. Waiting up to %.0fs for %d child processes'
                    % (self.WAIT_FOR_CHILDREN_TIMEOUT,
@@ -547,13 +553,10 @@ class LPForkingService(object):
             try:
                 conn, client_addr = self._server_socket.accept()
             except self._socket_timeout:
-                # Check on the children, etc.
-                pass
+                pass # run shutdown and children checks
             except self._socket_error, e:
                 if e.args[0] == errno.EINTR:
-                    # EINTR just means we got a signal like SIGCHLD, poll and
-                    # try again
-                    pass
+                    pass # run shutdown and children checks
                 elif e.args[0] != errno.EBADF:
                     # We can get EBADF here while we are shutting down
                     # So we just ignore it for now
@@ -620,9 +623,6 @@ class LPForkingService(object):
         One interesting hook here would be to track memory consumption, etc.
         """
         to_remove = []
-        # TODO: I think we can change this to a simple 'while True: (c_pid,
-        # status) = os.wait() if c_pid == 0: break. But that needs some
-        # testing.
         while self._child_processes:
             try:
                 c_id, exit_code, rusage = os.wait3(os.WNOHANG)
@@ -697,8 +697,6 @@ class LPForkingService(object):
 
     def _parse_fork_request(self, conn, client_addr, request):
         if request.startswith('fork-env '):
-            # TODO: How do we make this not block indefinitely on a malformed
-            #       request?
             while not request.endswith('end\n'):
                 request += osutils.read_bytes_from_socket(conn)
             command, env = request[9:].split('\n', 1)
@@ -749,9 +747,7 @@ class LPForkingService(object):
                 return
         else:
             self.log(client_addr, 'FAILURE: unknown request: %r' % (request,))
-            # TODO: Do we want to be friendly here? Or do we want to just
-            #       ignore the request? This is meant to be a local-only
-            #       process, so we probably want to be helpful
+            # See [Decision #9]
             conn.sendall('FAILURE\nunknown request: %r\n' % (request,))
         conn.close()
 
