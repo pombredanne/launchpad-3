@@ -29,7 +29,6 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.menu import structured
 from canonical.widgets.textwidgets import URIWidget
-from lp.bugs.browser.bugcomment import should_display_remote_comments
 from lp.bugs.browser.bugtask import get_comments_for_bugtask
 from lp.bugs.interfaces.bugwatch import (
     BUG_WATCH_ACTIVITY_SUCCESS_STATUSES,
@@ -65,8 +64,6 @@ class BugWatchView(LaunchpadView):
         team, no comments will be returned.
         """
         user = getUtility(ILaunchBag).user
-        if not should_display_remote_comments(user):
-            return []
 
         bug_comments = get_comments_for_bugtask(self.context.bug.bugtasks[0],
             truncate=True)

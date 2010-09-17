@@ -12,7 +12,6 @@ __all__ = [
     'BugCommentXHTMLRepresentation',
     'BugCommentBreadcrumb',
     'build_comments_from_chunks',
-    'should_display_remote_comments',
     ]
 
 from datetime import (
@@ -48,29 +47,8 @@ from lp.bugs.interfaces.bugmessage import (
 from lp.registry.interfaces.person import IPersonSet
 
 
-def should_display_remote_comments(user):
-    """Return whether remote comments should be displayed for the user."""
-    # comment_syncing_team can be either None or '' to indicate unset.
-    if config.malone.comment_syncing_team:
-        comment_syncing_team = getUtility(IPersonSet).getByName(
-            config.malone.comment_syncing_team)
-        assert comment_syncing_team is not None, (
-            "comment_syncing_team was set to %s, which doesn't exist." % (
-                config.malone.comment_syncing_team))
-    else:
-        comment_syncing_team = None
-
-    if comment_syncing_team is None:
-        return True
-    else:
-        return user is not None and user.inTeam(comment_syncing_team)
-
-
 def build_comments_from_chunks(chunks, bugtask, truncate=False):
     """Build BugComments from MessageChunks."""
-    display_if_from_bugwatch = should_display_remote_comments(
-        getUtility(ILaunchBag).user)
-
     comments = {}
     index = 0
     for chunk in chunks:
@@ -78,7 +56,7 @@ def build_comments_from_chunks(chunks, bugtask, truncate=False):
         bug_comment = comments.get(message_id)
         if bug_comment is None:
             bug_comment = BugComment(
-                index, chunk.message, bugtask, display_if_from_bugwatch)
+                index, chunk.message, bugtask)
             comments[message_id] = bug_comment
             index += 1
         bug_comment.chunks.append(chunk)
@@ -122,8 +100,7 @@ class BugComment:
     """
     implements(IBugComment)
 
-    def __init__(self, index, message, bugtask, display_if_from_bugwatch,
-                 activity=None):
+    def __init__(self, index, message, bugtask, activity=None):
         self.index = index
         self.bugtask = bugtask
         self.bugwatch = None
@@ -133,7 +110,6 @@ class BugComment:
         self.datecreated = message.datecreated
         self.owner = message.owner
         self.rfc822msgid = message.rfc822msgid
-        self.display_if_from_bugwatch = display_if_from_bugwatch
 
         self.chunks = []
         self.bugattachments = []
@@ -149,10 +125,7 @@ class BugComment:
     @property
     def can_be_shown(self):
         """Return whether or not the BugComment can be shown."""
-        if self.bugwatch and not self.display_if_from_bugwatch:
-            return False
-        else:
-            return True
+        return True
 
     @property
     def show_for_admin(self):
