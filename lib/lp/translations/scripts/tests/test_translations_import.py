@@ -11,7 +11,6 @@ from canonical.launchpad.webapp import errorlog
 from canonical.testing.layers import LaunchpadScriptLayer
 from lp.services.mail import stub
 from lp.testing import TestCaseWithFactory
-from lp.testing.fakelibrarian import FakeLibrarian
 from lp.testing.fakemethod import FakeMethod
 from lp.translations.interfaces.translationimportqueue import (
     RosettaImportStatus,
@@ -53,8 +52,6 @@ class TestTranslationsImport(TestCaseWithFactory):
 
     def _makeApprovedEntry(self, uploader):
         """Produce an approved queue entry."""
-        fake_librarian = self.installFixture(FakeLibrarian())
-
         path = '%s.pot' % self.factory.getUniqueString()
         series = self.factory.makeProductSeries()
         template = self.factory.makePOTemplate(series)
@@ -62,8 +59,6 @@ class TestTranslationsImport(TestCaseWithFactory):
             path, uploader=uploader, potemplate=template,
             productseries=template.productseries)
         entry.status = RosettaImportStatus.APPROVED
-
-        fake_librarian.pretendCommit()
         return entry
 
     def _getEmailRecipients(self):
