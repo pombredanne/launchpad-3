@@ -37,7 +37,7 @@ from canonical.lp import initZopeless
 
 
 LOCK_PATH = "/var/lock/"
-UTC = pytz.timezone('UTC')
+UTC = pytz.UTC
 
 
 class LaunchpadScriptFailure(Exception):
