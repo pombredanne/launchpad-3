@@ -25,7 +25,7 @@
       </strong>
       <ul>
         <li>
-          <a tal:replace="structure context/menu:overview/configure_translations/fmt:link"/>
+          <!--<a tal:replace="structure context/menu:overview/configure_translations/fmt:link"/>-->
         </li>
         <li>
           <a href="/+help/getting-started-for-your-project.html" target="help"
@@ -33,10 +33,10 @@
         </li>
       </ul>
     </div>
-    <div id="ubuntu-translations" tal:condition="view/context/ubuntu-translations" />
+    <div id="ubuntu-translations">
       <!-- Branches/ubuntu packages here. -->
     </div>
-    <div id="automatic-imports" tal:condition="view/context/auto-imports" />
+    <div id="automatic-imports">
       <!-- Auto imports here -->
     </div>
 
