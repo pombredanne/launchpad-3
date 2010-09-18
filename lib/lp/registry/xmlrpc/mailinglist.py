@@ -21,17 +21,15 @@ from canonical.launchpad.interfaces.emailaddress import (
     EmailAddressStatus,
     IEmailAddressSet,
     )
-from canonical.launchpad.interfaces.message import (
-    IMessageSet,
-    PostedMessageStatus,
-    )
+from canonical.launchpad.interfaces.message import IMessageSet
 from canonical.launchpad.webapp import LaunchpadXMLRPCView
 from canonical.launchpad.xmlrpc import faults
-from lp.registry.interfaces.mailinglists import (
+from lp.registry.interfaces.mailinglist import (
     IMailingListAPIView,
     IMailingListSet,
     IMessageApprovalSet,
     MailingListStatus,
+    PostedMessageStatus,
     )
 from lp.registry.interfaces.person import (
     IPersonSet,
@@ -227,6 +225,7 @@ class MailingListAPIView(LaunchpadXMLRPCView):
             return False
         email_address = getUtility(IEmailAddressSet).getByEmail(address)
         return (email_address is not None and
+                email_address.personID is not None and
                 email_address.status in (EmailAddressStatus.VALIDATED,
                                          EmailAddressStatus.PREFERRED))
 

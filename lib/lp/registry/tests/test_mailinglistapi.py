@@ -7,16 +7,9 @@ __metaclass__ = type
 __all__ = []
 
 
-import unittest
-
 import transaction
 
-from canonical.launchpad.ftests import (
-    ANONYMOUS,
-    login,
-    login_person,
-    logout,
-    )
+from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
 from canonical.testing import LaunchpadFunctionalLayer
 from lp.registry.tests.mailinglists_helper import new_team
 from lp.registry.xmlrpc.mailinglist import (
@@ -24,24 +17,32 @@ from lp.registry.xmlrpc.mailinglist import (
     ENABLED,
     MailingListAPIView,
     )
-from lp.testing.factory import LaunchpadObjectFactory
+from lp.testing import (
+    ANONYMOUS,
+    login,
+    login_person,
+    logout,
+    TestCaseWithFactory,
+    )
 
 
-class MailingListAPITestCase(unittest.TestCase):
+class MailingListAPITestCase(TestCaseWithFactory):
     """Tests for MailingListAPIView."""
 
     layer = LaunchpadFunctionalLayer
 
     def setUp(self):
         """Create a team with a list and subscribe self.member to it."""
+        super(MailingListAPITestCase, self).setUp()
         login('foo.bar@canonical.com')
         self.team, self.mailing_list = new_team('team-a', with_list=True)
-        self.member = LaunchpadObjectFactory().makePersonByName('Bob')
+        self.member = self.factory.makePersonByName('Bob')
         self.member.join(self.team)
         self.mailing_list.subscribe(self.member)
         self.api = MailingListAPIView(None, None)
 
     def tearDown(self):
+        super(MailingListAPITestCase, self).tearDown()
         logout()
 
     def _assertMembership(self, expected):
@@ -67,6 +68,18 @@ class MailingListAPITestCase(unittest.TestCase):
             ('no-priv@canonical.com', u'No Privileges Person', 0, BYUSER),
             ])
 
+    def test_isRegisteredInLaunchpad_person_with_preferred_email(self):
+        self.factory.makePerson(email='me@fndor.dom')
+        self.assertTrue(self.api.isRegisteredInLaunchpad('me@fndor.dom'))
 
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
+    def test_isRegisteredInLaunchpad_email_without_preferred_email(self):
+        self.factory.makePerson(
+            email='me@fndor.dom', email_address_status=EmailAddressStatus.NEW)
+        self.assertFalse(self.api.isRegisteredInLaunchpad('me@fndor.dom'))
+
+    def test_isRegisteredInLaunchpad_email_no_email_address(self):
+        self.assertFalse(self.api.isRegisteredInLaunchpad('me@fndor.dom'))
+
+    def test_isRegisteredInLaunchpad_email_without_person(self):
+        self.factory.makeAccount('Me', email='me@fndor.dom')
+        self.assertFalse(self.api.isRegisteredInLaunchpad('me@fndor.dom'))
