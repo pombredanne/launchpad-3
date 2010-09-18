@@ -760,7 +760,8 @@ class ArchiveSourcePackageListViewBase(ArchiveViewBase, LaunchpadFormView):
         requested_name_filter = self.request.query_string_params.get(
             'field.name_filter')
 
-        if requested_name_filter is not None:
+        if (requested_name_filter is not None and
+            len(requested_name_filter[0]) > 0):
             return requested_name_filter[0]
         else:
             return None
