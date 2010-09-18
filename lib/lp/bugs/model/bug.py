@@ -69,6 +69,7 @@ from zope.interface import (
     implements,
     providedBy,
     )
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
@@ -865,9 +866,11 @@ class Bug(SQLBase):
         # Direct subscriptions always take precedence over indirect
         # subscriptions.
         direct_subscribers = set(self.getDirectSubscribers())
+        # Remove security proxy for the sort key, but return
+        # the regular proxied object.
         return sorted(
             (also_notified_subscribers - direct_subscribers),
-            key=operator.attrgetter('displayname'))
+            key=lambda x: removeSecurityProxy(x).displayname)
 
     def getBugNotificationRecipients(self, duplicateof=None, old_bug=None,
                                      level=None,
