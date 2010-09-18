@@ -44,7 +44,7 @@ def mailingListXMLRPCInternalSetUp(test):
     # architecture.  Don't use ServerProxy.  We do this because it's easier to
     # debug because when things go horribly wrong, you see the errors on
     # stdout instead of in an OOPS report living in some log file somewhere.
-    from canonical.launchpad.xmlrpc import MailingListAPIView
+    from lp.registry.xmlrpc.mailinglist import MailingListAPIView
     class ImpedenceMatchingView(MailingListAPIView):
         @mailinglists_helper.fault_catcher
         def getPendingActions(self):

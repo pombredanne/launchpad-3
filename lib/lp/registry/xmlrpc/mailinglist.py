@@ -24,14 +24,16 @@ from canonical.launchpad.interfaces import (
     IMailingListSet,
     IMessageApprovalSet,
     IMessageSet,
-    IPersonSet,
     MailingListStatus,
     PersonalStanding,
     PostedMessageStatus,
     )
 from canonical.launchpad.webapp import LaunchpadXMLRPCView
 from canonical.launchpad.xmlrpc import faults
-from lp.registry.interfaces.person import PersonVisibility
+from lp.registry.interfaces.person import (
+    IPersonSet,
+    PersonVisibility,
+    )
 
 # Not all developers will have built the Mailman instance (via
 # 'make mailman_instance').  In that case, this import will fail, but in that

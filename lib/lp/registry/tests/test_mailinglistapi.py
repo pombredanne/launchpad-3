@@ -17,13 +17,13 @@ from canonical.launchpad.ftests import (
     login_person,
     logout,
     )
-from canonical.launchpad.xmlrpc.mailinglist import (
+from canonical.testing import LaunchpadFunctionalLayer
+from lp.registry.tests.mailinglists_helper import new_team
+from lp.registry.xmlrpc.mailinglist import (
     BYUSER,
     ENABLED,
     MailingListAPIView,
     )
-from canonical.testing import LaunchpadFunctionalLayer
-from lp.registry.tests.mailinglists_helper import new_team
 from lp.testing.factory import LaunchpadObjectFactory
 
 
