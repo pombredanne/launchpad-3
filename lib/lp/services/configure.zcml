@@ -6,8 +6,11 @@
   <adapter factory=".propertycache.get_default_cache"/>
   <adapter factory=".propertycache.PropertyCacheManager"/>
   <adapter factory=".propertycache.DefaultPropertyCacheManager"/>
+  <include package=".comments" />
   <include package=".database" />
   <include package=".features" />
+  <include package=".fields" />
+  <include package=".geoip" />
   <include package=".inlinehelp" file="meta.zcml" />
   <include package=".job" />
   <include package=".memcache" />

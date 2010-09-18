@@ -74,14 +74,16 @@ from lp.archiveuploader.uploadpolicy import (
     SOURCE_PACKAGE_RECIPE_UPLOAD_POLICY_NAME,
     UploadPolicyError,
     )
-from lp.buildmaster.enums import BuildStatus
+from lp.buildmaster.enums import (
+    BuildStatus,
+    )
+from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSet
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.soyuz.interfaces.archive import (
     IArchiveSet,
     NoSuchPPA,
     )
-from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 
 
 __all__ = [
@@ -104,11 +106,11 @@ def parse_build_upload_leaf_name(name):
     """Parse the leaf directory name of a build upload.
 
     :param name: Directory name.
-    :return: Tuple with build id and build queue record id.
+    :return: Tuple with build farm job id.
     """
-    (build_id_str, queue_record_str) = name.split("-", 1)
+    (job_id_str,) = name.split("-")[-1:]
     try:
-        return int(build_id_str), int(queue_record_str)
+        return int(job_id_str)
     except TypeError:
         raise ValueError
 
@@ -191,7 +193,7 @@ class UploadProcessor:
                     continue
                 if self.builds:
                     # Upload directories contain build results,
-                    # directories are named after build ids.
+                    # directories are named after job ids.
                     self.processBuildUpload(fsroot, upload)
                 else:
                     self.processUpload(fsroot, upload)
@@ -206,13 +208,24 @@ class UploadProcessor:
         Build uploads always contain a single package per leaf.
         """
         try:
-            (build_id, build_queue_record_id) = parse_build_upload_leaf_name(
-                upload)
+            job_id = parse_build_upload_leaf_name(upload)
         except ValueError:
             self.log.warn("Unable to extract build id from leaf name %s,"
                 " skipping." % upload)
             return
-        build = getUtility(IBinaryPackageBuildSet).getByBuildID(int(build_id))
+        try:
+            buildfarm_job = getUtility(IBuildFarmJobSet).getByID(job_id)
+        except NotFoundError:
+            self.log.warn(
+                "Unable to find package build job with id %d. Skipping." %
+                job_id)
+            return
+        build = buildfarm_job.getSpecificJob()
+        if build.status != BuildStatus.UPLOADING:
+            self.log.warn(
+                "Expected build status to be 'UPLOADING', was %s. Skipping.",
+                build.status.name)
+            return
         self.log.debug("Build %s found" % build.id)
         logger = BufferLogger()
         upload_path = os.path.join(fsroot, upload)
@@ -245,6 +258,9 @@ class UploadProcessor:
             build.date_finished = datetime.datetime.now(pytz.UTC)
             build.notify(extra_info="Uploading build %s failed." % upload)
         build.storeUploadLog(logger.buffer.getvalue())
+
+        # Remove BuildQueue record.
+        build.buildqueue_record.destroySelf()
 
     def processUpload(self, fsroot, upload):
         """Process an upload's changes files, and move it to a new directory.

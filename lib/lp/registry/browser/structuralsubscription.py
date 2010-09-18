@@ -172,6 +172,10 @@ class StructuralSubscriptionView(LaunchpadFormView):
         """Return True, if the current user is subscribed."""
         return self.isSubscribed(self.user)
 
+    def userCanAlter(self):
+        if self.context.userCanAlterBugSubscription(self.user, self.user):
+            return True
+
     @action(u'Save these changes', name='save')
     def save_action(self, action, data):
         """Process the subscriptions submitted by the user."""
