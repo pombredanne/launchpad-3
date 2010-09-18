@@ -17,9 +17,12 @@ __all__ = [
 from testtools.content import Content
 from testtools.content_type import UTF8_TEXT
 from testtools.matchers import (
+    Equals,
     Matcher,
     Mismatch,
+    MismatchesAll,
     )
+from testtools import matchers
 from zope.interface.exceptions import (
     BrokenImplementation,
     BrokenMethodImplementation,
@@ -30,6 +33,8 @@ from zope.security.proxy import (
     builtin_isinstance,
     Proxy,
     )
+
+from canonical.launchpad.webapp.batching import BatchNavigator
 
 
 class DoesNotProvide(Mismatch):
@@ -220,3 +225,44 @@ class StartsWith(Matcher):
         if not matchee.startswith(self.expected):
             return DoesNotStartWith(matchee, self.expected)
         return None
+
+
+class IsConfiguredBatchNavigator(Matcher):
+    """Check that an object is a batch navigator."""
+
+    def __init__(self, singular, plural, batch_size=None):
+        """Create a ConfiguredBatchNavigator.
+
+        :param singular: The singular header the batch should be using.
+        :param plural: The plural header the batch should be using.
+        """
+        self._single = Equals(singular)
+        self._plural = Equals(plural)
+        self._batch = None
+        if batch_size:
+            self._batch = Equals(batch_size)
+        self.matchers = dict(
+            _singular_heading=self._single, _plural_heading=self._plural)
+        if self._batch:
+            self.matchers['default_size'] = self._batch
+
+    def __str__(self):
+        if self._batch:
+            batch = ", %r" % self._batch.expected
+        else:
+            batch = ''
+        return "ConfiguredBatchNavigator(%r, %r%s)" % (
+            self._single.expected, self._plural.expected, batch)
+
+    def match(self, matchee):
+        if not isinstance(matchee, BatchNavigator):
+            # Testtools doesn't have an IsInstanceMismatch yet.
+            return matchers._BinaryMismatch(
+                BatchNavigator, 'isinstance', matchee)
+        mismatches = []
+        for attrname, matcher in self.matchers.items():
+            mismatches.append(matcher.match(getattr(matchee, attrname)))
+            if not mismatches[-1]:
+                mismatches.pop(-1)
+        if mismatches:
+            return MismatchesAll(mismatches)

@@ -3,7 +3,6 @@
 
 __metaclass__ = type
 
-from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.testing.pages import find_tag_by_id
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.blueprints.interfaces.specificationtarget import (
@@ -15,6 +14,7 @@ from lp.testing import (
     login_person,
     TestCaseWithFactory,
     )
+from lp.testing.matchers import IsConfiguredBatchNavigator
 from lp.testing.views import (
     create_view,
     create_initialized_view,
@@ -95,22 +95,11 @@ class TestHasSpecificationsView(TestCaseWithFactory):
         # subclass.
         person = self.factory.makePerson()
         view = create_initialized_view(person, name='+assignments')
-        self.assertIsInstance(view.specs_batched, BatchNavigator)
-
-    def test_batch_headings(self):
-        person = self.factory.makePerson()
-        view = create_initialized_view(person, name='+assignments')
-        navigator = view.specs_batched
-        self.assertEqual('specification', navigator._singular_heading)
-        self.assertEqual('specifications', navigator._plural_heading)
-
-    def test_batch_size(self):
         # Because +assignments is meant to provide an overview, we default to
         # 500 as the default batch size.
-        person = self.factory.makePerson()
-        view = create_initialized_view(person, name='+assignments')
-        navigator = view.specs_batched
-        self.assertEqual(500, view.specs_batched.default_size)
+        matcher = IsConfiguredBatchNavigator(
+            'specification', 'specifications', batch_size=500)
+        self.assertThat(view.specs_batched, matcher)
 
 
 class TestAssignments(TestCaseWithFactory):
