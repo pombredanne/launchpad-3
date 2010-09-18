@@ -1109,6 +1109,11 @@ class Archive(SQLBase):
         elif self.is_ppa:
             if pocket != PackagePublishingPocket.RELEASE:
                 return InvalidPocketForPPA()
+        elif self.is_copy:
+            # Any pocket is allowed for COPY archives, otherwise it can
+            # make the buildd-manager throw exceptions when dispatching
+            # existing builds after a series is released.
+            return
         else:
             # Uploads to the partner archive are allowed in any distroseries
             # state.
