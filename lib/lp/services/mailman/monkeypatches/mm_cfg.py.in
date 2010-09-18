@@ -17,7 +17,7 @@ import _pythonpath
 
 # Pick up Launchpad static overrides.  This will also pick up the standard
 # Mailman.Defaults.* variables.
-from canonical.launchpad.mailman.monkeypatches.defaults import *
+from lp.services.mailman.monkeypatches.defaults import *
 
 # Our dynamic overrides of all the static defaults.
 SMTPHOST = '%(smtp_host)s'
