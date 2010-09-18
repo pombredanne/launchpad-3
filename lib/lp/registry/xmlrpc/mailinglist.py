@@ -17,21 +17,25 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.encoding import escape_nonascii_uniquely
-from canonical.launchpad.interfaces import (
+from canonical.launchpad.interfaces.emailaddress import (
     EmailAddressStatus,
     IEmailAddressSet,
-    IMailingListAPIView,
-    IMailingListSet,
-    IMessageApprovalSet,
+    )
+from canonical.launchpad.interfaces.message import (
     IMessageSet,
-    MailingListStatus,
-    PersonalStanding,
     PostedMessageStatus,
     )
 from canonical.launchpad.webapp import LaunchpadXMLRPCView
 from canonical.launchpad.xmlrpc import faults
+from lp.registry.interfaces.mailinglists import (
+    IMailingListAPIView,
+    IMailingListSet,
+    IMessageApprovalSet,
+    MailingListStatus,
+    )
 from lp.registry.interfaces.person import (
     IPersonSet,
+    PersonalStanding,
     PersonVisibility,
     )
 

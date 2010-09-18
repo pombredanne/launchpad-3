@@ -45,21 +45,27 @@ def mailingListXMLRPCInternalSetUp(test):
     # debug because when things go horribly wrong, you see the errors on
     # stdout instead of in an OOPS report living in some log file somewhere.
     from lp.registry.xmlrpc.mailinglist import MailingListAPIView
+
     class ImpedenceMatchingView(MailingListAPIView):
+
         @mailinglists_helper.fault_catcher
         def getPendingActions(self):
             return super(ImpedenceMatchingView, self).getPendingActions()
+
         @mailinglists_helper.fault_catcher
         def reportStatus(self, statuses):
             return super(ImpedenceMatchingView, self).reportStatus(statuses)
+
         @mailinglists_helper.fault_catcher
         def getMembershipInformation(self, teams):
             return super(
                 ImpedenceMatchingView, self).getMembershipInformation(teams)
+
         @mailinglists_helper.fault_catcher
         def isLaunchpadMember(self, address):
             return super(ImpedenceMatchingView, self).isLaunchpadMember(
                 address)
+
         @mailinglists_helper.fault_catcher
         def isTeamPublic(self, team_name):
             return super(ImpedenceMatchingView, self).isTeamPublic(team_name)
@@ -189,7 +195,7 @@ special = {
 
 def test_suite():
     suite = build_test_suite(here, special, layer=DatabaseFunctionalLayer)
-    launchpadlib_path = os.path.join(os.path.pardir,  'doc', 'launchpadlib')
+    launchpadlib_path = os.path.join(os.path.pardir, 'doc', 'launchpadlib')
     lplib_suite = build_doctest_suite(here, launchpadlib_path,
                                       layer=DatabaseFunctionalLayer)
     suite.addTest(lplib_suite)
