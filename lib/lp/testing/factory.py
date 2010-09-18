@@ -632,8 +632,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if not use_default_autosubscribe_policy:
             # Shut off list auto-subscription so that we have direct control
             # over subscriptions in the doctests.
-            person.mailing_list_auto_subscribe_policy = \
-                MailingListAutoSubscribePolicy.NEVER
+            with person_logged_in(person):
+                person.mailing_list_auto_subscribe_policy = (
+                    MailingListAutoSubscribePolicy.NEVER)
         account = IMasterStore(Account).get(Account, person.accountID)
         getUtility(IEmailAddressSet).new(
             alternative_address, person, EmailAddressStatus.VALIDATED,

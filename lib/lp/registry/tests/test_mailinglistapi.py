@@ -3,6 +3,8 @@
 
 """Unit tests for the private MailingList API."""
 
+from __future__ import with_statement
+
 __metaclass__ = type
 __all__ = []
 
@@ -10,7 +12,7 @@ __all__ = []
 import transaction
 
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing import DatabaseFunctionalLayer
 from lp.registry.tests.mailinglists_helper import new_team
 from lp.registry.xmlrpc.mailinglist import (
     BYUSER,
@@ -18,10 +20,7 @@ from lp.registry.xmlrpc.mailinglist import (
     MailingListAPIView,
     )
 from lp.testing import (
-    ANONYMOUS,
-    login,
-    login_person,
-    logout,
+    person_logged_in,
     TestCaseWithFactory,
     )
 
@@ -29,21 +28,17 @@ from lp.testing import (
 class MailingListAPITestCase(TestCaseWithFactory):
     """Tests for MailingListAPIView."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         """Create a team with a list and subscribe self.member to it."""
         super(MailingListAPITestCase, self).setUp()
-        login('foo.bar@canonical.com')
         self.team, self.mailing_list = new_team('team-a', with_list=True)
         self.member = self.factory.makePersonByName('Bob')
-        self.member.join(self.team)
+        with person_logged_in(self.member):
+            self.member.join(self.team)
         self.mailing_list.subscribe(self.member)
         self.api = MailingListAPIView(None, None)
-
-    def tearDown(self):
-        super(MailingListAPITestCase, self).tearDown()
-        logout()
 
     def _assertMembership(self, expected):
         """Assert that the named team has exactly the expected membership."""
@@ -57,10 +52,9 @@ class MailingListAPITestCase(TestCaseWithFactory):
 
     def test_getMembershipInformation_with_hidden_email(self):
         """Verify that hidden email addresses are still reported correctly."""
-        login_person(self.member)
-        self.member.hide_email_addresses = True
+        with person_logged_in(self.member):
+            self.member.hide_email_addresses = True
         # API runs without a logged in user.
-        login(ANONYMOUS)
         self._assertMembership([
             ('archive@mail-archive.dev', '', 0, ENABLED),
             ('bob.person@example.com', 'Bob Person', 0, ENABLED),
