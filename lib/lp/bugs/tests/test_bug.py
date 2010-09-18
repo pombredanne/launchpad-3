@@ -68,7 +68,6 @@ class TestBug(TestCaseWithFactory):
             set(real_bug.getSubscribersForPerson(person)))
 
     def test_get_also_notified_subscribers_with_private_team(self):
-        # Getting subscribers should not OOPS with a private team.
         product = self.factory.makeProduct()
         bug = self.factory.makeBug(product=product)
         person = self.factory.makePerson()
