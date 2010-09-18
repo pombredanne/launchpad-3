@@ -380,6 +380,7 @@ class IBugTracker(Interface):
         :param component_group_name: Name of the component group to retrieve.
         """
 
+
 class IBugTrackerSet(Interface):
     """A set of IBugTracker's.
 
@@ -490,7 +491,6 @@ class IBugTrackerComponent(Interface):
     they affect.  This class provides a mapping of this upstream component
     to the corresponding source package in the distro.
     """
-    #TODO: Is this needed?
     export_as_webservice_entry()
 
     id = Int(title=_('ID'), required=True, readonly=True)
@@ -503,8 +503,7 @@ class IBugTrackerComponent(Interface):
                                    "Launchpad?  If it was, we must retain "
                                    "it across updates of bugtracker data."),
                      readonly=True)
-  
-    # TODO: Should this be BugTrackerNameField(??
+
     name = exported(
         Text(
             title=_('Name'),
@@ -525,7 +524,7 @@ class IBugTrackerComponent(Interface):
 
     @export_write_operation()
     def hide():
-        """Cause this component not to be shown in the Launchpad web interface"""
+        """Do not show this component in the Launchpad web interface"""
 
 
 class IBugTrackerComponentGroup(Interface):
@@ -534,28 +533,21 @@ class IBugTrackerComponentGroup(Interface):
     Some bug trackers organize sets of components into higher level groups,
     such as Bugzilla's 'product'.
     """
-    #TODO: Is this needed?
-    #export_as_webservice_entry()
+    export_as_webservice_entry()
 
     id = Int(title=_('ID'))
 
     name = exported(
         Text(
             title=_('Name'),
-#            constraint=name_validator,
+            constraint=name_validator,
             description=_('The name of the bug tracker product.')))
 
-    # This probably should be a sql multi-join
-    #components = exported(
-    #    List(
-    #        title=_('Components'),
-    #        description=_(
-    #            'A list of components in the remote bug tracker that '
-    #            'are grouped together in this product'),
-    #        required=False))
+    components = exported(
+        Reference(title=_('Components'), schema=Interface))
 
-    #bug_tracker = exported(
-    #    Reference(title=_('BugTracker'), schema=Interface))
+    bug_tracker = exported(
+        Reference(title=_('BugTracker'), schema=Interface))
 
     @operation_parameters(
         component_name=TextLine(
@@ -563,7 +555,7 @@ class IBugTrackerComponentGroup(Interface):
             required=True))
     @export_write_operation()
     def addComponent(component_name):
-       """Adds a component to be tracked as part of this component group"""
+        """Adds a component to be tracked as part of this component group"""
 
 
 class IRemoteBug(Interface):

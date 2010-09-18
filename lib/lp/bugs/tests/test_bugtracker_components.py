@@ -9,17 +9,9 @@ __all__ = []
 
 import unittest
 
-from zope.component import getUtility
-from zope.security.interfaces import Unauthorized
-
 from canonical.launchpad.ftests import login_person
 from canonical.testing import DatabaseFunctionalLayer
 from lp.testing import TestCaseWithFactory
-
-from lp.bugs.interfaces.bugtracker import (
-    IBugTracker,
-    IBugTrackerComponent,
-    IBugTrackerComponentGroup)
 
 
 class TestBugTrackerComponent(TestCaseWithFactory):
@@ -33,7 +25,7 @@ class TestBugTrackerComponent(TestCaseWithFactory):
         login_person(regular_user)
 
         self.bug_tracker = self.factory.makeBugTracker()
-        
+
         self.comp_group = self.factory.makeBugTrackerComponentGroup(
             u'alpha',
             self.bug_tracker)
@@ -79,7 +71,7 @@ class TestBugTrackerComponent(TestCaseWithFactory):
 
     def test_multiple_component_creation(self):
         """Verify several components can be created at once"""
-        
+
         comp_a = self.factory.makeBugTrackerComponent(
             u'example-a', self.comp_group)
         comp_b = self.factory.makeBugTrackerComponent(
@@ -104,7 +96,6 @@ class TestBugTrackerWithComponents(TestCaseWithFactory):
 
         self.bug_tracker = self.factory.makeBugTracker()
 
-
     def test_empty_bugtracker(self):
         """Trivial case of bugtracker with no products or components"""
 
@@ -119,10 +110,12 @@ class TestBugTrackerWithComponents(TestCaseWithFactory):
         self.assertEqual(len(list(comp_groups)), 0)
 
     def test_single_product_bugtracker(self):
-        """Bug tracker with a single (default) product and several components"""
+        """Bug tracker with a single (default) product and several components
+        """
 
         # Add a component group and fill it with some components
-        default_comp_group = self.bug_tracker.addRemoteComponentGroup(u'alpha')
+        default_comp_group = self.bug_tracker.addRemoteComponentGroup(
+            u'alpha')
         default_comp_group.addComponent(u'example-a')
         default_comp_group.addComponent(u'example-b')
         default_comp_group.addComponent(u'example-c')
@@ -141,7 +134,7 @@ class TestBugTrackerWithComponents(TestCaseWithFactory):
         self.assertEqual(len(list(comp_groups)), 1)
 
     def test_multiple_product_bugtracker(self):
-        """Bug tracker with multiple products and varying numbers of components"""
+        """Bug tracker with multiple products and components"""
 
         # Create several component groups with varying numbers of components
         comp_group_i = self.bug_tracker.addRemoteComponentGroup(u'alpha')
@@ -154,7 +147,7 @@ class TestBugTrackerWithComponents(TestCaseWithFactory):
         comp_group_iii.addComponent(u'example-gamma-2')
         comp_group_iii.addComponent(u'example-gamma-3')
 
-        # Re-verify that retrieving a non-existant component group returns nothing
+        # Retrieving a non-existant component group returns nothing
         comp_group = self.bug_tracker.getRemoteComponentGroup(u'non-existant')
         self.assertEqual(comp_group, None)
 
@@ -162,7 +155,7 @@ class TestBugTrackerWithComponents(TestCaseWithFactory):
         comp_group = self.bug_tracker.getRemoteComponentGroup(u'beta')
         self.assertEqual(comp_group, comp_group_ii)
 
-        # Make sure the correct number of component groups are in the bug tracker
+        # Check the correct number of component groups are in the bug tracker
         comp_groups = self.bug_tracker.getAllRemoteComponentGroups()
         self.assertEqual(len(list(comp_groups)), 3)
 
@@ -170,12 +163,13 @@ class TestBugTrackerWithComponents(TestCaseWithFactory):
         """Retrieve a set of components from a given product"""
 
         # Create a component group with some components
-        default_comp_group = self.bug_tracker.addRemoteComponentGroup(u'alpha')
+        default_comp_group = self.bug_tracker.addRemoteComponentGroup(
+            u'alpha')
         default_comp_group.addComponent(u'example-a')
         default_comp_group.addComponent(u'example-b')
         default_comp_group.addComponent(u'example-c')
 
-        # Retrieve the group, and verify it has the correct number of components
+        # Verify group has the correct number of components
         comp_group = self.bug_tracker.getRemoteComponentGroup(u'alpha')
         self.assertEqual(len(list(comp_group.components)), 3)
 
@@ -189,4 +183,3 @@ def test_suite():
     suite.addTest(unittest.TestLoader().loadTestsFromName(__name__))
 
     return suite
-

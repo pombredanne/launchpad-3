@@ -24,7 +24,6 @@ from urllib import (
     )
 
 from storm.base import Storm
-from storm.expr import And
 from storm.locals import (
         Int,
         Reference,
@@ -33,7 +32,6 @@ from storm.locals import (
         )
 from zope.component import getUtility
 from zope.interface import implements
-from zope.security.interfaces import Unauthorized
 
 from lazr.uri import URI
 from pytz import timezone
@@ -54,8 +52,6 @@ from storm.expr import (
     )
 from storm.locals import Bool
 from storm.store import Store
-from zope.component import getUtility
-from zope.interface import implements
 
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
@@ -532,7 +528,7 @@ class BugTracker(SQLBase):
 
     def addRemoteComponentGroup(self, component_group_name):
         """See `IBugTracker`."""
-        
+
         if component_group_name is None:
             component_group_name = "default"
         component_group = BugTrackerComponentGroup()
@@ -564,7 +560,6 @@ class BugTracker(SQLBase):
             BugTrackerComponentGroup,
             name = component_group_name).one()
         return component_group
-
 
 
 class BugTrackerSet:
@@ -665,7 +660,9 @@ class BugTrackerSet:
     def getMostActiveBugTrackers(self, limit=None):
         """See `IBugTrackerSet`."""
         store = IStore(self.table)
-        result = store.find(self.table, self.table.id == BugWatch.bugtrackerID)
+        result = store.find(
+            self.table,
+            self.table.id == BugWatch.bugtrackerID)
         result = result.group_by(self.table)
         result = result.order_by(Desc(Count(BugWatch)))
         if limit is not None:
@@ -794,16 +791,16 @@ class BugTrackerComponentGroup(Storm):
             return Store.of(self).find(
                 BugTrackerComponent,
                 (BugTrackerComponent.name == component_name)).one()
-                                
 
     def addCustomComponent(self, component_name):
-        """Adds a component locally that isn't synced from a remote tracker"""
+        """Adds a component locally that isn't synced from a remote tracker
+        """
 
         component = BugTrackerComponent()
-        component.name = component_name 
+        component.name = component_name
         component.component_group = self
         component.setCustom()
-        
+
         store = IStore(BugTrackerComponent)
         store.add(component)
         store.commit()
