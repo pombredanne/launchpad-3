@@ -41,7 +41,12 @@ if [ $? -ne 0 ]; then
   echo "ensure postgres is running on port 5432."
 fi;
 
-sudo /etc/init.d/postgresql stop $pgversion
+if [ -e /etc/init.d/postgresql-$pgversion ]; then
+    sudo /etc/init.d/postgresql-$pgversion stop
+else
+    # This is Maverick.
+    sudo /etc/init.d/postgresql stop $pgversion
+fi
 
 echo Purging postgresql data...
 sudo pg_dropcluster $pgversion main --stop-server
@@ -99,7 +104,12 @@ max_fsm_relations=2000
 EOF
 fi
 
-sudo /etc/init.d/postgresql start $pgversion
+if [ -e /etc/init.d/postgresql-$pgversion ]; then
+    sudo /etc/init.d/postgresql-$pgversion start
+else
+    # This is Maverick.
+    sudo /etc/init.d/postgresql start $pgversion
+fi
 
 echo Waiting 10 seconds for postgresql to come up...
 sleep 10
