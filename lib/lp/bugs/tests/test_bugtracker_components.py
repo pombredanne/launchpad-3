@@ -12,11 +12,7 @@ import unittest
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 
-from canonical.launchpad.ftests import (
-    login,
-    login_person,
-    ANONYMOUS,
-    )
+from canonical.launchpad.ftests import login_person
 from canonical.testing import DatabaseFunctionalLayer
 from lp.testing import TestCaseWithFactory
 
@@ -25,8 +21,6 @@ from lp.bugs.interfaces.bugtracker import (
     IBugTrackerComponent,
     IBugTrackerComponentGroup)
 
-# TODO: Decide better about how to organize classes for tests
-# TODO: Add test for invalid naming and valid_name constraint checking
 
 class TestBugTrackerComponent(TestCaseWithFactory):
 
@@ -37,6 +31,7 @@ class TestBugTrackerComponent(TestCaseWithFactory):
 
         regular_user = self.factory.makePerson()
         login_person(regular_user)
+
         self.bug_tracker = self.factory.makeBugTracker()
         
         self.comp_group = self.factory.makeBugTrackerComponentGroup(
@@ -44,39 +39,53 @@ class TestBugTrackerComponent(TestCaseWithFactory):
             self.bug_tracker)
 
     def test_component_creation(self):
+        """Verify a component can be created"""
+
         component = self.factory.makeBugTrackerComponent(
-            u'foobar', self.comp_group)
+            u'example', self.comp_group)
         self.assertTrue(component is not None)
+        self.assertEqual(component.name, u'example')
 
     def test_set_visibility(self):
-        component = self.factory.makeBugTrackerComponent(
-            u'foobar', self.comp_group)
-        self.assertEqual(component.is_visible, True)
+        """Users can delete components
 
-        #TODO - only logged in users should be able to show/hide components
-        # self.assertRaises(Unauthorized, getattr, self.component, 'hide')
-        # regular_user = self.factory.makePerson()
-        # login_person(regular_user)
+        In case invalid components get imported from a remote bug
+        tracker, users can hide them so they don't show up in the UI.
+        We do this rather than delete them outright so that they won't
+        show up again when we re-sync from the remote bug tracker.
+        """
+
+        component = self.factory.makeBugTrackerComponent(
+            u'example', self.comp_group)
+        self.assertEqual(component.is_visible, True)
 
         component.hide()
         self.assertEqual(component.is_visible, False)
 
         component.show()
         self.assertEqual(component.is_visible, True)
-        
+
     def test_custom_component(self):
+        """Users can also add components
+
+        For whatever reason, it may be that we can't import a component
+        from the remote bug tracker.  This gives users a way to correct
+        the omissions."""
+
         custom_component = self.factory.makeBugTrackerComponent(
-            u'custom-foobar', self.comp_group, custom=True)
+            u'example', self.comp_group, custom=True)
         self.assertTrue(custom_component != None)
         self.assertEqual(custom_component.is_custom, True)
 
     def test_multiple_component_creation(self):
+        """Verify several components can be created at once"""
+        
         comp_a = self.factory.makeBugTrackerComponent(
-            u'a', self.comp_group)
+            u'example-a', self.comp_group)
         comp_b = self.factory.makeBugTrackerComponent(
-            u'b', self.comp_group)
+            u'example-b', self.comp_group)
         comp_c = self.factory.makeBugTrackerComponent(
-            u'c', self.comp_group, True)
+            u'example-c', self.comp_group, True)
 
         self.assertTrue(comp_a is not None)
         self.assertTrue(comp_b is not None)
@@ -98,83 +107,81 @@ class TestBugTrackerWithComponents(TestCaseWithFactory):
 
     def test_empty_bugtracker(self):
         """Trivial case of bugtracker with no products or components"""
+
         self.assertTrue(self.bug_tracker is not None)
 
         # Empty bugtrackers shouldn't return component groups
         comp_group = self.bug_tracker.getRemoteComponentGroup(u'non-existant')
         self.assertEqual(comp_group, None)
 
+        # Verify it contains no component groups
         comp_groups = self.bug_tracker.getAllRemoteComponentGroups()
         self.assertEqual(len(list(comp_groups)), 0)
-
 
     def test_single_product_bugtracker(self):
         """Bug tracker with a single (default) product and several components"""
 
-        default_comp_group = self.bug_tracker.addRemoteComponentGroup(u'single')
+        # Add a component group and fill it with some components
+        default_comp_group = self.bug_tracker.addRemoteComponentGroup(u'alpha')
+        default_comp_group.addComponent(u'example-a')
+        default_comp_group.addComponent(u'example-b')
+        default_comp_group.addComponent(u'example-c')
 
-        default_comp_group.addComponent(u'alpha')
-        default_comp_group.addComponent(u'beta')
-        default_comp_group.addComponent(u'gamma')
-
+        # Verify that retrieving an invalid component group returns nothing
         comp_group = self.bug_tracker.getRemoteComponentGroup(u'non-existant')
         self.assertEqual(comp_group, None)
 
-        comp_group = self.bug_tracker.getRemoteComponentGroup(u'single')
+        # Now retrieve the component group we added
+        comp_group = self.bug_tracker.getRemoteComponentGroup(u'alpha')
         self.assertEqual(comp_group, default_comp_group)
-        self.assertEqual(comp_group.name, u'single')
+        self.assertEqual(comp_group.name, u'alpha')
 
+        # Verify there is only the one component group in the tracker
         comp_groups = self.bug_tracker.getAllRemoteComponentGroups()
         self.assertEqual(len(list(comp_groups)), 1)
 
     def test_multiple_product_bugtracker(self):
         """Bug tracker with multiple products and varying numbers of components"""
-        comp_group_i = self.bug_tracker.addRemoteComponentGroup(u'product1')
 
-        comp_group_ii = self.bug_tracker.addRemoteComponentGroup(u'product2')
-        comp_group_ii.addComponent(u'component2-alpha')
+        # Create several component groups with varying numbers of components
+        comp_group_i = self.bug_tracker.addRemoteComponentGroup(u'alpha')
 
-        comp_group_iii = self.bug_tracker.addRemoteComponentGroup(u'product3')
-        comp_group_iii.addComponent(u'component3-alpha')
-        comp_group_iii.addComponent(u'component3-beta')
-        comp_group_iii.addComponent(u'component3-gamma')
+        comp_group_ii = self.bug_tracker.addRemoteComponentGroup(u'beta')
+        comp_group_ii.addComponent(u'example-beta-1')
 
+        comp_group_iii = self.bug_tracker.addRemoteComponentGroup(u'gamma')
+        comp_group_iii.addComponent(u'example-gamma-1')
+        comp_group_iii.addComponent(u'example-gamma-2')
+        comp_group_iii.addComponent(u'example-gamma-3')
+
+        # Re-verify that retrieving a non-existant component group returns nothing
         comp_group = self.bug_tracker.getRemoteComponentGroup(u'non-existant')
         self.assertEqual(comp_group, None)
 
-        comp_group = self.bug_tracker.getRemoteComponentGroup(u'product2')
+        # Now retrieve one of the real component groups
+        comp_group = self.bug_tracker.getRemoteComponentGroup(u'beta')
         self.assertEqual(comp_group, comp_group_ii)
 
+        # Make sure the correct number of component groups are in the bug tracker
         comp_groups = self.bug_tracker.getAllRemoteComponentGroups()
         self.assertEqual(len(list(comp_groups)), 3)
 
     def test_get_components_for_component_group(self):
         """Retrieve a set of components from a given product"""
 
-        default_comp_group = self.bug_tracker.addRemoteComponentGroup(u'default')
-        default_comp_group.addComponent(u'alpha')
-        default_comp_group.addComponent(u'beta')
-        default_comp_group.addComponent(u'gamma')
+        # Create a component group with some components
+        default_comp_group = self.bug_tracker.addRemoteComponentGroup(u'alpha')
+        default_comp_group.addComponent(u'example-a')
+        default_comp_group.addComponent(u'example-b')
+        default_comp_group.addComponent(u'example-c')
 
-        comp_group = self.bug_tracker.getRemoteComponentGroup(u'default')
+        # Retrieve the group, and verify it has the correct number of components
+        comp_group = self.bug_tracker.getRemoteComponentGroup(u'alpha')
         self.assertEqual(len(list(comp_group.components)), 3)
 
-        comp = comp_group.getComponent(u'beta')
-        self.assertEqual(comp.name, u'beta')
-
-    def test_link_source_package_to_component(self):
-        """Verify a source package can be linked to an upstream component"""
-
-        default_comp_group = self.bug_tracker.addRemoteComponentGroup(u'default')
-        default_comp_group.addComponent(u'alpha')
-
-        #comp_group = self.bug_tracker.getRemoteComponentGroup(u'default')
-        #comp = comp_group.getComponent(u'alpha')
-        #self.assertEqual(comp.source_package, None)
-
-        #comp.link_source_package(u'test-source-package')
-        # TODO: Actually, test that it links to the real source package
-        #self.assertEqual(comp.source_package, u'test-source-package')
+        # Check one of the components, that it is what we expect
+        comp = comp_group.getComponent(u'example-b')
+        self.assertEqual(comp.name, u'example-b')
 
 
 def test_suite():

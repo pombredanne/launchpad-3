@@ -6,9 +6,9 @@
 __metaclass__ = type
 __all__ = [
     'BugTracker',
+    'BugTrackerSet',
     'BugTrackerAlias',
     'BugTrackerAliasSet',
-    'BugTrackerSet',
     'BugTrackerComponent',
     'BugTrackerComponentGroup',
     ]
@@ -532,9 +532,8 @@ class BugTracker(SQLBase):
 
     def addRemoteComponentGroup(self, component_group_name):
         """See `IBugTracker`."""
-
+        
         if component_group_name is None:
-            # TODO: Probably should test that Default gets used
             component_group_name = "default"
         component_group = BugTrackerComponentGroup()
         component_group.name = component_group_name
@@ -549,7 +548,7 @@ class BugTracker(SQLBase):
     def getAllRemoteComponentGroups(self):
         """See `IBugTracker`."""
         component_groups = []
-        #TODO: This should work but also fails with permission denied
+
         component_groups = Store.of(self).find(
             BugTrackerComponentGroup,
             BugTrackerComponentGroup.bug_tracker == self.id)
@@ -735,22 +734,20 @@ class BugTrackerComponent(Storm):
     distro_source_package_id = Int('distro_source_package')
     distro_source_package = Reference(
         distro_source_package_id,
-        'DistributionSourcePackage.id')
-    # TODO: storm_validator=TODO ?
+        'DistributionSourcePackageInDatabase.id')
 
     def show(self):
         if not self.is_visible:
             self.is_visible = True
-            # self.sync()
 
     def hide(self):
         if self.is_visible:
             self.is_visible = False
-            # self.sync()
 
     def setCustom(self):
         if not self.is_custom:
             self.is_custom = True
+
 
 class BugTrackerComponentGroup(Storm):
     """A collection of components in a remote bug tracker.
@@ -774,7 +771,6 @@ class BugTrackerComponentGroup(Storm):
     def addComponent(self, component_name):
         """Adds a component that is synced from a remote bug tracker"""
 
-        # TODO: Do I need to use the Utility() stuff here?
         component = BugTrackerComponent()
         component.name = component_name
         component.component_group = self
@@ -802,7 +798,6 @@ class BugTrackerComponentGroup(Storm):
 
     def addCustomComponent(self, component_name):
         """Adds a component locally that isn't synced from a remote tracker"""
-        # TODO: Verify we don't already have the component
 
         component = BugTrackerComponent()
         component.name = component_name 

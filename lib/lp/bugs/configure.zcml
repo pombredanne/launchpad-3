@@ -418,50 +418,6 @@
             factory="canonical.launchpad.webapp.breadcrumb.TitleBreadcrumb"
             permission="zope.Public"/>
 
-        <!--BugTrackerComponent -->
-
-        <class
-            class="canonical.launchpad.database.BugTrackerComponent">
-            <allow
-                attributes="
-                    name
-                    is_visible
-                    is_custom
-                    "/>
-            <require
-                permission="zope.Public"
-                attributes="
-                    id
-                    show
-                    hide
-                    setCustom
-                    "/>
-            <implements
-                interface="lp.bugs.interfaces.bugtracker.IBugTrackerComponent"/>
-        </class>
-
-        <!--BugTrackerComponentGroup -->
-
-        <class
-            class="canonical.launchpad.database.BugTrackerComponentGroup">
-            <allow
-                attributes="
-                    name
-                    bug_tracker
-                    "/>
-            <require
-                permission="zope.Public"
-                attributes="
-                    id
-                    components
-                    addComponent
-                    addCustomComponent
-                    getComponent
-                    "/>
-            <implements
-                interface="lp.bugs.interfaces.bugtracker.IBugTrackerComponentGroup"/>
-        </class>
-
         <!-- BugTrackerSet -->
 
         <class
@@ -505,6 +461,44 @@
             <allow
                 interface="lp.bugs.interfaces.bugtracker.IBugTrackerAliasSet"/>
         </securedutility>
+
+        <!--BugTrackerComponent -->
+
+        <class
+            class="canonical.launchpad.database.BugTrackerComponent">
+            <require
+                permission="zope.Public"
+                attributes="
+                    id
+                    name
+                    is_visible
+                    is_custom
+                    show
+                    hide
+                    setCustom
+                    "/>
+            <implements
+                interface="lp.bugs.interfaces.bugtracker.IBugTrackerComponent"/>
+        </class>
+
+        <!--BugTrackerComponentGroup -->
+
+        <class
+            class="canonical.launchpad.database.BugTrackerComponentGroup">
+            <require
+                permission="zope.Public"
+                attributes="
+                    id
+                    name
+                    bug_tracker
+                    components
+                    getComponent
+                    addComponent
+                    addCustomComponent
+                    "/>
+            <implements
+                interface="lp.bugs.interfaces.bugtracker.IBugTrackerComponentGroup"/>
+        </class>
 
         <!-- RemoteBug -->
 
