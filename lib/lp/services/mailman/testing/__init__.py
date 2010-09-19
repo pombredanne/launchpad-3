@@ -15,16 +15,35 @@ from Mailman import (
     Message,
     mm_cfg,
     )
+from Mailman.Queue import XMLRPCRunner
 
 from canonical.testing import DatabaseFunctionalLayer
 
+from lp.registry.tests.mailinglists_helper import MailingListXMLRPCTestProxy
 from lp.testing import TestCaseWithFactory
+
+
+def get_mailing_list_api_test_proxy():
+    return MailingListXMLRPCTestProxy(context=None, request=None)
 
 
 class MailmanTestCase(TestCaseWithFactory):
     """TestCase with factory and mailman support."""
 
     layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(MailmanTestCase, self).setUp()
+        # Replace the xmlrpc proxy with a fast wrapper of the real view.
+        self.original_get_proxy = XMLRPCRunner.get_mailing_list_api_proxy
+        XMLRPCRunner.get_mailing_list_api_proxy = (
+            get_mailing_list_api_test_proxy)
+
+    def tearDown(self):
+        super(MailmanTestCase, self).tearDown()
+        # Restore the xmlrpc proxy.
+        XMLRPCRunner.get_mailing_list_api_proxy = self.original_get_proxy
+        self.cleanMailmanList(self.mm_list)
 
     def makeMailmanList(self, lp_mailing_list):
         # This utility is based on mailman/tests/TestBase.py.
@@ -42,12 +61,14 @@ class MailmanTestCase(TestCaseWithFactory):
         # This utility is based on mailman/tests/TestBase.py.
         mlist.Unlock()
         listname = mlist.internal_name()
-        for dirtmpl in ['lists/%s',
-                        'archives/private/%s',
-                        'archives/private/%s.mbox',
-                        'archives/public/%s',
-                        'archives/public/%s.mbox',
-                        ]:
+        paths = [
+            'lists/%s',
+            'archives/private/%s',
+            'archives/private/%s.mbox',
+            'archives/public/%s',
+            'archives/public/%s.mbox',
+            ]
+        for dirtmpl in paths:
             list_dir = os.path.join(mm_cfg.VAR_PREFIX, dirtmpl % listname)
             if os.path.islink(list_dir):
                 os.unlink(list_dir)
@@ -55,15 +76,15 @@ class MailmanTestCase(TestCaseWithFactory):
                 shutil.rmtree(list_dir)
 
     def makeMailmanMessage(self, mm_list, sender, subject, content,
-                           mime_type='text', attachment=None):
+                           mime_type='plain', attachment=None):
         # Make a Mailman Message.Message.
         if isinstance(sender, (list, tuple)):
             sender = ', '.join(sender)
         message = MIMEText(content, mime_type)
-        message['From'] = sender
-        message['To'] = mm_list.getListAddress()
-        message['Subject'] = subject
-        message['Message-ID'] = '<ocelot>'
+        message['from'] = sender
+        message['to'] = mm_list.getListAddress()
+        message['subject'] = subject
+        message['message-id'] = self.getUniqueString()
         mm_message = email.message_from_string(
             message.as_string(), Message.Message)
         if attachment is not None:

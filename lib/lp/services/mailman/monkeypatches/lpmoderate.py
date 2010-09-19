@@ -11,11 +11,8 @@ from email.Utils import (
     )
 import xmlrpclib
 
-# pylint: disable-msg=F0401
-from Mailman import (
-    Errors,
-    mm_cfg,
-    )
+from Mailman import Errors
+from Mailman.Queue import XMLRPCRunner
 from Mailman.Logging.Syslog import syslog
 
 
@@ -98,7 +95,7 @@ def hold(mlist, msg, msgdata, annotation):
     if 'date' not in msg:
         msg['Date'] = formatdate()
     # Store the message in the librarian.
-    proxy = xmlrpclib.ServerProxy(mm_cfg.XMLRPC_URL)
+    proxy = XMLRPCRunner.get_mailing_list_api_proxy()
     # This will fail if we can't talk to Launchpad.  That's okay though
     # because Mailman's IncomingRunner will re-queue the message and re-start
     # processing at this handler.

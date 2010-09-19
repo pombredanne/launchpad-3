@@ -4,6 +4,7 @@
 """XMLRPC runner for querying Launchpad."""
 
 __all__ = [
+    'get_mailing_list_api_proxy',
     'XMLRPCRunner',
     ]
 
@@ -42,6 +43,10 @@ COMMASPACE = ', '
 attrmap = {
     'welcome_message'   : 'welcome_msg',
     }
+
+
+def get_mailing_list_api_proxy():
+    return xmlrpclib.ServerProxy(mm_cfg.XMLRPC_URL)
 
 
 class MailmanErrorUtility(ErrorReportingUtility):
@@ -96,7 +101,7 @@ class XMLRPCRunner(Runner):
         # is designed for.
         self._kids = {}
         self._stop = False
-        self._proxy = xmlrpclib.ServerProxy(mm_cfg.XMLRPC_URL)
+        self._proxy = get_mailing_list_api_proxy()
         # Ensure that the log file exists, mostly for the test suite.
         syslog('xmlrpc', 'XMLRPC runner starting')
 
