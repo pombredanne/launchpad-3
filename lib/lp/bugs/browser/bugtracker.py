@@ -54,7 +54,11 @@ from canonical.launchpad.webapp import (
     structured,
     )
 from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.batching import (
+    ActiveBatchNavigator,
+    BatchNavigator,
+    InactiveBatchNavigator,
+    )
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.menu import NavigationMenu
 from canonical.lazr.utils import smartquote
