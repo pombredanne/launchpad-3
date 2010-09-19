@@ -235,6 +235,7 @@ class IsConfiguredBatchNavigator(Matcher):
 
         :param singular: The singular header the batch should be using.
         :param plural: The plural header the batch should be using.
+        :param batch_size: The batch size that should be configured by default.
         """
         self._single = Equals(singular)
         self._plural = Equals(plural)
@@ -261,8 +262,8 @@ class IsConfiguredBatchNavigator(Matcher):
                 BatchNavigator, 'isinstance', matchee)
         mismatches = []
         for attrname, matcher in self.matchers.items():
-            mismatches.append(matcher.match(getattr(matchee, attrname)))
-            if not mismatches[-1]:
-                mismatches.pop(-1)
+            mismatch = matcher.match(getattr(matchee, attrname))
+            if mismatch is not None:
+                mismatches.append(mismatch)
         if mismatches:
             return MismatchesAll(mismatches)

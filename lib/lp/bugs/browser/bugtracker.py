@@ -159,7 +159,7 @@ class BugTrackerSetView(LaunchpadView):
 
     def initialize(self):
         # eager load related pillars. In future we should do this for
-        # just the rendered trackers, and also use group by to get 
+        # just the rendered trackers, and also use group by to get
         # bug watch counts per tracker. However the batching makes
         # the inefficiency tolerable for now. Robert Collins 20100919.
         self._pillar_cache = self.context.getPillarsForBugtrackers(

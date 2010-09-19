@@ -436,7 +436,8 @@ class IBugTrackerSet(Interface):
         """Return a ResultSet of bugtrackers.
 
         :param active: If True, only active trackers are returned, if False
-            only inactive trackers are returned.
+            only inactive trackers are returned. All trackers are returned
+            by default.
         """
 
 

@@ -102,7 +102,7 @@ class TestHasSpecificationsViewInvolvement(TestCaseWithFactory):
             '<div id="involvement" class="portlet involvement">' in view())
 
     def test_specs_batch(self):
-        # Some pages turn up in very large contexts and patch. E.g.
+        # Some pages turn up in very large contexts and so batch. E.g.
         # Distro:+assignments which uses SpecificationAssignmentsView, a
         # subclass.
         person = self.factory.makePerson()

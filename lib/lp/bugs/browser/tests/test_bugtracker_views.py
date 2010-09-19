@@ -48,7 +48,7 @@ class TestBugTrackerSetView(TestCaseWithFactory):
             inactive_tracker1.active = False
             inactive_tracker2.active = False
         trackers = getUtility(IBugTrackerSet)
-        url = (canonical_url(trackers) + 
+        url = (canonical_url(trackers) +
             "/+index?active_batch=1&inactive_batch=1")
         browser = self.getUserBrowser(url)
         content = browser.contents
