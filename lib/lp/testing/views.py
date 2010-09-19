@@ -12,10 +12,6 @@ __all__ = [
 
 import os
 
-from testtools.matchers import (
-    Matcher,
-    Mismatch,
-    )
 from zope.component import (
     getMultiAdapter,
     getUtility,
