@@ -79,7 +79,7 @@ class InvolvedMenu(NavigationMenu):
 
     def submit_code(self):
         if self.pillar.codehosting_usage in [
-                ServiceUsage.LAUNCHPAD, 
+                ServiceUsage.LAUNCHPAD,
                 ServiceUsage.EXTERNAL,
                 ]:
             enabled = True

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Base class view for branch listings."""
@@ -82,6 +82,7 @@ from canonical.launchpad.webapp.badge import (
 from canonical.launchpad.webapp.batching import TableBatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.publisher import LaunchpadView
+from canonical.launchpad.webapp.tales import MenuAPI
 from canonical.widgets import LaunchpadDropdownWidget
 from lp.blueprints.interfaces.specificationbranch import (
     ISpecificationBranchSet,
@@ -92,6 +93,7 @@ from lp.code.browser.branchmergeproposallisting import (
     PersonActiveReviewsView,
     PersonProductActiveReviewsView,
     )
+from lp.code.browser.summary import BranchCountSummaryView
 from lp.code.enums import (
     BranchLifecycleStatus,
     BranchLifecycleStatusFilter,
@@ -112,6 +114,7 @@ from lp.code.interfaces.revisioncache import IRevisionCache
 from lp.code.interfaces.seriessourcepackagebranch import (
     IFindOfficialBranchLinks,
     )
+from lp.code.browser.branch import BranchMirrorMixin
 from lp.registry.browser.product import (
     ProductDownloadFileMixin,
     SortSeriesMixin,
@@ -124,7 +127,6 @@ from lp.registry.interfaces.personproduct import (
     IPersonProduct,
     IPersonProductFactory,
     )
-from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackage import ISourcePackageFactory
@@ -1180,8 +1182,13 @@ class ProductBranchListingView(BranchListingView):
         return message % self.context.displayname
 
 
+class ProductBranchStatisticsView(ProductBranchListingView,
+                                  BranchCountSummaryView):
+    """Portlet containing branch statistics."""
+
+
 class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
-                           ProductDownloadFileMixin):
+                           ProductDownloadFileMixin, BranchMirrorMixin):
     """Initial view for products on the code virtual host."""
 
     show_set_development_focus = True
@@ -1189,6 +1196,7 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
     def initialize(self):
         ProductBranchListingView.initialize(self)
         self.product = self.context
+        self.branch = self.development_focus_branch
         revision_cache = getUtility(IRevisionCache)
         self.revision_cache = revision_cache.inProduct(self.product)
 
@@ -1322,6 +1330,14 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
     @property
     def committer_text(self):
         return get_plural_text(self.committer_count, _('person'), _('people'))
+
+    @property
+    def configure_codehosting(self):
+        """Get the menu link for configuring code hosting."""
+        series_menu = MenuAPI(self.context.development_focus).overview
+        set_branch = series_menu['set_branch']
+        set_branch.text = 'Configure code hosting'
+        return set_branch
 
 
 class ProductBranchesView(ProductBranchListingView):

@@ -550,6 +550,15 @@ dl.reviews dd {
     color: black !important;
 }
 
+.code-links td.code-count {
+  text-align: right;
+  padding-right: 0.5em;
+}
+
+.code-links td.code-link {
+  text-align: left;
+}
+
 
 /* === Bugs === */
 /* The Launchpad Bugs application uses a maroon color: */
@@ -583,6 +592,15 @@ div#sub-unsub-spinner {
 
 .patches-view-cell {
   padding-right: 1em;
+}
+
+.bug-links td.bugs-count {
+  text-align: right;
+  padding-right: 0.5em;
+}
+
+.bug-links td.bugs-link {
+  text-align: left;
 }
 
 /* --- Blueprints --- */
@@ -650,15 +668,6 @@ body.tab-answers #actions h2, body.tab-answers #actions h2:hover {
 
 .search-box form.primary.search {
   margin: 0.5em;
-}
-
-.bug-links td.bugs-count {
-  text-align: right;
-  padding-right: 0.5em;
-}
-
-.bug-links td.bugs-link {
-  text-align: left;
 }
 
 /* ====== Content area styles ====== */

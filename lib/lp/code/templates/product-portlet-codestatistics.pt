@@ -1,0 +1,12 @@
+<!-- +portlet-product-codestatistics -->
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  class="portlet" id="portlet-product-codestatistics">
+
+  <table class="code-links">
+    <tbody id="portlet-product-codestatistics-content"
+      tal:content="structure context/@@+portlet-product-codestatistics-content" />
+  </table>
+</div>

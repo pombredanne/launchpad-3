@@ -6,8 +6,52 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  i18n:domain="launchpad"
-  id="application-summary">
+  i18n:domain="launchpad">
+
+  <div id="unknown" tal:condition="context/codehosting_usage/enumvalue:UNKNOWN">
+    <p>
+      <strong>
+        Launchpad does not know where <tal:project_title replace="context/title" />
+        hosts its code.
+      </strong>
+    </p>
+
+    <div
+       tal:condition="not: context/codehosting_usage/enumvalue:LAUNCHPAD"
+       tal:define="configure_codehosting view/configure_codehosting | nothing">
+      <a class="sprite maybe"
+         href="https://help.launchpad.net/Code">Getting started
+        with code hosting in Launchpad</a>.
+
+      <p tal:condition="context/required:launchpad.Edit"
+         id="no-code-edit"
+         >
+        <a tal:condition="configure_codehosting"
+           tal:replace="structure configure_codehosting/fmt:link"/>
+      </p>
+    </div>
+  </div>
+
+  <div id="external"
+       tal:condition="context/codehosting_usage/enumvalue:EXTERNAL">
+    <p>
+      <strong>
+        <tal:project_title replace="context/title" /> hosts its code at
+        <a tal:attributes="href view/mirror_location"><tal:mirror replace="view/mirror_location"/></a>.
+      </strong>
+    </p>
+    <p tal:condition="context/homepageurl">
+      You can learn more at the project's
+      <a tal:attributes="href context/homepageurl">web page</a>.
+    </p>
+    <p tal:condition="view/branch/branch_type/enumvalue:MIRRORED">
+      Launchpad has a mirror of the master branch and you can create branches
+      from it.
+    </p>
+    <p tal:condition="view/branch/branch_type/enumvalue:REMOTE">
+      Launchpad does not have a copy of the remote branch.
+    </p>
+  </div>
 
   <tal:no-branches condition="not: view/branch_count">
     There are no branches for <tal:project-name replace="context/displayname"/>
@@ -60,6 +104,7 @@
     </div>
 
   </tal:has-branches>
+
   <p tal:condition="view/latest_release_with_download_files">
     <img src="/@@/download"/> There are
     <a tal:define="rooturl modules/canonical.launchpad.webapp.vhosts/allvhosts/configs/mainsite/rooturl"

@@ -182,6 +182,17 @@ development focus series has a branch.
     >>> print view.codehosting_usage.name
     LAUNCHPAD
 
+    >>> from lp.code.enums import BranchType
+    >>> remote = factory.makeProduct()
+    >>> branch = factory.makeProductBranch(product=remote,
+    ...                                    branch_type=BranchType.REMOTE)
+    >>> remote.official_codehosting
+    False
+    >>> view = create_view(remote, '+get-involved')
+    >>> print view.codehosting_usage.name
+    UNKNOWN
+
+
 Project groups cannot make links to register a branch, so
 official_codehosting is always false.
 

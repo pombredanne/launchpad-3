@@ -8,6 +8,7 @@ import unittest
 from canonical.testing import DatabaseFunctionalLayer
 
 from lp.app.enums import ServiceUsage
+from lp.code.enums import BranchType
 from lp.testing import (
     login_person,
     TestCaseWithFactory,
@@ -55,13 +56,6 @@ class UsageEnumsMixin(object):
         self.assertEqual(
             True,
             self.target.official_answers)
-
-    def test_codehosting_usage(self):
-        # Only test get for codehosting; this has no setter because the
-        # state is derived from other data.
-        self.assertEqual(
-            ServiceUsage.UNKNOWN,
-            self.target.codehosting_usage)
 
     def test_translations_usage_no_data(self):
         # By default, we don't know anything about a target
@@ -168,6 +162,42 @@ class TestProductUsageEnums(TestCaseWithFactory, UsageEnumsMixin):
     def setUp(self):
         super(TestProductUsageEnums, self).setUp()
         self.target = self.factory.makeProduct()
+
+    def test_codehosting_unknown(self):
+        # A default product has UNKNOWN usage.
+        self.assertEqual(
+            ServiceUsage.UNKNOWN,
+            self.target.codehosting_usage)
+
+    def test_codehosting_mirrored_branch(self):
+        # A mirrored branch is EXTERNAL.
+        login_person(self.target.owner)
+        self.target.development_focus.branch = self.factory.makeProductBranch(
+            product=self.target,
+            branch_type=BranchType.MIRRORED)
+        self.assertEqual(
+            ServiceUsage.EXTERNAL,
+            self.target.codehosting_usage)
+
+    def test_codehosting_remote_branch(self):
+        # A remote branch is EXTERNAL.
+        login_person(self.target.owner)
+        self.target.development_focus.branch = self.factory.makeProductBranch(
+            product=self.target,
+            branch_type=BranchType.REMOTE)
+        self.assertEqual(
+            ServiceUsage.EXTERNAL,
+            self.target.codehosting_usage)
+
+    def test_codehosting_hosted_branch(self):
+        # A branch on Launchpad is HOSTED.
+        login_person(self.target.owner)
+        self.target.development_focus.branch = self.factory.makeProductBranch(
+            product=self.target,
+            branch_type=BranchType.HOSTED)
+        self.assertEqual(
+            ServiceUsage.LAUNCHPAD,
+            self.target.codehosting_usage)
 
 
 def test_suite():
