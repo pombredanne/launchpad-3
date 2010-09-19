@@ -109,9 +109,10 @@ class TestHasSpecificationsViewInvolvement(TestCaseWithFactory):
         view = create_initialized_view(person, name='+assignments')
         # Because +assignments is meant to provide an overview, we default to
         # 500 as the default batch size.
-        matcher = IsConfiguredBatchNavigator(
-            'specification', 'specifications', batch_size=500)
-        self.assertThat(view.specs_batched, matcher)
+        self.assertThat(
+            view.specs_batched,
+            IsConfiguredBatchNavigator(
+                'specification', 'specifications', batch_size=500))
 
 
 class TestAssignments(TestCaseWithFactory):
