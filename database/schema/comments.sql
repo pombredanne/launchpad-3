@@ -842,6 +842,11 @@ COMMENT ON COLUMN TranslationRelicensingAgreement.person IS 'A translator which 
 COMMENT ON COLUMN TranslationRelicensingAgreement.allow_relicensing IS 'Does this person want their translations relicensed under BSD.';
 COMMENT ON COLUMN TranslationRelicensingAgreement.date_decided IS 'Date when the last change of opinion was registered.';
 
+-- TranslationTemplatesBuild
+COMMENT ON TABLE TranslationTemplatesBuild IS 'Build-farm record of a translation templates build.';
+COMMENT ON COLUMN TranslationTemplatesBuild.build_farm_job IS 'Associated BuildFarmJob.';
+COMMENT ON COLUMN TranslationTemplatesBuild.branch IS 'Branch to build templates out of.';
+
 -- RevisionAuthor
 COMMENT ON TABLE RevisionAuthor IS 'All distinct authors for revisions.';
 COMMENT ON COLUMN RevisionAuthor.name IS 'The exact text extracted from the branch revision.';

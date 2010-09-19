@@ -17,7 +17,7 @@ from signal import (
 import time
 
 from canonical.config import config
-from canonical.launchpad.mailman.runmailman import stop_mailman
+from lp.services.mailman.runmailman import stop_mailman
 from canonical.launchpad.scripts import (
     logger,
     logger_options,

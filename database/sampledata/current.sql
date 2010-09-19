@@ -807,6 +807,12 @@ SET search_path = public, pg_catalog;
 
 
 
+
+
+
+
+
+
 SET SESSION AUTHORIZATION DEFAULT;
 
 ALTER TABLE account DISABLE TRIGGER ALL;
@@ -1834,14 +1840,14 @@ ALTER TABLE processorfamily ENABLE TRIGGER ALL;
 
 ALTER TABLE distroarchseries DISABLE TRIGGER ALL;
 
-INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, owner, official, package_count, date_created, supports_virtualized) VALUES (1, 1, 1, 'i386', 1, true, 5, '2006-10-16 18:31:43.454475', true);
-INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, owner, official, package_count, date_created, supports_virtualized) VALUES (6, 3, 1, 'i386', 1, true, 1, '2006-10-16 18:31:43.456532', true);
-INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, owner, official, package_count, date_created, supports_virtualized) VALUES (7, 6, 1, 'i386', 1, true, 0, '2006-10-16 18:31:43.457028', true);
-INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, owner, official, package_count, date_created, supports_virtualized) VALUES (8, 10, 1, 'i386', 1, true, 0, '2006-10-16 18:31:43.457484', true);
-INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, owner, official, package_count, date_created, supports_virtualized) VALUES (9, 13, 1, 'i386', 1, true, 0, '2006-10-16 18:31:43.457938', true);
-INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, owner, official, package_count, date_created, supports_virtualized) VALUES (10, 13, 3, 'amd64', 1, true, 0, '2006-10-16 18:31:43.458434', true);
-INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, owner, official, package_count, date_created, supports_virtualized) VALUES (11, 3, 4, 'hppa', 1, false, 0, '2006-10-16 18:31:43.458892', false);
-INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, owner, official, package_count, date_created, supports_virtualized) VALUES (12, 1, 4, 'hppa', 1, false, 0, '2006-10-16 18:31:43.459349', false);
+INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, owner, official, package_count, date_created, supports_virtualized, enabled) VALUES (1, 1, 1, 'i386', 1, true, 5, '2006-10-16 18:31:43.454475', true, true);
+INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, owner, official, package_count, date_created, supports_virtualized, enabled) VALUES (6, 3, 1, 'i386', 1, true, 1, '2006-10-16 18:31:43.456532', true, true);
+INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, owner, official, package_count, date_created, supports_virtualized, enabled) VALUES (7, 6, 1, 'i386', 1, true, 0, '2006-10-16 18:31:43.457028', true, true);
+INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, owner, official, package_count, date_created, supports_virtualized, enabled) VALUES (8, 10, 1, 'i386', 1, true, 0, '2006-10-16 18:31:43.457484', true, true);
+INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, owner, official, package_count, date_created, supports_virtualized, enabled) VALUES (9, 13, 1, 'i386', 1, true, 0, '2006-10-16 18:31:43.457938', true, true);
+INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, owner, official, package_count, date_created, supports_virtualized, enabled) VALUES (10, 13, 3, 'amd64', 1, true, 0, '2006-10-16 18:31:43.458434', true, true);
+INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, owner, official, package_count, date_created, supports_virtualized, enabled) VALUES (11, 3, 4, 'hppa', 1, false, 0, '2006-10-16 18:31:43.458892', false, true);
+INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, owner, official, package_count, date_created, supports_virtualized, enabled) VALUES (12, 1, 4, 'hppa', 1, false, 0, '2006-10-16 18:31:43.459349', false, true);
 
 
 ALTER TABLE distroarchseries ENABLE TRIGGER ALL;
@@ -3089,25 +3095,25 @@ ALTER TABLE revision ENABLE TRIGGER ALL;
 
 ALTER TABLE branchrevision DISABLE TRIGGER ALL;
 
-INSERT INTO branchrevision (sequence, branch, revision) VALUES (1, 10, 1);
-INSERT INTO branchrevision (sequence, branch, revision) VALUES (1, 11, 2);
-INSERT INTO branchrevision (sequence, branch, revision) VALUES (1, 12, 3);
-INSERT INTO branchrevision (sequence, branch, revision) VALUES (1, 20, 4);
-INSERT INTO branchrevision (sequence, branch, revision) VALUES (1, 21, 4);
-INSERT INTO branchrevision (sequence, branch, revision) VALUES (2, 20, 5);
-INSERT INTO branchrevision (sequence, branch, revision) VALUES (2, 21, 5);
-INSERT INTO branchrevision (sequence, branch, revision) VALUES (3, 20, 6);
-INSERT INTO branchrevision (sequence, branch, revision) VALUES (3, 21, 10);
-INSERT INTO branchrevision (sequence, branch, revision) VALUES (4, 20, 7);
-INSERT INTO branchrevision (sequence, branch, revision) VALUES (4, 21, 11);
-INSERT INTO branchrevision (sequence, branch, revision) VALUES (5, 20, 8);
-INSERT INTO branchrevision (sequence, branch, revision) VALUES (5, 21, 8);
-INSERT INTO branchrevision (sequence, branch, revision) VALUES (6, 20, 9);
-INSERT INTO branchrevision (sequence, branch, revision) VALUES (6, 21, 9);
-INSERT INTO branchrevision (sequence, branch, revision) VALUES (NULL, 20, 10);
-INSERT INTO branchrevision (sequence, branch, revision) VALUES (NULL, 20, 11);
-INSERT INTO branchrevision (sequence, branch, revision) VALUES (NULL, 21, 6);
-INSERT INTO branchrevision (sequence, branch, revision) VALUES (NULL, 21, 7);
+INSERT INTO branchrevision (id, sequence, branch, revision) VALUES (1, 1, 10, 1);
+INSERT INTO branchrevision (id, sequence, branch, revision) VALUES (2, 1, 11, 2);
+INSERT INTO branchrevision (id, sequence, branch, revision) VALUES (3, 1, 12, 3);
+INSERT INTO branchrevision (id, sequence, branch, revision) VALUES (4, 1, 20, 4);
+INSERT INTO branchrevision (id, sequence, branch, revision) VALUES (5, 2, 20, 5);
+INSERT INTO branchrevision (id, sequence, branch, revision) VALUES (6, 3, 20, 6);
+INSERT INTO branchrevision (id, sequence, branch, revision) VALUES (7, 4, 20, 7);
+INSERT INTO branchrevision (id, sequence, branch, revision) VALUES (8, 5, 20, 8);
+INSERT INTO branchrevision (id, sequence, branch, revision) VALUES (9, 6, 20, 9);
+INSERT INTO branchrevision (id, sequence, branch, revision) VALUES (10, 1, 21, 4);
+INSERT INTO branchrevision (id, sequence, branch, revision) VALUES (11, 2, 21, 5);
+INSERT INTO branchrevision (id, sequence, branch, revision) VALUES (12, 3, 21, 10);
+INSERT INTO branchrevision (id, sequence, branch, revision) VALUES (13, 4, 21, 11);
+INSERT INTO branchrevision (id, sequence, branch, revision) VALUES (14, 5, 21, 8);
+INSERT INTO branchrevision (id, sequence, branch, revision) VALUES (15, 6, 21, 9);
+INSERT INTO branchrevision (id, sequence, branch, revision) VALUES (16, NULL, 20, 10);
+INSERT INTO branchrevision (id, sequence, branch, revision) VALUES (17, NULL, 20, 11);
+INSERT INTO branchrevision (id, sequence, branch, revision) VALUES (18, NULL, 21, 6);
+INSERT INTO branchrevision (id, sequence, branch, revision) VALUES (19, NULL, 21, 7);
 
 
 ALTER TABLE branchrevision ENABLE TRIGGER ALL;
@@ -11136,6 +11142,13 @@ INSERT INTO translationtemplateitem (id, potemplate, sequence, potmsgset) VALUES
 
 
 ALTER TABLE translationtemplateitem ENABLE TRIGGER ALL;
+
+
+ALTER TABLE translationtemplatesbuild DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE translationtemplatesbuild ENABLE TRIGGER ALL;
 
 
 ALTER TABLE translator DISABLE TRIGGER ALL;
