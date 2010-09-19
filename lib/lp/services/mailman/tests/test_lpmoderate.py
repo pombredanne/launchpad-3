@@ -30,10 +30,30 @@ class TestLPModerateTestCase(MailmanTestCase):
         super(TestLPModerateTestCase, self).tearDown()
         self.cleanMailmanList(self.mm_list)
 
-    def test_hold_discard_empty_mesage(self):
+    def test_process_message_from_preapproved(self):
+        # Mailman process methods quietly return. They may set message data
+        # to raise an error for other handlers to process.
+        message = self.makeMailmanMessage(
+            self.mm_list, 'lp-user@place.dom', 'subject', 'any content.')
+        msg_data = dict(approved=True)
+        silence = LPModerate.process(self.mm_list, message, msg_data)
+        self.assertEqual(None, silence)
+
+    def test_process_message_from_subscriber(self):
+        # Mailman process methods quietly return. They may set message data
+        # to raise an error for other handlers to process.
+        subscriber_email = self.team.teamowner.preferredemail.email
+        message = self.makeMailmanMessage(
+            self.mm_list, subscriber_email, 'subject', 'any content.')
+        msg_data = dict(approved=False)
+        silence = LPModerate.process(self.mm_list, message, msg_data)
+        self.assertEqual(None, silence)
+
+    def test_process_empty_mesage_from_nonsubcriber_discarded(self):
         spam_message = self.makeMailmanMessage(
-            self.mm_list, 'spammer@spam.dom',
+            self.mm_list, 'lp-user@place.dom',
             'get drugs', '<a><img /></a>.', mime_type='html')
-        args = (self.mm_list, spam_message, {}, 'Not subscribed')
+        msg_data = dict(approved=False)
+        args = (self.mm_list, spam_message, msg_data)
         self.assertRaises(
-            Errors.DiscardMessage, LPModerate.hold, *args)
+            Errors.DiscardMessage, LPModerate.process, *args)

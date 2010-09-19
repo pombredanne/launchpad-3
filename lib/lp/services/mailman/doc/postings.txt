@@ -940,37 +940,3 @@ held for moderator approval.
         ...
         Itest One <noreply@launchpad.net>
         New mailing list message requiring approval for Itest One
-
-
-Non-text messages
-=================
-
-List members can send non-text messages to agitate the other list members.
-
-    >>> html_message = MIMEText('<a><img /></a>.', 'html')
-    >>> html_message['From'] = 'anne.person@example.com'
-    >>> html_message['To'] = 'itest-one@lists.launchpad.dev'
-    >>> html_message['Subject'] = "It's full of stars"
-    >>> html_message['Message-ID'] = '<loggerhead>'
-    >>> inject('itest-one', html_message.as_string())
-
-    >>> smtpd_watcher.wait_for_mbox_delivery('loggerhead')
-    >>> messages = list(smtpd)
-    >>> for message in messages:
-    ...     print message['Subject']
-    [Itest-one] It's full of stars
-    [Itest-one] It's full of stars
-
-Messages without non-empty text/plain parts from non-list members are rejected
-because launchpad does not store non-text messages for moderation.
-
-    >>> spam_message = MIMEText('<a><img /></a>.', 'html')
-    >>> spam_message['From'] = 'itest-one@lists.launchpad.dev'
-    >>> spam_message['To'] = 'itest-one@lists.launchpad.dev'
-    >>> spam_message['Subject'] = 'get drugs'
-    >>> spam_message['Message-ID'] = '<ocelot>'
-    >>> inject('itest-one', spam_message.as_string())
-
-    >>> vette_watcher.wait_for_discard('ocelot')
-    >>> print_message_summaries()
-    Number of messages: 0
