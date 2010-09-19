@@ -174,6 +174,20 @@ class BugTrackerSetView(LaunchpadView):
         self._pillar_cache = bugtrackerset.getPillarsForBugtrackers(
             all_bug_trackers)
 
+    @cachedproperty
+    def active_trackers(self):
+        results = self.context.trackers(active=True)
+        navigator = ActiveBatchNavigator(results, self.request)
+        navigator.setHeadings('tracker', 'trackers')
+        return navigator
+
+    @cachedproperty
+    def inactive_trackers(self):
+        results = self.context.trackers(active=False)
+        navigator = InactiveBatchNavigator(results, self.request)
+        navigator.setHeadings('tracker', 'trackers')
+        return navigator
+
     def getPillarData(self, bugtracker):
         """Return dict of pillars and booleans indicating ellipsis.
 

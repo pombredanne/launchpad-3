@@ -5,25 +5,22 @@
 
 __metaclass__ = type
 
-import unittest
 
-from datetime import datetime, timedelta
-from pytz import utc
-
-from zope.component import getUtility
-from zope.security.interfaces import Unauthorized
-
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.testing.layers import DatabaseFunctionalLayer
-
-from lp.bugs.browser.bugtracker import (
-    BugTrackerEditView)
-from lp.registry.interfaces.person import IPersonSet
-from lp.testing import login, TestCaseWithFactory
-from lp.testing.sampledata import ADMIN_EMAIL, NO_PRIVILEGE_EMAIL
+from lp.bugs.model.bugtracker import BugTrackerSet
+from lp.testing import TestCaseWithFactory
 from lp.testing.views import create_initialized_view
+from lp.testing.matchers import IsConfiguredBatchNavigator
 
 
 
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
+class TestBugTrackerSetView(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_trackers_are_batch_navigators(self):
+        trackers = BugTrackerSet()
+        view = create_initialized_view(trackers, name='+index')
+        matcher = IsConfiguredBatchNavigator('tracker', 'trackers')
+        self.assertThat(view.active_trackers, matcher)
+        self.assertThat(view.inactive_trackers, matcher)
