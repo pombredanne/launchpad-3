@@ -21,7 +21,10 @@ from canonical.launchpad.testing.pages import (
 from canonical.launchpad.webapp import canonical_url
 from canonical.testing import DatabaseFunctionalLayer
 from lp.app.enums import ServiceUsage
-from lp.code.enums import BranchType
+from lp.code.enums import (
+    BranchType,
+    BranchVisibilityRule,
+    )
 from lp.code.interfaces.revision import IRevisionSet
 from lp.testing import (
     ANONYMOUS,
@@ -194,8 +197,8 @@ class TestProductCodeIndexServiceUsages(ProductTestBase, BrowserTestCase):
         content = find_tag_by_id(browser.contents, 'unknown')
         text = extract_text(content)
         expected = (
-            "Launchpad does not know where %(product_title)s hosts its code.  "
-            "Getting started with code hosting in Launchpad." %
+            "Launchpad does not know where %(product_title)s "
+            "hosts its code.*" %
             dict(product_title=product.title))
         self.assertTextMatchesExpressionIgnoreWhitespace(expected, text)
 
@@ -206,9 +209,8 @@ class TestProductCodeIndexServiceUsages(ProductTestBase, BrowserTestCase):
         login(ANONYMOUS)
         text = extract_text(find_tag_by_id(
             browser.contents, 'branch-count-summary'))
-        expected = "1 active  branch owned by 1 person"
-        preface = text[:len(expected)]
-        self.assertTextMatchesExpressionIgnoreWhitespace(expected, preface)
+        expected = "1 active  branch owned by 1 person.*"
+        self.assertTextMatchesExpressionIgnoreWhitespace(expected, text)
 
     def test_view_mirror_location(self):
         url = "http://example.com/mybranch"
@@ -223,29 +225,27 @@ class TestProductBranchesViewPortlets(ProductTestBase, BrowserTestCase):
     """Tests for the portlets."""
 
     def test_is_private(self):
-        product, branch = self.makeProductAndDevelopmentFocusBranch(
-            private=True)
-        self.factory.makeProductBranch(product=product)
+        team_owner = self.factory.makePerson()
+        team = self.factory.makeTeam(team_owner)
+        product = self.factory.makeProduct(owner=team_owner)
+        product.setBranchVisibilityTeamPolicy(
+            team, BranchVisibilityRule.PRIVATE)
         login_person(product.owner)
-        browser = self.getUserBrowser(canonical_url(product, rootsite='code'))
-        text = extract_text(find_tag_by_id(browser.contents, 'privacy'))
+        view = create_initialized_view(
+            product, '+code-index', rootsite='code', principal=product.owner)
+        text = extract_text(find_tag_by_id(view.render(), 'privacy'))
         expected = ("New branches you create for %(name)s are private "
-                    "initially." % dict(name=product.name))
-        preface = text[:len(expected)]
-        self.assertTextMatchesExpressionIgnoreWhitespace(expected, preface)
+                    "initially.*" % dict(name=product.displayname))
+        self.assertTextMatchesExpressionIgnoreWhitespace(expected, text)
 
     def test_is_public(self):
-        product, branch = self.makeProductAndDevelopmentFocusBranch(
-            private=False)
-        self.factory.makeProductBranch(product=product)
+        product = self.factory.makeProduct()
         login_person(product.owner)
         browser = self.getUserBrowser(canonical_url(product, rootsite='code'))
         text = extract_text(find_tag_by_id(browser.contents, 'privacy'))
         expected = ("New branches you create for %(name)s are public "
-                    "initially." % dict(name=product.title))
-        preface = text[:len(expected)]
-        self.assertEqual(expected, preface)
-        self.assertTextMatchesExpressionIgnoreWhitespace(expected, preface)
+                    "initially.*" % dict(name=product.displayname))
+        self.assertTextMatchesExpressionIgnoreWhitespace(expected, text)
 
 
 def test_suite():
