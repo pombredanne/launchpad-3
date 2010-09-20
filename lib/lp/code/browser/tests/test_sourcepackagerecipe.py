@@ -699,11 +699,8 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
             'i386', ProcessorFamily.get(1), False, self.factory.makePerson(),
             supports_virtualized=True)
         recipe = self.makeRecipe()
-        recipe_url = canonical_url(recipe)
-        logout()
 
-        browser = setupBrowser()
-        browser.open(recipe_url)
+        browser = self.getViewBrowser(recipe, no_login=True)
         self.assertRaises(
             Unauthorized, browser.getLink('Request build(s)').click)
 

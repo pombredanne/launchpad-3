@@ -687,10 +687,17 @@ class BrowserTestCase(TestCaseWithFactory):
         self.assertIsNot(
             None, pattern.search(normalise_whitespace(text)), text)
 
-    def getViewBrowser(self, context, view_name=None):
+    def getViewBrowser(self, context, view_name=None, no_login=False):
         login(ANONYMOUS)
         url = canonical_url(context, view_name=view_name)
-        return self.getUserBrowser(url, self.user)
+        logout()
+        if no_login:
+            from canonical.launchpad.testing.pages import setupBrowser
+            browser = setupBrowser()
+            browser.open(url)
+            return browser
+        else:
+            return self.getUserBrowser(url, self.user)
 
     def getMainText(self, context, view_name=None):
         """Return the main text of a context's page."""
