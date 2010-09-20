@@ -268,18 +268,18 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     @property
     def answers_usage(self):
         """See `IServiceUsage.`"""
-        return self.product.answers_usage
+        return self.distribution.answers_usage
 
     @property
     def blueprints_usage(self):
         """See `IServiceUsage.`"""
-        return self.product.blueprints_usage
+        return self.distribution.blueprints_usage
 
     @property
     def translations_usage(self):
         """See `IServiceUsage.`"""
         # If translations_usage is set for the Product, respect it.
-        usage = self.product.translations_usage
+        usage = self.distribution.translations_usage
         if usage != ServiceUsage.UNKNOWN:
             return usage
        
@@ -293,12 +293,12 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     @property
     def codehosting_usage(self):
         """See `IServiceUsage.`"""
-        return self.product.codehosting_usage
+        return self.distribution.codehosting_usage
 
     @property
     def bug_tracking_usage(self):
         """See `IServiceUsage.`"""
-        return self.product.bug_tracking_usage
+        return self.distribution.bug_tracking_usage
 
     # DistroArchSeries lookup properties/methods.
     architectures = SQLMultipleJoin(

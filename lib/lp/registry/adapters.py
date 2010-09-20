@@ -34,15 +34,11 @@ from lp.registry.interfaces.poll import (
     )
 
 
-@implementer(IServiceUsage)
-@adapter(IDistroSeries)
-def distroseries_to_serviceusage(distroseries):
-    """Adapts `IDistroSeries` object to `IServiceUsage`."""
-    return distroseries.distribution
-
-
-def distroseries_to_launchpadusage(distroseries):
-    """Adapts `IDistroSeries` object to `ILaunchpadUsage`."""
+def distroseries_to_distribution(distroseries):
+    """Adapts `IDistroSeries` object to `IDistribution`.
+    
+    This is useful for adapting to `IServiceUsage`
+    or `ILaunchpadUsage`."""
     return distroseries.distribution
 
 
