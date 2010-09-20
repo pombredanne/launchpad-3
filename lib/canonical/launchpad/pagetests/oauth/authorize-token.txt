@@ -45,7 +45,7 @@ it involves OpenID, which would complicate this test quite a bit.)
     See all applications authorized to access Launchpad on your behalf.
 
 This page contains one submit button for each item of OAuthPermission,
-except for 'Grant Permissions', which must be specifically requested.
+except for 'Desktop Integration', which must be specifically requested.
 
     >>> browser.getControl('No Access')
     <SubmitControl...
@@ -58,6 +58,7 @@ except for 'Grant Permissions', which must be specifically requested.
     >>> browser.getControl('Change Anything')
     <SubmitControl...
 
+    # XXX FIXME
     >>> browser.getControl('Grant Permissions')
     Traceback (most recent call last):
     ...
@@ -89,28 +90,28 @@ to deny permission altogether.
     Change Non-Private Data
     Change Anything
 
-The only time the 'Grant Permissions' permission shows up in this list
+The only time the 'Desktop Integration' permission shows up in this list
 is if the client specifically requests it, and no other
 permission. (Also requesting UNAUTHORIZED is okay--it will show up
 anyway.)
 
-    >>> print_access_levels('allow_permission=GRANT_PERMISSIONS')
-    No Access
-    Grant Permissions
+    >>> print_access_levels('allow_permission=DESKTOP_INTEGRATION')
+    Give all programs running on "hostname" access to my Launchpad account.
+    No, thanks.
 
     >>> print_access_levels(
-    ...     'allow_permission=GRANT_PERMISSIONS&allow_permission=UNAUTHORIZED')
-    No Access
-    Grant Permissions
+    ...     'allow_permission=DESKTOP_INTEGRATION&allow_permission=UNAUTHORIZED')
+    Give all programs running on "hostname" access to my Launchpad account.
+    No, thanks.
 
     >>> print_access_levels(
-    ...     'allow_permission=WRITE_PUBLIC&allow_permission=GRANT_PERMISSIONS')
+    ...     'allow_permission=WRITE_PUBLIC&allow_permission=DESKTOP_INTEGRATION')
     No Access
     Change Non-Private Data
 
 If an application doesn't specify any valid access levels, or only
 specifies the UNAUTHORIZED access level, Launchpad will show all the
-access levels, except for GRANT_PERMISSIONS.
+access levels, except for DESKTOP_INTEGRATION.
 
     >>> print_access_levels('')
     No Access

@@ -88,11 +88,13 @@ class OAuthRequestTokenView(LaunchpadView, JSONTokenMixin):
 
         token = consumer.newRequestToken()
         if self.request.headers.get('Accept') == HTTPResource.JSON_TYPE:
-            # Don't show the client the GRANT_PERMISSIONS access
+            # Don't show the client the DESKTOP_INTEGRATION access
             # level. If they have a legitimate need to use it, they'll
             # already know about it.
-            permissions = [permission for permission in OAuthPermission.items
-                           if permission != OAuthPermission.GRANT_PERMISSIONS]
+            permissions = [
+                permission for permission in OAuthPermission.items
+                if (permission != OAuthPermission.DESKTOP_INTEGRATION)
+                ]
             return self.getJSONRepresentation(
                 permissions, token, include_secret=True)
         return u'oauth_token=%s&oauth_token_secret=%s' % (
@@ -105,7 +107,7 @@ def token_exists_and_is_not_reviewed(form, action):
 def create_oauth_permission_actions():
     """Return a list of `Action`s for each possible `OAuthPermission`."""
     actions = Actions()
-    actions_excluding_grant_permissions = Actions()
+    actions_excluding_special_permissions = Actions()
     def success(form, action, data):
         form.reviewToken(action.permission)
     for permission in OAuthPermission.items:
@@ -114,14 +116,14 @@ def create_oauth_permission_actions():
             condition=token_exists_and_is_not_reviewed)
         action.permission = permission
         actions.append(action)
-        if permission != OAuthPermission.GRANT_PERMISSIONS:
-            actions_excluding_grant_permissions.append(action)
-    return actions, actions_excluding_grant_permissions
+        if permission != OAuthPermission.DESKTOP_INTEGRATION:
+            actions_excluding_special_permissions.append(action)
+    return actions, actions_excluding_special_permissions
 
 class OAuthAuthorizeTokenView(LaunchpadFormView, JSONTokenMixin):
     """Where users authorize consumers to access Launchpad on their behalf."""
 
-    actions, actions_excluding_grant_permissions = (
+    actions, actions_excluding_special_permissions = (
         create_oauth_permission_actions())
     label = "Authorize application to access Launchpad on your behalf"
     schema = IOAuthRequestToken
@@ -150,7 +152,7 @@ class OAuthAuthorizeTokenView(LaunchpadFormView, JSONTokenMixin):
 
         allowed_permissions = self.request.form_ng.getAll('allow_permission')
         if len(allowed_permissions) == 0:
-            return self.actions_excluding_grant_permissions
+            return self.actions_excluding_special_permissions
         actions = Actions()
 
         # UNAUTHORIZED is always one of the options. If the client
@@ -159,13 +161,14 @@ class OAuthAuthorizeTokenView(LaunchpadFormView, JSONTokenMixin):
         if OAuthPermission.UNAUTHORIZED.name in allowed_permissions:
             allowed_permissions.remove(OAuthPermission.UNAUTHORIZED.name)
 
-        # GRANT_PERMISSIONS cannot be requested as one of several
+        # DESKTOP_INTEGRATION cannot be requested as one of several
         # options--it must be the only option (other than
-        # UNAUTHORIZED). If GRANT_PERMISSIONS is one of several
+        # UNAUTHORIZED). If DESKTOP_INTEGRATION is one of several
         # options, remove it from the list.
-        if (OAuthPermission.GRANT_PERMISSIONS.name in allowed_permissions
+        if (OAuthPermission.DESKTOP_INTEGRATION.name in allowed_permissions
             and len(allowed_permissions) > 1):
-            allowed_permissions.remove(OAuthPermission.GRANT_PERMISSIONS.name)
+            name = OAuthPermission.DESKTOP_INTEGRATION.name
+            allowed_permissions.remove(name)
 
         for action in self.actions:
             if (action.permission.name in allowed_permissions
@@ -179,8 +182,8 @@ class OAuthAuthorizeTokenView(LaunchpadFormView, JSONTokenMixin):
             # UNAUTHORIZED). Rather than present the end-user with an
             # impossible situation where their only option is to deny
             # access, we'll present the full range of actions (except
-            # for GRANT_PERMISSIONS).
-            return self.actions_excluding_grant_permissions
+            # for special permissions like DESKTOP_INTEGRATION).
+            return self.actions_excluding_special_permissions
         return actions
 
     def initialize(self):
