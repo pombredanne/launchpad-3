@@ -165,7 +165,7 @@ special = {
 
 def test_suite():
     suite = build_test_suite(here, special, layer=DatabaseFunctionalLayer)
-    launchpadlib_path = os.path.join(os.path.pardir,  'doc', 'launchpadlib')
+    launchpadlib_path = os.path.join(os.path.pardir, 'doc', 'launchpadlib')
     lplib_suite = build_doctest_suite(here, launchpadlib_path,
                                       layer=DatabaseFunctionalLayer)
     suite.addTest(lplib_suite)

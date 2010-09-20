@@ -41,7 +41,7 @@ COMMASPACE = ', '
 # Mapping from modifiable attributes as they are named by the xmlrpc
 # interface, to the attribute names on the MailList instances.
 attrmap = {
-    'welcome_message'   : 'welcome_msg',
+    'welcome_message': 'welcome_msg',
     }
 
 
