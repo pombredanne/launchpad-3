@@ -9,104 +9,34 @@ __all__ = [
     'launchpadlib_credentials_for',
     'launchpadlib_for',
     'oauth_access_token_for',
-    'OAuthSigningBrowser',
     ]
 
 
 import shutil
 import tempfile
-import transaction
-from urllib2 import BaseHandler
-
-from oauth.oauth import OAuthRequest, OAuthSignatureMethod_PLAINTEXT
-
-from zope.app.publication.interfaces import IEndRequestEvent
-from zope.app.testing import ztapi
-from zope.testbrowser.testing import Browser
-from zope.component import getUtility
-import zope.testing.cleanup
 
 from launchpadlib.credentials import (
     AccessToken,
     Credentials,
     )
 from launchpadlib.launchpad import Launchpad
-
-from lp.testing._login import (
-    login,
-    logout,
-    )
+import transaction
+from zope.app.publication.interfaces import IEndRequestEvent
+from zope.app.testing import ztapi
+from zope.component import getUtility
+import zope.testing.cleanup
 
 from canonical.launchpad.interfaces import (
     IOAuthConsumerSet,
     IPersonSet,
-    OAUTH_REALM,
     )
 from canonical.launchpad.webapp.adapter import get_request_statements
 from canonical.launchpad.webapp.interaction import ANONYMOUS
 from canonical.launchpad.webapp.interfaces import OAuthPermission
-
-
-class OAuthSigningHandler(BaseHandler):
-    """A urllib2 handler that signs requests with an OAuth token."""
-
-    def __init__(self, consumer, token):
-        """Constructor
-
-        :param consumer: An OAuth consumer.
-        :param token: An OAuth token.
-        """
-        self.consumer = consumer
-        self.token = token
-
-    def default_open(self, req):
-        """Set the Authorization header for the outgoing request."""
-        signer = OAuthRequest.from_consumer_and_token(
-            self.consumer, self.token)
-        signer.sign_request(
-            OAuthSignatureMethod_PLAINTEXT(), self.consumer, self.token)
-        auth_header = signer.to_header(OAUTH_REALM)['Authorization']
-        req.headers['Authorization'] = auth_header
-
-
-class UserAgentFilteringHandler(BaseHandler):
-    """A urllib2 handler that replaces the User-Agent header.
-
-    [XXX bug=638058] This is a hack to work around a bug in
-    zope.testbrowser.
-    """
-    def __init__(self, user_agent):
-        """Constructor."""
-        self.user_agent = user_agent
-
-    def default_open(self, req):
-        """Set the User-Agent header for the outgoing request."""
-        req.headers['User-Agent'] = self.user_agent
-
-
-class OAuthSigningBrowser(Browser):
-    """A browser that signs each outgoing request with an OAuth token.
-
-    This lets us simulate the behavior of the Launchpad Credentials
-    Manager.
-    """
-    def __init__(self, consumer, token, user_agent=None):
-        """Constructor.
-
-        :param consumer: An OAuth consumer.
-        :param token: An OAuth token.
-        :param user_agent: The User-Agent string to send.
-        """
-        super(OAuthSigningBrowser, self).__init__()
-        self.mech_browser.add_handler(
-            OAuthSigningHandler(consumer, token))
-        if user_agent is not None:
-            self.mech_browser.add_handler(
-                UserAgentFilteringHandler(user_agent))
-
-        # This will give us tracebacks instead of unhelpful error
-        # messages.
-        self.handleErrors = False
+from lp.testing._login import (
+    login,
+    logout,
+    )
 
 
 def oauth_access_token_for(consumer_name, person, permission, context=None):
