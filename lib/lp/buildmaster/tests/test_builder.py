@@ -11,6 +11,8 @@ import xmlrpclib
 from testtools.content import Content
 from testtools.content_type import UTF8_TEXT
 
+from twisted.trial.unittest import TestCase as TrialTestCase
+
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -24,7 +26,8 @@ from canonical.launchpad.webapp.interfaces import (
     )
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
-    LaunchpadZopelessLayer
+    LaunchpadZopelessLayer,
+    TwistedLayer,
     )
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.builder import IBuilder, IBuilderSet
@@ -467,11 +470,13 @@ class TestCurrentBuildBehavior(TestCaseWithFactory):
             self.builder.current_build_behavior, BinaryPackageBuildBehavior)
 
 
-class TestSlave(TestCase):
+class TestSlave(TrialTestCase):
     """
     Integration tests for BuilderSlave that verify how it works against a
     real slave server.
     """
+
+    layer = TwistedLayer
 
     # XXX: JonathanLange 2010-09-20 bug=643521: There are also tests for
     # BuilderSlave in buildd-slave.txt and in other places. The tests here
@@ -488,11 +493,14 @@ class TestSlave(TestCase):
         """
         tachandler = BuilddSlaveTestSetup()
         tachandler.setUp()
-        def addLogFile(exc_info):
-            self.addDetail(
-                'xmlrpc-log-file',
-                Content(UTF8_TEXT, lambda: open(tachandler.logfile, 'r').read()))
-        self.addOnException(addLogFile)
+        # Basically impossible to do this w/ TrialTestCase. But it would be
+        # really nice to keep it.
+        #
+        # def addLogFile(exc_info):
+        #     self.addDetail(
+        #         'xmlrpc-log-file',
+        #         Content(UTF8_TEXT, lambda: open(tachandler.logfile, 'r').read()))
+        # self.addOnException(addLogFile)
         self.addCleanup(tachandler.tearDown)
         return tachandler
 
@@ -527,7 +535,7 @@ class TestSlave(TestCase):
         :return: The build id returned by the slave.
         """
         if build_id is None:
-            build_id = self.getUniqueString()
+            build_id = 'random-build-id'
         tachandler = self.getServerSlave()
         chroot_file = 'fake-chroot'
         dsc_file = 'thing'
@@ -600,13 +608,15 @@ class TestSlave(TestCase):
         # ensurepresent checks to see if a file is there.
         self.getServerSlave()
         slave = self.getClientSlave()
-        result = slave.ensurepresent('blahblah', None, None, None)
-        self.assertEqual([False, 'No URL'], result)
+        d = slave.ensurepresent('blahblah', None, None, None)
+        d.addCallback(self.assertEqual, [False, 'No URL'])
+        return d
 
     def test_ensurepresent_actually_there(self):
         # ensurepresent checks to see if a file is there.
         tachandler = self.getServerSlave()
         slave = self.getClientSlave()
         self.makeCacheFile(tachandler, 'blahblah')
-        result = slave.ensurepresent('blahblah', None, None, None)
-        self.assertEqual([True, 'No URL'], result)
+        d = slave.ensurepresent('blahblah', None, None, None)
+        d.addCallback(self.assertEqual, [True, 'No URL'])
+        return d

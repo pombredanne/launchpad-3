@@ -34,6 +34,7 @@ from storm.expr import (
     Count,
     Sum,
     )
+from twisted.internet import defer
 from zope.component import getUtility
 from zope.interface import implements
 
@@ -157,7 +158,8 @@ class BuilderSlave(object):
 
     def ensurepresent(self, sha1sum, url, username, password):
         """Attempt to ensure the given file is present."""
-        return self._server.ensurepresent(sha1sum, url, username, password)
+        return defer.succeed(
+            self._server.ensurepresent(sha1sum, url, username, password))
 
     def getFile(self, sha_sum):
         """Construct a file-like object to return the named file."""
