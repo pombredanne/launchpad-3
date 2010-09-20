@@ -13,43 +13,6 @@ See more initialization details in canonical/buildd/tests/harness.py
   >>> from canonical.buildd.tests import BuilddSlaveTestSetup
   >>> BuilddSlaveTestSetup().setUp()
 
-Use simple xmlrpclib client to certify the BuildSlave is running
-
-  >>> import xmlrpclib
-  >>> slave = xmlrpclib.Server('http://localhost:8221/rpc/')
-  >>> slave.echo('Hello World')
-  ['Hello World']
-
-With slave protocol v1.0new, the only way to get files to the slave is to
-put them in the librarian first...
-
-  >>> from canonical.librarian.client import LibrarianClient
-  >>> from StringIO import StringIO
-  >>> from canonical.launchpad.database import LibraryFileAlias
-  >>> import transaction
-  >>> lc = LibrarianClient()
-  >>> helloworld = "Hello World"
-  >>> hw_sio = StringIO(helloworld)
-  >>> alias = lc.addFile("HelloWorld.txt", len(helloworld),
-  ...                    hw_sio, "text/plain")
-  >>> transaction.commit()
-  >>> lf = LibraryFileAlias.get(alias)
-  >>> present, info = slave.ensurepresent(
-  ...     lf.content.sha1, lf.http_url, "", "")
-  >>> present, info
-  (True, 'Download')
-
-As of slave protocol v1.0new, /filecache/SHA1SUM is *THE* way
-to retrieve files from the slave. Verify it works...
-
-  >>> from urllib2 import urlopen
-  >>> f = urlopen("http://localhost:8221/filecache/" + lf.content.sha1)
-  >>> hw_str = f.read()
-  >>> f.close()
-  >>> hw_str == helloworld
-  True
-
-
 == BuilderSet polling operations ==
 
     >>> import logging
@@ -90,6 +53,7 @@ Tested, time to shutdown.
 
 At this point the buildd-slave is not accessible anymore.
 
+  >>> import xmlrpclib
   >>> s = xmlrpclib.Server('http://localhost:8221/rpc/')
   >>> s.info()
   Traceback (most recent call last):

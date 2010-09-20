@@ -8,10 +8,8 @@ import os
 import socket
 import xmlrpclib
 
-from testtools.content import Content
-from testtools.content_type import UTF8_TEXT
-
 from twisted.trial.unittest import TestCase as TrialTestCase
+from twisted.web.client import getPage
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -27,6 +25,7 @@ from canonical.launchpad.webapp.interfaces import (
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
+    TwistedLaunchpadZopelessLayer,
     TwistedLayer,
     )
 from lp.buildmaster.enums import BuildStatus
@@ -56,9 +55,12 @@ from lp.soyuz.tests.soyuzbuilddhelpers import (
     )
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
-    TestCase,
+    ANONYMOUS,
+    login_as,
+    logout,
     TestCaseWithFactory,
     )
+from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.fakemethod import FakeMethod
 
 
@@ -474,21 +476,11 @@ class TestCurrentBuildBehavior(TestCaseWithFactory):
             self.builder.current_build_behavior, BinaryPackageBuildBehavior)
 
 
-class TestSlave(TrialTestCase):
-    """
-    Integration tests for BuilderSlave that verify how it works against a
-    real slave server.
-    """
-
-    layer = TwistedLayer
-
-    # XXX: JonathanLange 2010-09-20 bug=643521: There are also tests for
-    # BuilderSlave in buildd-slave.txt and in other places. The tests here
-    # ought to become the canonical tests for BuilderSlave vs running buildd
-    # XML-RPC server interaction.
+class SlaveTestHelpers:
 
     # The URL for the XML-RPC service set up by `BuilddSlaveTestSetup`.
-    TEST_URL = 'http://localhost:8221/rpc/'
+    BASE_URL = 'http://localhost:8221'
+    TEST_URL = '%s/rpc/' % (BASE_URL,)
 
     def getServerSlave(self):
         """Set up a test build slave server.
@@ -548,6 +540,20 @@ class TestSlave(TrialTestCase):
         return slave.build(
             build_id, 'debian', chroot_file, {'.dsc': dsc_file},
             {'ogrecomponent': 'main'})
+
+
+class TestSlave(TrialTestCase, SlaveTestHelpers):
+    """
+    Integration tests for BuilderSlave that verify how it works against a
+    real slave server.
+    """
+
+    layer = TwistedLayer
+
+    # XXX: JonathanLange 2010-09-20 bug=643521: There are also tests for
+    # BuilderSlave in buildd-slave.txt and in other places. The tests here
+    # ought to become the canonical tests for BuilderSlave vs running buildd
+    # XML-RPC server interaction.
 
     def test_abort(self):
         slave = self.getClientSlave()
@@ -641,3 +647,49 @@ class TestSlave(TrialTestCase):
             return d.addCallback(self.assertEqual, [True, 'No URL'])
         d.addCallback(check_present)
         return d
+
+
+class TestSlaveWithLibrarian(TrialTestCase, SlaveTestHelpers):
+    """Tests that need more of Launchpad to run."""
+
+    layer = TwistedLaunchpadZopelessLayer
+
+    def setUp(self):
+        super(TestSlaveWithLibrarian, self)
+        self.factory = LaunchpadObjectFactory()
+        login_as(ANONYMOUS)
+        self.addCleanup(logout)
+
+    def test_ensurepresent_librarian(self):
+        # ensurepresent, when given an http URL for a file will download the
+        # file from that URL and report that the file is present, and it was
+        # downloaded.
+
+        # Use the Librarian because it's a "convenient" web server.
+        lf = self.factory.makeLibraryFileAlias(
+            'HelloWorld.txt', content="Hello World")
+        self.layer.txn.commit()
+        self.getServerSlave()
+        slave = self.getClientSlave()
+        d = slave.ensurepresent(
+            lf.content.sha1, lf.http_url, "", "")
+        d.addCallback(self.assertEqual, [True, 'Download'])
+        return d
+
+    def test_retrieve_files_from_filecache(self):
+        # Files that are present on the slave can be downloaded with a
+        # filename made from the sha1 of the content underneath the
+        # 'filecache' directory.
+        content = "Hello World"
+        lf = self.factory.makeLibraryFileAlias(
+            'HelloWorld.txt', content=content)
+        self.layer.txn.commit()
+        expected_url = '%s/filecache/%s' % (self.BASE_URL, lf.content.sha1)
+        self.getServerSlave()
+        slave = self.getClientSlave()
+        d = slave.ensurepresent(
+            lf.content.sha1, lf.http_url, "", "")
+        def check_file(ignored):
+            d = getPage(expected_url.encode('utf8'))
+            return d.addCallback(self.assertEqual, content)
+        return d.addCallback(check_file)
