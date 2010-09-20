@@ -31,6 +31,7 @@
       sign off on the specification.
     </p>
 
+    <tal:navigation replace="structure view/specs_batched/@@+navigation-links-upper" />
     <table class="listing sortable" id="work">
       <thead>
         <tr>
@@ -43,8 +44,8 @@
           <th>Approver</th>
         </tr>
       </thead>
-      <tbody class="lesser">
-        <tr tal:repeat="spec view/specs">
+      <tbody class="lesser" tal:define="specs view/specs_batched/currentBatch">
+        <tr tal:repeat="spec specs">
           <td>
             <span class="sortkey" tal:content="spec/priority/sortkey" />
             <span tal:content="spec/priority/title"
@@ -91,6 +92,7 @@
         </tr>
       </tbody>
     </table>
+    <tal:navigation replace="structure view/specs_batched/@@+navigation-links-lower" />
   </div>
 
 </div>

@@ -10,9 +10,6 @@ from doctest import (
 
 def test_suite():
     suite = DocTestSuite(
-            'canonical.launchpad.mailman.config',
-            optionflags=NORMALIZE_WHITESPACE | ELLIPSIS
-            )
+            'lp.services.mailman.config',
+            optionflags=NORMALIZE_WHITESPACE | ELLIPSIS)
     return suite
-
-

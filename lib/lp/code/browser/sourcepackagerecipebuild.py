@@ -82,6 +82,7 @@ class SourcePackageRecipeBuildView(LaunchpadView):
             return 'No suitable builders'
         return {
             BuildStatus.NEEDSBUILD: 'Pending build',
+            BuildStatus.UPLOADING: 'Build uploading',
             BuildStatus.FULLYBUILT: 'Successful build',
             BuildStatus.MANUALDEPWAIT: (
                 'Could not build because of missing dependencies'),
