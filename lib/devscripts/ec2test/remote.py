@@ -28,6 +28,7 @@ import gzip
 import optparse
 import os
 import pickle
+from StringIO import StringIO
 import subprocess
 import sys
 import tempfile
@@ -341,6 +342,38 @@ class Request:
         """Actually send 'message'."""
         self._smtp_connection.send_email(message)
 
+    def format_result(self, result, start_time, end_time):
+        duration = end_time - start_time
+        source_branch, source_revno = self.get_source_details()
+        target_branch, target_revno = self.get_target_details()
+        preface = [
+            'Tests started at approximately %s' % start_time,
+            '%s r%s' % (source_branch, source_revno),
+            '%s r%s' % (target_branch, target_revno),
+            '',
+            '%s tests run in %s, %s failures, %s errors' % (
+                result.testsRun, duration, len(result.failures),
+                len(result.errors)),
+            '',
+            ]
+        failing_tests = ['  ' + test.id() for test, fail in result.failures]
+        error_tests = ['  ' + test.id() for test, fail in result.errors]
+
+        full_error_stream = StringIO()
+        copy_result = SummaryResult(full_error_stream)
+        for test, error in result.failures:
+            full_error_stream.write(
+                copy_result._formatError('FAILURE', test, error))
+        for test, error in result.errors:
+            full_error_stream.write(
+                copy_result._formatError('ERROR', test, error))
+        output = (
+            preface + ['Failing tests', '-------------'] + failing_tests
+            + ['', 'Tests with errors', '-----------------'] + error_tests
+            + ['', full_error_stream.getvalue(),
+               '(See the attached file for the complete log)'])
+        return '\n'.join(output)
+
     def get_target_details(self):
         """Return (branch_url, revno) for trunk."""
         branch = bzrlib.branch.Branch.open(self._local_branch_path)
@@ -505,6 +538,7 @@ class WebTestLogger:
         self._index_filename = index_filename
         self._request = request
         self._echo_to_stdout = echo_to_stdout
+        self._start_time = None
 
     @classmethod
     def make_in_directory(cls, www_dir, request, echo_to_stdout):
@@ -629,9 +663,9 @@ class WebTestLogger:
             return self._write_to_filename(
                 self._index_filename, textwrap.dedent(html))
 
+        self._start_time = datetime.datetime.utcnow()
         msg = 'Tests started at approximately %(now)s UTC' % {
-            'now': datetime.datetime.utcnow().strftime(
-                '%a, %d %b %Y %H:%M:%S')}
+            'now': self._start_time.strftime('%a, %d %b %Y %H:%M:%S')}
         add_to_html('''\
             <html>
               <head>

@@ -5,6 +5,8 @@
 
 __metaclass__ = type
 
+from datetime import datetime, timedelta
+import doctest
 from email.mime.application import MIMEApplication
 from email.mime.text import MIMEText
 import gzip
@@ -24,6 +26,7 @@ from bzrlib.tests import TestCaseWithTransport
 from testtools import TestCase, TestResult
 from testtools.content import Content
 from testtools.content_type import ContentType
+from testtools.matchers import DocTestMatches
 
 from devscripts.ec2test.remote import (
     EC2Runner,
@@ -556,6 +559,81 @@ class TestRequest(TestCaseWithTransport, RequestHelpers):
             if not expected_part.is_multipart():
                 self.assertEqual(
                     expected_part.get_payload(), observed_part.get_payload())
+
+    def test_format_result_with_errors(self):
+        class SomeTest(TestCase):
+            def test_ok(self):
+                pass
+            def test_fail(self):
+                self.fail("oh no")
+            def test_error(self):
+                1/0
+        fail_test = SomeTest('test_fail')
+        error_test = SomeTest('test_error')
+        test = unittest.TestSuite(
+            [fail_test, error_test, SomeTest('test_ok')])
+        result = TestResult()
+        test.run(result)
+        tree = self.make_trunk()
+        # Fake a merge, giving silly revision ids.
+        tree.add_pending_merge('foo', 'bar')
+        req = self.make_request(
+            branch_url='https://example.com/bzr/thing', revno=42, trunk=tree)
+        source_branch, source_revno = req.get_source_details()
+        target_branch, target_revno = req.get_target_details()
+        start_time = datetime.utcnow()
+        end_time = start_time + timedelta(hours=1)
+        data = {
+            'source_branch': source_branch,
+            'source_revno': source_revno,
+            'target_branch': target_branch,
+            'target_revno': target_revno,
+            'start_time': str(start_time),
+            'duration': str(end_time - start_time),
+            'fail_id': fail_test.id(),
+            'error_id': error_test.id(),
+            'num_tests': result.testsRun,
+            'num_failures': len(result.failures),
+            'num_errors': len(result.errors),
+            }
+        result_text = req.format_result(result, start_time, end_time)
+        self.assertThat(
+            result_text, DocTestMatches("""\
+Tests started at approximately %(start_time)s
+%(source_branch)s r%(source_revno)s
+%(target_branch)s r%(target_revno)s
+<BLANKLINE>
+%(num_tests)s tests run in %(duration)s, %(num_failures)s failures, %(num_errors)s errors
+<BLANKLINE>
+Failing tests
+-------------
+  %(fail_id)s
+<BLANKLINE>
+Tests with errors
+-----------------
+  %(error_id)s
+<BLANKLINE>
+======================================================================
+FAILURE: test_fail...
+----------------------------------------------------------------------
+Text attachment: traceback
+------------
+Traceback (most recent call last):
+...
+------------
+<BLANKLINE>
+======================================================================
+ERROR: test_error...
+----------------------------------------------------------------------
+Text attachment: traceback
+------------
+Traceback (most recent call last):
+...
+------------
+<BLANKLINE>
+<BLANKLINE>
+(See the attached file for the complete log)
+""" % data, doctest.REPORT_NDIFF | doctest.ELLIPSIS))
 
 
 class TestWebTestLogger(TestCaseWithTransport, RequestHelpers):
