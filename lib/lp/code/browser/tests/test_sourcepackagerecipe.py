@@ -25,6 +25,7 @@ from canonical.launchpad.testing.pages import (
     extract_text,
     find_main_content,
     find_tags_by_class,
+    setupBrowser,
     )
 from canonical.launchpad.webapp import canonical_url
 from canonical.testing import (
@@ -103,7 +104,6 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
         return branch
 
     def test_create_new_recipe_not_logged_in(self):
-        from canonical.launchpad.testing.pages import setupBrowser
         product = self.factory.makeProduct(
             name='ratatouille', displayname='Ratatouille')
         branch = self.factory.makeBranch(
@@ -688,6 +688,25 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         self.assertEqual(
             set([2605]),
             set(build.buildqueue_record.lastscore for build in builds))
+
+    def test_request_builds_action_not_logged_in(self):
+        """Requesting a build creates pending builds."""
+        woody = self.factory.makeDistroSeries(
+            name='woody', displayname='Woody',
+            distribution=self.ppa.distribution)
+        naked_woody = remove_security_proxy_and_shout_at_engineer(woody)
+        naked_woody.nominatedarchindep = woody.newArch(
+            'i386', ProcessorFamily.get(1), False, self.factory.makePerson(),
+            supports_virtualized=True)
+        recipe = self.makeRecipe()
+        recipe_url = canonical_url(recipe)
+        logout()
+
+        browser = setupBrowser()
+        browser.open(recipe_url)
+        self.assertRaises(
+            Unauthorized, browser.getLink('Request build(s)').click)
+
 
     def test_request_builds_archive(self):
         recipe = self.factory.makeSourcePackageRecipe()
