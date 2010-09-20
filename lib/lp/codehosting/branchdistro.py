@@ -28,7 +28,7 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.launchpad.interfaces import ILaunchpadCelebrities
-from lp.code.enums import BranchType
+from lp.code.enums import BranchLifecycleStatus, BranchType
 from lp.code.errors import BranchExists
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
@@ -341,6 +341,8 @@ class DistroBrancher:
         new_db_branch.sourcepackage.setBranch(
             PackagePublishingPocket.RELEASE, new_db_branch,
             getUtility(ILaunchpadCelebrities).ubuntu_branches.teamowner)
+
+        old_db_branch.lifecycle_status = BranchLifecycleStatus.MATURE
         # switch_branches *moves* the data to locations dependent on the
         # new_branch's id, so if the transaction was rolled back we wouldn't
         # know the branch id and thus wouldn't be able to find the branch data
