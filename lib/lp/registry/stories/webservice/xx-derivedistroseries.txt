@@ -22,7 +22,7 @@ Set Up
 Calling
 -------
 
-We can't call .deriveDistroSeries() with a distroseries that isn't the 
+We can't call .deriveDistroSeries() with a distroseries that isn't the
 child's parent
 
     >>> series_url = '/%s/%s' % (parent.parent.name, parent.name)

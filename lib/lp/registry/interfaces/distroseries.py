@@ -36,6 +36,7 @@ from lazr.restful.fields import (
     Reference,
     ReferenceChoice,
     )
+from lazr.restful.interface import copy_field
 from zope.component import getUtility
 from zope.interface import (
     Attribute,
@@ -796,29 +797,15 @@ class IDistroSeriesPublic(
         """
 
     @operation_parameters(
-        name=TextLine(
-            title=_("The name of the distroseries to derive."),
-            required=True),
-        displayname=TextLine(
-            title=_("The displayname of the distroseries to derive."),
-            required=False),
-        summary=TextLine(
-            title=_("The summary of the distroseries to derive."),
-            required=False),
-        description=TextLine(
-            title=_("The description of the distroseries to derive."),
-            required=False),
-        version=TextLine(
-            title=_("The version of the distroseries to derive."),
-            required=False),
-        distribution=TextLine(
-            title=_("The distribution the derived distroseries is part of."),
-            required=False),
-        status=TextLine(
-            title=_("Status the derived distroseries to created is."),
-            required=False),
-        arches=List(
-            title=_("The list of arches to copy to the derived "
+        name=copy_field(name, required=True),
+        displayname=copy_field(displayname, required=False),
+        title=copy_field(title, required=False),
+        description=copy_field(description, required=False),
+        version=copy_field(version, required=False),
+        distribution=copy_field(distribution, required=False),
+        status=copy_field(status, required=False),
+        architectures=List(
+            title=_("The list of architectures to copy to the derived "
             "distroseries."),
             required=False),
         packagesets=List(
@@ -829,8 +816,8 @@ class IDistroSeriesPublic(
     @call_with(user=REQUEST_USER)
     @export_write_operation()
     def deriveDistroSeries(
-        user, name, displayname, summary, description, version,
-        distribution, status, arches, packagesets):
+        user, name, displayname, title, description, version,
+        distribution, status, architectures, packagesets):
         """Derive a distroseries from this one.
 
         This method performs checks, can create the new distroseries if
@@ -842,7 +829,7 @@ class IDistroSeriesPublic(
             up, and then initialise.
         :param displayname: The Display Name for the new distroseries.
             If the distroseries already exists this parameter is ignored.
-        :param summary: The Summary for the new distroseries. If the
+        :param title: The Title for the new distroseries. If the
             distroseries already exists this parameter is ignored.
         :param description: The Description for the new distroseries. If the
             distroseries already exists this parameter is ignored.
@@ -854,8 +841,8 @@ class IDistroSeriesPublic(
         :param status: The status the new distroseries will be created
             in. If the distroseries isn't specified, this parameter will
             be ignored. Defaults to FROZEN.
-        :param arches: The architectures to copy to the derived series.
-            If not specified, all of the arches are copied.
+        :param architectures: The architectures to copy to the derived
+            series. If not specified, all of the architectures are copied.
         :param packagesets: The packagesets to copy to the derived series.
             If not specified, all of the packagesets are copied.
         """

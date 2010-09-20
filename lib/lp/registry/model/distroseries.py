@@ -1806,25 +1806,26 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     def deriveDistroSeries(
         self, user, name, distribution=None, displayname=None,
-        summary=None, description=None, version=None,
-        status=SeriesStatus.FROZEN, arches=(), packagesets=()):
+        title=None, description=None, version=None,
+        status=SeriesStatus.FROZEN, architectures=(), packagesets=()):
         """See `IDistroSeries`."""
-        if not user.inTeam('soyuz-team'):
+        # XXX StevenK bug=643369 This should be in the security adapter
+        # This should be allowed if the user is a driver for self.parent
+        # or the child.parent's drivers.
+        if not (user.inTeam('soyuz-team') or user.inTeam('admins')):
             raise Unauthorized
-        #if self.distribution is ubuntu and not user.in_tech_board
-        #elsif not user a driver
         child = IStore(self).find(DistroSeries, name=name).one()
         if child is None:
             if distribution is None:
                 distribution = self.distribution
-            for param in (displayname, summary, description, version):
-                if not param:
+            for param in (displayname, title, description, version):
+                if param is None or len(param) == 0:
                     raise DerivationError(
-                        "Display Name, Summary, Description and Version"
+                        "Display Name, Title, Description and Version"
                          " all need to be set when creating a"
                          " distroseries")
             child = getUtility(IDistroSeriesSet).new(
-                name=name, displayname=displayname, summary=summary,
+                name=name, displayname=displayname, title=title,
                 description=description, version=version,
                 distribution=distribution,
                 status=status,
@@ -1835,9 +1836,9 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 raise DerivationError(
                     "DistroSeries %s parent series isn't %s" % (
                         child.name, self.name))
-        ids = InitialiseDistroSeries(child)
+        initialise_series = InitialiseDistroSeries(child)
         try:
-            ids.check()
+            initialise_series.check()
         except InitialisationError, e:
             raise DerivationError(e)
         getUtility(IInitialiseDistroSeriesJobSource).create(child)
