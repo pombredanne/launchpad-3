@@ -694,7 +694,7 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         woody = self.factory.makeDistroSeries(
             name='woody', displayname='Woody',
             distribution=self.ppa.distribution)
-        naked_woody = remove_security_proxy_and_shout_at_engineer(woody)
+        naked_woody = removeSecurityProxy(woody)
         naked_woody.nominatedarchindep = woody.newArch(
             'i386', ProcessorFamily.get(1), False, self.factory.makePerson(),
             supports_virtualized=True)
