@@ -908,35 +908,3 @@ discarded.
     >>> vette_watcher.wait_for_discard('quahog')
     >>> print_message_summaries()
     Number of messages: 0
-
-
-Non-ascii messages
-==================
-
-Cate joins Launchpad and posts a message containing non-ascii characters to
-the mailing list.
-
-    >>> login('admin@canonical.com')
-    >>> cate = factory.makePersonByName('Cate')
-    >>> logout()
-    >>> transaction.commit()
-
-    >>> inject('itest-one', """\
-    ... From: Cate \xa9 Person <cperson@example.org>
-    ... To: team-one@lists.launchpad.dev
-    ... Subject: \xa9 Badgers!
-    ... Message-ID: <racoon>
-    ...
-    ... Watch out for badgers! \xa9
-    ... """)
-
-However, because Cate is not a member of the mailing list, her message gets
-held for moderator approval.
-
-    >>> vette_watcher.wait_for_hold('itest-one', 'racoon')
-    >>> print_message_summaries()
-    Number of messages: 1
-    bounces@canonical.com
-        ...
-        Itest One <noreply@launchpad.net>
-        New mailing list message requiring approval for Itest One

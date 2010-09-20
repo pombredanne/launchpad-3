@@ -64,6 +64,18 @@ class TestLPModerateTestCase(MailmanTestCase):
         args = (self.mm_list, message, msg_data)
         self.assertRaises(
             Errors.HoldMessage, LPModerate.process, *args)
+        self.assertEqual(1, self.mailing_list.getReviewableMessages().count())
+
+    def test_process_message_with_non_ascii_from_lp_user_held(self):
+        # Non-ascii messages can be held for moderation.
+        non_ascii_email = 'I \xa9 M <%s>' % self.lp_user_email.encode('ascii')
+        message = self.makeMailmanMessage(
+            self.mm_list, non_ascii_email, 'subject \xa9', 'content \xa9')
+        msg_data = {}
+        args = (self.mm_list, message, msg_data)
+        self.assertRaises(
+            Errors.HoldMessage, LPModerate.process, *args)
+        self.assertEqual(1, self.mailing_list.getReviewableMessages().count())
 
     def test_process_duplicate_message_discarded(self):
         # Messages are discarded is they are already held for moderation.
@@ -74,6 +86,7 @@ class TestLPModerateTestCase(MailmanTestCase):
         args = (self.mm_list, message, msg_data)
         self.assertRaises(
             Errors.DiscardMessage, LPModerate.process, *args)
+        self.assertEqual(0, self.mailing_list.getReviewableMessages().count())
 
     def test_process_empty_mesage_from_nonsubcriber_discarded(self):
         # Messages from Launchpad users without text content are discarded.
@@ -84,6 +97,7 @@ class TestLPModerateTestCase(MailmanTestCase):
         args = (self.mm_list, spam_message, msg_data)
         self.assertRaises(
             Errors.DiscardMessage, LPModerate.process, *args)
+        self.assertEqual(0, self.mailing_list.getReviewableMessages().count())
 
     def test_process_message_from_list_discarded(self):
         # Messages that claim to be from the list itself (not a subcriber) are
@@ -96,3 +110,4 @@ class TestLPModerateTestCase(MailmanTestCase):
         args = (self.mm_list, message, msg_data)
         self.assertRaises(
             Errors.DiscardMessage, LPModerate.process, *args)
+        self.assertEqual(0, self.mailing_list.getReviewableMessages().count())
