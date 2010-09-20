@@ -49,6 +49,15 @@ from bzrlib.smtp_connection import SMTPConnection
 import subunit
 
 
+class NonZeroExitCode(Exception):
+    """Raised when the child process exits with a non-zero exit code."""
+
+    def __init__(self, retcode):
+        super(NonZeroExitCode, self).__init__(
+            'Test process died with exit code %r, but no tests failed.'
+            % (retcode,))
+
+
 class SummaryResult(unittest.TestResult):
     """Test result object used to generate the summary."""
 
@@ -271,12 +280,16 @@ class LaunchpadTester:
         self._logger.prepare()
         try:
             popen = self._spawn_test_process()
-            self._gather_test_output(popen.stdout, self._logger)
-            exit_status = popen.wait()
+            result = self._gather_test_output(popen.stdout, self._logger)
+            retcode = popen.wait()
+            # The process could have an error not indicated by an actual test
+            # result nor by a raised exception
+            if result.wasSuccessful() and retcode:
+                raise NonZeroExitCode(retcode)
         except:
             self._logger.error_in_testrunner(sys.exc_info())
         else:
-            self._logger.got_result(not exit_status)
+            self._logger.got_result(result)
 
     def _gather_test_output(self, input_stream, logger):
         """Write the testrunner output to the logs."""
@@ -287,6 +300,7 @@ class LaunchpadTester:
             subunit_server.lineReceived(line)
             logger.got_line(line)
             summary_stream.flush()
+        return result
 
 
 class Request:
@@ -558,8 +572,9 @@ class WebTestLogger:
             if e.errno == errno.ENOENT:
                 return ''
 
-    def got_result(self, successful):
+    def got_result(self, result):
         """The tests are done and the results are known."""
+        successful = result.wasSuccessful()
         self._handle_pqm_submission(successful)
         if self._request.wants_email:
             self._write_to_filename(

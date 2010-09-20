@@ -21,7 +21,7 @@ import unittest
 from bzrlib.config import GlobalConfig
 from bzrlib.tests import TestCaseWithTransport
 
-from testtools import TestCase
+from testtools import TestCase, TestResult
 from testtools.content import Content
 from testtools.content_type import ContentType
 
@@ -676,7 +676,7 @@ class TestEC2Runner(TestCaseWithTransport, RequestHelpers):
         calls = []
         runner = self.make_ec2runner()
         def function(*args, **kwargs):
-            calls.append(args, kwargs)
+            calls.append((args, kwargs))
         runner.run("boring test method", function, "foo", "bar", baz="qux")
         self.assertEqual([(("foo", "bar"), {'baz': 'qux'})], calls)
 
@@ -769,18 +769,37 @@ class TestResultHandling(TestCaseWithTransport, RequestHelpers):
     def get_body_text(self, email):
         return email.get_payload()[0].get_payload()
 
+    def make_empty_result(self):
+        return TestResult()
+
+    def make_successful_result(self):
+        result = self.make_empty_result()
+        result.startTest(self)
+        result.stopTest(self)
+        return result
+
+    def make_failing_result(self):
+        result = self.make_empty_result()
+        result.startTest(self)
+        try:
+            1/0
+        except ZeroDivisionError:
+            result.addError(self, sys.exc_info())
+        result.stopTest(self)
+        return result
+
     def test_success_no_emails(self):
         log = []
         request = self.make_request(emails=[], emails_sent=log)
         logger = self.make_logger(request=request)
-        logger.got_result(True)
+        logger.got_result(self.make_successful_result())
         self.assertEqual([], log)
 
     def test_failure_no_emails(self):
         log = []
         request = self.make_request(emails=[], emails_sent=log)
         logger = self.make_logger(request=request)
-        logger.got_result(False)
+        logger.got_result(self.make_failing_result())
         self.assertEqual([], log)
 
     def test_submits_to_pqm_on_success(self):
@@ -789,7 +808,7 @@ class TestResultHandling(TestCaseWithTransport, RequestHelpers):
         request = self.make_request(
             emails=[], pqm_message=message, emails_sent=log)
         logger = self.make_logger(request=request)
-        logger.got_result(True)
+        logger.got_result(self.make_successful_result())
         self.assertEqual([message], log)
 
     def test_records_pqm_submission_in_email(self):
@@ -798,20 +817,20 @@ class TestResultHandling(TestCaseWithTransport, RequestHelpers):
         request = self.make_request(
             emails=['foo@example.com'], pqm_message=message, emails_sent=log)
         logger = self.make_logger(request=request)
-        logger.got_result(True)
+        logger.got_result(self.make_successful_result())
         [pqm_message, user_message] = log
         self.assertEqual(message, pqm_message)
         self.assertIn(
             'SUBMITTED TO PQM:\n%s' % (message['Subject'],),
             self.get_body_text(user_message))
 
-    def test_doesnt_submit_to_pqm_no_failure(self):
+    def test_doesnt_submit_to_pqm_on_failure(self):
         log = []
         message = {'Subject': 'foo'}
         request = self.make_request(
             emails=[], pqm_message=message, emails_sent=log)
         logger = self.make_logger(request=request)
-        logger.got_result(False)
+        logger.got_result(self.make_failing_result())
         self.assertEqual([], log)
 
     def test_records_non_pqm_submission_in_email(self):
@@ -820,7 +839,7 @@ class TestResultHandling(TestCaseWithTransport, RequestHelpers):
         request = self.make_request(
             emails=['foo@example.com'], pqm_message=message, emails_sent=log)
         logger = self.make_logger(request=request)
-        logger.got_result(False)
+        logger.got_result(self.make_failing_result())
         [user_message] = log
         self.assertIn(
             '**NOT** submitted to PQM:\n%s' % (message['Subject'],),
@@ -831,7 +850,7 @@ class TestResultHandling(TestCaseWithTransport, RequestHelpers):
         request = self.make_request(
             emails=['foo@example.com'], emails_sent=log)
         logger = self.make_logger(request=request)
-        logger.got_result(False)
+        logger.got_result(self.make_failing_result())
         [user_message] = log
         self.assertIn(
             '(See the attached file for the complete log)\n',
@@ -849,7 +868,7 @@ class TestResultHandling(TestCaseWithTransport, RequestHelpers):
             emails=['foo@example.com'], emails_sent=log)
         logger = self.make_logger(request=request)
         logger.get_summary_stream().write('bar\nbaz\nqux\n')
-        logger.got_result(False)
+        logger.got_result(self.make_failing_result())
         [user_message] = log
         self.assertEqual(
             'bar\nbaz\nqux\n\n(See the attached file for the complete log)\n',
@@ -863,7 +882,7 @@ class TestResultHandling(TestCaseWithTransport, RequestHelpers):
         logger = self.make_logger(request=request)
         logger.got_line("output from test process\n")
         logger.got_line("more output\n")
-        logger.got_result(False)
+        logger.got_result(self.make_successful_result())
         [user_message] = log
         [body, attachment] = user_message.get_payload()
         self.assertEqual('application/x-gzip', attachment['Content-Type'])
