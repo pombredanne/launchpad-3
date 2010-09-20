@@ -474,14 +474,14 @@ class TestRequest(TestCaseWithTransport, RequestHelpers):
     def test_submit_to_pqm_unsuccessful(self):
         # submit_to_pqm returns the subject of the PQM mail even if it's
         # handling a failed test run.
-        message = {'Subject:': 'My PQM message'}
+        message = {'Subject': 'My PQM message'}
         req = self.make_request(pqm_message=message)
         subject = req.submit_to_pqm(successful=False)
         self.assertIs(message.get('Subject'), subject)
 
     def test_submit_to_pqm_unsuccessful_no_email(self):
         # submit_to_pqm doesn't send any email if the run was unsuccessful.
-        message = {'Subject:': 'My PQM message'}
+        message = {'Subject': 'My PQM message'}
         log = []
         req = self.make_request(pqm_message=message, emails_sent=log)
         req.submit_to_pqm(successful=False)
@@ -489,7 +489,7 @@ class TestRequest(TestCaseWithTransport, RequestHelpers):
 
     def test_submit_to_pqm_successful(self):
         # submit_to_pqm returns the subject of the PQM mail.
-        message = {'Subject:': 'My PQM message'}
+        message = {'Subject': 'My PQM message'}
         log = []
         req = self.make_request(pqm_message=message, emails_sent=log)
         subject = req.submit_to_pqm(successful=True)
@@ -560,6 +560,49 @@ class TestRequest(TestCaseWithTransport, RequestHelpers):
                 self.assertEqual(
                     expected_part.get_payload(), observed_part.get_payload())
 
+    def test_format_result_success(self):
+        class SomeTest(TestCase):
+            def test_a(self):
+                pass
+            def test_b(self):
+                pass
+            def test_c(self):
+                pass
+        test = unittest.TestSuite(map(SomeTest, ['test_' + x for x in 'abc']))
+        result = TestResult()
+        test.run(result)
+        tree = self.make_trunk()
+        # Fake a merge, giving silly revision ids.
+        tree.add_pending_merge('foo', 'bar')
+        req = self.make_request(
+            branch_url='https://example.com/bzr/thing', revno=42, trunk=tree)
+        source_branch, source_revno = req.get_source_details()
+        target_branch, target_revno = req.get_target_details()
+        start_time = datetime.utcnow()
+        end_time = start_time + timedelta(hours=1)
+        data = {
+            'source_branch': source_branch,
+            'source_revno': source_revno,
+            'target_branch': target_branch,
+            'target_revno': target_revno,
+            'start_time': str(start_time),
+            'duration': str(end_time - start_time),
+            'num_tests': result.testsRun,
+            'num_failures': len(result.failures),
+            'num_errors': len(result.errors),
+            }
+        result_text = req.format_result(result, start_time, end_time)
+        self.assertThat(
+            result_text, DocTestMatches("""\
+Tests started at approximately %(start_time)s
+Source: %(source_branch)s r%(source_revno)s
+Target: %(target_branch)s r%(target_revno)s
+<BLANKLINE>
+%(num_tests)s tests run in %(duration)s, %(num_failures)s failures, %(num_errors)s errors
+<BLANKLINE>
+(See the attached file for the complete log)
+""" % data, doctest.REPORT_NDIFF | doctest.ELLIPSIS))
+
     def test_format_result_with_errors(self):
         class SomeTest(TestCase):
             def test_ok(self):
@@ -600,8 +643,8 @@ class TestRequest(TestCaseWithTransport, RequestHelpers):
         self.assertThat(
             result_text, DocTestMatches("""\
 Tests started at approximately %(start_time)s
-%(source_branch)s r%(source_revno)s
-%(target_branch)s r%(target_revno)s
+Source: %(source_branch)s r%(source_revno)s
+Target: %(target_branch)s r%(target_revno)s
 <BLANKLINE>
 %(num_tests)s tests run in %(duration)s, %(num_failures)s failures, %(num_errors)s errors
 <BLANKLINE>
@@ -934,23 +977,19 @@ class TestResultHandling(TestCaseWithTransport, RequestHelpers):
             '(See the attached file for the complete log)\n',
             self.get_body_text(user_message))
 
-    def test_email_body_is_summary(self):
+    def test_email_body_is_format_result(self):
         # The body of the email sent to the user is the summary file.
-        # XXX: JonathanLange 2010-08-17: We actually want to change this
-        # behaviour so that the summary log stays roughly the same as it is
-        # now and can vary independently from the contents of the sent
-        # email. We probably just want the contents of the email to be a list
-        # of failing tests.
         log = []
         request = self.make_request(
             emails=['foo@example.com'], emails_sent=log)
         logger = self.make_logger(request=request)
-        logger.get_summary_stream().write('bar\nbaz\nqux\n')
-        logger.got_result(self.make_failing_result())
+        result = self.make_failing_result()
+        logger.got_result(result)
         [user_message] = log
         self.assertEqual(
-            'bar\nbaz\nqux\n\n(See the attached file for the complete log)\n',
-            self.get_body_text(user_message))
+            request.format_result(
+                result, logger._start_time, logger._end_time),
+            self.get_body_text(user_message).decode('quoted-printable'))
 
     def test_gzip_of_full_log_attached(self):
         # The full log is attached to the email.

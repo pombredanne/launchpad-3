@@ -342,36 +342,55 @@ class Request:
         """Actually send 'message'."""
         self._smtp_connection.send_email(message)
 
+    def _format_test_list(self, header, tests):
+        if not tests:
+            return []
+        tests = ['  ' + test.id() for test, error in tests]
+        return [header, '-' * len(header)] + tests + ['']
+
     def format_result(self, result, start_time, end_time):
         duration = end_time - start_time
-        source_branch, source_revno = self.get_source_details()
-        target_branch, target_revno = self.get_target_details()
-        preface = [
+        output = [
             'Tests started at approximately %s' % start_time,
-            '%s r%s' % (source_branch, source_revno),
-            '%s r%s' % (target_branch, target_revno),
+            ]
+        source = self.get_source_details()
+        if source:
+            output.append('Source: %s r%s' % source)
+        target = self.get_target_details()
+        if target:
+            output.append('Target: %s r%s' % target)
+        output.extend([
             '',
             '%s tests run in %s, %s failures, %s errors' % (
                 result.testsRun, duration, len(result.failures),
                 len(result.errors)),
             '',
-            ]
-        failing_tests = ['  ' + test.id() for test, fail in result.failures]
-        error_tests = ['  ' + test.id() for test, fail in result.errors]
+            ])
 
-        full_error_stream = StringIO()
-        copy_result = SummaryResult(full_error_stream)
-        for test, error in result.failures:
-            full_error_stream.write(
-                copy_result._formatError('FAILURE', test, error))
-        for test, error in result.errors:
-            full_error_stream.write(
-                copy_result._formatError('ERROR', test, error))
-        output = (
-            preface + ['Failing tests', '-------------'] + failing_tests
-            + ['', 'Tests with errors', '-----------------'] + error_tests
-            + ['', full_error_stream.getvalue(),
-               '(See the attached file for the complete log)'])
+        bad_tests = (
+            self._format_test_list('Failing tests', result.failures) +
+            self._format_test_list('Tests with errors', result.errors))
+        output.extend(bad_tests)
+
+        if bad_tests:
+            full_error_stream = StringIO()
+            copy_result = SummaryResult(full_error_stream)
+            for test, error in result.failures:
+                full_error_stream.write(
+                    copy_result._formatError('FAILURE', test, error))
+            for test, error in result.errors:
+                full_error_stream.write(
+                    copy_result._formatError('ERROR', test, error))
+            output.append(full_error_stream.getvalue())
+
+        subject = self._get_pqm_subject()
+        if subject:
+            if result.wasSuccessful():
+                output.append('SUBMITTED TO PQM:')
+            else:
+                output.append('**NOT** submitted to PQM:')
+            output.extend([subject, ''])
+        output.extend(['(See the attached file for the complete log)', ''])
         return '\n'.join(output)
 
     def get_target_details(self):
@@ -496,12 +515,15 @@ class Request:
                     continue
                 yield name, branch.get_parent(), branch.revno()
 
-    def submit_to_pqm(self, successful):
-        """Submit this request to PQM, if successful & configured to do so."""
+    def _get_pqm_subject(self):
         if not self._pqm_message:
             return
-        subject = self._pqm_message.get('Subject')
-        if successful:
+        return self._pqm_message.get('Subject')
+
+    def submit_to_pqm(self, successful):
+        """Submit this request to PQM, if successful & configured to do so."""
+        subject = self._get_pqm_subject()
+        if subject and successful:
             self._send_email(self._pqm_message)
         return subject
 
@@ -538,7 +560,9 @@ class WebTestLogger:
         self._index_filename = index_filename
         self._request = request
         self._echo_to_stdout = echo_to_stdout
-        self._start_time = None
+        # Actually set by prepare(), but setting to a dummy value to make
+        # testing easier.
+        self._start_time = datetime.datetime.utcnow()
 
     @classmethod
     def make_in_directory(cls, www_dir, request, echo_to_stdout):
@@ -608,15 +632,14 @@ class WebTestLogger:
 
     def got_result(self, result):
         """The tests are done and the results are known."""
+        self._end_time = datetime.datetime.utcnow()
         successful = result.wasSuccessful()
         self._handle_pqm_submission(successful)
         if self._request.wants_email:
-            self._write_to_filename(
-                self._summary_filename,
-                '\n(See the attached file for the complete log)\n')
-            summary = self.get_summary_contents()
+            email_text = self._request.format_result(
+                result, self._start_time, self._end_time)
             full_log_gz = gzip_data(self.get_full_log_contents())
-            self._request.send_report_email(successful, summary, full_log_gz)
+            self._request.send_report_email(successful, email_text, full_log_gz)
 
     def _handle_pqm_submission(self, successful):
         subject = self._request.submit_to_pqm(successful)
