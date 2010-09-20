@@ -13,6 +13,10 @@ __all__ = [
     'IDistroSeriesDifferenceSource',
     ]
 
+from lazr.restful.declarations import (
+    export_as_webservice_entry,
+    exported,
+    )
 from lazr.restful.fields import Reference
 from zope.interface import Interface
 from zope.schema import (
@@ -39,18 +43,18 @@ class IDistroSeriesDifferencePublic(IHasOwner, Interface):
 
     id = Int(title=_('ID'), required=True, readonly=True)
 
-    derived_series = Reference(
+    derived_series = exported(Reference(
         IDistroSeries, title=_("Derived series"), required=True,
         readonly=True, description=_(
             "The distribution series which, together with its parent, "
-            "identifies the two series with the difference."))
+            "identifies the two series with the difference.")))
 
-    source_package_name = Reference(
+    source_package_name = exported(Reference(
         ISourcePackageName,
         title=_("Source package name"), required=True, readonly=True,
         description=_(
             "The package with a difference between the derived series "
-            "and its parent."))
+            "and its parent.")))
 
     package_diff = Reference(
         IPackageDiff, title=_("Package diff"), required=False,
@@ -134,6 +138,7 @@ class IDistroSeriesDifferenceEdit(Interface):
 class IDistroSeriesDifference(IDistroSeriesDifferencePublic,
                               IDistroSeriesDifferenceEdit):
     """An interface for a package difference between two distroseries."""
+    export_as_webservice_entry()
 
 
 class IDistroSeriesDifferenceSource(Interface):
