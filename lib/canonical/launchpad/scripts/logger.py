@@ -21,6 +21,8 @@ __all__ = [
     'BufferLogger',
     'FakeLogger',
     'QuietFakeLogger',
+    'OopsHandler',
+    'LaunchpadFormatter',
     'DEBUG2', 'DEBUG3', 'DEBUG4', 'DEBUG5',
     'DEBUG6', 'DEBUG7', 'DEBUG8', 'DEBUG9',
     ]
