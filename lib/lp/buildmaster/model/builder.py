@@ -112,7 +112,7 @@ class TimeoutTransport(xmlrpclib.Transport):
         return TimeoutHTTP(host)
 
 
-class BuilderSlave(xmlrpclib.ServerProxy):
+class BuilderSlave(object):
     """Add in a few useful methods for the XMLRPC slave."""
 
     # XXX: This (BuilderSlave) should use composition, rather than
@@ -137,9 +137,27 @@ class BuilderSlave(xmlrpclib.ServerProxy):
         self.vm_host = vm_host
         self.urlbase = urlbase
         rpc_url = urlappend(urlbase, "rpc")
-        xmlrpclib.Server.__init__(self, rpc_url,
-                                  transport=TimeoutTransport(),
-                                  allow_none=True)
+        self._server = xmlrpclib.Server(
+            rpc_url, transport=TimeoutTransport(), allow_none=True)
+
+    def abort(self):
+        return self._server.abort()
+
+    def echo(self, *args):
+        """Echo the arguments back."""
+        return self._server.echo(*args)
+
+    def info(self):
+        """Return the protocol version and the builder methods supported."""
+        return self._server.info()
+
+    def status(self):
+        """Return the status of the build daemon."""
+        return self._server.status()
+
+    def ensurepresent(self, sha1sum, url, username, password):
+        """Attempt to ensure the given file is present."""
+        return self._server.ensurepresent(sha1sum, url, username, password)
 
     def getFile(self, sha_sum):
         """Construct a file-like object to return the named file."""
@@ -197,12 +215,9 @@ class BuilderSlave(xmlrpclib.ServerProxy):
         :param args: A dictionary of extra arguments. The contents depend on
             the build job type.
         """
-        # Can't upcall to xmlrpclib.ServerProxy, since it doesn't actually
-        # have a 'build' method.
-        build_method = xmlrpclib.ServerProxy.__getattr__(self, 'build')
         try:
-            return build_method(
-                self, buildid, builder_type, chroot_sha1, filemap, args)
+            return self._server.build(
+                buildid, builder_type, chroot_sha1, filemap, args)
         except xmlrpclib.Fault, info:
             raise BuildSlaveFailure(info)
 

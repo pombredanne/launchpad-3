@@ -4,11 +4,17 @@
 """Test Builder features."""
 
 import errno
+import os
 import socket
+
+from testtools.content import Content
+from testtools.content_type import UTF8_TEXT
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.buildd.slave import BuilderStatus
+from canonical.buildd.tests.harness import BuilddSlaveTestSetup
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
@@ -25,6 +31,7 @@ from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior,
     )
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
+from lp.buildmaster.model.builder import BuilderSlave
 from lp.buildmaster.model.buildfarmjobbehavior import IdleBuildBehavior
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.soyuz.enums import (
@@ -40,7 +47,10 @@ from lp.soyuz.tests.soyuzbuilddhelpers import (
     MockBuilder,
     )
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    TestCase,
+    TestCaseWithFactory,
+    )
 from lp.testing.fakemethod import FakeMethod
 
 
@@ -454,3 +464,67 @@ class TestCurrentBuildBehavior(TestCaseWithFactory):
 
         self.assertIsInstance(
             self.builder.current_build_behavior, BinaryPackageBuildBehavior)
+
+
+class TestSlave(TestCase):
+    """
+    Integration tests for BuilderSlave that verify how it works against a
+    real slave server.
+    """
+
+    # XXX: It would be really nice to get the server-side logs for XML-RPC
+    # failures in these tests.
+
+    TEST_URL = 'http://localhost:8221/rpc/'
+
+    def addLogFile(self, slave):
+        self.addDetail(
+            'xmlrpc-log-file',
+            Content(UTF8_TEXT, lambda: open(slave.logfile, 'r').read()))
+
+    def getServer(self):
+        slave = BuilddSlaveTestSetup()
+        slave.setUp()
+        self.addOnException(lambda exc_info: self.addLogFile(slave))
+        self.addCleanup(slave.tearDown)
+        return slave
+
+    def getSlave(self):
+        return BuilderSlave(self.TEST_URL, 'vmhost')
+
+    def makeCacheFile(self, slave, filename):
+        path = os.path.join(slave.root, 'filecache', filename)
+        fd = open(path, 'w')
+        fd.write('something')
+        fd.close()
+        self.addCleanup(os.unlink, path)
+
+    def triggerGoodBuild(self, slave, build_id=None):
+        if build_id is None:
+            build_id = self.getUniqueString()
+        tachandler = self.getServer()
+        chroot_file = 'fake-chroot'
+        dsc_file = 'thing'
+        self.makeCacheFile(tachandler, chroot_file)
+        self.makeCacheFile(tachandler, dsc_file)
+        return slave.build(
+            build_id, 'debian', chroot_file, {'.dsc': dsc_file},
+            {'ogrecomponent': 'main'})
+
+    def test_build(self):
+        # Calling 'build' with an expected builder type, a good build id,
+        # valid chroot & filemaps works and returns a BuilderStatus of
+        # BUILDING.
+        build_id = 'some-id'
+        slave = self.getSlave()
+        result = self.triggerGoodBuild(slave, build_id)
+        self.assertEqual([BuilderStatus.BUILDING, build_id], result)
+
+    def test_abort(self):
+        slave = self.getSlave()
+        # We need to be in a BUILDING state before we can abort.
+        self.triggerGoodBuild(slave)
+        result = slave.abort()
+        self.assertEqual(result, BuilderStatus.ABORTING)
+
+    # XXX: echo, info, status, ensurepresent, ???
