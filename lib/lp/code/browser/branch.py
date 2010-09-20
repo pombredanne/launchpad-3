@@ -1318,7 +1318,7 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
                 description=data.get('comment'),
                 review_requests=review_requests,
                 commit_message=data.get('commit_message'),
-                default_review_type = review_type)
+                default_review_type=review_type, assign_default_reviewer=True)
             self.next_url = canonical_url(proposal)
         except InvalidBranchMergeProposal, error:
             self.addError(str(error))

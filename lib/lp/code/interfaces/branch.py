@@ -566,7 +566,9 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
     def addLandingTarget(registrant, target_branch, prerequisite_branch=None,
                          date_created=None, needs_review=False,
                          description=None, review_requests=None,
-                         review_diff=None, commit_message=None):
+                         review_diff=None, commit_message=None,
+                         assign_default_reviewer=False,
+                         default_review_type=None):
         """Create a new BranchMergeProposal with this branch as the source.
 
         Both the target_branch and the prerequisite_branch, if it is there,
@@ -586,6 +588,11 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
         :param description: A description of the bugs fixed, features added,
             or refactorings.
         :param review_requests: An optional list of (`Person`, review_type).
+        :param assign_default_reviewer: If True, and no review_requests are
+            specified, set the reviwer of the merge proposal to be the default
+            reviewer of the target branch, if any.
+        :param default_review_type: If a default reviewer is used, this is the
+            review type to request.
         """
 
     def scheduleDiffUpdates():

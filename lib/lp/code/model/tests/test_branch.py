@@ -67,6 +67,7 @@ from lp.code.errors import (
     CannotDeleteBranch,
     InvalidBranchMergeProposal,
     )
+from lp.code.event.branchmergeproposal import NewBranchMergeProposalEvent
 from lp.code.interfaces.branch import (
     DEFAULT_BRANCH_STATUS_IN_LISTING,
     IBranch,
@@ -1562,16 +1563,33 @@ class BranchAddLandingTarget(TestCaseWithFactory):
         self.product = self.factory.makeProduct()
 
         self.user = self.factory.makePerson()
+        self.reviewer = self.factory.makePerson(name='johndoe')
         self.source = self.factory.makeProductBranch(
             name='source-branch', owner=self.user, product=self.product)
         self.target = self.factory.makeProductBranch(
             name='target-branch', owner=self.user, product=self.product)
+        self.target_with_default_reviewer = self.factory.makeProductBranch(
+            name='target-branch-with-reviewer', owner=self.user,
+            product=self.product, reviewer=self.reviewer)
         self.prerequisite = self.factory.makeProductBranch(
             name='prerequisite-branch', owner=self.user, product=self.product)
 
     def tearDown(self):
         logout()
         super(BranchAddLandingTarget, self).tearDown()
+
+    def assertOnePendingReview(self, proposal, reviewer, review_type=None):
+        # There should be one pending vote for the reviewer with the specified
+        # review type.
+        votes = list(proposal.votes)
+        self.assertEqual(1, len(votes))
+        self.assertEqual(reviewer, votes[0].reviewer)
+        self.assertEqual(self.user, votes[0].registrant)
+        self.assertIs(None, votes[0].comment)
+        if review_type is None:
+            self.assertIs(None, votes[0].review_type)
+        else:
+            self.assertEqual(review_type, votes[0].review_type)
 
     def test_junkSource(self):
         """Junk branches cannot be used as a source for merge proposals."""
@@ -1650,6 +1668,47 @@ class BranchAddLandingTarget(TestCaseWithFactory):
         proposal.rejectBranch(self.user, 'some_revision')
         self.source.addLandingTarget(
             self.user, self.target, self.prerequisite)
+
+    def test_default_reviewer(self):
+        """If the target branch has a default reviewer set, this reviewer
+        should be assigned to the merge proposal, so long as the
+        assign_default_reviewer flag is True.
+        """
+        proposal = self.source.addLandingTarget(
+            self.user, self.target_with_default_reviewer,
+            assign_default_reviewer=True)
+        self.assertOnePendingReview(proposal, self.reviewer)
+
+    def test_default_reviewer_without_enable(self):
+        """If the target branch has a default reviewer set, this reviewer
+        should not be assigned to the merge proposal without the
+        assign_default_reviewer flag being set.
+        """
+        proposal = self.source.addLandingTarget(
+            self.user, self.target_with_default_reviewer)
+        self.assertEqual([], list(proposal.votes))
+
+    def test_default_reviewer_with_review_type(self):
+        """If the target branch has a default reviewer set, this reviewer
+        should be assigned to the merge proposal and the specified review type
+        used, so long as the assign_default_reviewer flag is True.
+        """
+        proposal = self.source.addLandingTarget(
+            self.user, self.target_with_default_reviewer,
+            default_review_type = 'code', assign_default_reviewer=True)
+        self.assertOnePendingReview(proposal, self.reviewer, 'code')
+
+    def test_notify_on_default_reviewer(self):
+        """Ensure that when a merge proposal is created with default reviewer
+        we only get a new branch merge proposal event and not an event for a
+        new reviewer being added.
+        """
+        result, event = self.assertNotifies(
+            NewBranchMergeProposalEvent,
+            self.source.addLandingTarget,
+            self.user, self.target_with_default_reviewer,
+            default_review_type = 'code', assign_default_reviewer=True)
+        self.assertEqual(result, event.object)
 
     def test_attributeAssignment(self):
         """Smoke test to make sure the assignments are there."""

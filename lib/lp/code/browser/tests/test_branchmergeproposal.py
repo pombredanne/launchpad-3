@@ -334,19 +334,8 @@ class TestBranchMergeProposalVoteView(TestCaseWithFactory):
         # We just test that rendering does not raise.
         view.render()
 
-
-class TestRegisterBranchMergeProposalView(TestCaseWithFactory):
-    """Test the merge proposal registration view."""
-
-    layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        TestCaseWithFactory.setUp(self)
-        self.target_branch = self.factory.makeProductBranch()
-        self.source_branch = self.factory.makeProductBranch(
-            product=self.target_branch.product)
-        self.user = self.factory.makePerson()
-        login_person(self.user)
+class RegisterBranchMergeProposalViewMixin:
+    """ Mixin class for BranchMergeProposalView tests."""
 
     def _createView(self):
         # Construct the view and initialize it.
@@ -379,6 +368,24 @@ class TestRegisterBranchMergeProposalView(TestCaseWithFactory):
             self.assertIs(None, votes[0].review_type)
         else:
             self.assertEqual(review_type, votes[0].review_type)
+
+
+class TestRegisterNoDefaultReviewBranchMergeProposalView(
+    TestCaseWithFactory, RegisterBranchMergeProposalViewMixin):
+    """Test the merge proposal registration view.
+
+    The target branch has no default reviewer assigned.
+    """
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        self.target_branch = self.factory.makeProductBranch()
+        self.source_branch = self.factory.makeProductBranch(
+            product=self.target_branch.product)
+        self.user = self.factory.makePerson()
+        login_person(self.user)
 
     def test_register_simplest_case(self):
         # This simplest case is where the user only specifies the target
@@ -470,6 +477,50 @@ class TestRegisterBranchMergeProposalView(TestCaseWithFactory):
         proposal = self._getSourceProposal()
         self.assertOnePendingReview(proposal, reviewer, 'god-like')
         self.assertEqual(proposal.description, "This is the description.")
+
+class TestRegisterBranchMergeProposalView(
+    TestCaseWithFactory, RegisterBranchMergeProposalViewMixin):
+    """Test the merge proposal registration view.
+
+    The target branch has a default reviewer assigned.
+    """
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        # The default reviewer is albert
+        self.albert = self.factory.makePerson(name='albert')
+        self.target_branch = self.factory.makeProductBranch(
+            reviewer=self.albert)
+        self.source_branch = self.factory.makeProductBranch(
+            product=self.target_branch.product)
+        self.user = self.factory.makePerson()
+        login_person(self.user)
+
+    def test_register_simplest_case(self):
+        # A simple case is where the user only specifies the target
+        # branch, and not an initial comment or reviewer. The target branch
+        # has a reviewer so that reviewer should be used
+        view = self._createView()
+        view.register_action.success(
+            {'target_branch': self.target_branch,
+             'needs_review': True})
+        proposal = self._getSourceProposal()
+        self.assertOnePendingReview(proposal, self.albert)
+        self.assertIs(None, proposal.description)
+
+    def test_register_request_review_type(self):
+        # We can ask for a specific review type. The target branch has a
+        # reviewer so that reviewer should be used.
+        view = self._createView()
+        view.register_action.success(
+            {'target_branch': self.target_branch,
+             'review_type' : 'god-like',
+             'needs_review': True})
+        proposal = self._getSourceProposal()
+        self.assertOnePendingReview(proposal, self.albert, 'god-like')
+        self.assertIs(None, proposal.description)
 
 
 class TestBranchMergeProposalView(TestCaseWithFactory):
