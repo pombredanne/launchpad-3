@@ -32,11 +32,14 @@ from lp.code.interfaces.branchjob import IRosettaUploadJobSource
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.revision import IRevisionSet
 from lp.code.model.branchrevision import BranchRevision
+from lp.code.model.branchmergeproposaljob import (
+    BranchMergeProposalJobSource, BranchMergeProposalJobType)
 from lp.code.model.revision import (
     Revision,
     RevisionAuthor,
     RevisionParent,
     )
+from lp.code.model.tests.test_diff import commit_file
 from lp.codehosting.scanner.bzrsync import BzrSync
 from lp.services.osutils import override_environ
 from lp.testing import TestCaseWithFactory
@@ -605,6 +608,34 @@ class TestUpdatePreviewDiffJob(BzrSyncTestCase):
         LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
         self.makeBzrSync(self.db_branch).syncBranchAndClose()
         self.assertIsNot(None, bmp.next_preview_diff_job)
+
+
+class TestGenerateIncrementalDiffJob(BzrSyncTestCase):
+    """Test the scheduling of GenerateIncrementalDiffJobs."""
+
+    def getPending(self):
+        return list(
+            BranchMergeProposalJobSource.iterReady(
+                BranchMergeProposalJobType.GENERATE_INCREMENTAL_DIFF
+                )
+            )
+
+    @run_as_db_user(config.launchpad.dbuser)
+    def test_create_on_new_revision(self):
+        """When branch tip changes, a job is created."""
+        bmp = self.factory.makeBranchMergeProposal(
+            source_branch=self.db_branch,
+            date_created=self.factory.getUniqueDate())
+        parent_id = commit_file(self.db_branch, 'foo', 'bar')
+        revision_id = commit_file(self.db_branch, 'foo', 'baz')
+        removeSecurityProxy(bmp).target_branch.last_scanned_id = 'rev'
+        self.assertEqual([], self.getPending())
+        transaction.commit()
+        LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
+        self.makeBzrSync(self.db_branch).syncBranchAndClose()
+        (job,) = self.getPending()
+        self.assertEqual(revision_id, job.new_revision_id)
+        self.assertEqual(parent_id, job.old_revision_id)
 
 
 class TestSetRecipeStale(BzrSyncTestCase):

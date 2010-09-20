@@ -22,6 +22,7 @@ __all__ = [
     'BranchMergeProposalJobType',
     'CodeReviewCommentEmailJob',
     'CreateMergeProposalJob',
+    'GenerateIncrementalDiffJob',
     'MergeProposalCreatedJob',
     'MergeProposalUpdatedEmailJob',
     'ReviewRequestedEmailJob',
@@ -770,21 +771,23 @@ class BranchMergeProposalJobSource:
         return BranchMergeProposalJobFactory.create(job)
 
     @staticmethod
-    def iterReady():
+    def iterReady(job_type=None):
         from lp.code.model.branch import Branch
         store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
         SourceBranch = ClassAlias(Branch)
         TargetBranch = ClassAlias(Branch)
-        jobs = store.find(
-            (BranchMergeProposalJob, Job, BranchMergeProposal,
-             SourceBranch, TargetBranch),
-            And(BranchMergeProposalJob.job == Job.id,
+        clauses = [BranchMergeProposalJob.job == Job.id,
                 Job._status.is_in([JobStatus.WAITING, JobStatus.RUNNING]),
                 BranchMergeProposalJob.branch_merge_proposal
                     == BranchMergeProposal.id,
                 BranchMergeProposal.source_branch == SourceBranch.id,
                 BranchMergeProposal.target_branch == TargetBranch.id,
-                ))
+                ]
+        if job_type is not None:
+            clauses.append(BranchMergeProposalJob.job_type == job_type)
+        jobs = store.find(
+            (BranchMergeProposalJob, Job, BranchMergeProposal,
+             SourceBranch, TargetBranch), And(*clauses))
         # Order by the job status first (to get running before waiting), then
         # the date_created, then job type.  This should give us all creation
         # jobs before comment jobs.

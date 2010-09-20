@@ -29,7 +29,6 @@ from storm.expr import (
     And,
     Count,
     Desc,
-    Max,
     NamedFunc,
     Not,
     Or,
@@ -62,11 +61,6 @@ from canonical.launchpad.interfaces.launchpad import (
     IPrivacy,
     )
 from canonical.launchpad.webapp import urlappend
-from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector,
-    MAIN_STORE,
-    SLAVE_FLAVOR,
-    )
 from lp.app.errors import UserCannotUnsubscribePerson
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.code.bzr import (
@@ -463,10 +457,18 @@ class Branch(SQLBase, BzrIdentityMixin):
 
     def scheduleDiffUpdates(self):
         """See `IBranch`."""
-        from lp.code.model.branchmergeproposaljob import UpdatePreviewDiffJob
-        jobs = [UpdatePreviewDiffJob.create(target)
-                for target in self.active_landing_targets
-                if target.target_branch.last_scanned_id is not None]
+        from lp.code.model.branchmergeproposaljob import (
+                GenerateIncrementalDiffJob,
+                UpdatePreviewDiffJob,
+        )
+        jobs = []
+        for merge_proposal in self.active_landing_targets:
+            if merge_proposal.target_branch.last_scanned_id is None:
+                continue
+            jobs.append(UpdatePreviewDiffJob.create(merge_proposal))
+            for old, new in merge_proposal.getMissingIncrementalDiffs():
+                GenerateIncrementalDiffJob.create(
+                    merge_proposal, old.revision_id, new.revision_id)
         return jobs
 
     # XXX: Tim Penhey, 2008-06-18, bug 240881
