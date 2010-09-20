@@ -707,7 +707,6 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         self.assertRaises(
             Unauthorized, browser.getLink('Request build(s)').click)
 
-
     def test_request_builds_archive(self):
         recipe = self.factory.makeSourcePackageRecipe()
         ppa2 = self.factory.makeArchive(
