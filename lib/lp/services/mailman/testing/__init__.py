@@ -5,6 +5,7 @@
 __metaclass__ = type
 __all__ = []
 
+from contextlib import contextmanager
 import email
 from email.mime.text import MIMEText
 import os
@@ -27,6 +28,16 @@ def get_mailing_list_api_test_proxy():
     return MailingListXMLRPCTestProxy(context=None, request=None)
 
 
+@contextmanager
+def fake_mailinglist_api_proxy():
+    original_get_proxy = XMLRPCRunner.get_mailing_list_api_proxy
+    XMLRPCRunner.get_mailing_list_api_proxy = get_mailing_list_api_test_proxy
+    try:
+        yield
+    finally:
+        XMLRPCRunner.get_mailing_list_api_proxy = original_get_proxy
+
+
 class MailmanTestCase(TestCaseWithFactory):
     """TestCase with factory and mailman support."""
 
@@ -35,14 +46,10 @@ class MailmanTestCase(TestCaseWithFactory):
     def setUp(self):
         super(MailmanTestCase, self).setUp()
         # Replace the xmlrpc proxy with a fast wrapper of the real view.
-        self.original_get_proxy = XMLRPCRunner.get_mailing_list_api_proxy
-        XMLRPCRunner.get_mailing_list_api_proxy = (
-            get_mailing_list_api_test_proxy)
+        self.useContext(fake_mailinglist_api_proxy())
 
     def tearDown(self):
         super(MailmanTestCase, self).tearDown()
-        # Restore the xmlrpc proxy.
-        XMLRPCRunner.get_mailing_list_api_proxy = self.original_get_proxy
         self.cleanMailmanList(self.mm_list)
 
     def makeMailmanList(self, lp_mailing_list):
