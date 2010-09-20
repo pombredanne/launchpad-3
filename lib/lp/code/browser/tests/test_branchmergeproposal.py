@@ -334,6 +334,7 @@ class TestBranchMergeProposalVoteView(TestCaseWithFactory):
         # We just test that rendering does not raise.
         view.render()
 
+
 class RegisterBranchMergeProposalViewMixin:
     """ Mixin class for BranchMergeProposalView tests."""
 
@@ -478,6 +479,7 @@ class TestRegisterNoDefaultReviewBranchMergeProposalView(
         self.assertOnePendingReview(proposal, reviewer, 'god-like')
         self.assertEqual(proposal.description, "This is the description.")
 
+
 class TestRegisterBranchMergeProposalView(
     TestCaseWithFactory, RegisterBranchMergeProposalViewMixin):
     """Test the merge proposal registration view.
@@ -516,7 +518,7 @@ class TestRegisterBranchMergeProposalView(
         view = self._createView()
         view.register_action.success(
             {'target_branch': self.target_branch,
-             'review_type' : 'god-like',
+             'review_type': 'god-like',
              'needs_review': True})
         proposal = self._getSourceProposal()
         self.assertOnePendingReview(proposal, self.albert, 'god-like')
@@ -807,7 +809,6 @@ class TestCommentAttachmentRendering(TestCaseWithFactory):
     """Test diff attachments are rendered correctly."""
 
     layer = LaunchpadFunctionalLayer
-
 
     def _makeCommentFromEmailWithAttachment(self, attachment_body):
         # Make an email message with an attachment, and create a code

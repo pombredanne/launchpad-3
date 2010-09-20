@@ -1037,7 +1037,7 @@ class IBranchEdit(Interface):
         is set, the branch gets moved into the junk namespace of the branch
         owner.
 
-        :raise: `BranchTargetError` if both project and source_package are set,
+        :raise: `BranchTargetError` if both project and source_package are set
           or if either the project or source_package fail to be adapted to an
           IBranchTarget.
         """

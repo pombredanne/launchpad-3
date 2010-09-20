@@ -707,6 +707,7 @@ class IMergeProposalUpdatedEmailJobSource(Interface):
 
 # XXX: JonathanLange 2010-01-06: This is only used in the scanner, perhaps it
 # should be moved there.
+
 def notify_modified(proposal, func, *args, **kwargs):
     """Call func, then notify about the changes it made.
 
