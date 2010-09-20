@@ -25,7 +25,6 @@ from canonical.launchpad.testing.pages import (
     extract_text,
     find_main_content,
     find_tags_by_class,
-    setupBrowser,
     )
 from canonical.launchpad.webapp import canonical_url
 from canonical.testing import (
@@ -47,7 +46,6 @@ from lp.testing import (
     ANONYMOUS,
     BrowserTestCase,
     login,
-    logout,
     person_logged_in,
     )
 from lp.testing.factory import remove_security_proxy_and_shout_at_engineer
@@ -108,12 +106,8 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
             name='ratatouille', displayname='Ratatouille')
         branch = self.factory.makeBranch(
             owner=self.chef, product=product, name='veggies')
-        branch_url = canonical_url(branch)
-        logout()
 
-        browser = setupBrowser()
-        browser.open(branch_url)
-
+        browser = self.getViewBrowser(branch, no_login=True)
         self.assertRaises(
             Unauthorized, browser.getLink('Create packaging recipe').click)
 
