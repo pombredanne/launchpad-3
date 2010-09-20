@@ -123,11 +123,6 @@ class BugComment:
         self.synchronized = False
 
     @property
-    def can_be_shown(self):
-        """Return whether or not the BugComment can be shown."""
-        return True
-
-    @property
     def show_for_admin(self):
         """Show hidden comments for Launchpad admins.
 
