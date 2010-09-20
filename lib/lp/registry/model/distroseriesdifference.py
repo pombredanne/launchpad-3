@@ -265,3 +265,8 @@ class DistroSeriesDifference(Storm):
             DistroSeriesDifferenceComment,
             DSDComment.distro_series_difference == self)
         return comments.order_by(Desc(DSDComment.id))
+
+    def blacklist(self):
+        """See `IDistroSeriesDifference`."""
+        pass
+

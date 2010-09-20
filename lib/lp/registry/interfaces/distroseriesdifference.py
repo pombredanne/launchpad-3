@@ -15,6 +15,7 @@ __all__ = [
 
 from lazr.restful.declarations import (
     export_as_webservice_entry,
+    export_write_operation,
     exported,
     )
 from lazr.restful.fields import Reference
@@ -49,12 +50,12 @@ class IDistroSeriesDifferencePublic(IHasOwner, Interface):
             "The distribution series which, together with its parent, "
             "identifies the two series with the difference.")))
 
-    source_package_name = exported(Reference(
+    source_package_name = Reference(
         ISourcePackageName,
         title=_("Source package name"), required=True, readonly=True,
         description=_(
             "The package with a difference between the derived series "
-            "and its parent.")))
+            "and its parent."))
 
     package_diff = Reference(
         IPackageDiff, title=_("Package diff"), required=False,
@@ -133,6 +134,10 @@ class IDistroSeriesDifferenceEdit(Interface):
 
     def addComment(owner, comment):
         """Add a comment on this difference."""
+
+    @export_write_operation()
+    def blacklist():
+        """Blacklist this version or all versions of this source package."""
 
 
 class IDistroSeriesDifference(IDistroSeriesDifferencePublic,
