@@ -2115,8 +2115,3 @@ Each bug has a collection of activities that have taken place with it.
   resource_type_link: u'http://.../#bug_activity'
   self_link: u'http://.../bugs/9/activity'
   whatchanged: u'thunderbird: status'
-
-The collection of bug tasks is not exposed as a resource:
-
-  >>> webservice.get("/activity").status
-  404

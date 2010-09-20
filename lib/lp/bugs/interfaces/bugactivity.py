@@ -37,30 +37,36 @@ class IBugActivity(Interface):
     export_as_webservice_entry()
 
     bug = exported(
-        BugField(title=_('Bug ID'), readonly=True))
+        BugField(title=_('Bug'), readonly=True))
+
     datechanged = exported(
         Datetime(title=_('Date Changed'),
                  description=_("The date on which this activity occurred."),
                  readonly=True))
+
     person = exported(PersonChoice(
         title=_('Person'), required=True, vocabulary='ValidPersonOrTeam',
         readonly=True, description=_("The person's Launchpad ID or "
         "e-mail address.")))
+
     whatchanged = exported(
         TextLine(title=_('What Changed'),
                  description=_("The property of the bug that changed."),
                  readonly=True))
+
     oldvalue = exported(
         TextLine(title=_('Old Value'),
                  description=_("The value before the change."),
                  readonly=True))
+
     newvalue = exported(
         TextLine(title=_('New Value'),
                  description=_("The value after the change."),
                  readonly=True))
+
     message = exported(
         Text(title=_('Message'),
-             description=_("The related property of the bug that changed."),
+             description=_("Additional information about what changed."),
              readonly=True))
 
 
