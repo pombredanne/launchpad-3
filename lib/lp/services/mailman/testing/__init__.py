@@ -51,7 +51,7 @@ class MailmanTestCase(TestCaseWithFactory):
         team = lp_mailing_list.team
         owner_email = team.teamowner.preferredemail.email
         mlist.Create(team.name, owner_email, 'password')
-        mlist.host_name = 'launchpad.dev'
+        mlist.host_name = 'lists.launchpad.dev'
         mlist.web_page_url = 'http://lists.launchpad.dev/mailman/'
         mlist.Save()
         mlist.addNewMember(owner_email)

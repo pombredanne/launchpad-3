@@ -84,6 +84,15 @@ def hold(mlist, msg, msgdata, annotation):
         syslog('vette',
                'Discarding duplicate held message-id: %s', message_id)
         raise Errors.DiscardMessage
+    # Discard messages that claim to be from the list itself because Mailman's
+    # internal handlers did not approve the message before it arrived at this
+    # step--these messages are forgeries.
+    list_address = mlist.getListAddress()
+    for sender in msg.get_senders():
+        if list_address == sender:
+            syslog('vette',
+                   'Discarding forged message-id: %s', message_id)
+            raise Errors.DiscardMessage
     # Discard messages without text content since there will be nothing to
     # moderate. Most of these messages are spam.
     if is_message_empty(msg):

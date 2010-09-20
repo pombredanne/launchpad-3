@@ -17,10 +17,12 @@ from lp.services.mailman.testing import MailmanTestCase
 class TestLPModerateTestCase(MailmanTestCase):
     """Test lpmoderate.
 
-    Mailman process methods quietly return. They may set message data
-    to raise an error to end processing. These tests often test for errors,
-    but that does not mean there is an error condition. To messages silently
-    pass through many process steps.
+    Mailman process() methods quietly return. They may set msg_data key-values
+    or raise an error to end processing. This group of tests tests often check
+    for errors, but that does not mean there is an error condition, it only
+    means message processing has reached a final decision. Messages that do
+    not cause a final decision pass-through and the process() methods ends
+    without a return.
     """
 
     layer = LaunchpadFunctionalLayer
@@ -74,11 +76,23 @@ class TestLPModerateTestCase(MailmanTestCase):
             Errors.DiscardMessage, LPModerate.process, *args)
 
     def test_process_empty_mesage_from_nonsubcriber_discarded(self):
-        # Messages from Launchpad users without text content are discarded
+        # Messages from Launchpad users without text content are discarded.
         spam_message = self.makeMailmanMessage(
             self.mm_list, self.lp_user_email,
             'get drugs', '<a><img /></a>.', mime_type='html')
         msg_data = dict(approved=False)
         args = (self.mm_list, spam_message, msg_data)
+        self.assertRaises(
+            Errors.DiscardMessage, LPModerate.process, *args)
+
+    def test_process_message_from_list_discarded(self):
+        # Messages that claim to be from the list itself (not a subcriber) are
+        # discarded because Mailman's internal handlers did not set 'approve'
+        # in msg_data.
+        list_email = 'spammer <%s>' % self.mailing_list.address
+        message = self.makeMailmanMessage(
+            self.mm_list, list_email, 'subject', 'any content.')
+        msg_data = {}
+        args = (self.mm_list, message, msg_data)
         self.assertRaises(
             Errors.DiscardMessage, LPModerate.process, *args)
