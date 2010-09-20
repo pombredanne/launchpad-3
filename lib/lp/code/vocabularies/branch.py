@@ -57,8 +57,9 @@ class BranchVocabularyBase(SQLObjectVocabularyBase):
         raise LookupError(token)
 
     def _getCollection(self):
-        """Override this to return the collection to which the search is
-        restricted.
+        """Return the collection of branches the vocabulary searches.
+
+        Subclasses MUST override and implement this.
         """
         raise NotImplementedError(self._getCollection)
 
