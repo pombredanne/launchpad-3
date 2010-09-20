@@ -63,6 +63,8 @@ from canonical.launchpad.webapp.interfaces import (
     SLAVE_FLAVOR,
     )
 from lp.app.errors import NotFoundError
+from lp.app.enums import ServiceUsage
+from lp.app.interfaces.launchpad import IServiceUsage
 from lp.blueprints.interfaces.specification import (
     SpecificationFilter,
     SpecificationGoalStatus,
@@ -186,7 +188,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     """A particular series of a distribution."""
     implements(
         ICanPublishPackages, IDistroSeries, IHasBugHeat, IHasBuildRecords,
-        IHasQueueItems)
+        IHasQueueItems, IServiceUsage)
 
     _table = 'DistroSeries'
     _defaultOrder = ['distribution', 'version']
@@ -262,6 +264,41 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             Component.name != 'partner'
             """ % self.id,
             clauseTables=["ComponentSelection"])
+
+    @property
+    def answers_usage(self):
+        """See `IServiceUsage.`"""
+        return IServiceUsage(self).answers_usage
+
+    @property
+    def blueprints_usage(self):
+        """See `IServiceUsage.`"""
+        return IServiceUsage(self).blueprints_usage
+
+    @property
+    def translations_usage(self):
+        """See `IServiceUsage.`"""
+        # If translations_usage is set for the Product, respect it.
+        usage = IServiceUsage(self).translations_usage
+        if usage != ServiceUsage.UNKNOWN:
+            return usage
+       
+        # If not, usage is based on the presence of current translation
+        # templates for the series.
+        if self.getCurrentTranslationTemplates.count() > 0:
+            return ServiceUsage.LAUNCHPAD
+        else:
+            return ServiceUsage.UNKNOWN
+
+    @property
+    def codehosting_usage(self):
+        """See `IServiceUsage.`"""
+        return IServiceUsage(self).codehosting_usage
+
+    @property
+    def bug_tracking_usage(self):
+        """See `IServiceUsage.`"""
+        return IServiceUsage(self).bug_tracking_usage
 
     # DistroArchSeries lookup properties/methods.
     architectures = SQLMultipleJoin(
