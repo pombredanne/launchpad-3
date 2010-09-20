@@ -37,7 +37,7 @@ def monkey_patch(mailman_path, config):
     # Calculate the parent directory of the canonical package.  This directory
     # will get appended to Mailman's sys.path.
     import canonical
-    from canonical.launchpad.mailman.config import configure_siteowner
+    from lp.services.mailman.config import configure_siteowner
     launchpad_top = os.path.dirname(
         os.path.dirname(os.path.dirname(canonical.__file__)))
     # Read the email footer template for all Launchpad messages.
@@ -88,7 +88,7 @@ def monkey_patch(mailman_path, config):
     runner_file = open(runner_path, 'w')
     try:
         print >> runner_file, (
-            'from canonical.launchpad.mailman.monkeypatches.xmlrpcrunner '
+            'from lp.services.mailman.monkeypatches.xmlrpcrunner '
             'import *')
     finally:
         runner_file.close()
@@ -104,7 +104,7 @@ def monkey_patch(mailman_path, config):
             mailman_path, 'Mailman', 'Handlers', mm_name + '.py')
         handler_file = open(handler_path, 'w')
         try:
-            package = 'canonical.launchpad.mailman.monkeypatches'
+            package = 'lp.services.mailman.monkeypatches'
             module = package + '.' + lp_name
             print >> handler_file, 'from', module, 'import *'
         finally:
