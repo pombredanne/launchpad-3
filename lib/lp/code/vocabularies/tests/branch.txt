@@ -1,19 +1,14 @@
 Branch Vocabularies
 ===================
 
-    >>> from lp.testing import login
-    >>> from lp.testing.sampledata import ADMIN_EMAIL
-    >>> from lp.registry.interfaces.product import IProductSet
-    >>> login(ADMIN_EMAIL)
+Launchpad has a few vocabularies that contain branches filtered in
+various ways.
+
     >>> from zope.schema.vocabulary import getVocabularyRegistry
     >>> vocabulary_registry = getVocabularyRegistry()
-    >>> from zope.security.proxy import removeSecurityProxy
-    >>> def get_naked_vocab(context, name):
-    ...     return removeSecurityProxy(
-    ...         vocabulary_registry.get(context, name))
 
 BranchVocabulary
-................
+----------------
 
 The list of bzr branches registered in Launchpad.
 
@@ -23,7 +18,7 @@ are restricted based on who is asking (as far as private branches is
 concerned).
 
     # Just use None as the context.
-    >>> branch_vocabulary = get_naked_vocab(None, "Branch")
+    >>> branch_vocabulary = vocabulary_registry.get(None, "Branch")
     >>> def print_vocab_branches(vocab, search):
     ...     for term in vocab.searchForTerms(search):
     ...         print term.value.unique_name
@@ -58,7 +53,8 @@ branch unique name as an ID:
     >>> branch = getUtility(IBranchLookup).get(15)
     >>> print branch.unique_name
     ~name12/gnome-terminal/main
-    >>> term = branch_vocabulary.toTerm(branch)
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> term = removeSecurityProxy(branch_vocabulary).toTerm(branch)
     >>> print term.token
     ~name12/gnome-terminal/main
 
@@ -80,27 +76,30 @@ The searches that the BranchVocabulary does are private branch aware.
 The results are effectively filtered on what the logged in user is
 able to see.
 
+    >>> from lp.testing import login, ANONYMOUS
+    >>> from lp.testing.sampledata import ADMIN_EMAIL
+
+    >>> login(ADMIN_EMAIL)
     >>> print_vocab_branches(branch_vocabulary, 'trunk')
     ~spiv/+junk/trunk
     ~limi/+junk/trunk
     ~landscape-developers/landscape/trunk
 
-    >>> login('no-priv@canonical.com')
+    >>> login(ANONYMOUS)
     >>> print_vocab_branches(branch_vocabulary, 'trunk')
     ~spiv/+junk/trunk
     ~limi/+junk/trunk
 
-    >>> login('foo.bar@canonical.com')
-
 
 BranchRestrictedOnProduct
-.........................
+-------------------------
 
 The BranchRestrictedOnProduct vocabulary restricts the result set to
 those of the product of the context.  Currently only two types of
 context are supported: Product; and Branch.  If a branch is the context,
 then the product of the branch is used to restrict the query.
 
+    >>> from lp.registry.interfaces.product import IProductSet
     >>> gnome_terminal = getUtility(IProductSet)["gnome-terminal"]
     >>> branch_vocabulary = vocabulary_registry.get(
     ...     gnome_terminal, "BranchRestrictedOnProduct")
@@ -124,7 +123,7 @@ BranchVocabulary with respect to the tokens and privacy awareness.
 
 
 HostedBranchRestrictedOnOwner
-.............................
+-----------------------------
 
 Here's a vocabulary for all hosted branches owned by the current user.
 
