@@ -1,6 +1,6 @@
 = Comments Imported From a Bug Watch =
 
-We now support importing comments from remote bug trackers.
+Comments can be imported from remote bugtrackers.
 
 These comments can be displayed like any other comments on a bug. Bug
 #15 has a bug watch against a debbugs bug.
