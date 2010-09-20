@@ -1,7 +1,7 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=C0102
+from __future__ import with_statement
 
 __metaclass__ = type
 
@@ -11,9 +11,15 @@ import transaction
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing import (
+    LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
 from lp.services.worlddata.interfaces.language import ILanguageSet
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    person_logged_in,
+    TestCaseWithFactory,
+    )
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue,
@@ -291,6 +297,45 @@ class TestGetGuessedPOFile(TestCaseWithFactory):
         self.assertEquals(catalan_valencia, pofile.language)
 
 
+class TestProductOwnerEntryImporter(TestCaseWithFactory):
+    """Test entries update when owners change."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        super(TestProductOwnerEntryImporter, self).setUp()
+        self.product = self.factory.makeProduct()
+        self.old_owner = self.product.owner
+        self.new_owner = self.factory.makePerson()
+        with person_logged_in(self.old_owner):
+            self.product.driver = self.new_owner
+        self.import_queue = getUtility(ITranslationImportQueue)
+
+    def test_product_change_owner_changes_entry_importer(self):
+        # Changing the Product owner also updates the importer of the entry.
+        with person_logged_in(self.old_owner):
+            entry = self.import_queue.addOrUpdateEntry(
+                u'po/sr.po', 'foo', True, self.old_owner,
+                productseries=self.product.series[0])
+            self.product.owner = self.new_owner
+        self.assertEqual(self.old_owner, entry.importer)
+
+    def test_product_change_owner_preserves_entry_importer(self):
+        # When the new owner already has an entry in the product's import
+        # queue, the entry importer is not updated because that would
+        # cause an non-unique key for the entry.
+        with person_logged_in(self.new_owner):
+            new_entry = self.import_queue.addOrUpdateEntry(
+                u'po/sr.po', 'foo', True, self.new_owner,
+                productseries=self.product.series[0])
+        with person_logged_in(self.old_owner):
+            old_entry = self.import_queue.addOrUpdateEntry(
+                u'po/sr.po', 'foo', True, self.old_owner,
+                productseries=self.product.series[0])
+            self.product.owner = self.new_owner
+        self.assertEqual(self.old_owner, old_entry.importer)
+
+
 def test_suite():
     """Add only specific test cases and leave out the base case."""
     suite = unittest.TestSuite()
@@ -300,5 +345,5 @@ def test_suite():
         unittest.makeSuite(TestCanSetStatusPOTemplateWithQueuedUser))
     suite.addTest(unittest.makeSuite(TestCanSetStatusPOFileWithQueuedUser))
     suite.addTest(unittest.makeSuite(TestGetGuessedPOFile))
+    suite.addTest(unittest.makeSuite(TestProductOwnerEntryImporter))
     return suite
-

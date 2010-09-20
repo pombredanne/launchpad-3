@@ -255,6 +255,11 @@
         factory="lp.translations.browser.translations.TranslationsVHostBreadcrumb"
         permission="zope.Public"/>
 
+    <!-- Subscribers to registry objects -->
+
+    <subscriber
+        for="canonical.launchpad.interfaces.IProduct zope.lifecycleevent.interfaces.IObjectModifiedEvent"
+        handler="lp.translations.subscribers.product_modified"/>
 
     <!-- DistroSeriesLanguage and Dummy -->
 
