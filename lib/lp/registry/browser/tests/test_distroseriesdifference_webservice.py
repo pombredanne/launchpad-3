@@ -5,6 +5,8 @@ from __future__ import with_statement
 
 __metaclass__ = type
 
+import transaction
+
 from lazr.restfulclient.errors import Unauthorized
 from zope.component import getUtility
 
@@ -52,13 +54,14 @@ class DistroSeriesDifferenceWebServiceTestCase(TestCaseWithFactory):
 
         self.assertRaises(Unauthorized, ws_diff.blacklist)
 
-    def test_blacklist_default(self):
-        # By default the specific version will be blacklisted.
+    def test_blacklist(self):
+        # The blacklist method can be called by people with edit access.
         ds_diff = self.factory.makeDistroSeriesDifference()
         ws_diff = ws_object(self.makeLaunchpadService(
             ds_diff.derived_series.owner), ds_diff)
 
         result = ws_diff.blacklist()
+        transaction.commit()
 
         utility = getUtility(IDistroSeriesDifferenceSource)
         ds_diff = utility.getByDistroSeriesAndName(

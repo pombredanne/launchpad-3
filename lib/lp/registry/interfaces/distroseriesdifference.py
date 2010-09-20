@@ -136,8 +136,12 @@ class IDistroSeriesDifferenceEdit(Interface):
         """Add a comment on this difference."""
 
     @export_write_operation()
-    def blacklist():
-        """Blacklist this version or all versions of this source package."""
+    def blacklist(all=False):
+        """Blacklist this version or all versions of this source package.
+
+        :param all: indicates whether all versions of this package should
+            be blacklisted or just the current (default).
+        """
 
 
 class IDistroSeriesDifference(IDistroSeriesDifferencePublic,
