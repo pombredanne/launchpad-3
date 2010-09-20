@@ -105,16 +105,6 @@ def construct_email_notifications(bug_notifications):
     mail_wrapper = MailWrapper(width=72)
     content = '\n\n'.join(text_notifications)
     from_address = get_bugmail_from_address(person, bug)
-
-    if comment is not None:
-        # The first time we import comments from a bug watch, a comment
-        # notification is added, originating from the Bug Watch Updater.
-        bug_watch_updater = getUtility(
-            ILaunchpadCelebrities).bug_watch_updater
-        is_initial_import_notification = (comment.owner == bug_watch_updater)
-        bug_message = getUtility(IBugMessageSet).getByBugAndMessage(
-            bug, comment)
-
     bug_notification_builder = BugNotificationBuilder(bug, person)
     sorted_recipients = sorted(
         recipients.items(), key=lambda t: t[0].preferredemail.email)

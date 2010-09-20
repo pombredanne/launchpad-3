@@ -107,7 +107,7 @@ class MockBugNotification:
         self.recipients = [MockBugNotificationRecipient()]
 
 
-class TestGetEmailNotificattions(unittest.TestCase):
+class TestGetEmailNotifications(unittest.TestCase):
     """Tests for the exception handling in get_email_notifications()."""
     layer = LaunchpadZopelessLayer
 
