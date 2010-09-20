@@ -51,6 +51,7 @@ from lp.translations.interfaces.translationimportqueue import (
     RosettaImportStatus,
     )
 from lp.translations.interfaces.translationmessage import (
+    TranslationConflict,
     TranslationValidationStatus,
     )
 from lp.translations.interfaces.translations import TranslationConstants
@@ -510,16 +511,6 @@ class FileImporter(object):
             return None
 
 
-        # Get the current message and check for conflict.
-        current = potmsgset.getCurrentTranslationMessage(
-            self.potemplate, self.pofile.language)
-        if current is not None and self.lock_timestamp is not None:
-            if current.date_created >= self.lock_timestamp:
-                self._addConflictError(message, potmsgset)
-                if self.logger is not None:
-                    self.logger.info(
-                        "Conflicting updates on message %d." % potmsgset.id)
-                return None
         # Create the new message as a suggestion.
         sanitized_translations = sanitize_translations_from_import(
             potmsgset.singular_text, message.translations,
@@ -533,16 +524,25 @@ class FileImporter(object):
                 potmsgset.singular_text, potmsgset.plural_text,
                 sanitized_translations, potmsgset.flags)
         except GettextValidationError, e:
-            # Add the pomsgset to the list of pomsgsets with errors.
             self._addUpdateError(message, potmsgset, unicode(e))
-            # The translation remains only a suggestion.
             new_message.validation_status = (
                 TranslationValidationStatus.UNKNOWNERROR)
         else:
             new_message.validation_status = TranslationValidationStatus.OK
-            # The translation is made current.
+            
+        # The translation is made current.
+        try:
             new_message.approve(
-                self.pofile, uploader_person, self.share_with_other_side)
+                self.pofile, uploader_person, self.share_with_other_side,
+                self.lock_timestamp)
+        except TranslationConflict:
+            self._addConflictError(message, potmsgset)
+            if self.logger is not None:
+                self.logger.info(
+                    "Conflicting updates on message %d." % potmsgset.id)
+            # The message remains a suggestion.
+            return None
+
 
         just_replaced_msgid = (
             self.importer.uses_source_string_msgids and
