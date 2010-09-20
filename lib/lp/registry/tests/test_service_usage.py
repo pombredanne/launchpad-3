@@ -142,6 +142,31 @@ class UsageEnumsMixin(object):
             True,
             self.target.official_blueprints)
 
+class SeriesUsageEnumsMixin(object):
+    
+    def setUp(self):
+        self.series = None
+        self.series_pillar = None
+
+    def _addPOTemplate(self):
+        raise NotImplementedError("Child class must provide _addPOTTemplate.")
+
+    def test_translations_usage_pillar_unknown(self):
+        self.assertEqual(
+            ServiceUsage.UNKNOWN,
+            self.series_pillar.translations_usage)
+        import pdb; pdb.set_trace()
+        self.assertEqual(
+            ServiceUsage.UNKNOWN,
+            self.series.translations_usage)
+
+        self._addPOTemplate(self)
+        self.assertEqual(
+            ServiceUsage.UNKNOWN,
+            self.series_pillar.translations_usage)
+        self.assertEqual(
+            ServiceUsage.LAUNCHPAD,
+            self.series.translations_usage)
 
 class TestDistributionUsageEnums(TestCaseWithFactory, UsageEnumsMixin):
     """Tests the usage enums for the distribution."""
@@ -168,6 +193,39 @@ class TestProductUsageEnums(TestCaseWithFactory, UsageEnumsMixin):
     def setUp(self):
         super(TestProductUsageEnums, self).setUp()
         self.target = self.factory.makeProduct()
+
+class TestProductSeriesUsageEnums(
+    TestCaseWithFactory,
+    SeriesUsageEnumsMixin):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestProductSeriesUsageEnums, self).setUp()
+        self.series_pillar = self.factory.makeProduct()
+        self.series = self.factory.makeProductSeries(
+            product=self.series_pillar)
+
+    def _addPOTemplate(self):
+        self.factory.makePOTemplate(productseries=self.series)
+        self.series_pillar = ServiceUsage.UNKNOWN
+        
+
+class TestDistroSeriesUsageEnums(
+    TestCaseWithFactory,
+    SeriesUsageEnumsMixin):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestDistroSeriesUsageEnums, self).setUp()
+        self.series_pillar = self.factory.makeDistribution()
+        self.series = self.factory.makeDistroSeries(
+            distribution=self.series_pillar)
+
+    def _addPOTemplate(self):
+        self.factory.makePOTemplate(distroseries=self.series)
+        self.series_pillar = ServiceUsage.UNKNOWN
 
 
 def test_suite():
