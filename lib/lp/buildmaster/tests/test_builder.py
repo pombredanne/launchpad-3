@@ -475,31 +475,54 @@ class TestSlave(TestCase):
     # XXX: It would be really nice to get the server-side logs for XML-RPC
     # failures in these tests.
 
+    # The URL for the XML-RPC service set up by `BuilddSlaveTestSetup`.
     TEST_URL = 'http://localhost:8221/rpc/'
 
-    def addLogFile(self, slave):
-        self.addDetail(
-            'xmlrpc-log-file',
-            Content(UTF8_TEXT, lambda: open(slave.logfile, 'r').read()))
-
     def getServer(self):
-        slave = BuilddSlaveTestSetup()
-        slave.setUp()
-        self.addOnException(lambda exc_info: self.addLogFile(slave))
-        self.addCleanup(slave.tearDown)
-        return slave
+        """Set up a test build slave server.
+
+        :return: A `BuilddSlaveTestSetup` object.
+        """
+        tachandler = BuilddSlaveTestSetup()
+        tachandler.setUp()
+        def addLogFile(exc_info):
+            self.addDetail(
+                'xmlrpc-log-file',
+                Content(UTF8_TEXT, lambda: open(tachandler.logfile, 'r').read()))
+        self.addOnException(addLogFile)
+        self.addCleanup(tachandler.tearDown)
+        return tachandler
 
     def getSlave(self):
+        """Return a `BuilderSlave` for use in testing.
+
+        Points to a fixed URL that is also used by `BuilddSlaveTestSetup`.
+        """
         return BuilderSlave(self.TEST_URL, 'vmhost')
 
-    def makeCacheFile(self, slave, filename):
-        path = os.path.join(slave.root, 'filecache', filename)
+    def makeCacheFile(self, tachandler, filename):
+        """Make a cache file available on the remote slave.
+
+        :param tachandler: The TacTestSetup object used to start the remote
+            slave.
+        :param filename: The name of the file to create in the file cache
+            area.
+        """
+        path = os.path.join(tachandler.root, 'filecache', filename)
         fd = open(path, 'w')
         fd.write('something')
         fd.close()
         self.addCleanup(os.unlink, path)
 
     def triggerGoodBuild(self, slave, build_id=None):
+        """Trigger a good build on 'slave'.
+
+        :param slave: A `BuilderSlave` instance to trigger the build on.
+        :param build_id: The build identifier. If not specified, defaults to
+            an arbitrary string.
+        :type build_id: str
+        :return: The build id returned by the slave.
+        """
         if build_id is None:
             build_id = self.getUniqueString()
         tachandler = self.getServer()
@@ -511,6 +534,13 @@ class TestSlave(TestCase):
             build_id, 'debian', chroot_file, {'.dsc': dsc_file},
             {'ogrecomponent': 'main'})
 
+    def test_abort(self):
+        slave = self.getSlave()
+        # We need to be in a BUILDING state before we can abort.
+        self.triggerGoodBuild(slave)
+        result = slave.abort()
+        self.assertEqual(result, BuilderStatus.ABORTING)
+
     def test_build(self):
         # Calling 'build' with an expected builder type, a good build id,
         # valid chroot & filemaps works and returns a BuilderStatus of
@@ -519,12 +549,5 @@ class TestSlave(TestCase):
         slave = self.getSlave()
         result = self.triggerGoodBuild(slave, build_id)
         self.assertEqual([BuilderStatus.BUILDING, build_id], result)
-
-    def test_abort(self):
-        slave = self.getSlave()
-        # We need to be in a BUILDING state before we can abort.
-        self.triggerGoodBuild(slave)
-        result = slave.abort()
-        self.assertEqual(result, BuilderStatus.ABORTING)
 
     # XXX: echo, info, status, ensurepresent, ???
