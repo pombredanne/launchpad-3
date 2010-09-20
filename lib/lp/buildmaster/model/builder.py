@@ -115,6 +115,23 @@ class TimeoutTransport(xmlrpclib.Transport):
 class BuilderSlave(xmlrpclib.ServerProxy):
     """Add in a few useful methods for the XMLRPC slave."""
 
+    # XXX: This (BuilderSlave) should use composition, rather than
+    # inheritance.
+
+    # XXX: Have a documented interface for the XML-RPC server:
+    #  - what methods
+    #  - what return values expected
+    #  - what faults
+    #  (see XMLRPCBuildDSlave in lib/canonical/buildd/slave.py).
+
+    # XXX: Arguably, this interface should be asynchronous
+    # (i.e. Deferred-returning). This would mean that Builder (see below)
+    # would have to expect Deferreds.
+
+    # XXX: Once we have a client object with a defined, tested interface, we
+    # should make a test double that doesn't do any XML-RPC and can be used to
+    # make testing easier & tests faster.
+
     def __init__(self, urlbase, vm_host):
         """Initialise a Server with specific parameter to our buildfarm."""
         self.vm_host = vm_host
@@ -138,6 +155,10 @@ class BuilderSlave(xmlrpclib.ServerProxy):
 
         :return: a (stdout, stderr, subprocess exitcode) triple
         """
+        # XXX: This executes the vm_resume_command
+        # synchronously. RecordingSlave does so asynchronously. Since we
+        # always want to do this asynchronously, there's no need for the
+        # duplication.
         resume_command = config.builddmaster.vm_resume_command % {
             'vm_host': self.vm_host}
         resume_argv = resume_command.split()
