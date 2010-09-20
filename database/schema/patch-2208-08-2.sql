@@ -5,4 +5,4 @@ SET client_min_messages=ERROR;
 
 CREATE INDEX bugtask_importance_idx ON BugTask (importance, id desc nulls first);
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 8, 2);
