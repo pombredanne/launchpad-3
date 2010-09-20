@@ -6,6 +6,7 @@
 import errno
 import os
 import socket
+import xmlrpclib
 
 from testtools.content import Content
 from testtools.content_type import UTF8_TEXT
@@ -472,13 +473,15 @@ class TestSlave(TestCase):
     real slave server.
     """
 
-    # XXX: It would be really nice to get the server-side logs for XML-RPC
-    # failures in these tests.
+    # XXX: JonathanLange 2010-09-20 bug=: There are also tests for
+    # BuilderSlave in buildd-slave.txt and in other places. The tests here
+    # ought to become the canonical tests for BuilderSlave vs running buildd
+    # XML-RPC server interaction.
 
     # The URL for the XML-RPC service set up by `BuilddSlaveTestSetup`.
     TEST_URL = 'http://localhost:8221/rpc/'
 
-    def getServer(self):
+    def getServerSlave(self):
         """Set up a test build slave server.
 
         :return: A `BuilddSlaveTestSetup` object.
@@ -493,7 +496,7 @@ class TestSlave(TestCase):
         self.addCleanup(tachandler.tearDown)
         return tachandler
 
-    def getSlave(self):
+    def getClientSlave(self):
         """Return a `BuilderSlave` for use in testing.
 
         Points to a fixed URL that is also used by `BuilddSlaveTestSetup`.
@@ -525,7 +528,7 @@ class TestSlave(TestCase):
         """
         if build_id is None:
             build_id = self.getUniqueString()
-        tachandler = self.getServer()
+        tachandler = self.getServerSlave()
         chroot_file = 'fake-chroot'
         dsc_file = 'thing'
         self.makeCacheFile(tachandler, chroot_file)
@@ -535,7 +538,7 @@ class TestSlave(TestCase):
             {'ogrecomponent': 'main'})
 
     def test_abort(self):
-        slave = self.getSlave()
+        slave = self.getClientSlave()
         # We need to be in a BUILDING state before we can abort.
         self.triggerGoodBuild(slave)
         result = slave.abort()
@@ -546,8 +549,64 @@ class TestSlave(TestCase):
         # valid chroot & filemaps works and returns a BuilderStatus of
         # BUILDING.
         build_id = 'some-id'
-        slave = self.getSlave()
+        slave = self.getClientSlave()
         result = self.triggerGoodBuild(slave, build_id)
         self.assertEqual([BuilderStatus.BUILDING, build_id], result)
 
-    # XXX: echo, info, status, ensurepresent, ???
+    def test_echo(self):
+        # Calling 'echo' contacts the server which returns the arguments we
+        # gave it.
+        self.getServerSlave()
+        slave = self.getClientSlave()
+        result = slave.echo('foo', 'bar', 42)
+        self.assertEqual(['foo', 'bar', 42], result)
+
+    def test_info(self):
+        # Calling 'info' gets some information about the slave.
+        self.getServerSlave()
+        slave = self.getClientSlave()
+        result = slave.info()
+        # We're testing the hard-coded values, since the version is hard-coded
+        # into the remote slave, the supported build managers are hard-coded
+        # into the tac file for the remote slave and config is returned from
+        # the configuration file.
+        self.assertEqual(
+            ['1.0',
+             'i386',
+             ['sourcepackagerecipe',
+              'translation-templates', 'binarypackage', 'debian']],
+            result)
+
+    def test_initial_status(self):
+        # Calling 'status' returns the current status of the slave. The
+        # initial status is IDLE.
+        self.getServerSlave()
+        slave = self.getClientSlave()
+        status = slave.status()
+        self.assertEqual([BuilderStatus.IDLE, ''], status)
+
+    def test_status_after_build(self):
+        # Calling 'status' returns the current status of the slave. After a
+        # build has been triggered, the status is BUILDING.
+        slave = self.getClientSlave()
+        build_id = 'status-build-id'
+        self.triggerGoodBuild(slave, build_id)
+        status = slave.status()
+        self.assertEqual([BuilderStatus.BUILDING, build_id], status[:2])
+        [log_file] = status[2:]
+        self.assertIsInstance(log_file, xmlrpclib.Binary)
+
+    def test_ensurepresent_not_there(self):
+        # ensurepresent checks to see if a file is there.
+        self.getServerSlave()
+        slave = self.getClientSlave()
+        result = slave.ensurepresent('blahblah', None, None, None)
+        self.assertEqual([False, 'No URL'], result)
+
+    def test_ensurepresent_actually_there(self):
+        # ensurepresent checks to see if a file is there.
+        tachandler = self.getServerSlave()
+        slave = self.getClientSlave()
+        self.makeCacheFile(tachandler, 'blahblah')
+        result = slave.ensurepresent('blahblah', None, None, None)
+        self.assertEqual([True, 'No URL'], result)
