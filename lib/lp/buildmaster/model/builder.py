@@ -157,6 +157,7 @@ class BuilderSlave(object):
         return self._server.status()
 
     def ensurepresent(self, sha1sum, url, username, password):
+        # XXX: Nothing external calls this. Make it private.
         """Attempt to ensure the given file is present."""
         return defer.succeed(
             self._server.ensurepresent(sha1sum, url, username, password))
@@ -198,13 +199,15 @@ class BuilderSlave(object):
         logger.debug("Asking builder on %s to ensure it has file %s "
                      "(%s, %s)" % (self.urlbase, libraryfilealias.filename,
                                    url, libraryfilealias.content.sha1))
-        self.sendFileToSlave(libraryfilealias.content.sha1, url)
+        return self.sendFileToSlave(libraryfilealias.content.sha1, url)
 
     def sendFileToSlave(self, sha1, url, username="", password=""):
         """Helper to send the file at 'url' with 'sha1' to this builder."""
-        present, info = self.ensurepresent(sha1, url, username, password)
-        if not present:
-            raise CannotFetchFile(url, info)
+        d = self.ensurepresent(sha1, url, username, password)
+        def check_present((present, info)):
+            if not present:
+                raise CannotFetchFile(url, info)
+        return d.addCallback(check_present)
 
     def build(self, buildid, builder_type, chroot_sha1, filemap, args):
         """Build a thing on this build slave.
@@ -461,14 +464,19 @@ class Builder(SQLBase):
 
         # Do it.
         build_queue_item.markAsBuilding(self)
-        try:
-            self.current_build_behavior.dispatchBuildToSlave(
-                build_queue_item.id, logger)
-        except BuildSlaveFailure, e:
-            logger.debug("Disabling builder: %s" % self.url, exc_info=1)
+
+        d = self.current_build_behavior.dispatchBuildToSlave(
+            build_queue_item.id, logger)
+
+        def eb_slave_failure(failure):
+            failure.trap(BuildSlaveFailure)
+            e = failure.value
             self.failBuilder(
                 "Exception (%s) when setting up to new job" % (e,))
-        except CannotFetchFile, e:
+
+        def eb_cannot_fetch_file(failure):
+            failure.trap(CannotFetchFile)
+            e = failure.value
             message = """Slave '%s' (%s) was unable to fetch file.
             ****** URL ********
             %s
@@ -477,10 +485,18 @@ class Builder(SQLBase):
             *******************
             """ % (self.name, self.url, e.file_url, e.error_information)
             raise BuildDaemonError(message)
-        except socket.error, e:
+
+        def eb_socket_error(failure):
+            failure.trap(socket.error)
+            e = failure.value
             error_message = "Exception (%s) when setting up new job" % (e,)
             self.handleTimeout(logger, error_message)
             raise BuildSlaveFailure
+
+        d.addErrback(eb_slave_failure)
+        d.addErrback(eb_cannot_fetch_file)
+        d.addErrback(eb_socket_error)
+        return d
 
     def failBuilder(self, reason):
         """See IBuilder"""
@@ -674,10 +690,13 @@ class Builder(SQLBase):
         :param candidate: The job to dispatch.
         """
         logger = self._getSlaveScannerLogger()
-        try:
-            self.startBuild(candidate, logger)
-        except (BuildSlaveFailure, CannotBuild, BuildBehaviorMismatch), err:
+        d = self.startBuild(candidate, logger)
+        def warn_on_error(failure):
+            failure.trap(
+                BuildSlaveFailure, CannotBuild, BuildBehaviorMismatch)
+            err = failure.value
             logger.warn('Could not build: %s' % err)
+        return d.addErrback(warn_on_error)
 
     def handleTimeout(self, logger, error_message):
         """See IBuilder."""
@@ -718,8 +737,8 @@ class Builder(SQLBase):
         if buildd_slave is not None:
             self.setSlaveForTesting(buildd_slave)
 
-        self._dispatchBuildCandidate(candidate)
-        return candidate
+        d = self._dispatchBuildCandidate(candidate)
+        return d.addCallback(lambda ignored: candidate)
 
     def getBuildQueue(self):
         """See `IBuilder`."""

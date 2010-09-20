@@ -30,7 +30,11 @@ from canonical.testing.layers import (
     TwistedLayer,
     )
 from lp.buildmaster.enums import BuildStatus
-from lp.buildmaster.interfaces.builder import IBuilder, IBuilderSet
+from lp.buildmaster.interfaces.builder import (
+    CannotFetchFile,
+    IBuilder,
+    IBuilderSet,
+    )
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior,
     )
@@ -619,4 +623,21 @@ class TestSlave(TrialTestCase):
         self.makeCacheFile(tachandler, 'blahblah')
         d = slave.ensurepresent('blahblah', None, None, None)
         d.addCallback(self.assertEqual, [True, 'No URL'])
+        return d
+
+    def test_sendFileToSlave_not_there(self):
+        self.getServerSlave()
+        slave = self.getClientSlave()
+        d = slave.sendFileToSlave('blahblah', None, None, None)
+        return self.assertFailure(d, CannotFetchFile)
+
+    def test_sendFileToSlave_actually_there(self):
+        tachandler = self.getServerSlave()
+        slave = self.getClientSlave()
+        self.makeCacheFile(tachandler, 'blahblah')
+        d = slave.sendFileToSlave('blahblah', None, None, None)
+        def check_present(ignored):
+            d = slave.ensurepresent('blahblah', None, None, None)
+            return d.addCallback(self.assertEqual, [True, 'No URL'])
+        d.addCallback(check_present)
         return d

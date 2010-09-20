@@ -283,15 +283,15 @@ class SlaveScanner:
         """Scan the builder and dispatch to it or deal with failures."""
         self.logger.debug("Scanning builder: %s" % self.builder_name)
 
-        try:
-            slave = self.scan()
+        d = self.scan()
+
+        def got_slave(slave):
             if slave is None:
-                self.scheduleNextScanCycle()
+                return self.scheduleNextScanCycle()
             else:
-                # XXX: Ought to return Deferred.
-                self.resumeAndDispatch(slave)
-        except:
-            error = Failure()
+                return self.resumeAndDispatch(slave)
+
+        def disaster(error):
             self.logger.info("Scanning failed with: %s\n%s" %
                 (error.getErrorMessage(), error.getTraceback()))
 
@@ -307,7 +307,11 @@ class SlaveScanner:
             assessFailureCounts(builder, error.getErrorMessage())
             transaction.commit()
 
-            self.scheduleNextScanCycle()
+            return self.scheduleNextScanCycle()
+
+        d.addCallback(got_slave)
+        d.addErrback(disaster)
+        return d
 
     @write_transaction
     def scan(self):
@@ -346,7 +350,7 @@ class SlaveScanner:
         if self.builder.manual:
             self.logger.debug(
                 '%s is in manual mode, not dispatching.' % self.builder.name)
-            return None
+            return defer.succeed(None)
 
         # If the builder is marked unavailable, don't dispatch anything.
         # Additionaly, because builders can be removed from the pool at
@@ -362,7 +366,7 @@ class SlaveScanner:
                     "job" % self.builder.name)
                 job.reset()
                 transaction.commit()
-            return None
+            return defer.succeed(None)
 
         # See if there is a job we can dispatch to the builder slave.
 
@@ -374,15 +378,17 @@ class SlaveScanner:
             self.builder.name, self.builder.url, self.builder.vm_host)
         # XXX: Passing buildd_slave=slave overwrites the 'slave' property of
         # self.builder. Not sure why this is needed yet.
-        self.builder.findAndStartJob(buildd_slave=slave)
-        if self.builder.currentjob is not None:
-            # After a successful dispatch we can reset the
-            # failure_count.
-            self.builder.resetFailureCount()
-            transaction.commit()
-            return slave
-
-        return None
+        d = self.builder.findAndStartJob(buildd_slave=slave)
+        def job_started(candidate):
+            if self.builder.currentjob is not None:
+                # After a successful dispatch we can reset the
+                # failure_count.
+                self.builder.resetFailureCount()
+                transaction.commit()
+                return slave
+            else:
+                return None
+        return d.addCallback(job_started)
 
     def resumeAndDispatch(self, slave):
         """Chain the resume and dispatching Deferreds."""
