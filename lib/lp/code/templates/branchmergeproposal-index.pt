@@ -43,6 +43,10 @@
     #proposal-summary td {
       padding-left: 0.5em;
     }
+    .related-bugs-list {
+      padding-left: 20px;
+      padding-bottom: 10px;
+    }
   </style>
 </metal:block>
 
@@ -132,6 +136,18 @@
   </tal:has-description>
   </div>
 
+  <div class="yui-g" tal:condition="view/has_bug_or_spec">
+      <div id="related-bugs-and-blueprints" class="related-bugs-list"
+        tal:define="branch context/source_branch">
+        <div class="actions">
+          <metal:bug-branch-links use-macro="branch/@@+macros/bug-branch-links"/>
+        </div>
+        <div class="actions">
+          <metal:spec-branch-links use-macro="branch/@@+macros/spec-branch-links"/>
+        </div>
+      </div>
+  </div>
+
   <div class="yui-g">
     <tal:not-logged-in condition="not: view/user">
       <div align="center" id="add-comment-login-first">
@@ -170,36 +186,19 @@
   </tal:logged-in>
 
   <div class="yui-g">
-    <div class="yui-u first">
-      <div id="source-revisions"
-           tal:condition="not: context/queue_status/enumvalue:MERGED">
+    <div id="source-revisions"
+         tal:condition="not: context/queue_status/enumvalue:MERGED">
 
-        <tal:history-available condition="context/source_branch/revision_count"
-                               define="branch context/source_branch;
-                                       revisions view/unlanded_revisions">
-          <h2>Unmerged revisions</h2>
-          <metal:landing-target use-macro="branch/@@+macros/branch-revisions"/>
-        </tal:history-available>
-
-        <tal:remote-branch condition="context/source_branch/branch_type/enumvalue:REMOTE">
-          <h2>Unmerged revisions</h2>
-          <p>Recent revisions are not available due to the source branch being remote.</p>
-        </tal:remote-branch>
-      </div>
-    </div>
-
-    <div class="yui-u" tal:condition="view/has_bug_or_spec">
-      <div id="related-bugs-and-blueprints"
-        tal:define="branch context/source_branch">
-        <h2>Linked bug reports and blueprints</h2>
-        <div class="actions">
-
-          <metal:bug-branch-links use-macro="branch/@@+macros/bug-branch-links"/>
-        </div>
-        <div class="actions">
-          <metal:spec-branch-links use-macro="branch/@@+macros/spec-branch-links"/>
-        </div>
-      </div>
+      <tal:history-available condition="context/source_branch/revision_count"
+                             define="branch context/source_branch;
+                                     revisions view/unlanded_revisions">
+        <h2>Unmerged revisions</h2>
+        <metal:landing-target use-macro="branch/@@+macros/branch-revisions"/>
+      </tal:history-available>
+      <tal:remote-branch condition="context/source_branch/branch_type/enumvalue:REMOTE">
+        <h2>Unmerged revisions</h2>
+        <p>Recent revisions are not available due to the source branch being remote.</p>
+      </tal:remote-branch>
     </div>
   </div>
 
