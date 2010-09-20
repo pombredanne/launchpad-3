@@ -1806,7 +1806,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     def deriveDistroSeries(
         self, user, name, distribution=None, displayname=None,
-        title=None, description=None, version=None,
+        title=None, summary=None, description=None, version=None,
         status=SeriesStatus.FROZEN, architectures=(), packagesets=()):
         """See `IDistroSeries`."""
         # XXX StevenK bug=643369 This should be in the security adapter
@@ -1818,18 +1818,18 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         if child is None:
             if distribution is None:
                 distribution = self.distribution
-            for param in (displayname, title, description, version):
+            for param in (
+                displayname, title, summary, description, version):
                 if param is None or len(param) == 0:
                     raise DerivationError(
-                        "Display Name, Title, Description and Version"
-                         " all need to be set when creating a"
+                        "Display Name, Title, Summary, Description and"
+                        " Version all need to be set when creating a"
                          " distroseries")
-            child = getUtility(IDistroSeriesSet).new(
+            child = distribution.newSeries(
                 name=name, displayname=displayname, title=title,
-                description=description, version=version,
-                distribution=distribution,
-                status=status,
-                parent=self)
+                summary=summary, description=description,
+                version=version, parent_series=self, owner=user)
+            child.status = status
             IStore(self).add(child)
         else:
             if child.parent_series is not self:

@@ -45,8 +45,8 @@ class TestDeriveDistroSeries(TestCaseWithFactory):
         function errors."""
         self.assertRaisesWithContent(
             DerivationError,
-            'Display Name, Summary, Description and Version all need to '
-            'be set when creating a distroseries',
+            'Display Name, Title, Summary, Description and Version all '
+            'need to be set when creating a distroseries',
             self.parent.deriveDistroSeries, self.soyuz.teamowner,
             'foobuntu')
 
@@ -67,3 +67,12 @@ class TestDeriveDistroSeries(TestCaseWithFactory):
         [job] = list(
             getUtility(IInitialiseDistroSeriesJobSource).iterReady())
         self.assertEqual(job.distroseries, self.child)
+
+    def test_create_fully_new_distroseries(self):
+        self.parent.deriveDistroSeries(
+            self.soyuz.teamowner, 'foobuntu', displayname='Foobuntu',
+            title='The Foobuntu', summary='Foobuntu',
+            description='Foobuntu is great', version='11.11')
+        [job] = list(
+            getUtility(IInitialiseDistroSeriesJobSource).iterReady())
+        self.assertEqual(job.distroseries.name, 'foobuntu')

@@ -800,6 +800,9 @@ class IDistroSeriesPublic(
         name=copy_field(name, required=True),
         displayname=copy_field(displayname, required=False),
         title=copy_field(title, required=False),
+        summary=TextLine(
+            title=_("The summary of the distroseries to derive."),
+            required=False),
         description=copy_field(description, required=False),
         version=copy_field(version, required=False),
         distribution=copy_field(distribution, required=False),
@@ -816,7 +819,7 @@ class IDistroSeriesPublic(
     @call_with(user=REQUEST_USER)
     @export_write_operation()
     def deriveDistroSeries(
-        user, name, displayname, title, description, version,
+        user, name, displayname, title, summary, description, version,
         distribution, status, architectures, packagesets):
         """Derive a distroseries from this one.
 
@@ -830,6 +833,8 @@ class IDistroSeriesPublic(
         :param displayname: The Display Name for the new distroseries.
             If the distroseries already exists this parameter is ignored.
         :param title: The Title for the new distroseries. If the
+            distroseries already exists this parameter is ignored.
+        :param summary: The Summary for the new distroseries. If the
             distroseries already exists this parameter is ignored.
         :param description: The Description for the new distroseries. If the
             distroseries already exists this parameter is ignored.
