@@ -25,7 +25,6 @@ from zope.component import getUtility
 from canonical.config import config
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.xmlrpc import MailingListAPIView
 from lp.registry.interfaces.mailinglist import (
     IMailingListSet,
     IMessageApprovalSet,
@@ -36,6 +35,7 @@ from lp.registry.interfaces.person import (
     IPersonSet,
     TeamSubscriptionPolicy,
     )
+from lp.registry.xmlrpc.mailinglist import MailingListAPIView
 
 
 COMMASPACE = ', '
