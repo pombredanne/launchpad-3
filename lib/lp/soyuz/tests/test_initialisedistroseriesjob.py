@@ -72,3 +72,18 @@ class InitialiseDistroSeriesJobTests(TestCaseWithFactory):
         # returns an InitialisationError, then it's good.
         self.assertRaisesWithContent(
             InitialisationError, "Parent series required.", job.run)
+
+    def test_arguments(self):
+        """Test that InitialiseDistroSeriesJob specified with arguments can
+        be gotten out again."""
+        distroseries = self.factory.makeDistroSeries()
+        arches = (u'i386', u'amd64')
+        packagesets = (u'foo', u'bar', u'baz')
+
+        job = getUtility(IInitialiseDistroSeriesJobSource).create(
+            distroseries, arches, packagesets)
+
+        naked_job = removeSecurityProxy(job)
+        self.assertEqual(naked_job.distroseries, distroseries)
+        self.assertEqual(naked_job.arches, arches)
+        self.assertEqual(naked_job.packagesets, packagesets)

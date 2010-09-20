@@ -35,17 +35,27 @@ class InitialiseDistroSeriesJob(DistributionJobDerived):
     classProvides(IInitialiseDistroSeriesJobSource)
 
     @classmethod
-    def create(cls, distroseries):
+    def create(cls, distroseries, arches=(), packagesets=()):
         """See `IInitialiseDistroSeriesJob`."""
+        metadata = {'arches': arches, 'packagesets': packagesets}
         job = DistributionJob(
             distroseries.distribution, distroseries, cls.class_job_type,
-            ())
+            metadata)
         IMasterStore(DistributionJob).add(job)
         return cls(job)
 
+    @property
+    def arches(self):
+        return tuple(self.metadata['arches'])
+
+    @property
+    def packagesets(self):
+        return tuple(self.metadata['packagesets'])
+
     def run(self):
         """See `IRunnableJob`."""
-        ids = InitialiseDistroSeries(self.distroseries)
+        # XXX self.packagesets is missing
+        ids = InitialiseDistroSeries(self.distroseries, self.arches)
         ids.check()
         ids.initialise()
 
