@@ -142,6 +142,9 @@
             interface="canonical.launchpad.interfaces.ICanPublishPackages"/>
         <require
             permission="launchpad.Edit"
+            set_schema="lp.app.interfaces.launchpad.IServiceUsage"/>
+        <require
+            permission="launchpad.Edit"
             interface="lp.registry.interfaces.distroseries.IDistroSeriesEditRestricted"/>
         <require
             permission="launchpad.TranslationsAdmin"
@@ -1372,6 +1375,9 @@
             interface="lp.bugs.interfaces.bugtarget.IHasBugHeat"/>
         <allow
             interface="lp.translations.interfaces.translationimportqueue.IHasTranslationImports"/>
+        <require
+            permission="launchpad.Edit"
+            set_schema="lp.app.interfaces.launchpad.IServiceUsage"/>
         <require
             permission="launchpad.Edit"
             set_attributes="product name owner driver summary branch
