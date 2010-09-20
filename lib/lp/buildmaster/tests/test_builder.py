@@ -473,7 +473,7 @@ class TestSlave(TestCase):
     real slave server.
     """
 
-    # XXX: JonathanLange 2010-09-20 bug=: There are also tests for
+    # XXX: JonathanLange 2010-09-20 bug=643521: There are also tests for
     # BuilderSlave in buildd-slave.txt and in other places. The tests here
     # ought to become the canonical tests for BuilderSlave vs running buildd
     # XML-RPC server interaction.
