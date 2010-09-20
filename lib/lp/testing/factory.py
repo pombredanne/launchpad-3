@@ -883,7 +883,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return product
 
     def makeProductSeries(self, product=None, name=None, owner=None,
-                          summary=None, date_created=None):
+                          summary=None, date_created=None, branch=None):
         """Create and return a new ProductSeries."""
         if product is None:
             product = self.makeProduct()
@@ -897,7 +897,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         # so we remove the security proxy before creating the series.
         naked_product = removeSecurityProxy(product)
         series = naked_product.newSeries(
-            owner=owner, name=name, summary=summary)
+            owner=owner, name=name, summary=summary, branch=branch)
         if date_created is not None:
             series.datecreated = date_created
         return ProxyFactory(series)
@@ -2560,6 +2560,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                                  source_package_recipe_build=None,
                                  dscsigningkey=None,
                                  user_defined_fields=None,
+                                 changelog_entry=None,
                                  homepage=None):
         """Make a `SourcePackageRelease`."""
         if distroseries is None:
@@ -2617,7 +2618,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             build_conflicts_indep=build_conflicts_indep,
             architecturehintlist=architecturehintlist,
             changelog=None,
-            changelog_entry=None,
+            changelog_entry=changelog_entry,
             dsc=None,
             copyright=self.getUniqueString(),
             dscsigningkey=dscsigningkey,

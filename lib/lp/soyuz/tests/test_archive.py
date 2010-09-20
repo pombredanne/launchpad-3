@@ -618,6 +618,20 @@ class TestArchiveCanUpload(TestCaseWithFactory):
             NoRightsForArchive, archive, person, sourcepackagename,
             distroseries=distroseries)
 
+    def test_checkUploadToPocket_for_released_distroseries_copy_archive(self):
+        # Uploading to the release pocket in a released COPY archive
+        # should be allowed.  This is mainly so that rebuilds that are
+        # running during the release process don't suddenly cause
+        # exceptions in the buildd-manager.
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.COPY)
+        distroseries = self.factory.makeDistroSeries(
+            distribution=archive.distribution,
+            status=SeriesStatus.CURRENT)
+        self.assertIs(
+            None,
+            archive.checkUploadToPocket(
+                distroseries, PackagePublishingPocket.RELEASE))
+
     def test_checkUpload_package_permission(self):
         archive, distroseries = self.makeArchiveAndActiveDistroSeries(
             purpose=ArchivePurpose.PRIMARY)

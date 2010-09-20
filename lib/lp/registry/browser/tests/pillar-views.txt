@@ -36,8 +36,8 @@ Pillars that do use launchpad applications have an involvement menu.
     True
     >>> print view.answers_usage.name
     LAUNCHPAD
-    >>> view.translations_usage.name
-    'UNKNOWN'
+    >>> print view.translations_usage.name
+    UNKNOWN
     >>> print view.blueprints_usage.name
     UNKNOWN
     >>> print view.codehosting_usage.name

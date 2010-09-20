@@ -44,6 +44,8 @@ class BugMessage(SQLBase):
         notNull=False, default=None)
     remote_comment_id = StringCol(notNull=False, default=None)
     visible = BoolCol(notNull=True, default=True)
+    # -- Uncomment when deployed.
+    # index = IntCol()
 
 
 class BugMessageSet:
