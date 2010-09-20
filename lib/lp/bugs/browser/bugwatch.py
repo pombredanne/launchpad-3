@@ -14,7 +14,6 @@ __all__ = [
 from zope.component import getUtility
 from zope.interface import Interface
 
-from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad import _
 from canonical.launchpad.webapp import (
