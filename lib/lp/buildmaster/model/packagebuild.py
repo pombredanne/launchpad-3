@@ -94,8 +94,6 @@ class PackageBuild(BuildFarmJobDerived, Storm):
     build_farm_job_id = Int(name='build_farm_job', allow_none=False)
     build_farm_job = Reference(build_farm_job_id, 'BuildFarmJob.id')
 
-    policy_name = 'buildd'
-
     # The following two properties are part of the IPackageBuild
     # interface, but need to be provided by derived classes.
     distribution = None
@@ -239,6 +237,10 @@ class PackageBuild(BuildFarmJobDerived, Storm):
         """See `IPackageBuild`."""
         raise NotImplementedError
 
+    def getUploader(self, changes):
+        """See `IPackageBuild`."""
+        raise NotImplementedError
+
 
 class PackageBuildDerived:
     """Setup the delegation for package build.
@@ -352,6 +354,10 @@ class PackageBuildDerived:
         if not os.path.exists(target_dir):
             os.mkdir(target_dir)
 
+        # Flush so there are no race conditions with archiveuploader about
+        # self.status.
+        Store.of(self).flush()
+
         # Move the directory used to grab the binaries into
         # the incoming directory so the upload processor never
         # sees half-finished uploads.
@@ -359,6 +365,9 @@ class PackageBuildDerived:
 
         # Release the builder for another job.
         self.buildqueue_record.builder.cleanSlave()
+
+        # Remove BuildQueue record.
+        self.buildqueue_record.destroySelf()
 
     def _handleStatus_PACKAGEFAIL(self, librarian, slave_status, logger):
         """Handle a package that had failed to build.
