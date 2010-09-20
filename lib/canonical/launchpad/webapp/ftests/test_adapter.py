@@ -5,8 +5,10 @@
 
 __metaclass__ = type
 import unittest
+
 from canonical.launchpad.testing.systemdocs import LayeredDocFileSuite
 from canonical.testing import LaunchpadFunctionalLayer
+
 
 def test_suite():
     return unittest.TestSuite([

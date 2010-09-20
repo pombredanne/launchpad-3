@@ -14,15 +14,30 @@ __all__ = [
     'TranslationPermission',
     ]
 
-from zope.interface import Attribute, Interface
-from zope.schema import Choice, Datetime, Int, TextLine
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    )
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Choice,
+    Datetime,
+    Int,
+    TextLine,
+    )
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import (
-    PublicPersonChoice, Summary, Title, URIField)
 from canonical.launchpad.validators.name import name_validator
 from lp.registry.interfaces.role import IHasOwner
-from lazr.enum import DBEnumeratedType, DBItem
+from lp.services.fields import (
+    PublicPersonChoice,
+    Summary,
+    Title,
+    URIField,
+    )
 
 
 class TranslationPermission(DBEnumeratedType):
@@ -171,8 +186,34 @@ class ITranslationGroup(IHasOwner):
     def fetchTranslatorData():
         """Fetch translators and related data.
 
-        :return: A tuple (`Translator`, `Language`, `Person`), ordered
-            by language name in English.
+        Prefetches display-related properties.
+
+        :return: A result set of (`Translator`, `Language`, `Person`),
+            ordered by language name in English.
+        """
+
+    def fetchProjectsForDisplay():
+        """Fetch `Product`s using this group, for display purposes.
+
+        Prefetches display-related properties.
+
+        :return: A result set of `Product`, ordered by display name.
+        """
+
+    def fetchProjectGroupsForDisplay():
+        """Fetch `Project`s using this group, for display purposes.
+
+        Prefetches display-related properties.
+
+        :return: A result set of `Project`, ordered by display name.
+        """
+
+    def fetchDistrosForDisplay():
+        """Fetch `Distribution`s using this group, for display purposes.
+
+        Prefetches display-related properties.
+
+        :return: A result set of `Distribution`, ordered by display name.
         """
 
 

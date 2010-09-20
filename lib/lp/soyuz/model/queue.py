@@ -12,20 +12,51 @@ __all__ = [
     'PackageUploadSet',
     ]
 
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 import os
 import shutil
 import StringIO
 import tempfile
 
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
-
-from storm.locals import Desc, In, Join
+from sqlobject import (
+    ForeignKey,
+    SQLMultipleJoin,
+    SQLObjectNotFound,
+    )
+from storm.locals import (
+    Desc,
+    In,
+    Join,
+    )
 from storm.store import Store
-from sqlobject import ForeignKey, SQLMultipleJoin, SQLObjectNotFound
 from zope.component import getUtility
 from zope.interface import implements
 
+from canonical.config import config
+from canonical.database.constants import UTC_NOW
+from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.database.enumcol import EnumCol
+from canonical.database.sqlbase import (
+    SQLBase,
+    sqlvalues,
+    )
+from canonical.encoding import (
+    ascii_smash,
+    guess as guess_encoding,
+    )
+from canonical.launchpad.helpers import get_email_template
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.lpstorm import IMasterStore
+from canonical.launchpad.mail import (
+    format_address,
+    sendmail,
+    signed_message_from_string,
+    )
+from canonical.launchpad.webapp import canonical_url
+from canonical.librarian.interfaces import DownloadFailed
+from canonical.librarian.utils import copy_and_close
+from lp.app.errors import NotFoundError
 # XXX 2009-05-10 julian
 # This should not import from archivepublisher, but to avoid
 # that it needs a bit of redesigning here around the publication stuff.
@@ -35,43 +66,38 @@ from lp.archivepublisher.utils import get_ppa_reference
 from lp.archiveuploader.changesfile import ChangesFile
 from lp.archiveuploader.tagfiles import parse_tagfile_lines
 from lp.archiveuploader.utils import safe_fix_maintainer
-from canonical.cachedproperty import cachedproperty
-from canonical.config import config
-from canonical.database.constants import UTC_NOW
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import SQLBase, sqlvalues
-from canonical.encoding import guess as guess_encoding, ascii_smash
-from canonical.launchpad.helpers import get_email_template
-from lp.soyuz.interfaces.archive import MAIN_ARCHIVE_PURPOSES
-from lp.soyuz.interfaces.binarypackagerelease import (
-    BinaryPackageFormat)
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from lp.soyuz.interfaces.queue import (
-    PackageUploadStatus, PackageUploadCustomFormat)
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import (
-    PackagePublishingPocket, pocketsuffix)
+    PackagePublishingPocket,
+    pocketsuffix,
+    )
+from lp.services.propertycache import cachedproperty
+from lp.soyuz.enums import (
+    BinaryPackageFormat,
+    PackageUploadCustomFormat,
+    PackageUploadStatus,
+    )
+from lp.soyuz.interfaces.archive import MAIN_ARCHIVE_PURPOSES
 from lp.soyuz.interfaces.publishing import (
-    IPublishingSet, ISourcePackagePublishingHistory)
+    IPublishingSet,
+    ISourcePackagePublishingHistory,
+    )
 from lp.soyuz.interfaces.queue import (
-    IPackageUpload, IPackageUploadBuild, IPackageUploadCustom,
-    IPackageUploadQueue, IPackageUploadSource, IPackageUploadSet,
-    NonBuildableSourceUploadError, QueueBuildAcceptError,
-    QueueInconsistentStateError, QueueSourceAcceptError,
-    QueueStateWriteProtectedError)
+    IPackageUpload,
+    IPackageUploadBuild,
+    IPackageUploadCustom,
+    IPackageUploadQueue,
+    IPackageUploadSet,
+    IPackageUploadSource,
+    NonBuildableSourceUploadError,
+    QueueBuildAcceptError,
+    QueueInconsistentStateError,
+    QueueSourceAcceptError,
+    QueueStateWriteProtectedError,
+    )
 from lp.soyuz.pas import BuildDaemonPackagesArchSpecific
-from canonical.launchpad.mail import (
-    format_address, signed_message_from_string, sendmail)
-from lp.soyuz.scripts.processaccepted import (
-    close_bugs_for_queue_item)
 from lp.soyuz.scripts.packagecopier import update_files_privacy
-from canonical.librarian.interfaces import DownloadFailed
-from canonical.librarian.utils import copy_and_close
-from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.interfaces import NotFoundError
-from canonical.launchpad.interfaces.lpstorm import IMasterStore
-
+from lp.soyuz.scripts.processaccepted import close_bugs_for_queue_item
 
 # There are imports below in PackageUploadCustom for various bits
 # of the archivepublisher which cause circular import errors if they
@@ -775,16 +801,16 @@ class PackageUpload(SQLBase):
         :changes: A dictionary with the changes file content.
         """
         # Add the date field.
-        message.DATE = 'Date: %s' % changes['date']
+        message.DATE = 'Date: %s' % changes['Date']
 
         # Add the debian 'Changed-By:' field.
-        changed_by = changes.get('changed-by')
+        changed_by = changes.get('Changed-By')
         if changed_by is not None:
             changed_by = sanitize_string(changed_by)
             message.CHANGEDBY = '\nChanged-By: %s' % changed_by
 
         # Add maintainer if present and different from changed-by.
-        maintainer = changes.get('maintainer')
+        maintainer = changes.get('Maintainer')
         if maintainer is not None:
             maintainer = sanitize_string(maintainer)
             if maintainer != changed_by:
@@ -805,8 +831,8 @@ class PackageUpload(SQLBase):
                 message.SIGNER = '\nSigned-By: %s' % signer_signature
 
         # Add the debian 'Origin:' field if present.
-        if changes.get('origin') is not None:
-            message.ORIGIN = '\nOrigin: %s' % changes['origin']
+        if changes.get('Origin') is not None:
+            message.ORIGIN = '\nOrigin: %s' % changes['Origin']
 
         if self.sources or self.builds:
             message.SPR_URL = canonical_url(self.my_source_package_release)
@@ -829,7 +855,7 @@ class PackageUpload(SQLBase):
             template = get_email_template('upload-rejection.txt')
             SUMMARY = sanitize_string(summary_text)
             CHANGESFILE = sanitize_string(
-                ChangesFile.formatChangesComment(changes['changes']))
+                ChangesFile.formatChangesComment(changes['Changes']))
             CHANGEDBY = ''
             ORIGIN = ''
             SIGNER = ''
@@ -907,7 +933,7 @@ class PackageUpload(SQLBase):
             STATUS = "New"
             SUMMARY = summarystring
             CHANGESFILE = sanitize_string(
-                ChangesFile.formatChangesComment(changes['changes']))
+                ChangesFile.formatChangesComment(changes['Changes']))
             DISTRO = self.distroseries.distribution.title
             if announce_list:
                 ANNOUNCE = 'Announcing to %s' % announce_list
@@ -922,7 +948,7 @@ class PackageUpload(SQLBase):
             SUMMARY = summarystring + (
                     "\nThis upload awaits approval by a distro manager\n")
             CHANGESFILE = sanitize_string(
-                ChangesFile.formatChangesComment(changes['changes']))
+                ChangesFile.formatChangesComment(changes['Changes']))
             DISTRO = self.distroseries.distribution.title
             if announce_list:
                 ANNOUNCE = 'Announcing to %s' % announce_list
@@ -941,7 +967,7 @@ class PackageUpload(SQLBase):
             STATUS = "Accepted"
             SUMMARY = summarystring
             CHANGESFILE = sanitize_string(
-                ChangesFile.formatChangesComment(changes['changes']))
+                ChangesFile.formatChangesComment(changes['Changes']))
             DISTRO = self.distroseries.distribution.title
             if announce_list:
                 ANNOUNCE = 'Announcing to %s' % announce_list
@@ -968,7 +994,7 @@ class PackageUpload(SQLBase):
             STATUS = "Accepted"
             SUMMARY = summarystring
             CHANGESFILE = sanitize_string(
-                ChangesFile.formatChangesComment(changes['changes']))
+                ChangesFile.formatChangesComment(changes['Changes']))
             CHANGEDBY = ''
             ORIGIN = ''
             SIGNER = ''
@@ -1019,14 +1045,14 @@ class PackageUpload(SQLBase):
         do_sendmail(AcceptedMessage)
 
         # Don't send announcements for Debian auto sync uploads.
-        if self.isAutoSyncUpload(changed_by_email=changes['changed-by']):
+        if self.isAutoSyncUpload(changed_by_email=changes['Changed-By']):
             return
 
         if announce_list:
             if not self.signing_key:
                 from_addr = None
             else:
-                from_addr = guess_encoding(changes['changed-by'])
+                from_addr = guess_encoding(changes['Changed-By'])
 
             do_sendmail(
                 AnnouncementMessage,
@@ -1109,7 +1135,7 @@ class PackageUpload(SQLBase):
         """Return a list of recipients for notification emails."""
         candidate_recipients = []
         debug(self.logger, "Building recipients list.")
-        changer = self._emailToPerson(changes['changed-by'])
+        changer = self._emailToPerson(changes['Changed-By'])
 
         if self.signing_key:
             # This is a signed upload.
@@ -1131,7 +1157,7 @@ class PackageUpload(SQLBase):
 
         # If this is not a PPA, we also consider maintainer and changed-by.
         if self.signing_key and not self.isPPA():
-            maintainer = self._emailToPerson(changes['maintainer'])
+            maintainer = self._emailToPerson(changes['Maintainer'])
             if (maintainer and maintainer != signer and
                     maintainer.isUploader(self.distroseries.distribution)):
                 debug(self.logger, "Adding maintainer to recipients")

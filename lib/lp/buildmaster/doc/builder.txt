@@ -1,3 +1,8 @@
+XXX Julian 2010-08-03 bug=613096
+Most of this doctest is really a unit test in disguise.  It should get
+re-written and unit tests moved to buildmaster/tests/test_builder.py
+
+
 =============
 Builder Class
 =============
@@ -173,11 +178,26 @@ show up in the calculated queue size.
     >>> from lp.soyuz.interfaces.processor import IProcessorFamilySet
     >>> i386_family = getUtility(IProcessorFamilySet).getByName('x86')
     >>> recipe_bq.processor = i386_family.processors[0]
-    
+    >>> recipe_bq.virtualized = True
     >>> transaction.commit()
+    
     >>> queue_sizes = builderset.getBuildQueueSizes()
     >>> print queue_sizes['virt']['386']
     (1L, datetime.timedelta(0, 64))
+
+Any BuildQueues with a null `virtualized` property are considered virtual
+by default.
+
+    >>> recipe_bq = factory.makeSourcePackageRecipeBuildJob()
+    >>> recipe_bq.virtualized = None
+    >>> recipe_bq.processor = i386_family.processors[0]
+    >>> transaction.commit()
+    >>> queue_sizes = builderset.getBuildQueueSizes()
+
+The virtual queue size has increased accordingly:
+
+    >>> print queue_sizes['virt']['386']
+    (2L, datetime.timedelta(0, 128))
 
 
 Resuming buildd slaves
@@ -241,40 +261,6 @@ Restore default value for resume command.
     >>> config_data = config.pop('vm_resume_command')
 
 
-Slave architecture checks
-=========================
-
-Builder.checkSlaveArchitecture() asks the slave for its version and tries
-to match it against a DistroArchSeries with a ProcessorFamily containing
-the Builder's Processor. If it fails, it will raise an exception so the
-builder can be marked as failed.
-
-A fictitious i386 variant is rejected, since there are no DASes with that
-tag.
-
-    >>> from lp.soyuz.tests.soyuzbuilddhelpers import OkSlave
-    >>> bob.setSlaveForTesting(OkSlave('i387'))
-    >>> bob.checkSlaveArchitecture()
-    Traceback (most recent call last):
-    ...
-    BuildDaemonError: Bad slave architecture tag: i387 (registered family: x86)
-
-hppa isn't in the x86 family, so it too is rejected.
-
-    >>> from lp.soyuz.tests.soyuzbuilddhelpers import OkSlave
-    >>> bob.setSlaveForTesting(OkSlave('hppa'))
-    >>> bob.checkSlaveArchitecture()
-    Traceback (most recent call last):
-    ...
-    BuildDaemonError: Bad slave architecture tag: hppa (registered family: x86)
-
-But i386, a real x86 variant, passes without objection.
-
-    >>> from lp.soyuz.tests.soyuzbuilddhelpers import OkSlave
-    >>> bob.setSlaveForTesting(OkSlave('i386'))
-    >>> bob.checkSlaveArchitecture()
-
-
 Rescuing lost slaves
 ====================
 
@@ -315,7 +301,7 @@ or cleaned.
 
     >>> rescue_slave_if_lost(BuildingSlave(build_id='bad'))
     Aborting slave
-    WARNING:root:Builder 'mock' rescued from 'bad': 'Bad value'
+    INFO:root:Builder 'mock' rescued from 'bad': 'Bad value'
 
 Slaves having completed an incorrect build are also declared lost,
 but there's no need to abort a completed build. Such builders are
@@ -323,5 +309,5 @@ instead simply cleaned, ready for the next build.
 
     >>> rescue_slave_if_lost(WaitingSlave(build_id='bad'))
     Cleaning slave
-    WARNING:root:Builder 'mock' rescued from 'bad': 'Bad value'
+    INFO:root:Builder 'mock' rescued from 'bad': 'Bad value'
 

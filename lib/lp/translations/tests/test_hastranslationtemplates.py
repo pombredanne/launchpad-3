@@ -1,20 +1,20 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
-import unittest
-
 from zope.interface.verify import verifyObject
 
 from canonical.testing import ZopelessDatabaseLayer
+from lp.app.enums import ServiceUsage
+from lp.testing import TestCaseWithFactory
 from lp.translations.interfaces.potemplate import IHasTranslationTemplates
 from lp.translations.interfaces.translationfileformat import (
-    TranslationFileFormat)
-from lp.testing import TestCaseWithFactory
+    TranslationFileFormat,
+    )
 
 
-class HasTranslationTemplatesTestMixin(TestCaseWithFactory):
+class HasTranslationTemplatesTestMixin:
     """Test behaviour of objects with translation templates."""
 
     layer = ZopelessDatabaseLayer
@@ -153,7 +153,7 @@ class HasTranslationTemplatesTestMixin(TestCaseWithFactory):
 
         # A product or distribution that doesn't use Launchpad for
         # translations has no current templates.
-        self.product_or_distro.official_rosetta = False
+        self.product_or_distro.translations_usage = ServiceUsage.EXTERNAL
         self.assertFalse(self.container.has_current_translation_templates)
 
     def test_getTranslationTemplateFormats(self):
@@ -193,7 +193,7 @@ class HasTranslationTemplatesTestMixin(TestCaseWithFactory):
 
 
 class TestProductSeriesHasTranslationTemplates(
-    HasTranslationTemplatesTestMixin):
+    HasTranslationTemplatesTestMixin, TestCaseWithFactory):
     """Test implementation of IHasTranslationTemplates on ProductSeries."""
 
     def createTranslationTemplate(self, name, priority=0):
@@ -206,11 +206,11 @@ class TestProductSeriesHasTranslationTemplates(
         super(TestProductSeriesHasTranslationTemplates, self).setUp()
         self.container = self.factory.makeProductSeries()
         self.product_or_distro = self.container.product
-        self.product_or_distro.official_rosetta = True
+        self.product_or_distro.translations_usage = ServiceUsage.LAUNCHPAD
 
 
 class TestSourcePackageHasTranslationTemplates(
-    HasTranslationTemplatesTestMixin):
+    HasTranslationTemplatesTestMixin, TestCaseWithFactory):
     """Test implementation of IHasTranslationTemplates on ProductSeries."""
 
     def createTranslationTemplate(self, name, priority=0):
@@ -224,11 +224,11 @@ class TestSourcePackageHasTranslationTemplates(
         super(TestSourcePackageHasTranslationTemplates, self).setUp()
         self.container = self.factory.makeSourcePackage()
         self.product_or_distro = self.container.distroseries.distribution
-        self.product_or_distro.official_rosetta = True
+        self.product_or_distro.translations_usage = ServiceUsage.LAUNCHPAD
 
 
 class TestDistroSeriesHasTranslationTemplates(
-    HasTranslationTemplatesTestMixin):
+    HasTranslationTemplatesTestMixin, TestCaseWithFactory):
     """Test implementation of IHasTranslationTemplates on ProductSeries."""
 
     def createTranslationTemplate(self, name, priority=0):
@@ -244,16 +244,4 @@ class TestDistroSeriesHasTranslationTemplates(
         super(TestDistroSeriesHasTranslationTemplates, self).setUp()
         self.container = self.factory.makeDistroRelease()
         self.product_or_distro = self.container.distribution
-        self.product_or_distro.official_rosetta = True
-
-
-def test_suite():
-    suite = unittest.TestSuite()
-    loader = unittest.TestLoader()
-    suite.addTest(loader.loadTestsFromTestCase(
-        TestProductSeriesHasTranslationTemplates))
-    suite.addTest(loader.loadTestsFromTestCase(
-        TestSourcePackageHasTranslationTemplates))
-    suite.addTest(loader.loadTestsFromTestCase(
-        TestDistroSeriesHasTranslationTemplates))
-    return suite
+        self.product_or_distro.translations_usage = ServiceUsage.LAUNCHPAD

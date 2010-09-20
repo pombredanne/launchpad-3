@@ -11,19 +11,28 @@ __all__ = [
     'IBranchSubscription',
     ]
 
+from lazr.restful.declarations import (
+    call_with,
+    export_as_webservice_entry,
+    export_read_operation,
+    exported,
+    REQUEST_USER,
+    )
+from lazr.restful.fields import Reference
 from zope.interface import Interface
-from zope.schema import Choice, Int
+from zope.schema import (
+    Choice,
+    Int,
+    )
 
 from canonical.launchpad import _
 from lp.code.enums import (
-    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
-    CodeReviewNotificationLevel)
+    BranchSubscriptionDiffSize,
+    BranchSubscriptionNotificationLevel,
+    CodeReviewNotificationLevel,
+    )
 from lp.code.interfaces.branch import IBranch
-from canonical.launchpad.fields import ParticipatingPersonChoice
-from lazr.restful.declarations import (
-    REQUEST_USER, call_with, export_as_webservice_entry,
-    export_read_operation, exported)
-from lazr.restful.fields import Reference
+from lp.services.fields import PersonChoice
 
 
 class IBranchSubscription(Interface):
@@ -32,7 +41,7 @@ class IBranchSubscription(Interface):
 
     id = Int(title=_('ID'), readonly=True, required=True)
     person = exported(
-        ParticipatingPersonChoice(
+        PersonChoice(
             title=_('Person'), required=True, vocabulary='ValidPersonOrTeam',
             readonly=True, description=_('Enter the launchpad id, or email '
             'address of the person you wish to subscribe to this branch. '
@@ -75,7 +84,7 @@ class IBranchSubscription(Interface):
                 'notifications.'
                 )))
 
-    subscribed_by = exported(ParticipatingPersonChoice(
+    subscribed_by = exported(PersonChoice(
         title=_('Subscribed by'), required=True,
         vocabulary='ValidPersonOrTeam', readonly=True,
         description=_("The person who created this subscription.")))

@@ -13,6 +13,7 @@ __all__ = [
 
 from zope.interface import Interface
 
+
 class IPackageCloner(Interface):
     """Copies publishing history data across archives."""
 

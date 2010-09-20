@@ -6,45 +6,71 @@
 __metaclass__ = type
 __all__ = ['DailyDatabaseGarbageCollector', 'HourlyDatabaseGarbageCollector']
 
-from datetime import datetime, timedelta
+from datetime import (
+    datetime,
+    timedelta,
+    )
 import time
 
-import pytz
-import transaction
 from psycopg2 import IntegrityError
+import pytz
+from storm.locals import (
+    In,
+    Max,
+    Min,
+    SQL,
+    )
+import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
-from storm.locals import In, SQL, Max, Min
 
 from canonical.config import config
 from canonical.database import postgresql
 from canonical.database.constants import THIRTY_DAYS_AGO
-from canonical.database.sqlbase import cursor, sqlvalues
+from canonical.database.sqlbase import (
+    cursor,
+    session_store,
+    sqlvalues,
+    )
 from canonical.launchpad.database.emailaddress import EmailAddress
-from lp.hardwaredb.model.hwdb import HWSubmission
-from canonical.launchpad.database.librarian import LibraryFileAlias
+from canonical.launchpad.database.librarian import (
+    LibraryFileAlias,
+    TimeLimitedToken,
+    )
 from canonical.launchpad.database.oauth import OAuthNonce
 from canonical.launchpad.database.openidconsumer import OpenIDConsumerNonce
 from canonical.launchpad.interfaces import IMasterStore
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
 from canonical.launchpad.utilities.looptuner import TunableLoop
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
+    IStoreSelector,
+    MAIN_STORE,
+    MASTER_FLAVOR,
+    )
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.model.bug import Bug
 from lp.bugs.model.bugattachment import BugAttachment
 from lp.bugs.model.bugnotification import BugNotification
 from lp.bugs.model.bugwatch import BugWatch
 from lp.bugs.scripts.checkwatches.scheduler import (
-    BugWatchScheduler, MAX_SAMPLE_SIZE)
+    BugWatchScheduler,
+    MAX_SAMPLE_SIZE,
+    )
 from lp.code.interfaces.revision import IRevisionSet
 from lp.code.model.branchjob import BranchJob
 from lp.code.model.codeimportresult import CodeImportResult
-from lp.code.model.revision import RevisionAuthor, RevisionCache
+from lp.code.model.revision import (
+    RevisionAuthor,
+    RevisionCache,
+    )
+from lp.hardwaredb.model.hwdb import HWSubmission
 from lp.registry.model.person import Person
 from lp.services.job.model.job import Job
 from lp.services.scripts.base import (
-    LaunchpadCronScript, SilentLaunchpadScriptFailure)
+    LaunchpadCronScript,
+    SilentLaunchpadScriptFailure,
+    )
+from lp.translations.interfaces.potemplate import IPOTemplateSet
 
 
 ONE_DAY_IN_SECONDS = 24*60*60
@@ -177,6 +203,7 @@ class CodeImportResultPruner(TunableLoop):
     CodeImport.
     """
     maximum_chunk_size = 1000
+
     def __init__(self, log, abort_time=None):
         super(CodeImportResultPruner, self).__init__(log, abort_time)
         self.store = IMasterStore(CodeImportResult)
@@ -293,6 +320,7 @@ class HWSubmissionEmailLinker(TunableLoop):
     linked to the same.
     """
     maximum_chunk_size = 50000
+
     def __init__(self, log, abort_time=None):
         super(HWSubmissionEmailLinker, self).__init__(log, abort_time)
         self.submission_store = IMasterStore(HWSubmission)
@@ -491,7 +519,7 @@ class BugNotificationPruner(TunableLoop):
 
 
 class BranchJobPruner(TunableLoop):
-    """Prune `BranchJob`s that are in a final state and older than a month old.
+    """Prune `BranchJob`s that are in a final state and more than a month old.
 
     When a BranchJob is completed, it gets set to a final state.  These jobs
     should be pruned from the database after a month.
@@ -661,6 +689,66 @@ class ObsoleteBugAttachmentDeleter(TunableLoop):
         transaction.commit()
 
 
+class OldTimeLimitedTokenDeleter(TunableLoop):
+    """Delete expired url access tokens from the session DB."""
+
+    maximum_chunk_size = 24*60*60 # 24 hours in seconds.
+
+    def __init__(self, log, abort_time=None):
+        super(OldTimeLimitedTokenDeleter, self).__init__(log, abort_time)
+        self.store = session_store()
+        self._update_oldest()
+
+    def _update_oldest(self):
+        self.oldest_age = self.store.execute("""
+            SELECT COALESCE(EXTRACT(EPOCH FROM
+                CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+                - MIN(created)), 0)
+            FROM TimeLimitedToken
+            """).get_one()[0]
+
+    def isDone(self):
+        return self.oldest_age <= ONE_DAY_IN_SECONDS
+
+    def __call__(self, chunk_size):
+        self.oldest_age = max(
+            ONE_DAY_IN_SECONDS, self.oldest_age - chunk_size)
+
+        self.log.debug(
+            "Removed TimeLimitedToken rows older than %d seconds"
+            % self.oldest_age)
+        self.store.find(
+            TimeLimitedToken,
+            TimeLimitedToken.created < SQL(
+                "CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - interval '%d seconds'"
+                % ONE_DAY_IN_SECONDS)).remove()
+        transaction.commit()
+        self._update_oldest()
+
+
+class SuggestiveTemplatesCacheUpdater(TunableLoop):
+    """Refresh the SuggestivePOTemplate cache.
+
+    This isn't really a TunableLoop.  It just pretends to be one to fit
+    in with the garbo crowd.
+    """
+    maximum_chunk_size = 1
+
+    done = False
+
+    def isDone(self):
+        """See `TunableLoop`."""
+        return self.done
+
+    def __call__(self, chunk_size):
+        """See `TunableLoop`."""
+        utility = getUtility(IPOTemplateSet)
+        utility.wipeSuggestivePOTemplatesCache()
+        utility.populateSuggestivePOTemplatesCache()
+        transaction.commit()
+        self.done = True
+
+
 class BaseDatabaseGarbageCollector(LaunchpadCronScript):
     """Abstract base class to run a collection of TunableLoops."""
     script_name = None # Script name for locking and database user. Override.
@@ -759,13 +847,15 @@ class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
 class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
     script_name = 'garbo-daily'
     tunable_loops = [
-        CodeImportResultPruner,
-        RevisionAuthorEmailLinker,
-        HWSubmissionEmailLinker,
-        BugNotificationPruner,
         BranchJobPruner,
+        BugNotificationPruner,
         BugWatchActivityPruner,
+        CodeImportResultPruner,
+        HWSubmissionEmailLinker,
         ObsoleteBugAttachmentDeleter,
+        OldTimeLimitedTokenDeleter,
+        RevisionAuthorEmailLinker,
+        SuggestiveTemplatesCacheUpdater,
         ]
     experimental_tunable_loops = [
         PersonPruner,
@@ -775,4 +865,3 @@ class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         super(DailyDatabaseGarbageCollector, self).add_my_options()
         # Abort script after 24 hours by default.
         self.parser.set_defaults(abort_script=86400)
-

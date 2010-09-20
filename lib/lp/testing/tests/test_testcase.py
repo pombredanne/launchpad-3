@@ -5,15 +5,23 @@
 
 __metaclass__ = type
 
-from storm.store import Store
+from StringIO import StringIO
+import sys
 import unittest
 
+from storm.store import Store
 from zope.component import getUtility
 
-from canonical.testing.layers import DatabaseFunctionalLayer
-
+from canonical.launchpad.webapp import errorlog
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer,
+    FunctionalLayer,
+    )
 from lp.code.interfaces.branch import IBranchSet
-from lp.testing import record_statements, TestCaseWithFactory
+from lp.testing import (
+    record_statements,
+    TestCaseWithFactory,
+    )
 
 
 class TestRecordStatements(TestCaseWithFactory):
@@ -40,6 +48,58 @@ class TestRecordStatements(TestCaseWithFactory):
         store.reset()
         branch = getUtility(IBranchSet).getByUniqueName(branch.unique_name)
         self.assertStatementCount(1, getattr, branch, "owner")
+
+
+class TestCaptureOops(TestCaseWithFactory):
+
+    layer = FunctionalLayer
+
+    def trigger_oops(self):
+        try:
+            raise AssertionError("Exception to get a traceback.")
+        except AssertionError:
+            errorlog.globalErrorUtility.raising(sys.exc_info())
+
+    def test_no_oops_gives_no_details(self):
+        self.assertEqual(0, len(self.oopses))
+        self.attachOopses()
+        self.assertEqual(
+            0, len([a for a in self.getDetails() if "oops" in a]))
+
+    def test_one_oops_gives_one_detail(self):
+        self.assertEqual(0, len(self.oopses))
+        self.trigger_oops()
+        self.attachOopses()
+        self.assertEqual(
+            ["oops-0"], [a for a in self.getDetails() if "oops" in a])
+
+    def test_two_oops_gives_two_details(self):
+        self.assertEqual(0, len(self.oopses))
+        self.trigger_oops()
+        self.trigger_oops()
+        self.attachOopses()
+        self.assertEqual(
+            ["oops-0", "oops-1"],
+            sorted([a for a in self.getDetails() if "oops" in a]))
+
+    def test_oops_content(self):
+        self.assertEqual(0, len(self.oopses))
+        self.trigger_oops()
+        self.attachOopses()
+        oops = errorlog.globalErrorUtility.getLastOopsReport()
+        # We have to serialise and read in again, as that is what
+        # getLastOopsReport does, and doing so changes whether the
+        # timezone is in the timestamp.
+        content = StringIO()
+        content.writelines(self.getDetails()['oops-0'].iter_bytes())
+        content.seek(0)
+        # Safety net: ensure that no autocasts have occured even on Python 2.6
+        # which is slightly better.
+        self.assertIsInstance(content.getvalue(), str)
+        from_details = errorlog.ErrorReport.read(content)
+        self.assertEqual(
+            oops.get_chunks(),
+            from_details.get_chunks())
 
 
 def test_suite():

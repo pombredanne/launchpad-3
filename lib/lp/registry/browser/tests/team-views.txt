@@ -72,6 +72,11 @@ map requires the google GMap JavaScript to display, so the views set the
 state of the request's needs_gmap2 attribute to true if there are
 members who have set their location.
 
+    >>> from lp.services.features.model import FeatureFlag, getFeatureStore
+    >>> ignore = getFeatureStore().add(FeatureFlag(
+    ...     scope=u'default', flag=u'gmap2', value=u'on', priority=1))
+    >>> transaction.commit()
+
     >>> team_view = create_initialized_view(ubuntu_team, '+index')
     >>> team_view.has_visible_location
     False
@@ -284,19 +289,6 @@ Private teams are indicated as private.
     >>> print view.visibility_portlet_class
     portlet private
 
-Private membership teams are also indicated as private.
-
-    >>> private_membership_team = factory.makeTeam(
-    ...     owner=sample_person,
-    ...     name='private-membership-team',
-    ...     displayname='Private Membership Team',
-    ...     visibility=PersonVisibility.PRIVATE_MEMBERSHIP)
-    >>> view = create_initialized_view(private_membership_team, '+index')
-    >>> print view.visibility_info
-    Team membership is viewable by team members
-    >>> print view.visibility_portlet_class
-    portlet private
-
 == +add-my-teams ==
 
 This page lists the teams that you administer and can add as a member
@@ -309,15 +301,3 @@ team.
     ...     print candidate.name, candidate.visibility.title
     landscape-developers Public
     launchpad-users Public
-
-Making one of the teams that sample person owns public will cause it
-to show up.
-
-    >>> removeSecurityProxy(private_membership_team).visibility = (
-    ...     PersonVisibility.PUBLIC)
-    >>> view = create_initialized_view(guadamen, '+add-my-teams')
-    >>> for candidate in view.candidate_teams:
-    ...     print candidate.name, candidate.visibility.title
-    landscape-developers Public
-    launchpad-users Public
-    private-membership-team Public

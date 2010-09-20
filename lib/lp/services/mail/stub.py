@@ -5,11 +5,13 @@
 
 __metaclass__ = type
 
+import email
+from logging import getLogger
+
+from zope.app import zapi
 from zope.interface import implements
 from zope.sendmail.interfaces import IMailer
-from zope.app import zapi
-from logging import getLogger
-import email
+
 
 class StubMailer:
     """

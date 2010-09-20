@@ -20,8 +20,6 @@
         });
       </script>
       <style type="text/css">
-        /* A page-specific fix for inline text are editing to line up box. */
-        #edit-description .yui-ieditor-input { top: 0; }
         /* Align the 'add comment' link to the right of the comment box. */
         #add-comment-form textarea { width: 100%; }
         #add-comment-form { max-width: 60em; padding-bottom: 4em; }
@@ -43,12 +41,11 @@
     </metal:side>
 
     <tal:registering metal:fill-slot="registering">
-      Bug #<tal:block content="context/bug/id"/> reported by
+      Reported by
       <tal:reporter replace="structure context/bug/owner/fmt:link" />
       <span
         tal:attributes="title context/bug/datecreated/fmt:datetime"
         tal:content="context/bug/datecreated/fmt:displaydate" />
-      <tal:heat replace="structure view/bug_heat_html" />
     </tal:registering>
 
     <metal:heading fill-slot="heading" tal:define="context_menu context/menu:context">
@@ -91,6 +88,10 @@
           # you have just now converted the report into a question.
         </tal:XXX>
       </p>
+
+      <div style="float: right;">
+        <tal:heat replace="structure view/bug_heat_html" />
+      </div>
 
       <div tal:replace="structure context/bug/@@+bugtasks-and-nominations-table" />
 
@@ -287,8 +288,8 @@
                 button.style.display = 'none';
               </script>
               <script type="text/javascript">
-                LPS.use('lp.comment', function(Y) {
-                    var comment = new Y.lp.Comment();
+                LPS.use('lp.app.comment', function(Y) {
+                    var comment = new Y.lp.app.comment.Comment();
                     comment.render();
                 });
               </script>

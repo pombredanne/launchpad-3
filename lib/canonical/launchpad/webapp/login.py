@@ -1,50 +1,69 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-from __future__ import with_statement
-
 """Stuff to do with logging in and logging out."""
+
+from __future__ import with_statement
 
 __metaclass__ = type
 
+from datetime import (
+    datetime,
+    timedelta,
+    )
 import urllib
 
-from datetime import datetime, timedelta
-
 from BeautifulSoup import UnicodeDammit
-
-from openid.consumer.consumer import CANCEL, Consumer, FAILURE, SUCCESS
+from openid.consumer.consumer import (
+    CANCEL,
+    Consumer,
+    FAILURE,
+    SUCCESS,
+    )
 from openid.extensions import sreg
-from openid.fetchers import setDefaultFetcher, Urllib2Fetcher
-
+from openid.fetchers import (
+    setDefaultFetcher,
+    Urllib2Fetcher,
+    )
 import transaction
-
+from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.security.interfaces import IUnauthenticatedPrincipal
-from zope.component import getUtility, getSiteManager
+from zope.component import (
+    getSiteManager,
+    getUtility,
+    )
 from zope.event import notify
 from zope.interface import Interface
 from zope.publisher.browser import BrowserPage
 from zope.publisher.interfaces.http import IHTTPApplicationRequest
 from zope.security.proxy import removeSecurityProxy
-from zope.session.interfaces import ISession, IClientIdManager
+from zope.session.interfaces import (
+    IClientIdManager,
+    ISession,
+    )
 
-from z3c.ptcompat import ViewPageTemplateFile
-
-from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.account import AccountSuspendedError
 from canonical.launchpad.interfaces.openidconsumer import IOpenIDConsumerStore
-from lp.registry.interfaces.person import IPersonSet, PersonCreationRationale
 from canonical.launchpad.readonly import is_read_only
 from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
 from canonical.launchpad.webapp.error import SystemErrorView
 from canonical.launchpad.webapp.interfaces import (
-    CookieAuthLoggedInEvent, ILaunchpadApplication, IPlacelessAuthUtility,
-    IPlacelessLoginSource, LoggedOutEvent)
+    CookieAuthLoggedInEvent,
+    ILaunchpadApplication,
+    IPlacelessAuthUtility,
+    IPlacelessLoginSource,
+    LoggedOutEvent,
+    )
 from canonical.launchpad.webapp.metazcml import ILaunchpadPermission
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.url import urlappend
 from canonical.launchpad.webapp.vhosts import allvhosts
+from lp.registry.interfaces.person import (
+    IPersonSet,
+    PersonCreationRationale,
+    )
+from lp.services.propertycache import cachedproperty
 
 
 class UnauthorizedView(SystemErrorView):
@@ -245,9 +264,28 @@ class OpenIDCallbackView(OpenIDLogin):
     suspended_account_template = ViewPageTemplateFile(
         '../templates/login-suspended-account.pt')
 
+    def _gather_params(self, request):
+        params = dict(request.form)
+        for key, value in request.query_string_params.iteritems():
+            if len(value) > 1:
+                raise ValueError(
+                    'Did not expect multi-valued fields.')
+            params[key] = value[0]
+
+        return params
+
+    def _get_requested_url(self, request):
+        requested_url = request.getURL()
+        query_string = request.get('QUERY_STRING')
+        if query_string is not None:
+            requested_url += '?' + query_string
+        return requested_url
+
     def initialize(self):
-        self.openid_response = self._getConsumer().complete(
-            self.request.form, self.request.getURL())
+        params = self._gather_params(self.request)
+        requested_url = self._get_requested_url(self.request)
+        consumer = self._getConsumer()
+        self.openid_response = consumer.complete(params, requested_url)
 
     def login(self, account):
         loginsource = getUtility(IPlacelessLoginSource)
@@ -291,6 +329,7 @@ class OpenIDCallbackView(OpenIDLogin):
         the changes we just did.
         """
         identifier = self.openid_response.identity_url.split('/')[-1]
+        identifier = identifier.decode('ascii')
         should_update_last_write = False
         # Force the use of the master database to make sure a lagged slave
         # doesn't fool us into creating a Person/Account when one already
@@ -350,7 +389,13 @@ class OpenIDCallbackView(OpenIDLogin):
     def _redirect(self):
         target = self.request.form.get('starting_url')
         if target is None:
-            target = self.getApplicationURL()
+            # If this was a POST, then the starting_url won't be in the form
+            # values, but in the query parameters instead.
+            target = self.request.query_string_params.get('starting_url')
+            if target is None:
+                target = self.request.getApplicationURL()
+            else:
+                target = target[0]
         self.request.response.redirect(target, temporary_if_possible=True)
 
 
@@ -463,7 +508,7 @@ class CookieLogoutPage:
         openid_root = allvhosts.configs[openid_vhost].rooturl
         target = '%s+logout?%s' % (
             config.codehosting.secure_codebrowse_root,
-            urllib.urlencode(dict(next_to='%s+logout' % (openid_root,))))
+            urllib.urlencode(dict(next_to='%s+logout' % (openid_root, ))))
         self.request.response.redirect(target)
         return ''
 

@@ -6,24 +6,21 @@
 __metaclass__ = type
 
 import logging
-import unittest
-
 from StringIO import StringIO
+import unittest
 
 import dkim
 import dns.resolver
-
 from zope.component import getUtility
 
+from canonical.launchpad.interfaces.mail import IWeaklyAuthenticatedPrincipal
 from canonical.launchpad.mail import (
     incoming,
     signed_message_from_string,
     )
 from canonical.launchpad.mail.incoming import authenticateEmail
-from canonical.launchpad.interfaces.mail import IWeaklyAuthenticatedPrincipal
-from lp.testing import TestCaseWithFactory
 from canonical.testing.layers import DatabaseFunctionalLayer
-
+from lp.testing import TestCaseWithFactory
 
 # sample private key made with 'openssl genrsa' and public key using 'openssl
 # rsa -pubout'.  Not really the key for canonical.com ;-)

@@ -1,6 +1,8 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+from __future__ import with_statement
+
 """Testing infrastructure for page tests."""
 
 # Stop lint warning about not initializing TestCase parent on
@@ -9,43 +11,67 @@
 
 __metaclass__ = type
 
+import doctest
 import os
 import pdb
 import pprint
 import re
-import transaction
 import unittest
-
-from BeautifulSoup import (
-    BeautifulSoup, CData, Comment, Declaration, NavigableString, PageElement,
-    ProcessingInstruction, SoupStrainer, Tag)
-from contrib.oauth import (
-    OAuthConsumer, OAuthRequest, OAuthSignatureMethod_PLAINTEXT, OAuthToken)
 from urlparse import urljoin
 
-from zope.app.testing.functional import HTTPCaller, SimpleCookie
+from BeautifulSoup import (
+    BeautifulSoup,
+    CData,
+    Comment,
+    Declaration,
+    NavigableString,
+    PageElement,
+    ProcessingInstruction,
+    SoupStrainer,
+    Tag,
+    )
+from contrib.oauth import (
+    OAuthConsumer,
+    OAuthRequest,
+    OAuthSignatureMethod_PLAINTEXT,
+    OAuthToken,
+    )
+from lazr.restful.interfaces import IRepresentationCache
+from lazr.restful.testing.webservice import WebServiceCaller
+import transaction
+from zope.app.testing.functional import (
+    HTTPCaller,
+    SimpleCookie,
+    )
 from zope.component import getUtility
-from zope.testbrowser.testing import Browser
-from zope.testing import doctest
 from zope.security.proxy import removeSecurityProxy
-
-from launchpadlib.launchpad import Launchpad
+from zope.testbrowser.testing import Browser
 
 from canonical.launchpad.interfaces import (
-    IOAuthConsumerSet, OAUTH_REALM, ILaunchpadCelebrities,
-    TeamMembershipStatus)
+    ILaunchpadCelebrities,
+    IOAuthConsumerSet,
+    OAUTH_REALM,
+    TeamMembershipStatus,
+    )
 from canonical.launchpad.testing.systemdocs import (
-    LayeredDocFileSuite, SpecialOutputChecker, stop, strip_prefix)
+    LayeredDocFileSuite,
+    SpecialOutputChecker,
+    stop,
+    strip_prefix,
+    )
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import OAuthPermission
 from canonical.launchpad.webapp.url import urlsplit
 from canonical.testing import PageTestLayer
-from lazr.restful.interfaces import IRepresentationCache
-from lazr.restful.testing.webservice import WebServiceCaller
-from lp.testing import (
-    ANONYMOUS, launchpadlib_for, login, login_person, logout)
-from lp.testing.factory import LaunchpadObjectFactory
 from lp.registry.interfaces.person import NameAlreadyTaken
+from lp.testing import (
+    ANONYMOUS,
+    launchpadlib_for,
+    login,
+    login_person,
+    logout,
+    )
+from lp.testing.factory import LaunchpadObjectFactory
 
 
 class UnstickyCookieHTTPCaller(HTTPCaller):
@@ -787,6 +813,7 @@ def setUpGlobs(test):
     test.globs['print_tag_with_id'] = print_tag_with_id
     test.globs['PageTestLayer'] = PageTestLayer
     test.globs['stop'] = stop
+    test.globs['with_statement'] = with_statement
     test.globs['ws_uncache'] = ws_uncache
 
 

@@ -9,45 +9,68 @@ __metaclass__ = type
 
 import operator
 import re
-import transaction
 
 from bzrlib.branch import Branch
 from bzrlib.errors import (
-    NotAMergeDirective, NotBranchError, NotStacked)
+    NotAMergeDirective,
+    NotBranchError,
+    NotStacked,
+    )
 from bzrlib.merge_directive import MergeDirective
 from bzrlib.transport import get_transport
 from bzrlib.urlutils import join as urljoin
+from lazr.uri import URI
 from sqlobject import SQLObjectNotFound
-
+import transaction
 from zope.component import getUtility
 from zope.interface import implements
 
-from lp.codehosting.bzrutils import is_branch_stackable
-from lp.codehosting.vfs import get_lp_server
 from canonical.launchpad.interfaces.mail import (
-    IMailHandler, EmailProcessingError)
+    EmailProcessingError,
+    IMailHandler,
+    )
 from canonical.launchpad.interfaces.message import IMessageSet
 from canonical.launchpad.mail.commands import (
-    EmailCommand, EmailCommandCollection)
+    EmailCommand,
+    EmailCommandCollection,
+    )
 from canonical.launchpad.mail.helpers import (
-    ensure_not_weakly_authenticated, get_error_message, get_main_body,
-    get_person_or_team, IncomingEmailError, parse_commands)
-from lp.services.mail.sendmail import simple_sendmail
+    ensure_not_weakly_authenticated,
+    get_error_message,
+    get_main_body,
+    get_person_or_team,
+    IncomingEmailError,
+    parse_commands,
+    )
 from canonical.launchpad.mailnotification import (
-    send_process_error_notification)
+    send_process_error_notification,
+    )
 from canonical.launchpad.webapp import urlparse
 from canonical.launchpad.webapp.errorlog import globalErrorUtility
 from canonical.launchpad.webapp.interfaces import ILaunchBag
-from lazr.uri import URI
-from lp.code.enums import BranchType, CodeReviewVote
-from lp.code.errors import BranchMergeProposalExists, UserNotBranchReviewer
-from lp.code.interfaces.branch import BranchCreationException
+from lp.code.bzr import get_branch_formats
+from lp.code.enums import (
+    BranchType,
+    CodeReviewVote,
+    )
+from lp.code.errors import (
+    BranchCreationException,
+    BranchMergeProposalExists,
+    UserNotBranchReviewer,
+    )
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchmergeproposal import (
-    IBranchMergeProposalGetter, ICreateMergeProposalJobSource)
+    IBranchMergeProposalGetter,
+    ICreateMergeProposalJobSource,
+    )
 from lp.code.interfaces.branchnamespace import (
-    lookup_branch_namespace, split_unique_name)
+    lookup_branch_namespace,
+    split_unique_name,
+    )
 from lp.code.interfaces.branchtarget import check_default_stacked_on
+from lp.codehosting.bzrutils import is_branch_stackable
+from lp.codehosting.vfs import get_lp_server
+from lp.services.mail.sendmail import simple_sendmail
 
 
 class BadBranchMergeProposalAddress(Exception):
@@ -516,11 +539,15 @@ class CodeHandler:
                 except NotStacked:
                     # We don't currently support pulling in the revisions if
                     # the source branch exists and isn't stacked.
+                    # XXX Tim Penhey 2010-07-27 bug 610292
+                    # We should fail here and return an oops email to the user.
                     return db_source
                 self._pullRevisionsFromMergeDirectiveIntoSourceBranch(
                     md, target_url, bzr_source)
                 # Get the puller to pull the branch into the mirrored area.
-                db_source.requestMirror()
+                formats = get_branch_formats(bzr_source)
+                db_source.branchChanged(
+                    stacked_url, bzr_source.last_revision(), *formats)
             return db_source
         finally:
             lp_server.stop_server()
@@ -540,8 +567,12 @@ class CodeHandler:
         # access to any needed but not supplied revisions.
         md.target_branch = target_url
         md.install_revisions(bzr_branch.repository)
-        bzr_branch.pull(bzr_branch, stop_revision=md.revision_id,
-                        overwrite=True)
+        bzr_branch.lock_write()
+        try:
+            bzr_branch.pull(bzr_branch, stop_revision=md.revision_id,
+                            overwrite=True)
+        finally:
+            bzr_branch.unlock()
 
     def findMergeDirectiveAndComment(self, message):
         """Extract the comment and Merge Directive from a SignedMessage."""

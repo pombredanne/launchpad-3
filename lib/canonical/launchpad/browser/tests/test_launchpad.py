@@ -1,7 +1,7 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Tests for traversal from the root branch object.."""
+"""Tests for traversal from the root branch object."""
 
 __metaclass__ = type
 
@@ -13,18 +13,69 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.browser.launchpad import LaunchpadRootNavigation
 from canonical.launchpad.interfaces.account import AccountStatus
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.interfaces import GoneError
+from canonical.launchpad.webapp.interfaces import BrowserNotificationLevel
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.launchpad.webapp.url import urlappend
 from canonical.testing.layers import DatabaseFunctionalLayer
-
-from lp.registry.interfaces.person import IPersonSet, PersonVisibility
-from lp.testing import login_person, TestCaseWithFactory
+from lp.app.errors import GoneError
+from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
+from lp.registry.interfaces.person import (
+    IPersonSet,
+    PersonVisibility,
+    )
+from lp.testing import (
+    login_person,
+    person_logged_in,
+    TestCaseWithFactory,
+    )
 from lp.testing.views import create_view
 
 
 class TraversalMixin:
+
+    def _validateNotificationContext(
+        self, request, notification=None,
+        level=BrowserNotificationLevel.INFO):
+        """Check the browser notifications associated with the request.
+
+        Ensure that the notification instances attached to the request match
+        the expected values for text and type.
+
+        :param notification: The exact notification text to validate. If None
+            then we don't care what the notification text is, so long as there
+            is some.
+        : param level: the required notification level
+        """
+
+        notifications = request.notifications
+        if notification is None:
+            self.assertEquals(len(notifications), 0)
+            return
+        self.assertEqual(len(notifications), 1)
+        self.assertEquals(notifications[0].level, level)
+        self.assertEqual(notification, notifications[0].message)
+
+    def assertDisplaysNotification(
+        self, path, notification=None,
+        level=BrowserNotificationLevel.INFO):
+        """Assert that an invalid path redirects back to referrer.
+
+        The request object is expected to have a notification message to
+        display to the user to explain the reason for the error.
+
+        :param path: The path to check
+        :param notification: The exact notification text to validate. If None
+            then we don't care what the notification text is, so long as there
+            is some.
+        : param level: the required notification level
+        """
+
+        redirection = self.traverse(path)
+        self.assertIs(redirection.target, None)
+        self._validateNotificationContext(
+            redirection.request, notification, level)
 
     def assertNotFound(self, path):
         self.assertRaises(NotFound, self.traverse, path)
@@ -53,8 +104,8 @@ class TraversalMixin:
 class TestBranchTraversal(TestCaseWithFactory, TraversalMixin):
     """Branches are traversed to from IPersons. Test we can reach them.
 
-    This class tests the `PersonNavigation` class to see that we can traverse
-    to branches from such objects.
+    This class tests the `LaunchpadRootNavigation` class to see that we can
+    traverse to branches from URLs of the form +branch/xxxx.
     """
 
     layer = DatabaseFunctionalLayer
@@ -70,26 +121,107 @@ class TestBranchTraversal(TestCaseWithFactory, TraversalMixin):
 
     def test_no_such_unique_name(self):
         # Traversing to /+branch/<unique_name> where 'unique_name' is for a
-        # branch that doesn't exist will generate a 404.
+        # branch that doesn't exist will display an error message.
         branch = self.factory.makeAnyBranch()
-        self.assertNotFound(branch.unique_name + 'wibble')
+        bad_name = branch.unique_name + 'wibble'
+        requiredMessage = "No such branch: '%s'." % (branch.name+"wibble")
+        self.assertDisplaysNotification(
+            bad_name, requiredMessage,
+            BrowserNotificationLevel.ERROR)
+
+    def test_private_branch(self):
+        # If an attempt is made to access a private branch, display an error.
+        branch = self.factory.makeProductBranch()
+        branch_unique_name = branch.unique_name
+        naked_product = removeSecurityProxy(branch.product)
+        ICanHasLinkedBranch(naked_product).setBranch(branch)
+        removeSecurityProxy(branch).private = True
+
+        any_user = self.factory.makePerson()
+        login_person(any_user)
+        requiredMessage = "No such branch: '%s'." % branch_unique_name
+        self.assertDisplaysNotification(
+            branch_unique_name,
+            requiredMessage,
+            BrowserNotificationLevel.ERROR)
 
     def test_product_alias(self):
         # Traversing to /+branch/<product> redirects to the page for the
         # branch that is the development focus branch for that product.
         branch = self.factory.makeProductBranch()
-        product = removeSecurityProxy(branch.product)
-        product.development_focus.branch = branch
-        self.assertRedirects(product.name, canonical_url(branch))
+        naked_product = removeSecurityProxy(branch.product)
+        ICanHasLinkedBranch(naked_product).setBranch(branch)
+        self.assertRedirects(naked_product.name, canonical_url(branch))
+
+    def test_private_branch_for_product(self):
+        # If the development focus of a product is private, display a
+        # message telling the user there is no linked branch.
+        branch = self.factory.makeProductBranch()
+        naked_product = removeSecurityProxy(branch.product)
+        ICanHasLinkedBranch(naked_product).setBranch(branch)
+        removeSecurityProxy(branch).private = True
+
+        any_user = self.factory.makePerson()
+        login_person(any_user)
+        requiredMessage = (u"The target %s does not have a linked branch."
+            % naked_product.name)
+        self.assertDisplaysNotification(
+            naked_product.name,
+            requiredMessage,
+            BrowserNotificationLevel.NOTICE)
 
     def test_nonexistent_product(self):
-        # Traversing to /+branch/<no-such-product> generates a 404.
-        self.assertNotFound('non-existent')
+        # Traversing to /+branch/<no-such-product> displays an error message.
+        non_existent = 'non-existent'
+        requiredMessage = u"No such product: '%s'." % non_existent
+        self.assertDisplaysNotification(
+            non_existent, requiredMessage,
+            BrowserNotificationLevel.ERROR)
 
     def test_product_without_dev_focus(self):
-        # Traversing to a product without a development focus generates a 404.
+        # Traversing to a product without a development focus displays a
+        # user message on the same page.
         product = self.factory.makeProduct()
-        self.assertNotFound(product.name)
+        requiredMessage = (u"The target %s does not have a linked branch."
+            % product.name)
+        self.assertDisplaysNotification(
+            product.name,
+            requiredMessage,
+            BrowserNotificationLevel.NOTICE)
+
+    def test_distro_package_alias(self):
+        # Traversing to /+branch/<distro>/<sourcepackage package> redirects
+        # to the page for the branch that is the development focus branch
+        # for that package.
+        sourcepackage = self.factory.makeSourcePackage()
+        branch = self.factory.makePackageBranch(sourcepackage=sourcepackage)
+        distro_package = sourcepackage.distribution_sourcepackage
+        ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
+        registrant = ubuntu_branches.teamowner
+        target = ICanHasLinkedBranch(distro_package)
+        with person_logged_in(registrant):
+            target.setBranch(branch, registrant)
+        self.assertRedirects("%s" % target.bzr_path, canonical_url(branch))
+
+    def test_private_branch_for_distro_package(self):
+        # If the development focus of a distro package is private, display a
+        # message telling the user there is no linked branch.
+        sourcepackage = self.factory.makeSourcePackage()
+        branch = self.factory.makePackageBranch(
+            sourcepackage=sourcepackage, private=True)
+        distro_package = sourcepackage.distribution_sourcepackage
+        ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
+        registrant = ubuntu_branches.teamowner
+        with person_logged_in(registrant):
+            ICanHasLinkedBranch(distro_package).setBranch(branch, registrant)
+
+        any_user = self.factory.makePerson()
+        login_person(any_user)
+        path = ICanHasLinkedBranch(distro_package).bzr_path
+        requiredMessage = (u"The target %s does not have a linked branch."
+            % path)
+        self.assertDisplaysNotification(
+            path, requiredMessage, BrowserNotificationLevel.NOTICE)
 
     def test_trailing_path_redirect(self):
         # If there are any trailing path segments after the branch identifier,
@@ -101,33 +233,63 @@ class TestBranchTraversal(TestCaseWithFactory, TraversalMixin):
     def test_product_series_redirect(self):
         # Traversing to /+branch/<product>/<series> redirects to the branch
         # for that series, if there is one.
-        branch = self.factory.makeProductBranch()
-        product = branch.product
-        series = self.factory.makeProductSeries(product=product)
-        removeSecurityProxy(series).branch = branch
+        branch = self.factory.makeBranch()
+        series = self.factory.makeProductSeries(branch=branch)
         self.assertRedirects(
-            '%s/%s' % (product.name, series.name), canonical_url(branch))
+            ICanHasLinkedBranch(series).bzr_path, canonical_url(branch))
 
     def test_nonexistent_product_series(self):
-        # /+branch/<product>/<series> generates a 404 if there is no such
-        # series.
+        # /+branch/<product>/<series> displays an error message if there is
+        # no such series.
         product = self.factory.makeProduct()
-        self.assertNotFound('%s/nonexistent' % product.name)
+        non_existent = 'nonexistent'
+        requiredMessage = u"No such product series: '%s'." % non_existent
+        self.assertDisplaysNotification(
+            '%s/%s' % (product.name, non_existent),
+            requiredMessage,
+            BrowserNotificationLevel.ERROR)
 
     def test_no_branch_for_series(self):
-        # If there's no branch for a product series, generate a 404.
+        # If there's no branch for a product series, display a
+        # message telling the user there is no linked branch.
         series = self.factory.makeProductSeries()
-        self.assertNotFound('%s/%s' % (series.product.name, series.name))
+        path = ICanHasLinkedBranch(series).bzr_path
+        requiredMessage = ("The target %s does not have a linked branch."
+            % path)
+        self.assertDisplaysNotification(
+            path, requiredMessage, BrowserNotificationLevel.NOTICE)
+
+    def test_private_branch_for_series(self):
+        # If the development focus of a product series is private, display a
+        # message telling the user there is no linked branch.
+        branch = self.factory.makeBranch(private=True)
+        series = self.factory.makeProductSeries(branch=branch)
+
+        any_user = self.factory.makePerson()
+        login_person(any_user)
+        path = ICanHasLinkedBranch(series).bzr_path
+        requiredMessage = (u"The target %s does not have a linked branch."
+            % path)
+        self.assertDisplaysNotification(
+            path, requiredMessage, BrowserNotificationLevel.NOTICE)
 
     def test_too_short_branch_name(self):
-        # 404 if the thing following +branch is a unique name that's too short
-        # to be a real unique name.
+        # error notification if the thing following +branch is a unique name
+        # that's too short to be a real unique name.
         owner = self.factory.makePerson()
-        self.assertNotFound('~%s' % owner.name)
+        requiredMessage = (u"Cannot understand namespace name: '%s'"
+            % owner.name)
+        self.assertDisplaysNotification(
+            '~%s' % owner.name,
+            requiredMessage,
+            BrowserNotificationLevel.ERROR)
 
     def test_invalid_product_name(self):
-        # 404 if the thing following +branch has an invalid product name.
-        self.assertNotFound('a')
+        # error notification if the thing following +branch has an invalid
+        # product name.
+        self.assertDisplaysNotification(
+            'a', u"Invalid name for product: a.",
+            BrowserNotificationLevel.ERROR)
 
 
 class TestPersonTraversal(TestCaseWithFactory, TraversalMixin):

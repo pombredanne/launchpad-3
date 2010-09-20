@@ -10,15 +10,19 @@ __all__ = [
     'ComponentSet'
     ]
 
+from sqlobject import (
+    ForeignKey,
+    StringCol,
+    )
 from zope.interface import implements
 
-from sqlobject import StringCol, ForeignKey
-
 from canonical.database.sqlbase import SQLBase
-
-from canonical.launchpad.webapp.interfaces import NotFoundError
+from lp.app.errors import NotFoundError
 from lp.soyuz.interfaces.component import (
-    IComponent, IComponentSelection, IComponentSet)
+    IComponent,
+    IComponentSelection,
+    IComponentSet,
+    )
 
 
 class Component(SQLBase):

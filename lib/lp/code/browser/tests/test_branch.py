@@ -7,36 +7,52 @@ from __future__ import with_statement
 
 __metaclass__ = type
 
-from datetime import datetime, timedelta
+from datetime import (
+    datetime,
+    timedelta,
+    )
 from textwrap import dedent
 import unittest
 
 import pytz
 import simplejson
-
-
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
-
-from lp.app.interfaces.headings import IRootContext
-from lp.bugs.interfaces.bugtask import (
-    BugTaskStatus, UNRESOLVED_BUGTASK_STATUSES)
-from lp.code.browser.branch import (
-    BranchAddView, BranchMirrorStatusView, BranchReviewerEditView,
-    BranchSparkView, BranchView)
-from lp.code.browser.branchlisting import PersonOwnedBranchesView
-from lp.code.interfaces.branchtarget import IBranchTarget
 from canonical.launchpad.helpers import truncate_text
-from lp.code.enums import BranchLifecycleStatus, BranchType
-from lp.testing import (
-    login, login_person, logout, person_logged_in, ANONYMOUS,
-    TestCaseWithFactory)
-from lp.testing.views import create_initialized_view
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import (
-    DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
+from lp.app.interfaces.headings import IRootContext
+from lp.bugs.interfaces.bugtask import (
+    BugTaskStatus,
+    UNRESOLVED_BUGTASK_STATUSES,
+    )
+from lp.code.browser.branch import (
+    BranchAddView,
+    BranchMirrorStatusView,
+    BranchReviewerEditView,
+    BranchSparkView,
+    BranchView,
+    )
+from lp.code.browser.branchlisting import PersonOwnedBranchesView
+from lp.code.enums import (
+    BranchLifecycleStatus,
+    BranchType,
+    )
+from lp.code.interfaces.branchtarget import IBranchTarget
+from lp.testing import (
+    ANONYMOUS,
+    login,
+    login_person,
+    logout,
+    person_logged_in,
+    TestCaseWithFactory,
+    )
+from lp.testing.views import create_initialized_view
 
 
 class TestBranchMirrorHidden(TestCaseWithFactory):
@@ -125,7 +141,7 @@ class TestBranchView(TestCaseWithFactory):
 
     def testMirrorStatusMessageIsTruncated(self):
         """mirror_status_message is truncated if the text is overly long."""
-        branch = self.factory.makeBranch()
+        branch = self.factory.makeBranch(branch_type=BranchType.MIRRORED)
         branch.mirrorFailed(
             "on quick brown fox the dog jumps to" *
             BranchMirrorStatusView.MAXIMUM_STATUS_MESSAGE_LENGTH)
@@ -137,7 +153,7 @@ class TestBranchView(TestCaseWithFactory):
 
     def testMirrorStatusMessage(self):
         """mirror_status_message on the view is the same as on the branch."""
-        branch = self.factory.makeBranch()
+        branch = self.factory.makeBranch(branch_type=BranchType.MIRRORED)
         branch.mirrorFailed("This is a short error message.")
         branch_view = BranchMirrorStatusView(branch, self.request)
         self.assertTrue(

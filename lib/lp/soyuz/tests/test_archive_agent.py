@@ -4,11 +4,16 @@
 """Test Archive software center agent celebrity."""
 
 from zope.component import getUtility
+
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.authorization import check_permission
-from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
 from canonical.testing import LaunchpadFunctionalLayer
-from lp.testing import login, login_person, TestCaseWithFactory
+from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
+from lp.testing import (
+    login,
+    login_person,
+    TestCaseWithFactory,
+    )
 
 
 class TestArchivePrivacy(TestCaseWithFactory):
@@ -60,4 +65,3 @@ class TestArchivePrivacy(TestCaseWithFactory):
         url = self.ppa.archive_url.split('http://')[1]
         new_url = "http://joe:%s@%s" % (authtoken, url)
         self.assertEqual(sources, new_url)
-

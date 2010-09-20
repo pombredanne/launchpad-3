@@ -299,6 +299,7 @@ build created during the copy is ready to be dispatched.
     James Blackwell
     PPA for James Blackwell
     i386 build of pmount 0.1-1
+    ...
     Build status Needs building
     Start (2505) What's this?
     Build details
@@ -463,7 +464,7 @@ has unpublished binaries.
 We will build and publish the architecture independent binary for
 pmount ('pmount-bin') and publish it in hoary/i386 and hoary/hppa.
 
-    >>> from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+    >>> from lp.soyuz.enums import PackagePublishingStatus
     >>> login('foo.bar@canonical.com')
     >>> jblack = person_set.getByName('jblack')
     >>> pmount_build = jblack.archive.getBuildRecords()[0]
@@ -511,8 +512,6 @@ hppa support.
 After the binary package go from PENDING->PUBLISHED, the page reflects the
 changes:
 
-    >>> from lp.soyuz.interfaces.publishing import (
-    ...     PackagePublishingStatus)
     >>> login('foo.bar@canonical.com')
     >>> for binary in pmount_binaries:
     ...     binary.setPublished()
@@ -973,7 +972,7 @@ in No Privileges' PPA.
     ...     archive=jblack_friends.archive,
     ...     status=PackagePublishingStatus.PUBLISHED)
     >>> [build] = jblack_friends_foo_src.createMissingBuilds()
-    >>> from lp.buildmaster.interfaces.buildbase import BuildStatus
+    >>> from lp.buildmaster.enums import BuildStatus
     >>> build.status = BuildStatus.FAILEDTOBUILD
 
     >>> flush_database_updates()

@@ -190,7 +190,8 @@ Let's try requesting an export in MO format:
 
     >>> from lp.translations.interfaces.translationfileformat import (
     ...     TranslationFileFormat)
-    >>> request_set.addRequest(person, None, [cs], TranslationFileFormat.MO)
+    >>> request_set.addRequest(
+    ...     person, None, [cs, cs.potemplate], TranslationFileFormat.MO)
     >>> transaction.commit()
     >>> process_queue(transaction, MockLogger())
     log> Exporting objects for Happy Downloader, related to template pmount
@@ -268,6 +269,7 @@ The script is run.
     ...     )
     >>> (output, empty) = process.communicate()
     >>> print output
+    DEBUG   ...
     INFO    Creating lockfile: /var/lock/launchpad-rosetta-export-queue.lock
     DEBUG   Exporting objects for Happy Downloader, related to template
     evolution-2.2 in Evolution trunk

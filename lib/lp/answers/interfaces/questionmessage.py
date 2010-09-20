@@ -11,12 +11,17 @@ __all__ = [
     'IQuestionMessage',
     ]
 
-from zope.schema import Choice, Field
+from zope.schema import (
+    Choice,
+    Field,
+    )
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.message import IMessage
 from lp.answers.interfaces.questionenums import (
-    QuestionAction, QuestionStatus)
+    QuestionAction,
+    QuestionStatus,
+    )
 
 
 class IQuestionMessage(IMessage):

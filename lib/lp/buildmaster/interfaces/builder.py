@@ -19,14 +19,27 @@ __all__ = [
     'ProtocolVersionMismatch',
     ]
 
-from zope.interface import Interface, Attribute
-from zope.schema import Bool, Choice, Field, Text, TextLine
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Bool,
+    Choice,
+    Field,
+    Int,
+    Text,
+    TextLine,
+    )
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import Title, Description
-from lp.registry.interfaces.role import IHasOwner
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.validators.url import builder_url_validator
+from lp.registry.interfaces.role import IHasOwner
+from lp.services.fields import (
+    Description,
+    Title,
+    )
 
 
 class BuildDaemonError(Exception):
@@ -134,7 +147,7 @@ class IBuilder(IHasOwner):
                       'buildd-slave, e.g.: foobar-host.ppa'))
 
     active = Bool(
-        title=_('Active'), required=True, default=True,
+        title=_('Publicly Visible'), required=True, default=True,
         description=_('Whether or not to present the builder publicly.'))
 
     slave = Attribute("xmlrpclib.Server instance corresponding to builder.")
@@ -146,23 +159,19 @@ class IBuilder(IHasOwner):
                 "new jobs. "),
         required=False)
 
+    failure_count = Int(
+        title=_('Failure Count'), required=False, default=0,
+        description=_("Number of consecutive failures for this builder."))
+
     current_build_behavior = Field(
         title=u"The current behavior of the builder for the current job.",
         required=False)
 
-    def checkSlaveArchitecture():
-        """Check that the slave can compile for its nominated processor.
+    def gotFailure():
+        """Increment failure_count on the builder."""
 
-        This will query the builder to determine its actual architecture (as
-        opposed to what we expect it to be). It will then look for a
-        DistroArchSeries with the returned architecture tag, and confirm that
-        the processor type matches.
-
-        :raises BuildDaemonError: When the builder is down or of the wrong
-            architecture.
-        :raises ProtocolVersionMismatch: When the builder returns an
-            unsupported protocol version.
-        """
+    def resetFailureCount():
+        """Set the failure_count back to zero."""
 
     def checkSlaveAlive():
         """Check that the buildd slave is alive.
@@ -284,6 +293,15 @@ class IBuilder(IHasOwner):
             talk to.
         :return: the `IBuildQueue` instance found or None if no job was found.
         """
+
+    def getBuildQueue():
+        """Return a `BuildQueue` if there's an active job on this builder.
+
+        :return: A BuildQueue, or None.
+        """
+
+    def getCurrentBuildFarmJob():
+        """Return a `BuildFarmJob` for this builder."""
 
 
 class IBuilderSet(Interface):

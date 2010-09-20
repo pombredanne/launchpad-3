@@ -14,8 +14,8 @@ __all__ = [
     'text_to_html',
     ]
 
-import re
 from math import ceil
+import re
 from xml.sax.saxutils import escape as xml_escape
 
 from canonical.launchpad import helpers

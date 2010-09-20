@@ -1,4 +1,27 @@
-== The map of a team's members ==
+The map of a team's members
+===========================
+
+Maps are disabled
+-----------------
+
+Users cannot see maps when the gmap2 feature is disbaled for them
+
+    >>> user_browser.open('http://launchpad.dev/~guadamen')
+    >>> body = find_main_content(user_browser.contents)
+    >>> mapdiv = find_tag_by_id(str(body), 'team_map_div')
+    >>> 'lp.app.mapping.renderTeamMapSmall(' in str(body)
+    False
+
+
+Maps are enabled
+----------------
+
+Users can see maps when the gmap2 feature is enabled for them.
+
+    >>> from lp.services.features.model import FeatureFlag, getFeatureStore
+    >>> ignore = getFeatureStore().add(FeatureFlag(
+    ...     scope=u'default', flag=u'gmap2', value=u'on', priority=1))
+    >>> transaction.commit()
 
 If a team has members that have locations, then you should see a portlet
 with their locations displayed.
@@ -7,12 +30,12 @@ with their locations displayed.
     >>> nopriv_browser.open('http://launchpad.dev/~guadamen')
     >>> body = find_main_content(nopriv_browser.contents)
     >>> mapdiv = find_tag_by_id(str(body), 'team_map_div')
-    >>> 'lp.mapping.renderTeamMapSmall(' in str(body)
+    >>> 'lp.app.mapping.renderTeamMapSmall(' in str(body)
     True
     >>> markup = str(nopriv_browser.contents)
     >>> 'src="http://maps.google.com/maps' in markup
     True
-    >>> 'build/lp/mapping.js' in markup
+    >>> 'build/app/mapping.js' in markup
     True
 
 You should also be able to see a map of the team.
@@ -37,7 +60,9 @@ without, mapped members.
       <participant
         displayname="Colin Watson"
         name="kamion"
-        logo_html="&lt;img alt=&quot;&quot; width=&quot;64&quot; height=&quot;64&quot; src=&quot;/@@/person-logo&quot; /&gt;"
+        logo_html="&lt;img alt=&quot;&quot;
+            width=&quot;64&quot; height=&quot;64&quot;
+            src=&quot;/@@/person-logo&quot; /&gt;"
         url="/~kamion"
         local_time="..."
         lat="52.2"
@@ -72,7 +97,9 @@ test.
       <participant
         displayname="Colin Watson"
         name="kamion"
-        logo_html="&lt;img alt=&quot;&quot; width=&quot;64&quot; height=&quot;64&quot; src=&quot;/@@/person-logo&quot; /&gt;"
+        logo_html="&lt;img alt=&quot;&quot;
+            width=&quot;64&quot; height=&quot;64&quot;
+                src=&quot;/@@/person-logo&quot; /&gt;"
         url="/~kamion"
         local_time="..."
         lat="52.2"
@@ -90,7 +117,8 @@ to +map.
     http://launchpad.dev/~guadamen/+map
 
 
-== +mapdata ==
++mapdata
+--------
 
 The display name of all team participants will be escaped to prevent
 XSS attacks on any callsite of +mapdata.
@@ -106,5 +134,6 @@ XSS attacks on any callsite of +mapdata.
     >>> anon_browser.open('http://launchpad.dev/~guadamen/+mapdata')
     >>> print anon_browser.contents
     <?xml version="1.0"...
-    ...displayname="&amp;lt;script&amp;gt;alert('Colin &amp;quot;nasty&amp;quot;');&amp;lt;/script&amp;gt;"
+    ...displayname="&amp;lt;script&amp;gt;alert('Colin
+        &amp;quot;nasty&amp;quot;');&amp;lt;/script&amp;gt;"
     ...

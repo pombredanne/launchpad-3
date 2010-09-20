@@ -1,10 +1,12 @@
-= Person and Account =
+Person and Account
+==================
 
 The Person object is responsible for updating the status of its
 Account object.
 
 
-== Activating user accounts ==
+Activating user accounts
+------------------------
 
 A user may activate their account that was created by an automated
 process. Matsubara's account was created during a code import.
@@ -54,7 +56,8 @@ as arguments.
     u'matsubara@async.com.br'
 
 
-== Deactivating user accounts ==
+Deactivating user accounts
+--------------------------
 
 Any user can deactivate his own account, in case they don't want it
 anymore or they don't want to be shown as Launchpad users.
@@ -77,7 +80,7 @@ will cause this spec to be reassigned.
     >>> spec = Specification.selectFirst("assignee IS NULL", orderBy='id')
     >>> spec.assignee = foobar
 
-    >>> [membership.team.name for membership in foobar.myactivememberships]
+    >>> [membership.team.name for membership in foobar.team_memberships]
     [u'canonical-partner-dev', u'guadamen', u'hwdb-team', u'admins',
      u'launchpad-buildd-admins', u'launchpad', u'testing-spanish-team',
      u'name18', u'ubuntu-team', u'vcs-imports']
@@ -149,7 +152,7 @@ adds a '-deactivatedaccount' suffix to the person's name...
 
 ...to have no team memberships...
 
-    >>> [membership.team.name for membership in foobar.myactivememberships]
+    >>> [membership.team.name for membership in foobar.team_memberships]
     []
 
 ...and no validated/preferred email addresses...
@@ -206,7 +209,8 @@ Bar are now owned/driven by the registry admins team.
     True
 
 
-== Reactivating user accounts ==
+Reactivating user accounts
+--------------------------
 
 Accounts can be reactivated. A comment and a non-None preferred email address
 are required to reactivate() an account, though.

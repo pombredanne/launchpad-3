@@ -1,4 +1,5 @@
-= Person Packages =
+Person Packages
+===============
 
 All packages maintained or uploaded by a given person can be seen on
 that person's +related-software page, which is linked to from the
@@ -6,7 +7,7 @@ person's home page.
 
     >>> browser.open("http://launchpad.dev/~mark/+related-software")
     >>> print browser.title
-    Software related to Mark Shuttleworth...
+    Related software : Mark Shuttleworth
 
 This page is just a summary of the user's packages and will only
 display up to the most recent 30 items in each category.  However, it
@@ -67,7 +68,7 @@ source package page:
     >>> browser.open("http://launchpad.dev/~name16/+related-software")
     >>> link = browser.getLink(url="/ubuntu/hoary/+source/cnews")
     >>> print link
-    <Link text='Ubuntu Hoary' url='http://launchpad.dev/ubuntu/hoary/+source/cnews'>
+    <Link text='Ubuntu Hoary' ...>
     >>> link.click()
     >>> browser.title
     '...cnews... package : Hoary (5.04) : Ubuntu'
@@ -78,13 +79,14 @@ package release page:
     >>> browser.open("http://launchpad.dev/~name16/+related-software")
     >>> link = browser.getLink(url="/ubuntu/+source/cnews/cr.g7-37")
     >>> print link
-    <Link text='cr.g7-37' url='http://launchpad.dev/ubuntu/+source/cnews/cr.g7-37'>
+    <Link ... url='http://launchpad.dev/ubuntu/+source/cnews/cr.g7-37'>
     >>> link.click()
     >>> browser.title
     'cr.g7-37 : \xe2\x80\x9ccnews\xe2\x80\x9d package : Ubuntu'
 
 
-== Batched listing pages ==
+Batched listing pages
+---------------------
 
 Following the navigation link to "Maintained packages" takes the user
 to the page that lists maintained packages in batches.
@@ -120,8 +122,8 @@ page that lists uploaded packages in batches.
     >>> print extract_text(find_tag_by_id(browser.contents, 'packages'))
     1...5 of 6 results
     ...
-    Name    Uploaded to          Version When        Failures   Bugs  Questions
-    foobar  Ubuntu Breezy-autotest  1.0  2006-12-01  i386       0     0
+    Name    Uploaded to          Version When        Failures  Bugs Questions
+    foobar  Ubuntu Breezy-autotest  1.0  2006-12-01  i386      0    0
     ...
 
 The navigation link to "PPA packages" takes the user to the
@@ -134,19 +136,9 @@ page that lists PPA packages in batches.
     Name      Uploaded to           Version  When        Failures
     iceweasel PPA for Mark...Warty  1.0      2006-04-11  None
 
-And finally the Related projects navigation link takes the user to the
-page that lists related projects in batches.
 
-    >>> browser.getLink("Related projects").click()
-    >>> print extract_text(find_tag_by_id(browser.contents, 'projects'))
-    1...5 of 5 results
-    ...
-    Name           Bugs  Blueprints  Questions
-    Ubuntu Linux   4     1           8
-    ...
-
-
-== Private PPA packages ==
+Private PPA packages
+--------------------
 
 Packages listed in the PPA section of this page are filtered so that
 if the user is not allowed to see a private package they are not present
@@ -180,7 +172,7 @@ so that they appear in his +packages page.
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.soyuz.tests.test_publishing import (
     ...      SoyuzTestPublisher)
-    >>> from lp.soyuz.interfaces.publishing import (
+    >>> from lp.soyuz.enums import (
     ...     PackagePublishingStatus)
 
     >>> login("foo.bar@canonical.com")
@@ -215,7 +207,9 @@ Make user_browser a known user that does not conflict with "no-priv":
 
     >>> user_browser = setupBrowser(auth='Basic test@canonical.com:test')
 
-=== Cprov's +related-software page ===
+
+Cprov's +related-software page
+------------------------------
 
 For unprivileged users, cprov's displayed PPA packages only display
 the one in his own public PPA because source2 is only published
@@ -305,8 +299,8 @@ public archives.
 Now we'll publish it in the primary archive.
 
     >>> login("foo.bar@canonical.com")
-    >>> from lp.soyuz.interfaces.archive import (
-    ...     ArchivePurpose, IArchiveSet)
+    >>> from lp.soyuz.enums import ArchivePurpose
+    >>> from lp.soyuz.interfaces.archive import IArchiveSet
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> primary = getUtility(IArchiveSet).getByDistroPurpose(ubuntu,
@@ -351,7 +345,8 @@ the listings.
         ...ago None - -
 
 
-== Packages deleted from a PPA ==
+Packages deleted from a PPA
+---------------------------
 
 When a package is deleted from a PPA, in contrast to the archive index
 it will continue to appear in the related-software packages list.  This

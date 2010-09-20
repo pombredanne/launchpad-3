@@ -5,16 +5,17 @@ __metaclass__ = type
 
 import unittest
 
-from zope.interface.verify import verifyObject
 from zope.component import getUtility
+from zope.interface.verify import verifyObject
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.interfaces.launchpad import (
-    ILaunchpadCelebrities, IPersonRoles)
-from lp.registry.interfaces.person import IPerson
-
-from lp.testing import TestCaseWithFactory
+    ILaunchpadCelebrities,
+    IPersonRoles,
+    )
 from canonical.testing import ZopelessDatabaseLayer
+from lp.registry.interfaces.person import IPerson
+from lp.testing import TestCaseWithFactory
 
 
 class TestPersonRoles(TestCaseWithFactory):

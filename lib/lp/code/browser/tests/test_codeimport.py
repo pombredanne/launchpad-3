@@ -8,10 +8,12 @@ __metaclass__ = type
 import re
 import unittest
 
-from canonical.launchpad.testing.pages import extract_text, find_tag_by_id
+from canonical.launchpad.testing.pages import (
+    extract_text,
+    find_tag_by_id,
+    )
 from canonical.launchpad.webapp import canonical_url
 from canonical.testing.layers import DatabaseFunctionalLayer
-
 from lp.code.enums import RevisionControlSystems
 from lp.testing import TestCaseWithFactory
 

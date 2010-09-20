@@ -22,6 +22,7 @@ import logging
 import os
 import time
 
+
 try:
     import xml.etree.cElementTree as ET
 except ImportError:
@@ -466,7 +467,7 @@ class BugImporter:
                 self.logger.info(
                     'Marking bug %d as duplicate of bug %d',
                     other_bug.id, bug.id)
-                other_bug.duplicateof = bug
+                other_bug.markAsDuplicate(bug)
             del self.pending_duplicates[bug_id]
         # Process this bug as a duplicate
         if duplicateof is not None:
@@ -478,7 +479,7 @@ class BugImporter:
                 self.logger.info(
                     'Marking bug %d as duplicate of bug %d',
                     bug.id, other_bug.id)
-                bug.duplicateof = other_bug
+                bug.markAsDuplicate(other_bug)
             else:
                 self.pending_duplicates.setdefault(
                     duplicateof, []).append(bug.id)

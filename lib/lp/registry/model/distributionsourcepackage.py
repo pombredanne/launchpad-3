@@ -15,46 +15,81 @@ import itertools
 import operator
 
 from sqlobject.sqlbuilder import SQLConstant
-from storm.expr import And, Count, Desc, In, Join, Lower, Max, Sum
+from storm.expr import (
+    And,
+    Count,
+    Desc,
+    In,
+    Join,
+    Lower,
+    Max,
+    Sum,
+    )
+from storm.locals import (
+    Bool,
+    Int,
+    Reference,
+    Store,
+    Storm,
+    Unicode,
+    )
 from storm.store import EmptyResultSet
-from storm.locals import Bool, Int, Reference, Store, Storm, Unicode
-from zope.component import getUtility
-from zope.error.interfaces import IErrorReportingUtility
 from zope.interface import implements
-
 
 from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.database.emailaddress import EmailAddress
-from lp.registry.model.distroseries import DistroSeries
-from lp.registry.model.packaging import Packaging
-from lp.registry.model.structuralsubscription import (
-    StructuralSubscriptionTargetMixin)
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.lazr.utils import smartquote
 from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.bugs.interfaces.bugtarget import IHasBugHeat
-from lp.bugs.model.bug import Bug, BugSet, get_bug_tags_open_count
-from lp.bugs.model.bugtarget import BugTargetBase, HasBugHeatMixin
+from lp.bugs.interfaces.bugtask import UNRESOLVED_BUGTASK_STATUSES
+from lp.bugs.model.bug import (
+    Bug,
+    BugSet,
+    get_bug_tags_open_count,
+    )
+from lp.bugs.model.bugtarget import (
+    BugTargetBase,
+    HasBugHeatMixin,
+    )
 from lp.bugs.model.bugtask import BugTask
-from lp.code.model.hasbranches import HasBranchesMixin, HasMergeProposalsMixin
+from lp.code.model.hasbranches import (
+    HasBranchesMixin,
+    HasMergeProposalsMixin,
+    )
 from lp.registry.interfaces.distributionsourcepackage import (
-    IDistributionSourcePackage)
+    IDistributionSourcePackage,
+    )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.karma import KarmaTotalCache
+from lp.registry.model.packaging import Packaging
 from lp.registry.model.person import Person
 from lp.registry.model.sourcepackage import (
-    SourcePackage, SourcePackageQuestionTargetMixin)
-from lp.soyuz.interfaces.archive import ArchivePurpose
-from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+    SourcePackage,
+    SourcePackageQuestionTargetMixin,
+    )
+from lp.registry.model.structuralsubscription import (
+    StructuralSubscriptionTargetMixin,
+    )
+from lp.soyuz.enums import (
+    ArchivePurpose,
+    PackagePublishingStatus,
+    )
 from lp.soyuz.model.archive import Archive
 from lp.soyuz.model.distributionsourcepackagerelease import (
-    DistributionSourcePackageRelease)
+    DistributionSourcePackageRelease,
+    )
 from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 from lp.translations.interfaces.customlanguagecode import (
-    IHasCustomLanguageCodes)
+    IHasCustomLanguageCodes,
+    )
 from lp.translations.model.customlanguagecode import (
-    CustomLanguageCode, HasCustomLanguageCodesMixin)
+    CustomLanguageCode,
+    HasCustomLanguageCodesMixin,
+    )
+
 
 def is_upstream_link_allowed(spph):
     """Metapackages shouldn't have upstream links.
@@ -67,6 +102,7 @@ def is_upstream_link_allowed(spph):
 
 
 class DistributionSourcePackageProperty:
+
     def __init__(self, attrname):
         self.attrname = attrname
 
@@ -75,13 +111,6 @@ class DistributionSourcePackageProperty:
 
     def __set__(self, obj, value):
         if obj._self_in_database is None:
-            # Log an oops without raising an error.
-            exception = AssertionError(
-                "DistributionSourcePackage record should have been created "
-                "earlier in the database for distro=%s, sourcepackagename=%s"
-                % (obj.distribution.name, obj.sourcepackagename.name))
-            getUtility(IErrorReportingUtility).raising(
-                (exception.__class__, exception, None))
             spph = Store.of(obj.distribution).find(
                 SourcePackagePublishingHistory,
                 SourcePackagePublishingHistory.distroseriesID ==
@@ -90,8 +119,8 @@ class DistributionSourcePackageProperty:
                 SourcePackagePublishingHistory.sourcepackagereleaseID ==
                     SourcePackageRelease.id,
                 SourcePackageRelease.sourcepackagenameID ==
-                    obj.sourcepackagename.id
-                ).order_by(Desc(SourcePackagePublishingHistory.id)).first()
+                    obj.sourcepackagename.id).order_by(
+                        Desc(SourcePackagePublishingHistory.id)).first()
             obj._new(obj.distribution, obj.sourcepackagename,
                      is_upstream_link_allowed(spph))
         setattr(obj._self_in_database, self.attrname, value)
@@ -160,6 +189,8 @@ class DistributionSourcePackage(BugTargetBase,
     @property
     def summary(self):
         """See `IDistributionSourcePackage`."""
+        if self.development_version is None:
+            return None
         return self.development_version.summary
 
     @property
@@ -185,7 +216,9 @@ class DistributionSourcePackage(BugTargetBase,
             (Max(Bug.heat), Sum(Bug.heat), Count(Bug.id)),
             BugTask.bug == Bug.id,
             BugTask.distributionID == self.distribution.id,
-            BugTask.sourcepackagenameID == self.sourcepackagename.id).one()
+            BugTask.sourcepackagenameID == self.sourcepackagename.id,
+            Bug.duplicateof == None,
+            BugTask.status.is_in(UNRESOLVED_BUGTASK_STATUSES)).one()
 
         # Aggregate functions return NULL if zero rows match.
         row = list(row)
@@ -329,8 +362,7 @@ class DistributionSourcePackage(BugTargetBase,
             # Next, the joins for the ordering by soyuz karma of the
             # SPR creator.
             KarmaTotalCache.person == SourcePackageRelease.creatorID,
-            *extra_args
-            )
+            *extra_args)
 
         # Note: If and when we later have a field on IArchive to order by,
         # such as IArchive.rank, we will then be able to return distinct
@@ -352,8 +384,7 @@ class DistributionSourcePackage(BugTargetBase,
         condition = And(
             Packaging.sourcepackagename == self.sourcepackagename,
             Packaging.distroseriesID == DistroSeries.id,
-            DistroSeries.distribution == self.distribution
-            )
+            DistroSeries.distribution == self.distribution)
         result = store.find(Packaging, condition)
         result.order_by("debversion_sort_key(version) DESC")
         if result.count() == 0:
@@ -518,8 +549,7 @@ class DistributionSourcePackage(BugTargetBase,
             DistributionSourcePackageInDatabase.sourcepackagename ==
                 sourcepackagename,
             DistributionSourcePackageInDatabase.distribution ==
-                distribution
-            ).one()
+                distribution).one()
 
     @classmethod
     def _new(cls, distribution, sourcepackagename,
@@ -529,6 +559,7 @@ class DistributionSourcePackage(BugTargetBase,
         dsp.sourcepackagename = sourcepackagename
         dsp.is_upstream_link_allowed = is_upstream_link_allowed
         Store.of(distribution).add(dsp)
+        Store.of(distribution).flush()
         return dsp
 
     @classmethod

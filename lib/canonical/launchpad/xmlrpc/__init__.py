@@ -7,9 +7,9 @@
 
 from canonical.launchpad.xmlrpc.application import *
 from canonical.launchpad.xmlrpc.authserver import *
-from lp.code.xmlrpc.branch import *
-from lp.bugs.xmlrpc.bug import *
-from lp.code.xmlrpc.codeimportscheduler import *
 from canonical.launchpad.xmlrpc.mailinglist import *
+from lp.bugs.xmlrpc.bug import *
+from lp.code.xmlrpc.branch import *
+from lp.code.xmlrpc.codeimportscheduler import *
 
 

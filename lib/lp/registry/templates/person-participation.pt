@@ -32,14 +32,14 @@
             tal:condition="not: context/teamowner">Mailing List</th>
         </tr>
       </thead>
-      <tbody tal:content="cache:private, 30 minute">
+      <tbody tal:content="cache:anonymous, 10 minute">
         <tr tal:repeat="participation view/active_participations">
           <td>
             <a tal:replace="structure participation/team/fmt:link">name</a>
           </td>
           <td>
             <tal:date condition="not: participation/via"
-              tal:replace="participation/membership/datejoined/fmt:date">
+              tal:replace="participation/datejoined/fmt:date">
               2005-06-17
             </tal:date>
             <tal:no-date condition="participation/via">
@@ -60,13 +60,9 @@
           </td>
           <td
             tal:condition="not: context/teamowner">
-            <tal:subscribed condition="participation/team/mailing_list"
-              replace="participation/subscribed">
+            <tal:subscribed replace="structure participation/subscribed">
               yes
             </tal:subscribed>
-            <tal:no-list condition="not: participation/team/mailing_list">
-              &mdash;
-            </tal:no-list>
           </td>
         </tr>
       </tbody>

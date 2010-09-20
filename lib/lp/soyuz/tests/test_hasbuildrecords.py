@@ -1,28 +1,27 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test implementations of the IHasBuildRecords interface."""
-
-import unittest
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.testing import LaunchpadZopelessLayer
-
-from lp.registry.model.sourcepackage import SourcePackage
+from lp.buildmaster.enums import BuildFarmJobType
 from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.buildmaster.interfaces.buildfarmjob import (
-    BuildFarmJobType, IBuildFarmJob)
-from lp.buildmaster.interfaces.packagebuild import (
-    IPackageBuildSource)
+    IBuildFarmJob,
+    )
+from lp.buildmaster.interfaces.packagebuild import IPackageBuildSource
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.model.sourcepackage import SourcePackage
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuild
 from lp.soyuz.interfaces.buildrecords import (
-    IHasBuildRecords, IncompatibleArguments)
+    IHasBuildRecords,
+    IncompatibleArguments,
+    )
 from lp.soyuz.model.processor import ProcessorFamilySet
-from lp.soyuz.tests.test_binarypackagebuild import (
-    BaseTestCaseWithThreeBuilds)
+from lp.soyuz.tests.test_binarypackagebuild import BaseTestCaseWithThreeBuilds
 
 
 class TestHasBuildRecordsInterface(BaseTestCaseWithThreeBuilds):
@@ -67,6 +66,7 @@ class TestHasBuildRecordsInterface(BaseTestCaseWithThreeBuilds):
 
 class TestDistroSeriesHasBuildRecords(TestHasBuildRecordsInterface):
     """Test the DistroSeries implementation of IHasBuildRecords."""
+
     def setUp(self):
         super(TestDistroSeriesHasBuildRecords, self).setUp()
 
@@ -75,6 +75,7 @@ class TestDistroSeriesHasBuildRecords(TestHasBuildRecordsInterface):
 
 class TestDistroArchSeriesHasBuildRecords(TestHasBuildRecordsInterface):
     """Test the DistroArchSeries implementation of IHasBuildRecords."""
+
     def setUp(self):
         super(TestDistroArchSeriesHasBuildRecords, self).setUp()
 
@@ -83,6 +84,7 @@ class TestDistroArchSeriesHasBuildRecords(TestHasBuildRecordsInterface):
 
 class TestArchiveHasBuildRecords(TestHasBuildRecordsInterface):
     """Test the Archive implementation of IHasBuildRecords."""
+
     def setUp(self):
         super(TestArchiveHasBuildRecords, self).setUp()
 
@@ -117,6 +119,7 @@ class TestArchiveHasBuildRecords(TestHasBuildRecordsInterface):
 
 class TestBuilderHasBuildRecords(TestHasBuildRecordsInterface):
     """Test the Builder implementation of IHasBuildRecords."""
+
     def setUp(self):
         super(TestBuilderHasBuildRecords, self).setUp()
 
@@ -141,7 +144,7 @@ class TestBuilderHasBuildRecords(TestHasBuildRecordsInterface):
         # can only test this by creating a lone IBuildFarmJob of a
         # different type.
         from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSource
-        from lp.buildmaster.interfaces.buildbase import BuildStatus
+        from lp.buildmaster.enums import BuildStatus
         build_farm_job = getUtility(IBuildFarmJobSource).new(
             job_type=BuildFarmJobType.RECIPEBRANCHBUILD, virtualized=True,
             status=BuildStatus.BUILDING)
@@ -171,8 +174,10 @@ class TestBuilderHasBuildRecords(TestHasBuildRecordsInterface):
             IncompatibleArguments, self.context.getBuildRecords,
             binary_only=False, name="anything")
 
+
 class TestSourcePackageHasBuildRecords(TestHasBuildRecordsInterface):
     """Test the SourcePackage implementation of IHasBuildRecords."""
+
     def setUp(self):
         super(TestSourcePackageHasBuildRecords, self).setUp()
 
@@ -187,7 +192,3 @@ class TestSourcePackageHasBuildRecords(TestHasBuildRecordsInterface):
         for build in self.builds[1:3]:
             spr = build.source_package_release
             removeSecurityProxy(spr).sourcepackagename = gedit_name
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

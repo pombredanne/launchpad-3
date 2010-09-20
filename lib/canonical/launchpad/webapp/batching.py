@@ -3,15 +3,15 @@
 
 __metaclass__ = type
 
+import lazr.batchnavigator
+from storm.zope.interfaces import IResultSet
 from zope.component import adapts
 from zope.interface import implements
-import lazr.batchnavigator
 from zope.interface.common.sequence import IFiniteSequence
-from storm.zope.interfaces import IResultSet # and ISQLObjectResultSet
 
 from canonical.config import config
-from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
+from canonical.launchpad.webapp.publisher import LaunchpadView
 
 
 class FiniteSequenceAdapter:
@@ -75,6 +75,24 @@ class BatchNavigator(lazr.batchnavigator.BatchNavigator):
         table.
         """
         return self.batch.total() > self.batch.size
+
+
+class ActiveBatchNavigator(BatchNavigator):
+    """A paginator for active items.
+
+    Used when a view needs to display more than one BatchNavigator of items.
+    """
+    start_variable_name = 'active_start'
+    batch_variable_name = 'active_batch'
+
+
+class InactiveBatchNavigator(BatchNavigator):
+    """A paginator for inactive items.
+
+    Used when a view needs to display more than one BatchNavigator of items.
+    """
+    start_variable_name = 'inactive_start'
+    batch_variable_name = 'inactive_batch'
 
 
 class TableBatchNavigator(BatchNavigator):

@@ -95,9 +95,9 @@ Completing the registration
 The second step of the registration process does not allow Sample Person to
 modify the project's URL.
 
-    >>> user_browser.getControl('URL')
+    >>> user_browser.getControl(name='field.name')
     <Control name='field.name' type='hidden'>
-    >>> print user_browser.getControl('URL').value
+    >>> print user_browser.getControl(name='field.name').value
     aardvark
 
 Sample Person is given the opportunity though to change the title and

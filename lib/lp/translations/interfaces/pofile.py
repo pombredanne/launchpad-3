@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -11,26 +11,41 @@ __all__ = [
     'IPOFileAlternativeLanguage',
     ]
 
+from lazr.restful.declarations import (
+    export_as_webservice_entry,
+    exported,
+    )
 from zope.component import getUtility
-from zope.interface import Attribute, implements, Interface
+from zope.interface import (
+    Attribute,
+    implements,
+    Interface,
+    )
 from zope.schema import (
-    Bool, Choice, Datetime, Field, Int, List, Object, Text, TextLine)
+    Bool,
+    Choice,
+    Datetime,
+    Field,
+    Int,
+    List,
+    Object,
+    Text,
+    TextLine,
+    )
 from zope.schema.interfaces import IContextSourceBinder
 from zope.schema.vocabulary import (
-    getVocabularyRegistry, SimpleTerm, SimpleVocabulary)
-
-from lazr.restful.declarations import (
-    exported, export_as_webservice_entry)
+    getVocabularyRegistry,
+    SimpleTerm,
+    SimpleVocabulary,
+    )
 
 from canonical.launchpad import _
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.registry.interfaces.person import IPerson
 from lp.translations.interfaces.potemplate import IPOTemplate
 from lp.translations.interfaces.rosettastats import IRosettaStats
-from lp.translations.interfaces.translationgroup import (
-    TranslationPermission)
-from lp.translations.interfaces.translationsperson import (
-    ITranslationsPerson)
+from lp.translations.interfaces.translationgroup import TranslationPermission
+from lp.translations.interfaces.translationsperson import ITranslationsPerson
 
 
 class IPOFile(IRosettaStats):
@@ -147,20 +162,10 @@ class IPOFile(IRosettaStats):
         translations for.
         """
 
-    def translated():
-        """
-        Return an iterator over translated message sets in this PO file.
-        """
-
     def untranslatedCount():
         """
         Return the number of messages which this PO file has no translation
         for.
-        """
-
-    def untranslated():
-        """
-        Return an iterator over untranslated message sets in this PO file.
         """
 
     def getHeader():
@@ -194,6 +199,13 @@ class IPOFile(IRosettaStats):
 
         Returned messages are ordered by the `POTMsgSet`, and then by
         `date_created` with newest first.
+        """
+
+    def getTranslationMessages(condition=None):
+        """Get TranslationMessages in this `IPOFile`.
+
+        If condition is None, return all messages, else narrow the result
+        set down using the condition.
         """
 
     def makeTranslatableMessage(potmsgset):
@@ -273,10 +285,10 @@ class IPOFile(IRosettaStats):
         """
 
     def getFullLanguageCode():
-        """Return full language code, including variant if applicable."""
+        """Return the language code."""
 
     def getFullLanguageName():
-        """Return full language name, including variant if applicable."""
+        """Return the language name."""
 
     def getTranslationRows():
         """Return exportable rows of translation data.

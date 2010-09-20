@@ -24,12 +24,12 @@ from canonical.lazr.utils import safe_js_escape
 
 from canonical.config import config
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.geoip import IGeoIPRecord
-from lp.registry.interfaces.location import IObjectWithLocation
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp.interfaces import (
     ILaunchBag, IMultiLineWidgetLayout)
 from canonical.launchpad.webapp.tales import ObjectImageDisplayAPI
+from lp.registry.interfaces.location import IObjectWithLocation
+from lp.services.geoip.interfaces import IGeoIPRecord
 
 
 class ILocationWidget(IInputWidget, IBrowserWidget, IMultiLineWidgetLayout):
@@ -126,9 +126,9 @@ class LocationWidget(BrowserWidget, InputWidget):
             show_marker=self.show_marker)
         return """
             <script type="text/javascript">
-                YUI().use('node', 'lp.mapping', function(Y) {
+                YUI().use('node', 'lp.app.mapping', function(Y) {
                     function renderMap() {
-                        Y.lp.mapping.renderPersonMap(
+                        Y.lp.app.mapping.renderPersonMap(
                             %(center_lat)s, %(center_lng)s, %(displayname)s,
                             '%(name)s', '%(logo_html)s', '%(geoname)s',
                             '%(lat_name)s', '%(lng_name)s', '%(tz_name)s',

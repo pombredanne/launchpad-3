@@ -25,7 +25,9 @@ Get evolution template for Ubuntu Hoary
 Get Xhosa translation
 
     >>> pofile = potemplate.getPOFileByLang('xh')
-    >>> dummy_pofile = potemplate.getDummyPOFile('pt_BR')
+    >>> language_pt_BR = getUtility(
+    ...     ILanguageSet).getLanguageByCode('pt_BR')
+    >>> dummy_pofile = potemplate.getDummyPOFile(language_pt_BR)
 
 Both implement the IPOFile interface:
 
@@ -81,8 +83,7 @@ We need a helper method to better display test results.
     ...                plural = plural[:17] + "..."
     ...         if pofile is not None:
     ...             translation = potmsgset.getCurrentTranslationMessage(
-    ...                 pofile.potemplate, pofile.language,
-    ...                 pofile.variant).translations[0]
+    ...                 pofile.potemplate, pofile.language).translations[0]
     ...             if len(translation) > 20:
     ...                 translation = translation[:17] + "..."
     ...         print "%2d. %-20s   %-20s   %-20s" % (
@@ -91,28 +92,25 @@ We need a helper method to better display test results.
 
 == getFullLanguageCode ==
 
-Returns the complete code for this POFile's language, including variant
-if present.
+Returns the complete code for this POFile's language.
 
     >>> print potemplate.getPOFileByLang('es').getFullLanguageCode()
     es
 
-    >>> print potemplate.getDummyPOFile('sr', variant=u'Latn'
-    ...     ).getFullLanguageCode()
-    sr@Latn
+    >>> sr_latin = factory.makeLanguage('sr@latin', 'Serbian Latin')
+    >>> print potemplate.getDummyPOFile(sr_latin).getFullLanguageCode()
+    sr@latin
 
 
 == getFullLanguageName ==
 
-Returns the complete English name for this POFile's language, including
-variant if present.
+Returns the complete English name for this POFile's language.
 
     >>> print potemplate.getPOFileByLang('es').getFullLanguageName()
     Spanish
 
-    >>> print potemplate.getDummyPOFile('sr', variant=u'Latn'
-    ...     ).getFullLanguageName()
-    Serbian ("Latn" variant)
+    >>> print potemplate.getDummyPOFile(sr_latin).getFullLanguageName()
+    Serbian Latin
 
 
 == findPOTMsgSetsContaining ==
@@ -427,7 +425,7 @@ breakage.
     >>> potmsgset = pofile_es.potemplate.getPOTMsgSetByMsgIDText(
     ...     singular_text=u'evolution addressbook')
     >>> translation_message = potmsgset.getCurrentTranslationMessage(
-    ...     pofile_es.potemplate, pofile_es.language, pofile_es.variant)
+    ...     pofile_es.potemplate, pofile_es.language)
     >>> is_imported = False
     >>> lock_timestamp = datetime.datetime.now(UTC)
     >>> translation_message.potmsgset.updateTranslation(
@@ -439,7 +437,8 @@ breakage.
 
 Now, we get an IPOFile that does not have a translation team assigned.
 
-    >>> pofile_cy = potemplate.getDummyPOFile('cy')
+    >>> language_cy = getUtility(ILanguageSet).getLanguageByCode('cy')
+    >>> pofile_cy = potemplate.getDummyPOFile(language_cy)
 
 Valentina Commissari is not a translator for this language and does not
 have permissions.
@@ -608,7 +607,7 @@ When the language has number of plural forms defined, that value is used.
     >>> serbian = getUtility(ILanguageSet)['sr']
     >>> serbian.pluralforms
     3
-    >>> evolution_sr = evolution_pot.getDummyPOFile(serbian.code)
+    >>> evolution_sr = evolution_pot.getDummyPOFile(serbian)
     >>> evolution_sr.plural_forms
     3
 
@@ -618,7 +617,7 @@ the most common number of plural forms:
     >>> divehi = getUtility(ILanguageSet)['dv']
     >>> print divehi.pluralforms
     None
-    >>> evolution_dv = evolution_pot.getDummyPOFile(divehi.code)
+    >>> evolution_dv = evolution_pot.getDummyPOFile(divehi)
     >>> evolution_dv.plural_forms
     2
 
@@ -756,7 +755,7 @@ Now, just to be sure that this entry doesn't exist yet:
     >>> potmsgset = pofile_sr.potemplate.getOrCreateSharedPOTMsgSet(
     ...     singular_text=msgid, plural_text=msgid_plural)
     >>> print potmsgset.getCurrentTranslationMessage(
-    ...     pofile_sr.potemplate, pofile_sr.language, pofile_sr.variant)
+    ...     pofile_sr.potemplate, pofile_sr.language)
     None
 
 Is time to create it.
@@ -774,7 +773,7 @@ As we can see, is the msgid we were looking for.
     Found %i invalid file.
     >>> print pofile_sr.language.code
     sr
-    >>> print translation_message.pofile.language.code
+    >>> print translation_message.language.code
     sr
 
 This entry is in fact one that is not used anymore, that means, its sequence
@@ -1055,7 +1054,6 @@ the getPOFileContributorsByLanguage() method of IDistroSeries.
     jorge-gonzalez-gonzalez
     carlos
     valyag
-    danner
     name16
     name12
     ubuntu-translators

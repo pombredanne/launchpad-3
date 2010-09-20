@@ -188,7 +188,8 @@
                 displayversion
                 is_delayed_copy
                 isPPA
-                components"/>
+                components
+                isAutoSyncUpload"/>
         <require
             permission="launchpad.Edit"
             attributes="
@@ -405,9 +406,9 @@
             set_attributes="description displayname publish status"/>
         <require
             permission="launchpad.Commercial"
-            set_attributes="authorized_size buildd_secret
-                            enabled_restricted_families
-                            commercial external_dependencies private
+            set_attributes="authorized_size build_debug_symbols buildd_secret
+                            commercial enabled_restricted_families
+                            external_dependencies private
                             require_virtualized relative_build_score "/>
         <require
             permission="launchpad.Admin"
@@ -510,6 +511,18 @@
             permission="launchpad.Edit"
             set_attributes="log date_finished date_started builder
                             status dependencies upload_log"/>
+
+        <!-- XXX bigjools 2010-07-27 bug=570939
+             Work around the fact that not all BuildFarmJobs are concrete
+             objects.
+
+             This should not be required once the old BuildFarmJob stuff is
+             removed when the Translation Template jobs and Recipe jobs
+             use the new infrastructure -->
+        <require
+            permission="launchpad.Admin"
+            set_attributes="failure_count"/>
+
     </class>
     <adapter
         provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
@@ -544,34 +557,6 @@
         provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
         factory="canonical.launchpad.webapp.breadcrumb.NameBreadcrumb"
         permission="zope.Public" />
-
-    <!-- PublishedPackage -->
-
-    <class
-        class="canonical.launchpad.database.PublishedPackage">
-        <allow
-            interface="lp.soyuz.interfaces.publishedpackage.IPublishedPackage"/>
-        <require
-            permission="zope.Public"
-            set_schema="lp.soyuz.interfaces.publishedpackage.IPublishedPackage"/>
-    </class>
-
-    <!-- PublishedPackageSet -->
-
-    <class
-        class="canonical.launchpad.database.PublishedPackageSet">
-        <allow
-            interface="lp.soyuz.interfaces.publishedpackage.IPublishedPackageSet"/>
-        <require
-            permission="zope.Public"
-            set_schema="lp.soyuz.interfaces.publishedpackage.IPublishedPackageSet"/>
-    </class>
-    <securedutility
-        provides="lp.soyuz.interfaces.publishedpackage.IPublishedPackageSet"
-        class="canonical.launchpad.database.PublishedPackageSet">
-        <allow
-            interface="lp.soyuz.interfaces.publishedpackage.IPublishedPackageSet"/>
-    </securedutility>
 
     <!-- ArchiveSubscriber -->
 
@@ -881,5 +866,16 @@
             permission="launchpad.View"
             interface="lp.soyuz.interfaces.binarypackagerelease.IBinaryPackageReleaseDownloadCount"/>
     </class>
+
+    <call
+      callable="lp.archiveuploader.uploadpolicy.register_archive_upload_policy_adapters"
+      />
+
+    <!-- Although the policies defined in lp.archiveuploader.tests are only
+         required by tests, they're used when testing scripts manually on
+         dogfood/staging, so they're registered here. -->
+    <call
+      callable="lp.archiveuploader.tests.register_archive_upload_policy_adapters"
+      />
 
 </configure>
