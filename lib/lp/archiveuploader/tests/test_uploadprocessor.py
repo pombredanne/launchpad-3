@@ -18,6 +18,7 @@ import sys
 import tempfile
 import traceback
 
+from storm.locals import Store
 from zope.component import (
     getGlobalSiteManager,
     getUtility,
@@ -153,7 +154,7 @@ class TestUploadProcessorBase(TestCaseWithFactory):
 
         self.options = MockOptions()
         self.options.base_fsroot = self.queue_folder
-        self.options.builds = True
+        self.options.builds = False
         self.options.leafname = None
         self.options.distro = "ubuntu"
         self.options.distroseries = None
@@ -172,9 +173,13 @@ class TestUploadProcessorBase(TestCaseWithFactory):
         super(TestUploadProcessorBase, self).tearDown()
 
     def getUploadProcessor(self, txn):
-        def getPolicy(distro):
+        def getPolicy(distro, build):
             self.options.distro = distro.name
             policy = findPolicyByName(self.options.context)
+            if self.options.builds:
+                policy.distroseries = build.distro_series
+                policy.pocket = build.pocket
+                policy.archive = build.archive
             policy.setOptions(self.options)
             return policy
         return UploadProcessor(
@@ -288,7 +293,7 @@ class TestUploadProcessorBase(TestCaseWithFactory):
         shutil.copytree(upload_dir, target_path)
         return os.path.join(self.incoming_folder, queue_entry)
 
-    def processUpload(self, processor, upload_dir):
+    def processUpload(self, processor, upload_dir, build=None):
         """Process an upload queue entry directory.
 
         There is some duplication here with logic in UploadProcessor,
@@ -298,7 +303,8 @@ class TestUploadProcessorBase(TestCaseWithFactory):
         results = []
         changes_files = processor.locateChangesFiles(upload_dir)
         for changes_file in changes_files:
-            result = processor.processChangesFile(upload_dir, changes_file)
+            result = processor.processChangesFile(
+                upload_dir, changes_file, build=build)
             results.append(result)
         return results
 
@@ -693,10 +699,10 @@ class TestUploadProcessor(TestUploadProcessorBase):
         # Upload and accept a binary for the primary archive source.
         shutil.rmtree(upload_dir)
         self.options.context = 'buildd'
-        self.options.buildid = bar_original_build.id
         self.layer.txn.commit()
         upload_dir = self.queueUpload("bar_1.0-1_binary")
-        self.processUpload(uploadprocessor, upload_dir)
+        self.processUpload(uploadprocessor, upload_dir,
+            build=bar_original_build)
         self.assertEqual(
             uploadprocessor.last_processed_upload.is_rejected, False)
         bar_bin_pubs = self.publishPackage('bar', '1.0-1', source=False)
@@ -724,10 +730,10 @@ class TestUploadProcessor(TestUploadProcessorBase):
 
         shutil.rmtree(upload_dir)
         self.options.context = 'buildd'
-        self.options.buildid = bar_copied_build.id
         upload_dir = self.queueUpload(
             "bar_1.0-1_binary", "%s/ubuntu" % copy_archive.id)
-        self.processUpload(uploadprocessor, upload_dir)
+        self.processUpload(uploadprocessor, upload_dir,
+             build=bar_copied_build)
 
         # Make sure the upload succeeded.
         self.assertEqual(
@@ -796,9 +802,9 @@ class TestUploadProcessor(TestUploadProcessorBase):
         [bar_original_build] = bar_source_pub.createMissingBuilds()
 
         self.options.context = 'buildd'
-        self.options.buildid = bar_original_build.id
         upload_dir = self.queueUpload("bar_1.0-1_binary")
-        self.processUpload(uploadprocessor, upload_dir)
+        self.processUpload(
+            uploadprocessor, upload_dir, build=bar_original_build)
         [bar_binary_pub] = self.publishPackage("bar", "1.0-1", source=False)
 
         # Prepare ubuntu/breezy-autotest to build sources in i386.
@@ -818,10 +824,10 @@ class TestUploadProcessor(TestUploadProcessorBase):
         # Re-upload the same 'bar-1.0-1' binary as if it was rebuilt
         # in breezy-autotest context.
         shutil.rmtree(upload_dir)
-        self.options.buildid = bar_copied_build.id
         self.options.distroseries = breezy_autotest.name
         upload_dir = self.queueUpload("bar_1.0-1_binary")
-        self.processUpload(uploadprocessor, upload_dir)
+        self.processUpload(uploadprocessor, upload_dir,
+            build=bar_copied_build)
         [duplicated_binary_upload] = breezy_autotest.getQueueItems(
             status=PackageUploadStatus.NEW, name='bar',
             version='1.0-1', exact_match=True)
@@ -859,9 +865,9 @@ class TestUploadProcessor(TestUploadProcessorBase):
         [bar_original_build] = bar_source_pub.getBuilds()
 
         self.options.context = 'buildd'
-        self.options.buildid = bar_original_build.id
         upload_dir = self.queueUpload("bar_1.0-2_binary")
-        self.processUpload(uploadprocessor, upload_dir)
+        self.processUpload(uploadprocessor, upload_dir,
+            build=bar_original_build)
         [bar_binary_pub] = self.publishPackage("bar", "1.0-2", source=False)
 
         # Create a COPY archive for building in non-virtual builds.
@@ -878,10 +884,10 @@ class TestUploadProcessor(TestUploadProcessorBase):
         [bar_copied_build] = bar_copied_source.createMissingBuilds()
 
         shutil.rmtree(upload_dir)
-        self.options.buildid = bar_copied_build.id
         upload_dir = self.queueUpload(
             "bar_1.0-1_binary", "%s/ubuntu" % copy_archive.id)
-        self.processUpload(uploadprocessor, upload_dir)
+        self.processUpload(uploadprocessor, upload_dir,
+            build=bar_copied_build)
 
         # The binary just uploaded is accepted because it's destined for a
         # copy archive and the PRIMARY and the COPY archives are isolated
@@ -1034,9 +1040,9 @@ class TestUploadProcessor(TestUploadProcessorBase):
             self.breezy['i386'], PackagePublishingPocket.RELEASE,
             self.ubuntu.main_archive)
         self.layer.txn.commit()
-        self.options.buildid = foocomm_build.id
         upload_dir = self.queueUpload("foocomm_1.0-1_binary")
-        self.processUpload(uploadprocessor, upload_dir)
+        self.processUpload(
+            uploadprocessor, upload_dir, build=foocomm_build)
 
         contents = [
             "Subject: foocomm_1.0-1_i386.changes rejected",
@@ -1044,10 +1050,8 @@ class TestUploadProcessor(TestUploadProcessorBase):
             "where they don't fit."]
         self.assertEmail(contents)
 
-        # Reset upload queue directory for a new upload and the
-        # uploadprocessor buildid option.
+        # Reset upload queue directory for a new upload.
         shutil.rmtree(upload_dir)
-        self.options.buildid = None
 
         # Now upload a binary package of 'foocomm', letting a new build record
         # with appropriate data be created by the uploadprocessor.
@@ -1881,7 +1885,7 @@ class TestBuildUploadProcessor(TestUploadProcessorBase):
         self.assertLogContains(
             "Unable to find package build job with id 42. Skipping.")
 
-    def testNoFiles(self):
+    def testBinaryPackageBuild_fail(self):
         # If the upload directory is empty, the upload
         # will fail.
 
@@ -1905,6 +1909,8 @@ class TestBuildUploadProcessor(TestUploadProcessorBase):
 
         # Upload and accept a binary for the primary archive source.
         shutil.rmtree(upload_dir)
+
+        # Commit so the build cookie has the right ids.
         self.layer.txn.commit()
         leaf_name = build.getUploadDirLeaf(build.getBuildCookie())
         os.mkdir(os.path.join(self.incoming_folder, leaf_name))
@@ -1925,7 +1931,7 @@ class TestBuildUploadProcessor(TestUploadProcessorBase):
         self.assertTrue('DEBUG: Moving upload directory '
             in log_contents)
 
-    def testSuccess(self):
+    def testBinaryPackageBuilds(self):
         # Properly uploaded binaries should result in the
         # build status changing to FULLYBUILT.
         # Upload a source package
@@ -1946,6 +1952,8 @@ class TestBuildUploadProcessor(TestUploadProcessorBase):
 
         # Upload and accept a binary for the primary archive source.
         shutil.rmtree(upload_dir)
+
+        # Commit so the build cookie has the right ids.
         self.layer.txn.commit()
         leaf_name = build.getUploadDirLeaf(build.getBuildCookie())
         upload_dir = self.queueUpload("bar_1.0-1_binary",
@@ -1959,13 +1967,74 @@ class TestBuildUploadProcessor(TestUploadProcessorBase):
         # No emails are sent on success
         self.assertEquals(len(stub.test_emails), last_stub_mail_count)
         self.assertEquals(BuildStatus.FULLYBUILT, build.status)
-        log_contents = build.upload_log.read()
-        log_lines = log_contents.splitlines()
-        self.assertTrue(
-            'INFO: Processing upload bar_1.0-1_i386.changes' in log_lines)
-        self.assertTrue(
-            'INFO: Committing the transaction and any mails associated with '
-            'this upload.' in log_lines)
+        # Upon full build the upload log is unset.
+        self.assertIs(None, build.upload_log)
+
+    def testSourcePackageRecipeBuild(self):
+        # Properly uploaded source packages should result in the
+        # build status changing to FULLYBUILT.
+
+        # Upload a source package
+        archive = self.factory.makeArchive()
+        archive.require_virtualized = False
+        build = self.factory.makeSourcePackageRecipeBuild(sourcename=u"bar",
+            distroseries=self.breezy, archive=archive, requester=archive.owner)
+        self.assertEquals(archive.owner, build.requester)
+        bq = self.factory.makeSourcePackageRecipeBuildJob(recipe_build=build)
+        # Commit so the build cookie has the right ids.
+        self.layer.txn.commit()
+        leaf_name = build.getUploadDirLeaf(build.getBuildCookie())
+        relative_path = "~%s/%s/%s/%s" % (
+            archive.owner.name, archive.name, self.breezy.distribution.name,
+            self.breezy.name)
+        upload_dir = self.queueUpload(
+            "bar_1.0-1", queue_entry=leaf_name, relative_path=relative_path)
+        self.options.context = 'buildd'
+        self.options.builds = True
+        build.jobStarted()
+        # Commit so date_started is recorded and doesn't cause constraint
+        # violations later.
+        build.status = BuildStatus.UPLOADING
+        Store.of(build).flush()
+        self.uploadprocessor.processBuildUpload(
+            self.incoming_folder, leaf_name)
+        self.layer.txn.commit()
+
+        self.assertEquals(BuildStatus.FULLYBUILT, build.status)
+        self.assertEquals(None, build.builder)
+        self.assertIsNot(None, build.date_finished)
+        self.assertIsNot(None, build.duration)
+        # Upon full build the upload log is unset.
+        self.assertIs(None, build.upload_log)
+
+    def testSourcePackageRecipeBuild_fail(self):
+        # A source package recipe build will fail if no files are present.
+
+        # Upload a source package
+        archive = self.factory.makeArchive()
+        archive.require_virtualized = False
+        build = self.factory.makeSourcePackageRecipeBuild(sourcename=u"bar",
+            distroseries=self.breezy, archive=archive)
+        bq = self.factory.makeSourcePackageRecipeBuildJob(recipe_build=build)
+        # Commit so the build cookie has the right ids.
+        Store.of(build).flush()
+        leaf_name = build.getUploadDirLeaf(build.getBuildCookie())
+        os.mkdir(os.path.join(self.incoming_folder, leaf_name))
+        self.options.context = 'buildd'
+        self.options.builds = True
+        build.jobStarted()
+        # Commit so date_started is recorded and doesn't cause constraint
+        # violations later.
+        Store.of(build).flush()
+        build.status = BuildStatus.UPLOADING
+        self.uploadprocessor.processBuildUpload(
+            self.incoming_folder, leaf_name)
+        self.layer.txn.commit()
+        self.assertEquals(BuildStatus.FAILEDTOUPLOAD, build.status)
+        self.assertEquals(None, build.builder)
+        self.assertIsNot(None, build.date_finished)
+        self.assertIsNot(None, build.duration)
+        self.assertIsNot(None, build.upload_log)
 
 
 class ParseBuildUploadLeafNameTests(TestCase):
