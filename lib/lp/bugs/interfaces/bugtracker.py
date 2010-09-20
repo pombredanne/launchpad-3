@@ -432,6 +432,14 @@ class IBugTrackerSet(Interface):
     def getPillarsForBugtrackers(bug_trackers):
         """Return dict mapping bugtrackers to lists of pillars."""
 
+    def trackers(active=None):
+        """Return a ResultSet of bugtrackers.
+
+        :param active: If True, only active trackers are returned, if False
+            only inactive trackers are returned. All trackers are returned
+            by default.
+        """
+
 
 class IBugTrackerAlias(Interface):
     """Another URL for a remote bug system.
