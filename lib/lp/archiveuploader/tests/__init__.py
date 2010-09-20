@@ -64,17 +64,15 @@ def insertFakeChangesFileForAllPackageUploads():
 class MockUploadOptions:
     """Mock upload policy options helper"""
 
-    def __init__(self, distro='ubuntutest', distroseries=None, buildid=None):
+    def __init__(self, distro='ubuntutest', distroseries=None):
         self.distro = distro
         self.distroseries = distroseries
-        self.buildid = buildid
 
 
-def getPolicy(name='anything', distro='ubuntu', distroseries=None,
-              buildid=None):
+def getPolicy(name='anything', distro='ubuntu', distroseries=None):
     """Build and return an Upload Policy for the given context."""
     policy = findPolicyByName(name)
-    options = MockUploadOptions(distro, distroseries, buildid)
+    options = MockUploadOptions(distro, distroseries)
     policy.setOptions(options)
     return policy
 

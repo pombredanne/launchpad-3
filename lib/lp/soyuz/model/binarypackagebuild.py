@@ -760,6 +760,10 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
         # package build, then don't hit the db.
         return self
 
+    def getUploader(self, changes):
+        """See `IBinaryPackageBuild`."""
+        return changes.signer
+
 
 class BinaryPackageBuildSet:
     implements(IBinaryPackageBuildSet)
