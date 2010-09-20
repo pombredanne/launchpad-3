@@ -4,6 +4,5 @@ SET client_min_messages=ERROR;
 -- index rather than doing the full search and sorting.
 
 CREATE INDEX bugtask__date_closed__id__idx2 ON BugTask (date_closed, id desc nulls first);
-DROP INDEX bugtask__date_closed__id__idx;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 8, 3);
