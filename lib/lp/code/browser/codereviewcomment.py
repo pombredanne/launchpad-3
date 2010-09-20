@@ -43,6 +43,10 @@ from lp.services.comments.interfaces.conversation import IComment
 from lp.services.propertycache import cachedproperty
 
 
+class ICodeReviewDisplayComment(IComment, ICodeReviewComment):
+    """Marker interface for displaying code review comments."""
+
+
 class CodeReviewDisplayComment:
     """A code review comment or activity or both.
 
@@ -51,7 +55,7 @@ class CodeReviewDisplayComment:
     only code in the model itself.
     """
 
-    implements(IComment)
+    implements(ICodeReviewDisplayComment)
 
     delegates(ICodeReviewComment, 'comment')
 

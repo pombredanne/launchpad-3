@@ -683,7 +683,7 @@
         name="+index"/>
     <browser:pages
         facet="branches"
-        for="lp.code.interfaces.codereviewcomment.ICodeReviewComment"
+        for="lp.code.browser.codereviewcomment.ICodeReviewDisplayComment"
         layer="lp.code.publisher.CodeLayer"
         class="lp.code.browser.codereviewcomment.CodeReviewCommentView"
         permission="zope.Public">

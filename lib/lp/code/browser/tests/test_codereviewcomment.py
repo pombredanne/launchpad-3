@@ -12,8 +12,10 @@ import unittest
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing import DatabaseFunctionalLayer
-from lp.code.browser.codereviewcomment import CodeReviewDisplayComment
-from lp.services.comments.interfaces.conversation import IComment
+from lp.code.browser.codereviewcomment import (
+    CodeReviewDisplayComment,
+    ICodeReviewDisplayComment,
+    )
 from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
@@ -38,14 +40,14 @@ class TestCodeReviewComments(TestCaseWithFactory):
             IPrimaryContext(comment).context,
             IPrimaryContext(comment.branch_merge_proposal).context)
 
-    def test_display_comment_provides_icomment(self):
+    def test_display_comment_provides_icodereviewdisplaycomment(self):
         # The CodeReviewDisplayComment class provides IComment.
         with person_logged_in(self.factory.makePerson()):
             comment = self.factory.makeCodeReviewComment()
 
         display_comment = CodeReviewDisplayComment(comment)
 
-        verifyObject(IComment, display_comment)
+        verifyObject(ICodeReviewDisplayComment, display_comment)
 
 
 def test_suite():
