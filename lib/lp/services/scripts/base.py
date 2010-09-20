@@ -6,7 +6,7 @@ __all__ = [
     'LaunchpadCronScript',
     'LaunchpadScript',
     'LaunchpadScriptFailure',
-    'SilentLaunchpadScriptFailure'
+    'SilentLaunchpadScriptFailure',
     ]
 
 from ConfigParser import SafeConfigParser
@@ -16,6 +16,7 @@ import logging
 from optparse import OptionParser
 import os.path
 import sys
+from urllib2 import urlopen, HTTPError, URLError
 
 from contrib.glock import (
     GlobalLock,
@@ -59,6 +60,7 @@ class LaunchpadScriptFailure(Exception):
 
 class SilentLaunchpadScriptFailure(Exception):
     """A LaunchpadScriptFailure that doesn't log an error."""
+
     def __init__(self, exit_status=1):
         Exception.__init__(self, exit_status)
         self.exit_status = exit_status
@@ -145,7 +147,6 @@ class LaunchpadScript:
     #
     # Hooks that we expect users to redefine.
     #
-
     def main(self):
         """Define the meat of your script here. Must be defined.
 
@@ -169,7 +170,6 @@ class LaunchpadScript:
     #
     # Convenience or death
     #
-
     def login(self, user):
         """Super-convenience method that avoids the import."""
         setupInteractionByEmail(user)
@@ -179,7 +179,6 @@ class LaunchpadScript:
     # they really want to control the run-and-locking semantics of the
     # script carefully.
     #
-
     @property
     def lockfilename(self):
         """Return lockfilename.
@@ -278,7 +277,6 @@ class LaunchpadScript:
     #
     # Make things happen
     #
-
     def lock_and_run(self, blocking=False, skip_delete=False,
                      use_web_security=False, implicit_begin=True,
                      isolation=ISOLATION_LEVEL_DEFAULT):
@@ -304,12 +302,12 @@ class LaunchpadCronScript(LaunchpadScript):
         enabled and disabled using a config file.
 
         The control file location is specified by
-        config.canonical.cron_control_file.
+        config.canonical.cron_control_url.
         """
         super(LaunchpadCronScript, self).__init__(name, dbuser, test_args)
 
         enabled = cronscript_enabled(
-            config.canonical.cron_control_file, self.name, self.logger)
+            config.canonical.cron_control_url, self.name, self.logger)
         if not enabled:
             sys.exit(0)
 
@@ -324,26 +322,40 @@ class LaunchpadCronScript(LaunchpadScript):
         self.txn.commit()
 
 
-def cronscript_enabled(control_path, name, log):
+def cronscript_enabled(control_url, name, log):
     """Return True if the cronscript is enabled."""
-    if not os.path.isabs(control_path):
-        control_path = os.path.abspath(
-            os.path.join(config.root, control_path))
+    try:
+        if sys.version_info[:2] >= (2, 6):
+            # Timeout of 5 seconds should be fine on the LAN. We don't want
+            # the default as it is too long for scripts being run every 60
+            # seconds.
+            control_fp = urlopen(control_url, timeout=5)
+        else:
+            control_fp = urlopen(control_url)
+    except HTTPError, error:
+        if error.code == 404:
+            log.debug("Cronscript control file not found at %s", control_url)
+            return True
+        log.exception("Error loading %s" % control_url)
+        return True
+    except URLError, error:
+        if getattr(error.reason, 'errno', None) == 2:
+            log.debug("Cronscript control file not found at %s", control_url)
+            return True
+        log.exception("Error loading %s" % control_url)
+        return True
+    except:
+        log.exception("Error loading %s" % control_url)
+        return True
 
     cron_config = SafeConfigParser({'enabled': str(True)})
 
-    if not os.path.exists(control_path):
-        # No control file exists. Everything enabled by default.
-        log.debug("Cronscript control file not found at %s", control_path)
-    else:
-        log.debug("Cronscript control file found at %s", control_path)
-
-        # Try reading the config file. If it fails, we log the
-        # traceback and continue on using the defaults.
-        try:
-            cron_config.read(control_path)
-        except:
-            log.exception("Error parsing %s", control_path)
+    # Try reading the config file. If it fails, we log the
+    # traceback and continue on using the defaults.
+    try:
+        cron_config.readfp(control_fp)
+    except:
+        log.exception("Error parsing %s", control_url)
 
     if cron_config.has_option(name, 'enabled'):
         section = name
@@ -355,7 +367,7 @@ def cronscript_enabled(control_path, name, log):
     except:
         log.exception(
             "Failed to load value from %s section of %s",
-            section, control_path)
+            section, control_url)
         enabled = True
 
     if enabled:
