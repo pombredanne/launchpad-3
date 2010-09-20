@@ -150,6 +150,15 @@ class TestBinaryPackageBuild(TestCaseWithFactory):
         self.assertStatementCount(
             0, self.build.getSpecificJob)
 
+    def test_getUploader(self):
+        # For ACL purposes the uploader is the changes file signer.
+
+        class MockChanges:
+            signer = "Somebody <somebody@ubuntu.com>"
+
+        self.assertEquals("Somebody <somebody@ubuntu.com>",
+            self.build.getUploader(MockChanges()))
+
 
 class TestBuildUpdateDependencies(TestCaseWithFactory):
 
