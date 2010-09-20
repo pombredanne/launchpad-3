@@ -31,6 +31,8 @@ from lp.soyuz.model.binarypackagebuildbehavior import (
     )
 from lp.testing.sampledata import I386_ARCHITECTURE_NAME
 
+# XXX: Almost everything in this module will need to be revisited & perhaps
+# deleted now that we have new APIs for BuilderSlave.
 
 class MockBuilder:
     """Emulates a IBuilder class."""
