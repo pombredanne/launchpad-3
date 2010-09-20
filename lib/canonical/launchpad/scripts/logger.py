@@ -398,6 +398,7 @@ def _logger(level, out_stream, name=None):
     # We set the level on the handler rather than the logger, so other
     # handlers with different levels can be added for things like debug
     # logs.
+    root_logger.setLevel(0)
     hdlr.setLevel(level)
     formatter = LaunchpadFormatter()
     hdlr.setFormatter(formatter)

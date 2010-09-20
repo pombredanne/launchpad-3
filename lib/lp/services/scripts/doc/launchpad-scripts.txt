@@ -13,7 +13,8 @@ line scripts.
 Scripts report their executution using the standard Python logging
 module, with command line arguments and logging setup provided by
 LaunchpadScript. Unhandled exceptions from scripts are automatically
-sent to the Python logging system.
+sent to the Python logging system. Cronscripts (scripts using
+LaunchpadCronScript) also log warnings and and errors as OOPS reports.
 
     >>> import os.path, subprocess, sys
     >>> from canonical.config import config
@@ -21,19 +22,18 @@ sent to the Python logging system.
     ...     config.root, 'lib', 'lp', 'services', 'scripts', 'tests',
     ...     'cronscript-crash.py')
     >>> p = subprocess.Popen(
-    ...     [sys.executable, cronscript_crash_path, '--verbose'],
+    ...     [sys.executable, cronscript_crash_path, '-vq'],
     ...     stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
     ...     stdin=subprocess.PIPE)
     >>> print p.communicate()[0]
+    INFO    Creating lockfile: ...
     WARNING This is a warning
+    INFO    New OOPS detected
+    CRITICAL This is critical
+    INFO    New OOPS detected
     ERROR   Unhandled exception
     ...
     NotImplementedError: Whoops
     >>> p.returncode
     42
-
-
-Cronscripts (scripts using LaunchpadCronScript) also log warnings and
-and errors as OOPS reports.
-
 
