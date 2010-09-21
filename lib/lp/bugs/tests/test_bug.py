@@ -87,3 +87,13 @@ class TestBug(TestCaseWithFactory):
             product=product, subscriber=team, subscribed_by=member)
         self.assertTrue(team in bug.getIndirectSubscribers())
 
+    def test_get_direct_subscribers_with_private_team(self):
+        product = self.factory.makeProduct()
+        bug = self.factory.makeBug(product=product)
+        member = self.factory.makePerson()
+        team = self.factory.makeTeam(
+            owner=member, visibility=PersonVisibility.PRIVATE)
+        with person_logged_in(member):
+            bug.subscribe(team, member)
+        self.assertTrue(team in bug.getDirectSubscribers())
+
