@@ -366,6 +366,7 @@ def get_stacked_on_url(branch):
     except (NotStacked, UnstackableBranchFormat):
         return None
 
+
 @contextmanager
 def read_locked(branch):
     branch.lock_read()
