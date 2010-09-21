@@ -3,11 +3,9 @@
 
 __metaclass__ = type
 
-import unittest
 
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.testing.pages import find_tag_by_id
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.blueprints.interfaces.specificationtarget import (
@@ -21,6 +19,7 @@ from lp.testing import (
     login_person,
     TestCaseWithFactory,
     )
+from lp.testing.matchers import IsConfiguredBatchNavigator
 from lp.testing.views import (
     create_view,
     create_initialized_view,
@@ -103,27 +102,17 @@ class TestHasSpecificationsViewInvolvement(TestCaseWithFactory):
             '<div id="involvement" class="portlet involvement">' in view())
 
     def test_specs_batch(self):
-        # Some pages turn up in very large contexts and patch. E.g.
+        # Some pages turn up in very large contexts and so batch. E.g.
         # Distro:+assignments which uses SpecificationAssignmentsView, a
         # subclass.
         person = self.factory.makePerson()
         view = create_initialized_view(person, name='+assignments')
-        self.assertIsInstance(view.specs_batched, BatchNavigator)
-
-    def test_batch_headings(self):
-        person = self.factory.makePerson()
-        view = create_initialized_view(person, name='+assignments')
-        navigator = view.specs_batched
-        self.assertEqual('specification', navigator._singular_heading)
-        self.assertEqual('specifications', navigator._plural_heading)
-
-    def test_batch_size(self):
         # Because +assignments is meant to provide an overview, we default to
         # 500 as the default batch size.
-        person = self.factory.makePerson()
-        view = create_initialized_view(person, name='+assignments')
-        navigator = view.specs_batched
-        self.assertEqual(500, view.specs_batched.default_size)
+        self.assertThat(
+            view.specs_batched,
+            IsConfiguredBatchNavigator(
+                'specification', 'specifications', batch_size=500))
 
 
 class TestAssignments(TestCaseWithFactory):
@@ -243,13 +232,3 @@ class TestHasSpecificationsConfiguration(TestCaseWithFactory):
         login_person(project_group.owner)
         view = create_initialized_view(project_group, '+specs')
         self.assertEqual(False, view.can_configure_blueprints)
-
-
-def test_suite():
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.TestLoader().loadTestsFromName(__name__))
-    return suite
-
-
-if __name__ == '__main__':
-    unittest.TextTestRunner().run(test_suite())
