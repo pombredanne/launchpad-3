@@ -805,8 +805,11 @@ BugMessage""" % sqlvalues(self.id))
             self.getAlsoNotifiedSubscribers(recipients, level) +
             self.getSubscribersFromDuplicates(recipients, level))
 
+        # Remove security proxy for the sort key, but return
+        # the regular proxied object.
         return sorted(
-            indirect_subscribers, key=operator.attrgetter("displayname"))
+            indirect_subscribers,
+            key=lambda x: removeSecurityProxy(x).displayname)
 
     def getSubscriptionsFromDuplicates(self, recipients=None):
         """See `IBug`."""
