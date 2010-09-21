@@ -51,6 +51,7 @@ from lp.translations.interfaces.translationimportqueue import (
     RosettaImportStatus,
     )
 from lp.translations.interfaces.translationmessage import (
+    RosettaTranslationOrigin,
     TranslationConflict,
     TranslationValidationStatus,
     )
@@ -473,6 +474,8 @@ class FileImporter(object):
         # Find the sharing POFile and check permissions.
         productseries = self.potemplate.distroseries.getSourcePackage(
             self.potemplate.sourcepackagename).productseries
+        if productseries is None:
+            return False
         upstream_template = getUtility(IPOTemplateSet).getSubset(
             productseries=productseries).getPOTemplateByName(
                 self.potemplate.name)
@@ -511,44 +514,51 @@ class FileImporter(object):
             return None
 
 
-        # Create the new message as a suggestion.
         sanitized_translations = sanitize_translations_from_import(
             potmsgset.singular_text, message.translations,
             self.pofile.language.pluralforms)
-        uploader_person = self.translation_import_queue_entry.importer
-        new_message = potmsgset.submitSuggestion(
-            self.pofile, uploader_person, sanitized_translations)
-        # Try to validate the message.
-        try:
-            validate_translation(
-                potmsgset.singular_text, potmsgset.plural_text,
-                sanitized_translations, potmsgset.flags)
-        except GettextValidationError, e:
-            self._addUpdateError(message, potmsgset, unicode(e))
-            new_message.validation_status = (
-                TranslationValidationStatus.UNKNOWNERROR)
+        if potmsgset.is_translation_credit:
+            # Translation credits cannot be added as suggestions.
+            new_message = potmsgset.setCurrentTranslation(
+                self.pofile, self.last_translator, sanitized_translations,
+                RosettaTranslationOrigin.SCM, self.share_with_other_side)
         else:
-            new_message.validation_status = TranslationValidationStatus.OK
-            
-        # The translation is made current.
-        if new_message.validation_status == TranslationValidationStatus.OK:
+            # Create the new message as a suggestion.
+            new_message = potmsgset.submitSuggestion(
+                self.pofile, self.last_translator, sanitized_translations)
+            # Try to validate the message.
             try:
-                new_message.approve(
-                    self.pofile, uploader_person, self.share_with_other_side,
-                    self.lock_timestamp)
-            except TranslationConflict:
-                self._addConflictError(message, potmsgset)
-                if self.logger is not None:
-                    self.logger.info(
-                        "Conflicting updates on message %d." % potmsgset.id)
-                # The message remains a suggestion.
-                return None
-        else:
-            # XXX: henninge 2010-09-21: Mixed models!
-            # This is mimicking the old behavior to still mark these messages
-            # as "imported". Will have to be removed when
-            # getPOTMsgSetsWithErrors is updated to the new model.
-            new_message.makeCurrentUpstream(True)
+                validate_translation(
+                    potmsgset.singular_text, potmsgset.plural_text,
+                    sanitized_translations, potmsgset.flags)
+            except GettextValidationError, e:
+                self._addUpdateError(message, potmsgset, unicode(e))
+                new_message.validation_status = (
+                    TranslationValidationStatus.UNKNOWNERROR)
+            else:
+                new_message.validation_status = TranslationValidationStatus.OK
+                
+            # The translation is made current.
+            validation_ok = (
+                new_message.validation_status == TranslationValidationStatus.OK) 
+            if validation_ok and self.is_editor:
+                try:
+                    new_message.approve(
+                        self.pofile, self.last_translator,
+                        self.share_with_other_side, self.lock_timestamp)
+                except TranslationConflict:
+                    self._addConflictError(message, potmsgset)
+                    if self.logger is not None:
+                        self.logger.info(
+                            "Conflicting updates on message %d." % potmsgset.id)
+                    # The message remains a suggestion.
+                    return None
+            else:
+                # XXX: henninge 2010-09-21: Mixed models!
+                # This is mimicking the old behavior to still mark these messages
+                # as "imported". Will have to be removed when
+                # getPOTMsgSetsWithErrors is updated to the new model.
+                new_message.makeCurrentUpstream(True)
 
         just_replaced_msgid = (
             self.importer.uses_source_string_msgids and
