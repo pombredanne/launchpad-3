@@ -1216,7 +1216,8 @@ class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView, FeedsMixin):
         bug has a task. It is returned as Javascript snippet, to be embedded
         in the bug page.
         """
-        # Unwrap the security proxy.
+        # Unwrap the security proxy. - official_tags is a security proxy
+        # wrapped list.
         available_tags = list(self.context.bug.official_tags)
         return 'var available_official_tags = %s;' % dumps(available_tags)
 
@@ -3338,7 +3339,6 @@ class BugTasksAndNominationsView(LaunchpadView):
             bugtask for bugtask in bugtasks
             if bugtask.distribution or bugtask.distroseries]
 
-        # sort and group
         upstream_tasks.sort(key=_by_targetname)
         distro_tasks.sort(key=_by_targetname)
         all_bugtasks = upstream_tasks + distro_tasks

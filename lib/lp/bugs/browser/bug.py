@@ -511,11 +511,11 @@ class BugViewMixin:
 
     @cachedproperty
     def _bug_attachments(self):
-        """get a dict of attachment type -> attachments list."""
+        """Get a dict of attachment type -> attachments list."""
         # Note that this is duplicated with get_comments_for_bugtask
         # if you are looking to consolidate things.
-        result = {BugAttachmentType.PATCH:[],
-                  'other':[]
+        result = {BugAttachmentType.PATCH: [],
+                  'other': []
         }
         for attachment in self.context.attachments_unpopulated:
             info = {
