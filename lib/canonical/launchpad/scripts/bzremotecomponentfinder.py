@@ -9,13 +9,16 @@ __all__ = [
     'LaunchpadBugTracker',
     ]
 
-import os
-import sys
 import re
 import pycurl
-import time
-
 from StringIO import StringIO
+
+import urllib
+from urllib2 import (
+        HTTPError,
+        urlopen,
+        )
+from BeautifulSoup import BeautifulSoup
 
 
 class BugzillaRemoteComponentFinder:
@@ -27,27 +30,18 @@ class BugzillaRemoteComponentFinder:
 
     def __init__(self, bzurl):
         self.products = {}
+
+        # TODO:  Hack!!  This should be fixed in sampledata
+        if (bzurl == "http://bugzilla.gnome.org/bugs" or
+            bzurl == "http://bugzilla.gnome.org/"):
+            bzurl = "http://bugzilla.gnome.org"
+        elif (bzurl == "https://bugzilla.mozilla.org/"):
+            bzurl = " https://bugzilla.mozilla.org"
+
         self.url = "%s/query.cgi?format=advanced" %(bzurl)
 
     def _getPage(self, url):
-        # TODO: Switch from pycurl to BeautifulSoup, to match sourceforge script
-        curl = pycurl.Curl()
-        headers = StringIO()
-        response = StringIO()
-
-        print "Pulling from %s" %(url)
-
-        curl.setopt(pycurl.URL, url)
-        curl.setopt(pycurl.FOLLOWLOCATION, 1)
-        curl.setopt(pycurl.HEADERFUNCTION, headers.write)
-        curl.setopt(pycurl.WRITEFUNCTION, response.write)
-        curl.setopt(pycurl.SSL_VERIFYPEER, False)
-
-        curl.perform()
-        curl.close()
-
-        #print headers.getvalue()
-        return response.getvalue()
+        return urlopen(url).read()
 
     def parseProductListFromBugzillaSearchPage(self, body):
         products = []
@@ -80,7 +74,7 @@ class BugzillaRemoteComponentFinder:
 
     def retrieveProducts(self):
         body = self._getPage(self.url)
-
+        
         # Load products into a list since Bugzilla references them by index number
         products = self.parseProductListFromBugzillaSearchPage(body)
 

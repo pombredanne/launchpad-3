@@ -8,11 +8,7 @@ import _pythonpath
 
 import os
 import sys
-import re
-import pycurl
 import time
-
-from StringIO import StringIO
 
 from canonical.config import config
 from lp.services.scripts.base import LaunchpadCronScript
@@ -20,17 +16,42 @@ from canonical.launchpad.scripts.bzremotecomponentfinder import (
     BugzillaRemoteComponentFinder,
     LaunchpadBugTracker)
 
+from zope.component import getUtility
+from lp.bugs.interfaces.bugtracker import (
+    BugTrackerType,
+    IBugTrackerSet,
+    )
+
+# TODO:
+#  - Convert to use of BeautifulSoup
+#  - Hook up storage to database
+#  - Plan out tests
 
 class UpdateRemoteComponentsFromBugzilla(LaunchpadCronScript):
 
     def getBugzillas(self):
-        # TODO: Lookup list of bugzillas from launchpad
+        """Look up list of bugzillas known to Launchpad"""
         bugzillas = [
             {'name': 'freedesktop-bugs',
              'url': 'http://bugs.freedesktop.org'},
-            {'name': 'gnome-bugs',
-             'url': 'http://bugs.gnome.org'},
             ]
+
+        bugtrackers = getUtility(IBugTrackerSet)
+        for bugtracker in bugtrackers:
+            if bugtracker.name == "ubuntu-bugzilla":
+                continue
+            if bugtracker.name == "mozilla.org":
+                # TODO: We should permit mozilla, but it errors so skip for now
+                continue
+            if bugtracker.bugtrackertype != BugTrackerType.BUGZILLA:
+                continue
+
+            bugzillas.append({
+                'name' : bugtracker.name,
+                'url': bugtracker.baseurl,
+                'type': 'Bugzilla',
+                })
+
         return bugzillas
 
     def removedComponents(self, bugzilla_components, launchpad_components):
@@ -69,11 +90,6 @@ class UpdateRemoteComponentsFromBugzilla(LaunchpadCronScript):
             help="Purge all data including local customizations before "
                  "importing data from Bugzillas")
 
-
-# TODO:
-# Cargo cult from update-sourceforge-remote-products.py
-# Set up as a cron job (how?)
-# Do updates to the database
 
     def main(self):
         # TODO: If a bz url was specified, run against only it
