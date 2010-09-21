@@ -355,8 +355,9 @@ class TestArchiveEnableDisable(TestCaseWithFactory):
         # Enabling an archive should set all the Archive's suspended builds to
         # WAITING.
         archive = self.factory.makeArchive(enabled=True)
-        self.factory.makeBinaryPackageBuild(
+        build = self.factory.makeBinaryPackageBuild(
             archive=archive, status=BuildStatus.NEEDSBUILD)
+        build.queueBuild()
         # disable the archive, as it is currently enabled
         removeSecurityProxy(archive).disable()
         self.assertHasBuildJobsWithStatus(archive, JobStatus.SUSPENDED, 1)
@@ -373,8 +374,9 @@ class TestArchiveEnableDisable(TestCaseWithFactory):
         # Disabling an archive should set all the Archive's pending bulds to
         # SUSPENDED.
         archive = self.factory.makeArchive(enabled=True)
-        self.factory.makeBinaryPackageBuild(
+        build = self.factory.makeBinaryPackageBuild(
             archive=archive, status=BuildStatus.NEEDSBUILD)
+        build.queueBuild()
         self.assertHasBuildJobsWithStatus(archive, JobStatus.WAITING, 1)
         removeSecurityProxy(archive).disable()
         self.assertNoBuildJobsHaveStatus(archive, JobStatus.WAITING)
