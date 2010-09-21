@@ -31,6 +31,7 @@ setup(
         'cssutils',
         # Required for pydkim
         'dnspython',
+        'fixtures',
         'FeedParser',
         'feedvalidator',
         'funkload',

@@ -1464,7 +1464,6 @@ def generate_changes(dsc, dsc_files, suite, changelog, urgency, closes,
         changes["Closes"] = " ".join(closes)
     if lp_closes:
         changes["Launchpad-bugs-fixed"] = " ".join(lp_closes)
-    changes["Changes"] = "\n%s" % changelog
     files = []
     for filename in dsc_files:
         if filename in files_from_librarian:
@@ -1477,4 +1476,5 @@ def generate_changes(dsc, dsc_files, suite, changelog, urgency, closes,
                      })
 
     changes["Files"] = files
+    changes["Changes"] = "\n%s" % changelog
     return changes
