@@ -7,6 +7,7 @@ from __future__ import with_statement
 
 __metaclass__ = type
 
+from twisted.internet import defer
 from twisted.trial import unittest
 
 from zope.security.proxy import removeSecurityProxy
@@ -111,6 +112,12 @@ class TestBinaryBuildPackageBehavior(unittest.TestCase):
               'suite': suite})])
         self.assertEqual(call_log, expected)
 
+    def startBuild(self, builder, candidate):
+        builder = removeSecurityProxy(builder)
+        candidate = removeSecurityProxy(candidate)
+        return defer.maybeDeferred(
+            builder.startBuild, candidate, QuietFakeLogger())
+
     def test_non_virtual_ppa_dispatch(self):
         # When the BinaryPackageBuildBehavior dispatches PPA builds to
         # non-virtual builders, it stores the chroot on the server and
@@ -127,9 +134,7 @@ class TestBinaryBuildPackageBehavior(unittest.TestCase):
         self.layer.txn.commit()
         build.distro_arch_series.addOrUpdateChroot(lf)
         candidate = build.queueBuild()
-        # XXX: Maybe we should add Deferred to the zope.security.checkers.
-        d = removeSecurityProxy(builder).startBuild(
-            removeSecurityProxy(candidate), QuietFakeLogger())
+        d = self.startBuild(builder, candidate)
         d.addCallback(
             self.assertSlaveInteraction,
             slave.call_log, builder, build, lf, archive,
@@ -148,8 +153,7 @@ class TestBinaryBuildPackageBehavior(unittest.TestCase):
         self.layer.txn.commit()
         build.distro_arch_series.addOrUpdateChroot(lf)
         candidate = build.queueBuild()
-        d = removeSecurityProxy(builder).startBuild(
-            removeSecurityProxy(candidate), QuietFakeLogger())
+        d = self.startBuild(builder, candidate)
         d.addCallback(
             self.assertSlaveInteraction,
             slave.call_log, builder, build, lf, archive,
