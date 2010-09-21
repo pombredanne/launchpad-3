@@ -113,6 +113,12 @@ class TestFactory(TestCaseWithFactory):
             status=BuildStatus.FULLYBUILT)
         self.assertEqual(BuildStatus.FULLYBUILT, bpb.status)
 
+    def test_makeBinaryPackageBuild_can_be_queued(self):
+        build = self.factory.makeBinaryPackageBuild()
+        # Just check that makeBinaryPackageBuild returns a build that can be
+        # queued.
+        build.queueBuild()
+
     # makeBinaryPackageName
     def test_makeBinaryPackageName_returns_proxied_IBinaryPackageName(self):
         binarypackagename = self.factory.makeBinaryPackageName()
