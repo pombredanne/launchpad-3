@@ -142,8 +142,9 @@ class UsageEnumsMixin(object):
             True,
             self.target.official_blueprints)
 
+
 class SeriesUsageEnumsMixin(object):
-    
+
     def setUp(self):
         self.series = None
         self.series_pillar = None
@@ -163,6 +164,7 @@ class SeriesUsageEnumsMixin(object):
         self.assertEqual(
             ServiceUsage.LAUNCHPAD,
             self.series.translations_usage)
+
 
 class TestDistributionUsageEnums(TestCaseWithFactory, UsageEnumsMixin):
     """Tests the usage enums for the distribution."""
@@ -190,6 +192,7 @@ class TestProductUsageEnums(TestCaseWithFactory, UsageEnumsMixin):
         super(TestProductUsageEnums, self).setUp()
         self.target = self.factory.makeProduct()
 
+
 class TestProductSeriesUsageEnums(
     TestCaseWithFactory,
     SeriesUsageEnumsMixin):
@@ -209,7 +212,7 @@ class TestProductSeriesUsageEnums(
         # be current, the series pillar must be marked as using
         # using translations.
         self.series_pillar.translations_usage = ServiceUsage.LAUNCHPAD
-        
+
 
 class TestDistroSeriesUsageEnums(
     TestCaseWithFactory,
@@ -237,6 +240,7 @@ class TestDistroSeriesUsageEnums(
         # be current, the series pillar must be marked as using
         # using translations.
         self.series_pillar.translations_usage = ServiceUsage.LAUNCHPAD
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

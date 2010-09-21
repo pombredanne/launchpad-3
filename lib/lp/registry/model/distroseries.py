@@ -282,7 +282,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         usage = self.distribution.translations_usage
         if usage != ServiceUsage.UNKNOWN:
             return usage
-       
+
         # If not, usage is based on the presence of current translation
         # templates for the series.
         if self.getCurrentTranslationTemplates().count() > 0:

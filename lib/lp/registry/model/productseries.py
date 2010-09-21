@@ -170,7 +170,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
         usage = self.product.translations_usage
         if usage != ServiceUsage.UNKNOWN:
             return usage
-       
+
         # If not, usage is based on the presence of current translation
         # templates for the series.
         if self.potemplate_count > 0:
