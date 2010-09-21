@@ -9,6 +9,7 @@ __all__ = [
     ]
 
 from lazr.delegates import delegates
+from storm import Undef
 from storm.zope.interfaces import IResultSet
 from zope.security.proxy import removeSecurityProxy
 
@@ -33,25 +34,32 @@ class DecoratedResultSet(object):
     """
     delegates(IResultSet, context='result_set')
 
-    def __init__(self, result_set, result_decorator=None, pre_iter_hook=None):
+    def __init__(self, result_set, result_decorator=None, pre_iter_hook=None,
+                 slice_info=False):
         """
         :param result_set: The original result set to be decorated.
         :param result_decorator: The method with which individual results
             will be passed through before being returned.
         :param pre_iter_hook: The method to be called (with the 'result_set')
             immediately before iteration starts.
+        :param slice_info: If True pass information about the slice parameters
+            to the result_decorator and pre_iter_hook. any() and similar
+            methods will cause None to be supplied.
         """
         self.result_set = result_set
         self.result_decorator = result_decorator
         self.pre_iter_hook = pre_iter_hook
+        self.slice_info = slice_info
 
-    def decorate_or_none(self, result):
+    def decorate_or_none(self, result, row_index=None):
         """Decorate a result or return None if the result is itself None"""
         if result is None:
             return None
         else:
             if self.result_decorator is None:
                 return result
+            elif self.slice_info:
+                return self.result_decorator(result, row_index)
             else:
                 return self.result_decorator(result)
 
@@ -62,7 +70,8 @@ class DecoratedResultSet(object):
         """
         new_result_set = self.result_set.copy(*args, **kwargs)
         return DecoratedResultSet(
-            new_result_set, self.result_decorator, self.pre_iter_hook)
+            new_result_set, self.result_decorator, self.pre_iter_hook,
+            self.slice_info)
 
     def config(self, *args, **kwargs):
         """See `IResultSet`.
@@ -79,10 +88,25 @@ class DecoratedResultSet(object):
         """
         # Execute/evaluate the result set query.
         results = list(self.result_set.__iter__(*args, **kwargs))
+        if self.slice_info:
+            # Calculate slice data
+            start = self.result_set._offset
+            if start is Undef:
+                start = 0
+            stop = start + len(results)
+            result_slice = slice(start, stop)
         if self.pre_iter_hook is not None:
-            self.pre_iter_hook(results)
-        for value in results:
-            yield self.decorate_or_none(value)
+            if self.slice_info:
+                self.pre_iter_hook(results, result_slice)
+            else:
+                self.pre_iter_hook(results)
+        if self.slice_info:
+            start = result_slice.start
+            for offset, value in enumerate(results):
+                yield self.decorate_or_none(value, offset + start)
+        else:
+            for value in results:
+                yield self.decorate_or_none(value)
 
     def __getitem__(self, *args, **kwargs):
         """See `IResultSet`.
@@ -94,7 +118,8 @@ class DecoratedResultSet(object):
         naked_value = removeSecurityProxy(value)
         if IResultSet.providedBy(naked_value):
             return DecoratedResultSet(
-                value, self.result_decorator, self.pre_iter_hook)
+                value, self.result_decorator, self.pre_iter_hook,
+                self.slice_info)
         else:
             return self.decorate_or_none(value)
 
@@ -137,4 +162,5 @@ class DecoratedResultSet(object):
         """
         new_result_set = self.result_set.order_by(*args, **kwargs)
         return DecoratedResultSet(
-            new_result_set, self.result_decorator, self.pre_iter_hook)
+            new_result_set, self.result_decorator, self.pre_iter_hook,
+            self.slice_info)

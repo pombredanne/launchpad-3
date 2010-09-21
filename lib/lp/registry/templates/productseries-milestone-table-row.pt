@@ -5,7 +5,7 @@
   define="milestone_menu view/milestone/menu:overview;
           milestone view/milestone;
           release view/release"
-  tal:content="cache:private, 1 hour">
+  tal:content="cache:private, 1 hour, milestone/id">
   <tr>
     <td>
       <img src="/@@/milestone" alt="" />

@@ -58,12 +58,12 @@ class ChangesFile(SignableTagFile):
     """Changesfile model."""
 
     mandatory_fields = set([
-        "source", "binary", "architecture", "version", "distribution",
-        "maintainer", "files", "changes", "date",
+        "Source", "Binary", "Architecture", "Version", "Distribution",
+        "Maintainer", "Files", "Changes", "Date",
         # Changed-By is not technically mandatory according to
         # Debian policy but Soyuz relies on it being set in
         # various places.
-        "changed-by"])
+        "Changed-By"])
 
     # Map urgencies to their dbschema values.
     # Debian policy only permits low, medium, high, emergency.
@@ -117,7 +117,7 @@ class ChangesFile(SignableTagFile):
                     "file." % field)
 
         try:
-            format = float(self._dict["format"])
+            format = float(self._dict["Format"])
         except KeyError:
             # If format is missing, pretend it's 1.5
             format = 1.5
@@ -158,12 +158,12 @@ class ChangesFile(SignableTagFile):
             # signed upload.  This is desireable because it avoids us
             # doing ensurePerson() for buildds and sync owners.
             try:
-                self.maintainer = self.parseAddress(self._dict['maintainer'])
+                self.maintainer = self.parseAddress(self._dict['Maintainer'])
             except UploadError, error:
                 yield error
 
         try:
-            self.changed_by = self.parseAddress(self._dict['changed-by'])
+            self.changed_by = self.parseAddress(self._dict['Changed-By'])
         except UploadError, error:
             yield error
 
@@ -188,7 +188,7 @@ class ChangesFile(SignableTagFile):
         files.
         """
         files = []
-        for fileline in self._dict['files'].strip().split("\n"):
+        for fileline in self._dict['Files'].strip().split("\n"):
             # files lines from a changes file are always of the form:
             # CHECKSUM SIZE [COMPONENT/]SECTION PRIORITY FILENAME
             digest, size, component_and_section, priority_name, filename = (
@@ -237,16 +237,16 @@ class ChangesFile(SignableTagFile):
         if len(self.files) == 0:
             yield UploadError("No files found in the changes")
 
-        if 'urgency' not in self._dict:
+        if 'Urgency' not in self._dict:
             # Urgency is recommended but not mandatory. Default to 'low'
-            self._dict['urgency'] = "low"
+            self._dict['Urgency'] = "low"
 
-        raw_urgency = self._dict['urgency'].lower()
+        raw_urgency = self._dict['Urgency'].lower()
         if raw_urgency not in self.urgency_map:
             yield UploadWarning(
                 "Unable to grok urgency %s, overriding with 'low'"
                 % (raw_urgency))
-            self._dict['urgency'] = "low"
+            self._dict['Urgency'] = "low"
 
         if not self.policy.unsigned_changes_ok:
             assert self.signer is not None, (
@@ -295,7 +295,7 @@ class ChangesFile(SignableTagFile):
 
         For example, 'hoary' or 'hoary-security'.
         """
-        return self._dict['distribution']
+        return self._dict['Distribution']
 
     @property
     def architectures(self):
@@ -304,22 +304,22 @@ class ChangesFile(SignableTagFile):
         For instance ['source', 'all'] or ['source', 'i386', 'amd64']
         or ['source'].
         """
-        return set(self._dict['architecture'].split())
+        return set(self._dict['Architecture'].split())
 
     @property
     def binaries(self):
         """Return set of binary package names listed."""
-        return set(self._dict['binary'].strip().split())
+        return set(self._dict['Binary'].strip().split())
 
     @property
     def converted_urgency(self):
         """Return the appropriate SourcePackageUrgency item."""
-        return self.urgency_map[self._dict['urgency'].lower()]
+        return self.urgency_map[self._dict['Urgency'].lower()]
 
     @property
     def version(self):
         """Return changesfile claimed version."""
-        return self._dict['version']
+        return self._dict['Version']
 
     @classmethod
     def formatChangesComment(cls, comment):
@@ -336,24 +336,24 @@ class ChangesFile(SignableTagFile):
     @property
     def changes_comment(self):
         """Return changesfile 'change' comment."""
-        comment = self._dict['changes']
+        comment = self._dict['Changes']
 
         return self.formatChangesComment(comment)
 
     @property
     def date(self):
         """Return changesfile date."""
-        return self._dict['date']
+        return self._dict['Date']
 
     @property
     def source(self):
         """Return changesfile claimed source name."""
-        return self._dict['source']
+        return self._dict['Source']
 
     @property
     def architecture_line(self):
         """Return changesfile archicteture line."""
-        return self._dict['architecture']
+        return self._dict['Architecture']
 
     @property
     def filecontents(self):

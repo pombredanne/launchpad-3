@@ -28,6 +28,7 @@ __all__ = [
     'map_branch_contents',
     'normalize_whitespace',
     'oauth_access_token_for',
+    'OAuthSigningBrowser',
     'person_logged_in',
     'record_statements',
     'run_with_login',
@@ -56,7 +57,6 @@ from datetime import (
     )
 from inspect import (
     getargspec,
-    getmembers,
     getmro,
     isclass,
     ismethod,
@@ -76,6 +76,7 @@ from bzrlib.bzrdir import (
     format_registry,
     )
 from bzrlib.transport import get_transport
+import fixtures
 import pytz
 from storm.expr import Variable
 from storm.store import Store
@@ -145,6 +146,7 @@ from lp.testing._webservice import (
     launchpadlib_credentials_for,
     launchpadlib_for,
     oauth_access_token_for,
+    OAuthSigningBrowser,
     )
 from lp.testing.fixture import ZopeEventHandlerFixture
 from lp.testing.matchers import Provides
@@ -222,7 +224,7 @@ class FakeTime:
 
 class StormStatementRecorder:
     """A storm tracer to count queries.
-    
+
     This exposes the count and queries as lp.testing._webservice.QueryCollector
     does permitting its use with the HasQueryCount matcher.
 
@@ -302,7 +304,7 @@ def run_with_storm_debug(function, *args, **kwargs):
         debug(False)
 
 
-class TestCase(testtools.TestCase):
+class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
     """Provide Launchpad-specific test facilities."""
 
     def becomeDbUser(self, dbuser):
@@ -681,6 +683,7 @@ class BrowserTestCase(TestCaseWithFactory):
     def assertTextMatchesExpressionIgnoreWhitespace(self,
                                                     regular_expression_txt,
                                                     text):
+
         def normalise_whitespace(text):
             return ' '.join(text.split())
         pattern = re.compile(
@@ -857,6 +860,7 @@ def capture_events(callable_obj, *args, **kwargs):
         callable, and events are the events emitted by the callable.
     """
     events = []
+
     def on_notify(event):
         events.append(event)
     old_subscribers = zope.event.subscribers[:]
@@ -1023,7 +1027,13 @@ def validate_mock_class(mock_class):
     assert isclass(mock_class), (
         "validate_mock_class() must be called for a class")
     base_classes = getmro(mock_class)
-    for name, obj in getmembers(mock_class):
+    # Don't use inspect.getmembers() here because it fails on __provides__, a
+    # descriptor added by zope.interface as part of its caching strategy. See
+    # http://comments.gmane.org/gmane.comp.python.zope.interface/241.
+    for name in dir(mock_class):
+        if name == '__provides__':
+            continue
+        obj = getattr(mock_class, name)
         if ismethod(obj):
             for base_class in base_classes[1:]:
                 if name in base_class.__dict__:

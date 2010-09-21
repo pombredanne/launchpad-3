@@ -15,6 +15,7 @@ import tempfile
 
 import pytz
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.launchpad.interfaces import (
@@ -29,6 +30,7 @@ from lp.archivepublisher.scripts.generate_ppa_htaccess import (
     HtaccessTokenGenerator,
     )
 from lp.services.mail import stub
+from lp.services.scripts.interfaces.scriptactivity import IScriptActivitySet
 from lp.soyuz.enums import (
     ArchiveStatus,
     ArchiveSubscriberStatus,
@@ -298,7 +300,7 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
 
         # Initially, nothing is eligible for deactivation.
         script = self.getScript()
-        script.deactivateTokens(self.ppa)
+        script.deactivateTokens()
         for person in tokens:
             self.assertNotDeactivated(tokens[person])
 
@@ -311,7 +313,7 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
         # Clear out emails generated when leaving a team.
         pop_notifications()
 
-        script.deactivateTokens(self.ppa, send_email=True)
+        script.deactivateTokens(send_email=True)
         self.assertDeactivated(tokens[team1_person])
         del tokens[team1_person]
         for person in tokens:
@@ -332,7 +334,7 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
         self.layer.switchDbUser(self.dbuser)
         # Clear out emails generated when leaving a team.
         pop_notifications()
-        script.deactivateTokens(self.ppa, send_email=True)
+        script.deactivateTokens(send_email=True)
         self.assertNotDeactivated(tokens[promiscuous_person])
         for person in tokens:
             self.assertNotDeactivated(tokens[person])
@@ -353,7 +355,7 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
         self.assertFalse(team2.inTeam(parent_team))
         self.layer.txn.commit()
         self.layer.switchDbUser(self.dbuser)
-        script.deactivateTokens(self.ppa)
+        script.deactivateTokens()
         for person in persons2:
             self.assertDeactivated(tokens[person])
 
@@ -573,3 +575,34 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
             "feedback@launchpad.net\n\n"
             "Regards,\n"
             "The Launchpad team")
+
+    def test_getNewTokensSinceLastRun_no_previous_run(self):
+        """All valid tokens returned if there is no record of previous run."""
+        now = datetime.now(pytz.UTC)
+        tokens = self.setupDummyTokens()[1]
+
+        # If there is no record of the script running previously, all
+        # valid tokens are returned.
+        script = self.getScript()
+        self.assertContentEqual(tokens, script.getNewTokensSinceLastRun())
+
+    def test_getNewTokensSinceLastRun_only_those_since_last_run(self):
+        """Only tokens created since the last run are returned."""
+        now = datetime.now(pytz.UTC)
+        tokens = self.setupDummyTokens()[1]
+        getUtility(IScriptActivitySet).recordSuccess(
+            'generate-ppa-htaccess', now, now - timedelta(minutes=3))
+        removeSecurityProxy(tokens[0]).date_created = (
+            now - timedelta(minutes=4))
+
+        script = self.getScript()
+        self.assertContentEqual(tokens[1:], script.getNewTokensSinceLastRun())
+
+    def test_getNewTokensSinceLastRun_only_active_tokens(self):
+        """Only active tokens are returned."""
+        now = datetime.now(pytz.UTC)
+        tokens = self.setupDummyTokens()[1]
+        tokens[0].deactivate()
+
+        script = self.getScript()
+        self.assertContentEqual(tokens[1:], script.getNewTokensSinceLastRun())

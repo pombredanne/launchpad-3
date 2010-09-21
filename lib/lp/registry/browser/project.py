@@ -42,7 +42,6 @@ from zope.interface import (
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.schema import Choice
 
-from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.browser.feeds import FeedsMixin
 from canonical.launchpad.webapp import (
@@ -98,6 +97,7 @@ from lp.services.fields import (
     PillarAliases,
     PublicPersonChoice,
     )
+from lp.services.propertycache import cachedproperty
 
 
 class ProjectNavigation(Navigation,

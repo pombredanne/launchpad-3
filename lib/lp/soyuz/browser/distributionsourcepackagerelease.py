@@ -14,7 +14,6 @@ import operator
 
 from zope.component import getUtility
 
-from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
 from canonical.launchpad.webapp import (
     LaunchpadView,
@@ -25,11 +24,12 @@ from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.lazr.utils import smartquote
 from lp.app.errors import NotFoundError
 from lp.archivepublisher.debversion import Version
+from lp.services.propertycache import cachedproperty
+from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.distributionsourcepackagerelease import (
     IDistributionSourcePackageRelease,
     )
-from lp.soyuz.enums import PackagePublishingStatus
 
 
 class DistributionSourcePackageReleaseBreadcrumb(Breadcrumb):

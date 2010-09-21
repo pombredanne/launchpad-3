@@ -24,12 +24,12 @@ from canonical.lazr.utils import safe_js_escape
 
 from canonical.config import config
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.geoip import IGeoIPRecord
-from lp.registry.interfaces.location import IObjectWithLocation
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp.interfaces import (
     ILaunchBag, IMultiLineWidgetLayout)
 from canonical.launchpad.webapp.tales import ObjectImageDisplayAPI
+from lp.registry.interfaces.location import IObjectWithLocation
+from lp.services.geoip.interfaces import IGeoIPRecord
 
 
 class ILocationWidget(IInputWidget, IBrowserWidget, IMultiLineWidgetLayout):

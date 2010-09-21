@@ -22,10 +22,9 @@ class TestProjectLicenses(WindmillTestCase):
     def test_project_licenses(self):
         """Test the dynamic aspects of the project license picker."""
         # The firefox project is as good as any.
+        lpuser.SAMPLE_PERSON.ensure_login(self.client)
         self.client.open(url=u'http://launchpad.dev:8085/firefox/+edit')
         self.client.waits.forPageLoad(timeout=u'20000')
-
-        lpuser.SAMPLE_PERSON.ensure_login(self.client)
 
         # The Recommended table is visible.
         self.client.waits.forElementProperty(
@@ -64,7 +63,7 @@ class TestProjectLicenses(WindmillTestCase):
             option='className|lazr-closed')
 
         # But clicking on one of the Other/* licenses exposes it.
-        self.client.click(id='field.licenses.26')
+        self.client.click(xpath='//input[@value = "OTHER_OPEN_SOURCE"]')
         self.client.waits.forElementProperty(
             id=u'license-details',
             option='className|lazr-opened')
@@ -75,7 +74,7 @@ class TestProjectLicenses(WindmillTestCase):
             id=u'proprietary',
             option='className|lazr-closed')
 
-        self.client.click(id='field.licenses.25')
+        self.client.click(xpath='//input[@value = "OTHER_PROPRIETARY"]')
         self.client.waits.forElementProperty(
             id=u'license-details',
             option='className|lazr-opened')
@@ -85,12 +84,12 @@ class TestProjectLicenses(WindmillTestCase):
 
         # Only when all Other/* items are unchecked does the details box get
         # hidden.
-        self.client.click(id='field.licenses.26')
+        self.client.click(xpath='//input[@value = "OTHER_OPEN_SOURCE"]')
         self.client.waits.forElementProperty(
             id=u'license-details',
             option='className|lazr-opened')
 
-        self.client.click(id='field.licenses.25')
+        self.client.click(xpath='//input[@value = "OTHER_PROPRIETARY"]')
         self.client.waits.forElementProperty(
             id=u'license-details',
             option='className|lazr-closed')
@@ -101,17 +100,17 @@ class TestProjectLicenses(WindmillTestCase):
         # Clicking on "I haven't specified..." unchecks everything and
         # closes the details box, but leaves the sections opened.
 
-        self.client.click(id='field.licenses.25')
+        self.client.click(xpath='//input[@value = "OTHER_PROPRIETARY"]')
         self.client.waits.forElementProperty(
             id=u'license-details',
             option='className|lazr-opened')
 
         self.client.asserts.assertChecked(
-            id=u'field.licenses.25')
+            xpath='//input[@value = "OTHER_PROPRIETARY"]')
 
         self.client.click(id='license_pending')
         self.client.asserts.assertNotChecked(
-            id=u'field.licenses.25')
+            xpath='//input[@value = "OTHER_PROPRIETARY"]')
 
         self.client.asserts.assertProperty(
             id=u'license-details',
@@ -121,7 +120,7 @@ class TestProjectLicenses(WindmillTestCase):
         # time the page is visited, those sections will be open.  The
         # Recommended section is always open.
 
-        self.client.click(id='field.licenses.25')
+        self.client.click(xpath='//input[@value = "OTHER_PROPRIETARY"]')
         self.client.type(id='field.license_info', text='Foo bar')
         self.client.click(id='field.licenses.3')
         self.client.click(id='field.actions.change')
