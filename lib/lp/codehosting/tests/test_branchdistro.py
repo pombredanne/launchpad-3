@@ -27,6 +27,7 @@ from bzrlib.transport import get_transport
 from bzrlib.transport.chroot import ChrootServer
 from lazr.uri import URI
 import transaction
+from zope.component import getUtility
 
 from canonical.config import config
 from canonical.launchpad.scripts.logger import (
@@ -35,6 +36,7 @@ from canonical.launchpad.scripts.logger import (
     )
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.code.enums import BranchLifecycleStatus
+from lp.code.interfaces.branchjob import IBranchScanJobSource
 from lp.codehosting.branchdistro import (
     DistroBrancher,
     switch_branches,
@@ -240,6 +242,34 @@ class TestDistroBrancher(TestCaseWithFactory):
             BranchLifecycleStatus.DEVELOPMENT, new_branch.lifecycle_status)
         self.assertEqual(
             BranchLifecycleStatus.MATURE, db_branch.lifecycle_status)
+
+    def test_makeOneNewBranch_avoids_need_for_scan(self):
+        # makeOneNewBranch sets the appropriate properties of the new branch
+        # so a scan is unnecessary.  This can be done because we are making a
+        # copy of the source branch.
+        db_branch = self.makeOfficialPackageBranch()
+        self.factory.makeRevisionsForBranch(db_branch, count=10)
+        brancher = self.makeNewSeriesAndBrancher(db_branch.distroseries)
+        brancher.makeOneNewBranch(db_branch)
+        tip_revision_id = db_branch.last_mirrored_id
+        self.assertIsNot(None, tip_revision_id)
+
+        new_branch = brancher.new_distroseries.getSourcePackage(
+            db_branch.sourcepackage.name).getBranch(RELEASE)
+
+        self.assertEqual(tip_revision_id, new_branch.last_mirrored_id)
+        self.assertEqual(tip_revision_id, new_branch.last_scanned_id)
+
+        scan_jobs = list(getUtility(IBranchScanJobSource).iterReady())
+        self.assertEqual(0, len(scan_jobs))
+
+        self.assertFalse(new_branch.pending_writes)
+
+        # Make sure that the branch revisions have been copied.
+        old_ancestry, old_history = db_branch.getScannerData()
+        new_ancestry, new_history = new_branch.getScannerData()
+        self.assertEqual(old_ancestry, new_ancestry)
+        self.assertEqual(old_history, new_history)
 
     def test_makeOneNewBranch_inconsistent_branch(self):
         # makeOneNewBranch skips over an inconsistent official package branch
