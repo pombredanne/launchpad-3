@@ -43,7 +43,10 @@ from storm.expr import (
     Or,
     SQL,
     )
-from storm.store import EmptyResultSet
+from storm.store import (
+    EmptyResultSet,
+    Store,
+    )
 from storm.zope.interfaces import (
     IResultSet,
     ISQLObjectResultSet,
@@ -2350,7 +2353,6 @@ class BugTaskSet:
             distroseries=distroseries,
             sourcepackagename=sourcepackagename,
             **non_target_create_params)
-        del IPropertyCache(bug).bugtasks
 
         if distribution:
             # Create tasks for accepted nominations if this is a source
@@ -2369,6 +2371,11 @@ class BugTaskSet:
             bugtask._syncFromConjoinedSlave()
 
         bugtask.updateTargetNameCache()
+        del IPropertyCache(bug).bugtasks
+        # Because of block_implicit_flushes, it is possible for a new bugtask
+        # to be queued in appropriately, which leads to Bug.bugtasks not
+        # finding the bugtask.
+        Store.of(bugtask).flush()
         return bugtask
 
     def getStatusCountsForProductSeries(self, user, product_series):

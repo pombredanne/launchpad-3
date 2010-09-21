@@ -558,7 +558,8 @@ BugMessage""" % sqlvalues(self.id))
         # Do not use the default orderBy as the prejoins cause ambiguities
         # across the tables.
         result = result.orderBy("id")
-        return sorted(result, key=bugtask_sort_key)
+        result = sorted(result, key=bugtask_sort_key)
+        return result
 
     @property
     def default_bugtask(self):
@@ -2080,13 +2081,13 @@ class BugSet:
 
         # Create the task on a product if one was passed.
         if params.product:
-            BugTaskSet().createTask(
+            getUtility(IBugTaskSet).createTask(
                 bug=bug, product=params.product, owner=params.owner,
                 status=params.status)
 
         # Create the task on a source package name if one was passed.
         if params.distribution:
-            BugTaskSet().createTask(
+            getUtility(IBugTaskSet).createTask(
                 bug=bug, distribution=params.distribution,
                 sourcepackagename=params.sourcepackagename,
                 owner=params.owner, status=params.status)
