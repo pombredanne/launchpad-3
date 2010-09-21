@@ -18,15 +18,17 @@ class CrashScript(LaunchpadCronScript):
 
     def main(self):
         initial_oops = globalErrorUtility.getLastOopsReport().id
-        self.logger.debug("This is debug level")
-        self.logger.warn("This is a warning")
 
+        self.logger.debug("This is debug level")
+        # Debug messages do not generate an OOPS.
+        assert globalErrorUtility.getLastOopsReport().id == initial_oops
+
+        self.logger.warn("This is a warning")
         first_oops = globalErrorUtility.getLastOopsReport().id
         if first_oops != initial_oops:
             self.logger.info("New OOPS detected")
 
         self.logger.critical("This is critical")
-
         second_oops = globalErrorUtility.getLastOopsReport().id
         if second_oops != first_oops:
             self.logger.info("New OOPS detected")
