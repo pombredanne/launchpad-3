@@ -195,7 +195,7 @@ class InitialiseDistroSeries:
             destination = PackageLocation(
                 target_archive, self.distroseries.distribution,
                 self.distroseries, PackagePublishingPocket.RELEASE)
-            if self.rebuild is True:
+            if self.rebuild:
                 distroarchseries_list = ()
             clone_packages(origin, destination, distroarchseries_list)
 
