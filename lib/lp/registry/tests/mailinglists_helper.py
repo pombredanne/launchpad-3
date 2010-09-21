@@ -35,6 +35,7 @@ from lp.registry.interfaces.person import (
     IPersonSet,
     TeamSubscriptionPolicy,
     )
+from lp.registry.xmlrpc.mailinglist import MailingListAPIView
 
 
 COMMASPACE = ', '
@@ -274,3 +275,29 @@ class MailmanStub:
 
 
 mailman = MailmanStub()
+
+
+class MailingListXMLRPCTestProxy(MailingListAPIView):
+    """A low impedance test proxy for code that uses MailingListAPIView."""
+
+    @fault_catcher
+    def getPendingActions(self):
+        return super(MailingListXMLRPCTestProxy, self).getPendingActions()
+
+    @fault_catcher
+    def reportStatus(self, statuses):
+        return super(MailingListXMLRPCTestProxy, self).reportStatus(statuses)
+
+    @fault_catcher
+    def getMembershipInformation(self, teams):
+        return super(
+            MailingListXMLRPCTestProxy, self).getMembershipInformation(teams)
+
+    @fault_catcher
+    def isLaunchpadMember(self, address):
+        return super(MailingListXMLRPCTestProxy, self).isLaunchpadMember(
+            address)
+
+    @fault_catcher
+    def isTeamPublic(self, team_name):
+        return super(MailingListXMLRPCTestProxy, self).isTeamPublic(team_name)
