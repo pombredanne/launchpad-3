@@ -144,7 +144,7 @@ class UsageEnumsMixin(object):
 
 
 class SeriesUsageEnumsMixin(object):
-
+    """Mixin to test the usage attributes on product and distro series."""
     def setUp(self):
         self.series = None
         self.series_pillar = None
@@ -153,6 +153,8 @@ class SeriesUsageEnumsMixin(object):
         raise NotImplementedError("Child class must provide _addPOTTemplate.")
 
     def test_translations_usage_pillar(self):
+        # The translations_usage enum should determine usage based on
+        # pillar usage enum and existence of current templates.
         self.assertEqual(
             ServiceUsage.UNKNOWN,
             self.series_pillar.translations_usage)
@@ -228,6 +230,8 @@ class TestDistroSeriesUsageEnums(
         login_person(self.series_pillar.owner)
 
     def _addCurrentPOTemplate(self):
+        # Adding POTemplates are much more complicated for distribution
+        # than product; specifically, a sourcepackage needs to be setup.
         sp_name = self.factory.makeSourcePackageName()
         self.factory.makeSourcePackage(
             sourcepackagename=sp_name,
