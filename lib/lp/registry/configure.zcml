@@ -1034,7 +1034,7 @@
     <xmlrpc:view
         for="lp.registry.interfaces.mailinglist.IMailingListApplication"
         interface="lp.registry.interfaces.mailinglist.IMailingListAPIView"
-        class="canonical.launchpad.xmlrpc.MailingListAPIView"
+        class="lp.registry.xmlrpc.mailinglist.MailingListAPIView"
         permission="zope.Public"/>
     <securedutility
         class="lp.registry.xmlrpc.softwarecenteragent.SoftwareCenterAgentApplication"
