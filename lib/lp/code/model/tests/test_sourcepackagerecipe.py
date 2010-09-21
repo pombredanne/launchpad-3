@@ -240,7 +240,8 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         recipe_text = textwrap.dedent(recipe_text)
         with person_logged_in(sp_recipe.owner):
             self.assertRaises(
-                ForbiddenInstructionError, sp_recipe.setRecipeText, recipe_text)
+                ForbiddenInstructionError, sp_recipe.setRecipeText,
+                recipe_text)
         self.assertEquals(
             old_branches, list(sp_recipe.getReferencedBranches()))
 
