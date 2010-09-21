@@ -17,8 +17,6 @@ from lp.registry.interfaces.distroseriesdifference import (
     IDistroSeriesDifferenceSource,
     )
 from lp.testing import (
-    launchpadlib_for,
-    login_person,
     TestCaseWithFactory,
     ws_object,
     )
@@ -28,21 +26,13 @@ class DistroSeriesDifferenceWebServiceTestCase(TestCaseWithFactory):
 
     layer = AppServerLayer
 
-    def makeLaunchpadService(self, person=None):
-        if person is None:
-            person = self.factory.makePerson()
-        launchpad = launchpadlib_for("test", person,
-            service_root="http://api.launchpad.dev:8085")
-        login_person(person)
-        return launchpad
-
     def test_get_difference(self):
         # DistroSeriesDifferences are available on the web service.
         ds_diff = self.factory.makeDistroSeriesDifference()
         ds_diff_path = canonical_url(ds_diff).replace(
             'http://launchpad.dev', '')
 
-        ws_diff = ws_object(self.makeLaunchpadService(), ds_diff)
+        ws_diff = ws_object(self.factory.makeLaunchpadService(), ds_diff)
 
         self.assertTrue(
             ws_diff.self_link.endswith(ds_diff_path))
@@ -50,14 +40,14 @@ class DistroSeriesDifferenceWebServiceTestCase(TestCaseWithFactory):
     def test_blacklist_not_public(self):
         # The blacklist method is not publically available.
         ds_diff = self.factory.makeDistroSeriesDifference()
-        ws_diff = ws_object(self.makeLaunchpadService(), ds_diff)
+        ws_diff = ws_object(self.factory.makeLaunchpadService(), ds_diff)
 
         self.assertRaises(Unauthorized, ws_diff.blacklist)
 
     def test_blacklist(self):
         # The blacklist method can be called by people with edit access.
         ds_diff = self.factory.makeDistroSeriesDifference()
-        ws_diff = ws_object(self.makeLaunchpadService(
+        ws_diff = ws_object(self.factory.makeLaunchpadService(
             ds_diff.derived_series.owner), ds_diff)
 
         result = ws_diff.blacklist()

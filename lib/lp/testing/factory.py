@@ -249,8 +249,10 @@ from lp.soyuz.model.files import (
 from lp.soyuz.model.processor import ProcessorFamilySet
 from lp.testing import (
     ANONYMOUS,
+    launchpadlib_for,
     login,
     login_as,
+    login_person,
     person_logged_in,
     run_with_login,
     temp_dir,
@@ -3125,6 +3127,14 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         new_uuid = getUtility(ITemporaryStorageManager).new(blob, expires)
 
         return getUtility(ITemporaryStorageManager).fetch(new_uuid)
+
+    def makeLaunchpadService(self, person=None):
+        if person is None:
+            person = self.makePerson()
+        launchpad = launchpadlib_for("test", person,
+            service_root="http://api.launchpad.dev:8085")
+        login_person(person)
+        return launchpad
 
 
 # Some factory methods return simple Python types. We don't add

@@ -185,7 +185,7 @@ class DistroSeriesDifference(Storm):
         """See `IDistroSeriesDifference`."""
         # Updating is expected to be a heavy operation (not called
         # during requests). We clear the cache beforehand - even though
-        # it is not currently be necessary so that in the future it
+        # it is not currently necessary - so that in the future it
         # won't cause a hard-to find bug if a script ever creates a
         # difference, copies/publishes a new version and then calls
         # update() (like the tests for this method do).
