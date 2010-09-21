@@ -71,9 +71,9 @@ class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):
         d = self._buildFilemapStructure(logger)
 
         def got_filemap(filemap):
-            # Generate a string which can be used to cross-check when
-            # obtaining results so we know we are referring to the right
-            # database object in subsequent runs.
+            # Generate a string which can be used to cross-check when obtaining
+            # results so we know we are referring to the right database object in
+            # subsequent runs.
             buildid = "%s-%s" % (self.build.id, build_queue_id)
             cookie = self.buildfarmjob.generateSlaveBuildCookie()
             chroot_sha1 = chroot.content.sha1
@@ -111,8 +111,9 @@ class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):
            distroseries state.
         """
         build = self.build
-        assert not (not self._builder.virtualized and build.is_virtualized), (
-            "Attempt to build non-virtual item on a virtual builder.")
+        if not self._builder.virtualized and build.is_virtualized:
+            raise AssertionError(
+                "Attempt to build non-virtual item on a virtual builder.")
 
         # Assert that we are not silently building SECURITY jobs.
         # See findBuildCandidates. Once we start building SECURITY
