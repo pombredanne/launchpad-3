@@ -278,7 +278,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     @property
     def translations_usage(self):
         """See `IServiceUsage.`"""
-        # If translations_usage is set for the Product, respect it.
+        # If translations_usage is set for the Distribution, respect it.
         usage = self.distribution.translations_usage
         if usage != ServiceUsage.UNKNOWN:
             return usage
