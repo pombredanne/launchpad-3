@@ -97,3 +97,14 @@ class TestBug(TestCaseWithFactory):
             bug.subscribe(team, member)
         self.assertTrue(team in bug.getDirectSubscribers())
 
+    def test_get_subscribers_from_duplicates_with_private_team(self):
+        product = self.factory.makeProduct()
+        bug = self.factory.makeBug(product=product)
+        dupe_bug = self.factory.makeBug()
+        member = self.factory.makePerson()
+        team = self.factory.makeTeam(
+            owner=member, visibility=PersonVisibility.PRIVATE)
+        with person_logged_in(member):
+            dupe_bug.subscribe(team, member)
+            dupe_bug.markAsDuplicate(bug)
+        self.assertTrue(team in bug.getSubscribersFromDuplicates())
