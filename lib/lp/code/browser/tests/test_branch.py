@@ -78,6 +78,7 @@ class TestBranchMirrorHidden(TestCaseWithFactory):
             branch_type=BranchType.MIRRORED,
             url="http://example.com/good/mirror")
         view = BranchView(branch, LaunchpadTestRequest())
+        view.initialize()
         self.assertTrue(view.user is None)
         self.assertEqual(
             "http://example.com/good/mirror", view.mirror_location)
@@ -89,6 +90,7 @@ class TestBranchMirrorHidden(TestCaseWithFactory):
             branch_type=BranchType.MIRRORED,
             url="http://private.example.com/bzr-mysql/mysql-5.0")
         view = BranchView(branch, LaunchpadTestRequest())
+        view.initialize()
         self.assertTrue(view.user is None)
         self.assertEqual(
             "<private server>", view.mirror_location)
@@ -106,6 +108,7 @@ class TestBranchMirrorHidden(TestCaseWithFactory):
         logout()
         login('eric@example.com')
         view = BranchView(branch, LaunchpadTestRequest())
+        view.initialize()
         self.assertEqual(view.user, owner)
         self.assertEqual(
             "http://private.example.com/bzr-mysql/mysql-5.0",
@@ -126,6 +129,7 @@ class TestBranchMirrorHidden(TestCaseWithFactory):
         logout()
         login('other@example.com')
         view = BranchView(branch, LaunchpadTestRequest())
+        view.initialize()
         self.assertEqual(view.user, other)
         self.assertEqual(
             "<private server>", view.mirror_location)
