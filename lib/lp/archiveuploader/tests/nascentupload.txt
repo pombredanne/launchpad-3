@@ -27,7 +27,7 @@ managed archive.
   ...    datadir, getPolicy, mock_logger, mock_logger_quiet)
 
   >>> buildd_policy = getPolicy(
-  ...     name='buildd', distro='ubuntu', distroseries='hoary', buildid=1)
+  ...     name='buildd', distro='ubuntu', distroseries='hoary')
 
   >>> sync_policy = getPolicy(
   ...     name='sync', distro='ubuntu', distroseries='hoary')
@@ -216,7 +216,7 @@ should match the files target architectures:
   # Use the buildd policy as it accepts unsigned changes files and binary
   # uploads.
   >>> modified_buildd_policy = getPolicy(
-  ...     name='buildd', distro='ubuntu', distroseries='hoary', buildid=1)
+  ...     name='buildd', distro='ubuntu', distroseries='hoary')
 
   >>> ed_mismatched_upload = NascentUpload.from_changesfile_path(
   ...     datadir("ed_0.2-20_i386.changes.mismatched-arch-unsigned"),
@@ -640,13 +640,12 @@ At this point slave-scanner moves the upload to the appropriate path
 the 'buildd' upload policy and the build record id.
 
   >>> buildd_policy = getPolicy(
-  ...     name='buildd', distro='ubuntu', distroseries='hoary',
-  ...     buildid=multibar_build.id)
+  ...     name='buildd', distro='ubuntu', distroseries='hoary')
 
   >>> multibar_bin_upload = NascentUpload.from_changesfile_path(
   ...     datadir('suite/multibar_1.0-1/multibar_1.0-1_i386.changes'),
   ...     buildd_policy, mock_logger_quiet)
-  >>> multibar_bin_upload.process()
+  >>> multibar_bin_upload.process(build=multibar_build)
   >>> success = multibar_bin_upload.do_accept()
 
 Now that we have successfully processed the binaries coming from a

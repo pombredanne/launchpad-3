@@ -18,9 +18,6 @@
     #code-review-votes {
       margin: 1em 0;
     }
-    #description, #edit-description {
-      margin: 1em 0;
-    }
     #add-comment-form {
       max-width: 60em;
       padding-bottom: 3em;
@@ -50,9 +47,6 @@
       padding-left: 20px;
       padding-bottom: 10px;
     }
-    /* A page-specific fix for inline text are editing to line up box. */
-    #edit-description .yui-ieditor-input { top: 0; }
-    #edit-commit_message .yui-ieditor-input { top: 0; }
   </style>
 </metal:block>
 

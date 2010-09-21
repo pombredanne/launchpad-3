@@ -20,8 +20,11 @@ from lp.archiveuploader.dscfile import DSCFile
 from lp.archiveuploader.nascentuploadfile import (
     CustomUploadFile,
     DebBinaryUploadFile,
+    UploadError,
     )
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.archiveuploader.tests import AbsolutelyAnythingGoesUploadPolicy
+from lp.buildmaster.enums import BuildStatus
 from lp.soyuz.enums import PackageUploadCustomFormat
 from lp.testing import TestCaseWithFactory
 
@@ -34,6 +37,7 @@ class NascentUploadFileTestCase(TestCaseWithFactory):
         self.logger = BufferLogger()
         self.policy = AbsolutelyAnythingGoesUploadPolicy()
         self.distro = self.factory.makeDistribution()
+        self.policy.pocket = PackagePublishingPocket.RELEASE
         self.policy.archive = self.factory.makeArchive(
             distribution=self.distro)
 
@@ -217,6 +221,34 @@ class DSCFileTests(PackageUploadFileTestCase):
         release = uploadfile.storeInDatabase(None)
         self.assertEquals(u"http://samba.org/~jelmer/bzr", release.homepage)
 
+    def test_checkBuild(self):
+        # checkBuild() verifies consistency with a build.
+        build = self.factory.makeSourcePackageRecipeBuild(
+            pocket=self.policy.pocket, distroseries=self.policy.distroseries,
+            archive=self.policy.archive)
+        dsc = self.getBaseDsc()
+        uploadfile = self.createDSCFile(
+            "foo.dsc", dsc, "main/net", "extra", "dulwich", "0.42",
+            self.createChangesFile("foo.changes", self.getBaseChanges()))
+        uploadfile.checkBuild(build)
+        # checkBuild() sets the build status to FULLYBUILT and
+        # removes the upload log.
+        self.assertEquals(BuildStatus.FULLYBUILT, build.status)
+        self.assertIs(None, build.upload_log)
+
+    def test_checkBuild_inconsistent(self):
+        # checkBuild() raises UploadError if inconsistencies between build
+        # and upload file are found.
+        build = self.factory.makeSourcePackageRecipeBuild(
+            pocket=self.policy.pocket,
+            distroseries=self.factory.makeDistroSeries(),
+            archive=self.policy.archive)
+        dsc = self.getBaseDsc()
+        uploadfile = self.createDSCFile(
+            "foo.dsc", dsc, "main/net", "extra", "dulwich", "0.42",
+            self.createChangesFile("foo.changes", self.getBaseChanges()))
+        self.assertRaises(UploadError, uploadfile.checkBuild, build)
+
 
 class DebBinaryUploadFileTests(PackageUploadFileTestCase):
     """Tests for DebBinaryUploadFile."""
@@ -326,3 +358,32 @@ class DebBinaryUploadFileTests(PackageUploadFileTestCase):
         bpr = uploadfile.storeInDatabase(build)
         self.assertEquals(
             u"http://samba.org/~jelmer/dulwich", bpr.homepage)
+
+    def test_checkBuild(self):
+        # checkBuild() verifies consistency with a build.
+        das = self.factory.makeDistroArchSeries(
+            distroseries=self.policy.distroseries, architecturetag="i386")
+        build = self.factory.makeBinaryPackageBuild(
+            distroarchseries=das,
+            archive=self.policy.archive)
+        uploadfile = self.createDebBinaryUploadFile(
+            "foo_0.42_i386.deb", "main/python", "unknown", "mypkg", "0.42",
+            None)
+        uploadfile.checkBuild(build)
+        # checkBuild() sets the build status to FULLYBUILT and
+        # removes the upload log.
+        self.assertEquals(BuildStatus.FULLYBUILT, build.status)
+        self.assertIs(None, build.upload_log)
+
+    def test_checkBuild_inconsistent(self):
+        # checkBuild() raises UploadError if inconsistencies between build
+        # and upload file are found.
+        das = self.factory.makeDistroArchSeries(
+            distroseries=self.policy.distroseries, architecturetag="amd64")
+        build = self.factory.makeBinaryPackageBuild(
+            distroarchseries=das,
+            archive=self.policy.archive)
+        uploadfile = self.createDebBinaryUploadFile(
+            "foo_0.42_i386.deb", "main/python", "unknown", "mypkg", "0.42",
+            None)
+        self.assertRaises(UploadError, uploadfile.checkBuild, build)
