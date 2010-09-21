@@ -17,21 +17,25 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.encoding import escape_nonascii_uniquely
-from canonical.launchpad.interfaces import (
+from canonical.launchpad.interfaces.emailaddress import (
     EmailAddressStatus,
     IEmailAddressSet,
+    )
+from canonical.launchpad.interfaces.message import IMessageSet
+from canonical.launchpad.webapp import LaunchpadXMLRPCView
+from canonical.launchpad.xmlrpc import faults
+from lp.registry.interfaces.mailinglist import (
     IMailingListAPIView,
     IMailingListSet,
     IMessageApprovalSet,
-    IMessageSet,
-    IPersonSet,
     MailingListStatus,
-    PersonalStanding,
     PostedMessageStatus,
     )
-from canonical.launchpad.webapp import LaunchpadXMLRPCView
-from canonical.launchpad.xmlrpc import faults
-from lp.registry.interfaces.person import PersonVisibility
+from lp.registry.interfaces.person import (
+    IPersonSet,
+    PersonalStanding,
+    PersonVisibility,
+    )
 
 # Not all developers will have built the Mailman instance (via
 # 'make mailman_instance').  In that case, this import will fail, but in that
@@ -221,6 +225,7 @@ class MailingListAPIView(LaunchpadXMLRPCView):
             return False
         email_address = getUtility(IEmailAddressSet).getByEmail(address)
         return (email_address is not None and
+                email_address.personID is not None and
                 email_address.status in (EmailAddressStatus.VALIDATED,
                                          EmailAddressStatus.PREFERRED))
 
