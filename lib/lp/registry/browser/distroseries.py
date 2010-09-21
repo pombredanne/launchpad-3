@@ -560,6 +560,6 @@ class DistroSeriesLocalDifferences(LaunchpadView):
     @cachedproperty
     def cached_differences(self):
         """Return a batch navigator of potentially filtered results."""
-        differences = getUtility(IDistroSeriesDifferenceSource).getForDistroSeries(
-            self.context)
+        utility = getUtility(IDistroSeriesDifferenceSource)
+        differences = utility.getForDistroSeries(self.context)
         return BatchNavigator(differences, self.request)

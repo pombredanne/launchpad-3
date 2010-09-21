@@ -76,6 +76,7 @@ class DistroSeriesLocalPackageDiffsTestCase(TestCaseWithFactory):
     def makeControllerInScopes(self, scopes):
         """Make a controller that will report it's in the given scopes."""
         call_log = []
+
         def scope_cb(scope):
             call_log.append(scope)
             return scope in scopes
