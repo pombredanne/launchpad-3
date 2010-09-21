@@ -12,30 +12,38 @@ import os
 import shutil
 import stat
 import tempfile
-import transaction
 
+import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.zeca.ftests.harness import ZecaTestSetup
-from lp.archivepublisher.config import getPubConfig
-from lp.archivepublisher.diskpool import DiskPool
-from lp.archivepublisher.publishing import Publisher, getPublisher
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.ftests.keys_for_tests import gpgkeysdir
-from lp.soyuz.interfaces.archive import (
-    ArchivePurpose, ArchiveStatus, IArchiveSet)
-from lp.soyuz.interfaces.binarypackagerelease import (
-    BinaryPackageFormat)
-from lp.registry.interfaces.distribution import IDistributionSet
-from lp.registry.interfaces.series import SeriesStatus
 from canonical.launchpad.interfaces.gpghandler import IGPGHandler
+from canonical.zeca.ftests.harness import ZecaTestSetup
+from lp.archivepublisher.config import getPubConfig
+from lp.archivepublisher.diskpool import DiskPool
+from lp.archivepublisher.interfaces.archivesigningkey import (
+    IArchiveSigningKey,
+    )
+from lp.archivepublisher.publishing import (
+    getPublisher,
+    Publisher,
+    )
+from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.soyuz.interfaces.publishing import PackagePublishingStatus
-from lp.archivepublisher.interfaces.archivesigningkey import (
-    IArchiveSigningKey)
+from lp.registry.interfaces.series import SeriesStatus
+from lp.soyuz.enums import (
+    ArchivePurpose,
+    ArchiveStatus,
+    BinaryPackageFormat,
+    PackagePublishingStatus,
+    )
+from lp.soyuz.interfaces.archive import (
+    IArchiveSet,
+    )
 from lp.soyuz.tests.test_publishing import TestNativePublishingBase
 
 
@@ -1113,6 +1121,7 @@ class TestPublisherRepositorySignatures(TestPublisherBase):
 
     def tearDown(self):
         """Purge the archive root location. """
+        super(TestPublisherRepositorySignatures, self).tearDown()
         if self.archive_publisher is not None:
             shutil.rmtree(self.archive_publisher._config.distsroot)
 

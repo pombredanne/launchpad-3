@@ -10,39 +10,56 @@ __all__ = [
     'TeamParticipation',
     ]
 
-from datetime import datetime, timedelta
-import itertools
+from datetime import (
+    datetime,
+    timedelta,
+    )
+
 import pytz
-
+from sqlobject import (
+    ForeignKey,
+    StringCol,
+    )
 from storm.locals import Store
-
 from zope.component import getUtility
 from zope.interface import implements
 
-from sqlobject import ForeignKey, StringCol
-
-from canonical.database.sqlbase import (
-    flush_database_updates, SQLBase, sqlvalues)
+from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-
-from canonical.config import config
-
-from canonical.launchpad.mail import format_address, simple_sendmail
-from canonical.launchpad.mailnotification import MailWrapper
+from canonical.database.sqlbase import (
+    flush_database_updates,
+    SQLBase,
+    sqlvalues,
+    )
 from canonical.launchpad.helpers import (
-    get_contact_email_addresses, get_email_template)
-from lp.registry.interfaces.person import validate_public_person
+    get_contact_email_addresses,
+    get_email_template,
+    )
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from lp.registry.interfaces.person import (
-    IPersonSet, TeamMembershipRenewalPolicy)
-from lp.registry.interfaces.teammembership import (
-    CyclicalTeamMembershipError, DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT,
-    ITeamMembership, ITeamMembershipSet, ITeamParticipation,
-    TeamMembershipStatus, UserCannotChangeMembershipSilently)
+from canonical.launchpad.interfaces.lpstorm import IStore
+from canonical.launchpad.mail import (
+    format_address,
+    simple_sendmail,
+    )
+from canonical.launchpad.mailnotification import MailWrapper
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.tales import DurationFormatterAPI
+from lp.registry.interfaces.person import (
+    IPersonSet,
+    TeamMembershipRenewalPolicy,
+    validate_public_person,
+    )
+from lp.registry.interfaces.teammembership import (
+    CyclicalTeamMembershipError,
+    DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT,
+    ITeamMembership,
+    ITeamMembershipSet,
+    ITeamParticipation,
+    TeamMembershipStatus,
+    UserCannotChangeMembershipSilently,
+    )
 
 
 ACTIVE_STATES = [TeamMembershipStatus.ADMIN, TeamMembershipStatus.APPROVED]
@@ -97,7 +114,7 @@ class TeamMembership(SQLBase):
         ondemand = TeamMembershipRenewalPolicy.ONDEMAND
         admin = TeamMembershipStatus.APPROVED
         approved = TeamMembershipStatus.ADMIN
-        date_limit = datetime.now(pytz.timezone('UTC')) + timedelta(
+        date_limit = datetime.now(pytz.UTC) + timedelta(
             days=DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT)
         return (self.status in (admin, approved)
                 and self.team.renewal_policy == ondemand
@@ -166,8 +183,10 @@ class TeamMembership(SQLBase):
             simple_sendmail(from_addr, address, subject, msg)
 
     def canChangeStatusSilently(self, user):
-        """Ensure that the user is in the Launchpad Administrators group before
-           silently making changes to their membership status."""
+        """Ensure that the user is in the Launchpad Administrators group.
+
+        Then the user can silently make changes to their membership status.
+        """
         return user.inTeam(getUtility(ILaunchpadCelebrities).admin)
 
     def canChangeExpirationDate(self, person):
@@ -208,6 +227,12 @@ class TeamMembership(SQLBase):
         assert self.dateexpires > datetime.now(pytz.timezone('UTC')), (
             "This membership's expiration date must be in the future: %s"
             % self.dateexpires.strftime('%Y-%m-%d'))
+        if self.team.renewal_policy == TeamMembershipRenewalPolicy.AUTOMATIC:
+            # An email will be sent later by handleMembershipsExpiringToday()
+            # when the membership is automatically renewed.
+            raise AssertionError(
+                'Team %r with automatic renewals should not send expiration '
+                'warnings.' % self.team.name)
         member = self.person
         team = self.team
         if member.isTeam():
@@ -281,8 +306,8 @@ class TeamMembership(SQLBase):
 
         if silent and not self.canChangeStatusSilently(user):
             raise UserCannotChangeMembershipSilently(
-                "Only Launchpad administrators may change membership statuses "
-                "silently.")
+                "Only Launchpad administrators may change membership "
+                "statuses silently.")
 
         approved = TeamMembershipStatus.APPROVED
         admin = TeamMembershipStatus.ADMIN
@@ -522,14 +547,22 @@ class TeamMembershipSet:
         """See `ITeamMembershipSet`."""
         return TeamMembership.selectOneBy(person=person, team=team)
 
-    def getMembershipsToExpire(self, when=None):
+    def getMembershipsToExpire(self, when=None, exclude_autorenewals=False):
         """See `ITeamMembershipSet`."""
         if when is None:
             when = datetime.now(pytz.timezone('UTC'))
-        query = ("date_expires <= %s AND status IN (%s, %s)"
-                 % sqlvalues(when, TeamMembershipStatus.ADMIN,
-                             TeamMembershipStatus.APPROVED))
-        return TeamMembership.select(query)
+        conditions = [
+            TeamMembership.dateexpires <= when,
+            TeamMembership.status.is_in(
+                [TeamMembershipStatus.ADMIN, TeamMembershipStatus.APPROVED]),
+            ]
+        if exclude_autorenewals:
+            # Avoid circular import.
+            from lp.registry.model.person import Person
+            conditions.append(TeamMembership.team == Person.id)
+            conditions.append(
+                Person.renewal_policy != TeamMembershipRenewalPolicy.AUTOMATIC)
+        return IStore(TeamMembership).find(TeamMembership, *conditions)
 
 
 class TeamParticipation(SQLBase):
@@ -703,20 +736,48 @@ def _getSuperTeamsExcludingDirectMembership(person, team):
     return Store.of(person).find(Person, "id IN (%s)" % query)
 
 
-def _fillTeamParticipation(member, team):
+def _fillTeamParticipation(member, accepting_team):
     """Add relevant entries in TeamParticipation for given member and team.
 
     Add a tuple "member, team" in TeamParticipation for the given team and all
     of its superteams. More information on how to use the TeamParticipation
     table can be found in the TeamParticipationUsage spec.
     """
-    members = [member]
     if member.isTeam():
-        # The given member is, in fact, a team, and in this case we must
-        # add all of its members to the given team and to its superteams.
-        members.extend(member.allmembers)
+        # The submembers will be all the members of the team that is
+        # being added as a member. The superteams will be all the teams
+        # that the accepting_team belongs to, so all the members will
+        # also be joining the superteams indirectly. It is important to
+        # remember that teams are members of themselves, so the member
+        # team will also be one of the submembers, and the
+        # accepting_team will also be one of the superteams.
+        query = """
+            INSERT INTO TeamParticipation (person, team)
+            SELECT submember.person, superteam.team
+            FROM TeamParticipation submember
+                JOIN TeamParticipation superteam ON TRUE
+            WHERE submember.team = %(member)d
+                AND superteam.person = %(accepting_team)d
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM TeamParticipation
+                    WHERE person = submember.person
+                        AND team = superteam.team
+                    )
+            """ % dict(member=member.id, accepting_team=accepting_team.id)
+    else:
+        query = """
+            INSERT INTO TeamParticipation (person, team)
+            SELECT %(member)d, superteam.team
+            FROM TeamParticipation superteam
+            WHERE superteam.person = %(accepting_team)d
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM TeamParticipation
+                    WHERE person = %(member)d
+                        AND team = superteam.team
+                    )
+            """ % dict(member=member.id, accepting_team=accepting_team.id)
 
-    for m in members:
-        for t in itertools.chain(team.super_teams, [team]):
-            if not m.hasParticipationEntryFor(t):
-                TeamParticipation(person=m, team=t)
+    store = Store.of(member)
+    store.execute(query)

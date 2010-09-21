@@ -15,20 +15,31 @@ __all__ = [
     'IBugAttachmentIsPatchConfirmationForm',
     ]
 
-from zope.interface import Interface
-from zope.schema import Bool, Bytes, Choice, Int, TextLine
-from lazr.enum import DBEnumeratedType, DBItem
-
-from canonical.launchpad.interfaces.message import IMessage
-from canonical.launchpad.interfaces.launchpad import IHasBug
-
-from canonical.launchpad.fields import Title
-from canonical.launchpad import _
-
-from lazr.restful.fields import Reference
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    )
 from lazr.restful.declarations import (
-    call_with, export_as_webservice_entry, export_write_operation, exported,
-    REQUEST_USER)
+    call_with,
+    export_as_webservice_entry,
+    export_write_operation,
+    exported,
+    REQUEST_USER,
+    )
+from lazr.restful.fields import Reference
+from zope.interface import Interface
+from zope.schema import (
+    Bool,
+    Bytes,
+    Choice,
+    Int,
+    TextLine,
+    )
+
+from canonical.launchpad import _
+from canonical.launchpad.interfaces.launchpad import IHasBug
+from canonical.launchpad.interfaces.message import IMessage
+from lp.services.fields import RestrictedBytes, Title
 
 
 class BugAttachmentType(DBEnumeratedType):
@@ -77,7 +88,7 @@ class IBugAttachment(IHasBug):
     libraryfile = Bytes(title=_("The attachment content."),
               required=True)
     data = exported(
-        Bytes(title=_("The attachment content."),
+        RestrictedBytes(title=_("The attachment content."),
               required=True,
               readonly=True))
     message = exported(
@@ -98,6 +109,14 @@ class IBugAttachment(IHasBug):
 
         The library file content for this attachment is set to None.
         """
+
+    def getFileByName(filename):
+        """Return the `ILibraryFileAlias for the given file name.
+
+        NotFoundError is raised if the given filename does not match
+        libraryfile.filename.
+        """
+
 
 # Need to do this here because of circular imports.
 IMessage['bugattachments'].value_type.schema = IBugAttachment

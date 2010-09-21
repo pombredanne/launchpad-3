@@ -5,20 +5,20 @@
 
 __metaclass__ = type
 
-import transaction
 import unittest
 
+import transaction
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from lp.translations.interfaces.translationimportqueue import (
-    ITranslationImportQueue, RosettaImportStatus)
-from lp.services.worlddata.interfaces.language import (
-    ILanguageSet)
-
+from canonical.testing import LaunchpadZopelessLayer
+from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing import TestCaseWithFactory
 from lp.testing.factory import LaunchpadObjectFactory
-from canonical.testing import LaunchpadZopelessLayer
+from lp.translations.interfaces.translationimportqueue import (
+    ITranslationImportQueue,
+    RosettaImportStatus,
+    )
 
 
 class TestCanSetStatusBase(TestCaseWithFactory):
@@ -270,7 +270,6 @@ class TestGetGuessedPOFile(TestCaseWithFactory):
         serbian = getUtility(ILanguageSet).getLanguageByCode('sr')
         self.assertEquals(potemplate, pofile.potemplate)
         self.assertEquals(serbian, pofile.language)
-        self.assertIs(None, pofile.variant)
 
     def test_KDE4_language_country(self):
         # If package name is kde-l10n-engb, it needs to be mapped
@@ -280,17 +279,16 @@ class TestGetGuessedPOFile(TestCaseWithFactory):
         real_english = getUtility(ILanguageSet).getLanguageByCode('en_GB')
         self.assertEquals(potemplate, pofile.potemplate)
         self.assertEquals(real_english, pofile.language)
-        self.assertIs(None, pofile.variant)
 
     def test_KDE4_language_variant(self):
         # If package name is kde-l10n-ca-valencia, it needs to be mapped
         # to Valencian variant of Catalan (ca@valencia).
+        catalan_valencia = self.factory.makeLanguage(
+            'ca@valencia', 'Catalan Valencia')
         potemplate, pofile = self._getGuessedPOFile(
             'kde-l10n-ca-valencia', 'template')
-        catalan = getUtility(ILanguageSet).getLanguageByCode('ca')
         self.assertEquals(potemplate, pofile.potemplate)
-        self.assertEquals(catalan, pofile.language)
-        self.assertEquals(u'valencia', pofile.variant)
+        self.assertEquals(catalan_valencia, pofile.language)
 
 
 def test_suite():

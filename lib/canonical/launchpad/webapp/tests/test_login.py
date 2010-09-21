@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009-2010 Canonical Ltd.  All rights reserved.
 from __future__ import with_statement
 
 # pylint: disable-msg=W0105
@@ -6,37 +6,69 @@ from __future__ import with_statement
 
 __metaclass__ = type
 
-__all__ = []
+__all__ = [
+    'FakeOpenIDConsumer',
+    'FakeOpenIDResponse',
+    'IAccountSet_getByOpenIDIdentifier_monkey_patched',
+    'SRegResponse_fromSuccessResponse_stubbed',
+    'fill_login_form_and_submit',
+    ]
 
 from contextlib import contextmanager
-from datetime import datetime, timedelta
+from datetime import (
+    datetime,
+    timedelta,
+    )
 import httplib
 import unittest
 
 import mechanize
-
-from openid.consumer.consumer import FAILURE, SUCCESS
+from openid.consumer.consumer import (
+    FAILURE,
+    SUCCESS,
+    )
 from openid.extensions import sreg
-
 from zope.component import getUtility
 from zope.security.management import newInteraction
 from zope.security.proxy import removeSecurityProxy
 from zope.session.interfaces import ISession
 
-from canonical.launchpad.interfaces.account import AccountStatus, IAccountSet
+from canonical.launchpad.interfaces.account import (
+    AccountStatus,
+    IAccountSet,
+    )
+from canonical.launchpad.interfaces.lpstorm import IStore
+from canonical.launchpad.testing.browser import (
+    Browser,
+    setUp,
+    tearDown,
+    )
 from canonical.launchpad.testing.pages import (
-    extract_text, find_main_content, find_tag_by_id, find_tags_by_class)
+    extract_text,
+    find_main_content,
+    find_tag_by_id,
+    find_tags_by_class,
+    )
 from canonical.launchpad.testing.systemdocs import LayeredDocFileSuite
-from canonical.launchpad.testing.browser import Browser, setUp, tearDown
 from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
-from canonical.launchpad.webapp.login import OpenIDCallbackView, OpenIDLogin
 from canonical.launchpad.webapp.interfaces import IStoreSelector
+from canonical.launchpad.webapp.login import (
+    OpenIDCallbackView,
+    OpenIDLogin,
+    )
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import AppServerLayer, DatabaseFunctionalLayer
-
+from canonical.testing.layers import (
+    AppServerLayer,
+    DatabaseFunctionalLayer,
+    FunctionalLayer,
+    )
 from lp.registry.interfaces.person import IPerson
+from lp.services.openid.model.openididentifier import OpenIdIdentifier
+from lp.testing import (
+    logout,
+    TestCaseWithFactory,
+    )
 from lp.testopenid.interfaces.server import ITestOpenIDPersistentIdentity
-from lp.testing import logout, TestCaseWithFactory
 
 
 class FakeOpenIDResponse:
@@ -62,8 +94,25 @@ class StubbedOpenIDCallbackView(OpenIDCallbackView):
                 "Not using the master store: %s" % current_policy)
 
 
+class FakeConsumer:
+    """An OpenID consumer that stashes away arguments for test inspection."""
+
+    def complete(self, params, requested_url):
+        self.params = params
+        self.requested_url = requested_url
+
+
+class FakeConsumerOpenIDCallbackView(OpenIDCallbackView):
+    """An OpenID handler with fake consumer so arguments can be inspected."""
+
+    def _getConsumer(self):
+        self.fake_consumer = FakeConsumer()
+        return self.fake_consumer
+
+
 @contextmanager
 def SRegResponse_fromSuccessResponse_stubbed():
+
     def sregFromFakeSuccessResponse(cls, success_response, signed_only=True):
         return {'email': success_response.sreg_email,
                 'fullname': success_response.sreg_fullname}
@@ -96,11 +145,11 @@ def IAccountSet_getByOpenIDIdentifier_monkey_patched():
                 "Not using the master store: %s" % current_policy)
         return orig_getByOpenIDIdentifier(identifier)
 
-    account_set.getByOpenIDIdentifier = fake_getByOpenIDIdentifier
-
-    yield
-
-    account_set.getByOpenIDIdentifier = orig_getByOpenIDIdentifier
+    try:
+        account_set.getByOpenIDIdentifier = fake_getByOpenIDIdentifier
+        yield
+    finally:
+        account_set.getByOpenIDIdentifier = orig_getByOpenIDIdentifier
 
 
 class TestOpenIDCallbackView(TestCaseWithFactory):
@@ -108,11 +157,12 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
 
     def _createViewWithResponse(
             self, account, response_status=SUCCESS, response_msg='',
-            view_class=StubbedOpenIDCallbackView):
+            view_class=StubbedOpenIDCallbackView,
+            email='non-existent@example.com'):
         openid_response = FakeOpenIDResponse(
             ITestOpenIDPersistentIdentity(account).openid_identity_url,
             status=response_status, message=response_msg,
-            email='non-existent@example.com', full_name='Foo User')
+            email=email, full_name='Foo User')
         return self._createAndRenderView(
             openid_response, view_class=view_class)
 
@@ -142,7 +192,8 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
         # in the 'starting_url' query arg.
         person = self.factory.makePerson()
         with SRegResponse_fromSuccessResponse_stubbed():
-            view, html = self._createViewWithResponse(person.account)
+            view, html = self._createViewWithResponse(
+                person.account, email=person.preferredemail.email)
         self.assertTrue(view.login_called)
         response = view.request.response
         self.assertEquals(httplib.TEMPORARY_REDIRECT, response.getStatus())
@@ -153,6 +204,81 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
         # Person/Account entry, so it's ok for further requests to hit the
         # slave DBs.
         self.assertNotIn('last_write', ISession(view.request)['lp.dbpolicy'])
+
+    def test_gather_params(self):
+        # If the currently requested URL includes a query string, the
+        # parameters in the query string must be included when constructing
+        # the params mapping (which is then used to complete the open ID
+        # response).  OpenIDCallbackView._gather_params does that gathering.
+        request = LaunchpadTestRequest(
+            SERVER_URL='http://example.com',
+            QUERY_STRING='foo=bar',
+            form={'starting_url': 'http://launchpad.dev/after-login'},
+            environ={'PATH_INFO': '/'})
+        view = OpenIDCallbackView(context=None, request=None)
+        params = view._gather_params(request)
+        expected_params = {
+            'starting_url': 'http://launchpad.dev/after-login',
+            'foo': 'bar',
+        }
+        self.assertEquals(params, expected_params)
+
+    def test_gather_params_with_unicode_data(self):
+        # If the currently requested URL includes a query string, the
+        # parameters in the query string will be included when constructing
+        # the params mapping (which is then used to complete the open ID
+        # response) and if there are non-ASCII characters in the query string,
+        # they are properly decoded.
+        request = LaunchpadTestRequest(
+            SERVER_URL='http://example.com',
+            QUERY_STRING='foo=%E1%9B%9D',
+            environ={'PATH_INFO': '/'})
+        view = OpenIDCallbackView(context=None, request=None)
+        params = view._gather_params(request)
+        self.assertEquals(params['foo'], u'\u16dd')
+
+    def test_unexpected_multivalue_fields(self):
+        # The parameter gatering doesn't expect to find multi-valued form
+        # field and it reports an error if it finds any.
+        request = LaunchpadTestRequest(
+            SERVER_URL='http://example.com',
+            QUERY_STRING='foo=1&foo=2',
+            environ={'PATH_INFO': '/'})
+        view = OpenIDCallbackView(context=None, request=None)
+        self.assertRaises(ValueError, view._gather_params, request)
+
+    def test_get_requested_url(self):
+        # The OpenIDCallbackView needs to pass the currently-being-requested
+        # URL to the OpenID library.  OpenIDCallbackView._get_requested_url
+        # returns the URL.
+        request = LaunchpadTestRequest(
+            SERVER_URL='http://example.com',
+            QUERY_STRING='foo=bar',
+            form={'starting_url': 'http://launchpad.dev/after-login'})
+        view = OpenIDCallbackView(context=None, request=None)
+        url = view._get_requested_url(request)
+        self.assertEquals(url, 'http://example.com?foo=bar')
+
+    def test_open_id_callback_handles_query_string(self):
+        # If the currently requested URL includes a query string, the
+        # parameters in the query string must be included when constructing
+        # the params mapping (which is then used to complete the open ID
+        # response).
+        request = LaunchpadTestRequest(
+            SERVER_URL='http://example.com',
+            QUERY_STRING='foo=bar',
+            form={'starting_url': 'http://launchpad.dev/after-login'},
+            environ={'PATH_INFO': '/'})
+        view = FakeConsumerOpenIDCallbackView(object(), request)
+        view.initialize()
+        self.assertEquals(
+            view.fake_consumer.params,
+            {
+                'starting_url': 'http://launchpad.dev/after-login',
+                'foo': 'bar',
+            })
+        self.assertEquals(
+            view.fake_consumer.requested_url, 'http://example.com?foo=bar')
 
     def test_personless_account(self):
         # When there is no Person record associated with the account, we
@@ -178,7 +304,7 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
         # seen, we automatically register an account with that identity
         # because someone who registered on login.lp.net or login.u.c should
         # be able to login here without any further steps.
-        identifier = '4w7kmzU'
+        identifier = u'4w7kmzU'
         account_set = getUtility(IAccountSet)
         self.assertRaises(
             LookupError, account_set.getByOpenIDIdentifier, identifier)
@@ -206,7 +332,7 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
         # When we get a positive assertion about an identity URL we've never
         # seen but whose email address is already registered, we just change
         # the identity URL that's associated with the existing email address.
-        identifier = '4w7kmzU'
+        identifier = u'4w7kmzU'
         email = 'test@example.com'
         account = self.factory.makeAccount(
             'Test account', email=email, status=AccountStatus.DEACTIVATED)
@@ -220,10 +346,12 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
             view, html = self._createAndRenderView(openid_response)
         self.assertTrue(view.login_called)
 
-        # The existing account's openid_identifier was updated, the account
-        # was reactivated and its preferred email was set, but its display
-        # name was not changed.
-        self.assertEquals(identifier, account.openid_identifier)
+        # The existing accounts had a new openid_identifier added, the
+        # account was reactivated and its preferred email was set, but
+        # its display name was not changed.
+        identifiers = [i.identifier for i in account.openid_identifiers]
+        self.assertIn(identifier, identifiers)
+
         self.assertEquals(AccountStatus.ACTIVE, account.status)
         self.assertEquals(
             email, removeSecurityProxy(account.preferredemail).email)
@@ -243,7 +371,8 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
         account = self.factory.makeAccount(
             'Test account', email=email, status=AccountStatus.DEACTIVATED)
         self.assertIs(None, IPerson(account, None))
-        openid_identifier = removeSecurityProxy(account).openid_identifier
+        openid_identifier = removeSecurityProxy(
+            account).openid_identifiers.any().identifier
         openid_response = FakeOpenIDResponse(
             'http://testopenid.dev/+id/%s' % openid_identifier,
             status=SUCCESS, email=email, full_name=account.displayname)
@@ -269,7 +398,11 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
         account = self.factory.makeAccount(
             'Test account', email=email, status=AccountStatus.NOACCOUNT)
         self.assertIs(None, IPerson(account, None))
-        openid_identifier = removeSecurityProxy(account).openid_identifier
+        openid_identifier = IStore(OpenIdIdentifier).find(
+            OpenIdIdentifier.identifier,
+            OpenIdIdentifier.account_id == account.id).order_by(
+                OpenIdIdentifier.account_id).order_by(
+                    OpenIdIdentifier.account_id).first()
         openid_response = FakeOpenIDResponse(
             'http://testopenid.dev/+id/%s' % openid_identifier,
             status=SUCCESS, email=email, full_name=account.displayname)
@@ -312,8 +445,10 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
         # the response and redirect to the starting_url specified in the
         # OpenID response.
         test_account = self.factory.makeAccount('Test account')
+
         class StubbedOpenIDCallbackViewLoggedIn(StubbedOpenIDCallbackView):
             account = test_account
+
         view, html = self._createViewWithResponse(
             test_account, response_status=FAILURE,
             response_msg='Server denied check_authentication',
@@ -332,11 +467,55 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
         with IAccountSet_getByOpenIDIdentifier_monkey_patched():
             self.assertRaises(
                 AssertionError,
-                getUtility(IAccountSet).getByOpenIDIdentifier, 'foo')
+                getUtility(IAccountSet).getByOpenIDIdentifier, u'foo')
 
     def assertLastWriteIsSet(self, request):
         last_write = ISession(request)['lp.dbpolicy']['last_write']
         self.assertTrue(datetime.utcnow() - last_write < timedelta(minutes=1))
+
+
+class TestOpenIDCallbackRedirects(TestCaseWithFactory):
+    layer = FunctionalLayer
+
+    APPLICATION_URL = 'http://example.com'
+    STARTING_URL = APPLICATION_URL + '/start'
+
+    def test_open_id_callback_redirect_from_get(self):
+        # If OpenID callback request was a GET, the starting_url is extracted
+        # correctly.
+        view = OpenIDCallbackView(context=None, request=None)
+        view.request = LaunchpadTestRequest(
+            SERVER_URL=self.APPLICATION_URL,
+            form={'starting_url': self.STARTING_URL})
+        view._redirect()
+        self.assertEquals(
+            httplib.TEMPORARY_REDIRECT, view.request.response.getStatus())
+        self.assertEquals(
+            view.request.response.getHeader('Location'), self.STARTING_URL)
+
+    def test_open_id_callback_redirect_from_post(self):
+        # If OpenID callback request was a POST, the starting_url is extracted
+        # correctly.
+        view = OpenIDCallbackView(context=None, request=None)
+        view.request = LaunchpadTestRequest(
+            SERVER_URL=self.APPLICATION_URL, form={'fake': 'value'},
+            QUERY_STRING='starting_url='+self.STARTING_URL)
+        view._redirect()
+        self.assertEquals(
+            httplib.TEMPORARY_REDIRECT, view.request.response.getStatus())
+        self.assertEquals(
+            view.request.response.getHeader('Location'), self.STARTING_URL)
+
+    def test_openid_callback_redirect_fallback(self):
+        # If OpenID callback request was a POST or GET with no form or query
+        # string values at all, then the application URL is used.
+        view = OpenIDCallbackView(context=None, request=None)
+        view.request = LaunchpadTestRequest(SERVER_URL=self.APPLICATION_URL)
+        view._redirect()
+        self.assertEquals(
+            httplib.TEMPORARY_REDIRECT, view.request.response.getStatus())
+        self.assertEquals(
+            view.request.response.getHeader('Location'), self.APPLICATION_URL)
 
 
 urls_redirected_to = []
@@ -380,7 +559,7 @@ class TestOpenIDReplayAttack(TestCaseWithFactory):
         fill_login_form_and_submit(browser, 'test@canonical.com', 'test')
         login_status = extract_text(
             find_tag_by_id(browser.contents, 'logincontrol'))
-        self.assertIn('Sample Person', login_status)
+        self.assertIn('name12', login_status)
 
         # Now we look up (in urls_redirected_to) the +openid-callback URL that
         # was used to complete the authentication and open it on a different
@@ -417,11 +596,13 @@ class FakeOpenIDRequest:
 
 
 class FakeOpenIDConsumer:
+
     def begin(self, url):
         return FakeOpenIDRequest()
 
 
 class StubbedOpenIDLogin(OpenIDLogin):
+
     def _getConsumer(self):
         return FakeOpenIDConsumer()
 

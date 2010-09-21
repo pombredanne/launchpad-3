@@ -3,12 +3,26 @@
 
 # pylint: disable-msg=E0211,E0213
 
-from zope.interface import Interface, Attribute
-from zope.schema import Bool, Choice, Int, List, Object, Text
-from lazr.enum import EnumeratedType, Item
+from lazr.enum import (
+    EnumeratedType,
+    Item,
+    )
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Bool,
+    Choice,
+    Int,
+    List,
+    Object,
+    Text,
+    )
 
 from canonical.launchpad import _
 from lp.translations.interfaces.pomsgid import IPOMsgID
+
 
 __metaclass__ = type
 
@@ -130,19 +144,19 @@ class IPOTMsgSet(Interface):
         an exception is raised.
         """
 
-    def getCurrentTranslationMessage(potemplate, language, variant=None):
+    def getCurrentTranslationMessage(potemplate, language):
         """Returns a TranslationMessage marked as being currently used.
 
         Diverged messages are preferred.
         """
 
-    def getImportedTranslationMessage(potemplate, language, variant=None):
+    def getImportedTranslationMessage(potemplate, language):
         """Returns a TranslationMessage as imported from the package.
 
         Diverged messages are preferred.
         """
 
-    def getSharedTranslationMessage(language, variant=None):
+    def getSharedTranslationMessage(language):
         """Returns a shared TranslationMessage."""
 
     def getLocalTranslationMessages(potemplate, language,

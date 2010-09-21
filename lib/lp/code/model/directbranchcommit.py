@@ -3,6 +3,8 @@
 
 """Commit files straight to bzr branch."""
 
+from __future__ import with_statement
+
 __metaclass__ = type
 __all__ = [
     'ConcurrentUpdateError',
@@ -14,11 +16,16 @@ import os.path
 
 from bzrlib.generate_ids import gen_file_id
 from bzrlib.revision import NULL_REVISION
-from bzrlib.transform import TransformPreview, ROOT_PARENT
+from bzrlib.transform import (
+    ROOT_PARENT,
+    TransformPreview,
+    )
 
 from canonical.launchpad.interfaces import IMasterObject
-
 from lp.codehosting.bzrutils import get_stacked_on_url
+from lp.services.mail.sendmail import format_address_for_person
+from lp.services.osutils import override_environ
+
 
 class ConcurrentUpdateError(Exception):
     """Bailout exception for concurrent updates.
@@ -188,8 +195,12 @@ class DirectBranchCommit:
             if rev_id == NULL_REVISION:
                 if list(self.transform_preview.iter_changes()) == []:
                     return
-            new_rev_id = self.transform_preview.commit(
-                self.bzrbranch, commit_message)
+            committer_id = format_address_for_person(self.committer)
+            # XXX: AaronBentley 2010-08-06 bug=614404: a bzr username is
+            # required to generate the revision-id.
+            with override_environ(BZR_EMAIL=committer_id):
+                new_rev_id = self.transform_preview.commit(
+                    self.bzrbranch, commit_message, committer=committer_id)
             IMasterObject(self.db_branch).branchChanged(
                 get_stacked_on_url(self.bzrbranch), new_rev_id,
                 self.db_branch.control_format, self.db_branch.branch_format,

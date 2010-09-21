@@ -4,8 +4,9 @@ In order to prepare the tests below some initialization is required.
     >>> from lp.archiveuploader.tests import (
     ...     datadir, getPolicy, mock_logger_quiet)
     >>> from canonical.database.sqlbase import commit
+    >>> from lp.soyuz.enums import ArchivePermissionType
     >>> from canonical.launchpad.interfaces import (
-    ...     ArchivePermissionType, IArchivePermissionSet, IPackagesetSet,
+    ...     IArchivePermissionSet, IPackagesetSet,
     ...     IPersonSet, ISourcePackageNameSet)
     >>> from canonical.testing import LaunchpadZopelessLayer
 
@@ -31,7 +32,7 @@ rights to all components from 'ubuntu-team' to 'mark':
 This time the upload will fail because the ACLs don't let
 "name16", the key owner, upload a package.
 
-    >>> bar_failed = NascentUpload(
+    >>> bar_failed = NascentUpload.from_changesfile_path(
     ...     datadir('suite/bar_1.0-1/bar_1.0-1_source.changes'),
     ...     insecure_policy, mock_logger_quiet)
 
@@ -39,8 +40,8 @@ This time the upload will fail because the ACLs don't let
     >>> bar_failed.is_rejected
     True
     >>> print bar_failed.rejection_message
-	The signer of this package is lacking the upload rights for the source
-	package, component or package set in question.
+    The signer of this package has no upload rights to this distribution's
+    primary archive.  Did you mean to upload to a PPA?
 
 
 We can grant selective, package set based upload permissions to the user
@@ -111,7 +112,7 @@ There are still no package sets that include 'bar'.
 
 Let's retry the upload.
 
-    >>> bar_failed = NascentUpload(
+    >>> bar_failed = NascentUpload.from_changesfile_path(
     ...     datadir('suite/bar_1.0-1/bar_1.0-1_source.changes'),
     ...     insecure_policy, mock_logger_quiet)
 
@@ -166,7 +167,7 @@ With the authorization above the upload should work again.
 
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser('uploader')
-    >>> bar2 = NascentUpload(
+    >>> bar2 = NascentUpload.from_changesfile_path(
     ...     datadir('suite/bar_1.0-1/bar_1.0-1_source.changes'),
     ...     insecure_policy, mock_logger_quiet)
     >>> bar2.process()

@@ -264,7 +264,7 @@ version: 2.7.0
 
 /* NAVIGATOR BOUNDING BOX */
 .yui-skin-sam .yui-calcontainer .yui-cal-nav {
-	font-family: bitstream vera sans, dejavu sans, verdana, sans-serif;
+	font-family: UbuntuBeta, Ubuntu, 'Bitstream Vera Sans', 'DejaVu Sans', Tahoma, sans-serif;
 	font-size:93%;
 	border:1px solid #808080;
 	left:50%;

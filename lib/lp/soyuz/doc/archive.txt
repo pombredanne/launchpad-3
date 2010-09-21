@@ -9,8 +9,9 @@ records to disk, including configuration and indexes.
     ...     IDistributionSet)
     >>> from lp.registry.interfaces.person import (
     ...     IPersonSet)
+    >>> from lp.soyuz.enums import ArchivePurpose, ArchiveStatus
     >>> from lp.soyuz.interfaces.archive import (
-    ...     ArchivePurpose, IArchiveSet, IArchive)
+    ...     IArchiveSet, IArchive)
 
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
     >>> cprov_archive = cprov.archive
@@ -184,7 +185,6 @@ It is only editable by someone with launchpad.Edit permissions:
     >>> print cprov_archive.status.name
     ACTIVE
 
-    >>> from lp.soyuz.interfaces.archive import ArchiveStatus
     >>> cprov_archive.status = ArchiveStatus.DELETING
     >>> print cprov_archive.status.name
     DELETING
@@ -300,7 +300,7 @@ This lookup also supports optional filters:
  * 'version': exact version string matching;
  * 'status': a item or a list of PackagePublishingStatus.
 
-    >>> from canonical.launchpad.interfaces import PackagePublishingStatus
+    >>> from lp.soyuz.enums import PackagePublishingStatus
 
     >>> active_status = [PackagePublishingStatus.PENDING,
     ...                  PackagePublishingStatus.PUBLISHED]
@@ -913,10 +913,8 @@ decreases.
 
     >>> cprov_archive.number_of_sources
     3
-    >>> superseded = cprov_archive.getPublishedSources(
+    >>> cprov_archive.getPublishedSources(
     ...     name='cdrkit')[0].supersede()
-    >>> from canonical.launchpad.ftests import syncUpdate
-    >>> syncUpdate(superseded)
 
     >>> cprov_archive.number_of_sources
     2
@@ -926,9 +924,8 @@ decreases.
 
     >>> cprov_archive.number_of_binaries
     3
-    >>> superseded = cprov_archive.getAllPublishedBinaries(
+    >>> cprov_archive.getAllPublishedBinaries(
     ...     name='mozilla-firefox')[0].supersede()
-    >>> syncUpdate(superseded)
 
     >>> cprov_archive.number_of_binaries
     2
@@ -941,7 +938,7 @@ source-package releases for the archive. By default, all releases will
 be returned, but you can also ask for releases with builds in a certain
 state.
 
-    >>> from lp.buildmaster.interfaces.buildbase import BuildStatus
+    >>> from lp.buildmaster.enums import BuildStatus
     >>> releases = cprov_archive.getSourcePackageReleases(
     ...     build_status=BuildStatus.FULLYBUILT)
     >>> for release in releases:
@@ -982,7 +979,6 @@ it continues to be considered 'available for deletion'.
 
     >>> login("celso.providelo@canonical.com")
     >>> removal_candidate.requestDeletion(cprov, 'go away !')
-    >>> syncUpdate(removal_candidate)
 
     >>> cprov_archive.getSourcesForDeletion(name='ice').count()
     1
@@ -1022,7 +1018,6 @@ binary is also DELETED.
 
     >>> for bin in removal_candidate.getPublishedBinaries():
     ...     bin.requestDeletion(cprov, 'go away !')
-    ...     syncUpdate(bin)
 
     >>> cprov_archive.getSourcesForDeletion(name='ice').count()
     0
@@ -1290,10 +1285,15 @@ Attempts to remove a non-existent dependency results in a AssertionError.
 The IArchive interface includes a convenience method for creating a
 package copy request:
 
+    >>> from lp.testing.factory import (
+    ...     remove_security_proxy_and_shout_at_engineer)
     >>> requestor = factory.makePerson(name='me-copy')
     >>> copy_target = factory.makeCopyArchiveLocation(
     ...     distribution=ubuntu, name='my-copy-archive', owner=requestor)
-    >>> pcr = ubuntu.main_archive.requestPackageCopy(copy_target, requestor)
+    >>> naked_copy_target = remove_security_proxy_and_shout_at_engineer(
+    ...     copy_target)
+    >>> pcr = ubuntu.main_archive.requestPackageCopy(
+    ...     naked_copy_target, requestor)
     >>> print pcr
     Package copy request
     source = primary/hoary/-/RELEASE
@@ -1306,7 +1306,7 @@ package copy request:
 The requestPackageCopy method can also take an optional suite name:
 
     >>> package_copy_request = ubuntu.main_archive.requestPackageCopy(
-    ...     copy_target, requestor, suite="hoary-updates");
+    ...     naked_copy_target, requestor, suite="hoary-updates");
     >>> print package_copy_request
     Package copy request
     source = primary/hoary/-/UPDATES
@@ -1417,9 +1417,9 @@ use to retrieve files from it.
 
 COPY archives use a URL format of <distro-name>-<archive-name>:
 
-    >>> print copy_target.archive.is_copy
+    >>> print naked_copy_target.archive.is_copy
     True
-    >>> print copy_target.archive.archive_url
+    >>> print naked_copy_target.archive.archive_url
     http://rebuild-test.internal/ubuntu-my-copy-archive/ubuntu
 
 If the archive is private, the url may be different as private PPAs

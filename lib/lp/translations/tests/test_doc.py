@@ -11,9 +11,15 @@ import unittest
 
 from canonical.launchpad.testing.pages import PageTestSuite
 from canonical.launchpad.testing.systemdocs import (
-    LayeredDocFileSuite, setUp, setGlobs, tearDown)
+    LayeredDocFileSuite,
+    setGlobs,
+    setUp,
+    tearDown,
+    )
 from canonical.testing import (
-    LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
+    LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
 
 
 here = os.path.dirname(os.path.realpath(__file__))
@@ -21,12 +27,8 @@ here = os.path.dirname(os.path.realpath(__file__))
 
 special = {
     'pofile-views.txt': LayeredDocFileSuite(
-            '../browser/tests/pofile-views.txt',
-            setUp=setUp, tearDown=tearDown, layer=LaunchpadFunctionalLayer
-            ),
-    'remove-upstream-translations-script.txt': LayeredDocFileSuite(
-        '../doc/remove-upstream-translations-script.txt',
-        setUp=setGlobs, stdout_logging=False, layer=None
+        '../browser/tests/pofile-views.txt',
+        setUp=setUp, tearDown=tearDown, layer=LaunchpadFunctionalLayer
         ),
     'poexport-queue.txt': LayeredDocFileSuite(
         '../doc/poexport-queue.txt',

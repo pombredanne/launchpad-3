@@ -9,11 +9,21 @@
     xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
     xmlns:lp="http://namespaces.canonical.com/lp"
     i18n_domain="launchpad">
-    <include
-        package=".browser"/>
+
+  <authorizations module=".security" />
+
+  <include package=".browser"/>
+
+  <publisher
+      name="bugs"
+      factory="lp.bugs.publisher.bugs_request_publication_factory"/>
+  <utility
+      component="lp.bugs.publisher.BugsLayer"
+      provides="zope.publisher.interfaces.browser.IDefaultBrowserLayer"
+      name="bugs" />
 
     <lp:help-folder
-        folder="help" type="canonical.launchpad.layers.BugsLayer" />
+        folder="help" type="lp.bugs.publisher.BugsLayer" />
 
     <class
         class="canonical.launchpad.database.BugActivity">
@@ -47,13 +57,10 @@
         handler="lp.bugs.subscribers.bugcreation.at_least_one_task"/>
     <subscriber
         for="canonical.launchpad.interfaces.IBug                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
-        handler="canonical.launchpad.mailnotification.notify_bug_added"/>
+        handler="lp.bugs.subscribers.bug.notify_bug_added"/>
     <subscriber
         for="canonical.launchpad.interfaces.IBug                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
         handler="canonical.launchpad.subscribers.karma.bug_created"/>
-    <subscriber
-        for="canonical.launchpad.interfaces.IBug                 lazr.lifecycle.interfaces.IObjectModifiedEvent"
-        handler="canonical.launchpad.mailnotification.notify_bug_modified"/>
     <subscriber
         for="canonical.launchpad.interfaces.IBug                 lazr.lifecycle.interfaces.IObjectModifiedEvent"
         handler="canonical.launchpad.subscribers.karma.bug_modified"/>
@@ -62,10 +69,10 @@
         handler="lp.bugs.subscribers.buglastupdated.update_bug_date_last_updated"/>
     <subscriber
         for="canonical.launchpad.interfaces.IBugAttachment                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
-        handler="canonical.launchpad.mailnotification.notify_bug_attachment_added"/>
+        handler="lp.bugs.subscribers.bug.notify_bug_attachment_added"/>
     <subscriber
         for="canonical.launchpad.interfaces.IBugAttachment                 lazr.lifecycle.interfaces.IObjectDeletedEvent"
-        handler="canonical.launchpad.mailnotification.notify_bug_attachment_removed"/>
+        handler="lp.bugs.subscribers.bug.notify_bug_attachment_removed"/>
     <subscriber
         for="canonical.launchpad.interfaces.IBugAttachment                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
         handler="lp.bugs.subscribers.buglastupdated.update_bug_date_last_updated"/>
@@ -86,7 +93,7 @@
         handler="canonical.launchpad.subscribers.karma.cve_added"/>
     <subscriber
         for="canonical.launchpad.interfaces.IBugMessage                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
-        handler="canonical.launchpad.mailnotification.notify_bug_comment_added"/>
+        handler="lp.bugs.subscribers.bug.notify_bug_comment_added"/>
     <subscriber
         for="canonical.launchpad.interfaces.IBugMessage                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
         handler="canonical.launchpad.subscribers.karma.bug_comment_added"/>
@@ -107,7 +114,7 @@
         handler="lp.bugs.subscribers.buglastupdated.update_bug_date_last_updated"/>
     <subscriber
         for="canonical.launchpad.interfaces.IBugSubscription                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
-        handler="canonical.launchpad.mailnotification.notify_bug_subscription_added"/>
+        handler="lp.bugs.subscribers.bug.notify_bug_subscription_added"/>
     <subscriber
         for="canonical.launchpad.interfaces.IBug                 lazr.lifecycle.interfaces.IObjectModifiedEvent"
         handler="lp.bugs.subscribers.bug.notify_bug_modified"/>
@@ -385,7 +392,8 @@
                 attributes="
                     destroySelf
                     ensurePersonForSelf
-                    linkPersonToSelf"
+                    linkPersonToSelf
+                    "
                 set_attributes="
                     aliases
                     baseurl
@@ -470,8 +478,7 @@
         <require
             permission="launchpad.Edit"
             attributes="
-                destroySelf"
-            set_attributes="fixed_in_revision_id"/>
+                destroySelf"/>
     </class>
     <adapter
         for="lp.bugs.interfaces.bugbranch.IBugBranch"
@@ -621,6 +628,7 @@
                     cve_links
                     duplicates
                     attachments
+                    attachments_unpopulated
                     questions
                     specifications
                     followup_subject
@@ -634,6 +642,7 @@
                     isSubscribedToDupes
                     getSubscribersFromDuplicates
                     getSubscriptionsFromDuplicates
+                    getSubscribersForPerson
                     indexed_messages
                     getAlsoNotifiedSubscribers
                     getBugWatch
@@ -649,7 +658,6 @@
                     getBugTasksByPackageName
                     users_affected_count
                     users_unaffected_count
-                    readonly_duplicateof
                     users_affected
                     users_unaffected
                     users_affected_count_with_dupes
@@ -700,7 +708,6 @@
                     date_last_updated
                     date_made_private
                     datecreated
-                    duplicateof
                     hits
                     hitstimestamp
                     name
@@ -879,7 +886,9 @@
                 attributes="
                     addComment
                     updateImportance
-                    updateStatus"
+                    updateStatus
+                    reset
+                    "
                 set_attributes="
                     last_error_type
                     lastchanged
@@ -887,7 +896,8 @@
                     needscheck
                     next_check
                     remote_importance
-                    remotestatus"/>
+                    remotestatus
+                    "/>
         </class>
 
         <!-- https://launchpad.net/bugs/98639 -->
@@ -927,7 +937,7 @@
         handler="lp.bugs.subscribers.buglastupdated.update_bug_date_last_updated"/>
     <subscriber
         for="canonical.launchpad.interfaces.IBugTask                 lazr.lifecycle.interfaces.IObjectModifiedEvent"
-        handler="canonical.launchpad.mailnotification.notify_bugtask_edited"/>
+        handler="lp.bugs.subscribers.bugtask.notify_bugtask_edited"/>
     <subscriber
         for="canonical.launchpad.interfaces.IBugTask                 lazr.lifecycle.interfaces.IObjectModifiedEvent"
         handler="canonical.launchpad.subscribers.karma.bugtask_modified"/>
@@ -981,4 +991,12 @@
     <class class="lp.bugs.model.bug.FileBugData">
         <allow interface="lp.bugs.interfaces.bug.IFileBugData" />
     </class>
+
+  <class class="lp.bugs.mail.bugnotificationrecipients.BugNotificationRecipientReason">
+    <allow attributes="
+        bug
+        getReason
+        mail_header
+        recipient"/>
+  </class>
 </configure>

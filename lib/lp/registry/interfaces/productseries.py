@@ -15,40 +15,67 @@ __all__ = [
     'NoSuchProductSeries',
     ]
 
-from zope.schema import Bool, Choice, Datetime, Int, TextLine
-from zope.interface import Interface, Attribute
+from lazr.restful.declarations import (
+    export_as_webservice_entry,
+    export_factory_operation,
+    export_operation_as,
+    export_read_operation,
+    exported,
+    operation_parameters,
+    rename_parameters_as,
+    )
+from lazr.restful.fields import (
+    CollectionField,
+    Reference,
+    ReferenceChoice,
+    )
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Bool,
+    Choice,
+    Datetime,
+    Int,
+    TextLine,
+    )
 
-from canonical.launchpad.fields import (
-    ContentNameField, ParticipatingPersonChoice, Title)
-from lp.registry.interfaces.structuralsubscription import (
-    IStructuralSubscriptionTarget)
-from lp.code.interfaces.branch import IBranch
-from lp.bugs.interfaces.bugtarget import IBugTarget, IHasOfficialBugTags
-from lp.registry.interfaces.series import ISeriesMixin, SeriesStatus
+from canonical.launchpad import _
 from canonical.launchpad.interfaces.launchpad import IHasAppointedDriver
-from lp.registry.interfaces.role import IHasOwner
-from lp.registry.interfaces.milestone import (
-    IHasMilestones, IMilestone)
-from lp.registry.interfaces.productrelease import IProductRelease
-from lp.blueprints.interfaces.specificationtarget import (
-    ISpecificationGoal)
-from lp.translations.interfaces.potemplate import IHasTranslationTemplates
-from lp.translations.interfaces.translations import (
-    TranslationsBranchImportMode)
 from canonical.launchpad.interfaces.validation import validate_url
 from canonical.launchpad.validators import LaunchpadValidationError
-
 from canonical.launchpad.validators.name import name_validator
-from canonical.launchpad.webapp.interfaces import NameLookupFailed
 from canonical.launchpad.webapp.url import urlparse
-from canonical.launchpad import _
-
-from lazr.restful.fields import CollectionField, Reference, ReferenceChoice
-
-from lazr.restful.declarations import (
-    export_as_webservice_entry, export_factory_operation, export_operation_as,
-    export_read_operation, exported, operation_parameters,
-    rename_parameters_as)
+from lp.app.errors import NameLookupFailed
+from lp.blueprints.interfaces.specificationtarget import ISpecificationGoal
+from lp.bugs.interfaces.bugtarget import (
+    IBugTarget,
+    IHasOfficialBugTags,
+    )
+from lp.code.interfaces.branch import IBranch
+from lp.registry.interfaces.milestone import (
+    IHasMilestones,
+    IMilestone,
+    )
+from lp.registry.interfaces.productrelease import IProductRelease
+from lp.registry.interfaces.role import IHasOwner
+from lp.registry.interfaces.series import (
+    ISeriesMixin,
+    SeriesStatus,
+    )
+from lp.registry.interfaces.structuralsubscription import (
+    IStructuralSubscriptionTarget,
+    )
+from lp.services.fields import (
+    ContentNameField,
+    PersonChoice,
+    Title,
+    )
+from lp.translations.interfaces.potemplate import IHasTranslationTemplates
+from lp.translations.interfaces.translations import (
+    TranslationsBranchImportMode,
+    )
 
 
 class ProductSeriesNameField(ContentNameField):
@@ -129,12 +156,12 @@ class IProductSeriesPublic(
         exported_as='date_created')
 
     owner = exported(
-        ParticipatingPersonChoice(
+        PersonChoice(
             title=_('Owner'), required=True, vocabulary='ValidOwner',
             description=_('Project owner, either a valid Person or Team')))
 
     driver = exported(
-        ParticipatingPersonChoice(
+        PersonChoice(
             title=_("Release manager"),
             description=_(
                 "The person or team responsible for decisions about features "
@@ -281,7 +308,10 @@ class IProductSeriesPublic(
     @export_read_operation()
     @export_operation_as('get_timeline')
     def getTimeline(include_inactive):
-        """Return basic timeline data useful for creating a diagram."""
+        """Return basic timeline data useful for creating a diagram.
+
+        The number of milestones returned is limited.
+        """
 
 
 class IProductSeries(IProductSeriesEditRestricted, IProductSeriesPublic,

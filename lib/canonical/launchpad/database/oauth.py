@@ -10,46 +10,64 @@ __all__ = [
     'OAuthRequestToken',
     'OAuthRequestTokenSet']
 
-import pytz
-from datetime import datetime, timedelta
+from datetime import (
+    datetime,
+    timedelta,
+    )
 
+import pytz
+from sqlobject import (
+    BoolCol,
+    ForeignKey,
+    StringCol,
+    )
+from storm.expr import And
 from zope.component import getUtility
 from zope.interface import implements
-
-from sqlobject import BoolCol, ForeignKey, StringCol
-from storm.expr import And
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
-
 from canonical.launchpad.components.tokens import (
-    create_token, create_unique_token_for_table)
-
+    create_token,
+    create_unique_token_for_table,
+    )
+from canonical.launchpad.interfaces import (
+    ClockSkew,
+    IOAuthAccessToken,
+    IOAuthConsumer,
+    IOAuthConsumerSet,
+    IOAuthNonce,
+    IOAuthRequestToken,
+    IOAuthRequestTokenSet,
+    NonceAlreadyUsed,
+    TimestampOrderingError,
+    )
+from canonical.launchpad.webapp.interfaces import (
+    AccessLevel,
+    IStoreSelector,
+    MAIN_STORE,
+    MASTER_FLAVOR,
+    OAuthPermission,
+    )
 from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.distributionsourcepackage import (
+    IDistributionSourcePackage,
+    )
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
-from lp.registry.interfaces.distributionsourcepackage import (
-    IDistributionSourcePackage)
-from canonical.launchpad.interfaces import (
-    IOAuthAccessToken, IOAuthConsumer, IOAuthConsumerSet, IOAuthNonce,
-    IOAuthRequestToken, IOAuthRequestTokenSet, NonceAlreadyUsed,
-    TimestampOrderingError, ClockSkew)
-from canonical.launchpad.webapp.interfaces import (
-    AccessLevel, OAuthPermission, IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
-
 
 # How many hours should a request token be valid for?
 REQUEST_TOKEN_VALIDITY = 12
-# The OAuth Core 1.0 spec (http://oauth.net/core/1.0/#nonce) says that a
-# timestamp "MUST be equal or greater than the timestamp used in previous
-# requests," but this is likely to cause problems if the client does request
-# pipelining, so we use a time window (relative to the timestamp of the
-# existing OAuthNonce) to check if the timestamp can is acceptable. As
-# suggested by Robert, we use a window which is at least twice the size of our
-# hard time out. This is a safe bet since no requests should take more than
-# one hard time out.
+# The OAuth Core 1.0 spec (http://oauth.net/core/1.0/#nonce) says that
+# a timestamp "MUST be equal or greater than the timestamp used in
+# previous requests," but this is likely to cause problems if the
+# client does request pipelining, so we use a time window (relative to
+# the timestamp of the existing OAuthNonce) to check if the timestamp
+# can is acceptable. As suggested by Robert, we use a window which is
+# at least twice the size of our hard time out. This is a safe bet
+# since no requests should take more than one hard time out.
 TIMESTAMP_ACCEPTANCE_WINDOW = 60 # seconds
 # If the timestamp is far in the future because of a client's clock skew,
 # it will effectively invalidate the authentication tokens when the clock is
@@ -58,6 +76,7 @@ TIMESTAMP_ACCEPTANCE_WINDOW = 60 # seconds
 # concept of "now".  We also reject timestamps that are too old by the same
 # amount.
 TIMESTAMP_SKEW_WINDOW = 60*60 # seconds, +/-
+
 
 class OAuthBase(SQLBase):
     """Base class for all OAuth database classes."""
@@ -74,6 +93,7 @@ class OAuthBase(SQLBase):
         return getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
 
     getStore = _get_store
+
 
 class OAuthConsumer(OAuthBase):
     """See `IOAuthConsumer`."""
@@ -305,6 +325,7 @@ def create_token_key_and_secret(table):
     The key will have a length of 20 and we'll make sure it's not yet in the
     given table.  The secret will have a length of 80.
     """
+
     key_length = 20
     key = create_unique_token_for_table(key_length, getattr(table, "key"))
     secret_length = 80

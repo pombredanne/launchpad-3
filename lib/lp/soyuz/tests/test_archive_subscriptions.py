@@ -1,16 +1,20 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test Archive features."""
 
-import unittest
+from __future__ import with_statement
 
 from zope.security.interfaces import Unauthorized
 
 from canonical.testing import DatabaseFunctionalLayer
-
 from lp.registry.interfaces.person import PersonVisibility
-from lp.testing import login_person, TestCaseWithFactory
+from lp.testing import (
+    celebrity_logged_in,
+    login_person,
+    TestCaseWithFactory,
+    )
+from lp.testing.mail_helpers import pop_notifications
 
 
 class TestArchiveSubscriptions(TestCaseWithFactory):
@@ -36,7 +40,6 @@ class TestArchiveSubscriptions(TestCaseWithFactory):
         # a private team's PPA after they have been given a subscription.
         # This is essentially allowing access for the subscriber to see
         # the private team.
-
         def get_name():
             return self.archive.owner.name
 
@@ -52,6 +55,26 @@ class TestArchiveSubscriptions(TestCaseWithFactory):
         login_person(self.subscriber)
         self.assertEqual(self.archive.owner.name, "subscribertest")
 
+    def test_new_subscription_sends_email(self):
+        # Creating a new subscription sends an email to all members
+        # of the person or team subscribed.
+        self.assertEqual(0, len(pop_notifications()))
 
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
+        self.archive.newSubscription(
+            self.subscriber, registrant=self.archive.owner)
+
+        notifications = pop_notifications()
+        self.assertEqual(1, len(notifications))
+        self.assertEqual(
+            self.subscriber.preferredemail.email,
+            notifications[0]['to'])
+
+    def test_new_commercial_subscription_no_email(self):
+        # As per bug 611568, an email is not sent for commercial PPAs.
+        with celebrity_logged_in('commercial_admin'):
+            self.archive.commercial = True
+
+        self.archive.newSubscription(
+            self.subscriber, registrant=self.archive.owner)
+
+        self.assertEqual(0, len(pop_notifications()))

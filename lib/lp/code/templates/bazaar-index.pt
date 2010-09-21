@@ -54,7 +54,7 @@
       </p>
 
       <div id="project-cloud-preview" tal:content="cache:public,6 hours">
-        <h2>Projects with active branches</h2>
+        <h2>Most active projects in the last month</h2>
         <a tal:repeat="product view/short_product_tag_cloud"
            tal:attributes="href product/url;
                            class product/html_class;
@@ -125,10 +125,6 @@
             <strong tal:content="view/import_count">123</strong>
             imported branches
           </a>
-        </div>
-        <div>
-          <strong tal:content="view/branches_with_bugs_count">12</strong>
-          branches associated with bug reports
         </div>
         <div>
           Launchpad uses <a href="http://bazaar.canonical.com/">Bazaar</a>

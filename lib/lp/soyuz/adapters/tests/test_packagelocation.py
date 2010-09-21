@@ -7,12 +7,16 @@ import unittest
 
 from zope.component import getUtility
 
+from canonical.testing import LaunchpadZopelessLayer
 from lp.soyuz.adapters.packagelocation import (
-    PackageLocationError, build_package_location)
-from lp.soyuz.interfaces.archive import ArchivePurpose
+    build_package_location,
+    PackageLocationError,
+    )
+from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.testing import TestCaseWithFactory
-from canonical.testing import LaunchpadZopelessLayer
+from lp.testing.factory import remove_security_proxy_and_shout_at_engineer
+
 
 class TestPackageLocation(TestCaseWithFactory):
     """Test the `PackageLocation` class."""
@@ -34,7 +38,8 @@ class TestPackageLocation(TestCaseWithFactory):
         returned_location = self.factory.makeCopyArchiveLocation(
             distribution=ubuntu, name='now-comes-the-mystery',
             owner=self.factory.makePerson(name='mysteryman'))
-        copy_archive = returned_location.archive
+        copy_archive = remove_security_proxy_and_shout_at_engineer(
+            returned_location).archive
 
         # Now use the created copy archive to test the build_package_location
         # helper (called via getPackageLocation):

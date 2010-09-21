@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for archive."""
@@ -27,82 +27,130 @@ __all__ = [
     ]
 
 
-from datetime import datetime, timedelta
-import pytz
+from datetime import (
+    datetime,
+    timedelta,
+    )
 from urlparse import urlparse
 
+import pytz
+from sqlobject import SQLObjectNotFound
+from storm.zope.interfaces import IResultSet
 from zope.app.form.browser import TextAreaWidget
 from zope.component import getUtility
 from zope.formlib import form
-from zope.interface import implements, Interface
+from zope.interface import (
+    implements,
+    Interface,
+    )
+from zope.schema import (
+    Choice,
+    List,
+    TextLine,
+    )
+from zope.schema.interfaces import IContextSourceBinder
+from zope.schema.vocabulary import (
+    SimpleTerm,
+    SimpleVocabulary,
+    )
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
-from zope.schema import Choice, List, TextLine
-from zope.schema.interfaces import IContextSourceBinder
-from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
-from storm.zope.interfaces import IResultSet
 
-from sqlobject import SQLObjectNotFound
-
-from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
+from canonical.launchpad.browser.librarian import FileNavigationMixin
 from canonical.launchpad.components.tokens import create_token
 from canonical.launchpad.helpers import english_list
-from canonical.lazr.utils import smartquote
-from lp.buildmaster.interfaces.buildbase import BuildStatus
-from lp.services.browser_helpers import get_user_agent_distroseries
-from lp.services.worlddata.interfaces.country import ICountrySet
-from lp.soyuz.browser.build import BuildRecordsView
-from lp.soyuz.browser.sourceslist import (
-    SourcesListEntries, SourcesListEntriesView)
-from canonical.launchpad.browser.librarian import FileNavigationMixin
-from lp.soyuz.adapters.archivedependencies import (
-    default_component_dependency_name, default_pocket_dependency)
-from lp.soyuz.adapters.archivesourcepublication import (
-    ArchiveSourcePublications)
-from lp.soyuz.interfaces.archive import (
-    ArchivePurpose, ArchiveStatus, CannotCopy, IArchive,
-    IArchiveEditDependenciesForm, IArchiveSet, IPPAActivateForm, NoSuchPPA)
-from lp.soyuz.interfaces.archivepermission import (
-    ArchivePermissionType, IArchivePermissionSet)
-from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
-from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
-from lp.soyuz.interfaces.binarypackagebuild import (
-    BuildSetStatus, IBinaryPackageBuildSet)
-from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
-from lp.soyuz.interfaces.component import IComponentSet
-from lp.registry.interfaces.series import SeriesStatus
-from canonical.launchpad.interfaces.launchpad import (
-    ILaunchpadCelebrities, NotFoundError)
-from lp.soyuz.interfaces.packagecopyrequest import (
-    IPackageCopyRequestSet)
-from lp.soyuz.interfaces.packageset import IPackagesetSet
-from lp.registry.interfaces.person import IPersonSet, PersonVisibility
-from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.soyuz.interfaces.processor import IProcessorFamilySet
-from lp.soyuz.interfaces.publishing import (
-    active_publishing_status, inactive_publishing_status, IPublishingSet,
-    PackagePublishingStatus)
-from lp.registry.interfaces.sourcepackagename import (
-    ISourcePackageNameSet)
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp import (
-    action, canonical_url, custom_widget, enabled_with_permission,
-    stepthrough, LaunchpadEditFormView,
-    LaunchpadFormView, LaunchpadView, Link, Navigation)
-from lp.soyuz.scripts.packagecopier import do_copy
+    action,
+    canonical_url,
+    custom_widget,
+    enabled_with_permission,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    LaunchpadView,
+    Link,
+    Navigation,
+    stepthrough,
+    )
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.badge import HasBadgeBase
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
-from canonical.launchpad.webapp.menu import structured, NavigationMenu
-from lp.app.browser.stringformatter import FormattersAPI
+from canonical.launchpad.webapp.menu import (
+    NavigationMenu,
+    structured,
+    )
+from canonical.lazr.utils import smartquote
 from canonical.widgets import (
-    LabeledMultiCheckBoxWidget, PlainMultiCheckBoxWidget)
+    LabeledMultiCheckBoxWidget,
+    PlainMultiCheckBoxWidget,
+    )
 from canonical.widgets.itemswidgets import (
-    LaunchpadDropdownWidget, LaunchpadRadioWidget)
+    LaunchpadDropdownWidget,
+    LaunchpadRadioWidget,
+    )
 from canonical.widgets.lazrjs import (
-    TextAreaEditorWidget, TextLineEditorWidget)
+    TextAreaEditorWidget,
+    TextLineEditorWidget,
+    )
 from canonical.widgets.textwidgets import StrippedTextWidget
+from lp.app.browser.stringformatter import FormattersAPI
+from lp.app.errors import NotFoundError
+from lp.buildmaster.enums import BuildStatus
+from lp.registry.interfaces.person import (
+    IPersonSet,
+    PersonVisibility,
+    )
+from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.interfaces.series import SeriesStatus
+from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.services.browser_helpers import get_user_agent_distroseries
+from lp.services.propertycache import cachedproperty
+from lp.services.worlddata.interfaces.country import ICountrySet
+from lp.soyuz.adapters.archivedependencies import (
+    default_component_dependency_name,
+    default_pocket_dependency,
+    )
+from lp.soyuz.adapters.archivesourcepublication import (
+    ArchiveSourcePublications,
+    )
+from lp.soyuz.browser.build import BuildRecordsView
+from lp.soyuz.browser.sourceslist import (
+    SourcesListEntries,
+    SourcesListEntriesView,
+    )
+from lp.soyuz.enums import (
+    ArchivePermissionType,
+    ArchivePurpose,
+    ArchiveStatus,
+    PackagePublishingStatus,
+    )
+from lp.soyuz.interfaces.archive import (
+    CannotCopy,
+    IArchive,
+    IArchiveEditDependenciesForm,
+    IArchiveSet,
+    IPPAActivateForm,
+    NoSuchPPA,
+    )
+from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
+from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
+from lp.soyuz.interfaces.binarypackagebuild import (
+    BuildSetStatus,
+    IBinaryPackageBuildSet,
+    )
+from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
+from lp.soyuz.interfaces.component import IComponentSet
+from lp.soyuz.interfaces.packagecopyrequest import IPackageCopyRequestSet
+from lp.soyuz.interfaces.packageset import IPackagesetSet
+from lp.soyuz.interfaces.processor import IProcessorFamilySet
+from lp.soyuz.interfaces.publishing import (
+    active_publishing_status,
+    inactive_publishing_status,
+    IPublishingSet,
+    )
+from lp.soyuz.scripts.packagecopier import do_copy
 
 
 class ArchiveBadges(HasBadgeBase):
@@ -292,6 +340,7 @@ class ArchiveNavigation(Navigation, FileNavigationMixin):
         user.item
         where item is a component or a source package name,
         """
+
         def get_url_param(param_name):
             """Return the URL parameter with the given name or None."""
             param_seq = self.request.query_string_params.get(param_name)
@@ -371,6 +420,7 @@ class ArchiveNavigation(Navigation, FileNavigationMixin):
 
 
 class ArchiveMenuMixin:
+
     def ppa(self):
         text = 'View PPA'
         return Link(canonical_url(self.context), text, icon='info')
@@ -522,6 +572,7 @@ class ArchiveViewBase(LaunchpadView):
     @cachedproperty
     def repository_usage(self):
         """Return a dictionary with usage details of this repository."""
+
         def package_plural(control):
             if control == 1:
                 return 'package'
@@ -628,7 +679,6 @@ class ArchiveViewBase(LaunchpadView):
         copy_requests = getUtility(
             IPackageCopyRequestSet).getByTargetArchive(self.context)
         return list(copy_requests)
-
 
     @property
     def disabled_warning_message(self):
@@ -737,7 +787,7 @@ class ArchiveSourcePackageListViewBase(ArchiveViewBase, LaunchpadFormView):
         # If the request included a filter, try to use it - if it's
         # invalid we use the default instead.
         vocab = self.widgets[filter_name].vocabulary
-        if vocab.by_token.has_key(requested_filter[0]):
+        if requested_filter[0] in vocab.by_token:
             return vocab.getTermByToken(requested_filter[0]).value
         else:
             return getattr(self, default_filter_attr)
@@ -807,7 +857,6 @@ class ArchiveView(ArchiveSourcePackageListViewBase):
     Implements useful actions and collects useful sets for the page template.
     """
 
-    __used_for__ = IArchive
     implements(IArchiveIndexActionsMenu)
 
     def initialize(self):
@@ -898,6 +947,7 @@ class ArchiveView(ArchiveSourcePackageListViewBase):
             'NEEDSBUILD': 'Waiting to build',
             'FAILEDTOBUILD': 'Failed to build:',
             'BUILDING': 'Currently building',
+            'UPLOADING': 'Currently uploading',
             }
 
         now = datetime.now(tz=pytz.UTC)
@@ -918,7 +968,7 @@ class ArchiveView(ArchiveSourcePackageListViewBase):
                 'status': status_names[current_status.title],
                 'status_class': current_status.title,
                 'duration': duration,
-                'builds': builds
+                'builds': builds,
                 })
 
         return latest_updates_list
@@ -1159,6 +1209,7 @@ class ArchivePackageDeletionView(ArchiveSourceSelectionFormView):
             structured(notification, comment=comment))
 
         self.setNextURL()
+
 
 class DestinationArchiveDropdownWidget(LaunchpadDropdownWidget):
     """Redefining default display value as 'This PPA'."""
@@ -1809,8 +1860,7 @@ class ArchiveActivateView(LaunchpadFormView):
     def is_private_team(self):
         """Is the person a private team?
 
-        :return: True only if visibility is PRIVATE.  False is returned when
-        the visibility is PUBLIC and PRIVATE_MEMBERSHIP.
+        :return: True only if visibility is PRIVATE.
         :rtype: bool
         """
         return self.context.visibility == PersonVisibility.PRIVATE
@@ -1818,8 +1868,6 @@ class ArchiveActivateView(LaunchpadFormView):
 
 class ArchiveBuildsView(ArchiveViewBase, BuildRecordsView):
     """Build Records View for IArchive."""
-
-    __used_for__ = IHasBuildRecords
 
     # The archive builds view presents all package builds (binary
     # or source package recipe builds).
@@ -1861,6 +1909,7 @@ class BaseArchiveEditView(LaunchpadEditFormView, ArchiveViewBase):
         """Default save validation does nothing."""
         pass
 
+
 class ArchiveEditView(BaseArchiveEditView):
 
     field_names = ['displayname', 'description', 'enabled', 'publish']
@@ -1871,8 +1920,8 @@ class ArchiveEditView(BaseArchiveEditView):
 class ArchiveAdminView(BaseArchiveEditView):
 
     field_names = ['enabled', 'private', 'commercial', 'require_virtualized',
-                   'buildd_secret', 'authorized_size', 'relative_build_score',
-                   'external_dependencies']
+                   'build_debug_symbols', 'buildd_secret', 'authorized_size',
+                   'relative_build_score', 'external_dependencies']
 
     custom_widget('external_dependencies', TextAreaWidget, height=3)
 
@@ -1881,7 +1930,7 @@ class ArchiveAdminView(BaseArchiveEditView):
     def updateContextFromData(self, data):
         """Update context from form data.
 
-        If the user did not specify a buildd secret but marked the 
+        If the user did not specify a buildd secret but marked the
         archive as private, generate a secret for them.
         """
         if data['private'] and data['buildd_secret'] is None:
@@ -1917,7 +1966,7 @@ class ArchiveAdminView(BaseArchiveEditView):
                 'Do not specify for non-private archives')
 
         # Check the external_dependencies field.
-        ext_deps =  data.get('external_dependencies')
+        ext_deps = data.get('external_dependencies')
         if ext_deps is not None:
             errors = self.validate_external_dependencies(ext_deps)
             if len(errors) != 0:
@@ -1958,8 +2007,7 @@ class ArchiveAdminView(BaseArchiveEditView):
     def owner_is_private_team(self):
         """Is the owner a private team?
 
-        :return: True only if visibility is PRIVATE.  False is returned when
-        the visibility is PUBLIC and PRIVATE_MEMBERSHIP.
+        :return: True only if visibility is PRIVATE.
         :rtype: bool
         """
         return self.context.owner.visibility == PersonVisibility.PRIVATE
@@ -2028,4 +2076,3 @@ class ArchiveDeleteView(LaunchpadFormView):
         self.request.response.addInfoNotification(
             "Deletion of '%s' has been requested and the repository will be "
             "removed shortly." % self.context.title)
-

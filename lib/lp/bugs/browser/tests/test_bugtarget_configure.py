@@ -5,11 +5,13 @@
 
 __metaclass__ = type
 
-import unittest
-
-from lp.testing import login_person, TestCaseWithFactory
-from lp.testing.views import create_initialized_view
 from canonical.testing import DatabaseFunctionalLayer
+from lp.app.enums import ServiceUsage
+from lp.testing import (
+    login_person,
+    TestCaseWithFactory,
+    )
+from lp.testing.views import create_initialized_view
 
 
 class TestProductBugConfigurationView(TestCaseWithFactory):
@@ -58,7 +60,9 @@ class TestProductBugConfigurationView(TestCaseWithFactory):
         self.assertEqual([], view.errors)
         self.assertEqual(self.owner, self.product.bug_supervisor)
         self.assertEqual(self.owner, self.product.security_contact)
-        self.assertTrue(self.product.official_malone)
+        self.assertEqual(
+            ServiceUsage.LAUNCHPAD,
+            self.product.bug_tracking_usage)
         self.assertTrue(self.product.enable_bug_expiration)
         self.assertEqual('sf-boing', self.product.remote_product)
         self.assertEqual('guidelines', self.product.bug_reporting_guidelines)
@@ -146,7 +150,3 @@ class TestProductBugConfigurationView(TestCaseWithFactory):
         self.assertEqual([], view.errors)
         self.assertEqual(
             'new guidelines', self.product.bug_reporting_guidelines)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

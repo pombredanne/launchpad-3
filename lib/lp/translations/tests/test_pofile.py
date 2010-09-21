@@ -1,29 +1,41 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=C0102
 
 __metaclass__ = type
 
-from datetime import datetime, timedelta
-import pytz
+from datetime import (
+    datetime,
+    timedelta,
+    )
 from textwrap import dedent
-from unittest import TestLoader
 
-from zope.component import getAdapter, getUtility
+import pytz
+from zope.component import (
+    getAdapter,
+    getUtility,
+    )
 from zope.interface.verify import verifyObject
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.launchpad.webapp.publisher import canonical_url
+from canonical.testing import (
+    LaunchpadZopelessLayer,
+    ZopelessDatabaseLayer,
+    )
+from lp.app.enums import ServiceUsage
+from lp.testing import TestCaseWithFactory
 from lp.translations.interfaces.pofile import IPOFileSet
 from lp.translations.interfaces.translatablemessage import (
-    ITranslatableMessage)
-from lp.translations.interfaces.translationmessage import (
-    TranslationValidationStatus)
+    ITranslatableMessage,
+    )
 from lp.translations.interfaces.translationcommonformat import (
-    ITranslationFileData)
-from lp.testing import TestCaseWithFactory
-from canonical.testing import LaunchpadZopelessLayer, ZopelessDatabaseLayer
-from canonical.launchpad.webapp.publisher import canonical_url
+    ITranslationFileData,
+    )
+from lp.translations.interfaces.translationmessage import (
+    TranslationValidationStatus,
+    )
 
 
 class TestTranslationSharedPOFile(TestCaseWithFactory):
@@ -35,12 +47,13 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
         # Create a product with two series and a shared POTemplate
         # in different series ('devel' and 'stable').
         super(TestTranslationSharedPOFile, self).setUp()
-        self.foo = self.factory.makeProduct()
+        self.foo = self.factory.makeProduct(
+            name='foo',
+            translations_usage=ServiceUsage.LAUNCHPAD)
         self.foo_devel = self.factory.makeProductSeries(
             name='devel', product=self.foo)
         self.foo_stable = self.factory.makeProductSeries(
             name='stable', product=self.foo)
-        self.foo.official_rosetta = True
 
         # POTemplate is 'shared' if it has the same name ('messages').
         self.devel_potemplate = self.factory.makePOTemplate(
@@ -58,6 +71,16 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
         # and add it to only one of the POTemplates.
         self.potmsgset = self.factory.makePOTMsgSet(self.devel_potemplate)
         self.potmsgset.setSequence(self.devel_potemplate, 1)
+
+    def test_POFile_canonical_url(self):
+        # Test the canonical_url of the POFile.
+        self.assertEqual(
+            'http://translations.launchpad.dev/foo/devel/+pots/messages/sr',
+            canonical_url(self.devel_sr_pofile))
+        self.assertEqual(
+            ('http://translations.launchpad.dev/'
+            'foo/devel/+pots/messages/sr/+details'),
+            canonical_url(self.devel_sr_pofile, view_name="+details"))
 
     def test_findPOTMsgSetsContaining(self):
         # Test that search works correctly.
@@ -164,10 +187,13 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
         self.assertEquals(found_translations, [translation])
 
         # Adding a translation for same POTMsgSet, but to a different
-        # POFile (i.e. language or variant) will not add the translation
+        # POFile (different language) will not add the translation
         # to the list of submitter's translations for *former* POFile.
+        serbian_latin = self.factory.makeLanguage(
+            'sr@latin', 'Serbian Latin')
+
         self.devel_sr_latin_pofile = self.factory.makePOFile(
-            'sr', variant=u'latin', potemplate=self.devel_potemplate)
+            'sr@latin', potemplate=self.devel_potemplate)
         self.factory.makeTranslationMessage(
             pofile=self.devel_sr_latin_pofile, potmsgset=potmsgset,
             translations=[u"Yet another translation"],
@@ -856,12 +882,12 @@ class TestSharedPOFileCreation(TestCaseWithFactory):
         # Create a product with two series and a shared POTemplate
         # in different series ('devel' and 'stable').
         super(TestSharedPOFileCreation, self).setUp()
-        self.foo = self.factory.makeProduct()
+        self.foo = self.factory.makeProduct(
+            translations_usage=ServiceUsage.LAUNCHPAD)
         self.foo_devel = self.factory.makeProductSeries(
             name='devel', product=self.foo)
         self.foo_stable = self.factory.makeProductSeries(
             name='stable', product=self.foo)
-        self.foo.official_rosetta = True
 
     def test_pofile_creation_shared(self):
         # When a pofile is created in a POTemplate it is also created in
@@ -933,8 +959,7 @@ class TestTranslationCredits(TestCaseWithFactory):
                 imported_credits_text,
                 "\n  ".join(["%s %s" % (person.displayname,
                                         canonical_url(person))
-                             for person in self.pofile.contributors])
-            )
+                             for person in self.pofile.contributors]))
 
     def test_prepareTranslationCredits_extending(self):
         # This test ensures that continuous updates to the translation credits
@@ -987,12 +1012,12 @@ class TestTranslationPOFilePOTMsgSetOrdering(TestCaseWithFactory):
         # Create a product with two series and a shared POTemplate
         # in different series ('devel' and 'stable').
         super(TestTranslationPOFilePOTMsgSetOrdering, self).setUp()
-        self.foo = self.factory.makeProduct()
+        self.foo = self.factory.makeProduct(
+            translations_usage=ServiceUsage.LAUNCHPAD)
         self.foo_devel = self.factory.makeProductSeries(
             name='devel', product=self.foo)
         self.foo_stable = self.factory.makeProductSeries(
             name='stable', product=self.foo)
-        self.foo.official_rosetta = True
 
         # POTemplate is 'shared' if it has the same name ('messages').
         self.devel_potemplate = self.factory.makePOTemplate(
@@ -1266,8 +1291,8 @@ class TestPOFileSet(TestCaseWithFactory):
         # We create a product with two series, and attach
         # a POTemplate and Serbian POFile to each, making
         # sure they share translations (potemplates have the same name).
-        product = self.factory.makeProduct()
-        product.official_rosetta = True
+        product = self.factory.makeProduct(
+            translations_usage=ServiceUsage.LAUNCHPAD)
         series1 = self.factory.makeProductSeries(product=product,
                                                  name='one')
         series2 = self.factory.makeProductSeries(product=product,
@@ -1302,8 +1327,8 @@ class TestPOFileSet(TestCaseWithFactory):
         # This is a test for bug #414832 which caused sharing POFiles
         # of the touched POFile not to be returned if they had
         # IDs smaller than the touched POFile.
-        product = self.factory.makeProduct()
-        product.official_rosetta = True
+        product = self.factory.makeProduct(
+            translations_usage=ServiceUsage.LAUNCHPAD)
         series1 = self.factory.makeProductSeries(product=product,
                                                  name='one')
         series2 = self.factory.makeProductSeries(product=product,
@@ -1335,7 +1360,7 @@ class TestPOFileSet(TestCaseWithFactory):
         # POFile to each, making sure they share translations
         # (potemplates have the same name).
         distro = self.factory.makeDistribution()
-        distro.official_rosetta = True
+        distro.translations_usage = ServiceUsage.LAUNCHPAD
         series1 = self.factory.makeDistroRelease(distribution=distro,
                                                  name='one')
         sourcepackagename = self.factory.makeSourcePackageName()
@@ -1373,9 +1398,9 @@ class TestPOFileSet(TestCaseWithFactory):
         # Make sure POFiles which are in different products
         # are not returned even though they have the same potemplate name.
         series1 = self.factory.makeProductSeries(name='one')
-        series1.product.official_rosetta = True
+        series1.product.translations_usage = ServiceUsage.LAUNCHPAD
         series2 = self.factory.makeProductSeries(name='two')
-        series2.product.official_rosetta = True
+        series1.product.translations_usage = ServiceUsage.LAUNCHPAD
         self.assertNotEqual(series1.product, series2.product)
 
         potemplate1 = self.factory.makePOTemplate(name='shared',
@@ -1707,8 +1732,7 @@ class TestPOFile(TestCaseWithFactory):
 
     def test_makeTranslatableMessage(self):
         # TranslatableMessages can be created from the PO file
-        potmsgset = self.factory.makePOTMsgSet(self.potemplate,
-                                                    sequence=1)
+        potmsgset = self.factory.makePOTMsgSet(self.potemplate, sequence=1)
         message = self.pofile.makeTranslatableMessage(potmsgset)
         verifyObject(ITranslatableMessage, message)
 
@@ -1718,7 +1742,7 @@ class TestPOFile(TestCaseWithFactory):
             self.potemplate, testmsg['msgid'], sequence=testmsg['sequence'])
         pomsgset.updateTranslation(
             self.pofile, self.pofile.owner,
-            {0:testmsg['string'],},
+            {0: testmsg['string'], },
             True, None, force_edition_rights=True)
 
     def test_getTranslationRows_sequence(self):
@@ -1732,6 +1756,113 @@ class TestPOFile(TestCaseWithFactory):
                 "(sequence=0) to the end of the file.")
 
 
+class TestPOFileTranslationMessages(TestCaseWithFactory):
+    """Test PO file getTranslationMessages method."""
+
+    layer = ZopelessDatabaseLayer
+
+    def setUp(self):
+        super(TestPOFileTranslationMessages, self).setUp()
+        self.pofile = self.factory.makePOFile('eo')
+        self.potemplate = self.pofile.potemplate
+        self.potmsgset = self.factory.makePOTMsgSet(
+            self.potemplate, sequence=1)
+
+    def test_getTranslationMessages_current_shared(self):
+        # A shared message is included in this POFile's messages.
+        message = self.factory.makeTranslationMessage(
+            potmsgset=self.potmsgset, pofile=self.pofile, force_shared=True)
+        
+        self.assertEqual(
+            [message], list(self.pofile.getTranslationMessages()))
+        
+    def test_getTranslationMessages_current_diverged(self):
+        # A diverged message is included in this POFile's messages.
+        message = self.factory.makeTranslationMessage(
+            potmsgset=self.potmsgset, pofile=self.pofile, force_diverged=True)
+        
+        self.assertEqual(
+            [message], list(self.pofile.getTranslationMessages()))
+        
+    def test_getTranslationMessages_suggestion(self):
+        # A suggestion is included in this POFile's messages.
+        message = self.factory.makeTranslationMessage(
+            potmsgset=self.potmsgset, pofile=self.pofile)
+        
+        self.assertEqual(
+            [message], list(self.pofile.getTranslationMessages()))
+        
+    def test_getTranslationMessages_obsolete(self):
+        # A message on an obsolete POTMsgSEt is included in this
+        # POFile's messages.
+        potmsgset = self.factory.makePOTMsgSet(self.potemplate, sequence=0)
+        message = self.factory.makeTranslationMessage(
+            potmsgset=potmsgset, pofile=self.pofile, force_shared=True)
+        
+        self.assertEqual(
+            [message], list(self.pofile.getTranslationMessages()))
+        
+    def test_getTranslationMessages_other_pofile(self):
+        # A message from another POFiles is not included.
+        other_pofile = self.factory.makePOFile('de')
+        self.factory.makeTranslationMessage(
+            potmsgset=self.potmsgset, pofile=other_pofile)
+        
+        self.assertEqual([], list(self.pofile.getTranslationMessages()))
+        
+    def test_getTranslationMessages_condition_matches(self):
+        # A message matching the given condition is included.
+        # Diverged messages are linked to a specific POTemplate.
+        message = self.factory.makeTranslationMessage(
+            potmsgset=self.potmsgset, pofile=self.pofile, force_diverged=True)
+        
+        self.assertContentEqual(
+            [message],
+            self.pofile.getTranslationMessages(
+                "TranslationMessage.potemplate IS NOT NULL"))
+       
+    def test_getTranslationMessages_condition_matches_not(self):
+        # A message not matching the given condition is excluded.
+        # Shared messages are not linked to a POTemplate.
+        self.factory.makeTranslationMessage(
+            potmsgset=self.potmsgset, pofile=self.pofile, force_shared=True)
+        
+        self.assertContentEqual(
+            [],
+            self.pofile.getTranslationMessages(
+                "TranslationMessage.potemplate IS NOT NULL"))
+       
+    def test_getTranslationMessages_condition_matches_in_other_pofile(self):
+        # A message matching given condition but located in another POFile
+        # is not included.
+        other_pofile = self.factory.makePOFile('de')
+        self.factory.makeTranslationMessage(
+            potmsgset=self.potmsgset, pofile=other_pofile,
+            force_diverged=True)
+        
+        self.assertContentEqual(
+            [],
+            self.pofile.getTranslationMessages(
+                "TranslationMessage.potemplate IS NOT NULL"))
+       
+    def test_getTranslationMessages_diverged_elsewhere(self):
+        # Diverged messages from sharing POTemplates are not included.
+        # Create a sharing potemplate in another product series and share
+        # potmsgset in both templates.
+        other_series = self.factory.makeProductSeries(
+            product=self.potemplate.productseries.product)
+        other_template = self.factory.makePOTemplate(
+            productseries=other_series, name=self.potemplate.name)
+        other_pofile = other_template.getPOFileByLang(
+            self.pofile.language.code)
+        self.potmsgset.setSequence(other_template, 1)
+        self.factory.makeTranslationMessage(
+            potmsgset=self.potmsgset, pofile=other_pofile,
+            force_diverged=True)
+        
+        self.assertEqual([], list(self.pofile.getTranslationMessages()))
+       
+
 class TestPOFileToTranslationFileDataAdapter(TestCaseWithFactory):
     """Test POFile being adapted to IPOFileToTranslationFileData."""
 
@@ -1739,7 +1870,7 @@ class TestPOFileToTranslationFileDataAdapter(TestCaseWithFactory):
 
     header = dedent("""
         Project-Id-Version: foo
-        Report-Msgid-Bugs-To: 
+        Report-Msgid-Bugs-To:
         POT-Creation-Date: 2007-07-09 03:39+0100
         PO-Revision-Date: 2001-09-09 01:46+0000
         Last-Translator: Kubla Kahn <kk@pleasure-dome.com>
@@ -1842,7 +1973,3 @@ class TestPOFileToTranslationFileDataAdapter(TestCaseWithFactory):
         self.assertEqual(1, translation_file_data.header.number_plural_forms)
         self.assertEqual(
             u"0", translation_file_data.header.plural_form_expression)
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

@@ -6,36 +6,67 @@ __metaclass__ = type
 import re
 from urlparse import urlunparse
 
+from lazr.lifecycle.event import ObjectCreatedEvent
+from lazr.lifecycle.interfaces import IObjectCreatedEvent
 from zope.component import getUtility
-from zope.interface import implements
 from zope.event import notify
+from zope.interface import implements
 
 from canonical.config import config
 from canonical.database.sqlbase import rollback
 from canonical.launchpad.helpers import get_email_template
 from canonical.launchpad.interfaces import (
     BugAttachmentType,
-    CreatedBugWithNoBugTasksError, EmailProcessingError,
+    CreatedBugWithNoBugTasksError,
+    EmailProcessingError,
     IBugAttachmentSet,
-    IBugEditEmailCommand, IBugEmailCommand, IBugMessageSet,
-    IBugTaskEditEmailCommand, IBugTaskEmailCommand,
-    ILaunchBag, IMailHandler,
-    IMessageSet, IQuestionSet, ISpecificationSet,
-    QuestionStatus)
-from lp.code.mail.codehandler import CodeHandler
+    IBugEditEmailCommand,
+    IBugEmailCommand,
+    IBugMessageSet,
+    IBugTaskEditEmailCommand,
+    IBugTaskEmailCommand,
+    ILaunchBag,
+    IMailHandler,
+    IMessageSet,
+    IQuestionSet,
+    ISpecificationSet,
+    QuestionStatus,
+    )
+from canonical.launchpad.interfaces.gpghandler import IGPGHandler
 from canonical.launchpad.mail.commands import (
-    BugEmailCommands, get_error_message)
+    BugEmailCommands,
+    get_error_message,
+    )
 from canonical.launchpad.mail.helpers import (
-    ensure_not_weakly_authenticated, get_main_body, guess_bugtask,
-    IncomingEmailError, parse_commands, reformat_wiki_text)
-from lp.services.mail.sendmail import sendmail, simple_sendmail
+    ensure_not_weakly_authenticated,
+    ensure_sane_signature_timestamp,
+    get_main_body,
+    guess_bugtask,
+    IncomingEmailError,
+    parse_commands,
+    reformat_wiki_text,
+    )
 from canonical.launchpad.mail.specexploder import get_spec_url_from_moin_mail
 from canonical.launchpad.mailnotification import (
-    MailWrapper, send_process_error_notification)
+    MailWrapper,
+    send_process_error_notification,
+    )
 from canonical.launchpad.webapp import urlparse
+from lp.code.mail.codehandler import CodeHandler
+from lp.services.mail.sendmail import (
+    sendmail,
+    simple_sendmail,
+    )
 
-from lazr.lifecycle.event import ObjectCreatedEvent
-from lazr.lifecycle.interfaces import IObjectCreatedEvent
+
+def extract_signature_timestamp(signed_msg):
+    # break import cycle
+    from canonical.launchpad.mail.incoming import (
+        canonicalise_line_endings)
+    signature = getUtility(IGPGHandler).getVerifiedSignature(
+        canonicalise_line_endings(signed_msg.signedContent),
+        signed_msg.signature)
+    return signature.timestamp
 
 
 class MaloneHandler:
@@ -57,20 +88,26 @@ class MaloneHandler:
                 name, args in parse_commands(content,
                                              BugEmailCommands.names())]
 
-    def process(self, signed_msg, to_addr, filealias=None, log=None):
+    def process(self, signed_msg, to_addr, filealias=None, log=None,
+                extract_signature_timestamp=extract_signature_timestamp):
         """See IMailHandler."""
         commands = self.getCommands(signed_msg)
         user, host = to_addr.split('@')
         add_comment_to_bug = False
+        signature = signed_msg.signature
 
         try:
             if len(commands) > 0:
-                ensure_not_weakly_authenticated(signed_msg, 'bug report')
+                CONTEXT = 'bug report'
+                ensure_not_weakly_authenticated(signed_msg, CONTEXT)
+                if signature is not None:
+                    ensure_sane_signature_timestamp(
+                        extract_signature_timestamp(signed_msg), CONTEXT)
 
             if user.lower() == 'new':
                 # A submit request.
                 commands.insert(0, BugEmailCommands.get('bug', ['new']))
-                if signed_msg.signature is None:
+                if signature is None:
                     raise IncomingEmailError(
                         get_error_message('not-gpg-signed.txt'))
             elif user.isdigit():
@@ -345,7 +382,7 @@ class AnswerTrackerHandler:
         """
         if question.status in [
             QuestionStatus.OPEN, QuestionStatus.NEEDSINFO,
-	    QuestionStatus.ANSWERED]:
+        QuestionStatus.ANSWERED]:
             question.giveAnswer(message.owner, message)
         else:
             # In the other states, only a comment can be added.

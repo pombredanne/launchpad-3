@@ -21,15 +21,19 @@ import subprocess
 import tempfile
 import time
 
+from bzrlib.tests.treeshape import build_tree_contents
+from bzrlib.transport import Server
+from bzrlib.urlutils import (
+    escape,
+    join as urljoin,
+    )
 import CVS
+from dulwich.repo import Repo as GitRepo
 import pysvn
 import svn_oo
 
-from bzrlib.urlutils import escape, join as urljoin
-from bzrlib.transport import Server
-from bzrlib.tests.treeshape import build_tree_contents
-
 from canonical.launchpad.scripts.logger import QuietFakeLogger
+
 
 def local_path_to_url(local_path):
     """Return a file:// URL to `local_path`.
@@ -199,11 +203,11 @@ class GitServer(Server):
         self.repo_url = repo_url
 
     def makeRepo(self, tree_contents):
-        from bzrlib.plugins.git.tests import GitBranchBuilder, run_git
+        from bzrlib.plugins.git.tests import GitBranchBuilder
         wd = os.getcwd()
         try:
             os.chdir(self.repo_url)
-            run_git('init')
+            GitRepo.init(".")
             builder = GitBranchBuilder()
             for filename, contents in tree_contents:
                 builder.set_file(filename, contents, False)
@@ -229,5 +233,5 @@ class MercurialServer(Server):
                 f.write(contents)
             finally:
                 f.close()
-            repo.add([filename])
+            repo[None].add([filename])
         repo.commit(text='<The commit message>', user='jane Foo <joe@foo.com>')

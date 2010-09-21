@@ -14,51 +14,162 @@ import threading
 import traceback
 import urllib
 
-import tickcount
-import transaction
-
+from lazr.uri import (
+    InvalidURIError,
+    URI,
+    )
 from psycopg2.extensions import TransactionRollbackError
 from storm.database import STATE_DISCONNECTED
-from storm.exceptions import DisconnectionError, IntegrityError
+from storm.exceptions import (
+    DisconnectionError,
+    IntegrityError,
+    )
 from storm.zope.interfaces import IZStorm
-
+import tickcount
+import transaction
 from zc.zservertracelog.interfaces import ITraceLog
+# used to get at the adapters service
+from zope.app import zapi
 import zope.app.publication.browser
-from zope.app import zapi  # used to get at the adapters service
 from zope.app.publication.interfaces import BeforeTraverseEvent
 from zope.app.security.interfaces import IUnauthenticatedPrincipal
-from zope.component import getUtility, queryMultiAdapter
+from zope.component import (
+    getUtility,
+    queryMultiAdapter,
+    )
 from zope.error.interfaces import IErrorReportingUtility
 from zope.event import notify
-from zope.interface import implements, providedBy
-from zope.publisher.interfaces import IPublishTraverse, Retry
+from zope.interface import (
+    implements,
+    providedBy,
+    )
+from zope.publisher.interfaces import (
+    IPublishTraverse,
+    Retry,
+    )
 from zope.publisher.interfaces.browser import (
-    IDefaultSkin, IBrowserRequest)
+    IBrowserRequest,
+    IDefaultSkin,
+    )
 from zope.publisher.publish import mapply
-from zope.security.proxy import removeSecurityProxy
 from zope.security.management import newInteraction
-
-import canonical.launchpad.layers as layers
-import canonical.launchpad.webapp.adapter as da
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.oauth import IOAuthSignedRequest
+import canonical.launchpad.layers as layers
 from canonical.launchpad.readonly import is_read_only
-from lp.registry.interfaces.person import (
-    IPerson, IPersonSet, ITeam)
-from canonical.launchpad.webapp.interfaces import (
-    IDatabasePolicy, ILaunchpadRoot, INotificationResponse, IOpenLaunchBag,
-    IPlacelessAuthUtility, IPrimaryContext, IStoreSelector,
-    MASTER_FLAVOR, OffsiteFormPostError, NoReferrerError, StartRequestEvent)
+import canonical.launchpad.webapp.adapter as da
 from canonical.launchpad.webapp.dbpolicy import LaunchpadDatabasePolicy
+from canonical.launchpad.webapp.interfaces import (
+    IDatabasePolicy,
+    ILaunchpadRoot,
+    INotificationResponse,
+    IOpenLaunchBag,
+    IPlacelessAuthUtility,
+    IPrimaryContext,
+    IStoreSelector,
+    MASTER_FLAVOR,
+    NoReferrerError,
+    OffsiteFormPostError,
+    StartRequestEvent,
+    )
 from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.opstats import OpStats
-from lazr.uri import URI, InvalidURIError
 from canonical.launchpad.webapp.vhosts import allvhosts
+from lp.registry.interfaces.person import (
+    IPerson,
+    IPersonSet,
+    ITeam,
+    )
 
 
 METHOD_WRAPPER_TYPE = type({}.__setitem__)
+
+OFFSITE_POST_WHITELIST = ('/+storeblob', '/+request-token', '/+access-token',
+    '/+hwdb/+submit', '/+openid')
+
+
+def maybe_block_offsite_form_post(request):
+    """Check if an attempt was made to post a form from a remote site.
+
+    This is a cross-site request forgery (XSRF/CSRF) countermeasure.
+
+    The OffsiteFormPostError exception is raised if the following
+    holds true:
+      1. the request method is POST *AND*
+      2. a. the HTTP referer header is empty *OR*
+         b. the host portion of the referrer is not a registered vhost
+    """
+    if request.method != 'POST':
+        return
+    if (IOAuthSignedRequest.providedBy(request)
+        or not IBrowserRequest.providedBy(request)):
+        # We only want to check for the referrer header if we are
+        # in the middle of a request initiated by a web browser. A
+        # request to the web service (which is necessarily
+        # OAuth-signed) or a request that does not implement
+        # IBrowserRequest (such as an XML-RPC request) can do
+        # without a Referer.
+        return
+    if request['PATH_INFO'] in OFFSITE_POST_WHITELIST:
+        # XXX: jamesh 2007-11-23 bug=124421:
+        # Allow offsite posts to our TestOpenID endpoint.  Ideally we'd
+        # have a better way of marking this URL as allowing offsite
+        # form posts.
+        #
+        # XXX gary 2010-03-09 bug=535122,538097
+        # The one-off exceptions are necessary because existing
+        # non-browser applications make requests to these URLs
+        # without providing a Referer. Apport makes POST requests
+        # to +storeblob without providing a Referer (bug 538097),
+        # and launchpadlib used to make POST requests to
+        # +request-token and +access-token without providing a
+        # Referer.
+        #
+        # XXX Abel Deuring 2010-04-09 bug=550973
+        # The HWDB client "checkbox" accesses /+hwdb/+submit without
+        # a referer. This will change in the version in Ubuntu 10.04,
+        # but Launchpad should support HWDB submissions from older
+        # Ubuntu versions during their support period.
+        #
+        # We'll have to keep an application's one-off exception
+        # until the application has been changed to send a
+        # Referer, and until we have no legacy versions of that
+        # application to support. For instance, we can't get rid
+        # of the apport exception until after Lucid's end-of-life
+        # date. We should be able to get rid of the launchpadlib
+        # exception after Karmic's end-of-life date.
+        return
+    if request['PATH_INFO'].startswith('/+openid-callback'):
+        # If this is a callback from an OpenID provider, we don't require an
+        # on-site referer (because the provider may be off-site).  This
+        # exception was added as a result of bug 597324 (message #10 in
+        # particular).
+        return
+    referrer = request.getHeader('referer') # match HTTP spec misspelling
+    if not referrer:
+        raise NoReferrerError('No value for REFERER header')
+    # XXX: jamesh 2007-04-26 bug=98437:
+    # The Zope testing infrastructure sets a default (incorrect)
+    # referrer value of "localhost" or "localhost:9000" if no
+    # referrer is included in the request.  We let it pass through
+    # here for the benefits of the tests.  Web browsers send full
+    # URLs so this does not open us up to extra XSRF attacks.
+    if referrer in ['localhost', 'localhost:9000']:
+        return
+    # Extract the hostname from the referrer URI
+    try:
+        hostname = URI(referrer).host
+    except InvalidURIError:
+        hostname = None
+    if hostname not in allvhosts.hostnames:
+        raise OffsiteFormPostError(referrer)
+
+
+class ProfilingOops(Exception):
+    """Fake exception used to log OOPS information when profiling pages."""
 
 
 class LoginRoot:
@@ -118,13 +229,7 @@ class LaunchpadBrowserPublication(
         if end_of_traversal_stack == ['+login']:
             return LoginRoot()
         else:
-            bag = getUtility(IOpenLaunchBag)
-            if bag.site is None:
-                root_object = getUtility(self.root_object_interface)
-                bag.add(root_object)
-            else:
-                root_object = bag.site
-            return root_object
+            return getUtility(self.root_object_interface)
 
     # The below overrides to zopepublication (callTraversalHooks,
     # afterTraversal, and _maybePlacefullyAuthenticate) make the
@@ -133,6 +238,7 @@ class LaunchpadBrowserPublication(
     # If this becomes untrue at some point, the code will need to be
     # revisited.
 
+    # pylint: disable-msg=E0301
     def beforeTraversal(self, request):
         notify(StartRequestEvent(request))
         request._traversalticks_start = tickcount.tickcount()
@@ -140,7 +246,7 @@ class LaunchpadBrowserPublication(
         threadrequestfile = open('thread-%s.request' % threadid, 'w')
         try:
             request_txt = unicode(request).encode('UTF-8')
-        except:
+        except Exception:
             request_txt = 'Exception converting request to string\n\n'
             try:
                 request_txt += traceback.format_exc()
@@ -188,6 +294,7 @@ class LaunchpadBrowserPublication(
 
         # Set the default layer.
         adapters = zapi.getGlobalSiteManager().adapters
+        # pylint: disable-msg=E0231
         layer = adapters.lookup((providedBy(request),), IDefaultSkin, '')
         if layer is not None:
             layers.setAdditionalLayer(request, layer)
@@ -195,7 +302,7 @@ class LaunchpadBrowserPublication(
         principal = self.getPrincipal(request)
         request.setPrincipal(principal)
         self.maybeRestrictToTeam(request)
-        self.maybeBlockOffsiteFormPost(request)
+        maybe_block_offsite_form_post(request)
         self.maybeNotifyReadOnlyMode(request)
 
     def maybeNotifyReadOnlyMode(self, request):
@@ -299,76 +406,27 @@ class LaunchpadBrowserPublication(
             uri = uri.replace(query=query_string)
         return str(uri)
 
-    def maybeBlockOffsiteFormPost(self, request):
-        """Check if an attempt was made to post a form from a remote site.
+    def constructPageID(self, view, context):
+        """Given a view, figure out what its page ID should be.
 
-        The OffsiteFormPostError exception is raised if the following
-        holds true:
-          1. the request method is POST *AND*
-          2. a. the HTTP referer header is empty *OR*
-             b. the host portion of the referrer is not a registered vhost
+        This provides a hook point for subclasses to override.
         """
-        if request.method != 'POST':
-            return
-        # XXX: jamesh 2007-11-23 bug=124421:
-        # Allow offsite posts to our TestOpenID endpoint.  Ideally we'd
-        # have a better way of marking this URL as allowing offsite
-        # form posts.
-        if request['PATH_INFO'] == '/+openid':
-            return
-        if (IOAuthSignedRequest.providedBy(request)
-            or not IBrowserRequest.providedBy(request)
-            or request['PATH_INFO']  in (
-                '/+storeblob', '/+request-token', '/+access-token',
-                '/+hwdb/+submit')):
-            # We only want to check for the referrer header if we are
-            # in the middle of a request initiated by a web browser. A
-            # request to the web service (which is necessarily
-            # OAuth-signed) or a request that does not implement
-            # IBrowserRequest (such as an XML-RPC request) can do
-            # without a Referer.
-            #
-            # XXX gary 2010-03-09 bug=535122,538097
-            # The one-off exceptions are necessary because existing
-            # non-browser applications make requests to these URLs
-            # without providing a Referer. Apport makes POST requests
-            # to +storeblob without providing a Referer (bug 538097),
-            # and launchpadlib used to make POST requests to
-            # +request-token and +access-token without providing a
-            # Referer.
-            #
-            # XXX Abel Deuring 2010-04-09 bug=550973
-            # The HWDB client "checkbox" accesses /+hwdb/+submit without
-            # a referer. This will change in the version in Ubuntu 10.04,
-            # but Launchpad should support HWDB submissions from older
-            # Ubuntu versions during their support period.
-            #
-            # We'll have to keep an application's one-off exception
-            # until the application has been changed to send a
-            # Referer, and until we have no legacy versions of that
-            # application to support. For instance, we can't get rid
-            # of the apport exception until after Lucid's end-of-life
-            # date. We should be able to get rid of the launchpadlib
-            # exception after Karmic's end-of-life date.
-            return
-        referrer = request.getHeader('referer') # match HTTP spec misspelling
-        if not referrer:
-            raise NoReferrerError('No value for REFERER header')
-        # XXX: jamesh 2007-04-26 bug=98437:
-        # The Zope testing infrastructure sets a default (incorrect)
-        # referrer value of "localhost" or "localhost:9000" if no
-        # referrer is included in the request.  We let it pass through
-        # here for the benefits of the tests.  Web browsers send full
-        # URLs so this does not open us up to extra XSRF attacks.
-        if referrer in ['localhost', 'localhost:9000']:
-            return
-        # Extract the hostname from the referrer URI
-        try:
-            hostname = URI(referrer).host
-        except InvalidURIError:
-            hostname = None
-        if hostname not in allvhosts.hostnames:
-            raise OffsiteFormPostError(referrer)
+        if context is None:
+            pageid = ''
+        else:
+            # ZCML registration will set the name under which the view
+            # is accessible in the instance __name__ attribute. We use
+            # that if it's available, otherwise fall back to the class
+            # name.
+            if getattr(view, '__name__', None) is not None:
+                view_name = view.__name__
+            else:
+                view_name = view.__class__.__name__
+            pageid = '%s:%s' % (context.__class__.__name__, view_name)
+        # The view name used in the pageid usually comes from ZCML and so
+        # it will be a unicode string although it shouldn't.  To avoid
+        # problems we encode it into ASCII.
+        return pageid.encode('US-ASCII')
 
     def callObject(self, request, ob):
         """See `zope.publisher.interfaces.IPublication`.
@@ -386,31 +444,13 @@ class LaunchpadBrowserPublication(
         request.setInWSGIEnvironment(
             'launchpad.userid', request.principal.id)
 
-        # launchpad.pageid contains an identifier of the form
-        # ContextName:ViewName. It will end up in the page log.
+        # The view may be security proxied
         view = removeSecurityProxy(ob)
-        # It's possible that the view is a bounded method.
+        # It's possible that the view is a bound method.
         view = getattr(view, 'im_self', view)
         context = removeSecurityProxy(getattr(view, 'context', None))
-        if context is None:
-            pageid = ''
-        else:
-            # ZCML registration will set the name under which the view
-            # is accessible in the instance __name__ attribute. We use
-            # that if it's available, otherwise fall back to the class
-            # name.
-            if getattr(view, '__name__', None) is not None:
-                view_name = view.__name__
-            else:
-                view_name = view.__class__.__name__
-            pageid = '%s:%s' % (context.__class__.__name__, view_name)
-        # The view name used in the pageid usually comes from ZCML and so
-        # it will be a unicode string although it shouldn't.  To avoid
-        # problems we encode it into ASCII.
-        pageid = pageid.encode('US-ASCII')
-
+        pageid = self.constructPageID(view, context)
         request.setInWSGIEnvironment('launchpad.pageid', pageid)
-
         # And spit the pageid out to our tracelog.
         tracelog(request, 'p', pageid)
 
@@ -532,16 +572,16 @@ class LaunchpadBrowserPublication(
         orig_env = request._orig_env
         ticks = tickcount.tickcount()
         if (hasattr(request, '_publicationticks_start') and
-            not orig_env.has_key('launchpad.publicationticks')):
+            ('launchpad.publicationticks' not in orig_env)):
             # The traversal process has been started but hasn't completed.
-            assert orig_env.has_key('launchpad.traversalticks'), (
+            assert 'launchpad.traversalticks' in orig_env, (
                 'We reached the publication process so we must have finished '
                 'the traversal.')
             ticks = tickcount.difference(
                 request._publicationticks_start, ticks)
             request.setInWSGIEnvironment('launchpad.publicationticks', ticks)
         elif (hasattr(request, '_traversalticks_start') and
-              not orig_env.has_key('launchpad.traversalticks')):
+              ('launchpad.traversalticks' not in orig_env)):
             # The traversal process has been started but hasn't completed.
             ticks = tickcount.difference(
                 request._traversalticks_start, ticks)
@@ -719,6 +759,7 @@ _browser_re = re.compile(r"""(?x)^(
     Links |
     w3m
     )""")
+
 
 def is_browser(request):
     """Return True if we believe the request was from a browser.

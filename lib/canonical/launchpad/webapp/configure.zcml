@@ -672,7 +672,7 @@
         permission="zope.Public"
         class="canonical.launchpad.webapp.launchbag.LaunchBagView"
         />
-
+ 
     <!-- Resource unnamed view, allowing Z3 preferred spelling
         /@@/launchpad-icon-small to access the images directory -->
     <browser:page
@@ -708,6 +708,10 @@
         for="canonical.launchpad.webapp.servers.LaunchpadTestRequest"
         provides="canonical.launchpad.webapp.interfaces.INotificationResponse"
         factory="canonical.launchpad.webapp.servers.adaptRequestToResponse"
+        />
+
+    <adapter
+        factory="canonical.launchpad.webapp.tales.LaunchpadLayerToMainTemplateAdapter"
         />
 
     <adapter
@@ -781,7 +785,7 @@
     <!-- Set the default timeout function. -->
     <subscriber
         for="zope.app.appsetup.IProcessStartingEvent"
-        handler="canonical.launchpad.webapp.servers.set_launchpad_default_timeout"
+        handler="canonical.launchpad.webapp.adapter.set_launchpad_default_timeout"
         />
 
     <subscriber
@@ -813,7 +817,7 @@
     <!-- Define the widget used by PublicPersonChoice fields. -->
     <view
       type="zope.publisher.interfaces.browser.IBrowserRequest"
-      for="canonical.launchpad.fields.PublicPersonChoice
+      for="lp.services.fields.PublicPersonChoice
         canonical.launchpad.webapp.vocabulary.IHugeVocabulary"
       provides="zope.app.form.interfaces.IInputWidget"
       factory="canonical.widgets.popup.PersonPickerWidget"
@@ -824,7 +828,7 @@
     <view
       type="zope.publisher.interfaces.browser.IBrowserRequest"
       for="zope.schema.interfaces.IChoice
-        canonical.launchpad.vocabularies.dbobjects.BranchVocabularyBase"
+        lp.code.vocabularies.branch.BranchVocabularyBase"
       provides="zope.app.form.interfaces.IInputWidget"
       factory="canonical.launchpad.browser.widgets.BranchPopupWidget"
       permission="zope.Public"

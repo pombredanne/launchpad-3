@@ -160,7 +160,7 @@
             </p>
 
             <div id="project-admin-whiteboard" class="whiteboard"
-              tal:condition="context/required:launchpad.ProjectReview">
+              tal:condition="context/required:launchpad.Moderate">
               <div>
                 <strong>Whiteboard</strong>
                 <a tal:replace="structure overview_menu/review_license/fmt:icon"/>
@@ -215,10 +215,10 @@
       <div class="yui-g">
         <div class="yui-u first">
           <div tal:content="structure context/@@+portlet-listfaqs"
-            tal:condition="context/official_answers" />
+            tal:condition="context/answers_usage/enumvalue:LAUNCHPAD" />
 
           <div tal:content="structure context/@@+portlet-latestbugs"
-            tal:condition="context/official_malone" />
+            tal:condition="context/bug_tracking_usage/enumvalue:LAUNCHPAD" />
 
           <div tal:content="structure context/@@+portlet-top-contributors" />
 
@@ -227,10 +227,10 @@
 
         <div class="yui-u">
           <div tal:content="structure context/@@+portlet-latestquestions"
-            tal:condition="context/official_answers" />
+            tal:condition="context/answers_usage/enumvalue:LAUNCHPAD" />
 
           <div tal:content="structure context/@@+portlet-latestspecs"
-            tal:condition="context/official_blueprints" />
+            tal:condition="context/blueprints_usage/enumvalue:LAUNCHPAD" />
 
           <div tal:content="structure context/@@+portlet-coming-sprints" />
         </div>
@@ -240,6 +240,8 @@
     <tal:side metal:fill-slot="side"
       define="overview_menu context/menu:overview">
       <tal:menu replace="structure view/@@+global-actions" />
+
+      <div tal:replace="structure context/@@+get-involved" />
 
       <div id="downloads" class="top-portlet downloads"
         tal:define="release view/latest_release_with_download_files">
@@ -256,13 +258,11 @@
             tal:attributes="href link/fmt:url;
                             title link/summary">All downloads</a>
            <tal:no-files condition="not: release">
-             <tal:name replace="context/displayname" /> does not have any
-              download files.
+             <tal:name replace="context/displayname" />
+             does not have any download files registered with Launchpad.
            </tal:no-files>
         </p>
       </div>
-
-      <div tal:replace="structure context/@@+get-involved" />
 
       <div tal:replace="structure context/@@+portlet-latestannouncements" />
     </tal:side>

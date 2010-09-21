@@ -31,7 +31,7 @@
   <include package="lp.translations" />
   <include package="lp.testopenid" />
   <include package="lp.blueprints" />
-  <include package="lp.services.comments" />
+  <include package="lp.vostok" />
 
   <browser:url
     for="canonical.launchpad.interfaces.IPersonSet"
@@ -93,6 +93,12 @@
   <browser:navigation
       module="canonical.launchpad.browser"
       classes="LaunchpadRootNavigation"
+      />
+
+  <browser:navigation
+      module="canonical.launchpad.browser"
+      classes="LaunchpadRootNavigation"
+      layer="zope.publisher.interfaces.xmlrpc.IXMLRPCRequest"
       />
 
   <!-- Register a handler to fix things up just before the application

@@ -10,11 +10,19 @@
     xmlns:webservice="http://namespaces.canonical.com/webservice"
     xmlns:lp="http://namespaces.canonical.com/lp"
     i18n_domain="launchpad">
-    <include
-        package=".browser"/>
+
+  <include package=".browser"/>
+
+  <publisher
+      name="translations"
+      factory="lp.translations.publisher.translations_request_publication_factory"/>
+  <utility
+      component="lp.translations.publisher.TranslationsLayer"
+      provides="zope.publisher.interfaces.browser.IDefaultBrowserLayer"
+      name="translations" />
 
     <lp:help-folder
-        folder="help" type="canonical.launchpad.layers.TranslationsLayer" />
+        folder="help" type="lp.translations.publisher.TranslationsLayer" />
 
     <class
         class="lp.translations.model.vpotexport.VPOTExport">
@@ -372,7 +380,7 @@
             interface="lp.translations.interfaces.translationtemplateitem.ITranslationTemplateItem"/>
     </class>
 
-    <!-- ProductSeriesLanguage and Dummy -->
+    <!-- ProductSeriesLanguage -->
 
     <adapter
         provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
@@ -385,11 +393,6 @@
         <allow
             interface="lp.translations.interfaces.productserieslanguage.IProductSeriesLanguage"/>
     </class>
-    <class
-        class="lp.translations.model.productserieslanguage.DummyProductSeriesLanguage">
-        <allow
-            interface="lp.translations.interfaces.productserieslanguage.IProductSeriesLanguage"/>
-    </class>
 
     <!-- ProductSeriesLanguageSet -->
 
@@ -399,6 +402,16 @@
         <allow
             interface="lp.translations.interfaces.productserieslanguage.IProductSeriesLanguageSet"/>
     </securedutility>
+
+    <!-- TranslatedLanguage -->
+    <facet
+        facet="translations">
+        <class
+            class="lp.translations.model.translatedlanguage.POFilesByPOTemplates">
+            <allow
+                interface="lp.translations.interfaces.translatedlanguage.IPOFilesByPOTemplates"/>
+        </class>
+    </facet>
 
     <!-- POTemplate -->
     <facet
@@ -430,6 +443,13 @@
             for="lp.translations.interfaces.potemplate.IPOTemplate"
             provides="lp.translations.interfaces.translationcommonformat.ITranslationFileData"
             factory="lp.translations.model.potemplate.POTemplateToTranslationFileDataAdapter"/>
+
+        <!-- TranslationTemplatesCollection -->
+        <class
+            class="lp.translations.model.potemplate.TranslationTemplatesCollection">
+            <allow
+                interface="lp.translations.interfaces.potemplate.ITranslationTemplatesCollection"/>
+        </class>
 
         <!-- POTemplateSet -->
 

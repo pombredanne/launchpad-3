@@ -31,6 +31,8 @@ setup(
         'cssutils',
         # Required for pydkim
         'dnspython',
+        'fixtures',
+        'FeedParser',
         'feedvalidator',
         'funkload',
         'launchpadlib',
@@ -70,6 +72,7 @@ setup(
         'z3c.pt',
         'z3c.ptcompat',
         'zc.zservertracelog',
+        'zope.app.apidoc',
         'zope.app.appsetup',
         'zope.app.component',
         'zope.app.dav', # ./package-includes/dav-configure.zcml
@@ -77,7 +80,9 @@ setup(
         'zope.app.exception',
         'zope.app.file',
         'zope.app.form',
+        'zope.app.onlinehelp',
         'zope.app.pagetemplate',
+        'zope.app.preference',
         'zope.app.publication',
         'zope.app.publisher',
         'zope.app.security',
@@ -85,6 +90,7 @@ setup(
         'zope.app.server',
         'zope.app.session',
         'zope.app.testing',
+        'zope.app.tree',
         'zope.app.zcmlfiles',
         'zope.app.wsgi',
         'zope.app.zapi',
@@ -101,6 +107,7 @@ setup(
         'zope.hookable', # indirect, via zope.app.component
         'zope.lifecycleevent',
         'zope.location',
+        'zope.login',
         'zope.pagetemplate',
         'zope.publisher',
         'zope.proxy',
@@ -143,6 +150,8 @@ setup(
             'start_librarian '
                 '= canonical.launchpad.scripts.runlaunchpad:start_librarian',
             'ec2 = devscripts.ec2test.entrypoint:main',
+            'compile_templates '
+                '= canonical.launchpad.scripts:execute_zcml_for_scripts',
         ]
     ),
 )

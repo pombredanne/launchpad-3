@@ -30,43 +30,73 @@ __all__ = [
     ]
 
 import cgi
-from datetime import datetime, timedelta
+from datetime import (
+    datetime,
+    timedelta,
+    )
 
-import pytz
-import simplejson
-
-from zope.app.form.browser import TextAreaWidget
-from zope.traversing.interfaces import IPathAdapter
-from zope.component import getUtility, queryAdapter
-from zope.event import notify
-from zope.formlib import form
-from zope.interface import Interface, implements, providedBy
-from zope.publisher.interfaces import NotFound
-from zope.schema import Bool, Choice, Text
-from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
-from lazr.enum import EnumeratedType, Item
+from lazr.enum import (
+    EnumeratedType,
+    Item,
+    )
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
+from lazr.restful.interface import (
+    copy_field,
+    use_template,
+    )
 from lazr.uri import URI
+import pytz
+import simplejson
+from zope.app.form.browser import TextAreaWidget
+from zope.component import (
+    getUtility,
+    queryAdapter,
+    )
+from zope.event import notify
+from zope.formlib import form
+from zope.interface import (
+    implements,
+    Interface,
+    providedBy,
+    )
+from zope.publisher.interfaces import NotFound
+from zope.schema import (
+    Bool,
+    Choice,
+    Text,
+    )
+from zope.schema.vocabulary import (
+    SimpleTerm,
+    SimpleVocabulary,
+    )
+from zope.traversing.interfaces import IPathAdapter
 
-from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
-
-from lazr.restful.interface import copy_field, use_template
 from canonical.launchpad import _
-from canonical.launchpad.browser.feeds import BranchFeedLink, FeedsMixin
+from canonical.launchpad.browser.feeds import (
+    BranchFeedLink,
+    FeedsMixin,
+    )
 from canonical.launchpad.browser.launchpad import Hierarchy
 from canonical.launchpad.helpers import truncate_text
-from lp.bugs.interfaces.bug import IBugSet
-from lp.bugs.interfaces.bugbranch import IBugBranch
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from lp.blueprints.interfaces.specificationbranch import (
-    ISpecificationBranch)
 from canonical.launchpad.webapp import (
-    canonical_url, ContextMenu, Link, enabled_with_permission,
-    LaunchpadView, Navigation, NavigationMenu, stepto, stepthrough,
-    LaunchpadFormView, LaunchpadEditFormView, action, custom_widget)
+    action,
+    canonical_url,
+    ContextMenu,
+    custom_widget,
+    enabled_with_permission,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    LaunchpadView,
+    Link,
+    Navigation,
+    NavigationMenu,
+    stepthrough,
+    stepto,
+    )
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.launchpad.webapp.menu import structured
@@ -74,30 +104,47 @@ from canonical.lazr.utils import smartquote
 from canonical.widgets.branch import TargetBranchWidget
 from canonical.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
 from canonical.widgets.lazrjs import vocabulary_to_choice_edit_items
-
+from lp.blueprints.interfaces.specificationbranch import ISpecificationBranch
+from lp.bugs.interfaces.bug import IBugSet
+from lp.bugs.interfaces.bugbranch import IBugBranch
 from lp.bugs.interfaces.bugtask import UNRESOLVED_BUGTASK_STATUSES
-from lp.code.browser.branchref import BranchRef
 from lp.code.browser.branchmergeproposal import (
-    latest_proposals_for_each_branch)
+    latest_proposals_for_each_branch,
+    )
+from lp.code.browser.branchref import BranchRef
 from lp.code.browser.decorations import DecoratedBranch
 from lp.code.browser.sourcepackagerecipelisting import HasRecipesMenuMixin
 from lp.code.enums import (
-    BranchLifecycleStatus, BranchType,
-    CodeImportResultStatus, CodeImportReviewStatus, RevisionControlSystems,
-    UICreatableBranchType)
+    BranchLifecycleStatus,
+    BranchType,
+    CodeImportResultStatus,
+    CodeImportReviewStatus,
+    RevisionControlSystems,
+    UICreatableBranchType,
+    )
 from lp.code.errors import (
-    CodeImportAlreadyRequested, CodeImportAlreadyRunning,
-    CodeImportNotInReviewedState, InvalidBranchMergeProposal)
+    BranchCreationForbidden,
+    BranchExists,
+    CodeImportAlreadyRequested,
+    CodeImportAlreadyRunning,
+    CodeImportNotInReviewedState,
+    InvalidBranchMergeProposal,
+    )
 from lp.code.interfaces.branch import (
-    BranchCreationForbidden, BranchExists, IBranch,
-    user_has_special_branch_access)
+    IBranch,
+    user_has_special_branch_access,
+    )
 from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
-from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.branchnamespace import IBranchNamespacePolicy
+from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
-from lp.registry.interfaces.person import IPerson, IPersonSet
+from lp.registry.interfaces.person import (
+    IPerson,
+    IPersonSet,
+    )
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.vocabularies import UserTeamsParticipationPlusSelfVocabulary
+from lp.services.propertycache import cachedproperty
 
 
 def quote(text):
@@ -319,14 +366,15 @@ class BranchContextMenu(ContextMenu, HasRecipesMenuMixin):
             '+upgrade', 'Upgrade this branch', icon='edit', enabled=enabled)
 
     def create_recipe(self):
-        enabled = config.build_from_branch.enabled
+        if not self.context.private and config.build_from_branch.enabled:
+            enabled = True
+        else:
+            enabled = False
         text = 'Create packaging recipe'
         return Link('+new-recipe', text, enabled=enabled, icon='add')
 
 
 class BranchView(LaunchpadView, FeedsMixin):
-
-    __used_for__ = IBranch
 
     feed_types = (
         BranchFeedLink,
@@ -566,8 +614,8 @@ class BranchView(LaunchpadView, FeedsMixin):
     def show_merge_links(self):
         """Return whether or not merge proposal links should be shown.
 
-        Merge proposal links should not be shown if there is only one branch in
-        a non-final state.
+        Merge proposal links should not be shown if there is only one branch
+        in a non-final state.
         """
         if not self.context.target.supports_merge_proposals:
             return False
@@ -1154,8 +1202,6 @@ class BranchSubscriptionsView(LaunchpadView):
 
 class BranchMergeQueueView(LaunchpadView):
     """The view used to render the merge queue for a branch."""
-
-    __used_for__ = IBranch
 
     @cachedproperty
     def merge_queue(self):

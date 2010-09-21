@@ -27,8 +27,7 @@ reveal its translations to the public or hide them from the public.
     ...     DistroSeriesView)
     >>> from canonical.launchpad.interfaces import (
     ...     ILaunchpadCelebrities, ITeamMembershipSet, TeamMembershipStatus)
-    >>> from canonical.launchpad.webapp.interfaces import (
-    ...     TranslationUnavailable)
+    >>> from lp.app.errors import TranslationUnavailable
 
     >>> def check_translations_access(distroseries):
     ...     """Return any objections to current user accessing

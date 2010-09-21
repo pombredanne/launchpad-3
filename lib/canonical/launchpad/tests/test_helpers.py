@@ -4,15 +4,19 @@
 from doctest import DocTestSuite
 import unittest
 
-from canonical.testing import LaunchpadFunctionalLayer
-from zope.publisher.interfaces.browser import IBrowserRequest
 from zope.interface import implements
+from zope.publisher.interfaces.browser import IBrowserRequest
 
 from canonical.launchpad import helpers
 from canonical.launchpad.ftests import login
-from lp.translations.utilities.translation_export import LaunchpadWriteTarFile
-from canonical.launchpad.interfaces import ILanguageSet, IPerson, ILaunchBag
+from canonical.launchpad.interfaces import (
+    ILanguageSet,
+    ILaunchBag,
+    IPerson,
+    )
+from canonical.testing import LaunchpadFunctionalLayer
 from lp.testing.factory import LaunchpadObjectFactory
+from lp.translations.utilities.translation_export import LaunchpadWriteTarFile
 
 
 def make_test_tarball_1():
@@ -179,8 +183,8 @@ def test_preferred_or_request_languages():
     >>> from zope.app.testing.placelesssetup import setUp, tearDown
     >>> from zope.app.testing import ztapi
     >>> from zope.i18n.interfaces import IUserPreferredLanguages
-    >>> from canonical.launchpad.interfaces import IRequestPreferredLanguages
-    >>> from canonical.launchpad.interfaces import IRequestLocalLanguages
+    >>> from lp.services.geoip.interfaces import IRequestPreferredLanguages
+    >>> from lp.services.geoip.interfaces import IRequestLocalLanguages
     >>> from canonical.launchpad.helpers import preferred_or_request_languages
 
     First, test with a person who has a single preferred language.

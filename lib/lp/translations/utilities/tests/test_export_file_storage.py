@@ -9,8 +9,8 @@ from cStringIO import StringIO
 from tarfile import TarFile
 import unittest
 
-from lp.translations.utilities.translation_export import ExportFileStorage
 from canonical.testing import LaunchpadZopelessLayer
+from lp.translations.utilities.translation_export import ExportFileStorage
 
 
 class ExportFileStorageTestCase(unittest.TestCase):
@@ -69,9 +69,3 @@ class ExportFileStorageTestCase(unittest.TestCase):
         elements = set(tarball.getnames())
         self.assertTrue('/tmp/a/test/file.po' in elements)
         self.assertTrue('/tmp/another/test.po' in elements)
-
-
-def test_suite():
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(ExportFileStorageTestCase))
-    return suite

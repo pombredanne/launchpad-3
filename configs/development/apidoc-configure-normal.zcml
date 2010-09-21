@@ -1,0 +1,130 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:meta="http://namespaces.zope.org/meta"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    xmlns:apidoc="http://namespaces.zope.org/apidoc"
+    i18n_domain="canonical">
+
+    <!-- These packages/declarations are required by apidoc. If they are
+      deemed generally useful, move them to zopeapp.zcml -->
+
+    <browser:menu
+        id="zmi_views"
+        title="Views"
+        description="Menu for displaying alternate representations of an object"
+        />
+    <browser:menu
+        id="zmi_actions"
+        title="Actions"
+        description="Menu for displaying actions to be performed"
+        />
+
+    <!-- Use the default IAbsoluteURL adapter for requests on the apidoc
+         vhost. -->
+    <adapter
+        for="zope.interface.Interface
+             canonical.launchpad.webapp.servers.APIDocBrowserRequest"
+        provides="zope.traversing.browser.interfaces.IAbsoluteURL"
+        factory="zope.traversing.browser.AbsoluteURL"
+        />
+
+    <view
+      for="zope.container.interfaces.IReadContainer"
+      type="zope.publisher.interfaces.http.IHTTPRequest"
+      provides="zope.publisher.interfaces.IPublishTraverse"
+      factory="zope.container.traversal.ContainerTraverser"
+      permission="zope.Public"
+      allowed_interface="zope.publisher.interfaces.IPublishTraverse"
+      />
+
+    <utility
+        component="canonical.launchpad.systemhomes.apidocroot"
+        provides="canonical.launchpad.webapp.interfaces.IAPIDocRoot" />
+
+    <adapter factory="canonical.launchpad.webapp.authentication.TemporaryPrincipalAnnotations" />
+    <adapter
+      factory="canonical.launchpad.webapp.authentication.TemporaryUnauthenticatedPrincipalAnnotations" />
+
+    <class class="canonical.launchpad.webapp.servers.LaunchpadBrowserRequest">
+      <implements interface="zope.app.apidoc.browser.skin.APIDOC" />
+    </class>
+
+    <!-- apidoc.lp.dev breaks if we make IAPIDocRoot subclass ISite, so we
+      need to register this view here. -->
+    <view
+        for="canonical.launchpad.webapp.interfaces.IAPIDocRoot"
+        type="zope.publisher.interfaces.browser.IDefaultBrowserLayer"
+        name=""
+        factory="zope.browserresource.resources.Resources"
+        permission="zope.Public"
+        allowed_interface="zope.publisher.interfaces.browser.IBrowserPublisher"
+        />
+
+    <browser:defaultView
+        for="canonical.launchpad.webapp.interfaces.IAPIDocRoot"
+        name="++apidoc++"
+        />
+
+    <!-- Turn on devmode for the following includes to work -->
+    <meta:provides feature="devmode" />
+
+    <include package="zope.app.preference" file="meta.zcml" />
+    <include package="zope.app.apidoc.codemodule" file="meta.zcml" />
+    <include package="zope.app.apidoc.bookmodule" file="meta.zcml" />
+    <include package="zope.app.onlinehelp" file="meta.zcml" />
+
+    <include package="zope.app.apidoc" />
+    <include package="zope.app.applicationcontrol" />
+    <include package="zope.app.onlinehelp" />
+    <include package="zope.app.preference" />
+    <include package="zope.app.renderer" />
+    <include package="zope.app.tree" />
+    <include package="zope.location" />
+
+    <apidoc:rootModule module="canonical" />
+    <apidoc:rootModule module="lp" />
+    <apidoc:rootModule module="lazr" />
+    <apidoc:rootModule module="zc" />
+    <apidoc:rootModule module="wadllib" />
+    <apidoc:rootModule module="martian" />
+    <apidoc:rootModule module="manuel" />
+    <apidoc:rootModule module="chameleon" />
+    <apidoc:rootModule module="storm" />
+
+    <apidoc:bookchapter
+        id="lp"
+        title="Launchpad"
+        />
+    <apidoc:bookchapter
+        id="dbpolicy"
+        title="Storm Stores and Database Policies"
+        doc_path="../../lib/canonical/launchpad/doc/db-policy.txt"
+        parent="lp"
+        />
+    <apidoc:bookchapter
+        id="memcachetales"
+        title="Memcache Tales Expressions"
+        doc_path="../../lib/lp/services/memcache/doc/tales-cache.txt"
+        parent="lp"
+        />
+    <apidoc:bookchapter
+        id="sprites"
+        title="Image Sprites"
+        doc_path="../../lib/lp/services/doc/sprites.txt"
+        parent="lp"
+        />
+    <apidoc:bookchapter
+        id="buildout"
+        title="Buildout"
+        doc_path="../../doc/buildout.txt"
+        parent="lp"
+        />
+    <apidoc:bookchapter
+        id="profiling"
+        title="Profiling"
+        doc_path="../../lib/canonical/launchpad/doc/profiling.txt"
+        parent="lp"
+        />
+
+</configure>

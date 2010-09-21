@@ -60,7 +60,7 @@ the corresponding portlet with their estimated duration as well.
     >>> import datetime
     >>> from zope.component import getUtility
     >>> from zope.security.proxy import removeSecurityProxy
-    >>> from lp.buildmaster.interfaces.buildbase import BuildStatus
+    >>> from lp.buildmaster.enums import BuildStatus
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> login('foo.bar@canonical.com')
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
@@ -144,12 +144,12 @@ to the builder or simply proceed with the default (i386).
     >>> admin_browser.getControl(name='field.processor').displayValue
     ['Intel 386']
 
-By default, builders are created as 'active', although the
+By default, builders are created as 'Publicly Visible', although the
 administrator can change this value during creation time.
 
-    >>> print admin_browser.getControl('Active').selected
+    >>> print admin_browser.getControl('Publicly Visible').selected
     True
-    >>> admin_browser.getControl('Active').selected = False
+    >>> admin_browser.getControl('Publicly Visible').selected = False
 
 Builder as created as 'non-virtual' by default, but the administrator
 can also modify that while creating a builder.

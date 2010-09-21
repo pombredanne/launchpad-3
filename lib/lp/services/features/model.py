@@ -9,13 +9,20 @@ __all__ = [
 
 __metaclass__ = type
 
-from zope.component import getUtility
 from storm.locals import (
-    Desc, Int, Storm, Unicode, DateTime,
+    DateTime,
+    Desc,
+    Int,
+    Storm,
+    Unicode,
     )
+from zope.component import getUtility
 
 from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE)
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 
 
 def getFeatureStore():

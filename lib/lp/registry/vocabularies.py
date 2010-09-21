@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Vocabularies for content objects.
@@ -59,59 +59,101 @@ __all__ = [
 
 from operator import attrgetter
 
-from sqlobject import AND, CONTAINSSTRING, OR
-
-from storm.expr import Alias, And, Desc, Join, LeftJoin, Lower, Not, Or, SQL
-
+from sqlobject import (
+    AND,
+    CONTAINSSTRING,
+    OR,
+    )
+from storm.expr import (
+    Alias,
+    And,
+    Desc,
+    Join,
+    LeftJoin,
+    Lower,
+    Not,
+    Or,
+    SQL,
+    )
 from zope.component import getUtility
 from zope.interface import implements
 from zope.schema.interfaces import IVocabularyTokenized
-from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
+from zope.schema.vocabulary import (
+    SimpleTerm,
+    SimpleVocabulary,
+    )
 from zope.security.interfaces import Unauthorized
-from zope.security.proxy import isinstance as zisinstance
-from zope.security.proxy import removeSecurityProxy
+from zope.security.proxy import (
+    isinstance as zisinstance,
+    removeSecurityProxy,
+    )
 
-from canonical.cachedproperty import cachedproperty
-from canonical.database.sqlbase import SQLBase, quote_like, quote, sqlvalues
-from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet)
+from canonical.database.sqlbase import (
+    quote,
+    quote_like,
+    SQLBase,
+    sqlvalues,
+    )
 from canonical.launchpad.database.account import Account
 from canonical.launchpad.database.emailaddress import EmailAddress
 from canonical.launchpad.database.stormsugar import StartsWith
 from canonical.launchpad.helpers import shortlist
-from lp.bugs.interfaces.bugtask import (
-    IBugTask, IDistroBugTask, IDistroSeriesBugTask, IProductSeriesBugTask,
-    IUpstreamBugTask)
+from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import IStore
-from lp.blueprints.interfaces.specification import ISpecification
-from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import (
-    ILaunchBag, IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+    DEFAULT_FLAVOR,
+    ILaunchBag,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 from canonical.launchpad.webapp.tales import DateTimeFormatterAPI
 from canonical.launchpad.webapp.vocabulary import (
-    BatchedCountableIterator, CountableIterator, IHugeVocabulary,
-    NamedSQLObjectHugeVocabulary, NamedSQLObjectVocabulary,
-    SQLObjectVocabularyBase)
-
+    BatchedCountableIterator,
+    CountableIterator,
+    IHugeVocabulary,
+    NamedSQLObjectHugeVocabulary,
+    NamedSQLObjectVocabulary,
+    SQLObjectVocabularyBase,
+    )
+from lp.blueprints.interfaces.specification import ISpecification
+from lp.bugs.interfaces.bugtask import (
+    IBugTask,
+    IDistroBugTask,
+    IDistroSeriesBugTask,
+    IProductSeriesBugTask,
+    IUpstreamBugTask,
+    )
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
-    IDistributionSourcePackage)
+    IDistributionSourcePackage,
+    )
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.mailinglist import (
-    IMailingListSet, MailingListStatus)
+    IMailingListSet,
+    MailingListStatus,
+    )
 from lp.registry.interfaces.milestone import (
-    IMilestoneSet, IProjectGroupMilestone)
+    IMilestoneSet,
+    IProjectGroupMilestone,
+    )
 from lp.registry.interfaces.person import (
-    IPerson, IPersonSet, ITeam, PersonVisibility)
+    IPerson,
+    IPersonSet,
+    ITeam,
+    PersonVisibility,
+    )
 from lp.registry.interfaces.pillar import IPillarName
-from lp.registry.interfaces.product import IProduct, IProductSet, License
+from lp.registry.interfaces.product import (
+    IProduct,
+    IProductSet,
+    License,
+    )
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
-from lp.registry.model.teammembership import TeamParticipation
 from lp.registry.model.distribution import Distribution
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.featuredproject import FeaturedProject
@@ -125,6 +167,8 @@ from lp.registry.model.productrelease import ProductRelease
 from lp.registry.model.productseries import ProductSeries
 from lp.registry.model.projectgroup import ProjectGroup
 from lp.registry.model.sourcepackagename import SourcePackageName
+from lp.registry.model.teammembership import TeamParticipation
+from lp.services.propertycache import cachedproperty
 
 
 class BasePersonVocabulary:
@@ -220,8 +264,7 @@ class ProductVocabulary(SQLObjectVocabularyBase):
             like_query = "'%%' || %s || '%%'" % quote_like(query)
             fti_query = quote(query)
             sql = "active = 't' AND (name LIKE %s OR fti @@ ftq(%s))" % (
-                    like_query, fti_query
-                    )
+                    like_query, fti_query)
             return self._table.select(sql, orderBy=self._orderBy)
         return self.emptySelectResults()
 
@@ -268,8 +311,7 @@ class ProjectGroupVocabulary(SQLObjectVocabularyBase):
             like_query = "'%%' || %s || '%%'" % quote_like(query)
             fti_query = quote(query)
             sql = "active = 't' AND (name LIKE %s OR fti @@ ftq(%s))" % (
-                    like_query, fti_query
-                    )
+                    like_query, fti_query)
             return self._table.select(sql)
         return self.emptySelectResults()
 
@@ -441,9 +483,7 @@ class ValidPersonOrTeamVocabulary(
                 # visible.
                 private_query = AND(
                     Not(Person.teamowner == None),
-                    OR(
-                        Person.visibility == PersonVisibility.PRIVATE,
-                        Person.visibility == PersonVisibility.PRIVATE_MEMBERSHIP))
+                    Person.visibility == PersonVisibility.PRIVATE)
             else:
                 private_query = AND(
                     TeamParticipation.person == logged_in_user.id,
@@ -547,11 +587,8 @@ class ValidPersonOrTeamVocabulary(
                        # Or a person who has an active account and a working
                        # email address.
                        And(Account.status == AccountStatus.ACTIVE,
-                           EmailAddress.status.is_in(valid_email_statuses))
-                       ),
-                    self.extra_clause
-                    )
-                )
+                           EmailAddress.status.is_in(valid_email_statuses))),
+                    self.extra_clause))
             # The public query doesn't need to be ordered as it will be done
             # at the end.
             public_result.order_by()
@@ -608,10 +645,7 @@ class ValidPersonOrTeamVocabulary(
         else:
             result.order_by(Person.displayname, Person.name)
         result.config(limit=self.LIMIT)
-        # XXX: BradCrittenden 2009-04-24 bug=217644: Wrap the results to
-        # ensure the .count() method works until the Storm bug is fixed and
-        # integrated.
-        return DecoratedResultSet(result)
+        return result
 
     def search(self, text):
         """Return people/teams whose fti or email address match :text:."""
@@ -687,10 +721,7 @@ class ValidTeamVocabulary(ValidPersonOrTeamVocabulary):
         result.config(distinct=True)
         result.order_by(Person.displayname, Person.name)
         result.config(limit=self.LIMIT)
-        # XXX: BradCrittenden 2009-04-24 bug=217644: Wrap the results to
-        # ensure the .count() method works until the Storm bug is fixed and
-        # integrated.
-        return DecoratedResultSet(result)
+        return result
 
 
 class ValidPersonVocabulary(ValidPersonOrTeamVocabulary):
@@ -791,7 +822,7 @@ class PersonActiveMembershipVocabulary:
     def _get_teams(self):
         """The teams that the vocabulary is built from."""
         return [membership.team for membership
-                in self.context.myactivememberships
+                in self.context.team_memberships
                 if membership.team.visibility == PersonVisibility.PUBLIC]
 
     def __len__(self):
@@ -982,9 +1013,7 @@ class ProductReleaseVocabulary(SQLObjectVocabularyBase):
                 Milestone.q.productseriesID == ProductSeries.q.id,
                 ProductSeries.q.productID == Product.q.id,
                 Product.q.name == productname,
-                ProductSeries.q.name == productseriesname
-                )
-            )
+                ProductSeries.q.name == productseriesname))
         try:
             return self.toTerm(obj)
         except IndexError:
@@ -1252,7 +1281,7 @@ class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
     A commercial project is one that does not qualify for free hosting.  For
     normal users only commercial projects for which the user is the
     maintainer, or in the maintainers team, will be listed.  For users with
-    launchpad.ProjectReview permission, all commercial projects are returned.
+    launchpad.Moderate permission, all commercial projects are returned.
     """
 
     implements(IHugeVocabulary)
@@ -1270,8 +1299,7 @@ class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
         return [
             project for project in sorted(projects,
                                           key=attrgetter('displayname'))
-            if not project.qualifies_for_free_hosting
-            ]
+            if not project.qualifies_for_free_hosting]
 
     def _doSearch(self, query=None):
         """Return terms where query is in the text of name
@@ -1281,7 +1309,7 @@ class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
         if user is None:
             return self.emptySelectResults()
         product_set = getUtility(IProductSet)
-        if check_permission('launchpad.ProjectReview', product_set):
+        if check_permission('launchpad.Moderate', product_set):
             projects = product_set.forReview(
                 search_text=query, licenses=[License.OTHER_PROPRIETARY],
                 active=True)
@@ -1409,11 +1437,8 @@ class DistroSeriesVocabulary(NamedSQLObjectVocabulary):
                     Distribution.q.id == DistroSeries.q.distributionID,
                     OR(
                         CONTAINSSTRING(Distribution.q.name, query),
-                        CONTAINSSTRING(DistroSeries.q.name, query)
-                        )
-                    ),
-                orderBy=self._orderBy
-                )
+                        CONTAINSSTRING(DistroSeries.q.name, query))),
+                    orderBy=self._orderBy)
         return objs
 
 
@@ -1427,8 +1452,7 @@ class PillarVocabularyBase(NamedSQLObjectHugeVocabulary):
         """See `IVocabulary`."""
         if IPillarName.providedBy(obj):
             assert obj.active, 'Inactive object %s %d' % (
-                    obj.__class__.__name__, obj.id
-                    )
+                    obj.__class__.__name__, obj.id)
             obj = obj.pillar
 
         # It is a hack using the class name here, but it works

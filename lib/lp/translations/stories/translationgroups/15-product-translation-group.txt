@@ -15,9 +15,7 @@ First make sure it uses Launchpad for translations.
     >>> print netapplet_owner_browser.title
     Configure Translations : NetApplet
 
-    >>> netapplet_owner_browser.getControl(
-    ...     'Translations for this project are done in Launchpad'
-    ...     ).selected = True
+    >>> netapplet_owner_browser.getControl('Launchpad').click()
     >>> netapplet_owner_browser.getControl('Change').click()
     >>> print netapplet_owner_browser.title
     Network Applet in Launchpad

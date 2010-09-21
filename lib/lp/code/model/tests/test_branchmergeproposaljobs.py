@@ -3,42 +3,59 @@
 
 """Tests for branch merge proposal jobs."""
 
+from __future__ import with_statement
+
 __metaclass__ = type
 
-from datetime import datetime, timedelta
-import transaction
+from datetime import (
+    datetime,
+    timedelta,
+    )
 import unittest
 
+from lazr.lifecycle.event import ObjectModifiedEvent
 import pytz
 from sqlobject import SQLObjectNotFound
 from storm.locals import Select
 from storm.store import Store
+import transaction
 from zope.component import getUtility
 
 from canonical.config import config
 from canonical.launchpad.webapp.testing import verifyObject
-from canonical.testing import DatabaseFunctionalLayer, LaunchpadZopelessLayer
-
-from lazr.lifecycle.event import ObjectModifiedEvent
+from canonical.testing import (
+    DatabaseFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
 from lp.code.adapters.branch import BranchMergeProposalDelta
 from lp.code.interfaces.branchmergeproposal import (
-    IBranchMergeProposalJob, IBranchMergeProposalJobSource,
-    ICodeReviewCommentEmailJob, ICodeReviewCommentEmailJobSource,
-    IMergeProposalCreatedJob, IMergeProposalUpdatedEmailJob,
+    IBranchMergeProposalJob,
+    IBranchMergeProposalJobSource,
+    ICodeReviewCommentEmailJob,
+    ICodeReviewCommentEmailJobSource,
+    IMergeProposalCreatedJob,
+    IMergeProposalUpdatedEmailJob,
     IMergeProposalUpdatedEmailJobSource,
-    IReviewRequestedEmailJob, IReviewRequestedEmailJobSource,
-    IUpdatePreviewDiffJob, IUpdatePreviewDiffJobSource,
+    IReviewRequestedEmailJob,
+    IReviewRequestedEmailJobSource,
+    IUpdatePreviewDiffJob,
+    IUpdatePreviewDiffJobSource,
     )
 from lp.code.model.branchmergeproposaljob import (
-     BranchMergeProposalJob, BranchMergeProposalJobDerived,
-     BranchMergeProposalJobType, CodeReviewCommentEmailJob,
-     MergeProposalCreatedJob, MergeProposalUpdatedEmailJob,
-     ReviewRequestedEmailJob, UpdatePreviewDiffJob,
-     )
+    BranchMergeProposalJob,
+    BranchMergeProposalJobDerived,
+    BranchMergeProposalJobType,
+    CodeReviewCommentEmailJob,
+    MergeProposalCreatedJob,
+    MergeProposalUpdatedEmailJob,
+    ReviewRequestedEmailJob,
+    UpdatePreviewDiffJob,
+    )
 from lp.code.model.tests.test_diff import DiffTestCase
 from lp.code.subscribers.branchmergeproposal import merge_proposal_modified
-from lp.services.job.runner import JobRunner
 from lp.services.job.model.job import Job
+from lp.services.job.runner import JobRunner
+from lp.services.osutils import override_environ
 from lp.testing import TestCaseWithFactory
 from lp.testing.mail_helpers import pop_notifications
 
@@ -104,7 +121,10 @@ class TestMergeProposalCreatedJob(TestCaseWithFactory):
 
     def createProposalWithEmptyBranches(self):
         target_branch, tree = self.create_branch_and_tree()
-        tree.commit('test')
+        # XXX: AaronBentley 2010-08-06 bug=614404: a bzr username is
+        # required to generate the revision-id.
+        with override_environ(BZR_EMAIL='me@example.com'):
+            tree.commit('test')
         source_branch = self.factory.makeProductBranch(
             product=target_branch.product)
         self.createBzrBranch(source_branch, tree.branch)
@@ -123,7 +143,6 @@ class TestMergeProposalCreatedJob(TestCaseWithFactory):
     def test_getOopsMailController(self):
         """The registrant is notified about merge proposal creation issues."""
         bmp = self.factory.makeBranchMergeProposal()
-        bmp.source_branch.requestMirror()
         job = MergeProposalCreatedJob.create(bmp)
         ctrl = job.getOopsMailController('1234')
         self.assertEqual([bmp.registrant.preferredemail.email], ctrl.to_addrs)
@@ -138,7 +157,10 @@ class TestMergeProposalCreatedJob(TestCaseWithFactory):
         bmp = self.factory.makeBranchMergeProposal(
             target_branch=self.factory.makePackageBranch())
         tree = self.create_branch_and_tree(db_branch=bmp.target_branch)[1]
-        tree.commit('Initial commit')
+        # XXX: AaronBentley 2010-08-06 bug=614404: a bzr username is
+        # required to generate the revision-id.
+        with override_environ(BZR_EMAIL='me@example.com'):
+            tree.commit('Initial commit')
         self.createBzrBranch(bmp.source_branch, tree.branch)
         self.factory.makeRevisionsForBranch(bmp.source_branch, count=1)
         job = MergeProposalCreatedJob.create(bmp)

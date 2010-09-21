@@ -29,6 +29,14 @@ COMMENT ON COLUMN ApportJob.blob IS 'The TemporaryBlobStorage entry on which the
 COMMENT ON COLUMN ApportJob.job_type IS 'The type of job (enumeration value). Allows us to query the database for a given subset of ApportJobs.';
 COMMENT ON COLUMN ApportJob.json_data IS 'A JSON struct containing data for the job.';
 
+-- ArchiveJob
+
+COMMENT ON TABLE ArchiveJob is 'Contains references to jobs to be run against Archives.';
+COMMENT ON COLUMN ArchiveJob.archive IS 'The archive on which the job is to be run.';
+COMMENT ON COLUMN ArchiveJob.job_type IS 'The type of job (enumeration value). Allows us to query the database for a given subset of ArchiveJobs.';
+COMMENT ON COLUMN ArchiveJob.json_data IS 'A JSON struct containing data for the job.';
+
+
 -- Branch
 COMMENT ON TABLE Branch IS 'Bzr branch';
 COMMENT ON COLUMN Branch.registrant IS 'The user that registered the branch.';
@@ -188,6 +196,35 @@ COMMENT ON COLUMN BugNomination.date_created IS 'The date the nomination was sub
 COMMENT ON COLUMN BugNomination.date_decided IS 'The date the nomination was approved or declined.';
 COMMENT ON COLUMN BugNomination.owner IS 'The person that submitted the nomination';
 COMMENT ON COLUMN BugNomination.decider IS 'The person who approved or declined the nomination';
+
+--- BugSubscription
+COMMENT ON TABLE BugSubscription IS 'A subscription by a Person to a bug.';
+COMMENT ON COLUMN BugSubscription.bug_notification_level IS 'The level of notifications which the Person will receive from this subscription.';
+
+-- BugSubscriptionFilter
+COMMENT ON TABLE BugSubscriptionFilter IS 'A filter with search criteria. Emails are sent only if the affected bug matches the specified parameters. The parameters are the same as those used for bugtask searches.';
+COMMENT ON COLUMN BugSubscriptionFilter.structuralsubscription IS 'The structural subscription to be filtered.';
+COMMENT ON COLUMN BugSubscriptionFilter.find_all_tags IS 'If set, search for bugs having all tags specified in BugSubscriptionFilterTag, else search for bugs having any of the tags specified in BugSubscriptionFilterTag.';
+COMMENT ON COLUMN BugSubscriptionFilter.include_any_tags IS 'If True, include messages for bugs having any tag set.';
+COMMENT ON COLUMN BugSubscriptionFilter.exclude_any_tags IS 'If True, exclude bugs having any tag set.';
+COMMENT ON COLUMN BugSubscriptionFilter.other_parameters IS 'Other filter paremeters. Actual filtering is implemented on Python level.';
+COMMENT ON COLUMN BugSubscriptionFilter.description IS 'A description of the filter, allowing subscribers to note the intent of the filter.';
+
+-- BugSubscriptionFilterStatus
+COMMENT ON TABLE BugSubscriptionFilterStatus IS 'Filter a bugsubscription by bug task status.';
+COMMENT ON COLUMN BugSubscriptionFilterStatus.filter IS 'The subscription filter of this record.';
+COMMENT ON COLUMN BugSubscriptionFilterStatus.status IS 'The bug task status.';
+
+-- BugSubscriptionFilterImportance
+COMMENT ON TABLE BugSubscriptionFilterImportance IS 'Filter a bugsubscription by bug task status.';
+COMMENT ON COLUMN BugSubscriptionFilterImportance.filter IS 'The subscription filter of this record.';
+COMMENT ON COLUMN BugSubscriptionFilterImportance.importance IS 'The bug task importance.';
+
+-- BugSubscriptionFilterTag
+COMMENT ON TABLE BugSubscriptionFilterTag IS 'Filter by bug tag.';
+COMMENT ON COLUMN BugSubscriptionFilterTag.filter IS 'The subscription filter of this record.';
+COMMENT ON COLUMN BugSubscriptionFilterTag.tag IS 'A bug tag.';
+COMMENT ON COLUMN BugSubscriptionFilterTag.include IS 'If True, send only messages for bugs having this tag, else send only messages for bugs which do not have this tag.';
 
 -- BugTag
 COMMENT ON TABLE BugTag IS 'Attaches simple text tags to a bug.';
@@ -491,6 +528,19 @@ COMMENT ON COLUMN DistributionSourcePackageCache.binpkgdescriptions IS 'The aggr
 COMMENT ON COLUMN DistributionSourcePackageCache.changelog IS 'A concatenation of the source package release changelogs for this source package, where the status is not REMOVED.';
 COMMENT ON COLUMN DistributionSourcePackageCache.archive IS 'The archive where the source is published.';
 
+-- DistroSeriesDifference
+COMMENT ON TABLE DistroSeriesDifference IS 'A difference of versions for a package in a derived distroseries and its parent distroseries.';
+COMMENT ON COLUMN DistroSeriesDifference.derived_series IS 'The derived distroseries with the difference from its parent.';
+COMMENT ON COLUMN DistroSeriesDifference.source_package_name IS 'The name of the source package which is different in the two series.';
+COMMENT ON COLUMN DistroSeriesDifference.package_diff IS 'The most recent package diff that was created for this difference.';
+COMMENT ON COLUMN DistroSeriesDifference.status IS 'A distroseries difference can be needing attention, ignored or resolved.';
+COMMENT ON COLUMN DistroSeriesDifference.difference_type IS 'The type of difference that this record represents - a package unique to the derived series, or missing, or in both.';
+
+-- DistroSeriesDifferenceMessage
+COMMENT ON TABLE DistroSeriesDifferenceMessage IS 'A message/comment on a distro series difference.';
+COMMENT ON COLUMN DistroSeriesDifferenceMessage.distro_series_difference IS 'The distro series difference for this comment.';
+COMMENT ON COLUMN DistroSeriesDifferenceMessage.message IS 'The comment for the distro series difference.';
+
 -- DistroSeriesPackageCache
 
 COMMENT ON TABLE DistroSeriesPackageCache IS 'A cache of the text associated with binary packages in the distroseries. This table allows for fast queries to find a binary packagename that matches a given text.';
@@ -521,13 +571,13 @@ COMMENT ON TABLE FeatureFlag IS
 can be changed without restarting Launchpad
 <https://dev.launchpad.net/LEP/FeatureFlags>';
 
-COMMENT ON COLUMN FeatureFlag.scope IS 
+COMMENT ON COLUMN FeatureFlag.scope IS
     'Scope in which this setting is active';
 
-COMMENT ON COLUMN FeatureFlag.priority IS 
+COMMENT ON COLUMN FeatureFlag.priority IS
     'Higher priority flags override lower';
 
-COMMENT ON COLUMN FeatureFlag.flag IS 
+COMMENT ON COLUMN FeatureFlag.flag IS
     'Name of the flag being controlled';
 
 -- KarmaCategory
@@ -623,7 +673,6 @@ COMMENT ON COLUMN Product.translationpermission IS 'The level of openness of thi
 COMMENT ON COLUMN Product.official_rosetta IS 'Whether or not this product upstream uses Rosetta for its official translation team and coordination. This is a useful indicator in terms of whether translations in Rosetta for this upstream will quickly move upstream.';
 COMMENT ON COLUMN Product.official_malone IS 'Whether or not this product upstream uses Malone for an official bug tracker. This is useful to help indicate whether or not people are likely to pick up on bugs registered in Malone.';
 COMMENT ON COLUMN Product.official_answers IS 'Whether or not this product upstream uses Answers officialy. This is useful to help indicate whether or not that a question will receive an answer.';
-COMMENT ON COLUMN Product.official_codehosting IS 'Whether or not this product upstream uses codehosting officially.';
 COMMENT ON COLUMN Product.bug_supervisor IS 'Person who is responsible for managing bugs on this product.';
 COMMENT ON COLUMN Product.security_contact IS 'The person or team who handles security-related issues in the product.';
 COMMENT ON COLUMN Product.driver IS 'This is a driver for the overall product. This driver will be able to approve nominations of bugs and specs to any series in the product, including backporting to old stable series. You want the smallest group of "overall drivers" here, because you can add specific drivers to each series individually.';
@@ -1101,14 +1150,6 @@ COMMENT ON COLUMN BinaryPackagePublishingHistory.archive IS 'Target archive for 
 COMMENT ON COLUMN BinaryPackagePublishingHistory.removed_by IS 'Person responsible for the removal.';
 COMMENT ON COLUMN BinaryPackagePublishingHistory.removal_comment IS 'Reason why the publication was removed.';
 
--- PublishedPackage View
-
-COMMENT ON VIEW PublishedPackage IS
-    'A very large view that brings together all the information about
-    packages that are currently being published within a distribution. This
-    view was designed for the page which shows packages published in the
-    distribution, but may be more widely used.';
-
 -- ProcessorFamily
 
 COMMENT ON TABLE ProcessorFamily IS 'An architecture, that might consist of several actual processors. Different distributions call these architectures different things, so we have an "architecturetag" in DistroArchSeries that might be different to the architecture''s name.';
@@ -1170,8 +1211,6 @@ COMMENT ON COLUMN Account.status_comment IS 'The comment on the status of the ac
 COMMENT ON COLUMN Person.creation_rationale IS 'The rationale for the creation of this Account -- a PersonCreationRationale value.';
 COMMENT ON COLUMN Account.date_status_set IS 'When the status was last changed.';
 COMMENT ON COLUMN Account.displayname IS 'Name to display when rendering information about this account.';
-COMMENT ON COLUMN Account.openid_identifier IS 'The key used to construct an OpenID identity URL for this account.';
-COMMENT ON COLUMN Account.old_openid_identifier IS 'The previous openid_identifier, used for transitions to the current openid_identifier.';
 
 
 -- AccountPassword
@@ -1335,6 +1374,8 @@ COMMENT ON COLUMN SourcePackageRelease.copyright IS 'The copyright associated wi
 COMMENT ON COLUMN SourcePackageRelease.build_conflicts IS 'The list of packages that will conflict with this source while building, as mentioned in the control file "Build-Conflicts:" field.';
 COMMENT ON COLUMN SourcePackageRelease.build_conflicts_indep IS 'The list of packages that will conflict with this source while building in architecture independent environment, as mentioned in the control file "Build-Conflicts-Indep:" field.';
 COMMENT ON COLUMN SourcePackageRelease.changelog IS 'The LibraryFileAlias ID of changelog associated with this sourcepackage.  Often in the case of debian packages and will be found after the installation in /usr/share/doc/<binarypackagename>/changelog.Debian.gz';
+COMMENT ON COLUMN SourcePackageRelease.user_defined_fields IS 'A JSON struct containing a sequence of key-value pairs with user defined fields in the control file.';
+COMMENT ON COLUMN SourcePackageRelease.homepage IS 'Upstream project homepage URL, not checked for validity.';
 
 -- SourcePackageName
 
@@ -1384,19 +1425,10 @@ COMMENT ON COLUMN SourcePackageRecipeDistroSeries.sourcepackagerecipe IS 'The pr
 
 COMMENT ON TABLE SourcePackageRecipeBuild IS 'The build record for the process of building a source package as described by a recipe.';
 COMMENT ON COLUMN SourcePackageRecipeBuild.distroseries IS 'The distroseries the build was for.';
-COMMENT ON COLUMN SourcePackageRecipeBuild.build_state IS 'The state of the build.';
-COMMENT ON COLUMN SourcePackageRecipeBuild.date_built IS 'When the build record was processed.';
-COMMENT ON COLUMN SourcePackageRecipeBuild.build_duration IS 'How long this build took to be processed.';
-COMMENT ON COLUMN SourcePackageRecipeBuild.build_log IS 'Points to the build_log file stored in librarian.';
-COMMENT ON COLUMN SourcePackageRecipeBuild.builder IS 'Points to the builder which has once processed it.';
-COMMENT ON COLUMN SourcePackageRecipeBuild.date_first_dispatched IS 'The instant the build was dispatched the first time. This value will not get overridden if the build is retried.';
+COMMENT ON COLUMN SourcePackageRecipeBuild.package_build IS 'The package_build with the base information about this build.';
 COMMENT ON COLUMN SourcePackageRecipeBuild.requester IS 'Who requested the build.';
 COMMENT ON COLUMN SourcePackageRecipeBuild.recipe IS 'The recipe being processed.';
 COMMENT ON COLUMN SourcePackageRecipeBuild.manifest IS 'The evaluated recipe that was built.';
-COMMENT ON COLUMN SourcePackageRecipeBuild.archive IS 'The archive the source package will be built in and uploaded to.';
-COMMENT ON COLUMN SourcePackageRecipeBuild.pocket IS 'The pocket the source package will be built in and uploaded to.';
-COMMENT ON COLUMN SourcePackageRecipeBuild.dependencies IS 'The missing build dependencies, if any.';
-COMMENT ON COLUMN SourcePackageRecipeBuild.upload_log IS 'The output from uploading the source package to the archive.';
 
 -- SourcePackageRecipeBuildJob
 
@@ -1483,6 +1515,9 @@ COMMENT ON COLUMN BinaryPackageRelease.architecturespecific IS 'This field indic
 COMMENT ON COLUMN BinaryPackageRelease.pre_depends IS 'The list of packages this binary requires to be installed beforehand in apt/dpkg format, as it is in control file "Pre-Depends:" field.';
 COMMENT ON COLUMN BinaryPackageRelease.enhances IS 'The list of packages pointed as "enhanced" after the installation of this package, as it is in control file "Enhances:" field.';
 COMMENT ON COLUMN BinaryPackageRelease.breaks IS 'The list of packages which will be broken by the installtion of this package, as it is in the control file "Breaks:" field.';
+COMMENT ON COLUMN BinaryPackageRelease.debug_package IS 'The corresponding binary package release containing debug symbols for this binary, if any.';
+COMMENT ON COLUMN BinaryPackageRelease.user_defined_fields IS 'A JSON struct containing a sequence of key-value pairs with user defined fields in the control file.';
+COMMENT ON COLUMN BinaryPackageRelease.homepage IS 'Upstream project homepage URL, not checked for validity.';
 
 
 -- BinaryPackageFile
@@ -1628,6 +1663,7 @@ COMMENT ON COLUMN BuildFarmJob.builder IS 'Points to the builder which processed
 COMMENT ON COLUMN BuildFarmJob.status IS 'Stores the current build status.';
 COMMENT ON COLUMN BuildFarmJob.log IS 'Points to the log for this build farm job file stored in librarian.';
 COMMENT ON COLUMN BuildFarmJob.job_type IS 'The type of build farm job to which this record corresponds.';
+COMMENT ON COLUMN BuildFarmJob.failure_count IS 'The number of consecutive failures on this job.  If excessive, the job may be terminated.';
 
 -- PackageBuild
 COMMENT ON TABLE PackageBuild IS 'PackageBuild: This table stores the information common to build farm jobs that build source or binary packages.';
@@ -1652,6 +1688,7 @@ COMMENT ON COLUMN Builder.url IS 'The url to the build slave. There may be more 
 COMMENT ON COLUMN Builder.manual IS 'Whether or not builder was manual mode, i.e., collect any result from the it, but do not dispach anything to it automatically.';
 COMMENT ON COLUMN Builder.vm_host IS 'The virtual machine host associated to this builder. It should be empty for "native" builders (old fashion or architectures not yet supported by XEN).';
 COMMENT ON COLUMN Builder.active IS 'Whether to present or not the builder in the public list of builders avaialble. It is used to hide transient or defunct builders while they get fixed.';
+COMMENT ON COLUMN Builder.failure_count IS 'The number of consecutive failures on this builder.  Is reset to zero after a sucessful dispatch.';
 
 -- BuildQueue
 COMMENT ON TABLE BuildQueue IS 'BuildQueue: The queue of jobs in progress/scheduled to run on the Soyuz build farm.';
@@ -1988,6 +2025,7 @@ COMMENT ON COLUMN Archive.num_old_versions_published IS 'The number of versions 
 COMMENT ON COLUMN Archive.relative_build_score IS 'A delta to the build score that is applied to all builds in this archive.';
 COMMENT ON COLUMN Archive.external_dependencies IS 'Newline-separated list of repositories to be used to retrieve any external build dependencies when building packages in this archive, in the format: deb http[s]://[user:pass@]<host>[/path] %(series)s[-pocket] [components]  The series variable is replaced with the series name of the context build.  This column is specifically and only intended for OEM migration to Launchpad and should be re-examined in October 2010 to see if it is still relevant.';
 COMMENT ON COLUMN Archive.commercial IS 'Whether this archive is a commercial Archive and should appear in the Software Center.';
+COMMENT ON COLUMN Archive.build_debug_symbols IS 'Whether builds for this archive should create debug symbol packages.';
 
 -- ArchiveAuthToken
 
@@ -2124,9 +2162,6 @@ COMMENT ON COLUMN Entitlement.is_dirty IS 'This entitlement has been modified an
 COMMENT ON COLUMN Entitlement.distribution IS 'The distribution to which this entitlement applies.';
 COMMENT ON COLUMN Entitlement.product IS 'The product to which this entitlement applies.';
 COMMENT ON COLUMN Entitlement.project IS 'The project to which this entitlement applies.';
-
--- OpenIdNonce
-COMMENT ON TABLE OpenIdNonce IS 'Nonces for our OpenID consumer.';
 
 -- OpenIdRPConfig
 COMMENT ON TABLE OpenIdRPConfig IS 'Configuration information for OpenID Relying Parties';
@@ -2408,3 +2443,16 @@ COMMENT ON TABLE DatabaseTableStats IS 'Snapshots of pg_stat_user_tables to let 
 -- DatabaseCpuStats
 COMMENT ON TABLE DatabaseCpuStats IS 'Snapshots of CPU utilization per database username.';
 COMMENT ON COLUMN DatabaseCpuStats.cpu IS '% CPU utilization * 100, as reported by ps -o cp';
+
+
+-- SuggestivePOTemplate
+COMMENT ON TABLE SuggestivePOTemplate IS
+'Cache of POTemplates that can provide external translation suggestions.';
+
+
+-- OpenIdIdentifier
+COMMENT ON TABLE OpenIdIdentifier IS
+'OpenId Identifiers that can be used to log into an Account.';
+COMMENT ON COLUMN OpenIdIdentifier.identifier IS
+'OpenId Identifier. This should be a URL, but is currently just a token that can be used to generate the Identity URL for the Canonical SSO OpenId Provider.';
+

@@ -25,6 +25,12 @@ archive tree without removing the files.
 """
 import _pythonpath
 
+# This is needed to prevent circular imports until we get rid of the
+# abomination that is known as
+# canonical/launchpad/interfaces/__init.py__ that imports the whole
+# freaking world.
+import canonical.launchpad.interfaces
+
 from canonical.config import config
 from lp.soyuz.scripts.processdeathrow import DeathRowProcessor
 
