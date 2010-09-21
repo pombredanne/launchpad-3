@@ -112,12 +112,10 @@ Get a builder from the sample data:
 
 Make sure that a_builder has no active builds:
 
-    >>> from canonical.launchpad.ftests import syncUpdate
     >>> if a_builder.currentjob is not None:
     ...     currentjob = a_builder.currentjob
     ...     currentjob.setDateStarted(None)
     ...     currentjob.builder = None
-    ...     syncUpdate(currentjob)
 
 Force the test builder to be 'ok' as the code required to do this
 automatically is not yet factored into the content class.
@@ -595,11 +593,9 @@ tests.
     >>> resurrect_build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(
     ...     current_job)
     >>> resurrect_build.status = BuildStatus.NEEDSBUILD
-    >>> syncUpdate(resurrect_build)
     >>> current_job.builder = None
     >>> current_job.setDateStarted(None)
     >>> current_job.lastscore = 0
-    >>> syncUpdate(current_job)
 
 IBuilder.findCandidate also identifies if there are builds for
 superseded source package releases in the queue and marks the
