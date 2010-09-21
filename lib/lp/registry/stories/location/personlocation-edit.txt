@@ -1,4 +1,5 @@
-== Edit person location information ==
+Edit person location information
+================================
 
 A person's location is only editable by people who have launchpad.Edit on
 the person, which is that person and admins.
