@@ -11,6 +11,7 @@ __all__ = [
     ]
 
 from lazr.delegates import delegates
+from operator import attrgetter
 from simplejson import dumps
 
 from canonical.launchpad.webapp import (
@@ -95,7 +96,10 @@ class BugPortletDuplicateSubcribersContents(LaunchpadView, BugViewMixin):
         """Get the list of subscriptions to duplicates of this bug."""
         return [
             SubscriptionAttrDecorator(subscription)
-            for subscription in self.context.getSubscriptionsFromDuplicates()]
+            for subscription in sorted(
+                self.context.getSubscriptionsFromDuplicates(),
+                key=attrgetter("subscriber.displayname"))
+            ]
 
 
 class BugPortletSubcribersIds(LaunchpadView, BugViewMixin):
