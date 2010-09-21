@@ -148,7 +148,7 @@ class SeriesUsageEnumsMixin(object):
         self.series = None
         self.series_pillar = None
 
-    def _addPOTemplate(self):
+    def _addCurrentPOTemplate(self):
         raise NotImplementedError("Child class must provide _addPOTTemplate.")
 
     def test_translations_usage_pillar_unknown(self):
@@ -159,10 +159,7 @@ class SeriesUsageEnumsMixin(object):
             ServiceUsage.UNKNOWN,
             self.series.translations_usage)
 
-        self._addPOTemplate()
-        self.assertEqual(
-            ServiceUsage.UNKNOWN,
-            self.series_pillar.translations_usage)
+        self._addCurrentPOTemplate()
         self.assertEqual(
             ServiceUsage.LAUNCHPAD,
             self.series.translations_usage)
@@ -206,9 +203,12 @@ class TestProductSeriesUsageEnums(
             product=self.series_pillar)
         login_person(self.series_pillar.owner)
 
-    def _addPOTemplate(self):
+    def _addCurrentPOTemplate(self):
         self.factory.makePOTemplate(productseries=self.series)
-        self.series_pillar.translations_usage = ServiceUsage.UNKNOWN
+        # XXX j.c.sackett 2010-09-21 bug=605924: Right now for it to
+        # be current, the series pillar must be marked as using
+        # using translations.
+        self.series_pillar.translations_usage = ServiceUsage.LAUNCHPAD
         
 
 class TestDistroSeriesUsageEnums(
@@ -224,7 +224,7 @@ class TestDistroSeriesUsageEnums(
             distribution=self.series_pillar)
         login_person(self.series_pillar.owner)
 
-    def _addPOTemplate(self):
+    def _addCurrentPOTemplate(self):
         sp_name = self.factory.makeSourcePackageName()
         self.factory.makeSourcePackage(
             sourcepackagename=sp_name,
@@ -232,7 +232,11 @@ class TestDistroSeriesUsageEnums(
         self.factory.makePOTemplate(
             distroseries=self.series,
             sourcepackagename=sp_name)
-        self.series_pillar.translations_usage = ServiceUsage.UNKNOWN
+
+        # XXX j.c.sackett 2010-09-21 bug=605924: Right now for it to
+        # be current, the series pillar must be marked as using
+        # using translations.
+        self.series_pillar.translations_usage = ServiceUsage.LAUNCHPAD
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
