@@ -466,6 +466,19 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         # Show no database constraints were violated
         Store.of(recipe).flush()
 
+    def test_destroySelf_clears_release(self):
+        # Destroying a sourcepackagerecipe removes references to its builds
+        # from their releases.
+        recipe = self.factory.makeSourcePackageRecipe()
+        build = self.factory.makeSourcePackageRecipeBuild(recipe=recipe)
+        release = self.factory.makeSourcePackageRelease(
+            source_package_recipe_build=build)
+        self.assertEqual(build, release.source_package_recipe_build)
+        with person_logged_in(recipe.owner):
+            recipe.destroySelf()
+        self.assertIs(None, release.source_package_recipe_build)
+        transaction.commit()
+
     def test_findStaleDailyBuilds(self):
         # Stale recipe not built daily.
         self.factory.makeSourcePackageRecipe()
