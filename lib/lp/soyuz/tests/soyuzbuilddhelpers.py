@@ -61,10 +61,14 @@ class MockBuilder:
             slave_build_id)
 
     def cleanSlave(self):
+        # XXX: This should not print anything. The print is only here to make
+        # doc/builder.txt a meaningful test.
         print 'Cleaning slave'
         return self.slave.clean()
 
     def requestAbort(self):
+        # XXX: This should not print anything. The print is only here to make
+        # doc/builder.txt a meaningful test.
         print 'Aborting slave'
         return self.slave.abort()
 

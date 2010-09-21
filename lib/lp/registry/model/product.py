@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 # pylint: disable-msg=E0611,W0212
 
@@ -17,6 +17,7 @@ import datetime
 import operator
 
 from lazr.delegates import delegates
+from lazr.restful.error import expose
 import pytz
 from sqlobject import (
     BoolCol,
@@ -25,11 +26,13 @@ from sqlobject import (
     SQLObjectNotFound,
     StringCol,
     )
+from storm.expr import NamedFunc
 from storm.locals import (
     And,
     Desc,
     Int,
     Join,
+    Select,
     SQL,
     Store,
     Unicode,
@@ -45,6 +48,9 @@ from canonical.database.sqlbase import (
     quote,
     SQLBase,
     sqlvalues,
+    )
+from canonical.launchpad.components.decoratedresultset import (
+    DecoratedResultSet,
     )
 from canonical.launchpad.interfaces.launchpad import (
     IHasIcon,
@@ -62,6 +68,7 @@ from canonical.launchpad.webapp.interfaces import (
     MAIN_STORE,
     )
 from canonical.launchpad.webapp.sorting import sorted_version_numbers
+
 from lp.answers.interfaces.faqtarget import IFAQTarget
 from lp.answers.interfaces.questioncollection import (
     QUESTION_STATUS_DEFAULT_SEARCH,
@@ -85,7 +92,6 @@ from lp.blueprints.interfaces.specification import (
     SpecificationDefinitionStatus,
     SpecificationFilter,
     SpecificationImplementationStatus,
-    SpecificationSort,
     )
 from lp.blueprints.model.specification import (
     HasSpecificationsMixin,
@@ -145,6 +151,7 @@ from lp.registry.model.pillar import HasAliasMixin
 from lp.registry.model.productlicense import ProductLicense
 from lp.registry.model.productrelease import ProductRelease
 from lp.registry.model.productseries import ProductSeries
+from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.registry.model.structuralsubscription import (
     StructuralSubscriptionTargetMixin,
     )
@@ -201,14 +208,25 @@ def get_license_status(license_approved, license_reviewed, licenses):
         return LicenseStatus.OPEN_SOURCE
 
 
+class Array(NamedFunc):
+    """Implements the postgres "array" function in Storm."""
+    name = 'array'
+
+
 class ProductWithLicenses:
     """Caches `Product.licenses`."""
 
     delegates(IProduct, 'product')
 
-    def __init__(self, product, licenses):
+    def __init__(self, product, license_ids):
+        """Initialize a `ProductWithLicenses`.
+
+        :param product: the `Product` to wrap.
+        :param license_ids: a sequence of numeric `License` ids.
+        """
         self.product = product
-        self._licenses = licenses
+        self._licenses = tuple([
+            License.items[id] for id in sorted(license_ids)])
 
     @property
     def licenses(self):
@@ -223,8 +241,47 @@ class ProductWithLicenses:
         `Product.licenses`, which is not cached, instead of
         `ProductWithLicenses.licenses`, which is cached.
         """
+        naked_product = removeSecurityProxy(self.product)
         return get_license_status(
-            self.license_approved, self.license_reviewed, self.licenses)
+            naked_product.license_approved, naked_product.license_reviewed,
+            self.licenses)
+
+    @classmethod
+    def composeLicensesColumn(cls, for_class=None):
+        """Compose a Storm column specification for licenses.
+
+        Use this to render a list of `Product` linkes without querying
+        licenses for each one individually.
+
+        It lets you prefetch the licensing information in the same
+        query that fetches a `Product`.  Just add the column spec
+        returned by this function to the query, and pass it to the
+        `ProductWithLicenses` constructor:
+
+        license_column = ProductWithLicenses.composeLicensesColumn()
+        products_with_licenses = [
+            ProductWithLicenses(product, licenses)
+            for product, licenses in store.find(Product, license_column)
+            ]
+
+        :param for_class: Class to find licenses for.  Defaults to
+            `Product`, but could also be a Storm `ClassAlias`.
+        """
+        if for_class is None:
+            for_class = Product
+
+        return Array(
+            Select(
+                columns=[ProductLicense.license],
+                where=(ProductLicense.product == for_class.id),
+                tables=[ProductLicense]))
+
+
+class UnDeactivateable(Exception):
+    """Raised when a project is requested to deactivate but can not."""
+
+    def __init__(self, msg):
+        super(UnDeactivateable, self).__init__(msg)
 
 
 class Product(SQLBase, BugTargetBase, MakesAnnouncements,
@@ -396,9 +453,9 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         # Validate deactivation.
         if self.active == True and value == False:
             if len(self.sourcepackages) > 0:
-                raise AssertionError(
+                raise expose(UnDeactivateable(
                     'This project cannot be deactivated since it is '
-                    'linked to source packages.')
+                    'linked to source packages.'))
         return value
 
     active = BoolCol(dbName='active', notNull=True, default=True,
@@ -785,28 +842,40 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             (x.sourcepackagename.name, x.distroseries.name,
              x.distroseries.distribution.name))
 
-    @property
+    @cachedproperty
     def distrosourcepackages(self):
-        from lp.registry.model.distributionsourcepackage \
-            import DistributionSourcePackage
-        clause = """ProductSeries.id=Packaging.productseries AND
-                    ProductSeries.product = %s
-                    """ % sqlvalues(self.id)
-        clauseTables = ['ProductSeries']
-        ret = Packaging.select(clause, clauseTables,
-            prejoins=["sourcepackagename", "distroseries.distribution"])
-        distros = set()
-        dsps = []
-        for packaging in ret:
-            distro = packaging.distroseries.distribution
-            if distro in distros:
-                continue
-            distros.add(distro)
-            dsps.append(DistributionSourcePackage(
-                sourcepackagename=packaging.sourcepackagename,
-                distribution=distro))
-        return sorted(dsps, key=lambda x:
-            (x.sourcepackagename.name, x.distribution.name))
+        from lp.registry.model.distributionsourcepackage import (
+            DistributionSourcePackage,
+            )
+        store = IStore(Packaging)
+        origin = [
+            Packaging,
+            Join(SourcePackageName,
+                 Packaging.sourcepackagename == SourcePackageName.id),
+            Join(ProductSeries, Packaging.productseries == ProductSeries.id),
+            Join(DistroSeries, Packaging.distroseries == DistroSeries.id),
+            Join(Distribution, DistroSeries.distribution == Distribution.id),
+            ]
+        result = store.using(*origin).find(
+            (SourcePackageName, Distribution),
+            ProductSeries.product == self)
+        result = result.order_by(SourcePackageName.name, Distribution.name)
+        result.config(distinct=True)
+
+        return [
+            DistributionSourcePackage(
+                sourcepackagename=sourcepackagename,
+                distribution=distro)
+            for sourcepackagename, distro in result]
+
+    @cachedproperty
+    def ubuntu_packages(self):
+        """The Ubuntu `IDistributionSourcePackage`s linked to the `IProduct`.
+        """
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        return [
+            package for package in self.distrosourcepackages
+            if package.distribution == ubuntu]
 
     @property
     def bugtargetdisplayname(self):
