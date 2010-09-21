@@ -79,3 +79,17 @@ class TestBug(TestCaseWithFactory):
         StructuralSubscription(
             product=product, subscriber=team, subscribed_by=member)
         self.assertTrue(team in bug.getAlsoNotifiedSubscribers())
+
+    def test_get_indirect_subscribers_with_private_team(self):
+        product = self.factory.makeProduct()
+        bug = self.factory.makeBug(product=product)
+        person = self.factory.makePerson()
+        member = self.factory.makePerson()
+        team = self.factory.makeTeam(
+            owner=member, visibility=PersonVisibility.PRIVATE)
+        StructuralSubscription(
+            product=product, subscriber=person, subscribed_by=person)
+        StructuralSubscription(
+            product=product, subscriber=team, subscribed_by=member)
+        self.assertTrue(team in bug.getIndirectSubscribers())
+
