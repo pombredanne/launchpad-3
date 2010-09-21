@@ -8,6 +8,8 @@ import os
 import socket
 import xmlrpclib
 
+import fixtures
+
 from twisted.trial.unittest import TestCase as TrialTestCase
 from twisted.web.client import getPage
 
@@ -476,7 +478,7 @@ class TestCurrentBuildBehavior(TestCaseWithFactory):
             self.builder.current_build_behavior, BinaryPackageBuildBehavior)
 
 
-class SlaveTestHelpers:
+class SlaveTestHelpers(fixtures.Fixture):
 
     # The URL for the XML-RPC service set up by `BuilddSlaveTestSetup`.
     BASE_URL = 'http://localhost:8221'
@@ -542,7 +544,7 @@ class SlaveTestHelpers:
             {'ogrecomponent': 'main'})
 
 
-class TestSlave(TrialTestCase, SlaveTestHelpers):
+class TestSlave(TrialTestCase):
     """
     Integration tests for BuilderSlave that verify how it works against a
     real slave server.
@@ -550,15 +552,21 @@ class TestSlave(TrialTestCase, SlaveTestHelpers):
 
     layer = TwistedLayer
 
+    def setUp(self):
+        super(TestSlave, self).setUp()
+        self.slave_helper = SlaveTestHelpers()
+        self.slave_helper.setUp()
+        self.addCleanup(self.slave_helper.cleanUp)
+
     # XXX: JonathanLange 2010-09-20 bug=643521: There are also tests for
     # BuilderSlave in buildd-slave.txt and in other places. The tests here
     # ought to become the canonical tests for BuilderSlave vs running buildd
     # XML-RPC server interaction.
 
     def test_abort(self):
-        slave = self.getClientSlave()
+        slave = self.slave_helper.getClientSlave()
         # We need to be in a BUILDING state before we can abort.
-        self.triggerGoodBuild(slave)
+        self.slave_helper.triggerGoodBuild(slave)
         result = slave.abort()
         self.assertEqual(result, BuilderStatus.ABORTING)
 
@@ -567,22 +575,22 @@ class TestSlave(TrialTestCase, SlaveTestHelpers):
         # valid chroot & filemaps works and returns a BuilderStatus of
         # BUILDING.
         build_id = 'some-id'
-        slave = self.getClientSlave()
-        result = self.triggerGoodBuild(slave, build_id)
+        slave = self.slave_helper.getClientSlave()
+        result = self.slave_helper.triggerGoodBuild(slave, build_id)
         self.assertEqual([BuilderStatus.BUILDING, build_id], result)
 
     def test_echo(self):
         # Calling 'echo' contacts the server which returns the arguments we
         # gave it.
-        self.getServerSlave()
-        slave = self.getClientSlave()
+        self.slave_helper.getServerSlave()
+        slave = self.slave_helper.getClientSlave()
         result = slave.echo('foo', 'bar', 42)
         self.assertEqual(['foo', 'bar', 42], result)
 
     def test_info(self):
         # Calling 'info' gets some information about the slave.
-        self.getServerSlave()
-        slave = self.getClientSlave()
+        self.slave_helper.getServerSlave()
+        slave = self.slave_helper.getClientSlave()
         result = slave.info()
         # We're testing the hard-coded values, since the version is hard-coded
         # into the remote slave, the supported build managers are hard-coded
@@ -598,17 +606,17 @@ class TestSlave(TrialTestCase, SlaveTestHelpers):
     def test_initial_status(self):
         # Calling 'status' returns the current status of the slave. The
         # initial status is IDLE.
-        self.getServerSlave()
-        slave = self.getClientSlave()
+        self.slave_helper.getServerSlave()
+        slave = self.slave_helper.getClientSlave()
         status = slave.status()
         self.assertEqual([BuilderStatus.IDLE, ''], status)
 
     def test_status_after_build(self):
         # Calling 'status' returns the current status of the slave. After a
         # build has been triggered, the status is BUILDING.
-        slave = self.getClientSlave()
+        slave = self.slave_helper.getClientSlave()
         build_id = 'status-build-id'
-        self.triggerGoodBuild(slave, build_id)
+        self.slave_helper.triggerGoodBuild(slave, build_id)
         status = slave.status()
         self.assertEqual([BuilderStatus.BUILDING, build_id], status[:2])
         [log_file] = status[2:]
@@ -616,31 +624,31 @@ class TestSlave(TrialTestCase, SlaveTestHelpers):
 
     def test_ensurepresent_not_there(self):
         # ensurepresent checks to see if a file is there.
-        self.getServerSlave()
-        slave = self.getClientSlave()
+        self.slave_helper.getServerSlave()
+        slave = self.slave_helper.getClientSlave()
         d = slave.ensurepresent('blahblah', None, None, None)
         d.addCallback(self.assertEqual, [False, 'No URL'])
         return d
 
     def test_ensurepresent_actually_there(self):
         # ensurepresent checks to see if a file is there.
-        tachandler = self.getServerSlave()
-        slave = self.getClientSlave()
-        self.makeCacheFile(tachandler, 'blahblah')
+        tachandler = self.slave_helper.getServerSlave()
+        slave = self.slave_helper.getClientSlave()
+        self.slave_helper.makeCacheFile(tachandler, 'blahblah')
         d = slave.ensurepresent('blahblah', None, None, None)
         d.addCallback(self.assertEqual, [True, 'No URL'])
         return d
 
     def test_sendFileToSlave_not_there(self):
-        self.getServerSlave()
-        slave = self.getClientSlave()
+        self.slave_helper.getServerSlave()
+        slave = self.slave_helper.getClientSlave()
         d = slave.sendFileToSlave('blahblah', None, None, None)
         return self.assertFailure(d, CannotFetchFile)
 
     def test_sendFileToSlave_actually_there(self):
-        tachandler = self.getServerSlave()
-        slave = self.getClientSlave()
-        self.makeCacheFile(tachandler, 'blahblah')
+        tachandler = self.slave_helper.getServerSlave()
+        slave = self.slave_helper.getClientSlave()
+        self.slave_helper.makeCacheFile(tachandler, 'blahblah')
         d = slave.sendFileToSlave('blahblah', None, None, None)
         def check_present(ignored):
             d = slave.ensurepresent('blahblah', None, None, None)
@@ -649,13 +657,16 @@ class TestSlave(TrialTestCase, SlaveTestHelpers):
         return d
 
 
-class TestSlaveWithLibrarian(TrialTestCase, SlaveTestHelpers):
+class TestSlaveWithLibrarian(TrialTestCase):
     """Tests that need more of Launchpad to run."""
 
     layer = TwistedLaunchpadZopelessLayer
 
     def setUp(self):
         super(TestSlaveWithLibrarian, self)
+        self.slave_helper = SlaveTestHelpers()
+        self.slave_helper.setUp()
+        self.addCleanup(self.slave_helper.cleanUp)
         self.factory = LaunchpadObjectFactory()
         login_as(ANONYMOUS)
         self.addCleanup(logout)
@@ -669,8 +680,8 @@ class TestSlaveWithLibrarian(TrialTestCase, SlaveTestHelpers):
         lf = self.factory.makeLibraryFileAlias(
             'HelloWorld.txt', content="Hello World")
         self.layer.txn.commit()
-        self.getServerSlave()
-        slave = self.getClientSlave()
+        self.slave_helper.getServerSlave()
+        slave = self.slave_helper.getClientSlave()
         d = slave.ensurepresent(
             lf.content.sha1, lf.http_url, "", "")
         d.addCallback(self.assertEqual, [True, 'Download'])
@@ -684,9 +695,10 @@ class TestSlaveWithLibrarian(TrialTestCase, SlaveTestHelpers):
         lf = self.factory.makeLibraryFileAlias(
             'HelloWorld.txt', content=content)
         self.layer.txn.commit()
-        expected_url = '%s/filecache/%s' % (self.BASE_URL, lf.content.sha1)
-        self.getServerSlave()
-        slave = self.getClientSlave()
+        expected_url = '%s/filecache/%s' % (
+            self.slave_helper.BASE_URL, lf.content.sha1)
+        self.slave_helper.getServerSlave()
+        slave = self.slave_helper.getClientSlave()
         d = slave.ensurepresent(
             lf.content.sha1, lf.http_url, "", "")
         def check_file(ignored):
