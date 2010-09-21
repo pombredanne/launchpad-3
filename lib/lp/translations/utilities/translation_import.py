@@ -531,18 +531,24 @@ class FileImporter(object):
             new_message.validation_status = TranslationValidationStatus.OK
             
         # The translation is made current.
-        try:
-            new_message.approve(
-                self.pofile, uploader_person, self.share_with_other_side,
-                self.lock_timestamp)
-        except TranslationConflict:
-            self._addConflictError(message, potmsgset)
-            if self.logger is not None:
-                self.logger.info(
-                    "Conflicting updates on message %d." % potmsgset.id)
-            # The message remains a suggestion.
-            return None
-
+        if new_message.validation_status == TranslationValidationStatus.OK:
+            try:
+                new_message.approve(
+                    self.pofile, uploader_person, self.share_with_other_side,
+                    self.lock_timestamp)
+            except TranslationConflict:
+                self._addConflictError(message, potmsgset)
+                if self.logger is not None:
+                    self.logger.info(
+                        "Conflicting updates on message %d." % potmsgset.id)
+                # The message remains a suggestion.
+                return None
+        else:
+            # XXX: henninge 2010-09-21: Mixed models!
+            # This is mimicking the old behavior to still mark these messages
+            # as "imported". Will have to be removed when
+            # getPOTMsgSetsWithErrors is updated to the new model.
+            new_message.makeCurrentUpstream(True)
 
         just_replaced_msgid = (
             self.importer.uses_source_string_msgids and

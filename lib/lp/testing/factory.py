@@ -1848,8 +1848,18 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         series.status = status
         return ProxyFactory(series)
 
+    def makeUbuntuDistroRelease(self, version=None,
+                                status=SeriesStatus.DEVELOPMENT,
+                                parent_series=None, name=None,
+                                displayname=None):
+        """Short cut to use the celebrity 'ubuntu' as the distribution."""
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        return self.makeDistroRelease(
+            ubuntu, version, status, parent_series, name, displayname)
+
     # Most people think of distro releases as distro series.
     makeDistroSeries = makeDistroRelease
+    makeUbuntuDistroSeries = makeUbuntuDistroRelease
 
     def makeDistroSeriesDifference(
         self, derived_series=None, source_package_name_str=None,
