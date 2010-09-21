@@ -238,7 +238,7 @@ A Person may be linked to an Account.
 
     >>> login('no-priv@canonical.com')
     >>> person = personset.getByEmail('no-priv@canonical.com')
-    >>> person.account.openid_identifier
+    >>> person.account.openid_identifiers.any().identifier
     u'no-priv_oid'
 
 
@@ -627,31 +627,6 @@ TeamParticipation entries for themselves.
 
     >>> vcs_imports.hasParticipationEntryFor(vcs_imports)
     True
-
-The inTeam method is cached to avoid unnecessary database lookups - this
-was a cause of a number of timeouts
-
-    >>> naked_lifeless = removeSecurityProxy(lifeless)
-    >>> naked_lifeless._inTeam_cache[vcs_imports.id]
-    True
-
-    >>> naked_lifeless._inTeam_cache[vcs_imports.id] = False
-    >>> lifeless.inTeam(vcs_imports)
-    False
-
-    >>> naked_lifeless._inTeam_cache[vcs_imports.id] = True
-    >>> lifeless.inTeam(vcs_imports)
-    True
-
-IPerson has a method to clear it; this is used between IPerson instances
-to ensure that the cache can be kept consistent when membership changes.
-
-    >>> naked_lifeless.clearInTeamCache()
-    >>> naked_lifeless._inTeam_cache
-    {}
-
-** See lib/canonical/launchpad/doc/teammembership.txt for more
-information about team membership/participation.
 
 
 Email notifications to teams

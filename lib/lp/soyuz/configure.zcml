@@ -511,6 +511,18 @@
             permission="launchpad.Edit"
             set_attributes="log date_finished date_started builder
                             status dependencies upload_log"/>
+
+        <!-- XXX bigjools 2010-07-27 bug=570939
+             Work around the fact that not all BuildFarmJobs are concrete
+             objects.
+
+             This should not be required once the old BuildFarmJob stuff is
+             removed when the Translation Template jobs and Recipe jobs
+             use the new infrastructure -->
+        <require
+            permission="launchpad.Admin"
+            set_attributes="failure_count"/>
+
     </class>
     <adapter
         provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"

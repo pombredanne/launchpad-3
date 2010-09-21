@@ -55,8 +55,13 @@
                 <td><tal:reason replace="view/context/creation_rationale/title" /></td>
               </tr>
               <tr>
-                <th>OpenID Identifier:</th>
-                <td><tal:openid replace="view/context/openid_identifier" /></td>
+                <th>OpenID Identifiers:</th>
+                <td>
+                  <ul>
+                    <li tal:repeat="identifier view/context/openid_identifiers"
+                        tal:content="identifier/identifier">Identifier</li>
+                  </ul>
+                </td>
               </tr>
               <tr>
                 <th>Email Addresses:</th>

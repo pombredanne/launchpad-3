@@ -119,10 +119,11 @@ When we iterate over the mapped_participants in a team, their locations
 have been pre-cached so that we don't hit the database everytime we
 access a person's .location property.
 
-    >>> from zope.security.proxy import removeSecurityProxy
+    >>> from lp.services.propertycache import IPropertyCache
     >>> for mapped in guadamen.getMappedParticipants():
-    ...     mapped = removeSecurityProxy(mapped)
-    ...     if not verifyObject(IPersonLocation, mapped._location):
+    ...     cache = IPropertyCache(mapped)
+    ...     if ("location" not in cache or
+    ...         not verifyObject(IPersonLocation, cache.location)):
     ...         print 'No cached location on %s' % mapped.name
 
 The mapped_participants methods takes a optional argument to limit the

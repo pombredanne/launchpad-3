@@ -55,7 +55,6 @@ from zope.schema.vocabulary import (
     )
 import zope.security
 
-from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.helpers import (
     is_english_variant,
@@ -116,6 +115,7 @@ from lp.app.errors import (
     UnexpectedFormData,
     )
 from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.services.propertycache import cachedproperty
 
 
 class QuestionLinksMixin:
@@ -539,7 +539,7 @@ class QuestionAddView(QuestionSupportLanguageMixin, LaunchpadFormView):
     # The fields displayed on the search page.
     search_field_names = ['language', 'title']
 
-    custom_widget('title', TextWidget, displayWidth=40)
+    custom_widget('title', TextWidget, displayWidth=40, displayMaxWidth=250)
 
     search_template = ViewPageTemplateFile(
         '../templates/question-add-search.pt')
@@ -601,6 +601,10 @@ class QuestionAddView(QuestionSupportLanguageMixin, LaunchpadFormView):
         if 'title' not in data:
             self.setFieldError(
                 'title', _('You must enter a summary of your problem.'))
+        else:
+            if len(data['title']) > 250:
+                self.setFieldError(
+                    'title', _('The summary cannot exceed 250 characters.'))
         if self.widgets.get('description'):
             if 'description' not in data:
                 self.setFieldError(

@@ -246,7 +246,7 @@ class LaunchpadBrowserPublication(
         threadrequestfile = open('thread-%s.request' % threadid, 'w')
         try:
             request_txt = unicode(request).encode('UTF-8')
-        except:
+        except Exception:
             request_txt = 'Exception converting request to string\n\n'
             try:
                 request_txt += traceback.format_exc()
@@ -446,7 +446,7 @@ class LaunchpadBrowserPublication(
 
         # The view may be security proxied
         view = removeSecurityProxy(ob)
-        # It's possible that the view is a bounded method.
+        # It's possible that the view is a bound method.
         view = getattr(view, 'im_self', view)
         context = removeSecurityProxy(getattr(view, 'context', None))
         pageid = self.constructPageID(view, context)

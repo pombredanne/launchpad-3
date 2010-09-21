@@ -28,7 +28,6 @@ from zope.component import getUtility
 from zope.event import notify
 from zope.lifecycleevent import ObjectCreatedEvent
 
-from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.webapp import (
     action,
@@ -53,6 +52,7 @@ from lp.buildmaster.interfaces.builder import (
     IBuilder,
     IBuilderSet,
     )
+from lp.services.propertycache import cachedproperty
 from lp.soyuz.browser.build import BuildRecordsView
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 

@@ -94,7 +94,6 @@ from lp.registry.model.karma import KarmaContextMixin
 from lp.registry.model.mentoringoffer import MentoringOffer
 from lp.registry.model.milestone import (
     Milestone,
-    milestone_sort_key,
     ProjectMilestone,
     )
 from lp.registry.model.pillar import HasAliasMixin
@@ -164,8 +163,6 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
     bug_reported_acknowledgement = StringCol(default=None)
     max_bug_heat = Int()
 
-    # convenient joins
-
     @property
     def products(self):
         return Product.selectBy(project=self, active=True, orderBy='name')
@@ -205,6 +202,9 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     def translatables(self):
         """See `IProjectGroup`."""
+        # XXX j.c.sackett 2010-08-30 bug=627631 Once data migration has
+        # happened for the usage enums, this sql needs to be updated to
+        # check for the translations_usage, not official_rosetta.
         return Product.select('''
             Product.project = %s AND
             Product.official_rosetta = TRUE AND
@@ -274,7 +274,7 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
         # filter based on completion. see the implementation of
         # Specification.is_complete() for more details
-        completeness =  Specification.completeness_clause
+        completeness = Specification.completeness_clause
 
         if SpecificationFilter.COMPLETE in filter:
             query += ' AND ( %s ) ' % completeness
@@ -419,10 +419,25 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
         result.group_by(Milestone.name)
         if only_active:
             result.having('BOOL_OR(Milestone.active) = TRUE')
-        milestones = shortlist(
+        # MIN(Milestone.dateexpected) has to be used to match the
+        # aggregate function in the `columns` variable.
+        result.order_by(
+            'milestone_sort_key(MIN(Milestone.dateexpected), Milestone.name) '
+            'DESC')
+        return shortlist(
             [ProjectMilestone(self, name, dateexpected, active)
              for name, dateexpected, active in result])
-        return sorted(milestones, key=milestone_sort_key, reverse=True)
+
+    @property
+    def has_milestones(self):
+        """See `IHasMilestones`."""
+        store = Store.of(self)
+        result = store.find(
+            Milestone.id,
+            And(Milestone.product == Product.id,
+                Product.project == self,
+                Product.active == True))
+        return result.any() is not None
 
     @property
     def milestones(self):

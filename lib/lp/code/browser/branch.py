@@ -72,7 +72,6 @@ from zope.schema.vocabulary import (
     )
 from zope.traversing.interfaces import IPathAdapter
 
-from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad import _
@@ -145,6 +144,7 @@ from lp.registry.interfaces.person import (
     )
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.vocabularies import UserTeamsParticipationPlusSelfVocabulary
+from lp.services.propertycache import cachedproperty
 
 
 def quote(text):

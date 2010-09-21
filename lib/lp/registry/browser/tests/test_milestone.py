@@ -160,7 +160,7 @@ class TestMilestoneDeleteView(TestCaseWithFactory):
             }
         view = create_initialized_view(milestone, '+delete', form=form)
         self.assertEqual([], view.errors)
-        self.assertEqual(0, len(product.all_milestones))
+        self.assertEqual([], list(product.all_milestones))
         self.assertEqual(0, product.development_focus.all_bugtasks.count())
 
 

@@ -10,7 +10,6 @@ __all__ = [
 
 import os
 
-from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad.mail import (
     format_address,
@@ -21,6 +20,7 @@ from lp.answers.interfaces.questionenums import QuestionAction
 from lp.registry.interfaces.person import IPerson
 from lp.services.mail.mailwrapper import MailWrapper
 from lp.services.mail.notificationrecipientset import NotificationRecipientSet
+from lp.services.propertycache import cachedproperty
 
 
 def get_email_template(filename):

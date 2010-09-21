@@ -38,7 +38,6 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.buildd.slave import BuilderStatus
-from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.database.sqlbase import (
     SQLBase,
@@ -80,6 +79,7 @@ from lp.registry.interfaces.person import validate_public_person
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from lp.services.osutils import until_no_eintr
+from lp.services.propertycache import cachedproperty
 # XXX Michael Nelson 2010-01-13 bug=491330
 # These dependencies on soyuz will be removed when getBuildRecords()
 # is moved.
@@ -112,17 +112,52 @@ class TimeoutTransport(xmlrpclib.Transport):
         return TimeoutHTTP(host)
 
 
-class BuilderSlave(xmlrpclib.ServerProxy):
+class BuilderSlave(object):
     """Add in a few useful methods for the XMLRPC slave."""
+
+    # XXX: This (BuilderSlave) should use composition, rather than
+    # inheritance.
+
+    # XXX: Have a documented interface for the XML-RPC server:
+    #  - what methods
+    #  - what return values expected
+    #  - what faults
+    #  (see XMLRPCBuildDSlave in lib/canonical/buildd/slave.py).
+
+    # XXX: Arguably, this interface should be asynchronous
+    # (i.e. Deferred-returning). This would mean that Builder (see below)
+    # would have to expect Deferreds.
+
+    # XXX: Once we have a client object with a defined, tested interface, we
+    # should make a test double that doesn't do any XML-RPC and can be used to
+    # make testing easier & tests faster.
 
     def __init__(self, urlbase, vm_host):
         """Initialise a Server with specific parameter to our buildfarm."""
         self.vm_host = vm_host
         self.urlbase = urlbase
         rpc_url = urlappend(urlbase, "rpc")
-        xmlrpclib.Server.__init__(self, rpc_url,
-                                  transport=TimeoutTransport(),
-                                  allow_none=True)
+        self._server = xmlrpclib.Server(
+            rpc_url, transport=TimeoutTransport(), allow_none=True)
+
+    def abort(self):
+        return self._server.abort()
+
+    def echo(self, *args):
+        """Echo the arguments back."""
+        return self._server.echo(*args)
+
+    def info(self):
+        """Return the protocol version and the builder methods supported."""
+        return self._server.info()
+
+    def status(self):
+        """Return the status of the build daemon."""
+        return self._server.status()
+
+    def ensurepresent(self, sha1sum, url, username, password):
+        """Attempt to ensure the given file is present."""
+        return self._server.ensurepresent(sha1sum, url, username, password)
 
     def getFile(self, sha_sum):
         """Construct a file-like object to return the named file."""
@@ -138,6 +173,10 @@ class BuilderSlave(xmlrpclib.ServerProxy):
 
         :return: a (stdout, stderr, subprocess exitcode) triple
         """
+        # XXX: This executes the vm_resume_command
+        # synchronously. RecordingSlave does so asynchronously. Since we
+        # always want to do this asynchronously, there's no need for the
+        # duplication.
         resume_command = config.builddmaster.vm_resume_command % {
             'vm_host': self.vm_host}
         resume_argv = resume_command.split()
@@ -176,12 +215,9 @@ class BuilderSlave(xmlrpclib.ServerProxy):
         :param args: A dictionary of extra arguments. The contents depend on
             the build job type.
         """
-        # Can't upcall to xmlrpclib.ServerProxy, since it doesn't actually
-        # have a 'build' method.
-        build_method = xmlrpclib.ServerProxy.__getattr__(self, 'build')
         try:
-            return build_method(
-                self, buildid, builder_type, chroot_sha1, filemap, args)
+            return self._server.build(
+                buildid, builder_type, chroot_sha1, filemap, args)
         except xmlrpclib.Fault, info:
             raise BuildSlaveFailure(info)
 
@@ -298,6 +334,7 @@ class Builder(SQLBase):
     manual = BoolCol(dbName='manual', default=False)
     vm_host = StringCol(dbName='vm_host')
     active = BoolCol(dbName='active', notNull=True, default=True)
+    failure_count = IntCol(dbName='failure_count', default=0, notNull=True)
 
     def _getCurrentBuildBehavior(self):
         """Return the current build behavior."""
@@ -336,6 +373,14 @@ class Builder(SQLBase):
     current_build_behavior = property(
         _getCurrentBuildBehavior, _setCurrentBuildBehavior)
 
+    def gotFailure(self):
+        """See `IBuilder`."""
+        self.failure_count += 1
+
+    def resetFailureCount(self):
+        """See `IBuilder`."""
+        self.failure_count = 0
+
     def checkSlaveAlive(self):
         """See IBuilder."""
         if self.slave.echo("Test")[0] != "Test":
@@ -353,6 +398,8 @@ class Builder(SQLBase):
         """See IBuilder."""
         return self.slave.clean()
 
+    # XXX 2010-08-24 Julian bug=623281
+    # This should not be a property!  It's masking a complicated query.
     @property
     def currentjob(self):
         """See IBuilder"""
@@ -683,6 +730,11 @@ class Builder(SQLBase):
             BuildQueue.builder == self.id,
             Job._status == JobStatus.RUNNING,
             Job.date_started != None).one()
+
+    def getCurrentBuildFarmJob(self):
+        """See `IBuilder`."""
+        # Don't make this a property, it's masking a few queries.
+        return self.currentjob.specific_job.build
 
 
 class BuilderSet(object):

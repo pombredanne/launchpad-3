@@ -27,9 +27,9 @@
           class="batch-navigation-links">
         <a
           tal:condition="first_page_url"
-          tal:attributes="href first_page_url"
+          tal:attributes="href first_page_url;
+                          id string:${view/css_class}-batchnav-first"
           class="first"
-          id="batchnav_first"
           rel="first"
         >First</a>
         <span tal:condition="not:first_page_url" class="first inactive"
@@ -37,9 +37,9 @@
         &#149;
         <a
           tal:condition="prev_page_url"
-          tal:attributes="href prev_page_url"
+          tal:attributes="href prev_page_url;
+                          id string:${view/css_class}-batchnav-previous"
           class="previous"
-          id="batchnav_previous"
           rel="previous"
         >Previous</a>
         <span tal:condition="not:prev_page_url" class="previous inactive"
@@ -47,8 +47,8 @@
         &#149;
         <a
           tal:condition="next_page_url"
-          tal:attributes="href next_page_url"
-          id="batchnav_next"
+          tal:attributes="href next_page_url;
+                          id string:${view/css_class}-batchnav-next"
           class="next"
           rel="next"
         ><strong>Next</strong></a>
@@ -58,9 +58,9 @@
           &#149;
           <a
             tal:condition="last_page_url"
-            tal:attributes="href last_page_url"
+            tal:attributes="href last_page_url;
+                            id string:${view/css_class}-batchnav-last"
             class="last"
-            id="batchnav_last"
             rel="last"
           >Last</a>
           <span tal:condition="not:last_page_url" class="last inactive"

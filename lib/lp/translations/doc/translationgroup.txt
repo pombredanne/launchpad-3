@@ -1,4 +1,5 @@
-= Translation Groups =
+Translation Groups
+==================
 
     >>> from zope.component import getUtility
 
@@ -63,12 +64,12 @@ Let's only allow translators from that group to translate.
 
 No Privileges Person isn't allowed to translate into Welsh.
 
-   >>> series = evolution.getSeries('trunk')
-   >>> subset = potemplate_set.getSubset(productseries=series)
-   >>> potemplate = subset['evolution-2.2']
-   >>> pofile = potemplate.newPOFile('cy')
-   >>> pofile.canEditTranslations(no_priv)
-   False
+    >>> series = evolution.getSeries('trunk')
+    >>> subset = potemplate_set.getSubset(productseries=series)
+    >>> potemplate = subset['evolution-2.2']
+    >>> pofile = potemplate.newPOFile('cy')
+    >>> pofile.canEditTranslations(no_priv)
+    False
 
 Let's add him to the group.
 
@@ -176,6 +177,7 @@ repeated querying.
     >>> de_translator = factory.makeTranslator('de', group, person=de_team)
     >>> nl_translator = factory.makeTranslator('nl', group, person=nl_team)
     >>> la_translator = factory.makeTranslator('la', group, person=la_team)
+    >>> transaction.commit()
 
 The method returns tuples of respectively a Translator ("translation
 group membership entry"), its language, and the actual team or person
