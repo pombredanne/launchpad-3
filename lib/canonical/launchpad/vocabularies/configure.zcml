@@ -13,45 +13,6 @@
   </class>
 
   <securedutility
-    name="Branch"
-    component="canonical.launchpad.vocabularies.BranchVocabulary"
-    provides="zope.schema.interfaces.IVocabularyFactory"
-    >
-    <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
-  </securedutility>
-
-  <class class="canonical.launchpad.vocabularies.BranchVocabulary">
-    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
-  </class>
-
-
-  <securedutility
-    name="HostedBranchRestrictedOnOwner"
-    component="canonical.launchpad.vocabularies.HostedBranchRestrictedOnOwnerVocabulary"
-    provides="zope.schema.interfaces.IVocabularyFactory"
-    >
-    <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
-  </securedutility>
-
-  <class class="canonical.launchpad.vocabularies.HostedBranchRestrictedOnOwnerVocabulary">
-    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
-  </class>
-
-
-  <securedutility
-    name="BranchRestrictedOnProduct"
-    component="canonical.launchpad.vocabularies.BranchRestrictedOnProductVocabulary"
-    provides="zope.schema.interfaces.IVocabularyFactory"
-    >
-    <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
-  </securedutility>
-
-  <class class="canonical.launchpad.vocabularies.BranchRestrictedOnProductVocabulary">
-    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
-  </class>
-
-
-  <securedutility
     name="Bug"
     component="canonical.launchpad.vocabularies.BugVocabulary"
     provides="zope.schema.interfaces.IVocabularyFactory"
