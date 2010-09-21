@@ -71,10 +71,6 @@ class IPackageBuild(IBuildFarmJob):
         title=_('Build farm job'), schema=IBuildFarmJob, required=True,
         readonly=True, description=_('The base build farm job.'))
 
-    policy_name = TextLine(
-        title=_("Policy name"), required=True,
-        description=_("The upload policy to use for handling these builds."))
-
     current_component = Attribute(
         'Component where the source related to this build was last '
         'published.')
@@ -91,13 +87,6 @@ class IPackageBuild(IBuildFarmJob):
             title=_("Distribution series"), required=True,
             description=_("Shortcut for its distribution series.")))
 
-    def getUploaderCommand(package_build, upload_leaf, uploader_logfilename):
-        """Get the command to run as the uploader.
-
-        :return: A list of command line arguments, beginning with the
-            executable.
-        """
-
     def getUploadDirLeaf(build_cookie, now=None):
         """Return the directory-leaf where files to be uploaded are stored.
 
@@ -106,23 +95,12 @@ class IPackageBuild(IBuildFarmJob):
             directory name. If not provided, defaults to now.
         """
 
-    def getUploadDir(upload_leaf):
-        """Return the full directory where files to be uploaded are stored.
-
-        :param upload_leaf: The leaf directory name where things will be
-            stored.
+    def getBuildCookie():
+        """Return the build cookie (build id and build queue record id).
         """
 
     def getLogFromSlave(build):
         """Get last buildlog from slave. """
-
-    def getUploadLogContent(root, leaf):
-        """Retrieve the upload log contents.
-
-        :param root: Root directory for the uploads
-        :param leaf: Leaf for this particular upload
-        :return: Contents of log file or message saying no log file was found.
-        """
 
     def estimateDuration():
         """Estimate the build duration."""
@@ -165,6 +143,14 @@ class IPackageBuild(IBuildFarmJob):
 
         :param suspended: Whether the associated `Job` instance should be
             created in a suspended state.
+        """
+
+    def getUploader(changes):
+        """Return the person responsible for the upload.
+
+        This is used to when checking permissions.
+
+        :param changes: Changes file from the upload.
         """
 
 

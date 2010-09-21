@@ -11,11 +11,8 @@ from email.Utils import (
     )
 import xmlrpclib
 
-# pylint: disable-msg=F0401
-from Mailman import (
-    Errors,
-    mm_cfg,
-    )
+from Mailman import Errors
+from Mailman.Queue import XMLRPCRunner
 from Mailman.Logging.Syslog import syslog
 
 
@@ -87,6 +84,15 @@ def hold(mlist, msg, msgdata, annotation):
         syslog('vette',
                'Discarding duplicate held message-id: %s', message_id)
         raise Errors.DiscardMessage
+    # Discard messages that claim to be from the list itself because Mailman's
+    # internal handlers did not approve the message before it arrived at this
+    # step--these messages are forgeries.
+    list_address = mlist.getListAddress()
+    for sender in msg.get_senders():
+        if list_address == sender:
+            syslog('vette',
+                   'Discarding forged message-id: %s', message_id)
+            raise Errors.DiscardMessage
     # Discard messages without text content since there will be nothing to
     # moderate. Most of these messages are spam.
     if is_message_empty(msg):
@@ -98,7 +104,7 @@ def hold(mlist, msg, msgdata, annotation):
     if 'date' not in msg:
         msg['Date'] = formatdate()
     # Store the message in the librarian.
-    proxy = xmlrpclib.ServerProxy(mm_cfg.XMLRPC_URL)
+    proxy = XMLRPCRunner.get_mailing_list_api_proxy()
     # This will fail if we can't talk to Launchpad.  That's okay though
     # because Mailman's IncomingRunner will re-queue the message and re-start
     # processing at this handler.

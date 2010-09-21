@@ -39,7 +39,7 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.config import config
 from canonical.launchpad.interfaces import (
     IEmailAddressSet, IMailingListSet, IPersonSet)
-from canonical.launchpad.mailman.config import configure_prefix
+from lp.services.mailman.config import configure_prefix
 from lp.services.scripts.base import LaunchpadCronScript
 
 

@@ -25,7 +25,10 @@ __all__ = [
 
 from datetime import datetime
 import math
-from urllib import quote
+from urllib import (
+    quote,
+    unquote,
+    )
 
 import pytz
 from zope.app.form.browser import TextAreaWidget
@@ -807,21 +810,27 @@ class TeamMailingListModerationView(MailingListTeamBaseView):
         assert(self.mailing_list is not None), (
             'No mailing list: %s' % self.context.name)
 
-    @property
+    @cachedproperty
     def hold_count(self):
         """The number of message being held for moderator approval.
 
         :return: Number of message being held for moderator approval.
         """
-        return self.mailing_list.getReviewableMessages().count()
+        ## return self.mailing_list.getReviewableMessages().count()
+        # This looks like it would be more efficient, but it raises
+        # LocationError.
+        return self.held_messages.currentBatch().listlength
 
-    @property
+    @cachedproperty
     def held_messages(self):
         """All the messages being held for moderator approval.
 
         :return: Sequence of held messages.
         """
-        return self.mailing_list.getReviewableMessages()
+        results = self.mailing_list.getReviewableMessages()
+        navigator = BatchNavigator(results, self.request)
+        navigator.setHeadings('message', 'messages')
+        return navigator
 
     @action('Moderate', name='moderate')
     def moderate_action(self, action, data):
@@ -830,9 +839,19 @@ class TeamMailingListModerationView(MailingListTeamBaseView):
         # won't be in data.  Instead, get it out of the request.
         reviewable = self.hold_count
         disposed_count = 0
-        for message in self.held_messages:
-            action_name = self.request.form_ng.getOne(
-                'field.' + quote(message.message_id))
+        actions = {}
+        form = self.request.form_ng
+        for field_name in form:
+            if (field_name.startswith('field.') and
+                field_name.endswith('')):
+                # A moderated message.
+                quoted_id = field_name[len('field.'):]
+                message_id = unquote(quoted_id)
+                actions[message_id] = form.getOne(field_name)
+        messages = self.mailing_list.getReviewableMessages(
+            message_id_filter=actions)
+        for message in messages:
+            action_name = actions[message.message_id]
             # This essentially acts like a switch statement or if/elifs.  It
             # looks the action up in a map of allowed actions, watching out
             # for bogus input.
