@@ -240,7 +240,6 @@
                     isMergable
                     getComment
                     getRevisionsSinceReviewStart
-                    getCurrentIncrementalDiffs
                     getNotificationRecipients
                     getVoteReference
                     isValidTransition
