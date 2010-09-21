@@ -151,7 +151,7 @@ class SeriesUsageEnumsMixin(object):
     def _addCurrentPOTemplate(self):
         raise NotImplementedError("Child class must provide _addPOTTemplate.")
 
-    def test_translations_usage_pillar_unknown(self):
+    def test_translations_usage_pillar(self):
         self.assertEqual(
             ServiceUsage.UNKNOWN,
             self.series_pillar.translations_usage)
