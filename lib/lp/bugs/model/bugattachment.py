@@ -19,7 +19,6 @@ from storm.store import Store
 from zope.event import notify
 from zope.interface import implements
 
-from canonical.cachedproperty import cachedproperty
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
 from lp.app.errors import NotFoundError
@@ -28,6 +27,7 @@ from lp.bugs.interfaces.bugattachment import (
     IBugAttachment,
     IBugAttachmentSet,
     )
+from lp.services.propertycache import cachedproperty
 
 
 class BugAttachment(SQLBase):
@@ -50,10 +50,10 @@ class BugAttachment(SQLBase):
     _message = ForeignKey(
         foreignKey='Message', dbName='message', notNull=True)
 
-    @cachedproperty('_message_cached')
+    @cachedproperty
     def message(self):
         """This is a cachedproperty to allow message to be an IIndexedMessage.
-        
+
         This is needed for the bug/attachments API call which needs to index
         an IIndexedMessage rather than a simple DB model IMessage. See
         Bug.attachments where the injection occurs.

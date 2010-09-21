@@ -10,7 +10,6 @@ import email
 import urllib
 import urllib2
 
-from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad.webapp.url import urlparse
 from lp.bugs.externalbugtracker import (
@@ -24,6 +23,7 @@ from lp.bugs.externalbugtracker import (
 from lp.bugs.externalbugtracker.isolation import ensure_no_transaction
 from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.bugs.interfaces.externalbugtracker import UNKNOWN_REMOTE_IMPORTANCE
+from lp.services.propertycache import cachedproperty
 
 
 class RequestTracker(ExternalBugTracker):

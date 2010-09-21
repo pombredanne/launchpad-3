@@ -86,15 +86,13 @@ class TestP3APackages(TestCaseWithFactory):
 
 
 class TestPPAPackages(TestCaseWithFactory):
+
     layer = LaunchpadFunctionalLayer
 
-    def setUp(self):
-        super(TestPPAPackages, self).setUp()
-        self.joe = self.factory.makePerson(name='joe')
-        self.ppa = self.factory.makeArchive()
-
-    def test_ppa_packages(self):
-        login_person(self.joe)
-        view = create_initialized_view(self.ppa, "+index")
+    def test_ppa_packages_menu_is_enabled(self):
+        joe = self.factory.makePerson()
+        ppa = self.factory.makeArchive()
+        login_person(joe)
+        view = create_initialized_view(ppa, "+index")
         menu = ArchiveNavigationMenu(view)
         self.assertTrue(menu.packages().enabled)

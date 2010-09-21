@@ -23,11 +23,12 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
+from canonical.database import sqlbase
 from canonical.database.constants import (
     THIRTY_DAYS_AGO,
     UTC_NOW,
     )
-from canonical.database.sqlbase import quote
+from canonical.launchpad.database.librarian import TimeLimitedToken
 from canonical.launchpad.database.message import Message
 from canonical.launchpad.database.oauth import OAuthNonce
 from canonical.launchpad.database.openidconsumer import OpenIDConsumerNonce
@@ -561,6 +562,26 @@ class TestGarbo(TestCaseWithFactory):
         LaunchpadZopelessLayer.switchDbUser('testadmin')
         self.assertEqual(bug.attachments.count(), 0)
 
+    def test_TimeLimitedTokenPruner(self):
+        # Ensure there are no tokens
+        store = sqlbase.session_store()
+        map(store.remove, store.find(TimeLimitedToken))
+        store.flush()
+        self.assertEqual(0, len(list(store.find(TimeLimitedToken,
+            path="sample path"))))
+        # One to clean and one to keep
+        store.add(TimeLimitedToken(path="sample path", token="foo",
+            created=datetime(2008, 01, 01, tzinfo=UTC)))
+        store.add(TimeLimitedToken(path="sample path", token="bar")),
+        store.commit()
+        self.assertEqual(2, len(list(store.find(TimeLimitedToken,
+            path="sample path"))))
+        self.runDaily()
+        self.assertEqual(0, len(list(store.find(TimeLimitedToken,
+            path="sample path", token="foo"))))
+        self.assertEqual(1, len(list(store.find(TimeLimitedToken,
+            path="sample path", token="bar"))))
+
     def test_CacheSuggestivePOTemplates(self):
         LaunchpadZopelessLayer.switchDbUser('testadmin')
         template = self.factory.makePOTemplate()
@@ -571,6 +592,6 @@ class TestGarbo(TestCaseWithFactory):
             SELECT count(*)
             FROM SuggestivePOTemplate
             WHERE potemplate = %s
-            """ % quote(template.id)).get_one()
+            """ % sqlbase.quote(template.id)).get_one()
 
         self.assertEqual(1, count)

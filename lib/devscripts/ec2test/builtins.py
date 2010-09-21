@@ -329,6 +329,11 @@ class cmd_land(EC2Command):
             'incremental',
             help="Incremental to other bug fix (tags commit with [incr])."),
         Option(
+            'rollback', type=int,
+            help=(
+                "Rollback given revision number. (tags commit with "
+                "[rollback=revno]).")),
+        Option(
             'commit-text', short_name='s', type=str,
             help=(
                 'A description of the landing, not including reviewer '
@@ -361,8 +366,8 @@ class cmd_land(EC2Command):
     def run(self, merge_proposal=None, machine=None,
             instance_type=DEFAULT_INSTANCE_TYPE, postmortem=False,
             debug=False, commit_text=None, dry_run=False, testfix=False,
-            no_qa=False, incremental=False, print_commit=False, force=False,
-            attached=False):
+            no_qa=False, incremental=False, rollback=None, print_commit=False,
+            force=False, attached=False):
         try:
             from devscripts.autoland import (
                 LaunchpadBranchLander, MissingReviewError, MissingBugsError,
@@ -382,9 +387,6 @@ class cmd_land(EC2Command):
         if print_commit and dry_run:
             raise BzrCommandError(
                 "Cannot specify --print-commit and --dry-run.")
-        if no_qa and incremental:
-            raise BzrCommandError(
-                "--no-qa and --incremental cannot be given at the same time.")
         lander = LaunchpadBranchLander.load()
 
         if merge_proposal is None:
@@ -406,9 +408,11 @@ class cmd_land(EC2Command):
             raise BzrCommandError(
                 "Commit text not specified. Use --commit-text, or specify a "
                 "message on the merge proposal.")
+        if rollback and (no_qa or incremental):
+            print "--rollback option used. Ignoring --no-qa and --incremental."
         try:
             commit_message = mp.get_commit_message(
-                commit_text, testfix, no_qa, incremental)
+                commit_text, testfix, no_qa, incremental, rollback=rollback)
         except MissingReviewError:
             raise BzrCommandError(
                 "Cannot land branches that haven't got approved code "

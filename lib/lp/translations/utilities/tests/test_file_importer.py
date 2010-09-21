@@ -20,6 +20,8 @@ from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue,
     )
 from lp.translations.utilities.gettext_po_importer import GettextPOImporter
+from lp.translations.utilities.translation_common_format import (
+    TranslationMessageData)
 from lp.translations.utilities.translation_import import (
     FileImporter,
     POFileImporter,
@@ -167,7 +169,7 @@ class FileImporterTestCase(TestCaseWithFactory):
 
     def setUp(self):
         super(FileImporterTestCase, self).setUp()
-        self.fake_librarian = self.installFixture(FakeLibrarian())
+        self.fake_librarian = self.useFixture(FakeLibrarian())
         self.translation_import_queue = getUtility(ITranslationImportQueue)
         self.importer_person = self.factory.makePerson()
 
@@ -216,6 +218,34 @@ class FileImporterTestCase(TestCaseWithFactory):
         self.failUnlessEqual(potmsgset1.id, potmsgset2.id,
             "FileImporter.getOrCreatePOTMessageSet did not get an existing "
             "IPOTMsgSet object from the database.")
+
+    def _test_storeTranslationsInDatabase_empty(self, is_published=True):
+        """Check whether we store empty messages appropriately."""
+        # Construct a POFile importer.
+        pot_importer = self._createPOTFileImporter(
+            TEST_TEMPLATE_EXPORTED, is_published=True)
+        importer = self._createPOFileImporter(
+            pot_importer, TEST_TRANSLATION_EXPORTED,
+            is_published=is_published, person=self.importer_person)
+
+        # Empty message to import.
+        message = TranslationMessageData()
+        message.addTranslation(0, u'')
+
+        potmsgset = self.factory.makePOTMsgSet(
+            potemplate = importer.potemplate, sequence=50)
+        translation = importer.storeTranslationsInDatabase(
+            message, potmsgset)
+        # No TranslationMessage is created.
+        self.assertIs(None, translation)
+
+    def test_storeTranslationsInDatabase_empty_imported(self):
+        """Storing empty messages for published imports appropriately."""
+        self._test_storeTranslationsInDatabase_empty(is_published=True)
+
+    def test_storeTranslationsInDatabase_empty_user(self):
+        """Store empty messages for user uploads appropriately."""
+        self._test_storeTranslationsInDatabase_empty(is_published=False)
 
     def test_FileImporter_storeTranslationsInDatabase_privileges(self):
         """Test `storeTranslationsInDatabase` privileges."""
@@ -496,7 +526,7 @@ class CreateFileImporterTestCase(TestCaseWithFactory):
 
     def setUp(self):
         super(CreateFileImporterTestCase, self).setUp()
-        self.fake_librarian = self.installFixture(FakeLibrarian())
+        self.fake_librarian = self.useFixture(FakeLibrarian())
         self.translation_import_queue = getUtility(ITranslationImportQueue)
         self.importer_person = self.factory.makePerson()
 

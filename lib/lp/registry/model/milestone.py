@@ -36,6 +36,7 @@ from canonical.database.sqlbase import (
     sqlvalues,
     )
 from canonical.launchpad.webapp.sorting import expand_numbers
+from lazr.restful.error import expose
 from lp.app.errors import NotFoundError
 from lp.blueprints.model.specification import Specification
 from lp.bugs.interfaces.bugtarget import IHasBugs
@@ -82,6 +83,9 @@ def milestone_sort_key(milestone):
 class HasMilestonesMixin:
     implements(IHasMilestones)
 
+    _milestone_order = (
+        'milestone_sort_key(Milestone.dateexpected, Milestone.name) DESC')
+
     def _getMilestoneCondition(self):
         """Provides condition for milestones and all_milestones properties.
 
@@ -93,11 +97,15 @@ class HasMilestonesMixin:
             "Unexpected class for mixin: %r" % self)
 
     @property
+    def has_milestones(self):
+        return not self.all_milestones.is_empty()
+
+    @property
     def all_milestones(self):
         """See `IHasMilestones`."""
         store = Store.of(self)
         result = store.find(Milestone, self._getMilestoneCondition())
-        return sorted(result, key=milestone_sort_key, reverse=True)
+        return result.order_by(self._milestone_order)
 
     @property
     def milestones(self):
@@ -106,7 +114,14 @@ class HasMilestonesMixin:
         result = store.find(Milestone,
                             And(self._getMilestoneCondition(),
                                 Milestone.active == True))
-        return sorted(result, key=milestone_sort_key, reverse=True)
+        return result.order_by(self._milestone_order)
+
+
+class MultipleProductReleases(Exception):
+    """Raised when a second ProductRelease is created for a milestone."""
+
+    def __init__(self, msg='A milestone can only have one ProductRelease.'):
+        super(MultipleProductReleases, self).__init__(msg)
 
 
 class Milestone(SQLBase, StructuralSubscriptionTargetMixin, HasBugsBase):
@@ -194,8 +209,7 @@ class Milestone(SQLBase, StructuralSubscriptionTargetMixin, HasBugsBase):
                              changelog=None, release_notes=None):
         """See `IMilestone`."""
         if self.product_release is not None:
-            raise AssertionError(
-                'A milestone can only have one ProductRelease.')
+            raise expose(MultipleProductReleases())
         release = ProductRelease(
             owner=owner,
             changelog=changelog,
@@ -286,7 +300,10 @@ class ProjectMilestone(HasBugsBase):
     def __init__(self, target, name, dateexpected, active):
         self.name = name
         self.code_name = None
-        self.id = None
+        # The id is necessary for generating a unique memcache key
+        # in a page template loop. The ProjectMilestone.id is passed
+        # in as the third argument to the "cache" TALes.
+        self.id = 'ProjectGroup:%s/Milestone:%s' % (target.name, name)
         self.code_name = None
         self.product = None
         self.distribution = None

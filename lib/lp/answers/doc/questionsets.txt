@@ -208,14 +208,14 @@ The method returns only projects which officially use the Answer Tracker.  The
 order of the returned projects is based on the number of questions asked
 during the period.
 
-    >>> ubuntu.official_answers
-    True
-    >>> firefox.official_answers
-    True
-    >>> landscape.official_answers
-    False
-    >>> launchpad.official_answers
-    True
+    >>> print ubuntu.answers_usage.name
+    LAUNCHPAD
+    >>> print firefox.answers_usage.name
+    LAUNCHPAD
+    >>> print landscape.answers_usage.name
+    UNKNOWN
+    >>> print launchpad.answers_usage.name
+    LAUNCHPAD
 
     # Launchpad is not returned because the question was not asked in
     # the last 60 days.

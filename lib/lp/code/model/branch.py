@@ -7,15 +7,12 @@ __metaclass__ = type
 __all__ = [
     'Branch',
     'BranchSet',
-    'compose_public_url',
     ]
 
 from datetime import datetime
-import os.path
 
 from bzrlib import urlutils
 from bzrlib.revision import NULL_REVISION
-from lazr.uri import URI
 import pytz
 from sqlobject import (
     BoolCol,
@@ -60,6 +57,7 @@ from canonical.launchpad.interfaces.launchpad import (
     ILaunchpadCelebrities,
     IPrivacy,
     )
+from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.launchpad.webapp import urlappend
 from lp.app.errors import UserCannotUnsubscribePerson
 from lp.buildmaster.model.buildqueue import BuildQueue
@@ -102,6 +100,7 @@ from lp.code.interfaces.branchmergeproposal import (
 from lp.code.interfaces.branchnamespace import IBranchNamespacePolicy
 from lp.code.interfaces.branchpuller import IBranchPuller
 from lp.code.interfaces.branchtarget import IBranchTarget
+from lp.code.interfaces.codehosting import compose_public_url
 from lp.code.interfaces.seriessourcepackagebranch import (
     IFindOfficialBranchLinks,
     )
@@ -808,6 +807,17 @@ class Branch(SQLBase, BzrIdentityMixin):
             BranchRevision.branch == self,
             query).one()
 
+    def removeBranchRevisions(self, revision_ids):
+        """See `IBranch`."""
+        if isinstance(revision_ids, basestring):
+            revision_ids = [revision_ids]
+        IMasterStore(BranchRevision).find(
+            BranchRevision,
+            BranchRevision.branch == self,
+            BranchRevision.revision_id.is_in(
+                Select(Revision.id,
+                       Revision.revision_id.is_in(revision_ids)))).remove()
+
     def createBranchRevision(self, sequence, revision):
         """See `IBranch`."""
         branch_revision = BranchRevision(
@@ -925,13 +935,11 @@ class Branch(SQLBase, BzrIdentityMixin):
         rows = rows.order_by(BranchRevision.sequence)
         ancestry = set()
         history = []
-        branch_revision_map = {}
         for branch_revision_id, sequence, revision_id in rows:
             ancestry.add(revision_id)
-            branch_revision_map[revision_id] = branch_revision_id
             if sequence is not None:
                 history.append(revision_id)
-        return ancestry, history, branch_revision_map
+        return ancestry, history
 
     def getPullURL(self):
         """See `IBranch`."""
@@ -1326,18 +1334,3 @@ def branch_modified_subscriber(branch, event):
     """
     update_trigger_modified_fields(branch)
     send_branch_modified_notifications(branch, event)
-
-
-def compose_public_url(scheme, unique_name, suffix=None):
-    # Avoid circular imports.
-    from lp.code.xmlrpc.branch import PublicCodehostingAPI
-
-    # Accept sftp as a legacy protocol.
-    accepted_schemes = set(PublicCodehostingAPI.supported_schemes)
-    accepted_schemes.add('sftp')
-    assert scheme in accepted_schemes, "Unknown scheme: %s" % scheme
-    host = URI(config.codehosting.supermirror_root).host
-    path = '/' + urlutils.escape(unique_name)
-    if suffix:
-        path = os.path.join(path, suffix)
-    return str(URI(scheme=scheme, host=host, path=path))

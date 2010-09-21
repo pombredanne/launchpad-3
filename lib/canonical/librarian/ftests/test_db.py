@@ -39,7 +39,7 @@ class DBTestCase(unittest.TestCase):
                          sorted(library.lookupBySHA1('deadbeef')))
 
         aliasID = library.addAlias(fileID, 'file1', 'text/unknown')
-        alias = library.getAlias(aliasID)
+        alias = library.getAlias(aliasID, None, '/')
         self.assertEqual('file1', alias.filename)
         self.assertEqual('text/unknown', alias.mimetype)
 
@@ -65,42 +65,44 @@ class TestTransactionDecorators(unittest.TestCase):
         # Library.getAlias() returns the LibrarayFileAlias for a given
         # LibrarayFileAlias ID.
         library = db.Library(restricted=False)
-        alias = library.getAlias(1)
+        alias = library.getAlias(1, None, '/')
         self.assertEqual(1, alias.id)
 
     def test_getAlias_no_such_record(self):
         # Library.getAlias() raises a LookupError, if no record with
         # the given ID exists.
         library = db.Library(restricted=False)
-        self.assertRaises(LookupError, library.getAlias, -1)
+        self.assertRaises(LookupError, library.getAlias, -1, None, '/')
 
     def test_getAlias_content_is_null(self):
         # Library.getAlias() raises a LookupError, if no content
         # record for the given alias exists.
         library = db.Library(restricted=False)
-        alias = library.getAlias(1)
+        alias = library.getAlias(1, None, '/')
         alias.content = None
-        self.assertRaises(LookupError, library.getAlias, 1)
+        self.assertRaises(LookupError, library.getAlias, 1, None, '/')
 
     def test_getAlias_content_is_none(self):
         # Library.getAlias() raises a LookupError, if the matching
         # record does not reference any LibraryFileContent record.
         library = db.Library(restricted=False)
-        alias = library.getAlias(1)
+        alias = library.getAlias(1, None, '/')
         alias.content = None
-        self.assertRaises(LookupError, library.getAlias, 1)
+        self.assertRaises(LookupError, library.getAlias, 1, None, '/')
 
     def test_getAlias_content_wrong_library(self):
         # Library.getAlias() raises a LookupError, if a restricted
         # library looks up a unrestricted LibraryFileAlias and
         # vice versa.
         restricted_library = db.Library(restricted=True)
-        self.assertRaises(LookupError, restricted_library.getAlias, 1)
+        self.assertRaises(
+            LookupError, restricted_library.getAlias, 1, None, '/')
 
         unrestricted_library = db.Library(restricted=False)
-        alias = unrestricted_library.getAlias(1)
+        alias = unrestricted_library.getAlias(1, None, '/')
         alias.restricted = True
-        self.assertRaises(LookupError, unrestricted_library.getAlias, 1)
+        self.assertRaises(
+            LookupError, unrestricted_library.getAlias, 1, None, '/')
 
     def test_getAliases(self):
         # Library.getAliases() returns a sequence
@@ -119,7 +121,7 @@ class TestTransactionDecorators(unittest.TestCase):
         # Library.getAliases() does not return records which do not
         # reference any LibraryFileContent record.
         library = db.Library(restricted=False)
-        alias = library.getAlias(1)
+        alias = library.getAlias(1, None, '/')
         alias.content = None
         aliases = library.getAliases(1)
         expected_aliases = [
@@ -132,7 +134,7 @@ class TestTransactionDecorators(unittest.TestCase):
         # LibrarayFileAlias records when called from a unrestricted
         # library and vice versa.
         unrestricted_library = db.Library(restricted=False)
-        alias = unrestricted_library.getAlias(1)
+        alias = unrestricted_library.getAlias(1, None, '/')
         alias.restricted = True
 
         aliases = unrestricted_library.getAliases(1)

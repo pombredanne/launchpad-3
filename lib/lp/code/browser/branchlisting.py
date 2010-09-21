@@ -52,7 +52,6 @@ from zope.interface import (
     )
 from zope.schema import Choice
 
-from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.browser.feeds import (
@@ -131,6 +130,7 @@ from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackage import ISourcePackageFactory
 from lp.registry.model.sourcepackage import SourcePackage
 from lp.services.browser_helpers import get_plural_text
+from lp.services.propertycache import cachedproperty
 
 
 class CodeVHostBreadcrumb(Breadcrumb):

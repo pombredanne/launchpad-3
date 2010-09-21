@@ -52,6 +52,7 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector,
     MAIN_STORE,
     )
+from lp.app.errors import NotFoundError
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.enums import BuildFarmJobType
 from lp.buildmaster.interfaces.buildfarmjob import (
@@ -234,6 +235,8 @@ class BuildFarmJob(BuildFarmJobOld, Storm):
     job_type = DBEnum(
         name='job_type', allow_none=False, enum=BuildFarmJobType)
 
+    failure_count = Int(name='failure_count', allow_none=False)
+
     def __init__(self, job_type, status=BuildStatus.NEEDSBUILD,
                  processor=None, virtualized=None, date_created=None):
         super(BuildFarmJob, self).__init__()
@@ -337,6 +340,7 @@ class BuildFarmJob(BuildFarmJobOld, Storm):
         """See `IBuild`"""
         return self.status not in [BuildStatus.NEEDSBUILD,
                                    BuildStatus.BUILDING,
+                                   BuildStatus.UPLOADING,
                                    BuildStatus.SUPERSEDED]
 
     def getSpecificJob(self):
@@ -366,6 +370,10 @@ class BuildFarmJob(BuildFarmJobOld, Storm):
             "Unproxied result returned from ISpecificBuildFarmJob adapter.")
 
         return build_without_outer_proxy
+
+    def gotFailure(self):
+        """See `IBuildFarmJob`."""
+        self.failure_count += 1
 
 
 class BuildFarmJobDerived:
@@ -425,3 +433,11 @@ class BuildFarmJobSet:
         filtered_builds.config(distinct=True)
 
         return filtered_builds
+
+    def getByID(self, job_id):
+        """See `IBuildfarmJobSet`."""
+        job = IStore(BuildFarmJob).find(BuildFarmJob,
+                BuildFarmJob.id == job_id).one()
+        if job is None:
+            raise NotFoundError(job_id)
+        return job
