@@ -10,4 +10,4 @@ CREATE TABLE IncrementalDiff(
     old_revision integer NOT NULL CONSTRAINT old_revision_fk REFERENCES Revision ON DELETE CASCADE,
     new_revision integer NOT NULL CONSTRAINT new_revision_fk REFERENCES Revision ON DELETE CASCADE);
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2207, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 99, 0);
