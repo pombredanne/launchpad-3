@@ -4,25 +4,27 @@
 from datetime import datetime
 import gzip
 import os
+
+from contrib import apachelog
+from lazr.uri import URI
 import pytz
 from zope.component import getUtility
 
-from lazr.uri import URI
-
-from contrib import apachelog
-
 from canonical.config import config
-from canonical.launchpad.interfaces.geoip import IGeoIP
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 from lp.services.apachelogparser.model.parsedapachelog import ParsedApacheLog
+from lp.services.geoip.interfaces import IGeoIP
 
 
 parser = apachelog.parser(apachelog.formats['extended'])
 
 
 def get_files_to_parse(root, file_names):
-    """Return a dict mapping files to the position where reading should start.
+    """Return an iterator of file and position where reading should start.
 
     The lines read from that position onwards will be the ones that have not
     been parsed yet.
@@ -30,7 +32,6 @@ def get_files_to_parse(root, file_names):
     :param root: The directory where the files are stored.
     :param file_names: The names of the files.
     """
-    files_to_parse = {}
     store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
     for file_name in file_names:
         file_path = os.path.join(root, file_name)
@@ -50,8 +51,7 @@ def get_files_to_parse(root, file_names):
                 # parse what's new.
                 position = parsed_file.bytes_read
 
-        files_to_parse[fd] = position
-    return files_to_parse
+        yield fd, position
 
 
 def get_fd_and_file_size(file_path):
@@ -77,8 +77,13 @@ def get_fd_and_file_size(file_path):
     return fd, file_size
 
 
-def parse_file(fd, start_position, logger, get_download_key):
+def parse_file(fd, start_position, logger, get_download_key, parsed_lines=0):
     """Parse the given file starting on the given position.
+
+    parsed_lines accepts the number of lines that have been parsed during
+    previous calls to this function so they can be taken into account against
+    max_parsed_lines.  The total number of parsed lines is then returned so it
+    can be passed back to future calls to this function.
 
     Return a dictionary mapping file_ids (from the librarian) to days to
     countries to number of downloads.
@@ -91,7 +96,6 @@ def parse_file(fd, start_position, logger, get_download_key):
 
     geoip = getUtility(IGeoIP)
     downloads = {}
-    parsed_lines = 0
 
     # Check for an optional max_parsed_lines config option.
     max_parsed_lines = getattr(
@@ -167,7 +171,7 @@ def parse_file(fd, start_position, logger, get_download_key):
         logger.info('Parsed %d lines resulting in %d download stats.' % (
             parsed_lines, len(downloads)))
 
-    return downloads, parsed_bytes
+    return downloads, parsed_bytes, parsed_lines
 
 
 def create_or_update_parsedlog_entry(first_line, parsed_bytes):

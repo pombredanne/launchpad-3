@@ -5,42 +5,175 @@ __metaclass__ = type
 
 __all__ = [
     'check_oauth_signature',
+    'extract_oauth_access_token',
+    'get_oauth_principal',
     'get_oauth_authorization',
     'LaunchpadLoginSource',
     'LaunchpadPrincipal',
+    'OAuthSignedRequest',
     'PlacelessAuthUtility',
     'SSHADigestEncryptor',
     ]
 
 
 import binascii
+from datetime import datetime
 import hashlib
+import pytz
 import random
 from UserDict import UserDict
 
 from contrib.oauth import OAuthRequest
-
 from zope.annotation.interfaces import IAnnotations
-from zope.authentication.interfaces import IUnauthenticatedPrincipal
-from zope.interface import implements
-from zope.component import adapts, getUtility
-from zope.event import notify
-from zope.preference.interfaces import IPreferenceGroup
-
-from zope.security.proxy import removeSecurityProxy
-
-from zope.session.interfaces import ISession
 from zope.app.security.interfaces import ILoginPassword
 from zope.app.security.principalregistry import UnauthenticatedPrincipal
+from zope.authentication.interfaces import IUnauthenticatedPrincipal
+
+from zope.component import (
+    adapts,
+    getUtility,
+    )
+from zope.event import notify
+from zope.interface import (
+    alsoProvides,
+    implements,
+    )
+from zope.preference.interfaces import IPreferenceGroup
+from zope.security.interfaces import Unauthorized
+from zope.security.proxy import removeSecurityProxy
+from zope.session.interfaces import ISession
 
 from canonical.config import config
 from canonical.launchpad.interfaces.account import IAccountSet
 from canonical.launchpad.interfaces.launchpad import IPasswordEncryptor
 from canonical.launchpad.interfaces.oauth import OAUTH_CHALLENGE
-from lp.registry.interfaces.person import IPerson, IPersonSet
 from canonical.launchpad.webapp.interfaces import (
-    AccessLevel, BasicAuthLoggedInEvent, CookieAuthPrincipalIdentifiedEvent,
-    ILaunchpadPrincipal, IPlacelessAuthUtility, IPlacelessLoginSource)
+    AccessLevel,
+    BasicAuthLoggedInEvent,
+    CookieAuthPrincipalIdentifiedEvent,
+    ILaunchpadPrincipal,
+    IPlacelessAuthUtility,
+    IPlacelessLoginSource,
+    OAuthPermission,
+    )
+from canonical.launchpad.interfaces.oauth import (
+    ClockSkew,
+    IOAuthConsumerSet,
+    IOAuthSignedRequest,
+    NonceAlreadyUsed,
+    TimestampOrderingError,
+    )
+from lp.registry.interfaces.person import (
+    IPerson,
+    IPersonSet,
+    )
+
+
+def extract_oauth_access_token(request):
+    """Find the OAuth access token that signed the given request.
+
+    :param request: An incoming request.
+
+    :return: an IOAuthAccessToken, or None if the request is not
+        signed at all.
+
+    :raise Unauthorized: If the token is invalid or the request is an
+        anonymously-signed request that doesn't meet our requirements.
+    """
+    # Fetch OAuth authorization information from the request.
+    form = get_oauth_authorization(request)
+
+    consumer_key = form.get('oauth_consumer_key')
+    consumers = getUtility(IOAuthConsumerSet)
+    consumer = consumers.getByKey(consumer_key)
+    token_key = form.get('oauth_token')
+    anonymous_request = (token_key == '')
+
+    if consumer_key is None:
+        # Either the client's OAuth implementation is broken, or
+        # the user is trying to make an unauthenticated request
+        # using wget or another OAuth-ignorant application.
+        # Try to retrieve a consumer based on the User-Agent
+        # header.
+        anonymous_request = True
+        consumer_key = request.getHeader('User-Agent', '')
+        if consumer_key == '':
+            raise Unauthorized(
+                'Anonymous requests must provide a User-Agent.')
+        consumer = consumers.getByKey(consumer_key)
+
+    if consumer is None:
+        if anonymous_request:
+            # This is the first time anyone has tried to make an
+            # anonymous request using this consumer name (or user
+            # agent). Dynamically create the consumer.
+            #
+            # In the normal website this wouldn't be possible
+            # because GET requests have their transactions rolled
+            # back. But webservice requests always have their
+            # transactions committed so that we can keep track of
+            # the OAuth nonces and prevent replay attacks.
+            if consumer_key == '' or consumer_key is None:
+                raise Unauthorized("No consumer key specified.")
+            consumer = consumers.new(consumer_key, '')
+        else:
+            # An unknown consumer can never make a non-anonymous
+            # request, because access tokens are registered with a
+            # specific, known consumer.
+            raise Unauthorized('Unknown consumer (%s).' % consumer_key)
+    if anonymous_request:
+        # Skip the OAuth verification step and let the user access the
+        # web service as an unauthenticated user.
+        #
+        # XXX leonardr 2009-12-15 bug=496964: Ideally we'd be
+        # auto-creating a token for the anonymous user the first
+        # time, passing it through the OAuth verification step,
+        # and using it on all subsequent anonymous requests.
+        return None
+
+    token = consumer.getAccessToken(token_key)
+    if token is None:
+        raise Unauthorized('Unknown access token (%s).' % token_key)
+    return token
+
+
+def get_oauth_principal(request):
+    """Find the principal to use for this OAuth-signed request.
+
+    :param request: An incoming request.
+    :return: An ILaunchpadPrincipal with the appropriate access level.
+    """
+    token = extract_oauth_access_token(request)
+
+    if token is None:
+        # The consumer is making an anonymous request. If there was a
+        # problem with the access token, extract_oauth_access_token
+        # would have raised Unauthorized.
+        alsoProvides(request, IOAuthSignedRequest)
+        auth_utility = getUtility(IPlacelessAuthUtility)
+        return auth_utility.unauthenticatedPrincipal()
+
+    form = get_oauth_authorization(request)
+    nonce = form.get('oauth_nonce')
+    timestamp = form.get('oauth_timestamp')
+    try:
+        token.checkNonceAndTimestamp(nonce, timestamp)
+    except (NonceAlreadyUsed, TimestampOrderingError, ClockSkew), e:
+        raise Unauthorized('Invalid nonce/timestamp: %s' % e)
+    now = datetime.now(pytz.timezone('UTC'))
+    if token.permission == OAuthPermission.UNAUTHORIZED:
+        raise Unauthorized('Unauthorized token (%s).' % token.key)
+    elif token.date_expires is not None and token.date_expires <= now:
+        raise Unauthorized('Expired token (%s).' % token.key)
+    elif not check_oauth_signature(request, token.consumer, token):
+        raise Unauthorized('Invalid signature.')
+    else:
+        # Everything is fine, let's return the principal.
+        pass
+    alsoProvides(request, IOAuthSignedRequest)
+    return getUtility(IPlacelessLoginSource).getPrincipal(
+        token.person.account.id, access_level=token.permission,
+        scope=token.context)
 
 
 class PlacelessAuthUtility:
@@ -67,9 +200,8 @@ class PlacelessAuthUtility:
                     # as the login form is never visited for BasicAuth.
                     # This we treat each request as a separate
                     # login/logout.
-                    notify(BasicAuthLoggedInEvent(
-                        request, login, principal
-                        ))
+                    notify(
+                        BasicAuthLoggedInEvent(request, login, principal))
                     return principal
 
     def _authenticateUsingCookieAuth(self, request):
@@ -182,7 +314,8 @@ class SSHADigestEncryptor:
         plaintext = str(plaintext)
         if salt is None:
             salt = self.generate_salt()
-        v = binascii.b2a_base64(hashlib.sha1(plaintext + salt).digest() + salt)
+        v = binascii.b2a_base64(
+            hashlib.sha1(plaintext + salt).digest() + salt)
         return v[:-1]
 
     def validate(self, plaintext, encrypted):
@@ -326,6 +459,7 @@ class LaunchpadPrincipal:
 
 # zope.app.apidoc expects our principals to be adaptable into IAnnotations, so
 # we use these dummy adapters here just to make that code not OOPS.
+
 class TemporaryPrincipalAnnotations(UserDict):
     implements(IAnnotations)
     adapts(ILaunchpadPrincipal, IPreferenceGroup)

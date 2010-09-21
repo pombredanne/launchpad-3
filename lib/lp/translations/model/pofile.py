@@ -15,64 +15,110 @@ __all__ = [
     ]
 
 import datetime
+
 import pytz
 from sqlobject import (
-    ForeignKey, IntCol, StringCol, BoolCol, SQLMultipleJoin)
+    BoolCol,
+    ForeignKey,
+    IntCol,
+    StringCol,
+    )
+from storm.expr import (
+    And,
+    Coalesce,
+    Exists,
+    In,
+    Join,
+    LeftJoin,
+    Not,
+    Or,
+    Select,
+    SQL,
+    )
+from storm.info import ClassAlias
+from storm.store import (
+    EmptyResultSet,
+    Store,
+    )
+from zope.component import (
+    getAdapter,
+    getUtility,
+    )
 from zope.interface import implements
-from zope.component import getAdapter, getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.cachedproperty import cachedproperty
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import (
-    SQLBase, flush_database_updates, quote, quote_like, sqlvalues)
+    flush_database_updates,
+    quote,
+    quote_like,
+    SQLBase,
+    sqlvalues,
+    )
 from canonical.launchpad import helpers
-from canonical.launchpad.readonly import is_read_only
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.lpstorm import IStore
+from canonical.launchpad.readonly import is_read_only
 from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    MASTER_FLAVOR,
+    )
 from canonical.launchpad.webapp.publisher import canonical_url
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.model.person import Person
-from lp.translations.utilities.rosettastats import RosettaStats
-from lp.translations.interfaces.pofile import IPOFile, IPOFileSet
+from lp.services.propertycache import cachedproperty
+from lp.translations.interfaces.pofile import (
+    IPOFile,
+    IPOFileSet,
+    )
 from lp.translations.interfaces.potmsgset import (
-    BrokenTextError, TranslationCreditsType)
+    BrokenTextError,
+    TranslationCreditsType,
+    )
 from lp.translations.interfaces.translationcommonformat import (
-    ITranslationFileData)
+    ITranslationFileData,
+    )
 from lp.translations.interfaces.translationexporter import (
-    ITranslationExporter)
+    ITranslationExporter,
+    )
 from lp.translations.interfaces.translationfileformat import (
-    TranslationFileFormat)
-from lp.translations.interfaces.translationgroup import (
-    TranslationPermission)
+    TranslationFileFormat,
+    )
+from lp.translations.interfaces.translationgroup import TranslationPermission
 from lp.translations.interfaces.translationimporter import (
-    ITranslationImporter, NotExportedFromLaunchpad, OutdatedTranslationError,
-    TooManyPluralFormsError, TranslationFormatInvalidInputError,
-    TranslationFormatSyntaxError)
+    ITranslationImporter,
+    NotExportedFromLaunchpad,
+    OutdatedTranslationError,
+    TooManyPluralFormsError,
+    TranslationFormatInvalidInputError,
+    TranslationFormatSyntaxError,
+    )
 from lp.translations.interfaces.translationimportqueue import (
-    RosettaImportStatus)
+    RosettaImportStatus,
+    )
 from lp.translations.interfaces.translationmessage import (
-    TranslationValidationStatus)
-from lp.translations.interfaces.translationsperson import (
-    ITranslationsPerson)
+    TranslationValidationStatus,
+    )
 from lp.translations.interfaces.translations import TranslationConstants
+from lp.translations.interfaces.translationsperson import ITranslationsPerson
 from lp.translations.model.pomsgid import POMsgID
 from lp.translations.model.potmsgset import POTMsgSet
-from lp.translations.model.translationimportqueue import (
-    collect_import_info)
 from lp.translations.model.translatablemessage import TranslatableMessage
+from lp.translations.model.translationimportqueue import collect_import_info
 from lp.translations.model.translationmessage import (
-    TranslationMessage, make_plurals_sql_fragment)
+    make_plurals_sql_fragment,
+    TranslationMessage,
+    )
 from lp.translations.model.translationtemplateitem import (
-    TranslationTemplateItem)
+    TranslationTemplateItem,
+    )
+from lp.translations.utilities.rosettastats import RosettaStats
 from lp.translations.utilities.translation_common_format import (
-    TranslationMessageData)
-
-from storm.expr import And, Exists, In, Join, LeftJoin, Not, Or, Select, SQL
-from storm.info import ClassAlias
-from storm.store import Store
+    TranslationMessageData,
+    )
 
 
 def _check_translation_perms(permission, translators, person):
@@ -483,9 +529,26 @@ class POFile(SQLBase, POFileMixIn):
     from_sourcepackagename = ForeignKey(foreignKey='SourcePackageName',
         dbName='from_sourcepackagename', notNull=False, default=None)
 
-    # joins
-    translation_messages = SQLMultipleJoin(
-        'TranslationMessage', joinColumn='pofile', orderBy='id')
+    @property
+    def translation_messages(self):
+        """See `IPOFile`."""
+        return self.getTranslationMessages()
+
+    def getTranslationMessages(self, condition=None):
+        """See `IPOFile`."""
+        applicable_template = Coalesce(
+            TranslationMessage.potemplateID, self.potemplate.id)
+        clauses = [
+            TranslationTemplateItem.potmsgsetID == TranslationMessage.potmsgsetID,
+            TranslationTemplateItem.potemplate == self.potemplate,
+            TranslationMessage.language == self.language,
+            applicable_template == self.potemplate.id,
+            ]
+        if condition is not None:
+            clauses.append(condition)
+
+        return IStore(self).find(
+            TranslationMessage, *clauses).order_by(TranslationMessage.id)
 
     @property
     def title(self):
@@ -1044,9 +1107,9 @@ class POFile(SQLBase, POFileMixIn):
             entry_to_import.setErrorOutput(None)
 
         # Prepare the mail notification.
-        msgsets_imported = TranslationMessage.select(
-            'was_obsolete_in_last_import IS FALSE AND pofile=%s' %
-            (sqlvalues(self.id))).count()
+        msgsets_imported = self.getTranslationMessages(
+            TranslationMessage.was_obsolete_in_last_import == False
+            ).count()
 
         replacements = collect_import_info(entry_to_import, self, warnings)
         replacements.update({
@@ -1312,16 +1375,13 @@ class DummyPOFile(POFileMixIn):
         """See `IPOFile`."""
         return self.potemplate.translationpermission
 
-    def emptySelectResults(self):
-        return POFile.select("1=2")
-
     def getTranslationsFilteredBy(self, person):
         """See `IPOFile`."""
         return None
 
     def getPOTMsgSetTranslated(self):
         """See `IPOFile`."""
-        return self.emptySelectResults()
+        return EmptyResultSet()
 
     def getPOTMsgSetUntranslated(self):
         """See `IPOFile`."""
@@ -1329,15 +1389,19 @@ class DummyPOFile(POFileMixIn):
 
     def getPOTMsgSetWithNewSuggestions(self):
         """See `IPOFile`."""
-        return self.emptySelectResults()
+        return EmptyResultSet()
 
     def getPOTMsgSetChangedInLaunchpad(self):
         """See `IPOFile`."""
-        return self.emptySelectResults()
+        return EmptyResultSet()
 
     def getPOTMsgSetWithErrors(self):
         """See `IPOFile`."""
-        return self.emptySelectResults()
+        return EmptyResultSet()
+
+    def getTranslationMessages(self, condition=None):
+        """See `IPOFile`."""
+        return EmptyResultSet()
 
     def hasMessageID(self, msgid):
         """See `IPOFile`."""

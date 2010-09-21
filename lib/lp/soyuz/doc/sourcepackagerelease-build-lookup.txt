@@ -43,7 +43,7 @@ optionally provide another status.
     >>> hoary_evo_source = hoary.getSourcePackage('evolution')
     >>> evo_release = hoary_evo_source['1.0'].sourcepackagerelease
 
-    >>> from lp.buildmaster.interfaces.buildbase import BuildStatus
+    >>> from lp.buildmaster.enums import BuildStatus
     >>> evo_build_i386 = evo_release.createBuild(
     ...     hoary_i386, pocket_release, ubuntu.main_archive,
     ...     status=BuildStatus.FULLYBUILT)
@@ -118,7 +118,7 @@ In order to be independent of the sampledata we will use the
 SoyuzTestPublisher helper to create fake but complete publication for
 this test.
 
-    >>> from canonical.launchpad.interfaces import (
+    >>> from lp.soyuz.enums import (
     ...    PackagePublishingStatus)
     >>> from lp.soyuz.tests.test_publishing import (
     ...     SoyuzTestPublisher)

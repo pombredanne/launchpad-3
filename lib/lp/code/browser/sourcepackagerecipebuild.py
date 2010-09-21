@@ -18,12 +18,19 @@ from zope.schema import Int
 
 from canonical.launchpad.browser.librarian import FileNavigationMixin
 from canonical.launchpad.webapp import (
-    action, canonical_url, ContextMenu, enabled_with_permission,
-    LaunchpadView, LaunchpadFormView, Link, Navigation)
-
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+    action,
+    canonical_url,
+    ContextMenu,
+    enabled_with_permission,
+    LaunchpadFormView,
+    LaunchpadView,
+    Link,
+    Navigation,
+    )
+from lp.buildmaster.enums import BuildStatus
 from lp.code.interfaces.sourcepackagerecipebuild import (
-    ISourcePackageRecipeBuild)
+    ISourcePackageRecipeBuild,
+    )
 from lp.services.job.interfaces.job import JobStatus
 
 
@@ -75,6 +82,7 @@ class SourcePackageRecipeBuildView(LaunchpadView):
             return 'No suitable builders'
         return {
             BuildStatus.NEEDSBUILD: 'Pending build',
+            BuildStatus.UPLOADING: 'Build uploading',
             BuildStatus.FULLYBUILT: 'Successful build',
             BuildStatus.MANUALDEPWAIT: (
                 'Could not build because of missing dependencies'),

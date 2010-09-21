@@ -13,7 +13,7 @@ uploaded into the system.
   >>> from lp.registry.interfaces.distroseries import IDistroSeriesSet
   >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
   >>> from lp.soyuz.interfaces.component import IComponentSet
-  >>> from lp.soyuz.interfaces.publishing import (
+  >>> from lp.soyuz.enums import (
   ...     PackagePublishingStatus)
   >>> from lp.registry.interfaces.sourcepackagename import (
   ...     ISourcePackageNameSet)
@@ -74,15 +74,14 @@ queue:
   ...      dapper_amd64, PackagePublishingPocket.RELEASE, dapper.main_archive)
 
   >>> buildd_policy = getPolicy(
-  ...     name='buildd', distro='ubuntu', distroseries='dapper',
-  ...     buildid=build.id)
+  ...     name='buildd', distro='ubuntu', distroseries='dapper')
 
   >>> pmount_upload = NascentUpload.from_changesfile_path(
   ...     datadir('pmount_0.9.7-2ubuntu2_amd64.changes'),
   ...     buildd_policy, mock_logger)
   DEBUG: Changes file can be unsigned.
 
-  >>> pmount_upload.process()
+  >>> pmount_upload.process(build=build)
   DEBUG: Beginning processing.
   DEBUG: Verifying the changes file.
   DEBUG: Verifying files in upload.
@@ -105,9 +104,8 @@ package.
   >>> print len(dapper_pmount.getLatestTranslationsUploads())
   0
 
-  >>> success = pmount_upload.do_accept()
+  >>> success = pmount_upload.do_accept(build=build)
   DEBUG: Creating queue entry
-  DEBUG: Build ... found
   ...
 
   # And all things worked.
@@ -148,7 +146,7 @@ We'll get back to that uploaded file later.
 
 An upload to the RELEASE pocket will add items to the import queue:
 
-  >>> from lp.soyuz.interfaces.queue import PackageUploadStatus
+  >>> from lp.soyuz.enums import PackageUploadStatus
   >>> queue_item = dapper.getQueueItems(
   ...     status=PackageUploadStatus.NEW)[0]
   >>> queue_item.customfiles[0].publish()
@@ -285,7 +283,8 @@ For now we simply ignore translations for archives other than the
 Distribution archives (i.e. PPAs).
 
   >>> from lp.registry.interfaces.person import IPersonSet
-  >>> from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
+  >>> from lp.soyuz.enums import ArchivePurpose
+  >>> from lp.soyuz.interfaces.archive import IArchiveSet
 
   >>> foobar_archive = getUtility(IArchiveSet).new(
   ...     purpose=ArchivePurpose.PPA,
@@ -345,7 +344,7 @@ different interpretations of "importer" in attachTranslationFiles.
   ...     IArchive, ArchivePurpose)
   >>> from lp.soyuz.interfaces.queue import (
   ...     IPackageUpload, IPackageUploadCustom)
-  >>> from lp.soyuz.interfaces.queue import PackageUploadCustomFormat
+  >>> from lp.soyuz.enums import PackageUploadCustomFormat
   >>> from lp.soyuz.interfaces.component import IComponentSet
   >>> from lp.registry.interfaces.person import IPerson
   >>> from lp.soyuz.interfaces.sourcepackagerelease import (

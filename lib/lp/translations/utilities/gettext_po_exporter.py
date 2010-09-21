@@ -20,12 +20,15 @@ import os
 from zope.interface import implements
 
 from lp.translations.interfaces.translationexporter import (
-    ITranslationFormatExporter)
-from lp.translations.interfaces.translations import TranslationConstants
+    ITranslationFormatExporter,
+    )
 from lp.translations.interfaces.translationfileformat import (
-    TranslationFileFormat)
+    TranslationFileFormat,
+    )
+from lp.translations.interfaces.translations import TranslationConstants
 from lp.translations.utilities.translation_common_format import (
-    TranslationMessageData)
+    TranslationMessageData,
+    )
 
 
 def strip_last_newline(text):

@@ -120,5 +120,11 @@
         doc_path="../../doc/buildout.txt"
         parent="lp"
         />
+    <apidoc:bookchapter
+        id="profiling"
+        title="Profiling"
+        doc_path="../../lib/canonical/launchpad/doc/profiling.txt"
+        parent="lp"
+        />
 
 </configure>

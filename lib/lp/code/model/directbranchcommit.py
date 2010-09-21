@@ -16,13 +16,16 @@ import os.path
 
 from bzrlib.generate_ids import gen_file_id
 from bzrlib.revision import NULL_REVISION
-from bzrlib.transform import TransformPreview, ROOT_PARENT
+from bzrlib.transform import (
+    ROOT_PARENT,
+    TransformPreview,
+    )
 
 from canonical.launchpad.interfaces import IMasterObject
-
 from lp.codehosting.bzrutils import get_stacked_on_url
-from lp.services.osutils import override_environ
 from lp.services.mail.sendmail import format_address_for_person
+from lp.services.osutils import override_environ
+
 
 class ConcurrentUpdateError(Exception):
     """Bailout exception for concurrent updates.

@@ -7,19 +7,38 @@ __metaclass__ = type
 
 __all__ = [
     'distroseries_to_launchpadusage',
+    'distroseries_to_serviceusage',
     'PollSubset',
     'productseries_to_product',
     ]
 
 
-from zope.component import getUtility
+from zope.component import (
+    adapter,
+    getUtility,
+    )
 from zope.component.interfaces import ComponentLookupError
-from zope.interface import implements
+from zope.interface import (
+    implementer,
+    implements,
+    )
 
 from canonical.launchpad.webapp.interfaces import ILaunchpadPrincipal
-
+from lp.app.interfaces.launchpad import IServiceUsage
+from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.poll import (
-    IPollSet, IPollSubset, PollAlgorithm, PollStatus)
+    IPollSet,
+    IPollSubset,
+    PollAlgorithm,
+    PollStatus,
+    )
+
+
+@implementer(IServiceUsage)
+@adapter(IDistroSeries)
+def distroseries_to_serviceusage(distroseries):
+    """Adapts `IDistroSeries` object to `IServiceUsage`."""
+    return distroseries.distribution
 
 
 def distroseries_to_launchpadusage(distroseries):

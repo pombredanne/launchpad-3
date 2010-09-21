@@ -11,16 +11,28 @@ __all__ = [
     'IBugSubscription',
     ]
 
-from zope.interface import Interface, Attribute
-from zope.schema import Int, Datetime
-from canonical.launchpad import _
-from lp.services.fields import PersonChoice
-from lp.bugs.interfaces.bug import IBug
-
 from lazr.restful.declarations import (
-    REQUEST_USER, call_with, export_as_webservice_entry,
-    export_read_operation, exported)
+    call_with,
+    export_as_webservice_entry,
+    export_read_operation,
+    exported,
+    REQUEST_USER,
+    )
 from lazr.restful.fields import Reference
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Choice,
+    Datetime,
+    Int,
+    )
+
+from canonical.launchpad import _
+from lp.bugs.interfaces.bug import IBug
+from lp.registry.enum import BugNotificationLevel
+from lp.services.fields import PersonChoice
 
 
 class IBugSubscription(Interface):
@@ -35,6 +47,14 @@ class IBugSubscription(Interface):
         "e-mail address.")))
     bug = exported(Reference(
         IBug, title=_("Bug"), required=True, readonly=True))
+    bugID = Int(title=u"The bug id.", readonly=True)
+    bug_notification_level = Choice(
+        title=_("Bug notification level"), required=True,
+        vocabulary=BugNotificationLevel,
+        default=BugNotificationLevel.COMMENTS,
+        description=_(
+            "The volume and type of bug notifications "
+            "this subscription will generate."))
     date_created = exported(
         Datetime(title=_('Date subscribed'), required=True, readonly=True))
     subscribed_by = exported(PersonChoice(
@@ -44,6 +64,9 @@ class IBugSubscription(Interface):
 
     display_subscribed_by = Attribute(
         "`subscribed_by` formatted for display.")
+
+    display_duplicate_subscribed_by = Attribute(
+        "duplicate bug `subscribed_by` formatted for display.")
 
     @call_with(user=REQUEST_USER)
     @export_read_operation()

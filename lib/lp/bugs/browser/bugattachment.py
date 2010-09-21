@@ -10,34 +10,45 @@ __all__ = [
     'BugAttachmentSetNavigation',
     'BugAttachmentEditView',
     'BugAttachmentURL',
-    'SafeStreamOrRedirectLibraryFileAliasView',
     ]
 
 from cStringIO import StringIO
 
-from zope.interface import implements
 from zope.component import getUtility
 from zope.contenttype import guess_content_type
+from zope.interface import implements
 
 from canonical.launchpad.browser.librarian import (
-    FileNavigationMixin, ProxiedLibraryFileAlias, StreamOrRedirectLibraryFileAliasView)
-from canonical.launchpad.webapp import (
-    canonical_url, custom_widget, GetitemNavigation, Navigation)
+    FileNavigationMixin,
+    ProxiedLibraryFileAlias,
+    StreamOrRedirectLibraryFileAliasView,
+    SafeStreamOrRedirectLibraryFileAliasView,
+    )
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from lp.bugs.interfaces.bugattachment import (
-    BugAttachmentType, IBugAttachmentEditForm,
-    IBugAttachmentIsPatchConfirmationForm, IBugAttachmentSet)
-from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
+from canonical.launchpad.webapp import (
+    canonical_url,
+    custom_widget,
+    GetitemNavigation,
+    Navigation,
+    )
+from canonical.launchpad.webapp.interfaces import (
+    ICanonicalUrlData,
+    ILaunchBag,
+    )
 from canonical.launchpad.webapp.launchpadform import (
-    action, LaunchpadFormView)
+    action,
+    LaunchpadFormView,
+    )
 from canonical.launchpad.webapp.menu import structured
-
 from canonical.lazr.utils import smartquote
-
 from canonical.widgets.itemswidgets import LaunchpadBooleanRadioWidget
-
-from lp.bugs.interfaces.bugattachment import IBugAttachment
+from lp.bugs.interfaces.bugattachment import (
+    BugAttachmentType,
+    IBugAttachment,
+    IBugAttachmentEditForm,
+    IBugAttachmentIsPatchConfirmationForm,
+    IBugAttachmentSet,
+    )
 
 
 class BugAttachmentContentCheck:
@@ -229,21 +240,6 @@ class BugAttachmentPatchConfirmationView(LaunchpadFormView):
     def is_patch(self):
         """True if this attachment contains a patch, else False."""
         return self.context.type == BugAttachmentType.PATCH
-
-
-class SafeStreamOrRedirectLibraryFileAliasView(
-    StreamOrRedirectLibraryFileAliasView):
-    """A view for Librarian files that sets the content disposion header."""
-
-    def __call__(self):
-        """Stream the content of the context `ILibraryFileAlias`.
-
-        Set the content disposition header to the safe value "attachment".
-        """
-        self.request.response.setHeader(
-            'Content-Disposition', 'attachment')
-        return super(
-            SafeStreamOrRedirectLibraryFileAliasView, self).__call__()
 
 
 class BugAttachmentFileNavigation(Navigation, FileNavigationMixin):

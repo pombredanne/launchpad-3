@@ -10,15 +10,18 @@ __all__ = [
     'BugSubscriptionAddView',
     ]
 
+from lazr.delegates import delegates
 from simplejson import dumps
 
-from lazr.delegates import delegates
-
+from canonical.launchpad.webapp import (
+    action,
+    canonical_url,
+    LaunchpadFormView,
+    LaunchpadView,
+    )
+from canonical.launchpad.webapp.authorization import check_permission
 from lp.bugs.browser.bug import BugViewMixin
 from lp.bugs.interfaces.bugsubscription import IBugSubscription
-from canonical.launchpad.webapp import (
-    action, canonical_url, LaunchpadFormView, LaunchpadView)
-from canonical.launchpad.webapp.authorization import check_permission
 
 
 class BugSubscriptionAddView(LaunchpadFormView):

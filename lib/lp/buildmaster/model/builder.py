@@ -12,9 +12,8 @@ __all__ = [
     'updateBuilderStatus',
     ]
 
-import errno
-import httplib
 import gzip
+import httplib
 import logging
 import os
 import socket
@@ -24,41 +23,71 @@ import urllib2
 import xmlrpclib
 
 from sqlobject import (
-    BoolCol, ForeignKey, IntCol, SQLObjectNotFound, StringCol)
-from storm.expr import Coalesce, Count, Sum
+    BoolCol,
+    ForeignKey,
+    IntCol,
+    SQLObjectNotFound,
+    StringCol,
+    )
+from storm.expr import (
+    Coalesce,
+    Count,
+    Sum,
+    )
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.cachedproperty import cachedproperty
-from canonical.config import config
 from canonical.buildd.slave import BuilderStatus
+from canonical.config import config
+from canonical.database.sqlbase import (
+    SQLBase,
+    sqlvalues,
+    )
 from canonical.launchpad.helpers import filenameToContentType
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.webapp import urlappend
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR, SLAVE_FLAVOR)
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    SLAVE_FLAVOR,
+    )
 from canonical.lazr.utils import safe_hasattr
 from canonical.librarian.utils import copy_and_close
 from lp.app.errors import NotFoundError
 from lp.buildmaster.interfaces.builder import (
-    BuildDaemonError, BuildSlaveFailure, CannotBuild, CannotFetchFile,
-    CannotResumeHost, CorruptBuildCookie, IBuilder, IBuilderSet)
+    BuildDaemonError,
+    BuildSlaveFailure,
+    CannotBuild,
+    CannotFetchFile,
+    CannotResumeHost,
+    CorruptBuildCookie,
+    IBuilder,
+    IBuilderSet,
+    )
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSet
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
-    BuildBehaviorMismatch)
+    BuildBehaviorMismatch,
+    )
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.buildmaster.model.buildfarmjobbehavior import IdleBuildBehavior
-from lp.buildmaster.model.buildqueue import BuildQueue, specific_job_classes
-from canonical.database.sqlbase import SQLBase, sqlvalues
+from lp.buildmaster.model.buildqueue import (
+    BuildQueue,
+    specific_job_classes,
+    )
 from lp.registry.interfaces.person import validate_public_person
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
+from lp.services.osutils import until_no_eintr
+from lp.services.propertycache import cachedproperty
 # XXX Michael Nelson 2010-01-13 bug=491330
 # These dependencies on soyuz will be removed when getBuildRecords()
 # is moved.
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.buildrecords import (
-    IHasBuildRecords, IncompatibleArguments)
+    IHasBuildRecords,
+    IncompatibleArguments,
+    )
 from lp.soyuz.model.processor import Processor
 
 
@@ -83,17 +112,57 @@ class TimeoutTransport(xmlrpclib.Transport):
         return TimeoutHTTP(host)
 
 
-class BuilderSlave(xmlrpclib.ServerProxy):
+class BuilderSlave(object):
     """Add in a few useful methods for the XMLRPC slave."""
+
+    # XXX: This (BuilderSlave) should use composition, rather than
+    # inheritance.
+
+    # XXX: Have a documented interface for the XML-RPC server:
+    #  - what methods
+    #  - what return values expected
+    #  - what faults
+    #  (see XMLRPCBuildDSlave in lib/canonical/buildd/slave.py).
+
+    # XXX: Arguably, this interface should be asynchronous
+    # (i.e. Deferred-returning). This would mean that Builder (see below)
+    # would have to expect Deferreds.
+
+    # XXX: Once we have a client object with a defined, tested interface, we
+    # should make a test double that doesn't do any XML-RPC and can be used to
+    # make testing easier & tests faster.
 
     def __init__(self, urlbase, vm_host):
         """Initialise a Server with specific parameter to our buildfarm."""
         self.vm_host = vm_host
         self.urlbase = urlbase
         rpc_url = urlappend(urlbase, "rpc")
-        xmlrpclib.Server.__init__(self, rpc_url,
-                                  transport=TimeoutTransport(),
-                                  allow_none=True)
+        self._server = xmlrpclib.Server(
+            rpc_url, transport=TimeoutTransport(), allow_none=True)
+
+    def abort(self):
+        """Abort the current build."""
+        return self._server.abort()
+
+    def clean(self):
+        """Clean up the waiting files and reset the slave's internal state."""
+        return self._server.clean()
+
+    def echo(self, *args):
+        """Echo the arguments back."""
+        return self._server.echo(*args)
+
+    def info(self):
+        """Return the protocol version and the builder methods supported."""
+        return self._server.info()
+
+    def status(self):
+        """Return the status of the build daemon."""
+        return self._server.status()
+
+    def ensurepresent(self, sha1sum, url, username, password):
+        """Attempt to ensure the given file is present."""
+        return self._server.ensurepresent(sha1sum, url, username, password)
 
     def getFile(self, sha_sum):
         """Construct a file-like object to return the named file."""
@@ -109,6 +178,10 @@ class BuilderSlave(xmlrpclib.ServerProxy):
 
         :return: a (stdout, stderr, subprocess exitcode) triple
         """
+        # XXX: This executes the vm_resume_command
+        # synchronously. RecordingSlave does so asynchronously. Since we
+        # always want to do this asynchronously, there's no need for the
+        # duplication.
         resume_command = config.builddmaster.vm_resume_command % {
             'vm_host': self.vm_host}
         resume_argv = resume_command.split()
@@ -147,12 +220,9 @@ class BuilderSlave(xmlrpclib.ServerProxy):
         :param args: A dictionary of extra arguments. The contents depend on
             the build job type.
         """
-        # Can't upcall to xmlrpclib.ServerProxy, since it doesn't actually
-        # have a 'build' method.
-        build_method = xmlrpclib.ServerProxy.__getattr__(self, 'build')
         try:
-            return build_method(
-                self, buildid, builder_type, chroot_sha1, filemap, args)
+            return self._server.build(
+                buildid, builder_type, chroot_sha1, filemap, args)
         except xmlrpclib.Fault, info:
             raise BuildSlaveFailure(info)
 
@@ -177,6 +247,20 @@ def rescueBuilderIfLost(builder, logger=None):
     # IBuilder.slaveStatusSentence().
     status = status_sentence[0]
 
+    # If the cookie test below fails, it will request an abort of the
+    # builder.  This will leave the builder in the aborted state and
+    # with no assigned job, and we should now "clean" the slave which
+    # will reset its state back to IDLE, ready to accept new builds.
+    # This situation is usually caused by a temporary loss of
+    # communications with the slave and the build manager had to reset
+    # the job.
+    if status == 'BuilderStatus.ABORTED' and builder.currentjob is None:
+        builder.cleanSlave()
+        if logger is not None:
+            logger.info(
+                "Builder '%s' cleaned up from ABORTED" % builder.name)
+        return
+
     # If slave is not building nor waiting, it's not in need of rescuing.
     if status not in ident_position.keys():
         return
@@ -191,9 +275,28 @@ def rescueBuilderIfLost(builder, logger=None):
         else:
             builder.requestAbort()
         if logger:
-            logger.warn(
+            logger.info(
                 "Builder '%s' rescued from '%s': '%s'" %
                 (builder.name, slave_build_id, reason))
+
+
+def _update_builder_status(builder, logger=None):
+    """Really update the builder status."""
+    try:
+        builder.checkSlaveAlive()
+        builder.rescueIfLost(logger)
+    # Catch only known exceptions.
+    # XXX cprov 2007-06-15 bug=120571: ValueError & TypeError catching is
+    # disturbing in this context. We should spend sometime sanitizing the
+    # exceptions raised in the Builder API since we already started the
+    # main refactoring of this area.
+    except (ValueError, TypeError, xmlrpclib.Fault,
+            BuildDaemonError), reason:
+        builder.failBuilder(str(reason))
+        if logger:
+            logger.warn(
+                "%s (%s) marked as failed due to: %s",
+                builder.name, builder.url, builder.failnotes, exc_info=True)
 
 
 def updateBuilderStatus(builder, logger=None):
@@ -202,37 +305,15 @@ def updateBuilderStatus(builder, logger=None):
         logger.debug('Checking %s' % builder.name)
 
     MAX_EINTR_RETRIES = 42 # pulling a number out of my a$$ here
-    eintr_retry_count = 0
-
-    while True:
-        try:
-            builder.checkSlaveAlive()
-            builder.rescueIfLost(logger)
-        # Catch only known exceptions.
-        # XXX cprov 2007-06-15 bug=120571: ValueError & TypeError catching is
-        # disturbing in this context. We should spend sometime sanitizing the
-        # exceptions raised in the Builder API since we already started the
-        # main refactoring of this area.
-        except (ValueError, TypeError, xmlrpclib.Fault,
-                BuildDaemonError), reason:
-            builder.failBuilder(str(reason))
-            if logger:
-                logger.warn(
-                    "%s (%s) marked as failed due to: %s",
-                    builder.name, builder.url, builder.failnotes, exc_info=True)
-        except socket.error, reason:
-            # In Python 2.6 we can use IOError instead.  It also has
-            # reason.errno but we might be using 2.5 here so use the
-            # index hack.
-            if reason[0] == errno.EINTR:
-                eintr_retry_count += 1
-                if eintr_retry_count != MAX_EINTR_RETRIES:
-                    # It was an EINTR. Just retry.
-                    continue
-            error_message = str(reason)
-            builder.handleTimeout(logger, error_message)
-
-        return
+    try:
+        return until_no_eintr(
+            MAX_EINTR_RETRIES, _update_builder_status, builder, logger=logger)
+    except socket.error, reason:
+        # In Python 2.6 we can use IOError instead.  It also has
+        # reason.errno but we might be using 2.5 here so use the
+        # index hack.
+        error_message = str(reason)
+        builder.handleTimeout(logger, error_message)
 
 
 class Builder(SQLBase):
@@ -258,6 +339,7 @@ class Builder(SQLBase):
     manual = BoolCol(dbName='manual', default=False)
     vm_host = StringCol(dbName='vm_host')
     active = BoolCol(dbName='active', notNull=True, default=True)
+    failure_count = IntCol(dbName='failure_count', default=0, notNull=True)
 
     def _getCurrentBuildBehavior(self):
         """Return the current build behavior."""
@@ -296,6 +378,14 @@ class Builder(SQLBase):
     current_build_behavior = property(
         _getCurrentBuildBehavior, _setCurrentBuildBehavior)
 
+    def gotFailure(self):
+        """See `IBuilder`."""
+        self.failure_count += 1
+
+    def resetFailureCount(self):
+        """See `IBuilder`."""
+        self.failure_count = 0
+
     def checkSlaveAlive(self):
         """See IBuilder."""
         if self.slave.echo("Test")[0] != "Test":
@@ -313,6 +403,8 @@ class Builder(SQLBase):
         """See IBuilder."""
         return self.slave.clean()
 
+    # XXX 2010-08-24 Julian bug=623281
+    # This should not be a property!  It's masking a complicated query.
     @property
     def currentjob(self):
         """See IBuilder"""
@@ -643,6 +735,11 @@ class Builder(SQLBase):
             BuildQueue.builder == self.id,
             Job._status == JobStatus.RUNNING,
             Job.date_started != None).one()
+
+    def getCurrentBuildFarmJob(self):
+        """See `IBuilder`."""
+        # Don't make this a property, it's masking a few queries.
+        return self.currentjob.specific_job.build
 
 
 class BuilderSet(object):

@@ -8,80 +8,96 @@
 __metaclass__ = type
 
 import cgi
-import pytz
 import threading
 import xmlrpclib
-from datetime import datetime
 
+from lazr.restful.interfaces import (
+    ICollectionResource,
+    IWebServiceConfiguration,
+    IWebServiceVersion,
+    )
+from lazr.restful.publisher import (
+    WebServicePublicationMixin,
+    WebServiceRequestTraversal,
+    )
+from lazr.uri import URI
 import transaction
 from transaction.interfaces import ISynchronizer
-
+from zc.zservertracelog.tracelog import Server as ZServerTracelogServer
+from zope.app.form.browser.itemswidgets import MultiDataHelper
 from zope.app.form.browser.widget import SimpleInputWidget
-from zope.app.form.browser.itemswidgets import  MultiDataHelper
-from zope.session.interfaces import ISession
 from zope.app.publication.httpfactory import HTTPPublicationRequestFactory
 from zope.app.publication.interfaces import IRequestPublicationFactory
 from zope.app.publication.requestpublicationregistry import (
-    factoryRegistry as publisher_factory_registry)
+    factoryRegistry as publisher_factory_registry,
+    )
 from zope.app.server import wsgi
 from zope.app.wsgi import WSGIPublisherApplication
 from zope.component import getUtility
-from zope.interface import alsoProvides, implements
+from zope.interface import (
+    alsoProvides,
+    implements,
+    )
 from zope.publisher.browser import (
-    BrowserRequest, BrowserResponse, TestRequest)
+    BrowserRequest,
+    BrowserResponse,
+    TestRequest,
+    )
 from zope.publisher.interfaces import NotFound
-from zope.publisher.xmlrpc import XMLRPCRequest, XMLRPCResponse
-from zope.security.interfaces import IParticipation, Unauthorized
+from zope.publisher.xmlrpc import (
+    XMLRPCRequest,
+    XMLRPCResponse,
+    )
+from zope.security.interfaces import IParticipation
 from zope.security.proxy import (
-    isinstance as zope_isinstance, removeSecurityProxy)
+    isinstance as zope_isinstance,
+    removeSecurityProxy,
+    )
 from zope.server.http.commonaccesslogger import CommonAccessLogger
 from zope.server.http.wsgihttpserver import PMDBWSGIHTTPServer
+from zope.session.interfaces import ISession
 
-from canonical.cachedproperty import cachedproperty
 from canonical.config import config
-
-from canonical.lazr.interfaces.feed import IFeed
-from lazr.restful.interfaces import (
-    IWebServiceConfiguration, IWebServiceVersion)
-from lazr.restful.publisher import (
-    WebServicePublicationMixin, WebServiceRequestTraversal)
-
-from lp.app.errors import UnexpectedFormData
-from lp.testopenid.interfaces.server import ITestOpenIDApplication
 from canonical.launchpad.interfaces.launchpad import (
-    IFeedsApplication, IPrivateApplication, IWebServiceApplication)
-from canonical.launchpad.interfaces.oauth import (
-    ClockSkew, IOAuthConsumerSet, IOAuthSignedRequest, NonceAlreadyUsed,
-    TimestampOrderingError)
+    IFeedsApplication,
+    IPrivateApplication,
+    IWebServiceApplication,
+    )
 import canonical.launchpad.layers
-
-from canonical.launchpad.webapp.adapter import (
-    get_request_duration, RequestExpired)
-from canonical.launchpad.webapp.authorization import (
-    LAUNCHPAD_SECURITY_POLICY_CACHE_KEY)
-from canonical.launchpad.webapp.notifications import (
-    NotificationRequest, NotificationResponse, NotificationList)
-from canonical.launchpad.webapp.interfaces import (
-    IAPIDocRoot, IBasicLaunchpadRequest, IBrowserFormNG,
-    ILaunchpadBrowserApplicationRequest, ILaunchpadProtocolError,
-    INotificationRequest, INotificationResponse, IPlacelessAuthUtility,
-    IPlacelessLoginSource, OAuthPermission)
 from canonical.launchpad.webapp.authentication import (
-    check_oauth_signature, get_oauth_authorization)
+    get_oauth_principal,
+    )
+from canonical.launchpad.webapp.authorization import (
+    LAUNCHPAD_SECURITY_POLICY_CACHE_KEY,
+    )
 from canonical.launchpad.webapp.errorlog import ErrorReportRequest
-from lazr.uri import URI
-from canonical.launchpad.webapp.vhosts import allvhosts
+from canonical.launchpad.webapp.interfaces import (
+    IAPIDocRoot,
+    IBasicLaunchpadRequest,
+    IBrowserFormNG,
+    ILaunchpadBrowserApplicationRequest,
+    ILaunchpadProtocolError,
+    INotificationRequest,
+    INotificationResponse,
+    IPlacelessAuthUtility,
+    )
+from canonical.launchpad.webapp.notifications import (
+    NotificationList,
+    NotificationRequest,
+    NotificationResponse,
+    )
+from canonical.launchpad.webapp.opstats import OpStats
 from canonical.launchpad.webapp.publication import LaunchpadBrowserPublication
 from canonical.launchpad.webapp.publisher import (
-    get_current_browser_request, RedirectionView)
-from canonical.launchpad.webapp.opstats import OpStats
-from zc.zservertracelog.tracelog import Server as ZServerTracelogServer
-
-from canonical.lazr.timeout import set_default_timeout_function
-
-from lp.services.features.flags import (
-    NullFeatureController,
+    get_current_browser_request,
+    RedirectionView,
     )
+from canonical.launchpad.webapp.vhosts import allvhosts
+from canonical.lazr.interfaces.feed import IFeed
+from lp.app.errors import UnexpectedFormData
+from lp.services.features.flags import NullFeatureController
+from lp.services.propertycache import cachedproperty
+from lp.testopenid.interfaces.server import ITestOpenIDApplication
 
 
 class StepsToGo:
@@ -941,7 +957,7 @@ class LaunchpadAccessLogger(CommonAccessLogger):
         request string  (1st line of request)
         response status
         response bytes written
-        number of sql statements
+        number of nonpython statements (sql, email, memcache, rabbit etc)
         request duration
         number of ticks during traversal
         number of ticks during publication
@@ -962,7 +978,7 @@ class LaunchpadAccessLogger(CommonAccessLogger):
         bytes_written = task.bytes_written
         userid = cgi_env.get('launchpad.userid', '')
         pageid = cgi_env.get('launchpad.pageid', '')
-        sql_statements = cgi_env.get('launchpad.sqlstatements', 0)
+        nonpython_actions = cgi_env.get('launchpad.nonpythonactions', 0)
         request_duration = cgi_env.get('launchpad.requestduration', 0)
         traversal_ticks = cgi_env.get('launchpad.traversalticks', 0)
         publication_ticks = cgi_env.get('launchpad.publicationticks', 0)
@@ -980,7 +996,7 @@ class LaunchpadAccessLogger(CommonAccessLogger):
                 first_line,
                 status,
                 bytes_written,
-                sql_statements,
+                nonpython_actions,
                 request_duration,
                 traversal_ticks,
                 publication_ticks,
@@ -1116,9 +1132,25 @@ class WebServicePublication(WebServicePublicationMixin,
     root_object_interface = IWebServiceApplication
 
     def constructPageID(self, view, context):
-        """Add the web service named operation (if any) to the page ID."""
+        """Add the web service named operation (if any) to the page ID.
+
+        See https://dev.launchpad.net/Foundations/Webservice for more
+        information about WebService page IDs.
+        """
         pageid = super(WebServicePublication, self).constructPageID(
             view, context)
+        if ICollectionResource.providedBy(view):
+            # collection_identifier is a way to differentiate between
+            # CollectionResource objects. CollectionResource objects are
+            # objects that serve a list of Entry resources through the
+            # WebService, so by querying the CollectionResource.type_url
+            # attribute we're able to find out the resource type the
+            # collection holds. See lazr.restful._resource.py to see how
+            # the type_url is constructed.
+            # We don't need the full URL, just the type of the resource.
+            collection_identifier = view.type_url.split('/')[-1]
+            if collection_identifier:
+                pageid += ':' + collection_identifier
         op = (view.request.get('ws.op')
             or view.request.query_string_params.get('ws.op'))
         if op:
@@ -1169,89 +1201,22 @@ class WebServicePublication(WebServicePublicationMixin,
         if request_path.startswith("/%s" % web_service_config.path_override):
             return super(WebServicePublication, self).getPrincipal(request)
 
-        # Fetch OAuth authorization information from the request.
-        form = get_oauth_authorization(request)
-
-        consumer_key = form.get('oauth_consumer_key')
-        consumers = getUtility(IOAuthConsumerSet)
-        consumer = consumers.getByKey(consumer_key)
-        token_key = form.get('oauth_token')
-        anonymous_request = (token_key == '')
-
-        if consumer_key is None:
-            # Either the client's OAuth implementation is broken, or
-            # the user is trying to make an unauthenticated request
-            # using wget or another OAuth-ignorant application.
-            # Try to retrieve a consumer based on the User-Agent
-            # header.
-            anonymous_request = True
-            consumer_key = request.getHeader('User-Agent', '')
-            if consumer_key == '':
-                raise Unauthorized(
-                    'Anonymous requests must provide a User-Agent.')
-            consumer = consumers.getByKey(consumer_key)
-
-        if consumer is None:
-            if anonymous_request:
-                # This is the first time anyone has tried to make an
-                # anonymous request using this consumer name (or user
-                # agent). Dynamically create the consumer.
-                #
-                # In the normal website this wouldn't be possible
-                # because GET requests have their transactions rolled
-                # back. But webservice requests always have their
-                # transactions committed so that we can keep track of
-                # the OAuth nonces and prevent replay attacks.
-                if consumer_key == '' or consumer_key is None:
-                    raise Unauthorized("No consumer key specified.")
-                consumer = consumers.new(consumer_key, '')
-            else:
-                # An unknown consumer can never make a non-anonymous
-                # request, because access tokens are registered with a
-                # specific, known consumer.
-                raise Unauthorized('Unknown consumer (%s).' % consumer_key)
-        if anonymous_request:
-            # Skip the OAuth verification step and let the user access the
-            # web service as an unauthenticated user.
-            #
-            # XXX leonardr 2009-12-15 bug=496964: Ideally we'd be
-            # auto-creating a token for the anonymous user the first
-            # time, passing it through the OAuth verification step,
-            # and using it on all subsequent anonymous requests.
-            alsoProvides(request, IOAuthSignedRequest)
-            auth_utility = getUtility(IPlacelessAuthUtility)
-            return auth_utility.unauthenticatedPrincipal()
-        token = consumer.getAccessToken(token_key)
-        if token is None:
-            raise Unauthorized('Unknown access token (%s).' % token_key)
-        nonce = form.get('oauth_nonce')
-        timestamp = form.get('oauth_timestamp')
-        try:
-            token.checkNonceAndTimestamp(nonce, timestamp)
-        except (NonceAlreadyUsed, TimestampOrderingError, ClockSkew), e:
-            raise Unauthorized('Invalid nonce/timestamp: %s' % e)
-        now = datetime.now(pytz.timezone('UTC'))
-        if token.permission == OAuthPermission.UNAUTHORIZED:
-            raise Unauthorized('Unauthorized token (%s).' % token.key)
-        elif token.date_expires is not None and token.date_expires <= now:
-            raise Unauthorized('Expired token (%s).' % token.key)
-        elif not check_oauth_signature(request, consumer, token):
-            raise Unauthorized('Invalid signature.')
-        else:
-            # Everything is fine, let's return the principal.
-            pass
-        alsoProvides(request, IOAuthSignedRequest)
-        principal = getUtility(IPlacelessLoginSource).getPrincipal(
-            token.person.account.id, access_level=token.permission,
-            scope=token.context)
-
-        return principal
+        return get_oauth_principal(request)
 
 
-class WebServiceClientRequest(WebServiceRequestTraversal,
+class LaunchpadWebServiceRequestTraversal(WebServiceRequestTraversal):
+    implements(canonical.launchpad.layers.WebServiceLayer)
+
+    def getRootURL(self, rootsite):
+        """See IBasicLaunchpadRequest."""
+        # When browsing the web service, we want URLs to point back at the web
+        # service, so we basically ignore rootsite.
+        return self.getApplicationURL() + '/'
+
+
+class WebServiceClientRequest(LaunchpadWebServiceRequestTraversal,
                               LaunchpadBrowserRequest):
     """Request type for a resource published through the web service."""
-    implements(canonical.launchpad.layers.WebServiceLayer)
 
     def __init__(self, body_instream, environ, response=None):
         super(WebServiceClientRequest, self).__init__(
@@ -1277,20 +1242,14 @@ class WebServiceClientRequest(WebServiceRequestTraversal,
         # than ETag, we may have to revisit this.
         self.response.setHeader('Vary', 'Accept')
 
-    def getRootURL(self, rootsite):
-        """See IBasicLaunchpadRequest."""
-        # When browsing the web service, we want URLs to point back at the web
-        # service, so we basically ignore rootsite.
-        return self.getApplicationURL() + '/'
 
-
-class WebServiceTestRequest(WebServiceRequestTraversal, LaunchpadTestRequest):
+class WebServiceTestRequest(LaunchpadWebServiceRequestTraversal,
+                            LaunchpadTestRequest):
     """Test request for the webservice.
 
     It provides the WebServiceLayer and supports the getResource()
     web publication hook.
     """
-    implements(canonical.launchpad.layers.WebServiceLayer)
 
     def __init__(self, body_instream=None, environ=None, version=None, **kw):
         test_environ = {
@@ -1432,22 +1391,6 @@ class ProtocolErrorException(Exception):
         """A protocol error can be well-represented by its HTTP status code.
         """
         return "Protocol error: %s" % self.status
-
-
-def launchpad_default_timeout():
-    """Return the time before the request should be expired."""
-    timeout = config.database.db_statement_timeout
-    if timeout is None:
-        return None
-    left = timeout - get_request_duration()
-    if left < 0:
-        raise RequestExpired('request expired.')
-    return left
-
-
-def set_launchpad_default_timeout(event):
-    """Set the LAZR default timeout function."""
-    set_default_timeout_function(launchpad_default_timeout)
 
 
 def register_launchpad_request_publication_factories():

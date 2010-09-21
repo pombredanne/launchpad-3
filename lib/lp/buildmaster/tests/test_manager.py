@@ -6,39 +6,58 @@
 import os
 import signal
 import time
-import transaction
-import unittest
 
-from twisted.internet import defer, reactor, task
+import transaction
+
+from twisted.internet import (
+    defer,
+    reactor,
+    task,
+    )
 from twisted.internet.error import ConnectionClosed
-from twisted.internet.task import Clock, deferLater
+from twisted.internet.task import (
+    Clock,
+    deferLater,
+    )
 from twisted.python.failure import Failure
 from twisted.trial.unittest import TestCase as TrialTestCase
-
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.buildd.tests import BuilddSlaveTestSetup
 from canonical.config import config
-from canonical.launchpad.ftests import ANONYMOUS, login
+from canonical.launchpad.ftests import (
+    ANONYMOUS,
+    login,
+    )
 from canonical.launchpad.scripts.logger import BufferLogger
 from canonical.testing.layers import (
-    LaunchpadScriptLayer, LaunchpadZopelessLayer, TwistedLayer)
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+    LaunchpadScriptLayer,
+    LaunchpadZopelessLayer,
+    TwistedLayer,
+    )
+from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.buildmaster.manager import (
-    BaseDispatchResult, BuilddManager, SlaveScanner, FailDispatchResult,
-    NewBuildersScanner, RecordingSlave, ResetDispatchResult,
-    buildd_success_result_map)
+    BaseDispatchResult,
+    buildd_success_result_map,
+    BuilddManager,
+    FailDispatchResult,
+    NewBuildersScanner,
+    RecordingSlave,
+    ResetDispatchResult,
+    SlaveScanner,
+    )
 from lp.buildmaster.tests.harness import BuilddManagerTestSetup
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.tests.soyuzbuilddhelpers import BuildingSlave
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
+from lp.testing import TestCase as LaunchpadTestCase
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.fakemethod import FakeMethod
-from lp.testing import TestCase as LaunchpadTestCase
+from lp.testing.sampledata import BOB_THE_BUILDER_NAME
 
 
 class TestRecordingSlaves(TrialTestCase):
@@ -221,11 +240,15 @@ class TestingSlaveScanner(SlaveScanner):
 
 class TestSlaveScanner(TrialTestCase):
     """Tests for the actual build slave manager."""
-    layer = TwistedLayer
+    layer = LaunchpadZopelessLayer
 
     def setUp(self):
         TrialTestCase.setUp(self)
-        self.manager = TestingSlaveScanner("bob", BufferLogger())
+        self.manager = TestingSlaveScanner(
+            BOB_THE_BUILDER_NAME, BufferLogger())
+
+        self.fake_builder_url = 'http://bob.buildd:8221/'
+        self.fake_builder_host = 'bob.host'
 
         # We will use an instrumented SlaveScanner instance for tests in
         # this context.
@@ -360,9 +383,26 @@ class TestSlaveScanner(TrialTestCase):
             self.assertFalse(result.processed)
         return d.addCallback(check_result)
 
-    def testCheckDispatch(self):
-        """`SlaveScanner.checkDispatch` is chained after dispatch requests.
+    def _setUpSlaveAndBuilder(self, builder_failure_count=None,
+                              job_failure_count=None):
+        # Helper function to set up a builder and its recording slave.
+        if builder_failure_count is None:
+            builder_failure_count = 0
+        if job_failure_count is None:
+            job_failure_count = 0
+        slave = RecordingSlave(
+            BOB_THE_BUILDER_NAME, self.fake_builder_url,
+            self.fake_builder_host)
+        bob_builder = getUtility(IBuilderSet)[slave.name]
+        bob_builder.failure_count = builder_failure_count
+        bob_builder.getCurrentBuildFarmJob().failure_count = job_failure_count
+        return slave, bob_builder
 
+    def test_checkDispatch_success(self):
+        # SlaveScanner.checkDispatch returns None for a successful
+        # dispatch.
+
+        """
         If the dispatch request fails or a unknown method is given, it
         returns a `FailDispatchResult` (in the test context) that will
         be evaluated later.
@@ -385,7 +425,8 @@ class TestSlaveScanner(TrialTestCase):
 
         On success dispatching it returns None.
         """
-        slave = RecordingSlave('foo', 'http://foo.buildd:8221/', 'foo.host')
+        slave, bob_builder = self._setUpSlaveAndBuilder(
+            builder_failure_count=0, job_failure_count=0)
 
         # Successful legitimate response, None is returned.
         successful_response = [
@@ -395,39 +436,73 @@ class TestSlaveScanner(TrialTestCase):
         self.assertEqual(
             None, result, 'Successful dispatch checks should return None')
 
-        # Failed legitimate response, results in a `FailDispatchResult`.
+    def test_checkDispatch_first_fail(self):
+        # Failed legitimate response, results in FailDispatchResult and
+        # failure_count on the job and the builder are both incremented.
+        slave, bob_builder = self._setUpSlaveAndBuilder(
+            builder_failure_count=0, job_failure_count=0)
+
         failed_response = [False, 'uncool builder']
         result = self.manager.checkDispatch(
             failed_response, 'ensurepresent', slave)
         self.assertIsDispatchFail(result)
         self.assertEqual(
-            '<foo:http://foo.buildd:8221/> failure (uncool builder)',
-            repr(result))
+            repr(result),
+            '<bob:%s> failure (uncool builder)' % self.fake_builder_url)
+        self.assertEqual(1, bob_builder.failure_count)
+        self.assertEqual(
+            1, bob_builder.getCurrentBuildFarmJob().failure_count)
 
-        # Twisted Failure response, results in a `ResetDispatchResult`.
+    def test_checkDispatch_second_reset_fail_by_builder(self):
+        # Twisted Failure response, results in a `FailDispatchResult`.
+        slave, bob_builder = self._setUpSlaveAndBuilder(
+            builder_failure_count=1, job_failure_count=0)
+
         twisted_failure = Failure(ConnectionClosed('Boom!'))
         result = self.manager.checkDispatch(
             twisted_failure, 'ensurepresent', slave)
-        self.assertIsDispatchReset(result)
+        self.assertIsDispatchFail(result)
         self.assertEqual(
-            '<foo:http://foo.buildd:8221/> reset failure', repr(result))
+            '<bob:%s> failure (None)' % self.fake_builder_url, repr(result))
+        self.assertEqual(2, bob_builder.failure_count)
+        self.assertEqual(
+            1, bob_builder.getCurrentBuildFarmJob().failure_count)
 
+    def test_checkDispatch_second_comms_fail_by_builder(self):
         # Unexpected response, results in a `FailDispatchResult`.
+        slave, bob_builder = self._setUpSlaveAndBuilder(
+            builder_failure_count=1, job_failure_count=0)
+
         unexpected_response = [1, 2, 3]
         result = self.manager.checkDispatch(
             unexpected_response, 'build', slave)
         self.assertIsDispatchFail(result)
         self.assertEqual(
-            '<foo:http://foo.buildd:8221/> failure '
-            '(Unexpected response: [1, 2, 3])', repr(result))
+            '<bob:%s> failure '
+            '(Unexpected response: [1, 2, 3])' % self.fake_builder_url,
+            repr(result))
+        self.assertEqual(2, bob_builder.failure_count)
+        self.assertEqual(
+            1, bob_builder.getCurrentBuildFarmJob().failure_count)
 
-        # Unknown method was given, results in a `FailDispatchResult`
+    def test_checkDispatch_second_comms_fail_by_job(self):
+        # Unknown method was given, results in a `FailDispatchResult`.
+        # This could be caused by a faulty job which would fail the job.
+        slave, bob_builder = self._setUpSlaveAndBuilder(
+            builder_failure_count=0, job_failure_count=1)
+
+        successful_response = [
+            buildd_success_result_map.get('ensurepresent'), 'cool builder']
         result = self.manager.checkDispatch(
             successful_response, 'unknown-method', slave)
         self.assertIsDispatchFail(result)
         self.assertEqual(
-            '<foo:http://foo.buildd:8221/> failure '
-            '(Unknown slave method: unknown-method)', repr(result))
+            '<bob:%s> failure '
+            '(Unknown slave method: unknown-method)' % self.fake_builder_url,
+            repr(result))
+        self.assertEqual(1, bob_builder.failure_count)
+        self.assertEqual(
+            2, bob_builder.getCurrentBuildFarmJob().failure_count)
 
     def test_initiateDispatch(self):
         """Check `dispatchBuild` in various scenarios.
@@ -450,7 +525,8 @@ class TestSlaveScanner(TrialTestCase):
         def check_events(results):
             [error] = [r for s, r in results if r is not None]
             self.assertEqual(
-                '<foo:http://foo.buildd:8221/> failure (very broken slave)',
+                '<bob:%s> failure (very broken slave)'
+                    % self.fake_builder_url,
                 repr(error))
             self.assertTrue(error.processed)
 
@@ -463,7 +539,9 @@ class TestSlaveScanner(TrialTestCase):
             dl.addCallback(check_events)
 
         # A functional slave charged with some interactions.
-        slave = RecordingSlave('foo', 'http://foo.buildd:8221/', 'foo.host')
+        slave = RecordingSlave(
+            BOB_THE_BUILDER_NAME, self.fake_builder_url,
+            self.fake_builder_host)
         slave.ensurepresent('arg1', 'arg2', 'arg3')
         slave.build('arg1', 'arg2', 'arg3')
 
@@ -495,7 +573,9 @@ class TestSlaveScanner(TrialTestCase):
         # Create a broken slave and insert interaction that will
         # cause the builder to be marked as fail.
         self.test_proxy = TestingXMLRPCProxy('very broken slave')
-        slave = RecordingSlave('foo', 'http://foo.buildd:8221/', 'foo.host')
+        slave = RecordingSlave(
+            BOB_THE_BUILDER_NAME, self.fake_builder_url,
+            self.fake_builder_host)
         slave.ensurepresent('arg1', 'arg2', 'arg3')
         slave.build('arg1', 'arg2', 'arg3')
 
@@ -577,7 +657,7 @@ class TestSlaveScannerScan(TrialTestCase):
 
         Replace its default logging handler by a testing version.
         """
-        manager = SlaveScanner("bob", BufferLogger())
+        manager = SlaveScanner(BOB_THE_BUILDER_NAME, BufferLogger())
         manager.logger.name = 'slave-scanner'
 
         return manager
@@ -595,6 +675,7 @@ class TestSlaveScannerScan(TrialTestCase):
         self.assertEqual(slave.name, builder.name)
         self.assertEqual(slave.url, builder.url)
         self.assertEqual(slave.vm_host, builder.vm_host)
+        self.assertEqual(0, builder.failure_count)
 
         self.assertEqual(
             [('ensurepresent',
@@ -625,8 +706,11 @@ class TestSlaveScannerScan(TrialTestCase):
         # A job gets dispatched to the sampledata builder after it's reset.
 
         # Reset sampledata builder.
-        builder = getUtility(IBuilderSet)['bob']
+        builder = getUtility(IBuilderSet)[BOB_THE_BUILDER_NAME]
         self._resetBuilder(builder)
+        # Set this to 1 here so that _checkDispatch can make sure it's
+        # reset to 0 after a successful dispatch.
+        builder.failure_count = 1
 
         # Run 'scan' and check its result.
         LaunchpadZopelessLayer.switchDbUser(config.builddmaster.dbuser)
@@ -655,7 +739,7 @@ class TestSlaveScannerScan(TrialTestCase):
         # and the builder used should remain active and IDLE.
 
         # Reset sampledata builder.
-        builder = getUtility(IBuilderSet)['bob']
+        builder = getUtility(IBuilderSet)[BOB_THE_BUILDER_NAME]
         self._resetBuilder(builder)
 
         # Remove hoary/i386 chroot.
@@ -696,7 +780,7 @@ class TestSlaveScannerScan(TrialTestCase):
         # The job assigned to a broken builder is rescued.
 
         # Sampledata builder is enabled and is assigned to an active job.
-        builder = getUtility(IBuilderSet)['bob']
+        builder = getUtility(IBuilderSet)[BOB_THE_BUILDER_NAME]
         self.assertTrue(builder.builderok)
         job = builder.currentjob
         self.assertBuildingJob(job, builder)
@@ -733,7 +817,7 @@ class TestSlaveScannerScan(TrialTestCase):
 
         # Enable sampledata builder attached to an appropriate testing
         # slave. It will respond as if it was building the sampledata job.
-        builder = getUtility(IBuilderSet)['bob']
+        builder = getUtility(IBuilderSet)[BOB_THE_BUILDER_NAME]
 
         login('foo.bar@canonical.com')
         builder.builderok = True
@@ -751,8 +835,38 @@ class TestSlaveScannerScan(TrialTestCase):
         d.addCallback(self._checkJobUpdated, builder, job)
         return d
 
+    def test_scan_assesses_failure_exceptions(self):
+        # If scan() fails with an exception, failure_counts should be
+        # incremented and tested.
+        def failing_scan():
+            raise Exception("fake exception")
+        manager = self._getManager()
+        manager.scan = failing_scan
+        manager.scheduleNextScanCycle = FakeMethod()
+        from lp.buildmaster import manager as manager_module
+        self.patch(manager_module, 'assessFailureCounts', FakeMethod())
+        builder = getUtility(IBuilderSet)[manager.builder_name]
 
-class TestDispatchResult(unittest.TestCase):
+        # Failure counts start at zero.
+        self.assertEqual(0, builder.failure_count)
+        self.assertEqual(
+            0, builder.currentjob.specific_job.build.failure_count)
+
+        # startCycle() calls scan() which is our fake one that throws an
+        # exception.
+        manager.startCycle()
+
+        # Failure counts should be updated, and the assessment method
+        # should have been called.
+        self.assertEqual(1, builder.failure_count)
+        self.assertEqual(
+            1, builder.currentjob.specific_job.build.failure_count)
+
+        self.assertEqual(
+            1, manager_module.assessFailureCounts.call_count)
+
+
+class TestDispatchResult(LaunchpadTestCase):
     """Tests `BaseDispatchResult` variations.
 
     Variations of `BaseDispatchResult` when evaluated update the database
@@ -786,22 +900,24 @@ class TestDispatchResult(unittest.TestCase):
 
         return builder, job.id
 
-    def assertJobIsClean(self, job_id):
-        """Re-fetch the `IBuildQueue` record and check if it's clean."""
-        job = getUtility(IBuildQueueSet).get(job_id)
-        build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(job)
-        self.assertEqual('NEEDSBUILD', build.status.name)
-        self.assertEqual(None, job.builder)
-        self.assertEqual(None, job.date_started)
-        self.assertEqual(None, job.logtail)
+    def assertBuildqueueIsClean(self, buildqueue):
+        # Check that the buildqueue is reset.
+        self.assertEqual(None, buildqueue.builder)
+        self.assertEqual(None, buildqueue.date_started)
+        self.assertEqual(None, buildqueue.logtail)
+
+    def assertBuilderIsClean(self, builder):
+        # Check that the builder is ready for a new build.
+        self.assertTrue(builder.builderok)
+        self.assertIs(None, builder.failnotes)
+        self.assertIs(None, builder.currentjob)
 
     def testResetDispatchResult(self):
-        """`ResetDispatchResult` clean any existing jobs.
-
-        Although it keeps the builder active in pool.
-        """
-        builder, job_id = self._getBuilder('bob')
+        # Test that `ResetDispatchResult` resets the builder and job.
+        builder, job_id = self._getBuilder(BOB_THE_BUILDER_NAME)
+        buildqueue_id = builder.currentjob.id
         builder.builderok = True
+        builder.failure_count = 1
 
         # Setup a interaction to satisfy 'write_transaction' decorator.
         login(ANONYMOUS)
@@ -809,32 +925,82 @@ class TestDispatchResult(unittest.TestCase):
         result = ResetDispatchResult(slave)
         result()
 
-        self.assertJobIsClean(job_id)
+        buildqueue = getUtility(IBuildQueueSet).get(buildqueue_id)
+        self.assertBuildqueueIsClean(buildqueue)
 
         # XXX Julian
         # Disabled test until bug 586362 is fixed.
         #self.assertFalse(builder.builderok)
-        self.assertEqual(None, builder.currentjob)
+        self.assertBuilderIsClean(builder)
 
     def testFailDispatchResult(self):
-        """`FailDispatchResult` excludes the builder from pool.
-
-        It marks the build as failed (builderok=False) and clean any
-        existing jobs.
-        """
-        builder, job_id = self._getBuilder('bob')
+        # Test that `FailDispatchResult` calls assessFailureCounts() so
+        # that we know the builders and jobs are failed as necessary
+        # when a FailDispatchResult is called at the end of the dispatch
+        # chain.
+        builder, job_id = self._getBuilder(BOB_THE_BUILDER_NAME)
 
         # Setup a interaction to satisfy 'write_transaction' decorator.
         login(ANONYMOUS)
         slave = RecordingSlave(builder.name, builder.url, builder.vm_host)
         result = FailDispatchResult(slave, 'does not work!')
+        result.assessFailureCounts = FakeMethod()
+        self.assertEqual(0, result.assessFailureCounts.call_count)
         result()
+        self.assertEqual(1, result.assessFailureCounts.call_count)
 
-        self.assertJobIsClean(job_id)
+    def _setup_failing_dispatch_result(self):
+        # assessFailureCounts should fail jobs or builders depending on
+        # whether it sees the failure_counts on each increasing.
+        builder, job_id = self._getBuilder(BOB_THE_BUILDER_NAME)
+        slave = RecordingSlave(builder.name, builder.url, builder.vm_host)
+        result = FailDispatchResult(slave, 'does not work!')
+        return builder, result
+
+    def test_assessFailureCounts_equal_failures(self):
+        # Basic case where the failure counts are equal and the job is
+        # reset to try again & the builder is not failed.
+        builder, result = self._setup_failing_dispatch_result()
+        buildqueue = builder.currentjob
+        build = buildqueue.specific_job.build
+        builder.failure_count = 2
+        build.failure_count = 2
+        result.assessFailureCounts()
+
+        self.assertBuilderIsClean(builder)
+        self.assertEqual('NEEDSBUILD', build.status.name)
+        self.assertBuildqueueIsClean(buildqueue)
+
+    def test_assessFailureCounts_job_failed(self):
+        # Case where the job has failed more than the builder.
+        builder, result = self._setup_failing_dispatch_result()
+        buildqueue = builder.currentjob
+        build = buildqueue.specific_job.build
+        build.failure_count = 2
+        builder.failure_count = 1
+        result.assessFailureCounts()
+
+        self.assertBuilderIsClean(builder)
+        self.assertEqual('FAILEDTOBUILD', build.status.name)
+        # The buildqueue should have been removed entirely.
+        self.assertEqual(
+            None, getUtility(IBuildQueueSet).getByBuilder(builder),
+            "Buildqueue was not removed when it should be.")
+
+    def test_assessFailureCounts_builder_failed(self):
+        # Case where the builder has failed more than the job.
+        builder, result = self._setup_failing_dispatch_result()
+        buildqueue = builder.currentjob
+        build = buildqueue.specific_job.build
+        build.failure_count = 2
+        builder.failure_count = 3
+        result.assessFailureCounts()
 
         self.assertFalse(builder.builderok)
-        self.assertEqual(None, builder.currentjob)
         self.assertEqual('does not work!', builder.failnotes)
+        self.assertTrue(builder.currentjob is None)
+        self.assertEqual('NEEDSBUILD', build.status.name)
+        self.assertBuildqueueIsClean(buildqueue)
 
 
 class TestBuilddManager(TrialTestCase):

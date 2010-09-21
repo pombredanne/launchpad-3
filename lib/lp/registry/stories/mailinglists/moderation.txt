@@ -100,6 +100,21 @@ for moderation.  Now there are two messages waiting for review.
     2 messages have been posted to your mailing list...
     ...
 
+If there are more messages than the batch size, they get batched.
+
+    >>> admin_browser.open(
+    ...     'http://launchpad.dev/~guadamen/+mailinglist-moderate?batch=1')
+    >>> find_tag_by_id(admin_browser.contents, 'upper-batch-nav-batchnav-next')['class']
+    u'next'
+    >>> find_tag_by_id(admin_browser.contents, 'lower-batch-nav-batchnav-next')['class']
+    u'next'
+
+To test easily, we use the default batch size below.
+
+    >>> admin_browser.open(
+    ...     'http://launchpad.dev/~guadamen/+mailinglist-moderate')
+
+
 Each held message displays some details about what's being held.
 
     >>> print extract_text(find_tag_by_id(

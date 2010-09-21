@@ -8,7 +8,6 @@ from __future__ import with_statement
 from datetime import date
 
 import transaction
-
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
@@ -16,17 +15,26 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
-from canonical.testing import DatabaseFunctionalLayer, LaunchpadZopelessLayer
-
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
+from canonical.testing import (
+    DatabaseFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
+from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.job.interfaces.job import JobStatus
-from lp.soyuz.interfaces.archive import (
-    ArchiveDisabled,
+from lp.services.worlddata.interfaces.country import ICountrySet
+from lp.soyuz.enums import (
     ArchivePurpose,
     ArchiveStatus,
+    PackagePublishingStatus,
+    )
+from lp.soyuz.interfaces.archive import (
+    ArchiveDisabled,
     CannotRestrictArchitectures,
     CannotUploadToPocket,
     CannotUploadToPPA,
@@ -35,19 +43,24 @@ from lp.soyuz.interfaces.archive import (
     InvalidPocketForPartnerArchive,
     InvalidPocketForPPA,
     NoRightsForArchive,
-    NoRightsForComponent)
-from lp.services.worlddata.interfaces.country import ICountrySet
+    NoRightsForComponent,
+    )
 from lp.soyuz.interfaces.archivearch import IArchiveArchSet
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
-from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.model.binarypackagerelease import (
-    BinaryPackageReleaseDownloadCount)
+    BinaryPackageReleaseDownloadCount,
+    )
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
-    ANONYMOUS, login, login_person, person_logged_in, TestCaseWithFactory)
+    ANONYMOUS,
+    login,
+    login_person,
+    person_logged_in,
+    TestCaseWithFactory,
+    )
 from lp.testing.sampledata import COMMERCIAL_ADMIN_EMAIL
 
 
@@ -342,8 +355,9 @@ class TestArchiveEnableDisable(TestCaseWithFactory):
         # Enabling an archive should set all the Archive's suspended builds to
         # WAITING.
         archive = self.factory.makeArchive(enabled=True)
-        self.factory.makeBinaryPackageBuild(
+        build = self.factory.makeBinaryPackageBuild(
             archive=archive, status=BuildStatus.NEEDSBUILD)
+        build.queueBuild()
         # disable the archive, as it is currently enabled
         removeSecurityProxy(archive).disable()
         self.assertHasBuildJobsWithStatus(archive, JobStatus.SUSPENDED, 1)
@@ -360,8 +374,9 @@ class TestArchiveEnableDisable(TestCaseWithFactory):
         # Disabling an archive should set all the Archive's pending bulds to
         # SUSPENDED.
         archive = self.factory.makeArchive(enabled=True)
-        self.factory.makeBinaryPackageBuild(
+        build = self.factory.makeBinaryPackageBuild(
             archive=archive, status=BuildStatus.NEEDSBUILD)
+        build.queueBuild()
         self.assertHasBuildJobsWithStatus(archive, JobStatus.WAITING, 1)
         removeSecurityProxy(archive).disable()
         self.assertNoBuildJobsHaveStatus(archive, JobStatus.WAITING)
@@ -604,6 +619,20 @@ class TestArchiveCanUpload(TestCaseWithFactory):
         self.assertCannotUpload(
             NoRightsForArchive, archive, person, sourcepackagename,
             distroseries=distroseries)
+
+    def test_checkUploadToPocket_for_released_distroseries_copy_archive(self):
+        # Uploading to the release pocket in a released COPY archive
+        # should be allowed.  This is mainly so that rebuilds that are
+        # running during the release process don't suddenly cause
+        # exceptions in the buildd-manager.
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.COPY)
+        distroseries = self.factory.makeDistroSeries(
+            distribution=archive.distribution,
+            status=SeriesStatus.CURRENT)
+        self.assertIs(
+            None,
+            archive.checkUploadToPocket(
+                distroseries, PackagePublishingPocket.RELEASE))
 
     def test_checkUpload_package_permission(self):
         archive, distroseries = self.makeArchiveAndActiveDistroSeries(

@@ -15,6 +15,7 @@ import os.path
 import rfc822
 import sys
 import urllib
+
 ##import warnings
 
 from datetime import datetime, timedelta
@@ -57,9 +58,10 @@ from canonical.launchpad.webapp.session import get_cookie_domain
 from canonical.lazr.canonicalurl import nearest_adapter
 from lp.app.browser.stringformatter import escape, FormattersAPI
 from lp.blueprints.interfaces.specification import ISpecification
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.buildmaster.enums import BuildStatus
 from lp.code.interfaces.branch import IBranch
-from lp.soyuz.interfaces.archive import ArchivePurpose, IPPA
+from lp.soyuz.enums import ArchivePurpose
+from lp.soyuz.interfaces.archive import IPPA
 from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
 from lp.registry.interfaces.person import IPerson
 
@@ -993,6 +995,7 @@ class BuildImageDisplayAPI(ObjectImageDisplayAPI):
             BuildStatus.CHROOTWAIT: {'src': "/@@/build-chrootwait"},
             BuildStatus.SUPERSEDED: {'src': "/@@/build-superseded"},
             BuildStatus.BUILDING: {'src': "/@@/processing"},
+            BuildStatus.UPLOADING: {'src': "/@@/processing"},
             BuildStatus.FAILEDTOUPLOAD: {'src': "/@@/build-failedtoupload"},
             }
 

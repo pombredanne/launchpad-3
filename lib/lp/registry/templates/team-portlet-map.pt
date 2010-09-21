@@ -5,7 +5,8 @@
   omit-tag="">
 
 <div class="portlet" id="portlet-map" style="margin-bottom: 0px;"
-     tal:define="link context/menu:overview/map">
+     tal:define="link context/menu:overview/map"
+     tal:condition="view/gmap2_enabled">
 <table>
 <tr><td>
   <h2>

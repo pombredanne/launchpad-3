@@ -2,7 +2,6 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 from canonical.testing import LaunchpadZopelessLayer
-
 from lp.registry.scripts import listteammembers
 from lp.testing import TestCaseWithFactory
 

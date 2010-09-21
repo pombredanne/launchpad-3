@@ -11,29 +11,39 @@ __all__ = [
 
 import operator
 
+from lazr.delegates import delegates
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from lp.app.errors import NotFoundError, UnexpectedFormData
-from lp.soyuz.interfaces.component import IComponentSet
-from lp.soyuz.interfaces.section import ISectionSet
-from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
-from lp.soyuz.interfaces.queue import PackageUploadStatus
-from lp.soyuz.interfaces.publishing import PackagePublishingPriority
-from lp.soyuz.interfaces.queue import (
-    IHasQueueItems, IPackageUpload, IPackageUploadSet,
-    QueueInconsistentStateError)
-from lp.soyuz.interfaces.binarypackagename import (
-    IBinaryPackageNameSet)
-from lp.soyuz.interfaces.files import (
-    IBinaryPackageFileSet, ISourcePackageReleaseFileSet)
-from lp.soyuz.interfaces.packageset import IPackagesetSet
-from lp.soyuz.interfaces.publishing import name_priority_map
 from canonical.launchpad.webapp import LaunchpadView
-from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.batching import BatchNavigator
+from lp.app.errors import (
+    NotFoundError,
+    UnexpectedFormData,
+    )
+from lp.soyuz.enums import (
+    PackagePublishingPriority,
+    PackageUploadStatus,
+    )
+from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
+from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
+from lp.soyuz.interfaces.component import IComponentSet
+from lp.soyuz.interfaces.files import (
+    IBinaryPackageFileSet,
+    ISourcePackageReleaseFileSet,
+    )
+from lp.soyuz.interfaces.packageset import IPackagesetSet
+from lp.soyuz.interfaces.publishing import (
+    name_priority_map,
+    )
+from lp.soyuz.interfaces.queue import (
+    IPackageUpload,
+    IPackageUploadSet,
+    QueueInconsistentStateError,
+    )
+from lp.soyuz.interfaces.section import ISectionSet
 
-from lazr.delegates import delegates
 
 QUEUE_SIZE = 30
 

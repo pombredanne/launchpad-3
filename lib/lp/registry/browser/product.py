@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for products."""
@@ -44,94 +44,157 @@ __all__ = [
 
 
 from cgi import escape
-from datetime import datetime, timedelta
+from datetime import (
+    datetime,
+    timedelta,
+    )
 from operator import attrgetter
 
-import pytz
-
-from zope.component import getUtility
-from zope.event import notify
-from zope.app.form.browser import CheckBoxWidget, TextAreaWidget, TextWidget
-from zope.lifecycleevent import ObjectCreatedEvent
-from zope.interface import implements, Interface
-from zope.formlib import form
-from zope.schema import Bool, Choice
-from zope.schema.vocabulary import (
-    SimpleVocabulary, SimpleTerm)
-from zope.security.proxy import removeSecurityProxy
-
-from z3c.ptcompat import ViewPageTemplateFile
-
-from canonical.cachedproperty import cachedproperty
-
-from canonical.config import config
 from lazr.delegates import delegates
 from lazr.restful.interface import copy_field
-from canonical.launchpad import _
-from lp.services.fields import PillarAliases, PublicPersonChoice
-from lp.app.errors import NotFoundError
-from lp.app.interfaces.headings import IEditableContextTitle
-from lp.blueprints.browser.specificationtarget import (
-    HasSpecificationsMenuMixin)
-from lp.bugs.interfaces.bugtask import RESOLVED_BUGTASK_STATUSES
-from lp.code.browser.sourcepackagerecipelisting import HasRecipesMenuMixin
-from lp.services.worlddata.interfaces.country import ICountry
+import pytz
+from z3c.ptcompat import ViewPageTemplateFile
+from zope.app.form import CustomWidgetFactory
+from zope.app.form.browser import (
+    CheckBoxWidget,
+    TextAreaWidget,
+    TextWidget,
+    )
+from zope.component import getUtility
+from zope.event import notify
+from zope.formlib import form
+from zope.interface import (
+    implements,
+    Interface,
+    )
+from zope.lifecycleevent import ObjectCreatedEvent
+from zope.schema import (
+    Bool,
+    Choice,
+    )
+from zope.schema.vocabulary import (
+    SimpleTerm,
+    SimpleVocabulary,
+    )
+from zope.security.proxy import removeSecurityProxy
+
+from canonical.config import config
+from canonical.launchpad import (
+    _,
+    helpers,
+    )
+from canonical.launchpad.browser.feeds import FeedsMixin
+from canonical.launchpad.browser.multistep import (
+    MultiStepView,
+    StepView,
+    )
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.launchpad.webapp.interfaces import (
-    ILaunchBag, UnsafeFormGetSubmissionError)
-from lp.registry.interfaces.pillar import IPillarNameSet
-from lp.registry.interfaces.product import IProductReviewSearch, License
-from lp.registry.interfaces.series import SeriesStatus
-from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
-from lp.registry.interfaces.product import (
-    IProduct, IProductSet, LicenseStatus)
-from lp.registry.interfaces.productrelease import (
-    IProductRelease, IProductReleaseSet)
-from lp.registry.interfaces.productseries import IProductSeries
-from canonical.launchpad import helpers
-from lp.registry.browser.announcement import HasAnnouncementsView
-from lp.registry.browser.branding import BrandingChangeView
-from lp.code.browser.branchref import BranchRef
-from lp.bugs.browser.bugtask import (
-    BugTargetTraversalMixin, get_buglisting_search_filter_url)
-from lp.registry.browser.distribution import UsesLaunchpadMixin
-from lp.registry.browser.menu import (
-    IRegistryCollectionNavigationMenu, RegistryCollectionActionMenuBase)
-from lp.registry.browser.pillar import PillarBugsMenu
-from lp.answers.browser.faqtarget import FAQTargetNavigationMixin
-from canonical.launchpad.browser.feeds import FeedsMixin
-from lp.registry.browser.pillar import PillarView
-from lp.registry.browser.productseries import get_series_branch_error
-from lp.translations.browser.customlanguagecode import (
-    HasCustomLanguageCodesTraversalMixin)
-from canonical.launchpad.browser.multistep import MultiStepView, StepView
-from lp.answers.browser.questiontarget import (
-    QuestionTargetFacetMixin, QuestionTargetTraversalMixin)
-from lp.registry.browser.structuralsubscription import (
-    StructuralSubscriptionMenuMixin,
-    StructuralSubscriptionTargetTraversalMixin)
-from canonical.launchpad.mail import format_address, simple_sendmail
+from canonical.launchpad.mail import (
+    format_address,
+    simple_sendmail,
+    )
 from canonical.launchpad.webapp import (
-    ApplicationMenu, canonical_url, enabled_with_permission, LaunchpadView,
-    Link, Navigation, sorted_version_numbers, StandardLaunchpadFacets,
-    stepthrough, stepto, structured)
+    ApplicationMenu,
+    canonical_url,
+    enabled_with_permission,
+    LaunchpadView,
+    Link,
+    Navigation,
+    sorted_version_numbers,
+    StandardLaunchpadFacets,
+    stepthrough,
+    stepto,
+    structured,
+    )
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
+from canonical.launchpad.webapp.interfaces import (
+    ILaunchBag,
+    UnsafeFormGetSubmissionError,
+    )
 from canonical.launchpad.webapp.launchpadform import (
-    action, custom_widget, LaunchpadEditFormView, LaunchpadFormView,
-    ReturnToReferrerMixin, safe_action)
+    action,
+    custom_widget,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    ReturnToReferrerMixin,
+    safe_action,
+    )
 from canonical.launchpad.webapp.menu import NavigationMenu
 from canonical.launchpad.webapp.tales import MenuAPI
-from canonical.widgets.popup import PersonPickerWidget
 from canonical.widgets.date import DateWidget
 from canonical.widgets.itemswidgets import (
-    CheckBoxMatrixWidget, LaunchpadRadioWidget)
+    CheckBoxMatrixWidget,
+    LaunchpadRadioWidget,
+    )
 from canonical.widgets.lazrjs import TextLineEditorWidget
+from canonical.widgets.popup import PersonPickerWidget
 from canonical.widgets.product import (
-    LicenseWidget, GhostWidget, ProductNameWidget)
+    GhostWidget,
+    LicenseWidget,
+    ProductNameWidget,
+    )
 from canonical.widgets.textwidgets import StrippedTextWidget
+from lp.answers.browser.faqtarget import FAQTargetNavigationMixin
+from lp.answers.browser.questiontarget import (
+    QuestionTargetFacetMixin,
+    QuestionTargetTraversalMixin,
+    )
+from lp.app.enums import ServiceUsage
+from lp.app.errors import NotFoundError
+from lp.app.interfaces.headings import IEditableContextTitle
+from lp.blueprints.browser.specificationtarget import (
+    HasSpecificationsMenuMixin,
+    )
+from lp.bugs.browser.bugtask import (
+    BugTargetTraversalMixin,
+    get_buglisting_search_filter_url,
+    )
+from lp.bugs.interfaces.bugtask import RESOLVED_BUGTASK_STATUSES
+from lp.code.browser.branchref import BranchRef
+from lp.code.browser.sourcepackagerecipelisting import HasRecipesMenuMixin
+from lp.registry.browser.announcement import HasAnnouncementsView
+from lp.registry.browser.branding import BrandingChangeView
+from lp.registry.browser.distribution import UsesLaunchpadMixin
+from lp.registry.browser.menu import (
+    IRegistryCollectionNavigationMenu,
+    RegistryCollectionActionMenuBase,
+    )
+from lp.registry.browser.pillar import (
+    PillarBugsMenu,
+    PillarView,
+    )
+from lp.registry.browser.productseries import get_series_branch_error
+from lp.registry.browser.structuralsubscription import (
+    StructuralSubscriptionMenuMixin,
+    StructuralSubscriptionTargetTraversalMixin,
+    )
+from lp.registry.interfaces.pillar import IPillarNameSet
+from lp.registry.interfaces.product import (
+    IProduct,
+    IProductReviewSearch,
+    IProductSet,
+    License,
+    LicenseStatus,
+    )
+from lp.registry.interfaces.productrelease import (
+    IProductRelease,
+    IProductReleaseSet,
+    )
+from lp.registry.interfaces.productseries import IProductSeries
+from lp.registry.interfaces.series import SeriesStatus
+from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.services.fields import (
+    PillarAliases,
+    PublicPersonChoice,
+    )
+from lp.services.propertycache import cachedproperty
+from lp.services.worlddata.interfaces.country import ICountry
+from lp.translations.browser.customlanguagecode import (
+    HasCustomLanguageCodesTraversalMixin,
+    )
 
 
 OR = '|'
@@ -371,11 +434,13 @@ class ProductInvolvementView(PillarView):
         """
         states = {}
         states['configure_bugtracker'] = (
-            self.official_malone or self.context.bugtracker is not None)
-        states['configure_answers'] = self.official_answers
-        states['configure_translations'] = self.official_rosetta
+            self.context.bug_tracking_usage != ServiceUsage.UNKNOWN)
+        states['configure_answers'] = (
+            self.context.answers_usage != ServiceUsage.UNKNOWN)
+        states['configure_translations'] = (
+            self.context.translations_usage != ServiceUsage.UNKNOWN)
         states['configure_codehosting'] = (
-            self.context.development_focus.branch is not None)
+            self.context.codehosting_usage != ServiceUsage.UNKNOWN)
         return states
 
     @property
@@ -482,7 +547,7 @@ class ProductEditLinksMixin(StructuralSubscriptionMenuMixin):
     @enabled_with_permission('launchpad.Edit')
     def configure_blueprints(self):
         text = 'Configure blueprints'
-        summary = 'Enable tracking of specifications and meetings'
+        summary = 'Enable tracking of feature planning.'
         return Link('+configure-blueprints', text, summary, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
@@ -495,12 +560,12 @@ class ProductEditLinksMixin(StructuralSubscriptionMenuMixin):
         text = 'Change people'
         return Link('+edit-people', text, icon='edit')
 
-    @enabled_with_permission('launchpad.ProjectReview')
+    @enabled_with_permission('launchpad.Moderate')
     def review_license(self):
         text = 'Review project'
         return Link('+review-license', text, icon='edit')
 
-    @enabled_with_permission('launchpad.Admin')
+    @enabled_with_permission('launchpad.Moderate')
     def administer(self):
         text = 'Administer'
         return Link('+admin', text, icon='edit')
@@ -607,7 +672,7 @@ class ProductOverviewMenu(ApplicationMenu, ProductEditLinksMixin,
     def branch_add(self):
         text = 'Register a branch'
         summary = "Register a new Bazaar branch for this project"
-        return Link('+addbranch', text, summary, icon='add')
+        return Link('+addbranch', text, summary, icon='add', site='code')
 
 
 class ProductBugsMenu(PillarBugsMenu,
@@ -1335,6 +1400,28 @@ class ProductBrandingView(BrandingChangeView):
 class ProductConfigureBase(ReturnToReferrerMixin, LaunchpadEditFormView):
     implements(IProductEditMenu)
     schema = IProduct
+    usage_fieldname = None
+
+    def setUpFields(self):
+        super(ProductConfigureBase, self).setUpFields()
+        if self.usage_fieldname is not None:
+            # The usage fields are shared among pillars.  But when referring to
+            # an individual object in Launchpad it is better to call it by its
+            # real name, i.e. 'project' instead of 'pillar'.
+            usage_field = self.form_fields.get(self.usage_fieldname)
+            if usage_field:
+                usage_field.custom_widget = CustomWidgetFactory(
+                    LaunchpadRadioWidget, orientation='vertical')
+                # Copy the field or else the description in the interface will
+                # be modified in-place.
+                field = copy_field(usage_field.field)
+                field.description = (
+                    field.description.replace('pillar', 'project'))
+                usage_field.field = field
+
+    @property
+    def field_names(self):
+        return [self.usage_fieldname]
 
     @property
     def page_title(self):
@@ -1349,27 +1436,21 @@ class ProductConfigureBlueprintsView(ProductConfigureBase):
     """View class to configure the Launchpad Blueprints for a project."""
 
     label = "Configure Blueprints"
-    field_names = [
-        "official_blueprints",
-        ]
+    usage_fieldname = 'blueprints_usage'
 
 
 class ProductConfigureTranslationsView(ProductConfigureBase):
     """View class to configure the Launchpad Translations for a project."""
 
     label = "Configure Translations"
-    field_names = [
-        "official_rosetta",
-        ]
+    usage_fieldname = 'translations_usage'
 
 
 class ProductConfigureAnswersView(ProductConfigureBase):
     """View class to configure the Launchpad Answers for a project."""
 
     label = "Configure Answers"
-    field_names = [
-        "official_answers",
-        ]
+    usage_fieldname = 'answers_usage'
 
 
 class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
@@ -1474,7 +1555,13 @@ class ProductValidationMixin:
 class ProductAdminView(ProductEditView, ProductValidationMixin):
     """View for $project/+admin"""
     label = "Administer project details"
-    field_names = ["name", "owner", "active", "autoupdate", "private_bugs"]
+    default_field_names = [
+        "name",
+        "owner",
+        "active",
+        "autoupdate",
+        "private_bugs",
+        ]
 
     @property
     def page_title(self):
@@ -1488,9 +1575,16 @@ class ProductAdminView(ProductEditView, ProductValidationMixin):
         proper widget created by default.  Even though it is read-only, admins
         need the ability to change it.
         """
+        self.field_names = self.default_field_names[:]
+        admin = check_permission('launchpad.Admin', self.context)
+        if not admin:
+            self.field_names.remove('owner')
+            self.field_names.remove('autoupdate')
         super(ProductAdminView, self).setUpFields()
-        self.form_fields = (self._createAliasesField() + self.form_fields
-                            + self._createRegistrantField())
+        self.form_fields = self._createAliasesField() + self.form_fields
+        if admin:
+            self.form_fields = (
+                self.form_fields + self._createRegistrantField())
 
     def _createAliasesField(self):
         """Return a PillarAliases field for IProduct.aliases."""
@@ -1683,7 +1777,7 @@ class ProductSetNavigationMenu(RegistryCollectionActionMenuBase):
         'view_all_projects',
         ]
 
-    @enabled_with_permission('launchpad.ProjectReview')
+    @enabled_with_permission('launchpad.Moderate')
     def review_licenses(self):
         return Link('+review-licenses', 'Review projects', icon='edit')
 
@@ -1907,7 +2001,7 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
     """Step 2 (of 2) in the +new project add wizard."""
 
     _field_names = ['displayname', 'name', 'title', 'summary',
-                    'description', 'licenses', 'license_info',
+                    'description', 'homepageurl', 'licenses', 'license_info',
                     ]
     schema = IProduct
     step_name = 'projectaddstep2'
@@ -1918,6 +2012,7 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
 
     custom_widget('displayname', TextWidget, displayWidth=50, label='Name')
     custom_widget('name', ProductNameWidget, label='URL')
+    custom_widget('homepageurl', TextWidget, displayWidth=30)
     custom_widget('licenses', LicenseWidget)
     custom_widget('license_info', GhostWidget)
 
@@ -2075,6 +2170,7 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
             title=data['title'],
             summary=data['summary'],
             description=description,
+            homepageurl=data.get('homepageurl'),
             licenses=data['licenses'],
             license_info=data['license_info'],
             project=project)

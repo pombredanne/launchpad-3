@@ -7,7 +7,10 @@
 
 __metaclass__ = type
 
-from datetime import datetime, timedelta
+from datetime import (
+    datetime,
+    timedelta,
+    )
 from difflib import unified_diff
 import operator
 import unittest
@@ -18,34 +21,44 @@ from zope.component import getMultiAdapter
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from lp.code.browser.branch import RegisterBranchMergeProposalView
-from lp.code.browser.branchmergeproposal import (
-    BranchMergeProposalAddVoteView, BranchMergeProposalChangeStatusView,
-    BranchMergeProposalContextMenu, BranchMergeProposalMergedView,
-    BranchMergeProposalVoteView, DecoratedCodeReviewVoteReference,
-    latest_proposals_for_each_branch)
-from lp.code.enums import BranchMergeProposalStatus, CodeReviewVote
-from lp.code.tests.helpers import add_revision_to_branch
-from lp.testing import (
-    login_person, TestCaseWithFactory, time_counter)
-from lp.testing.views import create_initialized_view
-from lp.code.model.diff import PreviewDiff, StaticDiff
 from canonical.launchpad.database.message import MessageSet
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import (
-    DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
+from lp.code.browser.branch import RegisterBranchMergeProposalView
+from lp.code.browser.branchmergeproposal import (
+    BranchMergeProposalAddVoteView,
+    BranchMergeProposalChangeStatusView,
+    BranchMergeProposalContextMenu,
+    BranchMergeProposalMergedView,
+    BranchMergeProposalVoteView,
+    DecoratedCodeReviewVoteReference,
+    latest_proposals_for_each_branch,
+    )
+from lp.code.enums import (
+    BranchMergeProposalStatus,
+    CodeReviewVote,
+    )
+from lp.code.model.diff import (
+    PreviewDiff,
+    StaticDiff,
+    )
+from lp.code.tests.helpers import add_revision_to_branch
+from lp.testing import (
+    login_person,
+    TestCaseWithFactory,
+    time_counter,
+    )
+from lp.testing.views import create_initialized_view
 
 
 class TestBranchMergeProposalPrimaryContext(TestCaseWithFactory):
     """Tests the adaptation of a merge proposal into a primary context."""
 
     layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        # Use an admin so we don't have to worry about launchpad.Edit
-        # permissions on the merge proposals.
-        TestCaseWithFactory.setUp(self, user="admin@canonical.com")
 
     def testPrimaryContext(self):
         # The primary context of a merge proposal is the same as the primary
@@ -66,7 +79,6 @@ class TestBranchMergeProposalContextMenu(TestCaseWithFactory):
             set_state=BranchMergeProposalStatus.REJECTED)
         login_person(bmp.registrant)
         menu = BranchMergeProposalContextMenu(bmp)
-        link = menu.add_comment()
         self.assertTrue(menu.add_comment().enabled)
 
 
@@ -254,9 +266,6 @@ class TestBranchMergeProposalVoteView(TestCaseWithFactory):
         albert = self.factory.makePerson(name='albert')
         bob = self.factory.makePerson(name='bob')
         charles = self.factory.makePerson(name='charles')
-
-        owner = self.bmp.source_branch.owner
-
         self._createComment(albert, CodeReviewVote.APPROVE)
         self._createComment(bob, CodeReviewVote.ABSTAIN)
         self._createComment(charles, CodeReviewVote.DISAPPROVE)
@@ -272,9 +281,6 @@ class TestBranchMergeProposalVoteView(TestCaseWithFactory):
         # Request three reviews.
         albert = self.factory.makePerson(name='albert')
         bob = self.factory.makePerson(name='bob')
-
-        owner = self.bmp.source_branch.owner
-
         self._createComment(albert, CodeReviewVote.ABSTAIN)
         self._createComment(bob, CodeReviewVote.APPROVE)
         self._createComment(albert, CodeReviewVote.APPROVE)
@@ -287,7 +293,6 @@ class TestBranchMergeProposalVoteView(TestCaseWithFactory):
 
     def addReviewTeam(self):
         review_team = self.factory.makeTeam(name='reviewteam')
-        target_branch = self.factory.makeAnyBranch()
         self.bmp.target_branch.reviewer = review_team
 
     def test_review_team_members_trusted(self):

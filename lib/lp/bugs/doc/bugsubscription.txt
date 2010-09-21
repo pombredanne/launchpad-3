@@ -101,10 +101,8 @@ getAlsoNotifiedSubscribers() and getSubscribersFromDuplicates().
 It is also possible to get the list of indirect subscribers for an
 individual bug task.
 
-    >>> from canonical.launchpad.mailnotification import (
-    ...     get_bugtask_indirect_subscribers)
-    >>> get_bugtask_indirect_subscribers(
-    ...     linux_source_bug.bugtasks[0])
+    >>> from lp.bugs.subscribers.bug import get_bugtask_indirect_subscribers
+    >>> get_bugtask_indirect_subscribers(linux_source_bug.bugtasks[0])
     [<Person at ...>]
 
 The list of all bug subscribers can also be accessed via
@@ -254,8 +252,7 @@ subscription is currently set to COMMENTS.
 With this subscription level, No Privileges Person is returned for all
 parameter values of level.
 
-    >>> from lp.registry.interfaces.structuralsubscription import (
-    ...     BugNotificationLevel)
+    >>> from lp.registry.enum import BugNotificationLevel
     >>> print_displayname(linux_source_bug.getAlsoNotifiedSubscribers(
     ...     level=BugNotificationLevel.COMMENTS))
     No Privileges Person
@@ -544,14 +541,19 @@ IBug.subscribe and IBug.unsubscribe:
 
     >>> bug.isSubscribed(foobar)
     False
-    >>> bug.subscribe(foobar, foobar)
-    <BugSubscription at ...>
+    >>> subscription = bug.subscribe(foobar, foobar)
     >>> bug.isSubscribed(foobar)
     True
 
     >>> bug.unsubscribe(foobar, foobar)
     >>> bug.isSubscribed(foobar)
     False
+
+By default, the bug_notification_level of the new subscription will be
+COMMENTS, so the user will receive all notifications about the bug.
+
+    >>> print subscription.bug_notification_level.name
+    COMMENTS
 
 To unsubscribe from all dupes for a bug, call
 IBug.unsubscribeFromDupes. This is useful because direct subscribers
@@ -861,7 +863,7 @@ subscriptions themselves, rather than the subscribers.
     ...     print '%s (%s)' % (
     ...         subscription.person.displayname,
     ...         subscription.display_subscribed_by)
-    Mark Shuttleworth (Subscribed themselves)
+    Mark Shuttleworth (Self-subscribed)
     Robert Collins (Subscribed by Mark Shuttleworth)
     >>> params = CreateBugParams(
     ...     title="one more dupe test bug",
@@ -875,6 +877,6 @@ subscriptions themselves, rather than the subscribers.
     >>> for subscription in ff_bug.getSubscriptionsFromDuplicates():
     ...     print '%s (%s)' % (
     ...         subscription.person.displayname,
-    ...         subscription.display_subscribed_by)
-    Foo Bar (Subscribed by Robert Collins)
-    Scott James Remnant (Subscribed themselves)
+    ...         subscription.display_duplicate_subscribed_by)
+    Foo Bar (Subscribed to bug 28 by Robert Collins)
+    Scott James Remnant (Self-subscribed to bug 28)

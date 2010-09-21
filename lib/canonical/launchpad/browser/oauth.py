@@ -9,22 +9,40 @@ __all__ = [
     'OAuthTokenAuthorizedView',
     'lookup_oauth_context']
 
+from lazr.restful import HTTPResource
 import simplejson
-
+from zope.authentication.interfaces import IUnauthenticatedPrincipal
 from zope.component import getUtility
-from zope.formlib.form import Action, Actions
+from zope.formlib.form import (
+    Action,
+    Actions,
+    )
+from zope.security.interfaces import Unauthorized
 
+from canonical.launchpad.interfaces.oauth import (
+    IOAuthConsumerSet,
+    IOAuthRequestToken,
+    IOAuthRequestTokenSet,
+    OAUTH_CHALLENGE,
+    )
+from canonical.launchpad.webapp import (
+    LaunchpadFormView,
+    LaunchpadView,
+    )
+from canonical.launchpad.webapp.authentication import (
+    check_oauth_signature,
+    extract_oauth_access_token,
+    get_oauth_authorization,
+    get_oauth_principal
+    )
+from canonical.launchpad.webapp.interfaces import (
+    AccessLevel,
+    ILaunchBag,
+    OAuthPermission,
+    )
 from lp.app.errors import UnexpectedFormData
 from lp.registry.interfaces.distribution import IDistributionSet
-from canonical.launchpad.interfaces.oauth import (
-    IOAuthConsumerSet, IOAuthRequestToken, IOAuthRequestTokenSet,
-    OAUTH_CHALLENGE)
 from lp.registry.interfaces.pillar import IPillarNameSet
-from canonical.launchpad.webapp import LaunchpadFormView, LaunchpadView
-from canonical.launchpad.webapp.authentication import (
-    check_oauth_signature, get_oauth_authorization)
-from canonical.launchpad.webapp.interfaces import OAuthPermission
-from lazr.restful import HTTPResource
 
 
 class JSONTokenMixin:
@@ -78,10 +96,16 @@ class OAuthRequestTokenView(LaunchpadView, JSONTokenMixin):
 
         token = consumer.newRequestToken()
         if self.request.headers.get('Accept') == HTTPResource.JSON_TYPE:
+            # Don't show the client the GRANT_PERMISSIONS access
+            # level. If they have a legitimate need to use it, they'll
+            # already know about it.
+            permissions = [permission for permission in OAuthPermission.items
+                           if permission != OAuthPermission.GRANT_PERMISSIONS]
             return self.getJSONRepresentation(
-                OAuthPermission.items, token, include_secret=True)
+                permissions, token, include_secret=True)
         return u'oauth_token=%s&oauth_token_secret=%s' % (
             token.key, token.secret)
+
 
 def token_exists_and_is_not_reviewed(form, action):
     return form.token is not None and not form.token.is_reviewed
@@ -90,21 +114,105 @@ def token_exists_and_is_not_reviewed(form, action):
 def create_oauth_permission_actions():
     """Return a list of `Action`s for each possible `OAuthPermission`."""
     actions = Actions()
+    actions_excluding_grant_permissions = Actions()
+
     def success(form, action, data):
         form.reviewToken(action.permission)
+
     for permission in OAuthPermission.items:
         action = Action(
             permission.title, name=permission.name, success=success,
             condition=token_exists_and_is_not_reviewed)
         action.permission = permission
         actions.append(action)
-    return actions
+        if permission != OAuthPermission.GRANT_PERMISSIONS:
+            actions_excluding_grant_permissions.append(action)
+    return actions, actions_excluding_grant_permissions
 
 
-class OAuthAuthorizeTokenView(LaunchpadFormView, JSONTokenMixin):
+class CredentialManagerAwareMixin:
+    """A view for which a browser may authenticate with an OAuth token.
+
+    The OAuth token must be signed with a token that has the
+    GRANT_PERMISSIONS access level, and the browser must present
+    itself as the Launchpad Credentials Manager.
+    """
+    # A prefix identifying the Launchpad Credential Manager's
+    # User-Agent string.
+    GRANT_PERMISSIONS_USER_AGENT_PREFIX = "Launchpad Credentials Manager"
+
+    def ensureRequestIsAuthorizedOrSigned(self):
+        """Find the user who initiated the request.
+
+        This property is used by a view that wants to reject access
+        unless the end-user is authenticated with cookie auth, HTTP
+        Basic Auth, *or* a properly authorized OAuth token.
+
+        If the user is logged in with cookie auth or HTTP Basic, then
+        other parts of Launchpad have taken care of the login and we
+        don't have to do anything. But if the user's browser has
+        signed the request with an OAuth token, other parts of
+        Launchpad won't recognize that as an attempt to authorize the
+        request.
+
+        This method does the OAuth part of the work. It checks that
+        the OAuth token is valid, that it's got the correct access
+        level, and that the User-Agent is one that's allowed to sign
+        requests with OAuth tokens.
+
+        :return: The user who Launchpad identifies as the principal.
+         Or, if Launchpad identifies no one as the principal, the user
+         whose valid GRANT_PERMISSIONS OAuth token was used to sign
+         the request.
+
+        :raise Unauthorized: If the request is unauthorized and
+         unsigned, improperly signed, anonymously signed, or signed
+         with a token that does not have the right access level.
+        """
+        user = getUtility(ILaunchBag).user
+        if user is not None:
+            return user
+        # The normal Launchpad code was not able to identify any
+        # user, but we're going to try a little harder before
+        # concluding that no one's logged in. If the incoming
+        # request is signed by an OAuth access token with the
+        # GRANT_PERMISSIONS access level, we will force a
+        # temporary login with the user whose access token this
+        # is.
+        token = extract_oauth_access_token(self.request)
+        if token is None:
+            # The request is not OAuth-signed. The normal Launchpad
+            # code had it right: no one is authenticated.
+            raise Unauthorized("Anonymous access is not allowed.")
+        principal = get_oauth_principal(self.request)
+        if IUnauthenticatedPrincipal.providedBy(principal):
+            # The request is OAuth-signed, but as the anonymous
+            # user.
+            raise Unauthorized("Anonymous access is not allowed.")
+        if token.permission != AccessLevel.GRANT_PERMISSIONS:
+            # The request is OAuth-signed, but the token has
+            # the wrong access level.
+            raise Unauthorized("OAuth token has insufficient access level.")
+
+        # Both the consumer key and the User-Agent must identify the
+        # Launchpad Credentials Manager.
+        must_start_with_prefix = [
+            token.consumer.key, self.request.getHeader("User-Agent")]
+        for string in must_start_with_prefix:
+            if not string.startswith(
+                self.GRANT_PERMISSIONS_USER_AGENT_PREFIX):
+                raise Unauthorized(
+                    "Only the Launchpad Credentials Manager can access this "
+                    "page by signing requests with an OAuth token.")
+        return principal.person
+
+
+class OAuthAuthorizeTokenView(
+    LaunchpadFormView, JSONTokenMixin, CredentialManagerAwareMixin):
     """Where users authorize consumers to access Launchpad on their behalf."""
 
-    actions = create_oauth_permission_actions()
+    actions, actions_excluding_grant_permissions = (
+        create_oauth_permission_actions())
     label = "Authorize application to access Launchpad on your behalf"
     schema = IOAuthRequestToken
     field_names = []
@@ -122,34 +230,60 @@ class OAuthAuthorizeTokenView(LaunchpadFormView, JSONTokenMixin):
         acceptable subset of OAuthPermission.
 
         The user always has the option to deny the client access
-        altogether, so it makes sense for the client to specify the
-        least restrictions possible.
+        altogether, so it makes sense for the client to ask for the
+        least access possible.
 
         If the client sends nonsensical values for allow_permissions,
-        the end-user will be given an unrestricted choice.
+        the end-user will be given a choice among all the permissions
+        used by normal applications.
         """
+
         allowed_permissions = self.request.form_ng.getAll('allow_permission')
         if len(allowed_permissions) == 0:
-            return self.actions
+            return self.actions_excluding_grant_permissions
         actions = Actions()
+
+        # UNAUTHORIZED is always one of the options. If the client
+        # explicitly requested UNAUTHORIZED, remove it from the list
+        # to simplify the algorithm: we'll add it back later.
+        if OAuthPermission.UNAUTHORIZED.name in allowed_permissions:
+            allowed_permissions.remove(OAuthPermission.UNAUTHORIZED.name)
+
+        # GRANT_PERMISSIONS cannot be requested as one of several
+        # options--it must be the only option (other than
+        # UNAUTHORIZED). If GRANT_PERMISSIONS is one of several
+        # options, remove it from the list.
+        if (OAuthPermission.GRANT_PERMISSIONS.name in allowed_permissions
+            and len(allowed_permissions) > 1):
+            allowed_permissions.remove(OAuthPermission.GRANT_PERMISSIONS.name)
+
+        # GRANT_PERMISSIONS may only be requested by a specific User-Agent.
+        if (OAuthPermission.GRANT_PERMISSIONS.name in allowed_permissions
+            and not self.request.getHeader("User-Agent").startswith(
+                self.GRANT_PERMISSIONS_USER_AGENT_PREFIX)):
+            allowed_permissions.remove(OAuthPermission.GRANT_PERMISSIONS.name)
+
         for action in self.actions:
             if (action.permission.name in allowed_permissions
                 or action.permission is OAuthPermission.UNAUTHORIZED):
                 actions.append(action)
+
         if len(list(actions)) == 1:
             # The only visible action is UNAUTHORIZED. That means the
-            # client tried to restrict the actions but didn't name any
-            # actual actions (except possibly UNAUTHORIZED). Rather
-            # than present the end-user with an impossible situation
-            # where their only option is to deny access, we'll present
-            # the full range of actions.
-            return self.actions
+            # client tried to restrict the permissions but didn't name
+            # any actual permissions (except possibly
+            # UNAUTHORIZED). Rather than present the end-user with an
+            # impossible situation where their only option is to deny
+            # access, we'll present the full range of actions (except
+            # for GRANT_PERMISSIONS).
+            return self.actions_excluding_grant_permissions
         return actions
 
     def initialize(self):
+        self.oauth_authorized_user = self.ensureRequestIsAuthorizedOrSigned()
         self.storeTokenContext()
-        form = get_oauth_authorization(self.request)
-        key = form.get('oauth_token')
+
+        key = self.request.form.get('oauth_token')
         if key:
             self.token = getUtility(IOAuthRequestTokenSet).getByKey(key)
         super(OAuthAuthorizeTokenView, self).initialize()
@@ -180,7 +314,8 @@ class OAuthAuthorizeTokenView(LaunchpadFormView, JSONTokenMixin):
         self.token_context = context
 
     def reviewToken(self, permission):
-        self.token.review(self.user, permission, self.token_context)
+        self.token.review(self.user or self.oauth_authorized_user,
+                          permission, self.token_context)
         callback = self.request.form.get('oauth_callback')
         if callback:
             self.next_url = callback
@@ -208,7 +343,7 @@ def lookup_oauth_context(context):
     return context
 
 
-class OAuthTokenAuthorizedView(LaunchpadView):
+class OAuthTokenAuthorizedView(LaunchpadView, CredentialManagerAwareMixin):
     """Where users who reviewed tokens may get redirected to.
 
     If the consumer didn't include an oauth_callback when sending the user to
@@ -217,6 +352,7 @@ class OAuthTokenAuthorizedView(LaunchpadView):
     """
 
     def initialize(self):
+        authorized_user = self.ensureRequestIsAuthorizedOrSigned()
         key = self.request.form.get('oauth_token')
         self.token = getUtility(IOAuthRequestTokenSet).getByKey(key)
         assert self.token.is_reviewed, (

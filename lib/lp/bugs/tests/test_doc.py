@@ -11,15 +11,28 @@ import unittest
 
 from canonical.config import config
 from canonical.database.sqlbase import commit
-from canonical.launchpad.ftests import login, logout
+from canonical.launchpad.ftests import (
+    login,
+    logout,
+    )
 from canonical.launchpad.ftests.test_system_documentation import (
-    branchscannerSetUp, lobotomize_stevea, uploadQueueSetUp, uploaderSetUp,
-    uploaderTearDown)
+    branchscannerSetUp,
+    lobotomize_stevea,
+    uploaderSetUp,
+    uploaderTearDown,
+    uploadQueueSetUp,
+    )
 from canonical.launchpad.testing.pages import PageTestSuite
 from canonical.launchpad.testing.systemdocs import (
-    LayeredDocFileSuite, setUp, tearDown)
+    LayeredDocFileSuite,
+    setUp,
+    tearDown,
+    )
 from canonical.testing import (
-    DatabaseLayer, LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
+    DatabaseLayer,
+    LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
 
 
 here = os.path.dirname(os.path.realpath(__file__))

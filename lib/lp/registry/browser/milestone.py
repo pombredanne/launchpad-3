@@ -23,35 +23,58 @@ __all__ = [
 
 from zope.component import getUtility
 from zope.formlib import form
-from zope.interface import implements, Interface
+from zope.interface import (
+    implements,
+    Interface,
+    )
 from zope.schema import Choice
 
-from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
+from canonical.launchpad.webapp import (
+    action,
+    canonical_url,
+    custom_widget,
+    enabled_with_permission,
+    GetitemNavigation,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    LaunchpadView,
+    Navigation,
+    )
+from canonical.launchpad.webapp.authorization import (
+    precache_permission_for_objects,
+    )
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
+from canonical.launchpad.webapp.interfaces import ILaunchBag
+from canonical.launchpad.webapp.menu import (
+    ApplicationMenu,
+    ContextMenu,
+    Link,
+    NavigationMenu,
+    )
+from canonical.widgets import DateWidget
 from lp.bugs.browser.bugtask import BugTaskListingItem
 from lp.bugs.interfaces.bugtask import (
-    BugTaskSearchParams, IBugTaskSet)
-from lp.registry.interfaces.distroseries import IDistroSeries
-from lp.registry.interfaces.milestone import (
-    IMilestone, IMilestoneSet, IProjectGroupMilestone)
-from lp.registry.interfaces.product import IProduct
+    BugTaskSearchParams,
+    IBugTaskSet,
+    )
+from lp.registry.browser import (
+    get_status_counts,
+    RegistryDeleteViewMixin,
+    )
+from lp.registry.browser.product import ProductDownloadFileMixin
 from lp.registry.browser.structuralsubscription import (
     StructuralSubscriptionMenuMixin,
-    StructuralSubscriptionTargetTraversalMixin)
-from canonical.launchpad.webapp import (
-    action, canonical_url, custom_widget,
-    LaunchpadEditFormView, LaunchpadFormView, LaunchpadView,
-    enabled_with_permission, GetitemNavigation, Navigation)
-from canonical.launchpad.webapp.authorization import (
-    precache_permission_for_objects)
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.menu import (
-    ApplicationMenu, ContextMenu, Link, NavigationMenu)
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.widgets import DateWidget
-
-from lp.registry.browser import get_status_counts, RegistryDeleteViewMixin
-from lp.registry.browser.product import ProductDownloadFileMixin
+    StructuralSubscriptionTargetTraversalMixin,
+    )
+from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.milestone import (
+    IMilestone,
+    IMilestoneSet,
+    IProjectGroupMilestone,
+    )
+from lp.registry.interfaces.product import IProduct
+from lp.services.propertycache import cachedproperty
 
 
 class MilestoneSetNavigation(GetitemNavigation):

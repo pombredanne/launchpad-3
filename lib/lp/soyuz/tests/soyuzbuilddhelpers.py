@@ -22,10 +22,13 @@ import xmlrpclib
 
 from canonical.config import config
 from lp.buildmaster.interfaces.builder import CannotFetchFile
-from lp.buildmaster.model.builder import (rescueBuilderIfLost,
-    updateBuilderStatus)
+from lp.buildmaster.model.builder import (
+    rescueBuilderIfLost,
+    updateBuilderStatus,
+    )
 from lp.soyuz.model.binarypackagebuildbehavior import (
-    BinaryPackageBuildBehavior)
+    BinaryPackageBuildBehavior,
+    )
 from lp.testing.sampledata import I386_ARCHITECTURE_NAME
 
 
@@ -58,10 +61,14 @@ class MockBuilder:
             slave_build_id)
 
     def cleanSlave(self):
+        # XXX: This should not print anything. The print is only here to make
+        # doc/builder.txt a meaningful test.
         print 'Cleaning slave'
         return self.slave.clean()
 
     def requestAbort(self):
+        # XXX: This should not print anything. The print is only here to make
+        # doc/builder.txt a meaningful test.
         print 'Aborting slave'
         return self.slave.abort()
 

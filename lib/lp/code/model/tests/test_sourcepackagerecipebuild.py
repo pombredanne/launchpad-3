@@ -11,33 +11,45 @@ import datetime
 import re
 import unittest
 
-import transaction
 from storm.locals import Store
+import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.testing.layers import (
-    LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.testing import verifyObject
+from canonical.testing.layers import (
+    LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
 from lp.app.errors import NotFoundError
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
-from lp.buildmaster.tests.test_buildbase import (
-    TestGetUploadMethodsMixin, TestHandleStatusMixin)
+from lp.buildmaster.tests.test_packagebuild import (
+    TestGetUploadMethodsMixin,
+    TestHandleStatusMixin,
+    )
 from lp.code.interfaces.sourcepackagerecipebuild import (
-    ISourcePackageRecipeBuildJob, ISourcePackageRecipeBuild,
-    ISourcePackageRecipeBuildSource)
+    ISourcePackageRecipeBuild,
+    ISourcePackageRecipeBuildJob,
+    ISourcePackageRecipeBuildSource,
+    )
 from lp.code.mail.sourcepackagerecipebuild import (
-    SourcePackageRecipeBuildMailer)
+    SourcePackageRecipeBuildMailer,
+    )
 from lp.code.model.sourcepackagerecipebuild import SourcePackageRecipeBuild
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.mail.sendmail import format_address
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.model.processor import ProcessorFamily
 from lp.soyuz.tests.soyuzbuilddhelpers import WaitingSlave
-from lp.testing import ANONYMOUS, login, person_logged_in, TestCaseWithFactory
+from lp.testing import (
+    ANONYMOUS,
+    login,
+    person_logged_in,
+    TestCaseWithFactory,
+    )
 from lp.testing.fakemethod import FakeMethod
 from lp.testing.mail_helpers import pop_notifications
 
@@ -65,7 +77,7 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
             requester=person)
 
     def test_providesInterfaces(self):
-        # SourcePackageRecipeBuild provides IBuildBase and
+        # SourcePackageRecipeBuild provides IPackageBuild and
         # ISourcePackageRecipeBuild.
         spb = self.makeSourcePackageRecipeBuild()
         self.assertProvides(spb, ISourcePackageRecipeBuild)
@@ -297,6 +309,12 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         job = sprb.build_farm_job.getSpecificJob()
         self.assertEqual(sprb, job)
 
+    def test_getUploader(self):
+        # For ACL purposes the uploader is the build requester.
+        build = self.makeSourcePackageRecipeBuild()
+        self.assertEquals(build.requester,
+            build.getUploader(None))
+
 
 class TestAsBuildmaster(TestCaseWithFactory):
 
@@ -342,15 +360,15 @@ class TestAsBuildmaster(TestCaseWithFactory):
             queue_record.builder.setSlaveForTesting(slave)
             return build
 
-        def assertNotifyOnce(status, build):
+        def assertNotifyCount(status, build, count):
             build.handleStatus(status, None, {'filemap': {}})
-            self.assertEqual(1, len(pop_notifications()))
-        for status in ['PACKAGEFAIL', 'OK']:
-            assertNotifyOnce(status, prepare_build())
+            self.assertEqual(count, len(pop_notifications()))
+        assertNotifyCount("PACKAGEFAIL", prepare_build(), 1)
+        assertNotifyCount("OK", prepare_build(), 0)
         build = prepare_build()
         removeSecurityProxy(build).verifySuccessfulUpload = FakeMethod(
-        result=True)
-        assertNotifyOnce('OK', prepare_build())
+                result=True)
+        assertNotifyCount("OK", prepare_build(), 0)
 
 
 class MakeSPRecipeBuildMixin:
@@ -374,12 +392,12 @@ class MakeSPRecipeBuildMixin:
 
 class TestGetUploadMethodsForSPRecipeBuild(
     MakeSPRecipeBuildMixin, TestGetUploadMethodsMixin, TestCaseWithFactory):
-    """IBuildBase.getUpload-related methods work with SPRecipe builds."""
+    """IPackageBuild.getUpload-related methods work with SPRecipe builds."""
 
 
 class TestHandleStatusForSPRBuild(
     MakeSPRecipeBuildMixin, TestHandleStatusMixin, TestCaseWithFactory):
-    """IBuildBase.handleStatus works with SPRecipe builds."""
+    """IPackageBuild.handleStatus works with SPRecipe builds."""
 
 
 def test_suite():

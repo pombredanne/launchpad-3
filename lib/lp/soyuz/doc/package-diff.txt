@@ -228,8 +228,8 @@ against the last version in the RELEASE pocket.
 For testing diffs in the PPA context we need to activate the PPA for
 Foo Bar.
 
-    >>> from lp.soyuz.interfaces.archive import (
-    ...     ArchivePurpose, IArchiveSet)
+    >>> from lp.soyuz.enums import ArchivePurpose
+    >>> from lp.soyuz.interfaces.archive import IArchiveSet
     >>> foobar = getUtility(IPersonSet).getByName('name16')
     >>> ppa = getUtility(IArchiveSet).new(
     ...     owner=foobar, distribution=ubuntu, purpose=ArchivePurpose.PPA)
@@ -451,12 +451,7 @@ getPendingDiffs() results can optionally be limited.
     >>> packagediff_set.getPendingDiffs().count()
     7
 
-XXX cprov 20070530: storm doesn't go well with  limited count()s
-See bug #217644. For now we have to listify the results and used
-the list length.
-
-    >>> r = packagediff_set.getPendingDiffs(limit=2)
-    >>> len(list(r))
+    >>> packagediff_set.getPendingDiffs(limit=2).count()
     2
 
 All package diffs targeting a set of source package releases can also
@@ -680,7 +675,7 @@ disk very quickly.  For that reason, diffs of udev are created FAILED by
 default, which will stop the diff script from attempting to create the diff.
 
     >>> from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
-    >>> from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+    >>> from lp.soyuz.enums import PackagePublishingStatus
     >>> stp = SoyuzTestPublisher()
     >>> discard = stp.setUpDefaultDistroSeries(hoary)
     >>> udev_orig = stp.getPubSource(

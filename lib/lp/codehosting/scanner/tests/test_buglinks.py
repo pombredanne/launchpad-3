@@ -10,21 +10,27 @@ __metaclass__ = type
 import unittest
 
 from bzrlib.revision import Revision
-from zope.event import notify
 from zope.component import getUtility
+from zope.event import notify
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.launchpad.interfaces import IBugBranchSet, IBugSet
+from canonical.launchpad.interfaces import (
+    IBugBranchSet,
+    IBugSet,
+    )
 from canonical.testing.layers import LaunchpadZopelessLayer
-
 from lp.app.errors import NotFoundError
 from lp.code.interfaces.revision import IRevisionSet
 from lp.codehosting.scanner import events
 from lp.codehosting.scanner.buglinks import BugBranchLinker
 from lp.codehosting.scanner.tests.test_bzrsync import BzrSyncTestCase
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.testing import TestCase, TestCaseWithFactory
 from lp.services.osutils import override_environ
+from lp.testing import (
+    TestCase,
+    TestCaseWithFactory,
+    )
 
 
 class RevisionPropertyParsing(TestCase):
@@ -115,8 +121,16 @@ class TestBugLinking(BzrSyncTestCase):
     def makeFixtures(self):
         super(TestBugLinking, self).makeFixtures()
         self.bug1 = self.factory.makeBug()
+        sp = self.factory.makeSourcePackage()
+        self.bug1.addTask(self.bug1.owner, sp)
+        dsp = self.factory.makeDistributionSourcePackage()
+        self.bug1.addTask(self.bug1.owner, dsp)
+        distro = self.factory.makeDistribution()
+        self.bug1.addTask(self.bug1.owner, distro)
         self.bug2 = self.factory.makeBug()
         self.new_db_branch = self.factory.makeAnyBranch()
+        removeSecurityProxy(distro).max_bug_heat = 0;
+        removeSecurityProxy(dsp).max_bug_heat = 0;
         self.layer.txn.commit()
 
     def getBugURL(self, bug):

@@ -785,7 +785,7 @@
     <!-- Set the default timeout function. -->
     <subscriber
         for="zope.app.appsetup.IProcessStartingEvent"
-        handler="canonical.launchpad.webapp.servers.set_launchpad_default_timeout"
+        handler="canonical.launchpad.webapp.adapter.set_launchpad_default_timeout"
         />
 
     <subscriber
@@ -828,7 +828,7 @@
     <view
       type="zope.publisher.interfaces.browser.IBrowserRequest"
       for="zope.schema.interfaces.IChoice
-        canonical.launchpad.vocabularies.dbobjects.BranchVocabularyBase"
+        lp.code.vocabularies.branch.BranchVocabularyBase"
       provides="zope.app.form.interfaces.IInputWidget"
       factory="canonical.launchpad.browser.widgets.BranchPopupWidget"
       permission="zope.Public"

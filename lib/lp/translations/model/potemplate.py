@@ -23,39 +23,55 @@ import re
 
 from psycopg2.extensions import TransactionRollbackError
 from sqlobject import (
-    BoolCol, ForeignKey, IntCol, SQLMultipleJoin, SQLObjectNotFound,
-    StringCol)
-from storm.expr import And, Count, Desc, In, Join, LeftJoin, Or
+    BoolCol,
+    ForeignKey,
+    IntCol,
+    SQLMultipleJoin,
+    SQLObjectNotFound,
+    StringCol,
+    )
+from storm.expr import (
+    And,
+    Count,
+    Desc,
+    In,
+    Join,
+    LeftJoin,
+    Or,
+    )
 from storm.info import ClassAlias
 from storm.store import Store
-from zope.component import getAdapter, getUtility
+from zope.component import (
+    getAdapter,
+    getUtility,
+    )
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.cachedproperty import cachedproperty
 from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
-    SQLBase, quote, quote_like, flush_database_updates, sqlvalues)
+    flush_database_updates,
+    quote,
+    quote_like,
+    SQLBase,
+    sqlvalues,
+    )
 from canonical.launchpad import helpers
-from canonical.launchpad.interfaces.lpstorm import IMasterStore, IStore
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.lpstorm import (
+    IMasterStore,
+    IStore,
+    )
+from lp.app.enums import service_uses_launchpad
 from lp.app.errors import NotFoundError
-from lp.translations.utilities.rosettastats import RosettaStats
-from lp.services.database.prejoin import prejoin
-from lp.services.database.collection import Collection
-from lp.services.worlddata.model.language import Language
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.model.sourcepackagename import SourcePackageName
-from lp.translations.model.pofile import POFile, DummyPOFile
-from lp.translations.model.pomsgid import POMsgID
-from lp.translations.model.potmsgset import POTMsgSet
-from lp.translations.model.translationimportqueue import (
-    collect_import_info)
-from lp.translations.model.translationtemplateitem import (
-    TranslationTemplateItem)
-from lp.translations.model.vpotexport import VPOTExport
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.services.database.collection import Collection
+from lp.services.database.prejoin import prejoin
+from lp.services.propertycache import cachedproperty
+from lp.services.worlddata.model.language import Language
 from lp.translations.interfaces.pofile import IPOFileSet
 from lp.translations.interfaces.potemplate import (
     IHasTranslationTemplates,
@@ -63,22 +79,41 @@ from lp.translations.interfaces.potemplate import (
     IPOTemplateSet,
     IPOTemplateSharingSubset,
     IPOTemplateSubset,
-    LanguageNotFound)
+    LanguageNotFound,
+    )
+from lp.translations.interfaces.potmsgset import BrokenTextError
 from lp.translations.interfaces.translationcommonformat import (
-    ITranslationFileData)
+    ITranslationFileData,
+    )
 from lp.translations.interfaces.translationexporter import (
-    ITranslationExporter)
+    ITranslationExporter,
+    )
 from lp.translations.interfaces.translationfileformat import (
-    TranslationFileFormat)
+    TranslationFileFormat,
+    )
 from lp.translations.interfaces.translationimporter import (
     ITranslationImporter,
     TranslationFormatInvalidInputError,
-    TranslationFormatSyntaxError)
+    TranslationFormatSyntaxError,
+    )
 from lp.translations.interfaces.translationimportqueue import (
-    RosettaImportStatus)
-from lp.translations.interfaces.potmsgset import BrokenTextError
+    RosettaImportStatus,
+    )
+from lp.translations.model.pofile import (
+    DummyPOFile,
+    POFile,
+    )
+from lp.translations.model.pomsgid import POMsgID
+from lp.translations.model.potmsgset import POTMsgSet
+from lp.translations.model.translationimportqueue import collect_import_info
+from lp.translations.model.translationtemplateitem import (
+    TranslationTemplateItem,
+    )
+from lp.translations.model.vpotexport import VPOTExport
+from lp.translations.utilities.rosettastats import RosettaStats
 from lp.translations.utilities.translation_common_format import (
-    TranslationMessageData)
+    TranslationMessageData,
+    )
 
 
 log = logging.getLogger(__name__)
@@ -149,7 +184,7 @@ class POTemplate(SQLBase, RosettaStats):
     description = StringCol(dbName='description', notNull=False, default=None)
     copyright = StringCol(dbName='copyright', notNull=False, default=None)
     datecreated = UtcDateTimeCol(dbName='datecreated', default=DEFAULT)
-    path = StringCol(dbName='path', notNull=False, default=None)
+    path = StringCol(dbName='path', notNull=True)
     source_file = ForeignKey(foreignKey='LibraryFileAlias',
         dbName='source_file', notNull=False, default=None)
     source_file_format = EnumCol(dbName='source_file_format',
@@ -1288,8 +1323,7 @@ class POTemplateSet:
             preferred_matches = [
                 match
                 for match in matches
-                if match.from_sourcepackagename == sourcepackagename
-            ]
+                if match.from_sourcepackagename == sourcepackagename]
 
             if len(preferred_matches) == 1:
                 return preferred_matches[0]
@@ -1344,6 +1378,9 @@ class POTemplateSet:
 
     def populateSuggestivePOTemplatesCache(self):
         """See `IPOTemplateSet`."""
+        # XXX j.c.sackett 2010-08-30 bug=627631 Once data migration has
+        # happened for the usage enums, this sql needs to be updated to
+        # check for the translations_usage, not official_rosetta.
         return IMasterStore(POTemplate).execute("""
             INSERT INTO SuggestivePOTemplate (
                 SELECT POTemplate.id
@@ -1403,15 +1440,13 @@ class POTemplateSharingSubset(object):
         if self.product:
             subsets = [
                 self.potemplateset.getSubset(productseries=series)
-                for series in self.product.series
-                ]
+                for series in self.product.series]
         else:
             subsets = [
                 self.potemplateset.getSubset(
                     distroseries=series,
                     sourcepackagename=self.sourcepackagename)
-                for series in self.distribution.series
-                ]
+                for series in self.distribution.series]
         for subset in subsets:
             for template in subset:
                 if name_pattern is None or re.match(name_pattern,
@@ -1514,8 +1549,7 @@ class POTemplateToTranslationFileDataAdapter:
                 msgset.flags = set([
                     flag.strip()
                     for flag in row.flags_comment.split(',')
-                    if flag
-                    ])
+                    if flag])
 
             # Store the message.
             messages.append(msgset)
@@ -1544,8 +1578,9 @@ class HasTranslationTemplatesMixin:
         collection = self.getTemplatesCollection()
 
         # XXX JeroenVermeulen 2010-07-15 bug=605924: Move the
-        # official_rosetta distinction into browser code.
-        if collection.target_pillar.official_rosetta:
+        # translations_usage distinction into browser code.
+        pillar = collection.target_pillar
+        if service_uses_launchpad(pillar.translations_usage):
             return collection.restrictCurrent(current_value)
         else:
             # Product/Distribution does not have translation enabled.

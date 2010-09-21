@@ -27,82 +27,130 @@ __all__ = [
     ]
 
 
-from datetime import datetime, timedelta
-import pytz
+from datetime import (
+    datetime,
+    timedelta,
+    )
 from urlparse import urlparse
 
+import pytz
+from sqlobject import SQLObjectNotFound
+from storm.zope.interfaces import IResultSet
 from zope.app.form.browser import TextAreaWidget
 from zope.component import getUtility
 from zope.formlib import form
-from zope.interface import implements, Interface
+from zope.interface import (
+    implements,
+    Interface,
+    )
+from zope.schema import (
+    Choice,
+    List,
+    TextLine,
+    )
+from zope.schema.interfaces import IContextSourceBinder
+from zope.schema.vocabulary import (
+    SimpleTerm,
+    SimpleVocabulary,
+    )
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
-from zope.schema import Choice, List, TextLine
-from zope.schema.interfaces import IContextSourceBinder
-from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
-from storm.zope.interfaces import IResultSet
 
-from sqlobject import SQLObjectNotFound
-
-from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
+from canonical.launchpad.browser.librarian import FileNavigationMixin
 from canonical.launchpad.components.tokens import create_token
 from canonical.launchpad.helpers import english_list
-from canonical.lazr.utils import smartquote
-from lp.app.errors import NotFoundError
-from lp.buildmaster.interfaces.buildbase import BuildStatus
-from lp.services.browser_helpers import get_user_agent_distroseries
-from lp.services.worlddata.interfaces.country import ICountrySet
-from lp.soyuz.browser.build import BuildRecordsView
-from lp.soyuz.browser.sourceslist import (
-    SourcesListEntries, SourcesListEntriesView)
-from canonical.launchpad.browser.librarian import FileNavigationMixin
-from lp.soyuz.adapters.archivedependencies import (
-    default_component_dependency_name, default_pocket_dependency)
-from lp.soyuz.adapters.archivesourcepublication import (
-    ArchiveSourcePublications)
-from lp.soyuz.interfaces.archive import (
-    ArchivePurpose, ArchiveStatus, CannotCopy, IArchive,
-    IArchiveEditDependenciesForm, IArchiveSet, IPPAActivateForm, NoSuchPPA)
-from lp.soyuz.interfaces.archivepermission import (
-    ArchivePermissionType, IArchivePermissionSet)
-from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
-from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
-from lp.soyuz.interfaces.binarypackagebuild import (
-    BuildSetStatus, IBinaryPackageBuildSet)
-from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
-from lp.soyuz.interfaces.component import IComponentSet
-from lp.registry.interfaces.series import SeriesStatus
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from lp.soyuz.interfaces.packagecopyrequest import (
-    IPackageCopyRequestSet)
-from lp.soyuz.interfaces.packageset import IPackagesetSet
-from lp.registry.interfaces.person import IPersonSet, PersonVisibility
-from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.soyuz.interfaces.processor import IProcessorFamilySet
-from lp.soyuz.interfaces.publishing import (
-    active_publishing_status, inactive_publishing_status, IPublishingSet,
-    PackagePublishingStatus)
-from lp.registry.interfaces.sourcepackagename import (
-    ISourcePackageNameSet)
 from canonical.launchpad.webapp import (
-    action, canonical_url, custom_widget, enabled_with_permission,
-    stepthrough, LaunchpadEditFormView,
-    LaunchpadFormView, LaunchpadView, Link, Navigation)
-from lp.soyuz.scripts.packagecopier import do_copy
+    action,
+    canonical_url,
+    custom_widget,
+    enabled_with_permission,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    LaunchpadView,
+    Link,
+    Navigation,
+    stepthrough,
+    )
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.badge import HasBadgeBase
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
-from canonical.launchpad.webapp.menu import structured, NavigationMenu
-from lp.app.browser.stringformatter import FormattersAPI
+from canonical.launchpad.webapp.menu import (
+    NavigationMenu,
+    structured,
+    )
+from canonical.lazr.utils import smartquote
 from canonical.widgets import (
-    LabeledMultiCheckBoxWidget, PlainMultiCheckBoxWidget)
+    LabeledMultiCheckBoxWidget,
+    PlainMultiCheckBoxWidget,
+    )
 from canonical.widgets.itemswidgets import (
-    LaunchpadDropdownWidget, LaunchpadRadioWidget)
+    LaunchpadDropdownWidget,
+    LaunchpadRadioWidget,
+    )
 from canonical.widgets.lazrjs import (
-    TextAreaEditorWidget, TextLineEditorWidget)
+    TextAreaEditorWidget,
+    TextLineEditorWidget,
+    )
 from canonical.widgets.textwidgets import StrippedTextWidget
+from lp.app.browser.stringformatter import FormattersAPI
+from lp.app.errors import NotFoundError
+from lp.buildmaster.enums import BuildStatus
+from lp.registry.interfaces.person import (
+    IPersonSet,
+    PersonVisibility,
+    )
+from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.interfaces.series import SeriesStatus
+from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.services.browser_helpers import get_user_agent_distroseries
+from lp.services.propertycache import cachedproperty
+from lp.services.worlddata.interfaces.country import ICountrySet
+from lp.soyuz.adapters.archivedependencies import (
+    default_component_dependency_name,
+    default_pocket_dependency,
+    )
+from lp.soyuz.adapters.archivesourcepublication import (
+    ArchiveSourcePublications,
+    )
+from lp.soyuz.browser.build import BuildRecordsView
+from lp.soyuz.browser.sourceslist import (
+    SourcesListEntries,
+    SourcesListEntriesView,
+    )
+from lp.soyuz.enums import (
+    ArchivePermissionType,
+    ArchivePurpose,
+    ArchiveStatus,
+    PackagePublishingStatus,
+    )
+from lp.soyuz.interfaces.archive import (
+    CannotCopy,
+    IArchive,
+    IArchiveEditDependenciesForm,
+    IArchiveSet,
+    IPPAActivateForm,
+    NoSuchPPA,
+    )
+from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
+from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
+from lp.soyuz.interfaces.binarypackagebuild import (
+    BuildSetStatus,
+    IBinaryPackageBuildSet,
+    )
+from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
+from lp.soyuz.interfaces.component import IComponentSet
+from lp.soyuz.interfaces.packagecopyrequest import IPackageCopyRequestSet
+from lp.soyuz.interfaces.packageset import IPackagesetSet
+from lp.soyuz.interfaces.processor import IProcessorFamilySet
+from lp.soyuz.interfaces.publishing import (
+    active_publishing_status,
+    inactive_publishing_status,
+    IPublishingSet,
+    )
+from lp.soyuz.scripts.packagecopier import do_copy
 
 
 class ArchiveBadges(HasBadgeBase):
@@ -899,6 +947,7 @@ class ArchiveView(ArchiveSourcePackageListViewBase):
             'NEEDSBUILD': 'Waiting to build',
             'FAILEDTOBUILD': 'Failed to build:',
             'BUILDING': 'Currently building',
+            'UPLOADING': 'Currently uploading',
             }
 
         now = datetime.now(tz=pytz.UTC)

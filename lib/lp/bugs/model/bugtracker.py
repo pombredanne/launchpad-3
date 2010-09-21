@@ -8,51 +8,76 @@ __all__ = [
     'BugTracker',
     'BugTrackerAlias',
     'BugTrackerAliasSet',
-    'BugTrackerSet']
+    'BugTrackerSet',
+    ]
 
 
 from datetime import datetime
 from itertools import chain
-from pytz import timezone
 # splittype is not formally documented, but is in urllib.__all__, is
 # simple, and is heavily used by the rest of urllib, hence is unlikely
 # to change or go away.
-from urllib import splittype, quote
+from urllib import (
+    quote,
+    splittype,
+    )
 
 from zope.component import getUtility
 from zope.interface import implements
+from zope.security.interfaces import Unauthorized
 
+from lazr.uri import URI
+from pytz import timezone
 from sqlobject import (
-    BoolCol, ForeignKey, OR, SQLMultipleJoin, SQLObjectNotFound, StringCol)
+    BoolCol,
+    ForeignKey,
+    OR,
+    SQLMultipleJoin,
+    SQLObjectNotFound,
+    StringCol,
+    )
 from sqlobject.sqlbuilder import AND
-
-from storm.expr import Count, Desc, Not
+from storm.expr import (
+    Count,
+    Desc,
+    Not,
+    SQL,
+    )
 from storm.locals import Bool
 from storm.store import Store
+from zope.component import getUtility
+from zope.interface import implements
 
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
-    SQLBase, flush_database_updates, sqlvalues)
+    flush_database_updates,
+    SQLBase,
+    )
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.validators.name import sanitize_name
-
-from lazr.uri import URI
-
 from lp.app.errors import NotFoundError
 from lp.bugs.interfaces.bugtracker import (
-    BugTrackerType, IBugTracker, IBugTrackerAlias, IBugTrackerAliasSet,
-    IBugTrackerSet, SINGLE_PRODUCT_BUGTRACKERTYPES)
-from lp.bugs.interfaces.bugtrackerperson import (
-    BugTrackerPersonAlreadyExists)
+    BugTrackerType,
+    IBugTracker,
+    IBugTrackerAlias,
+    IBugTrackerAliasSet,
+    IBugTrackerSet,
+    SINGLE_PRODUCT_BUGTRACKERTYPES,
+    )
+from canonical.launchpad.webapp.interfaces import (
+        DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE)
+from lp.bugs.interfaces.bugtrackerperson import BugTrackerPersonAlreadyExists
 from lp.bugs.model.bug import Bug
 from lp.bugs.model.bugmessage import BugMessage
 from lp.bugs.model.bugtrackerperson import BugTrackerPerson
 from lp.bugs.model.bugwatch import BugWatch
-from lp.registry.interfaces.person import IPersonSet
-from lp.registry.interfaces.person import validate_public_person
+from lp.registry.interfaces.person import (
+    IPersonSet,
+    validate_public_person,
+    )
 
 
 def normalise_leading_slashes(rest):
@@ -482,19 +507,20 @@ class BugTracker(SQLBase):
 
         return person
 
-    def resetWatches(self, now=None):
+    def resetWatches(self, new_next_check=None):
         """See `IBugTracker`."""
-        if now is None:
-            now = datetime.now(timezone('UTC'))
+        if new_next_check is None:
+            new_next_check = SQL(
+                "now() at time zone 'UTC' + (random() * interval '1 day')")
 
         store = Store.of(self)
-        store.execute(
-            "UPDATE BugWatch SET next_check = %s WHERE bugtracker = %s" %
-            sqlvalues(now, self))
+        store.find(BugWatch, BugWatch.bugtracker == self).set(
+            next_check=new_next_check, lastchecked=None,
+            last_error_type=None)
 
 
 class BugTrackerSet:
-    """Implements IBugTrackerSet for a container or set of BugTracker's,
+    """Implements IBugTrackerSet for a container or set of BugTrackers,
     either the full set in the db, or a subset.
     """
 
@@ -553,6 +579,17 @@ class BugTrackerSet:
     def search(self):
         """See `IBugTrackerSet`."""
         return BugTracker.select()
+
+    def trackers(self, active=None):
+        # Without context, cannot tell what store flavour is desirable.
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        if active is not None:
+            clauses = [BugTracker.active==active]
+        else:
+            clauses = []
+        results = store.find(BugTracker, *clauses)
+        results.order_by(BugTracker.name)
+        return results
 
     def ensureBugTracker(self, baseurl, owner, bugtrackertype,
         title=None, summary=None, contactdetails=None, name=None):
