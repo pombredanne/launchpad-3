@@ -494,6 +494,9 @@ class DistributionSourcePackage(BugTargetBase,
                 BugTask.sourcepackagename == self.sourcepackagename),
             user)
 
+    def _getOfficialTagClause(self):
+        return self.distribution._getOfficialTagClause()
+
     @property
     def official_bug_tags(self):
         """See `IHasBugs`."""

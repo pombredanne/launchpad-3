@@ -386,6 +386,9 @@ class IOfficialBugTagTargetRestricted(Interface):
     def removeOfficialBugTag(tag):
         """Remove tag from the official bug tags of this target."""
 
+    def _getOfficialTagClause():
+        """Get the storm clause for finding this targets tags."""
+
 
 class IOfficialBugTagTarget(IOfficialBugTagTargetPublic,
                             IOfficialBugTagTargetRestricted):

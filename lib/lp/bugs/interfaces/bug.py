@@ -269,6 +269,7 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
             title=_('CVE entries related to this bug.'),
             value_type=Reference(schema=ICve),
             readonly=True))
+    has_cves = Bool(title=u"True if the bug has cve entries.")
     cve_links = Attribute('Links between this bug and CVE entries.')
     subscriptions = exported(
         doNotSnapshot(CollectionField(
@@ -405,6 +406,8 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
             required=False, readonly=True))
 
     latest_patch = Attribute("The most recent patch of this bug.")
+
+    official_tags = Attribute("The official bug tags relevant to this bug.")
 
     @operation_parameters(
         subject=optional_message_subject_field(),

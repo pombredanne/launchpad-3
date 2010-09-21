@@ -921,6 +921,9 @@ class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView, FeedsMixin):
         This is particularly useful for views that may render a
         NullBugTask.
         """
+        if self.context.id is not None:
+            # Fast path for real bugtasks: they have a DB id.
+            return True
         params = BugTaskSearchParams(user=self.user, bug=self.context.bug)
         matching_bugtasks = self.context.target.searchTasks(params)
         if self.context.productseries is not None:
@@ -1194,14 +1197,14 @@ class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView, FeedsMixin):
     @property
     def official_tags(self):
         """The list of official tags for this bug."""
-        target_official_tags = self.context.target.official_bug_tags
+        target_official_tags = set(self.context.bug.official_tags)
         return [tag for tag in self.context.bug.tags
                 if tag in target_official_tags]
 
     @property
     def unofficial_tags(self):
         """The list of unofficial tags for this bug."""
-        target_official_tags = self.context.target.official_bug_tags
+        target_official_tags = set(self.context.bug.official_tags)
         return [tag for tag in self.context.bug.tags
                 if tag not in target_official_tags]
 
@@ -1213,11 +1216,9 @@ class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView, FeedsMixin):
         bug has a task. It is returned as Javascript snippet, to be embedded
         in the bug page.
         """
-        available_tags = set()
-        for task in self.context.bug.bugtasks:
-            available_tags.update(task.target.official_bug_tags)
-        return 'var available_official_tags = %s;' % dumps(list(sorted(
-            available_tags)))
+        # Unwrap the security proxy.
+        available_tags = list(self.context.bug.official_tags)
+        return 'var available_official_tags = %s;' % dumps(available_tags)
 
     @property
     def user_is_admin(self):
@@ -3247,6 +3248,7 @@ class BugTasksAndNominationsView(LaunchpadView):
         """Cache the list of bugtasks and set up the release mapping."""
         # Cache some values, so that we don't have to recalculate them
         # for each bug task.
+        # This query is redundant: the publisher also queries all the bugtasks.
         self.bugtasks = list(self.context.bugtasks)
         self.many_bugtasks = len(self.bugtasks) >= 10
         self.cached_milestone_source = CachedMilestoneSourceFactory()
@@ -3336,9 +3338,9 @@ class BugTasksAndNominationsView(LaunchpadView):
             bugtask for bugtask in bugtasks
             if bugtask.distribution or bugtask.distroseries]
 
+        # sort and group
         upstream_tasks.sort(key=_by_targetname)
         distro_tasks.sort(key=_by_targetname)
-
         all_bugtasks = upstream_tasks + distro_tasks
 
         # Cache whether the bug was converted to a question, since
@@ -3402,7 +3404,7 @@ class BugTasksAndNominationsView(LaunchpadView):
         # Hide the links when the bug is viewed in a CVE context
         return self.request.getNearest(ICveSet) == (None, None)
 
-    @property
+    @cachedproperty
     def current_user_affected_status(self):
         """Is the current user marked as affected by this bug?"""
         return self.context.isUserAffected(self.user)
@@ -3623,10 +3625,11 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin):
 
         return items
 
-    @property
+    @cachedproperty
     def target_has_milestones(self):
         """Are there any milestones we can target?"""
-        return list(MilestoneVocabulary(self.context)) != []
+        return MilestoneVocabulary.getMilestoneTarget(
+            self.context).has_milestones
 
     def bugtask_canonical_url(self):
         """Return the canonical url for the bugtask."""

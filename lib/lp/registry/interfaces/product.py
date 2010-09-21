@@ -660,6 +660,7 @@ class IProductPublic(
                 'The series that represents the master or trunk branch. '
                 'The Bazaar URL lp:<project> points to the development focus '
                 'series branch.')))
+    development_focusID = Attribute("The development focus ID.")
 
     name_with_project = Attribute(_("Returns the product name prefixed "
         "by the project name, if a project is associated with this "

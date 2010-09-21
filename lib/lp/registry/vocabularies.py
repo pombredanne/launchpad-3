@@ -1161,7 +1161,7 @@ class MilestoneVocabulary(SQLObjectVocabularyBase):
         elif IDistroSeriesBugTask.providedBy(milestone_context):
             target = milestone_context.distroseries
         elif IProductSeriesBugTask.providedBy(milestone_context):
-            target = milestone_context.productseries
+            target = milestone_context.productseries.product
         elif IDistributionSourcePackage.providedBy(milestone_context):
             target = milestone_context.distribution
         elif ISourcePackage.providedBy(milestone_context):
@@ -1195,23 +1195,7 @@ class MilestoneVocabulary(SQLObjectVocabularyBase):
         # This fixes an urgent bug though, so I think this problem
         # should be revisited after we've unblocked users.
         if target is not None:
-            if IProjectGroup.providedBy(target):
-                milestones = shortlist(
-                    (milestone for product in target.products
-                     for milestone in product.milestones),
-                    longest_expected=40)
-            elif IProductSeries.providedBy(target):
-                # While some milestones may be associated with a
-                # productseries, we want to show all milestones for
-                # the product. Since the database constraint
-                # "valid_target" ensures that a milestone associated
-                # with a series is also associated with the product
-                # itself, we don't need to look up series-related
-                # milestones.
-                milestones = shortlist(target.product.milestones,
-                                       longest_expected=40)
-            else:
-                milestones = shortlist(
+            milestones = shortlist(
                     target.milestones, longest_expected=40)
         else:
             # We can't use context to reasonably filter the

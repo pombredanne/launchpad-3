@@ -399,6 +399,7 @@ class NullBugTask(BugTaskMixin):
                  sourcepackagename=None, distribution=None,
                  distroseries=None):
         """Initialize a NullBugTask."""
+        self.id = None
         self.bug = bug
         self.product = product
         self.productseries = productseries
@@ -756,11 +757,11 @@ class BugTask(SQLBase, BugTaskMixin):
                     conjoined_master = bugtask
                     break
         elif IUpstreamBugTask.providedBy(self):
-            assert self.product.development_focus is not None, (
+            assert self.product.development_focusID is not None, (
                 'A product should always have a development series.')
-            devel_focus = self.product.development_focus
+            devel_focusID = self.product.development_focusID
             for bugtask in bugtasks:
-                if bugtask.productseries == devel_focus:
+                if bugtask.productseriesID == devel_focusID:
                     conjoined_master = bugtask
                     break
 
@@ -2349,6 +2350,7 @@ class BugTaskSet:
             distroseries=distroseries,
             sourcepackagename=sourcepackagename,
             **non_target_create_params)
+        del IPropertyCache(bug).bugtasks
 
         if distribution:
             # Create tasks for accepted nominations if this is a source
@@ -2367,7 +2369,6 @@ class BugTaskSet:
             bugtask._syncFromConjoinedSlave()
 
         bugtask.updateTargetNameCache()
-
         return bugtask
 
     def getStatusCountsForProductSeries(self, user, product_series):

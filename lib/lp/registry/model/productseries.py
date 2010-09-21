@@ -373,6 +373,9 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
         """Customize `search_params` for this product series."""
         search_params.setProductSeries(self)
 
+    def _getOfficialTagClause(self):
+        return self.product._getOfficialTagClause()
+
     @property
     def official_bug_tags(self):
         """See `IHasBugs`."""

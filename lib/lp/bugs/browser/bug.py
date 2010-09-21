@@ -299,7 +299,7 @@ class BugContextMenu(ContextMenu):
 
     def unlinkcve(self):
         """Return 'Remove CVE link' Link."""
-        enabled = bool(self.context.bug.cves)
+        enabled = self.context.bug.has_cves
         text = 'Remove CVE link'
         return Link('+unlinkcve', text, icon='remove', enabled=enabled)
 
@@ -307,31 +307,30 @@ class BugContextMenu(ContextMenu):
         """Return the 'Offer mentorship' Link."""
         text = 'Offer mentorship'
         user = getUtility(ILaunchBag).user
-        enabled = self.context.bug.canMentor(user)
+        enabled = False
         return Link('+mentor', text, icon='add', enabled=enabled)
 
     def retractmentoring(self):
         """Return the 'Retract mentorship' Link."""
         text = 'Retract mentorship'
         user = getUtility(ILaunchBag).user
-        # We should really only allow people to retract mentoring if the
-        # bug's open and the user's already a mentor.
-        if user and not self.context.bug.is_complete:
-            enabled = self.context.bug.isMentor(user)
-        else:
-            enabled = False
+        enabled = False
         return Link('+retractmentoring', text, icon='remove', enabled=enabled)
+
+    @property
+    def _bug_question(self):
+        return self.context.bug.getQuestionCreatedFromBug()
 
     def createquestion(self):
         """Create a question from this bug."""
         text = 'Convert to a question'
-        enabled = self.context.bug.getQuestionCreatedFromBug() is None
+        enabled = self._bug_question is None
         return Link('+create-question', text, enabled=enabled, icon='add')
 
     def removequestion(self):
         """Remove the created question from this bug."""
         text = 'Convert back to a bug'
-        enabled = self.context.bug.getQuestionCreatedFromBug() is not None
+        enabled = self._bug_question is not None
         return Link('+remove-question', text, enabled=enabled, icon='remove')
 
     def activitylog(self):
@@ -510,29 +509,36 @@ class BugViewMixin:
         else:
             return 'subscribed-false %s' % dup_class
 
-    @property
-    def regular_attachments(self):
-        """The list of bug attachments that are not patches."""
-        return [
-            {
+    @cachedproperty
+    def _bug_attachments(self):
+        """get a dict of attachment type -> attachments list."""
+        # Note that this is duplicated with get_comments_for_bugtask
+        # if you are looking to consolidate things.
+        result = {BugAttachmentType.PATCH:[],
+                  'other':[]
+        }
+        for attachment in self.context.attachments_unpopulated:
+            info = {
                 'attachment': attachment,
                 'file': ProxiedLibraryFileAlias(
                     attachment.libraryfile, attachment),
                 }
-            for attachment in self.context.attachments_unpopulated
-            if attachment.type != BugAttachmentType.PATCH]
+            if attachment.type == BugAttachmentType.PATCH:
+                key = attachment.type
+            else:
+                key = 'other'
+            result[key].append(info)
+        return result
+
+    @property
+    def regular_attachments(self):
+        """The list of bug attachments that are not patches."""
+        return self._bug_attachments['other']
 
     @property
     def patches(self):
         """The list of bug attachments that are patches."""
-        return [
-            {
-                'attachment': attachment,
-                'file': ProxiedLibraryFileAlias(
-                    attachment.libraryfile, attachment),
-                }
-            for attachment in self.context.attachments_unpopulated
-            if attachment.type == BugAttachmentType.PATCH]
+        return self._bug_attachments[BugAttachmentType.PATCH]
 
 
 class BugView(LaunchpadView, BugViewMixin):

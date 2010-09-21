@@ -454,6 +454,7 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
         title=_('Project'), required=False, vocabulary='Product')
     productseries = Choice(
         title=_('Series'), required=False, vocabulary='ProductSeries')
+    productseriesID = Attribute('The product series ID')
     sourcepackagename = Choice(
         title=_("Package"), required=False,
         vocabulary='SourcePackageName')
