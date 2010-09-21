@@ -74,7 +74,7 @@ from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.distroseriesdifference import (
     IDistroSeriesDifferenceSource)
 from lp.registry.interfaces.series import SeriesStatus
-from lp.services.features.flags import FeatureController
+from lp.services.features import getFeatureFlag
 from lp.services.propertycache import cachedproperty
 from lp.services.worlddata.interfaces.country import ICountry
 from lp.services.worlddata.interfaces.language import ILanguageSet
@@ -543,11 +543,7 @@ class DistroSeriesLocalDifferences(LaunchpadView):
 
     def initialize(self):
         """Redirect to the derived series if the feature is not enabled."""
-        def in_scope(value):
-            return True
-
-        feature_controller = FeatureController(in_scope)
-        if feature_controller.getFlag('soyuz.derived-series-ui.enabled') != 'on':
+        if not getFeatureFlag('soyuz.derived-series-ui.enabled'):
             self.request.response.redirect(canonical_url(self.context))
             return
         super(DistroSeriesLocalDifferences, self).initialize()

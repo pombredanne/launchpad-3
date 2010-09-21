@@ -20,7 +20,14 @@ from lp.registry.enum import (
     DistroSeriesDifferenceType,
     )
 from lp.services.features.flags import FeatureController
-from lp.services.features.model import FeatureFlag, getFeatureStore
+from lp.services.features.model import (
+    FeatureFlag,
+    getFeatureStore,
+    )
+from lp.services.features import (
+    getFeatureFlag,
+    per_thread,
+    )
 from lp.testing import TestCaseWithFactory
 from lp.testing.views import create_initialized_view
 
@@ -66,19 +73,30 @@ class DistroSeriesLocalPackageDiffsTestCase(TestCaseWithFactory):
             name=derived_name, parent_series=parent)
         return derived_series
 
+    def makeControllerInScopes(self, scopes):
+        """Make a controller that will report it's in the given scopes."""
+        call_log = []
+        def scope_cb(scope):
+            call_log.append(scope)
+            return scope in scopes
+        return FeatureController(scope_cb), call_log
+
     def setDerivedSeriesUIFeatureFlag(self):
         # Helper to set the feature flag enabling the derived series ui.
         ignore = getFeatureStore().add(FeatureFlag(
             scope=u'default', flag=u'soyuz.derived-series-ui.enabled',
             value=u'on', priority=1))
 
-    def getDerivedSeriesUIFeatureFlag(self, flag):
-        """Helper to return the given flag leaving tests more readable."""
+        # XXX Michael Nelson 2010-09-21 bug=631884
+        # Currently LaunchpadTestRequest doesn't set per-thread
+        # features.
         def in_scope(value):
             return True
+        per_thread.features = FeatureController(in_scope)
 
-        feature_controller = FeatureController(in_scope)
-        return feature_controller.getFlag(flag)
+        def reset_per_thread_features():
+            per_thread.features = None
+        self.addCleanup(reset_per_thread_features)
 
     def test_view_redirects_without_feature_flag(self):
         # If the feature flag soyuz.derived-series-ui.enabled is not set the
@@ -87,8 +105,7 @@ class DistroSeriesLocalPackageDiffsTestCase(TestCaseWithFactory):
             parent_name='lucid', derived_name='derilucid')
 
         self.assertIs(
-            None, self.getDerivedSeriesUIFeatureFlag(
-                'soyuz.derived-series-ui.enabled'))
+            None, getFeatureFlag('soyuz.derived-series-ui.enabled'))
         view = create_initialized_view(
             derived_series, '+localpackagediffs')
 
