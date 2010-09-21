@@ -130,6 +130,7 @@ class TestDistroBrancher(TestCaseWithFactory):
         """Make an official package branch with an underlying bzr branch."""
         db_branch = self.factory.makePackageBranch(distroseries=distroseries)
         db_branch.sourcepackage.setBranch(RELEASE, db_branch, db_branch.owner)
+        self.factory.makeRevisionsForBranch(db_branch, count=1)
 
         transaction.commit()
 
