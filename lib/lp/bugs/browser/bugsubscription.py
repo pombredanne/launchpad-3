@@ -10,8 +10,9 @@ __all__ = [
     'BugSubscriptionAddView',
     ]
 
-from lazr.delegates import delegates
 from operator import attrgetter
+
+from lazr.delegates import delegates
 from simplejson import dumps
 
 from canonical.launchpad.webapp import (
