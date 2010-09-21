@@ -11,6 +11,7 @@
     xmlns:webservice="http://namespaces.canonical.com/webservice"
     i18n_domain="launchpad">
   <include package=".browser"/>
+  <include package=".vocabularies"/>
   <authorizations module="lp.code.security" />
 
   <publisher

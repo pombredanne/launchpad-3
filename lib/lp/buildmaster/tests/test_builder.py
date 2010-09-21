@@ -553,6 +553,14 @@ class TestSlave(TestCase):
         result = self.triggerGoodBuild(slave, build_id)
         self.assertEqual([BuilderStatus.BUILDING, build_id], result)
 
+    def test_clean(self):
+        slave = self.getClientSlave()
+        # clean() only works when in aborted / waiting state.
+        self.triggerGoodBuild(slave)
+        slave.abort()
+        result = slave.clean()
+        self.assertEqual(BuilderStatus.IDLE, result)
+
     def test_echo(self):
         # Calling 'echo' contacts the server which returns the arguments we
         # gave it.
