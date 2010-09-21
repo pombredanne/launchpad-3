@@ -1182,8 +1182,8 @@ class ProductBranchListingView(BranchListingView):
         return message % self.context.displayname
 
 
-class ProductBranchStatisticsView(ProductBranchListingView,
-                                  BranchCountSummaryView):
+class ProductBranchStatisticsView(BranchCountSummaryView,
+                                  ProductBranchListingView):
     """Portlet containing branch statistics."""
 
 

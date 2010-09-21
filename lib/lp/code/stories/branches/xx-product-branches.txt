@@ -34,9 +34,10 @@ overview page.
 If there are not any branches, a helpful message is shown.
 
     >>> def get_summary(browser):
-    ...     return find_tag_by_id(browser.contents, 'application-summary')
+    ...     return find_tag_by_id(browser.contents, 'branch-summary')
     >>> summary = get_summary(browser)
     >>> print extract_text(summary)
+    Launchpad does not know where The Gnome Panel Applets hosts its code...
     There are no branches for Gnome Applets in Launchpad.
     If there are Bazaar branches of Gnome Applets in a publicly
       accessible location, Launchpad can act as a mirror of the branch
@@ -50,6 +51,7 @@ The 'Read more' links go to the help wiki.
 
     >>> for anchor in summary.fetch('a'):
     ...     print anchor['href']
+    https://help.launchpad.net/Code
     https://help.launchpad.net/Code/MirroredBranches
     https://help.launchpad.net/Code/UploadingABranch
     https://help.launchpad.net/VcsImports
@@ -63,6 +65,7 @@ in downloads that may have been added for the product.
 
     >>> browser.open('http://code.launchpad.dev/netapplet')
     >>> print extract_text(get_summary(browser))
+    Launchpad does not know where Network Applet hosts its code...
     There are no branches for NetApplet in Launchpad.
     ...
     There are download files available for NetApplet.
@@ -155,32 +158,54 @@ default listings.
     lp://dev/~mark/firefox/release-0.8     Development ...
 
 
-Floating buttons
-================
+Involvement portlet
+===================
 
-There are two buttons that show on the right hand side of the screen
-for project branch listings.  'Register a branch' and 'Import a branch'.
+There are several links in the side portlet:  'Register a branch',
+'Import a branch', 'Configure code hosting', and 'Define branch
+visibility'.  The links are only shown if the user has permission to
+perform the task.
 
     >>> from zope.component import getUtility
     >>> from lp.registry.interfaces.product import IProductSet
-    >>> login('admin@canonical.com')
+    >>> from lp.testing.sampledata import ADMIN_EMAIL
+    >>> login(ADMIN_EMAIL)
     >>> product = getUtility(IProductSet).getByName('firefox')
     >>> old_branch = product.development_focus.branch
     >>> product.development_focus.branch = None
     >>> logout()
     >>> def print_links(browser):
-    ...     links = find_tag_by_id(browser.contents, 'floating-links')
+    ...     links = find_tag_by_id(browser.contents, 'involvement')
     ...     for link in links.findAll('a'):
     ...         print extract_text(link)
-    >>> browser.open('http://code.launchpad.dev/firefox')
-    >>> print_links(browser)
+    >>> admin_browser.open('http://code.launchpad.dev/firefox')
+    >>> print_links(admin_browser)
+    Register a branch
+    Import a branch
+    Configure code hosting
+    Define branch visibility
+
+The owner of the project sees the links for the activities he can
+perform, everything except defining branch visibility.
+
+    >>> owner_browser = setupBrowser(auth='Basic test@canonical.com:test')
+    >>> owner_browser.open('http://code.launchpad.dev/firefox')
+    >>> print_links(owner_browser)
+    Register a branch
+    Import a branch
+    Configure code hosting
+
+And a regular user can only register and import branches.
+
+    >>> user_browser.open('http://code.launchpad.dev/firefox')
+    >>> print_links(user_browser)
     Register a branch
     Import a branch
 
 If the product specifies that it officially uses Launchpad code, then
 the 'Import a branch' button is still shown.
 
-    >>> login('admin@canonical.com')
+    >>> login(ADMIN_EMAIL)
     >>> product.development_focus.branch = old_branch
     >>> logout()
     >>> browser.open('http://code.launchpad.dev/firefox')
@@ -189,34 +214,45 @@ the 'Import a branch' button is still shown.
     Import a branch
 
 
-Nice wording of summary numbers
-===============================
+The statistics portlet
+======================
 
 The text that is shown giving a summary of the number of branches
 shows correct singular and plural forms.
 
-    >>> def print_summary(product):
+    >>> def get_stats_portlet(browser):
+    ...     return find_tag_by_id(
+    ...         browser.contents,
+    ...         'portlet-product-codestatistics')
+    >>> def print_portlet(product):
     ...     browser.open('http://code.launchpad.dev/%s' % product)
-    ...     print extract_text(get_summary(browser))
+    ...     print extract_text(get_stats_portlet(browser))
 
-    >>> print_summary('gnome-terminal')
-    8 active branches owned by 1 person and 2 teams, 0 commits in the last month
-    ...
+    >>> print_portlet('gnome-terminal')
+    0 active reviews or unmerged proposals
+    8 active branches owned by 1 person and 2 teams
+    0 commits in the last month
+
     >>> from lp.testing import ANONYMOUS, login, logout
     >>> login(ANONYMOUS)
     >>> fooix = factory.makeProduct('fooix')
     >>> ignored = factory.makeProductBranch(fooix)
     >>> ignored = factory.makeProductBranch(fooix)
     >>> logout()
-    >>> print_summary('fooix')
-    2 active branches owned by 2 people, 0 commits in the last month
-    ...
-    >>> print_summary('evolution')
-    3 active branches owned by 1 person and 1 team, 0 commits in the last month
-    ...
-    >>> print_summary('iso-codes')
-    1 active branch owned by 1 person, 0 commits in the last month
-    ...
+    >>> print_portlet('fooix')
+    0 active reviews or unmerged proposals
+    2 active branches owned by 2 people
+    0 commits in the last month
+
+    >>> print_portlet('evolution')
+    0 active reviews or unmerged proposals
+    3 active branches owned by 1 person and 1 team
+    0 commits in the last month
+
+    >>> print_portlet('iso-codes')
+    0 active reviews or unmerged proposals
+    1 active branch owned by 1 person
+    0 commits in the last month
 
 
 Product has Branches, but none initially visible
@@ -231,10 +267,10 @@ branch, then they will not appear on the initial branch listing.
     >>> admin_browser.getControl('Abandoned').click()
     >>> admin_browser.getControl('Change Branch').click()
 
-    >>> browser.open('http://code.launchpad.dev/iso-codes')
-    >>> print extract_text(get_summary(browser))
-    0 active branches, 0 commits in the last month
+    >>> print_portlet('iso-codes')
     0 active reviews or unmerged proposals
+    0 active branches
+    0 commits in the last month
 
     >>> message = find_tag_by_id(browser.contents, 'no-branch-message')
     >>> print extract_text(message)

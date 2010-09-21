@@ -6,7 +6,8 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  i18n:domain="launchpad">
+  i18n:domain="launchpad"
+  id="branch-summary">
 
   <div id="unknown" tal:condition="context/codehosting_usage/enumvalue:UNKNOWN">
     <p>
@@ -78,6 +79,7 @@
   </tal:no-branches>
 
   <tal:has-branches condition="view/branch_count">
+    <!--
     <p tal:replace="structure context/@@+count-summary"/>
     <p id="merge-counts"
        tal:define="menu context/menu:branches">
@@ -87,6 +89,7 @@
           replace="structure link/render"
           />
     </p>
+    -->
     <div tal:condition="view/has_development_focus_branch"
          style="margin: 1em 0"
          tal:define="config modules/canonical.config/config;

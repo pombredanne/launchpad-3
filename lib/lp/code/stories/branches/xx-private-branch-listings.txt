@@ -103,12 +103,13 @@ listing tab.
     ...     # So print the text shown in the application summary.
     ...     if table is None:
     ...         print extract_text(find_tag_by_id(
-    ...             browser.contents, 'application-summary'))
+    ...             browser.contents, 'branch-summary'))
     ...     else:
     ...         for row in table.tbody.fetch('tr'):
     ...             print extract_text(row)
 
     >>> print_landscape_code_listing(anon_browser)
+    Launchpad does not know where The Landscape Project hosts its code...
     There are no branches for The Landscape Project in Launchpad...
 
     >>> print_landscape_code_listing(no_priv_browser)
