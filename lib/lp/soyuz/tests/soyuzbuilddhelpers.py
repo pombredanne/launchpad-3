@@ -209,6 +209,9 @@ class LostBuildingBrokenSlave:
     When 'aborted' it raises an xmlrpclib.Fault(8002, 'Could not abort')
     """
 
+    def __init__(self):
+        self.call_log = []
+
     def status(self):
         self.call_log.append('status')
         return ('BuilderStatus.BUILDING', '1000-10000')
