@@ -1899,7 +1899,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if difference_type is not (
             DistroSeriesDifferenceType.MISSING_FROM_DERIVED_SERIES):
 
-            source_pub = self.makeSourcePackagePublishingHistory(
+            self.makeSourcePackagePublishingHistory(
                 distroseries=derived_series,
                 version=versions.get('derived'),
                 sourcepackagename=source_package_name,
@@ -1908,7 +1908,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if difference_type is not (
             DistroSeriesDifferenceType.UNIQUE_TO_DERIVED_SERIES):
 
-            source_pub = self.makeSourcePackagePublishingHistory(
+            self.makeSourcePackagePublishingHistory(
                 distroseries=derived_series.parent_series,
                 version=versions.get('parent'),
                 sourcepackagename=source_package_name,
@@ -1943,6 +1943,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             processorfamily = ProcessorFamilySet().getByName('powerpc')
         if owner is None:
             owner = self.makePerson()
+        # XXX: architecturetag & processerfamily are tightly coupled. It's
+        # wrong to just make a fresh architecture tag without also making a
+        # processor family to go with it (ideally with processors!)
         if architecturetag is None:
             architecturetag = self.getUniqueString('arch')
         return distroseries.newArch(
@@ -2624,7 +2627,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
     def makeBinaryPackageBuild(self, source_package_release=None,
             distroarchseries=None, archive=None, builder=None,
-            status=None):
+            status=None, pocket=None):
         """Create a BinaryPackageBuild.
 
         If archive is not supplied, the source_package_release is used
@@ -2655,20 +2658,18 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 processorfamily=processor.family)
         if status is None:
             status = BuildStatus.NEEDSBUILD
+        if pocket is None:
+            pocket = PackagePublishingPocket.RELEASE
         binary_package_build = getUtility(IBinaryPackageBuildSet).new(
             source_package_release=source_package_release,
             processor=processor,
             distro_arch_series=distroarchseries,
             status=status,
             archive=archive,
-            pocket=PackagePublishingPocket.RELEASE,
+            pocket=pocket,
             date_created=self.getUniqueDate())
         naked_build = removeSecurityProxy(binary_package_build)
         naked_build.builder = builder
-        binary_package_build_job = naked_build.makeJob()
-        BuildQueue(
-            job=binary_package_build_job.job,
-            job_type=BuildFarmJobType.PACKAGEBUILD)
         return binary_package_build
 
     def makeSourcePackagePublishingHistory(self, sourcepackagename=None,
