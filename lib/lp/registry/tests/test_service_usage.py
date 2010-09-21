@@ -143,6 +143,31 @@ class UsageEnumsMixin(object):
             self.target.official_blueprints)
 
 
+class SeriesUsageEnumsMixin(object):
+    """Mixin to test the usage attributes on product and distro series."""
+    def setUp(self):
+        self.series = None
+        self.series_pillar = None
+
+    def _addCurrentPOTemplate(self):
+        raise NotImplementedError("Child class must provide _addPOTTemplate.")
+
+    def test_translations_usage_pillar(self):
+        # The translations_usage enum should determine usage based on
+        # pillar usage enum and existence of current templates.
+        self.assertEqual(
+            ServiceUsage.UNKNOWN,
+            self.series_pillar.translations_usage)
+        self.assertEqual(
+            ServiceUsage.UNKNOWN,
+            self.series.translations_usage)
+
+        self._addCurrentPOTemplate()
+        self.assertEqual(
+            ServiceUsage.LAUNCHPAD,
+            self.series.translations_usage)
+
+
 class TestDistributionUsageEnums(TestCaseWithFactory, UsageEnumsMixin):
     """Tests the usage enums for the distribution."""
 
@@ -168,6 +193,57 @@ class TestProductUsageEnums(TestCaseWithFactory, UsageEnumsMixin):
     def setUp(self):
         super(TestProductUsageEnums, self).setUp()
         self.target = self.factory.makeProduct()
+
+
+class TestProductSeriesUsageEnums(
+    TestCaseWithFactory,
+    SeriesUsageEnumsMixin):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestProductSeriesUsageEnums, self).setUp()
+        self.series_pillar = self.factory.makeProduct()
+        self.series = self.factory.makeProductSeries(
+            product=self.series_pillar)
+        login_person(self.series_pillar.owner)
+
+    def _addCurrentPOTemplate(self):
+        self.factory.makePOTemplate(productseries=self.series)
+        # XXX j.c.sackett 2010-09-21 bug=605924: Right now for it to
+        # be current, the series pillar must be marked as using
+        # using translations.
+        self.series_pillar.translations_usage = ServiceUsage.LAUNCHPAD
+
+
+class TestDistroSeriesUsageEnums(
+    TestCaseWithFactory,
+    SeriesUsageEnumsMixin):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestDistroSeriesUsageEnums, self).setUp()
+        self.series_pillar = self.factory.makeDistribution()
+        self.series = self.factory.makeDistroSeries(
+            distribution=self.series_pillar)
+        login_person(self.series_pillar.owner)
+
+    def _addCurrentPOTemplate(self):
+        # Adding POTemplates are much more complicated for distribution
+        # than product; specifically, a sourcepackage needs to be setup.
+        sp_name = self.factory.makeSourcePackageName()
+        self.factory.makeSourcePackage(
+            sourcepackagename=sp_name,
+            distroseries=self.series)
+        self.factory.makePOTemplate(
+            distroseries=self.series,
+            sourcepackagename=sp_name)
+
+        # XXX j.c.sackett 2010-09-21 bug=605924: Right now for it to
+        # be current, the series pillar must be marked as using
+        # using translations.
+        self.series_pillar.translations_usage = ServiceUsage.LAUNCHPAD
 
 
 def test_suite():

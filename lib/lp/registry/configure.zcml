@@ -142,6 +142,9 @@
             interface="canonical.launchpad.interfaces.ICanPublishPackages"/>
         <require
             permission="launchpad.Edit"
+            set_schema="lp.app.interfaces.launchpad.IServiceUsage"/>
+        <require
+            permission="launchpad.Edit"
             interface="lp.registry.interfaces.distroseries.IDistroSeriesEditRestricted"/>
         <require
             permission="launchpad.TranslationsAdmin"
@@ -194,10 +197,8 @@
     <adapter
         provides="lp.app.interfaces.launchpad.ILaunchpadUsage"
         for="lp.registry.interfaces.distroseries.IDistroSeries"
-        factory="lp.registry.adapters.distroseries_to_launchpadusage"
+        factory="lp.registry.adapters.distroseries_to_distribution"
         permission="zope.Public"/>
-    <adapter
-        factory="lp.registry.adapters.distroseries_to_serviceusage" />
     <adapter
         provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
         for="lp.registry.interfaces.distroseries.IDistroSeries"
@@ -1374,6 +1375,9 @@
             interface="lp.translations.interfaces.translationimportqueue.IHasTranslationImports"/>
         <require
             permission="launchpad.Edit"
+            set_schema="lp.app.interfaces.launchpad.IServiceUsage"/>
+        <require
+            permission="launchpad.Edit"
             set_attributes="product name owner driver summary branch
                             translations_branch status releasefileglob
                             translations_autoimport_mode"/>
@@ -1403,11 +1407,6 @@
     </class>
     <adapter
         provides="canonical.launchpad.interfaces.IHasExternalBugTracker"
-        for="lp.registry.interfaces.productseries.IProductSeries"
-        factory="lp.registry.adapters.productseries_to_product"
-        permission="zope.Public"/>
-    <adapter
-        provides="lp.app.interfaces.launchpad.IServiceUsage"
         for="lp.registry.interfaces.productseries.IProductSeries"
         factory="lp.registry.adapters.productseries_to_product"
         permission="zope.Public"/>
