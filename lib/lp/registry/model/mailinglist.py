@@ -21,6 +21,7 @@ from email.Header import (
     make_header,
     )
 from itertools import repeat
+import operator
 from socket import getfqdn
 from string import Template
 
@@ -63,8 +64,10 @@ from canonical.database.sqlbase import (
     sqlvalues,
     )
 from canonical.launchpad import _
+from canonical.launchpad.components.decoratedresultset import DecoratedResultSet
 from canonical.launchpad.database.account import Account
 from canonical.launchpad.database.emailaddress import EmailAddress
+from canonical.launchpad.database.message import Message
 from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.interfaces.emailaddress import (
     EmailAddressStatus,
@@ -557,15 +560,20 @@ class MailingList(SQLBase):
         notify(ObjectCreatedEvent(held_message))
         return held_message
 
-    def getReviewableMessages(self):
+    def getReviewableMessages(self, message_id_filter=None):
         """See `IMailingList`."""
-        return MessageApproval.select("""
-            MessageApproval.mailing_list = %s AND
-            MessageApproval.status = %s AND
-            MessageApproval.message = Message.id
-            """ % sqlvalues(self, PostedMessageStatus.NEW),
-            clauseTables=['Message'],
-            orderBy=['posted_date', 'Message.rfc822msgid'])
+        store = Store.of(self)
+        clauses = [
+            MessageApproval.mailing_listID==self.id,
+            MessageApproval.status==PostedMessageStatus.NEW,
+            MessageApproval.messageID==Message.id,
+            ]
+        if message_id_filter is not None:
+            clauses.append(Message.rfc822msgid.is_in(message_id_filter))
+        results = store.find((MessageApproval, Message),
+            *clauses)
+        results.order_by(MessageApproval.posted_date, Message.rfc822msgid)
+        return DecoratedResultSet(results, operator.itemgetter(0))
 
     def purge(self):
         """See `IMailingList`."""

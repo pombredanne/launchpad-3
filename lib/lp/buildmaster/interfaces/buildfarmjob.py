@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -256,6 +256,15 @@ class IBuildFarmJob(IBuildFarmJobOld):
 
     was_built = Attribute("Whether or not modified by the builddfarm.")
 
+    # This doesn't belong here.  It really belongs in IPackageBuild, but
+    # the TAL assumes it can read this directly.
+    dependencies = exported(
+        TextLine(
+            title=_('Dependencies'), required=False,
+            description=_(
+                'Debian-like dependency line that must be satisfied before '
+                'attempting to build this request.')))
+
 
 class ISpecificBuildFarmJob(IBuildFarmJob):
     """A marker interface with which to define adapters for IBuildFarmJob.
@@ -291,4 +300,8 @@ class IBuildFarmJobSet(Interface):
         :param user: If given, this will be used to determine private builds
             that should be included.
         :return: a `ResultSet` representing the requested builds.
+        """
+
+    def getByID(job_id):
+        """Look up a `IBuildFarmJob` record by id.
         """

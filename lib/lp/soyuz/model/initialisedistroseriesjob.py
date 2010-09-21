@@ -7,12 +7,10 @@ __all__ = [
     "InitialiseDistroSeriesJob",
 ]
 
-from zope.component import getUtility
 from zope.interface import classProvides, implements
 
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
 
-from lp.services.job.model.job import Job
 from lp.soyuz.interfaces.distributionjob import (
     DistributionJobType,
     IInitialiseDistroSeriesJob,
@@ -48,4 +46,3 @@ class InitialiseDistroSeriesJob(DistributionJobDerived):
         ids = InitialiseDistroSeries(self.distroseries)
         ids.check()
         ids.initialise()
-

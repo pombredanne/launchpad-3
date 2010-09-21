@@ -842,6 +842,11 @@ COMMENT ON COLUMN TranslationRelicensingAgreement.person IS 'A translator which 
 COMMENT ON COLUMN TranslationRelicensingAgreement.allow_relicensing IS 'Does this person want their translations relicensed under BSD.';
 COMMENT ON COLUMN TranslationRelicensingAgreement.date_decided IS 'Date when the last change of opinion was registered.';
 
+-- TranslationTemplatesBuild
+COMMENT ON TABLE TranslationTemplatesBuild IS 'Build-farm record of a translation templates build.';
+COMMENT ON COLUMN TranslationTemplatesBuild.build_farm_job IS 'Associated BuildFarmJob.';
+COMMENT ON COLUMN TranslationTemplatesBuild.branch IS 'Branch to build templates out of.';
+
 -- RevisionAuthor
 COMMENT ON TABLE RevisionAuthor IS 'All distinct authors for revisions.';
 COMMENT ON COLUMN RevisionAuthor.name IS 'The exact text extracted from the branch revision.';
@@ -1292,11 +1297,14 @@ COMMENT ON TABLE DistributionBounty IS 'This table records a simple link between
 
 COMMENT ON TABLE ProjectBounty IS 'This table records a simple link between a bounty and a project. This bounty will be listed on the project web page, and the project will be mentioned on the bounty web page.';
 
--- Messaging subsytem
+-- BugMessages
 COMMENT ON TABLE BugMessage IS 'This table maps a message to a bug. In other words, it shows that a particular message is associated with a particular bug.';
 COMMENT ON COLUMN BugMessage.bugwatch IS 'The external bug this bug comment was imported from.';
 COMMENT ON COLUMN BugMessage.remote_comment_id IS 'The id this bug comment has in the external bug tracker, if it is an imported comment. If it is NULL while having a bugwatch set, this comment was added in Launchpad and needs to be pushed to the external bug tracker.';
 COMMENT ON COLUMN BugMessage.visible IS 'If false, the bug comment is hidden and should not be shown in any UI.';
+COMMENT ON COLUMN BugMessage.index IS 'The index (used in urls) of the message in a particular bug.';
+
+-- Messaging subsytem
 COMMENT ON TABLE Message IS 'This table stores a single RFC822-style message. Messages can be threaded (using the parent field). These messages can then be referenced from elsewhere in the system, such as the BugMessage table, integrating messageboard facilities with the rest of The Launchpad.';
 COMMENT ON COLUMN Message.parent IS 'A "parent message". This allows for some level of threading in Messages.';
 COMMENT ON COLUMN Message.subject IS 'The title text of the message, or the subject if it was an email.';
