@@ -262,6 +262,12 @@ class DistroSeriesView(LaunchpadView, TranslationsMixin):
         """Is this DistroSeries the translation focus."""
         return self.context.distribution.translation_focus == self.context
 
+    @cachedproperty
+    def show_page_content(self):
+        """Whether the main content of the page should be shown."""
+        return (service_uses_launchpad(self.context.translations_usage) or
+                check_permission("launchpad.TranslationsAdmin", self.context))
+
 
 class DistroSeriesTranslationsMenu(NavigationMenu):
 

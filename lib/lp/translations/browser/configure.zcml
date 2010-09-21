@@ -952,6 +952,9 @@
         <browser:page
             name="+langchart"
             template="../templates/distroseries-langchart.pt"/>
+        <browser:page
+            name="+portlet-not-using-launchpad"
+            template="../templates/series-portlet-not-using-launchpad.pt"/>
     </browser:pages>
     <browser:page
         for="lp.registry.interfaces.distroseries.IDistroSeries"
