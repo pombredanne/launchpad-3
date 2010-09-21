@@ -231,6 +231,7 @@ class TestBranchChanged(TestCaseWithFactory):
         branch = self.factory.makeAnyBranch()
         login_person(branch.owner)
         removeSecurityProxy(branch).last_mirrored_id = 'rev1'
+        removeSecurityProxy(branch).last_scanned_id = 'rev1'
         jobs = list(getUtility(IBranchScanJobSource).iterReady())
         self.assertEqual(0, len(jobs))
         branch.branchChanged('', 'rev1', *self.arbitrary_formats)
