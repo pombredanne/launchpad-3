@@ -8,7 +8,8 @@ __all__ = [
     'BugTracker',
     'BugTrackerAlias',
     'BugTrackerAliasSet',
-    'BugTrackerSet']
+    'BugTrackerSet',
+    ]
 
 
 from datetime import datetime
@@ -66,6 +67,8 @@ from lp.bugs.interfaces.bugtracker import (
     IBugTrackerSet,
     SINGLE_PRODUCT_BUGTRACKERTYPES,
     )
+from canonical.launchpad.webapp.interfaces import (
+        DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE)
 from lp.bugs.interfaces.bugtrackerperson import BugTrackerPersonAlreadyExists
 from lp.bugs.model.bug import Bug
 from lp.bugs.model.bugmessage import BugMessage
@@ -576,6 +579,17 @@ class BugTrackerSet:
     def search(self):
         """See `IBugTrackerSet`."""
         return BugTracker.select()
+
+    def trackers(self, active=None):
+        # Without context, cannot tell what store flavour is desirable.
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        if active is not None:
+            clauses = [BugTracker.active==active]
+        else:
+            clauses = []
+        results = store.find(BugTracker, *clauses)
+        results.order_by(BugTracker.name)
+        return results
 
     def ensureBugTracker(self, baseurl, owner, bugtrackertype,
         title=None, summary=None, contactdetails=None, name=None):

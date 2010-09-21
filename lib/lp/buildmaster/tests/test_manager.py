@@ -6,7 +6,6 @@
 import os
 import signal
 import time
-import unittest
 
 import transaction
 

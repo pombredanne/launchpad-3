@@ -829,8 +829,6 @@ class TeamMailingListModerationView(MailingListTeamBaseView):
         """
         results = self.mailing_list.getReviewableMessages()
         navigator = BatchNavigator(results, self.request)
-        # Subclasses often set the singular and plural headings,
-        # but we can use the generic class too.
         navigator.setHeadings('message', 'messages')
         return navigator
 

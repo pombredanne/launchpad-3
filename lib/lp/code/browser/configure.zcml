@@ -1306,19 +1306,5 @@
             factory="canonical.launchpad.webapp.breadcrumb.NameBreadcrumb"
             permission="zope.Public"/>
     </facet>
-  <securedutility
-    name="BuildableDistroSeries"
-    component="lp.code.vocabularies.sourcepackagerecipe.buildable_distroseries_vocabulary"
-    provides="zope.schema.interfaces.IVocabularyFactory"
-    >
-    <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
-  </securedutility>
-  <securedutility
-    name="TargetPPAs"
-    component="lp.code.vocabularies.sourcepackagerecipe.target_ppas_vocabulary"
-    provides="zope.schema.interfaces.IVocabularyFactory"
-    >
-    <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
-  </securedutility>
 
 </configure>
