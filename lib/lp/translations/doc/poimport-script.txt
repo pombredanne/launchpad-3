@@ -1,4 +1,5 @@
-== Import Script ==
+Import Script
+=============
 
 The imports are performed by a dedicated cron script.
 
@@ -42,7 +43,7 @@ A template and two pofile will be imported.
     ... msgstr "%s"
     ... """
 
-    >>> potemplate_content = potemplate_header + po_content % (('',) * 5) 
+    >>> potemplate_content = potemplate_header + po_content % (('',) * 5)
     >>> pofile_eo_content = pofile_header + po_content % (
     ...     "baz eo", "Foo eo %s", "Singular eo %s", "Plural eo %s",
     ...     "helpful-eo@example.com")
@@ -70,11 +71,11 @@ already been approved.
     ...     distroseries=distroseries, sourcepackagename=sourcepackagename)
     >>> pofile_eo = potemplate.newPOFile('eo')
     >>> pofile_nl = potemplate.newPOFile('nl')
-    
+
     >>> from canonical.launchpad.interfaces.launchpad import (
     ...     ILaunchpadCelebrities)
     >>> rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_experts
-    
+
     >>> template_entry = queue.addOrUpdateEntry(
     ...     potemplate.path, potemplate_content, True, potemplate.owner,
     ...     distroseries=distroseries, sourcepackagename=sourcepackagename,
