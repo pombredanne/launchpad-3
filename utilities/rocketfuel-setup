@@ -217,7 +217,7 @@ do_install() {
   dpkg -s $pkg | grep -q "^Status: install ok installed"
   if [ $? -ne 0 ]; then
     echo "Installing $pkg package..."
-    sudo aptitude install $pkg
+    sudo apt-get install $pkg
     if [ $? -ne 0 ]; then
       echo "Unable to install $pkg."
       exit 1
@@ -225,7 +225,7 @@ do_install() {
   fi
   }
 
-sudo aptitude update
+sudo apt-get update
 REQUIRED_PACKAGES="launchpad-developer-dependencies apache2 apache2-mpm-worker"
 for pkg in $REQUIRED_PACKAGES; do
   do_install;

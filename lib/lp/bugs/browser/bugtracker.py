@@ -54,7 +54,11 @@ from canonical.launchpad.webapp import (
     structured,
     )
 from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.batching import (
+    ActiveBatchNavigator,
+    BatchNavigator,
+    InactiveBatchNavigator,
+    )
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.menu import NavigationMenu
 from canonical.lazr.utils import smartquote
@@ -154,21 +158,30 @@ class BugTrackerSetView(LaunchpadView):
     pillar_limit = 3
 
     def initialize(self):
-        # Sort the bug trackers into active and inactive lists so that
-        # we can display them separately.
-        all_bug_trackers = list(self.context)
-        self.active_bug_trackers = [
-            bug_tracker for bug_tracker in all_bug_trackers
-            if bug_tracker.active]
-        self.inactive_bug_trackers = [
-            bug_tracker for bug_tracker in all_bug_trackers
-            if not bug_tracker.active]
+        # eager load related pillars. In future we should do this for
+        # just the rendered trackers, and also use group by to get
+        # bug watch counts per tracker. However the batching makes
+        # the inefficiency tolerable for now. Robert Collins 20100919.
+        self._pillar_cache = self.context.getPillarsForBugtrackers(
+            list(self.context.trackers()))
 
-        bugtrackerset = getUtility(IBugTrackerSet)
-        # The caching of bugtracker pillars here avoids us hitting the
-        # database multiple times for each bugtracker.
-        self._pillar_cache = bugtrackerset.getPillarsForBugtrackers(
-            all_bug_trackers)
+    @property
+    def inactive_tracker_count(self):
+        return self.inactive_trackers.currentBatch().listlength
+
+    @cachedproperty
+    def active_trackers(self):
+        results = self.context.trackers(active=True)
+        navigator = ActiveBatchNavigator(results, self.request)
+        navigator.setHeadings('tracker', 'trackers')
+        return navigator
+
+    @cachedproperty
+    def inactive_trackers(self):
+        results = self.context.trackers(active=False)
+        navigator = InactiveBatchNavigator(results, self.request)
+        navigator.setHeadings('tracker', 'trackers')
+        return navigator
 
     def getPillarData(self, bugtracker):
         """Return dict of pillars and booleans indicating ellipsis.

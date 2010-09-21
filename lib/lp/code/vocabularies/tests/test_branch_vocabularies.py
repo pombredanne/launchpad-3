@@ -17,7 +17,7 @@ from canonical.launchpad.ftests import (
     login,
     logout,
     )
-from canonical.launchpad.vocabularies.dbobjects import (
+from lp.code.vocabularies.branch import (
     BranchRestrictedOnProductVocabulary,
     BranchVocabulary,
     )
