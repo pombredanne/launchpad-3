@@ -52,7 +52,8 @@
                     <tal:replace
                     replace="parent_source_pub/sourcepackagerelease/version"/></a>
               </td>
-              <td><a tal:attributes="href source_pub/sourcepackagerelease/fmt:url">
+              <td><a tal:attributes="href source_pub/sourcepackagerelease/fmt:url"
+                     class="derived-version">
                     <tal:replace
                     replace="source_pub/sourcepackagerelease/version"/></a>
               </td>
