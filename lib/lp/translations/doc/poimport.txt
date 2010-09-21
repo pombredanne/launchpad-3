@@ -617,22 +617,21 @@ Apart from the basic plural form handling, which is documented above as
 part of the import process, there are some peculiarities with importing
 plural forms we want documented as well.
 
-For a language such as Divehi, which has no plural forms defined, we
+For a language that has no plural forms defined, we
 default to two plural forms (the most common value for the number of
 plural forms).
 
-    >>> divehi = getUtility(ILanguageSet)['dv']
-    >>> print divehi.pluralforms
+    >>> language = factory.makeLanguage()
+    >>> print language.pluralforms
     None
 
-    >>> firefox = getUtility(IProductSet).getByName('firefox')
-    >>> firefox_trunk = firefox.getSeries('trunk')
-    >>> firefox_potemplate = firefox_trunk.getPOTemplate('firefox')
-    >>> firefox_dv = firefox_potemplate.newPOFile(divehi.code)
-    >>> firefox_dv.plural_forms
+    >>> potemplate = factory.makePOTemplate(
+    ...     distroseries=distroseries, sourcepackagename=sourcepackagename)
+    >>> pofile = potemplate.newPOFile(language.code)
+    >>> pofile.plural_forms
     2
 
-We'll import a POFile with 3 plural forms into Divehi POFile:
+We'll import a POFile with 3 plural forms into this POFile:
 
     >>> pofile_with_plurals = r'''
     ... msgid ""
@@ -651,16 +650,18 @@ We'll import a POFile with 3 plural forms into Divehi POFile:
     ... msgstr[2] "Third form %%d"
     ... ''' % datetime.datetime.now(UTC).isoformat()
 
-We now import this POFile as Divehi translation of Firefox trunk:
+We now import this POFile as this language's translation for the soure
+package:
 
     >>> entry = translation_import_queue.addOrUpdateEntry(
-    ...     firefox_dv.path, pofile_with_plurals, True, person,
-    ...     productseries=firefox_trunk, potemplate=firefox_potemplate)
+    ...     pofile.path, pofile_with_plurals, True, person,
+    ...     distroseries=distroseries, sourcepackagename=sourcepackagename,
+    ...     potemplate=potemplate)
     >>> # Allow Librarian to see the change.
     >>> transaction.commit()
-    >>> entry.pofile = firefox_dv
+    >>> entry.pofile = pofile
     >>> entry.setStatus(RosettaImportStatus.APPROVED, rosetta_experts)
-    >>> (subject, body) = firefox_dv.importFromQueue(entry, FakeLogger())
+    >>> (subject, body) = pofile.importFromQueue(entry, FakeLogger())
     >>> flush_database_updates()
     >>> print entry.status.name
     IMPORTED
@@ -669,18 +670,18 @@ If we get a current translation for this PO file, it will list only two
 translations (which is a default when the language has no plural forms
 specified):
 
-    >>> potmsgset_plural = firefox_potemplate.getPOTMsgSetByMsgIDText(
+    >>> potmsgset_plural = potemplate.getPOTMsgSetByMsgIDText(
     ...     u'Singular %d', u'Plural %d')
-    >>> current_dv = potmsgset_plural.getCurrentTranslationMessage(
-    ...     firefox_potemplate, divehi)
-    >>> current_dv.translations
+    >>> current = potmsgset_plural.getCurrentTranslationMessage(
+    ...     potemplate, language)
+    >>> current.translations
     [u'First form %d', u'Second form %d']
 
 However, even the third form will be imported into database (this is
 useful for when we finally define the number of plural forms for the
 language, we should not have to reimport all translations):
 
-    >>> current_dv.msgstr2.translation
+    >>> current.msgstr2.translation
     u'Third form %d'
 
 == Upstream import notifications ==
@@ -700,12 +701,12 @@ approve and import it.
     ... msgid "foo"
     ... msgstr "blah"
     ... '''
-    >>> pofile = factory.makePOFile('sr')
+    >>> pofile = factory.makePOFile('sr', potemplate=potemplate)
     >>> from_upstream = True
     >>> entry = translation_import_queue.addOrUpdateEntry(
     ...     pofile.path, pofile_contents, from_upstream, person,
-    ...     productseries=pofile.potemplate.productseries,
-    ...     potemplate=pofile.potemplate, pofile=pofile)
+    ...     distroseries=distroseries, sourcepackagename=sourcepackagename,
+    ...     potemplate=potemplate, pofile=pofile)
     >>> transaction.commit()
     >>> entry.setStatus(RosettaImportStatus.APPROVED, rosetta_experts)
     >>> (subject, message) = pofile.importFromQueue(entry)
@@ -723,8 +724,8 @@ For syntax errors, failure notification is still sent out.
     >>> pofile_contents = pofile_contents[:-2]
     >>> entry = translation_import_queue.addOrUpdateEntry(
     ...     pofile.path, pofile_contents, from_upstream, person,
-    ...     productseries=pofile.potemplate.productseries,
-    ...     potemplate=pofile.potemplate, pofile=pofile)
+    ...     distroseries=distroseries, sourcepackagename=sourcepackagename,
+    ...     potemplate=potemplate, pofile=pofile)
     >>> transaction.commit()
     >>> entry.setStatus(RosettaImportStatus.APPROVED, rosetta_experts)
     >>> (subject, message) = pofile.importFromQueue(entry)
