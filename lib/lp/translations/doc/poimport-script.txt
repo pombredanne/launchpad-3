@@ -49,7 +49,6 @@ A template and two pofile will be imported.
     >>> pofile_nl_content = pofile_header + po_content % (
     ...     "baz nl", "Foo nl %s", "Singular nl %s", "Plural nl %s",
     ...     "helpful-nl@example.com")
-    >>> print pofile_eo_content
 
 There is annoying sample data in the queue that needs to be removed.
 
@@ -59,11 +58,13 @@ There is annoying sample data in the queue that needs to be removed.
     >>> for entry in queue:
     ...     queue.remove(entry)
 
-
 The files have been uploaded to the queue for a source package and have
 already been approved.
 
+    >>> from zope.security.proxy import removeSecurityProxy
     >>> distroseries = factory.makeUbuntuDistroSeries()
+    >>> naked_distroseries = removeSecurityProxy(distroseries)
+    >>> naked_distroseries.distribution.official_rosetta = True
     >>> sourcepackagename = factory.makeSourcePackageName()
     >>> potemplate = factory.makePOTemplate(
     ...     distroseries=distroseries, sourcepackagename=sourcepackagename)
@@ -86,39 +87,35 @@ already been approved.
     ...     'nl.po', pofile_nl_content, True, potemplate.owner,
     ...     distroseries=distroseries, sourcepackagename=sourcepackagename,
     ...     potemplate=potemplate, pofile=pofile_nl)
+    >>> transaction.commit()
 
-    >>> print "the distroseries %r" % distroseries
-    >>> print "the sourcepackagename %r" % sourcepackagename
-    >>> for entry in queue:
-    ...     print "potemplate:        %r" % entry.potemplate
-    ...     print "pofile:            %r" % entry.pofile
-    ...     print "path:              '%s'" % entry.path
-    ...     print "productseries:     %r" % entry.productseries
-    ...     print "distroseries:      %r" % entry.distroseries
-    ...     print "sourcepackagename: %r" % entry.sourcepackagename
-    ...     print "status:            %r" % entry.status
-    ...     print "---------"
     >>> for entry in queue:
     ...     entry.setStatus(RosettaImportStatus.APPROVED, rosetta_experts)
     >>> transaction.commit()
-    >>> for entry in queue:
-    ...     print "potemplate:        %r" % entry.potemplate
-    ...     print "pofile:            %r" % entry.pofile
-    ...     print "path:              '%s'" % entry.path
-    ...     print "productseries:     %r" % entry.productseries
-    ...     print "distroseries:      %r" % entry.distroseries
-    ...     print "sourcepackagename: %r" % entry.sourcepackagename
-    ...     print "status:            %r" % entry.status
-    ...     print "---------"
 
-The import script can do its work.
+As it happens, the administrator has blocked imports to the distroseries, e.g.
+because an in-database update of its translations has been scheduled
+and we don't want interference from queued imports while that happens.
+It doesn't really matter whether entries still get auto-approved, but
+we can't accept new translation imports just now.
+
+    >>> distroseries.defer_translation_imports
+    True
 
     >>> from canonical.launchpad.scripts import FakeLogger
     >>> from lp.translations.scripts.po_import import TranslationsImport
-    >>> from lp.translations.scripts.import_queue_gardener import (
-    ...     ImportQueueGardener)
     >>> import email
     >>> from lp.services.mail import stub
+    >>> process = TranslationsImport('poimport', test_args=[])
+    >>> process.logger = FakeLogger()
+    >>> process.main()
+    DEBUG   Starting the import process.
+    INFO No requests pending.
+
+When imports are allowed, the import script can do its work.
+
+    >>> naked_distroseries.defer_translation_imports = False
+
     >>> process = TranslationsImport('poimport', test_args=[])
     >>> process.logger = FakeLogger()
     >>> process.main()
@@ -141,7 +138,7 @@ composed before, but also sends it.
     Translation template import - ...
 
     >>> print msg.get_payload(decode=True)
-    Hello Mark Shuttleworth,
+    Hello ...,
     <BLANKLINE>
     On ..., you uploaded a translation
     template for ... in Launchpad.
@@ -151,6 +148,14 @@ composed before, but also sends it.
     Thank you,
     <BLANKLINE>
     The Launchpad team
+
+The entries that remain in the queue as "imported" age over time.
+
+    >>> import datetime
+    >>> for entry in queue:
+    ...     removeSecurityProxy(entry).date_status_changed -= (
+    ...         datetime.timedelta(days=30))
+
 
 Now the queue gardener runs. This can happen anytime, since it's
 asynchronous to the po-import script. The script tries to approve any
@@ -163,16 +168,20 @@ two hand-approved Welsh translations that have just been imported.
 
     >>> import logging
     >>> from lp.testing.logger import MockLogger
+    >>> from lp.translations.scripts.import_queue_gardener import (
+    ...     ImportQueueGardener)
     >>> process = ImportQueueGardener('approver', test_args=[])
     >>> process.logger = MockLogger()
     >>> process.logger.setLevel(logging.INFO)
     >>> process.main()
-    log>    Removed 2 entries from the queue.
+    log>    Removed 3 entries from the queue.
     >>> transaction.commit()
 
 If users upload two versions of the same file, they are imported in the
 order in which they were uploaded.
 
+    >>> import pytz
+    >>> UTC = pytz.timezone('UTC')
     >>> first_pofile_content = r'''
     ... msgid ""
     ... msgstr ""
@@ -203,43 +212,32 @@ order in which they were uploaded.
     ... msgstr "I'd like to thank John, Kathy, my pot plants, and all the..."
     ... ''' % datetime.datetime.now(UTC).isoformat()
 
-We flush the entry contents.
-
-    >>> for entry in translation_import_queue:
-    ...     translation_import_queue.remove(entry)
-    >>> translation_import_queue.countEntries()
-    0
-
 Attach the first version of the file.
 
-    >>> entry = translation_import_queue.addOrUpdateEntry(
-    ...     pofile.path, first_pofile_content, False, rosetta_experts,
-    ...     sourcepackagename=pofile.potemplate.sourcepackagename,
-    ...     distroseries=pofile.potemplate.distroseries,
-    ...     productseries=pofile.potemplate.productseries)
+    >>> entry = queue.addOrUpdateEntry(
+    ...     pofile_eo.path, first_pofile_content, False, rosetta_experts,
+    ...     sourcepackagename=sourcepackagename, distroseries=distroseries)
     >>> transaction.commit()
 
 It's in the queue now.
 
-    >>> translation_import_queue.countEntries()
+    >>> queue.countEntries()
     1
 
-For the second version, we need a new importer, in this case, Jordi.
+For the second version, we need a new importer.
 
-    >>> jordi = person_set.getByName('jordi')
+    >>> importer_person = factory.makePerson()
 
 Attach the second version of the file.
 
-    >>> entry = translation_import_queue.addOrUpdateEntry(
-    ...     pofile.path, second_pofile_content, False, jordi,
-    ...     sourcepackagename=pofile.potemplate.sourcepackagename,
-    ...     distroseries=pofile.potemplate.distroseries,
-    ...     productseries=pofile.potemplate.productseries)
+    >>> entry = queue.addOrUpdateEntry(
+    ...     pofile_eo.path, second_pofile_content, False, importer_person,
+    ...     sourcepackagename=sourcepackagename, distroseries=distroseries)
     >>> transaction.commit()
 
 It's in the queue now.
 
-    >>> translation_import_queue.countEntries()
+    >>> queue.countEntries()
     2
     >>> print entry.status.name
     NEEDS_REVIEW
@@ -255,6 +253,7 @@ intelligence.
     log>    The automatic approval system approved some entries.
     >>> print entry.status.name
     APPROVED
+    >>> from canonical.launchpad.ftests import syncUpdate
     >>> syncUpdate(entry)
 
 Now that these submissions have been approved, the next run of the
@@ -264,8 +263,8 @@ import script picks them up and processes them.
     >>> process.logger = FakeLogger()
     >>> process.main()
     DEBUG   Starting the import process.
-    INFO    Importing: Welsh (cy) ... of firefox in Mozilla Firefox trunk
-    INFO    Importing: Welsh (cy) ... of firefox in Mozilla Firefox trunk
+    INFO    Importing: Esperanto (eo) ... of ...
+    INFO    Importing: Esperanto (eo) ... of ...
     INFO    Import requests completed.
     DEBUG   Finished the import process.
 
@@ -275,95 +274,31 @@ import script picks them up and processes them.
 
 And there are no more entries to import
 
-    >>> translation_import_queue.getFirstEntryToImport() is None
+    >>> queue.getFirstEntryToImport() is None
     True
 
 We've imported a new translation for "Foo %s."
 
-    >>> welsh = getUtility(ILanguageSet).getLanguageByCode('cy')
+    >>> from lp.services.worlddata.interfaces.language import ILanguageSet
+    >>> esperanto = getUtility(ILanguageSet).getLanguageByCode('eo')
     >>> foos = potemplate['Foo %s'].getLocalTranslationMessages(
-    ...     potemplate, welsh)
+    ...     potemplate, esperanto)
     >>> sorted([foo.msgstr0.translation for foo in foos])
-    [u'Bar', u'Bars', u'blah %i']
+    [u'Bar', u'Bars']
 
 Since this last upload was not the upstream one, however, its credits
 message translations were ignored.
 
-    >>> message = get_pofile_translation_message(
-    ...     pofile, u'translator-credits')
+    >>> potmsgset = pofile_eo.potemplate.getPOTMsgSetByMsgIDText(
+    ...     u'translator-credits')
+    >>> message =  potmsgset.getCurrentTranslationMessage(
+    ...     pofile_eo.potemplate, pofile_eo.language)
     >>> message.msgstr0.translation
-    u'helpful@example.com'
+    u'helpful-eo@example.com'
     >>> list(potemplate['translator-credits'].getLocalTranslationMessages(
-    ...     potemplate, welsh))
+    ...     potemplate, esperanto))
     []
 
-Imports so far have been associated with a product series. We can also
-submit translations for a distroseries.
-
-    >>> from lp.registry.interfaces.distribution import (
-    ...     IDistributionSet)
-    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-    >>> warty = ubuntu.getSeries('warty')
-    >>> print warty.name
-    warty
-    >>> firefox_name = SourcePackageName.byName('mozilla-firefox')
-    >>> subset = POTemplateSubset(sourcepackagename=firefox_name,
-    ...     distroseries=warty)
-    >>> potemplate = subset.new(
-    ...     name='firefox-warty',
-    ...     translation_domain='firefox-warty',
-    ...     path='po/firefox.pot',
-    ...     owner=person)
-
-As it happens, the administrator has blocked imports to warty, e.g.
-because an in-database update of its translations has been scheduled
-and we don't want interference from queued imports while that happens.
-It doesn't really matter whether entries still get auto-approved, but
-we can't accept new translation imports just now.
-
-    >>> warty.defer_translation_imports = True
-    >>> syncUpdate(warty)
-
-Nevertheless, someone submits an import request for warty, not knowing
-or caring that imports are deferred. The entry still gets approved as
-normal:
-
-    >>> entry = translation_import_queue.addOrUpdateEntry(
-    ...     potemplate.path, potemplate_contents, True, potemplate.owner,
-    ...     sourcepackagename=firefox_name, distroseries=warty,
-    ...     potemplate=potemplate)
-    >>> entry.setStatus(RosettaImportStatus.APPROVED, rosetta_experts)
-    >>> syncUpdate(entry)
-    >>> transaction.commit()
-
-Since imports for warty are suspended, and the only entry we happen to
-have waiting right now is for warty, the queue has no importable
-entries for us.
-
-    >>> warty.getFirstEntryToImport() is None
-    True
-
-So if we try to import now, nothing happens. Our request remains on the
-queue, but doesn't become a candidate for processing until warty
-imports are resumed.
-
-    >>> process = TranslationsImport('poimport', test_args=[])
-    >>> process.logger = FakeLogger()
-    >>> process.main()
-    DEBUG Starting the import process.
-    INFO No requests pending.
-
-    >>> print entry.status.name
-    APPROVED
-
-Once imports are allowed again, the import is done after all.
-
-    >>> warty.defer_translation_imports = False
-    >>> syncUpdate(warty)
-    >>> (subject, body) = potemplate.importFromQueue(entry, FakeLogger())
-
-    >>> print entry.status.name
-    IMPORTED
 
 No Contact Address
 ------------------
@@ -382,12 +317,11 @@ Hermit has none at the moment.
 
 Kermit uploads a translation, which gets approved.
 
-    >>> pofile = factory.makePOFile('lo')
-
-    >>> entry = translation_import_queue.addOrUpdateEntry(
+    >>> pofile = factory.makePOFile('lo', potemplate)
+    >>> entry = queue.addOrUpdateEntry(
     ...     'lo.po', 'Invalid content', True, hermit,
-    ...     pofile=pofile, potemplate=pofile.potemplate,
-    ...     productseries=pofile.potemplate.productseries)
+    ...     pofile=pofile, potemplate=potemplate,
+    ...     distroseries=distroseries, sourcepackagename=sourcepackagename)
     >>> entry.setStatus(RosettaImportStatus.APPROVED, rosetta_experts)
     >>> transaction.commit()
 
