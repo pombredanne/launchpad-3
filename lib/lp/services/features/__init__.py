@@ -114,6 +114,17 @@ provides various useful methods including `getFlag` to look up one feature
 As a convenience, `lp.services.features.getFeatureFlag` looks up a single
 flag in the thread default controller.
 
+To simply check a boolean::
+
+    if features.getFeatureFlag('soyuz.derived-series-ui.enabled'):
+        ...
+
+and if you want to use the value ::
+
+     value = features.getFeatureFlag('soyuz.derived-series-ui.enabled')
+     if value:
+        print value
+
 Debugging feature usage
 =======================
 
