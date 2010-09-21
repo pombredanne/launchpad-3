@@ -59,10 +59,11 @@ class InitialiseDistroSeries:
       in the initialisation of a derivative.
     """
 
-    def __init__(self, distroseries, arches=()):
+    def __init__(self, distroseries, arches=(), rebuild=False):
         self.distroseries = distroseries
         self.parent = self.distroseries.parent_series
         self.arches = arches
+        self.rebuild = rebuild
         self._store = IMasterStore(DistroSeries)
 
     def check(self):
@@ -194,6 +195,8 @@ class InitialiseDistroSeries:
             destination = PackageLocation(
                 target_archive, self.distroseries.distribution,
                 self.distroseries, PackagePublishingPocket.RELEASE)
+            if self.rebuild is True:
+                distroarchseries_list = ()
             clone_packages(origin, destination, distroarchseries_list)
 
     def _copy_component_section_and_format_selections(self):

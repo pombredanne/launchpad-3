@@ -124,11 +124,11 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
             foobuntu.isSourcePackageFormatPermitted(
             SourcePackageFormat.FORMAT_1_0))
 
-    def _full_initialise(self):
+    def _full_initialise(self, arches=(), rebuild=False):
         foobuntu = self._create_distroseries(self.hoary)
         self._set_pending_to_failed(self.hoary)
         transaction.commit()
-        ids = InitialiseDistroSeries(foobuntu)
+        ids = InitialiseDistroSeries(foobuntu, arches, rebuild)
         ids.check()
         ids.initialise()
         return foobuntu
@@ -141,12 +141,7 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
     def test_initialise_only_i386(self):
         # Test a full initialise with no errors, but only copy i386 to
         # the child
-        foobuntu = self._create_distroseries(self.hoary)
-        self._set_pending_to_failed(self.hoary)
-        transaction.commit()
-        ids = InitialiseDistroSeries(foobuntu, ('i386', ))
-        ids.check()
-        ids.initialise()
+        foobuntu = self._full_initialise(arches=('i386',))
         self.assertDistroSeriesInitialisedCorrectly(foobuntu)
         das = list(IStore(DistroArchSeries).find(
             DistroArchSeries, distroseries = foobuntu))
@@ -239,6 +234,13 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
             getUtility(IArchivePermissionSet).isSourceUploadAllowed(
                 foobuntu.main_archive, 'pmount', uploader,
                 distroseries=foobuntu))
+
+    def test_rebuild_flag(self):
+        # No binaries will get copied if we specify rebuild=True
+        foobuntu = self._full_initialise(rebuild=True)
+        foobuntu.updatePackageCount()
+        self.assertTrue(foobuntu.sourcecount > 0)
+        self.assertEqual(foobuntu.binarycount, 0)
 
     def test_script(self):
         # Do an end-to-end test using the command-line tool
