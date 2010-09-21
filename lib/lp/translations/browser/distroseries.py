@@ -16,7 +16,6 @@ __all__ = [
 
 from zope.component import getUtility
 
-from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import helpers
 from canonical.launchpad.webapp import action
 from canonical.launchpad.webapp.authorization import check_permission
@@ -33,6 +32,7 @@ from canonical.launchpad.webapp.publisher import (
 from lp.app.errors import TranslationUnavailable
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.propertycache import cachedproperty
 from lp.translations.browser.potemplate import BaseSeriesTemplatesView
 from lp.translations.browser.translations import TranslationsMixin
 from lp.translations.interfaces.distroserieslanguage import (
@@ -178,14 +178,16 @@ class DistroSeriesLanguagePackView(LaunchpadEditFormView):
         self.request.response.addInfoNotification(
             'Your changes have been applied.')
         self.next_url = canonical_url(
-            self.context, rootsite='translations', view_name='+language-packs')
+            self.context, rootsite='translations',
+            view_name='+language-packs')
 
     @action("Request", condition=is_langpack_admin)
     def request_action(self, action, data):
         self.updateContextFromData(data)
         self._request_full_export()
         self.next_url = canonical_url(
-            self.context, rootsite='translations', view_name='+language-packs')
+            self.context, rootsite='translations',
+            view_name='+language-packs')
 
 
 class DistroSeriesTemplatesView(BaseSeriesTemplatesView):
@@ -194,6 +196,11 @@ class DistroSeriesTemplatesView(BaseSeriesTemplatesView):
     def initialize(self):
         super(DistroSeriesTemplatesView, self).initialize(
             series=self.context, is_distroseries=True)
+
+    def constructTemplateURL(self, template):
+        """See `BaseSeriesTemplatesView`."""
+        return '+source/%s/+pots/%s' % (
+            template.sourcepackagename.name, template.name)
 
 
 class DistroSeriesView(LaunchpadView, TranslationsMixin):

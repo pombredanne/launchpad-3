@@ -68,10 +68,6 @@ def referenced_oops():
                 if match.group('oops') is not None:
                     code_string = match.group('oopscode')
                     referenced_codes.add(code_string.upper())
-                    found = True
-            assert found, \
-                'PostgreSQL regexp matched content that Python regexp ' \
-                'did not (%r)' % (content,)
 
     return referenced_codes
 

@@ -29,6 +29,7 @@ from zope.schema import (
     Bool,
     Choice,
     Datetime,
+    Int,
     TextLine,
     Timedelta,
     )
@@ -236,12 +237,20 @@ class IBuildFarmJob(IBuildFarmJobOld):
         vocabulary=BuildFarmJobType,
         description=_("The specific type of job."))
 
+    failure_count = Int(
+        title=_("Failure Count"), required=False, readonly=True,
+        default=0,
+        description=_("Number of consecutive failures for this job."))
+
     def getSpecificJob():
         """Return the specific build job associated with this record.
 
         :raises InconsistentBuildFarmJobError: if a specific job could not be
             returned.
         """
+
+    def gotFailure():
+        """Increment the failure_count for this job."""
 
     title = exported(TextLine(title=_("Title"), required=False))
 
@@ -282,4 +291,8 @@ class IBuildFarmJobSet(Interface):
         :param user: If given, this will be used to determine private builds
             that should be included.
         :return: a `ResultSet` representing the requested builds.
+        """
+
+    def getByID(job_id):
+        """Look up a `IBuildFarmJob` record by id.
         """

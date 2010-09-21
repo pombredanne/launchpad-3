@@ -15,7 +15,6 @@ from datetime import datetime
 import bzrlib
 from zope.component import getUtility
 
-from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad.webapp import (
     canonical_url,
@@ -32,6 +31,7 @@ from lp.code.interfaces.branch import (
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.codeimport import ICodeImportSet
 from lp.registry.interfaces.product import IProductSet
+from lp.services.propertycache import cachedproperty
 
 
 class BazaarApplicationView(LaunchpadView):

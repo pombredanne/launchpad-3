@@ -22,7 +22,6 @@ from zope.schema.vocabulary import (
     SimpleVocabulary,
     )
 
-from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.webapp import (
     action,
     canonical_url,
@@ -43,6 +42,7 @@ from lp.registry.interfaces.structuralsubscription import (
     IStructuralSubscriptionForm,
     IStructuralSubscriptionTarget,
     )
+from lp.services.propertycache import cachedproperty
 
 
 class StructuralSubscriptionView(LaunchpadFormView):
@@ -171,6 +171,10 @@ class StructuralSubscriptionView(LaunchpadFormView):
     def currentUserIsSubscribed(self):
         """Return True, if the current user is subscribed."""
         return self.isSubscribed(self.user)
+
+    def userCanAlter(self):
+        if self.context.userCanAlterBugSubscription(self.user, self.user):
+            return True
 
     @action(u'Save these changes', name='save')
     def save_action(self, action, data):

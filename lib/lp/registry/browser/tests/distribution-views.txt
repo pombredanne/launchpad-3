@@ -106,8 +106,8 @@ a label, page_title, and cancel_url.
 
 The view accepts most of the distribution fields.
 
-    >>> distribution.official_malone
-    False
+    >>> distribution.bug_tracking_usage
+    <DBItem ServiceUsage.UNKNOWN, (10) Unknown>
 
     >>> view.field_names
     ['displayname', 'title', 'summary', 'description',
@@ -130,8 +130,8 @@ The view accepts most of the distribution fields.
     >>> print distribution.bug_reporting_guidelines
     guidelines
 
-    >>> distribution.official_malone
-    True
+    >>> distribution.bug_tracking_usage
+    <DBItem ServiceUsage.LAUNCHPAD, (20) Launchpad>
 
 Only admins and owners can access the view.
 
@@ -274,11 +274,12 @@ not appear.
 If the distribution officially uses the application, its portlet does appear.
 
     >>> from canonical.testing.layers import MemcachedLayer
+    >>> from lp.app.enums import ServiceUsage
 
     # When the cache regenerated, all users will see the change.
     >>> MemcachedLayer.purge()
-    >>> distribution.official_answers = True
-    >>> distribution.official_blueprints = True
+    >>> distribution.answers_usage = ServiceUsage.LAUNCHPAD
+    >>> distribution.blueprints_usage = ServiceUsage.LAUNCHPAD
     >>> distribution.official_malone = True
 
     >>> view = create_view(distribution, name='+index', principal=owner)

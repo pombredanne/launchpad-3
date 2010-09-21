@@ -38,7 +38,6 @@ from zope.interface import (
     implements,
     )
 
-from canonical.cachedproperty import clear_property
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -89,6 +88,7 @@ from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.model.teammembership import TeamParticipation
 from lp.services.job.interfaces.job import JobStatus
+from lp.services.propertycache import IPropertyCache
 from lp.soyuz.adapters.archivedependencies import expand_dependencies
 from lp.soyuz.adapters.packagelocation import PackageLocation
 from lp.soyuz.enums import (
@@ -129,9 +129,7 @@ from lp.soyuz.interfaces.archive import (
     )
 from lp.soyuz.interfaces.archivearch import IArchiveArchSet
 from lp.soyuz.interfaces.archiveauthtoken import IArchiveAuthTokenSet
-from lp.soyuz.interfaces.archivepermission import (
-    IArchivePermissionSet,
-    )
+from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.archivesubscriber import (
     ArchiveSubscriptionError,
     IArchiveSubscriberSet,
@@ -1006,10 +1004,9 @@ class Archive(SQLBase):
                 BuildStatus.FAILEDTOUPLOAD,
                 BuildStatus.MANUALDEPWAIT,
                 ),
-             # The 'pending' count is a list because we may append to it
-             # later.
             'pending': [
                 BuildStatus.BUILDING,
+                BuildStatus.UPLOADING,
                 ],
             'succeeded': (
                 BuildStatus.FULLYBUILT,
@@ -1025,6 +1022,7 @@ class Archive(SQLBase):
                 BuildStatus.FAILEDTOUPLOAD,
                 BuildStatus.MANUALDEPWAIT,
                 BuildStatus.BUILDING,
+                BuildStatus.UPLOADING,
                 BuildStatus.FULLYBUILT,
                 BuildStatus.SUPERSEDED,
                 ],
@@ -1111,6 +1109,11 @@ class Archive(SQLBase):
         elif self.is_ppa:
             if pocket != PackagePublishingPocket.RELEASE:
                 return InvalidPocketForPPA()
+        elif self.is_copy:
+            # Any pocket is allowed for COPY archives, otherwise it can
+            # make the buildd-manager throw exceptions when dispatching
+            # existing builds after a series is released.
+            return
         else:
             # Uploads to the partner archive are allowed in any distroseries
             # state.
@@ -1836,7 +1839,7 @@ class ArchiveSet:
                 signing_key = owner.archive.signing_key
             else:
                 # owner.archive is a cached property and we've just cached it.
-                clear_property(owner, '_archive_cached')
+                del IPropertyCache(owner).archive
 
         new_archive = Archive(
             owner=owner, distribution=distribution, name=name,
@@ -2009,6 +2012,7 @@ class ArchiveSet:
                 ),
             'pending': (
                 BuildStatus.BUILDING,
+                BuildStatus.UPLOADING,
                 BuildStatus.NEEDSBUILD,
                 ),
             'succeeded': (

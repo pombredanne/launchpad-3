@@ -58,6 +58,7 @@ from storm.expr import (
     SQLRaw,
     Union,
     )
+from storm.info import ClassAlias
 from storm.store import (
     EmptyResultSet,
     Store,
@@ -70,11 +71,6 @@ from zope.interface import (
     providedBy,
     )
 
-from canonical.cachedproperty import (
-    cachedproperty,
-    cache_property,
-    clear_property,
-    )
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -83,7 +79,9 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from canonical.launchpad.components.decoratedresultset import DecoratedResultSet
+from canonical.launchpad.components.decoratedresultset import (
+    DecoratedResultSet,
+    )
 from canonical.launchpad.database.librarian import LibraryFileAlias
 from canonical.launchpad.database.message import (
     Message,
@@ -108,6 +106,7 @@ from canonical.launchpad.webapp.interfaces import (
     MAIN_STORE,
     )
 from lp.answers.interfaces.questiontarget import IQuestionTarget
+from lp.app.enums import ServiceUsage
 from lp.app.errors import (
     NotFoundError,
     UserCannotUnsubscribePerson,
@@ -189,6 +188,10 @@ from lp.registry.model.person import (
 from lp.registry.model.pillar import pillar_sort_key
 from lp.registry.model.teammembership import TeamParticipation
 from lp.services.fields import DuplicateBug
+from lp.services.propertycache import (
+    cachedproperty,
+    IPropertyCache,
+    )
 
 
 _bug_tag_query_template = """
@@ -424,21 +427,101 @@ class Bug(SQLBase):
     @property
     def indexed_messages(self):
         """See `IMessageTarget`."""
+        return self._indexed_messages(include_content=True)
+
+    def _indexed_messages(self, include_content=False, include_parents=True):
+        """Get the bugs messages, indexed.
+
+        :param include_content: If True retrieve the content for the messages
+            too.
+        :param include_parents: If True retrieve the object for parent messages
+            too. If False the parent attribute will be *forced* to None to
+            reduce database lookups.
+        """
+        # Make all messages be 'in' the main bugtask.
         inside = self.default_bugtask
-        messages = list(self.messages)
-        message_set = set(messages)
-
-        indexed_messages = []
-        for index, message in enumerate(messages):
-            if message.parent not in message_set:
-                parent = None
+        store = Store.of(self)
+        message_by_id = {}
+        if include_parents:
+            def to_messages(rows):
+                return [row[0] for row in rows]
+        else:
+            def to_messages(rows):
+                return rows
+        def eager_load_owners(messages):
+            # Because we may have multiple owners, we spend less time in storm
+            # with very large bugs by not joining and instead querying a second
+            # time. If this starts to show high db time, we can left outer join
+            # instead.
+            owner_ids = set(message.ownerID for message in messages)
+            owner_ids.discard(None)
+            if not owner_ids:
+                return
+            list(store.find(Person, Person.id.is_in(owner_ids)))
+        def eager_load_content(messages):
+            # To avoid the complexity of having multiple rows per
+            # message, or joining in the database (though perhaps in
+            # future we should do that), we do a single separate query
+            # for the message content.
+            message_ids = set(message.id for message in messages)
+            chunks = store.find(
+                MessageChunk, MessageChunk.messageID.is_in(message_ids))
+            chunks.order_by(MessageChunk.id)
+            chunk_map = {}
+            for chunk in chunks:
+                message_chunks = chunk_map.setdefault(chunk.messageID, [])
+                message_chunks.append(chunk)
+            for message in messages:
+                if message.id not in chunk_map:
+                    continue
+                cache = IPropertyCache(message)
+                cache.text_contents = Message.chunks_text(
+                    chunk_map[message.id])
+        def eager_load(rows, slice_info):
+            messages = to_messages(rows)
+            eager_load_owners(messages)
+            if include_content:
+                eager_load_content(messages)
+        def index_message(row, index):
+            # convert row to an IndexedMessage
+            if include_parents:
+                message, parent = row
+                if parent is not None:
+                    # If there is an IndexedMessage available as parent, use
+                    # that to reduce on-demand parent lookups.
+                    parent = message_by_id.get(parent.id, parent)
             else:
-                parent = message.parent
-
-            indexed_message = IndexedMessage(message, inside, index, parent)
-            indexed_messages.append(indexed_message)
-
-        return indexed_messages
+                message = row
+                parent = None # parent attribute is not going to be accessed.
+            result = IndexedMessage(message, inside, index, parent)
+            # This message may be the parent for another: stash it to permit
+            # use.
+            message_by_id[message.id] = result
+            return result
+        # There is possibly some nicer way to do this in storm, but
+        # this is a lot easier to figure out.
+        if include_parents:
+            ParentMessage = ClassAlias(Message, name="parent_message")
+            tables = SQL("""
+Message left outer join
+message as parent_message on (
+    message.parent=parent_message.id and
+    parent_message.id in (
+        select bugmessage.message from bugmessage where bugmessage.bug=%s)),
+BugMessage""" % sqlvalues(self.id))
+            results = store.using(tables).find(
+                (Message, ParentMessage),
+                BugMessage.bugID == self.id,
+                BugMessage.messageID == Message.id,
+                )
+        else:
+            results = store.find(Message,
+                BugMessage.bugID == self.id,
+                BugMessage.messageID == Message.id,
+                )
+        results.order_by(Message.datecreated, Message.id)
+        return DecoratedResultSet(results, index_message,
+            pre_iter_hook=eager_load, slice_info=True)
 
     @property
     def displayname(self):
@@ -636,7 +719,7 @@ class Bug(SQLBase):
                 # disabled see the change.
                 store.flush()
                 self.updateHeat()
-                clear_property(self, '_cached_viewers')
+                del IPropertyCache(self)._known_viewers
                 return
 
     def unsubscribeFromDupes(self, person, unsubscribed_by):
@@ -1198,7 +1281,7 @@ class Bug(SQLBase):
         if len(non_invalid_bugtasks) != 1:
             return None
         [valid_bugtask] = non_invalid_bugtasks
-        if valid_bugtask.pillar.official_malone:
+        if valid_bugtask.pillar.bug_tracking_usage == ServiceUsage.LAUNCHPAD:
             return valid_bugtask
         else:
             return None
@@ -1658,7 +1741,7 @@ class Bug(SQLBase):
             self, self.messages[comment_number])
         bug_message.visible = visible
 
-    @cachedproperty('_cached_viewers')
+    @cachedproperty
     def _known_viewers(self):
         """A dict of of known persons able to view this bug."""
         return set()
@@ -1775,7 +1858,7 @@ class Bug(SQLBase):
     @property
     def attachments(self):
         """See `IBug`.
-        
+
         This property does eager loading of the index_messages so that the API
         which wants the message_link for the attachment can answer that without
         O(N^2) overhead. As such it is moderately expensive to call (it
@@ -1783,7 +1866,7 @@ class Bug(SQLBase):
         when attachments is evaluated, not when the resultset is processed).
         """
         message_to_indexed = {}
-        for message in self.indexed_messages:
+        for message in self._indexed_messages(include_parents=False):
             message_to_indexed[message.id] = message
         def set_indexed_message(row):
             attachment = row[0]
@@ -1791,7 +1874,7 @@ class Bug(SQLBase):
             # will be found without a query when dereferenced.
             indexed_message = message_to_indexed.get(attachment._messageID)
             if indexed_message is not None:
-                cache_property(attachment, '_message_cached', indexed_message)
+                IPropertyCache(attachment).message = indexed_message
             return attachment
         rawresults = self._attachments_query()
         return DecoratedResultSet(rawresults, set_indexed_message)
@@ -1799,9 +1882,9 @@ class Bug(SQLBase):
     @property
     def attachments_unpopulated(self):
         """See `IBug`.
-        
+
         This version does not pre-lookup messages and LibraryFileAliases.
-        
+
         The regular 'attachments' property does prepopulation because it is
         exposed in the API.
         """

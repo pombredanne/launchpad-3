@@ -8,6 +8,20 @@
 >
 <body>
   <div metal:fill-slot="main">
+    <tal:no_permissions condition="not: view/userCanAlter|nothing">
+    <p>
+      You are unable to subscribe to bug reports about <span
+        tal:replace="context/title">this item</span> as it generates
+      a high amount of bug activity which results in more e-mails than
+      most users can handle.
+    </p>
+    <p>
+      If you really want to subscribe to <span
+        tal:replace="context/title">this item</span> bug mail than
+      please contact its bug supervisor.
+    </p>
+    </tal:no_permissions>
+    <tal:has_permissions condition="view/userCanAlter|nothing">
     <p>
       You can choose to receive an e-mail every time someone reports or
       changes a public bug associated with 
@@ -19,6 +33,7 @@
       time.
     </p>
     <div metal:use-macro="context/@@launchpad_form/form" />
+  </tal:has_permissions>
   </div>
   <div metal:fill-slot="side">
     <div tal:replace="structure context/@@+portlet-malone-bugmail-filtering-faq"/>

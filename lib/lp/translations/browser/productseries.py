@@ -24,7 +24,6 @@ from bzrlib.revision import NULL_REVISION
 from zope.component import getUtility
 from zope.publisher.browser import FileUpload
 
-from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.helpers import is_tar_filename
 from canonical.launchpad.webapp import (
@@ -42,6 +41,7 @@ from canonical.launchpad.webapp.menu import structured
 from canonical.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource
 from lp.registry.interfaces.productseries import IProductSeries
+from lp.services.propertycache import cachedproperty
 from lp.translations.browser.poexportrequest import BaseExportView
 from lp.translations.browser.potemplate import BaseSeriesTemplatesView
 from lp.translations.browser.translations import TranslationsMixin
@@ -250,7 +250,8 @@ class ProductSeriesUploadView(LaunchpadView, TranslationsMixin):
                     'administrator in the coming few days.  You can track '
                     'your upload\'s status in the '
                     '<a href="%s/+imports">Translation Import Queue</a>' %(
-                        canonical_url(self.context, rootsite='translations'))))
+                        canonical_url(self.context,
+                        rootsite='translations'))))
 
         elif is_tar_filename(filename):
             # Add the whole tarball to the import queue.
@@ -277,7 +278,8 @@ class ProductSeriesUploadView(LaunchpadView, TranslationsMixin):
                     'your upload\'s status in the '
                     '<a href="%s/+imports">Translation Import Queue</a>' %(
                         num, plural_s, plural_s, itthey,
-                        canonical_url(self.context, rootsite='translations'))))
+                        canonical_url(self.context,
+                        rootsite='translations'))))
                 if len(conflicts) > 0:
                     if len(conflicts) == 1:
                         warning = (
@@ -491,6 +493,10 @@ class ProductSeriesTemplatesView(BaseSeriesTemplatesView):
     def initialize(self):
         super(ProductSeriesTemplatesView, self).initialize(
             series=self.context, is_distroseries=False)
+
+    def constructTemplateURL(self, template):
+        """See `BaseSeriesTemplatesView`."""
+        return '+pots/%s' % template.name
 
 
 class LinkTranslationsBranchView(LaunchpadEditFormView):

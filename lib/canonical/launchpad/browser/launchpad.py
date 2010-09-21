@@ -53,7 +53,6 @@ from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
 from zope.security.interfaces import Unauthorized
 
-from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad.helpers import intOrZero
 from canonical.launchpad.interfaces.account import AccountStatus
@@ -142,6 +141,7 @@ from lp.registry.interfaces.product import (
     )
 from lp.registry.interfaces.projectgroup import IProjectGroupSet
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.services.propertycache import cachedproperty
 from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
@@ -514,19 +514,39 @@ class LaunchpadRootNavigation(Navigation):
 
         'foo' can be the unique name of the branch, or any of the aliases for
         the branch.
+        If 'foo' resolves to an ICanHasLinkedBranch instance but the linked
+        branch is not yet set, redirect back to the referring page with a
+        suitable notification message.
+        If 'foo' is completely invalid, redirect back to the referring page
+        with a suitable error message.
         """
+
+        # The default url to go to will be back to the referring page (in
+        # the case that there is an error resolving the branch url)
+        url = self.request.getHeader('referer')
         path = '/'.join(self.request.stepstogo)
         try:
-            branch_data = getUtility(IBranchLookup).getByLPPath(path)
-        except (CannotHaveLinkedBranch, NoLinkedBranch, InvalidNamespace,
-                InvalidProductName):
-            raise NotFoundError
-        branch, trailing = branch_data
-        if branch is None:
-            raise NotFoundError
-        url = canonical_url(branch)
-        if trailing is not None:
-            url = urlappend(url, trailing)
+            # first check for a valid branch url
+            try:
+                branch_data = getUtility(IBranchLookup).getByLPPath(path)
+                branch, trailing = branch_data
+                url = canonical_url(branch)
+                if trailing is not None:
+                    url = urlappend(url, trailing)
+
+            except (NoLinkedBranch):
+                # a valid ICanHasLinkedBranch target exists but there's no
+                # branch or it's not visible
+                self.request.response.addNotification(
+                    "The target %s does not have a linked branch." % path)
+
+        except (CannotHaveLinkedBranch, InvalidNamespace,
+                InvalidProductName, NotFoundError) as e:
+            error_msg = str(e)
+            if error_msg == '':
+                error_msg = "Invalid branch lp:%s." % path
+            self.request.response.addErrorNotification(error_msg)
+
         return self.redirectSubTree(url)
 
     @stepto('+builds')

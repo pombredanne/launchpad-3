@@ -67,7 +67,6 @@ from zope.schema.vocabulary import (
     SimpleVocabulary,
     )
 
-from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.message import IMessageSet
@@ -121,6 +120,7 @@ from lp.services.fields import (
     Summary,
     Whiteboard,
     )
+from lp.services.propertycache import cachedproperty
 
 
 def latest_proposals_for_each_branch(proposals):

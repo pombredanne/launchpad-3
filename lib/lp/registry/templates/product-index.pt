@@ -215,10 +215,10 @@
       <div class="yui-g">
         <div class="yui-u first">
           <div tal:content="structure context/@@+portlet-listfaqs"
-            tal:condition="context/official_answers" />
+            tal:condition="context/answers_usage/enumvalue:LAUNCHPAD" />
 
           <div tal:content="structure context/@@+portlet-latestbugs"
-            tal:condition="context/official_malone" />
+            tal:condition="context/bug_tracking_usage/enumvalue:LAUNCHPAD" />
 
           <div tal:content="structure context/@@+portlet-top-contributors" />
 
@@ -227,10 +227,10 @@
 
         <div class="yui-u">
           <div tal:content="structure context/@@+portlet-latestquestions"
-            tal:condition="context/official_answers" />
+            tal:condition="context/answers_usage/enumvalue:LAUNCHPAD" />
 
           <div tal:content="structure context/@@+portlet-latestspecs"
-            tal:condition="context/official_blueprints" />
+            tal:condition="context/blueprints_usage/enumvalue:LAUNCHPAD" />
 
           <div tal:content="structure context/@@+portlet-coming-sprints" />
         </div>

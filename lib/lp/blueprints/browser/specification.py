@@ -61,7 +61,6 @@ from zope.schema.vocabulary import (
     SimpleVocabulary,
     )
 
-from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.browser.launchpad import AppFrontPageSearchView
@@ -100,6 +99,7 @@ from lp.blueprints.interfaces.sprintspecification import ISprintSpecification
 from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.product import IProduct
+from lp.services.propertycache import cachedproperty
 
 
 class NewSpecificationView(LaunchpadFormView):

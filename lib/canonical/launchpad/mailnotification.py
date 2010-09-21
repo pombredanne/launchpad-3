@@ -536,6 +536,12 @@ def notify_new_ppa_subscription(subscription, event):
     non_active_subscribers = subscription.getNonActiveSubscribers()
 
     archive = subscription.archive
+
+    # We don't send notification emails for commercial PPAs as these
+    # are purchased via software center (and do not mention Launchpad).
+    if archive.commercial:
+        return
+
     registrant_name = subscription.registrant.displayname
     ppa_displayname = archive.displayname
     ppa_reference = "ppa:%s/%s" % (

@@ -20,8 +20,11 @@ from lp.archiveuploader.dscfile import DSCFile
 from lp.archiveuploader.nascentuploadfile import (
     CustomUploadFile,
     DebBinaryUploadFile,
+    UploadError,
     )
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.archiveuploader.tests import AbsolutelyAnythingGoesUploadPolicy
+from lp.buildmaster.enums import BuildStatus
 from lp.soyuz.enums import PackageUploadCustomFormat
 from lp.testing import TestCaseWithFactory
 
@@ -34,6 +37,7 @@ class NascentUploadFileTestCase(TestCaseWithFactory):
         self.logger = BufferLogger()
         self.policy = AbsolutelyAnythingGoesUploadPolicy()
         self.distro = self.factory.makeDistribution()
+        self.policy.pocket = PackagePublishingPocket.RELEASE
         self.policy.archive = self.factory.makeArchive(
             distribution=self.distro)
 
@@ -175,6 +179,76 @@ class DSCFileTests(PackageUploadFileTestCase):
         self.assertEquals("0.42", release.version)
         self.assertEquals("dpkg, bzr", release.builddepends)
 
+    def test_storeInDatabase_case_sensitivity(self):
+        # storeInDatabase supports field names with different cases,
+        # confirming to Debian policy.
+        dsc = self.getBaseDsc()
+        dsc["buIld-depends"] = "dpkg, bzr"
+        changes = self.getBaseChanges()
+        uploadfile = self.createDSCFile(
+            "foo.dsc", dsc, "main/net", "extra", "dulwich", "0.42",
+            self.createChangesFile("foo.changes", changes))
+        uploadfile.files = []
+        uploadfile.changelog = "DUMMY"
+        release = uploadfile.storeInDatabase(None)
+        self.assertEquals("dpkg, bzr", release.builddepends)
+
+    def test_user_defined_fields(self):
+        # storeInDatabase updates user_defined_fields.
+        dsc = self.getBaseDsc()
+        dsc["Python-Version"] = "2.5"
+        changes = self.getBaseChanges()
+        uploadfile = self.createDSCFile(
+            "foo.dsc", dsc, "main/net", "extra", "dulwich", "0.42",
+            self.createChangesFile("foo.changes", changes))
+        uploadfile.changelog = "DUMMY"
+        uploadfile.files = []
+        release = uploadfile.storeInDatabase(None)
+        # DSCFile lowercases the field names
+        self.assertEquals(
+            [["Python-Version", u"2.5"]], release.user_defined_fields)
+
+    def test_homepage(self):
+        # storeInDatabase updates homepage.
+        dsc = self.getBaseDsc()
+        dsc["Homepage"] = "http://samba.org/~jelmer/bzr"
+        changes = self.getBaseChanges()
+        uploadfile = self.createDSCFile(
+            "foo.dsc", dsc, "main/net", "extra", "dulwich", "0.42",
+            self.createChangesFile("foo.changes", changes))
+        uploadfile.changelog = "DUMMY"
+        uploadfile.files = []
+        release = uploadfile.storeInDatabase(None)
+        self.assertEquals(u"http://samba.org/~jelmer/bzr", release.homepage)
+
+    def test_checkBuild(self):
+        # checkBuild() verifies consistency with a build.
+        build = self.factory.makeSourcePackageRecipeBuild(
+            pocket=self.policy.pocket, distroseries=self.policy.distroseries,
+            archive=self.policy.archive)
+        dsc = self.getBaseDsc()
+        uploadfile = self.createDSCFile(
+            "foo.dsc", dsc, "main/net", "extra", "dulwich", "0.42",
+            self.createChangesFile("foo.changes", self.getBaseChanges()))
+        uploadfile.checkBuild(build)
+        # checkBuild() sets the build status to FULLYBUILT and
+        # removes the upload log.
+        self.assertEquals(BuildStatus.FULLYBUILT, build.status)
+        self.assertIs(None, build.upload_log)
+
+    def test_checkBuild_inconsistent(self):
+        # checkBuild() raises UploadError if inconsistencies between build
+        # and upload file are found.
+        build = self.factory.makeSourcePackageRecipeBuild(
+            pocket=self.policy.pocket,
+            distroseries=self.factory.makeDistroSeries(),
+            archive=self.policy.archive)
+        dsc = self.getBaseDsc()
+        uploadfile = self.createDSCFile(
+            "foo.dsc", dsc, "main/net", "extra", "dulwich", "0.42",
+            self.createChangesFile("foo.changes", self.getBaseChanges()))
+        self.assertRaises(UploadError, uploadfile.checkBuild, build)
+
 
 class DebBinaryUploadFileTests(PackageUploadFileTestCase):
     """Tests for DebBinaryUploadFile."""
@@ -196,7 +270,7 @@ class DebBinaryUploadFileTests(PackageUploadFileTestCase):
             "Homepage": "http://samba.org/~jelmer/dulwich",
             "Description": "Pure-python Git library\n"
                 "Dulwich is a Python implementation of the file formats and "
-                "protocols"
+                "protocols",
             }
 
     def createDebBinaryUploadFile(self, filename, component_and_section,
@@ -243,3 +317,73 @@ class DebBinaryUploadFileTests(PackageUploadFileTestCase):
         self.assertEquals(True, bpr.architecturespecific)
         self.assertEquals(u"", bpr.recommends)
         self.assertEquals("0.42", bpr.version)
+
+    def test_user_defined_fields(self):
+        # storeInDatabase stores user defined fields.
+        uploadfile = self.createDebBinaryUploadFile(
+            "foo_0.42_i386.deb", "main/python", "unknown", "mypkg", "0.42",
+            None)
+        control = self.getBaseControl()
+        control["Python-Version"] = "2.5"
+        uploadfile.parseControl(control)
+        build = self.factory.makeBinaryPackageBuild()
+        bpr = uploadfile.storeInDatabase(build)
+        self.assertEquals(
+            [[u"Python-Version", u"2.5"]], bpr.user_defined_fields)
+
+    def test_user_defined_fields_newlines(self):
+        # storeInDatabase stores user defined fields and keeps newlines.
+        uploadfile = self.createDebBinaryUploadFile(
+            "foo_0.42_i386.deb", "main/python", "unknown", "mypkg", "0.42",
+            None)
+        control = self.getBaseControl()
+        control["RandomData"] = "Foo\nbar\nbla\n"
+        uploadfile.parseControl(control)
+        build = self.factory.makeBinaryPackageBuild()
+        bpr = uploadfile.storeInDatabase(build)
+        self.assertEquals(
+            [
+                [u"RandomData", u"Foo\nbar\nbla\n"],
+            ], bpr.user_defined_fields)
+
+    def test_homepage(self):
+        # storeInDatabase stores homepage field.
+        uploadfile = self.createDebBinaryUploadFile(
+            "foo_0.42_i386.deb", "main/python", "unknown", "mypkg", "0.42",
+            None)
+        control = self.getBaseControl()
+        control["Python-Version"] = "2.5"
+        uploadfile.parseControl(control)
+        build = self.factory.makeBinaryPackageBuild()
+        bpr = uploadfile.storeInDatabase(build)
+        self.assertEquals(
+            u"http://samba.org/~jelmer/dulwich", bpr.homepage)
+
+    def test_checkBuild(self):
+        # checkBuild() verifies consistency with a build.
+        das = self.factory.makeDistroArchSeries(
+            distroseries=self.policy.distroseries, architecturetag="i386")
+        build = self.factory.makeBinaryPackageBuild(
+            distroarchseries=das,
+            archive=self.policy.archive)
+        uploadfile = self.createDebBinaryUploadFile(
+            "foo_0.42_i386.deb", "main/python", "unknown", "mypkg", "0.42",
+            None)
+        uploadfile.checkBuild(build)
+        # checkBuild() sets the build status to FULLYBUILT and
+        # removes the upload log.
+        self.assertEquals(BuildStatus.FULLYBUILT, build.status)
+        self.assertIs(None, build.upload_log)
+
+    def test_checkBuild_inconsistent(self):
+        # checkBuild() raises UploadError if inconsistencies between build
+        # and upload file are found.
+        das = self.factory.makeDistroArchSeries(
+            distroseries=self.policy.distroseries, architecturetag="amd64")
+        build = self.factory.makeBinaryPackageBuild(
+            distroarchseries=das,
+            archive=self.policy.archive)
+        uploadfile = self.createDebBinaryUploadFile(
+            "foo_0.42_i386.deb", "main/python", "unknown", "mypkg", "0.42",
+            None)
+        self.assertRaises(UploadError, uploadfile.checkBuild, build)

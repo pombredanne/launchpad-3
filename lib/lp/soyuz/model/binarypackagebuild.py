@@ -251,6 +251,7 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
         """See `IBuild`"""
         return self.status not in [BuildStatus.NEEDSBUILD,
                                    BuildStatus.BUILDING,
+                                   BuildStatus.UPLOADING,
                                    BuildStatus.SUPERSEDED]
 
     @property
@@ -483,10 +484,11 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
 
     def createBinaryPackageRelease(
         self, binarypackagename, version, summary, description,
-        binpackageformat, component,section, priority, shlibdeps,
-        depends, recommends, suggests, conflicts, replaces, provides,
-        pre_depends, enhances, breaks, essential, installedsize,
-        architecturespecific, debug_package):
+        binpackageformat, component, section, priority, installedsize,
+        architecturespecific, shlibdeps=None, depends=None, recommends=None,
+        suggests=None, conflicts=None, replaces=None, provides=None,
+        pre_depends=None, enhances=None, breaks=None, essential=False,
+        debug_package=None, user_defined_fields=None, homepage=None):
         """See IBuild."""
         return BinaryPackageRelease(
             build=self, binarypackagename=binarypackagename, version=version,
@@ -498,7 +500,8 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
             provides=provides, pre_depends=pre_depends, enhances=enhances,
             breaks=breaks, essential=essential, installedsize=installedsize,
             architecturespecific=architecturespecific,
-            debug_package=debug_package)
+            debug_package=debug_package,
+            user_defined_fields=user_defined_fields, homepage=homepage)
 
     def estimateDuration(self):
         """See `IPackageBuild`."""
@@ -669,6 +672,10 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
             buildduration = 'not available'
             buildlog_url = 'not available'
             builder_url = 'not available'
+        elif self.status == BuildStatus.UPLOADING:
+            buildduration = 'uploading'
+            buildlog_url = 'see builder page'
+            builder_url = 'not available'
         elif self.status == BuildStatus.BUILDING:
             # build in process
             buildduration = 'not finished'
@@ -752,6 +759,10 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
         # If we are asked to adapt an object that is already a binary
         # package build, then don't hit the db.
         return self
+
+    def getUploader(self, changes):
+        """See `IBinaryPackageBuild`."""
+        return changes.signer
 
 
 class BinaryPackageBuildSet:
@@ -957,11 +968,14 @@ class BinaryPackageBuildSet:
                 % sqlvalues(BuildStatus.FULLYBUILT))
 
         # Ordering according status
-        # * NEEDSBUILD & BUILDING by -lastscore
+        # * NEEDSBUILD, BUILDING & UPLOADING by -lastscore
         # * SUPERSEDED & All by -datecreated
         # * FULLYBUILT & FAILURES by -datebuilt
         # It should present the builds in a more natural order.
-        if status in [BuildStatus.NEEDSBUILD, BuildStatus.BUILDING]:
+        if status in [
+            BuildStatus.NEEDSBUILD,
+            BuildStatus.BUILDING,
+            BuildStatus.UPLOADING]:
             orderBy = ["-BuildQueue.lastscore", "BinaryPackageBuild.id"]
             clauseTables.append('BuildQueue')
             clauseTables.append('BuildPackageJob')
@@ -1077,7 +1091,8 @@ class BinaryPackageBuildSet:
                                 BuildStatus.CHROOTWAIT,
                                 BuildStatus.FAILEDTOUPLOAD)
         needsbuild = collect_builds(BuildStatus.NEEDSBUILD)
-        building = collect_builds(BuildStatus.BUILDING)
+        building = collect_builds(BuildStatus.BUILDING,
+                                  BuildStatus.UPLOADING)
         successful = collect_builds(BuildStatus.FULLYBUILT)
 
         # Note: the BuildStatus DBItems are used here to summarize the
