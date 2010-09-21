@@ -258,7 +258,7 @@ class MilestoneSet:
         """See lp.registry.interfaces.milestone.IMilestoneSet."""
         try:
             return Milestone.get(milestoneid)
-        except SQLObjectNotFound, err:
+        except SQLObjectNotFound:
             raise NotFoundError(
                 "Milestone with ID %d does not exist" % milestoneid)
 
