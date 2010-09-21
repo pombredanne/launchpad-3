@@ -28,6 +28,7 @@ from bzrlib.transport.chroot import ChrootServer
 from lazr.uri import URI
 import transaction
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.launchpad.scripts.logger import (
@@ -249,27 +250,35 @@ class TestDistroBrancher(TestCaseWithFactory):
         # copy of the source branch.
         db_branch = self.makeOfficialPackageBranch()
         self.factory.makeRevisionsForBranch(db_branch, count=10)
-        brancher = self.makeNewSeriesAndBrancher(db_branch.distroseries)
-        brancher.makeOneNewBranch(db_branch)
         tip_revision_id = db_branch.last_mirrored_id
         self.assertIsNot(None, tip_revision_id)
+        # The makeRevisionsForBranch will create a scan job for the db_branch.
+        # We don't really care about that, but what we do care about is that
+        # no new jobs are created.
+        existing_scan_job_count = len(
+            list(getUtility(IBranchScanJobSource).iterReady()))
 
+        brancher = self.makeNewSeriesAndBrancher(db_branch.distroseries)
+        brancher.makeOneNewBranch(db_branch)
         new_branch = brancher.new_distroseries.getSourcePackage(
             db_branch.sourcepackage.name).getBranch(RELEASE)
 
         self.assertEqual(tip_revision_id, new_branch.last_mirrored_id)
         self.assertEqual(tip_revision_id, new_branch.last_scanned_id)
-
-        scan_jobs = list(getUtility(IBranchScanJobSource).iterReady())
-        self.assertEqual(0, len(scan_jobs))
-
-        self.assertFalse(new_branch.pending_writes)
-
         # Make sure that the branch revisions have been copied.
-        old_ancestry, old_history = db_branch.getScannerData()
-        new_ancestry, new_history = new_branch.getScannerData()
+        old_ancestry, old_history = removeSecurityProxy(
+            db_branch).getScannerData()
+        new_ancestry, new_history = removeSecurityProxy(
+            new_branch).getScannerData()
         self.assertEqual(old_ancestry, new_ancestry)
         self.assertEqual(old_history, new_history)
+        self.assertFalse(new_branch.pending_writes)
+        # The script doesn't have permission to create branch jobs, but just
+        # to be insanely paradoid.
+        transaction.commit()
+        self.layer.switchDbUser('launchpad')
+        scan_jobs = list(getUtility(IBranchScanJobSource).iterReady())
+        self.assertEqual(existing_scan_job_count, len(scan_jobs))
 
     def test_makeOneNewBranch_inconsistent_branch(self):
         # makeOneNewBranch skips over an inconsistent official package branch
