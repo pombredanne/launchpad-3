@@ -37,8 +37,10 @@ from canonical.launchpad.webapp import (
     Link,
     NavigationMenu,
     )
+from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.menu import structured
 from canonical.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
+from lp.app.enums import service_uses_launchpad
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.services.propertycache import cachedproperty
@@ -409,6 +411,12 @@ class ProductSeriesView(LaunchpadView, ProductSeriesTranslationsMixin):
     def single_potemplate(self):
         """Does this ProductSeries have exactly one POTemplate."""
         return self.context.potemplate_count == 1
+
+    @cachedproperty
+    def show_page_content(self):
+        """Whether the main content of the page should be shown."""
+        return (service_uses_launchpad(self.context.translations_usage) or
+                check_permission("launchpad.TranslationsAdmin", self.context))
 
 
 class SettingsRadioWidget(LaunchpadRadioWidgetWithDescription):
