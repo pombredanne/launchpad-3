@@ -147,7 +147,6 @@ from canonical.launchpad import (
     helpers,
     )
 from canonical.launchpad.browser.feeds import FeedsMixin
-from canonical.launchpad.browser.launchpad import get_launchpad_views
 from canonical.launchpad.interfaces.account import (
     AccountStatus,
     IAccount,
@@ -239,7 +238,6 @@ from lp.buildmaster.enums import BuildStatus
 from lp.code.browser.sourcepackagerecipelisting import HasRecipesMenuMixin
 from lp.code.errors import InvalidNamespace
 from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
-from lp.registry.browser import MapMixin
 from lp.registry.browser.branding import BrandingChangeView
 from lp.registry.browser.mailinglists import enabled_with_active_mailing_list
 from lp.registry.browser.menu import (
@@ -3338,7 +3336,7 @@ class EmailAddressVisibleState:
         return self.state is EmailAddressVisibleState.ALLOWED
 
 
-class PersonIndexView(XRDSContentNegotiationMixin, MapMixin, PersonView):
+class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
     """View class for person +index and +xrds pages."""
 
     xrds_template = ViewPageTemplateFile(
@@ -3346,14 +3344,6 @@ class PersonIndexView(XRDSContentNegotiationMixin, MapMixin, PersonView):
 
     def initialize(self):
         super(PersonIndexView, self).initialize()
-        # This view requires the gmap2 Javascript in order to render the map
-        # with the person's usual location. The location is only availble if
-        # the location is set, visible, and the viewing user wants to see it.
-        launchpad_views = get_launchpad_views(self.request.cookies)
-        self._small_map = launchpad_views['small_maps']
-        if (self.gmap2_enabled
-            and self.has_visible_location and self._small_map):
-            self.request.needs_gmap2 = True
         if self.request.method == "POST":
             self.processForm()
 
@@ -3410,9 +3400,6 @@ class PersonIndexView(XRDSContentNegotiationMixin, MapMixin, PersonView):
         assert self.has_visible_location, (
             "Can't generate the map for a person who hasn't set a "
             "visible location.")
-        assert self.request.needs_gmap2 or not self._small_map, (
-            "To use this method a view must flag that it needs gmap2.")
-
         replacements = {'center_lat': self.context.latitude,
                         'center_lng': self.context.longitude}
         return u"""

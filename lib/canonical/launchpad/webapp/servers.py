@@ -522,7 +522,6 @@ class BasicLaunchpadRequest:
         self.needs_datepicker_iframe = False
         self.needs_datetimepicker_iframe = False
         self.needs_json = False
-        self.needs_gmap2 = False
         super(BasicLaunchpadRequest, self).__init__(
             body_instream, environ, response)
 
@@ -834,11 +833,9 @@ class LaunchpadTestRequest(TestRequest, ErrorReportRequest,
     >>> request.needs_datepicker_iframe
     False
 
-    And for JSON and GMap2:
+    And for JSON:
 
     >>> request.needs_json
-    False
-    >>> request.needs_gmap2
     False
 
     """
@@ -857,7 +854,6 @@ class LaunchpadTestRequest(TestRequest, ErrorReportRequest,
         self.needs_datepicker_iframe = False
         self.needs_datetimepicker_iframe = False
         self.needs_json = False
-        self.needs_gmap2 = False
         # stub out the FeatureController that would normally be provided by
         # the publication mechanism
         self.features = NullFeatureController()
