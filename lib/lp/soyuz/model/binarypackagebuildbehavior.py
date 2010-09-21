@@ -39,7 +39,7 @@ class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):
         logger.info("startBuild(%s, %s, %s, %s)", self._builder.url,
                     spr.name, spr.version, self.build.pocket.title)
 
-    def _buildFilemapStructure(self, logger):
+    def _buildFilemapStructure(self, ignored, logger):
         # Build filemap structure with the files required in this build
         # and send them to the slave.
         # If the build is private we tell the slave to get the files from the
@@ -66,9 +66,8 @@ class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):
         # Start the binary package build on the slave builder. First
         # we send the chroot.
         chroot = self.build.distro_arch_series.getChroot()
-        self._builder.slave.cacheFile(logger, chroot)
-
-        d = self._buildFilemapStructure(logger)
+        d = self._builder.slave.cacheFile(logger, chroot)
+        d.addCallback(self._buildFilemapStructure, logger)
 
         def got_filemap(filemap):
             # Generate a string which can be used to cross-check when obtaining

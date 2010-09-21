@@ -116,6 +116,11 @@ class TimeoutTransport(xmlrpclib.Transport):
 class BuilderSlave(object):
     """Add in a few useful methods for the XMLRPC slave."""
 
+    # WARNING: If you change the API for this, you should also change the APIs
+    # of the mocks in soyuzbuilderhelpers to match. Otherwise, you will have
+    # many false positives in your test run and will most likely break
+    # production.
+
     # XXX: This (BuilderSlave) should use composition, rather than
     # inheritance.
 
