@@ -65,7 +65,6 @@ __all__ = [
     'SearchSubscribedQuestionsView',
     'TeamAddMyTeamsView',
     'TeamBreadcrumb',
-    'TeamEditLocationView',
     'TeamEditMenu',
     'TeamIndexMenu',
     'TeamJoinView',
@@ -5652,7 +5651,7 @@ class PersonOAuthTokensView(LaunchpadView):
 class PersonLocationForm(Interface):
 
     location = LocationField(
-        title=_('Use the map to indicate default location'),
+        title=_('Time zone'),
         required=True)
     hide = Bool(
         title=_("Hide my location details from others."),
@@ -5663,37 +5662,15 @@ class PersonEditLocationView(LaunchpadFormView):
     """Edit a person's location."""
 
     schema = PersonLocationForm
-    field_names = ['location', 'hide']
+    field_names = ['location']
     custom_widget('location', LocationWidget)
+    page_title = label = 'Set timezone'
 
     @property
-    def page_title(self):
-        return smartquote(
-            "%s's location and timezone" % self.context.displayname)
+    def next_url(self):
+        return canonical_url(self.context)
 
-    label = page_title
-
-    @property
-    def initial_values(self):
-        """See `LaunchpadFormView`.
-
-        Set the initial value for the 'hide' field.  The initial value for the
-        'location' field is set by its widget.
-        """
-        if self.context.location is None:
-            return {}
-        else:
-            return {'hide': not self.context.location.visible}
-
-    def initialize(self):
-        self.next_url = canonical_url(self.context)
-        self.for_team_name = self.request.form.get('for_team')
-        if self.for_team_name is not None:
-            for_team = getUtility(IPersonSet).getByName(self.for_team_name)
-            if for_team is not None:
-                self.next_url = canonical_url(for_team) + '/+map'
-        super(PersonEditLocationView, self).initialize()
-        self.cancel_url = self.next_url
+    cancel_url = next_url
 
     @action(_("Update"), name="update")
     def action_update(self, action, data):
@@ -5708,17 +5685,6 @@ class PersonEditLocationView(LaunchpadFormView):
         if 'hide' in self.field_names:
             visible = not data['hide']
             self.context.setLocationVisibility(visible)
-
-
-class TeamEditLocationView(LaunchpadView):
-    """Redirect to the team's +map page.
-
-    We do that because it doesn't make sense to specify the location of a
-    team."""
-
-    def initialize(self):
-        self.request.response.redirect(
-            canonical_url(self.context, view_name="+map"))
 
 
 def archive_to_person(archive):
