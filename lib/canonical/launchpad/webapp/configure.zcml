@@ -828,7 +828,7 @@
     <view
       type="zope.publisher.interfaces.browser.IBrowserRequest"
       for="zope.schema.interfaces.IChoice
-        canonical.launchpad.vocabularies.dbobjects.BranchVocabularyBase"
+        lp.code.vocabularies.branch.BranchVocabularyBase"
       provides="zope.app.form.interfaces.IInputWidget"
       factory="canonical.launchpad.browser.widgets.BranchPopupWidget"
       permission="zope.Public"
