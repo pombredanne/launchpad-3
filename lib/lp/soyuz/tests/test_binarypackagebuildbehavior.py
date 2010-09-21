@@ -14,17 +14,18 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.testing import TwistedLaunchpadZopelessLayer
 
-from lp.registry.interfaces.pocket import pocketsuffix
+from lp.registry.interfaces.pocket import (
+    PackagePublishingPocket,
+    pocketsuffix,
+    )
+from lp.registry.interfaces.series import SeriesStatus
 from lp.soyuz.adapters.archivedependencies import (
     get_sources_list_for_building,
     )
 from lp.soyuz.enums import (
     ArchivePurpose,
-    PackagePublishingStatus,
     )
-from lp.soyuz.model.processor import ProcessorFamilySet
 from lp.soyuz.tests.soyuzbuilddhelpers import OkSlave
-from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
     ANONYMOUS,
     login_as,
@@ -155,42 +156,46 @@ class TestBinaryBuildPackageBehavior(unittest.TestCase):
             ArchivePurpose.PARTNER, build.current_component.name)
         return d
 
-    def test_partner_dispatch_with_publishing_history(self):
-        test_publisher = SoyuzTestPublisher()
-        archive = self.factory.makeArchive(
-            virtualized=False, purpose=ArchivePurpose.PARTNER)
+    def test_dont_dispatch_release_builds(self):
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
+        builder = self.factory.makeBuilder()
         distroseries = self.factory.makeDistroSeries(
-            distribution=archive.distribution)
+            status=SeriesStatus.CURRENT, distribution=archive.distribution)
         distro_arch_series = self.factory.makeDistroArchSeries(
-            distroseries=distroseries, architecturetag='i386',
-            processorfamily=ProcessorFamilySet().getByName('x86'))
+            distroseries=distroseries)
+        build = self.factory.makeBinaryPackageBuild(
+            builder=builder, archive=archive,
+            distroarchseries=distro_arch_series,
+            pocket=PackagePublishingPocket.RELEASE)
         lf = self.factory.makeLibraryFileAlias()
         self.layer.txn.commit()
-        distro_arch_series.addOrUpdateChroot(lf)
-        distroseries.nominatedarchindep = distro_arch_series
-        test_publisher.setUpDefaultDistroSeries(distroseries)
-        pub_source = test_publisher.getPubSource(
-            archive=archive, distroseries=distroseries,
-            status=PackagePublishingStatus.PUBLISHED,
-            component='partner',
-            architecturehintlist=distro_arch_series.architecturetag)
-        pub_binaries = test_publisher.getPubBinaries(
-            archive=archive, pub_source=pub_source,
-            distroseries=distroseries,
-            status=PackagePublishingStatus.PUBLISHED)
-        build = pub_binaries[0].binarypackagerelease.build
-        candidate = build.buildqueue_record
+        build.distro_arch_series.addOrUpdateChroot(lf)
+        candidate = build.queueBuild()
+        behavior = candidate.required_build_behavior
+        behavior.setBuilder(build)
+        e = self.assertRaises(
+            AssertionError, behavior.verifyBuildRequest, QuietFakeLogger())
+        self.assertEqual(
+            "%s (%s) can not be built for pocket %s: invalid pocket due "
+            "to the series status of %s." % (
+                build.title, build.id, build.pocket.name,
+                build.distro_series.name),
+            str(e))
 
-        slave = OkSlave()
-        builder = self.factory.makeBuilder(virtualized=False)
-        builder.setSlaveForTesting(slave)
-        d = removeSecurityProxy(builder).startBuild(
-            removeSecurityProxy(candidate), QuietFakeLogger())
-        d.addCallback(
-            self.assertSlaveInteraction,
-            slave.call_log, builder, build, lf, archive,
-            ArchivePurpose.PARTNER, build.current_component.name,
-            filemap_names=['foo_666.dsc'],
-            extra_urls=[
-                pub_source.sourcepackagerelease.files[0].libraryfile.http_url])
-        return d
+    def test_dont_dispatch_security_builds(self):
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
+        builder = self.factory.makeBuilder()
+        build = self.factory.makeBinaryPackageBuild(
+            builder=builder, archive=archive,
+            pocket=PackagePublishingPocket.SECURITY)
+        lf = self.factory.makeLibraryFileAlias()
+        self.layer.txn.commit()
+        build.distro_arch_series.addOrUpdateChroot(lf)
+        candidate = build.queueBuild()
+        behavior = candidate.required_build_behavior
+        behavior.setBuilder(build)
+        e = self.assertRaises(
+            AssertionError, behavior.verifyBuildRequest, QuietFakeLogger())
+        self.assertEqual(
+            'Soyuz is not yet capable of building SECURITY uploads.',
+            str(e))
