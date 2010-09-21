@@ -33,7 +33,7 @@ child's parent
     >>> other_series = webservice.get(other_series_url).jsonBody()
     >>> derived = soyuz_webservice.named_post(
     ...     other_series['self_link'], 'deriveDistroSeries', {},
-    ...     name=child_name)
+    ...     name=child_name, rebuild=False)
     >>> print derived
     HTTP/1.1 400 Bad Request
     Status: 400 Bad Request
@@ -46,7 +46,8 @@ child's parent
 If we call it correctly, it works.
 
     >>> derived = soyuz_webservice.named_post(
-    ...     series['self_link'], 'deriveDistroSeries', {}, name=child_name)
+    ...     series['self_link'], 'deriveDistroSeries', {},
+    ...     name=child_name, rebuild=False)
     >>> print derived
     HTTP/1.1 200 Ok
     Status: 200 Ok

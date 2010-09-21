@@ -815,12 +815,16 @@ class IDistroSeriesPublic(
             title=_("The list of packagesets to copy to the derived "
             "distroseries"),
             required=False),
+        rebuild=Bool(
+            title=_("If binaries will be copied to the derived "
+            "distroseries."),
+            required=True),
         )
     @call_with(user=REQUEST_USER)
     @export_write_operation()
     def deriveDistroSeries(
         user, name, displayname, title, summary, description, version,
-        distribution, status, architectures, packagesets):
+        distribution, status, architectures, packagesets, rebuild):
         """Derive a distroseries from this one.
 
         This method performs checks, can create the new distroseries if
@@ -850,6 +854,9 @@ class IDistroSeriesPublic(
             series. If not specified, all of the architectures are copied.
         :param packagesets: The packagesets to copy to the derived series.
             If not specified, all of the packagesets are copied.
+        :param rebuild: Whether binaries will be copied to the derived
+            series. If it's true, they will not be, and if it's false, they
+            will be.
         """
 
 
