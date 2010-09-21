@@ -99,7 +99,7 @@ class BugPortletDuplicateSubcribersContents(LaunchpadView, BugViewMixin):
             SubscriptionAttrDecorator(subscription)
             for subscription in sorted(
                 self.context.getSubscriptionsFromDuplicates(),
-                key=attrgetter("subscriber.displayname"))
+                key=attrgetter("person.displayname"))
             ]
 
 
