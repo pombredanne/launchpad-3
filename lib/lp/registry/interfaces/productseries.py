@@ -48,6 +48,7 @@ from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.webapp.url import urlparse
 from lp.app.errors import NameLookupFailed
+from lp.app.interfaces.launchpad import IServiceUsage
 from lp.blueprints.interfaces.specificationtarget import ISpecificationGoal
 from lp.bugs.interfaces.bugtarget import (
     IBugTarget,
@@ -120,7 +121,7 @@ class IProductSeriesEditRestricted(Interface):
 class IProductSeriesPublic(
     ISeriesMixin, IHasAppointedDriver, IHasOwner, IBugTarget,
     ISpecificationGoal, IHasMilestones, IHasOfficialBugTags,
-    IHasTranslationTemplates):
+    IHasTranslationTemplates, IServiceUsage):
     """Public IProductSeries properties."""
     # XXX Mark Shuttleworth 2004-10-14: Would like to get rid of id in
     # interfaces, as soon as SQLobject allows using the object directly

@@ -285,7 +285,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
        
         # If not, usage is based on the presence of current translation
         # templates for the series.
-        if self.getCurrentTranslationTemplates.count() > 0:
+        if self.getCurrentTranslationTemplates().count() > 0:
             return ServiceUsage.LAUNCHPAD
         else:
             return ServiceUsage.UNKNOWN

@@ -155,12 +155,11 @@ class SeriesUsageEnumsMixin(object):
         self.assertEqual(
             ServiceUsage.UNKNOWN,
             self.series_pillar.translations_usage)
-        import pdb; pdb.set_trace()
         self.assertEqual(
             ServiceUsage.UNKNOWN,
             self.series.translations_usage)
 
-        self._addPOTemplate(self)
+        self._addPOTemplate()
         self.assertEqual(
             ServiceUsage.UNKNOWN,
             self.series_pillar.translations_usage)
@@ -205,10 +204,11 @@ class TestProductSeriesUsageEnums(
         self.series_pillar = self.factory.makeProduct()
         self.series = self.factory.makeProductSeries(
             product=self.series_pillar)
+        login_person(self.series_pillar.owner)
 
     def _addPOTemplate(self):
         self.factory.makePOTemplate(productseries=self.series)
-        self.series_pillar = ServiceUsage.UNKNOWN
+        self.series_pillar.translations_usage = ServiceUsage.UNKNOWN
         
 
 class TestDistroSeriesUsageEnums(
@@ -222,11 +222,17 @@ class TestDistroSeriesUsageEnums(
         self.series_pillar = self.factory.makeDistribution()
         self.series = self.factory.makeDistroSeries(
             distribution=self.series_pillar)
+        login_person(self.series_pillar.owner)
 
     def _addPOTemplate(self):
-        self.factory.makePOTemplate(distroseries=self.series)
-        self.series_pillar = ServiceUsage.UNKNOWN
-
+        sp_name = self.factory.makeSourcePackageName()
+        self.factory.makeSourcePackage(
+            sourcepackagename=sp_name,
+            distroseries=self.series)
+        self.factory.makePOTemplate(
+            distroseries=self.series,
+            sourcepackagename=sp_name)
+        self.series_pillar.translations_usage = ServiceUsage.UNKNOWN
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
