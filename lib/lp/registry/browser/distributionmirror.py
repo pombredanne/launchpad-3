@@ -22,7 +22,6 @@ from zope.event import notify
 from zope.interface import implements
 from zope.lifecycleevent import ObjectCreatedEvent
 
-from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.webapp import (
     action,
@@ -40,6 +39,7 @@ from lp.archivepublisher.debversion import Version
 from lp.registry.browser.objectreassignment import ObjectReassignmentView
 from lp.registry.interfaces.distribution import IDistributionMirrorMenuMarker
 from lp.registry.interfaces.distributionmirror import IDistributionMirror
+from lp.services.propertycache import cachedproperty
 from lp.soyuz.browser.sourceslist import (
     SourcesListEntries,
     SourcesListEntriesView,

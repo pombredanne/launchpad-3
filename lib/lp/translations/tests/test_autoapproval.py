@@ -23,6 +23,7 @@ from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing import LaunchpadZopelessLayer
+from lp.app.enums import ServiceUsage
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.model.distribution import Distribution
 from lp.registry.model.sourcepackagename import (
@@ -714,8 +715,8 @@ class TestGetPOFileFromLanguage(TestCaseWithFactory, GardenerDbUserMixin):
         # _get_pofile_from_language will find an enabled template, and
         # return either an existing POFile for the given language, or a
         # newly created one.
-        product = self.factory.makeProduct()
-        product.official_rosetta = True
+        product = self.factory.makeProduct(
+            translations_usage=ServiceUsage.LAUNCHPAD)
         trunk = product.getSeries('trunk')
         template = self.factory.makePOTemplate(
             productseries=trunk, translation_domain='domain')
@@ -732,8 +733,8 @@ class TestGetPOFileFromLanguage(TestCaseWithFactory, GardenerDbUserMixin):
         # _get_pofile_from_language will not consider a disabled
         # template as an auto-approval target, and so will not return a
         # POFile for it.
-        product = self.factory.makeProduct()
-        product.official_rosetta = True
+        product = self.factory.makeProduct(
+            translations_usage=ServiceUsage.LAUNCHPAD)
         trunk = product.getSeries('trunk')
         template = self.factory.makePOTemplate(
             productseries=trunk, translation_domain='domain')
@@ -750,8 +751,8 @@ class TestGetPOFileFromLanguage(TestCaseWithFactory, GardenerDbUserMixin):
         # When the template has translation credits, a new dummy translation
         # is created in the new POFile. Since this is running with gardener
         # privileges, we need to check that this works, too.
-        product = self.factory.makeProduct()
-        product.official_rosetta = True
+        product = self.factory.makeProduct(
+            translations_usage=ServiceUsage.LAUNCHPAD)
         trunk = product.getSeries('trunk')
         template = self.factory.makePOTemplate(
             productseries=trunk, translation_domain='domain')
@@ -778,8 +779,8 @@ class TestCleanup(TestCaseWithFactory, GardenerDbUserMixin):
 
     def _makeProductEntry(self, path='foo.pot', status=None):
         """Simulate upload for a product."""
-        product = self.factory.makeProduct()
-        product.official_rosetta = True
+        product = self.factory.makeProduct(
+            translations_usage=ServiceUsage.LAUNCHPAD)
         trunk = product.getSeries('trunk')
         entry = self.queue.addOrUpdateEntry(
             path, '# contents', False, product.owner, productseries=trunk)

@@ -22,6 +22,7 @@ __all__ = [
     'ILocationField',
     'INoneableTextLine',
     'IPasswordField',
+    'IRestrictedBytes',
     'IStrippedTextLine',
     'ISummary',
     'ITag',
@@ -45,6 +46,7 @@ __all__ = [
     'ProductBugTracker',
     'ProductNameField',
     'PublicPersonChoice',
+    'RestrictedBytes',
     'SearchTag',
     'StrippedTextLine',
     'Summary',
@@ -111,6 +113,7 @@ KEEP_SAME_IMAGE = object()
 
 
 # Field Interfaces
+
 class IStrippedTextLine(ITextLine):
     """A field with leading and trailing whitespaces stripped."""
 
@@ -226,6 +229,10 @@ class IBaseImageUpload(IBytes):
         """
 
 
+class IRestrictedBytes(IBytes):
+    """A marker interface used for restricted LibraryFileAlias fields."""
+
+
 class StrippedTextLine(TextLine):
     implements(IStrippedTextLine)
 
@@ -241,6 +248,7 @@ class NoneableTextLine(StrippedTextLine):
 
 # Title
 # A field to capture a launchpad object title
+
 class Title(StrippedTextLine):
     implements(ITitle)
 
@@ -261,12 +269,14 @@ class StrippableText(Text):
 
 # Summary
 # A field capture a Launchpad object summary
+
 class Summary(StrippableText):
     implements(ISummary)
 
 
 # Description
 # A field capture a Launchpad object description
+
 class Description(StrippableText):
     implements(IDescription)
 
@@ -277,6 +287,7 @@ class NoneableDescription(Description):
 
 # Whiteboard
 # A field capture a Launchpad object whiteboard
+
 class Whiteboard(StrippableText):
     implements(IWhiteboard)
 
@@ -310,6 +321,7 @@ class AnnouncementDate(Datetime):
 # TimeInterval
 # A field to capture an interval in time, such as X days, Y hours, Z
 # minutes.
+
 class TimeInterval(TextLine):
     implements(ITimeInterval)
 
@@ -830,3 +842,8 @@ class PublicPersonChoice(PersonChoice):
         else:
             # The vocabulary prevents the revealing of private team names.
             raise PrivateTeamNotAllowed(value)
+
+
+class RestrictedBytes(Bytes):
+    """A field for restricted LibraryFileAlias records."""
+    implements(IRestrictedBytes)

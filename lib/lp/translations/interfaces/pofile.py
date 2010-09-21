@@ -201,6 +201,13 @@ class IPOFile(IRosettaStats):
         `date_created` with newest first.
         """
 
+    def getTranslationMessages(condition=None):
+        """Get TranslationMessages in this `IPOFile`.
+
+        If condition is None, return all messages, else narrow the result
+        set down using the condition.
+        """
+
     def makeTranslatableMessage(potmsgset):
         """Factory method for an `ITranslatableMessage` object.
 

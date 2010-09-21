@@ -46,9 +46,18 @@ class BugSubscription(SQLBase):
     def display_subscribed_by(self):
         """See `IBugSubscription`."""
         if self.person == self.subscribed_by:
-            return u'Subscribed themselves'
+            return u'Self-subscribed'
         else:
             return u'Subscribed by %s' % self.subscribed_by.displayname
+
+    @property
+    def display_duplicate_subscribed_by(self):
+        """See `IBugSubscription`."""
+        if self.person == self.subscribed_by:
+            return u'Self-subscribed to bug %s' % (self.bugID)
+        else:
+            return u'Subscribed to bug %s by %s' % (self.bugID,
+                self.subscribed_by.displayname)
 
     def canBeUnsubscribedByUser(self, user):
         """See `IBugSubscription`."""

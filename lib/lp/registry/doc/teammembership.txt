@@ -1,4 +1,5 @@
-= Team Membership/Participation =
+Team Membership/Participation
+=============================
 
 When a person joins a team, we store the relationship in the TeamMembership
 table. In this table we store the membership status, the join date and the
@@ -57,7 +58,8 @@ XXX: This doctest needs a lot of cleanups!
     >>> flush_database_updates()
 
 
-== Adding new members ==
+Adding new members
+------------------
 
 One way of adding new members to a team is by having the user himself join the
 team he wants.
@@ -138,7 +140,8 @@ Other users must use the join method if they are going to add themselves
 to a team.
 
     >>> mark = personset.getByName('mark')
-    >>> t3.addMember(salgado, reviewer=mark, status=TeamMembershipStatus.ADMIN)
+    >>> t3.addMember(salgado, reviewer=mark,
+    ...     status=TeamMembershipStatus.ADMIN)
     Traceback (most recent call last):
     ...
     Unauthorized:...
@@ -414,7 +417,8 @@ managed.
     True
 
 
-== Changing membership data ==
+Changing membership data
+------------------------
 
 The only bits of a TeamMembership that can be changed are its status, expiry
 date, reviewer[comment] and the date the user joined. From these ones, the
@@ -552,7 +556,8 @@ date of other's memberships, not his own.
     AssertionError: ...
 
 
-== Flagging expired memberships ==
+Flagging expired memberships
+----------------------------
 
 The expired memberships are flagged by a cronscript that runs daily. This
 script simply flags all active memberships which reached their expiry date as
@@ -631,7 +636,6 @@ a warning email several days before the expiration. The user will just
 be notified that the membership has already been automatically renewed
 on the expiration day.
 
-    >>> from storm.store import Store
     >>> autorenewal_team = factory.makeTeam(name="autorenewal-team")
     >>> autorenewal_team.renewal_policy = (
     ...     TeamMembershipRenewalPolicy.AUTOMATIC)
@@ -684,7 +688,7 @@ teams with automatic renewal don't need warnings.
     DEBUG   ...
     DEBUG   Sent warning email to name16 in launchpad-buildd-admins team.
     DEBUG   Sent warning email to name12 in landscape-developers team.
-    DEBUG   Removing lock file: /var/lock/launchpad-flag-expired-memberships.lock
+    DEBUG   Removing lock file: ...launchpad-flag-expired-memberships.lock
     >>> process.returncode
     0
     >>> transaction.abort()
@@ -713,7 +717,8 @@ while the one that was inactive hasn't changed.
     datetime.timedelta(73)
 
 
-== Renewing team memberships ==
+Renewing team memberships
+-------------------------
 
 A team membership can be renewed before it has been expired by either
 changing its dateexpires (which can be done only by admins of the
@@ -786,7 +791,8 @@ expire soon.
     Approved
 
 
-== Querying team memberships ==
+Querying team memberships
+-------------------------
 
 You can check a person's direct memberships by using team_memberships:
 
@@ -833,7 +839,8 @@ We can also change the sort order of the results of getMembersByStatus.
     [u'Celso Providelo (cprov)', u'Guilherme Salgado (salgado)']
 
 
-== Finding team administrators ==
+Finding team administrators
+---------------------------
 
 Another convenient method is getDirectAdministrators(), which returns the
 admin members plus the owner in case he is not one of the admin members.
@@ -878,7 +885,8 @@ teams for which the person/team has admin rights.
 
     >>> cprov_team = factory.makeTeam(owner=cprov, name="cprov-team")
     >>> [team.name for team in cprov.getAdministratedTeams()]
-    [u'canonical-partner-dev', u'cprov-team', u'guadamen', u'launchpad-buildd-admins']
+    [u'canonical-partner-dev', u'cprov-team', u'guadamen',
+     u'launchpad-buildd-admins']
 
 If a team is merged it will not show up in the set of administered teams.
 
@@ -889,7 +897,8 @@ If a team is merged it will not show up in the set of administered teams.
     [u'canonical-partner-dev', u'guadamen', u'launchpad-buildd-admins']
 
 
-== Querying a person for team participation ==
+Querying a person for team participation
+----------------------------------------
 
 Team membership is direct; team participation is indirect, people being
 participants of teams by virtue of being members of other teams which are in
@@ -942,44 +951,8 @@ for Salgado.
     t4
 
 
-== Membership caches ==
-
-Person instances have membership caches (_inTeam_cache) to avoid the
-need to reissue identical membership queries repeatedly. (This test uses
-Person directly to allow us access to an unproxied object, since
-_inTeam_cache is private, and it uses TeamMembershipSet directly to allow
-us to call TeamMembership.setStatus, which is private).
-
-    >>> from lp.registry.model.person import Person
-    >>> from lp.registry.model.teammembership import TeamMembershipSet
-    >>> no_priv = Person.selectOneBy(name='no-priv')
-    >>> no_priv.inTeam(admins)
-    False
-    >>> no_priv._inTeam_cache
-    {...25: False...}
-
-This cache is cleared when memberships are created:
-
-    >>> membership = TeamMembershipSet().new(
-    ...     no_priv, admins, TeamMembershipStatus.APPROVED, admins.teamowner)
-    >>> no_priv._inTeam_cache
-    {}
-    >>> no_priv.inTeam(admins)
-    True
-    >>> no_priv._inTeam_cache
-    {25: True}
-
-Or changed:
-
-    >>> membership.setStatus(TeamMembershipStatus.DEACTIVATED, mark)
-    True
-    >>> no_priv._inTeam_cache
-    {}
-    >>> no_priv.inTeam(admins)
-    False
-
-
-== Email to invalid users ==
+Email to invalid users
+----------------------
 
 There are cases where teams have deactivated or suspended users as members.
 This is a data error that needs fixing, but should not interfere with
@@ -1008,8 +981,8 @@ Bad user joins a team, and he is approved. An admin later suspends him.
     >>> from canonical.launchpad.interfaces import IMasterObject
     >>> IMasterObject(bad_user.account).status = AccountStatus.SUSPENDED
     >>> IMasterObject(bad_user.preferredemail).status = EmailAddressStatus.OLD
-    >>> from canonical.cachedproperty import clear_property
-    >>> clear_property(removeSecurityProxy(bad_user), '_preferredemail_cached')
+    >>> from lp.services.propertycache import IPropertyCache
+    >>> del IPropertyCache(removeSecurityProxy(bad_user)).preferredemail
     >>> transaction.commit()
 
     >>> [m.displayname for m in t3.allmembers]

@@ -45,7 +45,6 @@ from cscvs.cmds import totla
 import CVS
 import SCM
 
-from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from lp.code.enums import RevisionControlSystems
 from lp.codehosting.codeimport.foreigntree import (
@@ -57,6 +56,7 @@ from lp.codehosting.codeimport.tarball import (
     extract_tarball,
     )
 from lp.codehosting.codeimport.uifactory import LoggingUIFactory
+from lp.services.propertycache import cachedproperty
 
 
 class CodeImportWorkerExitCode:
@@ -665,8 +665,6 @@ class HgImportWorker(PullingImportWorker):
     The only behaviour we add is preserving the id-sha map between runs.
     """
 
-    db_file = 'hg-v2.db'
-
     @property
     def format_classes(self):
         """See `PullingImportWorker.opening_format`."""
@@ -677,26 +675,39 @@ class HgImportWorker(PullingImportWorker):
     def getBazaarBranch(self):
         """See `ImportWorker.getBazaarBranch`.
 
-        In addition to the superclass' behaviour, we retrieve the 'hg-v2.db'
-        map from the import data store and put it where bzr-hg will find
-        it in the Bazaar tree, that is at '.bzr/repository/hg-v2.db'.
+        In addition to the superclass' behaviour, we retrieve the bzr-hg's
+        caches, both legacy and current and put them where bzr-hg will find
+        them in the Bazaar tree, that is at '.bzr/repository/hg-v2.db' and
+        '.bzr/repository/hg'.
         """
         branch = PullingImportWorker.getBazaarBranch(self)
+        # Fetch the legacy cache from the store, if present.
         self.import_data_store.fetch(
-            self.db_file, branch.repository._transport)
+            'hg-v2.db', branch.repository._transport)
+        # The cache dir from newer bzr-hgs is stored as a tarball.
+        local_name = 'hg-cache.tar.gz'
+        if self.import_data_store.fetch(local_name):
+            repo_transport = branch.repository._transport
+            repo_transport.mkdir('hg')
+            hg_db_dir = os.path.join(
+                local_path_from_url(repo_transport.base), 'hg')
+            extract_tarball(local_name, hg_db_dir)
         return branch
 
     def pushBazaarBranch(self, bazaar_branch):
         """See `ImportWorker.pushBazaarBranch`.
 
-        In addition to the superclass' behaviour, we store the 'hg-v2.db'
-        shamap that bzr-hg will have created at .bzr/repository/hg-v2.db into
+        In addition to the superclass' behaviour, we store the hg cache
+        that bzr-hg will have created at .bzr/repository/hg into
         the import data store.
         """
         non_trivial = PullingImportWorker.pushBazaarBranch(
             self, bazaar_branch)
-        self.import_data_store.put(
-            self.db_file, bazaar_branch.repository._transport)
+        repo_base = bazaar_branch.repository._transport.base
+        hg_db_dir = os.path.join(local_path_from_url(repo_base), 'hg')
+        local_name = 'hg-cache.tar.gz'
+        create_tarball(hg_db_dir, local_name)
+        self.import_data_store.put(local_name)
         return non_trivial
 
 

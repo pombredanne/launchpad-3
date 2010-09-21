@@ -97,6 +97,9 @@ from lp.translations.model.translationimportqueue import (
     )
 
 
+MAX_TIMELINE_MILESTONES = 20
+
+
 def landmark_key(landmark):
     """Sorts landmarks by date and name."""
     if landmark['date'] is None:
@@ -543,7 +546,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
 
     def getTimeline(self, include_inactive=False):
         landmarks = []
-        for milestone in self.all_milestones:
+        for milestone in self.all_milestones[:MAX_TIMELINE_MILESTONES]:
             if milestone.product_release is None:
                 # Skip inactive milestones, but include releases,
                 # even if include_inactive is False.

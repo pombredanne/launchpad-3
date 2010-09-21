@@ -79,7 +79,7 @@ This new version fixes bug #6 according its changesfiles:
     >>> bar2_src.changes.changed_by['person'].name
     u'kinnison'
 
-    >>> bar2_src.changes._dict['launchpad-bugs-fixed']
+    >>> bar2_src.changes._dict['Launchpad-bugs-fixed']
     '6'
 
     >>> print bar2_src.changes.changes_comment
