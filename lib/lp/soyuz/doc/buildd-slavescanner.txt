@@ -339,8 +339,6 @@ the builder was OK:
     >>> build.status.title
     'Uploading build'
 
-    >>> bqItem10.destroySelf()
-
 === Successfully collected and uploaded  (FULLYBUILT) ===
 
 Build item 6 has binary packages available in the sample data, letting us test
@@ -1062,7 +1060,6 @@ the restricted librarian.
     True
     >>> print lfa.filename
     buildlog_ubuntu-hoary-i386.mozilla-firefox_0.9_BUILDING.txt.gz
-    >>> candidate.destroySelf()
 
 The attempt to fetch the buildlog from the common librarian will fail
 since this is a build in a private archive and the buildlog was thus

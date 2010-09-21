@@ -1804,6 +1804,20 @@ pre.changelog, table.diff,
     color: #b8b8ff;
     }
 
+/* Inline description editing.
+ * Override the lazr-js style for all uses.
+ */
+div#edit-description,
+div#edit-commit_message {
+    font-family: 'UbuntuBeta Mono', 'Ubuntu Mono', monospace;
+    font-size: 93%;
+    margin: 1em 0;
+    }
+div#edit-description .yui-ieditor-input,
+div#edit-commit_message .yui-ieditor-input {
+    top: 0;
+    }
+
 
 /* =========================
    Universal presentation

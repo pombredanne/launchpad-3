@@ -33,6 +33,7 @@ from zope.component import getUtility
 from canonical.encoding import guess as guess_encoding
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.librarian.utils import filechunks
+from lp.app.errors import NotFoundError
 from lp.archiveuploader.utils import (
     determine_source_file_type,
     prefix_multi_line_string,
@@ -52,7 +53,6 @@ from lp.soyuz.enums import (
     PackageUploadCustomFormat,
     PackageUploadStatus,
     )
-from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.section import ISectionSet
@@ -338,6 +338,13 @@ class PackageUploadFile(NascentUploadFile):
         """Return an ISection for self.section_name."""
         return getUtility(ISectionSet)[self.section_name]
 
+    def checkBuild(self, build):
+        """Check the status of the build this file is part of.
+
+        :param build: an `IPackageBuild` instance
+        """
+        raise NotImplementedError(self.checkBuild)
+
     def extractUserDefinedFields(self, control):
         """Extract the user defined fields out of a control file list.
         """
@@ -380,6 +387,23 @@ class SourceUploadFile(SourceFileMixin, PackageUploadFile):
         if filename_version != version_chopped:
             yield UploadError("%s: should be %s according to changes file."
                 % (filename_version, version_chopped))
+
+    def checkBuild(self, build):
+        """See PackageUploadFile."""
+        # The master verifies the status to confirm successful upload.
+        build.status = BuildStatus.FULLYBUILT
+        # If this upload is successful, any existing log is wrong and
+        # unuseful.
+        build.upload_log = None
+
+        # Sanity check; raise an error if the build we've been
+        # told to link to makes no sense.
+        if (build.pocket != self.policy.pocket or
+            build.distroseries != self.policy.distroseries or
+            build.archive != self.policy.archive):
+            raise UploadError(
+                "Attempt to upload source specifying "
+                "recipe build %s, where it doesn't fit." % build.id)
 
 
 class BaseBinaryUploadFile(PackageUploadFile):
@@ -834,51 +858,51 @@ class BaseBinaryUploadFile(PackageUploadFile):
         in this case, change this build to be FULLYBUILT.
         - Create a new build in FULLYBUILT status.
 
-        If by any chance an inconsistent build was found this method will
-        raise UploadError resulting in a upload rejection.
         """
-        build_id = getattr(self.policy.options, 'buildid', None)
         dar = self.policy.distroseries[self.archtag]
 
-        if build_id is None:
-            # Check if there's a suitable existing build.
-            build = sourcepackagerelease.getBuildByArch(
-                dar, self.policy.archive)
-            if build is not None:
-                build.status = BuildStatus.FULLYBUILT
-                self.logger.debug("Updating build for %s: %s" % (
-                    dar.architecturetag, build.id))
-            else:
-                # No luck. Make one.
-                # Usually happen for security binary uploads.
-                build = sourcepackagerelease.createBuild(
-                    dar, self.policy.pocket, self.policy.archive,
-                    status=BuildStatus.FULLYBUILT)
-                self.logger.debug("Build %s created" % build.id)
-        else:
-            build = getUtility(IBinaryPackageBuildSet).getByBuildID(build_id)
-            self.logger.debug("Build %s found" % build.id)
-            # Ensure gathered binary is related to a FULLYBUILT build
-            # record. It will be check in slave-scanner procedure to
-            # certify that the build was processed correctly.
+        # Check if there's a suitable existing build.
+        build = sourcepackagerelease.getBuildByArch(
+            dar, self.policy.archive)
+        if build is not None:
             build.status = BuildStatus.FULLYBUILT
-            # Also purge any previous failed upload_log stored, so its
-            # content can be garbage-collected since it's not useful
-            # anymore.
-            build.upload_log = None
+            self.logger.debug("Updating build for %s: %s" % (
+                dar.architecturetag, build.id))
+        else:
+            # No luck. Make one.
+            # Usually happen for security binary uploads.
+            build = sourcepackagerelease.createBuild(
+                dar, self.policy.pocket, self.policy.archive,
+                status=BuildStatus.FULLYBUILT)
+            self.logger.debug("Build %s created" % build.id)
+        return build
+
+    def checkBuild(self, build):
+        """See PackageUploadFile."""
+        try:
+            dar = self.policy.distroseries[self.archtag]
+        except NotFoundError:
+            raise UploadError(
+                "Upload to unknown architecture %s for distroseries %s" %
+                (self.archtag, self.policy.distroseries))
+
+        # Ensure gathered binary is related to a FULLYBUILT build
+        # record. It will be check in slave-scanner procedure to
+        # certify that the build was processed correctly.
+        build.status = BuildStatus.FULLYBUILT
+        # Also purge any previous failed upload_log stored, so its
+        # content can be garbage-collected since it's not useful
+        # anymore.
+        build.upload_log = None
 
         # Sanity check; raise an error if the build we've been
-        # told to link to makes no sense (ie. is not for the right
-        # source package).
-        if (build.source_package_release != sourcepackagerelease or
-            build.pocket != self.policy.pocket or
+        # told to link to makes no sense.
+        if (build.pocket != self.policy.pocket or
             build.distro_arch_series != dar or
             build.archive != self.policy.archive):
             raise UploadError(
                 "Attempt to upload binaries specifying "
                 "build %s, where they don't fit." % build.id)
-
-        return build
 
     def storeInDatabase(self, build):
         """Insert this binary release and build into the database."""
