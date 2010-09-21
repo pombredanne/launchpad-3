@@ -237,6 +237,19 @@ class TestBranchChanged(TestCaseWithFactory):
         jobs = list(getUtility(IBranchScanJobSource).iterReady())
         self.assertEqual(0, len(jobs))
 
+    def test_branchChanged_creates_scan_job_for_broken_scan(self):
+        # branchChanged() if the last_scanned_id is different to the newly
+        # changed revision, then a scan job is created.
+        branch = self.factory.makeAnyBranch()
+        login_person(branch.owner)
+        removeSecurityProxy(branch).last_mirrored_id = 'rev1'
+        removeSecurityProxy(branch).last_scanned_id = 'old'
+        jobs = list(getUtility(IBranchScanJobSource).iterReady())
+        self.assertEqual(0, len(jobs))
+        branch.branchChanged('', 'rev1', *self.arbitrary_formats)
+        jobs = list(getUtility(IBranchScanJobSource).iterReady())
+        self.assertEqual(1, len(jobs))
+
     def test_branchChanged_packs_format(self):
         # branchChanged sets the branch_format etc attributes to the passed in
         # values.
