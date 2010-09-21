@@ -1943,6 +1943,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             processorfamily = ProcessorFamilySet().getByName('powerpc')
         if owner is None:
             owner = self.makePerson()
+        # XXX: architecturetag & processerfamily are tightly coupled. It's
+        # wrong to just make a fresh architecture tag without also making a
+        # processor family to go with it (ideally with processors!)
         if architecturetag is None:
             architecturetag = self.getUniqueString('arch')
         return distroseries.newArch(

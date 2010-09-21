@@ -106,7 +106,8 @@ class OkSlave:
         return defer.succeed((True, None))
 
     def build(self, buildid, buildtype, chroot, filemap, args):
-        self.call_log.append(('build', buildid, buildtype, chroot, filemap, args))
+        self.call_log.append(
+            ('build', buildid, buildtype, chroot, filemap.keys(), args))
         info = 'OkSlave BUILDING'
         return ('BuildStatus.Building', info)
 
