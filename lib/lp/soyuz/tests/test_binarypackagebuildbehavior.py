@@ -7,21 +7,13 @@ from __future__ import with_statement
 
 __metaclass__ = type
 
-from zope.component import getUtility
+from twisted.trial import unittest
+
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 from canonical.testing import TwistedLaunchpadZopelessLayer
 
-from twisted.trial.unittest import TestCase
-
-
 from lp.buildmaster.tests.test_builder import SlaveTestHelpers
-from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
-from lp.soyuz.model.buildpackagejob import BuildPackageJob
-from lp.soyuz.model.publishing import BinaryPackagePublishingHistory
-from lp.soyuz.model.queue import PackageUploadBuild
 from lp.testing import (
     ANONYMOUS,
     login_as,
@@ -30,7 +22,7 @@ from lp.testing import (
 from lp.testing.factory import LaunchpadObjectFactory
 
 
-class TestBinaryBuildPackageBehavior(TestCase):
+class TestBinaryBuildPackageBehavior(unittest.TestCase):
     """Tests for the BinaryPackageBuildBehavior."""
 
     layer = TwistedLaunchpadZopelessLayer
@@ -44,11 +36,6 @@ class TestBinaryBuildPackageBehavior(TestCase):
         login_as(ANONYMOUS)
         self.addCleanup(logout)
         self.layer.switchDbUser('testadmin')
-        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
-        store.find(BinaryPackagePublishingHistory).remove()
-        store.find(BuildPackageJob).remove()
-        store.find(PackageUploadBuild).remove()
-        store.find(BinaryPackageBuild).remove()
 
     def test_smoke(self):
         self.slave_helper.getServerSlave()
@@ -64,4 +51,6 @@ class TestBinaryBuildPackageBehavior(TestCase):
         candidate = build.queueBuild()
         # Probably we should call startJob or something. Copy the doctest for
         # now.
-        return removeSecurityProxy(builder)._dispatchBuildCandidate(candidate)
+        # XXX: Maybe we should add Deferred to the zope.security.checkers.
+        return removeSecurityProxy(builder)._dispatchBuildCandidate(
+            removeSecurityProxy(candidate))
