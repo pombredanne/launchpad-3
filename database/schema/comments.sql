@@ -346,6 +346,21 @@ COMMENT ON COLUMN BugTrackerPerson.bugtracker IS 'The external bug tracker in wh
 COMMENT ON COLUMN BugTrackerPerson.name IS 'The (within the bug tracker) unique username in the external bug tracker.';
 COMMENT ON COLUMN BugTrackerPerson.person IS 'The Person record in Launchpad this user corresponds to.';
 
+-- BugTrackerComponent
+
+COMMENT ON TABLE BugTrackerComponent IS 'A software component in a remote bug tracker, which can be linked to the corresponding source package in a distribution using this table.';
+COMMENT ON COLUMN BugTrackerComponent.name IS 'The name of the component as registered in the remote bug tracker.';
+COMMENT ON COLUMN BugTrackerComponent.is_visible IS 'Whether to display or hide the item in the Launchpad user interface.';
+COMMENT ON COLUMN BugTrackerComponent.is_custom IS 'Whether the item was added by a user in Launchpad or is kept in sync with the remote bug tracker.';
+COMMENT ON COLUMN BugTrackerComponent.component_group IS 'The product or other higher level category used by the remote bug tracker to group projects, if any.';
+COMMENT ON COLUMN BugTrackerComponent.distro_source_package IS 'A link to the source package in a distribution that corresponds to this component.  This can be undefined if no link has been established yet.';
+
+-- BugTrackerComponentGroup
+
+COMMENT ON TABLE BugTrackerComponentGroup IS 'A collection of components as modeled in a remote bug tracker, often referred to as a product.  Some bug trackers do not categorize software components this way, so they will have a single default component group that all components belong to.';
+COMMENT ON COLUMN BugTrackerComponentGroup.name IS 'The product or category name used in the remote bug tracker for grouping components.';
+COMMENT ON COLUMN BugTrackerComponentGroup.bug_tracker IS 'The external bug tracker this component group belongs to.';
+
 -- BugCve
 
 COMMENT ON TABLE BugCve IS 'A table that records the link between a given malone bug number, and a CVE entry.';
@@ -532,9 +547,12 @@ COMMENT ON COLUMN DistributionSourcePackageCache.archive IS 'The archive where t
 COMMENT ON TABLE DistroSeriesDifference IS 'A difference of versions for a package in a derived distroseries and its parent distroseries.';
 COMMENT ON COLUMN DistroSeriesDifference.derived_series IS 'The derived distroseries with the difference from its parent.';
 COMMENT ON COLUMN DistroSeriesDifference.source_package_name IS 'The name of the source package which is different in the two series.';
-COMMENT ON COLUMN DistroSeriesDifference.package_diff IS 'The most recent package diff that was created for this difference.';
+COMMENT ON COLUMN DistroSeriesDifference.package_diff IS 'The most recent package diff that was created for the base version to derived version.';
+COMMENT ON COLUMN DistroSeriesDifference.parent_package_diff IS 'The most recent package diff that was created for the base version to the parent version.';
 COMMENT ON COLUMN DistroSeriesDifference.status IS 'A distroseries difference can be needing attention, ignored or resolved.';
 COMMENT ON COLUMN DistroSeriesDifference.difference_type IS 'The type of difference that this record represents - a package unique to the derived series, or missing, or in both.';
+COMMENT ON COLUMN DistroSeriesDifference.source_version IS 'The version of the package in the derived series.';
+COMMENT ON COLUMN DistroSeriesDifference.parent_source_version IS 'The version of the package in the parent series.';
 
 -- DistroSeriesDifferenceMessage
 COMMENT ON TABLE DistroSeriesDifferenceMessage IS 'A message/comment on a distro series difference.';
@@ -838,6 +856,11 @@ COMMENT ON TABLE TranslationRelicensingAgreement IS 'Who of translation contribu
 COMMENT ON COLUMN TranslationRelicensingAgreement.person IS 'A translator which has submitted their answer.';
 COMMENT ON COLUMN TranslationRelicensingAgreement.allow_relicensing IS 'Does this person want their translations relicensed under BSD.';
 COMMENT ON COLUMN TranslationRelicensingAgreement.date_decided IS 'Date when the last change of opinion was registered.';
+
+-- TranslationTemplatesBuild
+COMMENT ON TABLE TranslationTemplatesBuild IS 'Build-farm record of a translation templates build.';
+COMMENT ON COLUMN TranslationTemplatesBuild.build_farm_job IS 'Associated BuildFarmJob.';
+COMMENT ON COLUMN TranslationTemplatesBuild.branch IS 'Branch to build templates out of.';
 
 -- RevisionAuthor
 COMMENT ON TABLE RevisionAuthor IS 'All distinct authors for revisions.';
@@ -1171,6 +1194,7 @@ COMMENT ON COLUMN DistroArchSeries.official IS 'Whether or not this architecture
 COMMENT ON COLUMN DistroArchSeries.package_count IS 'A cache of the number of binary packages published in this distro arch release. The count only includes packages published in the release pocket.';
 COMMENT ON COLUMN DistroArchSeries.supports_virtualized IS 'Whether or not
 virtualized build support should be provided by this specific distroarchseries';
+COMMENT ON COLUMN DistroArchSeries.enabled IS 'Whether to allow build creation and publishing for this DistroArchSeries.';
 
 -- LauncpadDatabaseRevision
 COMMENT ON TABLE LaunchpadDatabaseRevision IS 'This table contains a list of the database patches that have been successfully applied to this database.';
@@ -1288,11 +1312,14 @@ COMMENT ON TABLE DistributionBounty IS 'This table records a simple link between
 
 COMMENT ON TABLE ProjectBounty IS 'This table records a simple link between a bounty and a project. This bounty will be listed on the project web page, and the project will be mentioned on the bounty web page.';
 
--- Messaging subsytem
+-- BugMessages
 COMMENT ON TABLE BugMessage IS 'This table maps a message to a bug. In other words, it shows that a particular message is associated with a particular bug.';
 COMMENT ON COLUMN BugMessage.bugwatch IS 'The external bug this bug comment was imported from.';
 COMMENT ON COLUMN BugMessage.remote_comment_id IS 'The id this bug comment has in the external bug tracker, if it is an imported comment. If it is NULL while having a bugwatch set, this comment was added in Launchpad and needs to be pushed to the external bug tracker.';
 COMMENT ON COLUMN BugMessage.visible IS 'If false, the bug comment is hidden and should not be shown in any UI.';
+COMMENT ON COLUMN BugMessage.index IS 'The index (used in urls) of the message in a particular bug.';
+
+-- Messaging subsytem
 COMMENT ON TABLE Message IS 'This table stores a single RFC822-style message. Messages can be threaded (using the parent field). These messages can then be referenced from elsewhere in the system, such as the BugMessage table, integrating messageboard facilities with the rest of The Launchpad.';
 COMMENT ON COLUMN Message.parent IS 'A "parent message". This allows for some level of threading in Messages.';
 COMMENT ON COLUMN Message.subject IS 'The title text of the message, or the subject if it was an email.';
@@ -1931,6 +1958,14 @@ COMMENT ON COLUMN ShipItReport.csvfile IS 'A csv file with the report';
 COMMENT ON TABLE Continent IS 'A continent in this huge world.';
 COMMENT ON COLUMN Continent.code IS 'A two-letter code for a continent.';
 COMMENT ON COLUMN Continent.name IS 'The name of the continent.';
+
+-- DistributionJob
+
+COMMENT ON TABLE DistributionJob IS 'Contains references to jobs to be run on distributions.';
+COMMENT ON COLUMN DistributionJob.distribution IS 'The distribution to be acted on.';
+COMMENT ON COLUMN DistributionJob.distroseries IS 'The distroseries to be acted on.';
+COMMENT ON COLUMN DistributionJob.job_type IS 'The type of job';
+COMMENT ON COLUMN DistributionJob.json_data IS 'A JSON struct containing data for the job.';
 
 -- DistributionMirror
 COMMENT ON TABLE DistributionMirror IS 'A mirror of a given distribution.';

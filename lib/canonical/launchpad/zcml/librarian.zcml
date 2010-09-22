@@ -16,7 +16,7 @@
     <allow interface="canonical.launchpad.interfaces.ILibraryFileAliasWithParent" />
     <require
       permission="launchpad.Edit"
-      set_attributes="restricted" />
+      set_attributes="mimetype restricted" />
   </class>
 
   <class class="canonical.launchpad.database.LibraryFileContent">

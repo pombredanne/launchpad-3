@@ -633,7 +633,7 @@ class BranchMergeProposal(SQLBase):
             SourceRevision,
             SourceRevision.branch_id == self.source_branch.id,
             SourceRevision.sequence != None,
-            TargetRevision.id == None)
+            TargetRevision.branch_id == None)
         return result.order_by(Desc(SourceRevision.sequence)).config(limit=10)
 
     def createComment(self, owner, subject, content=None, vote=None,
