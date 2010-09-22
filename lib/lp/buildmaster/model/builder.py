@@ -141,7 +141,8 @@ class BuilderSlave(object):
     def __init__(self, proxy, file_cache_url, vm_host):
         """Initialise a Server with specific parameter to our buildfarm.
 
-        :param proxy: An XML-RPC proxy, implementing 'callRemote'.
+        :param proxy: An XML-RPC proxy, implementing 'callRemote'. It must
+            support passing and returning None objects.
         :param file_cache_url: The URL of the file cache.
         :param vm_host: The VM host to use when resuming.
         """
