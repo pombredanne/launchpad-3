@@ -115,20 +115,20 @@ class TestProcessWithTimeout(ProcessTestsMixin, TrialTestCase):
         # If the timeout fires around the same time as the process ends,
         # then there is a race condition.  The timeoutConnection()
         # method can try and kill the process which has already exited
-        # which normall throws a
+        # which normally throws a
         # twisted.internet.error.ProcessExitedAlready - the code should
         # catch this and ignore it.
-
-        def process_exited(self, buffer_and_exit_code):
-            out, err, code = buffer_and_exit_code
-            self.assertEqual(0, code)
-        self._deferred.addCallback(process_exited)
 
         # Simulate process exit without "killing" it:
         self.protocol._process_transport = self.protocol.transport
         self.protocol.transport.exited = True
+
+        # Without catching the ProcessExitedAlready this will blow up.
         self.clock.advance(self.TIMEOUT+1)
-        return self._deferred
+
+        # At this point, processEnded is yet to be called so the
+        # Deferred has not fired.  If we sti
+        self.assertFalse(self._deferred.called)
 
 
 class TestProcessProtocolWithTwoStageKill(
