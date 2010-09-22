@@ -90,13 +90,26 @@ class UpdateRemoteComponentsFromBugzilla(LaunchpadCronScript):
             help="Purge all data including local customizations before "
                  "importing data from Bugzillas")
 
+    def storeComponents(self, product, components):
+        for component in components:
+            pass
+            # TODO: self.logger.debug(message)
+#            product.components.append(component)
+
+    def removeComponents(self, product, components):
+        for component in components:
+            pass
+#            if component in product.components:
+                # TODO: self.logger.debug(message)
+                # TODO: Remove item from product
+#                pass
 
     def main(self):
         # TODO: If a bz url was specified, run against only it
 
         start_time = time.time()
 
-        # TODO: Replace this with the actual database object
+        # TODO: Replace this with the actual database object (Celebrity?)
         distro = 'ubuntu'
 
         for bugzilla in self.getBugzillas():
@@ -109,13 +122,23 @@ class UpdateRemoteComponentsFromBugzilla(LaunchpadCronScript):
             for product in bz_bugtracker.products.itervalues():
                 #print "%s: %s" %(product['name'], product['components'])
 
+                # TODO: Retrieve component group from launchpad
+#                lp_product = lp_bugtracker.getProduct(product['name'])
+#                if not lp_product:
+#                    print "Error: TODO"
+
                 bz_components = product['components']
                 lp_components = lp_bugtracker.components(product['name'])
 
                 new_comps = self.newComponents(bz_components, lp_components)
                 rm_comps = self.removedComponents(bz_components, lp_components)
 
-                # TODO: Apply changes to launchpad database
+                # Apply changes to launchpad database
+#                self.txn.begin()
+                self.storeComponents(product, new_comps)
+                self.removeComponents(product, rm_comps)
+#                self.txn.commit()
+
                 print product['name']
                 print " - add to database:  ", new_comps
                 print " - rm from database:  ", rm_comps

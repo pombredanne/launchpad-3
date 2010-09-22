@@ -10,7 +10,6 @@ __all__ = [
     ]
 
 import re
-import pycurl
 from StringIO import StringIO
 
 import urllib
@@ -43,24 +42,6 @@ class BugzillaRemoteComponentFinder:
     def _getPage(self, url):
         return urlopen(url).read()
 
-    def parseProductListFromBugzillaSearchPage(self, body):
-        products = []
-        m = self.re_products_select.search(body)
-        if not m:
-            print "Error: No products found at %s" %(url)
-            sys.exit(1)
-        products_line = m.group(1)
-        for line in products_line.split("\n"):
-            m = self.re_product.search(line)
-            if m:
-                product = {
-                    'name': m.group(1),
-                    'components': {},
-                    'versions': None
-                    }
-                products.append(product)
-        return products
-
     def dictFromCSV(self, line):
         items_dict = {}
         for item in line.split(","):
@@ -73,22 +54,38 @@ class BugzillaRemoteComponentFinder:
         return items_dict
 
     def retrieveProducts(self):
-        body = self._getPage(self.url)
-        
+        try:
+            body = self._getPage(self.url)
+            soup = BeautifulSoup(body)
+        except HTTPError, error:
+            #self.logger.error("Error fetching %s: %s" % (url, error))
+            return None
+
         # Load products into a list since Bugzilla references them by index number
-        products = self.parseProductListFromBugzillaSearchPage(body)
+        products = []
+        for product in soup.find(
+            name='select',
+            onchange="doOnSelectProduct(2);").contents:
+            if product.string != "\n":
+                products.append({
+                    'name': product.string,
+                    'components': {},
+                    'versions': None
+                    })
 
-        for line in body.split(";"):
-            #print line
-            m = self.re_cpts.search(line)
-            if m:
-                num = int(m.group(1))
-                products[num]['components'] = self.dictFromCSV(m.group(2))
+        for script_text in soup.findAll(name="script"):
+            if script_text is None or script_text.string is None:
+                continue
+            for line in script_text.string.split(";"):
+                m = self.re_cpts.search(line)
+                if m:
+                    num = int(m.group(1))
+                    products[num]['components'] = self.dictFromCSV(m.group(2))
 
-            m = self.re_vers.search(line)
-            if m:
-                num = int(m.group(1))
-                products[num]['versions'] = self.dictFromCSV(m.group(2))
+                m = self.re_vers.search(line)
+                if m:
+                    num = int(m.group(1))
+                    products[num]['versions'] = self.dictFromCSV(m.group(2))
 
         # Re-map list into dict for easier lookups
         for product in products:
