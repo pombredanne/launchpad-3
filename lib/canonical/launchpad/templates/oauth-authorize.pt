@@ -21,28 +21,53 @@
       <tal:token-not-reviewed condition="not:token/is_reviewed">
         <div metal:use-macro="context/@@launchpad_form/form">
           <div metal:fill-slot="extra_top">
-            <p>The application identified as
-              <strong tal:content="token/consumer/key">consumer</strong>
-              wants to access
-              <tal:has-context condition="view/token_context">
-                things related to
-                <strong tal:content="view/token_context/title">Context</strong>
-                in
-              </tal:has-context>
-              Launchpad on your behalf. What level of access
-              do you want to grant?</p>
 
-            <table>
-              <tr tal:repeat="action view/visible_actions">
-                <td style="text-align: right">
-                  <tal:action replace="structure action/render" />
-                </td>
-                <td>
-                  <span class="lesser"
-                    tal:content="action/permission/description" />
-                </td>
-              </tr>
-            </table>
+           <tal:desktop-integration-token condition="token/consumer/is_integrated_desktop">
+             <p>The
+               <tal:desktop replace="structure
+               token/consumer/integrated_desktop_type" />
+             computer identified
+             as <strong tal:content="token/consumer/integrated_desktop_name">hostname</strong>
+             wants access to your Launchpad account. If you allow the
+             integration, all applications running
+             on <strong tal:content="token/consumer/integrated_desktop_name">hostname</strong>
+             will have read-write access to your Launchpad account,
+             including to your private data.</p>
+
+             <p>If
+             <strong tal:content="token/consumer/integrated_desktop_name">hostname</strong>
+             is not the computer you're using right now, or if you
+             don't trust this computer, you should click "No, Thanks",
+             or close this window now.</p>
+
+             <p>Even if you decide to allow the integration, you can
+             change your mind later.</p>
+           </tal:desktop-integration-token>
+
+           <tal:web-integration-token condition="not:token/consumer/is_integrated_desktop">
+             <p>The application identified as
+               <strong tal:content="token/consumer/key">consumer</strong>
+               wants to access
+               <tal:has-context condition="view/token_context">
+                 things related to
+                 <strong tal:content="view/token_context/title">Context</strong>
+                 in
+               </tal:has-context>
+               Launchpad on your behalf. What level of access
+               do you want to grant?</p>
+           </tal:web-integration-token>
+
+           <table>
+             <tr tal:repeat="action view/visible_actions">
+               <td style="text-align: right">
+                 <tal:action replace="structure action/render" />
+               </td>
+               <td>
+                 <span class="lesser"
+                   tal:content="action/permission/description" />
+               </td>
+             </tr>
+           </table>
           </div>
 
           <div metal:fill-slot="extra_bottom">

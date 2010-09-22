@@ -90,25 +90,6 @@ to deny permission altogether.
     Change Non-Private Data
     Change Anything
 
-The only time the 'Desktop Integration' permission shows up in this list
-is if the client specifically requests it, and no other
-permission. (Also requesting UNAUTHORIZED is okay--it will show up
-anyway.)
-
-    >>> print_access_levels('allow_permission=DESKTOP_INTEGRATION')
-    Give all programs running on "hostname" access to my Launchpad account.
-    No, thanks.
-
-    >>> print_access_levels(
-    ...     'allow_permission=DESKTOP_INTEGRATION&allow_permission=UNAUTHORIZED')
-    Give all programs running on "hostname" access to my Launchpad account.
-    No, thanks.
-
-    >>> print_access_levels(
-    ...     'allow_permission=WRITE_PUBLIC&allow_permission=DESKTOP_INTEGRATION')
-    No Access
-    Change Non-Private Data
-
 If an application doesn't specify any valid access levels, or only
 specifies the UNAUTHORIZED access level, Launchpad will show all the
 access levels, except for DESKTOP_INTEGRATION.
@@ -126,6 +107,20 @@ access levels, except for DESKTOP_INTEGRATION.
     Change Non-Private Data
     Read Anything
     Change Anything
+
+An application may not request the DESKTOP_INTEGRATION access level
+unless its consumer key matches a certain pattern. (Successful desktop
+integration has its own section, below.)
+
+    >>> allow_permission = "allow_permission=DESKTOP_INTEGRATION"
+    >>> browser.open(
+    ...     "http://launchpad.dev/+authorize-token?%s&%s"
+    ...         % (urlencode(params), allow_permission))
+    Traceback (most recent call last):
+    ...
+    Unauthorized: Consumer "foobar123451432" asked for desktop
+    integration, but didn't say what kind of desktop, or name the
+    computer being integrated.
 
 An application may also specify a context, so that the access granted
 by the user is restricted to things related to that context.
@@ -179,11 +174,15 @@ specified by the application).
 
     >>> browser.open(
     ...     "http://launchpad.dev/+authorize-token?%s" % urlencode(params))
+    >>> main_content = find_tag_by_id(browser.contents, 'maincontent')
+    >>> print main_content
     >>> browser.getControl('Read Non-Private Data').click()
 
     # This is the URL given to Launchpad in oauth_callback.
     >>> browser.url
     'http://launchpad.dev/bzr'
+    >>> main_content = find_tag_by_id(browser.contents, 'maincontent')
+    >>> print main_content
 
 After the authorization is granted the token gets its permission and
 person set.
@@ -264,3 +263,42 @@ another window/tab so there's no need to worry.
     This request for accessing Launchpad on your behalf has been
     reviewed ... ago.
     See all applications authorized to access Launchpad on your behalf.
+
+Desktop integration
+===================
+
+The test case given above shows how to integrate a single application
+or website into Launchpad. But it's also possible to integrate an
+entire desktop environment into Launchpad.
+
+
+
+The only time the 'Desktop Integration' permission shows up in this list
+is if the client specifically requests it, and no other
+permission. (Also requesting UNAUTHORIZED is okay--it will show up
+anyway.)
+
+    >>> login('salgado@ubuntu.com')
+    >>> desktop_key = "Ubuntu desktop (mycomputer)"
+    >>> consumer = getUtility(IOAuthConsumerSet).new(desktop_key)
+    >>> token = consumer.newRequestToken()
+    >>> logout()
+
+    >>> params = dict(oauth_token=token.key)
+    >>> print_access_levels('allow_permission=DESKTOP_INTEGRATION')
+    Give all programs running on "hostname" access to my Launchpad account.
+    No, thanks.
+
+    >>> print_access_levels(
+    ...     'allow_permission=DESKTOP_INTEGRATION&allow_permission=UNAUTHORIZED')
+    Give all programs running on "hostname" access to my Launchpad account.
+    No, thanks.
+
+    >>> print_access_levels(
+    ...     'allow_permission=WRITE_PUBLIC&allow_permission=DESKTOP_INTEGRATION')
+    No Access
+    Change Non-Private Data
+
+You can't specify a callback URL when authorizing a desktop
+integration token, since callback URLs are only for integrating
+websites.

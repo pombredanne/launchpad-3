@@ -64,6 +64,22 @@ class IOAuthConsumer(Interface):
         description=_('The secret which, if not empty, should be used by the '
                       'consumer to sign its requests.'))
 
+    is_integrated_desktop = Attribute(
+        """This attribute is true if the consumer corresponds to a
+        user account on a personal computer.""")
+
+    integrated_desktop_name = Attribute(
+        """If the consumer corresponds to a user account on a personal
+        computer, this is the self-reported name of that computer. If
+        the consumer is a specific web or desktop application, this is
+        None.""")
+
+    integrated_desktop_type = Attribute(
+        """If the consumer corresponds to a user account on a personal
+        computer, this is the self-reported type of that computer
+        (usually the operating system). If the consumer is a specific
+        web or desktop application, this is None.""")
+
     def newRequestToken():
         """Return a new `IOAuthRequestToken` with a random key and secret.
 

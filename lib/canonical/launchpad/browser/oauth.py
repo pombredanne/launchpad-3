@@ -16,6 +16,7 @@ from zope.formlib.form import (
     Action,
     Actions,
     )
+from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad.interfaces.oauth import (
     IOAuthConsumerSet,
@@ -104,27 +105,32 @@ def token_exists_and_is_not_reviewed(form, action):
     return form.token is not None and not form.token.is_reviewed
 
 
+def token_review_success(form, action, data):
+    """The success callback for a button to approve a token."""
+    form.reviewToken(action.permission)
+
+
 def create_oauth_permission_actions():
-    """Return a list of `Action`s for each possible `OAuthPermission`."""
+    """Return a list of `Action`s for each possible `OAuthPermission`.
+
+    Special permissions like DESKTOP_INTEGRATION are not included.
+    """
     actions = Actions()
-    actions_excluding_special_permissions = Actions()
-    def success(form, action, data):
-        form.reviewToken(action.permission)
     for permission in OAuthPermission.items:
         action = Action(
-            permission.title, name=permission.name, success=success,
+            permission.title, name=permission.name,
+            success=token_review_success,
             condition=token_exists_and_is_not_reviewed)
         action.permission = permission
-        actions.append(action)
         if permission != OAuthPermission.DESKTOP_INTEGRATION:
-            actions_excluding_special_permissions.append(action)
-    return actions, actions_excluding_special_permissions
+            actions.append(action)
+    return actions
+
 
 class OAuthAuthorizeTokenView(LaunchpadFormView, JSONTokenMixin):
     """Where users authorize consumers to access Launchpad on their behalf."""
 
-    actions, actions_excluding_special_permissions = (
-        create_oauth_permission_actions())
+    actions_excluding_special_permissions = create_oauth_permission_actions()
     label = "Authorize application to access Launchpad on your behalf"
     schema = IOAuthRequestToken
     field_names = []
@@ -165,15 +171,42 @@ class OAuthAuthorizeTokenView(LaunchpadFormView, JSONTokenMixin):
         # options--it must be the only option (other than
         # UNAUTHORIZED). If DESKTOP_INTEGRATION is one of several
         # options, remove it from the list.
-        if (OAuthPermission.DESKTOP_INTEGRATION.name in allowed_permissions
+        desktop_permission = OAuthPermission.DESKTOP_INTEGRATION
+        if (desktop_permission.name in allowed_permissions
             and len(allowed_permissions) > 1):
-            name = OAuthPermission.DESKTOP_INTEGRATION.name
-            allowed_permissions.remove(name)
+            allowed_permissions.remove(desktop_permission.name)
 
-        for action in self.actions:
-            if (action.permission.name in allowed_permissions
-                or action.permission is OAuthPermission.UNAUTHORIZED):
-                actions.append(action)
+        if desktop_permission.name in allowed_permissions:
+            if not self.token.consumer.is_integrated_desktop:
+                # Consumers may only ask for desktop integration if
+                # they give a desktop type (eg. "Ubuntu") and a
+                # user-recognizable desktop name (eg. the hostname).
+                raise Unauthorized(
+                    ('Consumer "%s" asked for desktop integration, '
+                     "but didn't say what kind of desktop, or name "
+                     "the computer being integrated."
+                     % self.token.consumer.key))
+
+            # We're going for desktop integration. The only two
+            # possibilities are "allow" and "deny". We'll customize
+            # the "allow" message using the hostname provided by the
+            # desktop.
+            allow_action = Action(
+                "Allow the integration.", name=desktop_permission.name,
+                success=token_review_success,
+                condition=token_exists_and_is_not_reviewed)
+            deny_action = Action(
+                "No, thanks.", name=OAuthPermission.UNAUTHORIZED.name,
+                success=token_review_success,
+                condition=token_exists_and_is_not_reviewed)
+            actions.append(allow_action)
+            actions.append(deny_action)
+        else:
+            # We're going for web-based integration.
+            for action in self.actions_excluding_special_permissions:
+                if (action.permission.name in allowed_permissions
+                    or action.permission is OAuthPermission.UNAUTHORIZED):
+                    actions.append(action)
 
         if len(list(actions)) == 1:
             # The only visible action is UNAUTHORIZED. That means the
