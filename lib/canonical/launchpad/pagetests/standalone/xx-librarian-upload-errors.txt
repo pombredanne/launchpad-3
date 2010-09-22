@@ -1,0 +1,64 @@
+Librarian errors
+================
+
+Librarian errors are shown in a special error page. We record OOPSes
+for these failures and display the OOPS ID in the error message.
+
+    >>> from canonical.config import config
+    >>> post_data = r"""
+    ... POST /firefox/+bug/1/+addcomment HTTP/1.1
+    ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+    ... Content-Type: multipart/form-data; boundary=---------------------------482515227376903752137397980
+    ...
+    ... -----------------------------482515227376903752137397980
+    ... Content-Disposition: form-data; name="field.subject"
+    ...
+    ... Re: Firefox does not support SVG
+    ... -----------------------------482515227376903752137397980
+    ... Content-Disposition: form-data; name="field.comment"
+    ...
+    ... -----------------------------482515227376903752137397980
+    ... Content-Disposition: form-data; name="field.filecontent.used"
+    ...
+    ... -----------------------------482515227376903752137397980
+    ... Content-Disposition: form-data; name="field.filecontent"; filename="foo.txt"
+    ... Content-Type: text/plain
+    ...
+    ... file content
+    ...
+    ... -----------------------------482515227376903752137397980
+    ... Content-Disposition: form-data; name="field.patch.used"
+    ...
+    ... -----------------------------482515227376903752137397980
+    ... Content-Disposition: form-data; name="field.attachment_description"
+    ...
+    ... -----------------------------482515227376903752137397980
+    ... Content-Disposition: form-data; name="field.actions.save"
+    ...
+    ... Post Comment
+    ... -----------------------------482515227376903752137397980--
+    ... """
+    >>> real_upload_port = config.librarian.upload_port
+    >>> # We can force a Librarian error by setting the Librarian upload
+    >>> # port to the download port.
+    >>> config.librarian.update(
+    ...     [('upload_port', str(config.librarian.download_port))])
+    []
+    >>> response = http(post_data)
+    >>> print extract_text(response.getOutput())
+    HTTP/1.1 500 Internal Server Error
+    ...
+    Sorry, you can't do this right now
+    Sorry, you can't upload or download files from Launchpad at the moment,
+    because we're doing feng shui in the server room. Normal service will
+    resume within an hour.
+    We&#8217;ve recorded what happened. The error ID is:
+    OOPS-...
+    Traceback (most recent call last):
+    ...
+    UploadFailed: Server said: foo.txt 501 Not Implemented&lt;br /&gt;
+    ...
+
+    >>> config.librarian.update(
+    ...     [('upload_port', str(real_upload_port))])
+    []
