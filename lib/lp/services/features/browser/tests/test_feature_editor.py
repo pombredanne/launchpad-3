@@ -6,6 +6,10 @@
 __metaclass__ = type
 
 
+from testtools.matchers import (
+    Equals,
+    )
+
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import ILaunchpadRoot
@@ -23,14 +27,46 @@ class TestFeatureControlPage(BrowserTestCase):
 
     layer = DatabaseFunctionalLayer
 
-    def test_feature_page_anonymous_readonly(self):
-        # Anonymous users can see the feature control page, but can't change
-        # anything.
+    def getFeaturePageBrowser(self):
         root = getUtility(ILaunchpadRoot)
         url = canonical_url(root,
             view_name='+features')
-        browser = self.getUserBrowser(url)
+        return self.getUserBrowser(url)
+
+    def test_feature_page_default_value(self):
+        """No rules in the sampledata gives no content in the page"""
+        browser = self.getFeaturePageBrowser()
         textarea = browser.getControl(name="feature_rules")
         # and by default, since there are no rules in the sample data, it's
         # empty
-        self.assertEquals(textarea.value, '')
+        self.assertThat(textarea.value, Equals(''))
+
+    def test_feature_page_from_database(self):
+        model.addFeatureFlagRules([
+            ('default', 'ui.icing', u'3.0', 100),
+            ('beta_user', 'ui.icing', u'4.0', 300),
+            ])
+        browser = self.getFeaturePageBrowser()
+        textarea = browser.getControl(name="feature_rules")
+        self.assertThat(textarea.value, Equals("""\
+default\tui.icing\t3.0\t100
+beta_user\tui.icing\t4.0\t300
+"""))
+
+    def test_feature_page_submit_changes(self):
+        # XXX: read/write mode not supported yet
+        return
+        ## new_value = 'beta_user 10 some_key some value with spaces'
+        ## browser = self.getFeaturePageBrowser()
+        ## textarea = browser.getControl(name="feature_rules")
+        ## textarea.value = new_value
+        ## browser.getControl(name="submit").click()
+        ## self.assertThat(textarea.value.replace('\t', ' '),
+        ##     Equals(new_value))
+
+
+    # TODO: test that for unauthorized or anonymous users, the page works
+    # (including showing the active rules) but the textarea is readonly and
+    # there is no submit button.
+    #
+    # TODO: test that you can submit it and it changes the database.
