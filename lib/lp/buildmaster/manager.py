@@ -106,6 +106,7 @@ class RecordingSlave:
 
     def build(self, *args):
         """Perform the build."""
+        # XXX: This method does not appear to be used.
         self.calls.append(('build', args))
         result = buildd_success_result_map.get('build')
         return [result, args[0]]
@@ -275,6 +276,7 @@ class SlaveScanner:
     def scheduleNextScanCycle(self):
         """Schedule another scan of the builder some time in the future."""
         self._deferred_list = []
+        # XXX: Change this to use LoopingCall.
         reactor.callLater(self.SCAN_INTERVAL, self.startCycle)
 
     def startCycle(self):
@@ -286,6 +288,7 @@ class SlaveScanner:
             if slave is None:
                 self.scheduleNextScanCycle()
             else:
+                # XXX: Ought to return Deferred.
                 self.resumeAndDispatch(slave)
         except:
             error = Failure()
@@ -362,9 +365,16 @@ class SlaveScanner:
             return None
 
         # See if there is a job we can dispatch to the builder slave.
+
+        # XXX: Rather than use the slave actually associated with the builder
+        # (which, incidentally, shouldn't be a property anyway), we make a new
+        # RecordingSlave so we can get access to its asynchronous
+        # "resumeSlave" method. Blech.
         slave = RecordingSlave(
             self.builder.name, self.builder.url, self.builder.vm_host)
-        candidate = self.builder.findAndStartJob(buildd_slave=slave)
+        # XXX: Passing buildd_slave=slave overwrites the 'slave' property of
+        # self.builder. Not sure why this is needed yet.
+        self.builder.findAndStartJob(buildd_slave=slave)
         if self.builder.currentjob is not None:
             # After a successful dispatch we can reset the
             # failure_count.
@@ -376,9 +386,13 @@ class SlaveScanner:
 
     def resumeAndDispatch(self, slave):
         """Chain the resume and dispatching Deferreds."""
+        # XXX: resumeAndDispatch makes Deferreds without returning them.
         if slave.resume_requested:
             # The slave needs to be reset before we can dispatch to
             # it (e.g. a virtual slave)
+
+            # XXX: Two problems here. The first is that 'resumeSlave' only
+            # exists on RecordingSlave (BuilderSlave calls it 'resume').
             d = slave.resumeSlave()
             d.addBoth(self.checkResume, slave)
         else:
