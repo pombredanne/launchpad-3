@@ -5,17 +5,25 @@
 
 import errno
 import os
+import signal
 import socket
 import xmlrpclib
 
+import fixtures
+
 from testtools.content import Content
 from testtools.content_type import UTF8_TEXT
+
+from twisted.internet.task import Clock
+from twisted.python.failure import Failure
+from twisted.trial.unittest import TestCase as TrialTestCase
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.buildd.slave import BuilderStatus
 from canonical.buildd.tests.harness import BuilddSlaveTestSetup
+from canonical.config import config
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
@@ -24,7 +32,8 @@ from canonical.launchpad.webapp.interfaces import (
     )
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
-    LaunchpadZopelessLayer
+    LaunchpadZopelessLayer,
+    TwistedLayer,
     )
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.builder import IBuilder, IBuilderSet
@@ -49,7 +58,6 @@ from lp.soyuz.tests.soyuzbuilddhelpers import (
     )
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
-    TestCase,
     TestCaseWithFactory,
     )
 from lp.testing.fakemethod import FakeMethod
@@ -467,19 +475,11 @@ class TestCurrentBuildBehavior(TestCaseWithFactory):
             self.builder.current_build_behavior, BinaryPackageBuildBehavior)
 
 
-class TestSlave(TestCase):
-    """
-    Integration tests for BuilderSlave that verify how it works against a
-    real slave server.
-    """
-
-    # XXX: JonathanLange 2010-09-20 bug=643521: There are also tests for
-    # BuilderSlave in buildd-slave.txt and in other places. The tests here
-    # ought to become the canonical tests for BuilderSlave vs running buildd
-    # XML-RPC server interaction.
+class SlaveTestHelpers(fixtures.Fixture):
 
     # The URL for the XML-RPC service set up by `BuilddSlaveTestSetup`.
-    TEST_URL = 'http://localhost:8221/rpc/'
+    BASE_URL = 'http://localhost:8221'
+    TEST_URL = '%s/rpc/' % (BASE_URL,)
 
     def getServerSlave(self):
         """Set up a test build slave server.
@@ -488,11 +488,14 @@ class TestSlave(TestCase):
         """
         tachandler = BuilddSlaveTestSetup()
         tachandler.setUp()
-        def addLogFile(exc_info):
-            self.addDetail(
-                'xmlrpc-log-file',
-                Content(UTF8_TEXT, lambda: open(tachandler.logfile, 'r').read()))
-        self.addOnException(addLogFile)
+        # Basically impossible to do this w/ TrialTestCase. But it would be
+        # really nice to keep it.
+        #
+        # def addLogFile(exc_info):
+        #     self.addDetail(
+        #         'xmlrpc-log-file',
+        #         Content(UTF8_TEXT, lambda: open(tachandler.logfile, 'r').read())
+        # self.addOnException(addLogFile)
         self.addCleanup(tachandler.tearDown)
         return tachandler
 
@@ -527,7 +530,7 @@ class TestSlave(TestCase):
         :return: The build id returned by the slave.
         """
         if build_id is None:
-            build_id = self.getUniqueString()
+            build_id = 'random-build-id'
         tachandler = self.getServerSlave()
         chroot_file = 'fake-chroot'
         dsc_file = 'thing'
@@ -537,10 +540,33 @@ class TestSlave(TestCase):
             build_id, 'debian', chroot_file, {'.dsc': dsc_file},
             {'ogrecomponent': 'main'})
 
+
+class TestSlave(TrialTestCase):
+    """
+    Integration tests for BuilderSlave that verify how it works against a
+    real slave server.
+    """
+
+    layer = TwistedLayer
+
+    def setUp(self):
+        super(TestSlave, self).setUp()
+        self.slave_helper = SlaveTestHelpers()
+        self.slave_helper.setUp()
+        self.addCleanup(self.slave_helper.cleanUp)
+
+    # XXX: JonathanLange 2010-09-20 bug=643521: There are also tests for
+    # BuilderSlave in buildd-slave.txt and in other places. The tests here
+    # ought to become the canonical tests for BuilderSlave vs running buildd
+    # XML-RPC server interaction.
+
+    # The URL for the XML-RPC service set up by `BuilddSlaveTestSetup`.
+    TEST_URL = 'http://localhost:8221/rpc/'
+
     def test_abort(self):
-        slave = self.getClientSlave()
+        slave = self.slave_helper.getClientSlave()
         # We need to be in a BUILDING state before we can abort.
-        self.triggerGoodBuild(slave)
+        self.slave_helper.triggerGoodBuild(slave)
         result = slave.abort()
         self.assertEqual(result, BuilderStatus.ABORTING)
 
@@ -549,12 +575,12 @@ class TestSlave(TestCase):
         # valid chroot & filemaps works and returns a BuilderStatus of
         # BUILDING.
         build_id = 'some-id'
-        slave = self.getClientSlave()
-        result = self.triggerGoodBuild(slave, build_id)
+        slave = self.slave_helper.getClientSlave()
+        result = self.slave_helper.triggerGoodBuild(slave, build_id)
         self.assertEqual([BuilderStatus.BUILDING, build_id], result)
 
     def test_clean(self):
-        slave = self.getClientSlave()
+        slave = self.slave_helper.getClientSlave()
         # XXX: JonathanLange 2010-09-21: Calling clean() on the slave requires
         # it to be in either the WAITING or ABORTED states, and both of these
         # states are very difficult to achieve in a test environment. For the
@@ -564,15 +590,15 @@ class TestSlave(TestCase):
     def test_echo(self):
         # Calling 'echo' contacts the server which returns the arguments we
         # gave it.
-        self.getServerSlave()
-        slave = self.getClientSlave()
+        self.slave_helper.getServerSlave()
+        slave = self.slave_helper.getClientSlave()
         result = slave.echo('foo', 'bar', 42)
         self.assertEqual(['foo', 'bar', 42], result)
 
     def test_info(self):
         # Calling 'info' gets some information about the slave.
-        self.getServerSlave()
-        slave = self.getClientSlave()
+        self.slave_helper.getServerSlave()
+        slave = self.slave_helper.getClientSlave()
         result = slave.info()
         # We're testing the hard-coded values, since the version is hard-coded
         # into the remote slave, the supported build managers are hard-coded
@@ -588,17 +614,17 @@ class TestSlave(TestCase):
     def test_initial_status(self):
         # Calling 'status' returns the current status of the slave. The
         # initial status is IDLE.
-        self.getServerSlave()
-        slave = self.getClientSlave()
+        self.slave_helper.getServerSlave()
+        slave = self.slave_helper.getClientSlave()
         status = slave.status()
         self.assertEqual([BuilderStatus.IDLE, ''], status)
 
     def test_status_after_build(self):
         # Calling 'status' returns the current status of the slave. After a
         # build has been triggered, the status is BUILDING.
-        slave = self.getClientSlave()
+        slave = self.slave_helper.getClientSlave()
         build_id = 'status-build-id'
-        self.triggerGoodBuild(slave, build_id)
+        self.slave_helper.triggerGoodBuild(slave, build_id)
         status = slave.status()
         self.assertEqual([BuilderStatus.BUILDING, build_id], status[:2])
         [log_file] = status[2:]
@@ -606,15 +632,89 @@ class TestSlave(TestCase):
 
     def test_ensurepresent_not_there(self):
         # ensurepresent checks to see if a file is there.
-        self.getServerSlave()
-        slave = self.getClientSlave()
+        self.slave_helper.getServerSlave()
+        slave = self.slave_helper.getClientSlave()
         result = slave.ensurepresent('blahblah', None, None, None)
         self.assertEqual([False, 'No URL'], result)
 
     def test_ensurepresent_actually_there(self):
         # ensurepresent checks to see if a file is there.
-        tachandler = self.getServerSlave()
-        slave = self.getClientSlave()
-        self.makeCacheFile(tachandler, 'blahblah')
+
+        tachandler = self.slave_helper.getServerSlave()
+        slave = self.slave_helper.getClientSlave()
+        self.slave_helper.makeCacheFile(tachandler, 'blahblah')
         result = slave.ensurepresent('blahblah', None, None, None)
         self.assertEqual([True, 'No URL'], result)
+
+    def test_resumeHost_success(self):
+        # On a successful resume resume() fires the returned deferred
+        # callback with 'None'.
+        self.slave_helper.getServerSlave()
+        slave = self.slave_helper.getClientSlave()
+
+        # The configuration testing command-line.
+        self.assertEqual(
+            'echo %(vm_host)s', config.builddmaster.vm_resume_command)
+
+        # On success the response is None.
+        def check_resume_success(response):
+            out, err, code = response
+            self.assertEqual(os.EX_OK, code)
+            self.assertEqual("%s\n" % slave.vm_host, out)
+        d = slave.resume()
+        d.addBoth(check_resume_success)
+        return d
+
+    def test_resumeHost_failure(self):
+        # On a failed resume, 'resumeHost' fires the returned deferred
+        # errorback with the `ProcessTerminated` failure.
+        self.slave_helper.getServerSlave()
+        slave = self.slave_helper.getClientSlave()
+
+        # Override the configuration command-line with one that will fail.
+        failed_config = """
+        [builddmaster]
+        vm_resume_command: test "%(vm_host)s = 'no-sir'"
+        """
+        config.push('failed_resume_command', failed_config)
+        self.addCleanup(config.pop, 'failed_resume_command')
+
+        # On failures, the response is a twisted `Failure` object containing
+        # a tuple.
+        def check_resume_failure(failure):
+            out, err, code = failure.value
+            # The process will exit with a return code of "1".
+            self.assertEqual(code, 1)
+        d = slave.resume()
+        d.addBoth(check_resume_failure)
+        return d
+
+    def test_resumeHost_timeout(self):
+        # On a resume timeouts, 'resumeHost' fires the returned deferred
+        # errorback with the `TimeoutError` failure.
+        self.slave_helper.getServerSlave()
+        slave = self.slave_helper.getClientSlave()
+
+        # Override the configuration command-line with one that will timeout.
+        timeout_config = """
+        [builddmaster]
+        vm_resume_command: sleep 5
+        socket_timeout: 1
+        """
+        config.push('timeout_resume_command', timeout_config)
+        self.addCleanup(config.pop, 'timeout_resume_command')
+
+        # On timeouts, the response is a twisted `Failure` object containing
+        # a `TimeoutError` error.
+        def check_resume_timeout(failure):
+            self.assertIsInstance(failure, Failure)
+            out, err, code = failure.value
+            self.assertEqual(code, signal.SIGKILL)
+        clock = Clock()
+        d = slave.resume(clock=clock)
+        # Move the clock beyond the socket_timeout but earlier than the
+        # sleep 5.  This stops the test having to wait for the timeout.
+        # Fast tests FTW!
+        clock.advance(2)
+        d.addBoth(check_resume_timeout)
+        return d

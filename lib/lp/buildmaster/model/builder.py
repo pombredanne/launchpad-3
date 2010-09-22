@@ -17,7 +17,6 @@ import httplib
 import logging
 import os
 import socket
-import subprocess
 import tempfile
 import urllib2
 import xmlrpclib
@@ -34,6 +33,7 @@ from storm.expr import (
     Count,
     Sum,
     )
+from twisted.internet import defer
 from zope.component import getUtility
 from zope.interface import implements
 
@@ -80,6 +80,7 @@ from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from lp.services.osutils import until_no_eintr
 from lp.services.propertycache import cachedproperty
+from lp.services.twistedsupport.processmonitor import ProcessWithTimeout
 # XXX Michael Nelson 2010-01-13 bug=491330
 # These dependencies on soyuz will be removed when getBuildRecords()
 # is moved.
@@ -170,26 +171,27 @@ class BuilderSlave(object):
         fileurl = urlappend(self.urlbase, filelocation)
         return urllib2.urlopen(fileurl)
 
-    def resume(self):
-        """Resume a virtual builder.
+    def resume(self, clock=None):
+        """Resume the builder in an asynchronous fashion.
 
-        It uses the configuration command-line (replacing 'vm_host') and
-        return its output.
+        We use the builddmaster configuration 'socket_timeout' as
+        the process timeout.
 
-        :return: a (stdout, stderr, subprocess exitcode) triple
+        :param clock: An optional twisted.internet.task.Clock to override
+                      the default clock.  For use in tests.
+
+        :return: a Deferred
         """
-        # XXX: This executes the vm_resume_command
-        # synchronously. RecordingSlave does so asynchronously. Since we
-        # always want to do this asynchronously, there's no need for the
-        # duplication.
         resume_command = config.builddmaster.vm_resume_command % {
             'vm_host': self.vm_host}
-        resume_argv = resume_command.split()
-        resume_process = subprocess.Popen(
-            resume_argv, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        stdout, stderr = resume_process.communicate()
+        # Twisted API requires string but the configuration provides unicode.
+        resume_argv = [str(term) for term in resume_command.split()]
 
-        return (stdout, stderr, resume_process.returncode)
+        d = defer.Deferred()
+        p = ProcessWithTimeout(
+            d, config.builddmaster.socket_timeout, clock=clock)
+        p.spawnProcess(resume_argv[0], tuple(resume_argv))
+        return d
 
     def cacheFile(self, logger, libraryfilealias):
         """Make sure that the file at 'libraryfilealias' is on the slave.
