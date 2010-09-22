@@ -24,6 +24,7 @@ from lp.services.twistedsupport.processmonitor import (
     ProcessMonitorProtocol,
     ProcessMonitorProtocolWithTimeout,
     ProcessProtocolWithTwoStageKill,
+    ProcessWithTimeout,
     run_process_with_timeout,
     )
 
@@ -96,6 +97,38 @@ class ProcessTestsMixin:
         self.protocol.transport = self.StubTransport(
             self.protocol, self.clock)
         self.protocol.connectionMade()
+
+
+class TestProcessWithTimeout(ProcessTestsMixin, TrialTestCase):
+    """Tests for `ProcessWithTimeout`."""
+
+    layer = TwistedLayer
+    TIMEOUT = 100 # arbitrary, big enough not to really fire.
+
+    def makeProtocol(self):
+        """See `ProcessMonitorProtocolTestsMixin.makeProtocol`."""
+        self._deferred = defer.Deferred()
+        return ProcessWithTimeout(
+            self._deferred, self.TIMEOUT, clock=self.clock)
+
+    def test_end_versus_timeout_race_condition(self):
+        # If the timeout fires around the same time as the process ends,
+        # then there is a race condition.  The timeoutConnection()
+        # method can try and kill the process which has already exited
+        # which normall throws a
+        # twisted.internet.error.ProcessExitedAlready - the code should
+        # catch this and ignore it.
+
+        def process_exited(self, buffer_and_exit_code):
+            out, err, code = buffer_and_exit_code
+            self.assertEqual(0, code)
+        self._deferred.addCallback(process_exited)
+
+        # Simulate process exit without "killing" it:
+        self.protocol._process_transport = self.protocol.transport
+        self.protocol.transport.exited = True
+        self.clock.advance(self.TIMEOUT+1)
+        return self._deferred
 
 
 class TestProcessProtocolWithTwoStageKill(
