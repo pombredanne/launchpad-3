@@ -19,6 +19,7 @@ import hashlib
 from StringIO import StringIO
 from urlparse import urljoin
 
+from fixtures import Fixture
 import transaction
 from transaction.interfaces import ISynchronizer
 import zope.component
@@ -58,8 +59,8 @@ class InstrumentedLibraryFileAlias(LibraryFileAlias):
         return self._datafile.read(chunksize)
 
 
-class FakeLibrarian(object):
-    """A fake, in-process Librarian.
+class FakeLibrarian(Fixture):
+    """A test double Librarian which works in-process.
 
     This takes the role of both the librarian client and the LibraryFileAlias
     utility.
@@ -67,65 +68,23 @@ class FakeLibrarian(object):
     provided_utilities = [ILibrarianClient, ILibraryFileAliasSet]
     implements(ISynchronizer, *provided_utilities)
 
-    installed_as_librarian = False
-
-    def installAsLibrarian(self):
-        """Install this `FakeLibrarian` as the default Librarian."""
-        if self.installed_as_librarian:
-            return
-
+    def setUp(self):
+        """Fixture API: install as the librarian."""
+        Fixture.setUp(self)
+        self.aliases = {}
+        self.download_url = config.librarian.download_url
         transaction.manager.registerSynch(self)
-
-        # Original utilities that need to be restored.
-        self.original_utilities = {}
+        self.addCleanup(transaction.manager.unregisterSynch, self)
 
         site_manager = zope.component.getGlobalSiteManager()
         for utility in self.provided_utilities:
             original = zope.component.getUtility(utility)
             if site_manager.unregisterUtility(original, utility):
-                # We really disabled a utility, so remember to restore
-                # it later.  (Alternatively, the utility object might
-                # implement an interface that extends the utility one,
-                # in which case we should not restore it.)
-                self.original_utilities[utility] = original
+                # We really disabled a utility, restore it later.
+                self.addCleanup(
+                    zope.component.provideUtility, original, utility)
             zope.component.provideUtility(self, utility)
-
-        self.installed_as_librarian = True
-
-    def uninstall(self):
-        """Un-install this `FakeLibrarian` as the default Librarian."""
-        if not self.installed_as_librarian:
-            return
-
-        transaction.manager.unregisterSynch(self)
-
-        site_manager = zope.component.getGlobalSiteManager()
-        for utility in reversed(self.provided_utilities):
-            site_manager.unregisterUtility(self, utility)
-            original_utility = self.original_utilities.get(utility)
-            if original_utility is not None:
-                # We disabled a utility to get here; restore the
-                # original.  We do not do this for utilities that were
-                # implemented through interface inheritance, because in
-                # that case we would never have unregistered anything in
-                # the first place.  Re-registering would register the
-                # same object twice, for related but different
-                # interfaces.
-                zope.component.provideUtility(original_utility, utility)
-
-        self.installed_as_librarian = False
-
-    def setUp(self):
-        """Fixture API: install as the librarian."""
-        self.installAsLibrarian()
-
-    def tearDown(self):
-        """Fixture API: uninstall."""
-        self.uninstall()
-
-    def __init__(self):
-        self.aliases = {}
-        self.download_url = config.librarian.download_url
+            self.addCleanup(site_manager.unregisterUtility, self, utility)
 
     def addFile(self, name, size, file, contentType, expires=None):
         """See `IFileUploadClient`."""
