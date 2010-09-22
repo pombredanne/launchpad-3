@@ -65,10 +65,6 @@ class IPackageBuild(IBuildFarmJob):
         title=_('Build farm job'), schema=IBuildFarmJob, required=True,
         readonly=True, description=_('The base build farm job.'))
 
-    policy_name = TextLine(
-        title=_("Policy name"), required=True,
-        description=_("The upload policy to use for handling these builds."))
-
     current_component = Attribute(
         'Component where the source related to this build was last '
         'published.')
@@ -141,6 +137,14 @@ class IPackageBuild(IBuildFarmJob):
 
         :param suspended: Whether the associated `Job` instance should be
             created in a suspended state.
+        """
+
+    def getUploader(changes):
+        """Return the person responsible for the upload.
+
+        This is used to when checking permissions.
+
+        :param changes: Changes file from the upload.
         """
 
 
