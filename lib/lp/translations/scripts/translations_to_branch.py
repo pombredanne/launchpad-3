@@ -98,9 +98,9 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
         :param db_branch: A `Branch` object as defined in Launchpad.
         :return: A `DirectBranchCommit` for `db_branch`.
         """
-        committer = 'Launchpad Translations on behalf of %s' % (
+        committer_id = 'Launchpad Translations on behalf of %s' % (
             db_branch.owner.name)
-        return DirectBranchCommit(db_branch, committer_string=committer)
+        return DirectBranchCommit(db_branch, committer_id=committer_id)
 
     def _prepareBranchCommit(self, db_branch):
         """Prepare branch for use with `DirectBranchCommit`.
