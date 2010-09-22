@@ -34,6 +34,7 @@ from canonical.launchpad.scripts.logger import (
     QuietFakeLogger,
     )
 from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.code.enums import BranchLifecycleStatus
 from lp.codehosting.branchdistro import (
     DistroBrancher,
     switch_branches,
@@ -233,6 +234,12 @@ class TestDistroBrancher(TestCaseWithFactory):
              db_branch.sourcepackagename, brancher.new_distroseries.name],
             [new_branch.owner, new_branch.distribution,
              new_branch.sourcepackagename, new_branch.name])
+        # The new branch is set in the development state, and the old one is
+        # mature.
+        self.assertEqual(
+            BranchLifecycleStatus.DEVELOPMENT, new_branch.lifecycle_status)
+        self.assertEqual(
+            BranchLifecycleStatus.MATURE, db_branch.lifecycle_status)
 
     def test_makeOneNewBranch_inconsistent_branch(self):
         # makeOneNewBranch skips over an inconsistent official package branch
