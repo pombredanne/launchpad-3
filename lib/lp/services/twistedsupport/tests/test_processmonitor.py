@@ -103,7 +103,7 @@ class TestProcessWithTimeout(ProcessTestsMixin, TrialTestCase):
     """Tests for `ProcessWithTimeout`."""
 
     layer = TwistedLayer
-    TIMEOUT = 100 # arbitrary, big enough not to really fire.
+    TIMEOUT = 100
 
     def makeProtocol(self):
         """See `ProcessMonitorProtocolTestsMixin.makeProtocol`."""
