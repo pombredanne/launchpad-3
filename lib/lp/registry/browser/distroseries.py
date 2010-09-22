@@ -147,6 +147,11 @@ class DistroSeriesNavigation(GetitemNavigation, BugTargetTraversalMixin,
     def traverse_queue(self, id):
         return getUtility(IPackageUploadSet).get(id)
 
+    @stepthrough('+difference')
+    def traverse_difference(self, name):
+        dsd_source = getUtility(IDistroSeriesDifferenceSource)
+        return dsd_source.getByDistroSeriesAndName(self.context, name)
+
 
 class DistroSeriesBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `IDistroSeries`."""

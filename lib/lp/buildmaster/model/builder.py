@@ -141,7 +141,12 @@ class BuilderSlave(object):
             rpc_url, transport=TimeoutTransport(), allow_none=True)
 
     def abort(self):
+        """Abort the current build."""
         return self._server.abort()
+
+    def clean(self):
+        """Clean up the waiting files and reset the slave's internal state."""
+        return self._server.clean()
 
     def echo(self, *args):
         """Echo the arguments back."""
