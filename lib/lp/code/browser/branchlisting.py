@@ -934,8 +934,8 @@ class PersonBranchesMenu(ApplicationMenu):
     def active_reviews(self):
         text = get_plural_text(
             self.active_review_count,
-            'active review or unmerged proposal',
-            'active reviews or unmerged proposals')
+            'active review',
+            'active reviews')
         return Link('+activereviews', text)
 
     def addbranch(self):
@@ -1124,8 +1124,8 @@ class ProductBranchesMenu(ApplicationMenu):
     def active_reviews(self):
         text = get_plural_text(
             self.active_review_count,
-            'active review or unmerged proposal',
-            'active reviews or unmerged proposals')
+            'active review',
+            'active reviews')
         return Link('+activereviews', text, site='code')
 
     @enabled_with_permission('launchpad.Commercial')

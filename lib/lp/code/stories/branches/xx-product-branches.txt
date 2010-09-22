@@ -37,7 +37,7 @@ If there are not any branches, a helpful message is shown.
     ...     return find_tag_by_id(browser.contents, 'branch-summary')
     >>> summary = get_summary(browser)
     >>> print extract_text(summary)
-    Launchpad does not know where The Gnome Panel Applets hosts its code...
+    Launchpad does not know where The Gnome Panel Applets hosts its code.
     There are no branches for Gnome Applets in Launchpad.
     If there are Bazaar branches of Gnome Applets in a publicly
       accessible location, Launchpad can act as a mirror of the branch
@@ -45,16 +45,16 @@ If there are not any branches, a helpful message is shown.
     Launchpad can also act as a primary location for Bazaar branches of
       Gnome Applets. Read more.
     Launchpad can import code from CVS, Subversion, Mercurial or Git
-      into Bazaar branches. Read more.
+      into Bazaar branches. Read more...
 
 The 'Read more' links go to the help wiki.
 
     >>> for anchor in summary.fetch('a'):
     ...     print anchor['href']
-    https://help.launchpad.net/Code
     https://help.launchpad.net/Code/MirroredBranches
     https://help.launchpad.net/Code/UploadingABranch
     https://help.launchpad.net/VcsImports
+    https://help.launchpad.net/Code
 
 
 Link to the product downloads
@@ -86,8 +86,6 @@ shown.
     >>> browser.open('http://code.launchpad.dev/evolution')
     >>> summary = get_summary(browser)
     >>> print extract_text(get_summary(browser))
-    3 active branches ...
-    0 active reviews or unmerged proposals
     You can get a copy of the development focus branch using the
     command:
        bzr branch lp://dev/evolution
@@ -229,7 +227,7 @@ shows correct singular and plural forms.
     ...     print extract_text(get_stats_portlet(browser))
 
     >>> print_portlet('gnome-terminal')
-    0 active reviews or unmerged proposals
+    0 active reviews
     8 active branches owned by 1 person and 2 teams
     0 commits in the last month
 
@@ -240,17 +238,17 @@ shows correct singular and plural forms.
     >>> ignored = factory.makeProductBranch(fooix)
     >>> logout()
     >>> print_portlet('fooix')
-    0 active reviews or unmerged proposals
+    0 active reviews
     2 active branches owned by 2 people
     0 commits in the last month
 
     >>> print_portlet('evolution')
-    0 active reviews or unmerged proposals
+    0 active reviews
     3 active branches owned by 1 person and 1 team
     0 commits in the last month
 
     >>> print_portlet('iso-codes')
-    0 active reviews or unmerged proposals
+    0 active reviews
     1 active branch owned by 1 person
     0 commits in the last month
 
@@ -268,7 +266,7 @@ branch, then they will not appear on the initial branch listing.
     >>> admin_browser.getControl('Change Branch').click()
 
     >>> print_portlet('iso-codes')
-    0 active reviews or unmerged proposals
+    0 active reviews
     0 active branches
     0 commits in the last month
 

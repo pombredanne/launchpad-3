@@ -8,7 +8,8 @@
     information available.
   </tal:comment>
 
-  <tr tal:define="menu context/menu:branches" class="code-links">
+  <tr tal:define="menu context/menu:branches" class="code-links"
+      id="merge-counts">
     <td class="code-count"
         tal:define="count menu/active_review_count"
         tal:content="count" />
@@ -20,7 +21,7 @@
     </td>
   </tr>
 
-  <tr class="code-links">
+  <tr class="code-links" id="branch-count-summary">
     <td class="code-count"
         tal:define="count view/branch_count"
         tal:content="count" />
