@@ -1,4 +1,3 @@
-<!-- +portlet-product-codestatistics-content -->
 <tal:portlet-product-codestatistics-content
     xmlns:tal="http://xml.zope.org/namespaces/tal"
     xmlns:metal="http://xml.zope.org/namespaces/metal">

@@ -1,4 +1,3 @@
-<!-- +portlet-product-codestatistics -->
 <div
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
@@ -6,7 +5,7 @@
   class="portlet" id="portlet-product-codestatistics">
 
   <table class="code-links">
-    <tbody id="portlet-product-codestatistics-content"
+    <tbody id="portlet-product-codestatistics"
       tal:content="structure context/@@+portlet-product-codestatistics-content" />
   </table>
 </div>

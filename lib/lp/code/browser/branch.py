@@ -381,8 +381,6 @@ class BranchMirrorMixin:
     Requires self.branch to be set by the class using this mixin.
     """
 
-    # XXX: BradCrittenden 2010-09-13 Should this be moved the model?
-
     @property
     def mirror_location(self):
         """Check the mirror location to see if it is a private one."""
