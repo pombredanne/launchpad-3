@@ -305,7 +305,8 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
             get_message_text(browser, 2), 'foo is not a branch on Launchpad.')
 
     def test_create_recipe_format_too_new(self):
-        # If the recipe's format version is too new, we should notify the user.
+        # If the recipe's format version is too new, we should notify the
+        # user.
         product = self.factory.makeProduct(
             name='ratatouille', displayname='Ratatouille')
         branch = self.factory.makeBranch(
