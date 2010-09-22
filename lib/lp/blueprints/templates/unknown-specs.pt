@@ -24,7 +24,7 @@
             planning or documentation.
           </p>
         </div>
-        
+
         <div tal:omit-tag
           tal:condition="not:view/is_project">
           <div tal:omit-tag tal:define="blueprints_usage view/context/blueprints_usage">
