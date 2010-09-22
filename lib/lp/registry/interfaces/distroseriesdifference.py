@@ -143,6 +143,7 @@ class IDistroSeriesDifferenceEdit(Interface):
             be blacklisted or just the current (default).
         """
 
+    @export_write_operation()
     def unblacklist():
         """Removes this difference from the blacklist.
 
