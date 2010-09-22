@@ -32,7 +32,6 @@ __all__ = [
     'latest_proposals_for_each_branch',
     ]
 
-from collections import defaultdict
 import operator
 
 from lazr.delegates import delegates
@@ -200,7 +199,7 @@ class BranchMergeCandidateView(LaunchpadView):
                 'Approved [Merge Failed]',
             BranchMergeProposalStatus.QUEUED : 'Queued',
             BranchMergeProposalStatus.SUPERSEDED : 'Superseded'
-            }
+        }
         return friendly_texts[self.context.queue_status]
 
     @property
@@ -212,8 +211,7 @@ class BranchMergeCandidateView(LaunchpadView):
         result = ''
         if self.context.queue_status in (
             BranchMergeProposalStatus.CODE_APPROVED,
-            BranchMergeProposalStatus.REJECTED
-            ):
+            BranchMergeProposalStatus.REJECTED):
             formatter = DateTimeFormatterAPI(self.context.date_reviewed)
             result = '%s %s' % (
                 self.context.reviewer.displayname,
@@ -608,46 +606,15 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
         """Location of page for commenting on this proposal."""
         return canonical_url(self.context, view_name='+comment')
 
-    @property
-    def revision_end_date(self):
-        """The cutoff date for showing revisions.
-
-        If the proposal has been merged, then we stop at the merged date. If
-        it is rejected, we stop at the reviewed date. For superseded
-        proposals, it should ideally use the non-existant date_last_modified,
-        but could use the last comment date.
-        """
-        status = self.context.queue_status
-        if status == BranchMergeProposalStatus.MERGED:
-            return self.context.date_merged
-        if status == BranchMergeProposalStatus.REJECTED:
-            return self.context.date_reviewed
-        # Otherwise return None representing an open end date.
-        return None
-
-    def _getRevisionsSinceReviewStart(self):
-        """Get the grouped revisions since the review started."""
-        # Work out the start of the review.
-        start_date = self.context.date_review_requested
-        if start_date is None:
-            start_date = self.context.date_created
-        source = DecoratedBranch(self.context.source_branch)
-        resultset = source.getMainlineBranchRevisions(
-            start_date, self.revision_end_date, oldest_first=True)
-        # Now group by date created.
-        groups = defaultdict(list)
-        for branch_revision, revision, revision_author in resultset:
-            groups[revision.date_created].append(branch_revision)
-        return [
-            CodeReviewNewRevisions(revisions, date, source)
-            for date, revisions in groups.iteritems()]
-
     @cachedproperty
     def conversation(self):
         """Return a conversation that is to be rendered."""
         # Sort the comments by date order.
-        comments = self._getRevisionsSinceReviewStart()
         merge_proposal = self.context
+        groups = merge_proposal.getRevisionsSinceReviewStart()
+        source = DecoratedBranch(merge_proposal.source_branch)
+        comments = [CodeReviewNewRevisions(list(revisions), date, source)
+            for date, revisions in groups]
         while merge_proposal is not None:
             from_superseded = merge_proposal != self.context
             comments.extend(
@@ -952,7 +919,6 @@ class MergeProposalEditView(LaunchpadEditFormView,
         self.next_url = canonical_url(self.context)
         self.cancel_url = self.next_url
         super(MergeProposalEditView, self).initialize()
-
 
     def _getRevisionId(self, data):
         """Translate the revision number that was entered into a revision id.
@@ -1480,8 +1446,8 @@ def text_xhtml_representation(context, field, request):
     """Render an `IText` as XHTML using the webservice."""
     formatter = FormattersAPI
     def renderer(value):
-        nomail  = formatter(value).obfuscate_email()
-        html    = formatter(nomail).text_to_html()
+        nomail = formatter(value).obfuscate_email()
+        html = formatter(nomail).text_to_html()
         return html.encode('utf-8')
     return renderer
 
