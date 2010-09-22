@@ -43,6 +43,10 @@ from lp.services.comments.interfaces.conversation import IComment
 from lp.services.propertycache import cachedproperty
 
 
+class ICodeReviewDisplayComment(IComment, ICodeReviewComment):
+    """Marker interface for displaying code review comments."""
+
+
 class CodeReviewDisplayComment:
     """A code review comment or activity or both.
 
@@ -51,7 +55,7 @@ class CodeReviewDisplayComment:
     only code in the model itself.
     """
 
-    implements(IComment)
+    implements(ICodeReviewDisplayComment)
 
     delegates(ICodeReviewComment, 'comment')
 
@@ -69,6 +73,40 @@ class CodeReviewDisplayComment:
             return 'from-superseded'
         else:
             return ''
+
+    @cachedproperty
+    def comment_author(self):
+        """The author of the comment."""
+        return self.comment.message.owner
+
+    @cachedproperty
+    def has_body(self):
+        """Is there body text?"""
+        return bool(self.body_text)
+
+    @cachedproperty
+    def body_text(self):
+        """Get the body text for the message."""
+        return self.comment.message_body
+
+    @cachedproperty
+    def comment_date(self):
+        """The date of the comment."""
+        return self.comment.message.datecreated
+
+    @cachedproperty
+    def all_attachments(self):
+        return self.comment.getAttachments()
+
+    @cachedproperty
+    def display_attachments(self):
+        # Attachments to show.
+        return [DiffAttachment(alias) for alias in self.all_attachments[0]]
+
+    @cachedproperty
+    def other_attachments(self):
+        # Attachments to not show.
+        return self.all_attachments[1]
 
 
 class CodeReviewCommentPrimaryContext:
@@ -132,44 +170,10 @@ class CodeReviewCommentView(LaunchpadView):
         """The decorated code review comment."""
         return CodeReviewDisplayComment(self.context)
 
-    @cachedproperty
-    def comment_author(self):
-        """The author of the comment."""
-        return self.context.message.owner
-
-    @cachedproperty
-    def has_body(self):
-        """Is there body text?"""
-        return bool(self.body_text)
-
-    @cachedproperty
-    def body_text(self):
-        """Get the body text for the message."""
-        return self.context.message_body
-
-    @cachedproperty
-    def comment_date(self):
-        """The date of the comment."""
-        return self.context.message.datecreated
-
     # Should the comment be shown in full?
     full_comment = True
     # Show comment expanders?
     show_expanders = False
-
-    @cachedproperty
-    def all_attachments(self):
-        return self.context.getAttachments()
-
-    @cachedproperty
-    def display_attachments(self):
-        # Attachments to show.
-        return [DiffAttachment(alias) for alias in self.all_attachments[0]]
-
-    @cachedproperty
-    def other_attachments(self):
-        # Attachments to not show.
-        return self.all_attachments[1]
 
 
 class CodeReviewCommentSummary(CodeReviewCommentView):
