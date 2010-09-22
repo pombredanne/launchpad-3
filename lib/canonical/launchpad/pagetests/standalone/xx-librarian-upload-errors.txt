@@ -48,11 +48,7 @@ for these failures and display the OOPS ID in the error message.
     >>> print extract_text(response.getOutput())
     HTTP/1.1 500 Internal Server Error
     ...
-    Sorry, you can't do this right now
-    Sorry, you can't upload or download files from Launchpad at the moment,
-    because we're doing feng shui in the server room. Normal service will
-    resume within an hour.
-    We&#8217;ve recorded what happened. The error ID is:
+    We've recorded what happened. The error ID is:
     OOPS-...
     Traceback (most recent call last):
     ...

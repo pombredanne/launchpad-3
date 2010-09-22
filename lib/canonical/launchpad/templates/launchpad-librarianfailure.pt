@@ -14,7 +14,7 @@
       because we're doing feng shui in the server room.  Normal service will
       resume within an hour.
       </p>
-      <p>We&#8217;ve recorded what happened. The error ID is:
+      <p>We've recorded what happened. The error ID is:
         <tal:oops replace="structure view/oops_id_text" />
       </p>
       <tal:replace tal:replace="structure view/maybeShowTraceback" />
