@@ -1,6 +1,4 @@
-***************************
-Authorizing a request token
-***************************
+= Authorizing a request token =
 
 Once the consumer gets a request token, it must send the user to
 Launchpad's +authorize-token page in order for the user to authenticate
@@ -21,10 +19,9 @@ use the HTTP GET method and may include the oauth_callback parameter.
 The oauth_token parameter, on the other hand, is required in the
 Launchpad implementation.
 
-Access to the page
-==================
-
-The +authorize-token page is restricted to authenticated users.
+The +authorize-token page is restricted to logged in users, so users will
+first be asked to log in. (We won't show the actual login process because
+it involves OpenID, which would complicate this test quite a bit.)
 
     >>> from urllib import urlencode
     >>> params = dict(
@@ -33,18 +30,7 @@ The +authorize-token page is restricted to authenticated users.
     >>> browser.open(url)
     Traceback (most recent call last):
     ...
-    Unauthorized: Anonymous access is not allowed.
-
-However, the details of the authentication are different than from any
-other part of Launchpad. Unlike with other pages, a user can authorize
-an OAuth token by signing their outgoing requests with an _existing_
-OAuth token. This makes it possible for a desktop client to retrieve
-this page without knowing the end-user's username and password, or
-making them navigate the arbitrarily complex OpenID login procedure.
-
-But, let's deal with that a little later. First let's show how the
-process works through HTTP Basic Auth (the testing equivalent of a
-regular username-and-password login).
+    Unauthorized:...
 
     >>> browser = setupBrowser(auth='Basic no-priv@canonical.com:test')
     >>> browser.open(url)
@@ -57,10 +43,6 @@ regular username-and-password login).
     your behalf. What level of access do you want to grant?
     ...
     See all applications authorized to access Launchpad on your behalf.
-
-
-Using the page
-==============
 
 This page contains one submit button for each item of OAuthPermission,
 except for 'Grant Permissions', which must be specifically requested.
@@ -92,34 +74,7 @@ prevents annoying cases where the user grants a level of permission
 that isn't enough for the application. The user always has the option
 to deny permission altogether.
 
-    >>> def filter_user_agent(key, value, new_value):
-    ...     """A filter to replace the User-Agent header in a list of headers.
-    ...
-    ...     [XXX bug=638058] This is a hack to work around a bug in
-    ...     zope.testbrowser.
-    ...     """
-    ...
-    ...     if key.lower() == "user-agent":
-    ...         return (key, new_value)
-    ...     return (key, value)
-
-    >>> def print_access_levels(allow_permission, user_agent=None):
-    ...     if user_agent is not None:
-    ...         # [XXX bug=638058] This is a hack to work around a bug in
-    ...         # zope.testbrowser which prevents browser.addHeader
-    ...         # from working with User-Agent.
-    ...         mech_browser = browser.mech_browser
-    ...         # Store the original User-Agent for later.
-    ...         old_user_agent = [
-    ...             value for key, value in mech_browser.addheaders
-    ...             if key.lower() == "user-agent"][0]
-    ...         # Replace the User-Agent with the value passed into this
-    ...         # function.
-    ...         mech_browser.addheaders = [
-    ...             filter_user_agent(key, value, user_agent)
-    ...             for key, value in mech_browser.addheaders]
-    ...
-    ...     # Okay, now we can make the request.
+    >>> def print_access_levels(allow_permission):
     ...     browser.open(
     ...         "http://launchpad.dev/+authorize-token?%s&%s"
     ...         % (urlencode(params), allow_permission))
@@ -127,13 +82,6 @@ to deny permission altogether.
     ...     actions = main_content.findAll('input', attrs={'type': 'submit'})
     ...     for action in actions:
     ...         print action['value']
-    ...
-    ...     if user_agent is not None:
-    ...         # Finally, restore the old User-Agent.
-    ...         mech_browser.addheaders = [
-    ...             filter_user_agent(key, value, old_user_agent)
-    ...             for key, value in mech_browser.addheaders]
-
 
     >>> print_access_levels(
     ...     'allow_permission=WRITE_PUBLIC&allow_permission=WRITE_PRIVATE')
@@ -142,38 +90,23 @@ to deny permission altogether.
     Change Anything
 
 The only time the 'Grant Permissions' permission shows up in this list
-is if a client identifying itself as the Launchpad Credentials Manager
-specifically requests it, and no other permission. (Also requesting
-UNAUTHORIZED is okay--it will show up anyway.)
-
-    >>> USER_AGENT = "Launchpad Credentials Manager v1.0"
-    >>> print_access_levels(
-    ...     'allow_permission=GRANT_PERMISSIONS', USER_AGENT)
-    No Access
-    Grant Permissions
-
-    >>> print_access_levels(
-    ...     ('allow_permission=GRANT_PERMISSIONS&'
-    ...      'allow_permission=UNAUTHORIZED'),
-    ...     USER_AGENT)
-    No Access
-    Grant Permissions
-
-    >>> print_access_levels(
-    ...     ('allow_permission=WRITE_PUBLIC&'
-    ...      'allow_permission=GRANT_PERMISSIONS'))
-    No Access
-    Change Non-Private Data
-
-If a client asks for GRANT_PERMISSIONS but doesn't claim to be the
-Launchpad Credentials Manager, Launchpad will not show GRANT_PERMISSIONS.
+is if the client specifically requests it, and no other
+permission. (Also requesting UNAUTHORIZED is okay--it will show up
+anyway.)
 
     >>> print_access_levels('allow_permission=GRANT_PERMISSIONS')
     No Access
-    Read Non-Private Data
+    Grant Permissions
+
+    >>> print_access_levels(
+    ...     'allow_permission=GRANT_PERMISSIONS&allow_permission=UNAUTHORIZED')
+    No Access
+    Grant Permissions
+
+    >>> print_access_levels(
+    ...     'allow_permission=WRITE_PUBLIC&allow_permission=GRANT_PERMISSIONS')
+    No Access
     Change Non-Private Data
-    Read Anything
-    Change Anything
 
 If an application doesn't specify any valid access levels, or only
 specifies the UNAUTHORIZED access level, Launchpad will show all the
@@ -330,124 +263,3 @@ another window/tab so there's no need to worry.
     This request for accessing Launchpad on your behalf has been
     reviewed ... ago.
     See all applications authorized to access Launchpad on your behalf.
-
-Access through OAuth
-====================
-
-Now it's time to show how to go through the same process without
-knowing the end-user's username and password. All you need is an OAuth
-token issued with the GRANT_PERMISSIONS access level, in the name of
-the Launchpad Credentials Manager.
-
-Let's go through the approval process again, without ever sending the
-user's username or password over HTTP. First we'll create a new user,
-and a GRANT_PERMISSIONS access token that they can use to sign
-requests.
-
-    >>> login(ANONYMOUS)
-    >>> user = factory.makePerson(name="test-user", password="never-used")
-    >>> logout()
-
-    >>> from oauth.oauth import OAuthConsumer
-    >>> manager_consumer = OAuthConsumer("Launchpad Credentials Manager", "")
-
-    >>> from lp.testing import oauth_access_token_for
-    >>> login_person(user)
-    >>> grant_permissions_token = oauth_access_token_for(
-    ...     manager_consumer.key, user, "GRANT_PERMISSIONS")
-    >>> logout()
-
-Next, we'll give the new user an OAuth request token that needs to be
-approved using a web browser.
-
-    >>> login_person(user)
-    >>> consumer = getUtility(IOAuthConsumerSet).getByKey('foobar123451432')
-    >>> request_token = consumer.newRequestToken()
-    >>> logout()
-
-    >>> params = dict(oauth_token=request_token.key)
-    >>> url = "http://launchpad.dev/+authorize-token?%s" % urlencode(params)
-
-Next, we'll create a browser object that knows how to sign requests
-with the new user's existing access token.
-
-    >>> from lp.testing import OAuthSigningBrowser
-    >>> browser = OAuthSigningBrowser(
-    ...     manager_consumer, grant_permissions_token, USER_AGENT)
-    >>> browser.open(url)
-    >>> print browser.title
-    Authorize application to access Launchpad on your behalf
-
-The browser object can approve the request and see the appropriate
-messages, even though we never gave it the user's password.
-
-    >>> browser.getControl('Read Anything').click()
-
-    >>> browser.url
-    'http://launchpad.dev/+token-authorized?...'
-    >>> print extract_text(find_tag_by_id(browser.contents, 'maincontent'))
-    Almost finished ...
-    To finish authorizing the application identified as foobar123451432 to
-    access Launchpad on your behalf you should go back to the application
-    window in which you started the process and inform it that you have done
-    your part of the process.
-
-OAuth error conditions
-----------------------
-
-The OAuth token used to sign the requests must have the
-GRANT_PERMISSIONS access level; no other access level will work.
-
-    >>> login(ANONYMOUS)
-    >>> insufficient_token = oauth_access_token_for(
-    ...     manager_consumer.key, user, "WRITE_PRIVATE")
-    >>> logout()
-
-    >>> browser = OAuthSigningBrowser(
-    ...     manager_consumer, insufficient_token, USER_AGENT)
-    >>> browser.open(url)
-    Traceback (most recent call last):
-    ...
-    Unauthorized: OAuth token has insufficient access level.
-
-The OAuth token must be for the Launchpad Credentials Manager, or it
-cannot be used. (Launchpad shouldn't even _issue_ a GRANT_PERMISSIONS
-token for any other consumer, but even if it somehow does, that token
-can't be used for this.)
-
-    >>> login(ANONYMOUS)
-    >>> wrong_consumer = OAuthConsumer(
-    ...     "Not the Launchpad Credentials Manager", "")
-    >>> wrong_consumer_token = oauth_access_token_for(
-    ...     wrong_consumer.key, user, "GRANT_PERMISSIONS")
-    >>> logout()
-
-    >>> browser = OAuthSigningBrowser(wrong_consumer, wrong_consumer_token)
-    >>> browser.open(url)
-    Traceback (most recent call last):
-    ...
-    Unauthorized: Only the Launchpad Credentials Manager can access
-    this page by signing requests with an OAuth token.
-
-Signing with an anonymous token will also not work.
-
-    >>> from oauth.oauth import OAuthToken
-    >>> anonymous_token = OAuthToken(key="", secret="")
-    >>> browser = OAuthSigningBrowser(manager_consumer, anonymous_token)
-    >>> browser.open(url)
-    Traceback (most recent call last):
-    ...
-    Unauthorized: Anonymous access is not allowed.
-
-Even if it presents the right token, the user agent sending the signed
-request must *also* identify *itself* as the Launchpad Credentials
-Manager.
-
-    >>> browser = OAuthSigningBrowser(
-    ...     manager_consumer, grant_permissions_token,
-    ...     "Not the Launchpad Credentials Manager")
-    >>> browser.open(url)
-    Traceback (most recent call last):
-    ...
-    Unauthorized: Only the Launchpad Credentials Manager can access
-    this page by signing requests with an OAuth token.

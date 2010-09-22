@@ -28,7 +28,6 @@ __all__ = [
     'map_branch_contents',
     'normalize_whitespace',
     'oauth_access_token_for',
-    'OAuthSigningBrowser',
     'person_logged_in',
     'record_statements',
     'run_with_login',
@@ -146,7 +145,6 @@ from lp.testing._webservice import (
     launchpadlib_credentials_for,
     launchpadlib_for,
     oauth_access_token_for,
-    OAuthSigningBrowser,
     )
 from lp.testing.fixture import ZopeEventHandlerFixture
 from lp.testing.matchers import Provides
@@ -224,7 +222,7 @@ class FakeTime:
 
 class StormStatementRecorder:
     """A storm tracer to count queries.
-
+    
     This exposes the count and queries as lp.testing._webservice.QueryCollector
     does permitting its use with the HasQueryCount matcher.
 
@@ -683,7 +681,6 @@ class BrowserTestCase(TestCaseWithFactory):
     def assertTextMatchesExpressionIgnoreWhitespace(self,
                                                     regular_expression_txt,
                                                     text):
-
         def normalise_whitespace(text):
             return ' '.join(text.split())
         pattern = re.compile(
@@ -860,7 +857,6 @@ def capture_events(callable_obj, *args, **kwargs):
         callable, and events are the events emitted by the callable.
     """
     events = []
-
     def on_notify(event):
         events.append(event)
     old_subscribers = zope.event.subscribers[:]
