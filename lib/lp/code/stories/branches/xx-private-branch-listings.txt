@@ -1,4 +1,5 @@
-= Private Branch Listings =
+Private Branch Listings
+=======================
 
 All pages that show branch listings to users should only show branches
 that the user is allowed to see.
@@ -15,7 +16,8 @@ blueprint.
     ...     reset_all_branch_last_modified)
     >>> reset_all_branch_last_modified()
 
-== Additional sample data ==
+Additional sample data
+----------------------
 
 Adding a private branch that is only visible by No Privileges Person
 (and Launchpad administrators).
@@ -37,7 +39,8 @@ Adding a private branch that is only visible by No Privileges Person
     >>> logout()
 
 
-== The code home page ==
+The code home page
+------------------
 
 The code home page shows lists of recently imported, changed, and
 registered branches.
@@ -60,7 +63,8 @@ When there is no logged in user, only public branches should be visible.
 Logged in users should only be able to see public branches, and private
 branches that they are subscribed to or are the owner of.
 
-    >>> no_priv_browser = setupBrowser(auth='Basic no-priv@canonical.com:test')
+    >>> no_priv_browser = setupBrowser(
+    ...     auth='Basic no-priv@canonical.com:test')
     >>> print_recently_registered_branches(no_priv_browser)
     '...~no-priv/landscape/testing-branch...<span...class="sprite private"...'
     '...~mark/+junk/testdoc...'
@@ -91,7 +95,8 @@ Launchpad administrators are able to see all private branches.
     '...~name12/gnome-terminal/scanned...'
 
 
-== Landscape code listing page ==
+Landscape code listing page
+---------------------------
 
 One of the most obvious places to hide private branches are the code
 listing tab.
@@ -125,7 +130,8 @@ listing tab.
     lp://dev/~no-priv/landscape/testing-branch      Development   ...
 
 
-== Person code listing pages ==
+Person code listing pages
+-------------------------
 
 The person code listings is the other obvious place to filter out the
 viewable branches.
@@ -174,7 +180,8 @@ viewable branches.
     >>> print_person_code_listing(landscape_dev_browser, '/+ownedbranches')
     Total of 10 branches listed
     lp://dev/~name12/landscape/feature-x            Development   ...
-    >>> print_person_code_listing(landscape_dev_browser, '/+registeredbranches')
+    >>> print_person_code_listing(landscape_dev_browser,
+    ...                           '/+registeredbranches')
     Total of 11 branches listed
     lp://dev/~landscape-developers/landscape/trunk  Development   ...
     lp://dev/~name12/landscape/feature-x            Development   ...
@@ -191,7 +198,8 @@ viewable branches.
     lp://dev/~name12/landscape/feature-x            Development   ...
 
 
-== Bug branch links ==
+Bug branch links
+----------------
 
 When a private branch is linked to a bug, the bug branch link is only
 visible to those that would be able to see the branch.
@@ -228,7 +236,8 @@ visible to a user that isn't able to see the branch itself.
     No bug branch links
 
 
-== Branches set as primary branches for product series ==
+Branches set as primary branches for product series
+---------------------------------------------------
 
 When a branch is set as the user branch for product series, the details
 must be visible to those that are entitled to see it, but hidden from

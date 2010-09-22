@@ -423,7 +423,7 @@ class BranchListingItemsMixin:
         return sorted(links, key=attrgetter('pocket'))
 
     def getDistroDevelSeries(self, distribution):
-        """Since distribution.currentseries hits the DB every time, cache it."""
+        """distribution.currentseries hits the DB every time so cache it."""
         self._distro_series_map = {}
         try:
             return self._distro_series_map[distribution]
@@ -779,7 +779,7 @@ class NoContextBranchListingView(BranchListingView):
     """A branch listing that has no associated product or person."""
 
     field_names = ['lifecycle']
-    no_sort_by = (BranchListingSort.DEFAULT,)
+    no_sort_by = (BranchListingSort.DEFAULT, )
 
     no_branch_message = (
         'There are no branches that match the current status filter.')
@@ -1024,7 +1024,7 @@ class PersonSubscribedBranchesView(PersonBaseBranchListingView):
 
     page_title = _('Subscribed')
     label_template = 'Bazaar branches subscribed to by %(displayname)s'
-    no_sort_by = (BranchListingSort.DEFAULT,)
+    no_sort_by = (BranchListingSort.DEFAULT, )
 
     def _getCollection(self):
         return getUtility(IAllBranches).subscribedBy(self.context)
@@ -1142,7 +1142,7 @@ class ProductBranchListingView(BranchListingView):
     """A base class for product branch listings."""
 
     show_series_links = True
-    no_sort_by = (BranchListingSort.PRODUCT,)
+    no_sort_by = (BranchListingSort.PRODUCT, )
     label_template = 'Bazaar branches of %(displayname)s'
 
     def _getCollection(self):
@@ -1248,6 +1248,7 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
         # skip subsequent series where the lifecycle status is Merged or
         # Abandoned
         sorted_series = self.sorted_active_series_list
+
         def show_branch(branch):
             if self.selected_lifecycle_status is None:
                 return True
@@ -1369,7 +1370,7 @@ class ProductBranchesView(ProductBranchListingView):
 class ProjectBranchesView(BranchListingView):
     """View for branch listing for a project."""
 
-    no_sort_by = (BranchListingSort.DEFAULT,)
+    no_sort_by = (BranchListingSort.DEFAULT, )
     extra_columns = ('author', 'product')
     label_template = 'Bazaar branches of %(displayname)s'
     show_series_links = True

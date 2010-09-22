@@ -125,7 +125,8 @@ once, but both series are shown in the listing.
 Firstly lets associate release--0.9.1 with the 1.0 series.
 
     >>> admin_browser.open('http://launchpad.dev/firefox/1.0/+linkbranch')
-    >>> admin_browser.getControl('Branch').value = '~mark/firefox/release--0.9.1'
+    >>> admin_browser.getControl('Branch').value = (
+    ...     '~mark/firefox/release--0.9.1')
     >>> admin_browser.getControl('Update').click()
 
     >>> browser.open('http://code.launchpad.dev/firefox')

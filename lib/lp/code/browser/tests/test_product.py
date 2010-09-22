@@ -57,7 +57,6 @@ class ProductTestBase(TestCaseWithFactory):
 class TestProductCodeIndexView(ProductTestBase):
     """Tests for the product code home page."""
 
-
     def getBranchSummaryBrowseLinkForProduct(self, product):
         """Get the 'browse code' link from the product's code home.
 
@@ -107,13 +106,15 @@ class TestProductCodeIndexView(ProductTestBase):
 
     def test_initial_branches_contains_dev_focus_branch(self):
         product, branch = self.makeProductAndDevelopmentFocusBranch()
-        view = create_initialized_view(product, '+code-index', rootsite='code')
+        view = create_initialized_view(product, '+code-index',
+                                       rootsite='code')
         self.assertIn(branch, view.initial_branches)
 
     def test_initial_branches_does_not_contain_private_dev_focus_branch(self):
         product, branch = self.makeProductAndDevelopmentFocusBranch(
             private=True)
-        view = create_initialized_view(product, '+code-index', rootsite='code')
+        view = create_initialized_view(product, '+code-index',
+                                       rootsite='code')
         self.assertNotIn(branch, view.initial_branches)
 
     def test_committer_count_with_revision_authors(self):
@@ -129,7 +130,8 @@ class TestProductCodeIndexView(ProductTestBase):
             date_generator=date_generator)
         getUtility(IRevisionSet).updateRevisionCacheForBranch(branch)
 
-        view = create_initialized_view(product, '+code-index', rootsite='code')
+        view = create_initialized_view(product, '+code-index',
+                                       rootsite='code')
         self.assertEqual(view.committer_count, 1)
 
     def test_committers_count_private_branch(self):
@@ -147,7 +149,8 @@ class TestProductCodeIndexView(ProductTestBase):
             date_generator=date_generator)
         getUtility(IRevisionSet).updateRevisionCacheForBranch(branch)
 
-        view = create_initialized_view(product, '+code-index', rootsite='code')
+        view = create_initialized_view(product, '+code-index',
+                                       rootsite='code')
         self.assertEqual(view.committer_count, 1)
 
 
@@ -217,7 +220,8 @@ class TestProductCodeIndexServiceUsages(ProductTestBase, BrowserTestCase):
         product, branch = self.makeProductAndDevelopmentFocusBranch(
             branch_type=BranchType.MIRRORED,
             url=url)
-        view = create_initialized_view(product, '+code-index', rootsite='code')
+        view = create_initialized_view(product, '+code-index',
+                                       rootsite='code')
         self.assertEqual(url, view.mirror_location)
 
 

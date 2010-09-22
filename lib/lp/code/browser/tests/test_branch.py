@@ -45,7 +45,6 @@ from lp.code.enums import (
     )
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.testing import (
-    ANONYMOUS,
     login,
     login_person,
     logout,
@@ -164,7 +163,7 @@ class TestBranchView(TestCaseWithFactory):
             len(branch.mirror_status_message)
             <= branch_view.MAXIMUM_STATUS_MESSAGE_LENGTH,
             "branch.mirror_status_message longer than expected: %r"
-            % (branch.mirror_status_message,))
+            % (branch.mirror_status_message, ))
         self.assertEqual(
             branch.mirror_status_message, branch_view.mirror_status_message)
         self.assertEqual(
@@ -189,7 +188,7 @@ class TestBranchView(TestCaseWithFactory):
                 'whiteboard': '',
                 'owner': arbitrary_person,
                 'author': arbitrary_person,
-                'product': arbitrary_product
+                'product': arbitrary_product,
                 }
             add_view.add_action.success(data)
             # Make sure that next_mirror_time is a datetime, not an sqlbuilder
