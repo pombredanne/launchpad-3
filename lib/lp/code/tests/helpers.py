@@ -308,8 +308,8 @@ def make_project_cloud_data(factory, details):
 @contextmanager
 def recipe_parser_newest_version(version):
     old_version = RecipeParser.NEWEST_VERSION
+    RecipeParser.NEWEST_VERSION = version
     try:
-        RecipeParser.NEWEST_VERSION = version
         yield
     finally:
         RecipeParser.NEWEST_VERSION = old_version
