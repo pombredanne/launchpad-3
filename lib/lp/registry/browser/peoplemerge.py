@@ -429,7 +429,14 @@ class RequestPeopleMergeMultipleEmailsView:
 
                 for emailaddress in emails:
                     email = emailaddrset.getByEmail(emailaddress)
-                    assert email in self.dupeemails
+                    if email not in self.dupeemails:
+                        # The dupe person has changes his email addresses.
+                        # See bug 239838.
+                        self.addErrorNotification(
+                            "A address was removed from the duplicate "
+                            "account while you were making this merge "
+                            "request. Select again.")
+                        return
                     email_addresses.append(emailaddress)
 
         for emailaddress in email_addresses:
