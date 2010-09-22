@@ -273,7 +273,7 @@ will use a special behavior that just checks if the cookie reads 'good'.
 
     >>> import logging
     >>> from lp.buildmaster.interfaces.builder import CorruptBuildCookie
-    >>> from lp.soyuz.tests.soyuzbuilddhelpers import (
+    >>> from lp.buildmaster.tests.mock_slaves import (
     ...    BuildingSlave, MockBuilder, OkSlave, WaitingSlave)
 
     >>> class TestBuildBehavior:
