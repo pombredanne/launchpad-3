@@ -468,6 +468,7 @@ class ProductInvolvementView(PillarView):
         # Add the branch configuration in separately.
         set_branch = series_menu['set_branch']
         set_branch.text = 'Configure project branch'
+        set_branch.summary = "Specify where this project's code lives."
         set_branch.configured = (
             )
         config_list.append(
