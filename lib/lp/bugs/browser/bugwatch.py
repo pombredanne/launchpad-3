@@ -72,7 +72,6 @@ class BugWatchView(LaunchpadView):
         displayed_comments = []
         for bug_comment in bug_comments:
             if bug_comment.bugwatch == self.context:
-                bug_comment.display_if_from_bugwatch = True
                 displayed_comments.append(bug_comment)
 
         return displayed_comments
