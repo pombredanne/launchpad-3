@@ -246,11 +246,18 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
             old_branches, list(sp_recipe.getReferencedBranches()))
 
     def test_reject_newer_formats(self):
+        # We need to monkeypath RecipeParser.NEWEST_VERSION
+        from bzrlib.plugins.builder.recipe import RecipeParser
+        old_version = RecipeParser.NEWEST_VERSION
+        RecipeParser.NEWEST_VERSION = 145.115
+
         builder_recipe = self.factory.makeRecipe()
-        builder_recipe.format = 0.3
+        builder_recipe.format = 145.115
         self.assertRaises(
             TooNewRecipeFormat,
             self.factory.makeSourcePackageRecipe, recipe=str(builder_recipe))
+
+        RecipeParser.NEWEST_VERSION = old_version
 
     def test_requestBuild(self):
         recipe = self.factory.makeSourcePackageRecipe()

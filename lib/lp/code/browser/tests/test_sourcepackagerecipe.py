@@ -327,7 +327,6 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
 
         RecipeParser.NEWEST_VERSION = old_version
 
-
     def test_create_dupe_recipe(self):
         # You shouldn't be able to create a duplicate recipe owned by the same
         # person with the same name.
