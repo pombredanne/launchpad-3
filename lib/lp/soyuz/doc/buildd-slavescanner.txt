@@ -31,7 +31,7 @@ standard output with noisily output.
 
 Import MockBuilder and a series of MockSlaves to be used in this test.
 
-    >>> from lp.soyuz.tests.soyuzbuilddhelpers import (
+    >>> from lp.buildmaster.tests.mock_slaves import (
     ...    AbortedSlave, AbortingSlave, BuildingSlave,
     ...    LostBuildingBrokenSlave, MockBuilder, OkSlave, WaitingSlave)
 

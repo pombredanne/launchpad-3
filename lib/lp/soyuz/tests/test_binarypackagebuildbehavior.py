@@ -17,6 +17,7 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.testing import TwistedLaunchpadZopelessLayer
 
+from lp.buildmaster.tests.mock_slaves import OkSlave
 from lp.registry.interfaces.pocket import (
     PackagePublishingPocket,
     pocketsuffix,
@@ -28,7 +29,6 @@ from lp.soyuz.adapters.archivedependencies import (
 from lp.soyuz.enums import (
     ArchivePurpose,
     )
-from lp.soyuz.tests.soyuzbuilddhelpers import OkSlave
 from lp.testing import (
     ANONYMOUS,
     login_as,

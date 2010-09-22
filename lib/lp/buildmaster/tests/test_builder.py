@@ -35,6 +35,10 @@ from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.buildmaster.model.builder import BuilderSlave
 from lp.buildmaster.model.buildfarmjobbehavior import IdleBuildBehavior
 from lp.buildmaster.model.buildqueue import BuildQueue
+from lp.buildmaster.tests.mock_slaves import (
+    AbortedSlave,
+    MockBuilder,
+    )
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackagePublishingStatus,
@@ -42,10 +46,6 @@ from lp.soyuz.enums import (
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.model.binarypackagebuildbehavior import (
     BinaryPackageBuildBehavior,
-    )
-from lp.soyuz.tests.soyuzbuilddhelpers import (
-    AbortedSlave,
-    MockBuilder,
     )
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
