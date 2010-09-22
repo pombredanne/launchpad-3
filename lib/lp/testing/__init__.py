@@ -75,6 +75,7 @@ from bzrlib.bzrdir import (
     format_registry,
     )
 from bzrlib.transport import get_transport
+import fixtures
 import pytz
 from storm.expr import Variable
 from storm.store import Store
@@ -301,7 +302,7 @@ def run_with_storm_debug(function, *args, **kwargs):
         debug(False)
 
 
-class TestCase(testtools.TestCase):
+class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
     """Provide Launchpad-specific test facilities."""
 
     def becomeDbUser(self, dbuser):

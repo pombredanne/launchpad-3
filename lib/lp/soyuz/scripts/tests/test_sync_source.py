@@ -5,7 +5,9 @@
 
 __metaclass__ = type
 
+from cStringIO import StringIO
 from debian.deb822 import (
+    Changes,
     Deb822Dict,
     Dsc,
     )
@@ -507,6 +509,30 @@ class TestGenerateChanges(TestCase):
         self.assertIn(
             "Updated French translation by J\xc3\xa9lmer.", contents)
 
+    def test_changelog_whitelines(self):
+        # The changelog entry can contain empty lines, and this should not
+        # mess up the parsing of the changes file.
+        changelog = "* Foo\n\n\n* Bar\n.\nEntries"
+        changes = self.generateChanges(changelog=changelog)
+        contents = changes.dump(encoding="utf-8").encode("utf-8")
+        # Read contents back
+        read_changes = Changes(contents)
+        self.assertEquals("\n%s" % changelog, changes['Changes'])
+        self.assertContentEqual([
+            'Architecture',
+            'Binary',
+            'Changed-By',
+            'Changes',
+            'Date',
+            'Distribution',
+            'Files',
+            'Format',
+            'Maintainer',
+            'Origin',
+            'Source',
+            'Urgency',
+            'Version',
+            ], read_changes.keys())
 
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)
