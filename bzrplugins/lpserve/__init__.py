@@ -330,12 +330,24 @@ class LPForkingService(object):
         self._server_socket.bind(self.master_socket_path)
         if self._perms is not None:
             os.chmod(self.master_socket_path, self._perms)
+        self._server_socket.setsockopt(socket.SOL_SOCKET,
+            socket.SO_REUSEADDR, 1)
         self._sockname = self._server_socket.getsockname()
         # self.host = self._sockname[0]
         self.port = self._sockname[1]
         self._server_socket.listen(5)
         self._server_socket.settimeout(self.SOCKET_TIMEOUT)
         trace.mutter('set socket timeout to: %s' % (self.SOCKET_TIMEOUT,))
+
+    def _cleanup_master_socket(self):
+        self._server_socket.close()
+        try:
+            os.remove(self.master_socket_path)
+        except (OSError, IOError), e:
+            # If we don't delete it, then we get 'address already in
+            # use' failures
+            trace.mutter('failed to cleanup: %s'
+                         % (self.master_socket_path,))
 
     def _handle_sigchld(self, signum, frm):
         # We don't actually do anything here, we just want an interrupt (EINTR)
@@ -522,7 +534,7 @@ class LPForkingService(object):
                 self._do_loop()
             finally:
                 # Stop talking to others, we are shutting down
-                self._server_socket.close()
+                self._cleanup_master_socket()
         except KeyboardInterrupt:
             # SIGINT received, try to shutdown cleanly
             pass

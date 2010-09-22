@@ -79,7 +79,6 @@ class TestingLPForkingServiceInAThread(lpserve.LPForkingService):
         os.close(fd)
         os.remove(path)
         new_service = TestingLPForkingServiceInAThread(path=path)
-        test.addCleanup(os.remove, path)
         thread = threading.Thread(target=new_service.main_loop,
                                   name='TestingLPForkingServiceInAThread')
         new_service.this_thread = thread
@@ -423,7 +422,6 @@ class TestCaseWithLPForkingServiceSubprocess(TestCaseWithSubprocess):
         trace.mutter(path_line)
         self.assertEqual(expected, path_line)
         # The process won't delete it, so we do
-        self.addCleanup(os.remove, path)
         return proc, path
 
     def stop_service(self):

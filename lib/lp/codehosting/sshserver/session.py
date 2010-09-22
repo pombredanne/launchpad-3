@@ -116,21 +116,12 @@ class ForkedProcessTransport(process.BaseProcess):
 
     def _sendMessageToService(self, message):
         """Send a message to the Forking service and get the response"""
-        address = config.codehosting.forking_daemon_address
-        if ':' in address:
-            address, port = address.split(':', 1)
-        else:
-            port = address
-            address = '127.0.0.1'
-        port = int(port)
-        addrs = socket.getaddrinfo(address, port,
-            socket.AF_UNSPEC, socket.SOCK_STREAM, 0, socket.AI_PASSIVE)
-        (family, socktype, proto, canonname, sockaddr) = addrs[0]
-        client_sock = socket.socket(family, socktype, proto)
-        log.msg('Connecting to Forking Service @ port: %s for %r'
-                % (sockaddr, message))
+        path = config.codehosting.forking_daemon_socket
+        client_sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        log.msg('Connecting to Forking Service @ socket: %s for %r'
+                % (path, message))
         try:
-            client_sock.connect(sockaddr)
+            client_sock.connect(path)
             client_sock.sendall(message)
             # We define the requests to be no bigger than 1kB. (For now)
             response = client_sock.recv(1024)
