@@ -12,7 +12,7 @@ __all__ = [
 import atexit
 import os
 
-from canonical.launchpad.mailman.runmailman import (
+from lp.services.mailman.runmailman import (
     start_mailman,
     stop_mailman,
     )

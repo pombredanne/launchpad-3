@@ -818,7 +818,7 @@
             for="lp.registry.interfaces.person.IPerson"
             class="lp.registry.browser.person.PersonEditLocationView"
             permission="launchpad.Edit"
-            template="../templates/person-editlocation.pt"/>
+            template="../../app/templates/generic-edit.pt"/>
         <browser:page
             name="+contactuser"
             for="lp.registry.interfaces.person.IPerson"
@@ -1066,11 +1066,6 @@
             class="lp.registry.browser.team.TeamMapLtdData"
             template="../templates/team-map-data.pt"
             name="+mapdataltd"/>
-        <browser:page
-            for="lp.registry.interfaces.person.ITeam"
-            permission="zope.Public"
-            class="lp.registry.browser.person.TeamEditLocationView"
-            name="+editlocation"/>
         <browser:page
             for="lp.registry.interfaces.person.ITeam"
             permission="zope.Public"
