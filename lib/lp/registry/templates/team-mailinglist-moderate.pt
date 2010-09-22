@@ -35,16 +35,24 @@
           action for obvious spam.</li>
           <li><strong>Hold</strong> - Continue to hold the message, deferring
           your decision until later.</li>
+          <li>Toss</li>
         </ul>
       </div>
-      <table class="listing" metal:fill-slot="widgets">
+      <div metal:fill-slot="widgets">
+      <tal:navigation
+        replace="structure view/held_messages/@@+navigation-links-upper" />
+
+      <table class="listing">
         <thead><tr>
           <th>Message details</th>
           <th>Approve</th><th>Decline</th><th>Discard</th><th>Hold</th>
         </tr></thead>
-        <span tal:repeat="message view/held_messages"
+        <span tal:repeat="message view/held_messages/currentBatch"
              tal:content="structure message/@@+moderation" />
       </table>
+      <tal:navigation
+        replace="structure view/held_messages/@@+navigation-links-lower" />
+      </div>
     </metal:form>
   </div>
   <span tal:condition="not: view/hold_count" id="legend">

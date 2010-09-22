@@ -280,10 +280,27 @@ class ProductSeriesOverviewMenu(
     usedfor = IProductSeries
     facet = 'overview'
     links = [
-        'edit', 'delete', 'driver', 'link_branch', 'ubuntupkg',
-        'create_milestone', 'create_release', 'rdf', 'subscribe',
+        'configure_bugtracker',
+        'create_milestone',
+        'create_release',
+        'delete',
+        'driver',
+        'edit',
+        'link_branch',
+        'rdf',
         'set_branch',
+        'subscribe',
+        'ubuntupkg',
         ]
+
+    @enabled_with_permission('launchpad.Edit')
+    def configure_bugtracker(self):
+        text = 'Configure bug tracker'
+        summary = 'Specify where bugs are tracked for this project'
+        return Link(
+            canonical_url(self.context.product,
+                          view_name='+configure-bugtracker'),
+            text, summary, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):

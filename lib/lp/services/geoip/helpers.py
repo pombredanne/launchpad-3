@@ -7,10 +7,14 @@ import re
 
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces import IGeoIP
+from lp.services.geoip.interfaces import IGeoIP
 
 
-__all__ = ['request_country', 'ipaddress_from_request']
+__all__ = [
+    'request_country',
+    'ipaddress_from_request',
+    ]
+
 
 def request_country(request):
     """Adapt a request to the country in which the request was made.
@@ -26,7 +30,9 @@ def request_country(request):
         return getUtility(IGeoIP).getCountryByAddr(ipaddress)
     return None
 
+
 _ipaddr_re = re.compile('\d\d?\d?\.\d\d?\d?\.\d\d?\d?\.\d\d?\d?')
+
 
 def ipaddress_from_request(request):
     """Determine the IP address for this request.
@@ -67,8 +73,7 @@ def ipaddress_from_request(request):
     ipaddresses = [
         addr for addr in ipaddresses
             if not (addr.startswith('127.')
-                    or _ipaddr_re.search(addr) is None)
-        ]
+                    or _ipaddr_re.search(addr) is None)]
 
     if ipaddresses:
         # If we have more than one, have a guess.

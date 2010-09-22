@@ -225,6 +225,11 @@ related to a certain upstream:
     >>> [(sp.name, sp.distribution.name) for sp in alsa.distrosourcepackages]
     [(u'alsa-utils', u'debian'), (u'alsa-utils', u'ubuntu')]
 
+For convenience, you can get just the distro source packages for Ubuntu.
+
+    >>> [(sp.name, sp.distribution.name) for sp in alsa.ubuntu_packages]
+    [(u'alsa-utils', u'ubuntu')]
+
 The date_next_suggest_packaging attribute records the date when Launchpad can
 resume suggesting Ubuntu packages that the project provides. A value of None
 means that no user has ever confirmed that that the project has no Ubuntu
@@ -713,6 +718,7 @@ still shows up in the list.
     >>> for series in firefox_view.sorted_active_series_list:
     ...     print series.name
     trunk
+
 
 Changing ownership
 ==================

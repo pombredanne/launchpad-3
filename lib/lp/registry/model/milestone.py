@@ -36,6 +36,7 @@ from canonical.database.sqlbase import (
     sqlvalues,
     )
 from canonical.launchpad.webapp.sorting import expand_numbers
+from lazr.restful.error import expose
 from lp.app.errors import NotFoundError
 from lp.blueprints.model.specification import Specification
 from lp.bugs.interfaces.bugtarget import IHasBugs
@@ -114,6 +115,13 @@ class HasMilestonesMixin:
                             And(self._getMilestoneCondition(),
                                 Milestone.active == True))
         return result.order_by(self._milestone_order)
+
+
+class MultipleProductReleases(Exception):
+    """Raised when a second ProductRelease is created for a milestone."""
+
+    def __init__(self, msg='A milestone can only have one ProductRelease.'):
+        super(MultipleProductReleases, self).__init__(msg)
 
 
 class Milestone(SQLBase, StructuralSubscriptionTargetMixin, HasBugsBase):
@@ -201,8 +209,7 @@ class Milestone(SQLBase, StructuralSubscriptionTargetMixin, HasBugsBase):
                              changelog=None, release_notes=None):
         """See `IMilestone`."""
         if self.product_release is not None:
-            raise AssertionError(
-                'A milestone can only have one ProductRelease.')
+            raise expose(MultipleProductReleases())
         release = ProductRelease(
             owner=owner,
             changelog=changelog,

@@ -159,6 +159,7 @@ from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
+
 debbugsseveritymap = {
     None: BugTaskImportance.UNDECIDED,
     'wishlist': BugTaskImportance.WISHLIST,

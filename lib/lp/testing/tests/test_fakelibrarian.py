@@ -143,7 +143,7 @@ class TestFakeLibrarian(LibraryAccessScenarioMixin, TestCaseWithFactory):
 
     def setUp(self):
         super(TestFakeLibrarian, self).setUp()
-        self.fake_librarian = self.installFixture(FakeLibrarian())
+        self.fake_librarian = self.useFixture(FakeLibrarian())
 
     def test_fake(self):
         self.assertTrue(verifyObject(ISynchronizer, self.fake_librarian))
