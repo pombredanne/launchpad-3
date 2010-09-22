@@ -739,6 +739,10 @@ class IHasTranslationTemplates(Interface):
         title=_("Does this object have current translation templates?"),
         readonly=True)
 
+    has_translation_files = Bool(
+        title=_("Does this object have translation files?"),
+        readonly=True)
+
     def getTemplatesCollection():
         """Return templates as a `TranslationTemplatesCollection`.
 
