@@ -22,6 +22,11 @@ class FeatureFixture(Fixture):
 
     Call the fixture's `setUp()' method to install the features with the
     desired values.  Calling `cleanUp()' will restore the original values.
+    You can also install this fixture by inheriting from
+    `fixtures.TestWithFixtures' and then calling the TestCase's
+    `self.useFixture()' method.
+
+    This fixture needs to be run within Launchpad's DatabaseFunctionalLayer.
 
     The fixture can also be used as a context manager. The value of the
     feature within the context block is set to the dictonary's key's value.
@@ -31,7 +36,11 @@ class FeatureFixture(Fixture):
     """
 
     def __init__(self, features_dict):
-        """Constructor."""
+        """Constructor.
+
+        :param features_dict: A dictionary-like object with keys and values
+            that are flag names and those flags' settings.
+        """
         self.desired_features = features_dict
 
     def setUp(self):
