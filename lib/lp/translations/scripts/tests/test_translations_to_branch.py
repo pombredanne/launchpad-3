@@ -5,7 +5,6 @@
 
 import re
 from textwrap import dedent
-import unittest
 
 from bzrlib.errors import NotBranchError
 import transaction
@@ -266,6 +265,19 @@ class TestExportTranslationsToBranch(TestCaseWithFactory):
         # fail either.
         transaction.commit()
 
+    def test_sets_bzr_id(self):
+        # The script commits to the branch under a user id that mentions
+        # the automatic translations exports as well as the Launchpad
+        # name of the branch owner.
+        self.useBzrBranches(direct_database=False)
+        exporter = ExportTranslationsToBranch(test_args=[])
+        branch, tree = self.create_branch_and_tree()
+        committer = exporter._makeDirectBranchCommit(branch)
+        committer.unlock()
+        self.assertEqual(
+            "Launchpad Translations on behalf of %s" % branch.owner.name,
+            committer.getBzrCommitterID())
+
 
 class TestExportToStackedBranch(TestCaseWithFactory):
     """Test workaround for bzr bug 375013."""
@@ -306,7 +318,3 @@ class TestExportToStackedBranch(TestCaseWithFactory):
             committer.commit("x!")
         finally:
             committer.unlock()
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

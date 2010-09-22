@@ -46,7 +46,6 @@ from lp.testing import (
     ANONYMOUS,
     BrowserTestCase,
     login,
-    logout,
     person_logged_in,
     )
 from lp.testing.factory import remove_security_proxy_and_shout_at_engineer
@@ -103,17 +102,12 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
         return branch
 
     def test_create_new_recipe_not_logged_in(self):
-        from canonical.launchpad.testing.pages import setupBrowser
         product = self.factory.makeProduct(
             name='ratatouille', displayname='Ratatouille')
         branch = self.factory.makeBranch(
             owner=self.chef, product=product, name='veggies')
-        branch_url = canonical_url(branch)
-        logout()
 
-        browser = setupBrowser()
-        browser.open(branch_url)
-
+        browser = self.getViewBrowser(branch, no_login=True)
         self.assertRaises(
             Unauthorized, browser.getLink('Create packaging recipe').click)
 
@@ -688,6 +682,21 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         self.assertEqual(
             set([2605]),
             set(build.buildqueue_record.lastscore for build in builds))
+
+    def test_request_builds_action_not_logged_in(self):
+        """Requesting a build creates pending builds."""
+        woody = self.factory.makeDistroSeries(
+            name='woody', displayname='Woody',
+            distribution=self.ppa.distribution)
+        naked_woody = removeSecurityProxy(woody)
+        naked_woody.nominatedarchindep = woody.newArch(
+            'i386', ProcessorFamily.get(1), False, self.factory.makePerson(),
+            supports_virtualized=True)
+        recipe = self.makeRecipe()
+
+        browser = self.getViewBrowser(recipe, no_login=True)
+        self.assertRaises(
+            Unauthorized, browser.getLink('Request build(s)').click)
 
     def test_request_builds_archive(self):
         recipe = self.factory.makeSourcePackageRecipe()
