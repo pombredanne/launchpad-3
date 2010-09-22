@@ -350,13 +350,9 @@ class LaunchpadCronScript(LaunchpadScript):
 
         name = self.name
 
-        # Customize the globalErrorUtility for script OOPS reporting.
-        # Scripts might choose to override this by calling
-        # globalErrorUtility.configure().
-        globalErrorUtility.copy_to_zlog = False
-        globalErrorUtility.log_namer = UniqueFileAllocator(
-            output_root=config.error_reports.error_dir,
-            log_type="OOPS", log_subtype=self.name)
+        # Configure the IErrorReportingUtility we use with defaults.
+        # Scripts can override this if they want.
+        globalErrorUtility.configure()
 
         # WARN and higher log messages should generate OOPS reports.
         self.logger.addHandler(OopsHandler(name))
