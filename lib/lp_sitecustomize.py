@@ -4,6 +4,7 @@
 # This file is imported by parts/scripts/sitecustomize.py, as set up in our
 # buildout.cfg (see the "initialization" key in the "[scripts]" section).
 
+import itertools
 import os
 import warnings
 import logging
@@ -45,6 +46,7 @@ def main():
     os.environ['STORM_CEXTENSIONS'] = '1'
     customizeMimetypes()
     dont_wrap_class_and_subclasses(Branch)
+    checker.BasicTypes[itertools.groupby] = checker._iteratorChecker
     silence_warnings()
     silence_bzr_logger()
 
