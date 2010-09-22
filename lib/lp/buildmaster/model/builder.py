@@ -80,6 +80,7 @@ from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from lp.services.osutils import until_no_eintr
 from lp.services.propertycache import cachedproperty
+from lp.services.twistedsupport.xmlrpc import BlockingProxy
 # XXX Michael Nelson 2010-01-13 bug=491330
 # These dependencies on soyuz will be removed when getBuildRecords()
 # is moved.
@@ -151,34 +152,35 @@ class BuilderSlave(object):
     @classmethod
     def makeBlockingSlave(cls, url_base, vm_host):
         rpc_url = urlappend(url_base, 'rpc')
-        proxy = xmlrpclib.Server(
+        server_proxy = xmlrpclib.ServerProxy(
             rpc_url, transport=TimeoutTransport(), allow_none=True)
         file_cache_url = urlappend(url_base, 'filecache')
-        return cls(proxy, file_cache_url, vm_host)
+        return cls(BlockingProxy(server_proxy), file_cache_url, vm_host)
 
     def abort(self):
         """Abort the current build."""
-        return self._server.abort()
+        return self._server.callRemote('abort')
 
     def clean(self):
         """Clean up the waiting files and reset the slave's internal state."""
-        return self._server.clean()
+        return self._server.callRemote('clean')
 
     def echo(self, *args):
         """Echo the arguments back."""
-        return self._server.echo(*args)
+        return self._server.callRemote('echo', *args)
 
     def info(self):
         """Return the protocol version and the builder methods supported."""
-        return self._server.info()
+        return self._server.callRemote('info')
 
     def status(self):
         """Return the status of the build daemon."""
-        return self._server.status()
+        return self._server.callRemote('status')
 
     def ensurepresent(self, sha1sum, url, username, password):
         """Attempt to ensure the given file is present."""
-        return self._server.ensurepresent(sha1sum, url, username, password)
+        return self._server.callRemote(
+            'ensurepresent', sha1sum, url, username, password)
 
     def getFile(self, sha_sum):
         """Construct a file-like object to return the named file."""
@@ -237,8 +239,8 @@ class BuilderSlave(object):
             the build job type.
         """
         try:
-            return self._server.build(
-                buildid, builder_type, chroot_sha1, filemap, args)
+            return self._server.callRemote(
+                'build', buildid, builder_type, chroot_sha1, filemap, args)
         except xmlrpclib.Fault, info:
             raise BuildSlaveFailure(info)
 
