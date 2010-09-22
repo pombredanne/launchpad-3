@@ -40,6 +40,7 @@ from lp.code.browser.sourcepackagerecipebuild import (
     SourcePackageRecipeBuildView,
     )
 from lp.code.interfaces.sourcepackagerecipe import MINIMAL_RECIPE_TEXT
+from lp.code.tests.helpers import recipe_parser_newest_version
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.model.processor import ProcessorFamily
 from lp.testing import (
@@ -312,21 +313,15 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
         branch = self.factory.makeBranch(
             owner=self.chef, product=product, name='veggies')
 
-        # We need to monkeypath RecipeParser.NEWEST_VERSION
-        from bzrlib.plugins.builder.recipe import RecipeParser
-        old_version = RecipeParser.NEWEST_VERSION
-        RecipeParser.NEWEST_VERSION = 145.115
-
-        recipe = dedent(u'''\
-            # bzr-builder format 145.115 deb-version 0+{revno}
-            %s
-            ''') % branch.bzr_identity
-        browser = self.createRecipe(recipe, branch)
-        self.assertEqual(
-            get_message_text(browser, 2),
-            'The recipe format version specified is not available.')
-
-        RecipeParser.NEWEST_VERSION = old_version
+        with recipe_parser_newest_version(145.115):
+            recipe = dedent(u'''\
+                # bzr-builder format 145.115 deb-version 0+{revno}
+                %s
+                ''') % branch.bzr_identity
+            browser = self.createRecipe(recipe, branch)
+            self.assertEqual(
+                get_message_text(browser, 2),
+                'The recipe format version specified is not available.')
 
     def test_create_dupe_recipe(self):
         # You shouldn't be able to create a duplicate recipe owned by the same
