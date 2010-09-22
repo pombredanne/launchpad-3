@@ -12,10 +12,15 @@ __metaclass__ = type
 import unittest
 
 import transaction
+from twisted.internet import defer
+from twisted.trial.unittest import TestCase as TrialTestCase
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.scripts.logger import BufferLogger
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing import (
+    LaunchpadFunctionalLayer,
+    TwistedLaunchpadZopelessLayer,
+    )
 from lp.buildmaster.enums import BuildFarmJobType
 from lp.buildmaster.interfaces.builder import CannotBuild
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
@@ -35,25 +40,16 @@ from lp.soyuz.adapters.archivedependencies import (
 from lp.soyuz.model.processor import ProcessorFamilySet
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
+    ANONYMOUS,
+    login_as,
+    logout,
     person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.factory import LaunchpadObjectFactory
 
 
-class TestRecipeBuilder(TestCaseWithFactory):
-
-    layer = LaunchpadFunctionalLayer
-
-    def test_providesInterface(self):
-        # RecipeBuildBehavior provides IBuildFarmJobBehavior.
-        recipe_builder = RecipeBuildBehavior(None)
-        self.assertProvides(recipe_builder, IBuildFarmJobBehavior)
-
-    def test_adapts_ISourcePackageRecipeBuildJob(self):
-        # IBuildFarmJobBehavior adapts a ISourcePackageRecipeBuildJob
-        job = self.factory.makeSourcePackageRecipeBuild().makeJob()
-        job = IBuildFarmJobBehavior(job)
-        self.assertProvides(job, IBuildFarmJobBehavior)
+class RecipeBuilderTestsMixin:
 
     def makeJob(self, recipe_registrant=None, recipe_owner=None):
         """Create a sample `ISourcePackageRecipeBuildJob`."""
@@ -85,6 +81,22 @@ class TestRecipeBuilder(TestCaseWithFactory):
         BuildQueue(job_type=BuildFarmJobType.RECIPEBRANCHBUILD, job=job_id)
         job = IBuildFarmJobBehavior(job)
         return job
+
+
+class TestRecipeBuilder(TestCaseWithFactory, RecipeBuilderTestsMixin):
+
+    layer = LaunchpadFunctionalLayer
+
+    def test_providesInterface(self):
+        # RecipeBuildBehavior provides IBuildFarmJobBehavior.
+        recipe_builder = RecipeBuildBehavior(None)
+        self.assertProvides(recipe_builder, IBuildFarmJobBehavior)
+
+    def test_adapts_ISourcePackageRecipeBuildJob(self):
+        # IBuildFarmJobBehavior adapts a ISourcePackageRecipeBuildJob
+        job = self.factory.makeSourcePackageRecipeBuild().makeJob()
+        job = IBuildFarmJobBehavior(job)
+        self.assertProvides(job, IBuildFarmJobBehavior)
 
     def test_display_name(self):
         # display_name contains a sane description of the job
@@ -240,6 +252,24 @@ class TestRecipeBuilder(TestCaseWithFactory):
             job.build, distroarchseries, None)
         self.assertEqual(args["archives"], expected_archives)
 
+    def test_getById(self):
+        job = self.makeJob()
+        transaction.commit()
+        self.assertEquals(
+            job.build, SourcePackageRecipeBuild.getById(job.build.id))
+
+
+class TestDispatchBuildToSlave(TrialTestCase, RecipeBuilderTestsMixin):
+
+    layer = TwistedLaunchpadZopelessLayer
+
+    def setUp(self):
+        super(TestDispatchBuildToSlave, self).setUp()
+        self.factory = LaunchpadObjectFactory()
+        login_as(ANONYMOUS)
+        self.addCleanup(logout)
+        self.layer.switchDbUser('testadmin')
+
     def test_dispatchBuildToSlave(self):
         # Ensure dispatchBuildToSlave will make the right calls to the slave
         job = self.makeJob()
@@ -251,20 +281,22 @@ class TestRecipeBuilder(TestCaseWithFactory):
         builder.processor = processorfamily.processors[0]
         job.setBuilder(builder)
         logger = BufferLogger()
-        job.dispatchBuildToSlave("someid", logger)
-        logger.buffer.seek(0)
-        self.assertEquals(
-            "DEBUG: Initiating build 1-someid on http://fake:0000\n",
-            logger.buffer.readline())
-        self.assertEquals(["ensurepresent", "build"],
-                          [call[0] for call in slave.call_log])
-        build_args = slave.call_log[1][1:]
-        self.assertEquals(
-            build_args[0], job.buildfarmjob.generateSlaveBuildCookie())
-        self.assertEquals(build_args[1], "sourcepackagerecipe")
-        self.assertEquals(build_args[3], [])
-        distroarchseries = job.build.distroseries.architectures[0]
-        self.assertEqual(build_args[4], job._extraBuildArgs(distroarchseries))
+        d = defer.maybeDeferred(job.dispatchBuildToSlave, "someid", logger)
+        def check_dispatch(ignored):
+            logger.buffer.seek(0)
+            self.assertEquals(
+                "DEBUG: Initiating build 1-someid on http://fake:0000\n",
+                logger.buffer.readline())
+            self.assertEquals(["ensurepresent", "build"],
+                              [call[0] for call in slave.call_log])
+            build_args = slave.call_log[1][1:]
+            self.assertEquals(
+                build_args[0], job.buildfarmjob.generateSlaveBuildCookie())
+            self.assertEquals(build_args[1], "sourcepackagerecipe")
+            self.assertEquals(build_args[3], [])
+            distroarchseries = job.build.distroseries.architectures[0]
+            self.assertEqual(build_args[4], job._extraBuildArgs(distroarchseries))
+        return d.addCallback(check_dispatch)
 
     def test_dispatchBuildToSlave_nochroot(self):
         # dispatchBuildToSlave will fail when there is not chroot tarball
@@ -275,14 +307,8 @@ class TestRecipeBuilder(TestCaseWithFactory):
         builder.processor = processorfamily.processors[0]
         job.setBuilder(builder)
         logger = BufferLogger()
-        self.assertRaises(CannotBuild, job.dispatchBuildToSlave,
-            "someid", logger)
-
-    def test_getById(self):
-        job = self.makeJob()
-        transaction.commit()
-        self.assertEquals(
-            job.build, SourcePackageRecipeBuild.getById(job.build.id))
+        d = defer.maybeDeferred(job.dispatchBuildToSlave, "someid", logger)
+        return self.assertFailure(d, CannotBuild)
 
 
 def test_suite():
