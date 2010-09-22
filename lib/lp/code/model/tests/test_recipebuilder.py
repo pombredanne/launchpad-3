@@ -21,7 +21,6 @@ from lp.buildmaster.interfaces.builder import CannotBuild
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior,
     )
-from lp.buildmaster.manager import RecordingSlave
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.code.model.recipebuilder import RecipeBuildBehavior
 from lp.code.model.sourcepackagerecipebuild import SourcePackageRecipeBuild
@@ -241,13 +240,12 @@ class TestRecipeBuilder(TestCaseWithFactory):
             job.build, distroarchseries, None)
         self.assertEqual(args["archives"], expected_archives)
 
-
     def test_dispatchBuildToSlave(self):
         # Ensure dispatchBuildToSlave will make the right calls to the slave
         job = self.makeJob()
         test_publisher = SoyuzTestPublisher()
         test_publisher.addFakeChroots(job.build.distroseries)
-        slave = RecordingSlave("i386-slave-1", "http://myurl", "vmhost")
+        slave = OkSlave()
         builder = MockBuilder("bob-de-bouwer", slave)
         processorfamily = ProcessorFamilySet().getByProcessorName('386')
         builder.processor = processorfamily.processors[0]
@@ -259,12 +257,12 @@ class TestRecipeBuilder(TestCaseWithFactory):
             "DEBUG: Initiating build 1-someid on http://fake:0000\n",
             logger.buffer.readline())
         self.assertEquals(["ensurepresent", "build"],
-                          [call[0] for call in slave.calls])
-        build_args = slave.calls[1][1]
+                          [call[0] for call in slave.call_log])
+        build_args = slave.call_log[1][1:]
         self.assertEquals(
             build_args[0], job.buildfarmjob.generateSlaveBuildCookie())
         self.assertEquals(build_args[1], "sourcepackagerecipe")
-        self.assertEquals(build_args[3], {})
+        self.assertEquals(build_args[3], [])
         distroarchseries = job.build.distroseries.architectures[0]
         self.assertEqual(build_args[4], job._extraBuildArgs(distroarchseries))
 
