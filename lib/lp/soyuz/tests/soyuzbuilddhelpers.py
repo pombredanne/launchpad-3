@@ -122,13 +122,11 @@ class OkSlave:
         return ('1.0', self.arch_tag, 'debian')
 
     def sendFileToSlave(self, sha1, url, username="", password=""):
-        self.call_log.append('sendFileToSlave')
         present, info = self.ensurepresent(sha1, url, username, password)
         if not present:
             raise CannotFetchFile(url, info)
 
     def cacheFile(self, logger, libraryfilealias):
-        self.call_log.append('cacheFile')
         return self.sendFileToSlave(
             libraryfilealias.content.sha1, libraryfilealias.http_url)
 
