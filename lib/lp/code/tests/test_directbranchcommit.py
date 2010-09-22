@@ -5,7 +5,10 @@
 
 __metaclass__ = type
 
-from canonical.testing.layers import ZopelessDatabaseLayer
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer,
+    ZopelessDatabaseLayer,
+    )
 from lp.code.model.directbranchcommit import (
     ConcurrentUpdateError,
     DirectBranchCommit,
@@ -280,17 +283,11 @@ class TestGetDir(DirectBranchCommitTestCase, TestCaseWithFactory):
 class TestGetBzrCommitterID(TestCaseWithFactory):
     """Test `DirectBranchCommitter.getBzrCommitterID`."""
 
-    layer = ZopelessDatabaseLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         super(TestGetBzrCommitterID, self).setUp()
         self.useBzrBranches(direct_database=True)
-        self.committer = None
-
-    def tearDown(self):
-        if self.committer:
-            self.committer.unlock()
-        super(TestGetBzrCommitterID, self).tearDown()
 
     def _makeBranch(self, **kwargs):
         """Create a branch in the database and in bzr."""
@@ -300,18 +297,19 @@ class TestGetBzrCommitterID(TestCaseWithFactory):
     def test_uses_committer_string(self):
         # getBzrCommitterID uses the committer string if provided.
         bzr_id = self.factory.getUniqueString()
-        self.committer = DirectBranchCommit(
+        committer = DirectBranchCommit(
             self._makeBranch(), committer_string=bzr_id)
-        self.assertEqual(bzr_id, self.committer.getBzrCommitterID())
+        self.addCleanup(committer.unlock)
+        self.assertEqual(bzr_id, committer.getBzrCommitterID())
 
     def test_uses_committer_email(self):
         # getBzrCommitterID returns the committing person's email address
         # if available (and if no committer string is given).
         branch = self._makeBranch()
-        self.committer = DirectBranchCommit(branch)
+        committer = DirectBranchCommit(branch)
+        self.addCleanup(committer.unlock)
         self.assertIn(
-            branch.owner.preferredemail.email,
-            self.committer.getBzrCommitterID())
+            branch.owner.preferredemail.email, committer.getBzrCommitterID())
 
     def test_falls_back_to_noreply(self):
         # If all else fails, getBzrCommitterID uses the noreply
@@ -319,5 +317,6 @@ class TestGetBzrCommitterID(TestCaseWithFactory):
         team = self.factory.makeTeam()
         self.assertIs(None, team.preferredemail)
         branch = self._makeBranch(owner=team)
-        self.committer = DirectBranchCommit(branch)
-        self.assertIn('noreply', self.committer.getBzrCommitterID())
+        committer = DirectBranchCommit(branch)
+        self.addCleanup(committer.unlock)
+        self.assertIn('noreply', committer.getBzrCommitterID())

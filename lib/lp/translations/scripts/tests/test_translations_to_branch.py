@@ -275,7 +275,7 @@ class TestExportTranslationsToBranch(TestCaseWithFactory):
         committer = exporter._makeDirectBranchCommit(branch)
         committer.unlock()
         self.assertEqual(
-            "Launchpad Translations for %s" % branch.owner.name,
+            "Launchpad Translations on behalf of %s" % branch.owner.name,
             committer.getBzrCommitterID())
 
 
