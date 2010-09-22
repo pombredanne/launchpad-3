@@ -41,6 +41,7 @@ from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior,
     )
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
+from lp.buildmaster.interfaces.builder import CannotResumeHost
 from lp.buildmaster.model.builder import BuilderSlave
 from lp.buildmaster.model.buildfarmjobbehavior import IdleBuildBehavior
 from lp.buildmaster.model.buildqueue import BuildQueue
@@ -136,6 +137,17 @@ class TestBuilder(TestCaseWithFactory):
         # builder.updateStatus should never call handleTimeout() for a
         # single EINTR.
         self.assertEqual(0, builder.handleTimeout.call_count)
+
+    def test_resumeSlaveHost_nonvirtual(self):
+        builder = self.factory.makeBuilder(virtualized=False)
+        self.assertRaises(CannotResumeHost, builder.resumeSlaveHost)
+
+    def test_resumeSlaveHost_no_vmhost(self):
+        builder = self.factory.makeBuilder(virtualized=True, vm_host=None)
+        self.assertRaises(CannotResumeHost, builder.resumeSlaveHost)
+
+    # XXX: Need a test for successful resuming here but that can be done
+    # after Deferreds are implemented in the resume method.
 
 
 class Test_rescueBuilderIfLost(TestCaseWithFactory):
