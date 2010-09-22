@@ -266,8 +266,7 @@ Similarly, unpopulated PPA dependencies are *not* listed in the building
     deb http://ftpmaster.internal/ubuntu hoary-updates
         main restricted universe multiverse
 
-Similarly, but *populated* PPA dependencies *are* listed in the building
-'sources_list'.
+But *populated* PPA dependencies *are* listed in the building 'sources_list'.
 
     >>> pub_binaries = test_publisher.getPubBinaries(
     ...     binaryname='dep-bin', archive=mark.archive,
