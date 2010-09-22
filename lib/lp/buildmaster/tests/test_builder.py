@@ -5,11 +5,14 @@
 
 import errno
 import os
+import signal
 import socket
 import xmlrpclib
 
 import fixtures
 
+from twisted.internet.task import Clock
+from twisted.python.failure import Failure
 from twisted.trial.unittest import TestCase as TrialTestCase
 from twisted.web.client import getPage
 
@@ -18,6 +21,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.buildd.slave import BuilderStatus
 from canonical.buildd.tests.harness import BuilddSlaveTestSetup
+from canonical.config import config
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
@@ -662,6 +666,79 @@ class TestSlave(TrialTestCase):
             d = slave.ensurepresent('blahblah', None, None, None)
             return d.addCallback(self.assertEqual, [True, 'No URL'])
         d.addCallback(check_present)
+        return d
+
+    def test_resumeHost_success(self):
+        # On a successful resume resume() fires the returned deferred
+        # callback with 'None'.
+        self.slave_helper.getServerSlave()
+        slave = self.slave_helper.getClientSlave()
+
+        # The configuration testing command-line.
+        self.assertEqual(
+            'echo %(vm_host)s', config.builddmaster.vm_resume_command)
+
+        # On success the response is None.
+        def check_resume_success(response):
+            out, err, code = response
+            self.assertEqual(os.EX_OK, code)
+            self.assertEqual("%s\n" % slave.vm_host, out)
+        d = slave.resume()
+        d.addBoth(check_resume_success)
+        return d
+
+    def test_resumeHost_failure(self):
+        # On a failed resume, 'resumeHost' fires the returned deferred
+        # errorback with the `ProcessTerminated` failure.
+        self.slave_helper.getServerSlave()
+        slave = self.slave_helper.getClientSlave()
+
+        # Override the configuration command-line with one that will fail.
+        failed_config = """
+        [builddmaster]
+        vm_resume_command: test "%(vm_host)s = 'no-sir'"
+        """
+        config.push('failed_resume_command', failed_config)
+        self.addCleanup(config.pop, 'failed_resume_command')
+
+        # On failures, the response is a twisted `Failure` object containing
+        # a tuple.
+        def check_resume_failure(failure):
+            out, err, code = failure.value
+            # The process will exit with a return code of "1".
+            self.assertEqual(code, 1)
+        d = slave.resume()
+        d.addBoth(check_resume_failure)
+        return d
+
+    def test_resumeHost_timeout(self):
+        # On a resume timeouts, 'resumeHost' fires the returned deferred
+        # errorback with the `TimeoutError` failure.
+        self.slave_helper.getServerSlave()
+        slave = self.slave_helper.getClientSlave()
+
+        # Override the configuration command-line with one that will timeout.
+        timeout_config = """
+        [builddmaster]
+        vm_resume_command: sleep 5
+        socket_timeout: 1
+        """
+        config.push('timeout_resume_command', timeout_config)
+        self.addCleanup(config.pop, 'timeout_resume_command')
+
+        # On timeouts, the response is a twisted `Failure` object containing
+        # a `TimeoutError` error.
+        def check_resume_timeout(failure):
+            self.assertIsInstance(failure, Failure)
+            out, err, code = failure.value
+            self.assertEqual(code, signal.SIGKILL)
+        clock = Clock()
+        d = slave.resume(clock=clock)
+        # Move the clock beyond the socket_timeout but earlier than the
+        # sleep 5.  This stops the test having to wait for the timeout.
+        # Fast tests FTW!
+        clock.advance(2)
+        d.addBoth(check_resume_timeout)
         return d
 
 
