@@ -363,6 +363,9 @@ class IHasOfficialBugTags(Interface):
         bugs will be returned.
         """
 
+    def _getOfficialTagClause():
+        """Get the storm clause for finding this targets tags."""
+
 
 class IOfficialBugTagTargetPublic(IHasOfficialBugTags):
     """Public attributes for `IOfficialBugTagTarget`."""
@@ -385,9 +388,6 @@ class IOfficialBugTagTargetRestricted(Interface):
     @export_write_operation()
     def removeOfficialBugTag(tag):
         """Remove tag from the official bug tags of this target."""
-
-    def _getOfficialTagClause():
-        """Get the storm clause for finding this targets tags."""
 
 
 class IOfficialBugTagTarget(IOfficialBugTagTargetPublic,

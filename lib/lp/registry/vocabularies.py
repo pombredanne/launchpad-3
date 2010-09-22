@@ -1195,8 +1195,11 @@ class MilestoneVocabulary(SQLObjectVocabularyBase):
         # This fixes an urgent bug though, so I think this problem
         # should be revisited after we've unblocked users.
         if target is not None:
-            milestones = shortlist(
-                    target.milestones, longest_expected=40)
+            if IProjectGroup.providedBy(self.context):
+                milestones_source = target.product_milestones
+            else:
+                milestones_source = target.milestones
+            milestones = shortlist(milestones_source, longest_expected=40)
         else:
             # We can't use context to reasonably filter the
             # milestones, so let's either just grab all of them,
@@ -1233,9 +1236,11 @@ class MilestoneVocabulary(SQLObjectVocabularyBase):
         product_ids = set(
             removeSecurityProxy(milestone).productID
             for milestone in milestones)
+        product_ids.discard(None)
         distro_ids = set(
             removeSecurityProxy(milestone).distributionID
             for milestone in milestones)
+        distro_ids.discard(None)
         if len(product_ids) > 0:
             list(Product.select("id IN %s" % sqlvalues(product_ids)))
         if len(distro_ids) > 0:

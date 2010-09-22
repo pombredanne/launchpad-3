@@ -70,6 +70,7 @@ from zope.interface import (
     implements,
     providedBy,
     )
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
@@ -703,7 +704,9 @@ BugMessage""" % sqlvalues(self.id))
         # bit in Python. If reviewing performance here feel free to change.
         clauses = []
         for task in self.bugtasks:
-            clauses.append(task.target._getOfficialTagClause())
+            clauses.append(
+                # Storm cannot compile proxied objects.
+                removeSecurityProxy(task.target._getOfficialTagClause()))
         clause = Or(*clauses)
         return list(Store.of(self).using(table).find(OfficialBugTag.tag,
             clause).order_by(OfficialBugTag.tag).config(distinct=True))
@@ -903,18 +906,23 @@ BugMessage""" % sqlvalues(self.id))
     def getSubscribersForPerson(self, person):
         """See `IBug."""
         assert person is not None
-        def cache_subscribed(rows):
-            for subscriber in rows:
-                if subscriber.bugID == self.id:
-                    self._subscriber_cache.add(subscriber)
-                else:
-                    self._subscriber_dups_cache.add(subscriber)
+        def cache_unsubscribed(rows):
             if not rows:
                 self._unsubscribed_cache.add(person)
-
+        def cache_subscriber(row):
+            _, subscriber, subscription = row
+            if subscription.bugID == self.id:
+                self._subscriber_cache.add(subscriber)
+            else:
+                self._subscriber_dups_cache.add(subscriber)
+            return subscriber
         return DecoratedResultSet(Store.of(self).find(
-            # return people
-            Person,
+            # XXX: RobertCollins 2010-09-22 bug=374777: This SQL(...) is a
+            # hack; it does not seem to be possible to express DISTINCT ON
+            # with Storm.
+            (SQL("DISTINCT ON (Person.name, BugSubscription.person) 0 AS ignore"),
+             # return people and subscribptions
+             Person, BugSubscription),
             # For this bug or its duplicates
             Or(
                 Bug.id == self.id,
@@ -934,8 +942,8 @@ BugMessage""" % sqlvalues(self.id))
             # bug=https://bugs.edge.launchpad.net/storm/+bug/627137
             # RBC 20100831
             SQL("""Person.id = TeamParticipation.team"""),
-            ).order_by(Person.name).config(distinct=True),
-            pre_iter_hook=cache_subscribed)
+            ).order_by(Person.name),
+            cache_subscriber, pre_iter_hook=cache_unsubscribed)
 
     def getAlsoNotifiedSubscribers(self, recipients=None, level=None):
         """See `IBug`.
@@ -1364,6 +1372,7 @@ BugMessage""" % sqlvalues(self.id))
         question_target = IQuestionTarget(bugtask.target)
         question = question_target.createQuestionFromBug(self)
         self.addChange(BugConvertedToQuestion(UTC_NOW, person, question))
+        IPropertyCache(self)._question_from_bug = question
 
         notify(BugBecameQuestionEvent(self, question, person))
         return question
@@ -1690,9 +1699,9 @@ BugMessage""" % sqlvalues(self.id))
         """Set the tags from a list of strings."""
         # In order to preserve the ordering of the tags, delete all tags
         # and insert the new ones.
-        del IPropertyCache(self)._cached_tags
         new_tags = set([tag.lower() for tag in tags])
         old_tags = set(self.tags)
+        del IPropertyCache(self)._cached_tags
         added_tags = new_tags.difference(old_tags)
         removed_tags = old_tags.difference(new_tags)
         for removed_tag in removed_tags:

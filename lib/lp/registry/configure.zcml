@@ -451,6 +451,7 @@
                 getReleasesAndPublishingHistory
                 upstream_product
                 target_type_display
+                _getOfficialTagClause
                 official_bug_tags
                 findRelatedArchives
                 findRelatedArchivePublications

@@ -100,23 +100,32 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
         self.view = BugTasksAndNominationsView(
             self.bug, LaunchpadTestRequest())
 
+    def refresh(self):
+        # The view caches, to see see different scenarios, a refresh is needed.
+        self.view = BugTasksAndNominationsView(
+            self.bug, LaunchpadTestRequest())
+
     def test_current_user_affected_status(self):
         self.failUnlessEqual(
             None, self.view.current_user_affected_status)
-        self.view.context.markUserAffected(self.view.user, True)
+        self.bug.markUserAffected(self.view.user, True)
+        self.refresh()
         self.failUnlessEqual(
             True, self.view.current_user_affected_status)
-        self.view.context.markUserAffected(self.view.user, False)
+        self.bug.markUserAffected(self.view.user, False)
+        self.refresh()
         self.failUnlessEqual(
             False, self.view.current_user_affected_status)
 
     def test_current_user_affected_js_status(self):
         self.failUnlessEqual(
             'null', self.view.current_user_affected_js_status)
-        self.view.context.markUserAffected(self.view.user, True)
+        self.bug.markUserAffected(self.view.user, True)
+        self.refresh()
         self.failUnlessEqual(
             'true', self.view.current_user_affected_js_status)
-        self.view.context.markUserAffected(self.view.user, False)
+        self.bug.markUserAffected(self.view.user, False)
+        self.refresh()
         self.failUnlessEqual(
             'false', self.view.current_user_affected_js_status)
 
@@ -143,10 +152,12 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
         # logged-in user marked him or herself as affected or not.
         self.failUnlessEqual(
             1, self.view.other_users_affected_count)
-        self.view.context.markUserAffected(self.view.user, True)
+        self.bug.markUserAffected(self.view.user, True)
+        self.refresh()
         self.failUnlessEqual(
             1, self.view.other_users_affected_count)
-        self.view.context.markUserAffected(self.view.user, False)
+        self.bug.markUserAffected(self.view.user, False)
+        self.refresh()
         self.failUnlessEqual(
             1, self.view.other_users_affected_count)
 
@@ -156,17 +167,18 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
         self.failUnlessEqual(
             1, self.view.other_users_affected_count)
         other_user_1 = self.factory.makePerson()
-        self.view.context.markUserAffected(other_user_1, True)
+        self.bug.markUserAffected(other_user_1, True)
         self.failUnlessEqual(
             2, self.view.other_users_affected_count)
         other_user_2 = self.factory.makePerson()
-        self.view.context.markUserAffected(other_user_2, True)
+        self.bug.markUserAffected(other_user_2, True)
         self.failUnlessEqual(
             3, self.view.other_users_affected_count)
-        self.view.context.markUserAffected(other_user_1, False)
+        self.bug.markUserAffected(other_user_1, False)
         self.failUnlessEqual(
             2, self.view.other_users_affected_count)
-        self.view.context.markUserAffected(self.view.user, True)
+        self.bug.markUserAffected(self.view.user, True)
+        self.refresh()
         self.failUnlessEqual(
             2, self.view.other_users_affected_count)
 

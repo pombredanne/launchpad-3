@@ -694,6 +694,9 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """Customize `search_params` for this distribution series."""
         search_params.setDistroSeries(self)
 
+    def _getOfficialTagClause(self):
+        return self.distribution._getOfficialTagClause()
+
     @property
     def official_bug_tags(self):
         """See `IHasBugs`."""
