@@ -26,23 +26,28 @@ __all__ = [
     ]
 
 
+from cStringIO import StringIO
+from datetime import (
+    datetime,
+    timedelta,
+    )
 import hashlib
 import logging
+from optparse import OptionParser
 import re
 import sys
-import traceback
 import time
+import traceback
 
-from optparse import OptionParser
-from cStringIO import StringIO
-from datetime import datetime, timedelta
 from pytz import utc
-
 from zope.component import getUtility
 
 from canonical.base import base
 from canonical.config import config
-from canonical.librarian.interfaces import ILibrarianClient, UploadFailed
+from canonical.librarian.interfaces import (
+    ILibrarianClient,
+    UploadFailed,
+    )
 
 # Custom log levels. logging.debug is 10.
 DEBUG2 = 9

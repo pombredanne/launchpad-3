@@ -8,13 +8,15 @@ __all__ = [
     ]
 
 
-import pytz
-from datetime import timedelta, datetime
+from datetime import (
+    datetime,
+    timedelta,
+    )
 
+import pytz
 from zope.component import getUtility
 
 from canonical.config import config
-
 from lp.registry.interfaces.personnotification import IPersonNotificationSet
 
 

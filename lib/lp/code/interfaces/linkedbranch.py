@@ -12,14 +12,20 @@ backports branch for a source package or something else.
 
 __metaclass__ = type
 __all__ = [
-    'get_linked_branch',
+    'get_linked_to_branch',
     'ICanHasLinkedBranch',
     ]
 
-from zope.interface import Attribute, Interface
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
 from zope.security.proxy import isinstance as zope_isinstance
 
-from lp.code.errors import CannotHaveLinkedBranch, NoLinkedBranch
+from lp.code.errors import (
+    CannotHaveLinkedBranch,
+    NoLinkedBranch,
+    )
 
 
 class ICanHasLinkedBranch(Interface):
@@ -41,14 +47,14 @@ class ICanHasLinkedBranch(Interface):
         """
 
 
-def get_linked_branch(provided):
-    """Get the linked branch for 'provided', whatever that is.
+def get_linked_to_branch(provided):
+    """Get the `ICanHasLinkedBranch` for 'provided', whatever that is.
 
     :raise CannotHaveLinkedBranch: If 'provided' can never have a linked
         branch.
     :raise NoLinkedBranch: If 'provided' could have a linked branch, but
         doesn't.
-    :return: The linked branch, an `IBranch`.
+    :return: The `ICanHasLinkedBranch` object.
     """
     has_linked_branch = ICanHasLinkedBranch(provided, None)
     if has_linked_branch is None:
@@ -57,7 +63,6 @@ def get_linked_branch(provided):
             # pocket.
             provided = provided[0]
         raise CannotHaveLinkedBranch(provided)
-    branch = has_linked_branch.branch
-    if branch is None:
+    if has_linked_branch.branch is None:
         raise NoLinkedBranch(provided)
-    return branch
+    return has_linked_branch

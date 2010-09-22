@@ -10,8 +10,8 @@ import unittest
 from twisted.python.failure import Failure
 from twisted.trial.unittest import TestCase
 
-from lp.services.xmlrpc import LaunchpadFault
 from lp.services.twistedsupport.xmlrpc import trap_fault
+from lp.services.xmlrpc import LaunchpadFault
 
 
 class TestFaultOne(LaunchpadFault):

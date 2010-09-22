@@ -11,7 +11,7 @@
     <title>Oops!</title>
     <style type="text/css">
       html {
-        font-family: bitstream vera sans, dejavu sans, verdana, sans-serif;
+        font-family: UbuntuBeta, Ubuntu, 'Bitstream Vera Sans', 'DejaVu Sans', Tahoma, sans-serif;
         font-size: 8pt;
       }
       h1 {background: none; color: #83ad23; font-size: 3em; font-weight: normal;}

@@ -3,8 +3,9 @@
 Launchpad has a 'macro:' TALES namespace that offers controls over the
 layout of the page.
 
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> class FakeView(object):
-    ...     pass
+    ...     request = LaunchpadTestRequest()
 
 Templates should start by specifying the kind of pagetype they use.
 That's done by using the 'macro:page' traversal. That expression returns
@@ -50,6 +51,7 @@ isBetaUser() (ie. all views inheriting LaunchpadView), and simply
 returns False for older views that do not.
 
     >>> class LPView(object):
+    ...     request = LaunchpadTestRequest()
     ...     def isBetaUser(self):
     ...         return True
 

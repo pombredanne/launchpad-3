@@ -5,21 +5,23 @@
 
 __metaclass__ = type
 
-import transaction
+from datetime import (
+    datetime,
+    timedelta,
+    )
 import unittest
 
-from datetime import datetime, timedelta
 from pytz import utc
-
+import transaction
 from zope.component import getUtility
 
 from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.testing import DatabaseFunctionalLayer
-
 from lp.bugs.interfaces.bugwatch import (
-    BugWatchActivityStatus, IBugWatchSet)
+    BugWatchActivityStatus,
+    IBugWatchSet,
+    )
 from lp.bugs.scripts.checkwatches.scheduler import BugWatchScheduler
-
 from lp.testing import TestCaseWithFactory
 
 

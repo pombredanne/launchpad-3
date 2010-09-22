@@ -6,17 +6,29 @@
 __metaclass__ = type
 __all__ = ['GPGKey', 'GPGKeySet']
 
-from zope.interface import implements
-from zope.component import getUtility
-
 from sqlobject import (
-    ForeignKey, IntCol, StringCol, BoolCol, SQLObjectNotFound)
+    BoolCol,
+    ForeignKey,
+    IntCol,
+    SQLObjectNotFound,
+    StringCol,
+    )
+from zope.component import getUtility
+from zope.interface import implements
 
 from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import SQLBase, sqlvalues
-
+from canonical.database.sqlbase import (
+    SQLBase,
+    sqlvalues,
+    )
 from canonical.launchpad.interfaces.gpghandler import IGPGHandler
-from lp.registry.interfaces.gpg import GPGKeyAlgorithm, IGPGKey, IGPGKeySet
+from lp.registry.interfaces.gpg import (
+    GPGKeyAlgorithm,
+    IGPGKey,
+    IGPGKeySet,
+    )
+
+
 class GPGKey(SQLBase):
     implements(IGPGKey)
 

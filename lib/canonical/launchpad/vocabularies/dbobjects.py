@@ -1,5 +1,5 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
-# GNU Affero General Public License version 3 (see the file LICENSE).
+# Copyright 2009, 2010 Canonical Ltd.  This software is licensed under the GNU
+# Affero General Public License version 3 (see the file LICENSE).
 
 """Vocabularies pulling stuff from the database.
 
@@ -10,8 +10,6 @@ docstring in __init__.py for details.
 __metaclass__ = type
 
 __all__ = [
-    'BranchRestrictedOnProductVocabulary',
-    'BranchVocabulary',
     'BugNominatableDistroSeriesVocabulary',
     'BugNominatableProductSeriesVocabulary',
     'BugNominatableSeriesVocabulary',
@@ -26,14 +24,12 @@ __all__ = [
     'FilteredFullLanguagePackVocabulary',
     'FilteredLanguagePackVocabulary',
     'FutureSprintVocabulary',
-    'HostedBranchRestrictedOnOwnerVocabulary',
     'LanguageVocabulary',
     'PackageReleaseVocabulary',
     'PPAVocabulary',
     'ProcessorFamilyVocabulary',
     'ProcessorVocabulary',
     'project_products_using_malone_vocabulary_factory',
-    'SpecificationDepCandidatesVocabulary',
     'SpecificationDependenciesVocabulary',
     'SpecificationVocabulary',
     'SprintVocabulary',
@@ -47,60 +43,77 @@ __all__ = [
 import cgi
 from operator import attrgetter
 
-from sqlobject import AND, CONTAINSSTRING, SQLObjectNotFound
-from storm.expr import SQL
+from sqlobject import (
+    AND,
+    CONTAINSSTRING,
+    SQLObjectNotFound,
+    )
+from storm.expr import (
+    And,
+    Or,
+    SQL,
+    )
 from zope.component import getUtility
 from zope.interface import implements
-from zope.schema.interfaces import IVocabulary, IVocabularyTokenized
-from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
+from zope.schema.interfaces import (
+    IVocabulary,
+    IVocabularyTokenized,
+    )
+from zope.schema.vocabulary import (
+    SimpleTerm,
+    SimpleVocabulary,
+    )
 
-from storm.expr import And, Or
-
+from canonical.database.sqlbase import (
+    quote,
+    sqlvalues,
+    )
+from canonical.launchpad.database import (
+    Archive,
+    BugWatch,
+    )
+from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces.lpstorm import IStore
-from lp.code.model.branch import Branch
+from canonical.launchpad.webapp.interfaces import ILaunchBag
+from canonical.launchpad.webapp.vocabulary import (
+    CountableIterator,
+    IHugeVocabulary,
+    NamedSQLObjectVocabulary,
+    SQLObjectVocabularyBase,
+    )
+from lp.app.browser.stringformatter import FormattersAPI
+from lp.app.enums import ServiceUsage
+from lp.blueprints.model.specification import Specification
+from lp.blueprints.model.sprint import Sprint
+from lp.bugs.interfaces.bugtask import IBugTask
+from lp.bugs.interfaces.bugtracker import BugTrackerType
 from lp.bugs.model.bug import Bug
 from lp.bugs.model.bugtracker import BugTracker
-from canonical.launchpad.database import Archive, BugWatch
-from lp.soyuz.model.component import Component
-from lp.soyuz.model.distroarchseries import DistroArchSeries
-from lp.soyuz.model.processor import Processor, ProcessorFamily
-from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
-from lp.services.worlddata.model.country import Country
-from lp.services.worlddata.model.language import Language
+from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.model.distribution import Distribution
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.person import Person
 from lp.registry.model.productseries import ProductSeries
-from lp.blueprints.model.specification import Specification
-from lp.blueprints.model.sprint import Sprint
+from lp.services.worlddata.interfaces.language import ILanguage
+from lp.services.worlddata.model.country import Country
+from lp.services.worlddata.model.language import Language
+from lp.soyuz.enums import ArchivePurpose
+from lp.soyuz.model.component import Component
+from lp.soyuz.model.distroarchseries import DistroArchSeries
+from lp.soyuz.model.processor import (
+    Processor,
+    ProcessorFamily,
+    )
+from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
+from lp.translations.interfaces.languagepack import LanguagePackType
 from lp.translations.model.languagepack import LanguagePack
 from lp.translations.model.potemplate import POTemplate
 from lp.translations.model.translationgroup import TranslationGroup
 from lp.translations.model.translationmessage import TranslationMessage
-from canonical.database.sqlbase import quote_like, quote, sqlvalues
-from canonical.launchpad.helpers import shortlist
-from lp.soyuz.interfaces.archive import ArchivePurpose
-from lp.bugs.interfaces.bugtask import IBugTask
-from lp.bugs.interfaces.bugtracker import BugTrackerType
-from lp.services.worlddata.interfaces.language import ILanguage
-from lp.translations.interfaces.languagepack import LanguagePackType
-from lp.blueprints.interfaces.specification import SpecificationFilter
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.launchpad.webapp.vocabulary import (
-    CountableIterator, IHugeVocabulary,
-    NamedSQLObjectVocabulary, SQLObjectVocabularyBase)
 
-from lp.app.browser.stringformatter import FormattersAPI
-from lp.code.enums import BranchType
-from lp.code.interfaces.branch import IBranch
-from lp.code.interfaces.branchcollection import IAllBranches
-from lp.registry.interfaces.distribution import IDistribution
-from lp.registry.interfaces.series import SeriesStatus
-from lp.registry.interfaces.distroseries import IDistroSeries    
-from lp.registry.interfaces.person import IPerson
-from lp.registry.interfaces.product import IProduct
-from lp.registry.interfaces.productseries import IProductSeries
-from lp.registry.interfaces.projectgroup import IProjectGroup
 
 class ComponentVocabulary(SQLObjectVocabularyBase):
 
@@ -121,105 +134,6 @@ class CountryNameVocabulary(SQLObjectVocabularyBase):
 
     def toTerm(self, obj):
         return SimpleTerm(obj, obj.id, obj.name)
-
-
-class BranchVocabularyBase(SQLObjectVocabularyBase):
-    """A base class for Branch vocabularies.
-
-    Override `BranchVocabularyBase._getCollection` to provide the collection
-    of branches which make up the vocabulary.
-    """
-
-    implements(IHugeVocabulary)
-
-    _table = Branch
-    _orderBy = ['name', 'id']
-    displayname = 'Select a branch'
-
-    def toTerm(self, branch):
-        """The display should include the URL if there is one."""
-        return SimpleTerm(branch, branch.unique_name, branch.unique_name)
-
-    def getTermByToken(self, token):
-        """See `IVocabularyTokenized`."""
-        search_results = self.searchForTerms(token)
-        if search_results.count() == 1:
-            return iter(search_results).next()
-        raise LookupError(token)
-
-    def _getCollection(self):
-        """Override this to return the collection to which the search is
-        restricted.
-        """
-        raise NotImplementedError(self._getCollection)
-
-    def searchForTerms(self, query=None):
-        """See `IHugeVocabulary`."""
-        logged_in_user = getUtility(ILaunchBag).user
-        collection = self._getCollection().visibleByUser(logged_in_user)
-        if query is None:
-            branches = collection.getBranches()
-        else:
-            branches = collection.search(query)
-        return CountableIterator(branches.count(), branches, self.toTerm)
-
-    def __len__(self):
-        """See `IVocabulary`."""
-        return self.search().count()
-
-
-class BranchVocabulary(BranchVocabularyBase):
-    """A vocabulary for searching branches.
-
-    The name and URL of the branch, the name of the product, and the
-    name of the registrant of the branches is checked for the entered
-    value.
-    """
-
-    def _getCollection(self):
-        return getUtility(IAllBranches)
-
-
-class BranchRestrictedOnProductVocabulary(BranchVocabularyBase):
-    """A vocabulary for searching branches restricted on product.
-
-    The query entered checks the name or URL of the branch, or the
-    name of the registrant of the branch.
-    """
-
-    def __init__(self, context=None):
-        BranchVocabularyBase.__init__(self, context)
-        if IProduct.providedBy(self.context):
-            self.product = self.context
-        elif IProductSeries.providedBy(self.context):
-            self.product = self.context.product
-        elif IBranch.providedBy(self.context):
-            self.product = self.context.product
-        else:
-            # An unexpected type.
-            raise AssertionError('Unexpected context type')
-
-    def _getCollection(self):
-        return getUtility(IAllBranches).inProduct(self.product)
-
-
-class HostedBranchRestrictedOnOwnerVocabulary(BranchVocabularyBase):
-    """A vocabulary for hosted branches owned by the current user.
-
-    These are branches that the user is guaranteed to be able to push
-    to.
-    """
-    def __init__(self, context=None):
-        """Pass a Person as context, or anything else for the current user."""
-        super(HostedBranchRestrictedOnOwnerVocabulary, self).__init__(context)
-        if IPerson.providedBy(self.context):
-            self.user = context
-        else:
-            self.user = getUtility(ILaunchBag).user
-
-    def _getCollection(self):
-        return getUtility(IAllBranches).ownedBy(self.user).withBranchType(
-            BranchType.HOSTED)
 
 
 class BugVocabulary(SQLObjectVocabularyBase):
@@ -316,6 +230,7 @@ class TranslatableLanguageVocabulary(LanguageVocabulary):
     This vocabulary contains all the languages known to Launchpad,
     excluding English and non-visible languages.
     """
+
     def __contains__(self, language):
         """See `IVocabulary`.
 
@@ -357,7 +272,7 @@ def project_products_using_malone_vocabulary_factory(context):
     return SimpleVocabulary([
         SimpleTerm(product, product.name, title=product.displayname)
         for product in project.products
-        if product.official_malone])
+        if product.bug_tracking_usage == ServiceUsage.LAUNCHPAD])
 
 
 class TranslationGroupVocabulary(NamedSQLObjectVocabulary):
@@ -391,14 +306,12 @@ class TranslationTemplateVocabulary(SQLObjectVocabularyBase):
         if context.productseries != None:
             self._filter = AND(
                 POTemplate.iscurrent == True,
-                POTemplate.productseries == context.productseries
-            )
+                POTemplate.productseries == context.productseries)
         else:
             self._filter = AND(
                 POTemplate.iscurrent == True,
                 POTemplate.distroseries == context.distroseries,
-                POTemplate.sourcepackagename == context.sourcepackagename
-            )
+                POTemplate.sourcepackagename == context.sourcepackagename)
         super(TranslationTemplateVocabulary, self).__init__(context)
 
     def toTerm(self, obj):
@@ -491,83 +404,6 @@ class SpecificationDependenciesVocabulary(NamedSQLObjectVocabulary):
             for spec in sorted(
                 curr_spec.dependencies, key=attrgetter('title')):
                 yield SimpleTerm(spec, spec.name, spec.title)
-
-
-class SpecificationDepCandidatesVocabulary(SQLObjectVocabularyBase):
-    """Specifications that could be dependencies of this spec.
-
-    This includes only those specs that are not blocked by this spec
-    (directly or indirectly), unless they are already dependencies.
-
-    The current spec is not included.
-    """
-
-    implements(IHugeVocabulary)
-
-    _table = Specification
-    _orderBy = 'name'
-    displayname = 'Select a blueprint'
-
-    def _filter_specs(self, specs):
-        # XXX intellectronica 2007-07-05: is 100 a reasonable count before
-        # starting to warn?
-        speclist = shortlist(specs, 100)
-        return [spec for spec in speclist
-                if (spec != self.context and
-                    spec.target == self.context.target
-                    and spec not in self.context.all_blocked)]
-
-    def _doSearch(self, query):
-        """Return terms where query is in the text of name
-        or title, or matches the full text index.
-        """
-
-        if not query:
-            return []
-
-        quoted_query = quote_like(query)
-        sql_query = ("""
-            (Specification.name LIKE %s OR
-             Specification.title LIKE %s OR
-             fti @@ ftq(%s))
-            """
-            % (quoted_query, quoted_query, quoted_query))
-        all_specs = Specification.select(sql_query, orderBy=self._orderBy)
-
-        return self._filter_specs(all_specs)
-
-    def toTerm(self, obj):
-        return SimpleTerm(obj, obj.name, obj.title)
-
-    def getTermByToken(self, token):
-        search_results = self._doSearch(token)
-        for search_result in search_results:
-            if search_result.name == token:
-                return self.toTerm(search_result)
-        raise LookupError(token)
-
-    def search(self, query):
-        candidate_specs = self._doSearch(query)
-        return CountableIterator(len(candidate_specs),
-                                 candidate_specs)
-
-    def _all_specs(self):
-        all_specs = self.context.target.specifications(
-            filter=[SpecificationFilter.ALL],
-            prejoin_people=False)
-        return self._filter_specs(all_specs)
-
-    def __iter__(self):
-        return (self.toTerm(spec) for spec in self._all_specs())
-
-    def __contains__(self, obj):
-        # We don't use self._all_specs here, since it will call
-        # self._filter_specs(all_specs) which will cause all the specs
-        # to be loaded, whereas obj in all_specs will query a single object.
-        all_specs = self.context.target.specifications(
-            filter=[SpecificationFilter.ALL],
-            prejoin_people=False)
-        return obj in all_specs and len(self._filter_specs([obj])) > 0
 
 
 class SprintVocabulary(NamedSQLObjectVocabulary):
@@ -716,7 +552,8 @@ class DistributionUsingMaloneVocabulary:
         return Distribution.selectBy(official_malone=True).count()
 
     def __contains__(self, obj):
-        return IDistribution.providedBy(obj) and obj.official_malone
+        return (IDistribution.providedBy(obj)
+                and obj.bug_tracking_usage == ServiceUsage.LAUNCHPAD)
 
     def getQuery(self):
         return None

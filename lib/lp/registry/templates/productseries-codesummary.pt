@@ -84,13 +84,12 @@
     <a id="series-branch" class="sprite branch"
       tal:attributes="href context/branch/fmt:url"
       tal:content="context/branch/bzr_identity">Mozilla Thunderbird 0.9.1</a>
-    - <a tal:replace="structure context/branch/owner/fmt:link/+ownedbranches" />
+    - <a tal:replace="structure context/branch/owner/fmt:link:code/+ownedbranches" />
     <a
       tal:replace="structure context/menu:overview/link_branch/fmt:icon" />
   </div>
   <div id="branch-revision-details" tal:condition="context/branch/revision_count">
-    <span tal:replace="context/branch/revision_count">35</span> revisions,
-    <span tal:replace="context/branch/@@+product-summary-listing/recent_revision_count">31</span> in the past month.
+    <span tal:replace="context/branch/revision_count">35</span> revisions.
   </div>
 </tal:block>
 

@@ -1,4 +1,4 @@
-<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009, 2010 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -15,15 +15,7 @@
     <include package="canonical.launchpad" file="permissions.zcml" />
     <include package="canonical.launchpad.webapp" file="meta.zcml" />
     <include package="lazr.restful" file="meta.zcml" />
-    <include package="lp.services.database" />
-    <include package="lp.services.inlinehelp" file="meta.zcml" />
-    <include package="lp.services.openid" />
-    <include package="lp.services.job" />
-    <include package="lp.services.memcache" />
-    <include package="lp.services.profile" />
-    <include package="lp.services.scripts" />
-    <include package="lp.services.worlddata" />
-    <include package="lp.services.salesforce" />
+    <include package="lp.services" />
     <include package="lazr.uri" />
     <include package="canonical.librarian" />
 

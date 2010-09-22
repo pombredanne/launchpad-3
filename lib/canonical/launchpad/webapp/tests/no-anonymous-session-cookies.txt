@@ -29,7 +29,7 @@ Now let's log in and show that the session cookie is set.
     ...     fill_login_form_and_submit)
     >>> fill_login_form_and_submit(browser, 'foo.bar@canonical.com', 'test')
     >>> print extract_text(find_tag_by_id(browser.contents, 'logincontrol'))
-    Foo Bar...
+    name16...
 
     # Open a page again so that we see the cookie for a launchpad.dev request
     # and not a testopenid.dev request (as above).

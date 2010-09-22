@@ -217,7 +217,7 @@ considered when building the source candidate. That's because there is
 no binary published in Celso's PPA hoary/i386, so there is
 no need to request the builder to load its archive indexes.
 
-    >>> from lp.soyuz.interfaces.publishing import (
+    >>> from lp.soyuz.enums import (
     ...     PackagePublishingStatus)
 
     >>> cprov.archive.getAllPublishedBinaries(

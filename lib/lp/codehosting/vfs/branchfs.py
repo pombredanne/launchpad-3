@@ -63,36 +63,55 @@ __all__ = [
 
 import xmlrpclib
 
+from bzrlib import urlutils
 from bzrlib.branch import Branch
-from bzrlib.bzrdir import BzrDir, BzrDirFormat
+from bzrlib.bzrdir import (
+    BzrDir,
+    BzrDirFormat,
+    )
 from bzrlib.config import TransportConfig
-from bzrlib.errors import NoSuchFile, PermissionDenied, TransportNotPossible
+from bzrlib.errors import (
+    NoSuchFile,
+    PermissionDenied,
+    TransportNotPossible,
+    )
 from bzrlib.plugins.loom.branch import LoomSupport
 from bzrlib.smart.request import jail_info
 from bzrlib.transport import get_transport
 from bzrlib.transport.memory import MemoryServer
-from bzrlib import urlutils
-
 from lazr.uri import URI
-
 from twisted.internet import defer
-from twisted.python import failure, log
-
+from twisted.python import (
+    failure,
+    log,
+    )
 from zope.component import getUtility
-from zope.interface import implements, Interface
+from zope.interface import (
+    implements,
+    Interface,
+    )
 
-from lp.codehosting.bzrutils import get_stacked_on_url
-from lp.codehosting.vfs.branchfsclient import (
-    BlockingProxy, BranchFileSystemClient)
-from lp.codehosting.vfs.transport import (
-    AsyncVirtualServer, AsyncVirtualTransport, TranslationError,
-    get_chrooted_transport, get_readonly_transport)
 from canonical.config import config
 from canonical.launchpad.xmlrpc import faults
 from lp.code.enums import BranchType
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.codehosting import (
-    BRANCH_TRANSPORT, CONTROL_TRANSPORT, LAUNCHPAD_SERVICES)
+    BRANCH_TRANSPORT,
+    CONTROL_TRANSPORT,
+    LAUNCHPAD_SERVICES,
+    )
+from lp.codehosting.bzrutils import get_stacked_on_url
+from lp.codehosting.vfs.branchfsclient import (
+    BlockingProxy,
+    BranchFileSystemClient,
+    )
+from lp.codehosting.vfs.transport import (
+    AsyncVirtualServer,
+    AsyncVirtualTransport,
+    get_chrooted_transport,
+    get_readonly_transport,
+    TranslationError,
+    )
 from lp.services.twistedsupport.xmlrpc import trap_fault
 
 

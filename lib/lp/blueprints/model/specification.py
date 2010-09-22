@@ -10,53 +10,80 @@ __all__ = [
     'SpecificationSet',
     ]
 
-from storm.store import Store
-
-from zope.interface import implements
-from zope.event import notify
-
-from sqlobject import (
-    ForeignKey, IntCol, StringCol, SQLMultipleJoin, SQLRelatedJoin, BoolCol)
-
 from lazr.lifecycle.event import (
-    ObjectCreatedEvent, ObjectDeletedEvent, ObjectModifiedEvent)
+    ObjectCreatedEvent,
+    ObjectDeletedEvent,
+    ObjectModifiedEvent,
+    )
+from lazr.lifecycle.objectdelta import ObjectDelta
+from sqlobject import (
+    BoolCol,
+    ForeignKey,
+    IntCol,
+    SQLMultipleJoin,
+    SQLRelatedJoin,
+    StringCol,
+    )
+from storm.expr import (
+    LeftJoin,
+    )
+from storm.locals import (
+    ClassAlias,
+    Desc,
+    SQL,
+    )
+from storm.store import Store
+from zope.event import notify
+from zope.interface import implements
 
-from lp.bugs.interfaces.buglink import IBugLinkTarget
-from lp.blueprints.interfaces.specification import (
-    ISpecification, ISpecificationSet, SpecificationDefinitionStatus,
-    SpecificationFilter, SpecificationGoalStatus,
-    SpecificationImplementationStatus, SpecificationLifecycleStatus,
-    SpecificationPriority, SpecificationSort)
-from lp.registry.interfaces.distroseries import IDistroSeries
-from lp.registry.interfaces.productseries import IProductSeries
-from canonical.database.sqlbase import cursor, quote, SQLBase, sqlvalues
-from canonical.database.constants import DEFAULT, UTC_NOW
+from canonical.database.constants import (
+    DEFAULT,
+    UTC_NOW,
+    )
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-
+from canonical.database.sqlbase import (
+    cursor,
+    quote,
+    SQLBase,
+    sqlvalues,
+    )
+from canonical.launchpad.components.decoratedresultset import (
+    DecoratedResultSet,
+    )
 from canonical.launchpad.helpers import (
-    get_contact_email_addresses, shortlist)
-
-
-from lp.bugs.model.buglinktarget import BugLinkTargetMixin
-from lp.registry.model.mentoringoffer import MentoringOffer
-from lp.registry.interfaces.person import validate_public_person
-from lp.blueprints.model.specificationdependency import (
-    SpecificationDependency)
-from lp.blueprints.model.specificationbranch import (
-    SpecificationBranch)
-from lp.blueprints.model.specificationbug import (
-    SpecificationBug)
-from lp.blueprints.model.specificationfeedback import (
-    SpecificationFeedback)
-from lp.blueprints.model.specificationsubscription import (
-    SpecificationSubscription)
-from lp.blueprints.model.sprintspecification import (
-    SprintSpecification)
-from lp.blueprints.model.sprint import Sprint
-
-from lazr.lifecycle.objectdelta import ObjectDelta
+    get_contact_email_addresses,
+    shortlist,
+    )
 from lp.blueprints.adapters import SpecificationDelta
+from lp.blueprints.interfaces.specification import (
+    ISpecification,
+    ISpecificationSet,
+    SpecificationDefinitionStatus,
+    SpecificationFilter,
+    SpecificationGoalStatus,
+    SpecificationImplementationStatus,
+    SpecificationLifecycleStatus,
+    SpecificationPriority,
+    SpecificationSort,
+    )
+from lp.blueprints.model.specificationbranch import SpecificationBranch
+from lp.blueprints.model.specificationbug import SpecificationBug
+from lp.blueprints.model.specificationdependency import (
+    SpecificationDependency,
+    )
+from lp.blueprints.model.specificationfeedback import SpecificationFeedback
+from lp.blueprints.model.specificationsubscription import (
+    SpecificationSubscription,
+    )
+from lp.blueprints.model.sprint import Sprint
+from lp.blueprints.model.sprintspecification import SprintSpecification
+from lp.bugs.interfaces.buglink import IBugLinkTarget
+from lp.bugs.model.buglinktarget import BugLinkTargetMixin
+from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.person import validate_public_person
+from lp.registry.interfaces.productseries import IProductSeries
+from lp.registry.model.mentoringoffer import MentoringOffer
 
 
 class Specification(SQLBase, BugLinkTargetMixin):
@@ -663,6 +690,62 @@ class HasSpecificationsMixin:
         """See IHasSpecifications."""
         # this should be implemented by the actual context class
         raise NotImplementedError
+
+    def _specification_sort(self, sort):
+        """Return the storm sort order for 'specifications'.
+        
+        :param sort: As per HasSpecificationsMixin.specifications.
+        """
+        # sort by priority descending, by default
+        if sort is None or sort == SpecificationSort.PRIORITY:
+            return (
+                Desc(Specification.priority), Specification.definition_status,
+                Specification.name)
+        elif sort == SpecificationSort.DATE:
+            return (Desc(Specification.datecreated), Specification.id)
+
+    def _preload_specifications_people(self, query):
+        """Perform eager loading of people and their validity for query.
+        
+        :param query: a string query generated in the 'specifications'
+            method.
+        :return: A DecoratedResultSet with Person precaching setup.
+        """
+        # Circular import.
+        from lp.registry.model.person import Person
+        def cache_people(rows):
+            # Find the people we need:
+            person_ids = set()
+            for spec in rows:
+                person_ids.add(spec.assigneeID)
+                person_ids.add(spec.approverID)
+                person_ids.add(spec.drafterID)
+            person_ids.discard(None)
+            if not person_ids:
+                return
+            # Query those people
+            origin = [Person]
+            columns = [Person]
+            validity_info = Person._validity_queries()
+            origin.extend(validity_info["joins"])
+            columns.extend(validity_info["tables"])
+            decorators = validity_info["decorators"]
+            personset = Store.of(self).using(*origin).find(
+                tuple(columns),
+                Person.id.is_in(person_ids),
+                )
+            for row in personset:
+                person = row[0]
+                index = 1
+                for decorator in decorators:
+                    column = row[index]
+                    index += 1
+                    decorator(person, column)
+        results = Store.of(self).find(
+            Specification,
+            SQL(query),
+            )
+        return DecoratedResultSet(results, pre_iter_hook=cache_people)
 
     @property
     def valid_specifications(self):

@@ -14,10 +14,7 @@ __all__ = [
 
 from zope.interface import implements
 
-from canonical.lazr.utils import smartquote
-
 from canonical.launchpad import _
-from lp.blueprints.interfaces.specificationbranch import ISpecificationBranch
 from canonical.launchpad.webapp import (
     action,
     canonical_url,
@@ -25,6 +22,8 @@ from canonical.launchpad.webapp import (
     LaunchpadFormView,
     )
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
+from canonical.lazr.utils import smartquote
+from lp.blueprints.interfaces.specificationbranch import ISpecificationBranch
 
 
 class SpecificationBranchURL:

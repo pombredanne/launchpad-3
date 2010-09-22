@@ -10,33 +10,64 @@ __all__ = [
     'ArchivePermissionSet',
     ]
 
-from sqlobject import BoolCol, ForeignKey
-from storm.expr import In, SQL
-from storm.locals import Int, Reference
+from sqlobject import (
+    BoolCol,
+    ForeignKey,
+    )
+from storm.expr import (
+    In,
+    SQL,
+    )
+from storm.locals import (
+    Int,
+    Reference,
+    )
 from storm.store import Store
 from zope.component import getUtility
-from zope.interface import alsoProvides, implements
+from zope.interface import (
+    alsoProvides,
+    implements,
+    )
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import sqlvalues, SQLBase
-
+from canonical.database.sqlbase import (
+    SQLBase,
+    sqlvalues,
+    )
+from canonical.launchpad.interfaces.lpstorm import (
+    IMasterStore,
+    IStore,
+    )
+from canonical.launchpad.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 from lp.app.errors import NotFoundError
 from lp.registry.interfaces.distribution import IDistributionSet
-from lp.soyuz.interfaces.archive import ComponentNotFound, IArchive
-from lp.soyuz.interfaces.archivepermission import (
-    ArchivePermissionType, IArchivePermission, IArchivePermissionSet,
-    IArchiveUploader, IArchiveQueueAdmin)
-from lp.soyuz.model.packageset import Packageset
-from lp.soyuz.interfaces.component import IComponent, IComponentSet
-from canonical.launchpad.interfaces.lpstorm import IMasterStore, IStore
-from lp.soyuz.interfaces.packageset import IPackageset
 from lp.registry.interfaces.sourcepackagename import (
-    ISourcePackageName, ISourcePackageNameSet)
-
-from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+    ISourcePackageName,
+    ISourcePackageNameSet,
+    )
+from lp.soyuz.interfaces.archive import (
+    ComponentNotFound,
+    IArchive,
+    )
+from lp.soyuz.enums import ArchivePermissionType
+from lp.soyuz.interfaces.archivepermission import (
+    IArchivePermission,
+    IArchivePermissionSet,
+    IArchiveQueueAdmin,
+    IArchiveUploader,
+    )
+from lp.soyuz.interfaces.component import (
+    IComponent,
+    IComponentSet,
+    )
+from lp.soyuz.interfaces.packageset import IPackageset
+from lp.soyuz.model.packageset import Packageset
 
 
 def _extract_type_name(value):

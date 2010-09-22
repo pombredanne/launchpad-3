@@ -8,19 +8,20 @@ __all__ = ['MigrateVariantsProcess']
 
 import logging
 
+from storm.expr import In
 from zope.component import getUtility
 from zope.interface import implements
-
-from storm.expr import In
 
 from canonical.launchpad.interfaces.looptuner import ITunableLoop
 from canonical.launchpad.utilities.looptuner import DBLoopTuner
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
+    IStoreSelector,
+    MAIN_STORE,
+    MASTER_FLAVOR,
+    )
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.services.worlddata.model.language import Language
-from lp.translations.model.translationmessage import (
-    TranslationMessage)
+from lp.translations.model.translationmessage import TranslationMessage
 
 
 class ReplacerMixin:

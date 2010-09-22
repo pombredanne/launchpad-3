@@ -6,8 +6,8 @@
 __metaclass__ = type
 
 import os
-from StringIO import StringIO
 import shutil
+from StringIO import StringIO
 import tempfile
 import unittest
 

@@ -16,17 +16,26 @@ from zope.component import getUtility
 from canonical.config import config
 from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 from canonical.testing import (
-    DatabaseLayer, LaunchpadLayer, LaunchpadZopelessLayer)
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+    DatabaseLayer,
+    LaunchpadLayer,
+    LaunchpadZopelessLayer,
+    )
+from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.packagebuild import PackageBuild
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.services.scripts.base import LaunchpadScriptFailure
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
-from lp.soyuz.scripts.buildd import QueueBuilder, RetryDepwait
+from lp.soyuz.scripts.buildd import (
+    QueueBuilder,
+    RetryDepwait,
+    )
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 
 

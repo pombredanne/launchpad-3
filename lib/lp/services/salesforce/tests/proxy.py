@@ -15,11 +15,16 @@ __all__ = [
 
 
 import re
-from xmlrpclib import Fault, loads, Transport
+from xmlrpclib import (
+    Fault,
+    loads,
+    Transport,
+    )
+
 from zope.interface import implements
 
-from lp.services.salesforce.proxy import SalesforceVoucherProxy
 from lp.services.salesforce.interfaces import ISalesforceVoucherProxy
+from lp.services.salesforce.proxy import SalesforceVoucherProxy
 
 
 TERM_RE = re.compile("^LPCBS(\d{2})-.*")

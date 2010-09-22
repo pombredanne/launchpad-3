@@ -26,7 +26,7 @@ from canonical.lp import initZopeless
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.scripts.ftpmaster import PubSourceChecker
-from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+from lp.soyuz.enums import PackagePublishingStatus
 
 from contrib.glock import GlobalLock
 

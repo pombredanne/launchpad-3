@@ -153,7 +153,7 @@ messages.
     # build with an known buildlog 'tail'.
     >>> login('foo.bar@canonical.com')
     >>> from canonical.database.constants import UTC_NOW
-    >>> from lp.buildmaster.interfaces.buildbase import BuildStatus
+    >>> from lp.buildmaster.enums import BuildStatus
     >>> in_progress_build.buildqueue_record.reset()
     >>> build.buildqueue_record.markAsBuilding(bob_builder)
     >>> build.buildqueue_record.logtail = 'one line\nanother line'

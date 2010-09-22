@@ -6,27 +6,30 @@
 import logging
 import os
 from StringIO import StringIO
-import transaction
 from unittest import TestLoader
 
+import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.testing import LaunchpadZopelessLayer
-
 from canonical.launchpad.interfaces import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+from canonical.testing import LaunchpadZopelessLayer
+from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
-    IBuildFarmJobBehavior)
+    IBuildFarmJobBehavior,
+    )
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.testing import TestCaseWithFactory
 from lp.testing.fakemethod import FakeMethod
 from lp.translations.interfaces.translationimportqueue import (
-    RosettaImportStatus, ITranslationImportQueue)
+    ITranslationImportQueue,
+    RosettaImportStatus,
+    )
 from lp.translations.interfaces.translations import (
-    TranslationsBranchImportMode)
+    TranslationsBranchImportMode,
+    )
 
 
 class FakeChrootContent:

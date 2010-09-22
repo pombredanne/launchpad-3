@@ -1,4 +1,4 @@
-= DistroSeriesLanguage = 
+= DistroSeriesLanguage =
 
 This is a special class which encapsulates the information associated with a
 particular language and distroseries.
@@ -113,7 +113,7 @@ as English. Thus English cannot be a DummyDistroSeriesLanguage.
     >>> hoary_english = hoary.getDistroSeriesLanguageOrDummy(english)
     Traceback (most recent call last):
     ...
-    AssertionError: English is not a translatable language.    
+    AssertionError: English is not a translatable language.
 
 A DummyDistroSeriesLanguage gives you the same set of templates to
 translate as a regular DistroSeriesLanguage would.

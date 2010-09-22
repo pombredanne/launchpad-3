@@ -12,16 +12,21 @@ import os
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.scripts.logger import log, DEBUG2
+from canonical.launchpad.scripts.logger import (
+    DEBUG2,
+    log,
+    )
 from canonical.launchpad.utilities.orderingcheck import OrderingCheck
+from lp.registry.interfaces.product import IProductSet
+from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.services.scripts.base import (
+    LaunchpadScript,
+    LaunchpadScriptFailure,
+    )
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.interfaces.translations import TranslationConstants
 from lp.translations.model.potmsgset import POTMsgSet
 from lp.translations.model.translationmessage import TranslationMessage
-from lp.registry.interfaces.product import IProductSet
-from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
-from lp.services.scripts.base import (
-    LaunchpadScript, LaunchpadScriptFailure)
 
 
 def get_potmsgset_key(potmsgset):
@@ -48,8 +53,7 @@ def merge_pofiletranslators(from_potmsgset, to_template):
     for pofiletranslator in affected_rows:
         person = pofiletranslator.person
         from_pofile = pofiletranslator.pofile
-        to_pofile = to_template.getPOFileByLang(
-            from_pofile.language.code, variant=from_pofile.variant)
+        to_pofile = to_template.getPOFileByLang(from_pofile.language.code)
 
         pofiletranslator = removeSecurityProxy(pofiletranslator)
         if to_pofile is None:
@@ -486,7 +490,7 @@ class MessageSharingMerge(LaunchpadScript):
         """Return tuple that identifies a TranslationMessage in a POTMsgSet.
 
         A TranslationMessage is identified by (potemplate, potmsgset,
-        language, variant, msgstr0, ...).  In this case we leave out the
+        language, msgstr0, ...).  In this case we leave out the
         potmsgset (because we start out with one) and potemplate (because
         that's sorted out in the nested dicts).
         """
@@ -495,8 +499,8 @@ class MessageSharingMerge(LaunchpadScript):
             getattr(tm, 'msgstr%dID' % form)
             for form in xrange(TranslationConstants.MAX_PLURAL_FORMS)
             ])
-            
-        return (tm.potemplateID, tm.languageID, tm.variant) + msgstr_ids
+
+        return (tm.potemplateID, tm.languageID) + msgstr_ids
 
     def _partitionTranslationMessageIds(self, potmsgset):
         """Partition `TranslationMessage`s by language.
@@ -507,13 +511,13 @@ class MessageSharingMerge(LaunchpadScript):
         :param potmsgset: A `POTMsgSet`.  All its `TranslationMessage`s
             will be read and partitioned.
         :return: A list of lists of `TranslationMessage` ids.  Each of
-            the inner lists represents one language/variant pair.
+            the inner lists represents one language.
         """
         ids_per_language = {}
         tms = potmsgset.getAllTranslationMessages().order_by(
-            TranslationMessage.languageID, TranslationMessage.variant)
+            TranslationMessage.languageID)
         for tm in tms:
-            language = (removeSecurityProxy(tm).languageID, tm.variant)
+            language = removeSecurityProxy(tm).languageID
             if language not in ids_per_language:
                 ids_per_language[language] = []
             ids_per_language[language].append(tm.id)
@@ -546,7 +550,7 @@ class MessageSharingMerge(LaunchpadScript):
                 key = self._getPOTMsgSetTranslationMessageKey(tm)
 
                 if key in translations:
-                    language_code = tm.language.getFullCode()
+                    language_code = tm.language.code
                     log.info(
                         "Cleaning up identical '%s' message for: \"%s\"" % (
                             language_code, potmsgset.singular_text))
@@ -588,16 +592,14 @@ class MessageSharingMerge(LaunchpadScript):
         clashing_current = None
         if message.is_current:
             found = target_potmsgset.getCurrentTranslationMessage(
-                potemplate=target_potemplate, language=message.language,
-                variant=message.variant)
+                potemplate=target_potemplate, language=message.language)
             if found is not None and found.potemplate == target_potemplate:
                 clashing_current = found
 
         clashing_imported = None
         if message.is_imported:
             found = target_potmsgset.getImportedTranslationMessage(
-                potemplate=target_potemplate, language=message.language,
-                variant=message.variant)
+                potemplate=target_potemplate, language=message.language)
             if found is not None and found.potemplate == target_potemplate:
                 clashing_imported = found
 

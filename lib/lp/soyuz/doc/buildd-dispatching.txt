@@ -186,7 +186,7 @@ buildqueue record, so the build was eliminated:
 
     >>> BuilddSlaveTestSetup().tearDown()
 
-    >>> from lp.buildmaster.interfaces.buildbase import BuildStatus
+    >>> from lp.buildmaster.enums import BuildStatus
     >>> build.status = BuildStatus.FAILEDTOBUILD
     >>> job.destroySelf()
     >>> flush_database_updates()

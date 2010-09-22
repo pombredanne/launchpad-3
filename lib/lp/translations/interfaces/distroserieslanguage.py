@@ -3,9 +3,13 @@
 
 # pylint: disable-msg=E0211,E0213
 
-from zope.interface import Interface, Attribute
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
 
 from lp.translations.interfaces.rosettastats import IRosettaStats
+
 
 __metaclass__ = type
 

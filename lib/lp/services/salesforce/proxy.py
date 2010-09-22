@@ -12,19 +12,27 @@ __all__ = [
     ]
 
 
-from xmlrpclib import Fault, ServerProxy
+from xmlrpclib import (
+    Fault,
+    ServerProxy,
+    )
 
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.cachedproperty import cachedproperty
 from canonical.config import config
-from lp.registry.interfaces.product import IProductSet
-from lp.services.salesforce.interfaces import (
-    ISalesforceVoucher, ISalesforceVoucherProxy, SFDCError,
-    SVPAlreadyRedeemedException, SVPNotAllowedException, SVPNotFoundException,
-    SalesforceVoucherProxyException)
 from canonical.lazr.timeout import SafeTransportWithTimeout
+from lp.registry.interfaces.product import IProductSet
+from lp.services.propertycache import cachedproperty
+from lp.services.salesforce.interfaces import (
+    ISalesforceVoucher,
+    ISalesforceVoucherProxy,
+    SalesforceVoucherProxyException,
+    SFDCError,
+    SVPAlreadyRedeemedException,
+    SVPNotAllowedException,
+    SVPNotFoundException,
+    )
 
 
 def fault_mapper(func):
@@ -100,30 +108,36 @@ class SalesforceVoucherProxy:
                            transport=self.xmlrpc_transport,
                            allow_none=True)
 
-    def _getUserIdentitifier(self, user):
+    def _getUserIdentifiers(self, user):
         """Return the user's openid_identifier."""
         from zope.security.proxy import removeSecurityProxy
-        return removeSecurityProxy(user.account).openid_identifier
+        return [
+            identifier.identifier for identifier
+                in removeSecurityProxy(user.account).openid_identifiers]
 
     @fault_mapper
     def getUnredeemedVouchers(self, user):
         """See `ISalesforceVoucherProxy`."""
-        identifier = self._getUserIdentitifier(user)
-        vouchers = self.server.getUnredeemedVouchers(identifier)
-        # Force the return value to be a list of dicts.
-        if isinstance(vouchers, dict):
-            vouchers = [vouchers]
-        return [Voucher(voucher) for voucher in vouchers]
+        all_vouchers = []
+        for identifier in self._getUserIdentifiers(user):
+            vouchers = self.server.getUnredeemedVouchers(identifier)
+            if isinstance(vouchers, dict):
+                all_vouchers.append(vouchers)
+            else:
+                all_vouchers.extend(vouchers)
+        return [Voucher(voucher) for voucher in all_vouchers]
 
     @fault_mapper
     def getAllVouchers(self, user):
         """See `ISalesforceVoucherProxy`."""
-        identifier = self._getUserIdentitifier(user)
-        vouchers = self.server.getAllVouchers(identifier)
-        # Force the return value to be a list of dicts.
-        if isinstance(vouchers, dict):
-            vouchers = [vouchers]
-        return [Voucher(voucher) for voucher in vouchers]
+        all_vouchers = []
+        for identifier in self._getUserIdentifiers(user):
+            vouchers = self.server.getAllVouchers(identifier)
+            if isinstance(vouchers, dict):
+                all_vouchers.append(vouchers)
+            else:
+                all_vouchers.extend(vouchers)
+        return [Voucher(voucher) for voucher in all_vouchers]
 
     @fault_mapper
     def getServerStatus(self):
@@ -142,12 +156,20 @@ class SalesforceVoucherProxy:
     @fault_mapper
     def redeemVoucher(self, voucher_id, user, project):
         """See `ISalesforceVoucherProxy`."""
-        identifier = self._getUserIdentitifier(user)
-        status = self.server.redeemVoucher(voucher_id,
-                                           identifier,
-                                           project.id,
-                                           project.displayname)
-        return status
+        for identifier in self._getUserIdentifiers(user):
+            vouchers = self.server.getAllVouchers(identifier)
+            if isinstance(vouchers, dict):
+                vouchers = [vouchers]
+            for voucher in vouchers:
+                if voucher['voucher_id'] == voucher_id:
+                    status = self.server.redeemVoucher(
+                        voucher_id, identifier,
+                        project.id, project.displayname)
+                    return status
+        # This will fail, but raise the expected exception.
+        return self.server.redeemVoucher(
+            voucher_id, identifier,
+            project.id, project.displayname)
 
     @fault_mapper
     def updateProjectName(self, project):
@@ -162,9 +184,12 @@ class SalesforceVoucherProxy:
         from zope.security.proxy import removeSecurityProxy
         # Bypass zope's security because IEmailAddress.email is not public.
         naked_email = removeSecurityProxy(recipient.preferredemail)
-        admin_identifier = self._getUserIdentitifier(admin)
-        approver_identifier = self._getUserIdentitifier(approver)
-        recipient_identifier = self._getUserIdentitifier(recipient)
+        admin_identifier = removeSecurityProxy(
+            admin.account).openid_identifiers.any().identifier
+        approver_identifier = removeSecurityProxy(
+            approver.account).openid_identifiers.any().identifier
+        recipient_identifier = removeSecurityProxy(
+            recipient.account).openid_identifiers.any().identifier
         voucher_id = self.server.grantVoucher(
             admin_identifier, approver_identifier,
             recipient_identifier, recipient.name,

@@ -4,11 +4,15 @@ Translations policy settings
 A product owner, Rosetta expert, and Ubuntu translations coordinator
 browser is created.
 
+    >>> from lp.app.enums import ServiceUsage
+
     >>> login('admin@canonical.com')
     >>> product_owner = factory.makePerson(
     ...     email="po@ex.com", password="test")
     >>> chestii = factory.makeProduct(
-    ...     name='chestii', owner=product_owner, official_rosetta=True)
+    ...     name='chestii',
+    ...     owner=product_owner,
+    ...     translations_usage=ServiceUsage.LAUNCHPAD)
     >>> logout()
     >>> dtc_browser = setupDTCBrowser()
     >>> re_browser = setupRosettaExpertBrowser()

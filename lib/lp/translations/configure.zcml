@@ -10,12 +10,16 @@
     xmlns:webservice="http://namespaces.canonical.com/webservice"
     xmlns:lp="http://namespaces.canonical.com/lp"
     i18n_domain="launchpad">
-    <include
-        package=".browser"/>
 
-    <publisher
-       name="translations"
-       factory="lp.translations.publisher.translations_request_publication_factory"/>
+  <include package=".browser"/>
+
+  <publisher
+      name="translations"
+      factory="lp.translations.publisher.translations_request_publication_factory"/>
+  <utility
+      component="lp.translations.publisher.TranslationsLayer"
+      provides="zope.publisher.interfaces.browser.IDefaultBrowserLayer"
+      name="translations" />
 
     <lp:help-folder
         folder="help" type="lp.translations.publisher.TranslationsLayer" />

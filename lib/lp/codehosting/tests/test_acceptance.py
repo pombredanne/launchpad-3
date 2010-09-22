@@ -6,38 +6,49 @@
 __metaclass__ = type
 
 import atexit
-import re
 import os
+import re
 import unittest
 import xmlrpclib
 
 import bzrlib.branch
-from bzrlib.tests import multiply_tests, TestCaseWithTransport
+from bzrlib.tests import (
+    multiply_tests,
+    TestCaseWithTransport,
+    )
 from bzrlib.urlutils import local_path_from_url
 from bzrlib.workingtree import WorkingTree
-
 from zope.component import getUtility
 
 from canonical.config import config
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
 from canonical.testing import ZopelessAppServerLayer
 from canonical.testing.profiled import profiled
-
-from lp.code.bzr import BranchFormat, ControlFormat, RepositoryFormat
+from lp.code.bzr import (
+    BranchFormat,
+    ControlFormat,
+    RepositoryFormat,
+    )
 from lp.code.enums import BranchType
 from lp.code.interfaces.branch import IBranchSet
 from lp.code.interfaces.branchnamespace import get_branch_namespace
-
+from lp.codehosting import (
+    get_bzr_path,
+    get_BZR_PLUGIN_PATH_for_subprocess,
+    )
 from lp.codehosting.bzrutils import DenyingServer
-from lp.codehosting.tests.helpers import adapt_suite, LoomTestMixin
+from lp.codehosting.tests.helpers import (
+    adapt_suite,
+    LoomTestMixin,
+    )
 from lp.codehosting.tests.servers import (
-    CodeHostingTac, set_up_test_user, SSHCodeHostingServer)
-from lp.codehosting import get_bzr_path, get_BZR_PLUGIN_PATH_for_subprocess
+    CodeHostingTac,
+    set_up_test_user,
+    SSHCodeHostingServer,
+    )
 from lp.codehosting.vfs import branch_id_to_path
-
 from lp.registry.model.person import Person
 from lp.registry.model.product import Product
-
 from lp.testing import TestCaseWithFactory
 
 
@@ -242,10 +253,7 @@ class SSHTestCase(TestCaseWithTransport, LoomTestMixin, TestCaseWithFactory):
             creator_id, '/~%s/%s/%s' % (user, product, branch))
         branch_url = 'file://' + os.path.abspath(
             os.path.join(branch_root, branch_id_to_path(branch_id)))
-        self.runInChdir(
-            self.local_branch_path,
-            self.run_bzr, ['push', '--create-prefix', branch_url],
-            retcode=None)
+        self.push(self.local_branch_path, branch_url, ['--create-prefix'])
         return branch_url
 
 
@@ -486,6 +494,27 @@ class AcceptanceTests(SSHTestCase):
         remote_url = self.getTransportURL(
             '~landscape-developers/landscape/some-branch')
         self.assertNotBranch(remote_url)
+
+    def test_push_to_new_full_branch_alias(self):
+        # We can also push branches to URLs like /+branch/~foo/bar/baz.
+        unique_name = '~testuser/firefox/new-branch'
+        remote_url = self.getTransportURL('+branch/%s' % unique_name)
+        self.push(self.local_branch_path, remote_url)
+        self.assertBranchesMatch(self.local_branch_path, remote_url)
+        self.assertBranchesMatch(
+            self.local_branch_path, self.getTransportURL(unique_name))
+
+    def test_push_to_new_short_branch_alias(self):
+        # We can also push branches to URLs like /+branch/firefox
+        # Hack 'firefox' so we have permission to do this.
+        LaunchpadZopelessTestSetup().txn.begin()
+        firefox = Product.selectOneBy(name='firefox')
+        testuser = Person.selectOneBy(name='testuser')
+        firefox.development_focus.owner = testuser
+        LaunchpadZopelessTestSetup().txn.commit()
+        remote_url = self.getTransportURL('+branch/firefox')
+        self.push(self.local_branch_path, remote_url)
+        self.assertBranchesMatch(self.local_branch_path, remote_url)
 
     def test_can_push_to_existing_hosted_branch(self):
         # If a hosted branch exists in the database, but not on the

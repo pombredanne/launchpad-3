@@ -11,17 +11,28 @@ __all__ = [
 
 
 from sqlobject import (
-    BoolCol, CONTAINSSTRING, IntCol, SQLObjectNotFound, SQLRelatedJoin,
-    StringCol)
+    BoolCol,
+    CONTAINSSTRING,
+    IntCol,
+    SQLObjectNotFound,
+    SQLRelatedJoin,
+    StringCol,
+    )
 from storm.locals import Or
 from zope.interface import implements
 
-from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.enumcol import EnumCol
+from canonical.database.sqlbase import (
+    SQLBase,
+    sqlvalues,
+    )
 from canonical.launchpad.interfaces import ISlaveStore
 from lp.app.errors import NotFoundError
 from lp.services.worlddata.interfaces.language import (
-    ILanguage, ILanguageSet, TextDirection)
+    ILanguage,
+    ILanguageSet,
+    TextDirection,
+    )
 
 
 class Language(SQLBase):
@@ -140,20 +151,6 @@ class Language(SQLBase):
         """See `ILanguage`."""
         return self.translators.count()
 
-    def getFullCode(self, variant=None):
-        """See `ILanguage`."""
-        if variant:
-            return '%s@%s' % (self.code, variant)
-        else:
-            return self.code
-
-    def getFullEnglishName(self, variant=None):
-        """See `ILanguage`."""
-        if variant:
-            return '%s ("%s" variant)' % (self.englishname, variant)
-        else:
-            return self.englishname
-
 
 class LanguageSet:
     implements(ILanguageSet)
@@ -233,27 +230,6 @@ class LanguageSet:
                 pass
 
         return languages
-
-    def getLanguageAndVariantFromString(self, language_string):
-        """See `ILanguageSet`."""
-        if language_string is None:
-            return (None, None)
-
-        if u'@' in language_string:
-            # Seems like this entry is using a variant entry.
-            language_code, language_variant = language_string.split(u'@')
-        else:
-            language_code = language_string
-            language_variant = None
-
-        try:
-            language = self[language_code]
-        except NotFoundError:
-            # We don't have such language in our database so we cannot
-            # guess it using this method.
-            return (None, None)
-
-        return (language, language_variant)
 
     def createLanguage(self, code, englishname, nativename=None,
                        pluralforms=None, pluralexpression=None, visible=True,

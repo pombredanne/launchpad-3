@@ -16,23 +16,36 @@ __all__ = [
     'KarmaContextMixin',
     ]
 
+from sqlobject import (
+    ForeignKey,
+    IntCol,
+    SQLMultipleJoin,
+    SQLObjectNotFound,
+    StringCol,
+    )
+from sqlobject.sqlbuilder import AND
 from zope.interface import implements
 
-from sqlobject import (
-    ForeignKey, IntCol, StringCol, SQLObjectNotFound,
-    SQLMultipleJoin)
-from sqlobject.sqlbuilder import AND
-
-from canonical.database.sqlbase import SQLBase, sqlvalues, cursor
-from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.constants import UTC_NOW
+from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.database.sqlbase import (
+    cursor,
+    SQLBase,
+    sqlvalues,
+    )
 from canonical.launchpad.event.interfaces import IKarmaAssignedEvent
-
 from lp.app.errors import NotFoundError
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.karma import (
-    IKarma, IKarmaAction, IKarmaActionSet, IKarmaCache, IKarmaCacheManager,
-    IKarmaCategory, IKarmaContext, IKarmaTotalCache)
+    IKarma,
+    IKarmaAction,
+    IKarmaActionSet,
+    IKarmaCache,
+    IKarmaCacheManager,
+    IKarmaCategory,
+    IKarmaContext,
+    IKarmaTotalCache,
+    )
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
 

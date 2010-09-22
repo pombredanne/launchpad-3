@@ -767,7 +767,7 @@
     <browser:navigation
         module="lp.bugs.browser.bugattachment"
         classes="
-            BugAttachmentSetNavigation"/>
+            BugAttachmentSetNavigation BugAttachmentFileNavigation"/>
     <browser:page
         name="+bugsupervisor"
         for="lp.bugs.interfaces.bugsupervisor.IHasBugSupervisor"
@@ -1159,4 +1159,5 @@
             classes="
                 BugWatchSetNavigation"/>
     </facet>
+
 </configure>

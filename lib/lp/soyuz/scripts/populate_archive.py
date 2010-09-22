@@ -13,15 +13,17 @@ __all__ = [
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.launchpad.validators.name import valid_name
 from lp.app.errors import NotFoundError
-from lp.soyuz.adapters.packagelocation import (
-    build_package_location)
+from lp.soyuz.adapters.packagelocation import build_package_location
+from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packagecloner import IPackageCloner
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.scripts.ftpmasterbase import (
-    SoyuzScript, SoyuzScriptError)
-from canonical.launchpad.validators.name import valid_name
+    SoyuzScript,
+    SoyuzScriptError,
+    )
 
 
 def specified(option):
@@ -85,8 +87,7 @@ class ArchivePopulator(SoyuzScript):
         """
         # Avoid circular imports.
         from lp.registry.interfaces.person import IPersonSet
-        from lp.soyuz.interfaces.archive import (
-            ArchivePurpose, IArchiveSet)
+        from lp.soyuz.interfaces.archive import IArchiveSet
         from lp.soyuz.interfaces.archivearch import IArchiveArchSet
         from lp.soyuz.interfaces.packagecopyrequest import (
             IPackageCopyRequestSet)

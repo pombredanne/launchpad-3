@@ -21,17 +21,26 @@ from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
 from canonical.launchpad.interfaces.emailaddress import (
-    EmailAddressStatus, IEmailAddressSet)
+    EmailAddressStatus,
+    IEmailAddressSet,
+    )
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
 from canonical.launchpad.interfaces.lpstorm import IMasterObject
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from lp.registry.interfaces.person import (
-    IAdminPeopleMergeSchema, IAdminTeamMergeSchema, IPersonSet,
-    IRequestPeopleMerge)
-from lp.registry.interfaces.mailinglist import MailingListStatus
 from canonical.launchpad.webapp import (
-    action, canonical_url, LaunchpadFormView, LaunchpadView)
+    action,
+    canonical_url,
+    LaunchpadFormView,
+    LaunchpadView,
+    )
+from canonical.launchpad.webapp.interfaces import ILaunchBag
+from lp.registry.interfaces.mailinglist import MailingListStatus
+from lp.registry.interfaces.person import (
+    IAdminPeopleMergeSchema,
+    IAdminTeamMergeSchema,
+    IPersonSet,
+    IRequestPeopleMerge,
+    )
 
 
 class RequestPeopleMergeView(LaunchpadFormView):
@@ -321,6 +330,9 @@ class DeleteTeamView(AdminTeamMergeView):
     @action('Delete', name='delete', condition=canDelete)
     def merge_action(self, action, data):
         base = super(DeleteTeamView, self)
+        # Delete is implemented as a merge process, but email addresses should
+        # be deleted because ~registry can never claim them.
+        self.context.setContactAddress(None)
         base.deactivate_members_and_merge_action.success(data)
 
 

@@ -14,7 +14,9 @@ from bzrlib.errors import InvalidBugStatus
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
-    IBugSet, ILaunchpadCelebrities)
+    IBugSet,
+    ILaunchpadCelebrities,
+    )
 from lp.app.errors import NotFoundError
 
 

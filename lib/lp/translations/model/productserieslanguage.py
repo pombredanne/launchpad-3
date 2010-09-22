@@ -12,17 +12,19 @@ __all__ = [
 
 from zope.interface import implements
 
-from lp.translations.utilities.rosettastats import RosettaStats
-from lp.translations.model.translatedlanguage import TranslatedLanguageMixin
 from lp.translations.interfaces.productserieslanguage import (
-    IProductSeriesLanguage, IProductSeriesLanguageSet)
+    IProductSeriesLanguage,
+    IProductSeriesLanguageSet,
+    )
+from lp.translations.model.translatedlanguage import TranslatedLanguageMixin
+from lp.translations.utilities.rosettastats import RosettaStats
 
 
 class ProductSeriesLanguage(RosettaStats, TranslatedLanguageMixin):
     """See `IProductSeriesLanguage`."""
     implements(IProductSeriesLanguage)
 
-    def __init__(self, productseries, language, variant=None, pofile=None):
+    def __init__(self, productseries, language, pofile=None):
         assert 'en' != language.code, (
             'English is not a translatable language.')
         RosettaStats.__init__(self)
@@ -30,7 +32,6 @@ class ProductSeriesLanguage(RosettaStats, TranslatedLanguageMixin):
         self.productseries = productseries
         self.parent = productseries
         self.language = language
-        self.variant = variant
         self.pofile = pofile
         self.id = 0
         self.last_changed_date = None
@@ -76,7 +77,6 @@ class ProductSeriesLanguageSet:
     """
     implements(IProductSeriesLanguageSet)
 
-    def getProductSeriesLanguage(self, productseries, language,
-                                 variant=None, pofile=None):
+    def getProductSeriesLanguage(self, productseries, language, pofile=None):
         """See `IProductSeriesLanguageSet`."""
-        return ProductSeriesLanguage(productseries, language, variant, pofile)
+        return ProductSeriesLanguage(productseries, language, pofile)

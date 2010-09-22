@@ -22,26 +22,44 @@ from collections import defaultdict
 import contextlib
 import logging
 import os
-from signal import getsignal, SIGCHLD, SIGHUP, signal
+from signal import (
+    getsignal,
+    SIGCHLD,
+    SIGHUP,
+    signal,
+    )
 import sys
 
-from ampoule import child, pool, main
+from ampoule import (
+    child,
+    main,
+    pool,
+    )
+from lazr.delegates import delegates
 import transaction
-from twisted.internet import defer, reactor
+from twisted.internet import (
+    defer,
+    reactor,
+    )
 from twisted.protocols import amp
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
-from lazr.delegates import delegates
 
 from canonical.config import config
-from canonical.lp import initZopeless
 from canonical.launchpad import scripts
 from canonical.launchpad.webapp import errorlog
-from lp.services.job.interfaces.job import LeaseHeld, IRunnableJob, IJob
+from canonical.lp import initZopeless
+from lp.services.job.interfaces.job import (
+    IJob,
+    IRunnableJob,
+    LeaseHeld,
+    )
 from lp.services.mail.sendmail import MailController
 from lp.services.scripts.base import LaunchpadCronScript
 from lp.services.twistedsupport.task import (
-    ParallelLimitedTaskConsumer, PollingTaskSource)
+    ParallelLimitedTaskConsumer,
+    PollingTaskSource,
+    )
 
 
 class BaseRunnableJob:

@@ -19,21 +19,22 @@ import os
 
 from bzrlib.branch import Branch
 from bzrlib.bzrdir import BzrDir
-from bzrlib.errors import NotBranchError, NotStacked
-
+from bzrlib.errors import (
+    NotBranchError,
+    NotStacked,
+    )
 import transaction
-
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces import ILaunchpadCelebrities
 from canonical.config import config
-
-from lp.code.enums import BranchType
+from canonical.launchpad.interfaces import ILaunchpadCelebrities
+from lp.code.enums import BranchLifecycleStatus, BranchType
 from lp.code.errors import BranchExists
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
 from lp.code.interfaces.seriessourcepackagebranch import (
-    IFindOfficialBranchLinks)
+    IFindOfficialBranchLinks,
+    )
 from lp.codehosting.vfs import branch_id_to_path
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -340,6 +341,7 @@ class DistroBrancher:
         new_db_branch.sourcepackage.setBranch(
             PackagePublishingPocket.RELEASE, new_db_branch,
             getUtility(ILaunchpadCelebrities).ubuntu_branches.teamowner)
+        old_db_branch.lifecycle_status = BranchLifecycleStatus.MATURE
         # switch_branches *moves* the data to locations dependent on the
         # new_branch's id, so if the transaction was rolled back we wouldn't
         # know the branch id and thus wouldn't be able to find the branch data

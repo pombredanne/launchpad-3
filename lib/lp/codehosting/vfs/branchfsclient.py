@@ -95,6 +95,8 @@ class BranchFileSystemClient:
         for object_path, value in self._cache.iteritems():
             transport_type, data, inserted_time = value
             split_object_path = object_path.strip('/').split('/')
+            # Do a segment-by-segment comparison. Python sucks, lists should
+            # also have startswith.
             if split_path[:len(split_object_path)] == split_object_path:
                 if (self.expiry_time is not None
                     and self._now() > inserted_time + self.expiry_time):

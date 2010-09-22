@@ -16,21 +16,29 @@ from zope.interface import Interface
 
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
-from canonical.widgets.textwidgets import URIWidget
-
 from canonical.launchpad import _
-from lp.bugs.browser.bugtask import get_comments_for_bugtask
-from lp.bugs.browser.bugcomment import (
-    should_display_remote_comments)
-from canonical.launchpad.fields import URIField
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from lp.bugs.interfaces.bugwatch import (
-    BUG_WATCH_ACTIVITY_SUCCESS_STATUSES, IBugWatch, IBugWatchSet,
-    NoBugTrackerFound, UnrecognizedBugTrackerURL)
 from canonical.launchpad.webapp import (
-    action, canonical_url, custom_widget, GetitemNavigation,
-    LaunchpadFormView, LaunchpadView)
+    action,
+    canonical_url,
+    custom_widget,
+    GetitemNavigation,
+    LaunchpadFormView,
+    LaunchpadView,
+    )
+from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.menu import structured
+from canonical.widgets.textwidgets import URIWidget
+from lp.bugs.browser.bugcomment import should_display_remote_comments
+from lp.bugs.browser.bugtask import get_comments_for_bugtask
+from lp.bugs.interfaces.bugwatch import (
+    BUG_WATCH_ACTIVITY_SUCCESS_STATUSES,
+    IBugWatch,
+    IBugWatchSet,
+    NoBugTrackerFound,
+    UnrecognizedBugTrackerURL,
+    )
+from lp.services.fields import URIField
 
 
 class BugWatchSetNavigation(GetitemNavigation):
@@ -140,6 +148,22 @@ class BugWatchEditView(LaunchpadFormView):
             url=bugwatch.url, bugtracker=bugwatch.bugtracker.name,
             remote_bug=bugwatch.remotebug))
         bugwatch.bug.removeWatch(bugwatch, self.user)
+
+    def showResetActionCondition(self, action):
+        """Return True if the reset action can be shown to this user."""
+        return check_permission('launchpad.Admin', self.context)
+
+    @action('Reset this watch', name='reset',
+            condition=showResetActionCondition)
+    def reset_action(self, action, data):
+        bug_watch = self.context
+        bug_watch.reset()
+        self.request.response.addInfoNotification(
+            structured(
+            'The <a href="%(url)s">%(bugtracker)s #%(remote_bug)s</a>'
+            ' bug watch has been reset.',
+            url=bug_watch.url, bugtracker=bug_watch.bugtracker.name,
+            remote_bug=bug_watch.remotebug))
 
     @property
     def next_url(self):

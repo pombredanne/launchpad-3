@@ -14,30 +14,57 @@ __all__ = [
     'OfficialBugTagTargetMixin',
     ]
 
-from storm.locals import Int, Reference, Storm, Unicode
+from storm.locals import (
+    Int,
+    Reference,
+    Storm,
+    Unicode,
+    )
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.database.sqlbase import cursor, sqlvalues
-from lp.bugs.model.bugtask import (
-    BugTaskSet, get_bug_privacy_filter)
-from canonical.launchpad.searchbuilder import any, NULL, not_equals
-from canonical.launchpad.interfaces.lpstorm import IMasterObject, IMasterStore
-from canonical.launchpad.webapp.interfaces import ILaunchBag
+from canonical.database.sqlbase import (
+    cursor,
+    sqlvalues,
+    )
+from canonical.launchpad.interfaces.lpstorm import (
+    IMasterObject,
+    IMasterStore,
+    )
+from canonical.launchpad.searchbuilder import (
+    any,
+    not_equals,
+    NULL,
+    )
+from canonical.launchpad.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    ILaunchBag,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 from lp.bugs.interfaces.bugtarget import IOfficialBugTag
+from lp.bugs.interfaces.bugtask import (
+    BugTagsSearchCombinator,
+    BugTaskImportance,
+    BugTaskSearchParams,
+    BugTaskStatus,
+    RESOLVED_BUGTASK_STATUSES,
+    UNRESOLVED_BUGTASK_STATUSES,
+    )
+from lp.bugs.model.bugtask import (
+    BugTaskSet,
+    get_bug_privacy_filter,
+    )
 from lp.registry.interfaces.distribution import IDistribution
-from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.distributionsourcepackage import (
-    IDistributionSourcePackage)
+    IDistributionSourcePackage,
+    )
+from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
-from lp.bugs.interfaces.bugtask import (
-    BugTagsSearchCombinator, BugTaskImportance, BugTaskSearchParams,
-    BugTaskStatus, RESOLVED_BUGTASK_STATUSES, UNRESOLVED_BUGTASK_STATUSES)
-from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+
 
 class HasBugsBase:
     """Standard functionality for IHasBugs.
@@ -180,13 +207,7 @@ class HasBugsBase:
     @property
     def has_bugtasks(self):
         """See `IHasBugs`."""
-        # Check efficiently if any bugtasks exist. We should avoid
-        # expensive calls like all_bugtasks.count(). all_bugtasks
-        # returns a storm.SQLObjectResultSet instance, and this
-        # class does not provide methods like is_empty(). But we can
-        # indirectly call SQLObjectResultSet._result_set.is_empty()
-        # by converting all_bugtasks into a boolean object.
-        return bool(self.all_bugtasks)
+        return not self.all_bugtasks.is_empty()
 
     def getBugCounts(self, user, statuses=None):
         """See `IHasBugs`."""
@@ -250,6 +271,10 @@ class HasBugHeatMixin:
             # recalculating max_heat.
             return
 
+        # XXX: deryck The queries here are a source of pain and have
+        # been changed a couple times looking for the best
+        # performaning version.  Use caution and have EXPLAIN ANALYZE
+        # data ready when changing these.
         if IDistribution.providedBy(self):
             sql = ["""SELECT Bug.heat
                       FROM Bug, Bugtask
@@ -260,6 +285,7 @@ class HasBugHeatMixin:
                       FROM Bug, Bugtask, DistroSeries
                       WHERE Bugtask.bug = Bug.id
                       AND Bugtask.distroseries = DistroSeries.id
+                      AND Bugtask.distroseries IS NOT NULL
                       AND DistroSeries.distribution = %s
                       ORDER BY Bug.heat DESC LIMIT 1""" % sqlvalues(self)]
         elif IProduct.providedBy(self):
@@ -271,15 +297,18 @@ class HasBugHeatMixin:
                    """SELECT Bug.heat
                       FROM Bug, Bugtask, ProductSeries
                       WHERE Bugtask.bug = Bug.id
+                      AND Bugtask.productseries IS NOT NULL
                       AND Bugtask.productseries = ProductSeries.id
                       AND ProductSeries.product = %s
                       ORDER BY Bug.heat DESC LIMIT 1""" % sqlvalues(self)]
         elif IProjectGroup.providedBy(self):
-            sql = ["""SELECT MAX(heat)
+            sql = ["""SELECT heat
                       FROM Bug, Bugtask, Product
-                      WHERE Bugtask.bug = Bug.id AND
-                      Bugtask.product = Product.id AND
-                      Product.project =  %s""" % sqlvalues(self)]
+                      WHERE Bugtask.bug = Bug.id
+                      AND Bugtask.product = Product.id
+                      AND Product.project IS NOT NULL
+                      AND Product.project =  %s
+                      ORDER BY Bug.heat DESC LIMIT 1""" % sqlvalues(self)]
         else:
             raise NotImplementedError
 

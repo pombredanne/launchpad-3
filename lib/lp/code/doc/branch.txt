@@ -138,10 +138,10 @@ case) and -, +, _ and @ are allowed after that.
 
 == Determining the recently changed, registered and imported branches ==
 
-The IBranchSet methods getRecentlyChangedBranches, getRecentlyImportedBranches,
-and getRecentlyRegisteredBranches are used to give summary information that
-is to be displayed on the code.launchpad.net page to entice the
-user to click through.
+The IBranchSet methods getRecentlyChangedBranches,
+getRecentlyImportedBranches, and getRecentlyRegisteredBranches are used to
+give summary information that is to be displayed on the code.launchpad.net
+page to entice the user to click through.
 
 Changed branches are branches that are owned by real people or groups (as
 opposed to vcs-imports), and have recently had new revisions detected by
@@ -280,8 +280,8 @@ BranchSubscriptionNotificationLevel.
     True
     >>> subscription.branch == branch and subscription.person == subscriber
     True
-    >>> subscription.notification_level == BranchSubscriptionNotificationLevel.FULL
-    True
+    >>> print subscription.notification_level.name
+    FULL
     >>> subscription.max_diff_lines == BranchSubscriptionDiffSize.FIVEKLINES
     True
     >>> subscription.review_level == CodeReviewNotificationLevel.FULL
@@ -292,7 +292,7 @@ BranchSubscriptionNotificationLevel.
     True
     >>> from canonical.launchpad.webapp import canonical_url
     >>> print canonical_url(subscription)
-    http://code.launchpad.dev/~user/product/subscribed/+subscription/subscriber
+    http://code...dev/~user/product/subscribed/+subscription/subscriber
 
 The settings for a subscription can be changed by re-subscribing.
 
@@ -357,9 +357,12 @@ The current references to the branch table are shown here.
     >>> cur = cursor()
     >>> references = list(postgresql.listReferences(cur, 'branch', 'id'))
 
-    >>> for name in sorted([
-    ...     '%s.%s' % (src_tab, src_col) for
-    ...     src_tab, src_col, ref_tab, ref_col, updact, delact in references]):
+    >>> listing = sorted([
+    ...     '%s.%s' % (src_tab, src_col)
+    ...     for src_tab, src_col, ref_tab, ref_col, updact, delact
+    ...     in references
+    ...     ])
+    >>> for name in listing:
     ...     print name
     branch.stacked_on
     branchjob.branch

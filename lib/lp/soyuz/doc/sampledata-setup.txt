@@ -1,5 +1,7 @@
 = Sample data setup =
 
+# XXX: StevenK 2010-07-13 bug=617164: Calling utility scripts is bad
+
 In order to run Soyuz locally on a development system, the sample data
 must be cleaned up and customized a bit.  This is done by a the script
 utilities/soyuz-sampledata-setup.py.

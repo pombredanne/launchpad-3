@@ -13,7 +13,10 @@ __all__ = [
 import os
 
 from canonical.launchpad.readonly import (
-    is_read_only, read_only_file_exists, read_only_file_path)
+    is_read_only,
+    read_only_file_exists,
+    read_only_file_path,
+    )
 
 
 def touch_read_only_file():

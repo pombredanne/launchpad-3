@@ -5,10 +5,10 @@ __metaclass__ = type
 
 from zope.component import getUtility
 
+from canonical.testing import LaunchpadZopelessLayer
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing import TestCaseWithFactory
 from lp.translations.scripts.migrate_variants import MigrateVariantsProcess
-from canonical.testing import LaunchpadZopelessLayer
 
 
 class TestMigrateVariants(TestCaseWithFactory):
@@ -23,15 +23,10 @@ class TestMigrateVariants(TestCaseWithFactory):
         super(TestMigrateVariants, self).setUp(user='mark@example.com')
         self.migrate_process = MigrateVariantsProcess(self.layer.txn)
         self.language_set = getUtility(ILanguageSet)
-        # Unfortunately, sampledata has POFile in es@test, so that's
-        # what we get by default.
-        spanish = self.language_set.getLanguageByCode('es')
-        self.sampledata_language_variant = (spanish, u'test')
 
     def test_fetchAllLanguagesWithVariants(self):
         all_langs = self.migrate_process.fetchAllLanguagesWithVariants()
-        self.assertContentEqual([self.sampledata_language_variant],
-                                all_langs)
+        self.assertContentEqual([], all_langs)
 
     def _sortLanguageVariantPairs(self, lang_vars):
         cmp_pairs = lambda a, b: cmp(a[0].code, b[0].code) or cmp(a[1], b[1])
@@ -52,8 +47,7 @@ class TestMigrateVariants(TestCaseWithFactory):
         self.layer.txn.commit()
         all_langs = self.migrate_process.fetchAllLanguagesWithVariants()
         self.assertLanguageListsEqual(
-            [(serbian, u'test'), self.sampledata_language_variant],
-            all_langs)
+            [(serbian, u'test')], all_langs)
 
     def test_fetchAllLanguagesWithVariants_pofile_and_translation(self):
         # With both a POFile and TranslationMessage for the same language
@@ -65,9 +59,7 @@ class TestMigrateVariants(TestCaseWithFactory):
 
         all_langs = self.migrate_process.fetchAllLanguagesWithVariants()
         self.assertLanguageListsEqual(
-            [(serbian, u'test'),
-             self.sampledata_language_variant],
-            all_langs)
+            [(serbian, u'test')], all_langs)
 
     def test_fetchAllLanguagesWithVariants_translationmessages(self):
         # We create a TranslationMessage with no matching PO file
@@ -81,8 +73,7 @@ class TestMigrateVariants(TestCaseWithFactory):
 
         all_langs = self.migrate_process.fetchAllLanguagesWithVariants()
         self.assertLanguageListsEqual(
-            [(serbian, u'test'), (serbian, u'another'),
-             self.sampledata_language_variant],
+            [(serbian, u'test'), (serbian, u'another')],
             all_langs)
 
     def test_getOrCreateLanguage_new(self):
@@ -134,6 +125,7 @@ class TestMigrateVariants(TestCaseWithFactory):
         serbian = self.language_set.getLanguageByCode('sr')
         sr_pofile = self.factory.makePOFile(serbian.code, variant=u'test')
         message = self.factory.makeTranslationMessage(sr_pofile)
+        message.variant = u'test'
         tm_ids = self.migrate_process.getTranslationMessageIDsForLanguage(
             serbian, u'test')
         self.assertContentEqual([message.id], list(tm_ids))

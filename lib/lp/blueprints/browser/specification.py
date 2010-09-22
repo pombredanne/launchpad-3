@@ -40,45 +40,66 @@ __all__ = [
 
 from operator import attrgetter
 import os
-from subprocess import Popen, PIPE
+from subprocess import (
+    PIPE,
+    Popen,
+    )
 
+from zope.app.form.browser import (
+    TextAreaWidget,
+    TextWidget,
+    )
+from zope.app.form.browser.itemswidgets import DropdownWidget
 from zope.component import getUtility
 from zope.error.interfaces import IErrorReportingUtility
-from zope.app.form.browser import TextAreaWidget, TextWidget
-from zope.app.form.browser.itemswidgets import DropdownWidget
 from zope.formlib import form
 from zope.formlib.form import Fields
 from zope.interface import Interface
 from zope.schema import Choice
-from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
+from zope.schema.vocabulary import (
+    SimpleTerm,
+    SimpleVocabulary,
+    )
 
-from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad import _
-
+from canonical.launchpad.browser.launchpad import AppFrontPageSearchView
+from canonical.launchpad.webapp import (
+    action,
+    canonical_url,
+    custom_widget,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    LaunchpadView,
+    Navigation,
+    safe_action,
+    stepthrough,
+    stepto,
+    )
+from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.menu import (
+    ContextMenu,
+    enabled_with_permission,
+    Link,
+    NavigationMenu,
+    )
+from lp.blueprints.browser.specificationtarget import HasSpecificationsView
+from lp.blueprints.interfaces.specification import (
+    INewSpecification,
+    INewSpecificationProjectTarget,
+    INewSpecificationSeriesGoal,
+    INewSpecificationSprint,
+    INewSpecificationTarget,
+    ISpecification,
+    ISpecificationSet,
+    SpecificationDefinitionStatus,
+    )
+from lp.blueprints.interfaces.specificationbranch import ISpecificationBranch
+from lp.blueprints.interfaces.sprintspecification import ISprintSpecification
 from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.product import IProduct
-from lp.blueprints.interfaces.specification import (
-    INewSpecification, INewSpecificationSeriesGoal, INewSpecificationSprint,
-    INewSpecificationTarget, INewSpecificationProjectTarget, ISpecification,
-    ISpecificationSet, SpecificationDefinitionStatus)
-from lp.blueprints.interfaces.specificationbranch import (
-    ISpecificationBranch)
-from lp.blueprints.interfaces.sprintspecification import (
-    ISprintSpecification)
-
-from lp.blueprints.browser.specificationtarget import (
-    HasSpecificationsView)
-
-from canonical.launchpad.webapp import (
-    LaunchpadView, LaunchpadEditFormView, LaunchpadFormView,
-    Navigation, action, canonical_url,
-    safe_action, stepthrough, stepto, custom_widget)
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.menu import (
-    ContextMenu, enabled_with_permission, Link, NavigationMenu)
-from canonical.launchpad.browser.launchpad import AppFrontPageSearchView
+from lp.services.propertycache import cachedproperty
 
 
 class NewSpecificationView(LaunchpadFormView):

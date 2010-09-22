@@ -1,16 +1,18 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+import gpgme
 from zope.component import getUtility
 
-import gpgme
-
 from canonical.database.sqlbase import flush_database_updates
-
 from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
 from canonical.launchpad.interfaces.gpghandler import IGPGHandler
-from lp.registry.interfaces.person import IPersonSet, PersonCreationRationale
 from canonical.launchpad.validators.email import valid_email
+from lp.registry.interfaces.person import (
+    IPersonSet,
+    PersonCreationRationale,
+    )
+
 
 __metaclass__ = type
 

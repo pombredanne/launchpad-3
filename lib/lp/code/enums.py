@@ -28,7 +28,12 @@ __all__ = [
     ]
 
 from lazr.enum import (
-    DBEnumeratedType, DBItem, EnumeratedType, Item, use_template)
+    DBEnumeratedType,
+    DBItem,
+    EnumeratedType,
+    Item,
+    use_template,
+    )
 
 
 class BranchLifecycleStatus(DBEnumeratedType):

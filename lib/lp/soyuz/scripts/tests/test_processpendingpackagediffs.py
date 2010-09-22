@@ -9,9 +9,9 @@ import sys
 
 from canonical.config import config
 from canonical.launchpad.scripts import QuietFakeLogger
+from canonical.testing import LaunchpadZopelessLayer
 from lp.soyuz.scripts.packagediff import ProcessPendingPackageDiffs
 from lp.soyuz.tests.soyuz import TestPackageDiffsBase
-from canonical.testing import LaunchpadZopelessLayer
 
 
 class TestProcessPendingPackageDiffsScript(TestPackageDiffsBase):

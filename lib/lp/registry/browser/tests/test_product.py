@@ -9,16 +9,17 @@ import datetime
 import unittest
 
 import pytz
-
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.testing.layers import DatabaseFunctionalLayer
-from lp.testing import login_person, TestCaseWithFactory
+from lp.registry.browser.product import ProductLicenseMixin
+from lp.registry.interfaces.product import License
+from lp.testing import (
+    login_person,
+    TestCaseWithFactory,
+    )
 from lp.testing.mail_helpers import pop_notifications
 from lp.testing.views import create_view
-
-from lp.registry.interfaces.product import License
-from lp.registry.browser.product import ProductLicenseMixin
 
 
 class TestProductLicenseMixin(TestCaseWithFactory):

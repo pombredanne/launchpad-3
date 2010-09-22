@@ -14,16 +14,27 @@ __all__ = [
     'IUnlinkBugsForm',
     ]
 
-from zope.interface import implements, Interface
-from zope.schema import Choice, List, Object, Set
+from zope.interface import (
+    implements,
+    Interface,
+    )
+from zope.schema import (
+    Choice,
+    List,
+    Object,
+    Set,
+    )
 from zope.schema.interfaces import IContextSourceBinder
-from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
+from zope.schema.vocabulary import (
+    SimpleTerm,
+    SimpleVocabulary,
+    )
 from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import BugField
-from lp.bugs.interfaces.bug import IBug
 from canonical.launchpad.interfaces.launchpad import IHasBug
+from lp.bugs.interfaces.bug import IBug
+from lp.services.fields import BugField
 
 
 class IBugLink(IHasBug):

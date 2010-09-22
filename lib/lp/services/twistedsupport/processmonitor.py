@@ -15,11 +15,17 @@ __all__ = [
 import os
 import StringIO
 
-from twisted.internet import defer, error, reactor
+from twisted.internet import (
+    defer,
+    error,
+    reactor,
+    )
 from twisted.internet.protocol import ProcessProtocol
 from twisted.protocols.policies import TimeoutMixin
-from twisted.python import failure, log
-
+from twisted.python import (
+    failure,
+    log,
+    )
 
 
 class ProcessProtocolWithTwoStageKill(ProcessProtocol):

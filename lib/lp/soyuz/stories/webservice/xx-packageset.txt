@@ -185,7 +185,7 @@ sorted by name.
     ...     for entry in body['entries']:
     ...         print entry['self_link']
 
-    >>> response = webservice.get("/package-sets/")
+    >>> response = anon_webservice.get("/package-sets/")
     >>> print_payload(response)
     http://api.launchpad.dev/beta/package-sets/hoary/umbrella
 
@@ -197,7 +197,7 @@ however, we only have the 'umbrella' package set. It hence has no subsets.
     >>> print response
     HTTP/1.1 200 Ok
     ...
-    {"total_size": 0, "start": null, "entries": []}
+    {"total_size": 0, "start": 0, "entries": []}
 
 Let's create a few more package sets and set up a package set hierarchy.
 

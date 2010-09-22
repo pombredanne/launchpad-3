@@ -14,9 +14,8 @@ __all__ = [
     'UserCannotUnsubscribePerson',
     ]
 
-from zope.security.interfaces import Unauthorized
-
 from lazr.restful.declarations import webservice_error
+from zope.security.interfaces import Unauthorized
 
 
 class TranslationUnavailable(Exception):

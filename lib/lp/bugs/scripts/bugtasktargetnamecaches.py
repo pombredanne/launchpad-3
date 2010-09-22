@@ -9,9 +9,9 @@ __all__ = ['BugTaskTargetNameCacheUpdater']
 from zope.component import getUtility
 from zope.interface import implements
 
-from lp.bugs.interfaces.bugtask import IBugTaskSet
 from canonical.launchpad.interfaces.looptuner import ITunableLoop
 from canonical.launchpad.utilities.looptuner import LoopTuner
+from lp.bugs.interfaces.bugtask import IBugTaskSet
 
 
 class BugTaskTargetNameCachesTunableLoop(object):

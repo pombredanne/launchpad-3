@@ -12,8 +12,9 @@ from zope.interface import implements
 from zope.schema.vocabulary import SimpleTerm
 
 from canonical.launchpad.webapp.vocabulary import (
-    CountableIterator, IHugeVocabulary)
-
+    CountableIterator,
+    IHugeVocabulary,
+    )
 from lp.answers.interfaces.faq import IFAQ
 from lp.answers.interfaces.faqtarget import IFAQTarget
 

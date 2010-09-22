@@ -13,9 +13,15 @@ __all__ = [
     ]
 
 from zope.interface import Interface
-from zope.schema import Datetime, Int, Text, TextLine
+from zope.schema import (
+    Datetime,
+    Int,
+    Text,
+    TextLine,
+    )
 
 from canonical.launchpad import _
+
 
 class IBugActivity(Interface):
     """A log of all things that have happened to a bug."""

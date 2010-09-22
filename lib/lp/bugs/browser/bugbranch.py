@@ -12,23 +12,32 @@ __all__ = [
     'BugBranchView',
     ]
 
-from zope.component import adapts, getMultiAdapter
-from zope.interface import implements, Interface
-
 from lazr.restful.interfaces import IWebServiceClientRequest
-
-from canonical.cachedproperty import cachedproperty
-from canonical.lazr.utils import smartquote
+from zope.component import (
+    adapts,
+    getMultiAdapter,
+    )
+from zope.interface import (
+    implements,
+    Interface,
+    )
 
 from canonical.launchpad import _
 from canonical.launchpad.webapp import (
-    action, canonical_url, LaunchpadEditFormView, LaunchpadFormView,
-    LaunchpadView)
+    action,
+    canonical_url,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    LaunchpadView,
+    )
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
+from canonical.lazr.utils import smartquote
 from lp.bugs.interfaces.bugbranch import IBugBranch
 from lp.code.browser.branchmergeproposal import (
-    latest_proposals_for_each_branch)
+    latest_proposals_for_each_branch,
+    )
 from lp.code.enums import BranchLifecycleStatus
+from lp.services.propertycache import cachedproperty
 
 
 class BugBranchPrimaryContext:

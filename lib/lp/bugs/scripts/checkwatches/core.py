@@ -16,42 +16,55 @@ __all__ = [
     'externalbugtracker',
     ]
 
+from copy import copy
+from datetime import (
+    datetime,
+    timedelta,
+    )
+from itertools import (
+    chain,
+    islice,
+    )
 import socket
 import sys
 import threading
 import time
 
-from copy import copy
-from datetime import datetime, timedelta
-from itertools import chain, islice
-
 import pytz
-
 from twisted.internet import reactor
 from twisted.internet.defer import DeferredList
 from twisted.internet.threads import deferToThreadPool
 from twisted.python.threadpool import ThreadPool
-
 from zope.component import getUtility
 
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.interfaces import (
-    CreateBugParams, IBugTrackerSet, IBugWatchSet, IDistribution,
-    ILaunchpadCelebrities, IPersonSet, PersonCreationRationale)
+    CreateBugParams,
+    IBugTrackerSet,
+    IBugWatchSet,
+    IDistribution,
+    ILaunchpadCelebrities,
+    IPersonSet,
+    PersonCreationRationale,
+    )
 from canonical.launchpad.scripts.logger import log as default_log
-
 from lp.bugs import externalbugtracker
 from lp.bugs.externalbugtracker import (
-    BATCH_SIZE_UNLIMITED, BugWatchUpdateError,
-    UnknownBugTrackerTypeError)
+    BATCH_SIZE_UNLIMITED,
+    BugWatchUpdateError,
+    UnknownBugTrackerTypeError,
+    )
 from lp.bugs.scripts.checkwatches.base import (
-    WorkingBase, commit_before, with_interaction)
+    commit_before,
+    with_interaction,
+    WorkingBase,
+    )
 from lp.bugs.scripts.checkwatches.remotebugupdater import RemoteBugUpdater
 from lp.bugs.scripts.checkwatches.utilities import (
-    get_bugwatcherrortype_for_error)
+    get_bugwatcherrortype_for_error,
+    )
 from lp.services.database.bulk import reload
 from lp.services.scripts.base import LaunchpadCronScript
-
 
 # The login of the user to run as.
 LOGIN = 'bugwatch@bugs.launchpad.net'
@@ -288,7 +301,8 @@ class CheckwatchesMaster(WorkingBase):
             self.logger.info(
                 "Resetting %s bug watches for bug tracker '%s'" %
                 (bug_tracker.watches.count(), bug_tracker_name))
-            bug_tracker.resetWatches()
+            bug_tracker.resetWatches(
+                new_next_check=datetime.now(pytz.timezone('UTC')))
 
         # Loop over the bug watches in batches as specificed by
         # batch_size until there are none left to update.

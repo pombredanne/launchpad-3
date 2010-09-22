@@ -21,7 +21,7 @@ from zope.app.form.utility import setUpWidget
 from z3c.ptcompat import ViewPageTemplateFile
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import URIField
+from lp.services.fields import URIField
 from canonical.launchpad.interfaces import (
     IBugWatchSet, IDistributionSet, ILaunchBag, NoBugTrackerFound,
     UnrecognizedBugTrackerURL)

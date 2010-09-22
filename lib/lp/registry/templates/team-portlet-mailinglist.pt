@@ -19,16 +19,16 @@
       <strong>Policy:</strong>
       You must be a team member to subscribe to the team mailing list.
       <br/>
-      <tal:member condition="view/user_is_active_member">
+      <tal:member condition="view/userIsParticipant">
         <tal:can-subscribe-to-list
             condition="view/user_can_subscribe_to_list">
-          <a class="sprite add"
+          <a id="link-list-subscribe" class="sprite add"
               href="/people/+me/+editemails">Subscribe to mailing list</a>
           <br />
         </tal:can-subscribe-to-list>
         <tal:subscribed-to-list
             condition="view/user_is_subscribed_to_list">
-          <form id="form.list.unsubscribe" name="unsubscribe"
+          <form id="form-list-unsubscribe" name="unsubscribe"
             action="" method="post">
             <input type="submit" name="unsubscribe" value="Unsubscribe" />
           </form>

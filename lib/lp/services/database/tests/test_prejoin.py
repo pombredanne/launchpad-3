@@ -12,7 +12,10 @@ from canonical.launchpad.interfaces import IMasterStore
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.registry.model.person import Person
 from lp.registry.model.product import Product
-from lp.services.database.prejoin import prejoin, PrejoinResultSet
+from lp.services.database.prejoin import (
+    prejoin,
+    PrejoinResultSet,
+    )
 from lp.testing import TestCase
 
 

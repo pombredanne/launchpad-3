@@ -13,12 +13,21 @@ __all__ = [
     ]
 
 
-from zope.interface import Attribute, Interface
-from zope.schema import TextLine, Datetime
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Datetime,
+    TextLine,
+    )
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import PublicPersonChoice, Summary
 from canonical.launchpad.validators.name import name_validator
+from lp.services.fields import (
+    PublicPersonChoice,
+    Summary,
+    )
 
 
 class IBranchMergeQueue(Interface):

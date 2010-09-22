@@ -6,11 +6,14 @@
 __metaclass__ = type
 __all__ = []
 
-from canonical.launchpad.windmill.testing.constants import (
-    PAGE_LOAD, SLEEP)
 from canonical.launchpad.windmill.testing import lpuser
-from lp.translations.windmill.testing import TranslationsWindmillLayer
+from canonical.launchpad.windmill.testing.constants import (
+    PAGE_LOAD,
+    SLEEP,
+    )
 from lp.testing import WindmillTestCase
+from lp.translations.windmill.testing import TranslationsWindmillLayer
+
 
 LANGUAGE=(u"//table[@id='languagestats']/descendant::a[text()='%s']"
          u"/parent::td/parent::tr")

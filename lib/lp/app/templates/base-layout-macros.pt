@@ -179,8 +179,6 @@
     <script type="text/javascript"
             tal:attributes="src string:${lp_js}/app/picker.js"></script>
     <script type="text/javascript"
-            tal:attributes="src string:${lp_js}/app/mapping.js"></script>
-    <script type="text/javascript"
             tal:attributes="src string:${lp_js}/bugs/bugtracker_overlay.js"></script>
     <script type="text/javascript"
             tal:attributes="src string:${lp_js}/registry/milestoneoverlay.js"></script>
@@ -231,6 +229,16 @@
             tal:attributes="src string:${lp_js}/translations/languages.js"></script>
     <script type="text/javascript"
             tal:attributes="src string:${lp_js}/translations/pofile.js"></script>
+
+    <script type="text/javascript"
+            tal:attributes="src string:${lp_js}/soyuz/archivesubscribers_index.js"></script>
+    <script type="text/javascript"
+            tal:attributes="src string:${lp_js}/soyuz/base.js"></script>
+    <script type="text/javascript"
+            tal:attributes="src string:${lp_js}/soyuz/lp_dynamic_dom_updater.js"></script>
+    <script type="text/javascript"
+            tal:attributes="src string:${lp_js}/soyuz/update_archive_build_statuses.js"></script>
+
     <script type="text/javascript"
             tal:attributes="src string:${lp_js}/bugs/filebug_dupefinder.js">
     </script>
@@ -277,14 +285,6 @@
     <script type="text/javascript"
             tal:attributes="src string:${icingroot_contrib}/JSONScriptRequest.js"></script>
   </tal:needs_json>
-  <tal:needs-gmap2 condition="request/needs_gmap2">
-    <script type="text/javascript"
-            tal:condition="devmode"
-            tal:attributes="src string:http://maps.google.com/maps?${map_query};"></script>
-    <script type="text/javascript"
-            tal:condition="not: devmode"
-            tal:attributes="src string:https://maps-api-ssl.google.com/maps?oe=utf-8&amp;client=gme-canonical${map_query};"></script>
-  </tal:needs-gmap2>
 
   <metal:load-lavascript use-macro="context/@@+base-layout-macros/load-javascript" />
 
