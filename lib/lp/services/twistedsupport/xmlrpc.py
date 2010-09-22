@@ -5,10 +5,32 @@
 
 __metaclass__ = type
 __all__ = [
+    'BlockingProxy',
     'trap_fault',
     ]
 
 from twisted.web.xmlrpc import Fault
+
+
+class BlockingProxy:
+    """Make an xmlrpclib.ServerProxy behave like a Twisted XML-RPC proxy.
+
+    This is useful for writing code that needs to work in both a synchronous
+    and asynchronous fashion.
+
+    Also, some people prefer the callRemote style of invocation, which is more
+    explicit.
+    """
+
+    def __init__(self, proxy):
+        """Construct a `BlockingProxy`.
+
+        :param proxy: An xmlrpclib.ServerProxy.
+        """
+        self._proxy = proxy
+
+    def callRemote(self, method_name, *args):
+        return getattr(self._proxy, method_name)(*args)
 
 
 def trap_fault(failure, *fault_classes):

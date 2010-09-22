@@ -8,7 +8,6 @@ This code talks to the internal XML-RPC server for the branch filesystem.
 
 __metaclass__ = type
 __all__ = [
-    'BlockingProxy',
     'BranchFileSystemClient',
     'NotInCache',
     ]
@@ -18,15 +17,6 @@ import time
 from twisted.internet import defer
 
 from lp.code.interfaces.codehosting import BRANCH_TRANSPORT
-
-
-class BlockingProxy:
-
-    def __init__(self, proxy):
-        self._proxy = proxy
-
-    def callRemote(self, method_name, *args):
-        return getattr(self._proxy, method_name)(*args)
 
 
 class NotInCache(Exception):

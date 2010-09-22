@@ -19,7 +19,7 @@ from bzrlib.urlutils import local_path_to_url
 from lp.codehosting.inmemory import InMemoryFrontend
 from lp.codehosting.tests.helpers import TestResultWrapper
 from lp.codehosting.vfs.branchfs import LaunchpadInternalServer
-from lp.codehosting.vfs.branchfsclient import BlockingProxy
+from lp.services.twistedsupport.xmlrpc import BlockingProxy
 
 
 class TestingServer(LaunchpadInternalServer):

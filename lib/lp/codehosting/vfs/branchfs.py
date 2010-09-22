@@ -102,7 +102,6 @@ from lp.code.interfaces.codehosting import (
     )
 from lp.codehosting.bzrutils import get_stacked_on_url
 from lp.codehosting.vfs.branchfsclient import (
-    BlockingProxy,
     BranchFileSystemClient,
     )
 from lp.codehosting.vfs.transport import (
@@ -112,7 +111,10 @@ from lp.codehosting.vfs.transport import (
     get_readonly_transport,
     TranslationError,
     )
-from lp.services.twistedsupport.xmlrpc import trap_fault
+from lp.services.twistedsupport.xmlrpc import (
+    BlockingProxy,
+    trap_fault,
+    )
 
 
 class BadUrl(Exception):
