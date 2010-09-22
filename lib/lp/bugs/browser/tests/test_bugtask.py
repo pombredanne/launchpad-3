@@ -101,7 +101,7 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
             self.bug, LaunchpadTestRequest())
 
     def refresh(self):
-        # The view caches, to see see different scenarios, a refresh is needed.
+        # The view caches, to see different scenarios, a refresh is needed.
         self.view = BugTasksAndNominationsView(
             self.bug, LaunchpadTestRequest())
 

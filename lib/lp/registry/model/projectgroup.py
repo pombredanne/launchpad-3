@@ -311,6 +311,11 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """Customize `search_params` for this milestone."""
         search_params.setProject(self)
 
+    def _getOfficialTagClause(self):
+        """See `OfficialBugTagTargetMixin`."""
+        And(ProjectGroup.id == Product.projectID,
+            Product.id == OfficialBugTag.productID)
+
     @property
     def official_bug_tags(self):
         """See `IHasBugs`."""

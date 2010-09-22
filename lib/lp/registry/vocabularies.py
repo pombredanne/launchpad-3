@@ -1168,9 +1168,11 @@ class MilestoneVocabulary(SQLObjectVocabularyBase):
             target = milestone_context.distroseries
         elif ISpecification.providedBy(milestone_context):
             target = milestone_context.target
+        elif IProductSeries.providedBy(milestone_context):
+            # Show all the milestones of the product for a product series.
+            target = milestone_context.product
         elif (IProjectGroup.providedBy(milestone_context) or
               IProduct.providedBy(milestone_context) or
-              IProductSeries.providedBy(milestone_context) or
               IDistribution.providedBy(milestone_context) or
               IDistroSeries.providedBy(milestone_context)):
             target = milestone_context
@@ -1195,7 +1197,7 @@ class MilestoneVocabulary(SQLObjectVocabularyBase):
         # This fixes an urgent bug though, so I think this problem
         # should be revisited after we've unblocked users.
         if target is not None:
-            if IProjectGroup.providedBy(self.context):
+            if IProjectGroup.providedBy(target):
                 milestones_source = target.product_milestones
             else:
                 milestones_source = target.milestones
