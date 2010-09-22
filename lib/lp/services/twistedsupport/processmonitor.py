@@ -300,7 +300,7 @@ class ProcessWithTimeout(ProcessProtocol, TimeoutMixin):
 
     def spawnProcess(self, *args, **kwargs):
         """Start a process.
-        
+
         See reactor.spawnProcess.
         """
         self._process_transport = reactor.spawnProcess(
