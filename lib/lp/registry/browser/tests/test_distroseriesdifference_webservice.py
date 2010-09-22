@@ -82,5 +82,5 @@ class DistroSeriesDifferenceWebServiceTestCase(TestCaseWithFactory):
         ds_diff = utility.getByDistroSeriesAndName(
             ds_diff.derived_series, ds_diff.source_package_name.name)
         self.assertEqual(
-            DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT,
+            DistroSeriesDifferenceStatus.NEEDS_ATTENTION,
             ds_diff.status)
