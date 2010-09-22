@@ -75,11 +75,14 @@ prevents annoying cases where the user grants a level of permission
 that isn't enough for the application. The user always has the option
 to deny permission altogether.
 
-    >>> def print_access_levels(allow_permission):
+    >>> def authorize_token_main_content(allow_permission):
     ...     browser.open(
     ...         "http://launchpad.dev/+authorize-token?%s&%s"
     ...         % (urlencode(params), allow_permission))
-    ...     main_content = find_tag_by_id(browser.contents, 'maincontent')
+    ...     return find_tag_by_id(browser.contents, 'maincontent')
+
+    >>> def print_access_levels(allow_permission):
+    ...     main_content = authorize_token_main_content(allow_permission)
     ...     actions = main_content.findAll('input', attrs={'type': 'submit'})
     ...     for action in actions:
     ...         print action['value']
@@ -119,8 +122,8 @@ integration has its own section, below.)
     Traceback (most recent call last):
     ...
     Unauthorized: Consumer "foobar123451432" asked for desktop
-    integration, but didn't say what kind of desktop, or name the
-    computer being integrated.
+    integration, but didn't say what kind of desktop it is, or name
+    the computer being integrated.
 
 An application may also specify a context, so that the access granted
 by the user is restricted to things related to that context.
@@ -174,15 +177,11 @@ specified by the application).
 
     >>> browser.open(
     ...     "http://launchpad.dev/+authorize-token?%s" % urlencode(params))
-    >>> main_content = find_tag_by_id(browser.contents, 'maincontent')
-    >>> print main_content
     >>> browser.getControl('Read Non-Private Data').click()
 
     # This is the URL given to Launchpad in oauth_callback.
     >>> browser.url
     'http://launchpad.dev/bzr'
-    >>> main_content = find_tag_by_id(browser.contents, 'maincontent')
-    >>> print main_content
 
 After the authorization is granted the token gets its permission and
 person set.
@@ -271,12 +270,10 @@ The test case given above shows how to integrate a single application
 or website into Launchpad. But it's also possible to integrate an
 entire desktop environment into Launchpad.
 
-
-
-The only time the 'Desktop Integration' permission shows up in this list
-is if the client specifically requests it, and no other
-permission. (Also requesting UNAUTHORIZED is okay--it will show up
-anyway.)
+The desktop integration option is only available for OAuth consumers
+that say what kind of desktop they are (eg. Ubuntu) and give a name
+that a user can identify with their computer (eg. the hostname). Here,
+we'll create such a token.
 
     >>> login('salgado@ubuntu.com')
     >>> desktop_key = "Ubuntu desktop (mycomputer)"
@@ -284,21 +281,72 @@ anyway.)
     >>> token = consumer.newRequestToken()
     >>> logout()
 
+When a desktop tries to integrate with Launchpad, the user gets a
+special warning about giving access to every program running on their
+desktop.
+
     >>> params = dict(oauth_token=token.key)
+    >>> print extract_text(
+    ...     authorize_token_main_content(
+    ...         'allow_permission=DESKTOP_INTEGRATION'))
+    The Ubuntu computer identified as mycomputer wants access to your
+    Launchpad account. If you allow the integration, all applications
+    running on mycomputer will have read-write access to your
+    Launchpad account, including to your private data.
+    If mycomputer is not the computer you're using right now, or if
+    you don't trust this computer, you should click "No, thanks, I
+    don't trust this computer", or close this window now.
+    Even if you decide to allow the integration, you can
+    change your mind later.
+    See all applications authorized to access Launchpad on your behalf.
+
+The only time the 'Desktop Integration' permission shows up in the
+list of permissions is if the client specifically requests it, and no
+other permission. (Also requesting UNAUTHORIZED is okay--it will show
+up anyway.)
+
     >>> print_access_levels('allow_permission=DESKTOP_INTEGRATION')
-    Give all programs running on "hostname" access to my Launchpad account.
-    No, thanks.
+    Give all programs running on "mycomputer" access to my Launchpad account.
+    No, thanks, I don't trust this computer.
 
     >>> print_access_levels(
     ...     'allow_permission=DESKTOP_INTEGRATION&allow_permission=UNAUTHORIZED')
-    Give all programs running on "hostname" access to my Launchpad account.
-    No, thanks.
+    Give all programs running on "mycomputer" access to my Launchpad account.
+    No, thanks, I don't trust this computer.
+
+A desktop may not request a level of access other than
+DESKTOP_INTEGRATION, since the whole point is to have a permission
+level that specifically applies across the entire desktop.
+
+    >>> print_access_levels('allow_permission=WRITE_PRIVATE')
+    Traceback (most recent call last):
+    ...
+    Unauthorized: Desktop integration token requested a permission
+    ("Change Anything") not supported for desktop-wide use.
 
     >>> print_access_levels(
     ...     'allow_permission=WRITE_PUBLIC&allow_permission=DESKTOP_INTEGRATION')
-    No Access
-    Change Non-Private Data
+    Traceback (most recent call last):
+    ...
+    Unauthorized: Desktop integration token requested a permission
+    ("Change Non-Private Data") not supported for desktop-wide use.
 
-You can't specify a callback URL when authorizing a desktop
-integration token, since callback URLs are only for integrating
-websites.
+You can't specify a callback URL when authorizing a desktop-wide
+token, since callback URLs should only be used when integrating
+websites into Launchpad.
+
+    >>> params['oauth_callback'] = 'http://launchpad.dev/bzr'
+    >>> print_access_levels('allow_permission=DESKTOP_INTEGRATION')
+    Traceback (most recent call last):
+    ...
+    Unauthorized: A desktop integration may not specify an OAuth
+    callback URL.
+
+This is true even if the desktop token isn't asking for the
+DESKTOP_INTEGRATION permission.
+
+    >>> print_access_levels('allow_permission=WRITE_PRIVATE')
+    Traceback (most recent call last):
+    ...
+    Unauthorized: A desktop integration may not specify an OAuth
+    callback URL.

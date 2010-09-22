@@ -111,26 +111,31 @@ def token_review_success(form, action, data):
 
 
 def create_oauth_permission_actions():
-    """Return a list of `Action`s for each possible `OAuthPermission`.
+    """Return two `Actions` objects containing each possible `OAuthPermission`.
 
-    Special permissions like DESKTOP_INTEGRATION are not included.
+    The first `Actions` object contains every action supported by the
+    OAuthAuthorizeTokenView. The second list contains a good default
+    set of actions, omitting special permissions like DESKTOP_INTEGRATION.
     """
-    actions = Actions()
+    all_actions = Actions()
+    ordinary_actions = Actions()
     for permission in OAuthPermission.items:
         action = Action(
             permission.title, name=permission.name,
             success=token_review_success,
             condition=token_exists_and_is_not_reviewed)
         action.permission = permission
+        all_actions.append(action)
         if permission != OAuthPermission.DESKTOP_INTEGRATION:
-            actions.append(action)
-    return actions
+            ordinary_actions.append(action)
+    return all_actions, ordinary_actions
 
 
 class OAuthAuthorizeTokenView(LaunchpadFormView, JSONTokenMixin):
     """Where users authorize consumers to access Launchpad on their behalf."""
 
-    actions_excluding_special_permissions = create_oauth_permission_actions()
+    actions, actions_excluding_special_permissions = (
+        create_oauth_permission_actions())
     label = "Authorize application to access Launchpad on your behalf"
     schema = IOAuthRequestToken
     field_names = []
@@ -138,7 +143,7 @@ class OAuthAuthorizeTokenView(LaunchpadFormView, JSONTokenMixin):
 
     @property
     def visible_actions(self):
-        """Restrict the actions to the subset the client can make use of.
+        """Restrict the actions to a subset to be presented to the client.
 
         Not all client programs can function with all levels of
         access. For instance, a client that needs to modify the
@@ -183,7 +188,7 @@ class OAuthAuthorizeTokenView(LaunchpadFormView, JSONTokenMixin):
                 # user-recognizable desktop name (eg. the hostname).
                 raise Unauthorized(
                     ('Consumer "%s" asked for desktop integration, '
-                     "but didn't say what kind of desktop, or name "
+                     "but didn't say what kind of desktop it is, or name "
                      "the computer being integrated."
                      % self.token.consumer.key))
 
@@ -191,16 +196,23 @@ class OAuthAuthorizeTokenView(LaunchpadFormView, JSONTokenMixin):
             # possibilities are "allow" and "deny". We'll customize
             # the "allow" message using the hostname provided by the
             # desktop.
-            allow_action = Action(
-                "Allow the integration.", name=desktop_permission.name,
-                success=token_review_success,
-                condition=token_exists_and_is_not_reviewed)
-            deny_action = Action(
-                "No, thanks.", name=OAuthPermission.UNAUTHORIZED.name,
-                success=token_review_success,
-                condition=token_exists_and_is_not_reviewed)
+            label = (
+                'Give all programs running on &quot;%s&quot; access '
+                'to my Launchpad account.')
+            allow_action = [
+                action for action in self.actions
+                if action.name == desktop_permission.name][0]
+            allow_action.label = (
+                    label % self.token.consumer.integrated_desktop_name)
             actions.append(allow_action)
+
+            # We'll customize the "deny" message as well.
+            deny_action = [
+                action for action in self.actions
+                if action.name == OAuthPermission.UNAUTHORIZED.name][0]
+            deny_action.label = "No, thanks, I don't trust this computer."
             actions.append(deny_action)
+
         else:
             # We're going for web-based integration.
             for action in self.actions_excluding_special_permissions:
@@ -225,6 +237,31 @@ class OAuthAuthorizeTokenView(LaunchpadFormView, JSONTokenMixin):
         key = form.get('oauth_token')
         if key:
             self.token = getUtility(IOAuthRequestTokenSet).getByKey(key)
+
+
+        callback = self.request.form.get('oauth_callback')
+        if (self.token is not None
+            and self.token.consumer.is_integrated_desktop):
+            # Nip problems in the bud by appling special rules about
+            # what desktop integrations are allowed to do.
+            if callback is not None:
+                # A desktop integration is not allowed to specify a callback.
+                raise Unauthorized(
+                    "A desktop integration may not specify an "
+                    "OAuth callback URL.")
+            # A desktop integration token can only have one of two
+            # permission levels: "Desktop Integration" and
+            # "Unauthorized". It shouldn't even be able to ask for any
+            # other level.
+            for action in self.visible_actions:
+                if action.permission not in (
+                    OAuthPermission.DESKTOP_INTEGRATION,
+                    OAuthPermission.UNAUTHORIZED):
+                    raise Unauthorized(
+                        ("Desktop integration token requested a permission "
+                         '("%s") not supported for desktop-wide use.')
+                         % action.label)
+
         super(OAuthAuthorizeTokenView, self).initialize()
 
     def render(self):
