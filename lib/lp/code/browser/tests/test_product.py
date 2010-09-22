@@ -224,13 +224,53 @@ class TestProductCodeIndexServiceUsages(ProductTestBase, BrowserTestCase):
 class TestProductBranchesViewPortlets(ProductTestBase, BrowserTestCase):
     """Tests for the portlets."""
 
+    def test_portlet_not_shown_for_UNKNOWN(self):
+        # If the BranchUsage is UNKNOWN then the portlets are not shown.
+        product = self.factory.makeProduct()
+        self.assertEqual(ServiceUsage.UNKNOWN, product.codehosting_usage)
+        browser = self.getUserBrowser(canonical_url(product, rootsite='code'))
+        contents = browser.contents
+        self.assertEqual(None, find_tag_by_id(contents, 'branch-portlet'))
+        self.assertEqual(None, find_tag_by_id(contents, 'privacy'))
+        self.assertEqual(None, find_tag_by_id(contents, 'involvement'))
+        self.assertEqual(None, find_tag_by_id(
+            contents, 'portlet-product-codestatistics'))
+
+    def test_portlets_shown_for_HOSTED(self):
+        # If the BranchUsage is HOSTED then the portlets are shown.
+        product, branch = self.makeProductAndDevelopmentFocusBranch()
+        self.assertEqual(ServiceUsage.LAUNCHPAD, product.codehosting_usage)
+        browser = self.getUserBrowser(canonical_url(product, rootsite='code'))
+        contents = browser.contents
+        self.assertNotEqual(None, find_tag_by_id(contents, 'branch-portlet'))
+        self.assertNotEqual(None, find_tag_by_id(contents, 'privacy'))
+        self.assertNotEqual(None, find_tag_by_id(contents, 'involvement'))
+        self.assertNotEqual(None, find_tag_by_id(
+            contents, 'portlet-product-codestatistics'))
+
+    def test_portlets_shown_for_EXTERNAL(self):
+        # If the BranchUsage is HOSTED then the portlets are shown.
+        url = "http://example.com/mybranch"
+        product, branch = self.makeProductAndDevelopmentFocusBranch(
+            branch_type=BranchType.MIRRORED,
+            url=url)
+        browser = self.getUserBrowser(canonical_url(product, rootsite='code'))
+        contents = browser.contents
+        self.assertNotEqual(None, find_tag_by_id(contents, 'branch-portlet'))
+        self.assertNotEqual(None, find_tag_by_id(contents, 'privacy'))
+        self.assertNotEqual(None, find_tag_by_id(contents, 'involvement'))
+        self.assertNotEqual(None, find_tag_by_id(
+            contents, 'portlet-product-codestatistics'))
+
     def test_is_private(self):
         team_owner = self.factory.makePerson()
         team = self.factory.makeTeam(team_owner)
         product = self.factory.makeProduct(owner=team_owner)
+        branch = self.factory.makeProductBranch(product=product)
+        login_person(product.owner)
+        product.development_focus.branch = branch
         product.setBranchVisibilityTeamPolicy(
             team, BranchVisibilityRule.PRIVATE)
-        login_person(product.owner)
         view = create_initialized_view(
             product, '+code-index', rootsite='code', principal=product.owner)
         text = extract_text(find_tag_by_id(view.render(), 'privacy'))
@@ -240,7 +280,9 @@ class TestProductBranchesViewPortlets(ProductTestBase, BrowserTestCase):
 
     def test_is_public(self):
         product = self.factory.makeProduct()
+        branch = self.factory.makeProductBranch(product=product)
         login_person(product.owner)
+        product.development_focus.branch = branch
         browser = self.getUserBrowser(canonical_url(product, rootsite='code'))
         text = extract_text(find_tag_by_id(browser.contents, 'privacy'))
         expected = ("New branches you create for %(name)s are public "
