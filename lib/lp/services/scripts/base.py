@@ -87,12 +87,12 @@ def log_unhandled_exception_and_exit(func):
         try:
             self._log_unhandled_exceptions_level += 1
             return func(self, *args, **kw)
-        except:
+        except Exception:
             if self._log_unhandled_exceptions_level == 1:
                 # self.logger is setup in LaunchpadScript.__init__() so
                 # we can use it.
                 self.logger.exception("Unhandled exception")
-                sys.exit(42)
+                sys.exit(1)
             else:
                 raise
         finally:

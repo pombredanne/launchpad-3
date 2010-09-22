@@ -35,5 +35,5 @@ LaunchpadCronScript) also log warnings and and errors as OOPS reports.
     ...
     NotImplementedError: Whoops
     >>> p.returncode
-    42
+    1
 
