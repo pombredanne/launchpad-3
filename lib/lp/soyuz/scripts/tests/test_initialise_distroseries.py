@@ -239,8 +239,12 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
         # No binaries will get copied if we specify rebuild=True
         foobuntu = self._full_initialise(rebuild=True)
         foobuntu.updatePackageCount()
-        self.assertTrue(foobuntu.sourcecount > 0)
+        builds = foobuntu.getBuildRecords(
+            build_state=BuildStatus.NEEDSBUILD,
+            pocket=PackagePublishingPocket.RELEASE, arch_tag='i386')
+        self.assertEqual(foobuntu.sourcecount, 7)
         self.assertEqual(foobuntu.binarycount, 0)
+        self.assertEqual(builds.count(), 5)
 
     def test_script(self):
         # Do an end-to-end test using the command-line tool
