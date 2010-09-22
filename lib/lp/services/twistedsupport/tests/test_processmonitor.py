@@ -127,7 +127,9 @@ class TestProcessWithTimeout(ProcessTestsMixin, TrialTestCase):
         self.clock.advance(self.TIMEOUT+1)
 
         # At this point, processEnded is yet to be called so the
-        # Deferred has not fired.  If we sti
+        # Deferred has not fired.  Ideally it would be nice to test for
+        # something more concrete here but the stub transport doesn't
+        # work exactly like the real one.
         self.assertFalse(self._deferred.called)
 
 
