@@ -1,0 +1,34 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  i18n:domain="launchpad">
+  <dl>
+    <dt>Description:</dt>
+    <dd><tal:description replace="view/summary" /></dd>
+    <dt>Last common version:</dt>
+    <dd>Not implemented.</dd>
+    <dt>Package differences:</dt>
+    <tal:source-diff-option condition="context/source_pub">
+    <dd tal:condition="context/package_diff"
+        tal:content="structure context/package_diff/fmt:link">
+      <a>link to a diff</a></dd>
+    <dd tal:condition="not: context/package_diff" class="request-derived-diff">
+      Base version to derived <span
+          tal:replace="context/source_version">1.2.3</span>
+    </dd>
+    </tal:source-diff-option>
+
+    <tal:parent-diff-option condition="context/parent_source_pub">
+    <dd tal:condition="context/parent_package_diff"
+        tal:content="structure context/parent_package_diff/fmt:link">
+      <a>link to a diff</a></dd>
+    <dd tal:condition="not: context/parent_package_diff" class="request-derived-diff">
+      Base version to parent <span
+          tal:replace="context/parent_source_version">1.2.3</span>
+    </dd>
+    </tal:parent-diff-option>
+  </dl>
+  <h2>Comments:</h2>
+
+</tal:root>

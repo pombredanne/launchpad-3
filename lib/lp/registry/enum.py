@@ -63,15 +63,15 @@ class DistroSeriesDifferenceStatus(DBEnumeratedType):
         This difference is current and needs attention.
         """)
 
-    IGNORED = DBItem(2, """
-        Ignored
+    BLACKLISTED_CURRENT = DBItem(2, """
+        Blacklisted current version
 
         This difference is being ignored until a new package is uploaded
         or the status is manually updated.
         """)
 
-    IGNORED_ALWAYS = DBItem(3, """
-        Ignored always
+    BLACKLISTED_ALWAYS = DBItem(3, """
+        Blacklisted always
 
         This difference should always be ignored.
         """)
