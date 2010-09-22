@@ -143,6 +143,12 @@ class IDistroSeriesDifferenceEdit(Interface):
             be blacklisted or just the current (default).
         """
 
+    def unblacklist():
+        """Removes this difference from the blacklist.
+
+        The status will be updated based on the versions.
+        """
+
 
 class IDistroSeriesDifference(IDistroSeriesDifferencePublic,
                               IDistroSeriesDifferenceEdit):
