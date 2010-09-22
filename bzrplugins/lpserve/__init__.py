@@ -170,15 +170,12 @@ class LPForkingService(object):
     # the current decision, and the alternatives.
     #
     # [Decision #1]
-    #   Serve on a socket on port 4156 on the loopback
+    #   Serve on a named AF_UNIX socket.
     #       1) It doesn't make sense to serve to arbitrary hosts, we only want
     #          the local host to make requests. (Since the client needs to
     #          access the named fifos on the current filesystem.)
-    #       2) 4156 was chosen as the bzr serve port (4155) + 1.
-    #       3) It would also be reasonable to just used a named AF_UNIX socket
-    #          in a known or configurable location. Arguably we can provide
-    #          better security that way (since you can set rwx on a named
-    #          socket, but can't really do so on a port.)
+    #       2) You can set security parameters on a filesystem path (g+rw,
+    #          a-rw).
     # [Decision #2]
     #   SIGCHLD
     #       We want to quickly detect that children have exited so that we can
@@ -303,8 +300,8 @@ class LPForkingService(object):
     #       clients. Instead we try to be helpful, and tell them as much as we
     #       know about what went wrong.
 
-    DEFAULT_HOST = '127.0.0.1' # See [Decision #1]
-    DEFAULT_PORT = 4156
+    DEFAULT_PATH = '/var/run/launchpad_forking_service.sock'
+    DEFAULT_PERMISSIONS = 00660 # Permissions on the master socket (rw-rw----)
     WAIT_FOR_CHILDREN_TIMEOUT = 5*60 # Wait no more than 5 min for children
     SOCKET_TIMEOUT = 1.0
     SLEEP_FOR_CHILDREN_TIMEOUT = 1.0
@@ -313,15 +310,9 @@ class LPForkingService(object):
 
     _fork_function = os.fork
 
-    def __init__(self, host=DEFAULT_HOST, port=DEFAULT_PORT):
-        if host is None:
-            self.host = self.DEFAULT_HOST
-        else:
-            self.host = host
-        if port is None:
-            self.port = self.DEFAULT_PORT
-        else:
-            self.port = port
+    def __init__(self, path=DEFAULT_PATH, perms=DEFAULT_PERMISSIONS):
+        self.master_socket_path = path
+        self._perms = perms
         self._start_time = time.time()
         self._should_terminate = threading.Event()
         # We address these locally, in case of shutdown socket may be gc'd
@@ -335,17 +326,10 @@ class LPForkingService(object):
         self._children_spawned = 0
 
     def _create_master_socket(self):
-        addrs = socket.getaddrinfo(self.host, self.port, socket.AF_UNSPEC,
-            socket.SOCK_STREAM, 0, socket.AI_PASSIVE)[0]
-        (family, socktype, proto, canonname, sockaddr) = addrs
-        self._server_socket = socket.socket(family, socktype, proto)
-        if sys.platform != 'win32':
-            self._server_socket.setsockopt(socket.SOL_SOCKET,
-                socket.SO_REUSEADDR, 1)
-        try:
-            self._server_socket.bind(sockaddr)
-        except self._socket_error, message:
-            raise errors.CannotBindAddress(self.host, self.port, message)
+        self._server_socket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        self._server_socket.bind(self.master_socket_path)
+        if self._perms is not None:
+            os.chmod(self.master_socket_path, self._perms)
         self._sockname = self._server_socket.getsockname()
         # self.host = self._sockname[0]
         self.port = self._sockname[1]
@@ -532,7 +516,7 @@ class LPForkingService(object):
         self._should_terminate.clear()
         self._register_signals()
         self._create_master_socket()
-        trace.note('Listening on port: %s' % (self.port,))
+        trace.note('Listening on socket: %s' % (self.master_socket_path,))
         try:
             try:
                 self._do_loop()
@@ -593,8 +577,7 @@ class LPForkingService(object):
         if client_addr is not None:
             # Note, we don't use conn.getpeername() because if a client
             # disconnects before we get here, that raises an exception
-            peer_host, peer_port = client_addr
-            conn_info = '[%s:%d] ' % (peer_host, peer_port)
+            conn_info = '[%s] ' % (client_addr,)
         else:
             conn_info = ''
         trace.mutter('%s%s' % (conn_info, message))
@@ -764,9 +747,12 @@ class cmd_launchpad_forking_service(Command):
 
     aliases = ['lp-service']
 
-    takes_options = [Option('port',
-                        help='Listen for connections on [host:]portnumber',
+    takes_options = [Option('path',
+                        help='Listen for connections at PATH',
                         type=str),
+                     Option('perms',
+                        help='Set the mode bits for the socket, interpreted'
+                             ' as an octal integer (same as chmod)'),
                      Option('preload',
                         help="Do/don't preload libraries before startup."),
                      Option('children-timeout', type=int,
@@ -781,22 +767,17 @@ class cmd_launchpad_forking_service(Command):
             except ImportError, e:
                 trace.mutter('failed to preload %s: %s' % (pyname, e))
 
-    def _get_host_and_port(self, port):
-        host = None
-        if port is not None:
-            if ':' in port:
-                host, port = port.rsplit(':', 1)
-            port = int(port)
-        return host, port
-
-    def run(self, port=None, preload=True,
+    def run(self, path=None, perms=None, preload=True,
             children_timeout=LPForkingService.WAIT_FOR_CHILDREN_TIMEOUT):
-        host, port = self._get_host_and_port(port)
+        if path is None:
+            path = LPForkingService.DEFAULT_PATH
+        if perms is None:
+            perms = LPForkingService.DEFAULT_PERMISSIONS
         if preload:
-            # We note this because it often takes a fair amount of time.
+            # We 'note' this because it often takes a fair amount of time.
             trace.note('Preloading %d modules' % (len(libraries_to_preload),))
             self._preload_libraries()
-        service = LPForkingService(host, port)
+        service = LPForkingService(path, perms)
         service.WAIT_FOR_CHILDREN_TIMEOUT = children_timeout
         service.main_loop()
 

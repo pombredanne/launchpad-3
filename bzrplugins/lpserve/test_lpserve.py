@@ -34,13 +34,13 @@ class TestingLPForkingServiceInAThread(lpserve.LPForkingService):
 
     _fork_function = None
 
-    def __init__(self, host='127.0.0.1', port=0):
+    def __init__(self, path, perms=None):
         self.service_started = threading.Event()
         self.service_stopped = threading.Event()
         self.this_thread = None
         self.fork_log = []
-        super(TestingLPForkingServiceInAThread, self).__init__(host=host,
-                                                               port=port)
+        super(TestingLPForkingServiceInAThread, self).__init__(
+            path=path, perms=None)
 
     def _register_signals(self):
         pass # Don't register it for the test suite
@@ -49,9 +49,7 @@ class TestingLPForkingServiceInAThread(lpserve.LPForkingService):
         pass # We don't fork, and didn't register, so don't unregister
 
     def _create_master_socket(self):
-        trace.mutter('creating master socket')
         super(TestingLPForkingServiceInAThread, self)._create_master_socket()
-        trace.mutter('setting service_started')
         self.service_started.set()
 
     def main_loop(self):
@@ -68,15 +66,20 @@ class TestingLPForkingServiceInAThread(lpserve.LPForkingService):
 
     @staticmethod
     def start_service(test):
-        """Start a new LPForkingService in a thread on a random port.
+        """Start a new LPForkingService in a thread at a random path.
 
         This will block until the service has created its socket, and is ready
         to communicate.
 
         :return: A new TestingLPForkingServiceInAThread instance
         """
-        # Allocate a new port on only the loopback device
-        new_service = TestingLPForkingServiceInAThread()
+        fd, path = tempfile.mkstemp(prefix='tmp-lp-forking-service-',
+                                    suffix='.sock')
+        # We don't want a temp file, we want a temp socket
+        os.close(fd)
+        os.remove(path)
+        new_service = TestingLPForkingServiceInAThread(path=path)
+        test.addCleanup(os.remove, path)
         thread = threading.Thread(target=new_service.main_loop,
                                   name='TestingLPForkingServiceInAThread')
         new_service.this_thread = thread
@@ -129,12 +132,8 @@ class TestCaseWithLPForkingService(tests.TestCaseWithTransport):
         self.service = TestingLPForkingServiceInAThread.start_service(self)
 
     def send_message_to_service(self, message, one_byte_at_a_time=False):
-        host, port = self.service._sockname
-        addrs = socket.getaddrinfo(host, port, socket.AF_UNSPEC,
-            socket.SOCK_STREAM, 0, socket.AI_PASSIVE)
-        (family, socktype, proto, canonname, sockaddr) = addrs[0]
-        client_sock = socket.socket(family, socktype, proto)
-        client_sock.connect(sockaddr)
+        client_sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        client_sock.connect(self.service.master_socket_path)
         if one_byte_at_a_time:
             for byte in message:
                 client_sock.send(byte)
@@ -346,17 +345,14 @@ class TestCaseWithLPForkingServiceSubprocess(TestCaseWithSubprocess):
 
     def setUp(self):
         super(TestCaseWithLPForkingServiceSubprocess, self).setUp()
-        self.service_process, self.service_port = self.start_service_subprocess()
+        self.service_process, self.service_path = self.start_service_subprocess()
         self.addCleanup(self.stop_service)
 
     def start_conversation(self, message, one_byte_at_a_time=False):
         """Start talking to the service, and get the initial response."""
-        addrs = socket.getaddrinfo('127.0.0.1', self.service_port,
-            socket.AF_UNSPEC, socket.SOCK_STREAM, 0, socket.AI_PASSIVE)
-        (family, socktype, proto, canonname, sockaddr) = addrs[0]
-        client_sock = socket.socket(family, socktype, proto)
-        trace.mutter('sending %r to port %s' % (message, self.service_port))
-        client_sock.connect(sockaddr)
+        client_sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        trace.mutter('sending %r to socket %s' % (message, self.service_path))
+        client_sock.connect(self.service_path)
         if one_byte_at_a_time:
             for byte in message:
                 client_sock.send(byte)
@@ -395,7 +391,7 @@ class TestCaseWithLPForkingServiceSubprocess(TestCaseWithSubprocess):
 
     def start_service_subprocess(self):
         # Make sure this plugin is exposed to the subprocess
-        # SLOOWWW (~2.4 seconds, which is why we are doing the work anyway)
+        # SLOOWWW (~2 seconds, which is why we are doing the work anyway)
         fd, tempname = tempfile.mkstemp(prefix='tmp-log-bzr-lp-forking-')
         # I'm not 100% sure about when cleanup runs versus addDetail, but I
         # think this will work.
@@ -409,21 +405,26 @@ class TestCaseWithLPForkingServiceSubprocess(TestCaseWithSubprocess):
         self.addDetail('server-log', content.Content(
             content.ContentType('text', 'plain', {"charset": "utf8"}),
             read_log))
+        service_fd, path = tempfile.mkstemp(prefix='tmp-lp-service-',
+                                            suffix='.sock')
+        os.close(service_fd)
+        os.remove(path) # service wants create it as a socket
         env_changes = {'BZR_PLUGIN_PATH': lpserve.__path__[0],
                        'BZR_LOG': tempname}
         proc = self.start_bzr_subprocess(
-            ['lp-service', '--port', '127.0.0.1:0', '--no-preload',
+            ['lp-service', '--path', path, '--no-preload',
              '--children-timeout=1'],
             env_changes=env_changes)
         trace.mutter('started lp-service subprocess')
         # preload_line = proc.stderr.readline()
         # self.assertStartsWith(preload_line, 'Preloading')
-        prefix = 'Listening on port: '
-        port_line = proc.stderr.readline()
-        self.assertStartsWith(port_line, prefix)
-        port = int(port_line[len(prefix):])
-        trace.mutter(port_line)
-        return proc, port
+        expected = 'Listening on socket: %s\n' % (path,)
+        path_line = proc.stderr.readline()
+        trace.mutter(path_line)
+        self.assertEqual(expected, path_line)
+        # The process won't delete it, so we do
+        self.addCleanup(os.remove, path)
+        return proc, path
 
     def stop_service(self):
         if self.service_process is None:
