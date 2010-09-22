@@ -751,7 +751,7 @@ class cmd_launchpad_forking_service(Command):
 
     The process will block on a given --port waiting for requests to be made.
     When a request is made, it will fork itself and redirect stdout/in/err to
-    fifos on the filesystem, and start running the requseted command. The
+    fifos on the filesystem, and start running the requested command. The
     caller will be informed where those file handles can be found. Thus it only
     makes sense that the process connecting to the port must be on the same
     system.
