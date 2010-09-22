@@ -99,6 +99,24 @@ class TestDirectBranchCommit(DirectBranchCommitTestCase):
         branch_revision_id = self.committer.bzrbranch.last_revision()
         self.assertEqual(branch_revision_id, revision_id)
 
+    def test_commit_uses_merge_parents(self):
+        # DirectBranchCommit.commit returns uses merge parents
+        self._tearDownCommitter()
+        # Merge parents cannot be specified for initial commit, so do an
+        # empty commit.
+        self.tree.commit('foo', committer='foo@bar', rev_id='foo')
+        committer = DirectBranchCommit(
+            self.db_branch, merge_parents=['parent-1', 'parent-2'])
+        committer.last_scanned_id = (
+            committer.bzrbranch.last_revision())
+        committer.writeFile('file.txt', 'contents')
+        revision_id = committer.commit('')
+        branch_revision_id = committer.bzrbranch.last_revision()
+        branch_revision = committer.bzrbranch.repository.get_revision(
+            branch_revision_id)
+        self.assertEqual(
+            ['parent-1', 'parent-2'], branch_revision.parent_ids[1:])
+
     def test_DirectBranchCommit_aborts_cleanly(self):
         # If a DirectBranchCommit is not committed, its changes do not
         # go into the branch.

@@ -7,14 +7,17 @@ from __future__ import with_statement
 
 __metaclass__ = type
 
+import transaction
+
 from twisted.internet import defer
-from twisted.trial import unittest
+from twisted.trial import unittest as trialtest
 
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.testing import TwistedLaunchpadZopelessLayer
 
+from lp.buildmaster.tests.mock_slaves import OkSlave
 from lp.registry.interfaces.pocket import (
     PackagePublishingPocket,
     pocketsuffix,
@@ -26,7 +29,6 @@ from lp.soyuz.adapters.archivedependencies import (
 from lp.soyuz.enums import (
     ArchivePurpose,
     )
-from lp.soyuz.tests.soyuzbuilddhelpers import OkSlave
 from lp.testing import (
     ANONYMOUS,
     login_as,
@@ -35,7 +37,7 @@ from lp.testing import (
 from lp.testing.factory import LaunchpadObjectFactory
 
 
-class TestBinaryBuildPackageBehavior(unittest.TestCase):
+class TestBinaryBuildPackageBehavior(trialtest.TestCase):
     """Tests for the BinaryPackageBuildBehavior.
 
     In particular, these tests are about how the BinaryPackageBuildBehavior
@@ -54,19 +56,19 @@ class TestBinaryBuildPackageBehavior(unittest.TestCase):
         self.addCleanup(logout)
         self.layer.switchDbUser('testadmin')
 
-    def assertSlaveInteraction(self, ignored, call_log, builder, build,
-                               chroot, archive, archive_purpose, component,
-                               extra_urls=None, filemap_names=None):
-        """Assert that 'call_log' matches our expectations of interaction.
+    def assertExpectedInteraction(self, ignored, call_log, builder, build,
+                                  chroot, archive, archive_purpose, component,
+                                  extra_urls=None, filemap_names=None):
+        expected = self.makeExpectedInteraction(
+            builder, build, chroot, archive, archive_purpose, component,
+            extra_urls, filemap_names)
+        self.assertEqual(call_log, expected)
 
-        'call_log' is expected to be a recording from a test double slave like
-        OkSlave or one its subclasses.  We assert that the calls in call_log
-        match our expectations, thus showing that the binary package behaviour
-        interacts with the slave in the way we expect.
+    def makeExpectedInteraction(self, builder, build, chroot, archive,
+                                archive_purpose, component,
+                                extra_urls=None, filemap_names=None):
+        """Build the log of calls that we expect to be made to the slave.
 
-        :param ignored: Ignored. This parameter here only to make it easier
-            to use the assertion as a Twisted callback.
-        :param call_log: A list of calls to a `BuilderSlave`-like object.
         :param builder: The builder we are using to build the binary package.
         :param build: The build being done on the builder.
         :param chroot: The `LibraryFileAlias` for the chroot in which we are
@@ -76,6 +78,7 @@ class TestBinaryBuildPackageBehavior(unittest.TestCase):
             builder. We specify this separately from the archive because
             sometimes the behavior object has to give a different purpose
             in order to trick the slave into building correctly.
+        :return: A list of the calls we expect to be made.
         """
         job = removeSecurityProxy(builder.current_build_behavior).buildfarmjob
         build_id = job.generateSlaveBuildCookie()
@@ -90,27 +93,24 @@ class TestBinaryBuildPackageBehavior(unittest.TestCase):
         if extra_urls is None:
             extra_urls = []
 
-        def make_expected_upload(url):
-            return [
-                'cacheFile',
-                'sendFileToSlave',
-                ('ensurepresent', url, '', '')]
+        upload_logs = [
+            ['cacheFile', 'sendFileToSlave', ('ensurepresent', url, '', '')]
+            for url in [chroot.http_url] + extra_urls]
 
-        expected = []
-        for url in [chroot.http_url] + extra_urls:
-            expected.extend(make_expected_upload(url))
-        expected.extend([
+        extra_args = {
+            'arch_indep': arch_indep,
+            'arch_tag': build.distro_arch_series.architecturetag,
+            'archive_private': archive.private,
+            'archive_purpose': archive_purpose.name,
+            'archives': archives,
+            'build_debug_symbols': archive.build_debug_symbols,
+            'ogrecomponent': component,
+            'suite': suite,
+            }
+        build_log = [
             ('build', build_id, 'binarypackage', chroot.content.sha1,
-             filemap_names,
-             {'arch_indep': arch_indep,
-              'arch_tag': build.distro_arch_series.architecturetag,
-              'archive_private': archive.private,
-              'archive_purpose': archive_purpose.name,
-              'archives': archives,
-              'build_debug_symbols': archive.build_debug_symbols,
-              'ogrecomponent': component,
-              'suite': suite})])
-        self.assertEqual(call_log, expected)
+             filemap_names, extra_args)]
+        return sum(upload_logs, []) + build_log
 
     def startBuild(self, builder, candidate):
         builder = removeSecurityProxy(builder)
@@ -131,14 +131,13 @@ class TestBinaryBuildPackageBehavior(unittest.TestCase):
         build = self.factory.makeBinaryPackageBuild(
             builder=builder, archive=archive)
         lf = self.factory.makeLibraryFileAlias()
-        self.layer.txn.commit()
+        transaction.commit()
         build.distro_arch_series.addOrUpdateChroot(lf)
         candidate = build.queueBuild()
         d = self.startBuild(builder, candidate)
         d.addCallback(
-            self.assertSlaveInteraction,
-            slave.call_log, builder, build, lf, archive,
-            ArchivePurpose.PRIMARY, 'universe')
+            self.assertExpectedInteraction, slave.call_log,
+            builder, build, lf, archive, ArchivePurpose.PRIMARY, 'universe')
         return d
 
     def test_partner_dispatch_no_publishing_history(self):
@@ -150,13 +149,13 @@ class TestBinaryBuildPackageBehavior(unittest.TestCase):
         build = self.factory.makeBinaryPackageBuild(
             builder=builder, archive=archive)
         lf = self.factory.makeLibraryFileAlias()
-        self.layer.txn.commit()
+        transaction.commit()
         build.distro_arch_series.addOrUpdateChroot(lf)
         candidate = build.queueBuild()
         d = self.startBuild(builder, candidate)
         d.addCallback(
-            self.assertSlaveInteraction,
-            slave.call_log, builder, build, lf, archive,
+            self.assertExpectedInteraction, slave.call_log,
+            builder, build, lf, archive,
             ArchivePurpose.PARTNER, build.current_component.name)
         return d
 
@@ -172,19 +171,19 @@ class TestBinaryBuildPackageBehavior(unittest.TestCase):
             distroarchseries=distro_arch_series,
             pocket=PackagePublishingPocket.RELEASE)
         lf = self.factory.makeLibraryFileAlias()
-        self.layer.txn.commit()
+        transaction.commit()
         build.distro_arch_series.addOrUpdateChroot(lf)
         candidate = build.queueBuild()
         behavior = candidate.required_build_behavior
         behavior.setBuilder(build)
         e = self.assertRaises(
             AssertionError, behavior.verifyBuildRequest, QuietFakeLogger())
-        self.assertEqual(
+        expected_message = (
             "%s (%s) can not be built for pocket %s: invalid pocket due "
             "to the series status of %s." % (
                 build.title, build.id, build.pocket.name,
-                build.distro_series.name),
-            str(e))
+                build.distro_series.name))
+        self.assertEqual(expected_message, str(e))
 
     def test_dont_dispatch_security_builds(self):
         archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
@@ -193,7 +192,7 @@ class TestBinaryBuildPackageBehavior(unittest.TestCase):
             builder=builder, archive=archive,
             pocket=PackagePublishingPocket.SECURITY)
         lf = self.factory.makeLibraryFileAlias()
-        self.layer.txn.commit()
+        transaction.commit()
         build.distro_arch_series.addOrUpdateChroot(lf)
         candidate = build.queueBuild()
         behavior = candidate.required_build_behavior

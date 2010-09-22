@@ -110,7 +110,7 @@ class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):
            distroseries state.
         """
         build = self.build
-        if not self._builder.virtualized and build.is_virtualized:
+        if build.is_virtualized and not self._builder.virtualized:
             raise AssertionError(
                 "Attempt to build non-virtual item on a virtual builder.")
 
