@@ -294,11 +294,11 @@ class TestGetBzrCommitterID(TestCaseWithFactory):
         db_branch, tree = self.create_branch_and_tree(**kwargs)
         return db_branch
 
-    def test_uses_committer_string(self):
+    def test_uses_committer_id(self):
         # getBzrCommitterID uses the committer string if provided.
         bzr_id = self.factory.getUniqueString()
         committer = DirectBranchCommit(
-            self._makeBranch(), committer_string=bzr_id)
+            self._makeBranch(), committer_id=bzr_id)
         self.addCleanup(committer.unlock)
         self.assertEqual(bzr_id, committer.getBzrCommitterID())
 

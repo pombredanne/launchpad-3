@@ -57,7 +57,7 @@ class DirectBranchCommit:
     commit_builder = None
 
     def __init__(self, db_branch, committer=None, no_race_check=False,
-                 merge_parents=None, committer_string=None):
+                 merge_parents=None, committer_id=None):
         """Create context for direct commit to branch.
 
         Before constructing a `DirectBranchCommit`, set up a server that
@@ -79,9 +79,9 @@ class DirectBranchCommit:
             the branch owner.
         :param no_race_check: don't check for other commits before committing
             our changes, for use in tests.
-        :param committer_string: Optional description (typically with email
-            address) of the committer for use in bzr.  If not given, the
-            `committer`'s email address will be used instead.
+        :param committer_id: Optional identification (typically with email
+            address) of the person doing the commit, for use in bzr.  If not
+            given, the `committer`'s email address will be used instead.
         """
         self.db_branch = db_branch
 
@@ -90,7 +90,7 @@ class DirectBranchCommit:
         if committer is None:
             committer = db_branch.owner
         self.committer = committer
-        self.committer_string = committer_string
+        self.committer_id = committer_id
 
         self.no_race_check = no_race_check
 
@@ -184,8 +184,8 @@ class DirectBranchCommit:
 
     def getBzrCommitterID(self):
         """Find the committer id to pass to bzr."""
-        if self.committer_string is not None:
-            return self.committer_string
+        if self.committer_id is not None:
+            return self.committer_id
         elif self.committer.preferredemail is not None:
             return format_address_for_person(self.committer)
         else:
