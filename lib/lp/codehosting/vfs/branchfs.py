@@ -112,7 +112,7 @@ from lp.codehosting.vfs.transport import (
     TranslationError,
     )
 from lp.services.twistedsupport.xmlrpc import (
-    BlockingProxy,
+    DeferredBlockingProxy,
     trap_fault,
     )
 
@@ -191,7 +191,7 @@ def is_lock_directory(absolute_path):
 def get_ro_server():
     """Get a Launchpad internal server for scanning branches."""
     proxy = xmlrpclib.ServerProxy(config.codehosting.codehosting_endpoint)
-    codehosting_endpoint = BlockingProxy(proxy)
+    codehosting_endpoint = DeferredBlockingProxy(proxy)
     branch_transport = get_readonly_transport(
         get_transport(config.codehosting.internal_branch_by_id_root))
     return LaunchpadInternalServer(
@@ -214,7 +214,7 @@ def get_rw_server(direct_database=False):
         return DirectDatabaseLaunchpadServer('lp-internal:///', transport)
     else:
         proxy = xmlrpclib.ServerProxy(config.codehosting.codehosting_endpoint)
-        codehosting_endpoint = BlockingProxy(proxy)
+        codehosting_endpoint = DeferredBlockingProxy(proxy)
         return LaunchpadInternalServer(
             'lp-internal:///', codehosting_endpoint, transport)
 
@@ -721,7 +721,7 @@ def get_lp_server(user_id, codehosting_endpoint_url=None, branch_url=None,
 
     codehosting_client = xmlrpclib.ServerProxy(codehosting_endpoint_url)
     lp_server = LaunchpadServer(
-        BlockingProxy(codehosting_client), user_id, branch_transport,
+        DeferredBlockingProxy(codehosting_client), user_id, branch_transport,
         seen_new_branch_hook)
     return lp_server
 
