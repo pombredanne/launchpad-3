@@ -58,6 +58,11 @@ class TestDirectBranchCommit(DirectBranchCommitTestCase, TestCaseWithFactory):
 
     layer = ZopelessDatabaseLayer
 
+    def test_defaults_to_branch_owner(self):
+        # If no committer is given, DirectBranchCommits defaults to
+        # attributing changes to the branch owner.
+        self.assertEqual(self.db_branch.owner, self.committer.committer)
+
     def test_DirectBranchCommit_empty_initial_commit_noop(self):
         # An empty initial commit to a branch is a no-op.
         self.assertEqual('null:', self.tree.branch.last_revision())
