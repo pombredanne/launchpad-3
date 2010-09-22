@@ -49,13 +49,7 @@ class TestFeatureFlags(TestCase):
         return FeatureController(scope_cb), call_log
 
     def populateStore(self):
-        store = model.getFeatureStore()
-        for (scope, flag, value, priority) in testdata:
-            store.add(model.FeatureFlag(
-                scope=unicode(scope),
-                flag=unicode(flag),
-                value=value,
-                priority=priority))
+        model.addFeatureFlagRules(testdata)
 
     def test_getFlag(self):
         self.populateStore()
