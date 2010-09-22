@@ -137,13 +137,24 @@ class BuilderSlave(object):
     # should make a test double that doesn't do any XML-RPC and can be used to
     # make testing easier & tests faster.
 
-    def __init__(self, urlbase, vm_host):
-        """Initialise a Server with specific parameter to our buildfarm."""
-        self.vm_host = vm_host
-        self.urlbase = urlbase
-        rpc_url = urlappend(urlbase, "rpc")
-        self._server = xmlrpclib.Server(
+    def __init__(self, proxy, file_cache_url, vm_host):
+        """Initialise a Server with specific parameter to our buildfarm.
+
+        :param proxy: An XML-RPC proxy, implementing 'callRemote'.
+        :param file_cache_url: The URL of the file cache.
+        :param vm_host: The VM host to use when resuming.
+        """
+        self._vm_host = vm_host
+        self._file_cache_url = file_cache_url
+        self._server = proxy
+
+    @classmethod
+    def makeBlockingSlave(cls, url_base, vm_host):
+        rpc_url = urlappend(url_base, 'rpc')
+        proxy = xmlrpclib.Server(
             rpc_url, transport=TimeoutTransport(), allow_none=True)
+        file_cache_url = urlappend(url_base, 'filecache')
+        return cls(proxy, file_cache_url, vm_host)
 
     def abort(self):
         """Abort the current build."""
@@ -171,9 +182,8 @@ class BuilderSlave(object):
 
     def getFile(self, sha_sum):
         """Construct a file-like object to return the named file."""
-        filelocation = "filecache/%s" % sha_sum
-        fileurl = urlappend(self.urlbase, filelocation)
-        return urllib2.urlopen(fileurl)
+        file_url = urlappend(self._file_cache_url, sha_sum)
+        return urllib2.urlopen(file_url)
 
     def resume(self):
         """Resume a virtual builder.
@@ -188,7 +198,7 @@ class BuilderSlave(object):
         # always want to do this asynchronously, there's no need for the
         # duplication.
         resume_command = config.builddmaster.vm_resume_command % {
-            'vm_host': self.vm_host}
+            'vm_host': self._vm_host}
         resume_argv = resume_command.split()
         resume_process = subprocess.Popen(
             resume_argv, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -203,9 +213,10 @@ class BuilderSlave(object):
         :param libraryfilealias: An `ILibraryFileAlias`.
         """
         url = libraryfilealias.http_url
-        logger.debug("Asking builder on %s to ensure it has file %s "
-                     "(%s, %s)" % (self.urlbase, libraryfilealias.filename,
-                                   url, libraryfilealias.content.sha1))
+        logger.debug(
+            "Asking builder on %s to ensure it has file %s (%s, %s)" % (
+                self._file_cache_url, libraryfilealias.filename, url,
+                libraryfilealias.content.sha1))
         self.sendFileToSlave(libraryfilealias.content.sha1, url)
 
     def sendFileToSlave(self, sha1, url, username="", password=""):
@@ -444,7 +455,7 @@ class Builder(SQLBase):
         # the slave object, which is usually an XMLRPC client, with a
         # stub object that removes the need to actually create a buildd
         # slave in various states - which can be hard to create.
-        return BuilderSlave(self.url, self.vm_host)
+        return BuilderSlave.makeBlockingSlave(self.url, self.vm_host)
 
     def setSlaveForTesting(self, proxy):
         """See IBuilder."""
