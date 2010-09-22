@@ -553,6 +553,14 @@ class TestSlave(TestCase):
         result = self.triggerGoodBuild(slave, build_id)
         self.assertEqual([BuilderStatus.BUILDING, build_id], result)
 
+    def test_clean(self):
+        slave = self.getClientSlave()
+        # XXX: JonathanLange 2010-09-21: Calling clean() on the slave requires
+        # it to be in either the WAITING or ABORTED states, and both of these
+        # states are very difficult to achieve in a test environment. For the
+        # time being, we'll just assert that a clean attribute exists.
+        self.assertNotEqual(getattr(slave, 'clean', None), None)
+
     def test_echo(self):
         # Calling 'echo' contacts the server which returns the arguments we
         # gave it.

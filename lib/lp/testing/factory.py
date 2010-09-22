@@ -1918,7 +1918,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if difference_type is not (
             DistroSeriesDifferenceType.MISSING_FROM_DERIVED_SERIES):
 
-            source_pub = self.makeSourcePackagePublishingHistory(
+            self.makeSourcePackagePublishingHistory(
                 distroseries=derived_series,
                 version=versions.get('derived'),
                 sourcepackagename=source_package_name,
@@ -1927,7 +1927,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if difference_type is not (
             DistroSeriesDifferenceType.UNIQUE_TO_DERIVED_SERIES):
 
-            source_pub = self.makeSourcePackagePublishingHistory(
+            self.makeSourcePackagePublishingHistory(
                 distroseries=derived_series.parent_series,
                 version=versions.get('parent'),
                 sourcepackagename=source_package_name,
@@ -2689,10 +2689,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             date_created=self.getUniqueDate())
         naked_build = removeSecurityProxy(binary_package_build)
         naked_build.builder = builder
-        binary_package_build_job = naked_build.makeJob()
-        BuildQueue(
-            job=binary_package_build_job.job,
-            job_type=BuildFarmJobType.PACKAGEBUILD)
         return binary_package_build
 
     def makeSourcePackagePublishingHistory(self, sourcepackagename=None,
