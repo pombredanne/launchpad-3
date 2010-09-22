@@ -26,6 +26,7 @@ from canonical.testing.layers import (
 from lp.app.errors import NotFoundError
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
+from lp.buildmaster.tests.mock_slaves import WaitingSlave
 from lp.buildmaster.tests.test_packagebuild import (
     TestGetUploadMethodsMixin,
     TestHandleStatusMixin,
@@ -43,7 +44,6 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.mail.sendmail import format_address
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.model.processor import ProcessorFamily
-from lp.soyuz.tests.soyuzbuilddhelpers import WaitingSlave
 from lp.testing import (
     ANONYMOUS,
     login,
