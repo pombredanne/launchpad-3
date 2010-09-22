@@ -825,7 +825,7 @@
             template="../templates/product-portlet-obsolete-translatables.pt"/>
         <browser:page
             name="+portlet-not-using-launchpad"
-            template="../templates/product-distribution-portlet-not-using-launchpad.pt"/>
+            template="../templates/product-portlet-not-using-launchpad.pt"/>
     </browser:pages>
 
 <!-- ProjectGroup views -->
@@ -922,7 +922,7 @@
         name="+portlet-not-using-launchpad"
         for="lp.registry.interfaces.distribution.IDistribution"
         permission="zope.Public"
-        template="../templates/product-distribution-portlet-not-using-launchpad.pt"/>
+        template="../templates/distribution-portlet-not-using-launchpad.pt"/>
         layer="lp.translations.publisher.TranslationsLayer">
 
 <!-- DistroSeries -->

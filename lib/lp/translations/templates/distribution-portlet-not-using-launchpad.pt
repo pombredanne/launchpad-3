@@ -33,8 +33,13 @@
         </li>
       </ul>
     </div>
-    <div id="ubuntu-translations">
-      <!-- Branches/ubuntu packages here. -->
+    <div id="ubuntu-translations"
+      tal:define="packages context/ubuntu_packages | nothing"
+      tal:condition="packages">
+      <tal:project replace="context/displayname" /> messages are
+      tracked in: <tal:packages repeat="package packages">
+        <tal:package replace="structure package/fmt:link" /><tal:comma
+        condition="not:repeat/package/end">, </tal:comma></tal:packages>.
     </div>
     <div id="automatic-imports">
       <!-- Auto imports here -->

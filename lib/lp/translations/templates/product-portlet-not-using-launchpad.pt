@@ -1,0 +1,62 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+
+    <div id="not-translated-in-launchpad">
+      <strong>
+      <div tal:omit-tag
+        tal:condition="context/translations_usage/enumvalue:UNKNOWN">
+        Launchpad does not know where
+        <tal:project replace="context/displayname" /> translates its messages.
+      </div>
+      <div tal:omit-tag
+        tal:condition="context/translations_usage/enumvalue:EXTERNAL">
+        <tal:project replace="context/displayname" /> does not use Launchpad
+        to translate its messages.
+      </div>
+      <div tal:omit-tag
+        tal:condition="context/translations_usage/enumvalue:NOT_APPLICABLE">
+        <tal:project replace="context/displayname" /> does not translate its
+        messages. 
+      </div>
+      </strong>
+      <ul>
+        <li>Launchpad allows communities to translate projects using imports
+          or a branch.
+        <li>
+          <a class="info sprite"
+             href="/+help/getting-started-for-your-project.html"
+             target="help">
+             Getting started with translating your project in Launchpad
+          </a>
+        </li>
+        <li>
+          <a tal:replace="structure context/menu:overview/configure_translations/fmt:link"/>
+        </li>
+      </ul>
+    </div>
+      <div id="ubuntu-translations"
+        tal:define="packages context/translatable_packages | nothing"
+        tal:condition="packages">
+        <tal:project replace="context/displayname" /> messages are
+        tracked in: <tal:packages repeat="package packages">
+        <tal:package replace="structure package/fmt:link" />
+          <tal:comma condition="not:repeat/package/end">, </tal:comma>
+        </tal:packages>.
+      </div>
+
+      <div id="automatic-imports"
+        tal:define="focus view/context/development_focus"
+        tal:condition="focus/has_translation_files">
+        You can enable 
+        <a tal:attributes="
+          href focus/fmt:url:translations/+translations-settings">
+          automatic imports
+        </a> 
+        for <tal:focus replace="focus/displayname" />.
+
+      </div>
+
+</tal:root>
