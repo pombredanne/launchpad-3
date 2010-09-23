@@ -27,7 +27,7 @@ import transaction
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.launchpad.interfaces import ILaunchpadCelebrities
+from canonical.launchpad.interfaces import ILaunchpadCelebrities, IMasterStore
 from lp.code.enums import BranchLifecycleStatus, BranchType
 from lp.code.errors import BranchExists
 from lp.code.interfaces.branchcollection import IAllBranches
@@ -35,6 +35,7 @@ from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
 from lp.code.interfaces.seriessourcepackagebranch import (
     IFindOfficialBranchLinks,
     )
+from lp.code.model.branchrevision import BranchRevision
 from lp.codehosting.vfs import branch_id_to_path
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -350,4 +351,25 @@ class DistroBrancher:
         switch_branches(
             config.codehosting.mirrored_branches_root,
             'lp-internal', old_db_branch, new_db_branch)
+        # Directly copy the branch revisions from the old branch to the new branch.
+        store = IMasterStore(BranchRevision)
+        store.execute(
+            """
+            INSERT INTO BranchRevision (branch, revision, sequence)
+            SELECT %s, BranchRevision.revision, BranchRevision.sequence
+            FROM BranchRevision
+            WHERE branch = %s
+            """ % (new_db_branch.id, old_db_branch.id))
+
+        # Update the scanned details first, that way when hooking into
+        # branchChanged, it won't try to create a new scan job.
+        tip_revision = old_db_branch.getTipRevision()
+        new_db_branch.updateScannedDetails(
+            tip_revision, old_db_branch.revision_count)
+        new_db_branch.branchChanged(
+            '', tip_revision.revision_id,
+            old_db_branch.control_format,
+            old_db_branch.branch_format,
+            old_db_branch.repository_format)
+        transaction.commit()
         return new_db_branch
