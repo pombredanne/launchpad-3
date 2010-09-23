@@ -42,11 +42,7 @@
                   tal:attributes="rdf:resource context/logo/http_url" />
         <foaf:img tal:condition="context/mugshot"
                   tal:attributes="rdf:resource context/mugshot/http_url" />
-        <foaf:member tal:repeat="person context/adminmembers">
-            <lp:specifiedAt tal:attributes="rdf:resource
-                string:${person/fmt:url}/+rdf" />
-        </foaf:member>
-        <foaf:member tal:repeat="person context/approvedmembers">
+        <foaf:member tal:repeat="person context/allmembers">
             <lp:specifiedAt tal:attributes="rdf:resource
                 string:${person/fmt:url}/+rdf" />
         </foaf:member>
