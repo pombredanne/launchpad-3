@@ -359,24 +359,28 @@ def vocabulary_to_choice_edit_items(
         disabled_items = []
     items = []
     for item in vocab:
+        # Introspect to make sure we're dealing with the object itself.
+        # SimpleTerm objects have the object itself at item.value.
+        if hasattr(item, 'value'):
+            item = item.value
         if name_fn is not None:
-            name = name_fn(item.value)
+            name = name_fn(item)
         else:
-            name = item.value.title
+            name = item.title
         if value_fn is not None:
-            value = value_fn(item.value)
+            value = value_fn(item)
         else:
-            value = item.value.title
+            value = item.title
         new_item = {
             'name': name,
             'value': value,
             'style': '', 'help': '', 'disabled': False}
         for disabled_item in disabled_items:
-            if disabled_item == item.value:
+            if disabled_item == item:
                 new_item['disabled'] = True
                 break
         if css_class_prefix is not None:
-            new_item['css_class'] = css_class_prefix + item.value.name
+            new_item['css_class'] = css_class_prefix + item.name
         items.append(new_item)
 
     if as_json:
