@@ -228,6 +228,7 @@ class TestBuilderWithTrial(TrialTestCase):
             result=candidate)
         d = builder.findAndStartJob()
         def check_build_started(candidate):
+            self.assertEqual(candidate.builder, builder)
             self.assertEqual(BuildStatus.BUILDING, build.status)
         return d.addCallback(check_build_started)
 
