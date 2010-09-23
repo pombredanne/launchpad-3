@@ -1634,7 +1634,7 @@ class ITeamPublic(Interface):
             return
 
         renewal_period = person.defaultrenewalperiod
-        cannot_be_none = (
+        is_required_value_missing = (
             renewal_period is None
             and renewal_policy in [
                 TeamMembershipRenewalPolicy.AUTOMATIC,
@@ -1642,10 +1642,10 @@ class ITeamPublic(Interface):
         out_of_range = (
             renewal_period is not None
             and (renewal_period <= 0 or renewal_period > 3650))
-        if cannot_be_none or out_of_range:
+        if is_required_value_missing or out_of_range:
             raise Invalid(
-                'You must specify a default renewal period greater than 0 '
-                'and less than 3651 days.')
+                'You must specify a default renewal period '
+                'from 1 to 3650 days.')
 
     teamdescription = exported(
         Text(title=_('Team Description'), required=False, readonly=False,
