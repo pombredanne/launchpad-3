@@ -488,13 +488,14 @@ class Builder(SQLBase):
 
         # If we are building a virtual build, resume the virtual machine.
         if self.virtualized:
-            self.resumeSlaveHost()
+            d = self.resumeSlaveHost()
+        else:
+            d = defer.succeed(None)
 
-        # Do it.
-        build_queue_item.markAsBuilding(self)
-
-        d = self.current_build_behavior.dispatchBuildToSlave(
-            build_queue_item.id, logger)
+        def resume_done(ignored):
+            build_queue_item.markAsBuilding(self)
+            return self.current_build_behavior.dispatchBuildToSlave(
+                build_queue_item.id, logger)
 
         def eb_slave_failure(failure):
             failure.trap(BuildSlaveFailure)
@@ -521,6 +522,7 @@ class Builder(SQLBase):
             self.handleTimeout(logger, error_message)
             raise BuildSlaveFailure
 
+        d.addCallback(resume_done)
         d.addErrback(eb_slave_failure)
         d.addErrback(eb_cannot_fetch_file)
         d.addErrback(eb_socket_error)
