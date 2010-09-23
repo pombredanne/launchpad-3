@@ -54,11 +54,16 @@ class FeatureFlag(Storm):
 
 
 def getAllRules():
-    """Return model objects for all rules."""
+    """Return model objects for all rules.
+    
+    They're ordered by: flag name, then priority (descending).  If this list
+    is given to a user, they can then fairly easily scan through to see which
+    rule determines a particular value in given scopes.
+    """
     store = getFeatureStore()
     rs = (store
-            .find(FeatureFlag)
-            .order_by([FeatureFlag.scope, Desc(FeatureFlag.priority)]))
+        .find(FeatureFlag)
+        .order_by([FeatureFlag.flag, Desc(FeatureFlag.priority)]))
     return list(rs)
 
 

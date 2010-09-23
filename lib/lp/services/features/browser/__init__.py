@@ -29,5 +29,5 @@ class FeatureControlView(LaunchpadFormView):
     def rules_text(self):
         """Return all rules in an editable text form"""
         return '\n'.join(
-            "\t".join((r.scope, str(r.priority), r.flag, r.value))
+            "\t".join((r.flag, r.scope, str(r.priority), r.value))
             for r in getAllRules())

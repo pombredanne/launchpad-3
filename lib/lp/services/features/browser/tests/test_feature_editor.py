@@ -21,6 +21,7 @@ from lp.testing import (
 
 from lp.services.features.browser import FeatureControlView
 from lp.services.features.flags import FeatureController
+from lp.services.features.model import addFeatureFlagRules
 
 
 class TestFeatureControlPage(BrowserTestCase):
@@ -42,15 +43,15 @@ class TestFeatureControlPage(BrowserTestCase):
         self.assertThat(textarea.value, Equals(''))
 
     def test_feature_page_from_database(self):
-        model.addFeatureFlagRules([
+        addFeatureFlagRules([
             ('default', 'ui.icing', u'3.0', 100),
             ('beta_user', 'ui.icing', u'4.0', 300),
             ])
         browser = self.getFeaturePageBrowser()
         textarea = browser.getControl(name="feature_rules")
-        self.assertThat(textarea.value, Equals("""\
-default\tui.icing\t3.0\t100
-beta_user\tui.icing\t4.0\t300
+        self.assertThat(textarea.value.replace('\r', ''), Equals("""\
+ui.icing\tbeta_user\t300\t4.0
+ui.icing\tdefault\t100\t3.0\
 """))
 
     def test_feature_page_submit_changes(self):
