@@ -728,30 +728,29 @@ class Builder(SQLBase):
 
     def handleTimeout(self, logger, error_message):
         """See IBuilder."""
-        builder_should_be_failed = True
+        def fail_builder():
+            # Mark builder as 'failed'.
+            logger.warn(
+                "Disabling builder: %s -- %s" % (self.url, error_message))
+            self.failBuilder(error_message)
+
+        def got_resume_failed(failure):
+            failure.trap(CannotResumeHost)
+            logger.warn(
+                "Failed to reset builder: %s -- %s" % (
+                    self.url, str(failure.value)),
+                    exc_info=True)
+            fail_builder()
 
         if self.virtualized:
             # Virtualized/PPA builder: attempt a reset.
             logger.warn(
                 "Resetting builder: %s -- %s" % (self.url, error_message),
                 exc_info=True)
-            try:
-                self.resumeSlaveHost()
-            except CannotResumeHost, err:
-                # Failed to reset builder.
-                logger.warn(
-                    "Failed to reset builder: %s -- %s" %
-                    (self.url, str(err)), exc_info=True)
-            else:
-                # Builder was reset, do *not* mark it as failed.
-                builder_should_be_failed = False
-
-        if builder_should_be_failed:
-            # Mark builder as 'failed'.
-            logger.warn(
-                "Disabling builder: %s -- %s" % (self.url, error_message),
-                exc_info=True)
-            self.failBuilder(error_message)
+            d = self.resumeSlaveHost()
+            return d.addErrback(got_resume_failed)
+        else:
+            return defer.succeed(fail_builder())
 
     def findAndStartJob(self, buildd_slave=None):
         """See IBuilder."""
