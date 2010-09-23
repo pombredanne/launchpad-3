@@ -485,7 +485,7 @@
     <adapter
         for="lp.registry.interfaces.sourcepackage.ISourcePackage"
         provides="zope.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.SourcePackageFormatterAPI"
+        factory="lp.registry.browser.sourcepackage.SourcePackageFormatterAPI"
         name="fmt"
         />
     <browser:url
