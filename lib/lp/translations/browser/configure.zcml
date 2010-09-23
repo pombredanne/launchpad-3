@@ -928,9 +928,20 @@
         name="+portlet-not-using-launchpad"
         for="lp.registry.interfaces.distribution.IDistribution"
         permission="zope.Public"
-        template="../templates/translations-portlet-not-using-launchpad.pt"/>
-        layer="lp.translations.publisher.TranslationsLayer">
-
+        template="../templates/translations-portlet-not-using-launchpad.pt"
+        layer="lp.translations.publisher.TranslationsLayer"/>
+    <browser:page
+        name="+portlet-not-using-launchpad-extra"
+        for="lp.registry.interfaces.distribution.IDistribution"
+        permission="zope.Public"
+        template="../templates/translations-portlet-not-using-launchpad-extra.pt"
+        layer="lp.translations.publisher.TranslationsLayer"/> 
+    <browser:page
+        name="+portlet-configuration"
+        for="lp.registry.interfaces.distribution.IDistribution"
+        permission="zope.Public"
+        template="../templates/translations-portlet-configuration.pt"
+        layer="lp.translations.publisher.TranslationsLayer"/>
 <!-- DistroSeries -->
 
     <browser:defaultView
