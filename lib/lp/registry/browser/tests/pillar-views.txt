@@ -36,8 +36,8 @@ Pillars that do use launchpad applications have an involvement menu.
     True
     >>> print view.answers_usage.name
     LAUNCHPAD
-    >>> view.translations_usage.name
-    'UNKNOWN'
+    >>> print view.translations_usage.name
+    UNKNOWN
     >>> print view.blueprints_usage.name
     UNKNOWN
     >>> print view.codehosting_usage.name
@@ -152,35 +152,6 @@ indicator showing whether it has been configured or not.
     <a href="http://launchpad.dev/bread/trunk/+setbranch"...
     <span class="sprite no">...
     </table>
-
-Until other supporting code lands, the progress bar is not going to be
-shown on lpnet.
-
-    >>> # Pretend that we're on launchpad.net:
-    >>> from canonical.config import config
-    >>> from textwrap import dedent
-    >>> test_data = dedent("""
-    ...     [launchpad]
-    ...     is_lpnet: True
-    ...     """)
-    >>> config.push('test_data', test_data)
-
-The progress bar is not shown on lpnet.
-
-    >>> view = create_view(product, '+get-involved')
-    >>> rendered = view.render()
-    >>> print find_tag_by_id(rendered, 'progressbar')
-    None
-
-Neither are the indicator sprites.
-
-    >>> 'sprite' in find_tag_by_id(rendered, 'configuration_links')
-    False
-
-    >>> # Restore the previous config:
-    >>> config_data = config.pop('test_data')
-    >>> print config.launchpad.is_lpnet
-    False
 
 Project groups are supported too, but they only display the
 applications used by their products.

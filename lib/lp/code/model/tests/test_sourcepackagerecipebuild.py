@@ -309,6 +309,12 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         job = sprb.build_farm_job.getSpecificJob()
         self.assertEqual(sprb, job)
 
+    def test_getUploader(self):
+        # For ACL purposes the uploader is the build requester.
+        build = self.makeSourcePackageRecipeBuild()
+        self.assertEquals(build.requester,
+            build.getUploader(None))
+
 
 class TestAsBuildmaster(TestCaseWithFactory):
 
@@ -354,15 +360,15 @@ class TestAsBuildmaster(TestCaseWithFactory):
             queue_record.builder.setSlaveForTesting(slave)
             return build
 
-        def assertNotifyOnce(status, build):
+        def assertNotifyCount(status, build, count):
             build.handleStatus(status, None, {'filemap': {}})
-            self.assertEqual(1, len(pop_notifications()))
-        for status in ['PACKAGEFAIL', 'OK']:
-            assertNotifyOnce(status, prepare_build())
+            self.assertEqual(count, len(pop_notifications()))
+        assertNotifyCount("PACKAGEFAIL", prepare_build(), 1)
+        assertNotifyCount("OK", prepare_build(), 0)
         build = prepare_build()
         removeSecurityProxy(build).verifySuccessfulUpload = FakeMethod(
-        result=True)
-        assertNotifyOnce('OK', prepare_build())
+                result=True)
+        assertNotifyCount("OK", prepare_build(), 0)
 
 
 class MakeSPRecipeBuildMixin:
