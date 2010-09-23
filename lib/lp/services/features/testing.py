@@ -64,11 +64,17 @@ class FakeFeatureController(dict):
         pass
 
     def getFlag(self, flag_name):
+        """See `FeatureController.getFlag' for usage."""
         return self.get(flag_name)
 
     def getAllFlags(self):
+        """See `FeatureController.getAllFlags' for usage."""
         return self
 
     def setFlag(self, flag_name, value):
-        """A convenience method for setting a feature flag."""
+        """A convenience method for setting a feature flag.
+
+        :param flag_name: The name of the flag to be set.
+        :param value: The flag's new value.
+        """
         self[flag_name] = value
