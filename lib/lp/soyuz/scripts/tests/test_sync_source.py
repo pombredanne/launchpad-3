@@ -124,7 +124,7 @@ class TestSyncSource(TestCase):
         on disk.
         """
         files = {
-            'foo': {'md5sum': 'dd21ab16f950f7ac4f9c78ef1498eee1', 'size': 15}
+            'foo': {'md5sum': 'dd21ab16f950f7ac4f9c78ef1498eee1', 'size': 15},
             }
         origin = {}
         sync_source = self._getSyncSource(files, origin)
@@ -138,7 +138,7 @@ class TestSyncSource(TestCase):
     def testCheckDownloadedFilesWrongMD5(self):
         """Expect SyncSourceError to be raised due the wrong MD5."""
         files = {
-            'foo': {'md5sum': 'duhhhhh', 'size': 15}
+            'foo': {'md5sum': 'duhhhhh', 'size': 15},
             }
         origin = {}
         sync_source = self._getSyncSource(files, origin)
@@ -154,7 +154,7 @@ class TestSyncSource(TestCase):
     def testCheckDownloadedFilesWrongSize(self):
         """Expect SyncSourceError to be raised due the wrong size."""
         files = {
-            'foo': {'md5sum': 'dd21ab16f950f7ac4f9c78ef1498eee1', 'size': 10}
+            'foo': {'md5sum': 'dd21ab16f950f7ac4f9c78ef1498eee1', 'size': 10},
             }
         origin = {}
         sync_source = self._getSyncSource(files, origin)
@@ -209,7 +209,8 @@ class TestSyncSource(TestCase):
     def testFetchLibrarianFilesOK(self):
         """Probe fetchLibrarianFiles.
 
-        Seek on files published from librarian and download matching filenames.
+        Seek on files published from librarian and download matching
+        filenames.
         """
         files = {
             'netapplet_1.0.0.orig.tar.gz': {},
@@ -359,7 +360,7 @@ class TestSyncSourceScript(TestCase):
         os.unlink(expected_changesfile)
 
     def testSyncSourceRunV3(self):
-        """Try a simple sync-source.py run with a version 3 source format 
+        """Try a simple sync-source.py run with a version 3 source format
         package.
 
         It will run in a special tree prepared to cope with sync-source
@@ -386,7 +387,7 @@ class TestSyncSourceScript(TestCase):
         self.assertEqual(
             err.splitlines(),
             ['W: Could not find blacklist file on '
-             '/srv/launchpad.net/dak/sync-blacklist.txt', 
+             '/srv/launchpad.net/dak/sync-blacklist.txt',
              'INFO      - <sample1_1.0.orig-component3.tar.gz: cached>',
              'INFO      - <sample1_1.0-1.dsc: cached>',
              'INFO      - <sample1_1.0-1.debian.tar.gz: cached>',
