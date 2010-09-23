@@ -541,7 +541,7 @@ class LaunchpadRootNavigation(Navigation):
                     "The target %s does not have a linked branch." % path)
 
         except (CannotHaveLinkedBranch, InvalidNamespace,
-                InvalidProductName, NotFoundError) as e:
+                InvalidProductName, NotFoundError), e:
             error_msg = str(e)
             if error_msg == '':
                 error_msg = "Invalid branch lp:%s." % path
