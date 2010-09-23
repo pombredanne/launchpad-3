@@ -51,4 +51,3 @@ def generate_html(wadl_filename):
         ['xsltproc', stylesheet, wadl_filename],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE).communicate()[0]
-

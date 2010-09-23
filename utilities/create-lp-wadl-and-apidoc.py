@@ -71,6 +71,7 @@ def main(path_template, force=False):
 
     return 0
 
+
 def parse_args(args):
     usage = "usage: %prog [options] PATH_TEMPLATE"
     parser = optparse.OptionParser(usage=usage)
@@ -83,6 +84,7 @@ def parse_args(args):
         parser.error("A path template is required.")
 
     return options, args
+
 
 if __name__ == '__main__':
     options, args = parse_args(sys.argv)
