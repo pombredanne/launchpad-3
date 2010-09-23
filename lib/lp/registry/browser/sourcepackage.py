@@ -46,6 +46,7 @@ from canonical.launchpad import (
     _,
     helpers,
     )
+from canonical.launchpad.webapp.tales import CustomizableFormatter
 from canonical.launchpad.browser.multistep import (
     MultiStepView,
     StepView,
@@ -120,6 +121,18 @@ def get_register_upstream_url(source_package):
     query_string = urllib.urlencode(
         sorted(params.items()), doseq=True)
     return '/projects/+new?%s' % query_string
+
+
+class SourcePackageFormatterAPI(CustomizableFormatter):
+    """Adapter for ISourcePackage objects to a formatted string."""
+
+    _link_permission = 'zope.Public'
+
+    _link_summary_template = '%(displayname)s'
+
+    def _link_summary_values(self):
+        displayname = self._context.displayname
+        return {'displayname': displayname}
 
 
 class SourcePackageNavigation(GetitemNavigation, BugTargetTraversalMixin):

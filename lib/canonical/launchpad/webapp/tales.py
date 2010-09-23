@@ -1325,6 +1325,8 @@ class DistroSeriesFormatterAPI(CustomizableFormatter):
 class SourcePackageFormatterAPI(CustomizableFormatter):
     """Adapter for ISourcePackage objects to a formatted string."""
 
+    _link_permission = 'zope.Public'
+
     _link_summary_template = '%(displayname)s'
 
     def _link_summary_values(self):
