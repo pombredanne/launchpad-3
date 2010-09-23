@@ -163,3 +163,26 @@ class TestDefaultRenewalPeriodIsRequiredForSomeTeams(TestCaseWithFactory):
         # Automatic and ondemand policy cannot have a 3650 day max value.
         self.assertInvalid(
             TeamMembershipRenewalPolicy.AUTOMATIC, 3651)
+
+
+class TestDefaultMembershipPeriod(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestDefaultMembershipPeriod, self).setUp()
+        self.team = self.factory.makeTeam()
+        login_person(self.team.teamowner)
+
+    def test_default_membership_period_over_maximum(self):
+        self.assertRaises(
+            Invalid, ITeamPublic['defaultmembershipperiod'].validate, 3651)
+
+    def test_default_membership_period_none(self):
+        ITeamPublic['defaultmembershipperiod'].validate(None)
+
+    def test_default_membership_period_zero(self):
+        ITeamPublic['defaultmembershipperiod'].validate(0)
+
+    def test_default_membership_period_maximum(self):
+        ITeamPublic['defaultmembershipperiod'].validate(3650)

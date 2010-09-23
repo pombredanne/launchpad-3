@@ -1673,7 +1673,7 @@ class ITeamPublic(Interface):
                default=TeamMembershipRenewalPolicy.NONE))
 
     defaultmembershipperiod = exported(
-        Int(title=_('Subscription period'), required=False,
+        Int(title=_('Subscription period'), required=False, max=3650,
             description=_(
                 "Number of days a new subscription lasts before expiring. "
                 "You can customize the length of an individual subscription "
