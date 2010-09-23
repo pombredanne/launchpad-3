@@ -5,8 +5,9 @@
 
 import logging
 import os
-from StringIO import StringIO
 from unittest import TestLoader
+
+from twisted.trial.unittest import TestCase as TrialTestCase
 
 import transaction
 from zope.component import getUtility
@@ -15,13 +16,25 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.config import config
 from canonical.launchpad.interfaces import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.testing import LaunchpadZopelessLayer
-from lp.buildmaster.tests.mock_slaves import WaitingSlave
+from canonical.testing import (
+    LaunchpadZopelessLayer,
+    TwistedLaunchpadZopelessLayer,
+    )
+from lp.buildmaster.tests.mock_slaves import (
+    SlaveTestHelpers,
+    WaitingSlave,
+    )
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior,
     )
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    ANONYMOUS,
+    login_as,
+    logout,
+    TestCaseWithFactory,
+    )
+from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.fakemethod import FakeMethod
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue,
@@ -75,12 +88,30 @@ class MakeBehaviorMixin(object):
             behavior._getChroot = lambda: lf
         return behavior
 
+    def makeProductSeriesWithBranchForTranslation(self):
+        productseries = self.factory.makeProductSeries()
+        branch = self.factory.makeProductBranch(
+            productseries.product)
+        productseries.branch = branch
+        productseries.translations_autoimport_mode = (
+            TranslationsBranchImportMode.IMPORT_TEMPLATES)
+        return productseries
+
 
 class TestTranslationTemplatesBuildBehavior(
-        TestCaseWithFactory, MakeBehaviorMixin):
+        TrialTestCase, MakeBehaviorMixin):
     """Test `TranslationTemplatesBuildBehavior`."""
 
-    layer = LaunchpadZopelessLayer
+    layer = TwistedLaunchpadZopelessLayer
+
+    def setUp(self):
+        super(TestTranslationTemplatesBuildBehavior, self)
+        self.slave_helper = SlaveTestHelpers()
+        self.slave_helper.setUp()
+        self.addCleanup(self.slave_helper.cleanUp)
+        self.factory = LaunchpadObjectFactory()
+        login_as(ANONYMOUS)
+        self.addCleanup(logout)
 
     def _becomeBuilddMaster(self):
         """Log into the database as the buildd master."""
@@ -100,22 +131,22 @@ class TestTranslationTemplatesBuildBehavior(
         buildqueue_item = self._getBuildQueueItem(behavior)
 
         self._becomeBuilddMaster()
-        behavior.dispatchBuildToSlave(buildqueue_item, logging)
+        d = behavior.dispatchBuildToSlave(buildqueue_item, logging)
 
-        # call_log lives on the mock WaitingSlave and tells us what
-        # calls to the slave that the behaviour class made.
-        call_log = behavior._builder.slave.call_log
-        build_params = call_log[-1]
-        self.assertEqual('build', build_params[0])
-        build_type = build_params[2]
-        self.assertEqual('translation-templates', build_type)
-        branch_url = build_params[-1]['branch_url']
-        # The slave receives the public http URL for the branch.
-        self.assertEqual(
-            branch_url, 
-            behavior.buildfarmjob.branch.composePublicURL())
-
-
+        def got_dispatch((status, info)):
+            # call_log lives on the mock WaitingSlave and tells us what
+            # calls to the slave that the behaviour class made.
+            call_log = behavior._builder.slave.call_log
+            build_params = call_log[-1]
+            self.assertEqual('build', build_params[0])
+            build_type = build_params[2]
+            self.assertEqual('translation-templates', build_type)
+            branch_url = build_params[-1]['branch_url']
+            # The slave receives the public http URL for the branch.
+            self.assertEqual(
+                branch_url, 
+                behavior.buildfarmjob.branch.composePublicURL())
+        return d.addCallback(got_dispatch)
 
     def test_getChroot(self):
         # _getChroot produces the current chroot for the current Ubuntu
@@ -152,23 +183,27 @@ class TestTranslationTemplatesBuildBehavior(
         queue_item = FakeBuildQueue(behavior)
         builder = behavior._builder
 
-        behavior.dispatchBuildToSlave(queue_item, logging)
+        d = behavior.dispatchBuildToSlave(queue_item, logging)
 
-        self.assertEqual(0, queue_item.destroySelf.call_count)
-        slave_call_log = behavior._builder.slave.call_log
-        self.assertNotIn('clean', slave_call_log)
-        self.assertEqual(0, behavior._uploadTarball.call_count)
+        def got_dispatch((status, info)):
+            self.assertEqual(0, queue_item.destroySelf.call_count)
+            slave_call_log = behavior._builder.slave.call_log
+            self.assertNotIn('clean', slave_call_log)
+            self.assertEqual(0, behavior._uploadTarball.call_count)
 
-        slave_status = {
-            'builder_status': builder.slave.status()[0],
-            'build_status': builder.slave.status()[1],
-            }
-        behavior.updateSlaveStatus(builder.slave.status(), slave_status)
-        behavior.updateBuild_WAITING(queue_item, slave_status, None, logging)
+            slave_status = {
+                'builder_status': builder.slave.status()[0],
+                'build_status': builder.slave.status()[1],
+                }
+            behavior.updateSlaveStatus(builder.slave.status(), slave_status)
+            behavior.updateBuild_WAITING(
+                queue_item, slave_status, None, logging)
 
-        self.assertEqual(1, queue_item.destroySelf.call_count)
-        self.assertIn('clean', slave_call_log)
-        self.assertEqual(0, behavior._uploadTarball.call_count)
+            self.assertEqual(1, queue_item.destroySelf.call_count)
+            self.assertIn('clean', slave_call_log)
+            self.assertEqual(0, behavior._uploadTarball.call_count)
+
+        return d.addCallback(got_dispatch)
 
     def test_updateBuild_WAITING_failed(self):
         # Builds may also fail (and produce no tarball).
@@ -176,25 +211,30 @@ class TestTranslationTemplatesBuildBehavior(
         behavior._uploadTarball = FakeMethod()
         queue_item = FakeBuildQueue(behavior)
         builder = behavior._builder
-        behavior.dispatchBuildToSlave(queue_item, logging)
-        raw_status = (
-            'BuilderStatus.WAITING',
-            'BuildStatus.FAILEDTOBUILD',
-            builder.slave.status()[2],
-            )
-        status_dict = {
-            'builder_status': raw_status[0],
-            'build_status': raw_status[1],
-            }
-        behavior.updateSlaveStatus(raw_status, status_dict)
-        self.assertNotIn('filemap', status_dict)
+        d = behavior.dispatchBuildToSlave(queue_item, logging)
 
-        behavior.updateBuild_WAITING(queue_item, status_dict, None, logging)
+        def got_dispatch((status, info)):
+            raw_status = (
+                'BuilderStatus.WAITING',
+                'BuildStatus.FAILEDTOBUILD',
+                builder.slave.status()[2],
+                )
+            status_dict = {
+                'builder_status': raw_status[0],
+                'build_status': raw_status[1],
+                }
+            behavior.updateSlaveStatus(raw_status, status_dict)
+            self.assertNotIn('filemap', status_dict)
 
-        self.assertEqual(1, queue_item.destroySelf.call_count)
-        slave_call_log = behavior._builder.slave.call_log
-        self.assertIn('clean', slave_call_log)
-        self.assertEqual(0, behavior._uploadTarball.call_count)
+            behavior.updateBuild_WAITING(
+                queue_item, status_dict, None, logging)
+
+            self.assertEqual(1, queue_item.destroySelf.call_count)
+            slave_call_log = behavior._builder.slave.call_log
+            self.assertIn('clean', slave_call_log)
+            self.assertEqual(0, behavior._uploadTarball.call_count)
+
+        return d.addCallback(got_dispatch)
 
     def test_updateBuild_WAITING_notarball(self):
         # Even if the build status is "OK," absence of a tarball will
@@ -203,25 +243,67 @@ class TestTranslationTemplatesBuildBehavior(
         behavior._uploadTarball = FakeMethod()
         queue_item = FakeBuildQueue(behavior)
         builder = behavior._builder
-        behavior.dispatchBuildToSlave(queue_item, logging)
-        raw_status = (
-            'BuilderStatus.WAITING',
-            'BuildStatus.OK',
-            builder.slave.status()[2],
-            )
-        status_dict = {
-            'builder_status': raw_status[0],
-            'build_status': raw_status[1],
-            }
-        behavior.updateSlaveStatus(raw_status, status_dict)
-        self.assertFalse('filemap' in status_dict)
+        d = behavior.dispatchBuildToSlave(queue_item, logging)
 
-        behavior.updateBuild_WAITING(queue_item, status_dict, None, logging)
+        def got_dispatch((status, info)):
+            raw_status = (
+                'BuilderStatus.WAITING',
+                'BuildStatus.OK',
+                builder.slave.status()[2],
+                )
+            status_dict = {
+                'builder_status': raw_status[0],
+                'build_status': raw_status[1],
+                }
+            behavior.updateSlaveStatus(raw_status, status_dict)
+            self.assertFalse('filemap' in status_dict)
 
-        self.assertEqual(1, queue_item.destroySelf.call_count)
-        slave_call_log = behavior._builder.slave.call_log
-        self.assertIn('clean', slave_call_log)
-        self.assertEqual(0, behavior._uploadTarball.call_count)
+            behavior.updateBuild_WAITING(
+                queue_item, status_dict, None, logging)
+
+            self.assertEqual(1, queue_item.destroySelf.call_count)
+            slave_call_log = behavior._builder.slave.call_log
+            self.assertIn('clean', slave_call_log)
+            self.assertEqual(0, behavior._uploadTarball.call_count)
+
+        return d.addCallback(got_dispatch)
+
+    def test_updateBuild_WAITING_uploads(self):
+        productseries = self.makeProductSeriesWithBranchForTranslation()
+        branch = productseries.branch
+        behavior = self.makeBehavior(branch=branch)
+        queue_item = FakeBuildQueue(behavior)
+        builder = behavior._builder
+
+        d = behavior.dispatchBuildToSlave(queue_item, logging)
+
+        def got_dispatch((status, info)):
+            dummy_tar = os.path.join(
+                os.path.dirname(__file__),'dummy_templates.tar.gz')
+            builder.slave.getFile = lambda sum: open(dummy_tar)
+            builder.slave.filemap = {
+                'translation-templates.tar.gz': 'foo'}
+            slave_status = {
+                'builder_status': builder.slave.status()[0],
+                'build_status': builder.slave.status()[1],
+                'build_id': builder.slave.status()[2]
+                }
+            behavior.updateSlaveStatus(builder.slave.status(), slave_status)
+            behavior.updateBuild_WAITING(
+                queue_item, slave_status, None, logging)
+
+            entries = getUtility(
+                ITranslationImportQueue).getAllEntries(target=productseries)
+            expected_templates = [
+                'po/domain.pot',
+                'po-other/other.pot',
+                'po-thethird/templ3.pot'
+                ]
+            list1 = sorted(expected_templates)
+            list2 = sorted([entry.path for entry in entries])
+            self.assertEqual(list1, list2)
+
+        return d.addCallback(got_dispatch)
 
 
 class TestTTBuildBehaviorTranslationsQueue(
@@ -234,14 +316,10 @@ class TestTTBuildBehaviorTranslationsQueue(
         super(TestTTBuildBehaviorTranslationsQueue, self).setUp()
 
         self.queue = getUtility(ITranslationImportQueue)
-        self.productseries = self.factory.makeProductSeries()
-        self.branch = self.factory.makeProductBranch(
-            self.productseries.product)
-        self.productseries.branch = self.branch
-        self.productseries.translations_autoimport_mode = (
-            TranslationsBranchImportMode.IMPORT_TEMPLATES)
         self.dummy_tar = os.path.join(
             os.path.dirname(__file__),'dummy_templates.tar.gz')
+        self.productseries = self.makeProductSeriesWithBranchForTranslation()
+        self.branch = self.productseries.branch
 
     def test_uploadTarball(self):
         # Files from the tarball end up in the import queue.
@@ -278,33 +356,6 @@ class TestTTBuildBehaviorTranslationsQueue(
 
         entries = self.queue.getAllEntries(target=self.productseries)
         self.assertEqual(self.branch.owner, entries[0].importer)
-
-    def test_updateBuild_WAITING_uploads(self):
-        behavior = self.makeBehavior(branch=self.branch)
-        queue_item = FakeBuildQueue(behavior)
-        builder = behavior._builder
-
-        behavior.dispatchBuildToSlave(queue_item, logging)
-
-        builder.slave.getFile = lambda sum: open(self.dummy_tar)
-        builder.slave.filemap = {
-            'translation-templates.tar.gz': 'foo'}
-        slave_status = {
-            'builder_status': builder.slave.status()[0],
-            'build_status': builder.slave.status()[1],
-            'build_id': builder.slave.status()[2]
-            }
-        behavior.updateSlaveStatus(builder.slave.status(), slave_status)
-        behavior.updateBuild_WAITING(queue_item, slave_status, None, logging)
-
-        entries = self.queue.getAllEntries(target=self.productseries)
-        expected_templates = [
-            'po/domain.pot',
-            'po-other/other.pot',
-            'po-thethird/templ3.pot'
-            ]
-        self.assertContentEqual(
-            expected_templates, [entry.path for entry in entries])
 
 
 def test_suite():
