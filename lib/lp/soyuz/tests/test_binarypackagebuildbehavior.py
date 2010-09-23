@@ -57,15 +57,16 @@ class TestBinaryBuildPackageBehavior(trialtest.TestCase):
         self.layer.switchDbUser('testadmin')
 
     def assertExpectedInteraction(self, ignored, call_log, builder, build,
-                                  chroot, archive, archive_purpose, component,
-                                  extra_urls=None, filemap_names=None):
+                                  chroot, archive, archive_purpose,
+                                  component=None, extra_urls=None,
+                                  filemap_names=None):
         expected = self.makeExpectedInteraction(
             builder, build, chroot, archive, archive_purpose, component,
             extra_urls, filemap_names)
         self.assertEqual(call_log, expected)
 
     def makeExpectedInteraction(self, builder, build, chroot, archive,
-                                archive_purpose, component,
+                                archive_purpose, component=None,
                                 extra_urls=None, filemap_names=None):
         """Build the log of calls that we expect to be made to the slave.
 
@@ -88,6 +89,8 @@ class TestBinaryBuildPackageBehavior(trialtest.TestCase):
             build, build.distro_arch_series,
             build.source_package_release.name)
         arch_indep = build.distro_arch_series.isNominatedArchIndep
+        if component is None:
+            component = build.current_component.name
         if filemap_names is None:
             filemap_names = []
         if extra_urls is None:
@@ -155,11 +158,15 @@ class TestBinaryBuildPackageBehavior(trialtest.TestCase):
         build.distro_arch_series.addOrUpdateChroot(lf)
         candidate = build.queueBuild()
         d = self.startBuild(builder, candidate)
-        d.addCallback(
-            self.assertExpectedInteraction, slave.call_log,
-            builder, build, lf, archive, ArchivePurpose.PRIMARY, 'universe')
-        return d
-
+        def check_build(ignored):
+            # We expect the first call to the slave to be a resume call,
+            # followed by the rest of the usual calls we expect.
+            expected_resume_call = slave.call_log.pop(0)
+            self.assertEqual('resume', expected_resume_call)
+            self.assertExpectedInteraction(
+                ignored, slave.call_log,
+                builder, build, lf, archive, ArchivePurpose.PPA)
+        return d.addCallback(check_build)
 
     def test_partner_dispatch_no_publishing_history(self):
         archive = self.factory.makeArchive(
@@ -176,8 +183,7 @@ class TestBinaryBuildPackageBehavior(trialtest.TestCase):
         d = self.startBuild(builder, candidate)
         d.addCallback(
             self.assertExpectedInteraction, slave.call_log,
-            builder, build, lf, archive,
-            ArchivePurpose.PARTNER, build.current_component.name)
+            builder, build, lf, archive, ArchivePurpose.PARTNER)
         return d
 
     def test_dont_dispatch_release_builds(self):
