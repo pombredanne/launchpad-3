@@ -14,6 +14,7 @@ __all__ = [
     'AbortedSlave',
     'WaitingSlave',
     'AbortingSlave',
+    'SlaveTestHelpers',
     ]
 
 import fixtures
