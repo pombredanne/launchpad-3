@@ -17,7 +17,6 @@ import httplib
 import logging
 import os
 import socket
-import subprocess
 import tempfile
 import urllib2
 import xmlrpclib
@@ -34,6 +33,7 @@ from storm.expr import (
     Count,
     Sum,
     )
+from twisted.internet import defer
 from zope.component import getUtility
 from zope.interface import implements
 
@@ -80,6 +80,7 @@ from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from lp.services.osutils import until_no_eintr
 from lp.services.propertycache import cachedproperty
+from lp.services.twistedsupport.processmonitor import ProcessWithTimeout
 from lp.services.twistedsupport.xmlrpc import BlockingProxy
 # XXX Michael Nelson 2010-01-13 bug=491330
 # These dependencies on soyuz will be removed when getBuildRecords()
@@ -179,35 +180,38 @@ class BuilderSlave(object):
         return self._server.callRemote('status')
 
     def ensurepresent(self, sha1sum, url, username, password):
+        # XXX: Nothing external calls this. Make it private.
         """Attempt to ensure the given file is present."""
-        return self._server.callRemote(
-            'ensurepresent', sha1sum, url, username, password)
+        return defer.succeed(
+            self._server.callRemote(
+                'ensurepresent', sha1sum, url, username, password))
 
     def getFile(self, sha_sum):
         """Construct a file-like object to return the named file."""
         file_url = urlappend(self._file_cache_url, sha_sum)
         return urllib2.urlopen(file_url)
 
-    def resume(self):
-        """Resume a virtual builder.
+    def resume(self, clock=None):
+        """Resume the builder in an asynchronous fashion.
 
-        It uses the configuration command-line (replacing 'vm_host') and
-        return its output.
+        We use the builddmaster configuration 'socket_timeout' as
+        the process timeout.
 
-        :return: a (stdout, stderr, subprocess exitcode) triple
+        :param clock: An optional twisted.internet.task.Clock to override
+                      the default clock.  For use in tests.
+
+        :return: a Deferred
         """
-        # XXX: This executes the vm_resume_command
-        # synchronously. RecordingSlave does so asynchronously. Since we
-        # always want to do this asynchronously, there's no need for the
-        # duplication.
         resume_command = config.builddmaster.vm_resume_command % {
-            'vm_host': self._vm_host}
-        resume_argv = resume_command.split()
-        resume_process = subprocess.Popen(
-            resume_argv, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        stdout, stderr = resume_process.communicate()
+            'vm_host': self.vm_host}
+        # Twisted API requires string but the configuration provides unicode.
+        resume_argv = [str(term) for term in resume_command.split()]
 
-        return (stdout, stderr, resume_process.returncode)
+        d = defer.Deferred()
+        p = ProcessWithTimeout(
+            d, config.builddmaster.socket_timeout, clock=clock)
+        p.spawnProcess(resume_argv[0], tuple(resume_argv))
+        return d
 
     def cacheFile(self, logger, libraryfilealias):
         """Make sure that the file at 'libraryfilealias' is on the slave.
@@ -220,13 +224,15 @@ class BuilderSlave(object):
             "Asking builder on %s to ensure it has file %s (%s, %s)" % (
                 self._file_cache_url, libraryfilealias.filename, url,
                 libraryfilealias.content.sha1))
-        self.sendFileToSlave(libraryfilealias.content.sha1, url)
+        return self.sendFileToSlave(libraryfilealias.content.sha1, url)
 
     def sendFileToSlave(self, sha1, url, username="", password=""):
         """Helper to send the file at 'url' with 'sha1' to this builder."""
-        present, info = self.ensurepresent(sha1, url, username, password)
-        if not present:
-            raise CannotFetchFile(url, info)
+        d = self.ensurepresent(sha1, url, username, password)
+        def check_present((present, info)):
+            if not present:
+                raise CannotFetchFile(url, info)
+        return d.addCallback(check_present)
 
     def build(self, buildid, builder_type, chroot_sha1, filemap, args):
         """Build a thing on this build slave.
@@ -483,14 +489,19 @@ class Builder(SQLBase):
 
         # Do it.
         build_queue_item.markAsBuilding(self)
-        try:
-            self.current_build_behavior.dispatchBuildToSlave(
-                build_queue_item.id, logger)
-        except BuildSlaveFailure, e:
-            logger.debug("Disabling builder: %s" % self.url, exc_info=1)
+
+        d = self.current_build_behavior.dispatchBuildToSlave(
+            build_queue_item.id, logger)
+
+        def eb_slave_failure(failure):
+            failure.trap(BuildSlaveFailure)
+            e = failure.value
             self.failBuilder(
                 "Exception (%s) when setting up to new job" % (e,))
-        except CannotFetchFile, e:
+
+        def eb_cannot_fetch_file(failure):
+            failure.trap(CannotFetchFile)
+            e = failure.value
             message = """Slave '%s' (%s) was unable to fetch file.
             ****** URL ********
             %s
@@ -499,10 +510,18 @@ class Builder(SQLBase):
             *******************
             """ % (self.name, self.url, e.file_url, e.error_information)
             raise BuildDaemonError(message)
-        except socket.error, e:
+
+        def eb_socket_error(failure):
+            failure.trap(socket.error)
+            e = failure.value
             error_message = "Exception (%s) when setting up new job" % (e,)
             self.handleTimeout(logger, error_message)
             raise BuildSlaveFailure
+
+        d.addErrback(eb_slave_failure)
+        d.addErrback(eb_cannot_fetch_file)
+        d.addErrback(eb_socket_error)
+        return d
 
     def failBuilder(self, reason):
         """See IBuilder"""
@@ -696,10 +715,13 @@ class Builder(SQLBase):
         :param candidate: The job to dispatch.
         """
         logger = self._getSlaveScannerLogger()
-        try:
-            self.startBuild(candidate, logger)
-        except (BuildSlaveFailure, CannotBuild, BuildBehaviorMismatch), err:
+        d = self.startBuild(candidate, logger)
+        def warn_on_error(failure):
+            failure.trap(
+                BuildSlaveFailure, CannotBuild, BuildBehaviorMismatch)
+            err = failure.value
             logger.warn('Could not build: %s' % err)
+        return d.addErrback(warn_on_error)
 
     def handleTimeout(self, logger, error_message):
         """See IBuilder."""
@@ -740,8 +762,8 @@ class Builder(SQLBase):
         if buildd_slave is not None:
             self.setSlaveForTesting(buildd_slave)
 
-        self._dispatchBuildCandidate(candidate)
-        return candidate
+        d = self._dispatchBuildCandidate(candidate)
+        return d.addCallback(lambda ignored: candidate)
 
     def getBuildQueue(self):
         """See `IBuilder`."""

@@ -19,6 +19,8 @@ __all__ = [
 from StringIO import StringIO
 import xmlrpclib
 
+from twisted.internet import defer
+
 from lp.buildmaster.interfaces.builder import CannotFetchFile
 from lp.buildmaster.model.builder import (
     rescueBuilderIfLost,
@@ -99,7 +101,7 @@ class OkSlave:
 
     def ensurepresent(self, sha1, url, user=None, password=None):
         self.call_log.append(('ensurepresent', url, user, password))
-        return True, None
+        return defer.succeed((True, None))
 
     def build(self, buildid, buildtype, chroot, filemap, args):
         self.call_log.append(
@@ -121,10 +123,17 @@ class OkSlave:
         self.call_log.append('info')
         return ('1.0', self.arch_tag, 'debian')
 
+    def resume(self):
+        self.call_log.append('resume')
+        return ("", "", 0)
+
     def sendFileToSlave(self, sha1, url, username="", password=""):
-        present, info = self.ensurepresent(sha1, url, username, password)
-        if not present:
-            raise CannotFetchFile(url, info)
+        self.call_log.append('sendFileToSlave')
+        d = self.ensurepresent(sha1, url, username, password)
+        def check_present((present, info)):
+            if not present:
+                raise CannotFetchFile(url, info)
+        return d.addCallback(check_present)
 
     def cacheFile(self, logger, libraryfilealias):
         return self.sendFileToSlave(
