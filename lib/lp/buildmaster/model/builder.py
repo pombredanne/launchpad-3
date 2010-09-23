@@ -139,7 +139,7 @@ class BuilderSlave(object):
     # make testing easier & tests faster.
 
     def __init__(self, proxy, file_cache_url, vm_host):
-        """Initialise a Server with specific parameter to our buildfarm.
+        """Initialize a BuilderSlave.
 
         :param proxy: An XML-RPC proxy, implementing 'callRemote'. It must
             support passing and returning None objects.
