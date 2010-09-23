@@ -647,7 +647,7 @@
             />
         <browser:page
             name="+portlet-not-using-launchpad"
-            template="../templates/series-portlet-not-using-launchpad.pt"/>
+            template="../templates/translations-portlet-not-using-launchpad.pt"/>
     </browser:pages>
     <browser:pages
         for="lp.registry.interfaces.productseries.IProductSeries"
@@ -825,7 +825,7 @@
             template="../templates/product-portlet-obsolete-translatables.pt"/>
         <browser:page
             name="+portlet-not-using-launchpad"
-            template="../templates/product-portlet-not-using-launchpad.pt"/>
+            template="../templates/translations-portlet-not-using-launchpad.pt"/>
     </browser:pages>
 
 <!-- ProjectGroup views -->
@@ -922,7 +922,7 @@
         name="+portlet-not-using-launchpad"
         for="lp.registry.interfaces.distribution.IDistribution"
         permission="zope.Public"
-        template="../templates/distribution-portlet-not-using-launchpad.pt"/>
+        template="../templates/translations-portlet-not-using-launchpad.pt"/>
         layer="lp.translations.publisher.TranslationsLayer">
 
 <!-- DistroSeries -->
@@ -954,7 +954,7 @@
             template="../templates/distroseries-langchart.pt"/>
         <browser:page
             name="+portlet-not-using-launchpad"
-            template="../templates/series-portlet-not-using-launchpad.pt"/>
+            template="../templates/translations-portlet-not-using-launchpad.pt"/>
     </browser:pages>
     <browser:page
         for="lp.registry.interfaces.distroseries.IDistroSeries"
