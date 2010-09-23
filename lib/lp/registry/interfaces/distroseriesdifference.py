@@ -17,10 +17,12 @@ from lazr.restful.declarations import (
     export_as_webservice_entry,
     export_write_operation,
     exported,
+    operation_parameters,
     )
 from lazr.restful.fields import Reference
 from zope.interface import Interface
 from zope.schema import (
+    Bool,
     Choice,
     Int,
     TextLine,
@@ -135,6 +137,8 @@ class IDistroSeriesDifferenceEdit(Interface):
     def addComment(owner, comment):
         """Add a comment on this difference."""
 
+    @operation_parameters(
+        all=Bool(title=_("All"), required=False))
     @export_write_operation()
     def blacklist(all=False):
         """Blacklist this version or all versions of this source package.
