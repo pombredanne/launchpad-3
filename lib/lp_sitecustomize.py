@@ -8,6 +8,8 @@ import os
 import warnings
 import logging
 
+from twisted.internet.defer import Deferred
+
 from bzrlib.branch import Branch
 from lp.services.log.nullhandler import NullHandler
 from lp.services.mime import customizeMimetypes
@@ -45,6 +47,7 @@ def main():
     os.environ['STORM_CEXTENSIONS'] = '1'
     customizeMimetypes()
     dont_wrap_class_and_subclasses(Branch)
+    checker.BasicTypes.update({Deferred: checker.NoProxy})
     silence_warnings()
     silence_bzr_logger()
 
