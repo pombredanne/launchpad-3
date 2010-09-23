@@ -115,7 +115,11 @@ class TimeoutTransport(xmlrpclib.Transport):
 
 
 class BuilderSlave(object):
-    """Add in a few useful methods for the XMLRPC slave."""
+    """Add in a few useful methods for the XMLRPC slave.
+
+    :ivar url: The URL of the actual builder. The XML-RPC resource and
+        the filecache live beneath this.
+    """
 
     # WARNING: If you change the API for this, you should also change the APIs
     # of the mocks in soyuzbuilderhelpers to match. Otherwise, you will have
@@ -139,25 +143,25 @@ class BuilderSlave(object):
     # should make a test double that doesn't do any XML-RPC and can be used to
     # make testing easier & tests faster.
 
-    def __init__(self, proxy, file_cache_url, vm_host):
+    def __init__(self, proxy, builder_url, vm_host):
         """Initialize a BuilderSlave.
 
         :param proxy: An XML-RPC proxy, implementing 'callRemote'. It must
             support passing and returning None objects.
-        :param file_cache_url: The URL of the file cache.
+        :param builder_url: The URL of the builder.
         :param vm_host: The VM host to use when resuming.
         """
+        self.url = builder_url
         self._vm_host = vm_host
-        self._file_cache_url = file_cache_url
+        self._file_cache_url = urlappend(builder_url, 'filecache')
         self._server = proxy
 
     @classmethod
-    def makeBlockingSlave(cls, url_base, vm_host):
-        rpc_url = urlappend(url_base, 'rpc')
+    def makeBlockingSlave(cls, builder_url, vm_host):
+        rpc_url = urlappend(builder_url, 'rpc')
         server_proxy = xmlrpclib.ServerProxy(
             rpc_url, transport=TimeoutTransport(), allow_none=True)
-        file_cache_url = urlappend(url_base, 'filecache')
-        return cls(BlockingProxy(server_proxy), file_cache_url, vm_host)
+        return cls(BlockingProxy(server_proxy), builder_url, vm_host)
 
     def abort(self):
         """Abort the current build."""

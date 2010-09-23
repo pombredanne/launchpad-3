@@ -43,16 +43,6 @@ behavior is dealing with binary packages.
     ...     builder.current_build_behavior, BinaryPackageBuildBehavior)
     True
 
-A builder has an XML-RPC proxy in the 'slave' attribute, which allows
-us to easily call methods on the slave machines.
-
-    >>> s = builder.slave
-
-The base URL of the proxy matches the builder's URL.
-
-    >>> s.urlbase == builder.url
-    True
-
 
 BuilderSet
 ==========

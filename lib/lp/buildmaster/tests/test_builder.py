@@ -160,6 +160,13 @@ class TestBuilder(TestCaseWithFactory):
     # XXX: Need a test for successful resuming here but that can be done
     # after Deferreds are implemented in the resume method.
 
+    def test_slave(self):
+        # Builder.slave is a BuilderSlave that points at the actual Builder.
+        # The Builder is only ever used in scripts that run outside of the
+        # security context.
+        builder = removeSecurityProxy(self.factory.makeBuilder())
+        self.assertEqual(builder.url, builder.slave.url)
+
 
 class Test_rescueBuilderIfLost(TestCaseWithFactory):
     """Tests for lp.buildmaster.model.builder.rescueBuilderIfLost."""
