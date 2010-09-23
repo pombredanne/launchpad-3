@@ -165,11 +165,15 @@ class WaitingSlave(OkSlave):
     """A mock slave that looks like it's currently waiting."""
 
     def __init__(self, state='BuildStatus.OK', dependencies=None,
-                 build_id='1-1'):
+                 build_id='1-1', filemap=None):
         super(WaitingSlave, self).__init__()
         self.state = state
         self.dependencies = dependencies
         self.build_id = build_id
+        if filemap is None:
+            self.filemap = {}
+        else:
+            self.filemap = filemap
 
         # By default, the slave only has a buildlog, but callsites
         # can update this list as needed.
@@ -177,8 +181,9 @@ class WaitingSlave(OkSlave):
 
     def status(self):
         self.call_log.append('status')
-        return ('BuilderStatus.WAITING', self.state, self.build_id, {},
-                self.dependencies)
+        return (
+            'BuilderStatus.WAITING', self.state, self.build_id, self.filemap,
+            self.dependencies)
 
     def getFile(self, hash):
         self.call_log.append('getFile')
