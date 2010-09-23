@@ -468,7 +468,7 @@ class ProductInvolvementView(PillarView):
         # Add the branch configuration in separately.
         set_branch = series_menu['set_branch']
         set_branch.text = 'Configure project branch'
-        set_branch.summary = "Specify the location of this projects code."
+        set_branch.summary = "Specify the location of this project's code."
         config_list.append(
             dict(link=set_branch,
                  configured=config_statuses['configure_codehosting']))
