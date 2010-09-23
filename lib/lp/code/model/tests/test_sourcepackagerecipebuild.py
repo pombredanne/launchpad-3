@@ -291,6 +291,17 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         build = self.factory.makeSourcePackageRecipeBuild()
         build.destroySelf()
 
+    def test_destroySelf_clears_release(self):
+        # Destroying a sourcepackagerecipebuild removes references to it from
+        # its releases.
+        build = self.factory.makeSourcePackageRecipeBuild()
+        release = self.factory.makeSourcePackageRelease(
+            source_package_recipe_build=build)
+        self.assertEqual(build, release.source_package_recipe_build)
+        build.destroySelf()
+        self.assertIs(None, release.source_package_recipe_build)
+        transaction.commit()
+
     def test_cancelBuild(self):
         # ISourcePackageRecipeBuild should make sure to remove jobs and build
         # queue entries and then invalidate itself.
