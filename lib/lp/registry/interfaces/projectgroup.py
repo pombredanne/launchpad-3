@@ -328,6 +328,8 @@ class IProjectGroupPublic(
     def getSeries(series_name):
         """Return a ProjectGroupSeries object with name `series_name`."""
 
+    product_milestones = Attribute('all the milestones for all the products.')
+
 
 class IProjectGroup(IProjectGroupPublic,
                     IProjectGroupModerate,
