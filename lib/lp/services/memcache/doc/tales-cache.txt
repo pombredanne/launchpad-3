@@ -349,7 +349,6 @@ Disabling
 Memcache in templates can be disabled entirely by setting the memcache flag to
 'disabled'.
 
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> from lp.services.features.testing import FeatureFixture
     >>> fixture = FeatureFixture({'memcache': 'disabled'})
     >>> fixture.setUp()
