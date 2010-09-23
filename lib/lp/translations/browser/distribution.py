@@ -102,11 +102,11 @@ class DistributionView(LaunchpadView):
     def show_page_content(self):
         """Whether the main content of the page should be shown."""
         return (service_uses_launchpad(self.context.translations_usage) or
-               self.is_translations_admin) 
+               self.is_translations_admin)
 
     def can_configure_translations(self):
         """Whether or not the user can configure translations."""
-        return check_permission("launchpad.Edit", self.context) 
+        return check_permission("launchpad.Edit", self.context)
 
     def is_translations_admin(self):
         """Whether or not the user is a translations admin."""

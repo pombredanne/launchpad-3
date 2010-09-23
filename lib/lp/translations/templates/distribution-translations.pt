@@ -22,7 +22,7 @@
       </a>
       <div></div><!-- to clear-up all floats -->
     </div>
-    
+
     <tal:not-using-launchpad
       condition="not: context/translations_usage/enumvalue:LAUNCHPAD">
       <tal:message
@@ -31,8 +31,8 @@
         condition="view/can_configure_translations"
         replace="structure context/@@+portlet-configuration"/>
     </tal:not-using-launchpad>
-    
-    <div tal:omit-tag tal:condition="view/show_page_content">      
+
+    <div tal:omit-tag tal:condition="view/show_page_content">
     <tal:translation_focus condition="view/translation_focus"
                            define="target view/translation_focus">
 

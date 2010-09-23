@@ -351,7 +351,7 @@ class SourcePackageChangeUpstreamStepTwo(ReturnToReferrerMixin, StepView):
     next_url = None
 
     main_action_label = u'Change'
-    
+
     def main_action(self, data):
         productseries = data['productseries']
         # Because it is part of a multistep view, the next_url can't

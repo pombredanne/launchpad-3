@@ -19,7 +19,7 @@
       <div tal:omit-tag
         tal:condition="context/translations_usage/enumvalue:NOT_APPLICABLE">
         <tal:project replace="context/displayname" /> does not translate its
-        messages. 
+        messages.
       </div>
       </strong>
     </div>

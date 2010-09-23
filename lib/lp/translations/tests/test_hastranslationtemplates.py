@@ -31,7 +31,7 @@ class HasTranslationTemplatesTestMixin:
         """Attaches a pofile to appropriate container."""
         raise NotImplementedError(
             'This must be provided by an executable test.')
-    
+
     def test_implements_interface(self):
         # Make sure container implements IHasTranslationTemplates.
         verifyObject(IHasTranslationTemplates, self.container)
