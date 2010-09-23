@@ -20,6 +20,7 @@ from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.launchpad.webapp.url import urlappend
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.errors import GoneError
+from lp.code.errors import NoLinkedBranch
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from lp.registry.interfaces.person import (
     IPersonSet,
@@ -81,6 +82,11 @@ class TraversalMixin:
         self.assertIs(redirection.target, DEFAULT_REFERER)
         self._validateNotificationContext(
             redirection.request, notification, level)
+
+    def assertNoLinkedBranch(self, path, use_default_referer=True):
+        self.assertRaises(
+            NoLinkedBranch, self.traverse, path,
+            use_default_referer=use_default_referer)
 
     def assertNotFound(self, path, use_default_referer=True):
         self.assertRaises(
@@ -196,6 +202,20 @@ class TestBranchTraversal(TestCaseWithFactory, TraversalMixin):
         # in a 404 error. This happens if the user hacks the URL rather than
         # navigating via a link
         self.assertNotFound('non-existent', use_default_referer=False)
+
+    def test_private_without_referer(self):
+        # If the development focus of a product is private and there is no
+        # referer, we will get a 404 error. This happens if the user hacks
+        # the URL rather than navigating via a link
+        branch = self.factory.makeProductBranch()
+        naked_product = removeSecurityProxy(branch.product)
+        ICanHasLinkedBranch(naked_product).setBranch(branch)
+        removeSecurityProxy(branch).private = True
+
+        any_user = self.factory.makePerson()
+        login_person(any_user)
+        self.assertNoLinkedBranch(
+            naked_product.name, use_default_referer=False)
 
     def test_product_without_dev_focus(self):
         # Traversing to a product without a development focus displays a
