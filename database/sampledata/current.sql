@@ -813,6 +813,15 @@ SET search_path = public, pg_catalog;
 
 
 
+
+
+
+
+
+
+
+
+
 SET SESSION AUTHORIZATION DEFAULT;
 
 ALTER TABLE account DISABLE TRIGGER ALL;
@@ -3795,6 +3804,27 @@ INSERT INTO bugtrackeralias (id, bugtracker, base_url) VALUES (4, 5, 'http://www
 ALTER TABLE bugtrackeralias ENABLE TRIGGER ALL;
 
 
+ALTER TABLE bugtrackercomponentgroup DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE bugtrackercomponentgroup ENABLE TRIGGER ALL;
+
+
+ALTER TABLE distributionsourcepackage DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE distributionsourcepackage ENABLE TRIGGER ALL;
+
+
+ALTER TABLE bugtrackercomponent DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE bugtrackercomponent ENABLE TRIGGER ALL;
+
+
 ALTER TABLE bugtrackerperson DISABLE TRIGGER ALL;
 
 
@@ -4018,13 +4048,6 @@ INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_
 
 
 ALTER TABLE distributionmirror ENABLE TRIGGER ALL;
-
-
-ALTER TABLE distributionsourcepackage DISABLE TRIGGER ALL;
-
-
-
-ALTER TABLE distributionsourcepackage ENABLE TRIGGER ALL;
 
 
 ALTER TABLE distributionsourcepackagecache DISABLE TRIGGER ALL;
@@ -4575,6 +4598,13 @@ ALTER TABLE hwtestanswerdevice DISABLE TRIGGER ALL;
 
 
 ALTER TABLE hwtestanswerdevice ENABLE TRIGGER ALL;
+
+
+ALTER TABLE incrementaldiff DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE incrementaldiff ENABLE TRIGGER ALL;
 
 
 ALTER TABLE ircid DISABLE TRIGGER ALL;
