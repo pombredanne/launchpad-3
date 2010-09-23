@@ -155,6 +155,7 @@ from lp.bugs.browser.bugtask import (
 from lp.bugs.interfaces.bugtask import RESOLVED_BUGTASK_STATUSES
 from lp.code.browser.branchref import BranchRef
 from lp.code.browser.sourcepackagerecipelisting import HasRecipesMenuMixin
+from lp.registry.browser import BaseRdfView
 from lp.registry.browser.announcement import HasAnnouncementsView
 from lp.registry.browser.branding import BrandingChangeView
 from lp.registry.browser.distribution import UsesLaunchpadMixin
@@ -1405,7 +1406,7 @@ class ProductConfigureBase(ReturnToReferrerMixin, LaunchpadEditFormView):
     def setUpFields(self):
         super(ProductConfigureBase, self).setUpFields()
         if self.usage_fieldname is not None:
-            # The usage fields are shared among pillars.  But when referring to
+            # The usage fields are shared among pillars. But when referring to
             # an individual object in Launchpad it is better to call it by its
             # real name, i.e. 'project' instead of 'pillar'.
             usage_field = self.form_fields.get(self.usage_fieldname)
@@ -1729,31 +1730,15 @@ class ProductSeriesView(ProductView):
     page_title = label
 
 
-class ProductRdfView:
+class ProductRdfView(BaseRdfView):
     """A view that sets its mime-type to application/rdf+xml"""
 
     template = ViewPageTemplateFile(
         '../templates/product-rdf.pt')
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-
-    def __call__(self):
-        """Render RDF output, and return it as a string encoded in UTF-8.
-
-        Render the page template to produce RDF output.
-        The return value is string data encoded in UTF-8.
-
-        As a side-effect, HTTP headers are set for the mime type
-        and filename for download."""
-        self.request.response.setHeader('Content-Type', 'application/rdf+xml')
-        self.request.response.setHeader('Content-Disposition',
-                                        'attachment; filename=%s.rdf' %
-                                        self.context.name)
-        unicodedata = self.template()
-        encodeddata = unicodedata.encode('utf-8')
-        return encodeddata
+    @property
+    def filename(self):
+        return self.context.name
 
 
 class Icon:

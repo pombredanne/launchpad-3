@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'BaseRDFView',
     'get_status_counts',
     'MilestoneOverlayMixin',
     'RegistryEditFormView',
@@ -256,3 +257,30 @@ class RegistryEditFormView(LaunchpadEditFormView):
     @action("Change", name='change')
     def change_action(self, action, data):
         self.updateContextFromData(data)
+
+
+class BaseRdfView(object):
+    """A view that sets its mime-type to application/rdf+xml"""
+
+    template = None
+    filename = None
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+
+    def __call__(self):
+        """Render RDF output, and return it as a string encoded in UTF-8.
+
+        Render the page template to produce RDF output.
+        The return value is string data encoded in UTF-8.
+
+        As a side-effect, HTTP headers are set for the mime type
+        and filename for download."""
+        self.request.response.setHeader('Content-Type', 'application/rdf+xml')
+        self.request.response.setHeader(
+            'Content-Disposition', 'attachment; filename=%s.rdf' % (
+             self.filename))
+        unicodedata = self.template()
+        encodeddata = unicodedata.encode('utf-8')
+        return encodeddata
