@@ -223,6 +223,11 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
     def destroySelf(self):
         self._unqueueBuild()
         store = Store.of(self)
+        releases = store.find(
+            SourcePackageRelease,
+            SourcePackageRelease.source_package_recipe_build == self.id)
+        for release in releases:
+            release.source_package_recipe_build = None
         store.remove(self)
 
     @classmethod

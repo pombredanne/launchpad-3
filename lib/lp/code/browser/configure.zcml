@@ -1208,7 +1208,7 @@
             class="lp.code.browser.sourcepackagerecipe.SourcePackageRecipeRequestBuildsView"
             name="+request-builds"
             template="../templates/sourcepackagerecipe-request-builds.pt"
-            permission="launchpad.View"/>
+            permission="launchpad.AnyPerson"/>
     </facet>
     <facet facet="branches">
         <browser:defaultView
