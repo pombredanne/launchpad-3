@@ -14,13 +14,24 @@ __all__ = [
     'AbortedSlave',
     'WaitingSlave',
     'AbortingSlave',
+    'SlaveTestHelpers',
     ]
+
+import fixtures
+import os
 
 from StringIO import StringIO
 import xmlrpclib
 
+from testtools.content import Content
+from testtools.content_type import UTF8_TEXT
+
+from twisted.internet import defer
+
+from canonical.buildd.tests.harness import BuilddSlaveTestSetup
 from lp.buildmaster.interfaces.builder import CannotFetchFile
 from lp.buildmaster.model.builder import (
+    BuilderSlave,
     rescueBuilderIfLost,
     updateBuilderStatus,
     )
@@ -99,7 +110,7 @@ class OkSlave:
 
     def ensurepresent(self, sha1, url, user=None, password=None):
         self.call_log.append(('ensurepresent', url, user, password))
-        return True, None
+        return defer.succeed((True, None))
 
     def build(self, buildid, buildtype, chroot, filemap, args):
         self.call_log.append(
@@ -127,12 +138,13 @@ class OkSlave:
 
     def sendFileToSlave(self, sha1, url, username="", password=""):
         self.call_log.append('sendFileToSlave')
-        present, info = self.ensurepresent(sha1, url, username, password)
-        if not present:
-            raise CannotFetchFile(url, info)
+        d = self.ensurepresent(sha1, url, username, password)
+        def check_present((present, info)):
+            if not present:
+                raise CannotFetchFile(url, info)
+        return d.addCallback(check_present)
 
     def cacheFile(self, logger, libraryfilealias):
-        self.call_log.append('cacheFile')
         return self.sendFileToSlave(
             libraryfilealias.content.sha1, libraryfilealias.http_url)
 
@@ -161,11 +173,15 @@ class WaitingSlave(OkSlave):
     """A mock slave that looks like it's currently waiting."""
 
     def __init__(self, state='BuildStatus.OK', dependencies=None,
-                 build_id='1-1'):
+                 build_id='1-1', filemap=None):
         super(WaitingSlave, self).__init__()
         self.state = state
         self.dependencies = dependencies
         self.build_id = build_id
+        if filemap is None:
+            self.filemap = {}
+        else:
+            self.filemap = filemap
 
         # By default, the slave only has a buildlog, but callsites
         # can update this list as needed.
@@ -173,8 +189,9 @@ class WaitingSlave(OkSlave):
 
     def status(self):
         self.call_log.append('status')
-        return ('BuilderStatus.WAITING', self.state, self.build_id, {},
-                self.dependencies)
+        return (
+            'BuilderStatus.WAITING', self.state, self.build_id, self.filemap,
+            self.dependencies)
 
     def getFile(self, hash):
         self.call_log.append('getFile')
@@ -225,3 +242,70 @@ class BrokenSlave:
     def status(self):
         self.call_log.append('status')
         raise xmlrpclib.Fault(8001, "Broken slave")
+
+
+class SlaveTestHelpers(fixtures.Fixture):
+
+    # The URL for the XML-RPC service set up by `BuilddSlaveTestSetup`.
+    BASE_URL = 'http://localhost:8221'
+    TEST_URL = '%s/rpc/' % (BASE_URL,)
+
+    def getServerSlave(self):
+        """Set up a test build slave server.
+
+        :return: A `BuilddSlaveTestSetup` object.
+        """
+        tachandler = BuilddSlaveTestSetup()
+        tachandler.setUp()
+        # Basically impossible to do this w/ TrialTestCase. But it would be
+        # really nice to keep it.
+        #
+        # def addLogFile(exc_info):
+        #     self.addDetail(
+        #         'xmlrpc-log-file',
+        #         Content(UTF8_TEXT, lambda: open(tachandler.logfile, 'r').read()))
+        # self.addOnException(addLogFile)
+        self.addCleanup(tachandler.tearDown)
+        return tachandler
+
+    def getClientSlave(self):
+        """Return a `BuilderSlave` for use in testing.
+
+        Points to a fixed URL that is also used by `BuilddSlaveTestSetup`.
+        """
+        return BuilderSlave.makeBlockingSlave(self.TEST_URL, 'vmhost')
+
+    def makeCacheFile(self, tachandler, filename):
+        """Make a cache file available on the remote slave.
+
+        :param tachandler: The TacTestSetup object used to start the remote
+            slave.
+        :param filename: The name of the file to create in the file cache
+            area.
+        """
+        path = os.path.join(tachandler.root, 'filecache', filename)
+        fd = open(path, 'w')
+        fd.write('something')
+        fd.close()
+        self.addCleanup(os.unlink, path)
+
+    def triggerGoodBuild(self, slave, build_id=None):
+        """Trigger a good build on 'slave'.
+
+        :param slave: A `BuilderSlave` instance to trigger the build on.
+        :param build_id: The build identifier. If not specified, defaults to
+            an arbitrary string.
+        :type build_id: str
+        :return: The build id returned by the slave.
+        """
+        if build_id is None:
+            build_id = 'random-build-id'
+        tachandler = self.getServerSlave()
+        chroot_file = 'fake-chroot'
+        dsc_file = 'thing'
+        self.makeCacheFile(tachandler, chroot_file)
+        self.makeCacheFile(tachandler, dsc_file)
+        return slave.build(
+            build_id, 'debian', chroot_file, {'.dsc': dsc_file},
+            {'ogrecomponent': 'main'})
+

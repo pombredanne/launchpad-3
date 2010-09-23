@@ -9,10 +9,7 @@ import signal
 import socket
 import xmlrpclib
 
-import fixtures
-
-from testtools.content import Content
-from testtools.content_type import UTF8_TEXT
+from twisted.web.client import getPage
 
 from twisted.internet.task import Clock
 from twisted.python.failure import Failure
@@ -22,7 +19,6 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.buildd.slave import BuilderStatus
-from canonical.buildd.tests.harness import BuilddSlaveTestSetup
 from canonical.config import config
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.webapp.interfaces import (
@@ -33,21 +29,26 @@ from canonical.launchpad.webapp.interfaces import (
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
+    TwistedLaunchpadZopelessLayer,
     TwistedLayer,
     )
 from lp.buildmaster.enums import BuildStatus
-from lp.buildmaster.interfaces.builder import IBuilder, IBuilderSet
+from lp.buildmaster.interfaces.builder import (
+    CannotFetchFile,
+    IBuilder,
+    IBuilderSet,
+    )
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior,
     )
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.buildmaster.interfaces.builder import CannotResumeHost
-from lp.buildmaster.model.builder import BuilderSlave
 from lp.buildmaster.model.buildfarmjobbehavior import IdleBuildBehavior
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.buildmaster.tests.mock_slaves import (
     AbortedSlave,
     MockBuilder,
+    SlaveTestHelpers,
     )
 from lp.soyuz.enums import (
     ArchivePurpose,
@@ -59,8 +60,12 @@ from lp.soyuz.model.binarypackagebuildbehavior import (
     )
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
+    ANONYMOUS,
+    login_as,
+    logout,
     TestCaseWithFactory,
     )
+from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.fakemethod import FakeMethod
 
 
@@ -487,72 +492,6 @@ class TestCurrentBuildBehavior(TestCaseWithFactory):
             self.builder.current_build_behavior, BinaryPackageBuildBehavior)
 
 
-class SlaveTestHelpers(fixtures.Fixture):
-
-    # The URL for the XML-RPC service set up by `BuilddSlaveTestSetup`.
-    BASE_URL = 'http://localhost:8221'
-    TEST_URL = '%s/rpc/' % (BASE_URL,)
-
-    def getServerSlave(self):
-        """Set up a test build slave server.
-
-        :return: A `BuilddSlaveTestSetup` object.
-        """
-        tachandler = BuilddSlaveTestSetup()
-        tachandler.setUp()
-        # Basically impossible to do this w/ TrialTestCase. But it would be
-        # really nice to keep it.
-        #
-        # def addLogFile(exc_info):
-        #     self.addDetail(
-        #         'xmlrpc-log-file',
-        #         Content(UTF8_TEXT, lambda: open(tachandler.logfile, 'r').read())
-        # self.addOnException(addLogFile)
-        self.addCleanup(tachandler.tearDown)
-        return tachandler
-
-    def getClientSlave(self):
-        """Return a `BuilderSlave` for use in testing.
-
-        Points to a fixed URL that is also used by `BuilddSlaveTestSetup`.
-        """
-        return BuilderSlave(self.TEST_URL, 'vmhost')
-
-    def makeCacheFile(self, tachandler, filename):
-        """Make a cache file available on the remote slave.
-
-        :param tachandler: The TacTestSetup object used to start the remote
-            slave.
-        :param filename: The name of the file to create in the file cache
-            area.
-        """
-        path = os.path.join(tachandler.root, 'filecache', filename)
-        fd = open(path, 'w')
-        fd.write('something')
-        fd.close()
-        self.addCleanup(os.unlink, path)
-
-    def triggerGoodBuild(self, slave, build_id=None):
-        """Trigger a good build on 'slave'.
-
-        :param slave: A `BuilderSlave` instance to trigger the build on.
-        :param build_id: The build identifier. If not specified, defaults to
-            an arbitrary string.
-        :type build_id: str
-        :return: The build id returned by the slave.
-        """
-        if build_id is None:
-            build_id = 'random-build-id'
-        tachandler = self.getServerSlave()
-        chroot_file = 'fake-chroot'
-        dsc_file = 'thing'
-        self.makeCacheFile(tachandler, chroot_file)
-        self.makeCacheFile(tachandler, dsc_file)
-        return slave.build(
-            build_id, 'debian', chroot_file, {'.dsc': dsc_file},
-            {'ogrecomponent': 'main'})
-
-
 class TestSlave(TrialTestCase):
     """
     Integration tests for BuilderSlave that verify how it works against a
@@ -571,9 +510,6 @@ class TestSlave(TrialTestCase):
     # BuilderSlave in buildd-slave.txt and in other places. The tests here
     # ought to become the canonical tests for BuilderSlave vs running buildd
     # XML-RPC server interaction.
-
-    # The URL for the XML-RPC service set up by `BuilddSlaveTestSetup`.
-    TEST_URL = 'http://localhost:8221/rpc/'
 
     def test_abort(self):
         slave = self.slave_helper.getClientSlave()
@@ -646,17 +582,35 @@ class TestSlave(TrialTestCase):
         # ensurepresent checks to see if a file is there.
         self.slave_helper.getServerSlave()
         slave = self.slave_helper.getClientSlave()
-        result = slave.ensurepresent('blahblah', None, None, None)
-        self.assertEqual([False, 'No URL'], result)
+        d = slave.ensurepresent('blahblah', None, None, None)
+        d.addCallback(self.assertEqual, [False, 'No URL'])
+        return d
 
     def test_ensurepresent_actually_there(self):
         # ensurepresent checks to see if a file is there.
-
         tachandler = self.slave_helper.getServerSlave()
         slave = self.slave_helper.getClientSlave()
         self.slave_helper.makeCacheFile(tachandler, 'blahblah')
-        result = slave.ensurepresent('blahblah', None, None, None)
-        self.assertEqual([True, 'No URL'], result)
+        d = slave.ensurepresent('blahblah', None, None, None)
+        d.addCallback(self.assertEqual, [True, 'No URL'])
+        return d
+
+    def test_sendFileToSlave_not_there(self):
+        self.slave_helper.getServerSlave()
+        slave = self.slave_helper.getClientSlave()
+        d = slave.sendFileToSlave('blahblah', None, None, None)
+        return self.assertFailure(d, CannotFetchFile)
+
+    def test_sendFileToSlave_actually_there(self):
+        tachandler = self.slave_helper.getServerSlave()
+        slave = self.slave_helper.getClientSlave()
+        self.slave_helper.makeCacheFile(tachandler, 'blahblah')
+        d = slave.sendFileToSlave('blahblah', None, None, None)
+        def check_present(ignored):
+            d = slave.ensurepresent('blahblah', None, None, None)
+            return d.addCallback(self.assertEqual, [True, 'No URL'])
+        d.addCallback(check_present)
+        return d
 
     def test_resumeHost_success(self):
         # On a successful resume resume() fires the returned deferred
@@ -672,7 +626,10 @@ class TestSlave(TrialTestCase):
         def check_resume_success(response):
             out, err, code = response
             self.assertEqual(os.EX_OK, code)
-            self.assertEqual("%s\n" % slave.vm_host, out)
+            # XXX: JonathanLange 2010-09-23: We should instead pass the
+            # expected vm_host into the client slave. Not doing this now,
+            # since the SlaveHelper is being moved around.
+            self.assertEqual("%s\n" % slave._vm_host, out)
         d = slave.resume()
         d.addBoth(check_resume_success)
         return d
@@ -730,3 +687,53 @@ class TestSlave(TrialTestCase):
         clock.advance(2)
         d.addBoth(check_resume_timeout)
         return d
+
+
+class TestSlaveWithLibrarian(TrialTestCase):
+    """Tests that need more of Launchpad to run."""
+
+    layer = TwistedLaunchpadZopelessLayer
+
+    def setUp(self):
+        super(TestSlaveWithLibrarian, self)
+        self.slave_helper = SlaveTestHelpers()
+        self.slave_helper.setUp()
+        self.addCleanup(self.slave_helper.cleanUp)
+        self.factory = LaunchpadObjectFactory()
+        login_as(ANONYMOUS)
+        self.addCleanup(logout)
+
+    def test_ensurepresent_librarian(self):
+        # ensurepresent, when given an http URL for a file will download the
+        # file from that URL and report that the file is present, and it was
+        # downloaded.
+
+        # Use the Librarian because it's a "convenient" web server.
+        lf = self.factory.makeLibraryFileAlias(
+            'HelloWorld.txt', content="Hello World")
+        self.layer.txn.commit()
+        self.slave_helper.getServerSlave()
+        slave = self.slave_helper.getClientSlave()
+        d = slave.ensurepresent(
+            lf.content.sha1, lf.http_url, "", "")
+        d.addCallback(self.assertEqual, [True, 'Download'])
+        return d
+
+    def test_retrieve_files_from_filecache(self):
+        # Files that are present on the slave can be downloaded with a
+        # filename made from the sha1 of the content underneath the
+        # 'filecache' directory.
+        content = "Hello World"
+        lf = self.factory.makeLibraryFileAlias(
+            'HelloWorld.txt', content=content)
+        self.layer.txn.commit()
+        expected_url = '%s/filecache/%s' % (
+            self.slave_helper.BASE_URL, lf.content.sha1)
+        self.slave_helper.getServerSlave()
+        slave = self.slave_helper.getClientSlave()
+        d = slave.ensurepresent(
+            lf.content.sha1, lf.http_url, "", "")
+        def check_file(ignored):
+            d = getPage(expected_url.encode('utf8'))
+            return d.addCallback(self.assertEqual, content)
+        return d.addCallback(check_file)

@@ -41,16 +41,18 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
         """See `IBuildFarmJobBehavior`."""
         chroot = self._getChroot()
         chroot_sha1 = chroot.content.sha1
-        self._builder.slave.cacheFile(logger, chroot)
-        cookie = self.buildfarmjob.generateSlaveBuildCookie()
+        d = self._builder.slave.cacheFile(logger, chroot)
+        def got_cache_file(ignored):
+            cookie = self.buildfarmjob.generateSlaveBuildCookie()
 
-        args = {'arch_tag': self._getDistroArchSeries().architecturetag}
-        args.update(self.buildfarmjob.metadata)
+            args = {'arch_tag': self._getDistroArchSeries().architecturetag}
+            args.update(self.buildfarmjob.metadata)
 
-        filemap = {}
+            filemap = {}
 
-        self._builder.slave.build(
-            cookie, self.build_type, chroot_sha1, filemap, args)
+            return self._builder.slave.build(
+                cookie, self.build_type, chroot_sha1, filemap, args)
+        return d.addCallback(got_cache_file)
 
     def _getChroot(self):
         return self._getDistroArchSeries().getChroot()
