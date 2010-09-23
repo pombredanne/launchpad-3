@@ -114,7 +114,11 @@ class TimeoutTransport(xmlrpclib.Transport):
 
 
 class BuilderSlave(object):
-    """Add in a few useful methods for the XMLRPC slave."""
+    """Add in a few useful methods for the XMLRPC slave.
+
+    :ivar url: The URL of the actual builder. The XML-RPC resource and
+        the filecache live beneath this.
+    """
 
     # WARNING: If you change the API for this, you should also change the APIs
     # of the mocks in soyuzbuilderhelpers to match. Otherwise, you will have
