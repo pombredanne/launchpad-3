@@ -62,24 +62,6 @@ Clean up previous BuildQueue results from sampledata:
     u'bob'
     >>> lost_job.destroySelf()
 
-We'll next use BuilderSet to check the various builders and reset
-the virtualized ones if needed. Please note that 'frog' is a PPA
-builder and was reset due to a communication time-out.
-
-    >>> builder_set.checkBuilders(logger, transaction)
-    WARNING:root:Resetting builder: http://localhost:9221/...Connection refused...
-    Traceback (most recent call last):
-    ...
-    error: ...Connection refused...
-
-The 'frog' builder was not marked as failed.
-
-    >>> frog_builder = builder_set['frog']
-    >>> frog_builder.name
-    u'frog'
-    >>> frog_builder.builderok
-    True
-
 If the specified buildd slave reset command (used inside resumeSlaveHost())
 fails, the slave will still be marked as failed.
 
@@ -88,6 +70,7 @@ fails, the slave will still be marked as failed.
     ...     [builddmaster]
     ...     vm_resume_command: /bin/false'''
     >>> config.push('reset fail', reset_fail_config)
+    >>> frog_builder = builder_set['frog']
     >>> frog_builder.handleTimeout(logger, 'The universe just collapsed')
     WARNING:root:Resetting builder: http://localhost:9221/ -- The universe just collapsed
     ...
