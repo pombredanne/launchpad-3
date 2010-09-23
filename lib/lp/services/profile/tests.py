@@ -14,7 +14,6 @@ import os
 import time
 import unittest
 
-from lp.testing import TestCase
 from bzrlib.lsprof import BzrProfiler
 from zope.app.publication.interfaces import EndRequestEvent
 from zope.component import getSiteManager
@@ -27,6 +26,9 @@ from canonical.launchpad.webapp.errorlog import (
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.launchpad.webapp.interfaces import StartRequestEvent
 from lp.services.profile import profile
+from lp.services.features.testing import FeatureFixture
+from lp.testing import TestCase
+
 
 EXAMPLE_HTML_START = '''\
 <html><head><title>Random!</title></head>
@@ -58,10 +60,17 @@ class BaseTest(TestCase):
                 getattr(profile._profilers, name, None), None,
                 'Profiler state (%s) is dirty; %s.' % (name, message))
 
+    def turnOnProfilingFeature(self):
+        """Turn on the request_profiling feature flag."""
+        self.useFixture(FeatureFixture({'request_profiling': 'on'}))
+
     def pushProfilingConfig(
         self, profiling_allowed='False', profile_all_requests='False',
         memory_profile_log=''):
         """This is a convenience for setting profile configs."""
+        if profiling_allowed != 'False':
+            self.turnOnProfilingFeature()
+
         self.pushConfig(
             'profiling',
             profiling_allowed=profiling_allowed,

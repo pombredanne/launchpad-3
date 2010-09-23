@@ -49,8 +49,6 @@ def start_request(event):
     """
     if not features.getFeatureFlag('request_profiling'):
         return
-    #if not config.profiling.profiling_allowed:
-    #    return
     actions = get_desired_profile_actions(event.request)
     if config.profiling.profile_all_requests:
         actions.add('log')
@@ -76,8 +74,6 @@ def end_request(event):
     """If profiling is turned on, save profile data for the request."""
     if not features.getFeatureFlag('request_profiling'):
         return
-    #if not config.profiling.profiling_allowed:
-    #    return
     try:
         actions = _profilers.actions
     except AttributeError:
