@@ -26,10 +26,11 @@ from zope.interface import Interface, Attribute, implements
 from zope.component import adapts, getUtility, queryAdapter, getMultiAdapter
 from zope.app import zapi
 from zope.publisher.browser import BrowserView
-from zope.publisher.interfaces import IApplicationRequest
-from zope.publisher.interfaces.browser import IBrowserApplicationRequest
 from zope.traversing.interfaces import (
-    ITraversable, IPathAdapter, TraversalError)
+    ITraversable,
+    IPathAdapter,
+    TraversalError,
+    )
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import isinstance as zope_isinstance
 from zope.schema import TextLine
@@ -242,6 +243,7 @@ class CountAPI:
     This is available for all objects.  Individual operations may fail for
     objects that do not support them.
     """
+
     def __init__(self, context):
         self._context = context
 
@@ -310,12 +312,14 @@ class HTMLFormAPI:
             else:
                 return None
 
+
 def htmlmatch(formvalue, value):
     value = str(value)
     if isinstance(formvalue, list):
         return value in formvalue
     else:
         return formvalue == value
+
 
 class HTMLFormOperation:
 
@@ -835,13 +839,11 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
         """Return whether the bug has a patch."""
         return self._context.bug.has_patches
 
-
     def badges(self):
-
         badges = []
         if self._context.bug.private:
             badges.append(self.icon_template % (
-                "private", "Private","sprite private"))
+                "private", "Private", "sprite private"))
 
         if self._hasMentoringOffer():
             badges.append(self.icon_template % (
@@ -859,7 +861,7 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
             milestone_text = "milestone %s" % self._context.milestone.name
             badges.append(self.linked_icon_template % (
                 canonical_url(self._context.milestone),
-                milestone_text , "Linked to %s" % milestone_text,
+                milestone_text, "Linked to %s" % milestone_text,
                 "sprite milestone"))
 
         if self._hasPatch():
@@ -981,7 +983,6 @@ class BuildImageDisplayAPI(ObjectImageDisplayAPI):
         '<img width="%(width)s" height="14" alt="%(alt)s" '
         'title="%(title)s" src="%(src)s" />')
 
-
     def icon(self):
         """Return the appropriate <img> tag for the build icon."""
         icon_map = {
@@ -989,7 +990,7 @@ class BuildImageDisplayAPI(ObjectImageDisplayAPI):
             BuildStatus.FULLYBUILT: {'src': "/@@/build-success"},
             BuildStatus.FAILEDTOBUILD: {
                 'src': "/@@/build-failed",
-                'width': '16'
+                'width': '16',
                 },
             BuildStatus.MANUALDEPWAIT: {'src': "/@@/build-depwait"},
             BuildStatus.CHROOTWAIT: {'src': "/@@/build-chrootwait"},
@@ -1184,6 +1185,7 @@ class TeamFormatterAPI(PersonFormatterAPI):
             # This person has no permission to view the team details.
             return self.hidden
         return super(TeamFormatterAPI, self).unique_displayname(view_name)
+
 
 class CustomizableFormatter(ObjectFormatterAPI):
     """A ObjectFormatterAPI that is easy to customize.
@@ -1405,7 +1407,7 @@ class BranchFormatterAPI(ObjectFormatterAPI):
             'bzr_identity': branch.bzr_identity,
             'display_name': cgi.escape(branch.displayname),
             'name': branch.name,
-            'unique_name' : branch.unique_name,
+            'unique_name': branch.unique_name,
             'url': self.url(view_name),
             }
 
@@ -1517,6 +1519,7 @@ class CodeImportFormatterAPI(CustomizableFormatter):
 
 class PackageBuildFormatterAPI(ObjectFormatterAPI):
     """Adapter providing fmt support for `IPackageBuild` objects."""
+
     def _composeArchiveReference(self, archive):
         if archive.is_ppa:
             return " [%s/%s]" % (
@@ -1543,7 +1546,7 @@ class CodeImportMachineFormatterAPI(CustomizableFormatter):
 
     def _link_summary_values(self):
         """See CustomizableFormatter._link_summary_values."""
-        return {'hostname': self._context.hostname,}
+        return {'hostname': self._context.hostname}
 
 
 class MilestoneFormatterAPI(CustomizableFormatter):
@@ -2454,7 +2457,6 @@ class LanguageFormatterAPI(ObjectFormatterAPI):
         """See `ObjectFormatterAPI`."""
         return super(LanguageFormatterAPI, self).url(view_name, rootsite)
 
-
     def link(self, view_name, rootsite='translations'):
         """See `ObjectFormatterAPI`."""
         url = self.url(view_name, rootsite)
@@ -2491,6 +2493,7 @@ class POFileFormatterAPI(ObjectFormatterAPI):
 
 
 class PackageDiffFormatterAPI(ObjectFormatterAPI):
+
     def link(self, view_name, rootsite=None):
         diff = self._context
         if not diff.date_fulfilled:
