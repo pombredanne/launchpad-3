@@ -134,10 +134,9 @@ class OkSlave:
 
     def resume(self):
         self.call_log.append('resume')
-        return ("", "", 0)
+        return defer.succeed(("", "", 0))
 
     def sendFileToSlave(self, sha1, url, username="", password=""):
-        self.call_log.append('sendFileToSlave')
         d = self.ensurepresent(sha1, url, username, password)
         def check_present((present, info)):
             if not present:
