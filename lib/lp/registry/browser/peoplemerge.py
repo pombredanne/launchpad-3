@@ -403,7 +403,6 @@ class RequestPeopleMergeMultipleEmailsView:
         if self.request.method != "POST":
             return
 
-        self.form_processed = True
         login = getUtility(ILaunchBag).login
         logintokenset = getUtility(ILoginTokenSet)
 
@@ -444,6 +443,7 @@ class RequestPeopleMergeMultipleEmailsView:
                 self.user, login, emailaddress, LoginTokenType.ACCOUNTMERGE)
             token.sendMergeRequestEmail()
             self.notified_addresses.append(emailaddress)
+        self.form_processed = True
 
     @property
     def cancel_url(self):

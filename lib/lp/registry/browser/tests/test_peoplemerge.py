@@ -29,8 +29,15 @@ class TestRequestPeopleMergeMultipleEmailsView(TestCaseWithFactory):
         self.dupe_user = self.factory.makePerson()
         self.email_2 = self.factory.makeEmail(
             'dupe@place.dom', self.dupe_user)
-        self.orginal_user = self.factory.makePerson()
-        login_person(self.orginal_user)
+        self.original_user = self.factory.makePerson()
+        login_person(self.original_user)
+
+    def verify_user_must_reselect_email_addresses(self, view):
+        self.assertFalse(view.form_processed)
+        self.assertEqual(0, len(view.notified_addresses))
+        self.assertEqual(1, len(view.request.notifications))
+        message = view.request.notifications[0].message
+        self.assertTrue(message.endswith('Select again.'))
 
     def test_removed_email(self):
         # When the duplicate user deletes an email addres while the merge
@@ -51,7 +58,18 @@ class TestRequestPeopleMergeMultipleEmailsView(TestCaseWithFactory):
             self.personset, name='+requestmerge-multiple', form=form,
             method='POST')
         view.processForm()
-        self.assertEqual(0, len(view.notified_addresses))
-        self.assertEqual(1, len(view.request.notifications))
-        message = view.request.notifications[0].message
-        self.assertTrue(message.endswith('Select again.'))
+        self.verify_user_must_reselect_email_addresses(view)
+
+    def test_email_address_cannot_be_substituted(self):
+        # A person cannot hack the form to use another user's email address
+        # to take control of a profile.
+        controlled_user = self.factory.makePerson()
+        form = {
+            'dupe': self.dupe_user.id,
+            'selected': [controlled_user.preferredemail.email],
+            }
+        view = create_view(
+            self.personset, name='+requestmerge-multiple', form=form,
+            method='POST')
+        view.processForm()
+        self.verify_user_must_reselect_email_addresses(view)
