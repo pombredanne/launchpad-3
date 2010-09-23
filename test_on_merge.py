@@ -164,10 +164,12 @@ def run_test_process():
     # Popen.communicate() with large data sets.
     open_readers = set([xvfb_proc.stdout])
     while open_readers:
-        # blocks for a long time and can easily fail with EINTR
-        # <https://bugs.launchpad.net/launchpad/+bug/615740> - catching
-        # it just here is not the perfect fix (other syscalls might be
-        # interrupted) but is pragmatic
+        # select() blocks for a long time and can easily fail with EINTR
+        # <https://bugs.launchpad.net/launchpad/+bug/615740>.  Really we
+        # should have EINTR protection across the whole script (other syscalls
+        # might be interrupted) but this is the longest and most likely to
+        # hit, and doing it perfectly in python has proved to be quite hard in
+        # bzr. -- mbp 20100924
         while True:
             try:
                 rlist, wlist, xlist = select.select(open_readers, [], [], TIMEOUT)
