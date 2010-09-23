@@ -203,7 +203,7 @@ class BuilderSlave(object):
         :return: a Deferred
         """
         resume_command = config.builddmaster.vm_resume_command % {
-            'vm_host': self.vm_host}
+            'vm_host': self._vm_host}
         # Twisted API requires string but the configuration provides unicode.
         resume_argv = [str(term) for term in resume_command.split()]
 
