@@ -16,7 +16,6 @@ from canonical.config import config
 from canonical.launchpad.interfaces import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.testing import LaunchpadZopelessLayer
-from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.tests.mock_slaves import WaitingSlave
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior,
@@ -31,48 +30,6 @@ from lp.translations.interfaces.translationimportqueue import (
 from lp.translations.interfaces.translations import (
     TranslationsBranchImportMode,
     )
-
-
-class FakeChrootContent:
-    """Pretend chroot contents."""
-    sha1 = "shasha"
-
-
-class FakeChroot:
-    """Pretend chroot."""
-    def __init__(self, *args, **kwargs):
-        """Constructor acts as a fake _getChroot."""
-        self.content = FakeChrootContent()
-
-
-class FakeSlave:
-    """Pretend build slave."""
-    def __init__(self, builderstatus):
-        self._status = {
-            'test_build_started': False,
-        }
-
-        self.cacheFile = FakeMethod()
-        self.getFile = FakeMethod(result=StringIO("File from the slave."))
-
-    def build(self, buildid, build_type, chroot_sha1, filemap, args):
-        """Pretend to start a build."""
-        self._status['build_id'] = buildid
-        self._status['filemap'] = filemap
-
-        # Chuck in some information that a real slave wouldn't store,
-        # but which will allow tests to check up on the build call.
-        self._status['test_build_type'] = build_type
-        self._status['test_build_args'] = args
-        self._status['test_build_started'] = True
-
-    def status(self):
-        return (
-            'BuilderStatus.WAITING',
-            'BuildStatus.OK',
-            self._status.get('build_id'),
-            self._status.get('filemap'),
-            )
 
 
 class FakeBuilder:
@@ -109,10 +66,7 @@ class MakeBehaviorMixin(object):
         specific_job = self.factory.makeTranslationTemplatesBuildJob(
             branch=branch)
         behavior = IBuildFarmJobBehavior(specific_job)
-        # XXX
-        #slave = FakeSlave(BuildStatus.NEEDSBUILD)
         slave = WaitingSlave()
-        #behavior._builder = FakeBuilder(slave)
         behavior._builder = removeSecurityProxy(self.factory.makeBuilder())
         behavior._builder.setSlaveForTesting(slave)
         if use_fake_chroot:
