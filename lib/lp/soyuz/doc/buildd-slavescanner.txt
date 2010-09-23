@@ -33,27 +33,8 @@ Import MockBuilder and a series of MockSlaves to be used in this test.
 
     >>> from lp.buildmaster.tests.mock_slaves import (
     ...    AbortedSlave, AbortingSlave, BuildingSlave,
-    ...    LostBuildingBrokenSlave, MockBuilder, OkSlave, WaitingSlave)
+    ...    MockBuilder, OkSlave, WaitingSlave)
 
-Slave-scanner will deactivate a 'lost-building' builder that could not
-be aborted appropriately.
-
-    >>> from zope.security.proxy import removeSecurityProxy
-    >>> from lp.buildmaster.interfaces.builder import CorruptBuildCookie
-    >>> from lp.testing.fakemethod import FakeMethod
-    >>> lostbuilding_builder = MockBuilder(
-    ...     'Lost Building Broken Slave', LostBuildingBrokenSlave())
-    >>> behavior = removeSecurityProxy(
-    ...     lostbuilding_builder.current_build_behavior)
-    >>> behavior.verifySlaveBuildCookie = FakeMethod(
-    ...     failure=CorruptBuildCookie("Hopelessly lost!"))
-
-    >>> lostbuilding_builder.updateStatus(logger)
-    Aborting slave
-    WARNING:root:Lost Building Broken Slave (http://fake:0000) marked as failed due to: <Fault 8002: 'Could not abort'>
-    Traceback (most recent call last):
-    ...
-    Fault: <Fault 8002: 'Could not abort'>
 
 'ensurePresent()' slave method always return True, it theoretically
 means the slave has the requested file in cache.  In our MockBuilder
@@ -352,6 +333,7 @@ for this test we want to change it on the fly. An alternative would be to add
 new sample data for a build that can be uploaded with binary packages attached
 to it.
 
+    >>> from zope.security.proxy import removeSecurityProxy
     >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
     >>> removeSecurityProxy(
     ...     build).pocket = PackagePublishingPocket.UPDATES
