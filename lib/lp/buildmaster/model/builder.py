@@ -765,7 +765,7 @@ class Builder(SQLBase):
 
         if candidate is None:
             logger.debug("No build candidates available for builder.")
-            return None
+            return defer.succeed(None)
 
         if buildd_slave is not None:
             self.setSlaveForTesting(buildd_slave)

@@ -204,6 +204,33 @@ class TestBuilderWithTrial(TrialTestCase):
         return d.addCallback(
             lambda ignored: self.assertFalse(builder.builderok))
 
+    def test_findAndStartJob_returns_candidate(self):
+        # findAndStartJob finds the next queued job using _findBuildCandidate.
+        builder = self.factory.makeBuilder(virtualized=True, vm_host="bladh")
+        # We don't care about the type of build at all.
+        build = self.factory.makeSourcePackageRecipeBuild()
+        candidate = build.queueBuild()
+        # _findBuildCandidate is tested elsewhere, we just make sure that
+        # findAndStartJob delegates to it.
+        removeSecurityProxy(builder)._findBuildCandidate = FakeMethod(
+            result=candidate)
+        d = builder.findAndStartJob()
+        return d.addCallback(self.assertEqual, candidate)
+
+    def test_findAndStartJob_starts_job(self):
+        # findAndStartJob finds the next queued job using _findBuildCandidate
+        # and then starts it.
+        builder = self.factory.makeBuilder(virtualized=True, vm_host="bladh")
+        # We don't care about the type of build at all.
+        build = self.factory.makeSourcePackageRecipeBuild()
+        candidate = build.queueBuild()
+        removeSecurityProxy(builder)._findBuildCandidate = FakeMethod(
+            result=candidate)
+        d = builder.findAndStartJob()
+        def check_build_started(candidate):
+            self.assertEqual(BuildStatus.BUILDING, build.status)
+        return d.addCallback(check_build_started)
+
 
 class Test_rescueBuilderIfLost(TestCaseWithFactory):
     """Tests for lp.buildmaster.model.builder.rescueBuilderIfLost."""
