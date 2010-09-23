@@ -17,8 +17,6 @@ from canonical.launchpad.interfaces import (
     ILaunchpadRoot,
     )
 from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.launchpad.webapp.interaction import get_current_principal
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.testing import (
     BrowserTestCase,
