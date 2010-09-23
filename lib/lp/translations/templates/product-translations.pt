@@ -24,12 +24,20 @@
       </div>
       <div class="top-portlet notice">
 
-        <tal:official_use
-          condition="not: context/translations_usage/enumvalue:LAUNCHPAD"
-          replace="structure context/@@+portlet-not-using-launchpad"/>
+        <tal:not-using-launchpad
+          condition="not: context/translations_usage/enumvalue:LAUNCHPAD">
+          <tal:message
+            replace="structure context/@@+portlet-not-using-launchpad"/>
+          <tal:translations-configuration
+            condition="view/can_configure_translations"
+            replace="structure context/@@+portlet-configuration"/>
+          <tal:translatable-packages
+            condition="not: view/is_translations_admin"
+            replace="structure context/@@+portlet-not-using-launchpad-extra"/>
+        </tal:not-using-launchpad>
 
         <div tal:condition="view/no_translations_available">
-        There are no translations for this project.
+          There are no translations for this project.
         </div>
       </div>
 
