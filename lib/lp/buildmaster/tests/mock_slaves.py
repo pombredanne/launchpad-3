@@ -91,7 +91,7 @@ class MockBuilder:
         rescueBuilderIfLost(self, logger)
 
     def updateStatus(self, logger=None):
-        updateBuilderStatus(self, logger)
+        return defer.maybeDeferred(updateBuilderStatus, self, logger)
 
 
 # XXX: It would be *really* nice to run some set of tests against the real

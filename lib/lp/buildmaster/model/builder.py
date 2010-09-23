@@ -338,7 +338,8 @@ def updateBuilderStatus(builder, logger=None):
         # reason.errno but we might be using 2.5 here so use the
         # index hack.
         error_message = str(reason)
-        builder.handleTimeout(logger, error_message)
+        # Return a Deferred.
+        return builder.handleTimeout(logger, error_message)
 
 
 class Builder(SQLBase):
@@ -422,7 +423,10 @@ class Builder(SQLBase):
 
     def updateStatus(self, logger=None):
         """See `IBuilder`."""
-        updateBuilderStatus(self, logger)
+        # updateBuilderStatus returns a Deferred if the builder timed
+        # out, otherwise it returns a thing that we can wrap in a
+        # defer.succeed. maybeDeferred() handles this for us.
+        return defer.maybeDeferred(updateBuilderStatus, self, logger)
 
     def cleanSlave(self):
         """See IBuilder."""
@@ -519,8 +523,8 @@ class Builder(SQLBase):
             failure.trap(socket.error)
             e = failure.value
             error_message = "Exception (%s) when setting up new job" % (e,)
-            self.handleTimeout(logger, error_message)
-            raise BuildSlaveFailure
+            d = self.handleTimeout(logger, error_message)
+            return d.addBoth(lambda ignored: failure)
 
         d.addCallback(resume_done)
         d.addErrback(eb_slave_failure)
