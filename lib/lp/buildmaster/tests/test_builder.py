@@ -48,6 +48,7 @@ from lp.buildmaster.model.buildfarmjobbehavior import IdleBuildBehavior
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.buildmaster.tests.mock_slaves import (
     AbortedSlave,
+    LostBuildingBrokenSlave,
     MockBuilder,
     SlaveTestHelpers,
     )
@@ -138,7 +139,6 @@ class TestBuilderWithTrial(TrialTestCase):
             lambda ignored:
                 self.assertEqual(1, builder.handleTimeout.call_count))
 
-
     def test_updateBuilderStatus_catches_single_EINTR(self):
         builder = removeSecurityProxy(self.factory.makeBuilder())
         builder.handleTimeout = FakeMethod()
@@ -158,6 +158,21 @@ class TestBuilderWithTrial(TrialTestCase):
         return d.addCallback(
             lambda ignored:
             self.assertEqual(0, builder.handleTimeout.call_count))
+
+    def test_updateStatus_deactivates_builder_when_abort_fails(self):
+        from lp.buildmaster.interfaces.builder import CorruptBuildCookie
+        from lp.testing.fakemethod import FakeMethod
+        slave = LostBuildingBrokenSlave()
+        lostbuilding_builder = MockBuilder('Lost Building Broken Slave', slave)
+        behavior = removeSecurityProxy(
+            lostbuilding_builder.current_build_behavior)
+        behavior.verifySlaveBuildCookie = FakeMethod(
+            failure=CorruptBuildCookie("Hopelessly lost!"))
+        d = lostbuilding_builder.updateStatus(QuietFakeLogger())
+        def check_slave_status(ignored):
+            self.assertIn('abort', slave.call_log)
+            self.assertFalse(lostbuilding_builder.builderok)
+        return d.addCallback(check_slave_status)
 
     def test_resumeSlaveHost_nonvirtual(self):
         builder = self.factory.makeBuilder(virtualized=False)

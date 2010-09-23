@@ -332,6 +332,7 @@ class SlaveScanner:
             transaction.commit()
 
         # See if we think there's an active build on the builder.
+        # XXX: Now returns a Deferred.
         buildqueue = self.builder.getBuildQueue()
 
         # XXX Julian 2010-07-29 bug=611258
