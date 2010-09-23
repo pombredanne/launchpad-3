@@ -154,11 +154,11 @@ class BufferLogger(FakeLogger):
 class OopsHandler(logging.Handler):
     """Handler to log to the OOPS system."""
 
-    def __init__(self, name, level=logging.WARN):
+    def __init__(self, script_name, level=logging.WARN):
         logging.Handler.__init__(self, level)
         # Context for OOPS reports.
         self.request = ScriptRequest(
-            [('name', name), ('path', sys.argv[0])])
+            [('script_name', script_name), ('path', sys.argv[0])])
         self.setFormatter(LaunchpadFormatter())
 
     def emit(self, record):
