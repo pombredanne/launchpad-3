@@ -67,6 +67,7 @@ class SourcePackageRecipeBuildMailer(BaseMailer):
             'duration': '',
             'builder_url': '',
             'build_url': canonical_url(self.build),
+            'upload_log_url': '',
         })
         if self.build.builder is not None:
             params['builder_url'] = canonical_url(self.build.builder)
@@ -75,6 +76,8 @@ class SourcePackageRecipeBuildMailer(BaseMailer):
             params['duration'] = duration_formatter.approximateduration()
         if self.build.log is not None:
             params['log_url'] = self.build.log.getURL()
+        if self.build.upload_log is not None:
+            params['upload_log_url'] = self.build.upload_log_url
         return params
 
     def _getFooter(self, params):
