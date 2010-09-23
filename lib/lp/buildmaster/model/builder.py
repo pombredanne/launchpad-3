@@ -115,6 +115,11 @@ class TimeoutTransport(xmlrpclib.Transport):
 class BuilderSlave(object):
     """Add in a few useful methods for the XMLRPC slave."""
 
+    # WARNING: If you change the API for this, you should also change the APIs
+    # of the mocks in soyuzbuilderhelpers to match. Otherwise, you will have
+    # many false positives in your test run and will most likely break
+    # production.
+
     # XXX: This (BuilderSlave) should use composition, rather than
     # inheritance.
 
@@ -141,7 +146,12 @@ class BuilderSlave(object):
             rpc_url, transport=TimeoutTransport(), allow_none=True)
 
     def abort(self):
+        """Abort the current build."""
         return self._server.abort()
+
+    def clean(self):
+        """Clean up the waiting files and reset the slave's internal state."""
+        return self._server.clean()
 
     def echo(self, *args):
         """Echo the arguments back."""

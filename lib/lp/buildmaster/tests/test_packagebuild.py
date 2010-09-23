@@ -35,10 +35,10 @@ from lp.buildmaster.interfaces.packagebuild import (
     IPackageBuildSource,
     )
 from lp.buildmaster.model.packagebuild import PackageBuild
+from lp.buildmaster.tests.mock_slaves import WaitingSlave
 from lp.registry.interfaces.pocket import (
     PackagePublishingPocket,
     )
-from lp.soyuz.tests.soyuzbuilddhelpers import WaitingSlave
 from lp.testing import (
     login,
     login_person,

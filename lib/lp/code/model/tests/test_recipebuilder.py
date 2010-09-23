@@ -23,6 +23,10 @@ from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     )
 from lp.buildmaster.manager import RecordingSlave
 from lp.buildmaster.model.buildqueue import BuildQueue
+from lp.buildmaster.tests.mock_slaves import (
+    MockBuilder,
+    OkSlave,
+    )
 from lp.code.model.recipebuilder import RecipeBuildBehavior
 from lp.code.model.sourcepackagerecipebuild import SourcePackageRecipeBuild
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -30,10 +34,6 @@ from lp.soyuz.adapters.archivedependencies import (
     get_sources_list_for_building,
     )
 from lp.soyuz.model.processor import ProcessorFamilySet
-from lp.soyuz.tests.soyuzbuilddhelpers import (
-    MockBuilder,
-    OkSlave,
-    )
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
     person_logged_in,

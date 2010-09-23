@@ -269,8 +269,10 @@ class ProcessWithTimeout(ProcessProtocol, TimeoutMixin):
     """Run a process and capture its output while applying a timeout."""
 
     # XXX Julian 2010-04-21
-    # This class doesn't have any unit tests yet, it's used by
+    # This class doesn't have enough unit tests yet, it's used by
     # lib/lp/buildmaster/manager.py which tests its features indirectly.
+    # See lib/lp/services/twistedsupport/tests/test_processmonitor.py -
+    # TestProcessWithTimeout for the beginnings of tests.
 
     def __init__(self, deferred, timeout, clock=None):
         self._deferred = deferred
@@ -300,7 +302,7 @@ class ProcessWithTimeout(ProcessProtocol, TimeoutMixin):
 
     def spawnProcess(self, *args, **kwargs):
         """Start a process.
-        
+
         See reactor.spawnProcess.
         """
         self._process_transport = reactor.spawnProcess(
@@ -312,7 +314,11 @@ class ProcessWithTimeout(ProcessProtocol, TimeoutMixin):
 
     def timeoutConnection(self):
         """When a timeout occurs, kill the process with a SIGKILL."""
-        self._process_transport.signalProcess("KILL")
+        try:
+            self._process_transport.signalProcess("KILL")
+        except error.ProcessExitedAlready:
+            # The process has already died. Fine.
+            pass
         # processEnded will get called.
 
     def processEnded(self, reason):
