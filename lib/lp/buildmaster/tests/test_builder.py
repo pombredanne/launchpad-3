@@ -626,7 +626,10 @@ class TestSlave(TrialTestCase):
         def check_resume_success(response):
             out, err, code = response
             self.assertEqual(os.EX_OK, code)
-            self.assertEqual("%s\n" % slave.vm_host, out)
+            # XXX: JonathanLange 2010-09-23: We should instead pass the
+            # expected vm_host into the client slave. Not doing this now,
+            # since the SlaveHelper is being moved around.
+            self.assertEqual("%s\n" % slave._vm_host, out)
         d = slave.resume()
         d.addBoth(check_resume_success)
         return d
