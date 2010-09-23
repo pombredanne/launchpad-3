@@ -260,7 +260,7 @@ class RegistryEditFormView(LaunchpadEditFormView):
 
 
 class BaseRdfView:
-    """A view that sets its mime-type to application/rdf+xml"""
+    """A view that sets its mime-type to application/rdf+xml."""
 
     template = None
     filename = None
