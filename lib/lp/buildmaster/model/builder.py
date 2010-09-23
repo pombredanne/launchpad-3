@@ -442,20 +442,23 @@ class Builder(SQLBase):
     def resumeSlaveHost(self):
         """See IBuilder."""
         if not self.virtualized:
-            raise CannotResumeHost('Builder is not virtualized.')
+            return defer.fail(CannotResumeHost('Builder is not virtualized.'))
 
         if not self.vm_host:
-            raise CannotResumeHost('Undefined vm_host.')
+            return defer.fail(CannotResumeHost('Undefined vm_host.'))
 
         logger = self._getSlaveScannerLogger()
         logger.debug("Resuming %s (%s)" % (self.name, self.url))
 
-        stdout, stderr, returncode = self.slave.resume()
-        if returncode != 0:
+        d = self.slave.resume()
+        def got_resume_ok((stdout, stderr, returncode)):
+            return stdout, stderr
+        def got_resume_bad(failure):
+            stdout, stderr, code = failure.value
             raise CannotResumeHost(
                 "Resuming failed:\nOUT:\n%s\nERR:\n%s\n" % (stdout, stderr))
 
-        return stdout, stderr
+        return d.addCallback(got_resume_ok).addErrback(got_resume_bad)
 
     @cachedproperty
     def slave(self):

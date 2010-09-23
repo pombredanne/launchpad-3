@@ -21,6 +21,7 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.buildd.slave import BuilderStatus
 from canonical.config import config
 from canonical.database.sqlbase import flush_database_updates
+from canonical.launchpad.scripts import QuietFakeLogger
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
@@ -143,17 +144,67 @@ class TestBuilder(TestCaseWithFactory):
         # single EINTR.
         self.assertEqual(0, builder.handleTimeout.call_count)
 
+
+class TestBuilderWithTrial(TrialTestCase):
+
+    layer = TwistedLaunchpadZopelessLayer
+
+    def setUp(self):
+        super(TestBuilderWithTrial, self)
+        self.slave_helper = SlaveTestHelpers()
+        self.slave_helper.setUp()
+        self.addCleanup(self.slave_helper.cleanUp)
+        self.factory = LaunchpadObjectFactory()
+        login_as(ANONYMOUS)
+        self.addCleanup(logout)
+
     def test_resumeSlaveHost_nonvirtual(self):
         builder = self.factory.makeBuilder(virtualized=False)
-        self.assertRaises(CannotResumeHost, builder.resumeSlaveHost)
+        d = builder.resumeSlaveHost()
+        return self.assertFailure(d, CannotResumeHost)
 
     def test_resumeSlaveHost_no_vmhost(self):
         builder = self.factory.makeBuilder(virtualized=True, vm_host=None)
-        self.assertRaises(CannotResumeHost, builder.resumeSlaveHost)
+        d = builder.resumeSlaveHost()
+        return self.assertFailure(d, CannotResumeHost)
 
-    # XXX: Need a test for successful resuming here but that can be done
-    # after Deferreds are implemented in the resume method.
+    def test_resumeSlaveHost_success(self):
+        reset_config = """
+            [builddmaster]
+            vm_resume_command: /bin/echo -n parp"""
+        config.push('reset', reset_config)
+        self.addCleanup(config.pop, 'reset')
 
+        builder = self.factory.makeBuilder(virtualized=True, vm_host="pop")
+        d = builder.resumeSlaveHost()
+        def got_resume(output):
+            self.assertEqual(('parp', ''), output)
+        return d.addCallback(got_resume)
+
+    def test_resumeSlaveHost_command_failed(self):
+        reset_fail_config = """
+            [builddmaster]
+            vm_resume_command: /bin/false"""
+        config.push('reset fail', reset_fail_config)
+        self.addCleanup(config.pop, 'reset fail')
+        builder = self.factory.makeBuilder(virtualized=True, vm_host="pop")
+        d = builder.resumeSlaveHost()
+        return self.assertFailure(d, CannotResumeHost)
+
+    def test_handleTimeout(self):
+        reset_fail_config = """
+            [builddmaster]
+            vm_resume_command: /bin/false"""
+        config.push('reset fail', reset_fail_config)
+        self.addCleanup(config.pop, 'reset fail')
+        builder = self.factory.makeBuilder(virtualized=True, vm_host="pop")
+        builder.builderok = True
+        d = builder.handleTimeout(QuietFakeLogger(), 'blah')
+        return d.addCallback(
+            lambda ignored: self.assertFalse(builder.builderok))
+
+    def test_BuilderSet_checkBuilders(self):
+        pass
 
 class Test_rescueBuilderIfLost(TestCaseWithFactory):
     """Tests for lp.buildmaster.model.builder.rescueBuilderIfLost."""
