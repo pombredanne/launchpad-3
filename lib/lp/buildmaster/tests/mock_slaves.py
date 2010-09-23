@@ -123,6 +123,10 @@ class OkSlave:
         self.call_log.append('info')
         return ('1.0', self.arch_tag, 'debian')
 
+    def resume(self):
+        self.call_log.append('resume')
+        return ("", "", 0)
+
     def sendFileToSlave(self, sha1, url, username="", password=""):
         self.call_log.append('sendFileToSlave')
         d = self.ensurepresent(sha1, url, username, password)

@@ -11,10 +11,14 @@ import xmlrpclib
 
 import fixtures
 
+from twisted.web.client import getPage
+
+from testtools.content import Content
+from testtools.content_type import UTF8_TEXT
+
 from twisted.internet.task import Clock
 from twisted.python.failure import Failure
 from twisted.trial.unittest import TestCase as TrialTestCase
-from twisted.web.client import getPage
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -44,6 +48,7 @@ from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior,
     )
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
+from lp.buildmaster.interfaces.builder import CannotResumeHost
 from lp.buildmaster.model.builder import BuilderSlave
 from lp.buildmaster.model.buildfarmjobbehavior import IdleBuildBehavior
 from lp.buildmaster.model.buildqueue import BuildQueue
@@ -143,6 +148,17 @@ class TestBuilder(TestCaseWithFactory):
         # builder.updateStatus should never call handleTimeout() for a
         # single EINTR.
         self.assertEqual(0, builder.handleTimeout.call_count)
+
+    def test_resumeSlaveHost_nonvirtual(self):
+        builder = self.factory.makeBuilder(virtualized=False)
+        self.assertRaises(CannotResumeHost, builder.resumeSlaveHost)
+
+    def test_resumeSlaveHost_no_vmhost(self):
+        builder = self.factory.makeBuilder(virtualized=True, vm_host=None)
+        self.assertRaises(CannotResumeHost, builder.resumeSlaveHost)
+
+    # XXX: Need a test for successful resuming here but that can be done
+    # after Deferreds are implemented in the resume method.
 
 
 class Test_rescueBuilderIfLost(TestCaseWithFactory):
@@ -584,7 +600,7 @@ class TestSlave(TrialTestCase):
         self.assertEqual([BuilderStatus.BUILDING, build_id], result)
 
     def test_clean(self):
-        slave = self.getClientSlave()
+        slave = self.slave_helper.getClientSlave()
         # XXX: JonathanLange 2010-09-21: Calling clean() on the slave requires
         # it to be in either the WAITING or ABORTED states, and both of these
         # states are very difficult to achieve in a test environment. For the
