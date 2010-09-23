@@ -23,7 +23,7 @@
         </lp:description>
         <lp:creationDate tal:content="context/datecreated/fmt:datetime">
             1970-01-01 00:00:00
-        </lp:creationDate> 
+        </lp:creationDate>
         <lp:homepage tal:attributes="rdf:resource context/homepageurl" />
         <lp:wiki tal:condition="context/wikiurl"
                  tal:attributes="rdf:resource context/wikiurl" />
