@@ -145,7 +145,6 @@ class OkSlave:
         return d.addCallback(check_present)
 
     def cacheFile(self, logger, libraryfilealias):
-        self.call_log.append('cacheFile')
         return self.sendFileToSlave(
             libraryfilealias.content.sha1, libraryfilealias.http_url)
 
@@ -274,7 +273,7 @@ class SlaveTestHelpers(fixtures.Fixture):
 
         Points to a fixed URL that is also used by `BuilddSlaveTestSetup`.
         """
-        return BuilderSlave(self.TEST_URL, 'vmhost')
+        return BuilderSlave.makeBlockingSlave(self.TEST_URL, 'vmhost')
 
     def makeCacheFile(self, tachandler, filename):
         """Make a cache file available on the remote slave.
