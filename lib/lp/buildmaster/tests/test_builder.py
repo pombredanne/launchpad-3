@@ -107,6 +107,20 @@ class TestBuilder(TestCaseWithFactory):
         bq = builder.getBuildQueue()
         self.assertIs(None, bq)
 
+
+class TestBuilderWithTrial(TrialTestCase):
+
+    layer = TwistedLaunchpadZopelessLayer
+
+    def setUp(self):
+        super(TestBuilderWithTrial, self)
+        self.slave_helper = SlaveTestHelpers()
+        self.slave_helper.setUp()
+        self.addCleanup(self.slave_helper.cleanUp)
+        self.factory = LaunchpadObjectFactory()
+        login_as(ANONYMOUS)
+        self.addCleanup(logout)
+
     def test_updateBuilderStatus_catches_repeated_EINTR(self):
         # A single EINTR return from a socket operation should cause the
         # operation to be retried, not fail/reset the builder.
@@ -119,11 +133,11 @@ class TestBuilder(TestCaseWithFactory):
             raise socket.error(errno.EINTR, "fake eintr")
 
         builder.checkSlaveAlive = _fake_checkSlaveAlive
-        builder.updateStatus()
+        d = builder.updateStatus()
+        return d.addCallback(
+            lambda ignored:
+                self.assertEqual(1, builder.handleTimeout.call_count))
 
-        # builder.updateStatus should eventually have called
-        # handleTimeout()
-        self.assertEqual(1, builder.handleTimeout.call_count)
 
     def test_updateBuilderStatus_catches_single_EINTR(self):
         builder = removeSecurityProxy(self.factory.makeBuilder())
@@ -138,25 +152,12 @@ class TestBuilder(TestCaseWithFactory):
                 raise socket.error(errno.EINTR, "fake eintr")
 
         builder.checkSlaveAlive = _fake_checkSlaveAlive
-        builder.updateStatus()
-
+        d = builder.updateStatus()
         # builder.updateStatus should never call handleTimeout() for a
         # single EINTR.
-        self.assertEqual(0, builder.handleTimeout.call_count)
-
-
-class TestBuilderWithTrial(TrialTestCase):
-
-    layer = TwistedLaunchpadZopelessLayer
-
-    def setUp(self):
-        super(TestBuilderWithTrial, self)
-        self.slave_helper = SlaveTestHelpers()
-        self.slave_helper.setUp()
-        self.addCleanup(self.slave_helper.cleanUp)
-        self.factory = LaunchpadObjectFactory()
-        login_as(ANONYMOUS)
-        self.addCleanup(logout)
+        return d.addCallback(
+            lambda ignored:
+            self.assertEqual(0, builder.handleTimeout.call_count))
 
     def test_resumeSlaveHost_nonvirtual(self):
         builder = self.factory.makeBuilder(virtualized=False)
