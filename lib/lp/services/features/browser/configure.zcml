@@ -13,7 +13,7 @@
     <browser:page
         for="canonical.launchpad.interfaces.ILaunchpadRoot"
         class="lp.services.features.browser.FeatureControlView"
-        name="+features"
+        name="+feature-rules"
         permission="zope.Public"
         template="../templates/features.pt"/>
 

@@ -30,7 +30,7 @@ class TestFeatureControlPage(BrowserTestCase):
     def getFeaturePageBrowser(self):
         root = getUtility(ILaunchpadRoot)
         url = canonical_url(root,
-            view_name='+features')
+            view_name='+feature-rules')
         return self.getUserBrowser(url)
 
     def test_feature_page_default_value(self):
