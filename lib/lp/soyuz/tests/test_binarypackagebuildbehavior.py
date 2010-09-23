@@ -94,7 +94,7 @@ class TestBinaryBuildPackageBehavior(trialtest.TestCase):
             extra_urls = []
 
         upload_logs = [
-            ['cacheFile', 'sendFileToSlave', ('ensurepresent', url, '', '')]
+            ('ensurepresent', url, '', '')
             for url in [chroot.http_url] + extra_urls]
 
         extra_args = {
@@ -110,7 +110,7 @@ class TestBinaryBuildPackageBehavior(trialtest.TestCase):
         build_log = [
             ('build', build_id, 'binarypackage', chroot.content.sha1,
              filemap_names, extra_args)]
-        return sum(upload_logs, []) + build_log
+        return upload_logs + build_log
 
     def startBuild(self, builder, candidate):
         builder = removeSecurityProxy(builder)

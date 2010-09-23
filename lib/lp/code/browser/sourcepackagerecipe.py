@@ -60,6 +60,7 @@ from lp.code.errors import (
     BuildAlreadyPending,
     NoSuchBranch,
     PrivateBranchRecipe,
+    TooNewRecipeFormat
     )
 from lp.code.interfaces.sourcepackagerecipe import (
     ISourcePackageRecipe,
@@ -333,6 +334,11 @@ class SourcePackageRecipeAddView(RecipeTextValidatorMixin, LaunchpadFormView):
                     data['recipe_text'], data['description'], data['distros'],
                     data['daily_build_archive'], data['build_daily'])
             Store.of(source_package_recipe).flush()
+        except TooNewRecipeFormat:
+            self.setFieldError(
+                'recipe_text',
+                'The recipe format version specified is not available.')
+            return
         except ForbiddenInstructionError:
             # XXX: bug=592513 We shouldn't be hardcoding "run" here.
             self.setFieldError(

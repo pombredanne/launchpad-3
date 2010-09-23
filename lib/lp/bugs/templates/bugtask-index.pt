@@ -195,7 +195,7 @@
           </tal:branches>
         </div><!-- bug-branch-container -->
 
-        <div tal:condition="context/bug/cves" class="cves">
+        <div tal:condition="context/bug/has_cves" class="cves">
           <h2>CVE References</h2>
           <ul>
             <li class="sprite cve" tal:repeat="cve context/bug/cves">
