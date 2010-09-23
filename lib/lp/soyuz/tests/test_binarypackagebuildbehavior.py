@@ -202,7 +202,7 @@ class TestBinaryBuildPackageBehavior(trialtest.TestCase):
         build.distro_arch_series.addOrUpdateChroot(lf)
         candidate = build.queueBuild()
         behavior = candidate.required_build_behavior
-        behavior.setBuilder(build)
+        behavior.setBuilder(builder)
         e = self.assertRaises(
             AssertionError, behavior.verifyBuildRequest, QuietFakeLogger())
         expected_message = (
@@ -223,7 +223,7 @@ class TestBinaryBuildPackageBehavior(trialtest.TestCase):
         build.distro_arch_series.addOrUpdateChroot(lf)
         candidate = build.queueBuild()
         behavior = candidate.required_build_behavior
-        behavior.setBuilder(build)
+        behavior.setBuilder(builder)
         e = self.assertRaises(
             AssertionError, behavior.verifyBuildRequest, QuietFakeLogger())
         self.assertEqual(
@@ -231,9 +231,9 @@ class TestBinaryBuildPackageBehavior(trialtest.TestCase):
             str(e))
 
     def test_verifyBuildRequest(self):
-        # Don't allow a non-virtual build on a virtual builder.
-        archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
-        builder = self.factory.makeBuilder(virtualized=True)
+        # Don't allow a virtual build on a non-virtual builder.
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
+        builder = self.factory.makeBuilder(virtualized=False)
         build = self.factory.makeBinaryPackageBuild(
             builder=builder, archive=archive,
             pocket=PackagePublishingPocket.RELEASE)
@@ -242,9 +242,9 @@ class TestBinaryBuildPackageBehavior(trialtest.TestCase):
         build.distro_arch_series.addOrUpdateChroot(lf)
         candidate = build.queueBuild()
         behavior = candidate.required_build_behavior
-        behavior.setBuilder(build)
+        behavior.setBuilder(builder)
         e = self.assertRaises(
             AssertionError, behavior.verifyBuildRequest, QuietFakeLogger())
         self.assertEqual(
-            'Attempt to build non-virtual item on a virtual builder.',
+            'Attempt to build virtual item on a non-virtual builder.',
             str(e))

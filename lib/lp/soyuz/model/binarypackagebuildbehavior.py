@@ -112,7 +112,7 @@ class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):
         build = self.build
         if build.is_virtualized and not self._builder.virtualized:
             raise AssertionError(
-                "Attempt to build non-virtual item on a virtual builder.")
+                "Attempt to build virtual item on a non-virtual builder.")
 
         # Assert that we are not silently building SECURITY jobs.
         # See findBuildCandidates. Once we start building SECURITY
