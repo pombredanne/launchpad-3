@@ -46,17 +46,4 @@
           <tal:comma condition="not:repeat/package/end">, </tal:comma>
         </tal:packages>.
       </div>
-
-      <div id="automatic-imports"
-        tal:define="focus view/context/development_focus"
-        tal:condition="focus/has_translation_files">
-        You can enable 
-        <a tal:attributes="
-          href focus/fmt:url:translations/+translations-settings">
-          automatic imports
-        </a> 
-        for <tal:focus replace="focus/displayname" />.
-
-      </div>
-
 </tal:root>
