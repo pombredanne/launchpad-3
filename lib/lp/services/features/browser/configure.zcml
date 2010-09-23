@@ -14,7 +14,7 @@
         for="canonical.launchpad.interfaces.ILaunchpadRoot"
         class="lp.services.features.browser.FeatureControlView"
         name="+feature-rules"
-        permission="zope.Public"
+        permission="launchpad.Admin"
         template="../templates/features.pt"/>
 
 </configure>

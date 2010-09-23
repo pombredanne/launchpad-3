@@ -12,12 +12,23 @@ from testtools.matchers import (
 
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces import ILaunchpadRoot
+from canonical.launchpad.interfaces import (
+    ILaunchpadCelebrities,
+    ILaunchpadRoot,
+    )
 from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp.interfaces import ILaunchBag
+from canonical.launchpad.webapp.interaction import get_current_principal
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.testing import (
-    BrowserTestCase, TestCase, TestCaseWithFactory, login_person,
-    person_logged_in, time_counter)
+    BrowserTestCase,
+    TestCase,
+    TestCaseWithFactory,
+    celebrity_logged_in,
+    login_person,
+    person_logged_in,
+    time_counter,
+    )
 
 from lp.services.features.browser import FeatureControlView
 from lp.services.features.flags import FeatureController
@@ -28,15 +39,20 @@ class TestFeatureControlPage(BrowserTestCase):
 
     layer = DatabaseFunctionalLayer
 
-    def getFeaturePageBrowser(self):
+    def getFeaturePageBrowserAsAdmin(self):
         root = getUtility(ILaunchpadRoot)
-        url = canonical_url(root,
-            view_name='+feature-rules')
-        return self.getUserBrowser(url)
+        url = canonical_url(root, view_name='+feature-rules')
+        # XXX: To make a UserBrowser, you must know the password.  This should
+        # be separated out into test infrastructure -- mbp 20100923.
+        user = self.factory.makePerson(password='test')
+        admin_team = getUtility(ILaunchpadCelebrities).admin
+        with person_logged_in(admin_team.teamowner):
+            admin_team.addMember(user, reviewer=admin_team.teamowner)
+        return self.getUserBrowser(url, user=user, password='test')
 
     def test_feature_page_default_value(self):
         """No rules in the sampledata gives no content in the page"""
-        browser = self.getFeaturePageBrowser()
+        browser = self.getFeaturePageBrowserAsAdmin()
         textarea = browser.getControl(name="feature_rules")
         # and by default, since there are no rules in the sample data, it's
         # empty
@@ -47,7 +63,7 @@ class TestFeatureControlPage(BrowserTestCase):
             ('default', 'ui.icing', u'3.0', 100),
             ('beta_user', 'ui.icing', u'4.0', 300),
             ])
-        browser = self.getFeaturePageBrowser()
+        browser = self.getFeaturePageBrowserAsAdmin()
         textarea = browser.getControl(name="feature_rules")
         self.assertThat(textarea.value.replace('\r', ''), Equals("""\
 ui.icing\tbeta_user\t300\t4.0
