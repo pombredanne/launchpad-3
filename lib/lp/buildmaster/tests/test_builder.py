@@ -203,8 +203,6 @@ class TestBuilderWithTrial(TrialTestCase):
         return d.addCallback(
             lambda ignored: self.assertFalse(builder.builderok))
 
-    def test_BuilderSet_checkBuilders(self):
-        pass
 
 class Test_rescueBuilderIfLost(TestCaseWithFactory):
     """Tests for lp.buildmaster.model.builder.rescueBuilderIfLost."""
