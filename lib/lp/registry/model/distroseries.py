@@ -63,7 +63,9 @@ from canonical.launchpad.webapp.interfaces import (
     SLAVE_FLAVOR,
     )
 from lp.app.errors import NotFoundError
-from lp.app.enums import ServiceUsage
+from lp.app.enums import (
+    ServiceUsage,
+    service_uses_launchpad)
 from lp.app.interfaces.launchpad import IServiceUsage
 from lp.blueprints.interfaces.specification import (
     SpecificationFilter,
@@ -299,6 +301,16 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def bug_tracking_usage(self):
         """See `IServiceUsage.`"""
         return self.distribution.bug_tracking_usage
+
+    @property
+    def uses_launchpad(self):
+        """ See `IServiceUsage.`"""
+        return (
+            service_uses_launchpad(self.blueprints_usage) or
+            service_uses_launchpad(self.translations_usage) or
+            service_uses_launchpad(self.answers_usage) or
+            service_uses_launchpad(self.codehosting_usage) or
+            service_uses_launchpad(self.bug_tracking_usage))
 
     # DistroArchSeries lookup properties/methods.
     architectures = SQLMultipleJoin(
@@ -730,6 +742,9 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def _customizeSearchParams(self, search_params):
         """Customize `search_params` for this distribution series."""
         search_params.setDistroSeries(self)
+
+    def _getOfficialTagClause(self):
+        return self.distribution._getOfficialTagClause()
 
     @property
     def official_bug_tags(self):

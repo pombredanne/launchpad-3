@@ -43,7 +43,10 @@ from storm.expr import (
     Or,
     SQL,
     )
-from storm.store import EmptyResultSet
+from storm.store import (
+    EmptyResultSet,
+    Store,
+    )
 from storm.zope.interfaces import (
     IResultSet,
     ISQLObjectResultSet,
@@ -399,6 +402,7 @@ class NullBugTask(BugTaskMixin):
                  sourcepackagename=None, distribution=None,
                  distroseries=None):
         """Initialize a NullBugTask."""
+        self.id = None
         self.bug = bug
         self.product = product
         self.productseries = productseries
@@ -756,11 +760,11 @@ class BugTask(SQLBase, BugTaskMixin):
                     conjoined_master = bugtask
                     break
         elif IUpstreamBugTask.providedBy(self):
-            assert self.product.development_focus is not None, (
+            assert self.product.development_focusID is not None, (
                 'A product should always have a development series.')
-            devel_focus = self.product.development_focus
+            devel_focusID = self.product.development_focusID
             for bugtask in bugtasks:
-                if bugtask.productseries == devel_focus:
+                if bugtask.productseriesID == devel_focusID:
                     conjoined_master = bugtask
                     break
 
@@ -2367,7 +2371,11 @@ class BugTaskSet:
             bugtask._syncFromConjoinedSlave()
 
         bugtask.updateTargetNameCache()
-
+        del IPropertyCache(bug).bugtasks
+        # Because of block_implicit_flushes, it is possible for a new bugtask
+        # to be queued in appropriately, which leads to Bug.bugtasks not
+        # finding the bugtask.
+        Store.of(bugtask).flush()
         return bugtask
 
     def getStatusCountsForProductSeries(self, user, product_series):
