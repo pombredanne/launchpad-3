@@ -7,11 +7,8 @@ __metaclass__ = type
 __all__ = ['active_features']
 
 
-from contextlib import contextmanager
 from fixtures import Fixture
 from lp.services.features import per_thread
-from lp.services.features.flags import FeatureController
-from lp.services.features.model import FeatureFlag, getFeatureStore
 
 
 class FeatureFixture(Fixture):
@@ -26,13 +23,9 @@ class FeatureFixture(Fixture):
     `fixtures.TestWithFixtures' and then calling the TestCase's
     `self.useFixture()' method.
 
-    This fixture needs to be run within Launchpad's DatabaseFunctionalLayer.
-
     The fixture can also be used as a context manager. The value of the
     feature within the context block is set to the dictonary's key's value.
     The values are restored when the block exits.
-
-    All flags will be set with a priority of 1.
     """
 
     def __init__(self, features_dict):
@@ -46,26 +39,36 @@ class FeatureFixture(Fixture):
     def setUp(self):
         """Set the feature flags that this fixture is responsible for."""
         super(FeatureFixture, self).setUp()
-        self._setup_flags_database()
-        self._setup_feature_controller()
 
-    def _setup_flags_database(self):
-        store = getFeatureStore()
-        for flag, setting in self.desired_features.iteritems():
-            flag = store.add(
-                    FeatureFlag(
-                        scope=u'default',
-                        flag=unicode(flag),
-                        value=unicode(setting),
-                        priority=1))
-            self.addCleanup(store.remove, flag)
+        controller = FakeFeatureController()
 
-    def _setup_feature_controller(self):
-        # XXX mars 2010-09-22 bug=631884
-        # Currently the first features users has to set per-thread
-        # features.
+        # Save the currently set features and their controller
         original_features = getattr(per_thread, 'features', None)
-        def in_scope(value):
-            return True
-        per_thread.features = FeatureController(in_scope)
+        if original_features:
+            controller.update(original_features.getAllFlags())
+
+        # Add our new flags, overriding old ones if necessary
+        controller.update(self.desired_features)
+
+        per_thread.features = controller
         self.addCleanup(setattr, per_thread, 'features', original_features)
+
+
+class FakeFeatureController(dict):
+    """A FeatureController test double that does not hit the database.
+
+    This is essentially a glorified dict :)
+    """
+
+    def __init__(self, scopes_callback=None):
+        pass
+
+    def getFlag(self, flag_name):
+        return self.get(flag_name)
+
+    def getAllFlags(self):
+        return self
+
+    def setFlag(self, flag_name, value):
+        """A convenience method for setting a feature flag."""
+        self[flag_name] = value
