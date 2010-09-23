@@ -6,7 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
-    'BaseRDFView',
+    'BaseRdfView',
     'get_status_counts',
     'MilestoneOverlayMixin',
     'RegistryEditFormView',
@@ -259,7 +259,7 @@ class RegistryEditFormView(LaunchpadEditFormView):
         self.updateContextFromData(data)
 
 
-class BaseRdfView(object):
+class BaseRdfView:
     """A view that sets its mime-type to application/rdf+xml"""
 
     template = None
