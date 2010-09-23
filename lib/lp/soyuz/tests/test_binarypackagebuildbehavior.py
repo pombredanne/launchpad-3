@@ -229,3 +229,22 @@ class TestBinaryBuildPackageBehavior(trialtest.TestCase):
         self.assertEqual(
             'Soyuz is not yet capable of building SECURITY uploads.',
             str(e))
+
+    def test_verifyBuildRequest(self):
+        # Don't allow a non-virtual build on a virtual builder.
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
+        builder = self.factory.makeBuilder(virtualized=True)
+        build = self.factory.makeBinaryPackageBuild(
+            builder=builder, archive=archive,
+            pocket=PackagePublishingPocket.RELEASE)
+        lf = self.factory.makeLibraryFileAlias()
+        transaction.commit()
+        build.distro_arch_series.addOrUpdateChroot(lf)
+        candidate = build.queueBuild()
+        behavior = candidate.required_build_behavior
+        behavior.setBuilder(build)
+        e = self.assertRaises(
+            AssertionError, behavior.verifyBuildRequest, QuietFakeLogger())
+        self.assertEqual(
+            'Attempt to build non-virtual item on a virtual builder.',
+            str(e))
