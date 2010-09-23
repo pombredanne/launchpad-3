@@ -542,6 +542,11 @@ class LaunchpadRootNavigation(Navigation):
 
         except (CannotHaveLinkedBranch, InvalidNamespace,
                 InvalidProductName, NotFoundError) as e:
+            # If are aren't arriving at this invalid branch URL from another
+            # page then we just raise an exception, otherwise we end up in a
+            # bad recursion loop.
+            if url is None:
+                raise e
             error_msg = str(e)
             if error_msg == '':
                 error_msg = "Invalid branch lp:%s." % path
