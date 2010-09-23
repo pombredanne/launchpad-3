@@ -59,10 +59,11 @@ class InitialiseDistroSeries:
       in the initialisation of a derivative.
     """
 
-    def __init__(self, distroseries, arches=()):
+    def __init__(self, distroseries, arches=(), packagesets=()):
         self.distroseries = distroseries
         self.parent = self.distroseries.parent_series
         self.arches = arches
+        self.packagesets = packagesets
         self._store = IMasterStore(DistroSeries)
 
     def check(self):
@@ -272,6 +273,8 @@ class InitialiseDistroSeries:
         parent_to_child = {}
         # Create the packagesets, and any archivepermissions
         for parent_ps in packagesets:
+            if self.packagesets and parent_ps.name not in self.packagesets:
+                continue
             child_ps = getUtility(IPackagesetSet).new(
                 parent_ps.name, parent_ps.description,
                 self.distroseries.owner, distroseries=self.distroseries,

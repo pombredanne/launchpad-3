@@ -20,7 +20,10 @@ from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.enums import SourcePackageFormat
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
-from lp.soyuz.interfaces.packageset import IPackagesetSet
+from lp.soyuz.interfaces.packageset import (
+    IPackagesetSet,
+    NoSuchPackageSet,
+    )
 from lp.soyuz.model.distroarchseries import DistroArchSeries
 from lp.soyuz.scripts.initialise_distroseries import (
     InitialisationError,
@@ -124,11 +127,11 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
             foobuntu.isSourcePackageFormatPermitted(
             SourcePackageFormat.FORMAT_1_0))
 
-    def _full_initialise(self):
+    def _full_initialise(self, arches=(), packagesets=()):
         foobuntu = self._create_distroseries(self.hoary)
         self._set_pending_to_failed(self.hoary)
         transaction.commit()
-        ids = InitialiseDistroSeries(foobuntu)
+        ids = InitialiseDistroSeries(foobuntu, arches, packagesets)
         ids.check()
         ids.initialise()
         return foobuntu
@@ -141,12 +144,7 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
     def test_initialise_only_i386(self):
         # Test a full initialise with no errors, but only copy i386 to
         # the child
-        foobuntu = self._create_distroseries(self.hoary)
-        self._set_pending_to_failed(self.hoary)
-        transaction.commit()
-        ids = InitialiseDistroSeries(foobuntu, ('i386', ))
-        ids.check()
-        ids.initialise()
+        foobuntu = self._full_initialise(arches=('i386',))
         self.assertDistroSeriesInitialisedCorrectly(foobuntu)
         das = list(IStore(DistroArchSeries).find(
             DistroArchSeries, distroseries = foobuntu))
@@ -239,6 +237,28 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
             getUtility(IArchivePermissionSet).isSourceUploadAllowed(
                 foobuntu.main_archive, 'pmount', uploader,
                 distroseries=foobuntu))
+
+    def test_copy_limit_packagesets(self):
+        # If a parent series has packagesets, we can decide which ones we
+        # want to copy
+        test1 = getUtility(IPackagesetSet).new(
+            u'test1', u'test 1 packageset', self.hoary.owner,
+            distroseries=self.hoary)
+        test2 = getUtility(IPackagesetSet).new(
+            u'test2', u'test 2 packageset', self.hoary.owner,
+            distroseries=self.hoary)
+        test1.addSources('pmount')
+        foobuntu = self._full_initialise(packagesets=('test1',))
+        foobuntu_test1 = getUtility(IPackagesetSet).getByName(
+            u'test1', distroseries=foobuntu)
+        self.assertEqual(test1.description, foobuntu_test1.description)
+        self.assertRaises(
+            NoSuchPackageSet, getUtility(IPackagesetSet).getByName,
+                u'test2', distroseries=foobuntu)
+        foobuntu_srcs = foobuntu_test1.getSourcesIncluded(
+            direct_inclusion=True)
+        hoary_srcs = test1.getSourcesIncluded(direct_inclusion=True)
+        self.assertEqual(foobuntu_srcs, hoary_srcs)
 
     def test_script(self):
         # Do an end-to-end test using the command-line tool
