@@ -35,7 +35,9 @@ from datetime import (
     )
 import hashlib
 import logging
+from logging.handlers import WatchedFileHandler
 from optparse import OptionParser
+import os.path
 import re
 import sys
 import time
@@ -316,15 +318,48 @@ def logger_options(parser, default=logging.INFO):
         log._log = _logger(parser.values.loglevel, out_stream=sys.stderr)
 
     parser.add_option(
-            "-v", "--verbose", dest="loglevel", default=default,
-            action="callback", callback=dec_loglevel,
-            help="Increase verbosity. May be specified multiple times.")
+        "-v", "--verbose", dest="loglevel", default=default,
+        action="callback", callback=dec_loglevel,
+        help="Increase stderr verbosity. May be specified multiple times.")
     parser.add_option(
-            "-q", "--quiet", action="callback", callback=inc_loglevel,
-            help="Decrease verbosity. May be specified multiple times.")
+        "-q", "--quiet", action="callback", callback=inc_loglevel,
+        help="Decrease stderr verbosity. May be specified multiple times.")
+
+    debug_levels = ', '.join([
+        v for k, v in sorted(logging._levelNames.items(), reverse=True)
+            if isinstance(k, int)])
+
+    def log_file(option, opt_str, value, parser):
+        try:
+            level, path = value.split(':', 1)
+        except ValueError:
+            level, path = logging.DEBUG, value
+
+        if isinstance(level, int):
+            pass
+        elif level.upper() not in logging._levelNames:
+            parser.error(
+                "'%s' is not a valid logging level. Must be one of %s" % (
+                    level, debug_levels))
+        else:
+            level = logging._levelNames[level.upper()]
+
+        if not path:
+            parser.error("Path to log file not specified")
+
+        path = os.path.abspath(path)
+        try:
+            open(path, 'a')
+        except Exception:
+            parser.error("Unable to open log file %s" % path)
+
+        parser.values.log_file = path
+        parser.values.log_file_level = level
+
     parser.add_option(
-            "--log-file", action="store", type="string",
-            help="Send log to the given file, rather than stderr.")
+        "--log-file", type="string", action="callback", callback=log_file,
+        metavar="LVL:FILE", default=[],
+        help="Send log messages to FILE. LVL is one of %s" % debug_levels)
 
     # Set the global log
     log._log = _logger(default, out_stream=sys.stderr)
@@ -353,12 +388,9 @@ def logger(options=None, name=None):
         logger_options(parser)
         options, args = parser.parse_args()
 
-    if options.log_file:
-        out_stream = open(options.log_file, 'a')
-    else:
-        out_stream = sys.stderr
-
-    return _logger(options.loglevel, out_stream=out_stream, name=name)
+    return _logger(
+        options.loglevel, out_stream=sys.stderr, name=name,
+        log_file=options.log_file, log_file_level=options.log_file_level)
 
 
 def reset_root_logger():
@@ -372,7 +404,9 @@ def reset_root_logger():
         root_logger.removeHandler(hdlr)
 
 
-def _logger(level, out_stream, name=None):
+def _logger(
+    level, out_stream, name=None,
+    log_file=None, log_file_level=logging.DEBUG):
     """Create the actual logger instance, logging at the given level
 
     if name is None, it will get args[0] without the extension (e.g. gina).
@@ -404,11 +438,24 @@ def _logger(level, out_stream, name=None):
     hdlr.setFormatter(formatter)
     root_logger.addHandler(hdlr)
 
+    # Add an optional aditional log file.
+    if log_file is not None:
+        handler = WatchedFileHandler(log_file, encoding="UTF8")
+        handler.setFormatter(formatter)
+        handler.setLevel(log_file_level)
+        root_logger.addHandler(handler)
+
     # Create our logger
     logger = logging.getLogger(name)
 
     # Set the global log
     log._log = logger
+
+    # Inform the user the extra log file is in operation.
+    if log_file is not None:
+        log.info(
+            "Logging %s and higher messages to %s" % (
+                logging.getLevelName(log_file_level), log_file))
 
     return logger
 
