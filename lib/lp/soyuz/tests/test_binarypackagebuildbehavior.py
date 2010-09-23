@@ -140,6 +140,27 @@ class TestBinaryBuildPackageBehavior(trialtest.TestCase):
             builder, build, lf, archive, ArchivePurpose.PRIMARY, 'universe')
         return d
 
+    def test_virtual_ppa_dispatch(self):
+        # This is testing to make sure the builder slave gets reset
+        # before a build is dispatched to it.
+        archive = self.factory.makeArchive(virtualized=True)
+        slave = OkSlave()
+        builder = self.factory.makeBuilder(
+            virtualized=True, vm_host="foohost")
+        builder.setSlaveForTesting(slave)
+        build = self.factory.makeBinaryPackageBuild(
+            builder=builder, archive=archive)
+        lf = self.factory.makeLibraryFileAlias()
+        transaction.commit()
+        build.distro_arch_series.addOrUpdateChroot(lf)
+        candidate = build.queueBuild()
+        d = self.startBuild(builder, candidate)
+        d.addCallback(
+            self.assertExpectedInteraction, slave.call_log,
+            builder, build, lf, archive, ArchivePurpose.PRIMARY, 'universe')
+        return d
+
+
     def test_partner_dispatch_no_publishing_history(self):
         archive = self.factory.makeArchive(
             virtualized=False, purpose=ArchivePurpose.PARTNER)
