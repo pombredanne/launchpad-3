@@ -9,12 +9,7 @@ import signal
 import socket
 import xmlrpclib
 
-import fixtures
-
 from twisted.web.client import getPage
-
-from testtools.content import Content
-from testtools.content_type import UTF8_TEXT
 
 from twisted.internet.task import Clock
 from twisted.python.failure import Failure
@@ -24,7 +19,6 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.buildd.slave import BuilderStatus
-from canonical.buildd.tests.harness import BuilddSlaveTestSetup
 from canonical.config import config
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.webapp.interfaces import (
@@ -49,12 +43,12 @@ from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     )
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.buildmaster.interfaces.builder import CannotResumeHost
-from lp.buildmaster.model.builder import BuilderSlave
 from lp.buildmaster.model.buildfarmjobbehavior import IdleBuildBehavior
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.buildmaster.tests.mock_slaves import (
     AbortedSlave,
     MockBuilder,
+    SlaveTestHelpers,
     )
 from lp.soyuz.enums import (
     ArchivePurpose,
@@ -496,72 +490,6 @@ class TestCurrentBuildBehavior(TestCaseWithFactory):
 
         self.assertIsInstance(
             self.builder.current_build_behavior, BinaryPackageBuildBehavior)
-
-
-class SlaveTestHelpers(fixtures.Fixture):
-
-    # The URL for the XML-RPC service set up by `BuilddSlaveTestSetup`.
-    BASE_URL = 'http://localhost:8221'
-    TEST_URL = '%s/rpc/' % (BASE_URL,)
-
-    def getServerSlave(self):
-        """Set up a test build slave server.
-
-        :return: A `BuilddSlaveTestSetup` object.
-        """
-        tachandler = BuilddSlaveTestSetup()
-        tachandler.setUp()
-        # Basically impossible to do this w/ TrialTestCase. But it would be
-        # really nice to keep it.
-        #
-        # def addLogFile(exc_info):
-        #     self.addDetail(
-        #         'xmlrpc-log-file',
-        #         Content(UTF8_TEXT, lambda: open(tachandler.logfile, 'r').read()))
-        # self.addOnException(addLogFile)
-        self.addCleanup(tachandler.tearDown)
-        return tachandler
-
-    def getClientSlave(self):
-        """Return a `BuilderSlave` for use in testing.
-
-        Points to a fixed URL that is also used by `BuilddSlaveTestSetup`.
-        """
-        return BuilderSlave(self.TEST_URL, 'vmhost')
-
-    def makeCacheFile(self, tachandler, filename):
-        """Make a cache file available on the remote slave.
-
-        :param tachandler: The TacTestSetup object used to start the remote
-            slave.
-        :param filename: The name of the file to create in the file cache
-            area.
-        """
-        path = os.path.join(tachandler.root, 'filecache', filename)
-        fd = open(path, 'w')
-        fd.write('something')
-        fd.close()
-        self.addCleanup(os.unlink, path)
-
-    def triggerGoodBuild(self, slave, build_id=None):
-        """Trigger a good build on 'slave'.
-
-        :param slave: A `BuilderSlave` instance to trigger the build on.
-        :param build_id: The build identifier. If not specified, defaults to
-            an arbitrary string.
-        :type build_id: str
-        :return: The build id returned by the slave.
-        """
-        if build_id is None:
-            build_id = 'random-build-id'
-        tachandler = self.getServerSlave()
-        chroot_file = 'fake-chroot'
-        dsc_file = 'thing'
-        self.makeCacheFile(tachandler, chroot_file)
-        self.makeCacheFile(tachandler, dsc_file)
-        return slave.build(
-            build_id, 'debian', chroot_file, {'.dsc': dsc_file},
-            {'ogrecomponent': 'main'})
 
 
 class TestSlave(TrialTestCase):
