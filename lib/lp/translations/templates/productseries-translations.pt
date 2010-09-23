@@ -24,9 +24,13 @@
 
       <tal:no-languages condition="not:view/productserieslanguages">
         <div class="yui-b top-portlet">
-          <tal:official_use replace="
-            structure
-            context/@@+portlet-not-using-launchpad"/>
+
+          <tal:not-using-launchpad
+            condition="not: context/translations_usage/enumvalue:LAUNCHPAD">
+            <tal:message
+              replace="structure context/@@+portlet-not-using-launchpad"/>
+          </tal:not-using-launchpad>
+
           <p>There are no translations for this release series.</p>
 
           <p tal:condition="context/product/required:launchpad.Edit">To
