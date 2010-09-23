@@ -32,7 +32,7 @@
         replace="structure context/@@+portlet-configuration"/>
     </tal:not-using-launchpad>
 
-    <div tal:omit-tag tal:condition="view/show_page_content">
+    <tal:show-page-content condition="view/show_page_content">
     <tal:translation_focus condition="view/translation_focus"
                            define="target view/translation_focus">
 
@@ -102,7 +102,7 @@
         distroseries, you will be able to find or create its translations here.
       </p>
     </tal:untranslatable>
-  </div>
+    </tal:show-page-content>
 </div>
 </body>
 </html>

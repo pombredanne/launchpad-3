@@ -6,21 +6,21 @@
 
     <div id="not-translated-in-launchpad">
       <strong>
-      <div tal:omit-tag
-        tal:condition="context/translations_usage/enumvalue:UNKNOWN">
+      <tal:lauchpad-unknown
+        condition="context/translations_usage/enumvalue:UNKNOWN">
         Launchpad does not know where
         <tal:project replace="context/displayname" /> translates its messages.
-      </div>
-      <div tal:omit-tag
-        tal:condition="context/translations_usage/enumvalue:EXTERNAL">
+      </tal:lauchpad-unknown>
+      <tal:launchpad-external
+        condition="context/translations_usage/enumvalue:EXTERNAL">
         <tal:project replace="context/displayname" /> does not use Launchpad
         to translate its messages.
-      </div>
-      <div tal:omit-tag
+      </tal:launchpad-external>
+      <tal:launchpad-not-applicable
         tal:condition="context/translations_usage/enumvalue:NOT_APPLICABLE">
         <tal:project replace="context/displayname" /> does not translate its
         messages.
-      </div>
+      </tal:launchpad-not-applicable>
       </strong>
     </div>
 </tal:root>
