@@ -476,9 +476,12 @@
                     name
                     is_visible
                     is_custom
-                    show
-                    hide
-                    setCustom
+                    "/>
+            <require
+                premission="launchpad.Edit"
+                set_attributes="
+                    is_visible
+                    is_custom
                     "/>
             <implements
                 interface="lp.bugs.interfaces.bugtracker.IBugTrackerComponent"/>
