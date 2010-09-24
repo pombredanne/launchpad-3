@@ -39,7 +39,7 @@ def generate_wadl(version):
     return request.publication.getApplication(request)(request)
 
 
-def generate_html(wadl_filename):
+def generate_html(wadl_filename, suppress_stderr=True):
     """Given a WADL file generate HTML documentation from it."""
     # If we're supposed to prevent the subprocess from generating output on
     # stderr (like we want to do during test runs), we reassign the subprocess
@@ -47,7 +47,16 @@ def generate_html(wadl_filename):
     # subprocess inherit stderr.
     stylesheet = pkg_resources.resource_filename(
         'launchpadlib', 'wadl-to-refhtml.xsl')
-    return subprocess.Popen(
-        ['xsltproc', stylesheet, wadl_filename],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE).communicate()[0]
+    if suppress_stderr:
+        stderr = subprocess.PIPE
+    else:
+        stderr = None
+    args = ['xsltproc', stylesheet, wadl_filename]
+    process = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=stderr)
+
+    output = process.communicate()[0]
+    if process.returncode != 0:
+        raise subprocess.CalledProcessError(process.returncode, args)
+
+    return output
+
