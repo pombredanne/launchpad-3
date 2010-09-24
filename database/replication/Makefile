@@ -47,7 +47,7 @@ PGMASSACRE=../../utilities/pgmassacre.py
 
 CREATEDB_83=createdb --encoding=UTF8
 CREATEDB_84=createdb --encoding=UTF8 --locale=C --template=template0
-CREATEDB=${CREATEDB_83}
+CREATEDB=${CREATEDB_84}
 
 # Turn off output silencing so we can see details of staging deployments.
 # Without the timestamps, we are unable to estimate production deployment

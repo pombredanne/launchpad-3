@@ -5,10 +5,50 @@
 
 __metaclass__ = type
 __all__ = [
+    'BlockingProxy',
+    'DeferredBlockingProxy',
     'trap_fault',
     ]
 
+from twisted.internet import defer
 from twisted.web.xmlrpc import Fault
+
+
+class BlockingProxy:
+    """Make an xmlrpclib.ServerProxy behave like a Twisted XML-RPC proxy.
+
+    This is useful for writing code that needs to work in both a synchronous
+    and asynchronous fashion.
+
+    Also, some people prefer the callRemote style of invocation, which is more
+    explicit.
+    """
+
+    def __init__(self, proxy):
+        """Construct a `BlockingProxy`.
+
+        :param proxy: An xmlrpclib.ServerProxy.
+        """
+        self._proxy = proxy
+
+    def callRemote(self, method_name, *args, **kwargs):
+        return getattr(self._proxy, method_name)(*args, **kwargs)
+
+
+class DeferredBlockingProxy(BlockingProxy):
+    """Make an xmlrpclib.ServerProxy behave more like a Twisted XML-RPC proxy.
+
+    This is almost exactly like 'BlockingProxy', except that this returns
+    Deferreds. It is guaranteed to be exactly as synchronous as the passed-in
+    proxy. That means if you pass in a normal xmlrpclib proxy you ought to be
+    able to use `lp.services.twistedsupport.extract_result` to get the result.
+    """
+
+    def callRemote(self, method_name, *args, **kwargs):
+        return defer.maybeDeferred(
+            super(DeferredBlockingProxy, self).callRemote,
+            method_name, *args, **kwargs)
+
 
 
 def trap_fault(failure, *fault_classes):

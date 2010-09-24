@@ -17,10 +17,8 @@ __all__ = [
     ]
 
 from StringIO import StringIO
-import subprocess
 import xmlrpclib
 
-from canonical.config import config
 from lp.buildmaster.interfaces.builder import CannotFetchFile
 from lp.buildmaster.model.builder import (
     rescueBuilderIfLost,
@@ -45,7 +43,7 @@ class MockBuilder:
         self.builderok = True
         self.manual = False
         self.url = 'http://fake:0000'
-        slave.urlbase = self.url
+        slave.url = self.url
         self.name = name
         self.virtualized = True
 
@@ -85,60 +83,43 @@ class MockBuilder:
         updateBuilderStatus(self, logger)
 
 
+# XXX: It would be *really* nice to run some set of tests against the real
+# BuilderSlave and this one to prevent interface skew.
 class OkSlave:
     """An idle mock slave that prints information about itself.
 
     The architecture tag can be customised during initialisation."""
 
     def __init__(self, arch_tag=I386_ARCHITECTURE_NAME):
+        self.call_log = []
         self.arch_tag = arch_tag
 
     def status(self):
         return ('BuilderStatus.IDLE', '')
 
     def ensurepresent(self, sha1, url, user=None, password=None):
-        print "ensurepresent called, url=%s" % url
-        if user is not None and user != "":
-            print "URL authorisation with %s/%s" % (user, password)
+        self.call_log.append(('ensurepresent', url, user, password))
         return True, None
 
     def build(self, buildid, buildtype, chroot, filemap, args):
+        self.call_log.append(
+            ('build', buildid, buildtype, chroot, filemap.keys(), args))
         info = 'OkSlave BUILDING'
-        print info
-        if 'archives' in args:
-            print "Archives:"
-            for archive_line in sorted(args['archives']):
-                print " %s" % archive_line
-        else:
-            print "No archives set."
-        print "Suite: %s" % args['suite']
-        print "Ogre-component: %s" % args['ogrecomponent']
-        print "Archive Purpose: %s" % args['archive_purpose']
-        print "Archive Private: %s" % args['archive_private']
         return ('BuildStatus.Building', info)
 
-    def fetchlogtail(self, size):
-        return 'BOGUS'
-
     def echo(self, *args):
+        self.call_log.append(('echo',) + args)
         return args
 
     def clean(self):
-        pass
+        self.call_log.append('clean')
 
     def abort(self):
-        pass
+        self.call_log.append('abort')
 
     def info(self):
+        self.call_log.append('info')
         return ('1.0', self.arch_tag, 'debian')
-
-    def resume(self):
-        resume_argv = config.builddmaster.vm_resume_command.split()
-        resume_process = subprocess.Popen(
-            resume_argv, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        stdout, stderr = resume_process.communicate()
-
-        return (stdout, stderr, resume_process.returncode)
 
     def sendFileToSlave(self, sha1, url, username="", password=""):
         present, info = self.ensurepresent(sha1, url, username, password)
@@ -146,7 +127,7 @@ class OkSlave:
             raise CannotFetchFile(url, info)
 
     def cacheFile(self, logger, libraryfilealias):
-        self.sendFileToSlave(
+        return self.sendFileToSlave(
             libraryfilealias.content.sha1, libraryfilealias.http_url)
 
 
@@ -158,10 +139,12 @@ class BuildingSlave(OkSlave):
         self.build_id = build_id
 
     def status(self):
+        self.call_log.append('status')
         buildlog = xmlrpclib.Binary("This is a build log")
         return ('BuilderStatus.BUILDING', self.build_id, buildlog)
 
     def getFile(self, sum):
+        self.call_log.append('getFile')
         if sum == "buildlog":
             s = StringIO("This is a build log")
             s.headers = {'content-length': 19}
@@ -183,10 +166,12 @@ class WaitingSlave(OkSlave):
         self.valid_file_hashes = ['buildlog']
 
     def status(self):
+        self.call_log.append('status')
         return ('BuilderStatus.WAITING', self.state, self.build_id, {},
                 self.dependencies)
 
     def getFile(self, hash):
+        self.call_log.append('getFile')
         if hash in self.valid_file_hashes:
             content = "This is a %s" % hash
             s = StringIO(content)
@@ -198,6 +183,7 @@ class AbortingSlave(OkSlave):
     """A mock slave that looks like it's in the process of aborting."""
 
     def status(self):
+        self.call_log.append('status')
         return ('BuilderStatus.ABORTING', '1-1')
 
 
@@ -205,6 +191,7 @@ class AbortedSlave(OkSlave):
     """A mock slave that looks like it's aborted."""
 
     def status(self):
+        self.call_log.append('status')
         return ('BuilderStatus.ABORTED', '1-1')
 
 
@@ -214,10 +201,15 @@ class LostBuildingBrokenSlave:
     When 'aborted' it raises an xmlrpclib.Fault(8002, 'Could not abort')
     """
 
+    def __init__(self):
+        self.call_log = []
+
     def status(self):
+        self.call_log.append('status')
         return ('BuilderStatus.BUILDING', '1000-10000')
 
     def abort(self):
+        self.call_log.append('abort')
         raise xmlrpclib.Fault(8002, "Could not abort")
 
 
@@ -225,4 +217,5 @@ class BrokenSlave:
     """A mock slave that reports that it is broken."""
 
     def status(self):
+        self.call_log.append('status')
         raise xmlrpclib.Fault(8001, "Broken slave")

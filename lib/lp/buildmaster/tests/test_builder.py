@@ -35,6 +35,10 @@ from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.buildmaster.model.builder import BuilderSlave
 from lp.buildmaster.model.buildfarmjobbehavior import IdleBuildBehavior
 from lp.buildmaster.model.buildqueue import BuildQueue
+from lp.buildmaster.tests.mock_slaves import (
+    AbortedSlave,
+    MockBuilder,
+    )
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackagePublishingStatus,
@@ -42,10 +46,6 @@ from lp.soyuz.enums import (
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.model.binarypackagebuildbehavior import (
     BinaryPackageBuildBehavior,
-    )
-from lp.soyuz.tests.soyuzbuilddhelpers import (
-    AbortedSlave,
-    MockBuilder,
     )
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
@@ -128,6 +128,13 @@ class TestBuilder(TestCaseWithFactory):
         # builder.updateStatus should never call handleTimeout() for a
         # single EINTR.
         self.assertEqual(0, builder.handleTimeout.call_count)
+
+    def test_slave(self):
+        # Builder.slave is a BuilderSlave that points at the actual Builder.
+        # The Builder is only ever used in scripts that run outside of the
+        # security context.
+        builder = removeSecurityProxy(self.factory.makeBuilder())
+        self.assertEqual(builder.url, builder.slave.url)
 
 
 class Test_rescueBuilderIfLost(TestCaseWithFactory):
@@ -501,7 +508,7 @@ class TestSlave(TestCase):
 
         Points to a fixed URL that is also used by `BuilddSlaveTestSetup`.
         """
-        return BuilderSlave(self.TEST_URL, 'vmhost')
+        return BuilderSlave.makeBlockingSlave(self.TEST_URL, 'vmhost')
 
     def makeCacheFile(self, tachandler, filename):
         """Make a cache file available on the remote slave.
@@ -552,6 +559,14 @@ class TestSlave(TestCase):
         slave = self.getClientSlave()
         result = self.triggerGoodBuild(slave, build_id)
         self.assertEqual([BuilderStatus.BUILDING, build_id], result)
+
+    def test_clean(self):
+        slave = self.getClientSlave()
+        # XXX: JonathanLange 2010-09-21: Calling clean() on the slave requires
+        # it to be in either the WAITING or ABORTED states, and both of these
+        # states are very difficult to achieve in a test environment. For the
+        # time being, we'll just assert that a clean attribute exists.
+        self.assertNotEqual(getattr(slave, 'clean', None), None)
 
     def test_echo(self):
         # Calling 'echo' contacts the server which returns the arguments we
