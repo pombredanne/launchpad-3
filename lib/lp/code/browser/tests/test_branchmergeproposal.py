@@ -28,6 +28,7 @@ from zope.security.proxy import (
 from canonical.launchpad.database.message import MessageSet
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
@@ -40,9 +41,11 @@ from lp.code.browser.branchmergeproposal import (
     BranchMergeProposalMergedView,
     BranchMergeProposalVoteView,
     DecoratedCodeReviewVoteReference,
+    ICodeReviewNewRevisions,
     IncrementalDiffComment,
     latest_proposals_for_each_branch,
     )
+from lp.code.browser.codereviewcomment import CodeReviewDisplayComment
 from lp.code.enums import (
     BranchMergeProposalStatus,
     CodeReviewVote,
@@ -617,6 +620,20 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
             [comment.incremental_diff for comment in comments
              if zisinstance(comment, IncrementalDiffComment)])
 
+    def test_CodeReviewNewRevisions_implements_ICodeReviewNewRevisions(self):
+        # The browser helper class implements its interface.
+        review_date = datetime(2009, 9, 10, tzinfo=pytz.UTC)
+        revision_date = review_date + timedelta(days=1)
+        bmp = self.factory.makeBranchMergeProposal(
+            date_created=review_date)
+        revision = add_revision_to_branch(
+            self.factory, bmp.source_branch, revision_date)
+
+        view = create_initialized_view(bmp, '+index')
+        new_revisions = view.conversation.comments[0]
+
+        self.assertTrue(verifyObject(ICodeReviewNewRevisions, new_revisions))
+
     def test_include_superseded_comments(self):
         for x, time in zip(range(3), time_counter()):
             if x != 0:
@@ -749,7 +766,8 @@ class TestCommentAttachmentRendering(TestCaseWithFactory):
             body='testing',
             attachments=[('test.diff', 'text/plain', attachment_body)])
         message = MessageSet().fromEmail(msg.as_string())
-        return bmp.createCommentFromMessage(message, None, None, msg)
+        return CodeReviewDisplayComment(
+            bmp.createCommentFromMessage(message, None, None, msg))
 
     def test_nonascii_in_attachment_renders(self):
         # The view should render without errors.
@@ -765,7 +783,7 @@ class TestCommentAttachmentRendering(TestCaseWithFactory):
         # Need to commit in order to read the diff out of the librarian.
         transaction.commit()
         view = create_initialized_view(comment, '+comment-body')
-        [diff_attachment] = view.display_attachments
+        [diff_attachment] = view.comment.display_attachments
         self.assertEqual(u'\u2615', diff_attachment.diff_text)
 
 

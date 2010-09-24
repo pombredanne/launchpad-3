@@ -183,12 +183,12 @@ class DistroSeriesDifference(Storm):
 
     def update(self):
         """See `IDistroSeriesDifference`."""
-        # Updating is expected to be a heavy operation (not called during
-        # requests). We clear the cache beforehand - even though
-        # it is not currently be necessary so that in the future it
-        # won't cause a hard-to find bug if a script ever creates a difference,
-        # copies/publishes a new version and then calls update() (like the
-        # tests for this method do).
+        # Updating is expected to be a heavy operation (not called
+        # during requests). We clear the cache beforehand - even though
+        # it is not currently necessary - so that in the future it
+        # won't cause a hard-to find bug if a script ever creates a
+        # difference, copies/publishes a new version and then calls
+        # update() (like the tests for this method do).
         IPropertyCacheManager(self).clear()
         self._updateType()
         updated = self._updateVersionsAndStatus()
@@ -265,3 +265,10 @@ class DistroSeriesDifference(Storm):
             DistroSeriesDifferenceComment,
             DSDComment.distro_series_difference == self)
         return comments.order_by(Desc(DSDComment.id))
+
+    def blacklist(self, all=False):
+        """See `IDistroSeriesDifference`."""
+        if all:
+            self.status = DistroSeriesDifferenceStatus.BLACKLISTED_ALWAYS
+        else:
+            self.status = DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT

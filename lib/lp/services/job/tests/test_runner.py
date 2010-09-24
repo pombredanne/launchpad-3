@@ -216,10 +216,7 @@ class TestJobRunner(TestCaseWithFactory):
         # aborted, it is None.
         self.assertIs(None, job.job.log)
 
-    # XXX michaeln 2010-09-22 bug=644984
-    # This is failing sometimes, but has not yet been reproduced
-    # locally.
-    def _disabled_test_runAll_mails_oopses(self):
+    def test_runAll_mails_oopses(self):
         """Email interested parties about OOPses."""
         job_1, job_2 = self.makeTwoJobs()
         def raiseError():

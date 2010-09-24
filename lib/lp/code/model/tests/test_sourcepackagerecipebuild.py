@@ -26,6 +26,7 @@ from canonical.testing.layers import (
 from lp.app.errors import NotFoundError
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
+from lp.buildmaster.tests.mock_slaves import WaitingSlave
 from lp.buildmaster.tests.test_packagebuild import (
     TestGetUploadMethodsMixin,
     TestHandleStatusMixin,
@@ -43,7 +44,6 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.mail.sendmail import format_address
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.model.processor import ProcessorFamily
-from lp.soyuz.tests.soyuzbuilddhelpers import WaitingSlave
 from lp.testing import (
     ANONYMOUS,
     login,
@@ -290,6 +290,17 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         # queue entries and then invalidate itself.
         build = self.factory.makeSourcePackageRecipeBuild()
         build.destroySelf()
+
+    def test_destroySelf_clears_release(self):
+        # Destroying a sourcepackagerecipebuild removes references to it from
+        # its releases.
+        build = self.factory.makeSourcePackageRecipeBuild()
+        release = self.factory.makeSourcePackageRelease(
+            source_package_recipe_build=build)
+        self.assertEqual(build, release.source_package_recipe_build)
+        build.destroySelf()
+        self.assertIs(None, release.source_package_recipe_build)
+        transaction.commit()
 
     def test_cancelBuild(self):
         # ISourcePackageRecipeBuild should make sure to remove jobs and build

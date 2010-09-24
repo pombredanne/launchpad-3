@@ -195,7 +195,7 @@
           </tal:branches>
         </div><!-- bug-branch-container -->
 
-        <div tal:condition="context/bug/cves" class="cves">
+        <div tal:condition="context/bug/has_cves" class="cves">
           <h2>CVE References</h2>
           <ul>
             <li class="sprite cve" tal:repeat="cve context/bug/cves">
@@ -215,8 +215,8 @@
           <tal:is-comment
               define="comment comment_or_activity/comment|nothing"
               condition="comment">
-            <tal:comment-box condition="python: comment.can_be_shown and
-                                       (view.user_is_admin or
+            <tal:comment-box condition="python: (
+                                       view.user_is_admin or
                                        comment.visible)"
                              replace="structure comment/@@+box">
             </tal:comment-box>
