@@ -208,9 +208,8 @@ class BugTracker(SQLBase):
     watches = SQLMultipleJoin(
         'BugWatch', joinColumn='bugtracker', orderBy='-datecreated',
         prejoins=['bug'])
-
     component_groups = SQLMultipleJoin(
-        'BugTrackerComponentGroup', joinColumn='bug_tracker', orderBy='name')
+        'BugTrackerComponentGroup', joinColumn='bug_tracker_id', orderBy='name')
 
     _filing_url_patterns = {
         BugTrackerType.BUGZILLA: (
@@ -544,17 +543,6 @@ class BugTracker(SQLBase):
 
         return component_group
 
-    def getAllRemoteComponentGroups(self):
-        """See `IBugTracker`."""
-        component_groups = []
-
-        component_groups = Store.of(self).find(
-            BugTrackerComponentGroup,
-            BugTrackerComponentGroup.bug_tracker == self.id)
-        component_groups = component_groups.order_by(
-            BugTrackerComponentGroup.name)
-        return component_groups
-
     def getRemoteComponentGroup(self, component_group_name):
         """See `IBugTracker`."""
         component_group = None
@@ -761,7 +749,6 @@ class BugTrackerComponentGroup(Storm):
     name = Unicode(allow_none=False)
     bug_tracker_id = Int('bug_tracker')
     bug_tracker = Reference(bug_tracker_id, 'BugTracker.id')
-
     components = ReferenceSet(
         id,
         BugTrackerComponent.component_group_id,
@@ -776,7 +763,7 @@ class BugTrackerComponentGroup(Storm):
 
         store = IStore(BugTrackerComponent)
         store.add(component)
-        store.commit()
+        store.flush()
 
         return component
 
@@ -805,6 +792,6 @@ class BugTrackerComponentGroup(Storm):
 
         store = IStore(BugTrackerComponent)
         store.add(component)
-        store.commit()
+        store.flush()
 
         return component

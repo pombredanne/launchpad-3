@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test for components and component groups (products) in bug trackers."""
@@ -106,7 +106,7 @@ class TestBugTrackerWithComponents(TestCaseWithFactory):
         self.assertEqual(comp_group, None)
 
         # Verify it contains no component groups
-        comp_groups = self.bug_tracker.getAllRemoteComponentGroups()
+        comp_groups = self.bug_tracker.component_groups
         self.assertEqual(len(list(comp_groups)), 0)
 
     def test_single_product_bugtracker(self):
