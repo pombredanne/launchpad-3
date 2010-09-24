@@ -758,7 +758,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
                 self, object_before_modification=old_product,
                 edited_fields=['_owner']))
         else:
-            # The new_owner is the same as the current owner.
+            # The new owner is the same as the current owner.
             pass
 
     owner = property(_getOwner, _setOwner)
