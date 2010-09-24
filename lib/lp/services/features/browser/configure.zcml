@@ -15,6 +15,6 @@
         class="lp.services.features.browser.FeatureControlView"
         name="+feature-rules"
         permission="launchpad.Admin"
-        template="../templates/features.pt"/>
+        template="../templates/feature-rules.pt"/>
 
 </configure>
