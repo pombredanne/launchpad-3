@@ -199,6 +199,80 @@ SINGLE_PRODUCT_BUGTRACKERTYPES = [
     ]
 
 
+class IBugTrackerComponent(Interface):
+    """The software component in the remote bug tracker.
+
+    Most bug trackers organize bug reports by the software 'component'
+    they affect.  This class provides a mapping of this upstream component
+    to the corresponding source package in the distro.
+    """
+    export_as_webservice_entry()
+
+    id = Int(title=_('ID'), required=True, readonly=True)
+    is_visible = Bool(title=_('Is Visible?'),
+                      description=_("Should the component be shown in "
+                                    "the Launchpad web interface?"),
+                      readonly=True)
+    is_custom = Bool(title=_('Is Custom?'),
+                     description=_("Was the component added locally in "
+                                   "Launchpad?  If it was, we must retain "
+                                   "it across updates of bugtracker data."),
+                     readonly=True)
+
+    name = exported(
+        Text(
+            title=_('Name'),
+            constraint=name_validator,
+            description=_('The name of a software component'
+                          'in a remote bug tracker')))
+
+    distro_source_package = exported(
+        Reference(
+            title=_('Distribution Source Package'),
+            schema=Interface,
+            description=_('The distribution source package for this '
+                          'component, if one has been defined.')))
+
+    @export_write_operation()
+    def show():
+        """Cause this component to be shown in the Launchpad web interface"""
+
+    @export_write_operation()
+    def hide():
+        """Do not show this component in the Launchpad web interface"""
+
+
+class IBugTrackerComponentGroup(Interface):
+    """A collection of components in a remote bug tracker.
+
+    Some bug trackers organize sets of components into higher level groups,
+    such as Bugzilla's 'product'.
+    """
+    export_as_webservice_entry()
+
+    id = Int(title=_('ID'))
+
+    name = exported(
+        Text(
+            title=_('Name'),
+            constraint=name_validator,
+            description=_('The name of the bug tracker product.')))
+
+    components = exported(
+        Reference(title=_('Components'), schema=Interface))
+
+    bug_tracker = exported(
+        Reference(title=_('BugTracker'), schema=Interface))
+
+    @operation_parameters(
+        component_name=TextLine(
+            title=u"The name of the remote software component to be added",
+            required=True))
+    @export_write_operation()
+    def addComponent(component_name):
+        """Adds a component to be tracked as part of this component group"""
+
+
 class IBugTracker(Interface):
     """A remote bug system."""
     export_as_webservice_entry()
@@ -371,8 +445,7 @@ class IBugTracker(Interface):
     @operation_parameters(
         component_group_name=TextLine(
             title=u"The name of the remote component group", required=True))
-# TODO: Why can't I specify this as the return type?
-#    @operation_returns_entry(IBugTrackerComponentGroup)
+    @operation_returns_entry(IBugTrackerComponentGroup)
     @export_read_operation()
     def getRemoteComponentGroup(component_group_name):
         """Retrieve a given component group registered with the bug tracker.
