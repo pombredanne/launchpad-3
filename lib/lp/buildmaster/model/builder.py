@@ -81,7 +81,7 @@ from lp.services.job.model.job import Job
 from lp.services.osutils import until_no_eintr
 from lp.services.propertycache import cachedproperty
 from lp.services.twistedsupport.processmonitor import ProcessWithTimeout
-from lp.services.twistedsupport.xmlrpc import BlockingProxy
+from lp.services.twistedsupport.xmlrpc import DeferredBlockingProxy
 # XXX Michael Nelson 2010-01-13 bug=491330
 # These dependencies on soyuz will be removed when getBuildRecords()
 # is moved.
@@ -157,7 +157,8 @@ class BuilderSlave(object):
         server_proxy = xmlrpclib.ServerProxy(
             rpc_url, transport=TimeoutTransport(), allow_none=True)
         file_cache_url = urlappend(url_base, 'filecache')
-        return cls(BlockingProxy(server_proxy), file_cache_url, vm_host)
+        return cls(
+            DeferredBlockingProxy(server_proxy), file_cache_url, vm_host)
 
     def abort(self):
         """Abort the current build."""
@@ -182,12 +183,12 @@ class BuilderSlave(object):
     def ensurepresent(self, sha1sum, url, username, password):
         # XXX: Nothing external calls this. Make it private.
         """Attempt to ensure the given file is present."""
-        return defer.succeed(
-            self._server.callRemote(
-                'ensurepresent', sha1sum, url, username, password))
+        return self._server.callRemote(
+            'ensurepresent', sha1sum, url, username, password)
 
     def getFile(self, sha_sum):
         """Construct a file-like object to return the named file."""
+        # XXX: Change this to do non-blocking IO.
         file_url = urlappend(self._file_cache_url, sha_sum)
         return urllib2.urlopen(file_url)
 
@@ -245,11 +246,12 @@ class BuilderSlave(object):
         :param args: A dictionary of extra arguments. The contents depend on
             the build job type.
         """
-        try:
-            return self._server.callRemote(
-                'build', buildid, builder_type, chroot_sha1, filemap, args)
-        except xmlrpclib.Fault, info:
-            raise BuildSlaveFailure(info)
+        d = self._server.callRemote(
+            'build', buildid, builder_type, chroot_sha1, filemap, args)
+        def got_fault(failure):
+            failure.trap(xmlrpclib.Fault)
+            raise BuildSlaveFailure(failure.value)
+        return d.addErrback(got_fault)
 
 
 # This is a separate function since MockBuilder needs to use it too.

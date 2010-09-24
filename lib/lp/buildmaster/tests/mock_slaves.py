@@ -103,7 +103,7 @@ class OkSlave:
         self.arch_tag = arch_tag
 
     def status(self):
-        return ('BuilderStatus.IDLE', '')
+        return defer.succeed(('BuilderStatus.IDLE', ''))
 
     def ensurepresent(self, sha1, url, user=None, password=None):
         self.call_log.append(('ensurepresent', url, user, password))
@@ -113,21 +113,23 @@ class OkSlave:
         self.call_log.append(
             ('build', buildid, buildtype, chroot, filemap.keys(), args))
         info = 'OkSlave BUILDING'
-        return ('BuildStatus.Building', info)
+        return defer.succeed(('BuildStatus.Building', info))
 
     def echo(self, *args):
         self.call_log.append(('echo',) + args)
-        return args
+        return defer.succeed(args)
 
     def clean(self):
         self.call_log.append('clean')
+        return defer.succeed(None)
 
     def abort(self):
         self.call_log.append('abort')
+        return defer.succeed(None)
 
     def info(self):
         self.call_log.append('info')
-        return ('1.0', self.arch_tag, 'debian')
+        return defer.succeed(('1.0', self.arch_tag, 'debian'))
 
     def resume(self):
         self.call_log.append('resume')
@@ -155,9 +157,11 @@ class BuildingSlave(OkSlave):
     def status(self):
         self.call_log.append('status')
         buildlog = xmlrpclib.Binary("This is a build log")
-        return ('BuilderStatus.BUILDING', self.build_id, buildlog)
+        return defer.succeed(
+            ('BuilderStatus.BUILDING', self.build_id, buildlog))
 
     def getFile(self, sum):
+        # XXX: This needs to be updated to return a Deferred.
         self.call_log.append('getFile')
         if sum == "buildlog":
             s = StringIO("This is a build log")
@@ -185,11 +189,12 @@ class WaitingSlave(OkSlave):
 
     def status(self):
         self.call_log.append('status')
-        return (
+        return defer.succeed((
             'BuilderStatus.WAITING', self.state, self.build_id, self.filemap,
-            self.dependencies)
+            self.dependencies))
 
     def getFile(self, hash):
+        # XXX: This needs to be updated to return a Deferred.
         self.call_log.append('getFile')
         if hash in self.valid_file_hashes:
             content = "This is a %s" % hash
@@ -203,7 +208,7 @@ class AbortingSlave(OkSlave):
 
     def status(self):
         self.call_log.append('status')
-        return ('BuilderStatus.ABORTING', '1-1')
+        return defer.succeed(('BuilderStatus.ABORTING', '1-1'))
 
 
 class AbortedSlave(OkSlave):
@@ -211,7 +216,7 @@ class AbortedSlave(OkSlave):
 
     def status(self):
         self.call_log.append('status')
-        return ('BuilderStatus.ABORTED', '1-1')
+        return defer.succeed(('BuilderStatus.ABORTED', '1-1'))
 
 
 class LostBuildingBrokenSlave:
@@ -225,11 +230,11 @@ class LostBuildingBrokenSlave:
 
     def status(self):
         self.call_log.append('status')
-        return ('BuilderStatus.BUILDING', '1000-10000')
+        return defer.succeed(('BuilderStatus.BUILDING', '1000-10000'))
 
     def abort(self):
         self.call_log.append('abort')
-        raise xmlrpclib.Fault(8002, "Could not abort")
+        raise defer.fail(xmlrpclib.Fault(8002, "Could not abort"))
 
 
 class BrokenSlave:
@@ -237,7 +242,7 @@ class BrokenSlave:
 
     def status(self):
         self.call_log.append('status')
-        raise xmlrpclib.Fault(8001, "Broken slave")
+        raise defer.fail(xmlrpclib.Fault(8001, "Broken slave"))
 
 
 class SlaveTestHelpers(fixtures.Fixture):
