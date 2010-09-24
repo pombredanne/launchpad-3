@@ -5,10 +5,13 @@
 
 __metaclass__ = type
 
+from storm.store import Store
+import transaction
 from zope.component import getUtility
 from zope.interface.verify import verifyObject
 
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.config import config
+from canonical.testing import LaunchpadZopelessLayer
 from lp.buildmaster.enums import BuildFarmJobType
 from lp.buildmaster.interfaces.buildfarmjob import (
     IBuildFarmJob,
@@ -29,7 +32,7 @@ from lp.translations.interfaces.translationtemplatesbuildjob import (
 
 class TestTranslationTemplatesBuild(TestCaseWithFactory):
 
-    layer = DatabaseFunctionalLayer
+    layer = LaunchpadZopelessLayer
 
     def _makeBuildFarmJob(self):
         """Create a `BuildFarmJob` for testing."""
@@ -47,6 +50,20 @@ class TestTranslationTemplatesBuild(TestCaseWithFactory):
         self.assertTrue(verifyObject(IBuildFarmJob, build))
         self.assertEqual(build_farm_job, build.build_farm_job)
         self.assertEqual(branch, build.branch)
+
+    def test_permissions(self):
+        # The branch scanner creates TranslationTemplatesBuilds.  It has
+        # the database privileges it needs for that.
+        branch = self.factory.makeBranch()
+        transaction.commit()
+        self.layer.switchDbUser(config.branchscanner.dbuser)
+        utility = getUtility(ITranslationTemplatesBuildSource)
+        build_farm_job = self._makeBuildFarmJob()
+        specific_job = utility.create(build_farm_job, branch)
+
+        # Writing the new objects to the database violates no access
+        # restrictions.
+        Store.of(build_farm_job).flush()
 
     def test_created_by_buildjobsource(self):
         # ITranslationTemplatesBuildJobSource.create also creates a
