@@ -196,7 +196,7 @@ class TestUpdatePreviewDiffJob(DiffTestCase):
 
     def test_run(self):
         self.useBzrBranches(direct_database=True)
-        bmp = self.createExampleMerge()[0]
+        bmp = create_example_merge(self)
         job = UpdatePreviewDiffJob.create(bmp)
         self.factory.makeRevisionsForBranch(bmp.source_branch, count=1)
         bmp.source_branch.next_mirror_time = None
@@ -230,7 +230,7 @@ class TestUpdatePreviewDiffJob(DiffTestCase):
 
     def test_10_minute_lease(self):
         self.useBzrBranches(direct_database=True)
-        bmp = self.createExampleMerge()[0]
+        bmp = create_example_merge(self)[0]
         job = UpdatePreviewDiffJob.create(bmp)
         job.acquireLease()
         expiry_delta = job.lease_expires - datetime.now(pytz.UTC)
@@ -278,7 +278,7 @@ class TestGenerateIncrementalDiffJob(DiffTestCase):
         transaction.commit()
 
     def test_run_all(self):
-        job = self.makeRunnableJob()
+        job = make_runnable_incremental_diff_job(self)
         transaction.commit()
         self.layer.switchDbUser(config.merge_proposal_jobs.dbuser)
         runner = JobRunner([job])
@@ -287,7 +287,7 @@ class TestGenerateIncrementalDiffJob(DiffTestCase):
 
     def test_10_minute_lease(self):
         self.useBzrBranches(direct_database=True)
-        bmp = self.createExampleMerge()[0]
+        bmp = create_example_merge(self)[0]
         job = GenerateIncrementalDiffJob.create(bmp, 'old', 'new')
         transaction.commit()
         self.layer.switchDbUser(config.merge_proposal_jobs.dbuser)
