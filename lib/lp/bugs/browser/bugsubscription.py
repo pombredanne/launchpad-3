@@ -10,8 +10,6 @@ __all__ = [
     'BugSubscriptionAddView',
     ]
 
-from operator import attrgetter
-
 from lazr.delegates import delegates
 from simplejson import dumps
 
@@ -99,7 +97,7 @@ class BugPortletDuplicateSubcribersContents(LaunchpadView, BugViewMixin):
             SubscriptionAttrDecorator(subscription)
             for subscription in sorted(
                 self.context.getSubscriptionsFromDuplicates(),
-                key=attrgetter("person.displayname"))
+                key=(lambda subscription: subscription.person.displayname))
             ]
 
 
