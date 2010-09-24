@@ -44,7 +44,6 @@ from lp.testing import (
     login_person,
     TestCaseWithFactory,
     )
-from lp.testing.fakelibrarian import FakeLibrarian
 
 
 class RecordLister(logging.Handler):
@@ -567,40 +566,39 @@ class TestIncrementalDiff(DiffTestCase):
         diff.
         """
         self.useBzrBranches(direct_database=True)
-        with FakeLibrarian() as librarian:
-            prerequisite_branch = self.factory.makeAnyBranch()
-            bmp = self.factory.makeBranchMergeProposal(
-                prerequisite_branch=prerequisite_branch)
-            target_branch = self.createBzrBranch(bmp.target_branch)
-            old_revision_id = self.commitFile(
-                bmp.target_branch, 'foo', 'a\nb\ne\n')
-            old_revision = self.factory.makeRevision(rev_id=old_revision_id)
-            source_branch = self.createBzrBranch(
-                bmp.source_branch, target_branch)
-            self.commitFile(
-                bmp.source_branch, 'foo', 'a\nc\ne\n')
-            prerequisite = self.createBzrBranch(
-                bmp.prerequisite_branch, target_branch)
-            prerequisite_revision = self.commitFile(bmp.prerequisite_branch,
-                'foo', 'd\na\nb\ne\n')
-            merge_parent = self.commitFile(bmp.target_branch, 'foo',
-                'a\nb\ne\nf\n')
-            source_branch.repository.fetch(target_branch.repository,
-                revision_id=merge_parent)
-            self.commitFile(
-                bmp.source_branch, 'foo', 'a\nc\ne\nf\n', [merge_parent])
-            source_branch.repository.fetch(prerequisite.repository,
-                revision_id=prerequisite_revision)
-            new_revision_id = self.commitFile(
-                bmp.source_branch, 'foo', 'd\na\nc\ne\nf\n',
-                [prerequisite_revision])
-            new_revision = self.factory.makeRevision(rev_id=new_revision_id)
-            incremental_diff = bmp.generateIncrementalDiff(
-                old_revision, new_revision)
-            librarian.pretendCommit()
-            inserted, removed = self.diff_changes(incremental_diff.text)
-            self.assertEqual(['c\n'], inserted)
-            self.assertEqual(['b\n'], removed)
+        prerequisite_branch = self.factory.makeAnyBranch()
+        bmp = self.factory.makeBranchMergeProposal(
+            prerequisite_branch=prerequisite_branch)
+        target_branch = self.createBzrBranch(bmp.target_branch)
+        old_revision_id = self.commitFile(
+            bmp.target_branch, 'foo', 'a\nb\ne\n')
+        old_revision = self.factory.makeRevision(rev_id=old_revision_id)
+        source_branch = self.createBzrBranch(
+            bmp.source_branch, target_branch)
+        self.commitFile(
+            bmp.source_branch, 'foo', 'a\nc\ne\n')
+        prerequisite = self.createBzrBranch(
+            bmp.prerequisite_branch, target_branch)
+        prerequisite_revision = self.commitFile(bmp.prerequisite_branch,
+            'foo', 'd\na\nb\ne\n')
+        merge_parent = self.commitFile(bmp.target_branch, 'foo',
+            'a\nb\ne\nf\n')
+        source_branch.repository.fetch(target_branch.repository,
+            revision_id=merge_parent)
+        self.commitFile(
+            bmp.source_branch, 'foo', 'a\nc\ne\nf\n', [merge_parent])
+        source_branch.repository.fetch(prerequisite.repository,
+            revision_id=prerequisite_revision)
+        new_revision_id = self.commitFile(
+            bmp.source_branch, 'foo', 'd\na\nc\ne\nf\n',
+            [prerequisite_revision])
+        new_revision = self.factory.makeRevision(rev_id=new_revision_id)
+        incremental_diff = bmp.generateIncrementalDiff(
+            old_revision, new_revision)
+        transaction.commit()
+        inserted, removed = self.diff_changes(incremental_diff.text)
+        self.assertEqual(['c\n'], inserted)
+        self.assertEqual(['b\n'], removed)
 
 
 def test_suite():
