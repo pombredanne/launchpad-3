@@ -14,7 +14,6 @@ __all__ = [
 from zope.component import getUtility
 from zope.interface import Interface
 
-from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad import _
 from canonical.launchpad.webapp import (
@@ -29,7 +28,6 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.menu import structured
 from canonical.widgets.textwidgets import URIWidget
-from lp.bugs.browser.bugcomment import should_display_remote_comments
 from lp.bugs.browser.bugtask import get_comments_for_bugtask
 from lp.bugs.interfaces.bugmessage import IBugMessageSet
 from lp.bugs.interfaces.bugwatch import (
@@ -66,8 +64,6 @@ class BugWatchView(LaunchpadView):
         team, no comments will be returned.
         """
         user = getUtility(ILaunchBag).user
-        if not should_display_remote_comments(user):
-            return []
 
         bug_comments = get_comments_for_bugtask(self.context.bug.bugtasks[0],
             truncate=True)
@@ -77,7 +73,6 @@ class BugWatchView(LaunchpadView):
         displayed_comments = []
         for bug_comment in bug_comments:
             if bug_comment.bugwatch == self.context:
-                bug_comment.display_if_from_bugwatch = True
                 displayed_comments.append(bug_comment)
 
         return displayed_comments
