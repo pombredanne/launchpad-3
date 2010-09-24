@@ -65,7 +65,6 @@ __all__ = [
     'SearchSubscribedQuestionsView',
     'TeamAddMyTeamsView',
     'TeamBreadcrumb',
-    'TeamEditLocationView',
     'TeamEditMenu',
     'TeamIndexMenu',
     'TeamJoinView',
@@ -148,7 +147,6 @@ from canonical.launchpad import (
     helpers,
     )
 from canonical.launchpad.browser.feeds import FeedsMixin
-from canonical.launchpad.browser.launchpad import get_launchpad_views
 from canonical.launchpad.interfaces.account import (
     AccountStatus,
     IAccount,
@@ -194,7 +192,11 @@ from canonical.launchpad.webapp import (
     structured,
     )
 from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.batching import (
+    ActiveBatchNavigator,
+    BatchNavigator,
+    InactiveBatchNavigator,
+    )
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import (
     ILaunchBag,
@@ -240,7 +242,6 @@ from lp.buildmaster.enums import BuildStatus
 from lp.code.browser.sourcepackagerecipelisting import HasRecipesMenuMixin
 from lp.code.errors import InvalidNamespace
 from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
-from lp.registry.browser import MapMixin
 from lp.registry.browser.branding import BrandingChangeView
 from lp.registry.browser.mailinglists import enabled_with_active_mailing_list
 from lp.registry.browser.menu import (
@@ -1383,24 +1384,6 @@ class TeamOverviewNavigationMenu(NavigationMenu, TeamMenuMixin):
     usedfor = ITeam
     facet = 'overview'
     links = ['profile', 'polls', 'members', 'ppas']
-
-
-class ActiveBatchNavigator(BatchNavigator):
-    """A paginator for active items.
-
-    Used when a view needs to display more than one BatchNavigator of items.
-    """
-    start_variable_name = 'active_start'
-    batch_variable_name = 'active_batch'
-
-
-class InactiveBatchNavigator(BatchNavigator):
-    """A paginator for inactive items.
-
-    Used when a view needs to display more than one BatchNavigator of items.
-    """
-    start_variable_name = 'inactive_start'
-    batch_variable_name = 'inactive_batch'
 
 
 class TeamMembershipView(LaunchpadView):
@@ -3339,7 +3322,7 @@ class EmailAddressVisibleState:
         return self.state is EmailAddressVisibleState.ALLOWED
 
 
-class PersonIndexView(XRDSContentNegotiationMixin, MapMixin, PersonView):
+class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
     """View class for person +index and +xrds pages."""
 
     xrds_template = ViewPageTemplateFile(
@@ -3347,14 +3330,6 @@ class PersonIndexView(XRDSContentNegotiationMixin, MapMixin, PersonView):
 
     def initialize(self):
         super(PersonIndexView, self).initialize()
-        # This view requires the gmap2 Javascript in order to render the map
-        # with the person's usual location. The location is only availble if
-        # the location is set, visible, and the viewing user wants to see it.
-        launchpad_views = get_launchpad_views(self.request.cookies)
-        self._small_map = launchpad_views['small_maps']
-        if (self.gmap2_enabled
-            and self.has_visible_location and self._small_map):
-            self.request.needs_gmap2 = True
         if self.request.method == "POST":
             self.processForm()
 
@@ -3411,9 +3386,6 @@ class PersonIndexView(XRDSContentNegotiationMixin, MapMixin, PersonView):
         assert self.has_visible_location, (
             "Can't generate the map for a person who hasn't set a "
             "visible location.")
-        assert self.request.needs_gmap2 or not self._small_map, (
-            "To use this method a view must flag that it needs gmap2.")
-
         replacements = {'center_lat': self.context.latitude,
                         'center_lng': self.context.longitude}
         return u"""
@@ -4835,6 +4807,11 @@ class PersonEditEmailsView(LaunchpadFormView):
                 "'%s' doesn't seem to be a valid email address." % newemail)
             return self.errors
 
+        # XXX j.c.sackett 2010-09-15 bug=628247, 576757 There is a validation
+        # system set up for this that is almost identical in
+        # canonical.launchpad.interfaces.validation, called
+        # _check_email_available or similar. It would be really nice if we
+        # could merge that code somehow with this.
         email = getUtility(IEmailAddressSet).getByEmail(newemail)
         person = self.context
         if email is not None:
@@ -4846,20 +4823,32 @@ class PersonEditEmailsView(LaunchpadFormView):
                     "detected it as being yours. If it was detected by our "
                     "system, it's probably shown on this page and is waiting "
                     "to be confirmed as yours." % newemail)
-            else:
+            elif email.person is not None:
                 owner = email.person
                 owner_name = urllib.quote(owner.name)
                 merge_url = (
                     '%s/+requestmerge?field.dupe_person=%s'
                     % (canonical_url(getUtility(IPersonSet)), owner_name))
-                self.addError(
-                    structured(
-                        "The email address '%s' is already registered to "
-                        '<a href="%s">%s</a>. If you think that is a '
-                        'duplicated account, you can <a href="%s">merge it'
-                        "</a> into your account.",
-                        newemail, canonical_url(owner), owner.displayname,
-                        merge_url))
+                self.addError(structured(
+                    "The email address '%s' is already registered to "
+                    '<a href="%s">%s</a>. If you think that is a '
+                    'duplicated account, you can <a href="%s">merge it'
+                    "</a> into your account.",
+                    newemail,
+                    canonical_url(owner),
+                    owner.displayname,
+                    merge_url))
+            elif email.account is not None:
+                account = email.account
+                self.addError(structured(
+                    "The email address '%s' is already registered to an "
+                    "account, %s.",
+                    newemail,
+                    account.displayname))
+            else:
+                self.addError(structured(
+                    "The email address '%s' is already registered.",
+                    newemail))
         return self.errors
 
     @action(_("Add"), name="add_email", validator=validate_action_add_email)
@@ -5635,7 +5624,7 @@ class PersonOAuthTokensView(LaunchpadView):
 class PersonLocationForm(Interface):
 
     location = LocationField(
-        title=_('Use the map to indicate default location'),
+        title=_('Time zone'),
         required=True)
     hide = Bool(
         title=_("Hide my location details from others."),
@@ -5646,37 +5635,15 @@ class PersonEditLocationView(LaunchpadFormView):
     """Edit a person's location."""
 
     schema = PersonLocationForm
-    field_names = ['location', 'hide']
+    field_names = ['location']
     custom_widget('location', LocationWidget)
+    page_title = label = 'Set timezone'
 
     @property
-    def page_title(self):
-        return smartquote(
-            "%s's location and timezone" % self.context.displayname)
+    def next_url(self):
+        return canonical_url(self.context)
 
-    label = page_title
-
-    @property
-    def initial_values(self):
-        """See `LaunchpadFormView`.
-
-        Set the initial value for the 'hide' field.  The initial value for the
-        'location' field is set by its widget.
-        """
-        if self.context.location is None:
-            return {}
-        else:
-            return {'hide': not self.context.location.visible}
-
-    def initialize(self):
-        self.next_url = canonical_url(self.context)
-        self.for_team_name = self.request.form.get('for_team')
-        if self.for_team_name is not None:
-            for_team = getUtility(IPersonSet).getByName(self.for_team_name)
-            if for_team is not None:
-                self.next_url = canonical_url(for_team) + '/+map'
-        super(PersonEditLocationView, self).initialize()
-        self.cancel_url = self.next_url
+    cancel_url = next_url
 
     @action(_("Update"), name="update")
     def action_update(self, action, data):
@@ -5691,17 +5658,6 @@ class PersonEditLocationView(LaunchpadFormView):
         if 'hide' in self.field_names:
             visible = not data['hide']
             self.context.setLocationVisibility(visible)
-
-
-class TeamEditLocationView(LaunchpadView):
-    """Redirect to the team's +map page.
-
-    We do that because it doesn't make sense to specify the location of a
-    team."""
-
-    def initialize(self):
-        self.request.response.redirect(
-            canonical_url(self.context, view_name="+map"))
 
 
 def archive_to_person(archive):
