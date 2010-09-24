@@ -41,8 +41,8 @@ class TestTeamLinking(TestCaseWithFactory):
         e = self.assertRaises(
             HTTPError,
             team_one.addMember,
-            person=team_two) 
-        self.assertIn('Cannot link person', e.content) 
+            person=team_two)
+        self.assertIn('Cannot link person', e.content)
         self.assertEqual(400, e.response.status)
 
 

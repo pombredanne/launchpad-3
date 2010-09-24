@@ -8,7 +8,6 @@ import unittest
 from zope.component import getUtility
 from lazr.restfulclient.errors import ClientError
 
-from canonical.launchpad.testing.pages import LaunchpadWebServiceCaller
 from canonical.launchpad.ftests import login
 from canonical.launchpad.webapp.errorlog import globalErrorUtility
 from canonical.testing import (
@@ -16,9 +15,7 @@ from canonical.testing import (
     DatabaseFunctionalLayer,
     )
 from lp.registry.interfaces.projectgroup import IProjectGroupSet
-from lp.soyuz.enums import ArchivePurpose
 from lp.testing import (
-    celebrity_logged_in,
     launchpadlib_for,
     TestCaseWithFactory,
     )
