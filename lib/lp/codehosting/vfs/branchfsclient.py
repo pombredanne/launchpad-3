@@ -8,7 +8,6 @@ This code talks to the internal XML-RPC server for the branch filesystem.
 
 __metaclass__ = type
 __all__ = [
-    'BlockingProxy',
     'BranchFileSystemClient',
     'NotInCache',
     ]
@@ -18,15 +17,6 @@ import time
 from twisted.internet import defer
 
 from lp.code.interfaces.codehosting import BRANCH_TRANSPORT
-
-
-class BlockingProxy:
-
-    def __init__(self, proxy):
-        self._proxy = proxy
-
-    def callRemote(self, method_name, *args):
-        return getattr(self._proxy, method_name)(*args)
 
 
 class NotInCache(Exception):
@@ -50,7 +40,8 @@ class BranchFileSystemClient:
                  seen_new_branch_hook=None, _now=time.time):
         """Construct a caching codehosting_endpoint.
 
-        :param codehosting_endpoint: An XML-RPC proxy that implements callRemote.
+        :param codehosting_endpoint: An XML-RPC proxy that implements
+            callRemote and returns Deferreds.
         :param user_id: The database ID of the user who will be making these
             requests. An integer.
         :param expiry_time: If supplied, only cache the results of
@@ -116,9 +107,8 @@ class BranchFileSystemClient:
         :param branch_path: The path to the branch to create.
         :return: A `Deferred` that fires the ID of the created branch.
         """
-        return defer.maybeDeferred(
-            self._codehosting_endpoint.callRemote, 'createBranch',
-            self._user_id, branch_path)
+        return self._codehosting_endpoint.callRemote(
+            'createBranch', self._user_id, branch_path)
 
     def branchChanged(self, branch_id, stacked_on_url, last_revision_id,
                       control_string, branch_string, repository_string):
@@ -126,8 +116,7 @@ class BranchFileSystemClient:
 
         :param branch_id: The database ID of the branch.
         """
-        return defer.maybeDeferred(
-            self._codehosting_endpoint.callRemote,
+        return self._codehosting_endpoint.callRemote(
             'branchChanged', self._user_id, branch_id, stacked_on_url,
             last_revision_id, control_string, branch_string,
             repository_string)
@@ -137,8 +126,7 @@ class BranchFileSystemClient:
         try:
             return defer.succeed(self._getFromCache(path))
         except NotInCache:
-            deferred = defer.maybeDeferred(
-                self._codehosting_endpoint.callRemote,
+            deferred = self._codehosting_endpoint.callRemote(
                 'translatePath', self._user_id, path)
             deferred.addCallback(self._addToCache, path)
             return deferred
