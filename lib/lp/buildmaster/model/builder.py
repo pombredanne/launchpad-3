@@ -127,11 +127,6 @@ class BuilderSlave(object):
     # many false positives in your test run and will most likely break
     # production.
 
-    # WARNING: If you change the API for this, you should also change the APIs
-    # of the mocks in soyuzbuilderhelpers to match. Otherwise, you will have
-    # many false positives in your test run and will most likely break
-    # production.
-
     # XXX: This (BuilderSlave) should use composition, rather than
     # inheritance.
 
