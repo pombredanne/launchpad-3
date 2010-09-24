@@ -191,19 +191,26 @@ class TestTranslationTemplatesBuildBehavior(
             self.assertNotIn('clean', slave_call_log)
             self.assertEqual(0, behavior._uploadTarball.call_count)
 
-            slave_status = {
-                'builder_status': builder.slave.status()[0],
-                'build_status': builder.slave.status()[1],
-                }
-            behavior.updateSlaveStatus(builder.slave.status(), slave_status)
-            behavior.updateBuild_WAITING(
-                queue_item, slave_status, None, logging)
+            return builder.slave.status()
 
+        def got_status(status):
+            slave_call_log = behavior._builder.slave.call_log
+            slave_status = {
+                'builder_status': status[0], 'build_status': status[1]}
+            behavior.updateSlaveStatus(status, slave_status)
+            return behavior.updateBuild_WAITING(
+                queue_item, slave_status, None, logging), slave_call_log
+
+        def build_updated(ignored):
+            slave_call_log = behavior._builder.slave.call_log
             self.assertEqual(1, queue_item.destroySelf.call_count)
             self.assertIn('clean', slave_call_log)
             self.assertEqual(0, behavior._uploadTarball.call_count)
 
-        return d.addCallback(got_dispatch)
+        d.addCallback(got_dispatch)
+        d.addCallback(got_status)
+        d.addCallback(build_updated)
+        return d
 
     def test_updateBuild_WAITING_failed(self):
         # Builds may also fail (and produce no tarball).
@@ -214,10 +221,14 @@ class TestTranslationTemplatesBuildBehavior(
         d = behavior.dispatchBuildToSlave(queue_item, logging)
 
         def got_dispatch((status, info)):
+            # Now that we've dispatched, get the status.
+            return builder.slave.status()
+
+        def got_status(status):
             raw_status = (
                 'BuilderStatus.WAITING',
                 'BuildStatus.FAILEDTOBUILD',
-                builder.slave.status()[2],
+                status[2],
                 )
             status_dict = {
                 'builder_status': raw_status[0],
@@ -226,15 +237,19 @@ class TestTranslationTemplatesBuildBehavior(
             behavior.updateSlaveStatus(raw_status, status_dict)
             self.assertNotIn('filemap', status_dict)
 
-            behavior.updateBuild_WAITING(
+            return behavior.updateBuild_WAITING(
                 queue_item, status_dict, None, logging)
 
+        def build_updated(ignored):
             self.assertEqual(1, queue_item.destroySelf.call_count)
             slave_call_log = behavior._builder.slave.call_log
             self.assertIn('clean', slave_call_log)
             self.assertEqual(0, behavior._uploadTarball.call_count)
 
-        return d.addCallback(got_dispatch)
+        d.addCallback(got_dispatch)
+        d.addCallback(got_status)
+        d.addCallback(build_updated)
+        return d
 
     def test_updateBuild_WAITING_notarball(self):
         # Even if the build status is "OK," absence of a tarball will
@@ -246,10 +261,13 @@ class TestTranslationTemplatesBuildBehavior(
         d = behavior.dispatchBuildToSlave(queue_item, logging)
 
         def got_dispatch((status, info)):
+            return builder.slave.status()
+
+        def got_status(status):
             raw_status = (
                 'BuilderStatus.WAITING',
                 'BuildStatus.OK',
-                builder.slave.status()[2],
+                status[2],
                 )
             status_dict = {
                 'builder_status': raw_status[0],
@@ -257,16 +275,19 @@ class TestTranslationTemplatesBuildBehavior(
                 }
             behavior.updateSlaveStatus(raw_status, status_dict)
             self.assertFalse('filemap' in status_dict)
-
-            behavior.updateBuild_WAITING(
+            return behavior.updateBuild_WAITING(
                 queue_item, status_dict, None, logging)
 
+        def build_updated(ignored):
             self.assertEqual(1, queue_item.destroySelf.call_count)
             slave_call_log = behavior._builder.slave.call_log
             self.assertIn('clean', slave_call_log)
             self.assertEqual(0, behavior._uploadTarball.call_count)
 
-        return d.addCallback(got_dispatch)
+        d.addCallback(got_dispatch)
+        d.addCallback(got_status)
+        d.addCallback(build_updated)
+        return d
 
     def test_updateBuild_WAITING_uploads(self):
         productseries = self.makeProductSeriesWithBranchForTranslation()
@@ -283,15 +304,19 @@ class TestTranslationTemplatesBuildBehavior(
             builder.slave.getFile = lambda sum: open(dummy_tar)
             builder.slave.filemap = {
                 'translation-templates.tar.gz': 'foo'}
+            return builder.slave.status()
+
+        def got_status(status):
             slave_status = {
-                'builder_status': builder.slave.status()[0],
-                'build_status': builder.slave.status()[1],
-                'build_id': builder.slave.status()[2]
+                'builder_status': status[0],
+                'build_status': status[1],
+                'build_id': status[2]
                 }
-            behavior.updateSlaveStatus(builder.slave.status(), slave_status)
-            behavior.updateBuild_WAITING(
+            behavior.updateSlaveStatus(status, slave_status)
+            return behavior.updateBuild_WAITING(
                 queue_item, slave_status, None, logging)
 
+        def build_updated(ignored):
             entries = getUtility(
                 ITranslationImportQueue).getAllEntries(target=productseries)
             expected_templates = [
@@ -303,7 +328,10 @@ class TestTranslationTemplatesBuildBehavior(
             list2 = sorted([entry.path for entry in entries])
             self.assertEqual(list1, list2)
 
-        return d.addCallback(got_dispatch)
+        d.addCallback(got_dispatch)
+        d.addCallback(got_status)
+        d.addCallback(build_updated)
+        return d
 
 
 class TestTTBuildBehaviorTranslationsQueue(

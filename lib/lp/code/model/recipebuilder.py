@@ -117,7 +117,7 @@ class RecipeBuildBehavior(BuildFarmJobBehaviorBase):
             raise CannotBuild("Unable to find distroarchseries for %s in %s" %
                 (self._builder.processor.name,
                 self.build.distroseries.displayname))
-
+        args = self._extraBuildArgs(distroarchseries, logger)
         chroot = distroarchseries.getChroot()
         if chroot is None:
             raise CannotBuild("Unable to find a chroot for %s" %
@@ -134,10 +134,10 @@ class RecipeBuildBehavior(BuildFarmJobBehaviorBase):
             logger.debug(
                 "Initiating build %s on %s" % (buildid, self._builder.url))
 
-            args = self._extraBuildArgs(distroarchseries, logger)
-            # XXX: Soon to be async
-            status, info = self._builder.slave.build(
+            return self._builder.slave.build(
                 cookie, "sourcepackagerecipe", chroot_sha1, {}, args)
+
+        def log_build_result((status, info)):
             message = """%s (%s):
             ***** RESULT *****
             %s
@@ -151,7 +151,8 @@ class RecipeBuildBehavior(BuildFarmJobBehaviorBase):
                 info,
                 )
             logger.info(message)
-        return d.addCallback(got_cache_file)
+
+        return d.addCallback(got_cache_file).addCallback(log_build_result)
 
     def verifyBuildRequest(self, logger):
         """Assert some pre-build checks.

@@ -129,5 +129,7 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
                     queue_item.specific_job.branch, tarball, logger)
                 logger.debug("Upload complete.")
 
-        queue_item.builder.cleanSlave()
-        queue_item.destroySelf()
+        # XXX: bigjools 2010-09-24: This call is not necessary, the build
+        # manager will restart the virtual machine.
+        d = queue_item.builder.cleanSlave()
+        return d.addCallback(lambda ignored: queue_item.destroySelf())

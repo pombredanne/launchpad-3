@@ -80,23 +80,25 @@ class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):
                 "Initiating build %s on %s" % (buildid, self._builder.url))
 
             args = self._extraBuildArgs(self.build)
-            status, info = self._builder.slave.build(
+            d = self._builder.slave.build(
                 cookie, "binarypackage", chroot_sha1, filemap, args)
-            message = """%s (%s):
-            ***** RESULT *****
-            %s
-            %s
-            %s: %s
-            ******************
-            """ % (
-                self._builder.name,
-                self._builder.url,
-                filemap,
-                args,
-                status,
-                info,
-                )
-            logger.info(message)
+            def got_build((status, info)):
+                message = """%s (%s):
+                ***** RESULT *****
+                %s
+                %s
+                %s: %s
+                ******************
+                """ % (
+                    self._builder.name,
+                    self._builder.url,
+                    filemap,
+                    args,
+                    status,
+                    info,
+                    )
+                logger.info(message)
+            return d.addCallback(got_build)
 
         return d.addCallback(got_filemap)
 
