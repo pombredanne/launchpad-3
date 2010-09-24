@@ -29,6 +29,19 @@ added to the bugwatches resp CVEs related to this bug
   >>> print extract_text(added_bugwatch_link)
   auto-some.bugzilla #9876
 
+It's important to note that the bug watch is not linked to the the
+comment that created it (see bug 575911).
+
+  >>> login('foo.bar@canonical.com')
+  >>> from zope.component import getUtility
+  >>> from lp.bugs.interfaces.bug import IBugSet
+  >>> bug_one = getUtility(IBugSet).get(1)
+  >>> bug_message = bug_one.bug_messages[-1]
+  >>> print bug_message.bugwatch
+  None
+
+  >>> logout()
+
 When extracting the remote bug URLs, we can use whatever text we want and
 place the URLs anywhere within this text. Only valid URIs that look like
 remote bugs will be extracted. Here, for example, we include two URLs in
