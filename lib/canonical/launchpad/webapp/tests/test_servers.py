@@ -364,7 +364,7 @@ class TestBasicLaunchpadRequest(TestCase):
         self.assertFalse(request.is_ajax)
 
         request = LaunchpadBrowserRequest(StringIO.StringIO(''), {
-            'HTTP_X_REQUESTED_WITH': ['XMLHttpRequest'],
+            'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest',
             })
         self.assertTrue(request.is_ajax)
 
