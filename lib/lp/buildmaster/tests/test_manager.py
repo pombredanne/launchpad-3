@@ -16,7 +16,6 @@ from twisted.internet import (
     )
 from twisted.internet.error import ConnectionClosed
 from twisted.internet.task import (
-    Clock,
     deferLater,
     )
 from twisted.python.failure import Failure
@@ -53,7 +52,6 @@ from lp.buildmaster.tests.harness import BuilddManagerTestSetup
 from lp.buildmaster.tests.mock_slaves import BuildingSlave
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
-from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCase as LaunchpadTestCase
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.fakemethod import FakeMethod
@@ -541,6 +539,7 @@ class TestSlaveScannerScan(TrialTestCase):
         Also adjust the sampledata in a way a build can be dispatched to
         'bob' builder.
         """
+        from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
         TwistedLayer.testSetUp()
         TrialTestCase.setUp(self)
         BuilddSlaveTestSetup().setUp()

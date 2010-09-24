@@ -34,7 +34,6 @@ from canonical.testing.layers import (
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.builder import (
     CannotFetchFile,
-    CorruptBuildCookie,
     IBuilder,
     IBuilderSet,
     )
