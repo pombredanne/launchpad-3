@@ -82,7 +82,6 @@ from lp.services.job.model.job import Job
 from lp.services.propertycache import cachedproperty
 from lp.services.twistedsupport.processmonitor import ProcessWithTimeout
 from lp.services.twistedsupport.xmlrpc import DeferredBlockingProxy
-
 # XXX Michael Nelson 2010-01-13 bug=491330
 # These dependencies on soyuz will be removed when getBuildRecords()
 # is moved.
