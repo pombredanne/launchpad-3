@@ -179,6 +179,12 @@ class InitialiseDistroSeries:
         """
         archive_set = getUtility(IArchiveSet)
 
+        spns = []
+        if self.packagesets:
+            for pkgsetname in self.packagesets:
+                pkgset = getUtility(IPackagesetSet).getByName(pkgsetname)
+                spns += pkgset.getSourcesIncluded()
+
         for archive in self.parent.distribution.all_distro_archives:
             if archive.purpose not in (
                 ArchivePurpose.PRIMARY, ArchivePurpose.DEBUG):

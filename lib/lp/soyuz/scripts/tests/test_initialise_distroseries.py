@@ -248,6 +248,8 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
             u'test2', u'test 2 packageset', self.hoary.owner,
             distroseries=self.hoary)
         test1.addSources('pmount')
+        test1.addSources('linux-source-2.6.15')
+        test1.addSources('libstdc++')
         foobuntu = self._full_initialise(packagesets=('test1',))
         foobuntu_test1 = getUtility(IPackagesetSet).getByName(
             u'test1', distroseries=foobuntu)
@@ -259,6 +261,8 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
             direct_inclusion=True)
         hoary_srcs = test1.getSourcesIncluded(direct_inclusion=True)
         self.assertEqual(foobuntu_srcs, hoary_srcs)
+        foobuntu.updatePackageCount()
+        self.assertEqual(foobuntu.sourcecount, 3)
 
     def test_script(self):
         # Do an end-to-end test using the command-line tool
