@@ -379,6 +379,26 @@ isn't available in which case we map against priority values.
     >>> external_bugzilla.convertRemoteImportance('LOW').title
     'Low'
 
+Some bugzillas don't provide a value, resulting in blank strings for
+priority and severity.  We simply leave the importance unknown in this
+case.
+
+    >>> external_bugzilla.convertRemoteImportance('').title
+    'Unknown'
+
+However, we still treat as an error if the priority or severity are set
+to some other unexpected string.
+
+    >>> external_bugzilla.convertRemoteImportance('foo bar')
+    Traceback (most recent call last):
+    ...
+    UnknownRemoteImportanceError: foo bar
+    >>> external_bugzilla.convertRemoteImportance('%&*@*#&$%!')
+    Traceback (most recent call last):
+    ...
+    UnknownRemoteImportanceError: %&*@*#&$%!
+
+
 
 Updating Bug Watches
 --------------------
