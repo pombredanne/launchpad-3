@@ -562,27 +562,23 @@ class TestIncrementalDiff(DiffTestCase):
         bmp = self.factory.makeBranchMergeProposal(
             prerequisite_branch=prerequisite_branch)
         target_branch = self.createBzrBranch(bmp.target_branch)
-        old_revision_id = commit_file(
-            self, bmp.target_branch, 'foo', 'a\nb\ne\n')
+        old_revision_id = commit_file(bmp.target_branch, 'foo', 'a\nb\ne\n')
         old_revision = self.factory.makeRevision(rev_id=old_revision_id)
         source_branch = self.createBzrBranch(
             bmp.source_branch, target_branch)
-        commit_file(
-            self, bmp.source_branch, 'foo', 'a\nc\ne\n')
+        commit_file(bmp.source_branch, 'foo', 'a\nc\ne\n')
         prerequisite = self.createBzrBranch(
             bmp.prerequisite_branch, target_branch)
         prerequisite_revision = commit_file(
-            self, bmp.prerequisite_branch, 'foo', 'd\na\nb\ne\n')
-        merge_parent = commit_file(
-            self, bmp.target_branch, 'foo', 'a\nb\ne\nf\n')
+            bmp.prerequisite_branch, 'foo', 'd\na\nb\ne\n')
+        merge_parent = commit_file(bmp.target_branch, 'foo', 'a\nb\ne\nf\n')
         source_branch.repository.fetch(target_branch.repository,
             revision_id=merge_parent)
-        commit_file(
-            self, bmp.source_branch, 'foo', 'a\nc\ne\nf\n', [merge_parent])
+        commit_file(bmp.source_branch, 'foo', 'a\nc\ne\nf\n', [merge_parent])
         source_branch.repository.fetch(prerequisite.repository,
             revision_id=prerequisite_revision)
         new_revision_id = commit_file(
-            self, bmp.source_branch, 'foo', 'd\na\nc\ne\nf\n',
+            bmp.source_branch, 'foo', 'd\na\nc\ne\nf\n',
             [prerequisite_revision])
         new_revision = self.factory.makeRevision(rev_id=new_revision_id)
         incremental_diff = bmp.generateIncrementalDiff(
