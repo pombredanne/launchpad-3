@@ -35,10 +35,10 @@ from lp.buildmaster.interfaces.packagebuild import (
     IPackageBuildSource,
     )
 from lp.buildmaster.model.packagebuild import PackageBuild
+from lp.buildmaster.tests.mock_slaves import WaitingSlave
 from lp.registry.interfaces.pocket import (
     PackagePublishingPocket,
     )
-from lp.soyuz.tests.soyuzbuilddhelpers import WaitingSlave
 from lp.testing import (
     login,
     login_person,
@@ -105,7 +105,6 @@ class TestPackageBuild(TestPackageBuildBase):
 
     def test_default_values(self):
         # PackageBuild has a number of default values.
-        self.failUnlessEqual('buildd', self.package_build.policy_name)
         self.failUnlessEqual(
             'multiverse', self.package_build.current_component.name)
         self.failUnlessEqual(None, self.package_build.distribution)
@@ -327,6 +326,7 @@ class TestHandleStatusMixin:
             })
         self.assertEqual(BuildStatus.FAILEDTOUPLOAD, self.build.status)
         self.assertResultCount(0, "failed")
+        self.assertIs(None, self.build.buildqueue_record)
 
     def test_handleStatus_OK_relative_filepath(self):
         # A filemap that tries to write to files outside of

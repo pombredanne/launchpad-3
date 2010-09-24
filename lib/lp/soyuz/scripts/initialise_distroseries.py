@@ -23,8 +23,8 @@ from lp.soyuz.enums import (
     PackageUploadStatus,
     )
 from lp.soyuz.interfaces.archive import IArchiveSet
+from lp.soyuz.interfaces.packagecloner import IPackageCloner
 from lp.soyuz.interfaces.packageset import IPackagesetSet
-from lp.soyuz.model.packagecloner import clone_packages
 from lp.soyuz.model.packageset import Packageset
 
 
@@ -59,11 +59,14 @@ class InitialiseDistroSeries:
       in the initialisation of a derivative.
     """
 
-    def __init__(self, distroseries, arches=(), packagesets=()):
+    def __init__(
+        self, distroseries, arches=(), packagesets=(), rebuild=False):
+
         self.distroseries = distroseries
         self.parent = self.distroseries.parent_series
         self.arches = arches
         self.packagesets = packagesets
+        self.rebuild = rebuild
         self._store = IMasterStore(DistroSeries)
 
     def check(self):
@@ -201,7 +204,15 @@ class InitialiseDistroSeries:
             destination = PackageLocation(
                 target_archive, self.distroseries.distribution,
                 self.distroseries, PackagePublishingPocket.RELEASE)
-            clone_packages(origin, destination, distroarchseries_list)
+            proc_families = None
+            if self.rebuild:
+                proc_families = [
+                    das[1].processorfamily
+                    for das in distroarchseries_list]
+                distroarchseries_list = ()
+            getUtility(IPackageCloner).clonePackages(
+                origin, destination, distroarchseries_list,
+                proc_families)
 
     def _copy_component_section_and_format_selections(self):
         """Copy the section, component and format selections from the parent

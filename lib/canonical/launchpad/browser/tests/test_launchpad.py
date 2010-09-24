@@ -20,6 +20,7 @@ from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.launchpad.webapp.url import urlappend
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.errors import GoneError
+from lp.code.errors import NoLinkedBranch
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from lp.registry.interfaces.person import (
     IPersonSet,
@@ -31,6 +32,11 @@ from lp.testing import (
     TestCaseWithFactory,
     )
 from lp.testing.views import create_view
+
+
+# We set the request header HTTP_REFERER  when we want to simulate navigation
+# from a valid page. This is used in the assertDisplaysNotification check.
+DEFAULT_REFERER = 'http://launchpad.dev'
 
 
 class TraversalMixin:
@@ -73,28 +79,40 @@ class TraversalMixin:
         """
 
         redirection = self.traverse(path)
-        self.assertIs(redirection.target, None)
+        self.assertIs(redirection.target, DEFAULT_REFERER)
         self._validateNotificationContext(
             redirection.request, notification, level)
 
-    def assertNotFound(self, path):
-        self.assertRaises(NotFound, self.traverse, path)
+    def assertNoLinkedBranch(self, path, use_default_referer=True):
+        self.assertRaises(
+            NoLinkedBranch, self.traverse, path,
+            use_default_referer=use_default_referer)
+
+    def assertNotFound(self, path, use_default_referer=True):
+        self.assertRaises(
+            NotFound, self.traverse, path,
+            use_default_referer=use_default_referer)
 
     def assertRedirects(self, segments, url):
         redirection = self.traverse(segments)
         self.assertEqual(url, redirection.target)
 
-    def traverse(self, path, first_segment):
+    def traverse(self, path, first_segment, use_default_referer=True):
         """Traverse to 'segments' using a 'LaunchpadRootNavigation' object.
 
         Using the Zope traversal machinery, traverse to the path given by
         'segments', starting at a `LaunchpadRootNavigation` object.
 
         :param segments: A list of path segments.
+        :param use_default_referer: If True, set the referer attribute in the
+            request header to DEFAULT_REFERER = "http://launchpad.dev"
+            (otherwise it remains as None)
         :return: The object found.
         """
-        request = LaunchpadTestRequest(
-            PATH_INFO=urlappend('/%s' % first_segment, path))
+        extra = {'PATH_INFO': urlappend('/%s' % first_segment, path)}
+        if use_default_referer:
+            extra['HTTP_REFERER'] = DEFAULT_REFERER
+        request = LaunchpadTestRequest(**extra)
         segments = reversed(path.split('/'))
         request.setTraversalStack(segments)
         traverser = LaunchpadRootNavigation(None, request=request)
@@ -110,8 +128,9 @@ class TestBranchTraversal(TestCaseWithFactory, TraversalMixin):
 
     layer = DatabaseFunctionalLayer
 
-    def traverse(self, path):
-        return super(TestBranchTraversal, self).traverse(path, '+branch')
+    def traverse(self, path, **kwargs):
+        return super(TestBranchTraversal, self).traverse(
+            path, '+branch', **kwargs)
 
     def test_unique_name_traversal(self):
         # Traversing to /+branch/<unique_name> redirects to the page for that
@@ -177,6 +196,26 @@ class TestBranchTraversal(TestCaseWithFactory, TraversalMixin):
         self.assertDisplaysNotification(
             non_existent, requiredMessage,
             BrowserNotificationLevel.ERROR)
+
+    def test_nonexistent_product_without_referer(self):
+        # Traversing to /+branch/<no-such-product> without a referer results
+        # in a 404 error. This happens if the user hacks the URL rather than
+        # navigating via a link
+        self.assertNotFound('non-existent', use_default_referer=False)
+
+    def test_private_without_referer(self):
+        # If the development focus of a product is private and there is no
+        # referer, we will get a 404 error. This happens if the user hacks
+        # the URL rather than navigating via a link
+        branch = self.factory.makeProductBranch()
+        naked_product = removeSecurityProxy(branch.product)
+        ICanHasLinkedBranch(naked_product).setBranch(branch)
+        removeSecurityProxy(branch).private = True
+
+        any_user = self.factory.makePerson()
+        login_person(any_user)
+        self.assertNoLinkedBranch(
+            naked_product.name, use_default_referer=False)
 
     def test_product_without_dev_focus(self):
         # Traversing to a product without a development focus displays a

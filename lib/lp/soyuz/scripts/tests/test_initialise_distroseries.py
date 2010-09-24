@@ -127,11 +127,12 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
             foobuntu.isSourcePackageFormatPermitted(
             SourcePackageFormat.FORMAT_1_0))
 
-    def _full_initialise(self, arches=(), packagesets=()):
+    def _full_initialise(self, arches=(), packagesets=(), rebuild=False):
         foobuntu = self._create_distroseries(self.hoary)
         self._set_pending_to_failed(self.hoary)
         transaction.commit()
-        ids = InitialiseDistroSeries(foobuntu, arches, packagesets)
+        ids = InitialiseDistroSeries(
+            foobuntu, arches, packagesets, rebuild)
         ids.check()
         ids.initialise()
         return foobuntu
@@ -263,6 +264,17 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
         self.assertEqual(foobuntu_srcs, hoary_srcs)
         foobuntu.updatePackageCount()
         self.assertEqual(foobuntu.sourcecount, 3)
+
+    def test_rebuild_flag(self):
+        # No binaries will get copied if we specify rebuild=True
+        foobuntu = self._full_initialise(rebuild=True)
+        foobuntu.updatePackageCount()
+        builds = foobuntu.getBuildRecords(
+            build_state=BuildStatus.NEEDSBUILD,
+            pocket=PackagePublishingPocket.RELEASE, arch_tag='i386')
+        self.assertEqual(foobuntu.sourcecount, 7)
+        self.assertEqual(foobuntu.binarycount, 0)
+        self.assertEqual(builds.count(), 5)
 
     def test_script(self):
         # Do an end-to-end test using the command-line tool

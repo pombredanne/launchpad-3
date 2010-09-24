@@ -231,11 +231,25 @@ class TestBranchChanged(TestCaseWithFactory):
         branch = self.factory.makeAnyBranch()
         login_person(branch.owner)
         removeSecurityProxy(branch).last_mirrored_id = 'rev1'
+        removeSecurityProxy(branch).last_scanned_id = 'rev1'
         jobs = list(getUtility(IBranchScanJobSource).iterReady())
         self.assertEqual(0, len(jobs))
         branch.branchChanged('', 'rev1', *self.arbitrary_formats)
         jobs = list(getUtility(IBranchScanJobSource).iterReady())
         self.assertEqual(0, len(jobs))
+
+    def test_branchChanged_creates_scan_job_for_broken_scan(self):
+        # branchChanged() if the last_scanned_id is different to the newly
+        # changed revision, then a scan job is created.
+        branch = self.factory.makeAnyBranch()
+        login_person(branch.owner)
+        removeSecurityProxy(branch).last_mirrored_id = 'rev1'
+        removeSecurityProxy(branch).last_scanned_id = 'old'
+        jobs = list(getUtility(IBranchScanJobSource).iterReady())
+        self.assertEqual(0, len(jobs))
+        branch.branchChanged('', 'rev1', *self.arbitrary_formats)
+        jobs = list(getUtility(IBranchScanJobSource).iterReady())
+        self.assertEqual(1, len(jobs))
 
     def test_branchChanged_packs_format(self):
         # branchChanged sets the branch_format etc attributes to the passed in
@@ -1385,7 +1399,7 @@ class TestBranchDeletionConsequences(TestCase):
 
     def test_branchWithSeriesRequirements(self):
         """Deletion requirements for a series' branch are right."""
-        series = self.factory.makeSeries(branch=self.branch)
+        series = self.factory.makeProductSeries(branch=self.branch)
         self.assertEqual(
             {series: ('alter',
             _('This series is linked to this branch.'))},
@@ -1393,8 +1407,8 @@ class TestBranchDeletionConsequences(TestCase):
 
     def test_branchWithSeriesDeletion(self):
         """break_links allows deleting a series' branch."""
-        series1 = self.factory.makeSeries(branch=self.branch)
-        series2 = self.factory.makeSeries(branch=self.branch)
+        series1 = self.factory.makeProductSeries(branch=self.branch)
+        series2 = self.factory.makeProductSeries(branch=self.branch)
         self.branch.destroySelf(break_references=True)
         self.assertEqual(None, series1.branch)
         self.assertEqual(None, series2.branch)
@@ -1489,7 +1503,7 @@ class TestBranchDeletionConsequences(TestCase):
 
     def test_ClearSeriesBranch(self):
         """ClearSeriesBranch.__call__ must clear the user branch."""
-        series = removeSecurityProxy(self.factory.makeSeries(
+        series = removeSecurityProxy(self.factory.makeProductSeries(
             branch=self.branch))
         ClearSeriesBranch(series, self.branch)()
         self.assertEqual(None, series.branch)

@@ -1161,16 +1161,18 @@ class MilestoneVocabulary(SQLObjectVocabularyBase):
         elif IDistroSeriesBugTask.providedBy(milestone_context):
             target = milestone_context.distroseries
         elif IProductSeriesBugTask.providedBy(milestone_context):
-            target = milestone_context.productseries
+            target = milestone_context.productseries.product
         elif IDistributionSourcePackage.providedBy(milestone_context):
             target = milestone_context.distribution
         elif ISourcePackage.providedBy(milestone_context):
             target = milestone_context.distroseries
         elif ISpecification.providedBy(milestone_context):
             target = milestone_context.target
+        elif IProductSeries.providedBy(milestone_context):
+            # Show all the milestones of the product for a product series.
+            target = milestone_context.product
         elif (IProjectGroup.providedBy(milestone_context) or
               IProduct.providedBy(milestone_context) or
-              IProductSeries.providedBy(milestone_context) or
               IDistribution.providedBy(milestone_context) or
               IDistroSeries.providedBy(milestone_context)):
             target = milestone_context
@@ -1196,23 +1198,10 @@ class MilestoneVocabulary(SQLObjectVocabularyBase):
         # should be revisited after we've unblocked users.
         if target is not None:
             if IProjectGroup.providedBy(target):
-                milestones = shortlist(
-                    (milestone for product in target.products
-                     for milestone in product.milestones),
-                    longest_expected=40)
-            elif IProductSeries.providedBy(target):
-                # While some milestones may be associated with a
-                # productseries, we want to show all milestones for
-                # the product. Since the database constraint
-                # "valid_target" ensures that a milestone associated
-                # with a series is also associated with the product
-                # itself, we don't need to look up series-related
-                # milestones.
-                milestones = shortlist(target.product.milestones,
-                                       longest_expected=40)
+                milestones_source = target.product_milestones
             else:
-                milestones = shortlist(
-                    target.milestones, longest_expected=40)
+                milestones_source = target.milestones
+            milestones = shortlist(milestones_source, longest_expected=40)
         else:
             # We can't use context to reasonably filter the
             # milestones, so let's either just grab all of them,
@@ -1249,9 +1238,11 @@ class MilestoneVocabulary(SQLObjectVocabularyBase):
         product_ids = set(
             removeSecurityProxy(milestone).productID
             for milestone in milestones)
+        product_ids.discard(None)
         distro_ids = set(
             removeSecurityProxy(milestone).distributionID
             for milestone in milestones)
+        distro_ids.discard(None)
         if len(product_ids) > 0:
             list(Product.select("id IN %s" % sqlvalues(product_ids)))
         if len(distro_ids) > 0:
