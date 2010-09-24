@@ -426,7 +426,7 @@ class Branch(SQLBase, BzrIdentityMixin):
         # use that default reviewer.
         default_reviewer = None
         if assign_default_reviewer:
-            default_reviewer = target_branch.reviewer
+            default_reviewer = target_branch.code_reviewer
         if default_reviewer is not None and len(review_requests) == 0:
             review_requests.append((default_reviewer, default_review_type))
 

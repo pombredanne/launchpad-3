@@ -351,10 +351,6 @@ class RegisterBranchMergeProposalViewMixin:
         self.assertEqual(self.target_branch, proposal.target_branch)
         return proposal
 
-    def assertNoPendingReviews(self, proposal):
-        # There should be no votes recorded for the proposal.
-        self.assertEqual([], list(proposal.votes))
-
     def assertOnePendingReview(self, proposal, reviewer, review_type=None):
         # There should be one pending vote for the reviewer with the specified
         # review type.
@@ -369,11 +365,12 @@ class RegisterBranchMergeProposalViewMixin:
             self.assertEqual(review_type, votes[0].review_type)
 
 
-class TestRegisterNoDefaultReviewBranchMergeProposalView(
+class TestRegisterBranchWithNoDefaultReviewerMergeProposalView(
     TestCaseWithFactory, RegisterBranchMergeProposalViewMixin):
     """Test the merge proposal registration view.
 
-    The target branch has no default reviewer assigned.
+    The target branch has no default reviewer assigned. Hence the reviewer
+    should be set to the branch owner unless specified otherwise.
     """
 
     layer = DatabaseFunctionalLayer
@@ -388,13 +385,14 @@ class TestRegisterNoDefaultReviewBranchMergeProposalView(
 
     def test_register_simplest_case(self):
         # This simplest case is where the user only specifies the target
-        # branch, and not an initial comment or reviewer.
+        # branch, and not an initial comment or reviewer. The reviewer will
+        # therefore be set to the branch owner.
         view = self._createView()
         view.register_action.success(
             {'target_branch': self.target_branch,
              'needs_review': True})
         proposal = self._getSourceProposal()
-        self.assertNoPendingReviews(proposal)
+        self.assertOnePendingReview(proposal, self.target_branch.owner)
         self.assertIs(None, proposal.description)
 
     def test_register_work_in_progress(self):
@@ -429,7 +427,7 @@ class TestRegisterNoDefaultReviewBranchMergeProposalView(
              'needs_review': True})
 
         proposal = self._getSourceProposal()
-        self.assertNoPendingReviews(proposal)
+        self.assertOnePendingReview(proposal, self.target_branch.owner)
         self.assertEqual(proposal.description, "This is the description.")
 
     def test_register_request_reviewer(self):

@@ -638,8 +638,12 @@ class CodeHandler:
         with globalErrorUtility.oopsMessage(
             'target: %r source: %r' % (target, source)):
             try:
+                # There may be a reviewer specified in the email but we don't
+                # know that yet. So tell addLandingTarget not to assign a
+                # default reviewer - will will do that below if required.
                 bmp = source.addLandingTarget(submitter, target,
-                                              needs_review=True)
+                                              needs_review=True,
+                                              assign_default_reviewer=False)
 
                 context = CodeReviewEmailCommandExecutionContext(
                     bmp, submitter, notify_event_listeners=False)
