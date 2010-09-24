@@ -2413,7 +2413,8 @@ class PersonSubscriptionsView(BugTaskSearchListingView):
                     BugTaskStatus.TRIAGED,
                     BugTaskStatus.INPROGRESS,
                     BugTaskStatus.FIXCOMMITTED,
-                    BugTaskStatus.INVALID))
+                    BugTaskStatus.INVALID),
+            bug_subscriber=self.context)
 
         sub_bug_tasks = []
         sub_bugs = []
