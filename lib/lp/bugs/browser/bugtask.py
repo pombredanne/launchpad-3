@@ -3632,7 +3632,11 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin):
 
     @cachedproperty
     def target_has_milestones(self):
-        """Are there any milestones we can target?"""
+        """Are there any milestones we can target?
+
+        We always look up all milestones, so there's no harm
+        using len on the list here and avoid the COUNT query.
+        """
         return len(self._visible_milestones) > 0
 
     def bugtask_canonical_url(self):
