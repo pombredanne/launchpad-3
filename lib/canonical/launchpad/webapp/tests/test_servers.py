@@ -358,6 +358,16 @@ class TestBasicLaunchpadRequest(TestCase):
             retried_request.response.getHeader('Vary'),
             'Cookie, Authorization')
 
+    def test_is_ajax(self):
+        """True if the HTTP_X_REQUESTED_WITH is set appropriately."""
+        request = LaunchpadBrowserRequest(StringIO.StringIO(''), {})
+        self.assertFalse(request.is_ajax)
+
+        request = LaunchpadBrowserRequest(StringIO.StringIO(''), {
+            'HTTP_X_REQUESTED_WITH': ['XMLHttpRequest'],
+            })
+        self.assertTrue(request.is_ajax)
+
 
 class IThingSet(Interface):
     """Marker interface for a set of things."""

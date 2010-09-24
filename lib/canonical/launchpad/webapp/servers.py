@@ -566,6 +566,15 @@ class BasicLaunchpadRequest:
         """See ILaunchpadBrowserApplicationRequest."""
         return get_query_string_params(self)
 
+    @property
+    def is_ajax(self):
+        """See `IBasicLaunchpadRequest`."""
+        requested_with = self.getHeader('HTTP_X_REQUESTED_WITH')
+        if requested_with is None:
+            return False
+
+        return 'XMLHttpRequest' in requested_with
+
 
 class LaunchpadBrowserRequestMixin:
     """A mixin for classes that share some method implementations."""
