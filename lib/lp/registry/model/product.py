@@ -749,15 +749,17 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         changed.
         """
         if self.owner is None:
-            # This is being initialize.
+            # This is being initialized.
             self._owner = new_owner
-            return
-        if self.owner != new_owner:
+        elif self.owner != new_owner:
             old_product = Snapshot(self, providing=providedBy(self))
             self._owner = new_owner
             notify(ObjectModifiedEvent(
                 self, object_before_modification=old_product,
                 edited_fields=['_owner']))
+        else:
+            # The new_owner is the same as the current owner.
+            pass
 
     owner = property(_getOwner, _setOwner)
 
