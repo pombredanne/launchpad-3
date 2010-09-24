@@ -242,7 +242,8 @@ class Bugzilla(ExternalBugTracker):
         """See `ExternalBugTracker`."""
         try:
             words = remote_importance.lower().split()
-            return self._importance_lookup[words.pop()]
+            if len(words) > 0:
+                return self._importance_lookup[words.pop()]
 
         except KeyError:
             raise UnknownRemoteImportanceError(remote_importance)
