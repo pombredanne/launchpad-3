@@ -46,6 +46,8 @@ from canonical.launchpad.mail import (
 from canonical.launchpad.mailnotification import MailWrapper
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.tales import DurationFormatterAPI
+from lazr.restful.error import expose
+from lp.registry.errors import TeamMembershipTransitionError
 from lp.registry.interfaces.person import (
     IPersonSet,
     TeamMembershipRenewalPolicy,
@@ -331,11 +333,14 @@ class TeamMembership(SQLBase):
             declined: [proposed, approved, admin],
             invited: [approved, admin, invitation_declined],
             invitation_declined: [invited, approved, admin]}
-        assert self.status in state_transition, (
-            "Unknown status: %s" % self.status.name)
-        assert status in state_transition[self.status], (
-            "Bad state transition from %s to %s"
-            % (self.status.name, status.name))
+        
+        if self.status not in state_transition:
+            raise expose(TeamMembershipTransitionError(
+                "Unknown status: %s" % self.status.name))
+        if status not in state_transition[self.status]:
+            raise expose(TeamMembershipTransitionError(
+                "Bad state transition from %s to %s"
+                % (self.status.name, status.name)))
 
         if status in ACTIVE_STATES and self.team in self.person.allmembers:
             raise CyclicalTeamMembershipError(
