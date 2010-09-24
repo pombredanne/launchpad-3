@@ -2117,7 +2117,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             distroseries = self.makeDistroSeries(
                 distribution=archive.distribution)
             arch = self.makeDistroArchSeries(distroseries=distroseries)
-            distroseries.nominatedarchindep = arch
+            removeSecurityProxy(distroseries).nominatedarchindep = arch
         if requester is None:
             requester = self.makePerson()
         spr_build = getUtility(ISourcePackageRecipeBuildSource).new(
