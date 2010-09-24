@@ -196,7 +196,7 @@ class TestUpdatePreviewDiffJob(DiffTestCase):
 
     def test_run(self):
         self.useBzrBranches(direct_database=True)
-        bmp = create_example_merge(self)
+        bmp = create_example_merge(self)[0]
         job = UpdatePreviewDiffJob.create(bmp)
         self.factory.makeRevisionsForBranch(bmp.source_branch, count=1)
         bmp.source_branch.next_mirror_time = None
