@@ -67,7 +67,6 @@ from lazr.restful.declarations import (
     webservice_error,
     )
 from lazr.restful.error import expose
-from lazr.restful.declarations import webservice_error
 from lazr.restful.fields import (
     CollectionField,
     Reference,
@@ -160,8 +159,11 @@ PRIVATE_TEAM_PREFIX = 'private-'
 
 class PrivatePersonLinkageError(ValueError):
     """An attempt was made to link a private person/team to something."""
-    # HTTP 406 -- NOT APPROPRIATE
-    webservice_error(406)
+    # HTTP 400 -- BAD REQUEST
+    # HTTP 403 would be better, but as this excpetion is raised inside a
+    # validator, it will default to 400 anyway.
+    webservice_error(400)
+
 
 @block_implicit_flushes
 def validate_person_common(obj, attr, value, validate_func):

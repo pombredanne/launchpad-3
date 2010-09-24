@@ -6,10 +6,8 @@ __metaclass__ = type
 import unittest
 
 from canonical.testing import DatabaseFunctionalLayer
-from lp.registry.interfaces.person import (
-    PersonVisibility,
-    PrivatePersonLinkageError,
-    )
+from lazr.restfulclient.errors import HTTPError
+from lp.registry.interfaces.person import PersonVisibility
 from lp.testing import (
     TestCaseWithFactory,
     launchpadlib_for,
@@ -33,14 +31,6 @@ class TestTeamLinking(TestCaseWithFactory):
             name='private-team-two',
             displayname='Private Team Two',
             visibility=PersonVisibility.PRIVATE)
-    def _errorCheck(self, teamone, teamtwo):
-        # Using the webservice confuses assertRaises
-        try:
-            teamone.addMember(person=teamtwo)
-        except PrivatePersonLinkageError, e:
-            self.assertEqual(406, e.response.status)
-        else:
-            self.fail()
 
     def test_private_links(self):
         # A private team cannot be linked to another team, private or
@@ -48,13 +38,12 @@ class TestTeamLinking(TestCaseWithFactory):
         launchpad = launchpadlib_for("test", self.team_owner.name)
         team_one = launchpad.people['private-team']
         team_two = launchpad.people['private-team-two']
-        self._errorCheck(team_one, team_two)
-        #e = self.assertRaises(
-        #    PrivatePersonLinkageError,
-        #    team_one.addMember,
-        #    person=team_two)
-
-        #self.assertEqual(406, e.response.status)
+        e = self.assertRaises(
+            HTTPError,
+            team_one.addMember,
+            person=team_two) 
+        self.assertIn('Cannot link person', e.content) 
+        self.assertEqual(400, e.response.status)
 
 
 def test_suite():
