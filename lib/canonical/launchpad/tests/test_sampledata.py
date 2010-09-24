@@ -36,7 +36,7 @@ class SampleDataTestCase(TestCase):
     def dump_and_restore(self, source_dbname):
         cmd = (
             "pg_dump --format=c --compress=0 --no-privileges --no-owner"
-            " --schema=public %s | pg_restore --clean --single-transaction"
+            " --schema=public %s | pg_restore --clean"
             " --exit-on-error --dbname=launchpad_ftest" % source_dbname)
         proc = subprocess.Popen(
             cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,

@@ -2338,6 +2338,14 @@ COMMENT ON COLUMN HWDMIValue.key IS 'The key.';
 COMMENT ON COLUMN HWDMIValue.value IS 'The value';
 COMMENT ON COLUMN HWDMIValue.handle IS 'The handle to which this key/value pair belongs.';
 
+-- IncrementalDiff
+COMMENT ON TABLE IncrementalDiff IS 'Incremental diffs for merge proposals.';
+COMMENT ON COLUMN IncrementalDiff.diff IS 'The contents of the diff.';
+COMMENT ON COLUMN IncrementalDiff.branch_merge_proposal IS 'The merge proposal the diff is for.';
+COMMENT ON COLUMN IncrementalDiff.old_revision IS 'The revision the diff is from.';
+COMMENT ON COLUMN IncrementalDiff.new_revision IS 'The revision the diff is to.';
+
+
 -- Job
 
 COMMENT ON TABLE Job IS 'Common info about a job.';

@@ -691,6 +691,16 @@
             name="+index"
             template="../templates/codereviewcomment-index.pt"/>
         <browser:page
+            name="+fragment"
+            template="../templates/codereviewcomment-fragment.pt"/>
+    </browser:pages>
+    <browser:pages
+        facet="branches"
+        for="lp.code.browser.codereviewcomment.ICodeReviewDisplayComment"
+        layer="lp.code.publisher.CodeLayer"
+        class="lp.code.browser.codereviewcomment.CodeReviewCommentView"
+        permission="zope.Public">
+        <browser:page
             name="+comment-header"
             template="../templates/codereviewcomment-header.pt"/>
         <browser:page
@@ -699,9 +709,6 @@
         <browser:page
             name="+comment-footer"
             template="../templates/codereviewcomment-footer.pt"/>
-        <browser:page
-            name="+fragment"
-            template="../templates/codereviewcomment-fragment.pt"/>
     </browser:pages>
     <browser:pages
         facet="branches"
@@ -1221,7 +1228,7 @@
             class="lp.code.browser.sourcepackagerecipe.SourcePackageRecipeRequestBuildsView"
             name="+request-builds"
             template="../templates/sourcepackagerecipe-request-builds.pt"
-            permission="launchpad.View"/>
+            permission="launchpad.AnyPerson"/>
     </facet>
     <facet facet="branches">
         <browser:defaultView
