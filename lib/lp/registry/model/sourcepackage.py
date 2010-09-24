@@ -481,6 +481,9 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         """Customize `search_params` for this source package."""
         search_params.setSourcePackage(self)
 
+    def _getOfficialTagClause(self):
+        return self.distroseries._getOfficialTagClause()
+
     @property
     def official_bug_tags(self):
         """See `IHasBugs`."""
