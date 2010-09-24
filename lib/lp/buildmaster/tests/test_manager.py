@@ -771,7 +771,7 @@ class TestSlaveScannerScan(TrialTestCase):
         # If scan() fails with an exception, failure_counts should be
         # incremented and tested.
         def failing_scan():
-            raise Exception("fake exception")
+            return defer.fail(Exception("fake exception"))
         manager = self._getManager()
         manager.scan = failing_scan
         manager.scheduleNextScanCycle = FakeMethod()
@@ -786,16 +786,19 @@ class TestSlaveScannerScan(TrialTestCase):
 
         # startCycle() calls scan() which is our fake one that throws an
         # exception.
-        manager.startCycle()
+        d = manager.startCycle()
 
         # Failure counts should be updated, and the assessment method
         # should have been called.
-        self.assertEqual(1, builder.failure_count)
-        self.assertEqual(
-            1, builder.currentjob.specific_job.build.failure_count)
+        def got_scan(ignored):
+            self.assertEqual(1, builder.failure_count)
+            self.assertEqual(
+                1, builder.currentjob.specific_job.build.failure_count)
 
-        self.assertEqual(
-            1, manager_module.assessFailureCounts.call_count)
+            self.assertEqual(
+                1, manager_module.assessFailureCounts.call_count)
+
+        return d.addCallback(got_scan)
 
 
 class TestDispatchResult(LaunchpadTestCase):
