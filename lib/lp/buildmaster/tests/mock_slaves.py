@@ -29,6 +29,7 @@ from testtools.content_type import UTF8_TEXT
 from twisted.internet import defer
 
 from canonical.buildd.tests.harness import BuilddSlaveTestSetup
+
 from lp.buildmaster.interfaces.builder import CannotFetchFile
 from lp.buildmaster.model.builder import (
     BuilderSlave,
@@ -54,7 +55,7 @@ class MockBuilder:
         self.builderok = True
         self.manual = False
         self.url = 'http://fake:0000'
-        slave.urlbase = self.url
+        slave.url = self.url
         self.name = name
         self.virtualized = True
 
@@ -243,7 +244,7 @@ class BrokenSlave:
 
     def status(self):
         self.call_log.append('status')
-        raise defer.fail(xmlrpclib.Fault(8001, "Broken slave"))
+        return defer.fail(xmlrpclib.Fault(8001, "Broken slave"))
 
 
 class SlaveTestHelpers(fixtures.Fixture):
@@ -310,4 +311,3 @@ class SlaveTestHelpers(fixtures.Fixture):
         return slave.build(
             build_id, 'debian', chroot_file, {'.dsc': dsc_file},
             {'ogrecomponent': 'main'})
-

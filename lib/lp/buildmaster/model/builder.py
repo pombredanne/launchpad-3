@@ -82,6 +82,7 @@ from lp.services.job.model.job import Job
 from lp.services.propertycache import cachedproperty
 from lp.services.twistedsupport.processmonitor import ProcessWithTimeout
 from lp.services.twistedsupport.xmlrpc import DeferredBlockingProxy
+
 # XXX Michael Nelson 2010-01-13 bug=491330
 # These dependencies on soyuz will be removed when getBuildRecords()
 # is moved.
@@ -115,7 +116,16 @@ class TimeoutTransport(xmlrpclib.Transport):
 
 
 class BuilderSlave(object):
-    """Add in a few useful methods for the XMLRPC slave."""
+    """Add in a few useful methods for the XMLRPC slave.
+
+    :ivar url: The URL of the actual builder. The XML-RPC resource and
+        the filecache live beneath this.
+    """
+
+    # WARNING: If you change the API for this, you should also change the APIs
+    # of the mocks in soyuzbuilderhelpers to match. Otherwise, you will have
+    # many false positives in your test run and will most likely break
+    # production.
 
     # WARNING: If you change the API for this, you should also change the APIs
     # of the mocks in soyuzbuilderhelpers to match. Otherwise, you will have
@@ -139,26 +149,26 @@ class BuilderSlave(object):
     # should make a test double that doesn't do any XML-RPC and can be used to
     # make testing easier & tests faster.
 
-    def __init__(self, proxy, file_cache_url, vm_host):
+    def __init__(self, proxy, builder_url, vm_host):
         """Initialize a BuilderSlave.
 
         :param proxy: An XML-RPC proxy, implementing 'callRemote'. It must
             support passing and returning None objects.
-        :param file_cache_url: The URL of the file cache.
+        :param builder_url: The URL of the builder.
         :param vm_host: The VM host to use when resuming.
         """
+        self.url = builder_url
         self._vm_host = vm_host
-        self._file_cache_url = file_cache_url
+        self._file_cache_url = urlappend(builder_url, 'filecache')
         self._server = proxy
 
     @classmethod
-    def makeBlockingSlave(cls, url_base, vm_host):
-        rpc_url = urlappend(url_base, 'rpc')
+    def makeBlockingSlave(cls, builder_url, vm_host):
+        rpc_url = urlappend(builder_url, 'rpc')
         server_proxy = xmlrpclib.ServerProxy(
             rpc_url, transport=TimeoutTransport(), allow_none=True)
-        file_cache_url = urlappend(url_base, 'filecache')
         return cls(
-            DeferredBlockingProxy(server_proxy), file_cache_url, vm_host)
+            DeferredBlockingProxy(server_proxy), builder_url, vm_host)
 
     def abort(self):
         """Abort the current build."""
@@ -201,13 +211,13 @@ class BuilderSlave(object):
         :param clock: An optional twisted.internet.task.Clock to override
                       the default clock.  For use in tests.
 
-        :return: a Deferred
+        :return: a Deferred that returns a
+            (stdout, stderr, subprocess exitcode) triple
         """
         resume_command = config.builddmaster.vm_resume_command % {
             'vm_host': self._vm_host}
         # Twisted API requires string but the configuration provides unicode.
         resume_argv = [str(term) for term in resume_command.split()]
-
         d = defer.Deferred()
         p = ProcessWithTimeout(
             d, config.builddmaster.socket_timeout, clock=clock)
