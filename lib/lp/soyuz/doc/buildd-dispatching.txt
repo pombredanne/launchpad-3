@@ -61,6 +61,7 @@ Clean up previous BuildQueue results from sampledata:
     >>> lost_job.builder.name
     u'bob'
     >>> lost_job.destroySelf()
+    >>> transaction.commit()
 
 If the specified buildd slave reset command (used inside resumeSlaveHost())
 fails, the slave will still be marked as failed.
