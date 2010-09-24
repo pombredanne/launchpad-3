@@ -67,6 +67,7 @@ class BuildFarmJobBehaviorBase:
 
     def updateBuild(self, queueItem):
         """See `IBuildFarmJobBehavior`."""
+        # XXX: Make this handle Deferreds & return one itself.
         logger = logging.getLogger('slave-scanner')
 
         try:

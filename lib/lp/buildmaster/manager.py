@@ -344,6 +344,7 @@ class SlaveScanner:
         # Scan the slave and get the logtail, or collect the build if
         # it's ready.  Yes, "updateBuild" is a bad name.
         if buildqueue is not None:
+            # XXX: Now returns a Deferred.
             self.builder.updateBuild(buildqueue)
             transaction.commit()
 

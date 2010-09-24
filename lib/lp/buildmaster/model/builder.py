@@ -586,7 +586,7 @@ class Builder(SQLBase):
 
     def updateBuild(self, queueItem):
         """See `IBuilder`."""
-        self.current_build_behavior.updateBuild(queueItem)
+        return self.current_build_behavior.updateBuild(queueItem)
 
     def transferSlaveFileToLibrarian(self, file_sha1, filename, private):
         """See IBuilder."""
