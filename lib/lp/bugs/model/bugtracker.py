@@ -661,11 +661,11 @@ class BugTrackerSet:
 
     def getMostActiveBugTrackers(self, limit=None):
         """See `IBugTrackerSet`."""
-        store = IStore(self.table)
+        store = IStore(BugTracker)
         result = store.find(
-            self.table,
-            self.table.id == BugWatch.bugtrackerID)
-        result = result.group_by(self.table)
+            BugTracker,
+            BugTracker.id == BugWatch.bugtrackerID)
+        result = result.group_by(BugTracker)
         result = result.order_by(Desc(Count(BugWatch)))
         if limit is not None:
             return result[:limit]
