@@ -21,6 +21,7 @@ from zope.security.checker import canAccess, canWrite
 from zope.schema.vocabulary import getVocabularyRegistry
 
 from lazr.restful.interfaces import IWebServiceClientRequest
+from canonical.lazr.utils import safe_hasattr
 
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.publisher import canonical_url
@@ -361,7 +362,7 @@ def vocabulary_to_choice_edit_items(
     for item in vocab:
         # Introspect to make sure we're dealing with the object itself.
         # SimpleTerm objects have the object itself at item.value.
-        if hasattr(item, 'value'):
+        if safe_hasattr(item, 'value'):
             item = item.value
         if name_fn is not None:
             name = name_fn(item)
