@@ -32,7 +32,6 @@ class TestBugTrackerComponent(TestCaseWithFactory):
 
     def test_component_creation(self):
         """Verify a component can be created"""
-
         component = self.factory.makeBugTrackerComponent(
             u'example', self.comp_group)
         self.assertTrue(component is not None)
@@ -46,7 +45,6 @@ class TestBugTrackerComponent(TestCaseWithFactory):
         We do this rather than delete them outright so that they won't
         show up again when we re-sync from the remote bug tracker.
         """
-
         component = self.factory.makeBugTrackerComponent(
             u'example', self.comp_group)
         self.assertEqual(component.is_visible, True)
@@ -63,7 +61,6 @@ class TestBugTrackerComponent(TestCaseWithFactory):
         For whatever reason, it may be that we can't import a component
         from the remote bug tracker.  This gives users a way to correct
         the omissions."""
-
         custom_component = self.factory.makeBugTrackerComponent(
             u'example', self.comp_group, custom=True)
         self.assertTrue(custom_component != None)
@@ -71,7 +68,6 @@ class TestBugTrackerComponent(TestCaseWithFactory):
 
     def test_multiple_component_creation(self):
         """Verify several components can be created at once"""
-
         comp_a = self.factory.makeBugTrackerComponent(
             u'example-a', self.comp_group)
         comp_b = self.factory.makeBugTrackerComponent(
@@ -98,7 +94,6 @@ class TestBugTrackerWithComponents(TestCaseWithFactory):
 
     def test_empty_bugtracker(self):
         """Trivial case of bugtracker with no products or components"""
-
         self.assertTrue(self.bug_tracker is not None)
 
         # Empty bugtrackers shouldn't return component groups
@@ -112,7 +107,6 @@ class TestBugTrackerWithComponents(TestCaseWithFactory):
     def test_single_product_bugtracker(self):
         """Bug tracker with a single (default) product and several components
         """
-
         # Add a component group and fill it with some components
         default_comp_group = self.bug_tracker.addRemoteComponentGroup(
             u'alpha')
@@ -135,7 +129,6 @@ class TestBugTrackerWithComponents(TestCaseWithFactory):
 
     def test_multiple_product_bugtracker(self):
         """Bug tracker with multiple products and components"""
-
         # Create several component groups with varying numbers of components
         comp_group_i = self.bug_tracker.addRemoteComponentGroup(u'alpha')
 
@@ -161,7 +154,6 @@ class TestBugTrackerWithComponents(TestCaseWithFactory):
 
     def test_get_components_for_component_group(self):
         """Retrieve a set of components from a given product"""
-
         # Create a component group with some components
         default_comp_group = self.bug_tracker.addRemoteComponentGroup(
             u'alpha')
