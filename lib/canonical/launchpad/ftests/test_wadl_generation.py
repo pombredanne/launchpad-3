@@ -18,8 +18,8 @@ from canonical.testing import LaunchpadFunctionalLayer
 from lazr.restful.interfaces import IWebServiceConfiguration
 from lp.testing import TestCase
 from lp.testing.matchers import (
-    StartsWith,
     Contains,
+    StartsWith,
     )
 
 

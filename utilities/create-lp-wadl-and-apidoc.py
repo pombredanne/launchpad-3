@@ -10,7 +10,7 @@ Example:
     % LPCONFIG=development bin/py utilities/create-lp-wadl-and-apidoc.py \\
       "lib/canonical/launchpad/apidoc/wadl-development-%(version)s.xml"
 """
-import _pythonpath # not lint, actually needed
+import _pythonpath # Not lint, actually needed.
 
 import optparse
 import os

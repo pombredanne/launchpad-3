@@ -51,7 +51,7 @@ def generate_html(wadl_filename, suppress_stderr=True):
         stderr = subprocess.PIPE
     else:
         stderr = None
-    args = ['xsltproc', stylesheet, wadl_filename]
+    args = ('xsltproc', stylesheet, wadl_filename)
     process = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=stderr)
 
     output = process.communicate()[0]
