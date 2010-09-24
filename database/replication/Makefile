@@ -14,8 +14,9 @@
 # To test the staging rebuild script:
 #
 #  $ cd database/replication
-#  $ pg_dump --format=c launchpad_dev > launchpad.dump
-#  $ make stagingsetup STAGING_CONFIG=dev-staging STAGING_DUMP=launchpad.dump
+#  $ pg_dump --format=c launchpad_dev | bzip2 -c > launchpad.dump.bz2
+#  $ make stagingsetup \
+#        STAGING_CONFIG=dev-staging STAGING_DUMP=launchpad.dump.bz2
 #  $ make stagingswitch STAGING_CONFIG=dev-staging
 #
 # To restore a dogfood database:

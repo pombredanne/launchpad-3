@@ -919,7 +919,7 @@ class Branch(SQLBase, BzrIdentityMixin):
     def getScannerData(self):
         """See `IBranch`."""
         columns = (
-            BranchRevision.id, BranchRevision.sequence, Revision.revision_id)
+            BranchRevision.sequence, Revision.revision_id)
         rows = Store.of(self).using(Revision, BranchRevision).find(
             columns,
             Revision.id == BranchRevision.revision_id,
@@ -927,7 +927,7 @@ class Branch(SQLBase, BzrIdentityMixin):
         rows = rows.order_by(BranchRevision.sequence)
         ancestry = set()
         history = []
-        for branch_revision_id, sequence, revision_id in rows:
+        for sequence, revision_id in rows:
             ancestry.add(revision_id)
             if sequence is not None:
                 history.append(revision_id)
@@ -1027,10 +1027,14 @@ class Branch(SQLBase, BzrIdentityMixin):
         """Delete jobs for this branch prior to deleting branch.
 
         This deletion includes `BranchJob`s associated with the branch,
-        as well as `BuildQueue` entries for `TranslationTemplateBuildJob`s.
+        as well as `BuildQueue` entries for `TranslationTemplateBuildJob`s
+        and `TranslationTemplateBuild`s.
         """
         # Avoid circular imports.
         from lp.code.model.branchjob import BranchJob
+        from lp.translations.model.translationtemplatesbuild import (
+            TranslationTemplatesBuild,
+            )
 
         store = Store.of(self)
         affected_jobs = Select(
@@ -1043,6 +1047,10 @@ class Branch(SQLBase, BzrIdentityMixin):
 
         # Delete Jobs.  Their BranchJobs cascade along in the database.
         store.find(Job, Job.id.is_in(affected_jobs)).remove()
+
+        store.find(
+            TranslationTemplatesBuild,
+            TranslationTemplatesBuild.branch == self).remove()
 
     def destroySelf(self, break_references=False):
         """See `IBranch`."""

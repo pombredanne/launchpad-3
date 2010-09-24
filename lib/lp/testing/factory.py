@@ -216,6 +216,7 @@ from lp.registry.model.milestone import Milestone
 from lp.registry.model.suitesourcepackage import SuiteSourcePackage
 from lp.services.mail.signedmessage import SignedMessage
 from lp.services.openid.model.openididentifier import OpenIdIdentifier
+from lp.services.propertycache import IPropertyCacheManager
 from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.soyuz.adapters.packagelocation import PackageLocation
@@ -223,6 +224,7 @@ from lp.soyuz.enums import (
     ArchivePurpose,
     BinaryPackageFileType,
     BinaryPackageFormat,
+    PackageDiffStatus,
     PackagePublishingPriority,
     PackagePublishingStatus,
     PackageUploadStatus,
@@ -1849,6 +1851,22 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             expires=expires, restricted=restricted)
         return library_file_alias
 
+    def makePackageDiff(self, from_spr=None, to_spr=None):
+        """Make a completed package diff."""
+        if from_spr is None:
+            from_spr = self.makeSourcePackageRelease()
+        if to_spr is None:
+            to_spr = self.makeSourcePackageRelease()
+
+        diff = from_spr.requestDiffTo(
+            from_spr.creator, to_spr)
+
+        naked_diff = removeSecurityProxy(diff)
+        naked_diff.status = PackageDiffStatus.COMPLETED
+        naked_diff.diff_content = self.makeLibraryFileAlias()
+        naked_diff.date_fulfilled = UTC_NOW
+        return diff
+
     def makeDistribution(self, name=None, displayname=None, owner=None,
                          members=None, title=None, aliases=None):
         """Make a new distribution."""
@@ -1939,9 +1957,14 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 sourcepackagename=source_package_name,
                 status = PackagePublishingStatus.PUBLISHED)
 
-        return getUtility(IDistroSeriesDifferenceSource).new(
+        diff = getUtility(IDistroSeriesDifferenceSource).new(
             derived_series, source_package_name, difference_type,
             status=status)
+
+        # We clear the cache on the diff, returning the object as if it
+        # was just loaded from the store.
+        IPropertyCacheManager(diff).clear()
+        return diff
 
     def makeDistroSeriesDifferenceComment(
         self, distro_series_difference=None, owner=None, comment=None):

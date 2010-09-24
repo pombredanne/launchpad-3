@@ -114,7 +114,8 @@
         <allow interface="lp.registry.interfaces.distroseriesdifference.IDistroSeriesDifferencePublic"/>
         <require
             permission="launchpad.Edit"
-            interface="lp.registry.interfaces.distroseriesdifference.IDistroSeriesDifferenceEdit"/>
+            interface="lp.registry.interfaces.distroseriesdifference.IDistroSeriesDifferenceEdit"
+            set_attributes="package_diff parent_package_diff"/>
     </class>
 
     <!-- DistroSeriesDifferenceComment -->
