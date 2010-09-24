@@ -1,8 +1,9 @@
 Subscriptions View
 ==================
 
-Each person and team has a subscriptions page that lists things to which they
-are directly subscribed.
+XXX: bdmurray 2010-09-24 bug=628411 This story is complete until we publish
+the link that leads to the +subscriptions page.  Each person and team has a
+subscriptions page that lists things to which they are directly subscribed.
 
     >>> anon_browser.open('http://launchpad.dev/~ubuntu-team/+subscriptions')
     >>> print anon_browser.title
@@ -41,13 +42,12 @@ subscriptions and includes the bug number, title and location.
     Thunderbird crashes
     thunderbird (Ubuntu)
 
-
 The bug subscriptions table also includes an unsubscribe link, if they have
 permission to remove the subscription, for bugs to which the person or team is
 subscribed.
 
     >>> name12_browser = setupBrowser(auth='Basic test@canonical.com:test')
-    >>> name12_browser.open('http://launchpad.dev/~name12/+subscriptions')
+    >>> name12_browser.open('http://bugs.launchpad.dev/~name12/+subscriptions')
     >>> unsub_link = name12_browser.getLink(
     ...     id='unsubscribe-subscriber-12')
 
@@ -65,6 +65,7 @@ subscribed to bug 13.  They click cancel which takes them back to their
     >>> cancel_link = name12_browser.getLink('Cancel')
     >>> cancel_link.click()
     >>> print name12_browser.url
+    http://bugs.launchpad.dev/~name12/+subscriptions
 
 If you view someone's subscriptions that you don't have permission to modify
 there will be no edit subscription link.
