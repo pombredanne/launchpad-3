@@ -13,7 +13,7 @@ Any user can see that a project with no releases has no downloads.
     Downloads
     APTonCD does not have any download files registered with Launchpad.
 
-Any user can see a project with a release without files has no downlaod files.
+Any user can see a project with a release without files has no download files.
 
     >>> anon_browser.open('http://launchpad.dev/thunderbird')
     >>> content = find_tag_by_id(anon_browser.contents, 'downloads')
