@@ -37,7 +37,6 @@
         <form action="." method="POST">
 
           <div class="field">
-
             <div>
               <div tal:content="structure view/subscription_widget">
                 <input type="radio" />
@@ -55,7 +54,8 @@
                    type="submit"
                    name="unsubscribe"
                    value="Continue" />
-            or <a tal:attributes="href context/fmt:url">Cancel</a>
+                   or <a tal:condition="view/_return_url | nothing"
+                         tal:attributes="href view/_return_url">Cancel</a>
           </div>
         </form>
 

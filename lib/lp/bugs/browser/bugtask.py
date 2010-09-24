@@ -162,6 +162,7 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import TableBatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import ILaunchBag
+from canonical.launchpad.webapp.launchpadform import ReturnToReferrerMixin
 from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.tales import (
     FormattersAPI,
@@ -618,7 +619,8 @@ class BugTaskTextView(LaunchpadView):
         return view.render()
 
 
-class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView, FeedsMixin):
+class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView,
+                  FeedsMixin, ReturnToReferrerMixin):
     """View class for presenting information about an `IBugTask`."""
 
     override_title_breadcrumbs = True

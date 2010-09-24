@@ -2424,6 +2424,16 @@ class PersonSubscriptionsView(BugTaskSearchListingView):
                 sub_bugs.append(task.bug)
         return BatchNavigator(sub_bug_tasks, self.request)
 
+    def canUnsubscribeFromBugTasks(self):
+        viewed_person = self.context
+        if self.user is None:
+            return False
+        elif viewed_person == self.user:
+            return True
+        elif (viewed_person.is_team and
+              self.user.inTeam(viewed_person)):
+            return True
+
     def getSubscriptionsPageHeading(self):
         """The header for the subscriptions page."""
         return "Subscriptions for %s" % self.context.displayname

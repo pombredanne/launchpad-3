@@ -32,7 +32,7 @@
         <th>
           In
         </th>
-        <th>
+        <th tal:condition="view/canUnsubscribeFromBugTasks">
         </th>
       </tr>
     </thead>
@@ -50,7 +50,8 @@
         <td tal:content="sub_bug_task/bugtargetdisplayname"
             tal:condition="sub_bug_task/bugtargetdisplayname|nothing"
         >mozilla-firefox (Ubuntu)</td>
-          <td align="center">
+        <td tal:condition="view/canUnsubscribeFromBugTasks"
+            align="center">
             <a
                tal:attributes="
                title string:Unsubscribe ${context/fmt:displayname} from bug ${sub_bug_task/bug/id};
@@ -58,7 +59,7 @@
                  href string:${sub_bug_task/fmt:url}/+subscribe;
                "
             >
-              <img src="/@@/remove"
+              <img src="/@@/edit"
               tal:attributes="id string:unsubscribe-icon-${context/id};
                               position string:relative"/>
             </a>

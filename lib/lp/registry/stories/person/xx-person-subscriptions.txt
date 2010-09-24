@@ -1,8 +1,6 @@
 Subscriptions View
 ==================
 
-Direct bug subscriptions
-
 Each person and team has a subscriptions page that lists things to which they
 are directly subscribed.
 
@@ -44,12 +42,48 @@ subscriptions and includes the bug number, title and location.
     thunderbird (Ubuntu)
 
 
-The bug subscriptions table also includes an unsubscribe link for bugs to
-which the person or team is subscribed.
+The bug subscriptions table also includes an unsubscribe link, if they have
+permission to remove the subscription, for bugs to which the person or team is
+subscribed.
 
-    >>> user_browser.open('http://launchpad.dev/~name12/+subscriptions')
-    >>> unsub_link = user_browser.getLink(
+    >>> name12_browser = setupBrowser(auth='Basic test@canonical.com:test')
+    >>> name12_browser.open('http://launchpad.dev/~name12/+subscriptions')
+    >>> unsub_link = name12_browser.getLink(
     ...     id='unsubscribe-subscriber-12')
+
+Clicking the unsubscribe link takes the person to the +subscribe page for the
+bug.
+
     >>> unsub_link.click()
-    >>> print user_browser.url
+    >>> print name12_browser.url
     http://bugs.launchpad.dev/launchpad/+bug/13/+subscribe
+
+After viewing the +subscribe page name12 decides that they still want to be
+subscribed to bug 13.  They click cancel which takes them back to their
++subscription page.
+
+    >>> cancel_link = name12_browser.getLink('Cancel')
+    >>> cancel_link.click()
+    >>> print name12_browser.url
+
+If you view someone's subscriptions that you don't have permission to modify
+there will be no edit subscription link.
+
+    >>> name12_browser.open('http://launchpad.dev/~name16/+subscriptions')
+    >>> name12_browser.getLink(id='unsubscribe-subscriber-32')
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+Create a bug subscription for a team of which name16 is a member.
+
+    >>> name16_browser = setupBrowser(auth='Basic foo.bar@canonical.com:test')
+    >>> name16_browser.open('http://bugs.launchpad.dev/firefox/+bug/1/+addsubscriber')
+    >>> name16_browser.getControl('Person').value = 'guadamen'
+    >>> name16_browser.getControl('Subscribe user').click()
+
+If you are the member of a team with bug subscriptions you will have edit
+subscriptions links in the bug subscription table.
+
+    >>> name16_browser.open('http://launchpad.dev/~guadamen/+subscriptions')
+    >>> unsub_link = name16_browser.getLink(id='unsubscribe-subscriber-32')
