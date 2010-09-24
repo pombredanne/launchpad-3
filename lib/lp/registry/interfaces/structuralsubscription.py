@@ -157,7 +157,6 @@ class IStructuralSubscriptionTargetRead(Interface):
     parent_subscription_target = Attribute(
         "The target's parent, or None if one doesn't exist.")
 
-    # XXX: This has to go.
     bug_subscriptions = Attribute(
         "All subscriptions to bugs at the METADATA level or higher.")
 
