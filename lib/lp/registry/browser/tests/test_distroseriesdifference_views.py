@@ -8,8 +8,10 @@ from __future__ import with_statement
 __metaclass__ = type
 
 from BeautifulSoup import BeautifulSoup
+from zope.app.form.browser.itemswidgets import RadioWidget
 from zope.component import getUtility
 
+from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing import (
     DatabaseFunctionalLayer,
@@ -19,7 +21,8 @@ from lp.registry.browser.distroseriesdifference import (
     DistroSeriesDifferenceDisplayComment,
     )
 from lp.registry.enum import DistroSeriesDifferenceType
-from lp.registry.interfaces.distroseriesdifference import IDistroSeriesDifferenceSource
+from lp.registry.interfaces.distroseriesdifference import (
+    IDistroSeriesDifferenceSource)
 from lp.services.comments.interfaces.conversation import (
     IComment,
     IConversation,
@@ -124,6 +127,29 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         self.assertIs(None, ds_diff.source_pub)
         self.assertIs(None, view.binary_summaries)
 
+    def test_show_blacklist_options(self):
+        # Blacklist options are shown if requested by an editor via
+        # ajax.
+        ds_diff = self.factory.makeDistroSeriesDifference()
+
+        # Without JS, even editors don't see blacklist options.
+        with person_logged_in(ds_diff.owner):
+            view = create_initialized_view(
+                ds_diff, '+listing-distroseries-extra')
+        self.assertFalse(view.show_blacklist_options)
+
+        # With a JS request, editors do see blacklist options.
+        request = LaunchpadTestRequest(HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        with person_logged_in(ds_diff.owner):
+            view = create_initialized_view(
+                ds_diff, '+listing-distroseries-extra', request=request)
+            self.assertTrue(view.show_blacklist_options)
+
+        # Even with a JS request, non-editors do not see the options.
+        view = create_initialized_view(
+            ds_diff, '+listing-distroseries-extra', request=request)
+        self.assertFalse(view.show_blacklist_options)
+
 
 class DistroSeriesDifferenceTemplateTestCase(TestCaseWithFactory):
 
@@ -215,3 +241,25 @@ class DistroSeriesDifferenceTemplateTestCase(TestCaseWithFactory):
             1, len(soup.findAll('pre', text="I'm working on this.")))
         self.assertEqual(
             1, len(soup.findAll('pre', text="Here's another comment.")))
+
+    def test_blacklist_fragment(self):
+        # blacklist options are presented to editors.
+        ds_diff = self.factory.makeDistroSeriesDifference()
+
+        with person_logged_in(ds_diff.owner):
+            request = LaunchpadTestRequest(
+                HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+            view = create_initialized_view(
+                ds_diff, '+listing-distroseries-extra', request=request)
+            soup = BeautifulSoup(view())
+
+        self.assertEqual(
+            1, len(soup.findAll('div', {'class': 'blacklist-options'})))
+
+    def test_blacklist_options_widget(self):
+        ds_diff = self.factory.makeDistroSeriesDifference()
+
+        view = create_initialized_view(ds_diff, '+listing-distroseries-extra')
+
+        self.assertIsInstance(
+            view.widgets.get('blacklist_options'), RadioWidget)

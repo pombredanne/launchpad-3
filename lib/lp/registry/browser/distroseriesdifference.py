@@ -8,18 +8,46 @@ __all__ = [
     'DistroSeriesDifferenceView',
     ]
 
-from zope.interface import implements
+from zope.app.form.browser.itemswidgets import RadioWidget
+from zope.interface import (
+    implements,
+    Interface,
+    )
+from zope.schema import Choice
+from zope.schema.vocabulary import (
+    SimpleTerm,
+    SimpleVocabulary,
+    )
 
-from canonical.launchpad.webapp.publisher import LaunchpadView
+from canonical.launchpad.webapp import LaunchpadFormView
+from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.launchpadform import custom_widget
+from lp.registry.enum import DistroSeriesDifferenceStatus
 from lp.services.comments.interfaces.conversation import (
     IComment,
     IConversation,
     )
 
 
-class DistroSeriesDifferenceView(LaunchpadView):
+class IDistroSeriesDifferenceForm(Interface):
+    blacklist_options = Choice(vocabulary=SimpleVocabulary((
+        SimpleTerm(None, 'no', 'No'),
+        SimpleTerm(
+            DistroSeriesDifferenceStatus.BLACKLISTED_ALWAYS,
+            DistroSeriesDifferenceStatus.BLACKLISTED_ALWAYS.name,
+            'All versions'),
+        SimpleTerm(
+            DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT,
+            DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT.name,
+            'This version'),
+        )))
+
+
+class DistroSeriesDifferenceView(LaunchpadFormView):
 
     implements(IConversation)
+    schema = IDistroSeriesDifferenceForm
+    custom_widget('blacklist_options', RadioWidget)
 
     @property
     def binary_summaries(self):
@@ -44,6 +72,12 @@ class DistroSeriesDifferenceView(LaunchpadView):
         return [
             DistroSeriesDifferenceDisplayComment(comment) for
                 comment in self.context.getComments()]
+
+    @property
+    def show_blacklist_options(self):
+        """Only show the options if an editor requests via JS."""
+        return self.request.is_ajax and check_permission(
+            'launchpad.Edit', self.context)
 
 
 class DistroSeriesDifferenceDisplayComment:
