@@ -54,6 +54,7 @@ from canonical.launchpad.webapp.interfaces import (
     SLAVE_FLAVOR,
     )
 from canonical.lazr.utils import safe_hasattr
+from lp.services.database import write_transaction
 from canonical.librarian.utils import copy_and_close
 from lp.app.errors import NotFoundError
 from lp.buildmaster.interfaces.builder import (
@@ -518,7 +519,6 @@ class Builder(SQLBase):
             d = defer.succeed(None)
 
         def resume_done(ignored):
-            build_queue_item.markAsBuilding(self)
             return self.current_build_behavior.dispatchBuildToSlave(
                 build_queue_item.id, logger)
 
@@ -579,22 +579,24 @@ class Builder(SQLBase):
 
     def slaveStatus(self):
         """See IBuilder."""
-        builder_version, builder_arch, mechanisms = self.slave.info()
-        status_sentence = self.slave.status()
+        d = self.slave.status()
+        def got_status(status_sentence):
+            status = {'builder_status': status_sentence[0]}
 
-        status = {'builder_status': status_sentence[0]}
+            # Extract detailed status and log information if present.
+            # Although build_id is also easily extractable here, there is no
+            # valid reason for anything to use it, so we exclude it.
+            if status['builder_status'] == 'BuilderStatus.WAITING':
+                status['build_status'] = status_sentence[1]
+            else:
+                if status['builder_status'] == 'BuilderStatus.BUILDING':
+                    status['logtail'] = status_sentence[2]
 
-        # Extract detailed status and log information if present.
-        # Although build_id is also easily extractable here, there is no
-        # valid reason for anything to use it, so we exclude it.
-        if status['builder_status'] == 'BuilderStatus.WAITING':
-            status['build_status'] = status_sentence[1]
-        else:
-            if status['builder_status'] == 'BuilderStatus.BUILDING':
-                status['logtail'] = status_sentence[2]
+            self.current_build_behavior.updateSlaveStatus(
+                status_sentence, status)
+            return status
 
-        self.current_build_behavior.updateSlaveStatus(status_sentence, status)
-        return status
+        return d.addCallback(got_status)
 
     def slaveStatusSentence(self):
         """See IBuilder."""
@@ -665,6 +667,21 @@ class Builder(SQLBase):
         # name argument anymore. See bug 164203.
         logger = logging.getLogger('slave-scanner')
         return logger
+
+    @write_transaction
+    def acquireBuildCandidate(self):
+        """Acquire a build candidate in an atomic fashion.
+
+        When retrieiving a candidate we need to mark it as building
+        immediately so that it is not dispatched by another builder in the
+        build manager.  We use the write_transaction decorator to force a
+        re-try of this method if the commit fails - this happens if another
+        invocation of this method for a different builder got there first
+        and grabbed the same candidate.
+        """
+        candidate = self._findBuildCandidate()
+        candidate.markAsBuilding(self)
+        return candidate
 
     def _findBuildCandidate(self):
         """Find a candidate job for dispatch to an idle buildd slave.
@@ -781,8 +798,12 @@ class Builder(SQLBase):
 
     def findAndStartJob(self, buildd_slave=None):
         """See IBuilder."""
+        # XXX This method should be removed in favour of two separately
+        # called methods that find and dispatch the job.  But I don't
+        # want to do that right now because I don't want to fix all the
+        # tests.
         logger = self._getSlaveScannerLogger()
-        candidate = self._findBuildCandidate()
+        candidate = self.acquireBuildCandidate()
 
         if candidate is None:
             logger.debug("No build candidates available for builder.")
