@@ -104,16 +104,6 @@ class PersonTransferJob(Storm):
         # but the DB representation is unicode.
         self._json_data = json_data.decode('utf-8')
 
-    @classmethod
-    def get(cls, key):
-        """Return the instance of this class whose key is supplied."""
-        store = IMasterStore(PersonTransferJob)
-        instance = store.get(cls, key)
-        if instance is None:
-            raise SQLObjectNotFound(
-                'No occurrence of %s has key %s' % (cls.__name__, key))
-        return instance
-
 
 class PersonTransferJobDerived(BaseRunnableJob):
     """Intermediate class for deriving from PersonTransferJob.
@@ -176,6 +166,16 @@ class PersonTransferJobDerived(BaseRunnableJob):
             ('minor_person_name', self.context.minor_person.name),
             ])
         return vars
+
+    @classmethod
+    def get(cls, id):
+        """Return the instance of this class whose id is supplied."""
+        store = IMasterStore(PersonTransferJob)
+        instance = store.get(PersonTransferJob, id)
+        if instance is None:
+            raise SQLObjectNotFound(
+                'No occurrence of PersonTransferJob with id %s' % id)
+        return cls(instance)
 
 
 class MembershipNotificationJob(PersonTransferJobDerived):

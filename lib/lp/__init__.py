@@ -41,3 +41,9 @@ Here are these layers:
     - lp.coop
     - lp.app
 """
+
+# This import is a kludge to prevent an import error caused by a loop
+# when the code first imports lp.registry.model.person, which imports
+# canonical.launchpad.database.account, which imports lp.bugs.model.bug,
+# which imports from lp.registry.model.person, again.
+__import__('canonical.launchpad.database.account')

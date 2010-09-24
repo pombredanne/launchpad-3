@@ -166,3 +166,6 @@ class IJobSource(Interface):
 
     def contextManager():
         """Get a context for running this kind of job in."""
+
+    def get(id):
+        """Get a job by its id."""
