@@ -4,14 +4,19 @@
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   metal:use-macro="view/macro:page/main_only">
 
+  <head>
+  <div metal:fill-slot="head_epilogue">
+    <metal:translations-js
+      use-macro="context/@@+translations-macros/translations-js" />
+    <metal:languages-table-js
+      use-macro="context/@@+translations-macros/languages-table-js" />
+    <tal:robots
+      condition="not:context/translations_usage/enumvalue:LAUNCHPAD">
+      <meta name="robots" content="noindex,nofollow" />
+    </tal:robots>
+  </div>
+  </head>
   <body>
-
-    <div metal:fill-slot="head_epilogue">
-      <metal:translations-js
-        use-macro="context/@@+translations-macros/translations-js" />
-      <metal:languages-table-js
-        use-macro="context/@@+translations-macros/languages-table-js" />
-    </div>
 
     <div metal:fill-slot="main">
       <div class="translation-help-links">
