@@ -61,7 +61,6 @@ from lp.testing import (
     TestCaseWithFactory,
     time_counter,
     )
-from lp.testing.fakelibrarian import FakeLibrarian
 from lp.testing.views import create_initialized_view
 
 
@@ -826,7 +825,7 @@ class TestBranchMergeCandidateView(TestCaseWithFactory):
 
 class TestBranchMergeProposal(BrowserTestCase):
 
-    layer = DatabaseFunctionalLayer
+    layer = LaunchpadFunctionalLayer
 
     def test_conversation(self):
         bmp = self.factory.makeBranchMergeProposal(registrant=self.user,
@@ -835,10 +834,9 @@ class TestBranchMergeProposal(BrowserTestCase):
             self.factory.getUniqueDate()).revision
         revision = add_revision_to_branch(self.factory, bmp.source_branch,
             self.factory.getUniqueDate()).revision
-        with FakeLibrarian() as librarian:
-            diff = self.factory.makeDiff()
-            bmp.generateIncrementalDiff(parent, revision, diff)
-            browser = self.getViewBrowser(bmp)
+        diff = self.factory.makeDiff()
+        bmp.generateIncrementalDiff(parent, revision, diff)
+        browser = self.getViewBrowser(bmp)
         assert 'unf_pbasyvpgf' in browser.contents
 
 

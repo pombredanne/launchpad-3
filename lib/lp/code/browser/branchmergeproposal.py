@@ -573,14 +573,14 @@ class CodeReviewNewRevisions:
         self.display_attachments = False
 
 
-class IIncrementalDiffComment(Interface):
+class IIncrementalDiffComment(IComment):
     """Marker interface used to register views for CodeReviewNewRevisions."""
 
 
 class IncrementalDiffComment:
     """Provides the comment interface for an incremental diff."""
 
-    implements(IComment, IIncrementalDiffComment)
+    implements(IIncrementalDiffComment)
 
     has_body = True
 
