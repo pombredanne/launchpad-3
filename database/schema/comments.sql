@@ -54,8 +54,6 @@ COMMENT ON COLUMN Branch.next_mirror_time IS 'The time when we will next mirror 
 COMMENT ON COLUMN Branch.private IS 'If the branch is private, then only the owner and subscribers of the branch can see it.';
 COMMENT ON COLUMN Branch.date_last_modified IS 'A branch is modified any time a user updates something using a view, a new revision for the branch is scanned, or the branch is linked to a bug, blueprint or merge proposal.';
 COMMENT ON COLUMN Branch.reviewer IS 'The reviewer (person or) team are able to transition merge proposals targetted at the branch throught the CODE_APPROVED state.';
-COMMENT ON COLUMN Branch.merge_robot IS 'The robot that controls the automatic landing onto this branch.';
-COMMENT ON COLUMN Branch.merge_control_status IS 'When there is no merge_robot set, the merge_control_status must be set to Manual.  If a merge_robot is set, then the branch merge_control_status can be set to Automatic which means that the merge robot will start merging the branches.';
 COMMENT ON COLUMN Branch.home_page IS 'This column is deprecated and to be removed soon.';
 COMMENT ON COLUMN Branch.branch_format IS 'The bzr branch format';
 COMMENT ON COLUMN Branch.repository_format IS 'The bzr repository format';
@@ -64,6 +62,25 @@ COMMENT ON COLUMN Branch.stacked_on IS 'The Launchpad branch that this branch is
 COMMENT ON COLUMN Branch.distroseries IS 'The distribution series that the branch belongs to.';
 COMMENT ON COLUMN Branch.sourcepackagename IS 'The source package this is a branch of.';
 COMMENT ON COLUMN Branch.size_on_disk IS 'The size in bytes of this branch in the mirrored area.';
+COMMENT ON COLUMN Branch.merge_queue_config IS 'A JSON string of configuration values that can be read by a merge queue script.';
+
+
+-- BranchMergeQueue
+COMMENT ON TABLE BranchMergeQueue IS 'Queue for managing the merge workflow for branches.';
+COMMENT ON COLUMN BranchMergeQueue.id IS 'The id of the merge queue.';
+COMMENT ON COLUMN BranchMergeQueue.registrant IS 'A reference to the person who created the merge queue.';
+COMMENT ON COLUMN BranchMergeQueue.owner IS 'A reference to the person who owns the merge queue.';
+COMMENT ON COLUMN BranchMergeQueue.name IS 'The name of the queue.';
+COMMENT ON COLUMN BranchMergeQueue.description IS 'A description of the queue.';
+COMMENT ON COLUMN BranchMergeQueue.configuration IS 'A JSON string of configuration data to be read by the merging script.';
+COMMENT ON COLUMN BranchMergeQueue.date_created IS 'The date the queue was created.';
+
+
+-- BranchQueue
+
+COMMENT ON TABLE BranchQueue IS 'Contains links between branches and their associated queues.';
+COMMENT ON COLUMN BranchQueue.branch IS 'A reference to the branch managed by the queue.';
+COMMENT ON COLUMN BranchQueue.queue IS 'A reference to the queue that manages this branch.';
 
 -- BranchJob
 
@@ -114,15 +131,6 @@ COMMENT ON COLUMN BranchMergeProposalJob.branch_merge_proposal IS 'The branch me
 COMMENT ON COLUMN BranchMergeProposalJob.job_type IS 'The type of job, like new proposal, review comment, or new review requested.';
 COMMENT ON COLUMN BranchMergeProposalJob.json_data IS 'Data that is specific to the type of job, normally references to code review messages and or votes.';
 
--- BranchMergeRobot
-
-COMMENT ON TABLE BranchMergeRobot IS 'In order to have a single merge robot be able to control landings on multiple branches, we need some robot entity.';
-COMMENT ON COLUMN BranchMergeRobot.registrant IS 'The person that created the merge robot.';
-COMMENT ON COLUMN BranchMergeRobot.owner IS 'The person or team that is able to update the robot and manage the landing queue.';
-COMMENT ON COLUMN BranchMergeRobot.name IS 'The name of the robot.  This is unique for the owner.';
-COMMENT ON COLUMN BranchMergeRobot.whiteboard IS 'Any interesting comments about the robot itself.';
-COMMENT ON COLUMN BranchMergeRobot.date_created IS 'When this robot was created.';
-
 -- SeriesSourcePackageBranch
 
 COMMENT ON TABLE SeriesSourcePackageBranch IS 'Link between branches and distribution suite.';
@@ -149,13 +157,6 @@ COMMENT ON COLUMN BranchVisibilityPolicy.project IS 'Even though projects don''t
 COMMENT ON COLUMN BranchVisibilityPolicy.product IS 'The product that the visibility policies apply to.';
 COMMENT ON COLUMN BranchVisibilityPolicy.team IS 'Refers to the team that the policy applies to.  NULL is used to indicate ALL people, as there is no team defined for *everybody*.';
 COMMENT ON COLUMN BranchVisibilityPolicy.policy IS 'An enumerated type, one of PUBLIC or PRIVATE.  PUBLIC is the default value.';
-
--- BranchWithSortKeys
-
-COMMENT ON VIEW BranchWithSortKeys IS 'A hack to allow the sorting of queries to Branch by human-meaningful keys in the face of limitations in SQLObject.  Will go away when we start using Storm.  This view has all the columns of Branch with three extra names joined on to it.';
-COMMENT ON COLUMN BranchWithSortKeys.product_name IS 'Branch.product.name';
-COMMENT ON COLUMN BranchWithSortKeys.author_name IS 'Branch.author.displayname';
-COMMENT ON COLUMN BranchWithSortKeys.owner_name IS 'Branch.owner.displayname';
 
 -- Bug
 
