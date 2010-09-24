@@ -727,8 +727,6 @@ addition to a reference to the release pocket in the partner archive itself.
     >>> removeSecurityProxy(a_build).archive = partner_archive
     >>> commit()
     >>> a_builder.setSlaveForTesting(OkSlave())
-    >>> a_builder.is_available
-    True
 
 The partner archive won't be passed to the builder unless it has at
 least one published binary availble in the target distroarchseries.
