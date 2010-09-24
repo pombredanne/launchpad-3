@@ -37,16 +37,20 @@ class TestFeatureControlPage(BrowserTestCase):
 
     layer = DatabaseFunctionalLayer
 
+    def getUserBrowserAsTeamMember(self, url, team):
+        """Make a TestBrowser authenticated as a team member."""
+        # XXX bug=646563: To make a UserBrowser, you must know the password.  This
+        # should be separated out into test infrastructure.  -- mbp 20100923
+        user = self.factory.makePerson(password='test')
+        with person_logged_in(team.teamowner):
+            team.addMember(user, reviewer=team.teamowner)
+        return self.getUserBrowser(url, user=user, password='test')
+
     def getFeaturePageBrowserAsAdmin(self):
         root = getUtility(ILaunchpadRoot)
         url = canonical_url(root, view_name='+feature-rules')
-        # XXX: To make a UserBrowser, you must know the password.  This should
-        # be separated out into test infrastructure -- mbp 20100923.
-        user = self.factory.makePerson(password='test')
         admin_team = getUtility(ILaunchpadCelebrities).admin
-        with person_logged_in(admin_team.teamowner):
-            admin_team.addMember(user, reviewer=admin_team.teamowner)
-        return self.getUserBrowser(url, user=user, password='test')
+        return self.getUserBrowserAsTeamMember(url, admin_team)
 
     def test_feature_page_default_value(self):
         """No rules in the sampledata gives no content in the page"""
