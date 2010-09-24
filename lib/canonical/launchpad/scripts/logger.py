@@ -358,8 +358,9 @@ def logger_options(parser, default=logging.INFO):
 
     parser.add_option(
         "--log-file", type="string", action="callback", callback=log_file,
-        metavar="LVL:FILE", default=[],
+        metavar="LVL:FILE", default=None,
         help="Send log messages to FILE. LVL is one of %s" % debug_levels)
+    parser.set_default('log_file_level', None)
 
     # Set the global log
     log._log = _logger(default, out_stream=sys.stderr)
