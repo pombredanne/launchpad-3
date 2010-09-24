@@ -131,6 +131,10 @@ The feature has two modes.
     >>> fixture = FeatureFixture({'request_profiling': 'on'})
     >>> fixture.setUp()
 
+    >>> from lp.services.features import getFeatureFlag
+    >>> getFeatureFlag('request_profiling')
+    'on'
+
     >>> response = http('GET /++profile++ HTTP/1.0')
     >>> '<h1>Profiling Information</h1>' in response.getBody()
     True
