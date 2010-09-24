@@ -3,10 +3,8 @@
 
 """Test Builder features."""
 
-import errno
 import os
 import signal
-import socket
 import xmlrpclib
 
 from twisted.web.client import getPage
@@ -122,46 +120,8 @@ class TestBuilderWithTrial(TrialTestCase):
         login_as(ANONYMOUS)
         self.addCleanup(logout)
 
-    def test_updateBuilderStatus_catches_repeated_EINTR(self):
-        # A single EINTR return from a socket operation should cause the
-        # operation to be retried, not fail/reset the builder.
-        builder = removeSecurityProxy(self.factory.makeBuilder())
-        builder.handleTimeout = FakeMethod()
-        builder.rescueIfLost = FakeMethod()
-
-        def _fake_checkSlaveAlive():
-            # Raise an EINTR error for all invocations.
-            raise socket.error(errno.EINTR, "fake eintr")
-
-        builder.checkSlaveAlive = _fake_checkSlaveAlive
-        d = builder.updateStatus()
-        return d.addCallback(
-            lambda ignored:
-                self.assertEqual(1, builder.handleTimeout.call_count))
-
-    def test_updateBuilderStatus_catches_single_EINTR(self):
-        builder = removeSecurityProxy(self.factory.makeBuilder())
-        builder.handleTimeout = FakeMethod()
-        builder.rescueIfLost = FakeMethod()
-        self.eintr_returned = False
-
-        def _fake_checkSlaveAlive():
-            # raise an EINTR error for the first invocation only.
-            if not self.eintr_returned:
-                self.eintr_returned = True
-                raise socket.error(errno.EINTR, "fake eintr")
-
-        builder.checkSlaveAlive = _fake_checkSlaveAlive
-        d = builder.updateStatus()
-        # builder.updateStatus should never call handleTimeout() for a
-        # single EINTR.
-        return d.addCallback(
-            lambda ignored:
-            self.assertEqual(0, builder.handleTimeout.call_count))
-
     def test_updateStatus_deactivates_builder_when_abort_fails(self):
         from lp.buildmaster.interfaces.builder import CorruptBuildCookie
-        from lp.testing.fakemethod import FakeMethod
         slave = LostBuildingBrokenSlave()
         lostbuilding_builder = MockBuilder('Lost Building Broken Slave', slave)
         behavior = removeSecurityProxy(
@@ -258,14 +218,12 @@ class Test_rescueBuilderIfLost(TestCaseWithFactory):
         # clean it if we don't think it's currently building anything.
         # See bug 463046.
         aborted_slave = AbortedSlave()
-        # The slave's clean() method is normally an XMLRPC call, so we
-        # can just stub it out and check that it got called.
-        aborted_slave.clean = FakeMethod()
         builder = MockBuilder("mock_builder", aborted_slave)
         builder.currentjob = None
-        builder.rescueIfLost()
-
-        self.assertEqual(1, aborted_slave.clean.call_count)
+        d = builder.rescueIfLost()
+        def check_slave_calls(ignored):
+            self.assertIn('clean', aborted_slave.call_log)
+        return d.addCallback(check_slave_calls)
 
 
 class TestFindBuildCandidateBase(TestCaseWithFactory):
@@ -604,14 +562,13 @@ class TestSlave(TrialTestCase):
     # ought to become the canonical tests for BuilderSlave vs running buildd
     # XML-RPC server interaction.
 
-    def disabled_test_abort(self):
-        # XXX: This is failing intermittently, probably due to something else
-        # not handling Deferreds properly.
+    def test_abort(self):
         slave = self.slave_helper.getClientSlave()
         # We need to be in a BUILDING state before we can abort.
-        self.slave_helper.triggerGoodBuild(slave)
-        d = slave.abort()
-        return d.addCallback(self.assertEqual, BuilderStatus.ABORTING)
+        d = self.slave_helper.triggerGoodBuild(slave)
+        d.addCallback(lambda ignored: slave.abort())
+        d.addCallback(self.assertEqual, BuilderStatus.ABORTING)
+        return d
 
     def test_build(self):
         # Calling 'build' with an expected builder type, a good build id,

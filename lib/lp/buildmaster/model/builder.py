@@ -34,6 +34,7 @@ from storm.expr import (
     Sum,
     )
 from twisted.internet import defer
+from twisted.internet.error import ConnectError
 from zope.component import getUtility
 from zope.interface import implements
 
@@ -78,7 +79,6 @@ from lp.buildmaster.model.buildqueue import (
 from lp.registry.interfaces.person import validate_public_person
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
-from lp.services.osutils import until_no_eintr
 from lp.services.propertycache import cachedproperty
 from lp.services.twistedsupport.processmonitor import ProcessWithTimeout
 from lp.services.twistedsupport.xmlrpc import DeferredBlockingProxy
@@ -258,7 +258,7 @@ class BuilderSlave(object):
 # Do not use it -- (Mock)Builder.rescueIfLost should be used instead.
 def rescueBuilderIfLost(builder, logger=None):
     """See `IBuilder`."""
-    status_sentence = builder.slaveStatusSentence()
+    # XXX: Make this return a Deferred.
 
     # 'ident_position' dict relates the position of the job identifier
     # token in the sentence received from status(), according the
@@ -269,61 +269,78 @@ def rescueBuilderIfLost(builder, logger=None):
         'BuilderStatus.WAITING': 2
         }
 
-    # Isolate the BuilderStatus string, always the first token in
-    # see lib/canonical/buildd/slave.py and
-    # IBuilder.slaveStatusSentence().
-    status = status_sentence[0]
+    d = builder.slaveStatusSentence()
 
-    # If the cookie test below fails, it will request an abort of the
-    # builder.  This will leave the builder in the aborted state and
-    # with no assigned job, and we should now "clean" the slave which
-    # will reset its state back to IDLE, ready to accept new builds.
-    # This situation is usually caused by a temporary loss of
-    # communications with the slave and the build manager had to reset
-    # the job.
-    if status == 'BuilderStatus.ABORTED' and builder.currentjob is None:
-        builder.cleanSlave()
-        if logger is not None:
-            logger.info(
-                "Builder '%s' cleaned up from ABORTED" % builder.name)
-        return
+    def got_status(status_sentence):
+        """After we get the status, clean if we have to.
 
-    # If slave is not building nor waiting, it's not in need of rescuing.
-    if status not in ident_position.keys():
-        return
+        Always return status_sentence.
+        """
+        # Isolate the BuilderStatus string, always the first token in
+        # see lib/canonical/buildd/slave.py and
+        # IBuilder.slaveStatusSentence().
+        status = status_sentence[0]
 
-    slave_build_id = status_sentence[ident_position[status]]
-
-    try:
-        builder.verifySlaveBuildCookie(slave_build_id)
-    except CorruptBuildCookie, reason:
-        if status == 'BuilderStatus.WAITING':
-            builder.cleanSlave()
+        # If the cookie test below fails, it will request an abort of the
+        # builder.  This will leave the builder in the aborted state and
+        # with no assigned job, and we should now "clean" the slave which
+        # will reset its state back to IDLE, ready to accept new builds.
+        # This situation is usually caused by a temporary loss of
+        # communications with the slave and the build manager had to reset
+        # the job.
+        if status == 'BuilderStatus.ABORTED' and builder.currentjob is None:
+            if logger is not None:
+                logger.info(
+                    "Builder '%s' being cleaned up from ABORTED" %
+                    (builder.name,))
+            d = builder.cleanSlave()
+            return d.addCallback(lambda ignored: status_sentence)
         else:
-            builder.requestAbort()
-        if logger:
-            logger.info(
-                "Builder '%s' rescued from '%s': '%s'" %
-                (builder.name, slave_build_id, reason))
+            return status_sentence
+
+    def rescue_slave(status_sentence):
+        # If slave is not building nor waiting, it's not in need of rescuing.
+        status = status_sentence[0]
+        if status not in ident_position.keys():
+            return
+        slave_build_id = status_sentence[ident_position[status]]
+        try:
+            builder.verifySlaveBuildCookie(slave_build_id)
+        except CorruptBuildCookie, reason:
+            if status == 'BuilderStatus.WAITING':
+                d = builder.cleanSlave()
+            else:
+                d = builder.requestAbort()
+            def log_rescue(ignored):
+                if logger:
+                    logger.info(
+                        "Builder '%s' rescued from '%s': '%s'" %
+                        (builder.name, slave_build_id, reason))
+            return d.addCallback(log_rescue)
+
+    d.addCallback(got_status)
+    d.addCallback(rescue_slave)
+    return d
 
 
 def _update_builder_status(builder, logger=None):
     """Really update the builder status."""
-    try:
-        builder.checkSlaveAlive()
-        builder.rescueIfLost(logger)
-    # Catch only known exceptions.
-    # XXX cprov 2007-06-15 bug=120571: ValueError & TypeError catching is
-    # disturbing in this context. We should spend sometime sanitizing the
-    # exceptions raised in the Builder API since we already started the
-    # main refactoring of this area.
-    except (ValueError, TypeError, xmlrpclib.Fault,
-            BuildDaemonError), reason:
+    # XXX: Make this handle & return Deferreds
+    d = builder.rescueIfLost(logger)
+    def rescue_failed(failure):
+        # XXX cprov 2007-06-15 bug=120571: ValueError & TypeError catching is
+        # disturbing in this context. We should spend sometime sanitizing the
+        # exceptions raised in the Builder API since we already started the
+        # main refactoring of this area.
+        failure.trap(
+            ValueError, TypeError, xmlrpclib.Fault, BuildDaemonError)
+        reason = failure.value
         builder.failBuilder(str(reason))
         if logger:
             logger.warn(
                 "%s (%s) marked as failed due to: %s",
                 builder.name, builder.url, builder.failnotes, exc_info=True)
+    return d.addErrback(rescue_failed)
 
 
 def updateBuilderStatus(builder, logger=None):
@@ -331,17 +348,20 @@ def updateBuilderStatus(builder, logger=None):
     if logger:
         logger.debug('Checking %s' % builder.name)
 
-    MAX_EINTR_RETRIES = 42 # pulling a number out of my a$$ here
-    try:
-        return until_no_eintr(
-            MAX_EINTR_RETRIES, _update_builder_status, builder, logger=logger)
-    except socket.error, reason:
-        # In Python 2.6 we can use IOError instead.  It also has
-        # reason.errno but we might be using 2.5 here so use the
-        # index hack.
-        error_message = str(reason)
-        # Return a Deferred.
-        return builder.handleTimeout(logger, error_message)
+    # XXX: This *will not work* until we switch to actually using Twisted for
+    # network IO for XMLRPC. We will get EINTR errors that we do not handle
+    # until then.
+
+    d = _update_builder_status(builder, logger=logger)
+    def handle_timeout(failure):
+        # XXX: Previously, this caught socket.error. That's a pretty general
+        # exception that's just not going to be raised by Twisted code. We
+        # don't want to mess with the logic too much right now, so we'll pick
+        # the lowest level Twisted exception that makes sense. At some later
+        # point, the build manager error handling strategy should be revised.
+        failure.trap(ConnectError)
+        return builder.handleTimeout(logger, str(failure.value))
+    return d.addErrback(handle_timeout)
 
 
 class Builder(SQLBase):
@@ -414,14 +434,9 @@ class Builder(SQLBase):
         """See `IBuilder`."""
         self.failure_count = 0
 
-    def checkSlaveAlive(self):
-        """See IBuilder."""
-        if self.slave.echo("Test")[0] != "Test":
-            raise BuildDaemonError("Failed to echo OK")
-
     def rescueIfLost(self, logger=None):
         """See `IBuilder`."""
-        rescueBuilderIfLost(self, logger)
+        return rescueBuilderIfLost(self, logger)
 
     def updateStatus(self, logger=None):
         """See `IBuilder`."""
@@ -625,18 +640,18 @@ class Builder(SQLBase):
 
         return library_file.id
 
-    @property
-    def is_available(self):
+    def isAvailable(self):
         """See `IBuilder`."""
+        # XXX: Completely lacks unit tests.
         if not self.builderok:
+            return defer.succeed(False)
+        d = self.slaveStatusSentence()
+        def catch_fault(failure):
+            failure.trap(xmlrpclib.Fault, socket.error)
             return False
-        try:
-            slavestatus = self.slaveStatusSentence()
-        except (xmlrpclib.Fault, socket.error):
-            return False
-        if slavestatus[0] != BuilderStatus.IDLE:
-            return False
-        return True
+        def check_available(status):
+            return status[0] == BuilderStatus.IDLE
+        return d.addCallbacks(check_available, catch_fault)
 
     def _getSlaveScannerLogger(self):
         """Return the logger instance from buildd-slave-scanner.py."""

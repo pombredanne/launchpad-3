@@ -70,9 +70,6 @@ class MockBuilder:
             slave_build_id)
 
     def cleanSlave(self):
-        # XXX: This should not print anything. The print is only here to make
-        # doc/builder.txt a meaningful test.
-        print 'Cleaning slave'
         return self.slave.clean()
 
     def requestAbort(self):
@@ -85,7 +82,7 @@ class MockBuilder:
         pass
 
     def rescueIfLost(self, logger=None):
-        rescueBuilderIfLost(self, logger)
+        return rescueBuilderIfLost(self, logger)
 
     def updateStatus(self, logger=None):
         return defer.maybeDeferred(updateBuilderStatus, self, logger)
@@ -214,8 +211,12 @@ class AbortingSlave(OkSlave):
 class AbortedSlave(OkSlave):
     """A mock slave that looks like it's aborted."""
 
-    def status(self):
+    def clean(self):
         self.call_log.append('status')
+        return defer.succeed(None)
+
+    def status(self):
+        self.call_log.append('clean')
         return defer.succeed(('BuilderStatus.ABORTED', '1-1'))
 
 
@@ -234,7 +235,7 @@ class LostBuildingBrokenSlave:
 
     def abort(self):
         self.call_log.append('abort')
-        raise defer.fail(xmlrpclib.Fault(8002, "Could not abort"))
+        return defer.fail(xmlrpclib.Fault(8002, "Could not abort"))
 
 
 class BrokenSlave:

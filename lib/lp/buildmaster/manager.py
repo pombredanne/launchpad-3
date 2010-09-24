@@ -328,6 +328,7 @@ class SlaveScanner:
         self.builder = get_builder(self.builder_name)
 
         if self.builder.builderok:
+            # XXX: Now returns a Deferred.
             self.builder.updateStatus(self.logger)
             transaction.commit()
 
@@ -360,6 +361,8 @@ class SlaveScanner:
         # on it before it was marked unavailable. In this case we reset
         # the build thusly forcing it to get re-dispatched to another
         # builder.
+
+        # XXX: Now builder.isAvailable(), returns a Deferred.
         if not self.builder.is_available:
             job = self.builder.currentjob
             if job is not None and not self.builder.builderok:

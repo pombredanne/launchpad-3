@@ -19,9 +19,6 @@ There are several builders in the sample data. Let's examine the first.
 As expected, it implements IBuilder.
 
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from lp.buildmaster.interfaces.builder import IBuilder
-    >>> verifyObject(IBuilder, builder)
-    True
 
     >>> print builder.name
     bob

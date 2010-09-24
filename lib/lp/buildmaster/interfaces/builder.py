@@ -154,10 +154,7 @@ class IBuilder(IHasOwner):
 
     currentjob = Attribute("BuildQueue instance for job being processed.")
 
-    is_available = Bool(
-        title=_("Whether or not a builder is available for building "
-                "new jobs. "),
-        required=False)
+    # XXX: This needs to change to become a method that returns a Deferred.
 
     failure_count = Int(
         title=_('Failure Count'), required=False, default=0,
@@ -167,20 +164,18 @@ class IBuilder(IHasOwner):
         title=u"The current behavior of the builder for the current job.",
         required=False)
 
+    def isAvailable():
+        """Whether or not a builder is available for building new jobs.
+
+        :return: A Deferred that fires with True or False, depending on
+            whether the builder is available or not.
+        """
+
     def gotFailure():
         """Increment failure_count on the builder."""
 
     def resetFailureCount():
         """Set the failure_count back to zero."""
-
-    def checkSlaveAlive():
-        """Check that the buildd slave is alive.
-
-        This pings the slave over the network via the echo method and looks
-        for the sent message as the reply.
-
-        :raises BuildDaemonError: When the slave is down.
-        """
 
     def rescueIfLost(logger=None):
         """Reset the slave if its job information doesn't match the DB.
