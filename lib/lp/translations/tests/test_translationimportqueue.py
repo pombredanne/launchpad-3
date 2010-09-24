@@ -318,7 +318,7 @@ class TestProductOwnerEntryImporter(TestCaseWithFactory):
                 u'po/sr.po', 'foo', True, self.old_owner,
                 productseries=self.product.series[0])
             self.product.owner = self.new_owner
-        self.assertEqual(self.old_owner, entry.importer)
+        self.assertEqual(self.new_owner, entry.importer)
 
     def test_product_change_owner_preserves_entry_importer(self):
         # When the new owner already has an entry in the product's import

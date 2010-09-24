@@ -17,6 +17,8 @@ import datetime
 import operator
 
 from lazr.delegates import delegates
+from lazr.lifecycle.event import ObjectModifiedEvent
+from lazr.lifecycle.snapshot import Snapshot
 from lazr.restful.error import expose
 import pytz
 from sqlobject import (
@@ -38,7 +40,11 @@ from storm.locals import (
     Unicode,
     )
 from zope.component import getUtility
-from zope.interface import implements
+from zope.event import notify
+from zope.interface import (
+    implements,
+    providedBy,
+    )
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.constants import UTC_NOW
@@ -298,7 +304,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     project = ForeignKey(
         foreignKey="ProjectGroup", dbName="project", notNull=False,
         default=None)
-    owner = ForeignKey(
+    _owner = ForeignKey(
         dbName="owner", foreignKey="Person",
         storm_validator=validate_person,
         notNull=True)
@@ -731,6 +737,29 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         self._cached_licenses = tuple(sorted(licenses))
 
     licenses = property(_getLicenses, _setLicenses)
+
+    def _getOwner(self):
+        """Get the owner."""
+        return self._owner
+
+    def _setOwner(self, new_owner):
+        """Set the owner.
+
+        Send an IObjectModifiedEvent to notify subscribers that the owner
+        changed.
+        """
+        if self.owner is None:
+            # This is being initialize.
+            self._owner = new_owner
+            return
+        if self.owner != new_owner:
+            old_product = Snapshot(self, providing=providedBy(self))
+            self._owner = new_owner
+            notify(ObjectModifiedEvent(
+                self, object_before_modification=old_product,
+                edited_fields=['_owner']))
+
+    owner = property(_getOwner, _setOwner)
 
     def _getBugTaskContextWhereClause(self):
         """See BugTargetBase."""
@@ -1280,7 +1309,7 @@ class ProductSet:
         results = Product.selectBy(
             active=True, orderBy="-Product.datecreated")
         # The main product listings include owner, so we prejoin it.
-        return results.prejoin(["owner"])
+        return results.prejoin(["_owner"])
 
     def get(self, productid):
         """See `IProductSet`."""
@@ -1523,7 +1552,7 @@ class ProductSet:
             queries.append('Product.active IS TRUE')
         query = " AND ".join(queries)
         return Product.select(query, distinct=True,
-                              prejoins=["owner"],
+                              prejoins=["_owner"],
                               clauseTables=clauseTables)
 
     def getTranslatables(self):
@@ -1534,7 +1563,7 @@ class ProductSet:
             Product.id == ProductSeries.productID,
             POTemplate.productseriesID == ProductSeries.id,
             Product.official_rosetta == True,
-            Person.id == Product.ownerID,
+            Person.id == Product._ownerID,
             ).config(distinct=True).order_by(Product.title)
 
         # We only want Product - the other tables are just to populate

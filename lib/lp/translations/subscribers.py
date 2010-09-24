@@ -34,11 +34,11 @@ def product_modified(product, event):
             elif entry.importer == product.owner:
                 new_owner_entries.append(entry)
             else:
-                # There is not permission issue.
+                # The entry is not affected by the ownership change.
                 pass
         if len(old_owner_entries) > 0 and len(new_owner_entries) == 0:
             # The new owner does not have any conflicting entries in the
             # queue. Change the old owner's entries to the new owner to
-            # ensure there is not permissions issues during processing.
+            # ensure there is no permissions issues during processing.
             for entry in old_owner_entries:
                 removeSecurityProxy(entry).importer = product.owner
