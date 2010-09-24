@@ -915,7 +915,7 @@ BugMessage""" % sqlvalues(self.id))
                 self._unsubscribed_cache.add(person)
         def cache_subscriber(row):
             _, subscriber, subscription = row
-            if subscription.bugID == self.id:
+            if subscription.bug_id == self.id:
                 self._subscriber_cache.add(subscriber)
             else:
                 self._subscriber_dups_cache.add(subscriber)
