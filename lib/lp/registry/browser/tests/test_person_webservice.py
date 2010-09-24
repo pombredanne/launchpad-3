@@ -13,37 +13,6 @@ from canonical.testing import DatabaseFunctionalLayer
 from lp.testing import TestCaseWithFactory
 
 
-class TestTeamLinking(TestCaseWithFactory):
-
-    layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        TestCaseWithFactory.setUp(self)
-        self.private_team_one = self.factory.makeTeam(
-            name='private team',
-            displayname='Private Team',
-            visiblity=PersonVisibility.PRIVATE)
-        self.private_team_two = self.factory.makeTeam(
-            name='private team two',
-            displayname='Private Team Two',
-            visiblity=PersonVisibility.PRIVATE)
-        self.public_team_one = self.factory.makeTeam(
-            name='team one',
-            displayname='Team One',
-            visiblity=PersonVisibility.PRIVATE)
-        self.public_team_two = self.factory.makeTeam(
-            name='team two',
-            displayname='Team Two',
-        self.webservice = LaunchpadWebServiceCaller(
-            'launchpad-library', 'salgado-change-anything')
-
-    def test_private_links(self):
-        # A private team cannot be linked to another team, private or
-        # or otherwise.
-        login(self.private_team_one.teamowner)
-        self.webservice.post('/~%s' % self.private_team_two)
-        # special sauce?
-
 class TestPersonRepresentation(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer

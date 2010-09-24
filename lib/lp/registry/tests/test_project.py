@@ -111,6 +111,7 @@ class ProjectGroupSearchTestCase(TestCaseWithFactory):
 
 
 class TestLaunchpadlibAPI(TestCaseWithFactory):
+
     layer = DatabaseFunctionalLayer
 
     def test_inappropriate_deactivation_does_not_cause_an_OOPS(self):
