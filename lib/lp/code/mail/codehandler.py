@@ -76,11 +76,14 @@ from lp.services.mail.sendmail import simple_sendmail
 class BadBranchMergeProposalAddress(Exception):
     """The user-supplied address is not an acceptable value."""
 
+
 class InvalidBranchMergeProposalAddress(BadBranchMergeProposalAddress):
     """The user-supplied address is not an acceptable value."""
 
+
 class NonExistantBranchMergeProposalAddress(BadBranchMergeProposalAddress):
     """The BranchMergeProposal specified by the address does not exist."""
+
 
 class InvalidVoteString(Exception):
     """The user-supplied vote is not an acceptable value."""
@@ -540,7 +543,8 @@ class CodeHandler:
                     # We don't currently support pulling in the revisions if
                     # the source branch exists and isn't stacked.
                     # XXX Tim Penhey 2010-07-27 bug 610292
-                    # We should fail here and return an oops email to the user.
+                    # We should fail here and return an oops email to the
+                    # user.
                     return db_source
                 self._pullRevisionsFromMergeDirectiveIntoSourceBranch(
                     md, target_url, bzr_source)
