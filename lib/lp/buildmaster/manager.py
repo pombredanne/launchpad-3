@@ -313,7 +313,6 @@ class SlaveScanner:
         d.addErrback(disaster)
         return d
 
-    @write_transaction
     def scan(self):
         """Probe the builder and update/dispatch/collect as appropriate.
 
@@ -329,71 +328,76 @@ class SlaveScanner:
 
         if self.builder.builderok:
             # XXX: Now returns a Deferred.
-            self.builder.updateStatus(self.logger)
+            d = self.builder.updateStatus(self.logger)
+        else:
+            d = defer.succeed(None)
+
+        def got_update_status(ignored):
             transaction.commit()
 
-        # See if we think there's an active build on the builder.
-        # XXX: Now returns a Deferred.
-        buildqueue = self.builder.getBuildQueue()
-
-        # XXX Julian 2010-07-29 bug=611258
-        # We're not using the RecordingSlave until dispatching, which
-        # means that this part blocks until we've received a response
-        # from the builder.  updateBuild() needs to be made
-        # asyncronous.
-
-        # Scan the slave and get the logtail, or collect the build if
-        # it's ready.  Yes, "updateBuild" is a bad name.
-        if buildqueue is not None:
+            # See if we think there's an active build on the builder.
             # XXX: Now returns a Deferred.
-            self.builder.updateBuild(buildqueue)
+            buildqueue = self.builder.getBuildQueue()
+
+            # XXX Julian 2010-07-29 bug=611258
+            # We're not using the RecordingSlave until dispatching, which
+            # means that this part blocks until we've received a response
+            # from the builder.  updateBuild() needs to be made
+            # asyncronous.
+
+            # Scan the slave and get the logtail, or collect the build if
+            # it's ready.  Yes, "updateBuild" is a bad name.
+            if buildqueue is not None:
+                # XXX: Now returns a Deferred.
+                return self.builder.updateBuild(buildqueue)
+
+        def got_available(available):
+            if not available:
+                job = self.builder.currentjob
+                if job is not None and not self.builder.builderok:
+                    self.logger.info(
+                        "%s was made unavailable, resetting attached "
+                        "job" % self.builder.name)
+                    job.reset()
+                    transaction.commit()
+                return
+
+            # See if there is a job we can dispatch to the builder slave.
+
+            d = self.builder.findAndStartJob()
+            def job_started(candidate):
+                if self.builder.currentjob is not None:
+                    # After a successful dispatch we can reset the
+                    # failure_count.
+                    self.builder.resetFailureCount()
+                    transaction.commit()
+                    return self.builder.slave
+                else:
+                    return None
+            return d.addCallback(job_started)
+
+        def got_update_build(ignored):
             transaction.commit()
 
-        # If the builder is in manual mode, don't dispatch anything.
-        if self.builder.manual:
-            self.logger.debug(
-                '%s is in manual mode, not dispatching.' % self.builder.name)
-            return defer.succeed(None)
+            # If the builder is in manual mode, don't dispatch anything.
+            if self.builder.manual:
+                self.logger.debug(
+                    '%s is in manual mode, not dispatching.' %
+                    self.builder.name)
+                return
 
-        # If the builder is marked unavailable, don't dispatch anything.
-        # Additionaly, because builders can be removed from the pool at
-        # any time, we need to see if we think there was a build running
-        # on it before it was marked unavailable. In this case we reset
-        # the build thusly forcing it to get re-dispatched to another
-        # builder.
+            # If the builder is marked unavailable, don't dispatch anything.
+            # Additionaly, because builders can be removed from the pool at
+            # any time, we need to see if we think there was a build running
+            # on it before it was marked unavailable. In this case we reset
+            # the build thusly forcing it to get re-dispatched to another
+            # builder.
 
-        # XXX: Now builder.isAvailable(), returns a Deferred.
-        if not self.builder.is_available:
-            job = self.builder.currentjob
-            if job is not None and not self.builder.builderok:
-                self.logger.info(
-                    "%s was made unavailable, resetting attached "
-                    "job" % self.builder.name)
-                job.reset()
-                transaction.commit()
-            return defer.succeed(None)
+            return self.builder.isAvailable().addCallback(got_available)
 
-        # See if there is a job we can dispatch to the builder slave.
-
-        # XXX: Rather than use the slave actually associated with the builder
-        # (which, incidentally, shouldn't be a property anyway), we make a new
-        # RecordingSlave so we can get access to its asynchronous
-        # "resumeSlave" method. Blech.
-        slave = RecordingSlave(
-            self.builder.name, self.builder.url, self.builder.vm_host)
-        # XXX: Passing buildd_slave=slave overwrites the 'slave' property of
-        # self.builder. Not sure why this is needed yet.
-        d = self.builder.findAndStartJob(buildd_slave=slave)
-        def job_started(candidate):
-            if self.builder.currentjob is not None:
-                # After a successful dispatch we can reset the
-                # failure_count.
-                self.builder.resetFailureCount()
-                transaction.commit()
-                return slave
-            else:
-                return None
-        return d.addCallback(job_started)
+        d.addCallback(got_update_status)
+        d.addCallback(got_update_build)
+        return d
 
     def resumeAndDispatch(self, slave):
         """Chain the resume and dispatching Deferreds."""
