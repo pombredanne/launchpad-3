@@ -2,22 +2,32 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  tal:define="tasks context/bugtasks"
+  tal:define="tasks context/bugtasks;
+              comments view/comments"
   class="portlet">
   <h2>Bug watch links</h2>
-    <div tal:condition="tasks" class="two-column-list">
-      <dl tal:repeat="task tasks">
-        <dt>On
-          <span tal:replace="task/bugtargetname">task context name</span>
-        </dt>
-        <dd>
-          <a tal:attributes="href task/fmt:url">
-            Bug #<span tal:replace="task/bug/id">42525</span>
-          </a>
-        </dd>
-      </dl>
-    </div>
-    <span tal:condition="not: tasks">
-        There are currently no links to this bug watch.
-    </span>
+  <div tal:condition="tasks" class="two-column-list">
+    <dl tal:repeat="task tasks">
+      <dt>On
+        <span tal:replace="task/bugtargetname">task context name</span>
+      </dt>
+      <dd>
+        <a tal:attributes="href task/fmt:url">
+          Bug #<span tal:replace="task/bug/id">42525</span>
+        </a>
+      </dd>
+    </dl>
+  </div>
+  <span tal:condition="not: tasks">
+      There are currently no links to this bug watch.
+  </span>
+  <h2>Imported bug comments</h2>
+  <span tal:condition="comments">
+    <span tal:replace="view/imported_comments_count">0</span>
+    <a tal:attributes="href view/comments_link">imported comments</a>
+    on <tal:bug replace="context/bug/fmt:link" />
+  </span>
+  <span tal:condition="not: comments">
+      There are currently no comments linked to this bug watch.
+  </span>
 </div>

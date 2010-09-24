@@ -31,6 +31,7 @@ from canonical.launchpad.webapp.menu import structured
 from canonical.widgets.textwidgets import URIWidget
 from lp.bugs.browser.bugcomment import should_display_remote_comments
 from lp.bugs.browser.bugtask import get_comments_for_bugtask
+from lp.bugs.interfaces.bugmessage import IBugMessageSet
 from lp.bugs.interfaces.bugwatch import (
     BUG_WATCH_ACTIVITY_SUCCESS_STATUSES,
     IBugWatch,
@@ -93,7 +94,7 @@ class BugWatchEditForm(Interface):
                       "forwarded (as a mailto: URL)."))
 
 
-class BugWatchEditView(LaunchpadFormView):
+class BugWatchEditView(LaunchpadFormView, BugWatchView):
     """View for editing a bug watch."""
 
     schema = BugWatchEditForm
@@ -136,7 +137,11 @@ class BugWatchEditView(LaunchpadFormView):
 
     def bugWatchIsUnlinked(self, action):
         """Return whether the bug watch is unlinked."""
-        return len(self.context.bugtasks) == 0
+        imported_messages = getUtility(IBugMessageSet).getImportedBugMessages(
+            self.context.bug)
+        return (
+            len(self.context.bugtasks) == 0 and
+            imported_messages.count() == 0)
 
     @action('Delete Bug Watch', name='delete', condition=bugWatchIsUnlinked)
     def delete_action(self, action, data):
@@ -222,3 +227,16 @@ class BugWatchActivityPortletView(LaunchpadFormView):
                 })
 
         return activity_items
+
+
+class BugWatchBugTasksAndCommentsPortletView(BugWatchView):
+    """A portlet displaying objects linked to the BugWatch."""
+
+    @property
+    def imported_comments_count(self):
+        return len(self.comments)
+
+    @property
+    def comments_link(self):
+        return canonical_url(self.context, view_name="+comments")
+
