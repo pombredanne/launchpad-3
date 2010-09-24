@@ -9,12 +9,17 @@
     xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
     i18n_domain="launchpad">
 
-    <!-- view or edit all feature rules -->
+    <!-- View or edit all feature rules.
+
+	 Readonly access is guarded by launchpad.Edit on ILaunchpadRoot, which
+	 limits it to ~admins + ~registry, which are all trusted users.  Write access
+	 is for admins only.
+    -->
     <browser:page
         for="canonical.launchpad.interfaces.ILaunchpadRoot"
         class="lp.services.features.browser.FeatureControlView"
         name="+feature-rules"
-        permission="launchpad.Admin"
+        permission="launchpad.Edit"
         template="../templates/feature-rules.pt"/>
 
 </configure>
