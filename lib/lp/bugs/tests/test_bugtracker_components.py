@@ -51,10 +51,10 @@ class TestBugTrackerComponent(TestCaseWithFactory):
             u'example', self.comp_group)
         self.assertEqual(component.is_visible, True)
 
-        component.hide()
+        component.is_visible = False
         self.assertEqual(component.is_visible, False)
 
-        component.show()
+        component.is_visible = True
         self.assertEqual(component.is_visible, True)
 
     def test_custom_component(self):

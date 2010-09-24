@@ -747,18 +747,6 @@ class BugTrackerComponent(Storm):
         distro_source_package_id,
         'DistributionSourcePackageInDatabase.id')
 
-    def show(self):
-        if not self.is_visible:
-            self.is_visible = True
-
-    def hide(self):
-        if self.is_visible:
-            self.is_visible = False
-
-    def setCustom(self):
-        if not self.is_custom:
-            self.is_custom = True
-
 
 class BugTrackerComponentGroup(Storm):
     """A collection of components in a remote bug tracker.

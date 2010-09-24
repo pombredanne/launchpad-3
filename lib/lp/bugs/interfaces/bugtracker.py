@@ -209,15 +209,17 @@ class IBugTrackerComponent(Interface):
     export_as_webservice_entry()
 
     id = Int(title=_('ID'), required=True, readonly=True)
-    is_visible = Bool(title=_('Is Visible?'),
-                      description=_("Should the component be shown in "
-                                    "the Launchpad web interface?"),
-                      readonly=True)
-    is_custom = Bool(title=_('Is Custom?'),
-                     description=_("Was the component added locally in "
-                                   "Launchpad?  If it was, we must retain "
-                                   "it across updates of bugtracker data."),
-                     readonly=True)
+    is_visible = Bool(
+        title=_('Is Visible?'),
+        description=_("Should the component be shown in "
+                      "the Launchpad web interface?"),
+        readonly=True)
+    is_custom = Bool(
+        title=_('Is Custom?'),
+        description=_("Was the component added locally in "
+                      "Launchpad?  If it was, we must retain "
+                      "it across updates of bugtracker data."),
+        readonly=True)
 
     name = exported(
         Text(
@@ -232,14 +234,6 @@ class IBugTrackerComponent(Interface):
             schema=Interface,
             description=_('The distribution source package for this '
                           'component, if one has been defined.')))
-
-    @export_write_operation()
-    def show():
-        """Cause this component to be shown in the Launchpad web interface"""
-
-    @export_write_operation()
-    def hide():
-        """Do not show this component in the Launchpad web interface"""
 
 
 class IBugTrackerComponentGroup(Interface):
