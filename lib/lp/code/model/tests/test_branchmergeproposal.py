@@ -83,7 +83,6 @@ from lp.testing.factory import (
     GPGSigningContext,
     LaunchpadObjectFactory,
     )
-from lp.testing.fakelibrarian import FakeLibrarian
 
 
 class TestBranchMergeProposalInterface(TestCaseWithFactory):
@@ -1865,7 +1864,7 @@ class TestGetRevisionsSinceReviewStart(TestCaseWithFactory):
 
 class TestBranchMergeProposalGetIncrementalDiffs(TestCaseWithFactory):
 
-    layer = DatabaseFunctionalLayer
+    layer = LaunchpadFunctionalLayer
 
     def test_getIncrementalDiffs(self):
         """getIncrementalDiffs returns the requested values or None.
@@ -1873,10 +1872,9 @@ class TestBranchMergeProposalGetIncrementalDiffs(TestCaseWithFactory):
         None is returned if there is no IncrementalDiff for the requested
         revision pair and branch_merge_proposal."""
         bmp = self.factory.makeBranchMergeProposal()
-        with FakeLibrarian() as librarian:
-            diff1 = self.factory.makeIncrementalDiff(merge_proposal=bmp)
-            diff2 = self.factory.makeIncrementalDiff(merge_proposal=bmp)
-            diff3 = self.factory.makeIncrementalDiff()
+        diff1 = self.factory.makeIncrementalDiff(merge_proposal=bmp)
+        diff2 = self.factory.makeIncrementalDiff(merge_proposal=bmp)
+        diff3 = self.factory.makeIncrementalDiff()
         result = bmp.getIncrementalDiffs([
             (diff1.old_revision, diff1.new_revision),
             (diff2.old_revision, diff2.new_revision),
@@ -1890,9 +1888,8 @@ class TestBranchMergeProposalGetIncrementalDiffs(TestCaseWithFactory):
     def test_getIncrementalDiffs_respects_input_order(self):
         """The order of the output follows the input order."""
         bmp = self.factory.makeBranchMergeProposal()
-        with FakeLibrarian() as librarian:
-            diff1 = self.factory.makeIncrementalDiff(merge_proposal=bmp)
-            diff2 = self.factory.makeIncrementalDiff(merge_proposal=bmp)
+        diff1 = self.factory.makeIncrementalDiff(merge_proposal=bmp)
+        diff2 = self.factory.makeIncrementalDiff(merge_proposal=bmp)
         result = bmp.getIncrementalDiffs([
             (diff1.old_revision, diff1.new_revision),
             (diff2.old_revision, diff2.new_revision),
