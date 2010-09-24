@@ -87,10 +87,7 @@ class FakeLogger:
         print >> output_file, prefix, msg % stuff
 
         if 'exc_info' in kw:
-            exception = traceback.format_exception(*sys.exc_info())
-            for thing in exception:
-                for line in thing.splitlines():
-                    self.log(line)
+            traceback.print_exc(file=output_file)
 
     def log(self, *stuff, **kw):
         self.message('log>', *stuff, **kw)

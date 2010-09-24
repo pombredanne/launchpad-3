@@ -80,6 +80,7 @@ from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from lp.services.osutils import until_no_eintr
 from lp.services.propertycache import cachedproperty
+from lp.services.twistedsupport.xmlrpc import BlockingProxy
 # XXX Michael Nelson 2010-01-13 bug=491330
 # These dependencies on soyuz will be removed when getBuildRecords()
 # is moved.
@@ -112,23 +113,84 @@ class TimeoutTransport(xmlrpclib.Transport):
         return TimeoutHTTP(host)
 
 
-class BuilderSlave(xmlrpclib.ServerProxy):
-    """Add in a few useful methods for the XMLRPC slave."""
+class BuilderSlave(object):
+    """Add in a few useful methods for the XMLRPC slave.
 
-    def __init__(self, urlbase, vm_host):
-        """Initialise a Server with specific parameter to our buildfarm."""
-        self.vm_host = vm_host
-        self.urlbase = urlbase
-        rpc_url = urlappend(urlbase, "rpc")
-        xmlrpclib.Server.__init__(self, rpc_url,
-                                  transport=TimeoutTransport(),
-                                  allow_none=True)
+    :ivar url: The URL of the actual builder. The XML-RPC resource and
+        the filecache live beneath this.
+    """
+
+    # WARNING: If you change the API for this, you should also change the APIs
+    # of the mocks in soyuzbuilderhelpers to match. Otherwise, you will have
+    # many false positives in your test run and will most likely break
+    # production.
+
+    # XXX: This (BuilderSlave) should use composition, rather than
+    # inheritance.
+
+    # XXX: Have a documented interface for the XML-RPC server:
+    #  - what methods
+    #  - what return values expected
+    #  - what faults
+    #  (see XMLRPCBuildDSlave in lib/canonical/buildd/slave.py).
+
+    # XXX: Arguably, this interface should be asynchronous
+    # (i.e. Deferred-returning). This would mean that Builder (see below)
+    # would have to expect Deferreds.
+
+    # XXX: Once we have a client object with a defined, tested interface, we
+    # should make a test double that doesn't do any XML-RPC and can be used to
+    # make testing easier & tests faster.
+
+    def __init__(self, proxy, builder_url, vm_host):
+        """Initialize a BuilderSlave.
+
+        :param proxy: An XML-RPC proxy, implementing 'callRemote'. It must
+            support passing and returning None objects.
+        :param builder_url: The URL of the builder.
+        :param vm_host: The VM host to use when resuming.
+        """
+        self.url = builder_url
+        self._vm_host = vm_host
+        self._file_cache_url = urlappend(builder_url, 'filecache')
+        self._server = proxy
+
+    @classmethod
+    def makeBlockingSlave(cls, builder_url, vm_host):
+        rpc_url = urlappend(builder_url, 'rpc')
+        server_proxy = xmlrpclib.ServerProxy(
+            rpc_url, transport=TimeoutTransport(), allow_none=True)
+        return cls(BlockingProxy(server_proxy), builder_url, vm_host)
+
+    def abort(self):
+        """Abort the current build."""
+        return self._server.callRemote('abort')
+
+    def clean(self):
+        """Clean up the waiting files and reset the slave's internal state."""
+        return self._server.callRemote('clean')
+
+    def echo(self, *args):
+        """Echo the arguments back."""
+        return self._server.callRemote('echo', *args)
+
+    def info(self):
+        """Return the protocol version and the builder methods supported."""
+        return self._server.callRemote('info')
+
+    def status(self):
+        """Return the status of the build daemon."""
+        return self._server.callRemote('status')
+
+    def ensurepresent(self, sha1sum, url, username, password):
+        """Attempt to ensure the given file is present."""
+        return self._server.callRemote(
+            'ensurepresent', sha1sum, url, username, password)
 
     def getFile(self, sha_sum):
         """Construct a file-like object to return the named file."""
-        filelocation = "filecache/%s" % sha_sum
-        fileurl = urlappend(self.urlbase, filelocation)
-        return urllib2.urlopen(fileurl)
+        file_url = urlappend(self._file_cache_url, sha_sum)
+        return urllib2.urlopen(file_url)
 
     def resume(self):
         """Resume a virtual builder.
@@ -138,8 +200,12 @@ class BuilderSlave(xmlrpclib.ServerProxy):
 
         :return: a (stdout, stderr, subprocess exitcode) triple
         """
+        # XXX: This executes the vm_resume_command
+        # synchronously. RecordingSlave does so asynchronously. Since we
+        # always want to do this asynchronously, there's no need for the
+        # duplication.
         resume_command = config.builddmaster.vm_resume_command % {
-            'vm_host': self.vm_host}
+            'vm_host': self._vm_host}
         resume_argv = resume_command.split()
         resume_process = subprocess.Popen(
             resume_argv, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -154,9 +220,10 @@ class BuilderSlave(xmlrpclib.ServerProxy):
         :param libraryfilealias: An `ILibraryFileAlias`.
         """
         url = libraryfilealias.http_url
-        logger.debug("Asking builder on %s to ensure it has file %s "
-                     "(%s, %s)" % (self.urlbase, libraryfilealias.filename,
-                                   url, libraryfilealias.content.sha1))
+        logger.debug(
+            "Asking builder on %s to ensure it has file %s (%s, %s)" % (
+                self._file_cache_url, libraryfilealias.filename, url,
+                libraryfilealias.content.sha1))
         self.sendFileToSlave(libraryfilealias.content.sha1, url)
 
     def sendFileToSlave(self, sha1, url, username="", password=""):
@@ -176,12 +243,9 @@ class BuilderSlave(xmlrpclib.ServerProxy):
         :param args: A dictionary of extra arguments. The contents depend on
             the build job type.
         """
-        # Can't upcall to xmlrpclib.ServerProxy, since it doesn't actually
-        # have a 'build' method.
-        build_method = xmlrpclib.ServerProxy.__getattr__(self, 'build')
         try:
-            return build_method(
-                self, buildid, builder_type, chroot_sha1, filemap, args)
+            return self._server.callRemote(
+                'build', buildid, builder_type, chroot_sha1, filemap, args)
         except xmlrpclib.Fault, info:
             raise BuildSlaveFailure(info)
 
@@ -398,7 +462,7 @@ class Builder(SQLBase):
         # the slave object, which is usually an XMLRPC client, with a
         # stub object that removes the need to actually create a buildd
         # slave in various states - which can be hard to create.
-        return BuilderSlave(self.url, self.vm_host)
+        return BuilderSlave.makeBlockingSlave(self.url, self.vm_host)
 
     def setSlaveForTesting(self, proxy):
         """See IBuilder."""
