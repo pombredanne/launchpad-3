@@ -6,15 +6,17 @@
 __metaclass__ = type
 
 __all__ = [
-    'MockBuilder',
-    'LostBuildingBrokenSlave',
-    'BrokenSlave',
-    'OkSlave',
-    'BuildingSlave',
     'AbortedSlave',
-    'WaitingSlave',
     'AbortingSlave',
+    'BrokenSlave',
+    'BuildingSlave',
+    'CorruptBehavior',
+    'LostBuildingBrokenSlave',
+    'MockBuilder',
+    'OkSlave',
     'SlaveTestHelpers',
+    'TrivialBehavior',
+    'WaitingSlave',
     ]
 
 import fixtures
@@ -30,7 +32,10 @@ from twisted.internet import defer
 
 from canonical.buildd.tests.harness import BuilddSlaveTestSetup
 
-from lp.buildmaster.interfaces.builder import CannotFetchFile
+from lp.buildmaster.interfaces.builder import (
+    CannotFetchFile,
+    CorruptBuildCookie,
+    )
 from lp.buildmaster.model.builder import (
     BuilderSlave,
     rescueBuilderIfLost,
@@ -245,6 +250,18 @@ class BrokenSlave:
     def status(self):
         self.call_log.append('status')
         return defer.fail(xmlrpclib.Fault(8001, "Broken slave"))
+
+
+class CorruptBehavior:
+
+    def verifySlaveBuildCookie(self, cookie):
+        raise CorruptBuildCookie("Bad value: %r" % (cookie,))
+
+
+class TrivialBehavior:
+
+    def verifySlaveBuildCookie(self, cookie):
+        pass
 
 
 class SlaveTestHelpers(fixtures.Fixture):

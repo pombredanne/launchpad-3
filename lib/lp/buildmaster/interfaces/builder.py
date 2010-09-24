@@ -180,10 +180,11 @@ class IBuilder(IHasOwner):
     def rescueIfLost(logger=None):
         """Reset the slave if its job information doesn't match the DB.
 
-        If the builder is BUILDING or WAITING but has a build ID string
-        that doesn't match what is stored in the DB, we have to dismiss
-        its current actions and clean the slave for another job, assuming
-        the XMLRPC is working properly at this point.
+        This checks the build ID reported in the slave status against the
+        database. If it isn't building what we think it should be, the current
+        build will be aborted and the slave cleaned in preparation for a new
+        task. The decision about the slave's correctness is left up to
+        `IBuildFarmJobBehavior.verifySlaveBuildCookie`.
         """
 
     def updateStatus(logger=None):

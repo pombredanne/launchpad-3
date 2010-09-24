@@ -34,6 +34,7 @@ from canonical.testing.layers import (
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.builder import (
     CannotFetchFile,
+    CorruptBuildCookie,
     IBuilder,
     IBuilderSet,
     )
@@ -46,9 +47,14 @@ from lp.buildmaster.model.buildfarmjobbehavior import IdleBuildBehavior
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.buildmaster.tests.mock_slaves import (
     AbortedSlave,
+    BuildingSlave,
+    CorruptBehavior,
     LostBuildingBrokenSlave,
     MockBuilder,
+    OkSlave,
     SlaveTestHelpers,
+    TrivialBehavior,
+    WaitingSlave,
     )
 from lp.soyuz.enums import (
     ArchivePurpose,
@@ -121,13 +127,9 @@ class TestBuilderWithTrial(TrialTestCase):
         self.addCleanup(logout)
 
     def test_updateStatus_deactivates_builder_when_abort_fails(self):
-        from lp.buildmaster.interfaces.builder import CorruptBuildCookie
         slave = LostBuildingBrokenSlave()
-        lostbuilding_builder = MockBuilder('Lost Building Broken Slave', slave)
-        behavior = removeSecurityProxy(
-            lostbuilding_builder.current_build_behavior)
-        behavior.verifySlaveBuildCookie = FakeMethod(
-            failure=CorruptBuildCookie("Hopelessly lost!"))
+        lostbuilding_builder = MockBuilder(
+            'Lost Building Broken Slave', slave, behavior=CorruptBehavior())
         d = lostbuilding_builder.updateStatus(QuietFakeLogger())
         def check_slave_status(ignored):
             self.assertIn('abort', slave.call_log)
@@ -214,12 +216,6 @@ class TestBuilderWithTrial(TrialTestCase):
         builder = removeSecurityProxy(self.factory.makeBuilder())
         self.assertEqual(builder.url, builder.slave.url)
 
-
-class Test_rescueBuilderIfLost(TestCaseWithFactory):
-    """Tests for lp.buildmaster.model.builder.rescueBuilderIfLost."""
-
-    layer = LaunchpadZopelessLayer
-
     def test_recovery_of_aborted_slave(self):
         # If a slave is in the ABORTED state, rescueBuilderIfLost should
         # clean it if we don't think it's currently building anything.
@@ -230,6 +226,63 @@ class Test_rescueBuilderIfLost(TestCaseWithFactory):
         d = builder.rescueIfLost()
         def check_slave_calls(ignored):
             self.assertIn('clean', aborted_slave.call_log)
+        return d.addCallback(check_slave_calls)
+
+    def test_recover_ok_slave(self):
+        # An idle slave is not rescued.
+        slave = OkSlave()
+        builder = MockBuilder("mock_builder", slave, TrivialBehavior())
+        d = builder.rescueIfLost()
+        def check_slave_calls(ignored):
+            self.assertNotIn('abort', slave.call_log)
+            self.assertNotIn('clean', slave.call_log)
+        return d.addCallback(check_slave_calls)
+
+    def test_recover_waiting_slave_with_good_id(self):
+        # rescueIfLost does not attempt to abort or clean a builder that is
+        # WAITING.
+        waiting_slave = WaitingSlave()
+        builder = MockBuilder("mock_builder", waiting_slave, TrivialBehavior())
+        d = builder.rescueIfLost()
+        def check_slave_calls(ignored):
+            self.assertNotIn('abort', waiting_slave.call_log)
+            self.assertNotIn('clean', waiting_slave.call_log)
+        return d.addCallback(check_slave_calls)
+
+    def test_recover_waiting_slave_with_bad_id(self):
+        # If a slave is WAITING with a build for us to get, and the build
+        # cookie cannot be verified, which means we don't recognize the build,
+        # then rescueBuilderIfLost should attempt to abort it, so that the
+        # builder is reset for a new build, and the corrupt build is
+        # discarded.
+        waiting_slave = WaitingSlave()
+        builder = MockBuilder("mock_builder", waiting_slave, CorruptBehavior())
+        d = builder.rescueIfLost()
+        def check_slave_calls(ignored):
+            self.assertNotIn('abort', waiting_slave.call_log)
+            self.assertIn('clean', waiting_slave.call_log)
+        return d.addCallback(check_slave_calls)
+
+    def test_recover_building_slave_with_good_id(self):
+        # rescueIfLost does not attempt to abort or clean a builder that is
+        # BUILDING.
+        building_slave = BuildingSlave()
+        builder = MockBuilder("mock_builder", building_slave, TrivialBehavior())
+        d = builder.rescueIfLost()
+        def check_slave_calls(ignored):
+            self.assertNotIn('abort', building_slave.call_log)
+            self.assertNotIn('clean', building_slave.call_log)
+        return d.addCallback(check_slave_calls)
+
+    def test_recover_building_slave_with_bad_id(self):
+        # If a slave is BUILDING with a build id we don't recognize, then we
+        # abort the build, thus stopping it in its tracks.
+        building_slave = BuildingSlave()
+        builder = MockBuilder("mock_builder", building_slave, CorruptBehavior())
+        d = builder.rescueIfLost()
+        def check_slave_calls(ignored):
+            self.assertIn('abort', building_slave.call_log)
+            self.assertNotIn('clean', building_slave.call_log)
         return d.addCallback(check_slave_calls)
 
 
