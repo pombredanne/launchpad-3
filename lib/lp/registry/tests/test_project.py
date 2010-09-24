@@ -5,14 +5,14 @@ __metaclass__ = type
 
 import unittest
 
-from zope.component import getUtility
 from lazr.restfulclient.errors import ClientError
+from zope.component import getUtility
 
 from canonical.launchpad.ftests import login
 from canonical.launchpad.webapp.errorlog import globalErrorUtility
 from canonical.testing import (
-    LaunchpadFunctionalLayer,
     DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
     )
 from lp.registry.interfaces.projectgroup import IProjectGroupSet
 from lp.testing import (

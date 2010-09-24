@@ -41,6 +41,7 @@ __all__ = [
     'validate_public_person',
     ]
 
+import httplib
 
 from lazr.enum import (
     DBEnumeratedType,
@@ -162,7 +163,7 @@ class PrivatePersonLinkageError(ValueError):
     # HTTP 400 -- BAD REQUEST
     # HTTP 403 would be better, but as this excpetion is raised inside a
     # validator, it will default to 400 anyway.
-    webservice_error(400)
+    webservice_error(httplib.BAD_REQUEST)
 
 
 @block_implicit_flushes

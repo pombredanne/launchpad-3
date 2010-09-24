@@ -5,12 +5,13 @@ __metaclass__ = type
 
 import unittest
 
-from canonical.testing import DatabaseFunctionalLayer
 from lazr.restfulclient.errors import HTTPError
+
+from canonical.testing import DatabaseFunctionalLayer
 from lp.registry.interfaces.person import PersonVisibility
 from lp.testing import (
-    TestCaseWithFactory,
     launchpadlib_for,
+    TestCaseWithFactory,
     )
 
 
@@ -38,12 +39,12 @@ class TestTeamLinking(TestCaseWithFactory):
         launchpad = launchpadlib_for("test", self.team_owner.name)
         team_one = launchpad.people['private-team']
         team_two = launchpad.people['private-team-two']
-        e = self.assertRaises(
+        api_error = self.assertRaises(
             HTTPError,
             team_one.addMember,
             person=team_two)
-        self.assertIn('Cannot link person', e.content)
-        self.assertEqual(400, e.response.status)
+        self.assertIn('Cannot link person', api_error.content)
+        self.assertEqual(400, api_error.response.status)
 
 
 def test_suite():
