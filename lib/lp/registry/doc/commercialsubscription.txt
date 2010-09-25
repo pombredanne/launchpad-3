@@ -373,9 +373,6 @@ then display name.
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> from datetime import timedelta
     >>> bzr.licenses = [License.GNU_GPL_V2, License.ECLIPSE]
-    >>> aaa_project = factory.makeProduct(name='g-aaa', displayname='AAA')
-    >>> aaa_project.licenses = [License.OTHER_OPEN_SOURCE]
-    >>> aaa_project.license_info = 'Same license as gnome apps.'
     >>> flush_database_updates()
     >>> for product in product_set.forReview(search_text='gnome'):
     ...     print product.displayname
@@ -384,7 +381,6 @@ then display name.
     GNOME Terminal
     Gnome Applets
     gnomebaker
-
 
 You can search for whether the product is active or not.
 
@@ -444,14 +440,12 @@ This OR the licenses search field must match.
     ...     print product.name
     mega-money-maker
     obsolete-junk
-    g-aaa
     >>> for product in product_set.forReview(license_info_is_empty=False,
     ...                                      licenses=[License.GNU_GPL_V2]):
     ...     print product.name
     bzr
     mega-money-maker
     obsolete-junk
-    g-aaa
 
 It is possible to search for problem project that have been reviewed, but
 not approved
