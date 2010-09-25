@@ -162,20 +162,32 @@ class TestFeatureFlags(TestCase):
         self.assertEqual(True, f.scopes['beta_user'])
         self.assertEqual(['beta_user', 'alpha_user'], call_log)
 
+
+test_rules_dict = {
+    notification_name: [
+        ('beta_user', 100, notification_value),],
+    'ui.icing': [
+        ('beta_user', 300, u'4.0'),
+        ('default', 100, u'3.0')]}
+
+
+class TestStormFeatureRuleSource(TestCase):
+
+    layer = layers.DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestStormFeatureRuleSource, self).setUp()
+        if os.environ.get("STORM_TRACE", None):
+            from storm.tracer import debug
+            debug(True)
+        self.source = StormFeatureRuleSource()
+        self.source.setAllRules(test_rules_dict)
+
     def test_getAllRules(self):
-        self.populateStore()
-        f, call_log = self.makeControllerInScopes(['beta_user'])
-        self.assertEquals(f.rule_source.getAllRules(), {
-            notification_name: [
-                ('beta_user', 100, notification_value),],
-            'ui.icing': [
-                ('beta_user', 300, u'4.0'),
-                ('default', 100, u'3.0')]})
+        self.assertEquals(self.source.getAllRules(), test_rules_dict)
 
     def test_getAllRulesAsText(self):
-        self.populateStore()
-        f, call_log = self.makeControllerInScopes(['beta_user'])
-        self.assertEquals(f.rule_source.getAllRulesAsText(),
+        self.assertEquals(self.source.getAllRulesAsText(),
             """\
 %s\tbeta_user\t100\t%s
 ui.icing\tbeta_user\t300\t4.0
