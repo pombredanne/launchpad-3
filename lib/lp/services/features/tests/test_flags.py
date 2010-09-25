@@ -163,12 +163,11 @@ class TestFeatureFlags(TestCase):
         self.assertEqual(['beta_user', 'alpha_user'], call_log)
 
 
-test_rules_dict = {
-    notification_name: [
-        ('beta_user', 100, notification_value),],
-    'ui.icing': [
-        ('beta_user', 300, u'4.0'),
-        ('default', 100, u'3.0')]}
+test_rules_list = [
+    (notification_name, 'beta_user', 100, notification_value),
+    ('ui.icing', 'beta_user', 300, u'4.0'),
+    ('ui.icing', 'default', 100, u'3.0'),
+    ]
 
 
 class TestStormFeatureRuleSource(TestCase):
@@ -181,10 +180,11 @@ class TestStormFeatureRuleSource(TestCase):
             from storm.tracer import debug
             debug(True)
         self.source = StormFeatureRuleSource()
-        self.source.setAllRules(test_rules_dict)
+        self.source.setAllRules(test_rules_list)
 
-    def test_getAllRules(self):
-        self.assertEquals(self.source.getAllRules(), test_rules_dict)
+    def test_getAllRulesAsTuples(self):
+        self.assertEquals(list(self.source.getAllRulesAsTuples()),
+            test_rules_list)
 
     def test_getAllRulesAsText(self):
         self.assertEquals(self.source.getAllRulesAsText(),
@@ -193,3 +193,18 @@ class TestStormFeatureRuleSource(TestCase):
 ui.icing\tbeta_user\t300\t4.0
 ui.icing\tdefault\t100\t3.0
 """ % (notification_name, notification_value))
+
+    def test_setAllRulesFromText(self):
+        self.source.setAllRulesFromText("""
+
+flag1   beta_user   200   alpha
+flag1   default     100   gamma with spaces
+flag2   default     0\ton
+""")
+        self.assertEquals(self.source.getAllRulesAsDict(), {
+            'flag1': [
+                ('beta_user', 200, 'alpha'),
+                ('default', 100, 'gamma with spaces'), ],
+            'flag2': [
+                ('default', 0, 'on'),]})
+                

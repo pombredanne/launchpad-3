@@ -132,7 +132,7 @@ class FeatureController(object):
 
     def _needRules(self):
         if self._rules is None:
-            self._rules = self.rule_source.getAllRules()
+            self._rules = self.rule_source.getAllRulesAsDict()
 
     def usedFlags(self):
         """Return dict of flags used in this controller so far."""
