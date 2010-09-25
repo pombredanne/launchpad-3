@@ -95,7 +95,7 @@ from canonical.launchpad.webapp.publisher import RedirectionView
 #     be factored out into a generally available adapter for both this
 #     code and for TALES namespace code to use.
 #     Same for MenuAPI.
-from canonical.launchpad.webapp.tales import (
+from lp.app.browser.tales import (
     DurationFormatterAPI,
     MenuAPI,
     PageTemplateContextsAPI,

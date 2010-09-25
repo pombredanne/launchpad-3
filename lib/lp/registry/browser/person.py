@@ -205,7 +205,7 @@ from canonical.launchpad.webapp.interfaces import (
 from canonical.launchpad.webapp.login import logoutPerson
 from canonical.launchpad.webapp.menu import get_current_view
 from canonical.launchpad.webapp.publisher import LaunchpadView
-from canonical.launchpad.webapp.tales import (
+from lp.app.browser.tales import (
     DateTimeFormatterAPI,
     PersonFormatterAPI,
     )

@@ -33,7 +33,7 @@ from zope.component import getUtility
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.menu import structured
-from canonical.launchpad.webapp.tales import BranchFormatterAPI
+from lp.app.browser.tales import BranchFormatterAPI
 from canonical.widgets import StrippedTextWidget
 from canonical.widgets.popup import VocabularyPickerWidget
 from lp.code.enums import BranchType

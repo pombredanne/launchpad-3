@@ -34,7 +34,7 @@ from zope.security.interfaces import Unauthorized
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interfaces import NoCanonicalUrl
 from canonical.launchpad.webapp.publisher import canonical_url
-from canonical.launchpad.webapp.tales import ObjectImageDisplayAPI
+from lp.app.browser.tales import ObjectImageDisplayAPI
 from canonical.launchpad.webapp.vocabulary import IHugeVocabulary
 from lp.app.errors import UnexpectedFormData
 from lp.code.interfaces.branch import IBranch

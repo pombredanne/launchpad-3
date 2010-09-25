@@ -11,7 +11,7 @@ __all__ = [
 
 from canonical.config import config
 from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.tales import DurationFormatterAPI
+from lp.app.browser.tales import DurationFormatterAPI
 from lp.services.mail.basemailer import (
     BaseMailer,
     RecipientReason,

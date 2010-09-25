@@ -109,7 +109,7 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector,
     MAIN_STORE,
     )
-from canonical.launchpad.webapp.tales import DateTimeFormatterAPI
+from lp.app.browser.tales import DateTimeFormatterAPI
 from canonical.launchpad.webapp.vocabulary import (
     BatchedCountableIterator,
     CountableIterator,

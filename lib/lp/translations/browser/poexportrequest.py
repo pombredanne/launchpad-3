@@ -16,7 +16,7 @@ from canonical.launchpad.webapp import (
     canonical_url,
     LaunchpadView,
     )
-from canonical.launchpad.webapp.tales import DurationFormatterAPI
+from lp.app.browser.tales import DurationFormatterAPI
 from lp.services.propertycache import cachedproperty
 from lp.translations.interfaces.poexportrequest import IPOExportRequestSet
 from lp.translations.interfaces.potemplate import IHasTranslationTemplates

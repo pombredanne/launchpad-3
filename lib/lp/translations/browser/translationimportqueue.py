@@ -36,7 +36,7 @@ from canonical.launchpad.webapp import (
     GetitemNavigation,
     LaunchpadFormView,
     )
-from canonical.launchpad.webapp.tales import DateTimeFormatterAPI
+from lp.app.browser.tales import DateTimeFormatterAPI
 from lp.app.errors import (
     NotFoundError,
     UnexpectedFormData,

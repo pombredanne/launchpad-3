@@ -28,7 +28,7 @@ from canonical.launchpad.webapp import (
     LaunchpadView,
     )
 from canonical.launchpad.webapp.menu import structured
-from canonical.launchpad.webapp.tales import PersonFormatterAPI
+from lp.app.browser.tales import PersonFormatterAPI
 from lp.app.errors import UnexpectedFormData
 from lp.registry.interfaces.mailinglist import (
     IHeldMessageDetails,

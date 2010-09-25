@@ -2321,7 +2321,7 @@ class LaunchpadLayerToMainTemplateAdapter:
     def __init__(self, context):
         here = os.path.dirname(os.path.realpath(__file__))
         self.path = os.path.join(
-            here, '../../../lp/app/templates/base-layout.pt')
+            here, '../templates/base-layout.pt')
 
 
 class PageMacroDispatcher:

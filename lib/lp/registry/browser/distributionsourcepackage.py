@@ -44,7 +44,7 @@ from canonical.launchpad.webapp.menu import (
     NavigationMenu,
     )
 from canonical.launchpad.webapp.sorting import sorted_dotted_numbers
-from canonical.launchpad.webapp.tales import CustomizableFormatter
+from lp.app.browser.tales import CustomizableFormatter
 from canonical.lazr.utils import smartquote
 from lp.answers.browser.questiontarget import (
     QuestionTargetFacetMixin,

@@ -45,7 +45,7 @@ from canonical.launchpad.mail import (
     )
 from canonical.launchpad.mailnotification import MailWrapper
 from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.tales import DurationFormatterAPI
+from lp.app.browser.tales import DurationFormatterAPI
 from lp.registry.interfaces.person import (
     IPersonSet,
     TeamMembershipRenewalPolicy,

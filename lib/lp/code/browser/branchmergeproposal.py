@@ -88,7 +88,7 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
 from canonical.launchpad.webapp.menu import NavigationMenu
-from canonical.launchpad.webapp.tales import DateTimeFormatterAPI
+from lp.app.browser.tales import DateTimeFormatterAPI
 from canonical.widgets.lazrjs import (
     TextAreaEditorWidget,
     vocabulary_to_choice_edit_items,

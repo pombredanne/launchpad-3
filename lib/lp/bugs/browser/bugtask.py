@@ -163,7 +163,7 @@ from canonical.launchpad.webapp.batching import TableBatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.menu import structured
-from canonical.launchpad.webapp.tales import (
+from lp.app.browser.tales import (
     FormattersAPI,
     ObjectImageDisplayAPI,
     PersonFormatterAPI,

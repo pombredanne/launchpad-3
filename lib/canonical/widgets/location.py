@@ -27,7 +27,7 @@ from canonical.launchpad import _
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp.interfaces import (
     ILaunchBag, IMultiLineWidgetLayout)
-from canonical.launchpad.webapp.tales import ObjectImageDisplayAPI
+from lp.app.browser.tales import ObjectImageDisplayAPI
 from lp.registry.interfaces.location import IObjectWithLocation
 from lp.services.geoip.interfaces import IGeoIPRecord
 

@@ -26,7 +26,7 @@ from canonical.launchpad.interfaces import (
     IBugWatchSet, IDistributionSet, ILaunchBag, NoBugTrackerFound,
     UnrecognizedBugTrackerURL)
 from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.tales import TeamFormatterAPI
+from lp.app.browser.tales import TeamFormatterAPI
 from canonical.widgets.helpers import get_widget_template
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 from canonical.widgets.popup import VocabularyPickerWidget

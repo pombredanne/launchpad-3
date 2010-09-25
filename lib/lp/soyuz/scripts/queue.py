@@ -25,7 +25,7 @@ import pytz
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.launchpad.webapp.tales import DurationFormatterAPI
+from lp.app.browser.tales import DurationFormatterAPI
 from canonical.librarian.utils import filechunks
 from lp.app.errors import NotFoundError
 from lp.services.propertycache import cachedproperty

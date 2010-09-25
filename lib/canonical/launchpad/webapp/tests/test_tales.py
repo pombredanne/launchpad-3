@@ -15,7 +15,7 @@ from lp.testing import TestCaseWithFactory
 
 def test_requestapi():
     """
-    >>> from canonical.launchpad.webapp.tales import IRequestAPI, RequestAPI
+    >>> from lp.app.browser.tales import IRequestAPI, RequestAPI
     >>> from canonical.launchpad.interfaces import IPerson
     >>> from zope.interface.verify import verifyObject
 
@@ -53,7 +53,7 @@ def test_cookie_scope():
     available for the entire Launchpad site.  It takes into account
     the request URL and the cookie_domains setting in launchpad.conf.
 
-        >>> from canonical.launchpad.webapp.tales import RequestAPI
+        >>> from lp.app.browser.tales import RequestAPI
         >>> def cookie_scope(url):
         ...     class FakeRequest:
         ...         def getURL(self):
@@ -77,7 +77,7 @@ def test_cookie_scope():
 
 def test_dbschemaapi():
     """
-    >>> from canonical.launchpad.webapp.tales import DBSchemaAPI
+    >>> from lp.app.browser.tales import DBSchemaAPI
     >>> from lp.code.enums import BranchType
 
     The syntax to get the title is: number/lp:DBSchemaClass

@@ -29,7 +29,7 @@ from canonical.launchpad.webapp.publisher import (
     LaunchpadView,
     nearest,
     )
-from canonical.launchpad.webapp.tales import MenuAPI
+from lp.app.browser.tales import MenuAPI
 from lp.app.enums import (
     ServiceUsage,
     service_uses_launchpad,

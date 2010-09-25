@@ -66,7 +66,7 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector,
     MAIN_STORE,
     )
-from canonical.launchpad.webapp.tales import DurationFormatterAPI
+from lp.app.browser.tales import DurationFormatterAPI
 from lp.app.errors import NotFoundError
 from lp.archivepublisher.utils import get_ppa_reference
 from lp.buildmaster.enums import (
