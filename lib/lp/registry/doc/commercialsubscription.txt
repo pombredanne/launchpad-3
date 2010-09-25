@@ -366,19 +366,25 @@ Product License Reviews
 =======================
 
 The forReview() method allows searching for products whose license needs to
-be reviewed. You can search by text in the Product table's full text index.
+be reviewed. You can search by text in the Product table's full text index
+as well as the license_info field. The results are ordered by date ceated
+then display name.
 
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> from datetime import timedelta
     >>> bzr.licenses = [License.GNU_GPL_V2, License.ECLIPSE]
+    >>> aaa_project = factory.makeProduct(name='g-aaa', displayname='AAA')
+    >>> aaa_project.licenses = [License.OTHER_OPEN_SOURCE]
+    >>> aaa_project.license_info = 'Same license as gnome apps.'
     >>> flush_database_updates()
     >>> for product in product_set.forReview(search_text='gnome'):
-    ...     print product.name
-    evolution
-    gnome-terminal
-    applets
+    ...     print product.displayname
+    python gnome2 dev
+    Evolution
+    GNOME Terminal
+    Gnome Applets
     gnomebaker
-    python-gnome2-dev
+
 
 You can search for whether the product is active or not.
 
@@ -391,11 +397,11 @@ You can search for whether the product is marked reviewed or not.
 
     >>> for product in product_set.forReview(license_reviewed=True):
     ...     print product.name
-    rosetta
-    obsolete-junk
-    alsa-utils
     python-gnome2-dev
     unassigned
+    alsa-utils
+    rosetta
+    obsolete-junk
 
 You can search for products by license. This will match products with
 any one of the licenses listed.
@@ -428,40 +434,24 @@ This OR the licenses search field must match.
 
     >>> for product in product_set.forReview(license_info_is_empty=True):
     ...     print product.name
-    aptoncd
-    arch-mirrors
-    bazaar
-    bzr
-    derby
-    evolution
-    gnome-terminal
-    applets
-    jokosher
-    launchpad
-    rosetta
-    firefox
-    thunderbird
-    netapplet
-    redfish
-    landscape
     tomcat
-    upstart
-    a52dec
-    alsa-utils
-    gnomebaker
-    iso-codes
     python-gnome2-dev
     unassigned
+    arch-mirrors
+    firefox
+    ...
     >>> for product in product_set.forReview(license_info_is_empty=False):
     ...     print product.name
     mega-money-maker
     obsolete-junk
+    g-aaa
     >>> for product in product_set.forReview(license_info_is_empty=False,
     ...                                      licenses=[License.GNU_GPL_V2]):
     ...     print product.name
     bzr
     mega-money-maker
     obsolete-junk
+    g-aaa
 
 It is possible to search for problem project that have been reviewed, but
 not approved
@@ -469,10 +459,10 @@ not approved
     >>> for product in product_set.forReview(
     ...     license_reviewed=True, license_approved=False):
     ...     print product.name
-    rosetta
-    alsa-utils
     python-gnome2-dev
     unassigned
+    alsa-utils
+    rosetta
 
 You can search for products based on a date range in which the product
 was created.
@@ -604,11 +594,11 @@ access it.
     >>> gnome =  product_set.forReview(search_text='gnome')
     >>> for product in gnome:
     ...     print product.name
+    python-gnome2-dev
     evolution
     gnome-terminal
     applets
     gnomebaker
-    python-gnome2-dev
 
 An admin can access 'forReview'.
 
@@ -618,11 +608,11 @@ An admin can access 'forReview'.
     >>> gnome =  product_set.forReview(search_text='gnome')
     >>> for product in gnome:
     ...     print product.name
+    python-gnome2-dev
     evolution
     gnome-terminal
     applets
     gnomebaker
-    python-gnome2-dev
 
 Members of the registry experts celebrity have permission to review
 IProduct and IProjectGroup objects and access an IProjectGroupSet.

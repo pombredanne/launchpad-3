@@ -1522,7 +1522,8 @@ class ProductSet:
 
         result = IStore(Product).find(
             Product, *conditions).config(
-                distinct=True).order_by(Product.displayname, Product.name)
+                distinct=True).order_by(
+                    Product.datecreated, Product.displayname)
         return result
 
     def search(self, text=None, soyuz=None,
