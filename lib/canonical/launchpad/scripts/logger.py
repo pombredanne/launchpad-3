@@ -333,7 +333,7 @@ def logger_options(parser, default=logging.INFO):
         try:
             level, path = value.split(':', 1)
         except ValueError:
-            level, path = logging.DEBUG, value
+            level, path = logging.INFO, value
 
         if isinstance(level, int):
             pass
@@ -355,6 +355,9 @@ def logger_options(parser, default=logging.INFO):
 
         parser.values.log_file = path
         parser.values.log_file_level = level
+
+        # Reset the global log.
+        log._log = _logger(parser.values.loglevel, out_stream=sys.stderr)
 
     parser.add_option(
         "--log-file", type="string", action="callback", callback=log_file,
