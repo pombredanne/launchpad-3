@@ -16,6 +16,7 @@ from lp.services.features import (
     per_thread,
     )
 from lp.services.features.flags import FeatureController
+from lp.services.features.rulesource import StormFeatureRuleSource
 from lp.testing import TestCase
 
 
@@ -46,7 +47,8 @@ class TestFeatureFlags(TestCase):
         def scope_cb(scope):
             call_log.append(scope)
             return scope in scopes
-        return FeatureController(scope_cb), call_log
+        controller = FeatureController(scope_cb, StormFeatureRuleSource())
+        return controller, call_log
 
     def populateStore(self):
         model.addFeatureFlagRules(testdata)

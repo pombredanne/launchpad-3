@@ -30,7 +30,6 @@ from lp.testing import (
     )
 
 from lp.services.features.browser import FeatureControlView
-from lp.services.features.flags import FeatureController
 from lp.services.features.model import addFeatureFlagRules
 
 
