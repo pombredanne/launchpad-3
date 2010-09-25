@@ -271,8 +271,8 @@ please see:
 https://wiki.launchpad.canonical.com/Bugs/EmailInterface
 
 If you've waited several minutes and still not received either a
-change notification or an error message, please email
-feedback@launchpad.net
+change notification or an error message, ask a question at
+https://launchpad.net/support
 
 
 Filtering bug mail
