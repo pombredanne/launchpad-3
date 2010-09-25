@@ -13,7 +13,6 @@ from canonical.launchpad.testing.systemdocs import (
     tearDown,
     )
 from canonical.testing import (
-    DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     )
 from lp.services.testing import build_test_suite
