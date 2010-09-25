@@ -56,15 +56,6 @@ class TestProductLicenseMixin(TestCaseWithFactory):
             'Commercial <commercial@launchpad.net>',
             notification['Reply-To'])
 
-    def verify_commercial_email(self, notification):
-        # Verify that the commercial team was sent an email.
-        self.assertEqual(
-            'Project License Submitted for ball by registrant',
-            notification['Subject'])
-        self.assertEqual(
-            'Commercial <commercial@launchpad.net>',
-            notification['To'])
-
     def test_ProductLicenseMixin_instance(self):
         # The object under test is an instance of ProductLicenseMixin.
         self.assertTrue(isinstance(self.view, ProductLicenseMixin))

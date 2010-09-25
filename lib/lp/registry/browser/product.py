@@ -1394,7 +1394,7 @@ class ProductConfigureBase(ReturnToReferrerMixin, LaunchpadEditFormView):
     def setUpFields(self):
         super(ProductConfigureBase, self).setUpFields()
         if self.usage_fieldname is not None:
-            # The usage fields are shared among pillars.  But when referring to
+            # The usage fields are shared among pillars. But when referring to
             # an individual object in Launchpad it is better to call it by its
             # real name, i.e. 'project' instead of 'pillar'.
             usage_field = self.form_fields.get(self.usage_fieldname)
