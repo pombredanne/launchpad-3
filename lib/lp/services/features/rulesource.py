@@ -22,7 +22,13 @@ from lp.services.features.model import (
 class FeatureRuleSource(object):
     """Access feature rule sources from the database or elsewhere."""
 
-    pass
+    def getAllRulesAsText(self):
+        tr = []
+        for flag, rules in sorted(self.getAllRules().items()):
+            for (scope, priority, value) in rules:
+                tr.append('\t'.join((flag, scope, str(priority), value)))
+        tr.append('')
+        return '\n'.join(tr)
 
 
 class StormFeatureRuleSource(FeatureRuleSource):
@@ -32,23 +38,18 @@ class StormFeatureRuleSource(FeatureRuleSource):
     def getAllRules(self):
         """Return all rule definitions.
 
-        :returns: dict from flag name to an ordered list of (scope, value) 
+        :returns: dict from flag name to an ordered list of 
+            (scope, priority, value) 
             tuples, where the first matching scope should be used.
         """
         store = getFeatureStore()
         d = {}
         rs = (store
                 .find(FeatureFlag)
-                .order_by(Desc(FeatureFlag.priority))
-                .values(FeatureFlag.flag, FeatureFlag.scope,
-                    FeatureFlag.value))
-        for flag, scope, value in rs:
-            d.setdefault(str(flag), []).append((str(scope), value))
+                .order_by(Desc(FeatureFlag.priority)))
+        for r in rs:
+            d.setdefault(str(r.flag), []).append((str(r.scope), r.priority, r.value))
         return d
-
-    def setRulesFromText(self, text_rules):
-        """Set rules from user-editable text form."""
-        raise NotImplementedError()
 
 
 class NullFeatureRuleSource(FeatureRuleSource):

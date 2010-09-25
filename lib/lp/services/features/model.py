@@ -4,7 +4,6 @@
 __all__ = [
     'addFeatureFlagRules',
     'FeatureFlag',
-    'getAllRules',
     'getFeatureStore',
     ]
 
@@ -51,20 +50,6 @@ class FeatureFlag(Storm):
         self.priority = priority
         self.flag = flag
         self.value = value
-
-
-def getAllRules():
-    """Return model objects for all rules.
-    
-    They're ordered by: flag name, then priority (descending).  If this list
-    is given to a user, they can then fairly easily scan through to see which
-    rule determines a particular value in given scopes.
-    """
-    store = getFeatureStore()
-    rs = (store
-        .find(FeatureFlag)
-        .order_by([FeatureFlag.flag, Desc(FeatureFlag.priority)]))
-    return list(rs)
 
 
 def addFeatureFlagRules(rule_list):

@@ -100,7 +100,7 @@ class FeatureController(object):
     def _checkFlag(self, flag):
         self._needRules()
         if flag in self._rules:
-            for scope, value in self._rules[flag]:
+            for scope, priority, value in self._rules[flag]:
                 if self._known_scopes.lookup(scope):
                     return value
 

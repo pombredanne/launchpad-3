@@ -14,10 +14,6 @@ from canonical.launchpad.webapp import (
     LaunchpadFormView,
     )
 
-from lp.services.features.model import (
-    getAllRules,
-    )
-
 
 class IFeatureControlForm(Interface):
     """Interface specifically for editing a text form of feature rules"""
@@ -41,6 +37,4 @@ class FeatureControlView(LaunchpadFormView):
 
     def rules_text(self):
         """Return all rules in an editable text form"""
-        return '\n'.join(
-            "\t".join((r.flag, r.scope, str(r.priority), r.value))
-            for r in getAllRules())
+        return self.request.features.rule_source.getAllRulesAsText()

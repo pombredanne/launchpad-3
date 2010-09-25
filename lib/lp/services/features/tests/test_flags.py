@@ -161,3 +161,23 @@ class TestFeatureFlags(TestCase):
         self.assertEqual(False, f.scopes['alpha_user'])
         self.assertEqual(True, f.scopes['beta_user'])
         self.assertEqual(['beta_user', 'alpha_user'], call_log)
+
+    def test_getAllRules(self):
+        self.populateStore()
+        f, call_log = self.makeControllerInScopes(['beta_user'])
+        self.assertEquals(f.rule_source.getAllRules(), {
+            notification_name: [
+                ('beta_user', 100, notification_value),],
+            'ui.icing': [
+                ('beta_user', 300, u'4.0'),
+                ('default', 100, u'3.0')]})
+
+    def test_getAllRulesAsText(self):
+        self.populateStore()
+        f, call_log = self.makeControllerInScopes(['beta_user'])
+        self.assertEquals(f.rule_source.getAllRulesAsText(),
+            """\
+%s\tbeta_user\t100\t%s
+ui.icing\tbeta_user\t300\t4.0
+ui.icing\tdefault\t100\t3.0
+""" % (notification_name, notification_value))
