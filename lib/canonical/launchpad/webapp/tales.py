@@ -1130,7 +1130,7 @@ class PersonFormatterAPI(ObjectFormatterAPI):
 
     def nameLink(self, view_name):
         """Return the Launchpad id of the person, linked to their profile."""
-        return self._makeLink(view_name, None, self._context.name)
+        return self._makeLink(view_name, 'mainsite', self._context.name)
 
 
 class TeamFormatterAPI(PersonFormatterAPI):
