@@ -162,8 +162,10 @@ class OopsHandler(logging.Handler):
 class LaunchpadFormatter(logging.Formatter):
     """logging.Formatter encoding our preferred output format."""
 
-    def __init__(self):
-        if config.instance_name == 'testrunner':
+    def __init__(self, fmt=None):
+        if fmt is not None:
+            pass # Custom format passed in.
+        elif config.instance_name == 'testrunner':
             # Don't output timestamps in the test environment
             fmt = '%(levelname)-7s %(message)s'
         else:
@@ -218,7 +220,7 @@ class LibrarianFormatter(LaunchpadFormatter):
             return ' -> %s (%s)' % (url, exception_string)
         except UploadFailed:
             return traceback
-        except:
+        except Exception:
             # Exceptions raised by the Formatter get swallowed, but we want
             # to know about them. Since we are already spitting out exception
             # information, we can stuff our own problems in there too.
@@ -375,9 +377,12 @@ def logger(options=None, name=None):
         logger_options(parser)
         options, args = parser.parse_args()
 
+    log_file = getattr(options, 'log_file', None)
+    log_file_level = getattr(options, 'log_file_level', None)
+
     return _logger(
         options.loglevel, out_stream=sys.stderr, name=name,
-        log_file=options.log_file, log_file_level=options.log_file_level)
+        log_file=log_file, log_file_level=log_file_level)
 
 
 def reset_root_logger():
