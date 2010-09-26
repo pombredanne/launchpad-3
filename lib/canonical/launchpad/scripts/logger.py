@@ -57,24 +57,7 @@ from canonical.librarian.interfaces import (
     UploadFailed,
     )
 
-# Custom log levels. logging.debug is 10.
-DEBUG2 = 9
-DEBUG3 = 8
-DEBUG4 = 7
-DEBUG5 = 6
-DEBUG6 = 5
-DEBUG7 = 4
-DEBUG8 = 3
-DEBUG9 = 2
-
-logging.addLevelName(DEBUG2, 'DEBUG2')
-logging.addLevelName(DEBUG3, 'DEBUG3')
-logging.addLevelName(DEBUG4, 'DEBUG4')
-logging.addLevelName(DEBUG5, 'DEBUG5')
-logging.addLevelName(DEBUG6, 'DEBUG6')
-logging.addLevelName(DEBUG7, 'DEBUG7')
-logging.addLevelName(DEBUG8, 'DEBUG8')
-logging.addLevelName(DEBUG9, 'DEBUG9')
+from lp.services.log.loglevels import *
 
 
 class FakeLogger:

@@ -29,11 +29,7 @@ from canonical.config import config
 from canonical.database.sqlbase import ISOLATION_LEVEL_DEFAULT
 from canonical.launchpad import scripts
 from canonical.launchpad.interfaces import IScriptActivitySet
-from canonical.launchpad.scripts.logger import (
-    DEBUG3,
-    DEBUG4,
-    OopsHandler,
-    )
+from canonical.launchpad.scripts.logger import OopsHandler
 from canonical.launchpad.webapp.errorlog import globalErrorUtility
 from canonical.launchpad.webapp.interaction import (
     ANONYMOUS,
@@ -184,23 +180,6 @@ class LaunchpadScript:
         self.logger = scripts.logger(self.options, name)
 
         self.lockfilepath = os.path.join(LOCK_PATH, self.lockfilename)
-
-        # ZCML load information is too noisy. Lower its DEBUG messages
-        # to DEBUG4.
-        config_filter = MappingFilter(
-            {logging.DEBUG: (DEBUG4, 'DEBUG4')}, 'config')
-        logging.getLogger('config').addFilter(config_filter)
-
-        # Transaction logging is too noisy. Lower its DEBUG messages
-        # to DEBUG3. Transactions log to loggers named txn.<thread_id>,
-        # so we need to register a null handler with a filter to ensure
-        # the logging records get mutated before being propagated up
-        # to higher level loggers.
-        txn_handler = NullHandler()
-        txn_filter = MappingFilter(
-            {logging.DEBUG: (DEBUG3, 'DEBUG3')}, 'txn')
-        txn_handler.addFilter(txn_filter)
-        logging.getLogger('txn').addHandler(txn_handler)
 
     #
     # Hooks that we expect users to redefine.
