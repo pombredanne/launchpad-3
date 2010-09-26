@@ -695,7 +695,7 @@ projects portlet on the bug tracker page:
   registered bug tracker in the project's &ldquo;Change
   details&rdquo; page.
   the Mozilla Project
-  Jokosher (Unspecified)
+  Jokosher
 
 
 == Info portlet ==

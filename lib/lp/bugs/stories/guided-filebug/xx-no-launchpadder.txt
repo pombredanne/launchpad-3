@@ -13,7 +13,7 @@ Alsa-utils, for instance, doesn't use Launchpad Bugs:
     ...     'http://bugs.launchpad.dev/alsa-utils/+filebug')
     >>> for message in find_tags_by_class(user_browser.contents, 'highlight-message'):
     ...     print extract_text(message)
-    alsa-utils (Unspecified) does not use Launchpad as its bug tracker.
+    alsa-utils does not use Launchpad as its bug tracker.
 
 But it's packaged in Ubuntu and Debian, and we suggest those packages
 for filing bugs:
@@ -35,7 +35,7 @@ information for it:
     ...     'http://bugs.launchpad.dev/gnomebaker/+filebug')
     >>> for message in find_tags_by_class(user_browser.contents, 'highlight-message'):
     ...     print extract_text(message)
-    gnomebaker (Unspecified) does not use Launchpad as its bug tracker.
+    gnomebaker does not use Launchpad as its bug tracker.
     >>> user_browser.getLink("linking them for us.") is not None
     True
 
@@ -80,7 +80,7 @@ The same happens with the advanced filebug form:
     ...     "http://launchpad.dev/products/alsa-utils/+filebug")
     >>> for message in find_tags_by_class(user_browser.contents, 'highlight-message'):
     ...     print extract_text(message)
-    alsa-utils (Unspecified) does not use Launchpad as its bug tracker.
+    alsa-utils does not use Launchpad as its bug tracker.
 
 
 == Distros ==

@@ -174,7 +174,7 @@ for the branch's canonical location.
     >>> print extract_text(get_branch_details_table())
     Branch information
     Owner: Sample Person
-    Project: GNOME Terminal (Unspecified)
+    Project: GNOME Terminal
     Status: Development
 
     >>> print extract_text(get_branch_management_portlet())
@@ -226,7 +226,7 @@ Branches that have never been mirrored don't have a 'Last mirrored' field.
     >>> print extract_text(get_branch_details_table())
     Branch information
     Owner: Sample Person
-    Project: GNOME Terminal (Unspecified)
+    Project: GNOME Terminal
     Status: Development
     Location: http://example.com/gnome-terminal/main
     Last mirrored: Not mirrored yet

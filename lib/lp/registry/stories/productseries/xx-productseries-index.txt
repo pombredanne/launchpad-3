@@ -13,7 +13,7 @@ The product series overview page summarises the series.
 
     >>> print extract_text(find_tag_by_id(content, 'series-details'))
     Series information
-    Project: Mozilla Firefox (Unspecified)
+    Project: Mozilla Firefox
     Series: trunk
     Project drivers: Sample Person
     Release manager: None
