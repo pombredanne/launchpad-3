@@ -24,7 +24,7 @@ from lp.services.fields import PublicPersonChoice
 class ReassignSchema(Interface):
     """Schema to use when reassigning the reviewer for a requested review."""
 
-    reviewer = PublicPersonChoice( title=_('Reviewer'), required=True,
+    reviewer = PublicPersonChoice(title=_('Reviewer'), required=True,
             description=_('A person who you want to review this.'),
             vocabulary='ValidPersonOrTeam')
 
@@ -36,11 +36,15 @@ class CodeReviewVoteReassign(LaunchpadFormView):
 
     page_title = label = 'Reassign review request'
 
+    def initialize(self):
+        self.cancel_url = (canonical_url(self.context.branch_merge_proposal))
+        self.next_url = self.cancel_url
+        super(CodeReviewVoteReassign, self).initialize()
+
     @action('Reassign', name='reassign')
     def reassign_action(self, action, data):
         """Use the form data to change the review request reviewer."""
         self.context.reassignReview(data['reviewer'])
-        self.next_url = canonical_url(self.context.branch_merge_proposal)
 
     def validate(self, data):
         """Make sure that the reassignment can happen."""
