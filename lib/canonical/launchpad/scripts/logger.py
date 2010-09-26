@@ -426,7 +426,7 @@ def _logger(
     # logs.
     root_logger.setLevel(0)
     hdlr.setLevel(level)
-    formatter = LaunchpadFormatter()
+    formatter = LibrarianFormatter()
     hdlr.setFormatter(formatter)
     root_logger.addHandler(hdlr)
 
