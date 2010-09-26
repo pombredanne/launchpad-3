@@ -9,7 +9,7 @@ import os
 import time
 
 from canonical.librarian.interfaces import DUMP_FILE, SIGDUMPMEM
-from canonical.librarian.ftests.harness import TacLibrarianTestSetup
+from canonical.librarian.testing.server import TacLibrarianTestSetup
 from canonical.testing.layers import LibrarianLayer
 from lp.testing import TestCase
 

@@ -13,14 +13,22 @@ __all__ = [
 import os
 import shutil
 import tempfile
+import warnings
+
+from fixtures import Fixture
 
 import canonical
 from canonical.config import config
-from canonical.launchpad.daemons.tachandler import TacException, TacTestSetup
+from canonical.launchpad.daemons.tachandler import (
+    get_pid_from_file,
+    TacException,
+    TacTestSetup,
+    two_stage_kill,
+    )
 from canonical.librarian.storage import _relFileLocation
 
 
-class LibrarianTestSetup:
+class LibrarianServerFixture(Fixture):
     """Set up librarian servers for use by functional tests.
 
     >>> from urllib import urlopen
@@ -88,31 +96,78 @@ class LibrarianTestSetup:
 
     >>> LibrarianTestSetup().tearDown()
     >>> socket.setdefaulttimeout(None)
+
+    :ivar: pid pid of the external process.
     """
+
+    def __init__(self):
+        Fixture.__init__(self)
+        self._pid = None
+        self._setup = False
+        """Track whether the fixture has been setup or not."""
 
     def setUp(self):
         """Start both librarian instances."""
-        if (os.environ.get('LP_PERSISTENT_TEST_SERVICES') is not None and
-            os.path.exists(TacLibrarianTestSetup().pidfile)):
+        if (self._persistent_servers() and self.pid):
             return
+        elif self.pid:
+            # Found an existing, running librarian, but we're not trying to
+            # reuse it. We cannot clean it up because we don't know that its
+            # config is the same: all we know for sure is that its using the
+            # same pid we wanted.
+            warnings.warn("Stale librarian process (%s) found" % (self.pid,))
+            two_stage_kill(self.pid)
+            if self.pid:
+                raise Exception("Could not kill stale librarian.")
+            self._pid = None
+        Fixture.setUp(self)
         self.setUpRoot()
         try:
             TacLibrarianTestSetup().setUp()
+            self._read_pid()
         except TacException:
             # Remove the directory usually removed in tearDown.
             self.tearDownRoot()
             raise
+        self._setup = True
 
     def tearDown(self):
+        self.cleanUp()
+
+    def cleanUp(self):
         """Shut downs both librarian instances."""
-        if os.environ.get('LP_PERSISTENT_TEST_SERVICES') is not None:
+        if self._persistent_servers():
             return
-        TacLibrarianTestSetup().tearDown()
-        self.tearDownRoot()
+        if not self._setup:
+            warnings.warn("Attempt to tearDown inactive fixture.",
+                DeprecationWarning, stacklevel=3)
+            return
+        try:
+            TacLibrarianTestSetup().tearDown()
+            self.tearDownRoot()
+        finally:
+            Fixture.cleanUp(self)
 
     def clear(self):
         """Clear all files from the Librarian"""
-        cleanupLibrarianFiles()
+        # Make this smarter if our tests create huge numbers of files
+        root = config.librarian_server.root
+        if os.path.isdir(os.path.join(root, '00')):
+            shutil.rmtree(os.path.join(root, '00'))
+
+    @property
+    def pid(self):
+        if self._pid:
+            return self._pid
+        if self._persistent_servers():
+            self._pid = self._read_pid()
+        return self._pid
+
+    def _read_pid(self):
+        return get_pid_from_file(TacLibrarianTestSetup().pidfile)
+
+    def _persistent_servers(self):
+        return os.environ.get('LP_PERSISTENT_TEST_SERVICES') is not None
 
     @property
     def root(self):
@@ -131,6 +186,13 @@ class LibrarianTestSetup:
         """Remove the librarian root archive."""
         if os.path.isdir(self.root):
             shutil.rmtree(self.root)
+
+
+_global_fixture = LibrarianServerFixture()
+
+def LibrarianTestSetup():
+    """Support the stateless lie."""
+    return _global_fixture
 
 
 class TacLibrarianTestSetup(TacTestSetup):
@@ -186,9 +248,7 @@ def fillLibrarianFile(fileid, content='Fake Content'):
     libfile.write(content)
     libfile.close()
 
+
 def cleanupLibrarianFiles():
     """Remove all librarian files present in disk."""
-    # Make this smarter if our tests create huge numbers of files
-    root = config.librarian_server.root
-    if os.path.isdir(os.path.join(root, '00')):
-        shutil.rmtree(os.path.join(root, '00'))
+    _global_fixture.clear()

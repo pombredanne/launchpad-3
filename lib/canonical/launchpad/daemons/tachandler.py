@@ -33,6 +33,17 @@ from twisted.python import log
 # This file is used by launchpad-buildd, so it cannot import any
 # Launchpad code!
 
+def _kill_may_race(pid, signal_number):
+    """Kill a pid accepting that it may not exist."""
+    try:
+        os.kill(pid, signal_number)
+    except OSError, e:
+        if e.errno in (errno.ESRCH, errno.ECHILD):
+            # Process has already been killed.
+            return
+        # Some other issue (e.g. different user owns it)
+        raise
+
 def two_stage_kill(pid, poll_interval=0.1, num_polls=50):
     """Kill process 'pid' with SIGTERM. If it doesn't die, SIGKILL it.
 
@@ -42,12 +53,7 @@ def two_stage_kill(pid, poll_interval=0.1, num_polls=50):
     :param num_polls: The number of polls to do before doing a SIGKILL.
     """
     # Kill the process.
-    try:
-        os.kill(pid, SIGTERM)
-    except OSError, e:
-        if e.errno in (errno.ESRCH, errno.ECHILD):
-            # Process has already been killed.
-            return
+    _kill_may_race(pid, SIGTERM)
 
     # Poll until the process has ended.
     for i in range(num_polls):
@@ -65,11 +71,7 @@ def two_stage_kill(pid, poll_interval=0.1, num_polls=50):
                 return
 
     # The process is still around, so terminate it violently.
-    try:
-        os.kill(pid, SIGKILL)
-    except OSError:
-        # Already terminated
-        pass
+    _kill_may_race(pid, SIGKILL)
 
 
 def get_pid_from_file(pidfile_path):
