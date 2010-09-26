@@ -162,15 +162,15 @@ class OopsHandler(logging.Handler):
 class LaunchpadFormatter(logging.Formatter):
     """logging.Formatter encoding our preferred output format."""
 
-    def __init__(self, fmt=None):
-        if fmt is not None:
-            pass # Custom format passed in.
-        elif config.instance_name == 'testrunner':
-            # Don't output timestamps in the test environment
-            fmt = '%(levelname)-7s %(message)s'
-        else:
-            fmt = '%(asctime)s %(levelname)-7s %(message)s'
-        datefmt = "%Y-%m-%d %H:%M:%S"
+    def __init__(self, fmt=None, datefmt=None):
+        if fmt is None:
+            if config.instance_name == 'testrunner':
+                # Don't output timestamps in the test environment
+                fmt = '%(levelname)-7s %(message)s'
+            else:
+                fmt = '%(asctime)s %(levelname)-7s %(message)s'
+        if datefmt is None:
+            datefmt = "%Y-%m-%d %H:%M:%S"
         logging.Formatter.__init__(self, fmt, datefmt)
         self.converter = time.gmtime # Output should be UTC
 
