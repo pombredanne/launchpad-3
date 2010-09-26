@@ -65,7 +65,6 @@ Logged in users can.
     >>> nopriv_browser.getControl(
     ...     name='field.prerequisite_branch').value = (
     ...         '~name12/gnome-terminal/pushed')
-
     >>> print_tag_with_id(nopriv_browser.contents, 'field.reviewer')
     <BLANKLINE>
 
