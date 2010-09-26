@@ -297,10 +297,11 @@ class ProductLicenseMixin:
 
     def notifyCommercialMailingList(self):
         """Notify user about Launchpad license rules."""
+        licenses = list(self.product.licenses)
         needs_email = (
-            License.OTHER_PROPRIETARY in self.product.licenses
-            or License.OTHER_OPEN_SOURCE in self.product.licenses
-            or [License.DONT_KNOW] == self.product.licenses)
+            License.OTHER_PROPRIETARY in licenses
+            or License.OTHER_OPEN_SOURCE in licenses
+            or [License.DONT_KNOW] == licenses)
         if not needs_email:
             # The project has a recognized license.
             return

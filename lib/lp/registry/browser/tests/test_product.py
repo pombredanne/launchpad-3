@@ -76,26 +76,24 @@ class TestProductLicenseMixin(TestCaseWithFactory):
         self.verify_user_email(notifications.pop())
 
     def test_notifyCommercialMailingList_other_open_source(self):
-        # An Other/Open Source license sends two emails.
+        # An Other/Open Source license sends one emails.
         self.product.licenses = [License.OTHER_OPEN_SOURCE]
         self.product.license_info = 'http://www,boost.org/'
         self.view.notifyCommercialMailingList()
         self.verify_whiteboard()
         notifications = pop_notifications()
-        self.assertEqual(2, len(notifications))
+        self.assertEqual(1, len(notifications))
         self.verify_user_email(notifications.pop())
-        self.verify_commercial_email(notifications.pop())
 
     def test_notifyCommercialMailingList_other_proprietary(self):
-        # An Other/Proprietary license sends two emails.
+        # An Other/Proprietary license sends one emails.
         self.product.licenses = [License.OTHER_PROPRIETARY]
         self.product.license_info = 'All mine'
         self.view.notifyCommercialMailingList()
         self.verify_whiteboard()
         notifications = pop_notifications()
-        self.assertEqual(2, len(notifications))
+        self.assertEqual(1, len(notifications))
         self.verify_user_email(notifications.pop())
-        self.verify_commercial_email(notifications.pop())
 
     def test__formatDate(self):
         # Verify the date format.
