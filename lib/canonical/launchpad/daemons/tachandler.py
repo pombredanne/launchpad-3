@@ -123,7 +123,7 @@ class TacException(Exception):
 class TacTestSetup:
     """Setup an TAC file as daemon for use by functional tests.
 
-    You can override setUpRoot to set up a root directory for the daemon.
+    You must override setUpRoot to set up a root directory for the daemon.
     """
 
     def setUp(self, spew=False, umask=None):
