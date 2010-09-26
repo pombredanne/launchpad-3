@@ -21,7 +21,6 @@ from canonical.launchpad.webapp import (
     canonical_url,
     urlparse,
     )
-from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.vocabulary import (
     CountableIterator,
     IHugeVocabulary,
@@ -174,10 +173,6 @@ class SpecificationDependenciesVocabulary(NamedSQLObjectVocabulary):
     _orderBy = 'title'
 
     def __iter__(self):
-        launchbag = getUtility(ILaunchBag)
-        curr_spec = launchbag.specification
-
-        if curr_spec is not None:
-            for spec in sorted(
-                curr_spec.dependencies, key=attrgetter('title')):
-                yield SimpleTerm(spec, spec.name, spec.title)
+        for spec in sorted(
+            self.context.dependencies, key=attrgetter('title')):
+            yield SimpleTerm(spec, spec.name, spec.title)
