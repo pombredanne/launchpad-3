@@ -48,7 +48,7 @@
         The root object is not ever published itself.  Only its views are.
         -->
     <browser:page
-        for="canonical.launchpad.interfaces.ILaunchpadRoot"
+        for="canonical.launchpad.interfaces.launchpad.ILaunchpadRoot"
         class="lp.app.browser.root.LaunchpadRootIndexView"
         name="index.html"
         template="../templates/root-index.pt"
@@ -56,7 +56,7 @@
         />
 
     <browser:page
-        for="canonical.launchpad.interfaces.ILaunchpadRoot"
+        for="canonical.launchpad.interfaces.launchpad.ILaunchpadRoot"
         class="lp.registry.browser.featuredproject.FeaturedProjectsView"
         name="+featuredprojects"
         template="../templates/root-featuredprojects.pt"
@@ -143,21 +143,21 @@
       />
 
   <adapter
-      for="canonical.launchpad.interfaces.IKarmaCategory"
+      for="lp.registry.interfaces.karma.IKarmaCategory"
       provides="zope.traversing.interfaces.IPathAdapter"
       factory="lp.app.browser.tales.KarmaCategoryImageDisplayAPI"
       name="image"
       />
 
   <adapter
-      for="canonical.launchpad.interfaces.IQuestion"
+      for="lp.answers.interfaces.question.IQuestion"
       provides="zope.traversing.interfaces.IPathAdapter"
       factory="lp.app.browser.tales.QuestionImageDisplayAPI"
       name="image"
       />
 
   <adapter
-      for="canonical.launchpad.interfaces.IBugTask"
+      for="lp.bugs.interfaces.bugtask.IBugTask"
       provides="zope.traversing.interfaces.IPathAdapter"
       factory="lp.app.browser.tales.BugTaskImageDisplayAPI"
       name="image"
@@ -171,7 +171,7 @@
       />
 
   <adapter
-      for="canonical.launchpad.interfaces.IMilestone"
+      for="lp.registry.interfaces.milestone.IMilestone"
       provides="zope.traversing.interfaces.IPathAdapter"
       factory="lp.app.browser.tales.MilestoneImageDisplayAPI"
       name="image"
@@ -192,7 +192,7 @@
       />
 
   <adapter
-      for="canonical.launchpad.interfaces.ISpecification"
+      for="lp.blueprints.interfaces.specification.ISpecification"
       provides="zope.traversing.interfaces.IPathAdapter"
       factory="lp.app.browser.tales.SpecificationImageDisplayAPI"
       name="image"
@@ -213,7 +213,7 @@
        want it to apply to the page template's CONTEXTS dict.
     -->
   <adapter
-      for="canonical.launchpad.interfaces.IPPA"
+      for="lp.soyuz.interfaces.archive.IPPA"
       provides="zope.traversing.interfaces.IPathAdapter"
       factory="lp.app.browser.tales.PPAFormatterAPI"
       name="fmt"
@@ -283,35 +283,35 @@
       />
 
   <adapter
-      for="canonical.launchpad.interfaces.IPerson"
+      for="lp.registry.interfaces.person.IPerson"
       provides="zope.traversing.interfaces.IPathAdapter"
       factory="lp.app.browser.tales.PersonFormatterAPI"
       name="fmt"
       />
 
   <adapter
-      for="canonical.launchpad.interfaces.ITeam"
+      for="lp.registry.interfaces.person.ITeam"
       provides="zope.traversing.interfaces.IPathAdapter"
       factory="lp.app.browser.tales.TeamFormatterAPI"
       name="fmt"
       />
 
   <adapter
-      for="canonical.launchpad.interfaces.IProduct"
+      for="lp.registry.interfaces.product.IProduct"
       provides="zope.traversing.interfaces.IPathAdapter"
       factory="lp.app.browser.tales.PillarFormatterAPI"
       name="fmt"
       />
 
   <adapter
-      for="canonical.launchpad.interfaces.IProjectGroup"
+      for="lp.registry.interfaces.projectgroup.IProjectGroup"
       provides="zope.traversing.interfaces.IPathAdapter"
       factory="lp.app.browser.tales.PillarFormatterAPI"
       name="fmt"
       />
 
   <adapter
-      for="canonical.launchpad.interfaces.IDistribution"
+      for="lp.registry.interfaces.distribution.IDistribution"
       provides="zope.traversing.interfaces.IPathAdapter"
       factory="lp.app.browser.tales.PillarFormatterAPI"
       name="fmt"
@@ -325,7 +325,7 @@
       />
 
   <adapter
-      for="canonical.launchpad.interfaces.IBug"
+      for="lp.bugs.interfaces.bug.IBug"
       provides="zope.traversing.interfaces.IPathAdapter"
       factory="lp.app.browser.tales.BugFormatterAPI"
       name="fmt"
@@ -339,14 +339,14 @@
       />
 
   <adapter
-      for="canonical.launchpad.interfaces.IBugBranch"
+      for="lp.bugs.interfaces.bugbranch.IBugBranch"
       provides="zope.traversing.interfaces.IPathAdapter"
       factory="lp.app.browser.tales.BugBranchFormatterAPI"
       name="fmt"
       />
 
   <adapter
-      for="canonical.launchpad.interfaces.IBugTask"
+      for="lp.bugs.interfaces.bugtask.IBugTask"
       provides="zope.traversing.interfaces.IPathAdapter"
       factory="lp.app.browser.tales.BugTaskFormatterAPI"
       name="fmt"
@@ -395,13 +395,13 @@
       />
 
   <adapter
-      for="canonical.launchpad.interfaces.IMilestone"
+      for="lp.registry.interfaces.milestone.IMilestone"
       provides="zope.traversing.interfaces.IPathAdapter"
       factory="lp.app.browser.tales.MilestoneFormatterAPI"
       name="fmt"
       />
   <adapter
-      for="canonical.launchpad.interfaces.IProductRelease"
+      for="lp.registry.interfaces.productrelease.IProductRelease"
       provides="zope.traversing.interfaces.IPathAdapter"
       factory="lp.app.browser.tales.ProductReleaseFormatterAPI"
       name="fmt"
@@ -413,13 +413,13 @@
       name="fmt"
       />
   <adapter
-      for="canonical.launchpad.interfaces.IProductSeries"
+      for="lp.registry.interfaces.productseries.IProductSeries"
       provides="zope.traversing.interfaces.IPathAdapter"
       factory="lp.app.browser.tales.ProductSeriesFormatterAPI"
       name="fmt"
       />
   <adapter
-      for="canonical.launchpad.interfaces.IQuestion"
+      for="lp.answers.interfaces.question.IQuestion"
       provides="zope.traversing.interfaces.IPathAdapter"
       factory="lp.app.browser.tales.QuestionFormatterAPI"
       name="fmt"
@@ -437,13 +437,13 @@
       name="fmt"
       />
   <adapter
-      for="canonical.launchpad.interfaces.ISpecification"
+      for="lp.blueprints.interfaces.specification.ISpecification"
       provides="zope.traversing.interfaces.IPathAdapter"
       factory="lp.app.browser.tales.SpecificationFormatterAPI"
       name="fmt"
       />
   <adapter
-      for="canonical.launchpad.interfaces.ISpecificationBranch"
+      for="lp.blueprints.interfaces.specificationbranch.ISpecificationBranch"
       provides="zope.traversing.interfaces.IPathAdapter"
       factory="lp.app.browser.tales.SpecificationBranchFormatterAPI"
       name="fmt"
@@ -467,13 +467,13 @@
       name="fmt"
       />
   <adapter
-      for="canonical.launchpad.interfaces.IBugTracker"
+      for="lp.bugs.interfaces.bugtracker.IBugTracker"
       provides="zope.traversing.interfaces.IPathAdapter"
       factory="lp.app.browser.tales.BugTrackerFormatterAPI"
       name="fmt"
       />
   <adapter
-      for="canonical.launchpad.interfaces.IBugWatch"
+      for="lp.bugs.interfaces.bugwatch.IBugWatch"
       provides="zope.traversing.interfaces.IPathAdapter"
       factory="lp.app.browser.tales.BugWatchFormatterAPI"
       name="fmt"
