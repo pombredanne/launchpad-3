@@ -5,7 +5,10 @@
 
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
-from lp.soyuz.enums import PackagePublishingStatus
+from lp.soyuz.enums import (
+    PackagePublishingStatus,
+    PackageUploadStatus,
+    )
 from lp.soyuz.tests.test_publishing import TestNativePublishingBase
 
 
@@ -421,14 +424,49 @@ class TestICanPublishPackagesAPI(TestNativePublishingBase):
             expected_result=[pub_published_release, pub_pending_release])
 
     def test_publishing_disabled_distroarchseries(self):
-        # Disabled DASes will be skipped even if there are pending
-        # publications for them.
-        binaries = self.getPubBinaries(architecturespecific=True)
-        # Just use the first binary.
-        binary = binaries[0]
-        self.assertEqual(PackagePublishingStatus.PENDING, binary.status)
+        # Disabled DASes will not receive new publications at all.
 
-        binary.distroarchseries.enabled = False
-        self._publish(pocket=binary.pocket)
+        # Make an arch-any source and some builds for it.
+        archive = self.factory.makeArchive(
+            distribution=self.ubuntutest, virtualized=False)
+        source = self.getPubSource(
+            archive=archive, architecturehintlist='any')
+        builds = source.createMissingBuilds()
+        [build_hppa, build_i386] = builds
+        bin_i386 = self.uploadBinaryForBuild(build_i386, 'bin-i386')
+        bin_hppa = self.uploadBinaryForBuild(build_hppa, 'bin-hppa')
 
-        self.assertEqual(PackagePublishingStatus.PENDING, binary.status)
+        # Now make sure they have a packageupload (but no publishing
+        # records).
+        changes_file_name = '%s_%s_%s.changes' % (
+            bin_i386.name, bin_i386.version, build_i386.arch_tag)
+        pu_i386 = self.addPackageUpload(
+            build_i386.archive, build_i386.distro_arch_series.distroseries,
+            build_i386.pocket, changes_file_content='anything',
+            changes_file_name=changes_file_name,
+            upload_status=PackageUploadStatus.ACCEPTED)
+        pu_i386.addBuild(build_i386)
+        
+        changes_file_name = '%s_%s_%s.changes' % (
+            bin_hppa.name, bin_hppa.version, build_hppa.arch_tag)
+        pu_hppa = self.addPackageUpload(
+            build_hppa.archive, build_hppa.distro_arch_series.distroseries,
+            build_hppa.pocket, changes_file_content='anything',
+            changes_file_name=changes_file_name,
+            upload_status=PackageUploadStatus.ACCEPTED)
+        pu_hppa.addBuild(build_hppa)
+
+        # Now we make hppa a disabled architecture, and then call the
+        # publish method on the packageupload.  The i386 will be
+        # published but the hppa will not.
+        build_hppa.distro_arch_series.enabled = False
+        for pu_build in pu_i386.builds:
+            pu_build.publish()
+        for pu_build in pu_hppa.builds:
+            pu_build.publish()
+
+        i386_publications = archive.getAllPublishedBinaries(name="bin-i386")
+        hppa_publications = archive.getAllPublishedBinaries(name="bin-hppa")
+
+        self.assertEqual(1, i386_publications.count())
+        self.assertEqual(0, hppa_publications.count())
