@@ -329,6 +329,10 @@ class ProductSeriesUploadView(LaunchpadView, TranslationsMixin):
                 "Upload failed because the file you uploaded was not"
                 " recognised as a file that can be imported.")
 
+    def can_configure_translations(self):
+        """Whether or not the user can configure translations."""
+        return check_permission("launchpad.Edit", self.context)
+
 
 class ProductSeriesView(LaunchpadView, ProductSeriesTranslationsMixin):
     """A view to show a series with translations."""

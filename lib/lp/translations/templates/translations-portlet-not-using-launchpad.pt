@@ -4,7 +4,8 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   omit-tag="">
 
-    <div id="not-translated-in-launchpad">
+    <div id="not-translated-in-launchpad"
+      condition=not:context/translations_usage/enumvalue:LAUNCHPAD>
       <strong>
       <tal:lauchpad-unknown
         condition="context/translations_usage/enumvalue:UNKNOWN">
