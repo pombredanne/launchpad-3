@@ -30,8 +30,9 @@ from lp.services.comments.interfaces.conversation import (
 
 
 class IDistroSeriesDifferenceForm(Interface):
+    """An interface used in the browser only for displaying form elements."""
     blacklist_options = Choice(vocabulary=SimpleVocabulary((
-        SimpleTerm(None, 'NONE', 'No'),
+        SimpleTerm('NONE', 'NONE', 'No'),
         SimpleTerm(
             DistroSeriesDifferenceStatus.BLACKLISTED_ALWAYS,
             DistroSeriesDifferenceStatus.BLACKLISTED_ALWAYS.name,
@@ -48,6 +49,10 @@ class DistroSeriesDifferenceView(LaunchpadFormView):
     implements(IConversation)
     schema = IDistroSeriesDifferenceForm
     custom_widget('blacklist_options', RadioWidget)
+
+    @property
+    def initial_values(self):
+        return dict(blacklist_options='NONE')
 
     @property
     def binary_summaries(self):
