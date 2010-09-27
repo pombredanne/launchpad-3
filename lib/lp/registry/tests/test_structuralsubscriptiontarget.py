@@ -25,6 +25,7 @@ from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing import LaunchpadFunctionalLayer
 from lp.bugs.interfaces.bug import CreateBugParams
 from lp.bugs.tests.test_bugtarget import bugtarget_filebug
+from lp.registry.enum import BugNotificationLevel
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
@@ -151,6 +152,12 @@ class UnrestrictedStructuralSubscription(StructuralSubscriptionTestBase):
             self.target.removeBugSubscription(
                 self.team, self.team_owner),
             None)
+
+    def test_getSubscriptionsForBug(self):
+        bug = self.factory.makeBug()
+        subscriptions = self.target.getSubscriptionsForBug(
+            bug, BugNotificationLevel.NOTHING)
+        self.assertEqual([], list(subscriptions))
 
 
 class TestStructuralSubscriptionForDistro(StructuralSubscriptionTestBase,

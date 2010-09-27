@@ -367,3 +367,7 @@ class StructuralSubscriptionTargetMixin:
                     # The user has a bug subscription
                     return True
         return False
+
+    def getSubscriptionsForBug(self, bug, level):
+        """See `IStructuralSubscriptionTarget`."""
+        return self.getSubscriptions(min_bug_notification_level=level)
