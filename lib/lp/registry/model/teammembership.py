@@ -335,12 +335,12 @@ class TeamMembership(SQLBase):
             invitation_declined: [invited, approved, admin]}
 
         if self.status not in state_transition:
-            raise expose(TeamMembershipTransitionError(
-                "Unknown status: %s" % self.status.name))
+            raise TeamMembershipTransitionError(
+                "Unknown status: %s" % self.status.name)
         if status not in state_transition[self.status]:
-            raise expose(TeamMembershipTransitionError(
+            raise TeamMembershipTransitionError(
                 "Bad state transition from %s to %s"
-                % (self.status.name, status.name)))
+                % (self.status.name, status.name))
 
         if status in ACTIVE_STATES and self.team in self.person.allmembers:
             raise CyclicalTeamMembershipError(
