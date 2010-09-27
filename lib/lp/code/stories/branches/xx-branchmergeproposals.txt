@@ -692,6 +692,8 @@ since at the very least the branch owner is now automatically the reviewer.
     ...     registrant=eric, source_branch=source_branch,
     ...     target_branch=fooix.development_focus.branch,
     ...     set_state=BranchMergeProposalStatus.NEEDS_REVIEW)
+    >>> for vote in bmp.votes:
+    ...     removeSecurityProxy(vote).destroySelf()    
     >>> bmp_url = canonical_url(bmp)
     >>> branch_url = canonical_url(bmp.source_branch)
     >>> logout()

@@ -1352,10 +1352,13 @@ class TestBranchMergeProposalNominateReviewer(TestCaseWithFactory):
             registrant=merge_proposal.source_branch.owner,
             _notify_listeners=False)
 
-    def test_no_initial_votes(self):
-        """A new merge proposal has no votes."""
+    def test_one_initial_votes(self):
+        """A new merge proposal has one vote of the default reviewer."""
         merge_proposal = self.factory.makeBranchMergeProposal()
-        self.assertEqual([], list(merge_proposal.votes))
+        self.assertEqual(1, len(merge_proposal.votes))
+        self.assertEqual(
+            [merge_proposal.target_branch.owner], 
+            list(merge_proposal.votes[0].reviewer))
 
     def makeProposalWithReviewer(self, reviewer=None, review_type=None,
                                  registrant=None):
@@ -1382,12 +1385,17 @@ class TestBranchMergeProposalNominateReviewer(TestCaseWithFactory):
         vote_reference = list(merge_proposal.votes)[0]
         self.assertEqual(registrant, vote_reference.registrant)
 
-    def assertOneReviewPending(self, merge_proposal, reviewer, review_type):
-        # Check that there is one and only one review pending with the
-        # specified reviewer and review_type.
+    def assertOneNonDefaultReviewPending(
+        self, merge_proposal, reviewer, review_type):
+        # Besides the default reviewer which is the branch owner, check that 
+        # there is one and only one review pending with the specified reviewer
+        # and review_type.
         votes = list(merge_proposal.votes)
-        self.assertEqual(1, len(votes))
-        vote_reference = votes[0]
+        self.assertEqual(2, len(votes))
+        # first vote will be the default reviewer
+        self.assertEqual(
+            votes[0].reviewer, merge_proposal.target_branch.owner)
+        vote_reference = votes[1]                
         self.assertEqual(reviewer, vote_reference.reviewer)
         if review_type is None:
             self.assertIs(None, vote_reference.review_type)
@@ -1399,14 +1407,15 @@ class TestBranchMergeProposalNominateReviewer(TestCaseWithFactory):
         # A new vote reference is created when a reviewer is nominated.
         merge_proposal, reviewer = self.makeProposalWithReviewer(
             review_type='General')
-        self.assertOneReviewPending(merge_proposal, reviewer, 'general')
+        self.assertOneNonDefaultReviewPending(
+            merge_proposal, reviewer, 'general')
 
     def test_nominate_with_None_review_type(self):
         # Reviews nominated with a review type of None, make vote references
         # with a review_type of None.
         merge_proposal, reviewer = self.makeProposalWithReviewer(
             review_type=None)
-        self.assertOneReviewPending(merge_proposal, reviewer, None)
+        self.assertOneNonDefaultReviewPending(merge_proposal, reviewer, None)
 
     def test_nominate_with_whitespace_review_type(self):
         # A review nominated with a review type that just contains whitespace
@@ -1414,13 +1423,13 @@ class TestBranchMergeProposalNominateReviewer(TestCaseWithFactory):
         # None.
         merge_proposal, reviewer = self.makeProposalWithReviewer(
             review_type='')
-        self.assertOneReviewPending(merge_proposal, reviewer, None)
+        self.assertOneNonDefaultReviewPending(merge_proposal, reviewer, None)
         merge_proposal, reviewer = self.makeProposalWithReviewer(
             review_type='    ')
-        self.assertOneReviewPending(merge_proposal, reviewer, None)
+        self.assertOneNonDefaultReviewPending(merge_proposal, reviewer, None)
         merge_proposal, reviewer = self.makeProposalWithReviewer(
             review_type='\t')
-        self.assertOneReviewPending(merge_proposal, reviewer, None)
+        self.assertOneNonDefaultReviewPending(merge_proposal, reviewer, None)
 
     def test_nominate_multiple_with_different_types(self):
         # While an individual can only be requested to do one review
@@ -1497,8 +1506,9 @@ class TestBranchMergeProposalNominateReviewer(TestCaseWithFactory):
             reviewer, 'Message subject', 'Message content',
             vote=CodeReviewVote.APPROVE)
         votes = list(merge_proposal.votes)
-        self.assertEqual(1, len(votes))
-        vote_reference = votes[0]
+        self.assertEqual(2, len(votes))
+        # First reviewer is default so take the next one that we just made.
+        vote_reference = votes[1]
         self.assertEqual(reviewer, vote_reference.reviewer)
         self.assertEqual(reviewer, vote_reference.registrant)
         self.assertTrue(vote_reference.review_type is None)
@@ -1510,7 +1520,9 @@ class TestBranchMergeProposalNominateReviewer(TestCaseWithFactory):
         reviewer = self.factory.makePerson()
         merge_proposal.createComment(
             reviewer, 'Message subject', 'Message content')
-        self.assertEqual([], list(merge_proposal.votes))
+        # Target branch owner is always a reviewer.
+        self.assertEqual(
+            [merge_proposal.target_branch.owner], list(merge_proposal.votes))
 
     def test_second_vote_by_person_just_alters_reference(self):
         """A second vote changes the comment reference only."""
@@ -1562,7 +1574,11 @@ class TestBranchMergeProposalNominateReviewer(TestCaseWithFactory):
             reviewer=team,
             registrant=merge_proposal.source_branch.owner,
             review_type='general')
-        [vote] = list(merge_proposal.votes)
+        votes = list(merge_proposal.votes)
+        # first vote will be the default reviewer
+        self.assertEqual(
+            votes[0].reviewer, merge_proposal.target_branch.owner)
+        vote = votes[1]
         self.assertEqual(team, vote.reviewer)
         comment = merge_proposal.createComment(
             reviewer, 'Message subject', 'Message content',
@@ -1584,7 +1600,11 @@ class TestBranchMergeProposalNominateReviewer(TestCaseWithFactory):
             reviewer=team,
             registrant=merge_proposal.source_branch.owner,
             review_type=None)
-        [vote] = list(merge_proposal.votes)
+        votes = list(merge_proposal.votes)
+        # first vote will be the default reviewer
+        self.assertEqual(
+            votes[0].reviewer, merge_proposal.target_branch.owner)
+        vote = votes[1]
         self.assertEqual(team, vote.reviewer)
         comment = merge_proposal.createComment(
             reviewer, 'Message subject', 'Message content',
@@ -1633,7 +1653,8 @@ class TestBranchMergeProposalResubmit(TestCaseWithFactory):
             review_type='specious')
         bmp2 = bmp1.resubmit(bmp1.registrant)
         self.assertEqual(
-            set([(nominee, 'nominee'), (reviewer, 'specious')]),
+            set([(bmp1.target_branch.owner, None), (nominee, 'nominee'), 
+                 (reviewer, 'specious')]),
             set((vote.reviewer, vote.review_type) for vote in bmp2.votes))
 
 

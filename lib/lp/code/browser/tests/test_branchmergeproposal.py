@@ -153,6 +153,9 @@ class TestBranchMergeProposalVoteView(TestCaseWithFactory):
         # nominating reviewers.
         TestCaseWithFactory.setUp(self, user="admin@canonical.com")
         self.bmp = self.factory.makeBranchMergeProposal()
+        #ensure bmp initially has no reviewers
+        for vote in self.bmp.votes:
+            removeSecurityProxy(vote).destroySelf()            
         self.date_generator = time_counter(delta=timedelta(days=1))
 
     def _createComment(self, reviewer, vote):

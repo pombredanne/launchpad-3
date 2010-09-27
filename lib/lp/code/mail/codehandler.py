@@ -221,21 +221,8 @@ class AddReviewerEmailCommand(CodeReviewEmailCommand):
     """Add a new reviewer."""
 
     def execute(self, context):
-        if len(self.string_args) == 0:
-            raise EmailProcessingError(
-                get_error_message(
-                    'num-arguments-mismatch.txt',
-                    command_name=self.name,
-                    num_arguments_expected='one or more',
-                    num_arguments_got='0'))
-
-        # Pop the first arg as the reviewer.
-        reviewer = get_person_or_team(self.string_args.pop(0))
-        if len(self.string_args) > 0:
-            review_tags = ' '.join(self.string_args)
-        else:
-            review_tags = None
-
+        reviewer, review_tags = CodeEmailCommands.parseReviewRequest(
+            self.name, self.string_args)
         context.merge_proposal.nominateReviewer(
             reviewer, context.user, review_tags,
             _notify_listeners=context.notify_event_listeners)
@@ -253,14 +240,32 @@ class CodeEmailCommands(EmailCommandCollection):
         }
 
     @classmethod
-    def getCommands(klass, message_body):
+    def getCommands(klass, message_body, exclude=set()):
         """Extract the commands from the message body."""
         if message_body is None:
             return []
+        keys = set(klass._commands.keys()) - exclude
         commands = [klass.get(name=name, string_args=args) for
-                    name, args in parse_commands(message_body,
-                                                 klass._commands.keys())]
+                    name, args in parse_commands(message_body, keys)]
         return sorted(commands, key=operator.attrgetter('sort_order'))
+
+    @classmethod
+    def parseReviewRequest(klass, op_name, string_args):
+        if len(string_args) == 0:
+            raise EmailProcessingError(
+                get_error_message(
+                    'num-arguments-mismatch.txt',
+                    command_name=op_name,
+                    num_arguments_expected='one or more',
+                    num_arguments_got='0'))
+    
+        # Pop the first arg as the reviewer.
+        reviewer = get_person_or_team(string_args.pop(0))
+        if len(string_args) > 0:
+            review_tags = ' '.join(string_args)
+        else:
+            review_tags = None
+        return (reviewer, review_tags)
 
 
 class CodeHandler:
@@ -305,10 +310,8 @@ class CodeHandler:
             getUtility(ICreateMergeProposalJobSource).create(file_alias)
         return True
 
-    def processCommands(self, context, email_body_text):
-        """Process the commadns in the email_body_text against the context."""
-        commands = CodeEmailCommands.getCommands(email_body_text)
-
+    def processCommands(self, context, commands):
+        """Process the various merge proposal commands against the context."""
         processing_errors = []
 
         for command in commands:
@@ -348,7 +351,8 @@ class CodeHandler:
         context = CodeReviewEmailCommandExecutionContext(merge_proposal, user)
         try:
             email_body_text = get_main_body(mail)
-            processed_count = self.processCommands(context, email_body_text)
+            commands = CodeEmailCommands.getCommands(email_body_text)
+            processed_count = self.processCommands(context, commands)
 
             # Make sure that the email is in fact signed.
             if processed_count > 0:
@@ -611,7 +615,7 @@ class CodeHandler:
         """
         submitter = getUtility(ILaunchBag).user
         try:
-            comment_text, md = self.findMergeDirectiveAndComment(message)
+            email_body_text, md = self.findMergeDirectiveAndComment(message)
         except MissingMergeDirective:
             body = get_error_message('missingmergedirective.txt')
             simple_sendmail('merge@code.launchpad.net',
@@ -642,27 +646,37 @@ class CodeHandler:
         with globalErrorUtility.oopsMessage(
             'target: %r source: %r' % (target, source)):
             try:
-                # There may be a reviewer specified in the email but we don't
-                # know that yet. So tell addLandingTarget not to assign a
-                # default reviewer - will will do that below if required.
+                # When creating a merge proposal, we need to gather all
+                # necessary arguments to addLandingTarget(). So from the email
+                # body we need to extract: reviewer, review type, description.
+                description = None
+                review_requests=[]
+                email_body_text = email_body_text.strip()
+                if email_body_text != '':
+                    description = email_body_text
+                    review_args = parse_commands(
+                        email_body_text, ['reviewer'])
+                    if len(review_args) > 0:
+                        cmd, args = review_args[0]
+                        review_request = (
+                            CodeEmailCommands.parseReviewRequest(cmd, args))
+                        review_requests.append(review_request)
+
                 bmp = source.addLandingTarget(submitter, target,
                                               needs_review=True,
-                                              assign_default_reviewer=False)
+                                              description=description,
+                                              review_requests=review_requests)
 
+                # So we have the merge proposal. The email body may yet
+                # contain additional commands to process. We need to run
+                # those but exclude any specified reviewer since we have
+                # already handled that.
                 context = CodeReviewEmailCommandExecutionContext(
                     bmp, submitter, notify_event_listeners=False)
-                processed_count = self.processCommands(context, comment_text)
+                commands = (CodeEmailCommands.getCommands(
+                    email_body_text, exclude=set('reviewer')))
+                self.processCommands(context, commands)
 
-                # If there are no reviews requested yet, request the default
-                # reviewer of the target branch.
-                if bmp.votes.count() == 0:
-                    bmp.nominateReviewer(
-                        target.code_reviewer, submitter, None,
-                        _notify_listeners=False)
-
-                comment_text = comment_text.strip()
-                if comment_text != '':
-                    bmp.description = comment_text
                 return bmp
 
             except BranchMergeProposalExists:
@@ -678,5 +692,5 @@ class CodeHandler:
                 send_process_error_notification(
                     str(submitter.preferredemail.email),
                     'Submit Request Failure',
-                    error.message, comment_text, error.failing_command)
+                    error.message, email_body_text, error.failing_command)
                 transaction.abort()
