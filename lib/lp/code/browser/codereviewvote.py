@@ -36,10 +36,11 @@ class CodeReviewVoteReassign(LaunchpadFormView):
 
     page_title = label = 'Reassign review request'
 
-    def initialize(self):
-        self.cancel_url = (canonical_url(self.context.branch_merge_proposal))
-        self.next_url = self.cancel_url
-        super(CodeReviewVoteReassign, self).initialize()
+    @property
+    def next_url(self):
+        return canonical_url(self.context.branch_merge_proposal)
+
+    cancel_url = next_url
 
     @action('Reassign', name='reassign')
     def reassign_action(self, action, data):
