@@ -109,11 +109,7 @@ class BuilddSlaveTestSetup(TacTestSetup):
         # When we are about running it seriously we need :
         # * install sbuild package
         # * to copy the scripts for sbuild
-
-    def tearDown(self):
-        """Tear down the system normally and additionaly remove the root."""
-        TacTestSetup.tearDown(self)
-        remove_tree(self.root)
+        self.addCleanup(remove_tree, self.root)
 
     @property
     def root(self):

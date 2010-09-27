@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = [
     'cleanupLibrarianFiles',
     'fillLibrarianFile',
+    'LibrarianServerFixture',
     'LibrarianTestSetup',
     ]
 
@@ -28,8 +29,8 @@ from canonical.launchpad.daemons.tachandler import (
 from canonical.librarian.storage import _relFileLocation
 
 
-class LibrarianServerFixture(Fixture):
-    """Set up librarian servers for use by functional tests.
+class LibrarianServerFixture(TacTestSetup):
+    """Librarian server fixture.
 
     >>> from urllib import urlopen
     >>> from canonical.config import config
@@ -41,7 +42,8 @@ class LibrarianServerFixture(Fixture):
     ...     config.librarian.restricted_download_host,
     ...     config.librarian.restricted_download_port)
 
-    >>> LibrarianTestSetup().setUp()
+    >>> fixture = LibrarianServerFixture()
+    >>> fixture.setUp()
 
     Set a socket timeout, so that this test cannot hang indefinitely.
 
@@ -50,8 +52,8 @@ class LibrarianServerFixture(Fixture):
     None
     >>> socket.setdefaulttimeout(1)
 
-    After setUp() is called, two librarian instances are started. The
-    regular one:
+    After setUp() is called, two librarian ports are available:
+    The regular one:
 
     >>> 'Copyright' in urlopen(librarian_url).read()
     True
@@ -67,9 +69,9 @@ class LibrarianServerFixture(Fixture):
     >>> os.path.isdir(config.librarian_server.root)
     True
 
-    After tearDown() is called, both instances are shut down:
+    After tearDown() is called, both ports are closed:
 
-    >>> LibrarianTestSetup().tearDown()
+    >>> fixture.tearDown()
 
     >>> urlopen(librarian_url).read()
     Traceback (most recent call last):
@@ -88,13 +90,13 @@ class LibrarianServerFixture(Fixture):
 
     That fixture can be started and stopped multiple time in succession:
 
-    >>> LibrarianTestSetup().setUp()
+    >>> fixture.setUp()
     >>> 'Copyright' in urlopen(librarian_url).read()
     True
 
     Tidy up.
 
-    >>> LibrarianTestSetup().tearDown()
+    >>> fixture.tearDown()
     >>> socket.setdefaulttimeout(None)
 
     :ivar: pid pid of the external process.
@@ -110,29 +112,19 @@ class LibrarianServerFixture(Fixture):
         """Start both librarian instances."""
         if (self._persistent_servers() and self.pid):
             return
-        elif self.pid:
-            # Found an existing, running librarian, but we're not trying to
-            # reuse it. We cannot clean it up because we don't know that its
-            # config is the same: all we know for sure is that its using the
-            # same pid we wanted.
-            warnings.warn("Stale librarian process (%s) found" % (self.pid,))
-            two_stage_kill(self.pid)
-            if self.pid:
-                raise Exception("Could not kill stale librarian.")
+        else:
+            # self.pid may have been evaluated - nuke it.
             self._pid = None
-        Fixture.setUp(self)
-        self.setUpRoot()
+        # The try:except here can be removed if someone audits the callers.
         try:
-            TacLibrarianTestSetup().setUp()
-            self._read_pid()
+            TacTestSetup.setUp(self)
         except TacException:
-            # Remove the directory usually removed in tearDown.
-            self.tearDownRoot()
+            self.cleanUp()
             raise
+        else:
+            self._pid = self._read_pid()
         self._setup = True
-
-    def tearDown(self):
-        self.cleanUp()
+        self.addCleanup(setattr, self, '_setup', False)
 
     def cleanUp(self):
         """Shut downs both librarian instances."""
@@ -142,11 +134,7 @@ class LibrarianServerFixture(Fixture):
             warnings.warn("Attempt to tearDown inactive fixture.",
                 DeprecationWarning, stacklevel=3)
             return
-        try:
-            TacLibrarianTestSetup().tearDown()
-            self.tearDownRoot()
-        finally:
-            Fixture.cleanUp(self)
+        TacTestSetup.cleanUp(self)
 
     def clear(self):
         """Clear all files from the Librarian"""
@@ -164,7 +152,7 @@ class LibrarianServerFixture(Fixture):
         return self._pid
 
     def _read_pid(self):
-        return get_pid_from_file(TacLibrarianTestSetup().pidfile)
+        return get_pid_from_file(self.pidfile)
 
     def _persistent_servers(self):
         return os.environ.get('LP_PERSISTENT_TEST_SERVICES') is not None
@@ -181,32 +169,12 @@ class LibrarianServerFixture(Fixture):
         if os.path.exists(self.root):
             self.tearDownRoot()
         os.makedirs(self.root, 0700)
+        self.addCleanup(self.tearDownRoot)
 
     def tearDownRoot(self):
         """Remove the librarian root archive."""
         if os.path.isdir(self.root):
             shutil.rmtree(self.root)
-
-
-_global_fixture = LibrarianServerFixture()
-
-def LibrarianTestSetup():
-    """Support the stateless lie."""
-    return _global_fixture
-
-
-class TacLibrarianTestSetup(TacTestSetup):
-    """Start the regular librarian instance."""
-
-    def setUpRoot(self):
-        """Taken care by LibrarianTestSetup."""
-
-    def tearDownRoot(self):
-        """Taken care by LibrarianTestSetup."""
-
-    @property
-    def root(self):
-        return config.librarian_server.root
 
     @property
     def tacfile(self):
@@ -220,20 +188,18 @@ class TacLibrarianTestSetup(TacTestSetup):
         return os.path.join(self.root, 'librarian.pid')
 
     @property
-    def _log_directory(self):
-        # Since the root gets deleted after the tests complete, and since we
-        # may still want to access the log file for post-mortem debugging, put
-        # the log file in the parent directory of root, or the temporary
-        # directory if that doesn't exist.
-        log_directory = os.path.dirname(self.root)
-        if os.path.isdir(log_directory):
-            return log_directory
-        else:
-            return tempfile.tempdir
-
-    @property
     def logfile(self):
-        return os.path.join(self._log_directory, 'librarian.log')
+        # Store the log in the server root; if its wanted after a test, that
+        # test can use addDetail to grab the log and include it in its 
+        # error.
+        return os.path.join(self.root, 'librarian.log')
+
+
+_global_fixture = LibrarianServerFixture()
+
+def LibrarianTestSetup():
+    """Support the stateless lie."""
+    return _global_fixture
 
 
 def fillLibrarianFile(fileid, content='Fake Content'):
