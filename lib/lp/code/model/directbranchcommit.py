@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Commit files straight to bzr branch."""
@@ -21,6 +21,7 @@ from bzrlib.transform import (
     TransformPreview,
     )
 
+from canonical.config import config
 from canonical.launchpad.interfaces import IMasterObject
 from lp.codehosting.bzrutils import get_stacked_on_url
 from lp.services.mail.sendmail import format_address_for_person
@@ -55,7 +56,8 @@ class DirectBranchCommit:
     is_locked = False
     commit_builder = None
 
-    def __init__(self, db_branch, committer=None, no_race_check=False):
+    def __init__(self, db_branch, committer=None, no_race_check=False,
+                 merge_parents=None, committer_id=None):
         """Create context for direct commit to branch.
 
         Before constructing a `DirectBranchCommit`, set up a server that
@@ -73,9 +75,13 @@ class DirectBranchCommit:
         `DirectBranchCommit`.
 
         :param db_branch: a Launchpad `Branch` object.
-        :param committer: the `Person` writing to the branch.
+        :param committer: the `Person` writing to the branch.  Defaults to
+            the branch owner.
         :param no_race_check: don't check for other commits before committing
             our changes, for use in tests.
+        :param committer_id: Optional identification (typically with email
+            address) of the person doing the commit, for use in bzr.  If not
+            given, the `committer`'s email address will be used instead.
         """
         self.db_branch = db_branch
 
@@ -84,6 +90,7 @@ class DirectBranchCommit:
         if committer is None:
             committer = db_branch.owner
         self.committer = committer
+        self.committer_id = committer_id
 
         self.no_race_check = no_race_check
 
@@ -174,6 +181,17 @@ class DirectBranchCommit:
             raise ConcurrentUpdateError(
                 "Branch has been changed.  Not committing.")
 
+    def getBzrCommitterID(self):
+        """Find the committer id to pass to bzr."""
+        if self.committer_id is not None:
+            return self.committer_id
+        elif self.committer.preferredemail is not None:
+            return format_address_for_person(self.committer)
+        else:
+            return '"%s" <%s>' % (
+                self.committer.displayname,
+                config.canonical.noreply_from_address)
+
     def commit(self, commit_message, txn=None):
         """Commit to branch.
 
@@ -195,7 +213,7 @@ class DirectBranchCommit:
             if rev_id == NULL_REVISION:
                 if list(self.transform_preview.iter_changes()) == []:
                     return
-            committer_id = format_address_for_person(self.committer)
+            committer_id = self.getBzrCommitterID()
             # XXX: AaronBentley 2010-08-06 bug=614404: a bzr username is
             # required to generate the revision-id.
             with override_environ(BZR_EMAIL=committer_id):
