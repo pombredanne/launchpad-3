@@ -40,6 +40,7 @@ from lp.code.browser.sourcepackagerecipebuild import (
     SourcePackageRecipeBuildView,
     )
 from lp.code.interfaces.sourcepackagerecipe import MINIMAL_RECIPE_TEXT
+from lp.code.tests.helpers import recipe_parser_newest_version
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.model.processor import ProcessorFamily
 from lp.testing import (
@@ -303,6 +304,24 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
         browser = self.createRecipe(recipe, branch)
         self.assertEqual(
             get_message_text(browser, 2), 'foo is not a branch on Launchpad.')
+
+    def test_create_recipe_format_too_new(self):
+        # If the recipe's format version is too new, we should notify the
+        # user.
+        product = self.factory.makeProduct(
+            name='ratatouille', displayname='Ratatouille')
+        branch = self.factory.makeBranch(
+            owner=self.chef, product=product, name='veggies')
+
+        with recipe_parser_newest_version(145.115):
+            recipe = dedent(u'''\
+                # bzr-builder format 145.115 deb-version 0+{revno}
+                %s
+                ''') % branch.bzr_identity
+            browser = self.createRecipe(recipe, branch)
+            self.assertEqual(
+                get_message_text(browser, 2),
+                'The recipe format version specified is not available.')
 
     def test_create_dupe_recipe(self):
         # You shouldn't be able to create a duplicate recipe owned by the same

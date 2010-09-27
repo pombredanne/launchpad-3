@@ -403,7 +403,6 @@ class RequestPeopleMergeMultipleEmailsView:
         if self.request.method != "POST":
             return
 
-        self.form_processed = True
         login = getUtility(ILaunchBag).login
         logintokenset = getUtility(ILoginTokenSet)
 
@@ -429,7 +428,14 @@ class RequestPeopleMergeMultipleEmailsView:
 
                 for emailaddress in emails:
                     email = emailaddrset.getByEmail(emailaddress)
-                    assert email in self.dupeemails
+                    if email is None or email not in self.dupeemails:
+                        # The dupe person has changes his email addresses.
+                        # See bug 239838.
+                        self.request.response.addNotification(
+                            "An address was removed from the duplicate "
+                            "account while you were making this merge "
+                            "request. Select again.")
+                        return
                     email_addresses.append(emailaddress)
 
         for emailaddress in email_addresses:
@@ -437,6 +443,7 @@ class RequestPeopleMergeMultipleEmailsView:
                 self.user, login, emailaddress, LoginTokenType.ACCOUNTMERGE)
             token.sendMergeRequestEmail()
             self.notified_addresses.append(emailaddress)
+        self.form_processed = True
 
     @property
     def cancel_url(self):

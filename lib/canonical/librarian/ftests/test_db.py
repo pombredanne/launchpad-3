@@ -44,8 +44,8 @@ class DBTestCase(unittest.TestCase):
         self.assertEqual('text/unknown', alias.mimetype)
 
 
-class TestTransactionDecorators(unittest.TestCase):
-    """Tests for the transaction decorators used by the librarian."""
+class TestLibrarianStuff(unittest.TestCase):
+    """Tests for the librarian."""
 
     layer = LaunchpadZopelessLayer
 
@@ -149,59 +149,6 @@ class TestTransactionDecorators(unittest.TestCase):
             (1, u'netapplet-1.0.0.tar.gz', u'application/x-gtar'),
             ]
         self.assertEqual(expected_aliases, aliases)
-
-    def test_read_transaction_reset_store(self):
-        """Make sure that the store is reset after the transaction."""
-        @db.read_transaction
-        def no_op():
-            pass
-        no_op()
-        self.failIf(
-            self.file_content is self._getTestFileContent(),
-            "Store wasn't reset properly.")
-
-    def test_write_transaction_reset_store(self):
-        """Make sure that the store is reset after the transaction."""
-        @db.write_transaction
-        def no_op():
-            pass
-        no_op()
-        self.failIf(
-            self.file_content is self._getTestFileContent(),
-            "Store wasn't reset properly.")
-
-    def test_write_transaction_reset_store_with_raise(self):
-        """Make sure that the store is reset after the transaction."""
-        @db.write_transaction
-        def no_op():
-            raise RuntimeError('an error occured')
-        self.assertRaises(RuntimeError, no_op)
-        self.failIf(
-            self.file_content is self._getTestFileContent(),
-            "Store wasn't reset properly.")
-
-    def test_writing_transaction_reset_store_on_commit_failure(self):
-        """The store should be reset even if committing the transaction fails.
-        """
-        class TransactionAborter:
-            """Make the next commit() fails."""
-            def newTransaction(self, txn):
-                pass
-
-            def beforeCompletion(self, txn):
-                raise RuntimeError('the commit will fail')
-        aborter = TransactionAborter()
-        transaction.manager.registerSynch(aborter)
-        try:
-            @db.write_transaction
-            def no_op():
-                pass
-            self.assertRaises(RuntimeError, no_op)
-            self.failIf(
-                self.file_content is self._getTestFileContent(),
-                "Store wasn't reset properly.")
-        finally:
-            transaction.manager.unregisterSynch(aborter)
 
 
 def test_suite():

@@ -17,6 +17,8 @@ import datetime
 import operator
 
 from lazr.delegates import delegates
+from lazr.lifecycle.event import ObjectModifiedEvent
+from lazr.lifecycle.snapshot import Snapshot
 from lazr.restful.error import expose
 import pytz
 from sqlobject import (
@@ -38,7 +40,11 @@ from storm.locals import (
     Unicode,
     )
 from zope.component import getUtility
-from zope.interface import implements
+from zope.event import notify
+from zope.interface import (
+    implements,
+    providedBy,
+    )
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.constants import UTC_NOW
@@ -48,9 +54,6 @@ from canonical.database.sqlbase import (
     quote,
     SQLBase,
     sqlvalues,
-    )
-from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet,
     )
 from canonical.launchpad.interfaces.launchpad import (
     IHasIcon,
@@ -164,9 +167,6 @@ from lp.translations.interfaces.customlanguagecode import (
     IHasCustomLanguageCodes,
     )
 from lp.translations.interfaces.translationgroup import TranslationPermission
-from lp.translations.interfaces.translationimportqueue import (
-    ITranslationImportQueue,
-    )
 from lp.translations.model.customlanguagecode import (
     CustomLanguageCode,
     HasCustomLanguageCodesMixin,
@@ -745,22 +745,21 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     def _setOwner(self, new_owner):
         """Set the owner.
 
-        Change the owner and change the ownership of related artifacts.
+        Send an IObjectModifiedEvent to notify subscribers that the owner
+        changed.
         """
-        old_owner = self._owner
-        self._owner = new_owner
-        if old_owner is not None:
-            import_queue = getUtility(ITranslationImportQueue)
-            for entry in import_queue.getAllEntries(target=self):
-                if entry.importer == old_owner:
-                    removeSecurityProxy(entry).importer = new_owner
-            for series in self.series:
-                if series.owner == old_owner:
-                    series.owner = new_owner
-            for release in self.releases:
-                if release.owner == old_owner:
-                    release.owner = new_owner
-            Store.of(self).flush()
+        if self.owner is None:
+            # This is being initialized.
+            self._owner = new_owner
+        elif self.owner != new_owner:
+            old_product = Snapshot(self, providing=providedBy(self))
+            self._owner = new_owner
+            notify(ObjectModifiedEvent(
+                self, object_before_modification=old_product,
+                edited_fields=['_owner']))
+        else:
+            # The new owner is the same as the current owner.
+            pass
 
     owner = property(_getOwner, _setOwner)
 

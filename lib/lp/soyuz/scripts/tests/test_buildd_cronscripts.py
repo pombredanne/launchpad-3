@@ -60,11 +60,6 @@ class TestCronscriptBase(unittest.TestCase):
             extra_args = []
         return self.runCronscript("buildd-queue-builder.py", extra_args)
 
-    def runBuilddSlaveScanner(self, extra_args=None):
-        if extra_args is None:
-            extra_args = []
-        return self.runCronscript("buildd-slave-scanner.py", extra_args)
-
     def runBuilddRetryDepwait(self, extra_args=None):
         if extra_args is None:
             extra_args = []
@@ -85,15 +80,6 @@ class TestCronscriptBase(unittest.TestCase):
         DatabaseLayer.force_dirty_database()
 
         return rc, out, err
-
-
-class TestSlaveScanner(TestCronscriptBase):
-    """Test SlaveScanner buildd script class."""
-    layer = LaunchpadLayer
-
-    def testRunSlaveScanner(self):
-        """Check if buildd-slave-scanner runs without errors."""
-        self.assertRuns(runner=self.runBuilddSlaveScanner)
 
 
 class TestQueueBuilder(TestCronscriptBase):
