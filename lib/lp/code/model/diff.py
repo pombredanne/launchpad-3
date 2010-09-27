@@ -201,6 +201,7 @@ class Diff(SQLBase):
 
     @classmethod
     def fromFileAtEnd(cls, diff_content, filename=None):
+        """Make a Diff from a file object that is currently at its end."""
         size = diff_content.tell()
         diff_content.seek(0)
         return cls.fromFile(diff_content, size, filename)
@@ -266,6 +267,18 @@ class Diff(SQLBase):
 
     @classmethod
     def generateIncrementalDiff(
+        """Return a Diff whose contents are an incremental diff.
+
+        The Diff's contents will show the changes made between old_revision
+        and new_revision, except those changes introduced by the
+        ignore_branches.
+
+        :param old_revision: The `Revision` to show changes from.
+        :param new_revision: The `Revision` to show changes to.
+        :param source_branch: The bzr branch containing these revisions.
+        :param ignore_brances: A collection of branches to ignore merges from.
+        :return: a `Diff`.
+        """
         cls, old_revision, new_revision, source_branch, ignore_branches):
         diff_content = StringIO()
         read_locks = [read_locked(branch) for branch in [source_branch] +
@@ -325,6 +338,7 @@ class StaticDiff(SQLBase):
 
 
 class IncrementalDiff(Storm):
+    """See `IIncrementalDiff."""
 
     implements(IIncrementalDiff)
 

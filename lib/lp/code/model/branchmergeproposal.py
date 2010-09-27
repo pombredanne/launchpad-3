@@ -779,6 +779,12 @@ class BranchMergeProposal(SQLBase):
         return self.preview_diff
 
     def generateIncrementalDiff(self, old_revision, new_revision, diff=None):
+        """Generate an incremental diff for the merge proposal.
+
+        :param old_revision: The `Revision` to generate the diff from.
+        :param new_revision: The `Revision` to generate the diff to.
+        :param diff: If supplied, a pregenerated `Diff`.
+        """
         if diff is None:
             source_branch = self.source_branch.getBzrBranch()
             ignore_branches = [self.target_branch.getBzrBranch()]
@@ -796,6 +802,14 @@ class BranchMergeProposal(SQLBase):
         return incremental_diff
 
     def getIncrementalDiffs(self, revision_list):
+        """Return a list of diffs for the specified revisions.
+
+        :param revision_list: A list of tuples of (`Revision`, `Revision`).
+            The first revision in the tuple is the old revision.  The second
+            is the new revision.
+        :return: A list of IncrementalDiffs in the same order as the supplied
+            Revisions.
+        """
         diffs = Store.of(self).find(IncrementalDiff,
             IncrementalDiff.branch_merge_proposal_id == self.id)
         diff_dict = dict(
