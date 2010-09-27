@@ -121,5 +121,4 @@ class BranchLinkToSpecificationView(LaunchpadFormView):
     @action(_('Continue'), name='continue')
     def continue_action(self, action, data):
         spec = data['specification']
-        spec_branch = spec.linkBranch(
-            branch=self.context, registrant=self.user)
+        spec.linkBranch(branch=self.context, registrant=self.user)
