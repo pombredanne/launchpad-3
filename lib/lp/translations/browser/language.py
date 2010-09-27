@@ -152,9 +152,6 @@ class LanguageSetView(LaunchpadFormView):
         return ", ".join(map(_format_language, languages))
 
 
-# There is no easy way to remove an ILanguage from the database due all the
-# dependencies that ILanguage would have. That's the reason why we don't have
-# such functionality here.
 class LanguageAddView(LaunchpadFormView):
     """View to handle ILanguage creation form."""
 
