@@ -115,7 +115,8 @@ class LibrarianServerFixture(TacTestSetup):
         else:
             # self.pid may have been evaluated - nuke it.
             self._pid = None
-        # The try:except here can be removed if someone audits the callers.
+        # The try:except here can be removed if someone audits the callers to
+        # make sure that they call cleanUp if setUp fails.
         try:
             TacTestSetup.setUp(self)
         except TacException:
