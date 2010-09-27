@@ -242,7 +242,7 @@ class DistroSeriesDifferenceTemplateTestCase(TestCaseWithFactory):
         self.assertEqual(
             1, len(soup.findAll('pre', text="Here's another comment.")))
 
-    def test_blacklist_fragment(self):
+    def test_blacklist_options(self):
         # blacklist options are presented to editors.
         ds_diff = self.factory.makeDistroSeriesDifference()
 
@@ -263,3 +263,28 @@ class DistroSeriesDifferenceTemplateTestCase(TestCaseWithFactory):
 
         self.assertIsInstance(
             view.widgets.get('blacklist_options'), RadioWidget)
+
+    def test_blacklist_options_initial_values(self):
+        ds_diff = self.factory.makeDistroSeriesDifference()
+        view = create_initialized_view(ds_diff, '+listing-distroseries-extra')
+
+        # If the difference is not currently blacklisted, 'NONE' is set
+        # as the default value for the field.
+        self.assertEqual('NONE', view.initial_values.get('blacklist_options'))
+
+        from lp.registry.enum import DistroSeriesDifferenceStatus
+        ds_diff = self.factory.makeDistroSeriesDifference(
+            status=DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT)
+        view = create_initialized_view(ds_diff, '+listing-distroseries-extra')
+
+        self.assertEqual(
+            DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT,
+            view.initial_values.get('blacklist_options'))
+
+        ds_diff = self.factory.makeDistroSeriesDifference(
+            status=DistroSeriesDifferenceStatus.BLACKLISTED_ALWAYS)
+        view = create_initialized_view(ds_diff, '+listing-distroseries-extra')
+
+        self.assertEqual(
+            DistroSeriesDifferenceStatus.BLACKLISTED_ALWAYS,
+            view.initial_values.get('blacklist_options'))

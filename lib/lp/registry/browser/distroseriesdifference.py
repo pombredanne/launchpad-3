@@ -52,6 +52,13 @@ class DistroSeriesDifferenceView(LaunchpadFormView):
 
     @property
     def initial_values(self):
+        """Ensure the correct radio button is checked for blacklisting."""
+        if self.context.status in (
+            DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT,
+            DistroSeriesDifferenceStatus.BLACKLISTED_ALWAYS,
+            ):
+            return dict(blacklist_options=self.context.status)
+
         return dict(blacklist_options='NONE')
 
     @property
