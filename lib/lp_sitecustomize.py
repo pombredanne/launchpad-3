@@ -9,7 +9,7 @@ import warnings
 import logging
 
 from bzrlib.branch import Branch
-from lp.services.log.loglevels import *
+from lp.services.log import loglevels
 from lp.services.log.mappingfilter import MappingFilter
 from lp.services.log.nullhandler import NullHandler
 from lp.services.mime import customizeMimetypes
@@ -18,24 +18,42 @@ from zope.security import checker
 
 def add_custom_loglevels():
     """Add out custom log levels to the Python logging package."""
-    logging.addLevelName(DEBUG2, 'DEBUG2')
-    logging.addLevelName(DEBUG3, 'DEBUG3')
-    logging.addLevelName(DEBUG4, 'DEBUG4')
-    logging.addLevelName(DEBUG5, 'DEBUG5')
-    logging.addLevelName(DEBUG6, 'DEBUG6')
-    logging.addLevelName(DEBUG7, 'DEBUG7')
-    logging.addLevelName(DEBUG8, 'DEBUG8')
-    logging.addLevelName(DEBUG9, 'DEBUG9')
+
+    # This import installs custom ZODB loglevels, which we can then
+    # override. BLATHER is between INFO and DEBUG, so we can leave it.
+    # TRACE conflicts with DEBUG6, and since we are not using ZEO, we
+    # just overwrite the level string by calling addLevelName.
+    from ZODB.loglevels import BLATHER, TRACE
+
+    # Confirm our above assumptions, and silence lint at the same time.
+    assert BLATHER == 15
+    assert TRACE == loglevels.DEBUG6
+
+    logging.addLevelName(loglevels.DEBUG2, 'DEBUG2')
+    logging.addLevelName(loglevels.DEBUG3, 'DEBUG3')
+    logging.addLevelName(loglevels.DEBUG4, 'DEBUG4')
+    logging.addLevelName(loglevels.DEBUG5, 'DEBUG5')
+    logging.addLevelName(loglevels.DEBUG6, 'DEBUG6')
+    logging.addLevelName(loglevels.DEBUG7, 'DEBUG7')
+    logging.addLevelName(loglevels.DEBUG8, 'DEBUG8')
+    logging.addLevelName(loglevels.DEBUG9, 'DEBUG9')
+
+    # Install our customized Logger that provides easy access to our
+    # custom loglevels.
+    logging.setLoggerClass(loglevels.LaunchpadLogger)
+
 
 def silence_bzr_logger():
     """Install the NullHandler on the bzr logger to silence logs."""
     logging.getLogger('bzr').addHandler(NullHandler())
+
 
 def silence_zcml_logger():
     """Lower level of ZCML parsing DEBUG messages."""
     config_filter = MappingFilter(
         {logging.DEBUG: (7, 'DEBUG4')}, 'config')
     logging.getLogger('config').addFilter(config_filter)
+
 
 def silence_transaction_logger():
     """Lower level of DEBUG messages from the transaction module."""
@@ -50,10 +68,12 @@ def silence_transaction_logger():
     txn_handler.addFilter(txn_filter)
     logging.getLogger('txn').addHandler(txn_handler)
 
+
 def dont_wrap_class_and_subclasses(cls):
     checker.BasicTypes.update({cls: checker.NoProxy})
     for subcls in cls.__subclasses__():
         dont_wrap_class_and_subclasses(subcls)
+
 
 def silence_warnings():
     """Silence warnings across the entire Launchpad project."""
@@ -64,6 +84,7 @@ def silence_warnings():
         "ignore",
         category=DeprecationWarning,
         module="Crypto")
+
 
 def main():
     # Note that we configure the LPCONFIG environmental variable in the

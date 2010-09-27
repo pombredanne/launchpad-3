@@ -56,8 +56,19 @@ from canonical.librarian.interfaces import (
     ILibrarianClient,
     UploadFailed,
     )
+from lp.services.log import loglevels
 
-from lp.services.log.loglevels import *
+
+# Reexport our custom loglevels for old callsites. These callsites
+# should be importing the symbols from lp.services.log.loglevels
+DEBUG2 = loglevels.DEBUG2
+DEBUG3 = loglevels.DEBUG3
+DEBUG4 = loglevels.DEBUG4
+DEBUG5 = loglevels.DEBUG5
+DEBUG6 = loglevels.DEBUG6
+DEBUG7 = loglevels.DEBUG7
+DEBUG8 = loglevels.DEBUG8
+DEBUG9 = loglevels.DEBUG9
 
 
 class FakeLogger:
