@@ -154,10 +154,14 @@ class UnrestrictedStructuralSubscription(StructuralSubscriptionTestBase):
             None)
 
     def test_getSubscriptionsForBug(self):
+        # If no one has a filtered subscription for a bug, the result of
+        # getSubscriptionsForBug is the same as for getSubscriptions().
         bug = self.factory.makeBug()
-        subscriptions = self.target.getSubscriptionsForBug(
+        subscriptions = self.target.getSubscriptions(
+            min_bug_notification_level=BugNotificationLevel.NOTHING)
+        subscriptions_for_bug = self.target.getSubscriptionsForBug(
             bug, BugNotificationLevel.NOTHING)
-        self.assertEqual([], list(subscriptions))
+        self.assertEqual(list(subscriptions), list(subscriptions_for_bug))
 
 
 class TestStructuralSubscriptionForDistro(StructuralSubscriptionTestBase,
