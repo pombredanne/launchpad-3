@@ -228,12 +228,13 @@ class IBugTrackerComponent(Interface):
             description=_('The name of a software component'
                           'in a remote bug tracker')))
 
-    distro_source_package = exported(
-        Reference(
-            title=_('Distribution Source Package'),
-            schema=Interface,
-            description=_('The distribution source package for this '
-                          'component, if one has been defined.')))
+# XXX: Bug 644794 will implement this link
+#    distro_source_package = exported(
+#        Reference(
+#            title=_('Distribution Source Package'),
+#            schema=Interface,
+#            description=_('The distribution source package for this '
+#                          'component, if one has been defined.')))
 
 
 class IBugTrackerComponentGroup(Interface):
@@ -251,9 +252,9 @@ class IBugTrackerComponentGroup(Interface):
             constraint=name_validator,
             description=_('The name of the bug tracker product.')))
     components = exported(
-        Reference(title=_('Components'), schema=Interface))
+        Reference(title=_('Components'), schema=IBugTrackerComponent))
     bug_tracker = exported(
-        Reference(title=_('BugTracker'), schema=Interface))
+        Reference(title=_('BugTracker'), schema=Interface)) # Specify later
 
     @operation_parameters(
         component_name=TextLine(
@@ -336,7 +337,9 @@ class IBugTracker(Interface):
     projects = Attribute('The projects that use this bug tracker.')
     products = Attribute('The products that use this bug tracker.')
     component_groups = exported(
-        Reference(title=_('ComponentGroups'), schema=Interface))
+        Reference(
+            title=_('ComponentGroups'),
+            schema=IBugTrackerComponentGroup))
     latestwatches = Attribute('The last 10 watches created.')
     imported_bug_messages = Attribute(
         'Bug messages that have been imported from this bug tracker.')
@@ -440,6 +443,9 @@ class IBugTracker(Interface):
 
         :param component_group_name: Name of the component group to retrieve.
         """
+
+# We can define the schema now that IBugTracker is defined
+IBugTrackerComponentGroup['bug_tracker'].schema = IBugTracker
 
 
 class IBugTrackerSet(Interface):
