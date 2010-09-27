@@ -16,6 +16,7 @@ from bzrlib.urlutils import (
     escape,
     unescape,
     )
+from twisted.internet import defer
 from zope.component import (
     adapter,
     getSiteManager,
@@ -913,8 +914,11 @@ class XMLRPCWrapper:
     def __init__(self, endpoint):
         self.endpoint = endpoint
 
-    def callRemote(self, method_name, *args):
+    def _callRemote(self, method_name, *args):
         result = getattr(self.endpoint, method_name)(*args)
         if isinstance(result, Fault):
             raise result
         return result
+
+    def callRemote(self, method_name, *args):
+        return defer.maybeDeferred(self._callRemote, method_name, *args)
