@@ -256,14 +256,6 @@ class DistroSeriesDifferenceTemplateTestCase(TestCaseWithFactory):
         self.assertEqual(
             1, len(soup.findAll('div', {'class': 'blacklist-options'})))
 
-    def test_blacklist_options_widget(self):
-        ds_diff = self.factory.makeDistroSeriesDifference()
-
-        view = create_initialized_view(ds_diff, '+listing-distroseries-extra')
-
-        self.assertIsInstance(
-            view.widgets.get('blacklist_options'), RadioWidget)
-
     def test_blacklist_options_initial_values(self):
         ds_diff = self.factory.makeDistroSeriesDifference()
         view = create_initialized_view(ds_diff, '+listing-distroseries-extra')
