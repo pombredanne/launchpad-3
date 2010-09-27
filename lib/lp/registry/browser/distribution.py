@@ -778,7 +778,7 @@ class DistributionAddView(LaunchpadFormView):
         "members",
         "official_malone",
         "official_blueprints",
-        "translations_usage",
+        "official_rosetta",
         "official_answers",
         ]
 
@@ -824,7 +824,7 @@ class DistributionEditView(RegistryEditFormView):
         'official_malone',
         'enable_bug_expiration',
         'official_blueprints',
-        'translations_usage',
+        'official_rosetta',
         'official_answers',
         'translation_focus',
         ]
