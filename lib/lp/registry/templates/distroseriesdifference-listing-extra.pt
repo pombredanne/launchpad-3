@@ -13,7 +13,6 @@
         </dd>
       </dl>
   </div>
-  <div class="inprogress_msg"></div>
   </tal:show_options>
 
   <dl>
