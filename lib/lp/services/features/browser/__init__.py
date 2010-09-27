@@ -4,6 +4,9 @@
 """Feature control view"""
 
 
+import logging 
+
+
 from zope.interface import Interface
 from zope.schema import (
     Text,
@@ -31,9 +34,11 @@ class FeatureControlView(LaunchpadFormView):
 
     @action(u"Change", name="change")
     def change_action(self, action, data):
-        print "Change feature rules to:"
-        print self.request.get('feature_rules')
-        pass
+        rules_text = self.request.get('feature_rules')
+        logger = logging.getLogger('lp.services.features')
+        logger.warning("Change feature rules to: %s" % (rules_text,))
+        return self.request.features.rule_source.setAllRulesFromText(
+            rules_text)
 
     def rules_text(self):
         """Return all rules in an editable text form"""
