@@ -105,8 +105,8 @@ class LibrarianServerFixture(TacTestSetup):
     def __init__(self):
         Fixture.__init__(self)
         self._pid = None
+        # Track whether the fixture has been setup or not.
         self._setup = False
-        """Track whether the fixture has been setup or not."""
 
     def setUp(self):
         """Start both librarian instances."""
