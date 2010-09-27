@@ -49,9 +49,6 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet,
-    )
 from canonical.launchpad.interfaces.launchpad import (
     IHasIcon,
     IHasLogo,
