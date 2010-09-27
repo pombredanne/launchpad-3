@@ -6,9 +6,11 @@ __all__ = [
     'TeamMembershipTransitionError',
     ]
     
+import httplib
+
 from lazr.restful.declarations import webservice_error
 
 
 class TeamMembershipTransitionError(ValueError):
     """comment"""
-    webservice_error(403) # 403 Forbidden
+    webservice_error(httplib.BAD_REQUEST)
