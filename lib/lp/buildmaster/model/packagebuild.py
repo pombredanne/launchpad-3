@@ -14,7 +14,6 @@ __all__ = [
 import datetime
 import logging
 import os.path
-import subprocess
 
 from cStringIO import StringIO
 from lazr.delegates import delegates
@@ -36,11 +35,6 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database.enumcol import DBEnum
-from canonical.database.sqlbase import (
-    clear_current_connection_cache,
-    cursor,
-    flush_database_updates,
-    )
 from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
 from canonical.launchpad.helpers import filenameToContentType
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
@@ -73,7 +67,6 @@ from lp.soyuz.interfaces.component import IComponentSet
 
 
 SLAVE_LOG_FILENAME = 'buildlog'
-UPLOAD_LOG_FILENAME = 'uploader.log'
 
 
 class PackageBuild(BuildFarmJobDerived, Storm):
@@ -164,30 +157,11 @@ class PackageBuild(BuildFarmJobDerived, Storm):
         timestamp = now.strftime("%Y%m%d-%H%M%S")
         return '%s-%s' % (timestamp, build_cookie)
 
-    def getUploadDir(self, upload_leaf):
+    def getBuildCookie(self):
         """See `IPackageBuild`."""
-        return os.path.join(config.builddmaster.root, 'incoming', upload_leaf)
-
-    @staticmethod
-    def getUploaderCommand(package_build, upload_leaf, upload_logfilename):
-        """See `IPackageBuild`."""
-        root = os.path.abspath(config.builddmaster.root)
-        uploader_command = list(config.builddmaster.uploader.split())
-
-        # Add extra arguments for processing a package upload.
-        extra_args = [
-            "--log-file", "%s" % upload_logfilename,
-            "-d", "%s" % package_build.distribution.name,
-            "-s", "%s" % (
-                package_build.distro_series.getSuite(package_build.pocket)),
-            "-b", "%s" % package_build.id,
-            "-J", "%s" % upload_leaf,
-            '--context=%s' % package_build.policy_name,
-            "%s" % root,
-            ]
-
-        uploader_command.extend(extra_args)
-        return uploader_command
+        return '%s-%s-%s' % (
+            self.id, self.build_farm_job.job_type.name,
+            self.build_farm_job.id)
 
     @staticmethod
     def getLogFromSlave(package_build):
@@ -197,26 +171,6 @@ class PackageBuild(BuildFarmJobDerived, Storm):
             SLAVE_LOG_FILENAME,
             package_build.buildqueue_record.getLogFileName(),
             package_build.is_private)
-
-    @staticmethod
-    def getUploadLogContent(root, leaf):
-        """Retrieve the upload log contents.
-
-        :param root: Root directory for the uploads
-        :param leaf: Leaf for this particular upload
-        :return: Contents of log file or message saying no log file was found.
-        """
-        # Retrieve log file content.
-        possible_locations = (
-            'failed', 'failed-to-move', 'rejected', 'accepted')
-        for location_dir in possible_locations:
-            log_filepath = os.path.join(root, location_dir, leaf,
-                UPLOAD_LOG_FILENAME)
-            if os.path.exists(log_filepath):
-                with open(log_filepath, 'r') as uploader_log_file:
-                    return uploader_log_file.read()
-        else:
-            return 'Could not find upload log file'
 
     def estimateDuration(self):
         """See `IPackageBuild`."""
@@ -346,19 +300,16 @@ class PackageBuildDerived:
         root = os.path.abspath(config.builddmaster.root)
 
         # Create a single directory to store build result files.
-        upload_leaf = self.getUploadDirLeaf(
-            '%s-%s' % (self.id, self.buildqueue_record.id))
-        upload_dir = self.getUploadDir(upload_leaf)
-        logger.debug("Storing build result at '%s'" % upload_dir)
+        upload_leaf = self.getUploadDirLeaf(self.getBuildCookie())
+        grab_dir = os.path.join(root, "grabbing", upload_leaf)
+        logger.debug("Storing build result at '%s'" % grab_dir)
 
         # Build the right UPLOAD_PATH so the distribution and archive
         # can be correctly found during the upload:
         #       <archive_id>/distribution_name
         # for all destination archive types.
-        archive = self.archive
-        distribution_name = self.distribution.name
-        target_path = '%s/%s' % (archive.id, distribution_name)
-        upload_path = os.path.join(upload_dir, target_path)
+        upload_path = os.path.join(
+            grab_dir, str(self.archive.id), self.distribution.name)
         os.makedirs(upload_path)
 
         slave = removeSecurityProxy(self.buildqueue_record.builder.slave)
@@ -379,106 +330,35 @@ class PackageBuildDerived:
             slave_file = slave.getFile(filemap[filename])
             copy_and_close(slave_file, out_file)
 
-        # We only attempt the upload if we successfully copied all the
-        # files from the slave.
-        if successful_copy_from_slave:
-            uploader_logfilename = os.path.join(
-                upload_dir, UPLOAD_LOG_FILENAME)
-            uploader_command = self.getUploaderCommand(
-                self, upload_leaf, uploader_logfilename)
-            logger.debug("Saving uploader log at '%s'" % uploader_logfilename)
-
-            logger.info("Invoking uploader on %s" % root)
-            logger.info("%s" % uploader_command)
-
-            uploader_process = subprocess.Popen(
-                uploader_command, stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE)
-
-            # Nothing should be written to the stdout/stderr.
-            upload_stdout, upload_stderr = uploader_process.communicate()
-
-            # XXX cprov 2007-04-17: we do not check uploader_result_code
-            # anywhere. We need to find out what will be best strategy
-            # when it failed HARD (there is a huge effort in process-upload
-            # to not return error, it only happen when the code is broken).
-            uploader_result_code = uploader_process.returncode
-            logger.info("Uploader returned %d" % uploader_result_code)
-
-        # Quick and dirty hack to carry on on process-upload failures
-        if os.path.exists(upload_dir):
-            logger.warning("The upload directory did not get moved.")
-            failed_dir = os.path.join(root, "failed-to-move")
-            if not os.path.exists(failed_dir):
-                os.mkdir(failed_dir)
-            os.rename(upload_dir, os.path.join(failed_dir, upload_leaf))
-
-        # The famous 'flush_updates + clear_cache' will make visible
-        # the DB changes done in process-upload, considering that the
-        # transaction was set with ISOLATION_LEVEL_READ_COMMITED
-        # isolation level.
-        cur = cursor()
-        cur.execute('SHOW transaction_isolation')
-        isolation_str = cur.fetchone()[0]
-        assert isolation_str == 'read committed', (
-            'BuildMaster/BuilderGroup transaction isolation should be '
-            'ISOLATION_LEVEL_READ_COMMITTED (not "%s")' % isolation_str)
-
-        original_slave = self.buildqueue_record.builder.slave
-
-        # XXX Robert Collins, Celso Providelo 2007-05-26 bug=506256:
-        # 'Refreshing' objects  procedure  is forced on us by using a
-        # different process to do the upload, but as that process runs
-        # in the same unix account, it is simply double handling and we
-        # would be better off to do it within this process.
-        flush_database_updates()
-        clear_current_connection_cache()
-
-        # XXX cprov 2007-06-15: Re-issuing removeSecurityProxy is forced on
-        # us by sqlobject refreshing the builder object during the
-        # transaction cache clearing. Once we sort the previous problem
-        # this step should probably not be required anymore.
-        self.buildqueue_record.builder.setSlaveForTesting(
-            removeSecurityProxy(original_slave))
-
         # Store build information, build record was already updated during
         # the binary upload.
         self.storeBuildInfo(self, librarian, slave_status)
 
-        # Retrive the up-to-date build record and perform consistency
-        # checks. The build record should be updated during the binary
-        # upload processing, if it wasn't something is broken and needs
-        # admins attention. Even when we have a FULLYBUILT build record,
-        # if it is not related with at least one binary, there is also
-        # a problem.
-        # For both situations we will mark the builder as FAILEDTOUPLOAD
-        # and the and update the build details (datebuilt, duration,
-        # buildlog, builder) in LP. A build-failure-notification will be
-        # sent to the lp-build-admin celebrity and to the sourcepackagerelease
-        # uploader about this occurrence. The failure notification will
-        # also contain the information required to manually reprocess the
-        # binary upload when it was the case.
-        if (self.status != BuildStatus.FULLYBUILT or
-            not successful_copy_from_slave or
-            not self.verifySuccessfulUpload()):
-            logger.warning("Build %s upload failed." % self.id)
-            self.status = BuildStatus.FAILEDTOUPLOAD
-            uploader_log_content = self.getUploadLogContent(root,
-                upload_leaf)
-            # Store the upload_log_contents in librarian so it can be
-            # accessed by anyone with permission to see the build.
-            self.storeUploadLog(uploader_log_content)
-            # Notify the build failure.
-            self.notify(extra_info=uploader_log_content)
-        else:
+        # We only attempt the upload if we successfully copied all the
+        # files from the slave.
+        if successful_copy_from_slave:
             logger.info(
-                "Gathered %s %d completely" % (
-                self.__class__.__name__, self.id))
+                "Gathered %s %d completely. Moving %s to uploader queue." % (
+                self.__class__.__name__, self.id, upload_leaf))
+            target_dir = os.path.join(root, "incoming")
+            self.status = BuildStatus.UPLOADING
+        else:
+            logger.warning(
+                "Copy from slave for build %s was unsuccessful.", self.id)
+            self.status = BuildStatus.FAILEDTOUPLOAD
+            self.notify(extra_info='Copy from slave was unsuccessful.')
+            target_dir = os.path.join(root, "failed")
+
+        if not os.path.exists(target_dir):
+            os.mkdir(target_dir)
+
+        # Move the directory used to grab the binaries into
+        # the incoming directory so the upload processor never
+        # sees half-finished uploads.
+        os.rename(grab_dir, os.path.join(target_dir, upload_leaf))
 
         # Release the builder for another job.
         self.buildqueue_record.builder.cleanSlave()
-        # Remove BuildQueue record.
-        self.buildqueue_record.destroySelf()
 
     def _handleStatus_PACKAGEFAIL(self, librarian, slave_status, logger):
         """Handle a package that had failed to build.
@@ -583,7 +463,9 @@ class PackageBuildSet:
         unfinished_states = [
             BuildStatus.NEEDSBUILD,
             BuildStatus.BUILDING,
-            BuildStatus.SUPERSEDED]
+            BuildStatus.UPLOADING,
+            BuildStatus.SUPERSEDED,
+            ]
         if status is None or status in unfinished_states:
             result_set.order_by(
                 Desc(BuildFarmJob.date_created), BuildFarmJob.id)

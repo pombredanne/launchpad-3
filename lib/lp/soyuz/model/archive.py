@@ -1004,10 +1004,9 @@ class Archive(SQLBase):
                 BuildStatus.FAILEDTOUPLOAD,
                 BuildStatus.MANUALDEPWAIT,
                 ),
-             # The 'pending' count is a list because we may append to it
-             # later.
             'pending': [
                 BuildStatus.BUILDING,
+                BuildStatus.UPLOADING,
                 ],
             'succeeded': (
                 BuildStatus.FULLYBUILT,
@@ -1023,6 +1022,7 @@ class Archive(SQLBase):
                 BuildStatus.FAILEDTOUPLOAD,
                 BuildStatus.MANUALDEPWAIT,
                 BuildStatus.BUILDING,
+                BuildStatus.UPLOADING,
                 BuildStatus.FULLYBUILT,
                 BuildStatus.SUPERSEDED,
                 ],
@@ -2007,6 +2007,7 @@ class ArchiveSet:
                 ),
             'pending': (
                 BuildStatus.BUILDING,
+                BuildStatus.UPLOADING,
                 BuildStatus.NEEDSBUILD,
                 ),
             'succeeded': (
