@@ -162,6 +162,7 @@ class BaseExportView(LaunchpadView):
         """Return a list of formats available for translation exports."""
 
         class BrowserFormat:
+
             def __init__(self, title, value, is_default=False):
                 self.title = title
                 self.value = value

@@ -83,23 +83,11 @@ class BugTaskAssigneeWidget(Widget):
             if not self.assignee_chooser_widget.hasInput():
                 raise WidgetInputError(
                         self.name, self.label,
-                        ValidationError("Missing value for assignee")
-                        )
+                        ValidationError("Missing value for assignee"))
             if not self.assignee_chooser_widget.hasValidInput():
                 raise WidgetInputError(
                         self.name, self.label,
-                        ValidationError("Assignee not found")
-                        )
-            #try:
-                # A ConversionError is expected if the user provides
-                # an assignee value that doesn't exist in the
-                # assignee_chooser_widget's vocabulary.
-            #except ConversionError:
-                # Turn the ConversionError into a WidgetInputError.
-            #    raise WidgetInputError(
-            #        self.assignee_chooser_widget.name,
-            #        self.assignee_chooser_widget.label,
-            #        ValidationError("Assignee not found"))
+                        ValidationError("Assignee not found"))
 
     def hasInput(self):
         """See zope.app.form.interfaces.IInputWidget."""

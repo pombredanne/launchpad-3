@@ -81,6 +81,7 @@ def default_pickerentry_adapter(obj):
         extra.css = 'sprite bullet'
     return extra
 
+
 @implementer(IPickerEntry)
 @adapter(IPerson)
 def person_to_pickerentry(person):
@@ -93,6 +94,7 @@ def person_to_pickerentry(person):
             extra.description = '<email address hidden>'
     return extra
 
+
 @implementer(IPickerEntry)
 @adapter(IBranch)
 def branch_to_pickerentry(branch):
@@ -100,6 +102,7 @@ def branch_to_pickerentry(branch):
     extra = default_pickerentry_adapter(branch)
     extra.description = branch.bzr_identity
     return extra
+
 
 @implementer(IPickerEntry)
 @adapter(ISourcePackageName)

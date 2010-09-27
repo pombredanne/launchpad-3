@@ -263,6 +263,7 @@ from lp.services.propertycache import cachedproperty
 @implementer(IFieldHTMLRenderer)
 def assignee_renderer(context, field, request):
     """Render a bugtask assignee as a link."""
+
     def render(value):
         if context.assignee is None:
             return ''
@@ -277,6 +278,7 @@ def assignee_renderer(context, field, request):
 @implementer(IFieldHTMLRenderer)
 def bugtarget_renderer(context, field, request):
     """Render a bugtarget as a link."""
+
     def render(value):
         html = """<span>
           <a href="%(href)s" class="%(class)s">%(displayname)s</a>
@@ -1454,7 +1456,7 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
                 not self.userCanEditImportance()):
                 editable_field_names.remove("importance")
         else:
-            editable_field_names = set(('bugwatch',))
+            editable_field_names = set(('bugwatch', ))
             if not IUpstreamBugTask.providedBy(self.context):
                 #XXX: Bjorn Tillenius 2006-03-01:
                 #     Should be possible to edit the product as well,
@@ -2195,7 +2197,8 @@ def getInitialValuesFromSearchParams(search_params, form_schema):
     >>> initial = getInitialValuesFromSearchParams(
     ...     {'status': any(*UNRESOLVED_BUGTASK_STATUSES)}, IBugTaskSearch)
     >>> [status.name for status in initial['status']]
-    ['NEW', 'INCOMPLETE', 'CONFIRMED', 'TRIAGED', 'INPROGRESS', 'FIXCOMMITTED']
+    ['NEW', 'INCOMPLETE', 'CONFIRMED', 'TRIAGED', 'INPROGRESS',
+     'FIXCOMMITTED']
 
     >>> initial = getInitialValuesFromSearchParams(
     ...     {'status': BugTaskStatus.INVALID}, IBugTaskSearch)
@@ -2269,11 +2272,11 @@ class BugTaskListingItem:
 
 class BugListingBatchNavigator(TableBatchNavigator):
     """A specialised batch navigator to load smartly extra bug information."""
-    # XXX sinzui 2009-05-29 bug=381672: Extract the BugTaskListingItem rules
-    # to a mixin so that MilestoneView and others can use it.
 
     def __init__(self, tasks, request, columns_to_show, size,
                  target_context=None):
+        # XXX sinzui 2009-05-29 bug=381672: Extract the BugTaskListingItem
+        # rules to a mixin so that MilestoneView and others can use it.
         self.request = request
         self.target_context = target_context
         TableBatchNavigator.__init__(
@@ -2353,7 +2356,7 @@ class NominatedBugListingBatchNavigator(BugListingBatchNavigator):
             return bugtask_listing_item
 
         review_action_field = Choice(
-            __name__='review_action_%d' % (bug_nomination.id,),
+            __name__='review_action_%d' % bug_nomination.id,
             vocabulary=NominatedBugReviewAction,
             title=u'Review action', required=True)
 
@@ -3248,8 +3251,8 @@ class BugTasksAndNominationsView(LaunchpadView):
     def initialize(self):
         """Cache the list of bugtasks and set up the release mapping."""
         # Cache some values, so that we don't have to recalculate them
-        # for each bug task.
-        # This query is redundant: the publisher also queries all the bugtasks.
+        # for each bug task. This query is redundant:
+        # the publisher also queries all the bugtasks.
         self.bugtasks = list(self.context.bugtasks)
         self.many_bugtasks = len(self.bugtasks) >= 10
         self.cached_milestone_source = CachedMilestoneSourceFactory()

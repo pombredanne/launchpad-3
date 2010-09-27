@@ -46,6 +46,7 @@ def test_requestapi():
 
     """
 
+
 def test_cookie_scope():
     """
     The 'request/lp:cookie_scope' TALES expression returns a string
@@ -74,6 +75,7 @@ def test_cookie_scope():
         >>> print cookie_scope('https://shipit.ubuntu.com/')
         ; Path=/; Secure
     """
+
 
 def test_dbschemaapi():
     """
@@ -116,7 +118,6 @@ class TestPersonFormatterAPI(TestCaseWithFactory):
         expected = '<a href="%s" class="sprite person">%s</a>' % (
             formatter.url(), person.name)
         self.assertEqual(expected, result)
-
 
 
 def test_suite():

@@ -238,6 +238,7 @@ class enabled_with_active_mailing_list:
     def __get__(self, obj, type=None):
         """Called by the decorator machinery to return a decorated function.
         """
+
         def enable_if_active(*args, **kws):
             link = self._function(obj, *args, **kws)
             if not ITeam.providedBy(obj.context) or not obj.context.isTeam():
