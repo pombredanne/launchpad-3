@@ -333,7 +333,7 @@ class TeamMembership(SQLBase):
             declined: [proposed, approved, admin],
             invited: [approved, admin, invitation_declined],
             invitation_declined: [invited, approved, admin]}
-        
+
         if self.status not in state_transition:
             raise expose(TeamMembershipTransitionError(
                 "Unknown status: %s" % self.status.name))
@@ -593,7 +593,8 @@ def _cleanTeamParticipation(person, team):
             SELECT 1 FROM TeamParticipation
             WHERE person = %(person_id)s AND team IN (
                     SELECT person
-                    FROM TeamParticipation JOIN Person ON (person = Person.id)
+                    FROM TeamParticipation JOIN Person ON
+                        (person = Person.id)
                     WHERE team = %(team_id)s
                         AND person NOT IN (%(team_id)s, %(person_id)s)
                         AND teamowner IS NOT NULL

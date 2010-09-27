@@ -9,11 +9,9 @@ from zope.component import getUtility
 
 from canonical.testing import DatabaseFunctionalLayer
 from lazr.restfulclient.errors import HTTPError
-from lp.registry.interfaces.person import PersonVisibility
 from lp.registry.interfaces.teammembership import (
-    ITeamMembership,
     ITeamMembershipSet,
-    TeamMembershipStatus
+    TeamMembershipStatus,
     )
 from lp.testing import (
     TestCaseWithFactory,

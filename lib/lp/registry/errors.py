@@ -5,7 +5,7 @@ __metaclass__ = type
 __all__ = [
     'TeamMembershipTransitionError',
     ]
-    
+
 import httplib
 
 from lazr.restful.declarations import webservice_error
