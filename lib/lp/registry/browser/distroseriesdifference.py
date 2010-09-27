@@ -31,7 +31,7 @@ from lp.services.comments.interfaces.conversation import (
 
 class IDistroSeriesDifferenceForm(Interface):
     blacklist_options = Choice(vocabulary=SimpleVocabulary((
-        SimpleTerm(None, 'no', 'No'),
+        SimpleTerm(None, 'NONE', 'No'),
         SimpleTerm(
             DistroSeriesDifferenceStatus.BLACKLISTED_ALWAYS,
             DistroSeriesDifferenceStatus.BLACKLISTED_ALWAYS.name,
@@ -68,7 +68,6 @@ class DistroSeriesDifferenceView(LaunchpadFormView):
     @property
     def comments(self):
         """See `IConversation`."""
-        # Could use a generator here?
         return [
             DistroSeriesDifferenceDisplayComment(comment) for
                 comment in self.context.getComments()]

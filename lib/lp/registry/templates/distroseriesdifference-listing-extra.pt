@@ -6,8 +6,14 @@
 
   <tal:show_options condition="view/show_blacklist_options">
   <div class="blacklist-options" style="float:right">
-      <tal:replace replace="structure view/widgets/blacklist_options" />
+      <dl>
+        <dt>Blacklisted:</dt>
+        <dd>
+            <tal:replace replace="structure view/widgets/blacklist_options" />
+        </dd>
+      </dl>
   </div>
+  <div class="inprogress_msg"></div>
   </tal:show_options>
 
   <dl>
