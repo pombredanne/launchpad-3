@@ -848,7 +848,8 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         # multiple join and returns all the diffs quite quickly.
         for diff in self.sourcepackagerelease.package_diffs:
             if diff.to_source.version == to_version:
-                return ProxiedLibraryFileAlias(diff.diff_content, self.archive)
+                return ProxiedLibraryFileAlias(
+                    diff.diff_content, self.archive).http_url
         return None
 
 

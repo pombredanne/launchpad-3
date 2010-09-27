@@ -396,17 +396,19 @@ librarian URL is returned.
 We need to create a fake package diff to show this:
 
     >>> login("admin@canonical.com")
-    >>> from_pub = test_publisher.getPubSource(
-    ...     sourcename='difftest', version='1.0', archive=cprov.archive)
     >>> to_pub = test_publisher.getPubSource(
+    ...     sourcename='difftest', version='1.0', archive=cprov.archive)
+    >>> from_pub = test_publisher.getPubSource(
     ...     sourcename='difftest', version='1.1', archive=cprov.archive)
     >>> new_diff = factory.makePackageDiff(
     ...     from_source=from_pub.sourcepackagerelease,
     ...     to_source=to_pub.sourcepackagerelease,
     ...     diff_content="test diff")
+    >>> import transaction
+    >>> transaction.commit()
     >>> logout()
 
-Grab the new publishing record:
+Using the web service, grab the new publishing record:
 
     >>> pubs = webservice.named_get(
     ...     cprov_archive['self_link'], 'getPublishedSources',
@@ -414,8 +416,24 @@ Grab the new publishing record:
     ...     exact_match=True).jsonBody()
     >>> source_pub = pubs['entries'][0]
 
+And then obtain the URL to the diff:
+
     >>> diff_url = webservice.named_get(
     ...     source_pub['self_link'], 'packageDiffUrl',
-    ...     to_version='1.1').jsonBody()
+    ...     to_version='1.0').jsonBody()
+
+The URL is a standard proxied URL in case the file is private:
 
     >>> print diff_url
+    http://launchpad.dev/~cprov/+archive/ppa/+files/...
+
+It will match the fake content we added earlier:
+
+    >>> login("admin@canonical.com")
+    >>> from canonical.launchpad.browser.librarian import (
+    ...     ProxiedLibraryFileAlias)
+    >>> diff_url == ProxiedLibraryFileAlias(
+    ...     new_diff.diff_content, cprov.archive).http_url
+    True
+
+    >>> logout()
