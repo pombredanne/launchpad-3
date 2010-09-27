@@ -9,7 +9,7 @@
       <dl>
         <dt>Blacklisted:</dt>
         <dd>
-            <tal:replace replace="structure view/widgets/blacklist_options" />
+          <form><tal:replace replace="structure view/widgets/blacklist_options" /></form>
         </dd>
       </dl>
   </div>
