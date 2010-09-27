@@ -1,6 +1,5 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-
 """Tests for construction bug notification emails for sending."""
 
 __metaclass__ = type
@@ -109,7 +108,7 @@ class MockBugNotification:
         self.recipients = [MockBugNotificationRecipient()]
 
 
-class TestGetEmailNotificattions(unittest.TestCase):
+class TestGetEmailNotifications(unittest.TestCase):
     """Tests for the exception handling in get_email_notifications()."""
     layer = LaunchpadZopelessLayer
 
@@ -151,17 +150,6 @@ class TestGetEmailNotificattions(unittest.TestCase):
         # We need to commit the transaction, since the error handling
         # will abort the current transaction.
         commit()
-
-        # Disable limiting bug watch notifications to a team, so that
-        # the testing gets easier.
-        config.push(
-            'no-comment-syncing-team', dedent("""
-                [malone]
-                comment_syncing_team:
-                """))
-
-    def tearDown(self):
-        config.pop('no-comment-syncing-team')
 
     def _getAndCheckSentNotifications(self, notifications_to_send):
         """Return the notifications that were successfully sent.

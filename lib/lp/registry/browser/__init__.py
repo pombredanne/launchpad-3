@@ -6,8 +6,8 @@
 __metaclass__ = type
 
 __all__ = [
+    'BaseRdfView',
     'get_status_counts',
-    'MapMixin',
     'MilestoneOverlayMixin',
     'RegistryEditFormView',
     'RegistryDeleteViewMixin',
@@ -32,7 +32,6 @@ from lp.bugs.interfaces.bugtask import (
     )
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.series import SeriesStatus
-from lp.services.propertycache import cachedproperty
 
 
 class StatusCount:
@@ -260,17 +259,28 @@ class RegistryEditFormView(LaunchpadEditFormView):
         self.updateContextFromData(data)
 
 
-class MapMixin:
+class BaseRdfView:
+    """A view that sets its mime-type to application/rdf+xml."""
 
-    @cachedproperty
-    def gmap2_enabled(self):
-        # XXX sinzui 2010-08-27 bug=625556: This is a hack to use
-        # feature flags, which are not ready for general use in the production
-        # code, but has just enough to support this use case:
-        # Do not enable gmap2 if Google's service is not operational.
-        from lp.services.features.flags import FeatureController
+    template = None
+    filename = None
 
-        def in_scope(value):
-            return True
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
 
-        return FeatureController(in_scope).getFlag('gmap2') == 'on'
+    def __call__(self):
+        """Render RDF output, and return it as a string encoded in UTF-8.
+
+        Render the page template to produce RDF output.
+        The return value is string data encoded in UTF-8.
+
+        As a side-effect, HTTP headers are set for the mime type
+        and filename for download."""
+        self.request.response.setHeader('Content-Type', 'application/rdf+xml')
+        self.request.response.setHeader(
+            'Content-Disposition', 'attachment; filename=%s.rdf' % (
+             self.filename))
+        unicodedata = self.template()
+        encodeddata = unicodedata.encode('utf-8')
+        return encodeddata

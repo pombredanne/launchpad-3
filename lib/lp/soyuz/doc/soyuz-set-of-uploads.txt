@@ -119,21 +119,17 @@ And then we need a way to process the uploads from the queue
   >>> from lp.soyuz.scripts.soyuz_process_upload import (
   ...     ProcessUpload)
   >>> from canonical.testing import LaunchpadZopelessLayer
-  >>> def process_uploads(upload_policy, build_id, series, loglevel):
+  >>> def process_uploads(upload_policy, series, loglevel):
   ...     """Simulate process-upload.py script run.
   ...
   ...     :param upload_policy: context in which to consider the upload
   ...         (equivalent to script's --context option).
-  ...     :param build_id: build to which to attach this upload.
-  ...         (equivalent to script's --buildid option).
   ...     :param series: distro series to give back from.
   ...         (equivalent to script's --series option).
   ...     :param loglevel: logging level (as defined in logging module).  Any
   ...         log messages below this level will be suppressed.
   ...     """
   ...     args = [temp_dir, "-C", upload_policy]
-  ...     if build_id is not None:
-  ...         args.extend(["-b", build_id])
   ...     if series is not None:
   ...         args.extend(["-s", series])
   ...     # Run script under 'uploader' DB user.  The dbuser argument to the
@@ -230,11 +226,11 @@ A helper function, simulate_upload does that with all the checking.
   >>> from lp.services.mail import stub
 
   >>> def simulate_upload(
-  ...     leafname, is_new=False, upload_policy='anything', build_id=None,
+  ...     leafname, is_new=False, upload_policy='anything',
   ...     series=None, distro="ubuntutest", loglevel=logging.WARN):
   ...     """Process upload(s).  Options are as for process_uploads()."""
   ...     punt_upload_into_queue(leafname, distro=distro)
-  ...     process_uploads(upload_policy, build_id, series, loglevel)
+  ...     process_uploads(upload_policy, series, loglevel)
   ...     # We seem to be leaving a lock file behind here for some reason.
   ...     # Naturally it doesn't count as an unprocessed incoming file, which
   ...     # is what we're really looking for.
@@ -288,19 +284,6 @@ and arch-independent binaries.
   >>> simulate_upload('bar_1.0-1_binary', is_new=True)
 
   >>> simulate_upload('bar_1.0-2')
-
-Check the rejection of bar_1.0-2_binary when uploaded to the wrong build id.
-
-  >>> simulate_upload(
-  ...     'bar_1.0-2_binary', upload_policy="buildd", build_id="2",
-  ...     loglevel=logging.ERROR)
-  log> Exception while accepting:
-  Attempt to upload binaries specifying build 2, where they don't fit.
-  ...
-  Rejected uploads: ['bar_1.0-2_binary']
-
-Try it again without the bogus build id.  This succeeds without
-complaints.
 
   >>> simulate_upload('bar_1.0-2_binary')
 
