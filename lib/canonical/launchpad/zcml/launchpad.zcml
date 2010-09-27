@@ -118,15 +118,6 @@
       class="canonical.launchpad.webapp.error.TranslationUnavailableView"
       />
 
-  <!-- LibrarianFailure -->
-  <browser:page
-      for="canonical.librarian.interfaces.LibrarianFailure"
-      name="index.html"
-      permission="zope.Public"
-      template="../templates/launchpad-librarianfailure.pt"
-      class="canonical.launchpad.webapp.error.SystemErrorView"
-      />
-
   <!-- ReadOnlyModeViolation -->
   <browser:page
       for="canonical.launchpad.webapp.interfaces.ReadOnlyModeViolation"
@@ -266,14 +257,14 @@
       name="+authorize-token"
       class="canonical.launchpad.browser.OAuthAuthorizeTokenView"
       template="../templates/oauth-authorize.pt"
-      permission="zope.Public" />
+      permission="launchpad.AnyPerson" />
 
   <browser:page
       for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
       name="+token-authorized"
       class="canonical.launchpad.browser.OAuthTokenAuthorizedView"
       template="../templates/token-authorized.pt"
-      permission="zope.Public" />
+      permission="launchpad.AnyPerson" />
 
   <browser:page
       for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"

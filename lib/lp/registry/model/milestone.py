@@ -15,6 +15,7 @@ __all__ = [
 
 import datetime
 
+from lazr.restful.error import expose
 from sqlobject import (
     AND,
     BoolCol,
@@ -28,6 +29,7 @@ from storm.locals import (
     And,
     Store,
     )
+from storm.zope import IResultSet
 from zope.component import getUtility
 from zope.interface import implements
 
@@ -36,7 +38,6 @@ from canonical.database.sqlbase import (
     sqlvalues,
     )
 from canonical.launchpad.webapp.sorting import expand_numbers
-from lazr.restful.error import expose
 from lp.app.errors import NotFoundError
 from lp.blueprints.model.specification import Specification
 from lp.bugs.interfaces.bugtarget import IHasBugs
@@ -107,14 +108,15 @@ class HasMilestonesMixin:
         result = store.find(Milestone, self._getMilestoneCondition())
         return result.order_by(self._milestone_order)
 
-    @property
-    def milestones(self):
+    def _get_milestones(self):
         """See `IHasMilestones`."""
         store = Store.of(self)
         result = store.find(Milestone,
                             And(self._getMilestoneCondition(),
                                 Milestone.active == True))
         return result.order_by(self._milestone_order)
+
+    milestones = property(_get_milestones)
 
 
 class MultipleProductReleases(Exception):
@@ -229,7 +231,8 @@ class Milestone(SQLBase, StructuralSubscriptionTargetMixin, HasBugsBase):
         """See `IMilestone`."""
         params = BugTaskSearchParams(milestone=self, user=None)
         bugtasks = getUtility(IBugTaskSet).search(params)
-        assert len(self.getSubscriptions()) == 0, (
+        subscriptions = IResultSet(self.getSubscriptions())
+        assert subscriptions.is_empty(), (
             "You cannot delete a milestone which has structural "
             "subscriptions.")
         assert bugtasks.count() == 0, (
@@ -256,7 +259,7 @@ class MilestoneSet:
         """See lp.registry.interfaces.milestone.IMilestoneSet."""
         try:
             return Milestone.get(milestoneid)
-        except SQLObjectNotFound, err:
+        except SQLObjectNotFound:
             raise NotFoundError(
                 "Milestone with ID %d does not exist" % milestoneid)
 

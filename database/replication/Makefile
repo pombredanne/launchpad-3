@@ -47,7 +47,12 @@ PGMASSACRE=../../utilities/pgmassacre.py
 
 CREATEDB_83=createdb --encoding=UTF8
 CREATEDB_84=createdb --encoding=UTF8 --locale=C --template=template0
-CREATEDB=${CREATEDB_83}
+CREATEDB=${CREATEDB_84}
+
+# Set this to --exit-on-error once our dumps are coming from a PG 8.4
+# source. Currently, the PG 8.3 dumps generate some spurious errors
+# when being restored into a PG 8.4 database.
+EXIT_ON_ERROR=
 
 # Turn off output silencing so we can see details of staging deployments.
 # Without the timestamps, we are unable to estimate production deployment
@@ -104,7 +109,7 @@ stagingsetup:
 	# later running security.py, to pull in permissions granted on
 	# production to users not maintained by security.py.
 	bunzip2 --stdout ${STAGING_DUMP} | \
-	    pg_restore --dbname=lpmain_staging_new --no-owner --exit-on-error
+	    pg_restore --dbname=lpmain_staging_new --no-owner ${EXIT_ON_ERROR}
 	# Uninstall Slony-I if it is installed - a pg_dump of a DB with
 	# Slony-I installed isn't usable without this step.
 	LPCONFIG=${NEW_STAGING_CONFIG} ./repair-restored-db.py
@@ -138,7 +143,7 @@ stagingswitch:
 dogfood:
 	${CREATEDB} ${DOGFOOD_DBNAME}
 	pg_restore --dbname=${DOGFOOD_DBNAME} --no-acl --no-owner \
-	    --exit-on-error ${DOGFOOD_DUMP}
+	    ${EXIT_ON_ERROR} ${DOGFOOD_DUMP}
 	./repair-restored-db.py -d ${DOGFOOD_DBNAME}
 	../schema/upgrade.py -d ${DOGFOOD_DBNAME}
 	../schema/fti.py -d ${DOGFOOD_DBNAME}
