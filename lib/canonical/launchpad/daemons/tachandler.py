@@ -142,7 +142,6 @@ class TacTestSetup(Fixture):
             if get_pid_from_file(self.pidfile):
                 raise Exception("Could not kill stale process.")
 
-        Fixture.setUp(self)
         # setUp() watches the logfile to determine when the daemon has fully
         # started. If it sees an old logfile, then it will find the LOG_MAGIC
         # string and return immediately, provoking hard-to-diagnose race
