@@ -266,7 +266,8 @@ class Diff(SQLBase):
         return file_stats
 
     @classmethod
-    def generateIncrementalDiff(
+    def generateIncrementalDiff(cls, old_revision, new_revision,
+            source_branch, ignore_branches):
         """Return a Diff whose contents are an incremental diff.
 
         The Diff's contents will show the changes made between old_revision
@@ -279,7 +280,6 @@ class Diff(SQLBase):
         :param ignore_brances: A collection of branches to ignore merges from.
         :return: a `Diff`.
         """
-        cls, old_revision, new_revision, source_branch, ignore_branches):
         diff_content = StringIO()
         read_locks = [read_locked(branch) for branch in [source_branch] +
                 ignore_branches]
