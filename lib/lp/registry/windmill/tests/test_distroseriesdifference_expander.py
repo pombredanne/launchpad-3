@@ -1,10 +1,15 @@
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+from zope.component import getUtility
+
 import transaction
 
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.windmill.testing import constants
+from canonical.launchpad.windmill.testing import lpuser
+from lp.registry.enum import DistroSeriesDifferenceStatus
+from lp.registry.interfaces.distroseriesdifference import IDistroSeriesDifferenceSource
 from lp.registry.windmill.testing import RegistryWindmillLayer
 from lp.services.features.model import FeatureFlag, getFeatureStore
 from lp.testing import WindmillTestCase
@@ -32,11 +37,36 @@ class TestDistroSeriesDifferenceExtraJS(WindmillTestCase):
         self.package_diffs_url = (
             canonical_url(self.diff.derived_series) + '/+localpackagediffs')
 
-    def test_diff_extra_details_available(self):
+    def test_diff_extra_details_blacklisting(self):
         """A successful request for the extra info updates the display."""
+        #login_person(self.diff.owner, 'test', self.client)
+        lpuser.FOO_BAR.ensure_login(self.client)
         self.client.open(url=self.package_diffs_url)
         self.client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
         self.client.click(link=u'foo')
         self.client.waits.forElement(
             classname=u'diff-extra', timeout=constants.FOR_ELEMENT)
 
+        self.client.click(id=u'field.blacklist_options.1')
+        self.client.waits.forElementProperty(
+            option=u'enabled', id=u'field.blacklist_options.1')
+
+        # Reload the diff and ensure it's been updated.
+        transaction.commit()
+        diff_source = getUtility(IDistroSeriesDifferenceSource)
+        diff_reloaded = diff_source.getByDistroSeriesAndName(
+            self.diff.derived_series, 'foo')
+        self.assertEqual(
+            DistroSeriesDifferenceStatus.BLACKLISTED_ALWAYS,
+            diff_reloaded.status)
+
+        # Now set it back so that it's not blacklisted.
+        self.client.click(id=u'field.blacklist_options.0')
+        self.client.waits.forElementProperty(
+            option=u'enabled', id=u'field.blacklist_options.0')
+        transaction.commit()
+        diff_reloaded = diff_source.getByDistroSeriesAndName(
+            self.diff.derived_series, 'foo')
+        self.assertEqual(
+            DistroSeriesDifferenceStatus.NEEDS_ATTENTION,
+            diff_reloaded.status)
