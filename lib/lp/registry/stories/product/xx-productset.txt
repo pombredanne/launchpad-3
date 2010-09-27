@@ -6,7 +6,8 @@ Under "/projects" there are several pages for various administration tasks.
 
 The pages are "+review-licenses", "+new", and "+all".
 
-== Review project licenses ==
+Review project licenses
+-----------------------
 
 The page +review-licenses is accessible from the /projects page via
 the "Review licenses" link, which is conditionally available
