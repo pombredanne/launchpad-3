@@ -13,15 +13,18 @@ lines of the file and leaves the file unchanged if it finds none.
 from datetime import date
 import os
 import re
-from subprocess import Popen
+from subprocess import (
+    PIPE,
+    Popen,
+    )
 import sys
 
 
 # This script lives in the 'utilites' directory.
-UTILITES_DIR = os.dirname(__file__)
+UTILITES_DIR = os.path.dirname(__file__)
 CURRENT_YEAR = date.today().year
 copyright_pattern = re.compile(
-    "Copyright (?<years>(?P<yearfrom>[0-9]{4})(-[0-9]{4})?) Canonical Ltd.")
+    "Copyright (?P<years>(?P<yearfrom>[0-9]{4})(-[0-9]{4})?) Canonical Ltd.")
 
 def years_string(yearfrom):
     """Build the new years string."""
@@ -32,7 +35,7 @@ def years_string(yearfrom):
 def update_copyright(lines):
     """Update the copyright notice in the given file lines."""
     for line in range(min(len(lines), 3)):
-        match = copyright_pattern.find(lines[line])
+        match = copyright_pattern.search(lines[line])
         if match is not None:
             old_years = match.group('years')
             new_years = years_string(match.group('yearfrom'))
@@ -55,7 +58,7 @@ def update_files(filenames):
         lines = file(filename).readlines()
         changed = update_copyright(lines)
         if changed:
-            newfile = open(filename, w)
+            newfile = open(filename, 'w')
             newfile.write(''.join(lines))
             newfile.close()
             print "Updated: %s" % filename
