@@ -478,7 +478,7 @@
                     is_custom
                     "/>
             <require
-                premission="launchpad.Edit"
+                permission="launchpad.Edit"
                 set_attributes="
                     is_visible
                     is_custom
