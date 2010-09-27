@@ -428,16 +428,6 @@ changed as well.
     >>> test_project['owner_link']
     u'http://.../~mark'
 
-    >>> test_series = webservice.get('/test-project/test-series').jsonBody()
-    >>> test_series['owner_link']
-    u'http://.../~mark'
-
-    >>> release_path = '/test-project/test-series/test-milestone'
-    >>> test_project_release = webservice.get(release_path).jsonBody()
-    >>> test_project_release['owner_link']
-    u'http://.../~mark'
-
-
 Read-only attributes, like registrant, cannot be modified via the
 webservice.patch() method.
 

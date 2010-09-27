@@ -833,42 +833,6 @@ class BuilderSet(object):
 
         return result_dict
 
-    def pollBuilders(self, logger, txn):
-        """See IBuilderSet."""
-        logger.debug("Slave Scan Process Initiated.")
-
-        logger.debug("Setting Builders.")
-        self.checkBuilders(logger, txn)
-
-        logger.debug("Scanning Builders.")
-        # Scan all the pending builds, update logtails and retrieve
-        # builds where they are completed
-        self.scanActiveBuilders(logger, txn)
-
-    def checkBuilders(self, logger, txn):
-        """See `IBuilderSet`."""
-        for builder in self:
-            # XXX Robert Collins 2007-05-23 bug=31546: builders that are not
-            # 'ok' are not worth rechecking here for some currently
-            # undocumented reason. This also relates to bug #30633.
-            if builder.builderok:
-                builder.updateStatus(logger)
-
-        txn.commit()
-
-    def scanActiveBuilders(self, logger, txn):
-        """See `IBuilderSet`."""
-
-        queueItems = getUtility(IBuildQueueSet).getActiveBuildJobs()
-
-        logger.debug(
-            "scanActiveBuilders() found %d active build(s) to check"
-            % queueItems.count())
-
-        for job in queueItems:
-            job.builder.updateBuild(job)
-            txn.commit()
-
     def getBuildersForQueue(self, processor, virtualized):
         """See `IBuilderSet`."""
         return Builder.selectBy(builderok=True, processor=processor,
