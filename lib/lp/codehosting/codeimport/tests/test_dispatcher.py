@@ -79,6 +79,17 @@ class TestCodeImportDispatcherUnit(TestCase):
 
     def filterOutLoggingOptions(self, arglist):
         """Remove the standard logging options from a list of arguments."""
+
+        # Calling parser.parse_args as we do below is dangerous,
+        # as if a callback invokes parser.error the test suite
+        # terminates. This hack removes the dangerous argument manually.
+        arglist = [
+            arg for arg in arglist if not arg.startswith('--log-file=')]
+        while '--log-file' in arglist:
+            index = arglist.index('--log-file')
+            del arglist[index] # Delete the argument
+            del arglist[index] # And its parameter
+
         parser = OptionParser()
         scripts.logger_options(parser)
         options, args = parser.parse_args(arglist)
