@@ -36,25 +36,3 @@ imported for it, it's possible to delete from the bug watch edit page.
     mozilla.org #2000
     mozilla.org #42
     debbugs #304014
-
-However, you can't delete a watch that is linked to a bug task.
-
-    >>> user_browser.open('http://launchpad.dev/bugs/15/+watch/11')
-    >>> print extract_text(
-    ...     find_portlet(
-    ...         user_browser.contents,
-    ...         'Bug watch links').dl.renderContents())
-    On thunderbird Bug #15
-
-    >>> print extract_text(
-    ...     find_portlet(
-    ...         user_browser.contents,
-    ...         'Imported bug comments').span.renderContents())
-    6 comments imported and linked to Bug #15
-
-    >>> user_browser.getControl('Delete Bug Watch')
-    Traceback (most recent call last):
-      ...
-    LookupError: label 'Delete Bug Watch'
-
-Unlinking the watch from the bug task 
