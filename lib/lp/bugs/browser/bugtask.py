@@ -1579,7 +1579,7 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
 
         if 'importance' not in read_only_field_names:
             # Users shouldn't be able to set a bugtask's importance to
-            # `UNKOWN`, only bug watches do that.
+            # `UNKNOWN`, only bug watches do that.
             importance_vocab_items = [
                 item for item in BugTaskImportance.items.items
                 if item != BugTaskImportance.UNKNOWN]
