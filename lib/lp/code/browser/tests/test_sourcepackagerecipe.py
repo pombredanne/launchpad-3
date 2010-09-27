@@ -472,7 +472,7 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
             browser.getControl('Update Recipe').click()
 
             self.assertEqual(
-                get_message_text(browser, 2),
+                get_message_text(browser, 1),
                 'The recipe format version specified is not available.')
 
     def test_edit_recipe_already_exists(self):
