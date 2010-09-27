@@ -24,6 +24,11 @@ from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing import LaunchpadFunctionalLayer
 from lp.bugs.interfaces.bug import CreateBugParams
+from lp.bugs.interfaces.bugtask import BugTaskStatus
+from lp.bugs.model.bugsubscriptionfilter import BugSubscriptionFilter
+from lp.bugs.model.bugsubscriptionfilterstatus import (
+    BugSubscriptionFilterStatus,
+    )
 from lp.bugs.tests.test_bugtarget import bugtarget_filebug
 from lp.registry.enum import BugNotificationLevel
 from lp.registry.interfaces.distribution import IDistributionSet
@@ -154,14 +159,37 @@ class UnrestrictedStructuralSubscription(StructuralSubscriptionTestBase):
             None)
 
     def test_getSubscriptionsForBug(self):
-        # If no one has a filtered subscription for a bug, the result of
-        # getSubscriptionsForBug is the same as for getSubscriptions().
+        # If no one has a filtered subscription for the given bug, the result
+        # of getSubscriptionsForBug() is the same as for getSubscriptions().
         bug = self.factory.makeBug()
         subscriptions = self.target.getSubscriptions(
             min_bug_notification_level=BugNotificationLevel.NOTHING)
         subscriptions_for_bug = self.target.getSubscriptionsForBug(
             bug, BugNotificationLevel.NOTHING)
         self.assertEqual(list(subscriptions), list(subscriptions_for_bug))
+
+    def test_getSubscriptionsForBug_with_filter_on_status(self):
+        # If a status filter exists for a subscription, the result of
+        # getSubscriptionsForBug() may be a subset of getSubscriptions().
+        bug = self.factory.makeBug()
+
+        # Create a new subscription on self.target, filtered to bugs in the
+        # CONFIRMED state.
+        login_person(self.ordinary_subscriber)
+        subscription = self.target.addSubscription(
+            self.ordinary_subscriber, self.ordinary_subscriber)
+        subscription.bug_notification_level = BugNotificationLevel.COMMENTS
+        subscription_filter = BugSubscriptionFilter()
+        subscription_filter.structural_subscription = subscription
+        subscription_filter_status = BugSubscriptionFilterStatus()
+        subscription_filter_status.filter = subscription_filter
+        subscription_filter_status.status = BugTaskStatus.CONFIRMED
+
+        subscriptions = self.target.getSubscriptions(
+            min_bug_notification_level=BugNotificationLevel.NOTHING)
+        subscriptions_for_bug = self.target.getSubscriptionsForBug(
+            bug, BugNotificationLevel.NOTHING)
+        self.assertNotEqual(list(subscriptions), list(subscriptions_for_bug))
 
 
 class TestStructuralSubscriptionForDistro(StructuralSubscriptionTestBase,

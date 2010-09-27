@@ -191,10 +191,6 @@ class IStructuralSubscriptionTargetRead(Interface):
     def userHasBugSubscriptions(user):
         """Is `user` subscribed, directly or via a team, to bug mail?"""
 
-    #
-    # Bug subscription filters.
-    #
-
     def getSubscriptionsForBug(bug, level):
         """Return subscriptions for a given `IBug` at `level`."""
 
