@@ -156,7 +156,7 @@
 
     <utility
         factory="canonical.launchpad.webapp.authentication.SSHADigestEncryptor"
-        provides="canonical.launchpad.interfaces.IPasswordEncryptor"
+        provides="canonical.launchpad.interfaces.launchpad.IPasswordEncryptor"
         permission="zope.Public"
         />
 
@@ -186,17 +186,17 @@
          to the correct Store for that tables replication set.
       -->
     <adapter
-        provides="canonical.launchpad.interfaces.IStore"
+        provides="canonical.launchpad.interfaces.lpstorm.IStore"
         for="zope.interface.Interface"
         factory="canonical.launchpad.webapp.adapter.get_store"
         />
     <adapter
-        provides="canonical.launchpad.interfaces.IMasterStore"
+        provides="canonical.launchpad.interfaces.lpstorm.IMasterStore"
         for="zope.interface.Interface"
         factory="canonical.launchpad.webapp.adapter.get_master_store"
         />
     <adapter
-        provides="canonical.launchpad.interfaces.ISlaveStore"
+        provides="canonical.launchpad.interfaces.lpstorm.ISlaveStore"
         for="zope.interface.Interface"
         factory="canonical.launchpad.webapp.adapter.get_slave_store"
         />
@@ -204,17 +204,17 @@
          We have no way of specifying that all subclasses of
          storm.locals.Storm implement an Interface. -->
     <adapter
-        provides="canonical.launchpad.interfaces.IMasterObject"
+        provides="canonical.launchpad.interfaces.lpstorm.IMasterObject"
         for="zope.interface.Interface"
         trusted="yes"
         factory="canonical.launchpad.webapp.adapter.get_object_from_master_store"
         />
     <class class="storm.store.Store">
-        <implements interface="canonical.launchpad.interfaces.IStore" />
+        <implements interface="canonical.launchpad.interfaces.lpstorm.IStore" />
         <allow attributes="get" />
     </class>
     <class class="canonical.database.sqlbase.SQLBase">
-        <implements interface="canonical.launchpad.interfaces.IDBObject" />
+        <implements interface="canonical.launchpad.interfaces.lpstorm.IDBObject" />
     </class>
 
     <!-- Default favicon -->
@@ -241,7 +241,7 @@
         permission="zope.Public"
         class="canonical.launchpad.webapp.launchbag.LaunchBagView"
         />
- 
+
     <!-- Resource unnamed view, allowing Z3 preferred spelling
         /@@/launchpad-icon-small to access the images directory -->
     <browser:page
@@ -252,7 +252,7 @@
         />
     <browser:page
         name=""
-        for="canonical.launchpad.interfaces.IFeedsApplication"
+        for="canonical.launchpad.interfaces.launchpad.IFeedsApplication"
         class="canonical.launchpad.browser.launchpad.LaunchpadImageFolder"
         permission="zope.Public"
         />
@@ -401,7 +401,7 @@
 
     <!-- A simple view used by the page tests. -->
     <browser:page
-        for="canonical.launchpad.interfaces.ILaunchpadRoot"
+        for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
         name="+whichdb"
         permission="zope.Public"
         class="canonical.launchpad.webapp.dbpolicy.WhichDbView"

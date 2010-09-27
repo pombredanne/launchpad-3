@@ -26,8 +26,6 @@ from zope.interface import Interface, Attribute, implements
 from zope.component import adapts, getUtility, queryAdapter, getMultiAdapter
 from zope.app import zapi
 from zope.publisher.browser import BrowserView
-from zope.publisher.interfaces import IApplicationRequest
-from zope.publisher.interfaces.browser import IBrowserApplicationRequest
 from zope.traversing.interfaces import (
     ITraversable, IPathAdapter, TraversalError)
 from zope.security.interfaces import Unauthorized
@@ -38,9 +36,6 @@ import pytz
 from z3c.ptcompat import ViewPageTemplateFile
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces import (
-    IBug, IDistribution, IProduct, IProjectGroup, IDistributionSourcePackage,
-    ISprint, LicenseStatus)
 from canonical.launchpad.interfaces.launchpad import (
     IHasIcon, IHasLogo, IHasMugshot, IPrivacy)
 from canonical.launchpad.layers import LaunchpadLayer
@@ -58,12 +53,23 @@ from canonical.launchpad.webapp.session import get_cookie_domain
 from canonical.lazr.canonicalurl import nearest_adapter
 from lp.app.browser.stringformatter import escape, FormattersAPI
 from lp.blueprints.interfaces.specification import ISpecification
+from lp.blueprints.interfaces.sprint import ISprint
+from lp.bugs.interfaces.bug import IBug
 from lp.buildmaster.enums import BuildStatus
 from lp.code.interfaces.branch import IBranch
 from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.archive import IPPA
 from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
+from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.distributionsourcepackage import (
+    IDistributionSourcePackage,
+    )
 from lp.registry.interfaces.person import IPerson
+from lp.registry.interfaces.product import (
+    IProduct,
+    LicenseStatus,
+    )
+from lp.registry.interfaces.projectgroup import IProjectGroup
 
 
 SEPARATOR = ' : '
