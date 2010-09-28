@@ -13,7 +13,6 @@ from canonical.launchpad.ftests import login_person
 from canonical.testing import DatabaseFunctionalLayer
 from lp.testing import TestCaseWithFactory
 
-
 class TestBugTrackerComponent(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
@@ -102,7 +101,7 @@ class TestBugTrackerWithComponents(TestCaseWithFactory):
 
         # Verify it contains no component groups
         comp_groups = self.bug_tracker.component_groups
-        self.assertEqual(len(list(comp_groups)), 0)
+        self.assertEqual(comp_groups.count(), 0)
 
     def test_single_product_bugtracker(self):
         """Bug tracker with a single (default) product and several components
@@ -125,7 +124,7 @@ class TestBugTrackerWithComponents(TestCaseWithFactory):
 
         # Verify there is only the one component group in the tracker
         comp_groups = self.bug_tracker.component_groups
-        self.assertEqual(len(list(comp_groups)), 1)
+        self.assertEqual(comp_groups.count(), 1)
 
     def test_multiple_product_bugtracker(self):
         """Bug tracker with multiple products and components"""
@@ -150,7 +149,7 @@ class TestBugTrackerWithComponents(TestCaseWithFactory):
 
         # Check the correct number of component groups are in the bug tracker
         comp_groups = self.bug_tracker.component_groups
-        self.assertEqual(len(list(comp_groups)), 3)
+        self.assertEqual(comp_groups.count(), 3)
 
     def test_get_components_for_component_group(self):
         """Retrieve a set of components from a given product"""
