@@ -26,7 +26,7 @@ from lp.code.interfaces.branchlookup import (
     )
 from lp.code.interfaces.branchnamespace import get_branch_namespace
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
-from lp\.registry\.errors import NoSuchDistroSeries.
+from lp.registry.errors import NoSuchDistroSeries
 from lp.registry.interfaces.person import NoSuchPerson
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.product import (

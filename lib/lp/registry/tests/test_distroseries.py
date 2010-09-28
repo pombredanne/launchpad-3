@@ -19,10 +19,8 @@ from canonical.testing import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     )
-from lp.registry.interfaces.distroseries import (
-    IDistroSeriesSet,
-    NoSuchDistroSeries,
-    )
+from lp.registry.errors import NoSuchDistroSeries
+from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.enums import (
     ArchivePurpose,

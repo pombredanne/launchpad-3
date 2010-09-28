@@ -51,13 +51,13 @@ from lp.code.interfaces.branchnamespace import (
     )
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.model.branch import Branch
+from lp.registry.errors import NoSuchDistroSeries
 from lp.registry.interfaces.distribution import (
     IDistributionSet,
     NoSuchDistribution,
     )
 from lp.registry.interfaces.distroseries import (
     IDistroSeriesSet,
-    NoSuchDistroSeries,
     )
 from lp.registry.interfaces.person import (
     IPersonSet,

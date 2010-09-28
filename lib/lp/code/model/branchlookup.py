@@ -48,11 +48,11 @@ from lp.code.interfaces.branchlookup import (
 from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
 from lp.code.interfaces.linkedbranch import get_linked_to_branch
 from lp.code.model.branch import Branch
+from lp.registry.errors import NoSuchDistroSeries
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import (
     IDistroSeries,
     IDistroSeriesSet,
-    NoSuchDistroSeries,
     )
 from lp.registry.interfaces.person import NoSuchPerson
 from lp.registry.interfaces.pillar import IPillarNameSet

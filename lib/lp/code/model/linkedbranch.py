@@ -20,7 +20,7 @@ from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
     )
-from lp\.registry\.errors import NoSuchDistroSeries.
+from lp.registry.errors import NoSuchDistroSeries
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries

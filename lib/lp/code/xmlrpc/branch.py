@@ -52,7 +52,10 @@ from lp.code.interfaces.codehosting import (
     compose_public_url,
     SUPPORTED_SCHEMES,
     )
-from lp\.registry\.errors import NoSuchDistroSeries.
+from lp.registry.errors import (
+    NoSuchDistroSeries,
+    NoSuchSourcePackageName,
+    )
 from lp.registry.interfaces.person import (
     IPersonSet,
     NoSuchPerson,
@@ -63,8 +66,7 @@ from lp.registry.interfaces.product import (
     NoSuchProduct,
     )
 from lp.registry.interfaces.productseries import NoSuchProductSeries
-from lp\.registry\.errors import NoSuchSourcePackageName
-
+from lp.registry\.errors import 
 
 class IBranchSetAPI(Interface):
     """An XMLRPC interface for dealing with branches.
