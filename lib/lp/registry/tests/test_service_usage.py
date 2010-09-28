@@ -139,6 +139,7 @@ class UsageEnumsMixin(object):
 
 class SeriesUsageEnumsMixin(object):
     """Mixin to test the usage attributes on product and distro series."""
+
     def setUp(self):
         self.series = None
         self.series_pillar = None

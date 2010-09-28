@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser code for the launchpad application."""
@@ -95,7 +95,7 @@ from canonical.launchpad.webapp.publisher import RedirectionView
 #     be factored out into a generally available adapter for both this
 #     code and for TALES namespace code to use.
 #     Same for MenuAPI.
-from canonical.launchpad.webapp.tales import (
+from lp.app.browser.tales import (
     DurationFormatterAPI,
     MenuAPI,
     PageTemplateContextsAPI,
@@ -536,7 +536,7 @@ class LaunchpadRootNavigation(Navigation):
                 if trailing is not None:
                     target_url = urlappend(target_url, trailing)
 
-            except (NoLinkedBranch) as e:
+            except (NoLinkedBranch), e:
                 # a valid ICanHasLinkedBranch target exists but there's no
                 # branch or it's not visible
 
@@ -550,7 +550,7 @@ class LaunchpadRootNavigation(Navigation):
                     "The target %s does not have a linked branch." % path)
 
         except (CannotHaveLinkedBranch, InvalidNamespace,
-                InvalidProductName, NotFoundError) as e:
+                InvalidProductName, NotFoundError), e:
             # If are aren't arriving at this invalid branch URL from another
             # page then we just raise an exception, otherwise we end up in a
             # bad recursion loop. The target url will be None in that case.

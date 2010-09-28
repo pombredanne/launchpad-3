@@ -43,7 +43,7 @@ class MockBuilder:
         self.builderok = True
         self.manual = False
         self.url = 'http://fake:0000'
-        slave.urlbase = self.url
+        slave.url = self.url
         self.name = name
         self.virtualized = True
 

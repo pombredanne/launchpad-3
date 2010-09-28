@@ -403,6 +403,11 @@ class SourcePackageRecipeEditView(RecipeTextValidatorMixin,
             try:
                 self.context.setRecipeText(recipe_text)
                 changed = True
+            except TooNewRecipeFormat:
+                self.setFieldError(
+                    'recipe_text',
+                    'The recipe format version specified is not available.')
+                return
             except ForbiddenInstructionError:
                 # XXX: bug=592513 We shouldn't be hardcoding "run" here.
                 self.setFieldError(
