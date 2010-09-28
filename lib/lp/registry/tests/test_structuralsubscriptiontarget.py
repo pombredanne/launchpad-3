@@ -159,6 +159,10 @@ class UnrestrictedStructuralSubscription(StructuralSubscriptionTestBase):
                 self.team, self.team_owner),
             None)
 
+
+class FilteredStructuralSubscriptionTestBase(StructuralSubscriptionTestBase):
+    """Tests for filtered structural subscriptions."""
+
     def test_getSubscriptionsForBug(self):
         # If no one has a filtered subscription for the given bug, the result
         # of getSubscriptionsForBug() is the same as for getSubscriptions().
@@ -214,8 +218,8 @@ class UnrestrictedStructuralSubscription(StructuralSubscriptionTestBase):
         self.assertEqual([subscription], list(subscriptions_for_bug))
 
 
-class TestStructuralSubscriptionForDistro(StructuralSubscriptionTestBase,
-    TestCaseWithFactory):
+class TestStructuralSubscriptionForDistro(
+    FilteredStructuralSubscriptionTestBase, TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
 
@@ -279,7 +283,9 @@ class TestStructuralSubscriptionForDistro(StructuralSubscriptionTestBase,
 
 
 class TestStructuralSubscriptionForProduct(
-    UnrestrictedStructuralSubscription, TestCaseWithFactory):
+    UnrestrictedStructuralSubscription,
+    FilteredStructuralSubscriptionTestBase,
+    TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
 
@@ -289,7 +295,9 @@ class TestStructuralSubscriptionForProduct(
 
 
 class TestStructuralSubscriptionForDistroSourcePackage(
-    UnrestrictedStructuralSubscription, TestCaseWithFactory):
+    UnrestrictedStructuralSubscription,
+    FilteredStructuralSubscriptionTestBase,
+    TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
 
@@ -300,7 +308,9 @@ class TestStructuralSubscriptionForDistroSourcePackage(
 
 
 class TestStructuralSubscriptionForMilestone(
-    UnrestrictedStructuralSubscription, TestCaseWithFactory):
+    UnrestrictedStructuralSubscription,
+    FilteredStructuralSubscriptionTestBase,
+    TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
 
@@ -311,7 +321,9 @@ class TestStructuralSubscriptionForMilestone(
 
 
 class TestStructuralSubscriptionForDistroSeries(
-    UnrestrictedStructuralSubscription, TestCaseWithFactory):
+    UnrestrictedStructuralSubscription,
+    FilteredStructuralSubscriptionTestBase,
+    TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
 
@@ -319,6 +331,9 @@ class TestStructuralSubscriptionForDistroSeries(
         super(TestStructuralSubscriptionForDistroSeries, self).setUp()
         self.target = self.factory.makeDistroSeries()
         self.target = ProxyFactory(self.target)
+
+
+# XXX Wot no ProjectGroup or ProductSeries?
 
 
 def distributionSourcePackageSetUp(test):
