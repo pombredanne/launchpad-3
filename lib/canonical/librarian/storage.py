@@ -13,7 +13,7 @@ from zope.component import getUtility
 
 from canonical.launchpad.webapp.interfaces import (
         IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
-from canonical.librarian.db import write_transaction
+from lp.services.database import write_transaction
 
 __all__ = [
     'DigestMismatchError',
