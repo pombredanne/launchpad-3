@@ -297,14 +297,13 @@ class ProductLicenseMixin:
             pass
 
     def notifyCommercialMailingList(self):
-        """Email feedback@canonical.com to review product license."""
-        if (License.OTHER_PROPRIETARY in self.product.licenses
-            or License.OTHER_OPEN_SOURCE in self.product.licenses):
-            review_needed = True
-        elif (len(self.product.licenses) == 1
-            and License.DONT_KNOW in self.product.licenses):
-            review_needed = False
-        else:
+        """Notify user about Launchpad license rules."""
+        licenses = list(self.product.licenses)
+        needs_email = (
+            License.OTHER_PROPRIETARY in licenses
+            or License.OTHER_OPEN_SOURCE in licenses
+            or [License.DONT_KNOW] == licenses)
+        if not needs_email:
             # The project has a recognized license.
             return
 
@@ -332,16 +331,6 @@ class ProductLicenseMixin:
             product_summary=indent(self.product.summary),
             license_titles=indent(license_titles),
             license_info=indent(self.product.license_info))
-        if review_needed:
-            # Email the Commercial team that a project needs review.
-            subject = (
-                "Project License Submitted for %(product_name)s "
-                "by %(user_name)s" % substitutions)
-            template = helpers.get_email_template('product-license.txt')
-            message = template % substitutions
-            simple_sendmail(
-                from_address, commercial_address,
-                subject, message, headers={'Reply-To': user_address})
         # Email the user about license policy.
         subject = (
             "License information for %(product_name)s "
