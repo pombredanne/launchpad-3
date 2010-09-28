@@ -82,12 +82,13 @@ from canonical.launchpad.webapp.badge import (
 from canonical.launchpad.webapp.batching import TableBatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.publisher import LaunchpadView
-from canonical.launchpad.webapp.tales import MenuAPI
 from canonical.widgets import LaunchpadDropdownWidget
+from lp.app.browser.tales import MenuAPI
 from lp.blueprints.interfaces.specificationbranch import (
     ISpecificationBranchSet,
     )
 from lp.bugs.interfaces.bugbranch import IBugBranchSet
+from lp.code.browser.branch import BranchMirrorMixin
 from lp.code.browser.branchmergeproposallisting import (
     ActiveReviewsView,
     PersonActiveReviewsView,
@@ -114,7 +115,6 @@ from lp.code.interfaces.revisioncache import IRevisionCache
 from lp.code.interfaces.seriessourcepackagebranch import (
     IFindOfficialBranchLinks,
     )
-from lp.code.browser.branch import BranchMirrorMixin
 from lp.registry.browser.product import (
     ProductDownloadFileMixin,
     SortSeriesMixin,
