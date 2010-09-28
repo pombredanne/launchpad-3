@@ -77,7 +77,6 @@ class BaseRunnableJob:
 
     # We redefine __eq__ and __ne__ here to prevent the security proxy
     # from mucking up our comparisons in tests and elsewhere.
-
     def __eq__(self, job):
         return (
             self.__class__ is removeSecurityProxy(job.__class__)
@@ -371,7 +370,8 @@ class TwistedJobRunner(BaseJobRunner):
         transaction.commit()
         job_id = job.id
         deadline = timegm(job.lease_expires.timetuple())
-        self.logger.debug('Running %r, lease expires %s', job, job.lease_expires)
+        self.logger.debug(
+            'Running %r, lease expires %s', job, job.lease_expires)
         deferred = self.pool.doWork(
             RunJobCommand, job_id = job_id, _deadline=deadline)
         def update(response):

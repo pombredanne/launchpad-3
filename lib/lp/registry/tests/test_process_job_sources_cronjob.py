@@ -7,7 +7,6 @@ __metaclass__ = type
 
 import os
 import subprocess
-import unittest
 
 import transaction
 from zope.component import getUtility
@@ -18,8 +17,10 @@ from lp.registry.interfaces.teammembership import (
     ITeamMembershipSet,
     TeamMembershipStatus,
     )
-from lp.testing import login_person
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    login_person,
+    TestCaseWithFactory,
+    )
 
 
 class ProcessJobSourceTest(TestCaseWithFactory):

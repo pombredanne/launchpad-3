@@ -44,6 +44,7 @@ from canonical.lazr.utils import safe_hasattr
 from lp.services.log.uniquefileallocator import UniqueFileAllocator
 from lp.services.timeline.requesttimeline import get_request_timeline
 
+
 UTC = pytz.utc
 
 LAZR_OOPS_USER_REQUESTED_KEY = 'lazr.oops.user_requested'

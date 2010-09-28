@@ -20,8 +20,8 @@ from lp.registry.interfaces.teammembership import (
 from lp.testing import (
     login,
     login_person,
+    TestCaseWithFactory,
     )
-from lp.testing import TestCaseWithFactory
 
 
 class CreateMembershipNotificationJobTest(TestCaseWithFactory):
@@ -41,8 +41,11 @@ class CreateMembershipNotificationJobTest(TestCaseWithFactory):
         tm = membership_set.getByPersonAndTeam(self.person, self.team)
         tm.setStatus(TeamMembershipStatus.ADMIN, self.team.teamowner)
         transaction.commit()
-        for job in self.job_source.iterReady():
-            print job
+        jobs = list(self.job_source.iterReady())
+        self.assertEqual(
+            ('[<MEMBERSHIP_NOTIFICATION branch job (1) '
+             'for murdock as part of a-team. status=Waiting>]'),
+            str(jobs))
 
     def test_setstatus_silent(self):
         login('admin@canonical.com')

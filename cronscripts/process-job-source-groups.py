@@ -7,17 +7,17 @@
 
 __metaclass__ = type
 
-import _pythonpath
+from optparse import IndentedHelpFormatter
 import os
 import subprocess
 import sys
 import textwrap
 
-from optparse import IndentedHelpFormatter
+import _pythonpath
 
+from canonical.config import config
 from lp.services.propertycache import cachedproperty
 from lp.services.scripts.base import LaunchpadCronScript
-from canonical.config import config
 
 
 class LongEpilogHelpFormatter(IndentedHelpFormatter):
