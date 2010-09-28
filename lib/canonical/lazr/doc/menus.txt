@@ -151,7 +151,7 @@ they are assigned to the same facet.
     >>> from zope.configuration import xmlconfig
 
     >>> zcmlcontext = xmlconfig.string("""
-    >>> <configure xmlns="http://namespaces.zope.org/zope"
+    ... <configure xmlns="http://namespaces.zope.org/zope"
     ...            xmlns:zope="http://namespaces.zope.org/zope"
     ...            xmlns:browser="http://namespaces.zope.org/browser">
     ...   <include package="zope.app" file="meta.zcml" />
@@ -587,7 +587,7 @@ INavigationMenus can also be adapted from a Recipe by including the
 facet name.
 
     >>> zcmlcontext = xmlconfig.string("""
-    >>> <configure xmlns:browser="http://namespaces.zope.org/browser">
+    ... <configure xmlns:browser="http://namespaces.zope.org/browser">
     ...   <include file="lib/canonical/launchpad/webapp/meta.zcml" />
     ...   <browser:menus
     ...     module="canonical.lazr.cookingexample"
