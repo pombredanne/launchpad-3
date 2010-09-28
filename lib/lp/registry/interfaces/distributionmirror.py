@@ -6,8 +6,6 @@
 __metaclass__ = type
 
 __all__ = [
-    'CannotTransitionToCountryMirror',
-    'CountryMirrorAlreadySet',
     'IDistributionMirror',
     'IMirrorDistroArchSeries',
     'IMirrorDistroSeriesSource',
@@ -17,11 +15,6 @@ __all__ = [
     'PROBE_INTERVAL',
     'MirrorContent',
     'MirrorFreshness',
-    'MirrorHasNoHTTPURL',
-    'MirrorNotOfficial',
-    'MirrorNotProbed',
-    'MirrorSpeed',
-    'MirrorStatus',
     'UnableToFetchCDImageFileList',
     ]
 
@@ -38,7 +31,6 @@ from lazr.restful.declarations import (
     exported,
     mutator_for,
     operation_parameters,
-    webservice_error,
     )
 from lazr.restful.fields import (
     Reference,
@@ -74,43 +66,6 @@ from lp.services.worlddata.interfaces.country import ICountry
 
 # The number of hours before we bother probing a mirror again
 PROBE_INTERVAL = 23
-
-
-class CannotTransitionToCountryMirror(Exception):
-    """Root exception for transitions to country mirrors."""
-    webservice_error(400)
-
-
-class CountryMirrorAlreadySet(CannotTransitionToCountryMirror):
-    """Distribution mirror cannot be set as a country mirror.
-
-    Raised when a user tries to change set a distribution mirror as a country
-    mirror, however there is already one set for that country.
-    """
-
-
-class MirrorNotOfficial(CannotTransitionToCountryMirror):
-    """Distribution mirror is not permitted to become a country mirror.
-
-    Raised when a user tries to change set a distribution mirror as a country
-    mirror, however the mirror in question is not official.
-    """
-
-
-class MirrorHasNoHTTPURL(CannotTransitionToCountryMirror):
-    """Distribution mirror has no HTTP URL.
-
-    Raised when a user tries to make an official mirror a country mirror,
-    however the mirror has not HTTP URL set.
-    """
-
-
-class MirrorNotProbed(CannotTransitionToCountryMirror):
-    """Distribution mirror has not been probed.
-
-    Raised when a user tries to set an official mirror as a country mirror,
-    however the mirror has not been probed yet.
-    """
 
 
 class MirrorContent(DBEnumeratedType):

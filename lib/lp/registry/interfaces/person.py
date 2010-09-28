@@ -32,7 +32,6 @@ __all__ = [
     'PersonCreationRationale',
     'PersonVisibility',
     'PersonalStanding',
-    'PrivatePersonLinkageError',
     'PRIVATE_TEAM_PREFIX',
     'TeamContactMethod',
     'TeamMembershipRenewalPolicy',
