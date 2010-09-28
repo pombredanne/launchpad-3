@@ -63,6 +63,15 @@ Launchpad is different from other "forges" in a few important ways:
     developers often need to acknoweldge and work around differences thrown up
     by hardware.
 
+  We don't care if you use Launchpad, sort of
+    XXX
+
+  One project, many communities
+    Any given project can have many distinct communities interested in
+    it.  These communities have different interests and different motivations,
+    but all work in the same project space so that they can easily benefit
+    from each others' efforts.
+
 
 Values
 ------
@@ -79,8 +88,8 @@ Where it is not possible to stay out of the way, Launchpad should be fun to
 use.  We make next actions obvious and draw attention to users' achievements.
 
 
-Create and highlight opportunities
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Reveal opportunities
+~~~~~~~~~~~~~~~~~~~~
 
 One of the grand things about open source software is that it is open to
 contributions from total strangers.
@@ -88,13 +97,6 @@ contributions from total strangers.
 Launchpad makes those contributions possible by removing as many barriers as
 possible to contribution, and highlights areas where contributions would be
 especially welcome.
-
-
-XXX - Where communities intersect
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Curtis goes on about this one.  I think he's on to something, but I don't
-really know what it is or where it should go.
 
 
 XXX - Collaboration occurs between people
@@ -112,6 +114,35 @@ stewards.  We make sure that users can get their data easily and that they can
 change it as they see fit.
 
 
+Cross-project consistency
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+XXX - incomplete
+
+ * Do not enforce workflows.  Allow people to fit their projects existing
+   workflow into Launchpad.  Workflow-agnostic.
+
+ * Be consistent between projects so that we have data coherency and so that
+   people can switch rapidly between projects.
+
+ * Encourage people toward best practices
+
+
+Full circle
+~~~~~~~~~~~
+
+XXX - incomplete
+
+Something magical happens when a feature or a workflow reaches all the way
+back to where it began.
+
+Being able to attach patches to bugs is great, but it's not good enough until
+developers can easily *find* those patches.  Finding the patches is only good
+enough when you can merge, comment and reject those patches.
+
+See also roundtripping, translations branches etc.
+
+
 Launchpad Agents
 ================
 
@@ -119,6 +150,7 @@ Launchpad Agents
  * Projects
  * Distribution
  * Hardware
+
 
 Launchpad Stock-in-trade
 ========================
@@ -145,6 +177,7 @@ Shop front
  * Project home
  * Answers
  * Announcement
+
 
 New World
 =========
