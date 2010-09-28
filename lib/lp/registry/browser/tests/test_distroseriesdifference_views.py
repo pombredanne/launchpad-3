@@ -19,7 +19,10 @@ from canonical.testing import (
 from lp.registry.browser.distroseriesdifference import (
     DistroSeriesDifferenceDisplayComment,
     )
-from lp.registry.enum import DistroSeriesDifferenceType
+from lp.registry.enum import (
+    DistroSeriesDifferenceStatus,
+    DistroSeriesDifferenceType,
+    )
 from lp.registry.interfaces.distroseriesdifference import (
     IDistroSeriesDifferenceSource)
 from lp.services.comments.interfaces.conversation import (
@@ -271,7 +274,6 @@ class DistroSeriesDifferenceTemplateTestCase(TestCaseWithFactory):
         self.assertEqual('NONE', view.initial_values.get('blacklist_options'))
 
     def test_blacklist_options_initial_values_CURRENT(self):
-        from lp.registry.enum import DistroSeriesDifferenceStatus
         ds_diff = self.factory.makeDistroSeriesDifference(
             status=DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT)
         view = create_initialized_view(ds_diff, '+listing-distroseries-extra')
@@ -281,7 +283,6 @@ class DistroSeriesDifferenceTemplateTestCase(TestCaseWithFactory):
             view.initial_values.get('blacklist_options'))
 
     def test_blacklist_options_initial_values_ALWAYS(self):
-        from lp.registry.enum import DistroSeriesDifferenceStatus
         ds_diff = self.factory.makeDistroSeriesDifference(
             status=DistroSeriesDifferenceStatus.BLACKLISTED_ALWAYS)
         view = create_initialized_view(ds_diff, '+listing-distroseries-extra')
