@@ -6,6 +6,12 @@ __all__ = ['StructuralSubscription',
            'StructuralSubscriptionTargetMixin']
 
 from sqlobject import ForeignKey
+from storm.expr import (
+    And,
+    LeftJoin,
+    Or,
+    )
+from storm.store import Store
 from zope.component import getUtility
 from zope.interface import implements
 
@@ -17,6 +23,10 @@ from canonical.database.sqlbase import (
     SQLBase,
     )
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.bugs.model.bugsubscriptionfilter import BugSubscriptionFilter
+from lp.bugs.model.bugsubscriptionfilterstatus import (
+    BugSubscriptionFilterStatus,
+    )
 from lp.registry.enum import BugNotificationLevel
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
@@ -370,4 +380,55 @@ class StructuralSubscriptionTargetMixin:
 
     def getSubscriptionsForBug(self, bug, level):
         """See `IStructuralSubscriptionTarget`."""
-        return self.getSubscriptions(min_bug_notification_level=level)
+        store = Store.of(self)
+        bugtasks = [bug.getBugTask(self)]
+
+        if IDistributionSourcePackage.providedBy(self):
+            store = Store.of(self.distribution)
+            join = And(
+                StructuralSubscription.distributionID == (
+                    self.distribution.id),
+                StructuralSubscription.sourcepackagenameID == (
+                        self.sourcepackagename.id))
+        elif IProduct.providedBy(self):
+            join = (StructuralSubscription.product == self)
+        elif IProjectGroup.providedBy(self):
+            join = (StructuralSubscription.project == self)
+            bugtasks.extend(
+                bug.getBugTask(product) for product in self.products)
+        elif IDistribution.providedBy(self):
+            join = (StructuralSubscription.distribution == self)
+        elif IMilestone.providedBy(self):
+            join = (StructuralSubscription.milestone == self)
+            bugtasks.append(bug.getBugTask(self.series_target))
+        elif IProductSeries.providedBy(self):
+            join = (StructuralSubscription.productseries == self)
+        elif IDistroSeries.providedBy(self):
+            join = (StructuralSubscription.distroseries == self)
+        else:
+            raise AssertionError(
+                '%s is not a valid structural subscription target.', self)
+
+        bugtasks = [bugtask for bugtask in bugtasks if bugtask is not None]
+        assert len(bugtasks) != 0
+
+        origin = [
+            StructuralSubscription,
+            LeftJoin(
+                BugSubscriptionFilter,
+                BugSubscriptionFilter.structural_subscription_id == (
+                    StructuralSubscription.id)),
+            LeftJoin(
+                BugSubscriptionFilterStatus,
+                BugSubscriptionFilterStatus.filter_id == (
+                    BugSubscriptionFilter.id)),
+            ]
+
+        conditions = [
+            Or(BugSubscriptionFilter.id == None,
+               BugSubscriptionFilterStatus.status.is_in(
+                    bugtask.status for bugtask in bugtasks))
+            ]
+
+        return store.using(*origin).find(
+            StructuralSubscription, join, *conditions)

@@ -32,6 +32,7 @@ from lp.bugs.model.bugsubscriptionfilterstatus import (
 from lp.bugs.tests.test_bugtarget import bugtarget_filebug
 from lp.registry.enum import BugNotificationLevel
 from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.milestone import IMilestone
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.interfaces.structuralsubscription import (
@@ -171,25 +172,42 @@ class UnrestrictedStructuralSubscription(StructuralSubscriptionTestBase):
     def test_getSubscriptionsForBug_with_filter_on_status(self):
         # If a status filter exists for a subscription, the result of
         # getSubscriptionsForBug() may be a subset of getSubscriptions().
-        bug = self.factory.makeBug()
 
-        # Create a new subscription on self.target, filtered to bugs in the
-        # CONFIRMED state.
+        if IMilestone.providedBy(self.target):
+            bugtask = self.factory.makeBugTask(
+                target=self.target.series_target)
+        else:
+            bugtask = self.factory.makeBugTask(target=self.target)
+        bug = bugtask.bug
+
+        # Create a new subscription on self.target.
         login_person(self.ordinary_subscriber)
         subscription = self.target.addSubscription(
             self.ordinary_subscriber, self.ordinary_subscriber)
         subscription.bug_notification_level = BugNotificationLevel.COMMENTS
+
+        # Without any filters the subscription is found.
+        subscriptions_for_bug = self.target.getSubscriptionsForBug(
+            bug, BugNotificationLevel.NOTHING)
+        self.assertEqual([subscription], list(subscriptions_for_bug))
+
+        # Filter the subscription to bugs in the CONFIRMED state.
         subscription_filter = BugSubscriptionFilter()
         subscription_filter.structural_subscription = subscription
         subscription_filter_status = BugSubscriptionFilterStatus()
         subscription_filter_status.filter = subscription_filter
         subscription_filter_status.status = BugTaskStatus.CONFIRMED
 
-        subscriptions = self.target.getSubscriptions(
-            min_bug_notification_level=BugNotificationLevel.NOTHING)
+        # With the filter the subscription is not found.
         subscriptions_for_bug = self.target.getSubscriptionsForBug(
             bug, BugNotificationLevel.NOTHING)
-        self.assertNotEqual(list(subscriptions), list(subscriptions_for_bug))
+        self.assertEqual([], list(subscriptions_for_bug))
+
+        # If the filter is adjusted, the subscription is found again.
+        subscription_filter_status.status = bug.default_bugtask.status
+        subscriptions_for_bug = self.target.getSubscriptionsForBug(
+            bug, BugNotificationLevel.NOTHING)
+        self.assertEqual([subscription], list(subscriptions_for_bug))
 
 
 class TestStructuralSubscriptionForDistro(StructuralSubscriptionTestBase,
