@@ -10,6 +10,7 @@ __metaclass__ = type
 from BeautifulSoup import BeautifulSoup
 from zope.component import getUtility
 
+from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing import (
     DatabaseFunctionalLayer,
@@ -18,14 +19,17 @@ from canonical.testing import (
 from lp.registry.browser.distroseriesdifference import (
     DistroSeriesDifferenceDisplayComment,
     )
-from lp.registry.enum import DistroSeriesDifferenceType
-from lp.registry.interfaces.distroseriesdifference import IDistroSeriesDifferenceSource
+from lp.registry.enum import (
+    DistroSeriesDifferenceStatus,
+    DistroSeriesDifferenceType,
+    )
+from lp.registry.interfaces.distroseriesdifference import (
+    IDistroSeriesDifferenceSource)
 from lp.services.comments.interfaces.conversation import (
     IComment,
     IConversation,
     )
 from lp.soyuz.enums import PackagePublishingStatus
-from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
     celebrity_logged_in,
     person_logged_in,
@@ -57,6 +61,8 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
 
     def addSummaryToDifference(self, distro_series_difference):
         """Helper that adds binaries with summary info to the source pubs."""
+        # Avoid circular import.
+        from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
         distro_series = distro_series_difference.derived_series
         source_package_name_str = (
             distro_series_difference.source_package_name.name)
@@ -123,6 +129,36 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         self.assertIs(None, ds_diff.parent_source_pub)
         self.assertIs(None, ds_diff.source_pub)
         self.assertIs(None, view.binary_summaries)
+
+    def test_show_blacklist_options_non_ajax(self):
+        # Blacklist options are not shown for non-ajax requests.
+        ds_diff = self.factory.makeDistroSeriesDifference()
+
+        # Without JS, even editors don't see blacklist options.
+        with person_logged_in(ds_diff.owner):
+            view = create_initialized_view(
+                ds_diff, '+listing-distroseries-extra')
+        self.assertFalse(view.show_blacklist_options)
+
+    def test_show_blacklist_options_editor(self):
+        # Blacklist options are shown if requested by an editor via
+        # ajax.
+        ds_diff = self.factory.makeDistroSeriesDifference()
+
+        request = LaunchpadTestRequest(HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        with person_logged_in(ds_diff.owner):
+            view = create_initialized_view(
+                ds_diff, '+listing-distroseries-extra', request=request)
+            self.assertTrue(view.show_blacklist_options)
+
+    def test_show_blacklist_options_non_editor(self):
+        # Even with a JS request, non-editors do not see the options.
+        ds_diff = self.factory.makeDistroSeriesDifference()
+
+        request = LaunchpadTestRequest(HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        view = create_initialized_view(
+            ds_diff, '+listing-distroseries-extra', request=request)
+        self.assertFalse(view.show_blacklist_options)
 
 
 class DistroSeriesDifferenceTemplateTestCase(TestCaseWithFactory):
@@ -215,3 +251,43 @@ class DistroSeriesDifferenceTemplateTestCase(TestCaseWithFactory):
             1, len(soup.findAll('pre', text="I'm working on this.")))
         self.assertEqual(
             1, len(soup.findAll('pre', text="Here's another comment.")))
+
+    def test_blacklist_options(self):
+        # blacklist options are presented to editors.
+        ds_diff = self.factory.makeDistroSeriesDifference()
+
+        with person_logged_in(ds_diff.owner):
+            request = LaunchpadTestRequest(
+                HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+            view = create_initialized_view(
+                ds_diff, '+listing-distroseries-extra', request=request)
+            soup = BeautifulSoup(view())
+
+        self.assertEqual(
+            1, len(soup.findAll('div', {'class': 'blacklist-options'})))
+
+    def test_blacklist_options_initial_values_NONE(self):
+        ds_diff = self.factory.makeDistroSeriesDifference()
+        view = create_initialized_view(ds_diff, '+listing-distroseries-extra')
+
+        # If the difference is not currently blacklisted, 'NONE' is set
+        # as the default value for the field.
+        self.assertEqual('NONE', view.initial_values.get('blacklist_options'))
+
+    def test_blacklist_options_initial_values_CURRENT(self):
+        ds_diff = self.factory.makeDistroSeriesDifference(
+            status=DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT)
+        view = create_initialized_view(ds_diff, '+listing-distroseries-extra')
+
+        self.assertEqual(
+            DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT,
+            view.initial_values.get('blacklist_options'))
+
+    def test_blacklist_options_initial_values_ALWAYS(self):
+        ds_diff = self.factory.makeDistroSeriesDifference(
+            status=DistroSeriesDifferenceStatus.BLACKLISTED_ALWAYS)
+        view = create_initialized_view(ds_diff, '+listing-distroseries-extra')
+
+        self.assertEqual(
+            DistroSeriesDifferenceStatus.BLACKLISTED_ALWAYS,
+            view.initial_values.get('blacklist_options'))
