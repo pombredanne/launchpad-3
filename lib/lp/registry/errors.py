@@ -13,7 +13,7 @@ from lazr.restful.declarations import webservice_error
 
 class TeamMembershipTransitionError(ValueError):
     """Indicates something has gone wrong with the transtiion.
-    
+
     Generally, this indicates a bad transition (e.g. approved to proposed)
     or an invalid transition (e.g. unicorn).
     """
