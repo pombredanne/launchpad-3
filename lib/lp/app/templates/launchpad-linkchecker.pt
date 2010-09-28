@@ -1,0 +1,16 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  omit-tag="">
+
+<metal:load-javascript define-macro="check_lp_links"
+  tal:define="
+      revno modules/canonical.launchpad.versioninfo/revno | string:unknown;
+      icingroot string:/+icing/rev${revno};
+      lp_js string:${icingroot}/build"
+>
+    <script type="text/javascript"
+        tal:attributes="src string:${lp_js}/app/lp-linkchecker.js">
+    </script>
+    </metal:load-javascript>
+</tal:root>

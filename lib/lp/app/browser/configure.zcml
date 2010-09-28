@@ -16,6 +16,13 @@
         />
     <browser:page
         for="*"
+        name="launchpad_linkchecker"
+        layer="canonical.launchpad.layers.LaunchpadLayer"
+        permission="zope.Public"
+        template="../templates/launchpad-linkchecker.pt"
+        />
+    <browser:page
+        for="*"
         name="+main-template-macros"
         template="../templates/base-layout-macros.pt"
         permission="zope.Public"
