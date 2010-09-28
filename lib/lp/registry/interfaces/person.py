@@ -63,7 +63,6 @@ from lazr.restful.declarations import (
     operation_returns_entry,
     rename_parameters_as,
     REQUEST_USER,
-    webservice_error,
     )
 from lazr.restful.error import expose
 from lazr.restful.fields import (
@@ -119,7 +118,10 @@ from lp.code.interfaces.hasbranches import (
     IHasRequestedReviews,
     )
 from lp.code.interfaces.hasrecipes import IHasRecipes
-from lp.registry.errors import PrivatePersonLinkageError
+from lp.registry.errors import (
+    NameAlreadyTaken,
+    PrivatePersonLinkageError,
+    )
 from lp.registry.interfaces.gpg import IGPGKey
 from lp.registry.interfaces.irc import IIrcID
 from lp.registry.interfaces.jabber import IJabberID
@@ -2171,11 +2173,6 @@ class ImmutableVisibilityError(Exception):
 
 class InvalidName(Exception):
     """The name given for a person is not valid."""
-
-
-class NameAlreadyTaken(Exception):
-    """The name given for a person is already in use by other person."""
-    webservice_error(409)
 
 
 class NoSuchPerson(NameLookupFailed):

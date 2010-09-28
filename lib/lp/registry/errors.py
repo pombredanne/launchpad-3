@@ -4,13 +4,18 @@
 __metaclass__ = type
 __all__ = [
     'PrivatePersonLinkageError',
+    'NameAlreadyTaken',
     ]
 
 import httplib
 
 class PrivatePersonLinkageError(ValueError):
     """An attempt was made to link a private person/team to something."""
-    # HTTP 400 -- BAD REQUEST
-    # HTTP 403 would be better, but as this excpetion is raised inside a
-    # validator, it will default to 400 anyway.
-    webservice_error(httplib.BAD_REQUEST)
+    webservice_error(httplib.FORBIDDEN)
+
+    
+class NameAlreadyTaken(Exception):
+    """The name given for a person is already in use by other person."""
+    webservice_error(httplib.CONFLICT)
+
+
