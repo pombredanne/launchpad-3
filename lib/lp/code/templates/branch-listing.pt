@@ -81,9 +81,9 @@ registerLaunchpadFunction(hookUpFilterSubmission);
       </tal:allow-setting-dev-focus>
       <tr tal:repeat="branch context/branches">
         <td>
-          <img src="/@@/branch" /> <a tal:attributes="href branch/fmt:url"
-             tal:content="structure branch/bzr_identity/fmt:break-long-words">
-               Name
+          <a tal:attributes="href branch/fmt:url"
+             tal:content="structure branch/bzr_identity/fmt:break-long-words"
+             class="sprite branch">Name
           </a>
           <tal:associated-series repeat="series branch/active_series"
                                  condition="context/view/show_series_links">
