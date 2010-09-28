@@ -64,3 +64,6 @@ class IDistroSeriesDifferenceCommentSource(Interface):
         :param comment: The comment.
         :return: A new `DistroSeriesDifferenceComment` object.
         """
+
+    def get(id):
+        """Return the `IDistroSeriesDifference` with the given id."""

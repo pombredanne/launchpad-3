@@ -6,11 +6,13 @@
 __metaclass__ = type
 
 from storm.store import Store
+from zope.component import getUtility
 
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing import DatabaseFunctionalLayer
 from lp.registry.interfaces.distroseriesdifferencecomment import (
     IDistroSeriesDifferenceComment,
+    IDistroSeriesDifferenceCommentSource,
     )
 from lp.testing import TestCaseWithFactory
 
@@ -55,3 +57,12 @@ class DistroSeriesDifferenceCommentTestCase(TestCaseWithFactory):
 
         self.assertEqual(
             dsd_comment.message.datecreated, dsd_comment.comment_date)
+
+    def test_get_comment(self):
+        # The utility can get comments by id.
+        dsd_comment = self.factory.makeDistroSeriesDifferenceComment()
+        Store.of(dsd_comment).flush()
+
+        comment_src = getUtility(IDistroSeriesDifferenceCommentSource)
+        self.assertEqual(dsd_comment, comment_src.get(dsd_comment.id))
+

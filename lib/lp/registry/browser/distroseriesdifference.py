@@ -9,6 +9,7 @@ __all__ = [
     ]
 
 from zope.app.form.browser.itemswidgets import RadioWidget
+from zope.component import getUtility
 from zope.interface import (
     implements,
     Interface,
@@ -19,14 +20,38 @@ from zope.schema.vocabulary import (
     SimpleVocabulary,
     )
 
-from canonical.launchpad.webapp import LaunchpadFormView
+from canonical.launchpad.webapp import (
+    LaunchpadFormView,
+    Navigation,
+    stepthrough,
+    )
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.launchpadform import custom_widget
 from lp.registry.enum import DistroSeriesDifferenceStatus
+from lp.registry.interfaces.distroseriesdifference import (
+    IDistroSeriesDifference,
+    )
+from lp.registry.interfaces.distroseriesdifferencecomment import (
+    IDistroSeriesDifferenceCommentSource,
+    )
 from lp.services.comments.interfaces.conversation import (
     IComment,
     IConversation,
     )
+
+
+class DistroSeriesDifferenceNavigation(Navigation):
+    usedfor = IDistroSeriesDifference
+
+    @stepthrough('comments')
+    def traverse_comment(self, id_str):
+        try:
+            id = int(id_str)
+        except ValueError:
+            return None
+
+        return getUtility(
+            IDistroSeriesDifferenceCommentSource).get(id)
 
 
 class IDistroSeriesDifferenceForm(Interface):

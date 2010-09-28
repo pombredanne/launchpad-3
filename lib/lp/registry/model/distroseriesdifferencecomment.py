@@ -22,7 +22,10 @@ from zope.interface import (
     )
 
 from canonical.launchpad.database.message import Message, MessageChunk
-from canonical.launchpad.interfaces.lpstorm import IMasterStore
+from canonical.launchpad.interfaces.lpstorm import (
+    IMasterStore,
+    IStore,
+    )
 from lp.registry.interfaces.distroseriesdifferencecomment import (
     IDistroSeriesDifferenceComment,
     IDistroSeriesDifferenceCommentSource,
@@ -75,3 +78,11 @@ class DistroSeriesDifferenceComment(Storm):
         dsd_comment.message = message
 
         return store.add(dsd_comment)
+
+    @staticmethod
+    def get(id):
+        """See `IDistroSeriesDifferenceCommentSource`."""
+        store = IStore(DistroSeriesDifferenceComment)
+        return store.find(
+            DistroSeriesDifferenceComment,
+            DistroSeriesDifferenceComment.id == id).one()

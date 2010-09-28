@@ -84,3 +84,25 @@ class DistroSeriesDifferenceWebServiceTestCase(TestCaseWithFactory):
         self.assertEqual(
             DistroSeriesDifferenceStatus.NEEDS_ATTENTION,
             ds_diff.status)
+
+
+class DSDCommentWebServiceTestCase(TestCaseWithFactory):
+
+    layer = AppServerLayer
+
+    def test_get_difference_comment(self):
+        # DistroSeriesDifferencesComments are available on the web service.
+        ds_diff = self.factory.makeDistroSeriesDifference()
+        from lp.testing import person_logged_in
+        from storm.store import Store
+        with person_logged_in(ds_diff.owner):
+            comment = ds_diff.addComment(ds_diff.owner, "Hey there")
+        Store.of(comment).flush()
+        transaction.commit()
+        dsd_comment_path = canonical_url(comment).replace(
+            'http://launchpad.dev', '')
+
+        ws_diff = ws_object(self.factory.makeLaunchpadService(), comment)
+
+        self.assertTrue(
+            ws_diff.self_link.endswith(dsd_comment_path))
