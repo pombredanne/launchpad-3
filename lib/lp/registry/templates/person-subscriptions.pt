@@ -21,7 +21,7 @@
 
     <tal:subscribed_bugs condition="sub_bug_batch|nothing">
       <p>
-      Bug subscriptions for
+      Direct bug subscriptions for
       <tal:person content="context/fmt:displayname">Sample Person</tal:person>
       </p>
     <div tal:replace="structure sub_bugs/@@+navigation-links-lower"/>
