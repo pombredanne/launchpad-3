@@ -103,7 +103,6 @@ class DistroSeriesDifferenceDisplayComment:
 
     def __init__(self, comment):
         """Setup the attributes required by `IComment`."""
-        self.message_body = comment.comment
-        self.comment_author = comment.message.owner
-        self.comment_date = comment.message.datecreated
-        self.body_text = comment.comment
+        self.comment_author = comment.comment_author
+        self.comment_date = comment.comment_date
+        self.body_text = comment.body_text
