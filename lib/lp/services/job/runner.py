@@ -463,7 +463,13 @@ class JobCronScript(LaunchpadCronScript):
         return sorted(counts.items())
 
     def main(self):
-        errorlog.globalErrorUtility.configure(self.config_name)
+        section = config[self.config_name]
+        if (getattr(section, 'error_dir', None) is not None
+            and getattr(section, 'oops_prefix', None) is not None
+            and getattr(section, 'copy_to_zlog', None) is not None):
+            # If the three variables are not set, we will let the error
+            # utility default to using the [error_reports] config.
+            errorlog.globalErrorUtility.configure(self.config_name)
         job_source = getUtility(self.source_interface)
         runner = self.runner_class.runFromSource(
             job_source, self.dbuser, self.logger)
