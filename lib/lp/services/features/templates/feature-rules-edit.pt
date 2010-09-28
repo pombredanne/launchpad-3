@@ -12,17 +12,21 @@
 <div metal:fill-slot="main">
   <div metal:use-macro="context/@@launchpad_form/form">
 
+    <div metal:fill-slot="widgets">
+
     <p><a href="http://dev.launchpad.net/LEP/FeatureFlags">Feature flag</a>
       rules currently active on Launchpad:</p>
-
-    <div metal:fill-slot="widgets">
 
 	<textarea style="font-family: monospace;" 
 	  rows="10" columns="80"
 	  tal:content="view/rules_text" name="feature_rules">
 	</textarea>
 
+    <p>Syntax is: <tt>flag scope priority value</tt>, whitespace-separated.  Numerically 
+    higher priorities match first.</p>
+
     </div>
+
   </div>
 </div>
 </body>

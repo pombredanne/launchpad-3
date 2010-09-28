@@ -11,17 +11,19 @@
 
 <div metal:fill-slot="main">
 
-  <p><a href="http://dev.launchpad.net/LEP/FeatureFlags">Feature flag</a>
-    rules currently active on Launchpad:</p>
-
   <div metal:use-macro="context/@@launchpad_form/form">
     <div metal:fill-slot="widgets">
+
+      <p><a href="http://dev.launchpad.net/LEP/FeatureFlags">Feature flag</a>
+	rules currently active on Launchpad:</p>
 
       <textarea style="font-family: monospace;" 
 	rows="10" columns="80"
 	readonly="true"
 	tal:content="view/rules_text" name="feature_rules">
       </textarea>
+
+      <a href="+feature-rules-edit">Edit</a>
 
     </div>
   </div>
