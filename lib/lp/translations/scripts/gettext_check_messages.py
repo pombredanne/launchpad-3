@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -10,7 +10,6 @@ from datetime import (
     timedelta,
     )
 
-from storm.locals import Store
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -95,11 +94,13 @@ class GettextCheckMessages(LaunchpadScript):
         :return: Error message string if there is an error, or None otherwise.
         """
         potmsgset = translationmessage.potmsgset
-        msgids = potmsgset._list_of_msgids()
-        msgstrs = translationmessage.translations
+        # validate_translation takes a dict but translations are a list.
+        msgstrs = dict(enumerate(translationmessage.translations))
 
         try:
-            validate_translation(msgids, msgstrs, potmsgset.flags)
+            validate_translation(
+                potmsgset.singular_text, potmsgset.plural_text,
+                msgstrs, potmsgset.flags)
         except GettextValidationError, error:
             self._error_count += 1
             return unicode(error)
