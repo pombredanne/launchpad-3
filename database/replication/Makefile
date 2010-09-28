@@ -108,7 +108,8 @@ stagingsetup:
 	# Restore the database. We need to restore permissions, despite
 	# later running security.py, to pull in permissions granted on
 	# production to users not maintained by security.py.
-	bunzip2 --stdout ${STAGING_DUMP} | \
+	# Stop ignoring error code after dumps come from an 8.4 system.
+	-bunzip2 --stdout ${STAGING_DUMP} | \
 	    pg_restore --dbname=lpmain_staging_new --no-owner ${EXIT_ON_ERROR}
 	# Uninstall Slony-I if it is installed - a pg_dump of a DB with
 	# Slony-I installed isn't usable without this step.
@@ -142,7 +143,8 @@ stagingswitch:
 
 dogfood:
 	${CREATEDB} ${DOGFOOD_DBNAME}
-	pg_restore --dbname=${DOGFOOD_DBNAME} --no-acl --no-owner \
+	# Stop ignoring error code after are dumps come from an 8.4 system.
+	-pg_restore --dbname=${DOGFOOD_DBNAME} --no-acl --no-owner \
 	    ${EXIT_ON_ERROR} ${DOGFOOD_DUMP}
 	./repair-restored-db.py -d ${DOGFOOD_DBNAME}
 	../schema/upgrade.py -d ${DOGFOOD_DBNAME}

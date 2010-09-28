@@ -607,11 +607,8 @@ licensing.  We can find all projects with unreviewed licenses.
     ...    unreviewed['entries'], key=itemgetter('display_name'))
     >>> for project in entries:
     ...     print project['display_name']
-    APTonCD
     Arch mirrors
-    Bazaar
-    Bazaar
-    Derby
+    ...
 
 Or those that are reviewed.
 
@@ -639,11 +636,8 @@ We can also find all projects with no licensing information.
     ...    no_licenses['entries'], key=itemgetter('display_name'))
     >>> for project in entries:
     ...     print project['display_name']
-    APTonCD
     Arch mirrors
-    Bazaar
-    Bazaar
-    Derby
+    ...
 
 We can find projects based on creation date.
 
@@ -656,10 +650,7 @@ We can find projects based on creation date.
     >>> for project in entries:
     ...     print project['display_name']
     Arch mirrors
-    Bazaar
-    Evolution
-    GNOME Terminal
-    Gnome Applets
+    ...
 
 Similarly we can find new projects.
 
@@ -672,10 +663,7 @@ Similarly we can find new projects.
     >>> for project in entries:
     ...     print project['display_name']
     APTonCD
-    Bazaar
-    Derby
-    Jokosher
-    Launchpad
+    ...
 
 All of the projects of a given license can be found.
 
