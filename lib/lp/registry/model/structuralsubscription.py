@@ -52,6 +52,7 @@ from lp.registry.interfaces.structuralsubscription import (
     IStructuralSubscriptionTargetHelper,
     UserCannotSubscribePerson,
     )
+from lp.services.propertycache import cachedproperty
 
 
 class StructuralSubscription(SQLBase):
@@ -257,6 +258,19 @@ class DistributionTargetHelper:
 class StructuralSubscriptionTargetMixin:
     """Mixin class for implementing `IStructuralSubscriptionTarget`."""
 
+    @cachedproperty
+    def __helper(self):
+        """A `IStructuralSubscriptionTargetHelper` for this object.
+
+        Eventually this helper object could become *the* way to work with
+        structural subscriptions. For now it just provides a few bits that
+        vary with the context.
+
+        It is cached in a pseudo-private variable because this is a mixin
+        class.
+        """
+        return IStructuralSubscriptionTargetHelper(self)
+
     @property
     def _target_args(self):
         """Target Arguments.
@@ -264,22 +278,12 @@ class StructuralSubscriptionTargetMixin:
         Return a dictionary with the arguments representing this
         target in a call to the structural subscription constructor.
         """
-        return IStructuralSubscriptionTargetHelper(self).target_arguments
-
-    @property
-    def _pillar(self):
-        """Return the pillar associated with this object."""
-        return IStructuralSubscriptionTargetHelper(self).pillar
-
-    @property
-    def _join(self):
-        """A `Join` to get the relevant subscriptions for this object."""
-        return IStructuralSubscriptionTargetHelper(self).join
+        return self.__helper.target_arguments
 
     @property
     def parent_subscription_target(self):
         """See `IStructuralSubscriptionTarget`."""
-        parent = IStructuralSubscriptionTargetHelper(self).target_parent
+        parent = self.__helper.target_parent
         assert (parent is None or
                 IStructuralSubscriptionTarget.providedBy(parent))
         return parent
@@ -287,7 +291,7 @@ class StructuralSubscriptionTargetMixin:
     @property
     def target_type_display(self):
         """See `IStructuralSubscriptionTarget`."""
-        return IStructuralSubscriptionTargetHelper(self).target_type_display
+        return self.__helper.target_type_display
 
     def userCanAlterSubscription(self, subscriber, subscribed_by):
         """See `IStructuralSubscriptionTarget`."""
@@ -495,5 +499,5 @@ class StructuralSubscriptionTargetMixin:
                     bugtask.status for bugtask in bugtasks))
             ]
 
-        return Store.of(self._pillar).using(*origin).find(
-            StructuralSubscription, self._join, *conditions)
+        return Store.of(self.__helper.pillar).using(*origin).find(
+            StructuralSubscription, self.__helper.join, *conditions)
