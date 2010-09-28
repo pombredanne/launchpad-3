@@ -369,8 +369,8 @@
                     baseurl
                     bugtrackertype
                     componentForDistroSourcePackage
+                    component_groups
                     contactdetails
-                    getAllRemoteComponentGroups
                     getBugFilingAndSearchLinks
                     getBugsWatching
                     getLinkedPersonByName
@@ -478,7 +478,7 @@
                     is_custom
                     "/>
             <require
-                permission="launchpad.Edit"
+                permission="launchpad.AnyPerson"
                 set_attributes="
                     is_visible
                     is_custom
