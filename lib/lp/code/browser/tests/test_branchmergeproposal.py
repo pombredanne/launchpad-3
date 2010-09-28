@@ -365,7 +365,7 @@ class RegisterBranchMergeProposalViewMixin:
             self.assertEqual(review_type, votes[0].review_type)
 
 
-class TestRegisterBranchWithNoDefaultReviewerMergeProposalView(
+class TestRegisterBranchMergeProposalView(
     TestCaseWithFactory, RegisterBranchMergeProposalViewMixin):
     """Test the merge proposal registration view.
 
@@ -476,7 +476,7 @@ class TestRegisterBranchWithNoDefaultReviewerMergeProposalView(
         self.assertEqual(proposal.description, "This is the description.")
 
 
-class TestRegisterBranchMergeProposalView(
+class TestRegisterBranchWithADefaultReviewerMergeProposalView(
     TestCaseWithFactory, RegisterBranchMergeProposalViewMixin):
     """Test the merge proposal registration view.
 
