@@ -13,6 +13,19 @@ using the user interface.  Now they can.
 
 Hosted branches use Launchpad as their primary location.
 
+    >>> from lp.registry.interfaces.product import IProductSet
+    >>> from lp.code.enums import BranchType
+    >>> from zope.component import getUtility
+    >>> login(ANONYMOUS)
+    >>> redfish = getUtility(IProductSet).getByName('redfish')
+    >>> branch = factory.makeProductBranch(
+    ...     product=redfish, branch_type=BranchType.HOSTED)
+    >>> productseries = factory.makeProductSeries(
+    ...     product=redfish, branch=branch)
+    >>> login_person(redfish.owner)
+    >>> redfish.development_focus = productseries
+    >>> logout()
+
     >>> browser = setupBrowser(auth="Basic test@canonical.com:test")
     >>> browser.open('http://code.launchpad.dev/redfish')
     >>> browser.getLink("Register a branch").click()
@@ -116,6 +129,29 @@ facet page.
 
 Let's make sure we can load the branch creation form on a product.
 
+    >>> user_browser.getLink("Register a branch").click()
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+The link is not there because the product has not been configured to
+do code hosting yet.  The development focus must be set with a branch first.
+
+    >>> owner_browser = setupBrowser(auth="Basic foo.bar@canonical.com:test")
+    >>> owner_browser.open('http://code.launchpad.dev/applets')
+    >>> owner_browser.getLink('Configure code hosting').click()
+    >>> print owner_browser.url
+    http://code.launchpad.dev/applets/trunk/+setbranch
+
+    >>> owner_browser.getControl(
+    ...     'Create a new, empty branch').click()
+    >>> owner_browser.getControl('Branch name').value = 'trunk'
+    >>> owner_browser.getControl('Update').click()
+
+Now that code hosting has been configured, a regular user will be able
+to register a branch.
+
+    >>> user_browser.open('http://code.launchpad.dev/applets')
     >>> user_browser.getLink("Register a branch").click()
     >>> print user_browser.url
     http://code.launchpad.dev/applets/+addbranch
@@ -298,7 +334,7 @@ Now registering again with the same name.
 
 URL validation should check that the entered URL is not the root of a site.
 
-    >>> user_browser.open('http://code.launchpad.dev/firefox')
+    >>> user_browser.open('http://code.launchpad.dev/applets')
     >>> user_browser.getLink("Register a branch").click()
     >>> user_browser.getControl('Branch URL').value = 'http://example.com'
     >>> user_browser.getControl('Name').value = 'unique-name'
@@ -312,7 +348,7 @@ URL validation should check that the entered URL is not the root of a site.
 
 URL validation should check that the entered URL is not from Launchpad.
 
-    >>> user_browser.open('http://code.launchpad.dev/firefox')
+    >>> user_browser.open('http://code.launchpad.dev/applets')
     >>> user_browser.getLink("Register a branch").click()
     >>> user_browser.getControl('Branch URL').value = (
     ...     'http://code.launchpad.dev/~testuser/')
@@ -327,7 +363,7 @@ URL validation should check that the entered URL is not from Launchpad.
 As well as checking against the root site set in the config, a check
 is also done against the value stored as a database constraint.
 
-    >>> user_browser.open('http://code.launchpad.dev/firefox')
+    >>> user_browser.open('http://code.launchpad.dev/applets')
     >>> user_browser.getLink("Register a branch").click()
     >>> user_browser.getControl('Branch URL').value = (
     ...     'http://bazaar.launchpad.net/foo/bar/')
@@ -361,6 +397,14 @@ create branches for landscape.
 
 When registering a branch from the product pages, there is no product widget,
 so errors are set at the page level.
+
+    >>> owner_browser = setupBrowser(auth="Basic test@canonical.com:test")
+    >>> owner_browser.open('http://code.launchpad.dev/landscape')
+    >>> owner_browser.getLink('Configure code hosting').click()
+    >>> owner_browser.getControl(
+    ...     'Create a new, empty branch').click()
+    >>> owner_browser.getControl('Branch name').value = 'trunk'
+    >>> owner_browser.getControl('Update').click()
 
     >>> user_browser.open('http://code.launchpad.dev/landscape')
     >>> user_browser.getLink("Register a branch").click()

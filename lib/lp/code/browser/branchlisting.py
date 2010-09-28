@@ -424,7 +424,6 @@ class BranchListingItemsMixin:
 
     def getDistroDevelSeries(self, distribution):
         """distribution.currentseries hits the DB every time so cache it."""
-        self._distro_series_map = {}
         try:
             return self._distro_series_map[distribution]
         except KeyError:
@@ -1124,8 +1123,8 @@ class ProductBranchesMenu(ApplicationMenu):
     def active_reviews(self):
         text = get_plural_text(
             self.active_review_count,
-            'active review',
-            'active reviews')
+            'Active review',
+            'Active reviews')
         return Link('+activereviews', text, site='code')
 
     @enabled_with_permission('launchpad.Commercial')
@@ -1186,6 +1185,16 @@ class ProductBranchStatisticsView(BranchCountSummaryView,
                                   ProductBranchListingView):
     """Portlet containing branch statistics."""
 
+    @property
+    def branch_text(self):
+        text = super(ProductBranchStatisticsView, self).branch_text
+        return text.capitalize()
+
+    @property
+    def commit_text(self):
+        text = super(ProductBranchStatisticsView, self).commit_text
+        return text.capitalize()
+
 
 class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
                            ProductDownloadFileMixin, BranchMirrorMixin):
@@ -1196,9 +1205,12 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
     def initialize(self):
         ProductBranchListingView.initialize(self)
         self.product = self.context
-        self.branch = self.development_focus_branch
         revision_cache = getUtility(IRevisionCache)
         self.revision_cache = revision_cache.inProduct(self.product)
+
+    @property
+    def branch(self):
+        return self.development_focus_branch
 
     @property
     def form_action(self):

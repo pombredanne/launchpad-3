@@ -234,10 +234,10 @@ class TestProductBranchesViewPortlets(ProductTestBase, BrowserTestCase):
         self.assertEqual(ServiceUsage.UNKNOWN, product.codehosting_usage)
         browser = self.getUserBrowser(canonical_url(product, rootsite='code'))
         contents = browser.contents
-        self.assertEqual(None, find_tag_by_id(contents, 'branch-portlet'))
-        self.assertEqual(None, find_tag_by_id(contents, 'privacy'))
-        self.assertEqual(None, find_tag_by_id(contents, 'involvement'))
-        self.assertEqual(None, find_tag_by_id(
+        self.assertIs(None, find_tag_by_id(contents, 'branch-portlet'))
+        self.assertIs(None, find_tag_by_id(contents, 'privacy'))
+        self.assertIs(None, find_tag_by_id(contents, 'involvement'))
+        self.assertIs(None, find_tag_by_id(
             contents, 'portlet-product-codestatistics'))
 
     def test_portlets_shown_for_HOSTED(self):
@@ -246,24 +246,24 @@ class TestProductBranchesViewPortlets(ProductTestBase, BrowserTestCase):
         self.assertEqual(ServiceUsage.LAUNCHPAD, product.codehosting_usage)
         browser = self.getUserBrowser(canonical_url(product, rootsite='code'))
         contents = browser.contents
-        self.assertNotEqual(None, find_tag_by_id(contents, 'branch-portlet'))
-        self.assertNotEqual(None, find_tag_by_id(contents, 'privacy'))
-        self.assertNotEqual(None, find_tag_by_id(contents, 'involvement'))
-        self.assertNotEqual(None, find_tag_by_id(
+        self.assertIsNot(None, find_tag_by_id(contents, 'branch-portlet'))
+        self.assertIsNot(None, find_tag_by_id(contents, 'privacy'))
+        self.assertIsNot(None, find_tag_by_id(contents, 'involvement'))
+        self.assertIsNot(None, find_tag_by_id(
             contents, 'portlet-product-codestatistics'))
 
     def test_portlets_shown_for_EXTERNAL(self):
-        # If the BranchUsage is HOSTED then the portlets are shown.
+        # If the BranchUsage is EXTERNAL then the portlets are shown.
         url = "http://example.com/mybranch"
         product, branch = self.makeProductAndDevelopmentFocusBranch(
             branch_type=BranchType.MIRRORED,
             url=url)
         browser = self.getUserBrowser(canonical_url(product, rootsite='code'))
         contents = browser.contents
-        self.assertNotEqual(None, find_tag_by_id(contents, 'branch-portlet'))
-        self.assertNotEqual(None, find_tag_by_id(contents, 'privacy'))
-        self.assertNotEqual(None, find_tag_by_id(contents, 'involvement'))
-        self.assertNotEqual(None, find_tag_by_id(
+        self.assertIsNot(None, find_tag_by_id(contents, 'branch-portlet'))
+        self.assertIsNot(None, find_tag_by_id(contents, 'privacy'))
+        self.assertIsNot(None, find_tag_by_id(contents, 'involvement'))
+        self.assertIsNot(None, find_tag_by_id(
             contents, 'portlet-product-codestatistics'))
 
     def test_is_private(self):

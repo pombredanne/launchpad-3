@@ -478,7 +478,7 @@ class ProductInvolvementView(PillarView):
     def registration_completeness(self):
         """The percent complete for registration."""
         config_statuses = self.configuration_states
-        configured = sum([1 for v in config_statuses.values() if v])
+        configured = sum(1 for v in config_statuses.values() if v)
         scale = 100
         done = int(float(configured) / len(config_statuses) * scale)
         undone = scale - done

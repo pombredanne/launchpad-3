@@ -1,11 +1,6 @@
 <tal:portlet-product-codestatistics-content
     xmlns:tal="http://xml.zope.org/namespaces/tal"
     xmlns:metal="http://xml.zope.org/namespaces/metal">
-  <tal:comment condition="nothing">
-    The view/*_count|nothing expressions below are so that this
-    template can be rendered by a view that does not have count
-    information available.
-  </tal:comment>
 
   <tr tal:define="menu context/menu:branches" class="code-links"
       id="merge-counts">
