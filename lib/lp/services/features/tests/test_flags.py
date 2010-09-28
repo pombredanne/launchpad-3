@@ -177,18 +177,20 @@ class TestStormFeatureRuleSource(TestCase):
     def test_getAllRulesAsTuples(self):
         source = StormFeatureRuleSource()
         source.setAllRules(test_rules_list)
-        self.assertEquals(list(source.getAllRulesAsTuples()),
-            test_rules_list)
+        self.assertEquals(
+            test_rules_list,
+            list(source.getAllRulesAsTuples()))
 
     def test_getAllRulesAsText(self):
         source = StormFeatureRuleSource()
         source.setAllRules(test_rules_list)
-        self.assertEquals(source.getAllRulesAsText(),
+        self.assertEquals(
             """\
 %s\tbeta_user\t100\t%s
 ui.icing\tbeta_user\t300\t4.0
 ui.icing\tdefault\t100\t3.0
-""" % (notification_name, notification_value))
+""" % (notification_name, notification_value),
+            source.getAllRulesAsText())
 
     def test_setAllRulesFromText(self):
         # We will overwrite existing data.
@@ -200,10 +202,13 @@ flag1   beta_user   200   alpha
 flag1   default     100   gamma with spaces
 flag2   default     0\ton
 """)
-        self.assertEquals(source.getAllRulesAsDict(), {
+        self.assertEquals({
             'flag1': [
                 ('beta_user', 200, 'alpha'),
-                ('default', 100, 'gamma with spaces'), ],
+                ('default', 100, 'gamma with spaces'), 
+                ],
             'flag2': [
-                ('default', 0, 'on'),]})
-                
+                ('default', 0, 'on'),
+                ],
+            }, 
+            source.getAllRulesAsDict())
