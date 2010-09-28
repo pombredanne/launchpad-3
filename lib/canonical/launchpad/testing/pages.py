@@ -63,7 +63,7 @@ from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import OAuthPermission
 from canonical.launchpad.webapp.url import urlsplit
 from canonical.testing import PageTestLayer
-from lp\.registry\.errors import NameAlreadyTaken
+from lp.registry.errors import NameAlreadyTaken
 from lp.testing import (
     ANONYMOUS,
     launchpadlib_for,

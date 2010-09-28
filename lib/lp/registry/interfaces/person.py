@@ -27,7 +27,6 @@ __all__ = [
     'ImmutableVisibilityError',
     'InvalidName',
     'JoinNotAllowed',
-    'NameAlreadyTaken',
     'NoSuchPerson',
     'PersonCreationRationale',
     'PersonVisibility',

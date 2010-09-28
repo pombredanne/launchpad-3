@@ -43,13 +43,15 @@ from lp.answers.model.answercontact import AnswerContact
 from lp.blueprints.model.specification import Specification
 from lp.bugs.interfaces.bugtask import IllegalRelatedBugTasksParams
 from lp.bugs.model.bugtask import get_related_bugtasks_search_params
-from lp.registry.errors import PrivatePersonLinkageError
+from lp.registry.errors import (
+    NameAlreadyTaken,
+    PrivatePersonLinkageError,
+    )
 from lp.registry.interfaces.karma import IKarmaCacheManager
 from lp.registry.interfaces.person import (
     ImmutableVisibilityError,
     InvalidName,
     IPersonSet,
-    NameAlreadyTaken,
     PersonCreationRationale,
     PersonVisibility,
     )
