@@ -50,7 +50,8 @@ def update_files(filenames):
     """Open the files with the given file names and update them."""
     for filename in filenames:
         if not os.path.isfile(filename):
-            print "Skipped: %s does not exist or is not a regular file." % filename
+            print "Skipped: %s does not exist or is not a regular file." %(
+                filename)
             continue
         if not os.access(filename, os.W_OK):
             print "Skipped: %s is not writeable." % filename
