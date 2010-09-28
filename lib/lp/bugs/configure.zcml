@@ -191,6 +191,7 @@
                     date_fix_released
                     date_left_closed
                     date_closed
+                    productseriesID
                     task_age
                     bug_subscribers
                     is_complete
@@ -367,10 +368,13 @@
                     aliases
                     baseurl
                     bugtrackertype
+                    componentForDistroSourcePackage
                     contactdetails
+                    getAllRemoteComponentGroups
                     getBugFilingAndSearchLinks
                     getBugsWatching
                     getLinkedPersonByName
+                    getRemoteComponentGroup
                     has_lp_plugin
                     id
                     imported_bug_messages
@@ -393,6 +397,7 @@
                     destroySelf
                     ensurePersonForSelf
                     linkPersonToSelf
+                    addRemoteComponentGroup
                     "
                 set_attributes="
                     aliases
@@ -459,6 +464,47 @@
             <allow
                 interface="lp.bugs.interfaces.bugtracker.IBugTrackerAliasSet"/>
         </securedutility>
+
+        <!--BugTrackerComponent -->
+
+        <class
+            class="canonical.launchpad.database.BugTrackerComponent">
+            <require
+                permission="zope.Public"
+                attributes="
+                    id
+                    name
+                    is_visible
+                    is_custom
+                    "/>
+            <require
+                permission="launchpad.Edit"
+                set_attributes="
+                    is_visible
+                    is_custom
+                    "/>
+            <implements
+                interface="lp.bugs.interfaces.bugtracker.IBugTrackerComponent"/>
+        </class>
+
+        <!--BugTrackerComponentGroup -->
+
+        <class
+            class="canonical.launchpad.database.BugTrackerComponentGroup">
+            <require
+                permission="zope.Public"
+                attributes="
+                    id
+                    name
+                    bug_tracker
+                    components
+                    getComponent
+                    addComponent
+                    addCustomComponent
+                    "/>
+            <implements
+                interface="lp.bugs.interfaces.bugtracker.IBugTrackerComponentGroup"/>
+        </class>
 
         <!-- RemoteBug -->
 
@@ -592,6 +638,7 @@
                     isMentor
                     getNullBugTask
                     is_complete
+                    official_tags
                     who_made_private
                     date_made_private
                     userCanView
@@ -624,6 +671,7 @@
                     initial_message
                     linked_branches
                     watches
+                    has_cves
                     cves
                     cve_links
                     duplicates

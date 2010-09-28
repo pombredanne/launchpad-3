@@ -66,7 +66,6 @@ from canonical.launchpad.database.message import (
     Message,
     MessageChunk,
     )
-from canonical.launchpad.ftests._sqlobject import syncUpdate
 from canonical.launchpad.interfaces import (
     IMasterStore,
     IStore,
@@ -249,8 +248,10 @@ from lp.soyuz.model.files import (
 from lp.soyuz.model.processor import ProcessorFamilySet
 from lp.testing import (
     ANONYMOUS,
+    launchpadlib_for,
     login,
     login_as,
+    login_person,
     person_logged_in,
     run_with_login,
     temp_dir,
@@ -634,8 +635,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if not use_default_autosubscribe_policy:
             # Shut off list auto-subscription so that we have direct control
             # over subscriptions in the doctests.
-            person.mailing_list_auto_subscribe_policy = \
-                MailingListAutoSubscribePolicy.NEVER
+            with person_logged_in(person):
+                person.mailing_list_auto_subscribe_policy = (
+                    MailingListAutoSubscribePolicy.NEVER)
         account = IMasterStore(Account).get(Account, person.accountID)
         getUtility(IEmailAddressSet).new(
             alternative_address, person, EmailAddressStatus.VALIDATED,
@@ -884,11 +886,21 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
     def makeProductSeries(self, product=None, name=None, owner=None,
                           summary=None, date_created=None, branch=None):
-        """Create and return a new ProductSeries."""
+        """Create a new, arbitrary ProductSeries.
+
+        :param branch: If supplied, the branch to set as
+            ProductSeries.branch.
+        :param date_created: If supplied, the date the series is created.
+        :param name: If supplied, the name of the series.
+        :param owner: If supplied, the owner of the series.
+        :param product: If supplied, the series is created for this product.
+            Otherwise, a new product is created.
+        :param summary: If supplied, the product series summary.
+        """
         if product is None:
             product = self.makeProduct()
         if owner is None:
-            owner = self.makePerson()
+            owner = product.owner
         if name is None:
             name = self.getUniqueString()
         if summary is None:
@@ -1385,6 +1397,31 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return getUtility(IBugTrackerSet).ensureBugTracker(
             base_url, owner, bugtrackertype, title=title, name=name)
 
+    def makeBugTrackerComponentGroup(self, name=None, bug_tracker=None):
+        """Make a new bug tracker component group."""
+        if name is None:
+            name = u'default'
+        if bug_tracker is None:
+            bug_tracker = self.makeBugTracker()
+
+        component_group = bug_tracker.addRemoteComponentGroup(name)
+        return component_group
+
+    def makeBugTrackerComponent(self, name=None, component_group=None,
+                                custom=None):
+        """Make a new bug tracker component."""
+        if name is None:
+            name = u'default'
+        if component_group is None:
+            component_group = self.makeBugTrackerComponentGroup()
+        if custom is None:
+            custom = False
+        if custom:
+            component = component_group.addCustomComponent(name)
+        else:
+            component = component_group.addComponent(name)
+        return component
+
     def makeBugWatch(self, remote_bug=None, bugtracker=None, bug=None,
                      owner=None, bug_task=None):
         """Make a new bug watch."""
@@ -1779,29 +1816,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         MessageChunk(message=message, sequence=1, content=content)
         return message
 
-    def makeSeries(self, branch=None, name=None, product=None):
-        """Create a new, arbitrary ProductSeries.
-
-        :param branch: If supplied, the branch to set as
-            ProductSeries.branch.
-        :param name: If supplied, the name of the series.
-        :param product: If supplied, the series is created for this product.
-            Otherwise, a new product is created.
-        """
-        if product is None:
-            product = self.makeProduct()
-        if name is None:
-            name = self.getUniqueString()
-        # We don't want to login() as the person used to create the product,
-        # so we remove the security proxy before creating the series.
-        naked_product = removeSecurityProxy(product)
-        series = naked_product.newSeries(
-            product.owner, name, self.getUniqueString(), branch)
-        if branch is not None:
-            series.branch = branch
-        syncUpdate(series)
-        return series
-
     def makeLanguage(self, language_code=None, name=None):
         """Makes a language given the language_code and name."""
         if language_code is None:
@@ -1917,7 +1931,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if difference_type is not (
             DistroSeriesDifferenceType.MISSING_FROM_DERIVED_SERIES):
 
-            source_pub = self.makeSourcePackagePublishingHistory(
+            self.makeSourcePackagePublishingHistory(
                 distroseries=derived_series,
                 version=versions.get('derived'),
                 sourcepackagename=source_package_name,
@@ -1926,7 +1940,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if difference_type is not (
             DistroSeriesDifferenceType.UNIQUE_TO_DERIVED_SERIES):
 
-            source_pub = self.makeSourcePackagePublishingHistory(
+            self.makeSourcePackagePublishingHistory(
                 distroseries=derived_series.parent_series,
                 version=versions.get('parent'),
                 sourcepackagename=source_package_name,
@@ -1966,6 +1980,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             processorfamily = ProcessorFamilySet().getByName('powerpc')
         if owner is None:
             owner = self.makePerson()
+        # XXX: architecturetag & processerfamily are tightly coupled. It's
+        # wrong to just make a fresh architecture tag without also making a
+        # processor family to go with it (ideally with processors!)
         if architecturetag is None:
             architecturetag = self.getUniqueString('arch')
         return distroseries.newArch(
@@ -2647,7 +2664,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
     def makeBinaryPackageBuild(self, source_package_release=None,
             distroarchseries=None, archive=None, builder=None,
-            status=None):
+            status=None, pocket=None):
         """Create a BinaryPackageBuild.
 
         If archive is not supplied, the source_package_release is used
@@ -2678,20 +2695,18 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 processorfamily=processor.family)
         if status is None:
             status = BuildStatus.NEEDSBUILD
+        if pocket is None:
+            pocket = PackagePublishingPocket.RELEASE
         binary_package_build = getUtility(IBinaryPackageBuildSet).new(
             source_package_release=source_package_release,
             processor=processor,
             distro_arch_series=distroarchseries,
             status=status,
             archive=archive,
-            pocket=PackagePublishingPocket.RELEASE,
+            pocket=pocket,
             date_created=self.getUniqueDate())
         naked_build = removeSecurityProxy(binary_package_build)
         naked_build.builder = builder
-        binary_package_build_job = naked_build.makeJob()
-        BuildQueue(
-            job=binary_package_build_job.job,
-            job_type=BuildFarmJobType.PACKAGEBUILD)
         return binary_package_build
 
     def makeSourcePackagePublishingHistory(self, sourcepackagename=None,
@@ -3125,6 +3140,14 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         new_uuid = getUtility(ITemporaryStorageManager).new(blob, expires)
 
         return getUtility(ITemporaryStorageManager).fetch(new_uuid)
+
+    def makeLaunchpadService(self, person=None):
+        if person is None:
+            person = self.makePerson()
+        launchpad = launchpadlib_for("test", person,
+            service_root="http://api.launchpad.dev:8085")
+        login_person(person)
+        return launchpad
 
 
 # Some factory methods return simple Python types. We don't add

@@ -276,6 +276,9 @@ class RetryDepwait(LaunchpadCronScript):
             self.txn.commit()
 
 
+# XXX: JonathanLange 2010-09-22 bug=645046: This is the old slave
+# scanner. Julian says it's not running on production. We should either delete
+# it or update it to use the async apis.
 class SlaveScanner(LaunchpadCronScript):
 
     def main(self):

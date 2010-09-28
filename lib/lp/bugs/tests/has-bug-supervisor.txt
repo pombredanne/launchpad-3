@@ -5,7 +5,7 @@ bugs pertaining to a target. All objects with a bug supervisor are also
 structural subscription targets. When the bug supervisor for such an object
 is set, a new bug subscription is created as well.
 
-    >>> target.bug_subscriptions
+    >>> list(target.bug_subscriptions)
     []
 
     >>> print target.bug_supervisor

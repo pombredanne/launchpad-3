@@ -11,6 +11,7 @@
     xmlns:webservice="http://namespaces.canonical.com/webservice"
     i18n_domain="launchpad">
   <include package=".browser"/>
+  <include package=".vocabularies"/>
   <authorizations module="lp.code.security" />
 
   <publisher
@@ -235,8 +236,10 @@
                     votes
                     all_comments
                     related_bugs
+                    revision_end_date
                     isMergable
                     getComment
+                    getRevisionsSinceReviewStart
                     getNotificationRecipients
                     getVoteReference
                     isValidTransition
