@@ -349,15 +349,12 @@ class TestStructuralSubscriptionTargetHelper(TestCaseWithFactory):
         self.person = self.factory.makePerson()
         login_person(self.person)
 
-    def get_helper(self, target):
-        helper = IStructuralSubscriptionTargetHelper(target)
-        self.assertThat(helper, Provides(IStructuralSubscriptionTargetHelper))
-        return helper
-
     def test_distribution_series(self):
         target = self.factory.makeDistroSeries()
-        helper = self.get_helper(target)
+        helper = IStructuralSubscriptionTargetHelper(target)
+        self.assertThat(helper, Provides(IStructuralSubscriptionTargetHelper))
         self.assertEqual("distribution series", helper.target_type_display)
+        self.assertEqual(target, helper.target)
         self.assertEqual(target.distribution, helper.target_parent)
         self.assertEqual(target.distribution, helper.pillar)
         self.assertEqual(
@@ -366,8 +363,10 @@ class TestStructuralSubscriptionTargetHelper(TestCaseWithFactory):
 
     def test_project_group(self):
         target = self.factory.makeProject(owner=self.person)
-        helper = self.get_helper(target)
+        helper = IStructuralSubscriptionTargetHelper(target)
+        self.assertThat(helper, Provides(IStructuralSubscriptionTargetHelper))
         self.assertEqual("project group", helper.target_type_display)
+        self.assertEqual(target, helper.target)
         self.assertEqual(None, helper.target_parent)
         self.assertEqual(target, helper.pillar)
         self.assertEqual(
@@ -376,8 +375,10 @@ class TestStructuralSubscriptionTargetHelper(TestCaseWithFactory):
 
     def test_distribution_source_package(self):
         target = self.factory.makeDistributionSourcePackage()
-        helper = self.get_helper(target)
+        helper = IStructuralSubscriptionTargetHelper(target)
+        self.assertThat(helper, Provides(IStructuralSubscriptionTargetHelper))
         self.assertEqual("package", helper.target_type_display)
+        self.assertEqual(target, helper.target)
         self.assertEqual(target.distribution, helper.target_parent)
         self.assertThat(
             helper.target_parent, Provides(IStructuralSubscriptionTarget))
@@ -389,8 +390,10 @@ class TestStructuralSubscriptionTargetHelper(TestCaseWithFactory):
 
     def test_milestone(self):
         target = self.factory.makeMilestone()
-        helper = self.get_helper(target)
+        helper = IStructuralSubscriptionTargetHelper(target)
+        self.assertThat(helper, Provides(IStructuralSubscriptionTargetHelper))
         self.assertEqual("milestone", helper.target_type_display)
+        self.assertEqual(target, helper.target)
         self.assertEqual(target.target, helper.target_parent)
         self.assertThat(
             helper.target_parent, Provides(IStructuralSubscriptionTarget))
@@ -401,8 +404,10 @@ class TestStructuralSubscriptionTargetHelper(TestCaseWithFactory):
 
     def test_product(self):
         target = self.factory.makeProduct(owner=self.person)
-        helper = self.get_helper(target)
+        helper = IStructuralSubscriptionTargetHelper(target)
+        self.assertThat(helper, Provides(IStructuralSubscriptionTargetHelper))
         self.assertEqual("project", helper.target_type_display)
+        self.assertEqual(target, helper.target)
         self.assertEqual(None, helper.target_parent)
         self.assertEqual(target, helper.pillar)
         self.assertEqual(
@@ -412,8 +417,10 @@ class TestStructuralSubscriptionTargetHelper(TestCaseWithFactory):
     def test_product_in_group(self):
         project = self.factory.makeProject(owner=self.person)
         target = self.factory.makeProduct(project=project)
-        helper = self.get_helper(target)
+        helper = IStructuralSubscriptionTargetHelper(target)
+        self.assertThat(helper, Provides(IStructuralSubscriptionTargetHelper))
         self.assertEqual("project", helper.target_type_display)
+        self.assertEqual(target, helper.target)
         self.assertEqual(project, helper.target_parent)
         self.assertEqual(target, helper.pillar)
         self.assertEqual(
@@ -422,8 +429,10 @@ class TestStructuralSubscriptionTargetHelper(TestCaseWithFactory):
 
     def test_product_series(self):
         target = self.factory.makeProductSeries(owner=self.person)
-        helper = self.get_helper(target)
+        helper = IStructuralSubscriptionTargetHelper(target)
+        self.assertThat(helper, Provides(IStructuralSubscriptionTargetHelper))
         self.assertEqual("project series", helper.target_type_display)
+        self.assertEqual(target, helper.target)
         self.assertEqual(target.product, helper.target_parent)
         self.assertThat(
             helper.target_parent, Provides(IStructuralSubscriptionTarget))
@@ -434,7 +443,9 @@ class TestStructuralSubscriptionTargetHelper(TestCaseWithFactory):
 
     def test_distribution(self):
         target = self.factory.makeDistribution(owner=self.person)
-        helper = self.get_helper(target)
+        helper = IStructuralSubscriptionTargetHelper(target)
+        self.assertThat(helper, Provides(IStructuralSubscriptionTargetHelper))
+        self.assertEqual(target, helper.target)
         self.assertEqual("distribution", helper.target_type_display)
         self.assertEqual(None, helper.target_parent)
         self.assertEqual(target, helper.pillar)
