@@ -41,7 +41,7 @@ class TestFeatureControlPage(BrowserTestCase):
 
     layer = DatabaseFunctionalLayer
 
-    def getUserBrowserAsTeamMember(self, url, teams):
+    def getUserBrowserAsTeamMember(self, teams):
         """Make a TestBrowser authenticated as a team member.
         
         :param teams: List of teams to add the new user to.
@@ -52,21 +52,22 @@ class TestFeatureControlPage(BrowserTestCase):
         for team in teams:
             with person_logged_in(team.teamowner):
                 team.addMember(user, reviewer=team.teamowner)
-        return self.getUserBrowser(url, user=user, password='test')
+        return self.getUserBrowser(url=None, user=user, password='test')
+
+    def getUserBrowserAsAdmin(self):
+        url = self.getFeatureRulesURL()
+        admin_team = getUtility(ILaunchpadCelebrities).admin
+        return self.getUserBrowserAsTeamMember([admin_team])
 
     def getFeatureRulesURL(self):
         root = getUtility(ILaunchpadRoot)
         url = canonical_url(root, view_name='+feature-rules')
         return url
 
-    def getFeaturePageBrowserAsAdmin(self):
-        url = self.getFeatureRulesURL()
-        admin_team = getUtility(ILaunchpadCelebrities).admin
-        return self.getUserBrowserAsTeamMember(url, [admin_team])
-
     def test_feature_page_default_value(self):
         """No rules in the sampledata gives no content in the page"""
-        browser = self.getFeaturePageBrowserAsAdmin()
+        browser = self.getUserBrowserAsAdmin()
+        browser.open(self.getFeatureRulesURL())
         textarea = browser.getControl(name="feature_rules")
         # and by default, since there are no rules in the sample data, it's
         # empty
@@ -77,7 +78,8 @@ class TestFeatureControlPage(BrowserTestCase):
             ('default', 'ui.icing', u'3.0', 100),
             ('beta_user', 'ui.icing', u'4.0', 300),
             ])
-        browser = self.getFeaturePageBrowserAsAdmin()
+        browser = self.getUserBrowserAsAdmin()
+        browser.open(self.getFeatureRulesURL())
         textarea = browser.getControl(name="feature_rules")
         self.assertThat(textarea.value.replace('\r', ''), Equals("""\
 ui.icing\tbeta_user\t300\t4.0
@@ -85,16 +87,17 @@ ui.icing\tdefault\t100\t3.0
 """))
 
     def test_feature_rules_anonymous_unauthorized(self):
+        browser = self.getUserBrowser()
         self.assertRaises(Unauthorized,
-            self.getUserBrowser,
+            browser.open,
             self.getFeatureRulesURL())
 
-    def test_feature_rules_peon_unauthorized(self):
+    def test_feature_rules_plebian_unauthorized(self):
         """Logged in, but not a member of any interesting teams."""
+        browser = self.getUserBrowserAsTeamMember([])
         self.assertRaises(Unauthorized,
-            self.getUserBrowserAsTeamMember,
-            self.getFeatureRulesURL(),
-            [])
+            browser.open,
+            self.getFeatureRulesURL())
 
     def test_feature_page_submit_changes(self):
         # XXX: read/write mode not supported yet
