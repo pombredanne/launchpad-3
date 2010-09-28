@@ -275,6 +275,10 @@ class IStructuralSubscriptionTargetHelper(Interface):
     target_type_display = Attribute(
         "The type of the target, for display.")
 
+    target_arguments = Attribute(
+        "A dict of arguments that can be used as arguments to the "
+        "structural subscription constructor.")
+
     pillar = Attribute(
         "The pillar most closely corresponding to the context.")
 

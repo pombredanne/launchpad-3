@@ -141,6 +141,7 @@ class DistroSeriesTargetHelper:
     def __init__(self, target):
         self.target = target
         self.target_parent = target.distribution
+        self.target_arguments = {"distroseries": target}
         self.pillar = target.distribution
         self.join = (StructuralSubscription.distroseries == target)
 
@@ -156,6 +157,7 @@ class ProjectGroupTargetHelper:
     def __init__(self, target):
         self.target = target
         self.target_parent = None
+        self.target_arguments = {"project": target}
         self.pillar = target
         self.join = (StructuralSubscription.project == target)
 
@@ -171,6 +173,10 @@ class DistributionSourcePackageTargetHelper:
     def __init__(self, target):
         self.target = target
         self.target_parent = target.distribution
+        self.target_arguments = {
+            "distribution": target.distribution,
+            "sourcepackagename": target.sourcepackagename,
+            }
         self.pillar = target.distribution
         self.join = And(
             StructuralSubscription.distributionID == (
@@ -190,6 +196,7 @@ class MilestoneTargetHelper:
     def __init__(self, target):
         self.target = target
         self.target_parent = target.target
+        self.target_arguments = {"milestone": target}
         self.pillar = target.target
         self.join = (StructuralSubscription.milestone == target)
 
@@ -205,6 +212,7 @@ class ProductTargetHelper:
     def __init__(self, target):
         self.target = target
         self.target_parent = target.project
+        self.target_arguments = {"product": target}
         self.pillar = target
         self.join = (StructuralSubscription.product == target)
 
@@ -220,6 +228,7 @@ class ProductSeriesTargetHelper:
     def __init__(self, target):
         self.target = target
         self.target_parent = target.product
+        self.target_arguments = {"productseries": target}
         self.pillar = target.product
         self.join = (StructuralSubscription.productseries == target)
 
@@ -235,6 +244,7 @@ class DistributionTargetHelper:
     def __init__(self, target):
         self.target = target
         self.target_parent = None
+        self.target_arguments = {"distribution": target}
         self.pillar = target
         self.join = (StructuralSubscription.distribution == target)
 

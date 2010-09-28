@@ -359,6 +359,7 @@ class TestStructuralSubscriptionTargetHelper(TestCaseWithFactory):
         self.assertEqual("distribution series", helper.target_type_display)
         self.assertEqual(target, helper.target)
         self.assertEqual(target.distribution, helper.target_parent)
+        self.assertEqual({"distroseries": target}, helper.target_arguments)
         self.assertEqual(target.distribution, helper.pillar)
         self.assertEqual(
             u"StructuralSubscription.distroseries = ?",
@@ -372,6 +373,7 @@ class TestStructuralSubscriptionTargetHelper(TestCaseWithFactory):
         self.assertEqual(target, helper.target)
         self.assertEqual(None, helper.target_parent)
         self.assertEqual(target, helper.pillar)
+        self.assertEqual({"project": target}, helper.target_arguments)
         self.assertEqual(
             u"StructuralSubscription.project = ?",
             compile_storm(helper.join))
@@ -387,6 +389,10 @@ class TestStructuralSubscriptionTargetHelper(TestCaseWithFactory):
             helper.target_parent, Provides(IStructuralSubscriptionTarget))
         self.assertEqual(target.distribution, helper.pillar)
         self.assertEqual(
+            {"distribution": target.distribution,
+             "sourcepackagename": target.sourcepackagename},
+            helper.target_arguments)
+        self.assertEqual(
             u"StructuralSubscription.distribution = ? AND "
             u"StructuralSubscription.sourcepackagename = ?",
             compile_storm(helper.join))
@@ -401,6 +407,7 @@ class TestStructuralSubscriptionTargetHelper(TestCaseWithFactory):
         self.assertThat(
             helper.target_parent, Provides(IStructuralSubscriptionTarget))
         self.assertEqual(target.target, helper.pillar)
+        self.assertEqual({"milestone": target}, helper.target_arguments)
         self.assertEqual(
             u"StructuralSubscription.milestone = ?",
             compile_storm(helper.join))
@@ -413,6 +420,7 @@ class TestStructuralSubscriptionTargetHelper(TestCaseWithFactory):
         self.assertEqual(target, helper.target)
         self.assertEqual(None, helper.target_parent)
         self.assertEqual(target, helper.pillar)
+        self.assertEqual({"product": target}, helper.target_arguments)
         self.assertEqual(
             u"StructuralSubscription.product = ?",
             compile_storm(helper.join))
@@ -426,6 +434,7 @@ class TestStructuralSubscriptionTargetHelper(TestCaseWithFactory):
         self.assertEqual(target, helper.target)
         self.assertEqual(project, helper.target_parent)
         self.assertEqual(target, helper.pillar)
+        self.assertEqual({"product": target}, helper.target_arguments)
         self.assertEqual(
             u"StructuralSubscription.product = ?",
             compile_storm(helper.join))
@@ -440,6 +449,7 @@ class TestStructuralSubscriptionTargetHelper(TestCaseWithFactory):
         self.assertThat(
             helper.target_parent, Provides(IStructuralSubscriptionTarget))
         self.assertEqual(target.product, helper.pillar)
+        self.assertEqual({"productseries": target}, helper.target_arguments)
         self.assertEqual(
             u"StructuralSubscription.productseries = ?",
             compile_storm(helper.join))
@@ -452,6 +462,7 @@ class TestStructuralSubscriptionTargetHelper(TestCaseWithFactory):
         self.assertEqual("distribution", helper.target_type_display)
         self.assertEqual(None, helper.target_parent)
         self.assertEqual(target, helper.pillar)
+        self.assertEqual({"distribution": target}, helper.target_arguments)
         self.assertEqual(
             u"StructuralSubscription.distribution = ?",
             compile_storm(helper.join))
