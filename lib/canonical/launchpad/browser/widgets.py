@@ -121,7 +121,7 @@ class BranchPopupWidget(VocabularyPickerWidget):
         # of the launch bag.
         url = unicode(URI(url).ensureNoSlash())
         if getUtility(IBranchLookup).getByUrl(url) is not None:
-            raise AlreadyRegisteredError('Already a branch for %r' % (url, ))
+            raise AlreadyRegisteredError('Already a branch for %r' % url)
         # Make sure the URL is valid.
         IBranch['url'].validate(url)
         product = self.getProduct()
@@ -152,4 +152,4 @@ class BranchPopupWidget(VocabularyPickerWidget):
                     LaunchpadValidationError):
                 # If it's not a URL or we can't figure out a product, then we
                 # re-raise the initial error.
-                raise
+                raise exc_class, exc_obj, exc_tb

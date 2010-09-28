@@ -6,7 +6,7 @@ calling IBug.addNomination.
 
     >>> from zope.component import getUtility
     >>> from zope.interface.verify import verifyClass
-    >>> from lp.bugs.model.bugbomination import BugNomination
+    >>> from lp.bugs.model.bugnomination import BugNomination
     >>> from lp.bugs.interfaces.bug import IBugSet
     >>> from lp.bugs.interfaces.bugnomination import IBugNomination
     >>> from lp.registry.interfaces.distribution import IDistributionSet

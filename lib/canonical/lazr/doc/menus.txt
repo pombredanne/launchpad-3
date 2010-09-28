@@ -48,7 +48,7 @@ for traversable objects.
 
     >>> class BaseContent:
     ...     implements(ICanonicalUrlData)
-    ... 
+    ...
     ...     def __init__(self, name, parent):
     ...         self.name = name
     ...         self.path = name
@@ -196,8 +196,8 @@ they are assigned to the same facet.
     ...     class="canonical.lazr.cookingexample.RecipeQuestionsAllView"
     ...     permission="zope.Public"
     ...     />
-    >>> </configure>
-    >>> """)
+    ... </configure>
+    ... """)
 
 
 The FacetMenu class
@@ -233,24 +233,24 @@ are appropriate for a context object.
     >>> from canonical.launchpad.webapp import Link
 
     >>> class CookeryFacetMenu(FacetMenu):
-    ... 
+    ...
     ...     usedfor = ICookbook
     ...     links = ['summary', 'questions', 'variations']
     ...     defaultlink = 'summary'
     ...     enable_only = ['summary', 'questions']
-    ... 
+    ...
     ...     def summary(self):
     ...         target = ''
     ...         text = 'Summary'
     ...         summary = 'Summary of %s in Cookery' % self.context.name
     ...         return Link(target, text, summary)
-    ... 
+    ...
     ...     def questions(self):
     ...         target = '+questions'
     ...         text = 'Questions'
     ...         summary = 'Questions and answers about %s' % self.context.name
     ...         return Link(target, text, summary)
-    ... 
+    ...
     ...     def variations(self):
     ...         target = '+variations'
     ...         text = 'Variations'
@@ -357,12 +357,12 @@ menu though one of its links.
     ...     facet = 'cookery'
     ...     title = 'Edit'
     ...     links = ('edit_instructions', 'edit_ingredients')
-    ... 
+    ...
     ...     def edit_instructions(self):
     ...         target = '+edit-instructions'
     ...         text = 'Edit instructions'
     ...         return Link(target, text)
-    ... 
+    ...
     ...     def edit_ingredients(self):
     ...         target = '+edit-ingredients'
     ...         text = 'Edit ingredients'
@@ -379,16 +379,16 @@ available in the generated dictionary.
     ...     title = 'Journal'
     ...     links = ('read_journal', 'write_entry')
     ...     extra_attributes = ('journal_entries',)
-    ... 
+    ...
     ...     @property
     ...     def journal_entries(self):
     ...         return 42
-    ... 
+    ...
     ...     def read_journal(self):
     ...         target = '+read-journal'
     ...         text = 'Read Journal entries'
     ...         return Link(target, text)
-    ... 
+    ...
     ...     def write_entry(self):
     ...         target = '+write-entry'
     ...         text = 'Write a journal entry'
@@ -398,12 +398,12 @@ available in the generated dictionary.
     ...     usedfor = IRecipe
     ...     facet = 'cookery'
     ...     links = ('summary', 'journal')
-    ... 
+    ...
     ...     def summary(self):
     ...         target = ''
     ...         text = 'Summary'
     ...         return Link(target, text, menu=IRecipeEditMenuMarker)
-    ... 
+    ...
     ...     def journal(self):
     ...         target = '+journal'
     ...         text = 'Journal'
@@ -413,12 +413,12 @@ available in the generated dictionary.
     ...     usedfor = IRecipe
     ...     facet = 'questions'
     ...     links = ('all_questions', 'answered')
-    ... 
+    ...
     ...     def all_questions(self):
     ...         target = '+questions?filter=all'
     ...         text = 'All'
     ...         return Link(target, text)
-    ... 
+    ...
     ...     def answered(self):
     ...         target = '+questions?filter=answered'
     ...         text = 'Answered'
@@ -468,7 +468,7 @@ The RecipeFacetMenu subclass defined below only applies to IRecipe
 content object and it has all facet links enabled.
 
     >>> class RecipeFacetMenu(CookeryFacetMenu):
-    ... 
+    ...
     ...     usedfor = IRecipe
     ...     enable_only = ['summary', 'questions', 'variations']
 
@@ -536,7 +536,7 @@ links. CookeryFacetMenu did not include 'non_link' in its links, so an
 error is raised when BogusFacetMenu is used.
 
     >>> class BogusFacetMenu(CookeryFacetMenu):
-    ... 
+    ...
     ...     usedfor = IRecipe
     ...     enable_only = ['summary', 'non_link']
 
@@ -595,8 +595,8 @@ facet name.
     ...       CookeryFacetMenu RecipeFacetMenu
     ...       RecipeMenu RecipeEditMenu RecipeJournalMenu RecipeQuestionsMenu"
     ...     />
-    >>> </configure>
-    >>> """)
+    ... </configure>
+    ... """)
 
     >>> recipe_facetmenu = queryAdapter(
     ...     recipe, IFacetMenu)
@@ -852,22 +852,22 @@ see if we have a link to a page within Launchpad.
 
     >>> class AbsoluteUrlTargetTestFacets(FacetMenu):
     ...     links = ['foo', 'bar', 'baz', 'spoo']
-    ... 
+    ...
     ...     def foo(self):
     ...         target = ''
     ...         text = 'Foo'
     ...         return Link(target, text)
-    ... 
+    ...
     ...     def bar(self):
     ...         target = 'ftp://barlink.example.com/barbarbar'
     ...         text = 'External bar'
     ...         return Link(target, text)
-    ... 
+    ...
     ...     def baz(self):
     ...         target = 'http://launchpad.dev/joy-of-cooking/+baz'
     ...         text = 'Baz'
     ...         return Link(target, text)
-    ... 
+    ...
     ...     def spoo(self):
     ...         target = '/joy-of-cooking/+spoo'
     ...         text = 'Spoo'
@@ -1124,7 +1124,7 @@ NavigationMenus used in the previous TALES section.
     ...         self.links = sorted(
     ...             [link for link in menu.iterlinks() if link.enabled],
     ...             key=operator.attrgetter('sort_key'))
-    ... 
+    ...
     ...     def getMenu(self, facet=None):
     ...         return queryAdapter(self.context, IFacetMenu)
 
@@ -1230,4 +1230,3 @@ None. See `http://www.python.org/doc/essays/cleanup/` steps C1-3.
     ...         sys.modules[cooking_module].__dict__[key] = None
     >>> sys.modules[cooking_module] = None
     >>> del sys.modules['canonical.lazr.cookingexample']
-
