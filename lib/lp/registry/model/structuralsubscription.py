@@ -158,6 +158,100 @@ class StructuralSubscriptionTargetMixin:
                 '%s is not a valid structural subscription target.')
         return args
 
+    @property
+    def _pillar(self):
+        """Return the pillar associated with this object."""
+        if IDistributionSourcePackage.providedBy(self):
+            return self.distribution
+        elif IProduct.providedBy(self):
+            return self
+        elif IProjectGroup.providedBy(self):
+            return self
+        elif IDistribution.providedBy(self):
+            return self
+        elif IMilestone.providedBy(self):
+            return self.target
+        elif IProductSeries.providedBy(self):
+            return self.product
+        elif IDistroSeries.providedBy(self):
+            return self.distribution
+        else:
+            raise AssertionError(
+                '%s is not a valid structural subscription target.', self)
+
+    @property
+    def _join(self):
+        """A `Join` to get the relevant subscriptions for this object."""
+        if IDistributionSourcePackage.providedBy(self):
+            return And(
+                StructuralSubscription.distributionID == (
+                    self.distribution.id),
+                StructuralSubscription.sourcepackagenameID == (
+                        self.sourcepackagename.id))
+        elif IProduct.providedBy(self):
+            return (StructuralSubscription.product == self)
+        elif IProjectGroup.providedBy(self):
+            return (StructuralSubscription.project == self)
+        elif IDistribution.providedBy(self):
+            return (StructuralSubscription.distribution == self)
+        elif IMilestone.providedBy(self):
+            return (StructuralSubscription.milestone == self)
+        elif IProductSeries.providedBy(self):
+            return (StructuralSubscription.productseries == self)
+        elif IDistroSeries.providedBy(self):
+            return (StructuralSubscription.distroseries == self)
+        else:
+            raise AssertionError(
+                '%s is not a valid structural subscription target.', self)
+
+    @property
+    def parent_subscription_target(self):
+        """See `IStructuralSubscriptionTarget`."""
+        # Some structures have a related structure which can be thought
+        # of as their parent. A package is related to a distribution,
+        # a product is related to a project, etc'...
+        # This method determines whether the target has a parent,
+        # returning it if it exists.
+        if IDistributionSourcePackage.providedBy(self):
+            parent = self.distribution
+        elif IProduct.providedBy(self):
+            parent = self.project
+        elif IProductSeries.providedBy(self):
+            parent = self.product
+        elif IDistroSeries.providedBy(self):
+            parent = self.distribution
+        elif IMilestone.providedBy(self):
+            parent = self.target
+        else:
+            parent = None
+        # We only want to return the parent if it's
+        # an `IStructuralSubscriptionTarget`.
+        if IStructuralSubscriptionTarget.providedBy(parent):
+            return parent
+        else:
+            return None
+
+    @property
+    def target_type_display(self):
+        """See `IStructuralSubscriptionTarget`."""
+        if IDistributionSourcePackage.providedBy(self):
+            return 'package'
+        elif IProduct.providedBy(self):
+            return 'project'
+        elif IProjectGroup.providedBy(self):
+            return 'project group'
+        elif IDistribution.providedBy(self):
+            return 'distribution'
+        elif IMilestone.providedBy(self):
+            return 'milestone'
+        elif IProductSeries.providedBy(self):
+            return 'project series'
+        elif IDistroSeries.providedBy(self):
+            return 'distribution series'
+        else:
+            raise AssertionError(
+                '%s is not a valid structural subscription target.', self)
+
     def userCanAlterSubscription(self, subscriber, subscribed_by):
         """See `IStructuralSubscriptionTarget`."""
         # A Launchpad administrator or the user can subscribe a user.
@@ -318,54 +412,6 @@ class StructuralSubscriptionTargetMixin:
         return self.getSubscriptions(
             min_bug_notification_level=BugNotificationLevel.METADATA)
 
-    @property
-    def parent_subscription_target(self):
-        """See `IStructuralSubscriptionTarget`."""
-        # Some structures have a related structure which can be thought
-        # of as their parent. A package is related to a distribution,
-        # a product is related to a project, etc'...
-        # This method determines whether the target has a parent,
-        # returning it if it exists.
-        if IDistributionSourcePackage.providedBy(self):
-            parent = self.distribution
-        elif IProduct.providedBy(self):
-            parent = self.project
-        elif IProductSeries.providedBy(self):
-            parent = self.product
-        elif IDistroSeries.providedBy(self):
-            parent = self.distribution
-        elif IMilestone.providedBy(self):
-            parent = self.target
-        else:
-            parent = None
-        # We only want to return the parent if it's
-        # an `IStructuralSubscriptionTarget`.
-        if IStructuralSubscriptionTarget.providedBy(parent):
-            return parent
-        else:
-            return None
-
-    @property
-    def target_type_display(self):
-        """See `IStructuralSubscriptionTarget`."""
-        if IDistributionSourcePackage.providedBy(self):
-            return 'package'
-        elif IProduct.providedBy(self):
-            return 'project'
-        elif IProjectGroup.providedBy(self):
-            return 'project group'
-        elif IDistribution.providedBy(self):
-            return 'distribution'
-        elif IMilestone.providedBy(self):
-            return 'milestone'
-        elif IProductSeries.providedBy(self):
-            return 'project series'
-        elif IDistroSeries.providedBy(self):
-            return 'distribution series'
-        else:
-            raise AssertionError(
-                '%s is not a valid structural subscription target.', self)
-
     def userHasBugSubscriptions(self, user):
         """See `IStructuralSubscriptionTarget`."""
         bug_subscriptions = self.getSubscriptions(
@@ -380,37 +426,19 @@ class StructuralSubscriptionTargetMixin:
 
     def getSubscriptionsForBug(self, bug, level):
         """See `IStructuralSubscriptionTarget`."""
-        store = Store.of(self)
-        bugtasks = [bug.getBugTask(self)]
-
-        if IDistributionSourcePackage.providedBy(self):
-            store = Store.of(self.distribution)
-            join = And(
-                StructuralSubscription.distributionID == (
-                    self.distribution.id),
-                StructuralSubscription.sourcepackagenameID == (
-                        self.sourcepackagename.id))
-        elif IProduct.providedBy(self):
-            join = (StructuralSubscription.product == self)
-        elif IProjectGroup.providedBy(self):
-            join = (StructuralSubscription.project == self)
-            bugtasks.extend(
-                bug.getBugTask(product) for product in self.products)
-        elif IDistribution.providedBy(self):
-            join = (StructuralSubscription.distribution == self)
+        if IProjectGroup.providedBy(self):
+            targets = set(self.products)
         elif IMilestone.providedBy(self):
-            join = (StructuralSubscription.milestone == self)
-            bugtasks.append(bug.getBugTask(self.series_target))
-        elif IProductSeries.providedBy(self):
-            join = (StructuralSubscription.productseries == self)
-        elif IDistroSeries.providedBy(self):
-            join = (StructuralSubscription.distroseries == self)
+            targets = [self.series_target]
         else:
-            raise AssertionError(
-                '%s is not a valid structural subscription target.', self)
+            targets = [self]
 
-        bugtasks = [bugtask for bugtask in bugtasks if bugtask is not None]
-        assert len(bugtasks) != 0
+        bugtasks = [
+            bugtask for bugtask in bug.bugtasks
+            if bugtask.target in targets
+            ]
+
+        assert len(bugtasks) != 0, repr(self)
 
         origin = [
             StructuralSubscription,
@@ -430,5 +458,5 @@ class StructuralSubscriptionTargetMixin:
                     bugtask.status for bugtask in bugtasks))
             ]
 
-        return store.using(*origin).find(
-            StructuralSubscription, join, *conditions)
+        return Store.of(self._pillar).using(*origin).find(
+            StructuralSubscription, self._join, *conditions)

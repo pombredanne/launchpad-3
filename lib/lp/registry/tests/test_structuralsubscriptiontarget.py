@@ -162,11 +162,16 @@ class UnrestrictedStructuralSubscription(StructuralSubscriptionTestBase):
     def test_getSubscriptionsForBug(self):
         # If no one has a filtered subscription for the given bug, the result
         # of getSubscriptionsForBug() is the same as for getSubscriptions().
-        bug = self.factory.makeBug()
+        if IMilestone.providedBy(self.target):
+            bugtask = self.factory.makeBugTask(
+                target=self.target.series_target)
+        else:
+            bugtask = self.factory.makeBugTask(target=self.target)
+
         subscriptions = self.target.getSubscriptions(
             min_bug_notification_level=BugNotificationLevel.NOTHING)
         subscriptions_for_bug = self.target.getSubscriptionsForBug(
-            bug, BugNotificationLevel.NOTHING)
+            bugtask.bug, BugNotificationLevel.NOTHING)
         self.assertEqual(list(subscriptions), list(subscriptions_for_bug))
 
     def test_getSubscriptionsForBug_with_filter_on_status(self):
@@ -178,7 +183,6 @@ class UnrestrictedStructuralSubscription(StructuralSubscriptionTestBase):
                 target=self.target.series_target)
         else:
             bugtask = self.factory.makeBugTask(target=self.target)
-        bug = bugtask.bug
 
         # Create a new subscription on self.target.
         login_person(self.ordinary_subscriber)
@@ -188,7 +192,7 @@ class UnrestrictedStructuralSubscription(StructuralSubscriptionTestBase):
 
         # Without any filters the subscription is found.
         subscriptions_for_bug = self.target.getSubscriptionsForBug(
-            bug, BugNotificationLevel.NOTHING)
+            bugtask.bug, BugNotificationLevel.NOTHING)
         self.assertEqual([subscription], list(subscriptions_for_bug))
 
         # Filter the subscription to bugs in the CONFIRMED state.
@@ -200,13 +204,13 @@ class UnrestrictedStructuralSubscription(StructuralSubscriptionTestBase):
 
         # With the filter the subscription is not found.
         subscriptions_for_bug = self.target.getSubscriptionsForBug(
-            bug, BugNotificationLevel.NOTHING)
+            bugtask.bug, BugNotificationLevel.NOTHING)
         self.assertEqual([], list(subscriptions_for_bug))
 
         # If the filter is adjusted, the subscription is found again.
-        subscription_filter_status.status = bug.default_bugtask.status
+        subscription_filter_status.status = bugtask.status
         subscriptions_for_bug = self.target.getSubscriptionsForBug(
-            bug, BugNotificationLevel.NOTHING)
+            bugtask.bug, BugNotificationLevel.NOTHING)
         self.assertEqual([subscription], list(subscriptions_for_bug))
 
 
