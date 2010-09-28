@@ -788,7 +788,7 @@ class BugTrackerComponentGroup(Storm):
         component = BugTrackerComponent()
         component.name = component_name
         component.component_group = self
-        component.setCustom()
+        component.is_custom = True
 
         store = IStore(BugTrackerComponent)
         store.add(component)
