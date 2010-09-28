@@ -489,15 +489,6 @@ class POTMsgSet(SQLBase):
             date_updated = current.date_reviewed
         return (date_updated is not None and date_updated > timestamp)
 
-    def _list_of_msgids(self):
-        """Return a list of [singular_text, plural_text] if the message
-        is using plural forms, or just [singular_text] if it's not.
-        """
-        original_texts = [self.singular_text]
-        if self.plural_text is not None:
-            original_texts.append(self.plural_text)
-        return original_texts
-
     def _sanitizeTranslations(self, translations, pluralforms):
         """Sanitize `translations` using self.applySanityFixes.
 
@@ -528,14 +519,12 @@ class POTMsgSet(SQLBase):
         # By default all translations are correct.
         validation_status = TranslationValidationStatus.OK
 
-        # Cache the list of singular_text and plural_text
-        original_texts = self._list_of_msgids()
-
         # Validate the translation we got from the translation form
         # to know if gettext is unhappy with the input.
         try:
             validate_translation(
-                original_texts, translations, self.flags)
+                self.singular_text, self.plural_text,
+                translations, self.flags)
         except GettextValidationError:
             if ignore_errors:
                 # The translations are stored anyway, but we set them as
@@ -543,13 +532,7 @@ class POTMsgSet(SQLBase):
                 validation_status = TranslationValidationStatus.UNKNOWNERROR
             else:
                 # Check to know if there is any translation.
-                has_translations = False
-                for key in translations.keys():
-                    if translations[key] is not None:
-                        has_translations = True
-                        break
-
-                if has_translations:
+                if any(translations.values()):
                     # Partial translations cannot be stored, the
                     # exception is raised again and handled outside
                     # this method.
