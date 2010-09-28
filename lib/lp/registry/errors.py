@@ -23,26 +23,23 @@ from lazr.restful.declarations import webservice_error
 
 from lp.app.errors import NameLookupFailed
 
-# Done
+
 class PrivatePersonLinkageError(ValueError):
     """An attempt was made to link a private person/team to something."""
     webservice_error(httplib.FORBIDDEN)
 
     
-# Done
 class NameAlreadyTaken(Exception):
     """The name given for a person is already in use by other person."""
     webservice_error(httplib.CONFLICT)
 
 
-# Done
 class NoSuchDistroSeries(NameLookupFailed):
     """Raised when we try to find a DistroSeries that doesn't exist."""
     webservice_error(httplib.BAD_REQUEST)
     _message_prefix = "No such distribution series"
 
 
-# Done
 class UserCannotChangeMembershipSilently(Unauthorized):
     """User not permitted to change membership status silently.
 
@@ -52,20 +49,17 @@ class UserCannotChangeMembershipSilently(Unauthorized):
     webservice_error(httplib.UNAUTHORIZED)
 
 
-#Done
 class NoSuchSourcePackageName(NameLookupFailed):
     """Raised when we can't find a particular sourcepackagename."""
     webservice_error(httplib.BAD_REQUEST)
     _message_prefix = "No such source package"
 
 
-# Done
 class CannotTransitionToCountryMirror(Exception):
     """Root exception for transitions to country mirrors."""
     webservice_error(httplib.BAD_REQUEST)
 
 
-# Done
 class CountryMirrorAlreadySet(CannotTransitionToCountryMirror):
     """Distribution mirror cannot be set as a country mirror.
 
@@ -96,7 +90,6 @@ class MirrorNotProbed(CannotTransitionToCountryMirror):
     Raised when a user tries to set an official mirror as a country mirror,
     however the mirror has not been probed yet.
     """
-
 
 class DeleteSubscriptionError(Exception):
     """Delete Subscription Error.
