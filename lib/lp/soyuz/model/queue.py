@@ -1447,9 +1447,15 @@ class PackageUploadBuild(SQLBase):
             target_das.distroseries.distribution.name,
             target_das.distroseries.name,
             build_archtag))
+
         # Get the other enabled distroarchseries for this
         # distroseries.  If the binary is architecture independent then
         # we need to publish it in all of those too.
+
+        # XXX Julian 2010-09-28 bug=649859
+        # This logic is duplicated in
+        # PackagePublishingSet.copyBinariesTo() and should be
+        # refactored.
         other_das = set(
             arch for arch in self.packageupload.distroseries.architectures
             if arch.enabled)
