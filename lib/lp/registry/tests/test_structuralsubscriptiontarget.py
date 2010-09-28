@@ -462,9 +462,13 @@ class TestStructuralSubscriptionTargetHelper(TestCaseWithFactory):
         self.assertEqual("distribution", helper.target_type_display)
         self.assertEqual(None, helper.target_parent)
         self.assertEqual(target, helper.pillar)
-        self.assertEqual({"distribution": target}, helper.target_arguments)
         self.assertEqual(
-            u"StructuralSubscription.distribution = ?",
+            {"distribution": target,
+             "sourcepackagename": None},
+            helper.target_arguments)
+        self.assertEqual(
+            u"StructuralSubscription.distribution = ? AND "
+            u"StructuralSubscription.sourcepackagename IS NULL",
             compile_storm(helper.join))
 
 

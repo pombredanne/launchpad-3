@@ -244,9 +244,14 @@ class DistributionTargetHelper:
     def __init__(self, target):
         self.target = target
         self.target_parent = None
-        self.target_arguments = {"distribution": target}
+        self.target_arguments = {
+            "distribution": target,
+            "sourcepackagename": None,
+            }
         self.pillar = target
-        self.join = (StructuralSubscription.distribution == target)
+        self.join = And(
+            StructuralSubscription.distributionID == target.id,
+            StructuralSubscription.sourcepackagenameID == None)
 
 
 class StructuralSubscriptionTargetMixin:
@@ -259,27 +264,7 @@ class StructuralSubscriptionTargetMixin:
         Return a dictionary with the arguments representing this
         target in a call to the structural subscription constructor.
         """
-        args = {}
-        if IDistributionSourcePackage.providedBy(self):
-            args['distribution'] = self.distribution
-            args['sourcepackagename'] = self.sourcepackagename
-        elif IProduct.providedBy(self):
-            args['product'] = self
-        elif IProjectGroup.providedBy(self):
-            args['project'] = self
-        elif IDistribution.providedBy(self):
-            args['distribution'] = self
-            args['sourcepackagename'] = None
-        elif IMilestone.providedBy(self):
-            args['milestone'] = self
-        elif IProductSeries.providedBy(self):
-            args['productseries'] = self
-        elif IDistroSeries.providedBy(self):
-            args['distroseries'] = self
-        else:
-            raise AssertionError(
-                '%s is not a valid structural subscription target.')
-        return args
+        return IStructuralSubscriptionTargetHelper(self).target_arguments
 
     @property
     def _pillar(self):
