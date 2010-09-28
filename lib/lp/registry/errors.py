@@ -65,6 +65,7 @@ class CannotTransitionToCountryMirror(Exception):
     webservice_error(httplib.BAD_REQUEST)
 
 
+# Done
 class CountryMirrorAlreadySet(CannotTransitionToCountryMirror):
     """Distribution mirror cannot be set as a country mirror.
 

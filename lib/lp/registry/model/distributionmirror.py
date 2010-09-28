@@ -58,12 +58,12 @@ from canonical.launchpad.webapp.interfaces import (
 from lp.archivepublisher.diskpool import poolify
 from lp.registry.errors import (
     CannotTransitionToCountryMirror,
+    CountryMirrorAlreadySet,
     MirrorHasNoHTTPURL,
     MirrorNotOfficial,
     MirrorNotProbed,
     )
 from lp.registry.interfaces.distributionmirror import (
-    CountryMirrorAlreadySet,
     IDistributionMirror,
     IDistributionMirrorSet,
     IMirrorCDImageDistroSeries,
