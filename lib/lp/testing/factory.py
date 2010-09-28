@@ -1141,7 +1141,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                                 product=None, review_diff=None,
                                 initial_comment=None, source_branch=None,
                                 preview_diff=None, date_created=None,
-                                description=None, reviewer=None):
+                                description=None, reviewer=None,
+                                review_type=None):
         """Create a proposal to merge based on anonymous branches."""
         if target_branch is not None:
             target = target_branch.target
@@ -1166,13 +1167,14 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             source_branch = self.makeBranchTargetBranch(target)
         if registrant is None:
             registrant = self.makePerson()
-        review_requests = []    
+        review_requests = []
         if reviewer is not None:
-            review_requests.append((reviewer, None))
+            review_requests.append((reviewer, review_type))
         proposal = source_branch.addLandingTarget(
             registrant, target_branch, review_requests=review_requests,
             prerequisite_branch=prerequisite_branch, review_diff=review_diff,
-            description=description, date_created=date_created)
+            description=description, date_created=date_created,
+            default_review_type=review_type)
 
         unsafe_proposal = removeSecurityProxy(proposal)
         if preview_diff is not None:
@@ -1204,6 +1206,33 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             raise AssertionError('Unknown status: %s' % set_state)
 
         return proposal
+
+    def makeBranchMergeProposalWithNoReviewers(self, target_branch=None,
+                                registrant=None, set_state=None,
+                                prerequisite_branch=None, product=None,
+                                review_diff=None, initial_comment=None,
+                                source_branch=None, preview_diff=None,
+                                date_created=None, description=None):
+        """ Create a merge proposal with no reviewers.
+
+        See `makeBranchMergeProposal`.
+
+        A newly created merge proposal will, if no reviewer is specified, be
+        set up with a reviewer who is the default for the branch. Some tests
+        require that we have a merge proposal with no reviewer, for those
+        times where all the reviewers have been deleted.
+        """
+
+        bmp = self.makeBranchMergeProposal(target_branch, registrant,
+                                set_state, prerequisite_branch,
+                                product, review_diff,
+                                initial_comment, source_branch,
+                                preview_diff, date_created,
+                                description)
+        #ensure bmp initially has no reviewers
+        for vote in bmp.votes:
+            removeSecurityProxy(vote).destroySelf()
+        return bmp
 
     def makeBranchSubscription(self, branch=None, person=None,
                                subscribed_by=None):

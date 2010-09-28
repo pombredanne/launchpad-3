@@ -681,19 +681,16 @@ Merge proposal details shown on the branch page
 
 A branch that has a merge proposal, but no requested reviews shows this on the
 branch page. We create a proposal using the factory since we want to force
-one without a reviewer. This will not normally happen anymore in general usage
-since at the very least the branch owner is now automatically the reviewer.
+one without a reviewer.
 
     >>> login('foo.bar@canonical.com')
     >>> source_branch = getUtility(IBranchLookup).getByUniqueName(
     ...     '~fred/fooix/feature')
     >>> fooix = getUtility(IProductSet).getByName('fooix')
-    >>> bmp = factory.makeBranchMergeProposal(
+    >>> bmp = factory.makeBranchMergeProposalWithNoReviewers(
     ...     registrant=eric, source_branch=source_branch,
     ...     target_branch=fooix.development_focus.branch,
     ...     set_state=BranchMergeProposalStatus.NEEDS_REVIEW)
-    >>> for vote in bmp.votes:
-    ...     removeSecurityProxy(vote).destroySelf()    
     >>> bmp_url = canonical_url(bmp)
     >>> branch_url = canonical_url(bmp.source_branch)
     >>> logout()
