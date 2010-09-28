@@ -62,7 +62,7 @@ from lp.registry.interfaces.product import (
     NoSuchProduct,
     )
 from lp.registry.interfaces.productseries import NoSuchProductSeries
-from lp.registry.interfaces.sourcepackagename import NoSuchSourcePackageName
+from lp\.registry\.errors import NoSuchSourcePackageName
 from lp.registry.model.distribution import Distribution
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.person import Person

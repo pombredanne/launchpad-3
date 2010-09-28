@@ -5,6 +5,9 @@ __metaclass__ = type
 __all__ = [
     'PrivatePersonLinkageError',
     'NameAlreadyTaken',
+    'NoSuchDistroSeries',
+    'UserCannotChangeMembershipSilently'
+    'NoSuchSourcePackageName',
     ]
 
 import httplib
@@ -12,6 +15,7 @@ import httplib
 from lazr.restful.declarations import webservice_error
 
 from lp.app.errors import NameLookupFailed
+
 
 class PrivatePersonLinkageError(ValueError):
     """An attempt was made to link a private person/team to something."""
@@ -28,3 +32,17 @@ class NoSuchDistroSeries(NameLookupFailed):
     webservice_error(httplib.BAD_REQUEST)
     _message_prefix = "No such distribution series"
 
+
+class UserCannotChangeMembershipSilently(Unauthorized):
+    """User not permitted to change membership status silently.
+
+    Raised when a user tries to change someone's membership silently, and is
+    not a Launchpad Administrator.
+    """
+    webservice_error(httplib.UNAUTHORIZED)
+
+
+class NoSuchSourcePackageName(NameLookupFailed):
+    """Raised when we can't find a particular sourcepackagename."""
+    webservice_error(httplib.BAD_REQUEST)
+    _message_prefix = "No such source package"

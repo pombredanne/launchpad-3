@@ -10,10 +10,8 @@ __metaclass__ = type
 __all__ = [
     'ISourcePackageName',
     'ISourcePackageNameSet',
-    'NoSuchSourcePackageName',
     ]
 
-from lazr.restful.declarations import webservice_error
 from zope.interface import (
     Attribute,
     Interface,
@@ -74,9 +72,3 @@ class ISourcePackageNameSet(Interface):
 
     def getOrCreateByName(name):
         """Get a source package name by name, creating it if necessary."""
-
-
-class NoSuchSourcePackageName(NameLookupFailed):
-    """Raised when we can't find a particular sourcepackagename."""
-    webservice_error(400)
-    _message_prefix = "No such source package"

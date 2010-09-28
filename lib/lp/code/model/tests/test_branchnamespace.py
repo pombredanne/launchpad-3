@@ -43,7 +43,7 @@ from lp.registry.interfaces.distribution import NoSuchDistribution
 from lp\.registry\.errors import NoSuchDistroSeries.
 from lp.registry.interfaces.person import NoSuchPerson
 from lp.registry.interfaces.product import NoSuchProduct
-from lp.registry.interfaces.sourcepackagename import NoSuchSourcePackageName
+from lp\.registry\.errors import NoSuchSourcePackageName
 from lp.registry.model.sourcepackage import SourcePackage
 from lp.testing import TestCaseWithFactory
 

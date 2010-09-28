@@ -12,7 +12,6 @@ __all__ = [
     'IDistroSeriesEditRestricted',
     'IDistroSeriesPublic',
     'IDistroSeriesSet',
-    'NoSuchDistroSeries',
     ]
 
 from lazr.enum import DBEnumeratedType
@@ -57,6 +56,7 @@ from lp.bugs.interfaces.bugtarget import (
     IHasBugs,
     IHasOfficialBugTags,
     )
+from lp.registry.errors import NoSuchDistroSeries
 from lp.registry.interfaces.milestone import (
     IHasMilestones,
     IMilestone,

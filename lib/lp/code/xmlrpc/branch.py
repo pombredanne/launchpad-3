@@ -63,7 +63,7 @@ from lp.registry.interfaces.product import (
     NoSuchProduct,
     )
 from lp.registry.interfaces.productseries import NoSuchProductSeries
-from lp.registry.interfaces.sourcepackagename import NoSuchSourcePackageName
+from lp\.registry\.errors import NoSuchSourcePackageName
 
 
 class IBranchSetAPI(Interface):
