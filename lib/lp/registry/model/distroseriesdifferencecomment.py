@@ -46,9 +46,19 @@ class DistroSeriesDifferenceComment(Storm):
     message = Reference(message_id, 'Message.id')
 
     @property
-    def comment(self):
+    def comment_author(self):
+        """See `IDistroSeriesDifferenceComment`."""
+        return self.message.owner
+
+    @property
+    def body_text(self):
         """See `IDistroSeriesDifferenceComment`."""
         return self.message.text_contents
+
+    @property
+    def comment_date(self):
+        """See `IDistroSeriesDifferenceComment`."""
+        return self.message.datecreated
 
     @staticmethod
     def new(distro_series_difference, owner, comment):

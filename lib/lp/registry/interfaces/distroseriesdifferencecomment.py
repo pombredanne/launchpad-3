@@ -13,6 +13,7 @@ __all__ = [
 from lazr.restful.fields import Reference
 from zope.interface import Interface
 from zope.schema import (
+    Datetime,
     Int,
     Text,
     )
@@ -38,9 +39,17 @@ class IDistroSeriesDifferenceComment(Interface):
         IMessage, title=_("Message"), required=True, readonly=True,
         description=_("A comment about this difference."))
 
-    comment = Text(
+    body_text = Text(
         title=_("Comment text"), readonly=True, description=_(
             "The comment text for the related distro series difference."))
+
+    comment_author = Reference(
+        # Really IPerson.
+        Interface, title=_("The author of the comment."),
+        readonly=True)
+
+    comment_date = Datetime(
+        title=_('Comment date.'), readonly=True)
 
 
 class IDistroSeriesDifferenceCommentSource(Interface):
