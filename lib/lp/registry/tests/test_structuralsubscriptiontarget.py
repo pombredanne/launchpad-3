@@ -23,7 +23,10 @@ from canonical.launchpad.testing.systemdocs import (
     )
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.testing import verifyObject
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing import (
+    LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
 from lp.bugs.interfaces.bug import CreateBugParams
 from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.bugs.model.bugsubscriptionfilter import BugSubscriptionFilter
@@ -342,7 +345,7 @@ class TestStructuralSubscriptionForDistroSeries(
 class TestStructuralSubscriptionTargetHelper(TestCaseWithFactory):
     """Tests for implementations of `IStructuralSubscriptionTargetHelper`."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = LaunchpadZopelessLayer
 
     def setUp(self):
         super(TestStructuralSubscriptionTargetHelper, self).setUp()
