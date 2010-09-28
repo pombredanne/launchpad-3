@@ -124,7 +124,7 @@ class TestBugTrackerWithComponents(TestCaseWithFactory):
         self.assertEqual(comp_group.name, u'alpha')
 
         # Verify there is only the one component group in the tracker
-        comp_groups = self.bug_tracker.getAllRemoteComponentGroups()
+        comp_groups = self.bug_tracker.component_groups
         self.assertEqual(len(list(comp_groups)), 1)
 
     def test_multiple_product_bugtracker(self):
@@ -149,7 +149,7 @@ class TestBugTrackerWithComponents(TestCaseWithFactory):
         self.assertEqual(comp_group, comp_group_ii)
 
         # Check the correct number of component groups are in the bug tracker
-        comp_groups = self.bug_tracker.getAllRemoteComponentGroups()
+        comp_groups = self.bug_tracker.component_groups
         self.assertEqual(len(list(comp_groups)), 3)
 
     def test_get_components_for_component_group(self):
