@@ -208,8 +208,6 @@ class BugTracker(SQLBase):
     watches = SQLMultipleJoin(
         'BugWatch', joinColumn='bugtracker', orderBy='-datecreated',
         prejoins=['bug'])
-    component_groups = SQLMultipleJoin(
-        'BugTrackerComponentGroup', joinColumn='bug_tracker_id', orderBy='name')
 
     _filing_url_patterns = {
         BugTrackerType.BUGZILLA: (

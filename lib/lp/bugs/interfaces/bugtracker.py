@@ -270,10 +270,6 @@ class IBugTracker(Interface):
             required=False, default=False))
     projects = Attribute('The projects that use this bug tracker.')
     products = Attribute('The products that use this bug tracker.')
-    component_groups = exported(
-        CollectionField(
-            title=_('ComponentGroups'),
-            value_type=Reference(schema=Interface)))
     latestwatches = Attribute('The last 10 watches created.')
     imported_bug_messages = Attribute(
         'Bug messages that have been imported from this bug tracker.')
@@ -367,7 +363,7 @@ class IBugTracker(Interface):
     def addRemoteComponentGroup(component_group_name):
         """Adds a new component group to the bug tracker"""
 
-    def getAllRemoteComponentGroups(self):
+    def getAllRemoteComponentGroups():
         """Return collection of all component groups for this bug tracker"""
 
     @operation_parameters(
@@ -557,10 +553,6 @@ class IBugTrackerComponentGroup(Interface):
     @export_write_operation()
     def addComponent(component_name):
         """Adds a component to be tracked as part of this component group"""
-
-
-# Avoid circular import problem via post-declaration definition
-IBugTracker['component_groups'].value_type.schema = IBugTrackerComponentGroup
 
 
 class IRemoteBug(Interface):
