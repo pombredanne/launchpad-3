@@ -8,6 +8,23 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
     i18n_domain="launchpad">
+    <!-- RDF downloadable documents -->
+    <browser:page
+        for="canonical.launchpad.interfaces.ILaunchpadRoot"
+        class="lp.registry.browser.RDFIndexView"
+        name="rdf"
+        template="../templates/rdf-index.pt"
+        permission="zope.Public"
+        />
+
+    <browser:page
+        for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+        name="rdf-spec"
+        class="lp.registry.browser.RDFFolder"
+        attribute="__call__"
+        permission="zope.Public"
+        />
+
     <browser:page
         for="lp.registry.interfaces.product.IProduct"
         name="+voucher-purchase-instructions"
