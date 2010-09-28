@@ -67,24 +67,18 @@ class IDiff(Interface):
 class IIncrementalDiff(Interface):
     """An incremental diff for a merge proposal."""
 
-    diff = exported(
-        Reference(IDiff, title=_('The Diff object.'), readonly=True))
+    diff = Reference(IDiff, title=_('The Diff object.'), readonly=True)
 
     # The schema for the Reference gets patched in _schema_circular_imports.
-    branch_merge_proposal = exported(
-        Reference(
-            Interface, readonly=True,
-            title=_('The branch merge proposal that diff relates to.')))
+    branch_merge_proposal = Reference(
+        Interface, readonly=True,
+        title=_('The branch merge proposal that diff relates to.'))
 
-    old_revision = exported(
-        Reference(
-            IRevision, readonly=True,
-            title=_('The old revision of the diff.')))
+    old_revision = Reference(
+        IRevision, readonly=True, title=_('The old revision of the diff.'))
 
-    new_revision = exported(
-        Reference(
-            IRevision, readonly=True,
-            title=_('The new revision of the diff.')))
+    new_revision = Reference(
+        IRevision, readonly=True, title=_('The new revision of the diff.'))
 
 
 class IStaticDiff(Interface):
