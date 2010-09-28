@@ -220,7 +220,7 @@ Involvement links
 The pillar involvement view uses the InvolvedMenu when rendering links.
 
     >>> from operator import attrgetter
-    >>> from canonical.launchpad.webapp.tales import MenuAPI
+    >>> from lp.app.browser.tales import MenuAPI
 
 The menu when viewed from a product page.
 
