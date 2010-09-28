@@ -545,7 +545,7 @@ class IBugTrackerComponentGroup(Interface):
     components = exported(
         Reference(title=_('Components'), schema=IBugTrackerComponent))
     bug_tracker = exported(
-        Reference(title=_('BugTracker'), schema=Interface)) # Specify later
+        Reference(title=_('BugTracker'), schema=IBugTracker))
 
     @operation_parameters(
         component_name=TextLine(
