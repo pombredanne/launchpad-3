@@ -46,6 +46,9 @@
           </div>
 
           <div class="actions">
+            <input type="hidden" name="next_url"
+                   tal:condition="view/_return_url | nothing"
+                   tal:attributes="value view/_return_url" />
             <input tal:condition="not: view/userIsSubscribed"
                    type="submit"
                    name="subscribe"

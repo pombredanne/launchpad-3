@@ -647,6 +647,12 @@ class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView,
                 bugtask.bug.id, bugtask.bugtargetdisplayname)
         return smartquote('%s: "%s"') % (heading, self.context.bug.title)
 
+    @property
+    def next_url(self):
+        next_url = self.request.get('next_url')
+        if next_url:
+            return next_url
+
     def initialize(self):
         """Set up the needed widgets."""
         bug = self.context.bug
@@ -727,6 +733,9 @@ class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView,
         # after unsubscribing from a private bug, because rendering the
         # bug page would raise Unauthorized errors!
         if self._redirecting_to_bug_list:
+            return u''
+        elif self.next_url:
+            self.request.response.redirect(self.next_url)
             return u''
         else:
             return LaunchpadView.render(self)
@@ -833,8 +842,8 @@ class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView,
                 # The user still has permission to see this bug, so no
                 # special-casing needed.
                 return (
-                    "You have been unsubscribed from this bug%s." %
-                    unsubed_dupes_msg_fragment)
+                    "You have been unsubscribed from bug %d%s." % (
+                    current_bug.id, unsubed_dupes_msg_fragment))
             else:
                 return (
                     "You have been unsubscribed from bug %d%s. You no "
