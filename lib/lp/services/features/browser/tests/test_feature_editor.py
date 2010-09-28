@@ -29,8 +29,12 @@ from lp.testing import (
     time_counter,
     )
 
-from lp.services.features.browser import FeatureControlView
-from lp.services.features.model import addFeatureFlagRules
+from lp.services.features.browser.edit import (
+    FeatureControlView,
+    )
+from lp.services.features.model import (
+    addFeatureFlagRules,
+    )
 
 
 class TestFeatureControlPage(BrowserTestCase):

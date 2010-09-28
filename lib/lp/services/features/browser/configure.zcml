@@ -17,14 +17,14 @@
     -->
     <browser:page
         for="canonical.launchpad.interfaces.ILaunchpadRoot"
-        class="lp.services.features.browser.FeatureControlView"
+        class="lp.services.features.browser.edit.FeatureControlView"
         name="+feature-rules"
         permission="launchpad.Edit"
         template="../templates/feature-rules.pt"/>
 
     <browser:page
         for="canonical.launchpad.interfaces.ILaunchpadRoot"
-        class="lp.services.features.browser.FeatureControlView"
+        class="lp.services.features.browser.edit.FeatureControlView"
         name="+feature-rules-edit"
         permission="launchpad.Admin"
         template="../templates/feature-rules-edit.pt"/>
