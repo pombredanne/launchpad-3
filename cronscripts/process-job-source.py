@@ -25,6 +25,7 @@ class ProcessJobSource(JobCronScript):
     """Run jobs."""
 
     def __init__(self, job_source):
+        # The dbuser is grabbed from the section matching config_name.
         self.config_name = job_source
         section = getattr(config, self.config_name)
         # The fromlist argument is necessary so that __import__()
