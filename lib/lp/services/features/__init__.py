@@ -137,6 +137,7 @@ import threading
 
 
 __all__ = [
+    'get_relevant_feature_controller',
     'getFeatureFlag',
     'per_thread',
     ]
@@ -150,11 +151,15 @@ when starting a web request.
 """
 
 
+def get_relevant_feature_controller():
+    return getattr(per_thread, 'features', None)
+
+
 def getFeatureFlag(flag):
     """Get the value of a flag for this thread's scopes."""
     # Workaround for bug 631884 - features have two homes, threads and
     # requests.
-    features = getattr(per_thread, 'features', None)
+    features = get_relevant_feature_controller()
     if features is None:
         return None
     return features.getFlag(flag)
