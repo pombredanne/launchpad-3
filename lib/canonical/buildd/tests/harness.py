@@ -61,7 +61,8 @@ class BuilddTestCase(unittest.TestCase):
 class BuilddSlaveTestSetup(TacTestSetup):
     r"""Setup BuildSlave for use by functional tests
 
-    >>> BuilddSlaveTestSetup().setUp()
+    >>> fixture = BuilddSlaveTestSetup()
+    >>> fixture.setUp()
 
     Make sure the server is running
 
@@ -69,11 +70,11 @@ class BuilddSlaveTestSetup(TacTestSetup):
     >>> s = xmlrpclib.Server('http://localhost:8221/rpc/')
     >>> s.echo('Hello World')
     ['Hello World']
-    >>> BuilddSlaveTestSetup().tearDown()
+    >>> fixture.tearDown()
 
     Again for luck !
 
-    >>> BuilddSlaveTestSetup().setUp()
+    >>> fixture.setUp()
     >>> s = xmlrpclib.Server('http://localhost:8221/rpc/')
 
     >>> s.echo('Hello World')
@@ -95,7 +96,7 @@ class BuilddSlaveTestSetup(TacTestSetup):
     >>> s.status()
     ['BuilderStatus.IDLE', '']
 
-    >>> BuilddSlaveTestSetup().tearDown()
+    >>> fixture.tearDown()
     """
     def setUpRoot(self):
         """Recreate empty root directory to avoid problems."""

@@ -610,7 +610,8 @@ class TestSlaveScannerScan(TrialTestCase):
         """
         TwistedLayer.testSetUp()
         TrialTestCase.setUp(self)
-        BuilddSlaveTestSetup().setUp()
+        self.slave = BuilddSlaveTestSetup()
+        self.slave.setUp()
 
         # Creating the required chroots needed for dispatching.
         login('foo.bar@canonical.com')
@@ -622,7 +623,7 @@ class TestSlaveScannerScan(TrialTestCase):
         login(ANONYMOUS)
 
     def tearDown(self):
-        BuilddSlaveTestSetup().tearDown()
+        self.slave.tearDown()
         TrialTestCase.tearDown(self)
         TwistedLayer.testTearDown()
 
