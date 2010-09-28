@@ -193,6 +193,14 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
         return package_upload.changesfile
 
     @property
+    def changesfile_url(self):
+        """See `IBinaryPackageBuild`."""
+        changesfile = self.upload_changesfile
+        if changesfile is None:
+            return None
+        return ProxiedLibraryFileAlias(changesfile, self).http_url
+
+    @property
     def package_upload(self):
         """See `IBuild`."""
         store = Store.of(self)
