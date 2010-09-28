@@ -59,6 +59,7 @@ class NoSuchSourcePackageName(NameLookupFailed):
     _message_prefix = "No such source package"
 
 
+# Done
 class CannotTransitionToCountryMirror(Exception):
     """Root exception for transitions to country mirrors."""
     webservice_error(httplib.BAD_REQUEST)

@@ -56,8 +56,13 @@ from canonical.launchpad.webapp.interfaces import (
     MAIN_STORE,
     )
 from lp.archivepublisher.diskpool import poolify
-from lp.registry.interfaces.distributionmirror import (
+from lp.registry.errors import (
     CannotTransitionToCountryMirror,
+    MirrorHasNoHTTPURL,
+    MirrorNotOfficial,
+    MirrorNotProbed,
+    )
+from lp.registry.interfaces.distributionmirror import (
     CountryMirrorAlreadySet,
     IDistributionMirror,
     IDistributionMirrorSet,
@@ -67,9 +72,6 @@ from lp.registry.interfaces.distributionmirror import (
     IMirrorProbeRecord,
     MirrorContent,
     MirrorFreshness,
-    MirrorHasNoHTTPURL,
-    MirrorNotOfficial,
-    MirrorNotProbed,
     MirrorSpeed,
     MirrorStatus,
     PROBE_INTERVAL,
