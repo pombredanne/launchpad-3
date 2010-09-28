@@ -30,7 +30,6 @@ from lp.services.comments.interfaces.conversation import (
     IConversation,
     )
 from lp.soyuz.enums import PackagePublishingStatus
-from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
     celebrity_logged_in,
     person_logged_in,
@@ -62,6 +61,8 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
 
     def addSummaryToDifference(self, distro_series_difference):
         """Helper that adds binaries with summary info to the source pubs."""
+        # Avoid circular import.
+        from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
         distro_series = distro_series_difference.derived_series
         source_package_name_str = (
             distro_series_difference.source_package_name.name)
