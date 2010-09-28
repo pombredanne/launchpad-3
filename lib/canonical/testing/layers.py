@@ -1197,7 +1197,18 @@ class LaunchpadFunctionalLayer(LaunchpadLayer, FunctionalLayer):
     @classmethod
     @profiled
     def tearDown(cls):
-        pass
+        # FunctionalLayer causes other layer tearDown to not occur, which is
+        # why atexit is used, but because test runners delegate rather than
+        # returning, the librarian and other servers are only killed *at the
+        # end of the whole test run*, which leads to multiple instances
+        # running, so we manually run the teardown for these layers.
+        try:
+            MemcachedLayer.tearDown()
+        finally:
+            try:
+                LibrarianLayer.tearDown()
+            finally:
+                DatabaseLayer.tearDown()
 
     @classmethod
     @profiled

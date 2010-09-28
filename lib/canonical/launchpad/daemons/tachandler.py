@@ -134,7 +134,9 @@ class TacTestSetup(Fixture):
         Fixture.setUp(self)
         if get_pid_from_file(self.pidfile):
             # An attempt to run while there was an existing live helper
-            # was made.
+            # was made. Note that this races with helpers which use unnique
+            # roots, so when moving/eliminating this code check subclasses
+            # for workarounds and remove those too.
             pid = get_pid_from_file(self.pidfile)
             warnings.warn("Attempt to start Tachandler with an existing "
                 "instance (%d) running in %s." % (pid, self.pidfile),

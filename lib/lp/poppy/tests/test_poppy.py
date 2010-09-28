@@ -151,17 +151,27 @@ class SFTPServer:
 
 
 class PoppyTac(TacTestSetup):
+    """A SFTP Poppy server fixture.
+
+    This class has two distinct roots:
+     - the POPPY_ROOT where the test looks for uploaded output.
+     - the server root where ssh keys etc go.
+    """
 
     def __init__(self, fs_root):
-        os.environ['POPPY_ROOT'] = fs_root
-        self.setUpRoot()
+        self.fs_root = fs_root
+        # The setUp check for stale pids races with self._root being assigned,
+        # so store a valid path temporarily. Once all fixtures use unique
+        # environments this can go.
+        self._root = '/var/does/not/exist'
+
+    def setUp(self):
+        os.environ['POPPY_ROOT'] = self.fs_root
         super(PoppyTac, self).setUp(umask='0')
 
     def setUpRoot(self):
         self._root = tempfile.mkdtemp()
-
-    def tearDownRoot(self):
-        shutil.rmtree(self._root)
+        self.addCleanup(shutil.rmtree, self.root)
 
     @property
     def root(self):
@@ -174,7 +184,7 @@ class PoppyTac(TacTestSetup):
 
     @property
     def logfile(self):
-        return os.path.join('/tmp', 'poppy-sftp.log')
+        return os.path.join(self.root, 'poppy-sftp.log')
 
     @property
     def pidfile(self):
