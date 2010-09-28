@@ -25,9 +25,9 @@ notification_value = u'\N{SNOWMAN} stormy Launchpad weather ahead'
 
 
 testdata = [
-    ('beta_user', notification_name, notification_value, 100),
-    ('default', 'ui.icing', u'3.0', 100),
-    ('beta_user', 'ui.icing', u'4.0', 300),
+    (notification_name, 'beta_user', 100, notification_value),
+    ('ui.icing', 'default', 100, u'3.0'),
+    ('ui.icing', 'beta_user', 300, u'4.0'),
     ]
 
 
@@ -51,7 +51,7 @@ class TestFeatureFlags(TestCase):
         return controller, call_log
 
     def populateStore(self):
-        model.addFeatureFlagRules(testdata)
+        StormFeatureRuleSource().setAllRules(testdata)
 
     def test_getFlag(self):
         self.populateStore()

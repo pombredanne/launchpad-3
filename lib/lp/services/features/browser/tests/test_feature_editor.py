@@ -35,9 +35,6 @@ from lp.services.features import (
 from lp.services.features.browser.edit import (
     FeatureControlView,
     )
-from lp.services.features.model import (
-    addFeatureFlagRules,
-    )
 from lp.services.features.rulesource import (
     StormFeatureRuleSource,
     )
@@ -85,9 +82,9 @@ class TestFeatureControlPage(BrowserTestCase):
         self.assertThat(textarea.value, Equals(''))
 
     def test_feature_page_from_database(self):
-        addFeatureFlagRules([
-            ('default', 'ui.icing', u'3.0', 100),
-            ('beta_user', 'ui.icing', u'4.0', 300),
+        StormFeatureRuleSource().setAllRules([
+            ('ui.icing', 'default',   100, u'3.0'),
+            ('ui.icing', 'beta_user', 300, u'4.0'),
             ])
         browser = self.getUserBrowserAsAdmin()
         browser.open(self.getFeatureRulesViewURL())

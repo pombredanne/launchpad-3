@@ -2,7 +2,6 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __all__ = [
-    'addFeatureFlagRules',
     'FeatureFlag',
     'getFeatureStore',
     ]
@@ -50,17 +49,3 @@ class FeatureFlag(Storm):
         self.priority = priority
         self.flag = flag
         self.value = value
-
-
-def addFeatureFlagRules(rule_list):
-    """Add rules in to the database; intended for use in testing.
-
-    :param rule_list: [(scope, flag, value, priority)...]
-    """
-    store = getFeatureStore()
-    for (scope, flag, value, priority) in rule_list:
-        store.add(FeatureFlag(
-            scope=unicode(scope),
-            flag=unicode(flag),
-            value=value,
-            priority=priority))
