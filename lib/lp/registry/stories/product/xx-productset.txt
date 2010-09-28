@@ -6,7 +6,8 @@ Under "/projects" there are several pages for various administration tasks.
 
 The pages are "+review-licenses", "+new", and "+all".
 
-== Review project licenses ==
+Review project licenses
+-----------------------
 
 The page +review-licenses is accessible from the /projects page via
 the "Review licenses" link, which is conditionally available
@@ -91,7 +92,7 @@ is provided for each product pointint to its +review-license page.
     >>> for tr in table.findAll('tr'):
     ...     td_list = tr.findAll('td')
     ...     print td_list[5].a
-    <a href="/arch-mirrors/+review-license">Review</a> ...
+    <a href="/tomcat/+review-license">Review</a> ...
 
 Now, we can click on the Review link, which will take us to the
 $project/+review-license page. Then clicking on the Change button
@@ -127,7 +128,8 @@ First, add a product with a Other/Open Source license.
     >>> user_browser.getControl('Summary').value = 'summary'
     >>> user_browser.getControl('Continue').click()
 
-    >>> user_browser.getControl(name='field.description').value = 'description'
+    >>> user_browser.getControl(name='field.description').value = (
+    ...     'description')
     >>> user_browser.getControl(name='field.licenses').value = [
     ...     'OTHER_OPEN_SOURCE']
     >>> user_browser.getControl(name='field.license_info').value = 'foo'
