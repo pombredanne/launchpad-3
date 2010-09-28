@@ -527,7 +527,7 @@ def get_query_string_params(request):
 
 
 class LaunchpadBrowserRequestMixin:
-    """A mixin for classes that share some method implementations."""
+    """Provides methods used for both API and web browser requests."""
 
     def getRootURL(self, rootsite):
         """See IBasicLaunchpadRequest."""

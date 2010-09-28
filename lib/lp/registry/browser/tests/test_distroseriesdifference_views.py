@@ -8,7 +8,6 @@ from __future__ import with_statement
 __metaclass__ = type
 
 from BeautifulSoup import BeautifulSoup
-from zope.app.form.browser.itemswidgets import RadioWidget
 from zope.component import getUtility
 
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
@@ -127,9 +126,8 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         self.assertIs(None, ds_diff.source_pub)
         self.assertIs(None, view.binary_summaries)
 
-    def test_show_blacklist_options(self):
-        # Blacklist options are shown if requested by an editor via
-        # ajax.
+    def test_show_blacklist_options_non_ajax(self):
+        # Blacklist options are not shown for non-ajax requests.
         ds_diff = self.factory.makeDistroSeriesDifference()
 
         # Without JS, even editors don't see blacklist options.
@@ -138,14 +136,22 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
                 ds_diff, '+listing-distroseries-extra')
         self.assertFalse(view.show_blacklist_options)
 
-        # With a JS request, editors do see blacklist options.
+    def test_show_blacklist_options_editor(self):
+        # Blacklist options are shown if requested by an editor via
+        # ajax.
+        ds_diff = self.factory.makeDistroSeriesDifference()
+
         request = LaunchpadTestRequest(HTTP_X_REQUESTED_WITH='XMLHttpRequest')
         with person_logged_in(ds_diff.owner):
             view = create_initialized_view(
                 ds_diff, '+listing-distroseries-extra', request=request)
             self.assertTrue(view.show_blacklist_options)
 
+    def test_show_blacklist_options_non_editor(self):
         # Even with a JS request, non-editors do not see the options.
+        ds_diff = self.factory.makeDistroSeriesDifference()
+
+        request = LaunchpadTestRequest(HTTP_X_REQUESTED_WITH='XMLHttpRequest')
         view = create_initialized_view(
             ds_diff, '+listing-distroseries-extra', request=request)
         self.assertFalse(view.show_blacklist_options)
@@ -256,7 +262,7 @@ class DistroSeriesDifferenceTemplateTestCase(TestCaseWithFactory):
         self.assertEqual(
             1, len(soup.findAll('div', {'class': 'blacklist-options'})))
 
-    def test_blacklist_options_initial_values(self):
+    def test_blacklist_options_initial_values_NONE(self):
         ds_diff = self.factory.makeDistroSeriesDifference()
         view = create_initialized_view(ds_diff, '+listing-distroseries-extra')
 
@@ -264,6 +270,7 @@ class DistroSeriesDifferenceTemplateTestCase(TestCaseWithFactory):
         # as the default value for the field.
         self.assertEqual('NONE', view.initial_values.get('blacklist_options'))
 
+    def test_blacklist_options_initial_values_CURRENT(self):
         from lp.registry.enum import DistroSeriesDifferenceStatus
         ds_diff = self.factory.makeDistroSeriesDifference(
             status=DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT)
@@ -273,6 +280,8 @@ class DistroSeriesDifferenceTemplateTestCase(TestCaseWithFactory):
             DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT,
             view.initial_values.get('blacklist_options'))
 
+    def test_blacklist_options_initial_values_ALWAYS(self):
+        from lp.registry.enum import DistroSeriesDifferenceStatus
         ds_diff = self.factory.makeDistroSeriesDifference(
             status=DistroSeriesDifferenceStatus.BLACKLISTED_ALWAYS)
         view = create_initialized_view(ds_diff, '+listing-distroseries-extra')
