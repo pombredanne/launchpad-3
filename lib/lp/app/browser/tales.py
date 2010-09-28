@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=C0103,W0613,R0911,F0401
@@ -39,9 +39,6 @@ import pytz
 from z3c.ptcompat import ViewPageTemplateFile
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces import (
-    IBug, IDistribution, IProduct, IProjectGroup, IDistributionSourcePackage,
-    ISprint, LicenseStatus)
 from canonical.launchpad.interfaces.launchpad import (
     IHasIcon, IHasLogo, IHasMugshot, IPrivacy)
 from canonical.launchpad.layers import LaunchpadLayer
@@ -59,12 +56,23 @@ from canonical.launchpad.webapp.session import get_cookie_domain
 from canonical.lazr.canonicalurl import nearest_adapter
 from lp.app.browser.stringformatter import escape, FormattersAPI
 from lp.blueprints.interfaces.specification import ISpecification
+from lp.blueprints.interfaces.sprint import ISprint
+from lp.bugs.interfaces.bug import IBug
 from lp.buildmaster.enums import BuildStatus
 from lp.code.interfaces.branch import IBranch
 from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.archive import IPPA
 from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
+from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.distributionsourcepackage import (
+    IDistributionSourcePackage,
+    )
 from lp.registry.interfaces.person import IPerson
+from lp.registry.interfaces.product import (
+    IProduct,
+    LicenseStatus,
+    )
+from lp.registry.interfaces.projectgroup import IProjectGroup
 
 
 SEPARATOR = ' : '
@@ -234,7 +242,8 @@ class MenuAPI:
             # We cannot use parens around the arguments to `raise`,
             # since that will cause it to ignore the third argument,
             # which is the original traceback.
-            raise new_exception, None, sys.exc_info()[2]
+            new_exception.addinfo(sys.exc_info()[2])
+            raise
 
 
 class CountAPI:
@@ -515,7 +524,7 @@ class ObjectFormatterAPI:
             method_name = self.final_traversable_names[name]
             return getattr(self, method_name)()
         else:
-            raise TraversalError, name
+            raise TraversalError(name)
 
     def link(self, view_name, rootsite=None):
         """Return an HTML link to the object's page.
@@ -795,7 +804,7 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
         if name in self.allowed_names:
             return getattr(self, name)()
         else:
-            raise TraversalError, name
+            raise TraversalError(name)
 
     def sprite_css(self):
         """Return the CSS class for the sprite"""
@@ -1131,7 +1140,7 @@ class PersonFormatterAPI(ObjectFormatterAPI):
 
     def nameLink(self, view_name):
         """Return the Launchpad id of the person, linked to their profile."""
-        return self._makeLink(view_name, None, self._context.name)
+        return self._makeLink(view_name, 'mainsite', self._context.name)
 
 
 class TeamFormatterAPI(PersonFormatterAPI):
@@ -1975,7 +1984,7 @@ class DateTimeFormatterAPI:
 
     def rfc822utcdatetime(self):
         return formatdate(
-            rfc822.mktime_tz(self._datetime.utctimetuple() + (0,)))
+            rfc822.mktime_tz(self._datetime.utctimetuple() + (0, )))
 
     def isodate(self):
         return self._datetime.isoformat()
@@ -2225,14 +2234,13 @@ def clean_path_segments(request):
     return clean_path_split
 
 
-# 2009-09-08 BarryWarsaw bug 426532.  Remove this class, all references to it,
-# and all instances of CONTEXTS/fmt:pagetitle
 class PageTemplateContextsAPI:
     """Adapter from page tempate's CONTEXTS object to fmt:pagetitle.
 
     This is registered to be used for the dict type.
     """
-
+    # 2009-09-08 BarryWarsaw bug 426532.  Remove this class, all references
+    # to it, and all instances of CONTEXTS/fmt:pagetitle
     implements(ITraversable)
 
     def __init__(self, contextdict):
@@ -2308,7 +2316,7 @@ class LaunchpadLayerToMainTemplateAdapter:
     def __init__(self, context):
         here = os.path.dirname(os.path.realpath(__file__))
         self.path = os.path.join(
-            here, '../../../lp/app/templates/base-layout.pt')
+            here, '../templates/base-layout.pt')
 
 
 class PageMacroDispatcher:
