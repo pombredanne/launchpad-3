@@ -1,0 +1,111 @@
+=================
+Launchpad: Values
+=================
+
+Whenever we are thinking about what Launchpad should be, or how we should
+implement a change, or whether something is a good idea or not, we have
+recourse to two distinct sets of guidelines.
+
+The first is the Launchpad Vision <vision>.  It can help us answer questions
+such as, "Is this in scope?", "How does this help Launchpad meet its goals?".
+It tries to sort out the 'matter' of Launchpad.
+
+The second is this document, the Launchpad Values.  It tries to address the
+'manner' of Launchpad.  It, perhaps, will not answer specific questions for
+you.  Rather, it will rule out certain options and decisions before they are
+even considered.
+
+Like the Vision, this document is living: it should be changed and improved as
+we learn more about how to make Launchpad.  It is also aspirational: not all
+of Launchpad lives up to these values.
+
+
+Better tools help
+=================
+
+Launchpad is fundamentally based on the principle that improving the tools
+that we use to make things will help us make better things than we could
+before and indeed make better things more cheaply than we could before.
+
+Launchpad should be that "better tool" and be always aiming to smooth and
+accelerate the process of making software.
+
+
+Invisible.  If not, fun.
+========================
+
+Launchpad is a tool to help busy people get important stuff done.  It should
+stay out of the way where possible.  Bugs, OOPSes, downtime and slowness all
+draw attention to Launchpad and away from the interesting problems that our
+users are trying to solve.
+
+Where it is not possible to stay out of the way, Launchpad should be fun to
+use.  We make next actions obvious and draw attention to users' achievements.
+
+
+Reveal opportunities
+====================
+
+One of the grand things about open source software is that it is open to
+contributions from total strangers.
+
+Launchpad makes those contributions possible by removing as many barriers as
+possible to contribution, and highlights areas where contributions would be
+especially welcome.
+
+
+Collaboration occurs between people
+===================================
+
+It is sometimes easy to forget that all of the code, bugs, translations,
+packages and whatever else that's in Launchpad are made by actual human
+beings.
+
+These human beings are deeply interested in themselves and in other human
+beings.
+
+[[XXX - this is wishy washy, what am I actually trying to say? - jml]]
+
+
+Not our data
+============
+
+The data in Launchpad does not really belong to us, we are merely its
+stewards.  We make sure that users can get their data easily and that they can
+change it as they see fit.
+
+
+Cross-project consistency
+=========================
+
+If you know how to contribute to one project on Launchpad, you ought to be
+able to quickly and painlessly contribute to any other project on Launchpad.
+Or, if you can't, it won't be Launchpad's fault.
+
+
+All of open source
+==================
+
+Any open source project ought to be able to host itself on Launchpad.  We do
+not enforce workflows, rather we allow people to fit their project's existing
+workflow into Launchpad.
+
+However, when we can, we encourage people toward best practices.  After all,
+we want to make open source software better.
+
+
+Full circle
+===========
+
+Something magical happens when a feature or a workflow reaches all the way
+back to where it began.
+
+Being able to attach patches to bugs is great, but it's not good enough until
+developers can easily *find* those patches.  Finding the patches is only good
+enough when you can merge, comment and reject those patches.
+
+Likewise, importing translations from an upstream is great, but it becomes
+much, much better when those translations can be improved in Launchpad and
+then sent back to the upstream.
+
+

@@ -2,6 +2,18 @@
 Launchpad: The Vision
 =====================
 
+This document tries to address *why* we are making Launchpad.  What problems
+are we trying to solve?  What benefits do we hope to gain from solving these
+problems?  How do we go about deciding whether something is in scope or not?
+How do we know if Launchpad is doing well?
+
+This document is not intended to be our strategy for the year or our scope of
+Launchpad development for the next six months.  Rather, it is intended to
+describe what Launchpad is and why we are doing it at a fundamental level.  Of
+course, as we learn more about Launchpad and its place in the world, we should
+amend this document.
+
+
 Introduction
 ============
 
@@ -11,13 +23,39 @@ give feedback and file bugs.  Distributions made up of thousands of different
 software packages need to be released to meet a deadline.  Translations must
 be made into hundreds of different languages and accumulated from a variety of
 sources.  Everywhere bugs need to be tracked, plans made and kept.
-Distributions have to be made to work on a wide variety of hardware
-platforms.
+Distributions have to be made to work on a wide variety of hardware platforms.
 
- * Who is affected by it
+The Ubuntu community, together with Canonical, are dedicated to making the
+very best open source operating system possible, one that far excels any
+commercial operating system.  To do this, we need to make the process of
+making Ubuntu as efficient as possible.  Moreover, we need to make the process
+of making open source software as efficient as possible, and then make it
+easy, quick and desirable to get that software into Ubuntu.
+
+Secondarily, Canonical's main business is providing premium services built
+around Ubuntu.  Many of these services are either proprietary or open source
+software, and Canonical must be able to make this software more quickly and at
+less cost than any rival.
+
+We aim to do this by::
+ * Lowering the barriers to contributing to Ubuntu and open source software
+ * Reducing the amount of time developers spend battling with their tools
+ * Smoothing the process of coordinating changes across multiple code-bases
+
  * What properties must a solution have
- * Why solve it? (scales)
  * Where is world at now
+
+
+
+[[XXX - this doesn't mention quality at all, which I think is unfortunate -
+jml]]
+
+[[XXX - I think the same thoughts could be expressed more clearly - jml]]
+
+[[XXX - mention something about the particular challenges of open source?
+heterogenous technology, volunteer vs paid contributions, distributed
+contributors, relatively small numbers, consensus based decisions - jml]]
+
 
 
 What is Launchpad?
@@ -34,113 +72,65 @@ Distinctives
 
 Launchpad is different from other "forges" in a few important ways:
 
-  Cross-project collaboration
-    No project lives in isolation.  Each project is part of an ecosystem of
-    software.  Projects must be able to interact with each other, share bugs,
-    teams, goals and code with each other.
 
-  Front-end to open source
-    Launchpad aims to be a front-end to open source.  Whether or not a project
-    chooses to host on Launchpad, opportunistic developers can use Launchpad
-    to navigate bugs, get code and send patches.  Likewise, we aim to present a
-    uniform interface to the projects we have.
+Cross-project collaboration
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  Distributions are projects too
-    Launchpad hosts Linux distributions in much the same way as it hosts
-    projects, allowing for developers to feel at home when interacting with
-    distributions.
-
-  Gated development
-    Sometimes, secrets are necessary.  Launchpad understands that sometimes
-    development needs to be done privately, and the results only later shared
-    with the world.  Security fixes, OEM development for new hardware,
-    proprietary services with open source clients are all examples of these.
-
-  Hardware matters
-    Many software developers like to pretend that hardware does not really
-    exist.  When people distribute software as part of an operating system,
-    they don't have the luxury of forgetting. Launchpad understands that
-    developers often need to acknoweldge and work around differences thrown up
-    by hardware.
-
-  We don't care if you use Launchpad, sort of
-    XXX
-
-  One project, many communities
-    Any given project can have many distinct communities interested in
-    it.  These communities have different interests and different motivations,
-    but all work in the same project space so that they can easily benefit
-    from each others' efforts.
+No project lives in isolation.  Each project is part of an ecosystem of
+software.  Projects must be able to interact with each other, share bugs,
+teams, goals and code with each other.
 
 
-Values
-------
-
-Invisible.  If not, fun.
+Front-end to open source
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-Launchpad is a tool to help busy people get important stuff done.  It should
-stay out of the way where possible.  Bugs, OOPSes, downtime and slowness all
-draw attention to Launchpad and away from the interesting problems that our
-users are trying to solve.
-
-Where it is not possible to stay out of the way, Launchpad should be fun to
-use.  We make next actions obvious and draw attention to users' achievements.
+Launchpad aims to be a front-end to open source.  Whether or not a project
+chooses to host on Launchpad, opportunistic developers can use Launchpad to
+navigate bugs, get code and send patches.  Likewise, we aim to present a
+uniform interface to the projects we have.
 
 
-Reveal opportunities
-~~~~~~~~~~~~~~~~~~~~
+Distributions are projects too
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-One of the grand things about open source software is that it is open to
-contributions from total strangers.
-
-Launchpad makes those contributions possible by removing as many barriers as
-possible to contribution, and highlights areas where contributions would be
-especially welcome.
+Launchpad hosts Linux distributions in much the same way as it hosts projects,
+allowing for developers to feel at home when interacting with distributions.
 
 
-XXX - Collaboration occurs between people
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Gated development
+~~~~~~~~~~~~~~~~~
 
-Something about the fact that "cross-project collaboration" is actually about
-acknowledging that people are the entities that exist between projects.
-
-
-Not our data
-~~~~~~~~~~~~
-
-The data in Launchpad does not really belong to us, we are merely its
-stewards.  We make sure that users can get their data easily and that they can
-change it as they see fit.
+Sometimes, secrets are necessary.  Launchpad understands that sometimes
+development needs to be done privately, and the results only later shared with
+the world.  Security fixes, OEM development for new hardware, proprietary
+services with open source clients are all examples of these.
 
 
-Cross-project consistency
-~~~~~~~~~~~~~~~~~~~~~~~~~
+Hardware matters
+~~~~~~~~~~~~~~~~
 
-XXX - incomplete
-
- * Do not enforce workflows.  Allow people to fit their projects existing
-   workflow into Launchpad.  Workflow-agnostic.
-
- * Be consistent between projects so that we have data coherency and so that
-   people can switch rapidly between projects.
-
- * Encourage people toward best practices
+Many software developers like to pretend that hardware does not really exist.
+When people distribute software as part of an operating system, they don't
+have the luxury of forgetting. Launchpad understands that developers often
+need to acknoweldge and work around differences thrown up by hardware.
 
 
-Full circle
-~~~~~~~~~~~
+We don't care if you use Launchpad, sort of
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-XXX - incomplete
+Many other forges exist to become more successful.  Although we love our users
+and welcome every new users, Launchpad does not judge its success by the
+number of users.  If one project wishes to host its development on another
+platform, Launchpad acts as a front-end to that platform.
 
-Something magical happens when a feature or a workflow reaches all the way
-back to where it began.
 
-Being able to attach patches to bugs is great, but it's not good enough until
-developers can easily *find* those patches.  Finding the patches is only good
-enough when you can merge, comment and reject those patches.
+One project, many communities
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-See also roundtripping, translations branches etc.
+Any given project can have many distinct communities interested in it.  These
+communities have different interests and different motivations, but all work
+in the same project space so that they can easily benefit from each others'
+efforts.
 
 
 Launchpad Agents
