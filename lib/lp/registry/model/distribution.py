@@ -123,7 +123,7 @@ from lp.registry.interfaces.distributionmirror import (
     MirrorContent,
     MirrorStatus,
     )
-from lp.registry.interfaces.distroseries import NoSuchDistroSeries
+from lp\.registry\.errors import NoSuchDistroSeries.
 from lp.registry.interfaces.packaging import PackagingType
 from lp.registry.interfaces.person import (
     validate_person,

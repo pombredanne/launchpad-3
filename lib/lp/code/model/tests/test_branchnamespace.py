@@ -40,7 +40,7 @@ from lp.code.model.branchnamespace import (
     ProductNamespace,
     )
 from lp.registry.interfaces.distribution import NoSuchDistribution
-from lp.registry.interfaces.distroseries import NoSuchDistroSeries
+from lp\.registry\.errors import NoSuchDistroSeries.
 from lp.registry.interfaces.person import NoSuchPerson
 from lp.registry.interfaces.product import NoSuchProduct
 from lp.registry.interfaces.sourcepackagename import NoSuchSourcePackageName

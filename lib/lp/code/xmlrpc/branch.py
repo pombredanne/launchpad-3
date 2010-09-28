@@ -52,7 +52,7 @@ from lp.code.interfaces.codehosting import (
     compose_public_url,
     SUPPORTED_SCHEMES,
     )
-from lp.registry.interfaces.distroseries import NoSuchDistroSeries
+from lp\.registry\.errors import NoSuchDistroSeries.
 from lp.registry.interfaces.person import (
     IPersonSet,
     NoSuchPerson,

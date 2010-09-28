@@ -9,6 +9,10 @@ __all__ = [
 
 import httplib
 
+from lazr.restful.declarations import webservice_error
+
+from lp.app.errors import NameLookupFailed
+
 class PrivatePersonLinkageError(ValueError):
     """An attempt was made to link a private person/team to something."""
     webservice_error(httplib.FORBIDDEN)
@@ -18,4 +22,9 @@ class NameAlreadyTaken(Exception):
     """The name given for a person is already in use by other person."""
     webservice_error(httplib.CONFLICT)
 
+
+class NoSuchDistroSeries(NameLookupFailed):
+    """Raised when we try to find a DistroSeries that doesn't exist."""
+    webservice_error(httplib.BAD_REQUEST)
+    _message_prefix = "No such distribution series"
 
