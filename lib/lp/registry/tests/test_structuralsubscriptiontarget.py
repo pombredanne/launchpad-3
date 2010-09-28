@@ -8,6 +8,7 @@ __metaclass__ = type
 
 import unittest
 
+from storm.expr import compile as compile_storm
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import (
@@ -38,16 +39,18 @@ from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.interfaces.structuralsubscription import (
     DeleteSubscriptionError,
     IStructuralSubscriptionTarget,
+    IStructuralSubscriptionTargetHelper,
     UserCannotSubscribePerson,
     )
 from lp.registry.model.structuralsubscription import StructuralSubscription
 from lp.testing import (
     ANONYMOUS,
     login,
+    login_celebrity,
     login_person,
     TestCaseWithFactory,
     )
-from lp.testing._login import login_celebrity
+from lp.testing.matchers import Provides
 
 
 class StructuralSubscriptionTestBase:
@@ -334,6 +337,110 @@ class TestStructuralSubscriptionForDistroSeries(
 
 
 # XXX Wot no ProjectGroup or ProductSeries?
+
+
+class TestStructuralSubscriptionTargetHelper(TestCaseWithFactory):
+    """Tests for implementations of `IStructuralSubscriptionTargetHelper`."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        super(TestStructuralSubscriptionTargetHelper, self).setUp()
+        self.person = self.factory.makePerson()
+        login_person(self.person)
+
+    def get_helper(self, target):
+        helper = IStructuralSubscriptionTargetHelper(target)
+        self.assertThat(helper, Provides(IStructuralSubscriptionTargetHelper))
+        return helper
+
+    def test_distribution_series(self):
+        target = self.factory.makeDistroSeries()
+        helper = self.get_helper(target)
+        self.assertEqual("distribution series", helper.target_type_display)
+        self.assertEqual(target.distribution, helper.target_parent)
+        self.assertEqual(target.distribution, helper.pillar)
+        self.assertEqual(
+            u"StructuralSubscription.distroseries = ?",
+            compile_storm(helper.join))
+
+    def test_project_group(self):
+        target = self.factory.makeProject(owner=self.person)
+        helper = self.get_helper(target)
+        self.assertEqual("project group", helper.target_type_display)
+        self.assertEqual(None, helper.target_parent)
+        self.assertEqual(target, helper.pillar)
+        self.assertEqual(
+            u"StructuralSubscription.project = ?",
+            compile_storm(helper.join))
+
+    def test_distribution_source_package(self):
+        target = self.factory.makeDistributionSourcePackage()
+        helper = self.get_helper(target)
+        self.assertEqual("package", helper.target_type_display)
+        self.assertEqual(target.distribution, helper.target_parent)
+        self.assertThat(
+            helper.target_parent, Provides(IStructuralSubscriptionTarget))
+        self.assertEqual(target.distribution, helper.pillar)
+        self.assertEqual(
+            u"StructuralSubscription.distribution = ? AND "
+            u"StructuralSubscription.sourcepackagename = ?",
+            compile_storm(helper.join))
+
+    def test_milestone(self):
+        target = self.factory.makeMilestone()
+        helper = self.get_helper(target)
+        self.assertEqual("milestone", helper.target_type_display)
+        self.assertEqual(target.target, helper.target_parent)
+        self.assertThat(
+            helper.target_parent, Provides(IStructuralSubscriptionTarget))
+        self.assertEqual(target.target, helper.pillar)
+        self.assertEqual(
+            u"StructuralSubscription.milestone = ?",
+            compile_storm(helper.join))
+
+    def test_product(self):
+        target = self.factory.makeProduct(owner=self.person)
+        helper = self.get_helper(target)
+        self.assertEqual("project", helper.target_type_display)
+        self.assertEqual(None, helper.target_parent)
+        self.assertEqual(target, helper.pillar)
+        self.assertEqual(
+            u"StructuralSubscription.product = ?",
+            compile_storm(helper.join))
+
+    def test_product_in_group(self):
+        project = self.factory.makeProject(owner=self.person)
+        target = self.factory.makeProduct(project=project)
+        helper = self.get_helper(target)
+        self.assertEqual("project", helper.target_type_display)
+        self.assertEqual(project, helper.target_parent)
+        self.assertEqual(target, helper.pillar)
+        self.assertEqual(
+            u"StructuralSubscription.product = ?",
+            compile_storm(helper.join))
+
+    def test_product_series(self):
+        target = self.factory.makeProductSeries(owner=self.person)
+        helper = self.get_helper(target)
+        self.assertEqual("project series", helper.target_type_display)
+        self.assertEqual(target.product, helper.target_parent)
+        self.assertThat(
+            helper.target_parent, Provides(IStructuralSubscriptionTarget))
+        self.assertEqual(target.product, helper.pillar)
+        self.assertEqual(
+            u"StructuralSubscription.productseries = ?",
+            compile_storm(helper.join))
+
+    def test_distribution(self):
+        target = self.factory.makeDistribution(owner=self.person)
+        helper = self.get_helper(target)
+        self.assertEqual("distribution", helper.target_type_display)
+        self.assertEqual(None, helper.target_parent)
+        self.assertEqual(target, helper.pillar)
+        self.assertEqual(
+            u"StructuralSubscription.distribution = ?",
+            compile_storm(helper.join))
 
 
 def distributionSourcePackageSetUp(test):

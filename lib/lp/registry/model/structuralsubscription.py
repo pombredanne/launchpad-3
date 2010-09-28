@@ -12,7 +12,10 @@ from storm.expr import (
     Or,
     )
 from storm.store import Store
-from zope.component import getUtility
+from zope.component import (
+    adapts,
+    getUtility,
+    )
 from zope.interface import implements
 
 from canonical.database.constants import UTC_NOW
@@ -46,6 +49,7 @@ from lp.registry.interfaces.structuralsubscription import (
     DeleteSubscriptionError,
     IStructuralSubscription,
     IStructuralSubscriptionTarget,
+    IStructuralSubscriptionTargetHelper,
     UserCannotSubscribePerson,
     )
 
@@ -124,6 +128,115 @@ class StructuralSubscription(SQLBase):
             return self.distroseries
         else:
             raise AssertionError('StructuralSubscription has no target.')
+
+
+class DistroSeriesTargetHelper:
+    """A helper for `IDistroSeries`s."""
+
+    implements(IStructuralSubscriptionTargetHelper)
+    adapts(IDistroSeries)
+
+    target_type_display = 'distribution series'
+
+    def __init__(self, target):
+        self.target = target
+        self.target_parent = target.distribution
+        self.pillar = target.distribution
+        self.join = (StructuralSubscription.distroseries == target)
+
+
+class ProjectGroupTargetHelper:
+    """A helper for `IProjectGroup`s."""
+
+    implements(IStructuralSubscriptionTargetHelper)
+    adapts(IProjectGroup)
+
+    target_type_display = 'project group'
+
+    def __init__(self, target):
+        self.target = target
+        self.target_parent = None
+        self.pillar = target
+        self.join = (StructuralSubscription.project == target)
+
+
+class DistributionSourcePackageTargetHelper:
+    """A helper for `IDistributionSourcePackage`s."""
+
+    implements(IStructuralSubscriptionTargetHelper)
+    adapts(IDistributionSourcePackage)
+
+    target_type_display = 'package'
+
+    def __init__(self, target):
+        self.target = target
+        self.target_parent = target.distribution
+        self.pillar = target.distribution
+        self.join = And(
+            StructuralSubscription.distributionID == (
+                target.distribution.id),
+            StructuralSubscription.sourcepackagenameID == (
+                target.sourcepackagename.id))
+
+
+class MilestoneTargetHelper:
+    """A helper for `IMilestone`s."""
+
+    implements(IStructuralSubscriptionTargetHelper)
+    adapts(IMilestone)
+
+    target_type_display = 'milestone'
+
+    def __init__(self, target):
+        self.target = target
+        self.target_parent = target.target
+        self.pillar = target.target
+        self.join = (StructuralSubscription.milestone == target)
+
+
+class ProductTargetHelper:
+    """A helper for `IProduct`s."""
+
+    implements(IStructuralSubscriptionTargetHelper)
+    adapts(IProduct)
+
+    target_type_display = 'project'
+
+    def __init__(self, target):
+        self.target = target
+        self.target_parent = target.project
+        self.pillar = target
+        self.join = (StructuralSubscription.product == target)
+
+
+class ProductSeriesTargetHelper:
+    """A helper for `IProductSeries`s."""
+
+    implements(IStructuralSubscriptionTargetHelper)
+    adapts(IProductSeries)
+
+    target_type_display = 'project series'
+
+    def __init__(self, target):
+        self.target = target
+        self.target_parent = target.product
+        self.pillar = target.product
+        self.join = (StructuralSubscription.productseries == target)
+
+
+class DistributionTargetHelper:
+    """A helper for `IDistribution`s."""
+
+    implements(IStructuralSubscriptionTargetHelper)
+    adapts(IDistribution)
+
+    target_type_display = 'distribution'
+
+    def __init__(self, target):
+        self.target = target
+        self.target_parent = None
+        self.pillar = target
+        self.join = (StructuralSubscription.distribution == target)
 
 
 class StructuralSubscriptionTargetMixin:

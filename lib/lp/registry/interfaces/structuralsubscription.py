@@ -14,6 +14,7 @@ __all__ = [
     'IStructuralSubscription',
     'IStructuralSubscriptionForm',
     'IStructuralSubscriptionTarget',
+    'IStructuralSubscriptionTargetHelper',
     'UserCannotSubscribePerson',
     ]
 
@@ -261,6 +262,25 @@ class IStructuralSubscriptionTarget(IStructuralSubscriptionTargetRead,
                                     IStructuralSubscriptionTargetWrite):
     """A Launchpad Structure allowing users to subscribe to it."""
     export_as_webservice_entry()
+
+
+class IStructuralSubscriptionTargetHelper(Interface):
+    """Provides information on subscribable objects."""
+
+    target = Attribute("The target.")
+
+    target_parent = Attribute(
+        "The target's parent, or None if one doesn't exist.")
+
+    target_type_display = Attribute(
+        "The type of the target, for display.")
+
+    pillar = Attribute(
+        "The pillar most closely corresponding to the context.")
+
+    join = Attribute(
+        "A Storm join to get the `IStructuralSubscription`s relating "
+        "to the context.")
 
 
 class IStructuralSubscriptionForm(Interface):
