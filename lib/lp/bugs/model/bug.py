@@ -58,6 +58,7 @@ from storm.expr import (
     SQLRaw,
     Union,
     )
+from storm.info import ClassAlias
 from storm.store import (
     EmptyResultSet,
     Store,
@@ -69,6 +70,7 @@ from zope.interface import (
     implements,
     providedBy,
     )
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
@@ -160,6 +162,7 @@ from lp.bugs.model.bugtask import (
     get_bug_privacy_filter,
     NullBugTask,
     )
+from lp.bugs.model.bugtarget import OfficialBugTag
 from lp.bugs.model.bugwatch import BugWatch
 from lp.hardwaredb.interfaces.hwdb import IHWSubmissionBugSet
 from lp.registry.enum import BugNotificationLevel
@@ -190,6 +193,7 @@ from lp.services.fields import DuplicateBug
 from lp.services.propertycache import (
     cachedproperty,
     IPropertyCache,
+    IPropertyCacheManager,
     )
 
 
@@ -347,6 +351,21 @@ class Bug(SQLBase):
     heat_last_updated = UtcDateTimeCol(default=None)
     latest_patch_uploaded = UtcDateTimeCol(default=None)
 
+    @cachedproperty
+    def _subscriber_cache(self):
+        """Caches known subscribers."""
+        return set()
+
+    @cachedproperty
+    def _subscriber_dups_cache(self):
+        """Caches known subscribers to dupes."""
+        return set()
+
+    @cachedproperty
+    def _unsubscribed_cache(self):
+        """Cache known non-subscribers."""
+        return set()
+
     @property
     def latest_patch(self):
         """See `IBug`."""
@@ -426,21 +445,101 @@ class Bug(SQLBase):
     @property
     def indexed_messages(self):
         """See `IMessageTarget`."""
+        return self._indexed_messages(include_content=True)
+
+    def _indexed_messages(self, include_content=False, include_parents=True):
+        """Get the bugs messages, indexed.
+
+        :param include_content: If True retrieve the content for the messages
+            too.
+        :param include_parents: If True retrieve the object for parent messages
+            too. If False the parent attribute will be *forced* to None to
+            reduce database lookups.
+        """
+        # Make all messages be 'in' the main bugtask.
         inside = self.default_bugtask
-        messages = list(self.messages)
-        message_set = set(messages)
-
-        indexed_messages = []
-        for index, message in enumerate(messages):
-            if message.parent not in message_set:
-                parent = None
+        store = Store.of(self)
+        message_by_id = {}
+        if include_parents:
+            def to_messages(rows):
+                return [row[0] for row in rows]
+        else:
+            def to_messages(rows):
+                return rows
+        def eager_load_owners(messages):
+            # Because we may have multiple owners, we spend less time in storm
+            # with very large bugs by not joining and instead querying a second
+            # time. If this starts to show high db time, we can left outer join
+            # instead.
+            owner_ids = set(message.ownerID for message in messages)
+            owner_ids.discard(None)
+            if not owner_ids:
+                return
+            list(store.find(Person, Person.id.is_in(owner_ids)))
+        def eager_load_content(messages):
+            # To avoid the complexity of having multiple rows per
+            # message, or joining in the database (though perhaps in
+            # future we should do that), we do a single separate query
+            # for the message content.
+            message_ids = set(message.id for message in messages)
+            chunks = store.find(
+                MessageChunk, MessageChunk.messageID.is_in(message_ids))
+            chunks.order_by(MessageChunk.id)
+            chunk_map = {}
+            for chunk in chunks:
+                message_chunks = chunk_map.setdefault(chunk.messageID, [])
+                message_chunks.append(chunk)
+            for message in messages:
+                if message.id not in chunk_map:
+                    continue
+                cache = IPropertyCache(message)
+                cache.text_contents = Message.chunks_text(
+                    chunk_map[message.id])
+        def eager_load(rows, slice_info):
+            messages = to_messages(rows)
+            eager_load_owners(messages)
+            if include_content:
+                eager_load_content(messages)
+        def index_message(row, index):
+            # convert row to an IndexedMessage
+            if include_parents:
+                message, parent = row
+                if parent is not None:
+                    # If there is an IndexedMessage available as parent, use
+                    # that to reduce on-demand parent lookups.
+                    parent = message_by_id.get(parent.id, parent)
             else:
-                parent = message.parent
-
-            indexed_message = IndexedMessage(message, inside, index, parent)
-            indexed_messages.append(indexed_message)
-
-        return indexed_messages
+                message = row
+                parent = None # parent attribute is not going to be accessed.
+            result = IndexedMessage(message, inside, index, parent)
+            # This message may be the parent for another: stash it to permit
+            # use.
+            message_by_id[message.id] = result
+            return result
+        # There is possibly some nicer way to do this in storm, but
+        # this is a lot easier to figure out.
+        if include_parents:
+            ParentMessage = ClassAlias(Message, name="parent_message")
+            tables = SQL("""
+Message left outer join
+message as parent_message on (
+    message.parent=parent_message.id and
+    parent_message.id in (
+        select bugmessage.message from bugmessage where bugmessage.bug=%s)),
+BugMessage""" % sqlvalues(self.id))
+            results = store.using(tables).find(
+                (Message, ParentMessage),
+                BugMessage.bugID == self.id,
+                BugMessage.messageID == Message.id,
+                )
+        else:
+            results = store.find(Message,
+                BugMessage.bugID == self.id,
+                BugMessage.messageID == Message.id,
+                )
+        results.order_by(Message.datecreated, Message.id)
+        return DecoratedResultSet(results, index_message,
+            pre_iter_hook=eager_load, slice_info=True)
 
     @property
     def displayname(self):
@@ -450,7 +549,7 @@ class Bug(SQLBase):
             dn += ' ('+self.name+')'
         return dn
 
-    @property
+    @cachedproperty
     def bugtasks(self):
         """See `IBug`."""
         result = BugTask.select('BugTask.bug = %s' % sqlvalues(self.id))
@@ -460,7 +559,8 @@ class Bug(SQLBase):
         # Do not use the default orderBy as the prejoins cause ambiguities
         # across the tables.
         result = result.orderBy("id")
-        return sorted(result, key=bugtask_sort_key)
+        result = sorted(result, key=bugtask_sort_key)
+        return result
 
     @property
     def default_bugtask(self):
@@ -584,6 +684,33 @@ class Bug(SQLBase):
             BugMessage.message == Message.id).order_by('id')
         return messages.first()
 
+    @cachedproperty
+    def official_tags(self):
+        """See `IBug`."""
+        # Da circle of imports forces the locals.
+        from lp.registry.model.distribution import Distribution
+        from lp.registry.model.product import Product
+        table = OfficialBugTag
+        table = LeftJoin(
+            table,
+            Distribution,
+            OfficialBugTag.distribution_id==Distribution.id)
+        table = LeftJoin(
+            table,
+            Product,
+            OfficialBugTag.product_id==Product.id)
+        # When this method is typically called it already has the necessary
+        # info in memory, so rather than rejoin with Product etc, we do this
+        # bit in Python. If reviewing performance here feel free to change.
+        clauses = []
+        for task in self.bugtasks:
+            clauses.append(
+                # Storm cannot compile proxied objects.
+                removeSecurityProxy(task.target._getOfficialTagClause()))
+        clause = Or(*clauses)
+        return list(Store.of(self).using(table).find(OfficialBugTag.tag,
+            clause).order_by(OfficialBugTag.tag).config(distinct=True))
+
     def followup_subject(self):
         """See `IBug`."""
         return 'Re: '+ self.title
@@ -617,6 +744,8 @@ class Bug(SQLBase):
 
     def unsubscribe(self, person, unsubscribed_by):
         """See `IBug`."""
+        # Drop cached subscription info.
+        IPropertyCacheManager(self).clear()
         if person is None:
             person = unsubscribed_by
 
@@ -656,21 +785,11 @@ class Bug(SQLBase):
 
     def isSubscribed(self, person):
         """See `IBug`."""
-        if person is None:
-            return False
-
-        bs = BugSubscription.selectBy(bug=self, person=person)
-        return bool(bs)
+        return self.personIsDirectSubscriber(person)
 
     def isSubscribedToDupes(self, person):
         """See `IBug`."""
-        if person is None:
-            return False
-
-        return bool(
-            BugSubscription.select("""
-                bug IN (SELECT id FROM Bug WHERE duplicateof = %d) AND
-                person = %d""" % (self.id, person.id)))
+        return self.personIsSubscribedToDuplicate(person)
 
     def getDirectSubscriptions(self):
         """See `IBug`."""
@@ -723,8 +842,11 @@ class Bug(SQLBase):
             self.getAlsoNotifiedSubscribers(recipients, level) +
             self.getSubscribersFromDuplicates(recipients, level))
 
+        # Remove security proxy for the sort key, but return
+        # the regular proxied object.
         return sorted(
-            indirect_subscribers, key=operator.attrgetter("displayname"))
+            indirect_subscribers,
+            key=lambda x: removeSecurityProxy(x).displayname)
 
     def getSubscriptionsFromDuplicates(self, recipients=None):
         """See `IBug`."""
@@ -787,9 +909,23 @@ class Bug(SQLBase):
     def getSubscribersForPerson(self, person):
         """See `IBug."""
         assert person is not None
-        return Store.of(self).find(
-            # return people
-            Person,
+        def cache_unsubscribed(rows):
+            if not rows:
+                self._unsubscribed_cache.add(person)
+        def cache_subscriber(row):
+            _, subscriber, subscription = row
+            if subscription.bugID == self.id:
+                self._subscriber_cache.add(subscriber)
+            else:
+                self._subscriber_dups_cache.add(subscriber)
+            return subscriber
+        return DecoratedResultSet(Store.of(self).find(
+            # XXX: RobertCollins 2010-09-22 bug=374777: This SQL(...) is a
+            # hack; it does not seem to be possible to express DISTINCT ON
+            # with Storm.
+            (SQL("DISTINCT ON (Person.name, BugSubscription.person) 0 AS ignore"),
+             # return people and subscribptions
+             Person, BugSubscription),
             # For this bug or its duplicates
             Or(
                 Bug.id == self.id,
@@ -809,7 +945,8 @@ class Bug(SQLBase):
             # bug=https://bugs.edge.launchpad.net/storm/+bug/627137
             # RBC 20100831
             SQL("""Person.id = TeamParticipation.team"""),
-            ).order_by(Person.name).config(distinct=True)
+            ).order_by(Person.name),
+            cache_subscriber, pre_iter_hook=cache_unsubscribed)
 
     def getAlsoNotifiedSubscribers(self, recipients=None, level=None):
         """See `IBug`.
@@ -865,9 +1002,11 @@ class Bug(SQLBase):
         # Direct subscriptions always take precedence over indirect
         # subscriptions.
         direct_subscribers = set(self.getDirectSubscribers())
+        # Remove security proxy for the sort key, but return
+        # the regular proxied object.
         return sorted(
             (also_notified_subscribers - direct_subscribers),
-            key=operator.attrgetter('displayname'))
+            key=lambda x: removeSecurityProxy(x).displayname)
 
     def getBugNotificationRecipients(self, duplicateof=None, old_bug=None,
                                      level=None,
@@ -1135,6 +1274,11 @@ class Bug(SQLBase):
             notify(ObjectDeletedEvent(bug_branch, user=user))
             bug_branch.destroySelf()
 
+    @cachedproperty
+    def has_cves(self):
+        """See `IBug`."""
+        return bool(self.cves)
+
     def linkCVE(self, cve, user):
         """See `IBug`."""
         if cve not in self.cves:
@@ -1233,17 +1377,22 @@ class Bug(SQLBase):
         question_target = IQuestionTarget(bugtask.target)
         question = question_target.createQuestionFromBug(self)
         self.addChange(BugConvertedToQuestion(UTC_NOW, person, question))
+        IPropertyCache(self)._question_from_bug = question
 
         notify(BugBecameQuestionEvent(self, question, person))
         return question
 
-    def getQuestionCreatedFromBug(self):
-        """See `IBug`."""
+    @cachedproperty
+    def _question_from_bug(self):
         for question in self.questions:
-            if (question.owner == self.owner
+            if (question.ownerID == self.ownerID
                 and question.datecreated == self.datecreated):
                 return question
         return None
+
+    def getQuestionCreatedFromBug(self):
+        """See `IBug`."""
+        return self._question_from_bug
 
     def canMentor(self, user):
         """See `ICanBeMentored`."""
@@ -1543,10 +1692,13 @@ class Bug(SQLBase):
 
     def _getTags(self):
         """Get the tags as a sorted list of strings."""
-        tags = [
-            bugtag.tag
-            for bugtag in BugTag.selectBy(bug=self, orderBy='tag')]
-        return tags
+        return self._cached_tags
+
+    @cachedproperty
+    def _cached_tags(self):
+        return list(Store.of(self).find(
+            BugTag.tag,
+            BugTag.bugID==self.id).order_by(BugTag.tag))
 
     def _setTags(self, tags):
         """Set the tags from a list of strings."""
@@ -1554,6 +1706,7 @@ class Bug(SQLBase):
         # and insert the new ones.
         new_tags = set([tag.lower() for tag in tags])
         old_tags = set(self.tags)
+        del IPropertyCache(self)._cached_tags
         added_tags = new_tags.difference(old_tags)
         removed_tags = old_tags.difference(new_tags)
         for removed_tag in removed_tags:
@@ -1701,12 +1854,17 @@ class Bug(SQLBase):
 
     def personIsDirectSubscriber(self, person):
         """See `IBug`."""
+        if person in self._subscriber_cache:
+            return True
+        if person in self._unsubscribed_cache:
+            return False
+        if person is None:
+            return False
         store = Store.of(self)
         subscriptions = store.find(
             BugSubscription,
             BugSubscription.bug == self,
             BugSubscription.person == person)
-
         return not subscriptions.is_empty()
 
     def personIsAlsoNotifiedSubscriber(self, person):
@@ -1722,6 +1880,12 @@ class Bug(SQLBase):
 
     def personIsSubscribedToDuplicate(self, person):
         """See `IBug`."""
+        if person in self._subscriber_dups_cache:
+            return True
+        if person in self._unsubscribed_cache:
+            return False
+        if person is None:
+            return False
         store = Store.of(self)
         subscriptions_from_dupes = store.find(
             BugSubscription,
@@ -1785,7 +1949,7 @@ class Bug(SQLBase):
         when attachments is evaluated, not when the resultset is processed).
         """
         message_to_indexed = {}
-        for message in self.indexed_messages:
+        for message in self._indexed_messages(include_parents=False):
             message_to_indexed[message.id] = message
         def set_indexed_message(row):
             attachment = row[0]
@@ -1931,13 +2095,13 @@ class BugSet:
 
         # Create the task on a product if one was passed.
         if params.product:
-            BugTaskSet().createTask(
+            getUtility(IBugTaskSet).createTask(
                 bug=bug, product=params.product, owner=params.owner,
                 status=params.status)
 
         # Create the task on a source package name if one was passed.
         if params.distribution:
-            BugTaskSet().createTask(
+            getUtility(IBugTaskSet).createTask(
                 bug=bug, distribution=params.distribution,
                 sourcepackagename=params.sourcepackagename,
                 owner=params.owner, status=params.status)

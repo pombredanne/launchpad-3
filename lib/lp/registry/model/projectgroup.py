@@ -93,6 +93,7 @@ from lp.registry.model.announcement import MakesAnnouncements
 from lp.registry.model.karma import KarmaContextMixin
 from lp.registry.model.mentoringoffer import MentoringOffer
 from lp.registry.model.milestone import (
+    HasMilestonesMixin,
     Milestone,
     ProjectMilestone,
     )
@@ -110,7 +111,8 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
                    MakesAnnouncements, HasSprintsMixin, HasAliasMixin,
                    KarmaContextMixin, BranchVisibilityPolicyMixin,
                    StructuralSubscriptionTargetMixin,
-                   HasBranchesMixin, HasMergeProposalsMixin, HasBugHeatMixin):
+                   HasBranchesMixin, HasMergeProposalsMixin, HasBugHeatMixin,
+                   HasMilestonesMixin):
     """A ProjectGroup"""
 
     implements(IProjectGroup, IFAQCollection, IHasBugHeat, IHasIcon, IHasLogo,
@@ -309,6 +311,11 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """Customize `search_params` for this milestone."""
         search_params.setProject(self)
 
+    def _getOfficialTagClause(self):
+        """See `OfficialBugTagTargetMixin`."""
+        And(ProjectGroup.id == Product.projectID,
+            Product.id == OfficialBugTag.productID)
+
     @property
     def official_bug_tags(self):
         """See `IHasBugs`."""
@@ -396,6 +403,11 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """
         return self.products.count() != 0
 
+    def _getMilestoneCondition(self):
+        """See `HasMilestonesMixin`."""
+        return And(Milestone.productID == Product.id,
+                   Product.projectID == self.id)
+
     def _getMilestones(self, only_active):
         """Return a list of milestones for this project group.
 
@@ -443,6 +455,13 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def milestones(self):
         """See `IProjectGroup`."""
         return self._getMilestones(True)
+
+    @property
+    def product_milestones(self):
+        """Hack to avoid the ProjectMilestone in MilestoneVocabulary."""
+        # XXX: bug=644977 Robert Collins - this is a workaround for
+        # insconsistency in project group milestone use.
+        return self._get_milestones()
 
     @property
     def all_milestones(self):
