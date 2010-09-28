@@ -274,96 +274,25 @@ class StructuralSubscriptionTargetMixin:
     @property
     def _pillar(self):
         """Return the pillar associated with this object."""
-        if IDistributionSourcePackage.providedBy(self):
-            return self.distribution
-        elif IProduct.providedBy(self):
-            return self
-        elif IProjectGroup.providedBy(self):
-            return self
-        elif IDistribution.providedBy(self):
-            return self
-        elif IMilestone.providedBy(self):
-            return self.target
-        elif IProductSeries.providedBy(self):
-            return self.product
-        elif IDistroSeries.providedBy(self):
-            return self.distribution
-        else:
-            raise AssertionError(
-                '%s is not a valid structural subscription target.', self)
+        return IStructuralSubscriptionTargetHelper(self).pillar
 
     @property
     def _join(self):
         """A `Join` to get the relevant subscriptions for this object."""
-        if IDistributionSourcePackage.providedBy(self):
-            return And(
-                StructuralSubscription.distributionID == (
-                    self.distribution.id),
-                StructuralSubscription.sourcepackagenameID == (
-                        self.sourcepackagename.id))
-        elif IProduct.providedBy(self):
-            return (StructuralSubscription.product == self)
-        elif IProjectGroup.providedBy(self):
-            return (StructuralSubscription.project == self)
-        elif IDistribution.providedBy(self):
-            return (StructuralSubscription.distribution == self)
-        elif IMilestone.providedBy(self):
-            return (StructuralSubscription.milestone == self)
-        elif IProductSeries.providedBy(self):
-            return (StructuralSubscription.productseries == self)
-        elif IDistroSeries.providedBy(self):
-            return (StructuralSubscription.distroseries == self)
-        else:
-            raise AssertionError(
-                '%s is not a valid structural subscription target.', self)
+        return IStructuralSubscriptionTargetHelper(self).join
 
     @property
     def parent_subscription_target(self):
         """See `IStructuralSubscriptionTarget`."""
-        # Some structures have a related structure which can be thought
-        # of as their parent. A package is related to a distribution,
-        # a product is related to a project, etc'...
-        # This method determines whether the target has a parent,
-        # returning it if it exists.
-        if IDistributionSourcePackage.providedBy(self):
-            parent = self.distribution
-        elif IProduct.providedBy(self):
-            parent = self.project
-        elif IProductSeries.providedBy(self):
-            parent = self.product
-        elif IDistroSeries.providedBy(self):
-            parent = self.distribution
-        elif IMilestone.providedBy(self):
-            parent = self.target
-        else:
-            parent = None
-        # We only want to return the parent if it's
-        # an `IStructuralSubscriptionTarget`.
-        if IStructuralSubscriptionTarget.providedBy(parent):
-            return parent
-        else:
-            return None
+        parent = IStructuralSubscriptionTargetHelper(self).target_parent
+        assert (parent is None or
+                IStructuralSubscriptionTarget.providedBy(parent))
+        return parent
 
     @property
     def target_type_display(self):
         """See `IStructuralSubscriptionTarget`."""
-        if IDistributionSourcePackage.providedBy(self):
-            return 'package'
-        elif IProduct.providedBy(self):
-            return 'project'
-        elif IProjectGroup.providedBy(self):
-            return 'project group'
-        elif IDistribution.providedBy(self):
-            return 'distribution'
-        elif IMilestone.providedBy(self):
-            return 'milestone'
-        elif IProductSeries.providedBy(self):
-            return 'project series'
-        elif IDistroSeries.providedBy(self):
-            return 'distribution series'
-        else:
-            raise AssertionError(
-                '%s is not a valid structural subscription target.', self)
+        return IStructuralSubscriptionTargetHelper(self).target_type_display
 
     def userCanAlterSubscription(self, subscriber, subscribed_by):
         """See `IStructuralSubscriptionTarget`."""
