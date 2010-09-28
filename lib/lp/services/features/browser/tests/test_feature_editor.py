@@ -29,11 +29,17 @@ from lp.testing import (
     time_counter,
     )
 
+from lp.services.features import (
+    get_relevant_feature_controller,
+    )
 from lp.services.features.browser.edit import (
     FeatureControlView,
     )
 from lp.services.features.model import (
     addFeatureFlagRules,
+    )
+from lp.services.features.rulesource import (
+    StormFeatureRuleSource,
     )
 
 
@@ -46,8 +52,9 @@ class TestFeatureControlPage(BrowserTestCase):
         
         :param teams: List of teams to add the new user to.
         """
-        # XXX bug=646563: To make a UserBrowser, you must know the password.  This
-        # should be separated out into test infrastructure.  -- mbp 20100923
+        # XXX MartinPool 2010-09-23 bug=646563: To make a UserBrowser, you
+        # must know the password; we can't get the password for an existing
+        # user so we have to make a new one.
         user = self.factory.makePerson(password='test')
         for team in teams:
             with person_logged_in(team.teamowner):
@@ -55,19 +62,23 @@ class TestFeatureControlPage(BrowserTestCase):
         return self.getUserBrowser(url=None, user=user, password='test')
 
     def getUserBrowserAsAdmin(self):
-        url = self.getFeatureRulesURL()
+        """Make a new TestBrowser logged in as an admin user."""
+        url = self.getFeatureRulesViewURL()
         admin_team = getUtility(ILaunchpadCelebrities).admin
         return self.getUserBrowserAsTeamMember([admin_team])
 
-    def getFeatureRulesURL(self):
+    def getFeatureRulesViewURL(self):
         root = getUtility(ILaunchpadRoot)
-        url = canonical_url(root, view_name='+feature-rules')
-        return url
+        return canonical_url(root, view_name='+feature-rules')
+
+    def getFeatureRulesEditURL(self):
+        root = getUtility(ILaunchpadRoot)
+        return canonical_url(root, view_name='+feature-rules-edit')
 
     def test_feature_page_default_value(self):
         """No rules in the sampledata gives no content in the page"""
         browser = self.getUserBrowserAsAdmin()
-        browser.open(self.getFeatureRulesURL())
+        browser.open(self.getFeatureRulesViewURL())
         textarea = browser.getControl(name="feature_rules")
         # and by default, since there are no rules in the sample data, it's
         # empty
@@ -79,7 +90,7 @@ class TestFeatureControlPage(BrowserTestCase):
             ('beta_user', 'ui.icing', u'4.0', 300),
             ])
         browser = self.getUserBrowserAsAdmin()
-        browser.open(self.getFeatureRulesURL())
+        browser.open(self.getFeatureRulesViewURL())
         textarea = browser.getControl(name="feature_rules")
         self.assertThat(textarea.value.replace('\r', ''), Equals("""\
 ui.icing\tbeta_user\t300\t4.0
@@ -90,29 +101,32 @@ ui.icing\tdefault\t100\t3.0
         browser = self.getUserBrowser()
         self.assertRaises(Unauthorized,
             browser.open,
-            self.getFeatureRulesURL())
+            self.getFeatureRulesViewURL())
 
     def test_feature_rules_plebian_unauthorized(self):
         """Logged in, but not a member of any interesting teams."""
         browser = self.getUserBrowserAsTeamMember([])
         self.assertRaises(Unauthorized,
             browser.open,
-            self.getFeatureRulesURL())
+            self.getFeatureRulesViewURL())
+
+    def test_feature_rules_plebian_unauthorized_edit(self):
+        """Logged in, but not a member of any interesting teams."""
+        browser = self.getUserBrowserAsTeamMember([])
+        self.assertRaises(Unauthorized,
+            browser.open,
+            self.getFeatureRulesEditURL())
 
     def test_feature_page_submit_changes(self):
-        # XXX: read/write mode not supported yet
-        return
-        ## new_value = 'beta_user 10 some_key some value with spaces'
-        ## browser = self.getFeaturePageBrowser()
-        ## textarea = browser.getControl(name="feature_rules")
-        ## textarea.value = new_value
-        ## browser.getControl(name="submit").click()
-        ## self.assertThat(textarea.value.replace('\t', ' '),
-        ##     Equals(new_value))
-
-
-    # TODO: test that for unauthorized or anonymous users, the page works
-    # (including showing the active rules) but the textarea is readonly and
-    # there is no submit button.
-    #
-    # TODO: test that you can submit it and it changes the database.
+        """Submitted changes show up in the db."""
+        browser = self.getUserBrowserAsAdmin()
+        browser.open(self.getFeatureRulesEditURL())
+        new_value = 'beta_user some_key 10 some value with spaces'
+        textarea = browser.getControl(name="feature_rules")
+        textarea.value = new_value
+        browser.getControl(name="field.actions.change").click()
+        self.assertThat(
+            list(StormFeatureRuleSource().getAllRulesAsTuples()),
+            Equals([
+                ('beta_user', 'some_key', 10, 'some value with spaces'),
+                ]))
