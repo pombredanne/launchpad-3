@@ -26,6 +26,7 @@ from signal import (
 import subprocess
 import sys
 import time
+import warnings
 
 from fixtures import Fixture
 from twisted.application import service
@@ -140,7 +141,8 @@ class TacTestSetup(Fixture):
                 DeprecationWarning, stacklevel=2)
             two_stage_kill(pid)
             if get_pid_from_file(self.pidfile):
-                raise Exception("Could not kill stale process.")
+                raise TacException(
+                    "Could not kill stale process %s." % (self.pidfile,))
 
         # setUp() watches the logfile to determine when the daemon has fully
         # started. If it sees an old logfile, then it will find the LOG_MAGIC
