@@ -41,8 +41,6 @@ __all__ = [
     'validate_public_person',
     ]
 
-import httplib
-
 from lazr.enum import (
     DBEnumeratedType,
     DBItem,
@@ -121,6 +119,7 @@ from lp.code.interfaces.hasbranches import (
     IHasRequestedReviews,
     )
 from lp.code.interfaces.hasrecipes import IHasRecipes
+from lp.registry.errors import PrivatePersonLinkageError
 from lp.registry.interfaces.gpg import IGPGKey
 from lp.registry.interfaces.irc import IIrcID
 from lp.registry.interfaces.jabber import IJabberID
@@ -156,14 +155,6 @@ from lp.services.worlddata.interfaces.language import ILanguage
 
 
 PRIVATE_TEAM_PREFIX = 'private-'
-
-
-class PrivatePersonLinkageError(ValueError):
-    """An attempt was made to link a private person/team to something."""
-    # HTTP 400 -- BAD REQUEST
-    # HTTP 403 would be better, but as this excpetion is raised inside a
-    # validator, it will default to 400 anyway.
-    webservice_error(httplib.BAD_REQUEST)
 
 
 @block_implicit_flushes
