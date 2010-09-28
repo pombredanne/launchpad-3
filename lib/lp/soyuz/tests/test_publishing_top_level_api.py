@@ -444,7 +444,7 @@ class TestICanPublishPackagesAPI(TestNativePublishingBase):
             changes_file_name=changes_file_name,
             upload_status=PackageUploadStatus.ACCEPTED)
         pu_i386.addBuild(build_i386)
-        
+
         # Now we make hppa a disabled architecture, and then call the
         # publish method on the packageupload.  The arch-all binary
         # should be published only in the i386 arch, not the hppa one.
