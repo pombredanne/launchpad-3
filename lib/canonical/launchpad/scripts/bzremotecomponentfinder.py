@@ -93,10 +93,16 @@ class BugzillaRemoteComponentFinder:
             self.products[product_name] = product
 
 
+# TODO: Perhaps this can be replaced by the BugTracker model class?
 class LaunchpadBugTracker:
     def __init__(self, bugtracker_name):
         self.name = bugtracker_name
         self.products = {}
+
+    def getComponentGroup(self, bz_product_name):
+        # TODO: Look to see if the Bugzilla product name is registered with
+        #       a Launchpad product, and if so, return it
+        return None
 
     def retrieveProducts(self):
         # TODO: Retrieve the bugtracker object from launchpad

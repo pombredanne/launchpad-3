@@ -6,8 +6,6 @@
 # pylint: disable-msg=W0403
 import _pythonpath
 
-import os
-import sys
 import time
 
 from canonical.config import config
@@ -21,11 +19,16 @@ from lp.bugs.interfaces.bugtracker import (
     BugTrackerType,
     IBugTrackerSet,
     )
+from lp.registry.interfaces.distribution import (
+    IDistributionSet,
+    IDistribution,
+    )
 
 # TODO:
-#  - Convert to use of BeautifulSoup
 #  - Hook up storage to database
-#  - Plan out tests
+#  - Write tests (look at how other cronscripts test)
+#    + When running in test mode, use pre-saved html pages
+#    + Make a lplib script to get all bugzillas, and then test them locally
 
 class UpdateRemoteComponentsFromBugzilla(LaunchpadCronScript):
 
@@ -41,7 +44,7 @@ class UpdateRemoteComponentsFromBugzilla(LaunchpadCronScript):
             if bugtracker.name == "ubuntu-bugzilla":
                 continue
             if bugtracker.name == "mozilla.org":
-                # TODO: We should permit mozilla, but it errors so skip for now
+                # TODO: We should permit mozilla, but it errors in the sample data so skip for now
                 continue
             if bugtracker.bugtrackertype != BugTrackerType.BUGZILLA:
                 continue
@@ -77,13 +80,13 @@ class UpdateRemoteComponentsFromBugzilla(LaunchpadCronScript):
         self.parser.add_option(
             "-c", "--clean", dest="opt_clean",
             default="false",
-            help="Drop all custom added components that are now deleted")
+            help="Cleanup all custom added components that have been hidden")
         self.parser.add_option(
             "-b", "--bugtracker", dest="opt_bugtracker",
             help="Update only the bug tracker with this name in launchpad")
         self.parser.add_option(
             "-g", "--component-group", dest="opt_component_group",
-            help="Only update components in this specific component group")
+            help="Only update components in the specified component group")
         self.parser.add_option(
             "-P", "--purge-first", dest="opt_purge_first",
             default="false",
@@ -105,12 +108,7 @@ class UpdateRemoteComponentsFromBugzilla(LaunchpadCronScript):
 #                pass
 
     def main(self):
-        # TODO: If a bz url was specified, run against only it
-
         start_time = time.time()
-
-        # TODO: Replace this with the actual database object (Celebrity?)
-        distro = 'ubuntu'
 
         for bugzilla in self.getBugzillas():
             lp_bugtracker = LaunchpadBugTracker(bugzilla['name'])
@@ -122,13 +120,15 @@ class UpdateRemoteComponentsFromBugzilla(LaunchpadCronScript):
             for product in bz_bugtracker.products.itervalues():
                 #print "%s: %s" %(product['name'], product['components'])
 
-                # TODO: Retrieve component group from launchpad
-#                lp_product = lp_bugtracker.getProduct(product['name'])
-#                if not lp_product:
-#                    print "Error: TODO"
+                # Bugzilla's "products" are referred to as "component groups" in Launchpad
+                lp_component_group = lp_bugtracker.getComponentGroup(product['name'])
+                if lp_component_group is None:
+                    # TODO: Add the component_group to the lp_bugtracker
+                    lp_components = []
+                else:
+                    lp_components = lp_component_group.components
 
                 bz_components = product['components']
-                lp_components = lp_bugtracker.components(product['name'])
 
                 new_comps = self.newComponents(bz_components, lp_components)
                 rm_comps = self.removedComponents(bz_components, lp_components)
