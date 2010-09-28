@@ -31,7 +31,7 @@ from canonical.database.sqlbase import (
     commit,
     ZopelessTransactionManager,
     )
-from canonical.launchpad.database import BugTracker
+from lp.bugs.model.bugtracker import BugTracker
 from canonical.launchpad.ftests import (
     login,
     logout,

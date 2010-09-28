@@ -16,10 +16,13 @@ from zope.component import getUtility
 
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 from canonical.lp import initZopeless
-from canonical.launchpad.database import BugTrackerAlias
-from canonical.launchpad.interfaces import (
-    BugTrackerType, IBugTrackerAliasSet, IBugTrackerSet,
-    ILaunchpadCelebrities)
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.bugs.interfaces.bugtracker import (
+    BugTrackerType,
+    IBugTrackerAliasSet,
+    IBugTrackerSet,
+    )
+from lp.bugs.model.bugtracker import BugTrackerAlias
 
 
 execute_zcml_for_scripts()

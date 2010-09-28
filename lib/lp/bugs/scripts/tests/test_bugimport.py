@@ -17,7 +17,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database.sqlbase import cursor
-from canonical.launchpad.database import BugNotification
+from lp.bugs.model.bugnotification import BugNotification
 from canonical.launchpad.ftests import (
     login,
     logout,

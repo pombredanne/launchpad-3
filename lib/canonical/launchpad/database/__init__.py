@@ -11,21 +11,6 @@ from canonical.launchpad.database.logintoken import *
 from canonical.launchpad.database.message import *
 from canonical.launchpad.database.oauth import *
 from canonical.launchpad.database.temporaryblobstorage import *
-from lp.bugs.model.bug import *
-from lp.bugs.model.bugactivity import *
-from lp.bugs.model.bugattachment import *
-from lp.bugs.model.bugbranch import *
-from lp.bugs.model.bugcve import *
-from lp.bugs.model.bugmessage import *
-from lp.bugs.model.bugnomination import *
-from lp.bugs.model.bugnotification import *
-from lp.bugs.model.bugsubscription import *
-from lp.bugs.model.bugtarget import *
-from lp.bugs.model.bugtask import *
-from lp.bugs.model.bugtracker import *
-from lp.bugs.model.bugwatch import *
-from lp.bugs.model.cve import *
-from lp.bugs.model.cvereference import *
 from lp.buildmaster.model.builder import *
 from lp.coop.answersbugs.model import *
 from lp.registry.model.personnotification import *
@@ -55,5 +40,3 @@ from lp.soyuz.model.publishing import *
 from lp.soyuz.model.queue import *
 from lp.soyuz.model.section import *
 from lp.soyuz.model.sourcepackagerelease import *
-
-

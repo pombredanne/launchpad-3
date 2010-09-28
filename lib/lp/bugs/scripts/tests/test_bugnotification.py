@@ -5,7 +5,6 @@
 __metaclass__ = type
 
 from datetime import datetime
-from textwrap import dedent
 import unittest
 
 import pytz
@@ -14,7 +13,7 @@ from zope.interface import implements
 
 from canonical.config import config
 from canonical.database.sqlbase import commit
-from canonical.launchpad.database import BugTask
+from lp.bugs.model.bugtask import BugTask
 from canonical.launchpad.helpers import get_contact_email_addresses
 from canonical.launchpad.interfaces.message import IMessageSet
 from canonical.testing import LaunchpadZopelessLayer
@@ -416,7 +415,8 @@ class TestNotificationBatches(unittest.TestCase):
 
     def test_notifications_for_different_owners(self):
         # Batches are grouped by owner.
-        notifications = [FakeNotification(owner=number) for number in range(5)]
+        notifications = [
+            FakeNotification(owner=number) for number in range(5)]
         expected = [[notification] for notification in notifications]
         observed = list(notification_batches(notifications))
         self.assertEquals(expected, observed)

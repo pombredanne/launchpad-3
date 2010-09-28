@@ -442,7 +442,7 @@ days or more.
 
 There are no Expired Bugtasks in sampledata, from the tests above.
 
-    >>> from canonical.launchpad.database import BugTask
+    >>> from lp.bugs.model.bugtask import BugTask
     >>> BugTask.selectBy(status=BugTaskStatus.EXPIRED).count()
     0
 

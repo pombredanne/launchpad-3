@@ -18,8 +18,8 @@ class TestAnnotations(unittest.TestCase):
         root = connection.root()
         handle_before_traversal(root)
         from canonical.launchpad.interfaces import IZODBAnnotation
-        from canonical.launchpad.database import Bug
-        from canonical.launchpad.database import Product
+        from lp.bugs.model.bug import Bug
+        from lp.registry.model.product import Product
         bug = Bug.get(1)
         bug_annotations = IZODBAnnotation(bug)
         bug_annotations['soyuz.message'] = "a message on a bug"
