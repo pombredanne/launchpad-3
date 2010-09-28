@@ -371,6 +371,7 @@
                     componentForDistroSourcePackage
                     component_groups
                     contactdetails
+                    getAllRemoteComponentGroups
                     getBugFilingAndSearchLinks
                     getBugsWatching
                     getLinkedPersonByName

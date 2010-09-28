@@ -543,6 +543,17 @@ class BugTracker(SQLBase):
 
         return component_group
 
+    def getAllRemoteComponentGroups(self):
+        """See `IBugTracker`."""
+        component_groups = []
+
+        component_groups = Store.of(self).find(
+            BugTrackerComponentGroup,
+            BugTrackerComponentGroup.bug_tracker == self.id)
+        component_groups = component_groups.order_by(
+            BugTrackerComponentGroup.name)
+        return component_groups
+
     def getRemoteComponentGroup(self, component_group_name):
         """See `IBugTracker`."""
         component_group = None

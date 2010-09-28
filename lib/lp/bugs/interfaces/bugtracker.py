@@ -367,6 +367,9 @@ class IBugTracker(Interface):
     def addRemoteComponentGroup(component_group_name):
         """Adds a new component group to the bug tracker"""
 
+    def getAllRemoteComponentGroups(self):
+        """Return collection of all component groups for this bug tracker"""
+
     @operation_parameters(
         component_group_name=TextLine(
             title=u"The name of the remote component group", required=True))
