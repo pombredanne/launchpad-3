@@ -92,7 +92,7 @@ is provided for each product pointint to its +review-license page.
     >>> for tr in table.findAll('tr'):
     ...     td_list = tr.findAll('td')
     ...     print td_list[5].a
-    <a href="/arch-mirrors/+review-license">Review</a> ...
+    <a href="/tomcat/+review-license">Review</a> ...
 
 Now, we can click on the Review link, which will take us to the
 $project/+review-license page. Then clicking on the Change button
